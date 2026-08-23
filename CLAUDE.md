@@ -807,8 +807,13 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   in its band via `roster_size(classification, school_key, salt)`, same idiom as a
   recruiting budget band — same `ncaa.ROSTER_CAP` pattern, same talent metrics, not
   weaker filler) because 3S/4D dressing 11-of-12 left almost no bench.
-  **`ROSTER_FLOOR` (11, the regular-season card's distinct-player count) is a HARD
-  floor UNDER that band** — `_freshman_class_size` rolls each grade independently
+  **`ROSTER_FLOOR` (12 — ONE MORE than the regular-season format's 11 distinct
+  players, owner rule 2026-08, so a program at the floor still has a bench of one
+  rather than exactly enough bodies to dress) is a HARD floor UNDER that band, and
+  there is NO CEILING: the band is a target `_freshman_class_size` draws around, real
+  rosters run 12-36, and the transfer portal appends on top without a check. Both are
+  deliberate — the owner reallocates talent by hand, and a big school rolling a deep
+  squad is what makes moving players down the ladder worth doing. Do not clamp it.** — `_freshman_class_size` rolls each grade independently
   with real downside variance, so `build_roster` tops a short roster up to 11 by
   growing ONLY the current year's incoming freshman class (never grades 10-12,
   already fixed from a prior roll) — without it, a program that rolled thin across

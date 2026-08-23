@@ -226,11 +226,23 @@ def roster_size(classification: str, school_key: str = "", salt: str = "") -> in
     return rng.randint(lo, hi)
 
 
-#: The regular-season league card's distinct-player count (S1 + the doubles pool
-#: #2-#9 + S2 + S3 = 11 — the biggest single-dual roster requirement in the whole
-#: JHSAA calendar; the early 5S/2D window and the 1S/4D postseason both need only
-#: 9). A HARD FLOOR on `build_roster`'s total output, same invariant as the
-#: college side's `ncaa.lineup_size`/`refill_walkons`.
+#: ONE MORE THAN the regular-season format's distinct-player count (owner rule
+#: 2026-08). That format needs 11 — S1 + the doubles pool #2-#9 + S2 + S3 — which is
+#: the biggest single-dual requirement in the whole JHSAA calendar (the early 5S/2D
+#: window and the 1S/4D postseason both need only 9). The floor sits at 12 so a
+#: program at the floor still has ONE player who is not dressed: a squad with exactly
+#: enough bodies to field a dual has no bench at all, so an absence has nowhere to
+#: come from and the rest/rotation rules have nothing to move. A HARD FLOOR on
+#: `build_roster`'s total output, same invariant as the college side's
+#: `ncaa.lineup_size`/`refill_walkons`.
+#:
+#: ‼️ AND THERE IS NO CEILING, DELIBERATELY (owner rule 2026-08).
+#: `ROSTER_SIZE_BAND_BY_CLASS` is a TARGET that `_freshman_class_size` draws around
+#: with real variance, not a cap — measured rosters run 11 to 36 — and the transfer
+#: portal appends on top of that without checking anything. Both are intended: the
+#: owner reallocates talent by hand every offseason, and a big school being able to
+#: roll a deep squad is what makes moving players down the ladder worth doing. Do not
+#: "fix" the over-band rosters by clamping them.
 #:
 #: ‼️ WHY THIS EXISTS: `_freshman_class_size` rolls each grade INDEPENDENTLY with
 #: real downside variance (35% of a mean as low as ~3.5/grade even at 1A's raised
@@ -246,7 +258,7 @@ def roster_size(classification: str, school_key: str = "", salt: str = "") -> in
 #: a PRIOR year's roll — touching them would break `_freshman_class_size`'s "rolled
 #: once per (school, entry_year)" contract and desync from anything already
 #: archived against that class).
-ROSTER_FLOOR = 11
+ROSTER_FLOOR = 12
 
 
 def _freshman_class_size(school_key: str, entry_year: int, classification: str,

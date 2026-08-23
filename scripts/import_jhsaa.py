@@ -1931,6 +1931,17 @@ EXTRA_SPONSORS = frozenset({
     "Abraham Lincoln",    # 9A 2347 — Belyakov. Owner add (2026-08): the state had no
                           # Lincoln at all. Displayed "Lincoln" (RENAMES), the
                           # surname style Washington/Roosevelt/Obama already use.
+    # ‼️ AN EXPANSION PROGRAM (owner, 2026-08). Minnesota City (2A, 215, Emigrant
+    # County, Kangas) already sponsored GIRLS tennis and lost the boys' sub-roll;
+    # the association adds boys. ⚠️ This table forces a school in for BOTH genders,
+    # which is exactly right here because the girls' side is already true — a
+    # boys-only add for a school sponsoring NEITHER would also create a girls' team,
+    # and would need a per-gender table rather than this one.
+    #
+    # No league redraw: a league belongs to the SCHOOL (drawn once per classification
+    # over the girls-inclusive pool), so their `boys_district` was already filled in
+    # and the 2A Desert Sky boys' half simply goes 7 → 8, well inside MAX_DISTRICT.
+    "Minnesota City",
 })
 
 # ‼️ LOCALITY — the settlement a school belongs to INSIDE its city (owner spec,

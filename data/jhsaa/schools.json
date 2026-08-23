@@ -9410,7 +9410,7 @@
         "#f4f1ea"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Desert Sky League",
       "boys_district": "Desert Sky League"
     },
