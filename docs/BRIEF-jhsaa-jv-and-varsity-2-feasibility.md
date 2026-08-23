@@ -1,72 +1,135 @@
-# BRIEF — a JHSAA sub-varsity season (JV and Varsity 2): feasibility
+# BRIEF — a concurrent JHSAA JV season: feasibility
 
 **Status: INVESTIGATION ONLY. Nothing is built, no code changed, no tests written.**
-This is a read on whether a concurrent JV / Varsity 2 season is worth doing, what it
-would cost, and what the owner has to decide before anyone writes a line of it.
 
-**Everything labelled MEASURED comes from the real 2038 save** (the research exports
-`playtoclinchjhsaa2038boys` / `…girls`, 864 girls' and 780 boys' programs, 31,766
-players, 21,419 duals, 446k line appearances). Numbers labelled GENERATED come from
-`jhsaa.build_roster` on a synthetic world and are only used where the real save can't
-answer the question. Numbers labelled PROJECTED are arithmetic on top of the real save,
-clearly derived, not simulated.
+**Everything labelled MEASURED comes from the real 2038 save** (research exports
+`playtoclinchjhsaa2038boys` / `…girls` — 864 girls' and 780 boys' programs, 31,766
+players, 21,419 duals, 446k line appearances). GENERATED means `jhsaa.build_roster`
+on a synthetic world, used only where the real save cannot answer. PROJECTED means
+arithmetic on top of the real save — clearly derived, not simulated.
+
+---
+
+## 0. Owner decisions already taken (2026-08)
+
+These are settled and the rest of this brief is written under them.
+
+1. **The JV lineup is ELASTIC — fit to what the school has that day, never dogmatic.**
+
+   | available | JV format | players | courts |
+   |---:|---|---:|---:|
+   | 5 | 1S/2D | 5 | 3 |
+   | 6 | 2S/2D | 6 | **4 — even** |
+   | 7 | 3S/2D | 7 | 5 |
+   | 8 | 2S/3D | 8 | 5 |
+   | 9 | 3S/3D | 9 | **6 — even** |
+   | 10 | 4S/3D | 10 | 7 |
+   | 11 | 3S/4D | 11 | 7 |
+   | 12+ | 4S/4D | 12 | **8 — even** |
+
+2. **Ties are accepted.** Even-court formats can draw; broken on sets, then games,
+   and **a dual still level after that is a TIE**. This is the association's first tie
+   — nothing in `jhsaa` has tie logic today, by explicit design.
+3. **A roster is not a lineup.** JV is a *daily slice of one ladder*, not a standing
+   squad: whoever sits below the varsity lineup that day is JV. If varsity rests two
+   starters, #12 and #13 move up and JV starts at #14. Porousness is therefore
+   structural, not a feature to add.
+4. **No Varsity 2.** Dropped — see §6 for why the numbers agreed.
+5. **JV has its own `TeamSeason` and its own page.** Standings and player pages get a
+   **JV tab** alongside varsity; a player with no JV results has an empty tab.
+6. **JV counts for nothing.** No TOSS, no rankings, no awards, no seeding, no
+   postseason. Varsity is untouched.
+7. **JV season capped at ~16 duals.**
+8. **Scheduling is flexible** — mirror the varsity opponent, or give JV its own
+   districts; whichever is easier. The only requirement is opponents **near their own
+   class**, plus **JV showcase events** for out-of-class play.
+9. `world.jhsaa_underplayed` stays as it is (varsity appearances only).
+10. `_rest_count` (weak-opponent starter resting) stays — it is realistic to use these
+    players in varsity duals sometimes.
 
 ---
 
 ## 1. The problem, measured
 
-The proposal exists because lower-roster players produce almost no data. That is true,
-and it is bigger than it looks.
-
-**MEASURED — matches actually played in 2038, by roster rank** (rank = ordered by
-matches played, so it is the effective usage order, not the seeded ladder):
+**MEASURED — matches actually played in 2038, by roster rank** (rank ordered by
+matches played, i.e. effective usage, not the seeded ladder):
 
 | rank | 1–9 | 10 | 11 | 12 | 13 | 14–15 | 16–19 | 20+ |
 |---|---|---|---|---|---|---|---|---|
 | median matches (girls) | 25–28 | 18 | 12 | **4** | **3** | **2** | **1** | **0** |
 | median matches (boys) | 24–27 | 17 | 12 | **4** | **3** | **2** | **1** | **0** |
 
-**MEASURED — the whole-state picture:**
-
 | | girls | boys |
 |---|---|---|
 | players | 16,564 | 15,202 |
 | zero matches all season | 1,352 (8.2%) | 1,496 (9.8%) |
-| 1–5 matches | 5,400 (32.6%) | 4,935 (32.5%) |
 | **≤5 matches** | **6,752 (40.8%)** | **6,431 (42.3%)** |
 | **seniors playing ≤5 in their final year** | **749 of 4,125 (18%)** | **741 of 3,852 (19%)** |
-| players at ≤5 matches with `current_grade` ≥ 50 | 59 | 171 |
+| best zero-match player, `current_grade` | 60 | 65 |
 
-Two things stand out beyond the headline:
-
-* **~750 seniors per gender reach the college recruit hand-off with essentially no
-  résumé.** `graduating_class` writes `Prospect.jhsaa` off `ts.records`, so those
-  players arrive on the board at 0-0 or 1-2.
-* Zero-match players are not all filler. Their median `current_grade` is 30 (girls) /
-  33 (boys) against a population median of 38 / 41 — but the **best zero-match player
-  in the state grades 60 (girls) / 65 (boys)**. Real players are invisible.
-
-This is the same hole `world.jhsaa_underplayed` (world.py:3840) already exists to
-paper over, and the same one `_rest_count`'s comment (jhsaa.py:2207) says the
-weak-opponent starter-resting rule was written as a substitute for.
+Two consequences worth naming. **~750 seniors a gender reach the college hand-off with
+no résumé** — `graduating_class` writes `Prospect.jhsaa` off `ts.records`, so they
+arrive on the recruit board at 0-0. And zero-match players are not all filler: their
+median `current_grade` is 30/33 against a population median of 38/41, but the tail
+reaches 60/65.
 
 ---
 
-## 2. Roster depth is the binding constraint, and the real save ≠ the design bands
+## 2. ‼️ The elastic format is the whole ballgame
 
-The whole proposal is gated on one number: how many players a program actually has.
-The regular-season 3S/4D format dresses **11 distinct players** (`lineup_need`), so:
+A fixed JV format has to be fielded by **both** schools, so its reach is the *product*
+of two roster constraints, and it collapses. The elastic table has no such product:
+the format simply drops to whatever the thinner side can dress, so a dual happens
+whenever both sides have **five spare players**.
 
-* JV needs **11 + N** where N is the JV format's player count.
-* If varsity keeps its bench — and `ROSTER_FLOOR = 12` exists specifically so it has
-  one, and `_rest_count` / `_ROTATE_ONE` / `_ROTATE_TWO` need spare bodies to move —
-  the threshold is **12 + N**.
-* A three-squad program (V + V2 + JV) needs **11 + 2N**, or **12 + 2N** with a bench.
+**MEASURED — programs that can field a JV at all (roster ≥ 16):**
 
-### ‼️ The real save's small classes run well ABOVE their design bands
+| | girls | boys |
+|---|---|---|
+| can field any JV | **759 of 864 (88%)** | **691 of 780 (89%)** |
+| by class (girls) | 9A 89/92 · 8A 80/87 · 7A 87/95 · 6A 107/114 · 5A 88/102 · 4A 81/103 · 3A 71/95 · 2A 76/95 · **1A 80/81** | |
+| spare players (roster − 11) | median 8, p90 13, max 22 | median 9, p90 14, max 25 |
 
-**MEASURED (real 2038) vs GENERATED (`build_roster`, medians stable across years 0/13
-and two salts):**
+Compare against fixed formats, measured on the same save as a share of **real league
+dates where both sides could field**: 3S/4D 7–9% · 2S/3D 32–36% · 2S/2D 61–64% ·
+1S/2D 78–79%. The elastic table replaces all of that with **88–89% of programs, and a
+dual whenever both sides clear five**.
+
+Note 1A: 80 of 81 girls' programs can field a JV — the *highest* rate in the state.
+See §3.
+
+### PROJECTED payoff
+
+Model: JV lineup = the players below varsity's 11, by ability; format = the **smaller**
+side's capacity, capped at 12; each JV player takes one line per dual; 16-dual cap.
+
+| scenario | JV duals | card/program | **zero-match** | **≤5 matches** |
+|---|---|---|---|---|
+| girls — baseline | — | — | 8.2% | **40.8%** |
+| **A: JV plays the varsity opponent's JV** | 5,806 | median 16 | **0.9%** | **5.7%** |
+| B: JV plays its own same-class league | 5,430 | median 16 | 1.5% | 9.0% |
+| boys — baseline | — | — | 9.8% | **42.3%** |
+| **A: mirror the varsity opponent** | 5,231 | median 16 | **1.2%** | **6.1%** |
+| B: own same-class league | 4,914 | median 16 | 2.0% | 9.4% |
+
+**The problem goes away.** 41% of the state at ≤5 matches becomes 6%.
+
+**Scenario A wins on every axis** and should be the default: it is more complete (5.7%
+vs 9.0%), it needs no new league structure, its opponents are already class-appropriate
+(district play is same-class, invitationals are ±1), and — see §5 — **the dates come
+free**. Scenario B loses ground only because own-class league blocks strand small pools
+in thin classes. Showcases can be added to either for out-of-class play.
+
+The **16-dual cap binds, feasibility does not**: 707 of 759 JV-capable girls' programs
+have ≥16 eligible dates on their varsity card. So the design question is not "can they
+find games", it is **which 16**.
+
+---
+
+## 3. Roster depth: the real save is not the design bands
+
+**MEASURED (real 2038) vs GENERATED (`build_roster`, medians stable across world years
+0 and 13 under two salts):**
 
 | class | `ROSTER_SIZE_BAND_BY_CLASS` | generated median | **real 2038 median (g/b)** | real min (g) |
 |---|---|---|---|---|
@@ -80,280 +143,194 @@ and two salts):**
 | 2A | 15–17 | 16 | **18 / 17** | 13 |
 | 1A | 14–16 | 15 | **19 / 19** | **15** |
 
-1A and 2A are running **3–4 players deeper than the generator produces**, and 1A's
-*minimum* (15) is above the generated median. The big classes are roughly on band.
-The likely cause is the documented one — the transfer portal appends on top of a
-roster without a check, and the owner reallocates talent by hand every offseason
-(`ROSTER_SIZE_BAND_BY_CLASS`'s "no ceiling, deliberately" note) — but this brief does
-not prove it, and it is **question 1** below.
-
-**Why it matters:** it inverts the intuition. On generated rosters, JV would be a
-9A/8A feature. On the real save, **1A can field a small JV more reliably than 4A can**
-(1A rosters cluster tightly at 15–25; 4A has more programs but a longer thin tail).
+1A and 2A run **3–4 players deeper than the generator produces**, and 1A's *minimum*
+(15) sits above its generated median. Big classes are on band. The likely cause is the
+documented one — the portal appends without a check and the owner reallocates by hand
+(`ROSTER_SIZE_BAND_BY_CLASS`'s "no ceiling, deliberately") — but this brief does not
+prove it. It is why 1A has the state's best JV coverage, and it means **JV feasibility
+rests on real depth, not on the bands**.
 
 ---
 
-## 3. Varsity 2 — how many programs would there actually be?
+## 4. ‼️ Ties are a third of the JV season, not a corner case
 
-This is the question that was asked directly. **MEASURED, real 2038 rosters:**
+**MEASURED format mix over the projected slate** (scenario A):
 
-| roster ≥ | statewide (g/b) | **9A/8A/7A only (g/b)** | by class, girls (9A→1A) | by class, boys |
-|---|---|---|---|---|
-| 24 | 100 / 103 | 66 / 71 | 26·21·19·13·5·4·5·3·4 | 26·30·15·15·5·6·4·2·0 |
-| 25 | 66 / 77 | 47 / 59 | 19·13·15·7·2·2·4·2·2 | 23·22·14·9·2·5·1·1·0 |
-| 26 | 45 / 55 | 37 / 40 | 15·11·11·2·1·2·2·1·0 | 14·17·9·8·1·4·1·1·0 |
-| **27** (the proposed line) | **28 / 33** | **22 / 25** | 9·7·6·2·0·2·1·1·0 | 8·11·6·7·0·1·0·0·0 |
-| 28 | 19 / 21 | 13 / 15 | 6·5·2·2·0·2·1·1·0 | 6·7·2·5·0·1·0·0·0 |
-| 29 | 8 / 13 | 6 / 10 | 3·1·2·1·0·1·0·0·0 | 5·3·2·2·0·1·0·0·0 |
-| **30** (three squads, each with a bench) | **3 / 8** | **3 / 8** | 1·1·1·0·0·0·0·0·0 | 5·2·1·0·0·0·0·0·0 |
+| format | courts | girls | boys |
+|---|---:|---:|---:|
+| 2S/2D | **4 — even** | 23% | 17% |
+| 1S/2D | 3 | 22% | 19% |
+| 3S/2D | 5 | 15% | 19% |
+| 2S/3D | 5 | 14% | 14% |
+| 3S/3D | **6 — even** | 12% | 10% |
+| 4S/3D | 7 | 6% | 10% |
+| 4S/4D | **8 — even** | 5% | 6% |
+| 3S/4D | 7 | 3% | 4% |
+| **even-court total (a tie is possible)** | | **40%** | **33–34%** |
 
-**Answer: at 27+ restricted to 9A/8A/7A, 22 girls' and 25 boys' programs.**
+So this is not "build ties for the rare 4S/4D". A third to two-fifths of every JV dual
+can end level, and the most common single format (2S/2D) is one of them. What that
+implies:
 
-That is a real but *thin* tier — roughly two dozen per gender, five to eleven per
-classification. It is enough to be interesting and not enough to be a league. It is
-also **fragile**: move the line to 28 and it halves (13/15); require a bench on each
-of the three squads (30) and it collapses to **3 girls' / 8 boys' programs**, which is
-not a tier at all.
+* `TeamSeason` carries `wins`/`losses` only — a JV one needs `ties`, and `record`
+  becomes `W-L-T`.
+* The tiebreak ladder (sets → games → tie) has no implementation anywhere.
+  `jhsaa._games` already parses games out of an archived score string; **sets are not
+  counted anywhere** and would be new.
+* `world_jhsaa_dual.won` is an INTEGER boolean — a tie has no representation in the
+  archive.
+* Everything downstream that computes a win % (`win_pct`, `district_pct`) assumes
+  `wins + losses` is the denominator.
 
-### ‼️ The proposed 27 is benchless arithmetic
+None of this is hard. It is just genuinely new, and it is the one place where "JV
+counts for nothing" does not spare us work.
 
-27 = 11 + 8 + 8 exactly, i.e. varsity dresses all eleven with nobody spare, and both
-sub-varsity squads dress every player they have. Under that reading:
-
-* varsity loses its bench entirely, so `_ROTATE_ONE` / `_ROTATE_TWO` (which is where
-  ranks #12–#15 get their current 2–4 matches) and `_rest_count`'s weak-opponent
-  resting both stop firing for exactly the programs that have the most depth;
-* `_squad`'s short-side wrap (`r[i % len(r)]`) has no margin left — an absence has
-  nowhere to come from.
-
-So the honest thresholds are 27 (benchless, 22/25 programs) or 30 (one bench per
-squad, 3/8 programs). Something in between — bench varsity only, run sub-varsity
-benchless — puts it at 28: **13 girls' / 15 boys' programs**.
-
-### Geography is not a problem
-
-**MEASURED:** all 22 girls' and all 25 boys' V2-eligible programs sit in an *area*
-that contains ≥4 programs from 3A/2A/1A. The small-class opponent pool is 271 girls' /
-248 boys' programs. There is no shortage of opponents and no travel problem.
+**Escape hatch if you want it:** every even format has an odd alternative at the same
+player count (6 → 4S/1D, 9 → 5S/2D, 12 → 6S/3D), which would remove ties entirely.
+Flagged, not recommended — the table as written is more tennis-like.
 
 ---
 
-## 4. JV — format choice is the whole decision
+## 5. What is cheap
 
-A JV dual can only happen when **both** schools clear the threshold. Using the duals
-actually played in 2038 (7,389 girls'/6,212 boys' district duals, plus 2,488/2,304
-invitational):
+**One ladder, two lineups.** `_order(ts)` already produces the ranked ladder and
+`_lineup` already slices it: varsity takes 11 (after `_rest_count` shifts and
+`_ROTATE_*` swaps), JV takes what is left. Decision 3 falls out of the existing code
+almost for free — JV is a second slice of the same `_order` call, not a second ladder.
 
-**MEASURED — share of real league dates where both sides could field a JV:**
+**The dual format is already data.** `DualFormat(n_singles=S, n_doubles=D,
+doubles_team_point=False)` — the whole elastic table is eight tuples. `FLIGHT_WEIGHTS`
+already carries S1–S5 and D1–D4, which covers every cell.
 
-| JV format | players | thr (no bench) | % programs (g/b) | **% district duals (g/b)** | thr (+bench) | % district duals (g/b) |
-|---|---|---|---|---|---|---|
-| 1S/2D | 5 | 16 | 88 / 89 | **78 / 79** | 17 | 61 / 64 |
-| 2S/2D | 6 | 17 | 77 / 79 | **61 / 64** | 18 | 43 / 51 |
-| 3S/2D | 7 | 18 | 64 / 69 | **43 / 51** | 19 | 32 / 36 |
-| **2S/3D** (the "2/3" proposal) | **8** | **19** | **54 / 56** | **32 / 36** | 20 | 21 / 25 |
-| 1S/4D | 9 | 20 | 42 / 45 | 21 / 25 | 21 | 11 / 17 |
-| 3S/4D (mirror varsity) | 11 | 22 | 22 / 25 | **7 / 9** | 23 | 4 / 5 |
+**The dates are free in scenario A.** `jhsaa_match_dates` packs duals into rounds; if
+a JV dual takes its varsity dual's date — which is what really happens, same afternoon
+— it needs **zero extra rounds**, so no pressure on the fitted Oct-31 / Jun-7 window
+(`_JH_SEASON_CLOSE`) and no risk of tripping `_jh_pattern` into a denser day pattern.
+Scenario B would need its own rounds and would push on that window.
 
-Per-classification coverage at 2S/3D, girls: 9A 60% · 8A 49% · 7A 31% · 6A 38% ·
-5A 21% · 4A 12% · 3A 12% · 2A 23% · 1A 40%. At 1S/2D: 9A 94% · 5A 74% · 3A 58% ·
-1A 97%.
-
-### PROJECTED payoff
-
-Model: JV squad = ranks 12..11+N by ability; a JV dual is played wherever both sides
-clear the threshold on a dual they really played; each JV player plays exactly one
-line per JV dual. Baseline in brackets.
-
-**girls** (baseline zero-match 8.2%, ≤5 matches 40.8%):
-
-| JV format | bench | JV programs | JV duals | median JV matches/player | zero-match | ≤5 matches |
-|---|---|---|---|---|---|---|
-| 1S/2D | no | 759 | 7,729 | 21 | 4.7% | **19.7%** |
-| 2S/2D | no | 668 | 6,028 | 18 | 4.0% | **18.2%** |
-| 3S/2D | no | 556 | 4,291 | 16 | 3.5% | **18.6%** |
-| **2S/3D** | no | 464 | 3,132 | 14 | 3.2% | **19.9%** |
-| 2S/3D | yes | 363 | 2,065 | 11 | 3.7% | 24.6% |
-| 3S/4D | no | 189 | 685 | 7 | 4.6% | 32.2% |
-
-**boys** (baseline 9.8% / 42.3%):
-
-| JV format | bench | JV programs | JV duals | median JV matches/player | zero-match | ≤5 matches |
-|---|---|---|---|---|---|---|
-| 1S/2D | no | 691 | 6,708 | 20 | 5.7% | **21.1%** |
-| 2S/2D | no | 618 | 5,466 | 18 | 5.0% | **19.2%** |
-| 3S/2D | no | 539 | 4,343 | 17 | 4.3% | **18.8%** |
-| **2S/3D** | no | 440 | 3,056 | 14 | 4.2% | **20.5%** |
-| 2S/3D | yes | 351 | 2,121 | 12 | 4.6% | 25.4% |
-| 3S/4D | no | 194 | 759 | 8 | 5.5% | 36.2% |
-
-**Reading:** every sensible format roughly **halves** the ≤5-match population
-(41% → 18–21%) and cuts zero-match by half or better. The payoff is remarkably flat
-between 1S/2D and 2S/3D — a bigger JV format reaches fewer programs but gives each
-reached player more lines, and the two effects cancel. **The choice is therefore not
-about data yield; it is about what a JV dual should look like.** Mirroring varsity at
-3S/4D is the one option that clearly fails: 7–9% coverage and it barely moves the
-number.
-
-Note what none of them fix: **ranks #20+ still get nothing.** A JV of 8 covers
-#12–#19; a 26-player roster still has six invisible players. JV moves the line down,
-it does not remove it.
+**MEASURED cost.** A gender's season today is **146.6s / 12,271 duals** — the rung is
+~5 minutes for both genders, not the 19s in `DESIGN-jhsaa-high-school-season.md:280`,
+which is badly stale. Per-dual: 3S/4D regular 10.44 ms, 1S/4D 9.93 ms, 5S/2D 7.25 ms,
+prototyped 2S/3D 8.25 ms. The projected JV slate averages **4.8 courts**, so ~7.9 ms ×
+5,800 duals ≈ **+46s/gender**. **Rung ~5 min → ~6.5 min.**
 
 ---
 
-## 5. What is cheap (cheaper than expected)
+## 6. Why Varsity 2 was dropped (and the numbers agreed)
 
-**A JV/V2 team wants to be its own `TeamSeason`, not a flag on the varsity one.**
-`play_dual` (jhsaa.py:2644) mutates the TeamSeason in place — `wins`/`losses`,
-`points_for`/`points_against`, `records`, `matches`, `schedule`, and the district
-counters. Give the JV its own `TeamSeason` over the same `School` and the tail of the
-roster and **the record bifurcation is free by construction**: no varsity counter can
-ever see a JV dual because it is a different object. The whole "don't pollute the
-varsity record" worry collapses to two decisions — which TeamSeasons enter
-`every_team` (that list is what feeds TOSS, awards, standings and the postseason), and
-how the archive is filtered on read.
+**MEASURED, real 2038 rosters** — programs by roster threshold:
 
-**The dual format is already data.** `DualFormat(n_singles=2, n_doubles=3,
-doubles_team_point=False)` — five courts, odd, so no ties and no tie-break logic; high
-school has no clinch anyway. `jhsaa.FLIGHT_WEIGHTS` already carries D3/D4.
+| roster ≥ | statewide (g/b) | 9A/8A/7A only (g/b) |
+|---|---|---|
+| 26 | 45 / 55 | 37 / 40 |
+| **27** (the proposed line) | **28 / 33** | **22 / 25** |
+| 28 | 19 / 21 | 13 / 15 |
+| 30 | 3 / 8 | 3 / 8 |
 
-**MEASURED cost.** One gender's season today is **146.6s / 12,271 duals** (the 19s in
-`DESIGN-jhsaa-high-school-season.md:280` is badly stale — the rung is ~5 minutes for
-both genders now, not 19 seconds). Per-dual: 3S/4D regular **10.44 ms**, 1S/4D state
-9.93 ms, 5S/2D early 7.25 ms, and a prototyped **2S/3D at 8.25 ms**. At 2S/3D that is
-~3,100 JV duals a gender ≈ **+26s/gender**, so the rung goes ~5 min → ~6 min. At
-1S/2D it is ~7,700 duals ≈ +60s/gender. V2 adds ~25 programs × ~14 duals ≈ 350 duals,
-which is noise.
+Two dozen programs a gender, and **fragile**: 28 halves it, 30 kills it. The proposed
+27 is also benchless arithmetic — 27 = 11 + 8 + 8 leaves varsity with no spare, which
+is exactly what `ROSTER_FLOOR = 12` exists to guarantee and what `_rest_count` and
+`_ROTATE_*` need to move. And a V2 is not a school: every surface here keys on a unique
+display name (`world_jhsaa_dual.school`, the routes, the pids, the crest lookup,
+`_jh_school_groups`), so a V2 appearing as an opponent on a 3A program's card would
+404 its program page and blank its crest, quietly.
 
-**The calendar can be free.** If a JV dual takes its varsity dual's date — which is
-what really happens; JV and varsity play the same afternoon — `jhsaa_match_dates`
-looks the date up instead of packing a new round. **Zero extra rounds**, no pressure
-on the fitted Oct-31 / Jun-7 window (`_JH_SEASON_CLOSE`), no risk of tripping
-`_jh_pattern` into a denser day pattern.
+The elastic JV reaches 88% of programs and takes ≤5-match players from 41% to 6%. V2
+would have added ~25 programs a gender for the largest structural cost in the proposal.
+Correctly dropped.
 
 ---
 
-## 6. What is expensive, and where the pollution actually lives
+## 7. What still needs building
 
-**The archive needs a `level` column, not a phase.** `world_jhsaa_dual`
-(world.py:213) has no axis for this. A `"jv"` *phase* is the wrong shape: phase is the
-archive's identity for an EVENT and it selects the dual format and the postseason
-calendar lane, but JV plays inside `early` *and* `regular`. There is an `ALTER TABLE`
-migration idiom already in place (world.py:264).
+* **A `level` axis on the archive.** `world_jhsaa_dual` (world.py:213) has none. It
+  must be a level, **not a phase** — phase is the archive's identity for an EVENT and
+  it selects the dual format and the postseason lane, but JV plays inside `early` and
+  `regular` alike. There is an `ALTER TABLE` idiom already (world.py:264).
+* **‼️ `jh_match_key` will break silently.** It is `(phase, district, home, away)`
+  (world.py:4024). A JV dual against the same opponent in the same phase yields the
+  **identical key**, which puts a self-edge into `_jh_global_order`'s topological sort,
+  drops it into its cycle fallback, and quietly degrades the whole gender's display
+  calendar. Level has to be in the key.
+* **Reader surface — small, but must be complete.** Four SQL readers of
+  `world_jhsaa_dual` (world.py:3888 `jhsaa_underplayed`, :3942 `_schedule_rows`, :4170
+  `jhsaa_match_dates`, :5037 `jhsaa_history_rows`) plus `research_export.py:62`; about
+  eight in-memory `t.schedule` readers (`rating_duals` jhsaa.py:3156, `_district_duals`
+  :2998, `district_oowp` :3014, the non-district `spent` tally :4487,
+  `_flat_format_profile` :5015, `_last_opponent` :3699).
+* **‼️ The one that bites silently:** `_jh_line_records` (web/state.py:3626) builds a
+  player's season record by **matching NAMES inside the archived `lines`** of that
+  school's card. Miss it and JV lines merge into the varsity player card with no error
+  anywhere — the same name-keying fragility already flagged for family ties.
+* **Ties** — see §4.
+* **The 16-dual selection rule.** The cap binds for 93% of JV-capable programs, so
+  *which* 16 is a real decision. Taking the first 16 in play order (what the projection
+  models) ends a program's JV season in mid-March.
+* **The band comment.** `ROSTER_SIZE_BAND_BY_CLASS` (jhsaa.py:193) says the bands are
+  deep *because* "varsity AND a JV feeder blur into one deeper roster here, since the
+  association has no separate JV system to model with." That rationale is now spent
+  and the comment should be rewritten, whatever the bands end up doing.
 
-**‼️ `jh_match_key` will break silently.** It is `(phase, district, home, away)`
-(world.py:4024). A JV dual against the same opponent in the same phase produces the
-**identical key**, which puts a self-edge into `_jh_global_order`'s topological sort,
-drives it into its cycle fallback, and quietly degrades the whole gender's display
-calendar. Level has to be in the key.
-
-**Reader surface — small, but it must be complete.** Four SQL readers of
-`world_jhsaa_dual` (world.py:3888 `jhsaa_underplayed`, :3942 `_schedule_rows`, :4170
-`jhsaa_match_dates`, :5037 `jhsaa_history_rows`) plus `research_export.py:62`; and
-about eight in-memory `t.schedule` readers (`rating_duals` jhsaa.py:3156,
-`_district_duals` :2998, `district_oowp` :3014, the non-district `spent` tally :4487,
-`_flat_format_profile` :5015, `_last_opponent` :3699).
-
-**‼️ The one that will bite silently:** `_jh_line_records` (web/state.py:3626) builds
-every player's season record by **matching NAMES inside the archived `lines` of that
-school's card**. Miss it and a JV player's record merges into the varsity player card
-with no error anywhere — the same name-keying fragility already flagged for family
-ties in CLAUDE.md.
-
-**Two documented owner rules get superseded** and should be re-decided rather than
-quietly contradicted:
-
-* `ROSTER_SIZE_BAND_BY_CLASS` (jhsaa.py:193) says the bands are deep *because*
-  "varsity AND a JV feeder blur into one deeper roster here, since the association has
-  no separate JV system to model with."
-* `_rest_count` (jhsaa.py:2207) says "Colorado's big programs field V2/V3 squads;
-  everywhere else the same depth is exercised by coaches SITTING starters… **We do not
-  model a V2**." That rule is the current stand-in for this whole proposal.
-
----
-
-## 7. Varsity 2's real problem: it is not a school
-
-Everything in this section of the app is keyed on a **unique school display name** —
-`world_jhsaa_dual.school`, `run_season`'s teams dict, the routes, the pids, the
-crest/mark lookup, `_jh_school_groups` (the postseason calendar lanes), `former_school`.
-CLAUDE.md states it outright: a JHSAA display name IS the archive identity.
-
-If a V2 plays a 3A varsity program, that dual lands on the 3A program's card naming an
-opponent `load_schools` does not return. Consequences, all of which **degrade quietly
-rather than raise**: the opponent's program page 404s, its crest renders blank, its
-calendar lane is unknown, `jhsaa_group_ranking` and `_season_row` cannot resolve it.
-Solvable — a `level` on the dual row plus a display convention ("Bishop Valera V2") —
-but it touches more surfaces than the JV work does.
-
-And the design question underneath it, which nobody can answer from the code:
-
-* If the V2 dual **doesn't** count for the 3A team, that program has played a match
-  that is not in its record — visible on its own schedule and absent from its ledger.
-* If it **does** count, a non-program is inside the varsity results graph: `rating`
-  needs a rating for it, `district_oowp` needs its win %, and the awards' two-pass
-  opponent-quality rating (`jhsaa_awards.build_pool`) needs it in the pool.
-
-Also worth noting: a 3A program already plays ~28 duals. V2 dates are **new** dates
-for that program (unlike JV, which shares the varsity date), so they either eat the
-`NONDISTRICT_MIN/MAX` 4–8 allowance or lengthen the card.
+**What the JV does NOT fix:** throttling. **46% of side-appearances** have the school's
+own depth cut down by a thinner opponent, and a 12-player JV cap means a 25-roster
+program still dresses only 23 of its players. Ranks ~20+ remain the residual — 65–100
+players per rank still at ≤5 matches. That is the price of the elastic table choosing
+the smaller side, and it is almost certainly the right price.
 
 ---
 
-## 8. Open questions for the owner
+## 8. Open questions
 
-1. **Why are 1A/2A rosters 3–4 deeper than their bands in the real save?** Hand
-   transfers, as suspected? The entire feasibility picture rests on real depth, not
-   on the bands, and it currently makes JV *more* viable at 1A than at 4A.
-2. **JV format — coverage or fidelity?** 1S/2D reaches 78–79% of real league dates,
-   2S/3D reaches 32–36%, and *they produce nearly the same data payoff* (≤5-match
-   population 20% vs 20%). So this is purely a question of what a JV dual should look
-   like on the page.
-3. **Does varsity keep its bench?** Threshold 12+N instead of 11+N. It costs ~10
-   points of coverage and it is what `_ROTATE_*` and `_rest_count` need to keep
-   working.
-4. **Is the JV squad fixed or porous?** If ranks 12–19 are locked into JV, varsity
-   loses the bench rotation that currently gives #12–#15 their 2–4 matches. If it is
-   porous (call-ups, which is what real life does), a player has both a varsity and a
-   JV record and the clean two-object separation gets harder.
-5. **V2 threshold:** 27 benchless (22 girls / 25 boys), 28 (13/15), or 30 with a bench
-   per squad (3/8)? Or raise the roster bands to support it — noting the bands' own
-   comment says they are deep *because* there is no JV.
-6. **Does a 3A varsity team's dual against a 9A's Varsity 2 count on the 3A team's
-   record and TOSS?** This determines whether V2 lives inside the varsity results
-   graph or entirely outside it, and it is the single biggest structural fork.
-7. **Does a V2 get a page** — a browsable entity with a schedule — or does it only
-   ever appear as an opponent on other programs' cards?
-8. **What happens to `jhsaa_underplayed`** (the transfer-portal board, world.py:3840)?
-   It finds 9th/10th graders under 12 matches. If JV puts them at ~14, the board
-   mostly empties. Keep it counting varsity appearances only?
-9. **The college hand-off.** `graduating_class` writes `Prospect.jhsaa` from
-   `ts.records`. A senior who only played JV would go to the recruit board at 0-0.
-   Merge JV in, carry it as a separate line, or leave it? (~750 seniors a gender
-   currently arrive with ≤5 matches, so this line is already thin.)
-10. **Does the weak-opponent rest rule stay?** It exists explicitly as the substitute
-    for not modelling a V2.
+1. **Does a JV result move the ladder?** `ladder_score` is `ovr + LADDER_SWING ×
+   (pct − ½) × n/(n + LADDER_PRIOR)`, read off `ts.records`. With JV on its own
+   `TeamSeason`, the varsity ladder never sees JV form, so a JV player can only climb
+   on ability — which is not really porous. If JV wins *do* feed it, JV results are
+   deciding varsity lineups, which brushes against "JV counts for nothing". This is the
+   single biggest unresolved design point.
+2. **What does "available that day" mean?** The JHSAA has no injuries and no absence
+   model, so available = roster − varsity's 11 − rested starters, which is **constant
+   all season**: a 19-roster program would play 2S/3D in every JV dual it ever plays,
+   and all the observed elasticity comes from the *opponent*. Do you want real
+   day-to-day availability variance (a new mechanic, and the association's first
+   non-determinism), or is per-program-constant fine?
+3. **Format = the smaller side's capacity?** Assumed throughout. Confirm — the
+   alternative (bigger school plays its shape, thin school forfeits lines) is worse but
+   it is a choice.
+4. **Which 16?** First 16 chronologically, evenly spread across the season, or
+   district dates first with invitationals filling in?
+5. **Ties: recorded as `W-L-T`, or something else on the page?** And does a JV tie
+   need to be distinguishable in the archive from a JV dual that was not played?
+6. **Development.** "It can be part of development if that matters" — flagging that
+   **today no JHSAA result affects any player's development at all**, varsity results
+   included. `_dev_maturity` rolls a four-year trajectory at entry and `build_roster`
+   regenerates deterministically, so results→growth would be a separate and much larger
+   feature needing persisted per-player state. Confirm that is understood and out of
+   scope for now.
+7. **JV showcases** — reuse the varsity showcase machinery (`showcase_schedule`, tiers,
+   pod/tiered), or something simpler? And do showcase duals count against the 16?
+8. **Does JV have district standings**, or only a program's overall JV record? A JV tab
+   showing a league table implies a JV district place, which is one step from a
+   standing nobody wanted.
 
 ---
 
 ## Appendix — method
 
-* Real-save figures: the two 2038 research exports, read directly
-  (`programs.csv`, `players.csv`, `duals.csv`, `line_players.csv`,
-  `jhsaa_standings.csv`). Match counts are `line_players.csv` rows per `player_id`,
-  which is the same appearance-by-line basis `_jh_line_records` and
+* Real-save figures read directly from `programs.csv`, `players.csv`, `duals.csv`,
+  `line_players.csv`, `jhsaa_standings.csv`. Match counts are `line_players.csv` rows
+  per `player_id` — the same appearance-by-line basis `_jh_line_records` and
   `jhsaa_underplayed` use.
-* Roster ability order is `players.csv` sorted by `current_grade` descending — the
-  seed `jhsaa._order` starts from, before results move it.
-* JV pair coverage counts **duals actually played** in that season with
-  `phase in ("regular","early")`, not theoretical league pairings, so it reflects the
-  real schedule including invitationals.
+* Roster ability order is `players.csv` by `current_grade` descending — the seed
+  `jhsaa._order` starts from, before results move it.
+* Scenario A plays a JV dual on every real `regular`/`early` varsity dual where both
+  sides have ≥5 spare, in archive order, until either side hits 16. Scenario B groups
+  JV-capable programs of one class into ~10-team blocks by area/county/district and
+  plays a truncated double round robin to the same cap.
 * Season timing and per-dual cost: `jhsaa.run_season("girls", 0)` on a throwaway DB,
-  and a direct `play_dual` microbenchmark over 9A/8A teams with a prototyped
+  plus a direct `play_dual` microbenchmark over 9A/8A teams with a prototyped
   `DualFormat(2, 3, False)`.
-* Generated-roster comparisons: `jhsaa.build_roster` at world years 0 and 13 under two
-  salts, to separate save-specific drift from year-to-year noise.
-* The projection in §4 is arithmetic, not a simulation: it assumes a JV plays wherever
-  both sides clear the threshold and that each JV player takes exactly one line per
-  dual. It does not model JV rotation, call-ups, or a JV non-district card of its own,
-  all of which would raise the numbers.
+* Generated-roster comparison: `build_roster` at world years 0 and 13 under two salts,
+  to separate save-specific drift from year-to-year noise.
+* The payoff projection is arithmetic, not a simulation. It does not model rest days
+  shrinking the JV pool, JV bench rotation, or JV showcases — the first would lower the
+  numbers slightly, the other two would raise them.
