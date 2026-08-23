@@ -101,7 +101,16 @@
     <div class="bl-panel">
       <div class="bl-panel-head">
         <span class="bl-panel-title">{{ view.season_year }} Schedule</span></div>
-      <div class="tbl-scroll">
+      {# Varsity and JV are two views of ONE season, so they are TABS — the section's
+         own layout rule for parallel views, and the shape OSAA's program pages use.
+         The JV pane carries a schedule and a record and nothing else: no ranking, no
+         seed, no finish, because JV counts for nothing (owner rule 2026-08). #}
+      {% if view.jv_schedule %}
+      {{ jh_tabs([('v', 'Varsity', view.schedule|length),
+                  ('jv', 'JV', view.jv_schedule|length)], 'jhsch',
+                 'JV results count for nothing — no ranking, seeding or postseason.') }}
+      {% endif %}
+      <div class="jh-pane tbl-scroll" data-pane="v">
         {% if view.schedule %}
         <table class="jh-sched">
           <tr><th style="width:62px">Date</th><th style="width:26px"></th><th>Opponent</th>
@@ -191,6 +200,34 @@
         <p class="jh-empty">Season not played yet this world year.</p>
         {% endif %}
       </div>
+      {% if view.jv_schedule %}
+      <div class="jh-pane tbl-scroll" data-pane="jv" hidden>
+        <table class="jh-sched">
+          <tr><th style="width:62px">Date</th><th style="width:26px"></th><th>Opponent</th>
+            <th style="width:34px">Res</th><th style="width:56px">Score</th><th style="width:92px">Format</th></tr>
+          {% for d in view.jv_schedule %}
+          {# A JV dual has no line scores to expand — per-court detail is deliberately
+             not archived — so the row is a plain row, never a toggle. #}
+          <tr class="{{ 'dist' if d.district }}">
+            <td class="dt">{{ d.date }}</td>
+            <td class="ha">{{ 'vs' if d.home else 'at' }}</td>
+            <td class="op">
+              <span class="jh-schoolcell">{{ d.opp_deco.mark|safe }}
+                <a href="{{ url_for('jhsaa_school', school=d.opp, u=u, g=view.gender, year=view.scope.pin) }}">{{ d.opp }}</a>
+                <span class="jh-chip ghost">JV</span></span>
+            </td>
+            {# ‼️ THREE outcomes, not two. A JV dual can be DRAWN — three of the eight
+               formats have an even court count — so a `won ? W : L` here would print
+               every tie as a loss. #}
+            <td class="{{ 'T' if d.tied else 'W' if d.won else 'L' }}">{{ 'T' if d.tied else 'W' if d.won else 'L' }}</td>
+            <td class="sc">{{ d.pf|int }}–{{ d.pa|int }}</td>
+            <td><span class="jh-tag {{ 'dist' if d.district }}">{{ 'DIST' if d.district else 'INVITE' }}</span>
+              {% if d.shape %}<span class="jh-tag rd">{{ d.shape }}</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+      {% endif %}
     </div>
   </div>
 
@@ -396,6 +433,8 @@
   </div>
 </div>
 {{ jh_tabs_script('jhhon') }}
+{# The schedule's Varsity/JV switcher. Its own id — two tab bars on one page. #}
+{{ jh_tabs_script('jhsch') }}
 {% endif %}
 </div>
 {% endblock %}

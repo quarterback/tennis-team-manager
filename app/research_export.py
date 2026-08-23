@@ -58,7 +58,8 @@ def _load_archived_jhsaa_season(year: int, gender: str) -> dict:
     conn = wd._db()
     try:
         rows = conn.execute(
-            "SELECT school, opp, home, phase, pf, pa, won, district, lines"
+            "SELECT school, opp, home, phase, pf, pa, won, district, lines,"
+            " level, tied, shape"
             " FROM world_jhsaa_dual WHERE world_id=? AND year=? AND gender=?"
             " ORDER BY school, rowid",
             (world["id"], world_year, gender)).fetchall()
@@ -74,6 +75,13 @@ def _load_archived_jhsaa_season(year: int, gender: str) -> dict:
         d["home"] = bool(d["home"])
         d["won"] = bool(d["won"])
         d["district"] = bool(d["district"])
+        # ‼️ `level` must reach `jh_match_key`, or every JV row hashes to its VARSITY
+        # namesake's key and takes that dual's date — the two seasons genuinely do meet
+        # the same opponent in the same phase. It is also what lets a reader separate
+        # them at all: a JV row carries no `lines`, which on its own is indistinguishable
+        # from a varsity dual whose lines failed to record.
+        d["level"] = d.get("level") or "v"
+        d["tied"] = bool(d.get("tied"))
         d["lines"] = json.loads(d.pop("lines") or "[]")
         played = dates.get(wd.jh_match_key(d))
         d["date"] = played.isoformat() if played else ""

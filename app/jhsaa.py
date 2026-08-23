@@ -170,6 +170,80 @@ def lineup_need(phase: str) -> int:
     return f.n_singles + 2 * f.n_doubles          # 3+8 = 11 regular, 1+8 = 9 state
 
 
+# --- THE JV SEASON (owner rule 2026-08) --------------------------------------
+#
+# ‼️ ONE ROSTER, ONE LADDER, BEST ELEVEN PLAY. There is no varsity squad and no JV
+# squad — `_order` ranks the whole roster, the top eleven dress varsity, and EVERYONE
+# BELOW THEM IS JV THAT DAY. A JV player who gets good enough walks into the varsity
+# lineup, which is what happens in life, and with no injuries or fatigue in this
+# association it is where the season's variability comes from. Nothing new was needed
+# to make that porous: `_order` / `_rest_count` / `_ROTATE_*` already move the line.
+#
+# ‼️ THE JV LINEUP IS ELASTIC — fit to what the program has, never dogmatic. A fixed JV
+# format has to be fielded by BOTH schools, so its reach is the PRODUCT of two roster
+# constraints and it collapses: measured against the real 2038 save, a 3S/4D JV could be
+# fielded on 7-9% of league dates and a 2S/3D one on 32-36%. The elastic table has no
+# product — the format simply drops to whatever the thinner side can dress — so a dual
+# happens whenever both sides have five spare, which under `ROSTER_FLOOR` 16 is always.
+#
+# The table is the owner's. Note that three entries have an EVEN court count and can
+# therefore be drawn; that is accepted and handled (`_tie_break`), and it is not a
+# corner case — 2S/2D alone is ~20% of the JV slate.
+JV_FORMATS = {
+    5:  DualFormat(n_singles=1, n_doubles=2, doubles_team_point=False),   # 3 courts
+    6:  DualFormat(n_singles=2, n_doubles=2, doubles_team_point=False),   # 4 — even
+    7:  DualFormat(n_singles=3, n_doubles=2, doubles_team_point=False),   # 5
+    8:  DualFormat(n_singles=2, n_doubles=3, doubles_team_point=False),   # 5
+    9:  DualFormat(n_singles=3, n_doubles=3, doubles_team_point=False),   # 6 — even
+    10: DualFormat(n_singles=4, n_doubles=3, doubles_team_point=False),   # 7
+    11: DualFormat(n_singles=3, n_doubles=4, doubles_team_point=False),   # 7
+    12: DualFormat(n_singles=4, n_doubles=4, doubles_team_point=False),   # 8 — even
+}
+JV_MIN_SPARE = min(JV_FORMATS)          # 5 — below this a program cannot field a JV
+JV_MAX_SPARE = max(JV_FORMATS)          # 12 — the card never grows past 4S/4D
+
+#: A JV program plays at most this many duals. ‼️ A LIMIT, NOT A FLOOR (owner rule
+#: 2026-08): the district single round robin gets most programs to 9-11 and the
+#: invitational window fills toward the cap, but a program in a small league simply
+#: plays fewer. Showcases are NOT counted here — see `JV_SHOWCASES_PER_PROGRAM`.
+JV_DUAL_CAP = 16
+
+#: One showcase per program per season, and it does not count against `JV_DUAL_CAP`
+#: (owner rule 2026-08). The varsity machinery is reused wholesale.
+JV_SHOWCASES_PER_PROGRAM = 1
+
+#: The JV level marker, on the schedule entry and on `world_jhsaa_dual.level`.
+#: ‼️ A LEVEL, NEVER A PHASE. A phase is the archive's identity for an EVENT and it
+#: selects the dual format and the postseason lane; JV plays inside its own league and
+#: its own invitationals, at every phase varsity has. And under the archive rule below
+#: it is load-bearing for IDENTITY, not merely for filtering: a JV row and a varsity row
+#: can BOTH carry an empty `lines`, so `level` is the only thing telling them apart.
+LEVEL_VARSITY = "v"
+LEVEL_JV = "jv"
+
+
+def jv_format(spare: int) -> DualFormat | None:
+    """The JV dual shape for a side with `spare` players available below varsity's
+    eleven, or None if it cannot field one at all. Clamped at `JV_MAX_SPARE` — a
+    deep program dresses twelve and the rest watch."""
+    if spare < JV_MIN_SPARE:
+        return None
+    return JV_FORMATS[min(spare, JV_MAX_SPARE)]
+
+
+def jv_lineup_need(fmt: DualFormat) -> int:
+    return fmt.n_singles + 2 * fmt.n_doubles
+
+
+def jv_dual_format(a_spare: int, b_spare: int) -> DualFormat | None:
+    """The shape TWO sides play: the SMALLER side's capacity. Both dress the same
+    number of courts, so a deep program is throttled by a thin opponent — measured at
+    46% of side-appearances, and the accepted price of the elastic table."""
+    if min(a_spare, b_spare) < JV_MIN_SPARE:
+        return None
+    return jv_format(min(a_spare, b_spare))
+
+
 ROSTER_SIZE = 12          # legacy flat default; real depth is per-classification, see below
 
 # ‼️ BIGGER SCHOOLS CARRY BIGGER ROSTERS (owner rule 2027-08) — the same pattern
@@ -258,7 +332,15 @@ def roster_size(classification: str, school_key: str = "", salt: str = "") -> in
 #: a PRIOR year's roll — touching them would break `_freshman_class_size`'s "rolled
 #: once per (school, entry_year)" contract and desync from anything already
 #: archived against that class).
-ROSTER_FLOOR = 12
+#: ‼️ RAISED 12 -> 16 WHEN THE JV SEASON LANDED (owner rule 2026-08). A JV dual needs
+#: FIVE spare players on top of varsity's eleven (`JV_FORMATS`' smallest entry, 1S/2D),
+#: so 11 + 5 = 16 is the floor at which EVERY program in the association can field a
+#: JV. Fifteen was considered and rejected by measurement: it raises the 12-14 rosters
+#: to 15 and leaves them — plus the 61 girls'/42 boys' programs already sitting at
+#: exactly 15 — still one player short, i.e. it changes nothing at all for JV. At 16,
+#: 864/864 girls' and 780/780 boys' programs field one.
+#: See `docs/BRIEF-jhsaa-jv-and-varsity-2-feasibility.md` §3.
+ROSTER_FLOOR = 16
 
 
 def _freshman_class_size(school_key: str, entry_year: int, classification: str,
@@ -1062,6 +1144,89 @@ class TeamSeason:
     def district_pct(self) -> float:
         n = self.dwins + self.dlosses
         return self.dwins / n if n else 0.0
+
+
+@dataclass
+class JVTeam:
+    """A program's JV season — its own W-L-T, points and schedule, hanging off the
+    varsity `TeamSeason` it shares a roster and a LADDER with.
+
+    ‼️ A SEPARATE OBJECT, NOT A SECOND TeamSeason. It has to be separate so a JV dual
+    can never touch `wins` / `points_for` / `records` / `matches` — JV counts for
+    nothing (no TOSS, no rankings, no awards, no seeding, no postseason), and the
+    cheapest way to guarantee that is for the varsity counters to be unreachable from
+    here rather than for every writer to remember to skip them.
+
+    ‼️ AND IT DELIBERATELY HAS NO `records` / `matches` OF ITS OWN. Those two feed the
+    awards (`jhsaa_awards.build_pool` reads `matches`) and the ladder (`ladder_score`
+    reads `records`), so a JV appearance must not reach either. It also means no
+    per-player JV data exists to archive, which is exactly what the archive rule
+    settled on independently — see `world_jhsaa_dual.level` and the `lines=[]` note in
+    `world.run_jhsaa`."""
+    team: TeamSeason
+    wins: int = 0
+    losses: int = 0
+    ties: int = 0
+    points_for: float = 0.0
+    points_against: float = 0.0
+    schedule: list = field(default_factory=list)
+
+    @property
+    def school(self) -> School:
+        return self.team.school
+
+    @property
+    def record(self) -> str:
+        """‼️ W-L-T, and the T is not decorative. Three of the eight `JV_FORMATS` have
+        an EVEN court count, so ~27-31% of JV duals can be drawn — 2S/2D alone is about
+        a fifth of the slate. A `W-L` string would silently lose them."""
+        return (f"{self.wins}-{self.losses}-{self.ties}" if self.ties
+                else f"{self.wins}-{self.losses}")
+
+    @property
+    def win_pct(self) -> float:
+        """Ties count a half, the ordinary sporting convention. The denominator is
+        every dual played, NOT `wins + losses` — that is the shape every other win%
+        in this module has, and it is wrong the moment a draw exists."""
+        n = self.wins + self.losses + self.ties
+        return (self.wins + 0.5 * self.ties) / n if n else 0.0
+
+
+def jv_pool(ts: TeamSeason) -> list:
+    """The players below the varsity eleven on TODAY's ladder — the JV, in order.
+
+    ‼️ Read off `_order`, which is the ONE ladder (owner rule 2026-08): there is no
+    standing JV squad to keep in step with anything. A varsity player who loses through
+    the season falls past a JV player's seed and they swap, which is the whole
+    porousness mechanism and it costs nothing to have.
+
+    Deliberately takes the plain top-eleven cut and NOT `_lineup`'s: resting (which
+    sits 1-2 starters out entirely) and bench rotation are per-DUAL decisions about a
+    varsity match, and "available that day" for JV is the per-program constant (owner
+    rule 2026-08). Threading a varsity dual's rest into a JV dual's size would couple
+    two schedules that are explicitly independent."""
+    return _order(ts)[lineup_need("regular"):]
+
+
+def jv_spare(ts: TeamSeason) -> int:
+    """How many players a program has for JV — the size input to `jv_format`."""
+    return len(jv_pool(ts))
+
+
+def jv_strength(ts: TeamSeason) -> float:
+    """The JV pool's mean current overall — what JV opponents are MATCHED on.
+
+    ‼️ RATE THE POOL, NOT THE PROGRAM (owner rule 2026-08). Varsity pairs on
+    `_strength`, the top-nine mean, and reusing it here would rate a JV team by players
+    who are not on it. The two orderings do correlate (Spearman 0.875 over the real
+    2038 save, with no quartile inversions), so this is a precision gain rather than a
+    reversal — but the median program still sits ~80 places apart in the two rankings
+    of ~860, and p90 is ~205, so the wrong metric mismatches by a quarter of the field
+    in the middle of the table where most duals are."""
+    pool = jv_pool(ts)
+    if not pool:
+        return 0.0
+    return sum(p.current_overall() for p in pool) / len(pool)
 
 
 _schools_cache: dict | None = None
@@ -2150,12 +2315,16 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     return out
 
 
-def _squad(ts: TeamSeason, phase: str, lineup: list | None = None) -> Team:
+def _squad(ts: TeamSeason, phase: str, lineup: list | None = None,
+           fmt: DualFormat | None = None) -> Team:
     """Dress `lineup` (or the current best nine) for `phase`. Singles take the top;
     doubles is its OWN roster below them (`Team.doubles_players`), so the state
     format's four doubles pairs are eight different players rather than the singles
-    re-permuted."""
-    f = dual_format(phase)
+    re-permuted.
+
+    `fmt` overrides the phase's shape — the JV season plays one of `JV_FORMATS`, which
+    is sized per dual rather than per phase, so it cannot be looked up from `phase`."""
+    f = fmt or dual_format(phase)
     r = lineup if lineup is not None else _order(ts)[:lineup_need(phase)]
     if not r:
         raise ValueError(f"{ts.school.name} has an empty roster")
@@ -2641,6 +2810,96 @@ def _score_str(ln) -> str:
     return ", ".join(f"{h}-{w}" for h, w in sets)
 
 
+def _dual_margin(res) -> tuple[int, int, int, int]:
+    """(home sets, away sets, home games, away games) across every court of a dual,
+    read off the engine result. `set_scores` is oriented (home, away) per set, which
+    is the same orientation `_score_str` stores."""
+    hs = aws = hg = ag = 0
+    for ln in res.lines:
+        for h, w in (getattr(getattr(ln, "result", None), "set_scores", None) or ()):
+            hg += h
+            ag += w
+            if h > w:
+                hs += 1
+            elif w > h:
+                aws += 1
+    return hs, aws, hg, ag
+
+
+def jv_outcome(res) -> int:
+    """1 home won, -1 away won, 0 a TIE — the JHSAA's first drawn match.
+
+    ‼️ NEVER READ `res.winner` FOR A JV DUAL. The engine computes it as
+    `0 if points[0] > points[1] else 1`, so on a level dual it silently reports an
+    AWAY win. Every varsity format in this association has an odd court count and can
+    never draw, which is why that has always been safe and why it would not be here:
+    three of the eight `JV_FORMATS` are even, and 2S/2D — the most common single shape
+    on the slate — is one of them. Left alone, roughly a fifth of drawn JV duals would
+    have been recorded as away wins with nothing to show for it.
+
+    The ladder is the owner's (2026-08): points, then SETS across every court, then
+    GAMES, and a dual still level after that is a tie. Sets before games because a
+    6-0 6-0 win and a 7-6 7-6 win are the same one court won; the set count is the
+    coarser and more meaningful of the two, so it is asked first."""
+    if res.home_points != res.away_points:
+        return 1 if res.home_points > res.away_points else -1
+    hs, aws, hg, ag = _dual_margin(res)
+    if hs != aws:
+        return 1 if hs > aws else -1
+    if hg != ag:
+        return 1 if hg > ag else -1
+    return 0
+
+
+def play_jv_dual(a: JVTeam, b: JVTeam, *, seed: int, phase: str = "regular",
+                 district: bool = False) -> None:
+    """One JV dual. The shape is the SMALLER side's capacity (`jv_dual_format`); a
+    side that cannot field five spare never reaches here.
+
+    ‼️ IT WRITES NOTHING TO THE VARSITY SEASON. No `_credit`, so nothing reaches
+    `records` (the ladder) or `matches` (the awards); no `lines`, so nothing reaches a
+    player's page. That is not restraint on this function's part — `JVTeam` simply has
+    nowhere to put them, which is why it is a separate type."""
+    fmt = jv_dual_format(jv_spare(a.team), jv_spare(b.team))
+    if fmt is None:
+        return
+    need = jv_lineup_need(fmt)
+    la, lb = jv_pool(a.team)[:need], jv_pool(b.team)[:need]
+    mf = match_format(phase)
+    res = simulate_dual(_squad(a.team, phase, la, fmt), _squad(b.team, phase, lb, fmt),
+                        seed=seed, play_all=True, fidelity=FIDELITY, dual_fmt=fmt,
+                        singles_fmt=mf, doubles_fmt=mf)
+    out = jv_outcome(res)
+    a.points_for += res.home_points
+    a.points_against += res.away_points
+    b.points_for += res.away_points
+    b.points_against += res.home_points
+    shape = f"{fmt.n_singles}S/{fmt.n_doubles}D"
+    # ‼️ `lines` is EMPTY BY DESIGN, not unfinished (owner rule 2026-08, option B in
+    # `docs/BRIEF-jhsaa-jv-and-varsity-2-feasibility.md` §8a). The dual row persists so
+    # the JV schedule and record survive every season; the per-court detail does not,
+    # which is 2.6 MB a season against 15.3 and — the part that matters — makes it
+    # STRUCTURALLY impossible for `state._jh_line_records` to merge a JV appearance
+    # into a varsity player card, since that reads by NAME out of `lines`.
+    a.schedule.append({"opp": b.school.name, "home": True, "phase": phase,
+                       "pf": res.home_points, "pa": res.away_points,
+                       "won": out > 0, "tied": out == 0, "district": district,
+                       "level": LEVEL_JV, "shape": shape, "lines": []})
+    b.schedule.append({"opp": a.school.name, "home": False, "phase": phase,
+                       "pf": res.away_points, "pa": res.home_points,
+                       "won": out < 0, "tied": out == 0, "district": district,
+                       "level": LEVEL_JV, "shape": shape, "lines": []})
+    if out > 0:
+        a.wins += 1
+        b.losses += 1
+    elif out < 0:
+        b.wins += 1
+        a.losses += 1
+    else:
+        a.ties += 1
+        b.ties += 1
+
+
 def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular",
               district: bool = False, challenge: bool = False):
     """One dual. Always to completion — high school has no clinch. `district` marks it
@@ -2684,13 +2943,18 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     # credits the away team every dual; under the home-and-home schedule this used to
     # run, that left every side at exactly .500 with correct-looking point
     # differentials. Cost an hour.
+    # `level` is stamped on every VARSITY row too, not only on JV rows: the archive
+    # column is not nullable-by-convention, and a row that merely OMITS the marker is
+    # indistinguishable from one written before the column existed.
     a.schedule.append({"opp": b.school.name, "home": True, "phase": phase,
                        "pf": res.home_points, "pa": res.away_points,
                        "won": res.winner == 0, "district": district,
+                       "level": LEVEL_VARSITY,
                        "challenge": challenge, "lines": lines})
     b.schedule.append({"opp": a.school.name, "home": False, "phase": phase,
                        "pf": res.away_points, "pa": res.home_points,
                        "won": res.winner == 1, "district": district,
+                       "level": LEVEL_VARSITY,
                        "challenge": challenge, "lines": lines})
     if res.winner == 0:
         a.wins += 1
@@ -4507,6 +4771,161 @@ def play_regular_season(by_group: dict, year: int, gender: str,
     return every_team, power
 
 
+# --- the JV season ------------------------------------------------------------
+#
+# Order of play, and as everywhere else in this association the ORDER IS THE SCHEDULE:
+#
+#     district single round robin -> invitationals to the cap -> one showcase
+#
+# It sits AFTER the varsity regular season in `run_season` for one concrete reason:
+# `jv_pool` reads `_order`, the results-moved ladder, so playing JV first would size
+# and staff every JV dual off a ladder that was still at its opening seeds.
+#
+# ‼️ AND IT NEVER TOUCHES THE VARSITY CALENDAR (owner rule 2026-08). JV rows are kept
+# out of the varsity round allocator entirely — `world.jhsaa_match_dates` advances its
+# per-school cursor on every distinct key, so a JV dual sharing a school with a varsity
+# one would take a later round and serialise the two seasons, overrunning the season
+# window while every individual card still read correctly. JV gets its own date pass,
+# on its own day pattern, and it may use SUNDAYS, which varsity never does.
+
+#: Talent proximity is bucketed before geography is consulted, so distance only ever
+#: breaks a genuine near-tie. Measured on the real 2038 save, a pure talent sort pairs
+#: at a median gap of 0.0 OVR and a p90 of 0.1, so half an OVR point is comfortably
+#: "the same team" — geography decides inside that and nowhere else.
+JV_MATCH_BUCKET = 0.5
+JV_MATCH_WINDOW = 8          # candidates scanned past a team before giving up
+
+
+def jv_teams(by_group: dict) -> dict[str, JVTeam]:
+    """A JV team per program, hanging off its varsity `TeamSeason`."""
+    return {t.school.name: JVTeam(team=t)
+            for st in by_group.values() for ts in st.values() for t in ts}
+
+
+def _jv_can_play(a: JVTeam, b: JVTeam) -> bool:
+    return jv_dual_format(jv_spare(a.team), jv_spare(b.team)) is not None
+
+
+def jv_district_slate(by_group: dict, jv: dict[str, JVTeam], year: int,
+                      salt: str) -> None:
+    """Every league's JV round robin — played ONCE, not home-and-away.
+
+    The varsity league is a double round robin under `DISTRICT_DUAL_CAP`; the JV plays
+    a single pass, which lands a typical 10-12 team league at 9-11 duals and leaves
+    the invitational window to fill toward `JV_DUAL_CAP`. Generated as ROUNDS
+    (`_rr_rounds`) for the same reason varsity is: a round is a set of duals with no
+    team in common, which is what the display calendar packs onto a day."""
+    for group, dists in sorted(by_group.items()):
+        for dname, teams in sorted(dists.items()):
+            squad = [jv[t.school.name] for t in teams]
+            for rnd in _rr_rounds(len(squad)):
+                for i, j in rnd:
+                    a, b = squad[i], squad[j]
+                    if not _jv_can_play(a, b):
+                        continue
+                    # The seed comes off the PAIRING, never its position — the same
+                    # rule `play_rounds` follows, and for the same reason: a caller
+                    # that slices the round list would otherwise restart an index and
+                    # replay identical inputs to different results.
+                    seed = abs(hash((salt, "jv-district", year, group, dname,
+                                     a.school.name, b.school.name))) % (1 << 30)
+                    play_jv_dual(a, b, seed=seed, district=True)
+
+
+def jv_invitational_pairs(jv: dict[str, JVTeam], played: dict[str, set],
+                          rng: random.Random) -> list[tuple]:
+    """One window of JV invitationals, paired TALENT FIRST and geography second.
+
+    ‼️ THE INVERSE OF VARSITY'S `_nondistrict_pairs`, deliberately (owner rule
+    2026-08). Varsity draws on geography and then picks the nearest strength inside
+    it; JV does the opposite, because this is a simulation and travel is not a real
+    cost in it, while a JV player facing someone their own level is the entire reason
+    the JV season exists. Measured over the real 2038 save: talent-first pairs at a
+    median gap of 0.0 OVR (p90 0.1), geography-first at 4.2-5.2 (p90 12-14) — roughly
+    a fortyfold difference on the thing the rule is for.
+
+    ‼️ AND CLASSIFICATION IS NOT A GATE HERE. Varsity's window is held to the same
+    class or one apart; JV is not, because talent proximity already subsumes it —
+    78-79% of the pairs this makes land within two classes anyway, and the ones that
+    do not are, by construction, two equally strong JV squads. Gating them would force
+    a WORSE match to satisfy a rule about enrollment.
+
+    A league-mate is refused: they have already met in the round robin."""
+    free = [t for t in jv.values() if _jv_can_play(t, t)]
+    free.sort(key=lambda t: (-jv_strength(t.team), t.school.name))
+    taken: set[str] = set()
+    pairs = []
+    for i, a in enumerate(free):
+        if a.school.name in taken:
+            continue
+        best, best_key = None, None
+        for b in free[i + 1: i + 1 + JV_MATCH_WINDOW]:
+            if b.school.name in taken or b.school.name in played[a.school.name]:
+                continue
+            if _dkey(a) == _dkey(b) or not _jv_can_play(a, b):
+                continue
+            gap = abs(jv_strength(a.team) - jv_strength(b.team))
+            key = (round(gap / JV_MATCH_BUCKET), _geo_gap(a.school, b.school), gap)
+            if best_key is None or key < best_key:
+                best, best_key = b, key
+        if best is None:
+            continue
+        taken.add(a.school.name)
+        taken.add(best.school.name)
+        played[a.school.name].add(best.school.name)
+        played[best.school.name].add(a.school.name)
+        pairs.append((a, best) if rng.random() < 0.5 else (best, a))
+    return pairs
+
+
+def jv_showcase(jv: dict[str, JVTeam], year: int, salt: str,
+                played: dict[str, set], rng: random.Random) -> None:
+    """One pod per program per season — four programs, a full round robin, three duals.
+
+    Reuses the varsity `_showcase_groups` wholesale (owner rule 2026-08: "yes reuse"),
+    including its hard district guardrail; `JVTeam` exposes `.school`, which is all
+    that helper reads. Does NOT count against `JV_DUAL_CAP`, so it is played after the
+    cap has already bound."""
+    pool = [t for t in jv.values() if _jv_can_play(t, t)]
+    seen = {id(t): played[t.school.name] for t in pool}
+    for grp in _showcase_groups(pool, 4, seen, rng):
+        for i in range(len(grp)):
+            for j in range(i + 1, len(grp)):
+                a, b = grp[i], grp[j]
+                if not _jv_can_play(a, b):
+                    continue
+                seed = abs(hash((salt, "jv-showcase", year,
+                                 a.school.name, b.school.name))) % (1 << 30)
+                play_jv_dual(a, b, seed=seed, district=False)
+
+
+def play_jv_season(by_group: dict, year: int, gender: str,
+                   salt: str) -> dict[str, JVTeam]:
+    """The whole JV season for one gender. Returns {school name -> JVTeam}."""
+    jv = jv_teams(by_group)
+    jv_district_slate(by_group, jv, year, salt)
+    rng = random.Random(f"{salt}|jv|{gender}|{year}")
+    played: dict[str, set] = {name: set() for name in jv}
+    for name, t in jv.items():                       # league-mates already met
+        played[name] |= {d["opp"] for d in t.schedule}
+    # Invitational windows until the cap binds. Bounded by a window count rather than
+    # "until nobody can be paired": the pool thins as programs reach the cap and the
+    # tail would otherwise spin over an unpairable remainder.
+    for _ in range(JV_DUAL_CAP):
+        under = {n: t for n, t in jv.items() if len(t.schedule) < JV_DUAL_CAP}
+        if len(under) < 2:
+            break
+        pairs = jv_invitational_pairs(under, played, rng)
+        if not pairs:
+            break
+        for a, b in pairs:
+            seed = abs(hash((salt, "jv-invite", year,
+                             a.school.name, b.school.name))) % (1 << 30)
+            play_jv_dual(a, b, seed=seed, district=False)
+    jv_showcase(jv, year, salt, played, rng)
+    return jv
+
+
 def _challenge_pairs(by_group: dict, year: int, salt: str,
                      played: dict[int, set[str]]) -> list[tuple]:
     """The mid-season challenge slate, paired on how the season has actually gone.
@@ -4861,6 +5280,16 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
                         for dname, schools in sorted(districts(gender, group).items())}
                 for group in GROUPS}
     every_team, power = play_regular_season(by_group, year, gender, salt)
+    # THE JV SEASON, played here and nowhere else: `jv_pool` reads `_order`, the
+    # results-moved ladder, so it has to run AFTER the varsity regular season or every
+    # JV dual would be sized and staffed off opening seeds. It runs BEFORE the
+    # postseason because that is where it sits on the calendar (April-May against the
+    # varsity league season) — and because the postseason FREEZES the Order of Ability,
+    # which is a varsity rule the JV has no business either reading or tripping.
+    #
+    # It writes nothing any line below this can see: no `records`, no `matches`, no
+    # `power`, no standings row. That is `JVTeam`'s doing, not this call's.
+    out["jv"] = play_jv_season(by_group, year, gender, salt)
     # TOSS was computed over the whole gender inside `play_regular_season` — once, on the
     # finished regular season, before any state tournament, since it is both the seeding
     # input and rung 4 of the district tiebreak. Across all classifications together

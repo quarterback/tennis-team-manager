@@ -213,7 +213,8 @@ CREATE TABLE IF NOT EXISTS world_jhsaa (
 CREATE TABLE IF NOT EXISTS world_jhsaa_dual (
   world_id INTEGER, year INTEGER, gender TEXT, school TEXT, opp TEXT,
   home INTEGER, phase TEXT, pf REAL, pa REAL, won INTEGER, district INTEGER,
-  lines TEXT DEFAULT '[]'
+  lines TEXT DEFAULT '[]',
+  level TEXT DEFAULT 'v', tied INTEGER DEFAULT 0, shape TEXT DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS ix_jhsaa_dual ON world_jhsaa_dual(world_id, year, gender, school);
 CREATE TABLE IF NOT EXISTS world_cups (
@@ -268,6 +269,17 @@ def init_schema() -> None:
         conn.execute("ALTER TABLE world ADD COLUMN salt TEXT")
     except sqlite3.OperationalError:
         pass
+    # The JV season's three columns (owner rule 2026-08). `level` is the one that
+    # matters: it is the ONLY thing separating a JV row from a varsity one, since both
+    # carry an empty `lines` — JV by design (no per-court detail is archived) and
+    # varsity on any dual whose lines failed to record. Defaulting to 'v' is what makes
+    # every row written before this migration read correctly as varsity.
+    for col, typ in (("level", "TEXT DEFAULT 'v'"), ("tied", "INTEGER DEFAULT 0"),
+                     ("shape", "TEXT DEFAULT ''")):
+        try:
+            conn.execute(f"ALTER TABLE world_jhsaa_dual ADD COLUMN {col} {typ}")
+        except sqlite3.OperationalError:
+            pass
     conn.commit()
     conn.close()
     _schema_ready_for = WORLD_DB
@@ -3739,14 +3751,27 @@ def run_jhsaa(seed: int, world: dict) -> dict:
             # Match by match, so a school's season reads like a college schedule
             # without replaying it. Its own table, not a blob on the summary row:
             # ~10k duals a year per gender would make every summary read heavy.
+            # ‼️ VARSITY AND JV GO IN THE SAME TABLE, separated by `level` and nothing
+            # else. A JV row carries `lines` as '[]' DELIBERATELY (owner rule 2026-08):
+            # the dual persists so the JV schedule and record survive every season, the
+            # per-court detail does not. That is 2.6 MB a season against 15.3 — and,
+            # more usefully, it makes it structurally impossible for
+            # `state._jh_line_records` to merge a JV appearance into a varsity player
+            # card, since that reads by NAME out of `lines` and finds none here.
+            rows = [(world["id"], year, gender, t.school.name, d["opp"], int(d["home"]),
+                     d["phase"], d["pf"], d["pa"], int(d["won"]), int(d["district"]),
+                     json.dumps(d.get("lines", [])), d.get("level", "v"),
+                     int(bool(d.get("tied"))), d.get("shape", ""))
+                    for t in season["teams"].values() for d in t.schedule]
+            rows += [(world["id"], year, gender, t.school.name, d["opp"], int(d["home"]),
+                      d["phase"], d["pf"], d["pa"], int(d["won"]), int(d["district"]),
+                      "[]", d.get("level", "jv"), int(bool(d.get("tied"))),
+                      d.get("shape", ""))
+                     for t in (season.get("jv") or {}).values() for d in t.schedule]
             conn.executemany(
                 "INSERT INTO world_jhsaa_dual (world_id, year, gender, school, opp,"
-                " home, phase, pf, pa, won, district, lines)"
-                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-                [(world["id"], year, gender, t.school.name, d["opp"], int(d["home"]),
-                  d["phase"], d["pf"], d["pa"], int(d["won"]), int(d["district"]),
-                  json.dumps(d.get("lines", [])))
-                 for t in season["teams"].values() for d in t.schedule])
+                " home, phase, pf, pa, won, district, lines, level, tied, shape)"
+                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
         conn.commit()
     finally:
         conn.close()
@@ -3939,7 +3964,8 @@ def _schedule_rows(conn, world_id: int, year: int, gender: str, school: str) -> 
     from . import jhsaa as _jh
     names = _jh.known_names(school, gender)
     rows = conn.execute(
-        "SELECT opp, home, phase, pf, pa, won, district, lines FROM world_jhsaa_dual"
+        "SELECT opp, home, phase, pf, pa, won, district, lines, level, tied, shape"
+        " FROM world_jhsaa_dual"
         " WHERE world_id=? AND year=? AND gender=? AND school IN (%s) ORDER BY rowid"
         % ",".join("?" * len(names)),
         (world_id, year, gender, *names)).fetchall()
@@ -4022,13 +4048,21 @@ def _jh_day(start: _dt.date, idx: int, pattern: tuple) -> _dt.date:
 
 
 def jh_match_key(row: dict) -> tuple:
-    """The identity of a DUAL, the same from either side's row: phase, whether it
-    was a league match, and the (home, away) pair in that order. A district double
+    """The identity of a DUAL, the same from either side's row: LEVEL, phase, whether
+    it was a league match, and the (home, away) pair in that order. A district double
     round robin meets twice with the venue reversed, so ordering the pair by venue
-    keeps the two meetings distinct."""
+    keeps the two meetings distinct.
+
+    ‼️ `level` IS LOAD-BEARING, not decoration. The same two programs meet at varsity
+    and at JV, in the same phase, in the same league — so without it both duals hash to
+    ONE key. `_jh_global_order` builds its edges from each school's key sequence, so a
+    repeated key becomes a self-edge, its in-degree never reaches zero, and the whole
+    gender's topological sort falls into its cycle fallback. Nothing raises; every
+    card just quietly stops reading in play order."""
     home = bool(row.get("home"))
     a, b = (row["school"], row["opp"]) if home else (row["opp"], row["school"])
-    return (row.get("phase") or "", int(bool(row.get("district"))), a, b)
+    return (row.get("level") or "v", row.get("phase") or "",
+            int(bool(row.get("district"))), a, b)
 
 
 def _jh_global_order(by_school: dict[str, list[tuple]],
@@ -4094,8 +4128,11 @@ def _jh_showcase_days(slot: dict, opening: _dt.date,
     sizes = {"showcase_pod": _jh.POD_DUALS, "showcase_tiered": _jh.TIER_DUALS}
     rounds: dict[str, set[int]] = {}
     for key, (_rk, r) in slot.items():
-        if key[0] in sizes:
-            rounds.setdefault(key[0], set()).add(r)
+        # key is (level, PHASE, district, home, away) — the phase is k[1]. Read off
+        # k[0] this matches the level string against showcase phase names, finds
+        # nothing, and every showcase silently reverts to the ordinary weekday pattern.
+        if key[1] in sizes:
+            rounds.setdefault(key[1], set()).add(r)
     chunks: list[tuple[int, str, list[int]]] = []
     for phase, rs in rounds.items():
         run: list[int] = []
@@ -4153,6 +4190,57 @@ def _jh_school_groups(world_id: int, year: int, gender: str) -> dict[str, str]:
     return out
 
 
+#: The JV season OPENS a month after varsity's (owner rule 2026-08): girls in April,
+#: boys in September. It is a real scheduling reason, not a cosmetic one — varsity's
+#: 5S/2D early-invitational window is played in month 1 (measured on the real 2038 save:
+#: all 950 girls' and all 871 boys' early duals fall in March and August respectively),
+#: and `lineup_need` is NINE there against eleven in the regular season. A JV dual
+#: overlapping it would find two more players available and silently size itself off a
+#: different varsity lineup. Opening in month 2 steps past the whole window.
+_JH_JV_OPEN = {"boys": (9, 1), "girls": (4, 1)}
+
+#: ‼️ AND JV MAY PLAY ON A SUNDAY. Varsity's `_JH_PATTERNS` exclude weekday 6 by
+#: construction; JV is explicitly allowed it (owner rule 2026-08: "played whenever and
+#: wherever… if that means the next day so be it or utilizing sundays since we don't use
+#: them for varsity it doesn't matter at all"). Duals bunching is fine — the ONE
+#: requirement is that a varsity dual never waits on a JV one, which is guaranteed
+#: upstream by JV never entering the varsity allocator at all.
+_JH_JV_DAYS = (0, 1, 2, 3, 4, 5, 6)
+
+
+def _jh_jv_dates(out: dict, by_school: dict[str, list[tuple]],
+                 seen: dict[tuple, int], gender: str,
+                 season_year: int) -> None:
+    """Date the JV season in place, on its own cursor and its own calendar.
+
+    Deliberately much simpler than the varsity pass: JV has no postseason, so there are
+    no stages to separate and no lanes to keep apart — it is one queue of duals packed
+    into rounds (a round being duals with no team in common) and laid on a seven-day
+    week from the JV opener. No season-close fitting either: JV cannot overrun a window
+    it does not have to finish inside, and a JV dual slipping past the varsity final is
+    not a fault."""
+    if not by_school:
+        return
+    mon, day = _JH_JV_OPEN.get(gender, _JH_JV_OPEN["girls"])
+    opening = _dt.date(season_year, mon, day)
+    opening += _dt.timedelta(days=-opening.weekday() % 7)          # first Monday
+    order = _jh_global_order(by_school, seen)
+    nxt: dict[str, int] = {}
+    for key in order:
+        a_s, b_s = key[3], key[4]
+        r = max(nxt.get(a_s, 0), nxt.get(b_s, 0))
+        nxt[a_s] = nxt[b_s] = r + 1
+        out[key] = _jh_day(opening, r, _JH_JV_DAYS)
+    # Same monotonic guarantee the varsity card gets: a program's JV schedule reads in
+    # date order, whatever dated it.
+    last: dict[str, _dt.date] = {}
+    for key in order:
+        floor = max((last[x] for x in (key[3], key[4]) if x in last), default=None)
+        if floor is not None and out[key] < floor:
+            out[key] = floor
+        last[key[3]] = last[key[4]] = out[key]
+
+
 def jhsaa_match_dates(world_id: int, year: int, gender: str,
                       season_year: int | None) -> dict[tuple, _dt.date]:
     """{match key -> date} for one archived gender-season. One date per dual, so
@@ -4167,19 +4255,34 @@ def jhsaa_match_dates(world_id: int, year: int, gender: str,
     conn = _db()
     try:
         rows = conn.execute(
-            "SELECT rowid, school, opp, home, phase, district FROM world_jhsaa_dual"
+            "SELECT rowid, school, opp, home, phase, district, level"
+            " FROM world_jhsaa_dual"
             " WHERE world_id=? AND year=? AND gender=? ORDER BY rowid",
             (world_id, year, gender)).fetchall()
     except sqlite3.OperationalError:
         rows = []
     finally:
         conn.close()
+    # ‼️ JV NEVER ENTERS THE VARSITY ALLOCATOR (owner rule 2026-08). The packing below
+    # advances a per-school cursor on every distinct key, so a JV dual sharing a school
+    # with a varsity one would take a LATER round and push the varsity season out — the
+    # two seasons would serialise, the calendar would overrun its window, and every
+    # individual card would still read perfectly. Only the SPAN would be wrong, which is
+    # exactly how `AAR-jhsaa-postseason-calendar-lanes.md` hid for as long as it did.
+    # JV is dated by `_jh_jv_dates` afterwards, off its own cursor and its own pattern.
     by_school: dict[str, list[tuple]] = {}
     seen: dict[tuple, int] = {}
+    jv_by_school: dict[str, list[tuple]] = {}
+    jv_seen: dict[tuple, int] = {}
     for r in rows:
-        k = jh_match_key(dict(r))
-        by_school.setdefault(r["school"], []).append(k)
-        seen.setdefault(k, r["rowid"])
+        d = dict(r)
+        k = jh_match_key(d)
+        if (d.get("level") or "v") == "jv":
+            jv_by_school.setdefault(r["school"], []).append(k)
+            jv_seen.setdefault(k, r["rowid"])
+        else:
+            by_school.setdefault(r["school"], []).append(k)
+            seen.setdefault(k, r["rowid"])
     from . import jhsaa as _jh
     rank = {p: i + 1 for i, p in enumerate(_jh.POSTSEASON)}
     # Play order first, then STAGE — a topological order alone interleaves the
@@ -4188,8 +4291,11 @@ def jhsaa_match_dates(world_id: int, year: int, gender: str,
     # then drags the regular season through the whole calendar. A team's own
     # matches already run regular -> Sectionals -> ... -> State, so a stable
     # sort by stage keeps each card in order while separating the stages.
+    # ‼️ `k[1]`, not `k[0]` — `jh_match_key` puts LEVEL first now. Read off k[0] this
+    # sorts every dual by the string "v", i.e. not at all, and the postseason stages
+    # stop being separated from the regular season.
     order = sorted(_jh_global_order(by_school, seen),
-                   key=lambda k: rank.get(k[0], 0))
+                   key=lambda k: rank.get(k[1], 0))
     mon, day = _JH_SEASON_OPEN.get(gender, _JH_SEASON_OPEN["girls"])
     opening = _dt.date(season_year, mon, day)
     opening += _dt.timedelta(days=-opening.weekday() % 7)          # first Monday
@@ -4232,7 +4338,7 @@ def jhsaa_match_dates(world_id: int, year: int, gender: str,
     lane_top: dict[str, int] = {}
     post_base: int | None = None
     for key in order:
-        phase, _dist, a_s, b_s = key
+        _lvl, phase, _dist, a_s, b_s = key
         r_rank = rank.get(phase, 0)
         if not r_rank:                                     # regular season, one queue
             r = max(reg_floor, nxt.get(a_s, 0), nxt.get(b_s, 0))
@@ -4268,7 +4374,7 @@ def jhsaa_match_dates(world_id: int, year: int, gender: str,
     days = _jh_pattern(opening, close, total)
     weekend = _jh_showcase_days(slot, opening, days)
     for key, (_r_rank, r) in slot.items():
-        out[key] = weekend.get((key[0], r)) or _jh_day(opening, r, days)
+        out[key] = weekend.get((key[1], r)) or _jh_day(opening, r, days)
 
     # ‼️ A CARD READS IN DATE ORDER, and that is a GUARANTEE rather than something
     # the round arithmetic happens to produce. Anything that dates a dual outside the
@@ -4282,10 +4388,13 @@ def jhsaa_match_dates(world_id: int, year: int, gender: str,
     # the same pattern, which is what a real fixture list does when a date slips.
     seen: dict[str, _dt.date] = {}
     for key in order:
-        floor = max((seen[s] for s in (key[2], key[3]) if s in seen), default=None)
+        # key is (level, phase, district, home, away) — the schools are the LAST TWO.
+        floor = max((seen[s] for s in (key[3], key[4]) if s in seen), default=None)
         if floor is not None and out[key] < floor:
             out[key] = floor
-        seen[key[2]] = seen[key[3]] = out[key]
+        seen[key[3]] = seen[key[4]] = out[key]
+    _jh_jv_dates(out, jv_by_school, jv_seen, gender, season_year)
+
     if len(_JH_CAL_CACHE) >= _JH_CAL_MAX:      # prune per season, never a global clear
         for k in list(_JH_CAL_CACHE)[:len(_JH_CAL_CACHE) - _JH_CAL_MAX + 1]:
             _JH_CAL_CACHE.pop(k, None)
@@ -4761,6 +4870,27 @@ def _unit_wins(arc: dict, group: str, school: str) -> list[str]:
     return out
 
 
+def jhsaa_jv_record(sched: list[dict]) -> tuple[int, int, int]:
+    """(wins, losses, ties) over a program's JV duals, folded off the archive.
+
+    ‼️ A FOLD, NOT A STORE — the same rule `jhsaa_school_history` runs on. The JV dual
+    rows persist, so the record is DERIVED from them exactly as the varsity record is,
+    and there is no second source of truth to drift. (Had the archive kept only a
+    record and no duals, this would have had to become a stored column, and that was
+    the strongest argument against it.)"""
+    w = l = t = 0
+    for d in sched:
+        if (d.get("level") or "v") != "jv":
+            continue
+        if d.get("tied"):
+            t += 1
+        elif d.get("won"):
+            w += 1
+        else:
+            l += 1
+    return w, l, t
+
+
 def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | None:
     """One archived season as this program lived it. `None` if the program has no
     standings row that year (it didn't sponsor the sport, or the archive predates
@@ -4777,6 +4907,12 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
            "state_finish": "", "champion": False, "district_title": False,
            "made_toc": False, "toc_seed": 0, "toc_place": 0, "toc_finish": "",
            "toc_champion": False, "honoured": False, "unit_wins": [],
+           # The JV season's record, folded off this program's JV rows. A RECORD, not a
+           # rating (owner rule 2026-08): JV has no TOSS, no ranking, no seed and no
+           # postseason, and it exists here because a program whose varsity is poor
+           # while its JV wins is a program about to get good — a story only legible if
+           # the number is on the page.
+           "jv_record": "", "jv_wins": 0, "jv_losses": 0, "jv_ties": 0,
            "poy": [], "all_state": [], "all_district": [], "honors": [],
            # Team-level honours that are TEXT rather than a chip (today just a TOC
            # finish short of the title). Kept apart from `honors`, which is
@@ -4844,10 +4980,19 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
     # The individual courts still come off the school's own duals — the match-level
     # archive is the source for drilling into a season, exactly as it is for the
     # schedule view. Cheap: one indexed read of ~26 rows for the year.
+    # ‼️ A JV ROW CANNOT REACH THE COURT COUNTS, and not by being filtered out here:
+    # JV duals archive with `lines` EMPTY, so this loop finds nothing to credit. That
+    # is option B's real dividend — the varsity ledger is immune to the JV season by
+    # the shape of the data rather than by a guard somebody has to remember. If
+    # per-court JV detail is ever archived, this loop needs a `level` filter that day.
     for d in sched:
         for ln in d.get("lines") or ():
             ours = bool(ln.get("home_won")) if d.get("home") else not ln.get("home_won")
             row["courts_won" if ours else "courts_lost"] += 1
+    jw, jl, jt = jhsaa_jv_record(sched)
+    row.update(jv_wins=jw, jv_losses=jl, jv_ties=jt,
+               jv_record=(f"{jw}-{jl}-{jt}" if jt else f"{jw}-{jl}") if jw + jl + jt
+               else "")
     # The TOC CHAMPION gets a gold chip of its own in the honours panel, exactly as the
     # state champion does — so the text line here is for the programs that MADE the
     # field without winning it. Emitting both listed the title twice, one row apart.

@@ -4389,9 +4389,18 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     # uses, never the world index. See world.run_jhsaa.
     season_year = ((arc or {}).get("season_year")
                    or (season or {}).get("season_year") or world.jhsaa_season_year(w))
-    sched = world.jhsaa_schedule(w["id"], yr, g, school)
-    dates = _jh_dates(sched, season_year,
-                      world.jhsaa_match_dates(w["id"], yr, g, season_year))
+    # ‼️ SPLIT BY LEVEL BEFORE ANYTHING ELSE TOUCHES IT. `kinds` and `dates` below are
+    # built INDEX-PARALLEL to this list, so a JV row left in it does not merely show up
+    # on the varsity card — it shifts every tag and date after it by one. The JV season
+    # is a separate tab on this page (owner rule 2026-08), never a second kind of row in
+    # the varsity one.
+    all_sched = world.jhsaa_schedule(w["id"], yr, g, school)
+    cal = world.jhsaa_match_dates(w["id"], yr, g, season_year)
+    sched = [d for d in all_sched if (d.get("level") or "v") != "jv"]
+    jv_sched = [d for d in all_sched if (d.get("level") or "v") == "jv"]
+    dates = _jh_dates(sched, season_year, cal)
+    jv_dates = _jh_dates(jv_sched, season_year, cal)
+    jv_w, jv_l, jv_t = world.jhsaa_jv_record(all_sched)
     lines = _jh_line_records(sched)
     roster = jh.build_roster(sc, season_year, salt)
     br = (arc or {}).get("brackets", {}).get(sc.group) or {}
@@ -4535,6 +4544,17 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                       "round": (state_round if k == "STATE" else
                                 toc_round if k == "TOC" else {}).get(d["opp"], "")}
                      for i, (d, k) in enumerate(zip(sched, kinds))],
+        # The JV season — schedule and record only. No ranking, no seed, no finish:
+        # JV counts for nothing (owner rule 2026-08), and OSAA's own program pages
+        # give a JV level Schedule and Roster and no Ranking tab for the same reason.
+        # `shape` is on the row because the JV format is chosen PER DUAL from what the
+        # two sides could dress, so "who did we play" is only half the story.
+        "jv_schedule": [{**d, "date": jv_dates[i],
+                         "opp_deco": _jh_deco(schools, d["opp"], 22)}
+                        for i, d in enumerate(jv_sched)],
+        "jv_record": (f"{jv_w}-{jv_l}-{jv_t}" if jv_t else f"{jv_w}-{jv_l}") if
+                     (jv_w + jv_l + jv_t) else "",
+        "jv_wins": jv_w, "jv_losses": jv_l, "jv_ties": jv_t,
         "roster": [{"pid": p.pid, "name": p.name, "grade": p.grade,
                     "ovr": round(p.current_overall(), 1),
                     # Talent/potential visibility (owner request) — the ceiling and
