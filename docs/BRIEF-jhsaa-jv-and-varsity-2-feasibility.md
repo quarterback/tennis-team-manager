@@ -67,12 +67,12 @@ arithmetic on top of the real save — clearly derived, not simulated.
     ‼️ This collides with an earlier decision — see §8a — because in the JHSAA there
     is no "current season" to read from: every page reads the archive.
 13. **The opponent reads `San Borrego (JV)`** — parentheses, not OSAA's `[JV]` brackets.
-11. **No Varsity 2.** Dropped — see §7 for why the numbers agreed.
-12. **Results→development stays out of scope.** (Flagged because today *no* JHSAA
+14. **No Varsity 2.** Dropped — see §7 for why the numbers agreed.
+15. **Results→development stays out of scope.** (Flagged because today *no* JHSAA
     result affects development at all: `_dev_maturity` rolls a four-year trajectory at
     entry and `build_roster` regenerates deterministically. That is a separate and much
     larger feature needing persisted per-player state.)
-13. `world.jhsaa_underplayed` stays as it is (varsity appearances only), and
+16. `world.jhsaa_underplayed` stays as it is (varsity appearances only), and
     `_rest_count` stays — using these players in varsity duals sometimes is realistic.
 
 ---
