@@ -380,11 +380,19 @@ elastic table taking the smaller side, and it is the right price.
 
 ---
 
-## 8a. ‼️ What "don't archive JV match data" costs — THERE IS NO LIVE SEASON
+## 8a. ‼️ JV PERSISTENCE — option B (settled 2026-08)
 
-Decision §0.12 says JV match data is not archived. Decision §0.10 says the school page
-carries a JV tab showing that program's **JV schedule**, and an earlier decision put a
-JV tab on the **player** page. Those cannot all hold, for a reason specific to this
+**The decision: archive the JV DUAL ROWS, drop the per-court `lines`.** A program's JV
+schedule and JV record persist for every season, forever, in `world_jhsaa_dual` beside
+the varsity rows. Per-court detail — who played S1, against whom, the set score — is
+not written, so there is **no JV tab on a player's page** and no JV flight record. Cost:
+**2.6 MB a season** across both genders, against varsity's measured 40.0 MB.
+
+The rest of this section is the reasoning, kept because the constraint it turns on is
+easy to forget and expensive to rediscover.
+
+Decision §0.12 as first stated ("JV match data is not archived") could not hold beside
+decision §0.10 (a JV schedule tab on the school page), for a reason specific to this
 association:
 
 **‼️ THE JHSAA HAS NO LIVE SEASON TO READ.** The whole thing runs in one rung at world
@@ -401,29 +409,35 @@ So the choice is what to write, and it is a three-way, not a yes/no:
 | | what persists | what the pages can show | **cost/season** (both genders) |
 |---|---|---|---|
 | **A** — full rows | dual + per-court `lines` | JV schedule · JV record · **JV player tab** (per-court W-L by name) | **15.3 MB** |
-| **B** — rows, `lines=[]` | dual only (opp, home, phase, pf/pa, won) | JV schedule · JV record · **no player tab** | **2.6 MB** |
+| **✅ B** — rows, `lines=[]` | dual only (opp, home, phase, pf/pa, won) | JV schedule · JV record · **no player tab** | **2.6 MB** |
 | **C** — record only | a `jvrecord` field on the existing standings rows | **JV record only — no schedule anywhere** | **0.07 MB** |
 
 Varsity today is 40.0 MB/season by the same measure (MEASURED: 22,983 duals, mean 875
 bytes of `lines` JSON per dual, stored twice because a dual sits on both schools'
 schedules).
 
-**B is almost certainly what §0.12 means.** "Match data" naturally reads as the
-per-court detail — the thing that is genuinely voluminous — and dropping it kills only
-the JV *player* tab. The JV *schedule* survives, at 6% of the cost of A and ~6.5% of
-what varsity already spends. C is the literal reading and it retires the JV schedule
-tab that §0.10 asks for.
+**Why B.** "Match data" means the per-court detail — the genuinely voluminous part —
+and dropping it costs only the JV *player* tab, which was never asked for. The JV
+*schedule* survives at 6% of A's cost and ~6.5% of what varsity already spends, and the
+row still carries the dual score, which is more than OSAA publishes. C was the literal
+reading of §0.12 and would have retired the schedule tab §0.10 asks for.
 
-**C is trivially easy either way**, which answers the "only if it can be done easily"
-condition: the JV record rides on the standings rows already in `world_jhsaa`'s summary
-blob (beside `record` / `drecord` / `place` / `pi`), so it needs **no new table, no new
-read, and no new query** — the program page and its season-by-season history already
-walk exactly those rows. Note it must be STORED rather than derived, which is the one
-place this feature legitimately departs from the "a fold, not a store" rule
-(`jhsaa_school_history`): with no JV duals archived there is nothing to fold.
+### ‼️ Three consequences of B worth writing down
 
-Under B or C, `jhsaa_underplayed` keeps counting varsity appearances only for free —
-it counts names inside `lines`, and JV rows carry none.
+* **The name-collision hazard disappears by construction.** §8 flags
+  `_jh_line_records` (web/state.py:3626) as the thing that bites silently, because it
+  builds a player's record by matching NAMES inside `lines` and would happily merge JV
+  appearances into the varsity player card. Under B **JV rows carry no lines at all**,
+  so there is nothing for it to match. This is not a guard that has to be maintained —
+  it is a fact about the data. Same for `jhsaa_underplayed`, which counts the same
+  names: it keeps measuring varsity appearances only, for free and permanently.
+* **A JV record is still a FOLD, not a store.** Because the dual rows persist, the JV
+  W-L-T is derived from them exactly as the varsity record is, and
+  `jhsaa_school_history`'s "do NOT add a second store for something the archive already
+  determines" rule holds unchanged. C would have been the exception; B is not one.
+* **A JV row must be distinguishable from a varsity row with an empty `lines`.** Both
+  read `[]`. The `level` column is the only thing separating them, which is one more
+  reason it is not optional — see §8.
 
 ---
 
