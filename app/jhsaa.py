@@ -5079,6 +5079,37 @@ def families() -> dict:
     return _family_map(ov.jhsaa_family_version())
 
 
+def family_links(fam: dict) -> list[dict]:
+    """The family's TIES, as `{a, b, relation}` — one per PAIR the owner actually
+    stated, never one per household.
+
+    ‼️ A RELATION BELONGS TO TWO PEOPLE, NOT TO A FAMILY (owner rule 2026-08). It was
+    stored once on the family, so a household begun as cousins made every later member
+    a cousin of everyone — "it doesn't let you connect siblings if the cousin
+    relationship was started". Real families are mixed: siblings, their cousins, a
+    parent. Each `family_add` now records the ONE pair it was told about.
+
+    Families written before links existed carry only `relation`, which is exactly what
+    they displayed for every pair — so they read back as the complete graph at that
+    relation. Derived on READ rather than migrated: the same call the rest of this
+    section makes, and the next shape change needs no migration either."""
+    links = fam.get("links")
+    if links:
+        return [dict(l) for l in links]
+    rel = fam.get("relation", "sibling")
+    pids = [m.get("pid") for m in (fam.get("members") or ()) if m.get("pid")]
+    return [{"a": pids[i], "b": p, "relation": rel}
+            for i in range(len(pids)) for p in pids[i + 1:]]
+
+
+def _link_between(fam: dict, a: str, b: str) -> dict | None:
+    """The stated tie between two members, whichever order it was stated in."""
+    for l in family_links(fam):
+        if {l.get("a"), l.get("b")} == {a, b}:
+            return l
+    return None
+
+
 def family_for(pid: str) -> dict | None:
     """This player's family, or None. The returned dict carries `family_id` and a
     `others` list — every OTHER member, with the relation each bears to `pid`."""
@@ -5088,35 +5119,59 @@ def family_for(pid: str) -> dict | None:
     fid, fam = hit
     members = fam.get("members") or []
     me = next((m for m in members if m.get("pid") == pid), None)
-    others = []
+    # ‼️ `others` SPLITS INTO STATED AND IMPLIED. A tie is between two people, so a
+    # member this player was never tied to directly is in the household and nothing
+    # more — claiming a relation for them would be inventing one (A's sibling's
+    # cousin is not A's cousin). The page lists the stated ties with their word and
+    # the rest as "also in this family", which is exactly what is known.
+    others, kin = [], []
     for m in members:
         if m.get("pid") == pid:
             continue
-        others.append({**m, "relation": _relation_from(fam, me, m)})
+        rel = _relation_from(fam, me, m)
+        (others if rel else kin).append({**m, "relation": rel})
     return {"family_id": fid, "label": fam.get("label", ""),
             "relation": fam.get("relation", "sibling"), "note": fam.get("note", ""),
-            "members": members, "others": others}
+            "members": members, "others": others, "kin": kin,
+            "links": family_links(fam)}
 
 
 def _relation_from(fam: dict, me: dict | None, them: dict) -> str:
-    """How `them` reads FROM `me`'s point of view — derived from entry years rather
-    than stored, so an 'older'/'younger' field can never disagree with itself."""
-    rel = fam.get("relation", "sibling")
-    if rel == "cousin" or me is None:
+    """What `them` IS to `me` — 'sibling', 'cousin', or the parent/child direction.
+
+    ‼️ NO older/younger/twin (owner rule 2026-08). It was derived from entry years,
+    which is right — an earlier entry year is the older player — and it still read
+    backwards on the page, because the derivation describes THEM while the sentence
+    around it ("older sibling of Jane") describes the page's player. Seniority is not
+    worth a label that inverts depending on which end of the tie you are standing on,
+    and the owner does not want it stated at all: two siblings are siblings.
+
+    PARENT still resolves its direction, because that asymmetry is the whole content
+    of the tie — but it is now rendered ON the other member ("Jane Doe · parent"),
+    never as an "X of Y" sentence that has the same perspective trap."""
+    if me is None:
+        return ""
+    link = _link_between(fam, me.get("pid", ""), them.get("pid", ""))
+    if link is None:
+        return ""                       # in the family, but never tied to directly
+    rel = link.get("relation", "sibling")
+    if rel != "parent":
         return rel
     a, b = me.get("entry"), them.get("entry")
     if a is None or b is None:
         return rel
-    if rel == "parent":
-        return "parent" if b < a else "child"
-    if a == b:
-        return "twin"
-    return "older sibling" if b < a else "younger sibling"
+    # An earlier entry year is the earlier cohort, so `them` is the parent.
+    return "parent" if b < a else "child"
 
 
 def _family_pairs(a_pid: str, b_pid: str, fam_map: dict | None = None) -> bool:
     """True when these two share a family — the doubles nudge's only question.
-    Takes a PRE-RESOLVED map so a lineup call never re-resolves the fingerprint."""
+    Takes a PRE-RESOLVED map so a lineup call never re-resolves the fingerprint.
+
+    ⚠️ HOUSEHOLD, NOT STATED TIE, and deliberately so: the nudge is about growing up
+    hitting together, which two siblings joined through a third sibling did just as
+    much as the pairs the owner happened to name. Narrowing this to `_link_between`
+    would also silently move lineups in every save that has a family in it."""
     m = families() if fam_map is None else fam_map
     ha, hb = m.get(a_pid), m.get(b_pid)
     return bool(ha and hb and ha[0] == hb[0])
@@ -5133,8 +5188,14 @@ def family_add(pid_a: str, pid_b: str, relation: str = "sibling",
     ‼️ NO same-school and NO same-surname rule. Siblings at different schools are
     ordinary, a brother and sister sit on two different teams, a parent played
     twenty seasons ago, and siblings routinely do not share a surname. The only
-    hard rules are that both pids resolve to real players and that a pid belongs
-    to at most one family.
+    hard rule is that both pids resolve to real players.
+
+    ‼️ EVERY CALL RECORDS ONE PAIR (owner rule 2026-08). The relation is stored on
+    the LINK, not on the household, so a family can hold siblings and their cousins
+    and a parent at once — and the same person can be tied again and again, which
+    was refused outright before ("already in the same family"). Two people who each
+    already have a family MERGE them: that is what discovering a tie between two
+    households means, and refusing it left the owner with no way to state it.
 
     ‼️ EACH MEMBER CARRIES ITS OWN `where` — {gender, year, school} — and they are
     NOT interchangeable. A single (gender, year) for both is wrong in exactly the
@@ -5150,11 +5211,35 @@ def family_add(pid_a: str, pid_b: str, relation: str = "sibling",
         return {"ok": False, "msg": "need two different players", "family_id": ""}
     m = families()
     fa, fb = m.get(pid_a), m.get(pid_b)
+    if fa and fb and fa[0] == fb[0]:
+        # ANOTHER tie inside one household — the case that used to be refused. A
+        # relation is a fact about two people, so stating a second one adds a link
+        # and no member.
+        fid, fam = fa
+        if _link_between(fam, pid_a, pid_b):
+            return {"ok": False, "msg": "those two are already tied",
+                    "family_id": fid}
+        ov.set_jhsaa_family(fid, {**fam, "links": family_links(fam) + [
+            {"a": pid_a, "b": pid_b, "relation": relation}]})
+        return {"ok": True, "msg": f"{relation} tie recorded", "family_id": fid}
     if fa and fb:
-        if fa[0] == fb[0]:
-            return {"ok": False, "msg": "already in the same family", "family_id": fa[0]}
-        return {"ok": False, "msg": "both already belong to different families",
-                "family_id": ""}
+        # TWO HOUSEHOLDS, now known to be one. Union the members and the stated
+        # ties, add the new one, and drop the row that was absorbed — a pid must
+        # still resolve to exactly one family, or `families()` picks whichever it
+        # met last and half the household disappears.
+        (fid, fam), (other_id, other) = fa, fb
+        seen = {mm.get("pid") for mm in (fam.get("members") or ())}
+        merged = list(fam.get("members") or []) + [
+            mm for mm in (other.get("members") or []) if mm.get("pid") not in seen]
+        links = family_links(fam) + family_links(other)
+        links.append({"a": pid_a, "b": pid_b, "relation": relation})
+        ov.set_jhsaa_family(fid, {**fam, "members": merged, "links": links,
+                                  "note": fam.get("note") or other.get("note", "")})
+        ov.clear_jhsaa_family(other_id)
+        return {"ok": True,
+                "msg": f"merged the {other.get('label') or 'other'} family into "
+                       f"{fam.get('label') or 'this one'}",
+                "family_id": fid}
     wa, wb = where_a or {}, where_b or {}
     info = {pid_a: _resolve_member(pid_a, salt=salt, **_where(wa)),
             pid_b: _resolve_member(pid_b, salt=salt, **_where(wb))}
@@ -5165,7 +5250,12 @@ def family_add(pid_a: str, pid_b: str, relation: str = "sibling",
     if existing:
         fid, fam = existing
         joiner = pid_b if fa else pid_a
-        fam = {**fam, "members": list(fam.get("members") or []) + [info[joiner]]}
+        # The new member arrives WITH the tie that brought them: the pair the owner
+        # named, at the relation they named. Everyone else in the household is
+        # simply family until somebody says otherwise.
+        fam = {**fam, "members": list(fam.get("members") or []) + [info[joiner]],
+               "links": family_links(fam) + [{"a": pid_a, "b": pid_b,
+                                              "relation": relation}]}
         ov.set_jhsaa_family(fid, fam)
         return {"ok": True, "msg": f"added to the {fam.get('label') or 'family'}",
                 "family_id": fid}
@@ -5175,8 +5265,11 @@ def family_add(pid_a: str, pid_b: str, relation: str = "sibling",
         sa = info[pid_a]["name"].split(" ", 1)[-1]
         sb = info[pid_b]["name"].split(" ", 1)[-1]
         label = sa if sa == sb else f"{sa}-{sb}"
+    # `relation` is kept at the family level for the pages and saves that read it as
+    # the household's default; the LINK is what the section actually renders.
     fam = {"label": label, "relation": relation, "note": note,
-           "members": [info[pid_a], info[pid_b]]}
+           "members": [info[pid_a], info[pid_b]],
+           "links": [{"a": pid_a, "b": pid_b, "relation": relation}]}
     ov.set_jhsaa_family(fid, fam)
     return {"ok": True, "msg": f"{label} family created", "family_id": fid}
 
@@ -5196,7 +5289,11 @@ def family_remove(family_id: str, pid: str = "") -> dict:
     if len(members) < 2:
         ov.clear_jhsaa_family(family_id)
         return {"ok": True, "msg": "family removed (a tie needs two)"}
-    ov.set_jhsaa_family(family_id, {**fam, "members": members})
+    # ‼️ THE DEPARTING MEMBER'S TIES GO WITH THEM. A link naming a pid that is no
+    # longer a member is a tie to nobody: `_link_between` would keep matching it and
+    # a re-added member would silently inherit the old relation.
+    links = [l for l in family_links(fam) if pid not in (l.get("a"), l.get("b"))]
+    ov.set_jhsaa_family(family_id, {**fam, "members": members, "links": links})
     return {"ok": True, "msg": "member removed"}
 
 
