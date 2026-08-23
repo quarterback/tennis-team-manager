@@ -145,12 +145,27 @@
         {% endif %}
         {% if family %}
         <p class="bit"><b>{{ family.label }}</b>{% if family.note %} · {{ family.note }}{% endif %}</p>
+        {# ‼️ THE RELATION IS A LABEL ON THE OTHER MEMBER, NEVER AN "X of Y" SENTENCE.
+           `o.relation` says what O is to the player on this page, so "older sibling
+           of Jane" put the label on the wrong end and read as the exact opposite of
+           what it meant — which is why the seniority words are gone entirely (owner
+           rule 2026-08). Written this way the sentence has no perspective to get
+           backwards: the name, then what that person is. #}
         {% for o in family.others %}
-        <p class="bit">{{ o.relation }} of
+        <p class="bit">
           <a href="{{ url_for('jhsaa_player', school=o.school, pid=o.pid, u=u, g=o.gender) }}">{{ o.name }}</a>
+          · {{ o.relation }}
           {%- if o.school != view.school %} · {{ o.school }}{% endif %}
           {%- if o.gender != view.gender %} · {{ o.gender }}{% endif %}</p>
         {% endfor %}
+        {# ‼️ A RELATION IS ONLY CLAIMED WHERE ONE WAS STATED. These are members of the
+           same family that this player was never directly tied to — a sibling's
+           cousin is not this player's cousin, and the old model, which stored one
+           relation for the whole household, said it was. #}
+        {% if family.kin %}
+        <p class="bit" style="color:var(--text-muted);margin-top:6px">Also in this family:
+          {% for o in family.kin %}<a href="{{ url_for('jhsaa_player', school=o.school, pid=o.pid, u=u, g=o.gender) }}">{{ o.name }}</a>{{ ", " if not loop.last }}{% endfor %}</p>
+        {% endif %}
         {% if not view.scope.pin %}
         <form method="post" action="{{ url_for('editor_jhsaa_family') }}">
           <input type="hidden" name="jh_pid" value="{{ view.pid }}">
@@ -163,7 +178,19 @@
           <button type="submit" class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">Remove tie</button>
         </form>
         {% endif %}
-        {% elif not view.scope.pin %}
+        {% endif %}
+
+        {# ‼️ A FAMILY IS NOT A PAIR — the picker stays available to a player who is
+           ALREADY tied (owner report 2026-08). `family_add` has always joined a
+           third member to an existing family; only this panel hid the control the
+           moment a tie existed, so three siblings could not be associated from any
+           page that showed two of them, and the only way in was to start from the
+           untied one. A family grows by adding members, so the way to add one is on
+           the family. #}
+        {% if not view.scope.pin %}
+        {% if family %}<p class="bit" style="margin-top:12px"><b>Add another tie</b>
+          — another member of the {{ family.label }} family, or another relation to
+          somebody already in it</p>{% endif %}
         {# Choosing the roster to pick from is a GET, so it round-trips without
            writing anything; the association itself is the POST below. #}
         <form method="get" style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
@@ -203,13 +230,19 @@
             <select name="other_pid" required style="max-width:260px">
               {% for opid, lbl in picker %}<option value="{{ opid }}">{{ lbl }}</option>{% endfor %}
             </select></label>
+          {# ‼️ THE RELATION IS ALWAYS ASKED, EVEN WHEN JOINING. It belongs to this
+             PAIR, not to the household: a family begun as cousins must still be able
+             to take a pair of siblings, which is exactly what one stored relation
+             made impossible. #}
           <label class="s">As
             <select name="relation">
               {% for r in relations %}<option value="{{ r }}">{{ r }}</option>{% endfor %}
             </select></label>
+          {% if not family %}
           <label class="s">Note
             <input type="text" name="note" placeholder="optional" style="width:170px"></label>
-          <button type="submit" class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">Associate</button>
+          {% endif %}
+          <button type="submit" class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">{{ 'Add to family' if family else 'Associate' }}</button>
         </form>
         {% endif %}
         {% endif %}

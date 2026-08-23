@@ -2710,11 +2710,22 @@ def create_app() -> Flask:
             picker_msg = f'No {fam_g} program named "{fam_school}".'
         else:
             salt = wd.active_salt(DEFAULT_SEED)
+            # ‼️ EXCLUDE WHO THIS PLAYER IS ALREADY TIED TO — not everyone in the
+            # family. A relation belongs to a PAIR, so a member of the household this
+            # player has no stated tie to is a perfectly good candidate: that is how
+            # you say "and these two are siblings" inside a family of cousins. Only a
+            # duplicate of an existing link is pointless, and `family_add` refuses it.
+            fam_now = _jh.family_for(pid) or {}
+            tied = {p for l in (fam_now.get("links") or ())
+                    for p in (l.get("a"), l.get("b"))
+                    if pid in (l.get("a"), l.get("b")) and p != pid}
             picker = [(p.pid, f"{p.name} · {p.grade}th")
                       for p in _jh.build_roster(fam_sc, fam_season, salt)
-                      if p.pid != pid]
+                      if p.pid != pid and p.pid not in tied]
             if not picker:
-                picker_msg = f"{fam_school} fielded nobody in {fam_season}."
+                picker_msg = (f"{fam_school} fielded nobody in {fam_season} who is not "
+                              "already tied to this player." if tied else
+                              f"{fam_school} fielded nobody in {fam_season}.")
         return render_template("jhsaa_player.html", active="High School", view=view,
                                gender=gender, u=u, uni_label=label,
                                school_names=school_names,
