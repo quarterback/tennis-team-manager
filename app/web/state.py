@@ -3709,8 +3709,11 @@ def _jh_flight_box(seasons: list[dict], key: str = "slots",
                         "overall": f"{ov[0]}-{ov[1]}"})
         tcells = {s: (f"{totals[s][0]}-{totals[s][1]}" if (totals[s][0] or totals[s][1]) else "–")
                   for s in slots}
+        # `any` is MATCH-based, not row-based: a career with three archived seasons and
+        # no play at this level rendered three rows of 0-0 instead of saying so.
         return {"slots": slots, "rows": rows, "tcells": tcells,
-                "toverall": f"{tov[0]}-{tov[1]}", "any": bool(rows)}
+                "toverall": f"{tov[0]}-{tov[1]}",
+                "any": bool(rows) and (tov[0] + tov[1]) > 0}
     def _width(prefix: str, floor: int) -> int:
         seen = [int(sl[1:]) for s in seasons for sl in (s[key] or {})
                 if sl.startswith(prefix) and sl[1:].isdigit()]

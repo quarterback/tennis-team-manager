@@ -99,8 +99,9 @@
         <span class="bl-panel-title">Flight record — {{ disc|capitalize }}</span>
         <span class="bit">W–L by court</span></div>
       {% if view.any_jv %}
-      {{ jh_tabs([('v', 'Varsity', view.flights[disc].rows|length),
-                  ('jv', 'JV', view.jv_flights[disc].rows|length)], 'jhfl' ~ disc) }}
+      {# No count on these tabs — `jh_tabs` skips the badge on 0. A number here counted
+         SEASON ROWS, which is identical for both tabs and says nothing about either. #}
+      {{ jh_tabs([('v', 'Varsity', 0), ('jv', 'JV', 0)], 'jhfl' ~ disc) }}
       {% endif %}
       <div class="jh-pane tbl-scroll" data-pane="v">{{ recbox(view.flights[disc]) }}</div>
       {% if view.any_jv %}
