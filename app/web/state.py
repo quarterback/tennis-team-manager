@@ -4360,15 +4360,30 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     import app.world as world
     w = world.get_or_create(seed)
     g = _jh_g(gender)
-    sc = next((s for s in jh.load_schools(g) if s.name == school), None)
+    # ‼️ A FORMER PROGRAM STILL HAS A PAGE (owner rule 2026-08). `load_schools`
+    # filters on the sponsorship flag, so a school that drops the sport used to 404
+    # here — taking its whole ledger, its honours and every player who ever played
+    # there with it, while its state title went on standing on the title board with
+    # a dead link under it. `former_school` falls back to the data row; None still
+    # means a name no row carries, which is a real 404.
+    sc = jh.former_school(school, g)
     if sc is None:
         return {"found": False, "school": school, "gender": g}
+    former = not jh.sponsors_sport(school, g)
     years = world.jhsaa_years(w["id"], g)
     yr = (years[0] if years else w["year"]) if year is None else year
     arc = world.get_jhsaa(w["id"], yr, g)
     salt = world.active_salt(seed)
     schools = _jh_schools(g)
     hist = world.jhsaa_school_history(w["id"], g, school)
+    # ‼️ AND IT OPENS ON THE LAST SEASON IT PLAYED. The default year is the newest the
+    # ASSOCIATION has archived, which a former program has no row in — so the page
+    # would render its own header over an empty season and read as a bug rather than
+    # as a program that stopped. An explicit `year` is still honoured: that is how you
+    # browse an archived season, including one they were not in.
+    if former and year is None and hist["seasons"]:
+        yr = hist["seasons"][0]["year"]
+        arc = world.get_jhsaa(w["id"], yr, g)
     season = next((s for s in hist["seasons"] if s["year"] == yr), None)
     # The season's own year drives the roster identity — the grad year the hand-off
     # uses, never the world index. See world.run_jhsaa.
@@ -4483,6 +4498,11 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     return {
         "found": True, "school": school, "gender": g, "year": yr, "years": years,
         "season_year": season_year, "is_current": bool(years) and yr == years[0],
+        # No longer fields a team in this sport — the page is a record, not a roster.
+        # `last_season` is the season it is showing, which for a former program is the
+        # last one they played.
+        "former": former,
+        "last_season": (hist["seasons"][0]["season_year"] if hist["seasons"] else None),
         "scope": _jh_scope(g, sc.group, list(jh.GROUPS), yr, years, season_year, arc),
         # --- identity ---
         "mark": jh.mark(sc, 76), "city": sc.city, "county": sc.county, "area": sc.area,
@@ -4816,7 +4836,10 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
     import app.world as world
     w = world.get_or_create(seed)
     g = _jh_g(gender)
-    sc = next((s for s in jh.load_schools(g) if s.name == school), None)
+    # A player's card outlives their program: same fallback as `jhsaa_school_view`,
+    # so a school dropping the sport does not take every player who ever played
+    # there down with it.
+    sc = jh.former_school(school, g)
     if sc is None:
         return {"found": False, "school": school, "gender": g}
     salt = world.active_salt(seed)
@@ -4832,17 +4855,21 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
     # missing rows. `moved` resolves the (at most one) transfer this pid has;
     # `_school_for_year` below picks origin vs destination per season.
     moved = jh.transfer_for(pid)
-    origin_sc = dest_sc = None
-    if moved:
-        origin_sc = next((s for s in jh.load_schools(g) if s.name == moved.get("from")), None)
-        dest_sc = next((s for s in jh.load_schools(g) if s.name == moved.get("to")), None)
+    # ‼️ A CAREER CAN HOLD SEVERAL MOVES — a third school, or a move back to the
+    # first. `jh.transfer_school` is the ONE authority on where a player is in a
+    # given season (`build_roster` asks it too), so the card and the roster cannot
+    # disagree about which school a season belonged to. This used to branch on a
+    # single stored move, which is why erasing one silently re-attributed the
+    # seasons played under it and zeroed their results.
+    by_name = {s.name: s for s in jh.load_schools(g)}
 
     def _school_for_year(season_year):
-        if moved and moved.get("year") is not None:
-            if season_year < moved["year"]:
-                return origin_sc or sc
-            return dest_sc or sc
-        return sc
+        if not moved:
+            return sc
+        # A school on either end of a transfer may itself have stopped sponsoring
+        # since, so this resolves through the same fallback the page came in on.
+        where = jh.transfer_school(moved, season_year)
+        return by_name.get(where) or jh.former_school(where, g) or sc
 
     # Per-school ledgers, built lazily and cached by school name — a two-school
     # career needs both, a one-school career needs only the one it always did.
@@ -4915,7 +4942,13 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         "honors": [h for s in seasons for h in s["honors"]], "flights": flights,
         # For the transfer form — the identity a `set_jhsaa_transfer` row is keyed on.
         "entry_year": player.entry_year,
-        "transfer": jh.transfer_for(pid),
+        "transfer": moved,
+        # The whole history, each hop reading FROM where they were before it — what
+        # the card lists, and what makes a move back to the old school legible.
+        "transfer_moves": [
+            {**m, "from": (jh.transfer_moves(moved)[i - 1]["to"] if i
+                           else moved.get("from"))}
+            for i, m in enumerate(jh.transfer_moves(moved))],
         # The grad year is what the college recruit board keys a Jefferson signee on,
         # so it is the hand-off between this career and the rest of the game.
         "grad_year": (seasons[0]["season_year"] + (12 - seasons[0]["grade"])

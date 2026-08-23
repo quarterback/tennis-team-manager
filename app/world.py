@@ -3862,11 +3862,21 @@ def jhsaa_underplayed(world_id: int, gender: str, salt: str = "",
     else:
         year = years[0]
         season_year = jhsaa_latest_season_year(world_id, gender)
-    # Only transfer rows already effective by this season can move this board.
-    past_moves = tuple(sorted((pid, r.get("to"), r.get("year"))
-                              for pid, r in _jh.transfers().items()
-                              if (r.get("year") or 0) <= season_year))
-    key = (world_id, gender, year, salt, past_moves)
+    # ‼️ KEY ON WHERE EACH PLAYER ACTUALLY IS THAT SEASON, not on the record's shape.
+    # This read `r["to"]`/`r["year"]` — the fields a SINGLE-move record carries — so
+    # once a career became a `moves` history every record collapsed to (pid, None,
+    # None) and the key stopped depending on the transfers at all: adding, editing or
+    # undoing a move effective during this archived season changed `build_roster` and
+    # not the key, and `reset_all()` does not clear this cache, so the board went on
+    # showing players at their previous schools until another season or a restart.
+    #
+    # `transfer_school` is also TIGHTER than listing the moves: the board depends only
+    # on which school each pid plays for in `season_year`, so a move recorded for a
+    # LATER season correctly leaves this key alone instead of evicting a board it
+    # cannot affect. Legacy single-move records read through the same helper.
+    where = tuple(sorted((pid, _jh.transfer_school(r, season_year))
+                         for pid, r in _jh.transfers().items()))
+    key = (world_id, gender, year, salt, where)
     got = _underplayed_cache.get(key)
     if got is not None:
         return got

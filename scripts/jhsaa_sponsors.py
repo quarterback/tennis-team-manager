@@ -71,26 +71,43 @@ def _row(m, s: dict, cities: dict) -> dict:
     }
 
 
-def apply(rows: list[dict], m, src: list[dict], cities: dict) -> tuple[list, list, set]:
-    """Return (added, dropped, groups_touched); `rows` is rebuilt by the caller."""
+def apply(rows: list[dict], m, src: list[dict], cities: dict) -> tuple[list, list, list, set]:
+    """Return (added, gained, dropped, groups_touched); `rows` is rebuilt by the caller."""
     by_src = {s["name"]: s for s in src}
     have = {(r.get("source") or r["name"]) for r in rows}
 
     dropped = [r for r in rows if (r.get("source") or r["name"]) in m.NEVER_SPONSOR]
     keep = [r for r in rows if r not in dropped]
 
-    added = []
+    added, gained = [], []
     for name in sorted(m.EXTRA_SPONSORS):
         if name in have:
+            # ‼️ ALREADY A ROW IS NOT ALREADY DONE. `EXTRA_SPONSORS` means "this school
+            # sponsors tennis in BOTH genders" — that is what `sponsors()` does with it
+            # — and a school can already be in the association on ONE side, which is
+            # exactly an EXPANSION program: Minnesota City sponsored girls and lost the
+            # boys' sub-roll. Skipping every existing row left the table saying one
+            # thing and the data another, and a full re-import would then have silently
+            # "added" a boys' team the committed file had never heard of.
+            row = next((r for r in keep if (r.get("source") or r["name"]) == name), None)
+            if row is not None:
+                for g in ("girls", "boys"):
+                    if not row.get(g):
+                        row[g] = True
+                        gained.append((row, g))
             continue
         s = by_src.get(name)
         if s is None:
             sys.exit(f"EXTRA_SPONSORS names a school prep-network does not have: {name}")
         added.append(_row(m, s, cities))
 
+    # A gender GAINED needs no redraw: a league belongs to the SCHOOL (drawn once per
+    # classification over the girls-inclusive pool), so the row's district fields are
+    # already filled in and the gender's half of that league simply grows by one. Only
+    # a row entering or leaving the association changes the cut.
     groups = {r["group"] for r in dropped} | {r["group"] for r in added}
     rows[:] = sorted(keep + added, key=lambda r: r["name"])
-    return added, dropped, groups
+    return added, gained, dropped, groups
 
 
 def redraw(rows: list[dict], m, src: list[dict], cities: dict, groups: set) -> None:
@@ -136,23 +153,35 @@ def main() -> None:
         doc = json.load(fh)
     rows = doc["schools"] if isinstance(doc, dict) else doc
 
-    added, dropped, groups = apply(rows, m, src, cities)
+    added, gained, dropped, groups = apply(rows, m, src, cities)
     for r in dropped:
         print(f"  - {r['name']:30} {r['group']:>5} {r['classification']:>3} "
               f"{r['enrollment']:5} {r['city']}")
     for r in added:
         print(f"  + {r['name']:30} {r['group']:>5} {r['classification']:>3} "
               f"{r['enrollment']:5} {r['city']}")
+    for row, g in gained:
+        league = row.get(f"{g}_district") or "?"
+        peers = sum(1 for r in rows if r.get(g) and r["group"] == row["group"]
+                    and r.get(f"{g}_district") == league)
+        print(f"  ± {row['name']:30} {row['group']:>5} {row['classification']:>3} "
+              f"{row['enrollment']:5} {row['city']} — now sponsors {g.upper()} "
+              f"({league}, {peers} teams)")
     if groups:
         redraw(rows, m, src, cities, groups)
         print(f"redrew leagues in: {', '.join(sorted(groups))}")
-    print(f"{len(added)} added, {len(dropped)} dropped; {len(rows)} programs")
+    print(f"{len(added)} added, {len(gained)} gained a gender, "
+          f"{len(dropped)} dropped; {len(rows)} programs")
 
     # A district over MAX_DISTRICT is a longer league season than everyone else
     # plays, so the redraw is checked rather than assumed.
     import collections
-    over = {k: v for k, v in collections.Counter(
-        (r["group"], r["girls_district"]) for r in rows).items() if v > m.MAX_DISTRICT}
+    # BOTH halves: a gender gained grows one league's boys' side without touching the
+    # girls' cut, so checking only the girls-inclusive pool would not see it.
+    over = {(g, k): v for g in ("girls", "boys")
+            for k, v in collections.Counter(
+                (r["group"], r[f"{g}_district"]) for r in rows if r.get(g)).items()
+            if v > m.MAX_DISTRICT}
     if over:
         sys.exit(f"district over MAX_DISTRICT after redraw: {over}")
 

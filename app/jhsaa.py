@@ -226,11 +226,23 @@ def roster_size(classification: str, school_key: str = "", salt: str = "") -> in
     return rng.randint(lo, hi)
 
 
-#: The regular-season league card's distinct-player count (S1 + the doubles pool
-#: #2-#9 + S2 + S3 = 11 — the biggest single-dual roster requirement in the whole
-#: JHSAA calendar; the early 5S/2D window and the 1S/4D postseason both need only
-#: 9). A HARD FLOOR on `build_roster`'s total output, same invariant as the
-#: college side's `ncaa.lineup_size`/`refill_walkons`.
+#: ONE MORE THAN the regular-season format's distinct-player count (owner rule
+#: 2026-08). That format needs 11 — S1 + the doubles pool #2-#9 + S2 + S3 — which is
+#: the biggest single-dual requirement in the whole JHSAA calendar (the early 5S/2D
+#: window and the 1S/4D postseason both need only 9). The floor sits at 12 so a
+#: program at the floor still has ONE player who is not dressed: a squad with exactly
+#: enough bodies to field a dual has no bench at all, so an absence has nowhere to
+#: come from and the rest/rotation rules have nothing to move. A HARD FLOOR on
+#: `build_roster`'s total output, same invariant as the college side's
+#: `ncaa.lineup_size`/`refill_walkons`.
+#:
+#: ‼️ AND THERE IS NO CEILING, DELIBERATELY (owner rule 2026-08).
+#: `ROSTER_SIZE_BAND_BY_CLASS` is a TARGET that `_freshman_class_size` draws around
+#: with real variance, not a cap — measured rosters run 11 to 36 — and the transfer
+#: portal appends on top of that without checking anything. Both are intended: the
+#: owner reallocates talent by hand every offseason, and a big school being able to
+#: roll a deep squad is what makes moving players down the ladder worth doing. Do not
+#: "fix" the over-band rosters by clamping them.
 #:
 #: ‼️ WHY THIS EXISTS: `_freshman_class_size` rolls each grade INDEPENDENTLY with
 #: real downside variance (35% of a mean as low as ~3.5/grade even at 1A's raised
@@ -246,7 +258,7 @@ def roster_size(classification: str, school_key: str = "", salt: str = "") -> in
 #: a PRIOR year's roll — touching them would break `_freshman_class_size`'s "rolled
 #: once per (school, entry_year)" contract and desync from anything already
 #: archived against that class).
-ROSTER_FLOOR = 11
+ROSTER_FLOOR = 12
 
 
 def _freshman_class_size(school_key: str, entry_year: int, classification: str,
@@ -1387,6 +1399,49 @@ def transfer_for(pid: str) -> dict | None:
     return transfers().get(pid)
 
 
+def transfer_moves(rec: dict | None) -> list[dict]:
+    """A record's moves as `[{to, year}, …]`, oldest first.
+
+    ‼️ A CAREER CAN HOLD MORE THAN ONE MOVE (owner rule 2026-08). It used to hold
+    exactly one — `{to, year}` on the record — so a player who moved a second time
+    had to have the first move CANCELLED, which did not just forget it: the card
+    derives which school each season belonged to from this record, so the seasons
+    actually played at the second school were re-attributed to the origin and their
+    results silently went 0-0 (the archived duals still named the right school, so
+    the two surfaces disagreed with nothing erroring). The college side has always
+    written a history row per player per season; this is the same idea in the shape
+    high school needs — moves only ever happen between seasons.
+
+    Records written before `moves` existed carry the single `to`/`year` pair and are
+    read back as a one-move history. Derived on READ, never migrated — the section's
+    own idiom, and the next shape change needs no migration either."""
+    if not rec:
+        return []
+    moves = rec.get("moves")
+    if moves is None:
+        return ([{"to": rec.get("to"), "year": rec.get("year")}]
+                if rec.get("to") else [])
+    return sorted((dict(m) for m in moves if m.get("to")),
+                  key=lambda m: (m.get("year") or 0))
+
+
+def transfer_school(rec: dict | None, season_year: int) -> str:
+    """Which school this record says the player attends in `season_year` — the LAST
+    move effective by then, or their origin if none is.
+
+    ‼️ ONE AUTHORITY FOR "WHERE ARE THEY". `build_roster` (both the outbound skip and
+    the inbound pull) and the career card all ask this, so a move back to the origin
+    school resolves the same way everywhere. Asking it in three places with three
+    inline comparisons is what let the card and the roster disagree."""
+    if not rec:
+        return ""
+    where = rec.get("from", "")
+    for m in transfer_moves(rec):
+        if (m.get("year") or 0) <= season_year:
+            where = m["to"]
+    return where
+
+
 def transfer_rows() -> list[dict]:
     """Every recorded transfer, with the mover's NAME resolved for display — the
     list the `/jhsaa/transfers` board reads. Player identity is regenerated (same
@@ -1402,13 +1457,24 @@ def transfer_rows() -> list[dict]:
             # `grade` only steers maturity/talent in `_gen_seat`, not identity or pid
             # (both keyed on entry+seat alone) — 9 is an arbitrary valid choice here,
             # this call exists only to read the name back off the regenerated Prospect.
-            mod = _program_mod(origin, rec.get("year", 0), "")
+            mod = _program_mod(origin, 0, "")
             p = _gen_seat(origin, mod, entry, rec.get("seat"), 9, "")
             if p.pid == pid:
                 name = p.name
-        rows.append({"pid": pid, "name": name or "(unresolved)", "gender": gender,
-                     "from": rec.get("from"), "to": rec.get("to"), "year": rec.get("year"),
-                     "entry": rec.get("entry")})
+        # ‼️ ONE ROW PER MOVE, not per player: the ledger is the record of what
+        # happened, and a career with three schools happened three times. Each row's
+        # `from` is where they were BEFORE that move (the previous destination, or
+        # the origin for the first), which is the only reading that makes a
+        # multi-move career legible — and the only one where a move back to the old
+        # school does not read as a move from itself.
+        moves = transfer_moves(rec)
+        where = rec.get("from")
+        for i, m in enumerate(moves):
+            rows.append({"pid": pid, "name": name or "(unresolved)", "gender": gender,
+                         "from": where, "to": m.get("to"), "year": m.get("year"),
+                         "entry": rec.get("entry"), "origin": rec.get("from"),
+                         "step": i + 1, "steps": len(moves)})
+            where = m.get("to")
     rows.sort(key=lambda r: (-(r["year"] or 0), r["name"]))
     return rows
 
@@ -1590,7 +1656,7 @@ def program_editor(selected: str = "", board: str = "", cat: str = "",
     # `girls_district`/`boys_district` names the program's OLD class's league;
     # reading it here is what made this card disagree with the district page for
     # every played-up program on the board.
-    moved = _playup_league(version, _schools_cache, pmap)
+    moved = _playup_league(version, rows, pmap)
     amap = _arch_map(ov.jhsaa_archetype_version())
     arch_ov, play_ov = ov.get_jhsaa_archetypes(), ov.get_jhsaa_playups()
     by_name = {r["name"]: r for r in _schools_cache}
@@ -1723,14 +1789,14 @@ def load_schools(gender: str) -> list[School]:
     hit = _schoolobj_cache.get(ck)
     if hit is not None:
         return hit
-    global _schools_cache
-    if _schools_cache is None:
-        with open(_DATA, encoding="utf-8") as fh:
-            _schools_cache = json.load(fh)["schools"]
+    rows = _rows()
     pmap = _playup_map(version)
-    moved = _playup_league(version, _schools_cache, pmap)
+    # `rows`, not the module global: `_rows()` is the one accessor that guarantees
+    # the file is loaded, and reading the global directly here passed None into the
+    # league map on any path that had just cleared it.
+    moved = _playup_league(version, rows, pmap)
     out = []
-    for r in _schools_cache:
+    for r in rows:
         if not r.get(gender):
             continue
         # ‼️ PLAYING UP MOVES `group` AND LEAVES `classification` ALONE. `group` is
@@ -1760,6 +1826,63 @@ def load_schools(gender: str) -> list[School]:
     _schoolobj_cache.clear()          # one version is live at a time
     _schoolobj_cache[ck] = out
     return out
+
+
+def former_school(name: str, gender: str) -> School | None:
+    """A program that no longer sponsors this sport, built from its data row anyway.
+
+    ‼️ A PROGRAM THAT STOPS SPONSORING MUST NOT LOSE ITS HISTORY (owner rule
+    2026-08). `load_schools` filters on the sponsorship flag, which is right for
+    every CURRENT-season surface — the directory, the leagues, the ladder — and it
+    also meant the program page and every player page 404'd the moment the flag went
+    off. The archive was untouched (their state title still stood on the title board
+    and on the champions grid), so the trophies stayed and the pages that explain
+    them died, with every link into them dead. That is the same fault a rename used
+    to cause, and it gets the same answer: resolve it on READ rather than migrating
+    anything.
+
+    Deliberately NOT part of `load_schools`. That call is the hot path — a season
+    builds ~1,600 rosters through it — and every one of its callers means "the
+    programs playing this year". This is the fallback a page takes when the live
+    lookup misses, and it is the ONLY way a non-sponsor is ever built.
+
+    Returns None for a name no data row carries, which is a genuine 404: the school
+    does not exist, rather than existing and not fielding a team."""
+    live = next((s for s in load_schools(gender) if s.name == name), None)
+    if live is not None:
+        return live
+    for r in _rows():
+        if r["name"] != name:
+            continue
+        return School(
+            name=r["name"], city=r["city"], county=r["county"], area=r["area"],
+            classification=r["classification"], group=r["group"],
+            enrollment=r["enrollment"], private=r["private"], mascot=r["mascot"],
+            colors=r["colors"], talent=r.get("talent", ""),
+            # Their last known league. A former sponsor plays in none, but the
+            # archive's own rows carry the league they played in each season, so
+            # this is only what the header prints beside the town.
+            district=r.get(f"{gender}_district") or _row_league(r) or "",
+            gender=gender, source=r.get("source", ""),
+            locality=r.get("locality", ""))
+    return None
+
+
+def sponsors_sport(name: str, gender: str) -> bool:
+    """Does this program field a team in `gender` TODAY? The one question that
+    separates a former program from a current one — everything else about them
+    (their archive, their pages, their honours) is the same."""
+    return any(s.name == name for s in load_schools(gender))
+
+
+def _rows() -> list[dict]:
+    """The raw school records, loaded once. `load_schools` owns the same file and
+    the same module-global; this is the unfiltered read behind it."""
+    global _schools_cache
+    if _schools_cache is None:
+        with open(_DATA, encoding="utf-8") as fh:
+            _schools_cache = json.load(fh)["schools"]
+    return _schools_cache
 
 
 def _row_league(row: dict) -> str | None:
@@ -1994,9 +2117,11 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
         for seat in range(n_seats):
             p = _gen_seat(school, mod, entry, seat, grade, salt)
             rec = tmap.get(p.pid)
-            # Left FOR somewhere else, effective this year or earlier — they play
-            # for their new school now, not this one.
-            if rec and rec.get("to") != school.name and rec.get("year", 0) <= year:
+            # Somewhere else THIS season — `transfer_school` walks every recorded
+            # move and returns where they actually are, so a player who moved away
+            # and later moved BACK is on this roster again for the years they
+            # returned for, without a second rule saying so.
+            if rec and transfer_school(rec, year) != school.name:
                 continue
             out.append(p)
     # ‼️ THE HARD FLOOR — see `ROSTER_FLOOR` above. Grown on THIS year's freshman
@@ -2012,8 +2137,15 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     # versa — `_gen_seat` would then place an origin-gender Prospect straight onto
     # the opposite-gender team.
     for pid, rec in tmap.items():
-        if (rec.get("to") != school.name or rec.get("gender") != school.gender
-                or rec.get("year", 0) > year):
+        if rec.get("gender") != school.gender:
+            continue
+        # ‼️ AND NEVER PULL SOMEBODY THIS SCHOOL ALREADY GENERATED. A player whose
+        # moves bring them back to their ORIGIN is produced by the seat loop above
+        # (which no longer skips them), so adding them here too would put the same
+        # person on the roster twice — the one new failure a multi-move history can
+        # cause, and it would read as a phantom team-mate rather than as a bug.
+        if (transfer_school(rec, year) != school.name
+                or rec.get("from") == school.name):
             continue
         entry = rec.get("entry")
         grade = year - entry + 9

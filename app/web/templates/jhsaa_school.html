@@ -19,12 +19,31 @@
   {% if not view.is_current %}<span class="jh-chip ghost">ARCHIVED {{ view.season_year }} SEASON</span>{% endif %}
 </div>
 
+{# ‼️ A PROGRAM THAT STOPPED SPONSORING KEEPS ITS PAGE (owner rule 2026-08). The page
+   used to 404 the moment the sponsorship flag went off, taking the ledger, the
+   honours and every player card with it while the state title went on standing on
+   the title board above a dead link. It is the same record it always was; what
+   changed is that there is no team this year, and the page has to SAY so rather
+   than leave the reader to work out why the season is empty. #}
+{% if view.former %}
+<div class="bl-panel" style="margin-bottom:12px">
+  <div class="bl-panel-body" style="padding:12px 14px">
+    <b>{{ view.school }} no longer fields a {{ view.gender }} tennis team.</b>
+    {% if view.last_season %}Their last season was {{ view.last_season }}, and
+    everything below is the record of it — the seasons they played, the trophies they
+    won and the players who won them are unchanged.{% else %}No season is archived for
+    this program.{% endif %}
+  </div>
+</div>
+{% endif %}
+
 <!-- ============ Identity: who they are and how this season went ============ -->
 <div class="jh-ident" style="margin-bottom:12px">
   <span class="crest">{{ view.mark|safe }}</span>
   <div class="jh-ident-body">
     <span class="jh-chip c-{{ view.group }}">{{ view.classification }}</span>
     {% if view.private %}<span class="jh-chip ghost">PRIVATE</span>{% endif %}
+    {% if view.former %}<span class="jh-chip ghost" title="no longer sponsors this sport">FORMER PROGRAM</span>{% endif %}
     <h1>{{ view.school }}</h1>
     <div class="mascot">{{ view.mascot }}</div>
     {# A locality reads as part of the address, not as a second city: the school

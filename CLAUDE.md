@@ -807,8 +807,13 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   in its band via `roster_size(classification, school_key, salt)`, same idiom as a
   recruiting budget band — same `ncaa.ROSTER_CAP` pattern, same talent metrics, not
   weaker filler) because 3S/4D dressing 11-of-12 left almost no bench.
-  **`ROSTER_FLOOR` (11, the regular-season card's distinct-player count) is a HARD
-  floor UNDER that band** — `_freshman_class_size` rolls each grade independently
+  **`ROSTER_FLOOR` (12 — ONE MORE than the regular-season format's 11 distinct
+  players, owner rule 2026-08, so a program at the floor still has a bench of one
+  rather than exactly enough bodies to dress) is a HARD floor UNDER that band, and
+  there is NO CEILING: the band is a target `_freshman_class_size` draws around, real
+  rosters run 12-36, and the transfer portal appends on top without a check. Both are
+  deliberate — the owner reallocates talent by hand, and a big school rolling a deep
+  squad is what makes moving players down the ladder worth doing. Do not clamp it.** — `_freshman_class_size` rolls each grade independently
   with real downside variance, so `build_roster` tops a short roster up to 11 by
   growing ONLY the current year's incoming freshman class (never grades 10-12,
   already fixed from a prior roll) — without it, a program that rolled thin across
@@ -1291,6 +1296,33 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   resting below the card wraps one player onto two lines). A weak-LOOKING roster
   that is actually winning is never rested on. Pinned by
   `tests/test_jhsaa_rest.py`.
+- **‼️ AN OFFSEASON TRANSFER IS A HISTORY, NOT A CURRENT SETTING (owner rule
+  2026-08, `overrides` kind `jhsaa_transfer`).** The record is
+  `{from, gender, entry, seat, moves: [{to, year}, …]}` — `from` is the ORIGIN and is
+  NEVER rewritten, because the pid is a one-way hash of (origin identity, gender,
+  entry year, seat) and is the only school the player can be regenerated from; a
+  later move records a destination, never a new origin. It held ONE move, so a second
+  one had to cancel the first — and since the career card DERIVES each season's
+  school from this record, the seasons played at the forgotten school were
+  re-attributed to the origin and their results read 0-0, while `world_jhsaa_dual`
+  still named the right school. Nothing errored; two surfaces just disagreed. The
+  college side has always written a history row per player per season
+  (`_record_world_history`); this is that idea in the shape high school needs.
+  - **`jhsaa.transfer_school(rec, season_year)` is the ONE authority on where a player
+    is** — the outbound skip in `build_roster`, its inbound pull, and the card all ask
+    it, so they cannot disagree. Records written before `moves` existed read back as a
+    one-move history (**derived on READ, never migrated**).
+  - **‼️ A MOVE BACK TO THE ORIGIN WOULD ROSTER THEM TWICE.** The origin's own seat
+    loop generates them (it no longer skips them once they are back) AND the inbound
+    pull would add them again, so the pull refuses anyone whose `from` IS this school.
+    A phantom team-mate reads as a roster quirk, never as a bug.
+  - Undo is per MOVE (`clear_jhsaa_transfer(pid, year)`); the rest of the career
+    stands, and a record left with no moves is deleted rather than kept as a row
+    saying the player transferred nowhere. Re-recording a move for a year that already
+    has one EDITS it — one decision changed, not two moves.
+  - The ledger is **one row per move**, each row's `from` being where they were
+    BEFORE it (the previous destination), which is the only reading where a move home
+    does not print as a move from itself. `tests/test_jhsaa_transfers.py`.
 - **‼️ FAMILY TIES ARE OWNER-AUTHORED METADATA (owner rule 2026-08, `jhsaa.family_add`
   / `overrides` kind `jhsaa_family`).** A tie links two PIDS and never touches a name —
   required, since `world_jhsaa_dual.lines` archives NAMES and `_jh_line_records` keys
@@ -1745,6 +1777,58 @@ was a school marker, shipped "Baptist HS High School".
     Baldwin, Gwendolyn Brooks, Thurgood Marshall, Mae Jemison, Barack Obama, John
     Lewis and every president. The presidents and justices are in `OWNER_EDICTS`; the
     rest are NOT, so "looks like a person" is not the test.
+- **‼️ A PROGRAM THAT STOPS SPONSORING KEEPS ITS PAGE (owner rule 2026-08,
+  `jhsaa.former_school` / `sponsors_sport`).** `load_schools` filters on the
+  `girls`/`boys` flag — correct for every CURRENT-season surface (the directory, the
+  leagues, the ladder, the rankings) and it also meant the program page and every
+  player page 404'd the moment the flag went off. The archive is untouched by a
+  sponsorship change, so the school's state title went on standing on the title board
+  and the champions grid with a DEAD LINK under it: the trophies stayed and the pages
+  that explain them died. Measured, not theorised.
+  - The two views fall back to `former_school`, which builds the School from its data
+    row whatever the flag says; `None` still means a name no row carries, which is a
+    real 404. **Resolved on READ, nothing migrated** — the same answer a rename gets
+    (`world._relabel`), for the same reason.
+  - **It opens on the LAST SEASON THEY PLAYED.** The default year is the newest the
+    association has archived, which a former program has no row in, so the page would
+    render its header over an empty season and read as a bug. An explicit `year` is
+    still honoured.
+  - `former_school` is deliberately NOT part of `load_schools`: that is the hot path
+    (~1,600 roster builds a season) and every caller of it means "the programs playing
+    this year". It is a fallback, and the only way a non-sponsor is ever built.
+  - Sponsorship is per SPORT — dropping the girls' team leaves the boys' program live.
+  - A sponsorship change still redraws the leagues of the classes it touches
+    (`scripts/jhsaa_sponsors.py`); that is unavoidable and is the section's own rule.
+    An incoming 1:1 replacement is a new row with a new name, so it generates twelve
+    new players and inherits nothing — which is what an expansion program should do.
+    `tests/test_jhsaa_former_program.py`.
+- **‼️ MASCOTS: THE FOREIGN-FAUNA CLEANUP (owner rule 2026-08,
+  `import_jhsaa.MASCOT_FIXES` + `scripts/jhsaa_mascots.py`).** An earlier pass was
+  asked to forage the world's animals so the state would not be five hundred Eagles.
+  It worked at the head of the list and left ~130 programs named after animals no
+  American high school has ever used — Muntjac (7), Sitatunga, Bogongs, Serows,
+  Saiga, Takin, Markhor, Hamerkops, Kookaburras, Quolls, plus a shelf of foraged
+  insects. 134 schools changed, 70 names retired; the head is untouched (Eagles 19).
+  - **‼️ THE BAR IS "WOULD A US HIGH SCHOOL PUT THIS ON A JERSEY", NOT "IS IT
+    OBSCURE".** The genuinely strange AMERICAN names are the best thing in the file
+    and none was touched — Beetdiggers, Cornjerkers, Whistlepunks, Shingle Weavers,
+    Highclimbers, Tie Hackers, Gandy Dancers, Cheesemongers, Onion Toppers, Hop
+    Pickers, Sugarbeeters, Hardrockers, Orediggers, Lava Bears, Vaudevillians, Poets,
+    Pelotaris, Bar Pilots, Fogbells all have real counterparts (Jordan HS
+    Beetdiggers, Hoopeston Cornjerkers, Shelton Highclimbers, Bend Lava Bears,
+    Whittier Poets, Alva Goldbugs). Local fauna stays too, however unusual —
+    Ensatinas, Giant Salamanders, Kokanee, Chukars, Sage Grouse, Rockchucks,
+    Skookums, Chinook — because it belongs to this ground. Overlaps are fine and
+    expected ("like real life").
+  - **Keyed on the MASCOT, not the school**: the offending NAME is what is wrong, so
+    one entry fixes every program carrying it and any future import that draws it.
+    Each maps to a POOL, picked per school on a stable hash, so seven Muntjac do not
+    become seven of anything else — check the script's "names that grew by 4+" line
+    after any retune, which is what caught Goldbugs +11 and Hornets +14 in drafts.
+  - Per-school OWNER PICKS go in `MASCOTS` (keyed on the display name) and outrank the
+    table: Plainfield are the Cardinals, Condotti Vanguard Academy the Valiant.
+  - Nothing keys on a mascot string and no archive stores one — it is read live off
+    the school row — so this is display-only and cannot disturb a played season.
 - **‼️ A JHSAA display rename MUST stamp `School.source`** with the pre-rename name
   (generation keys pids on `source or name` — move the name without it and the
   program gets twelve strangers and archived awards point at nobody), and
