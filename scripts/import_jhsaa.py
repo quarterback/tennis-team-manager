@@ -36,6 +36,7 @@ See docs/DESIGN-jhsaa-high-school-season.md.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import random
@@ -2499,7 +2500,132 @@ def league_names(blocks: list[list[dict]], group: str) -> list[str]:
     return out
 
 
+# ⚠️ THE FOREIGN-FAUNA CLEANUP (owner rule 2026-08). An earlier pass was asked to
+# forage the world's animals so the association would not be five hundred Eagles.
+# It worked — the head of the list now looks like a real state's — but it also left
+# ~130 programs named after animals no American high school has ever put on a jersey:
+# Muntjac (7 schools), Sitatunga, Bogongs, Serows, Saiga, Takin, Markhor, Nyala,
+# Hamerkops, Shoebills, Kookaburras, Quolls, Numbats, plus a shelf of foraged
+# insects. Owner: get rid of only the ones that make no sense, and expect overlaps,
+# "like real life".
+#
+# ‼️ THE BAR IS "WOULD A US HIGH SCHOOL PUT THIS ON A JERSEY", NOT "IS IT OBSCURE".
+# The genuinely strange American names are the best thing in the file and NONE of
+# them is touched: Beetdiggers, Cornjerkers, Whistlepunks, Shingle Weavers,
+# Highclimbers, Tie Hackers, Gandy Dancers, Cheesemongers, Onion Toppers, Hop
+# Pickers, Sugarbeeters, Hardrockers, Orediggers, Lava Bears, Vaudevillians, Poets,
+# Pelotaris, Bar Pilots, Fogbells. Every one of those has a real-world counterpart
+# (Jordan HS Beetdiggers, Hoopeston Cornjerkers, Shelton Highclimbers, Bend Lava
+# Bears, Whittier Poets, Tillamook Cheesemakers), and stripping them would leave
+# exactly the generic head the foraging pass was run to avoid.
+#
+# Local fauna STAYS even when it is unusual — Ensatinas, Giant Salamanders, Kokanee,
+# Sockeye, Steelhead, Chukars, Sage Grouse, Rockchucks, Skookums, Chinook — because
+# it belongs to this ground. What goes is the fauna of other continents.
+#
+# Keyed on the MASCOT, not the school: the offending name is the thing that is
+# wrong, so one entry fixes every program carrying it and any future import that
+# draws it again. A pool rather than a single replacement, picked per school on a
+# stable hash, so seven Muntjac do not become seven of anything else.
+MASCOT_FIXES = {
+    # ── hoofed exotics → the western hoofed stock a real school would use ──
+    "Muntjac": ("Blacktails", "Bighorns", "Bucks", "Pronghorns", "Stags",
+                "Mule Deer", "Elk"),
+    "Sitatunga": ("Bighorns", "Rams", "Blacktails"),
+    "Serows": ("Bighorns", "Rams"),
+    "Saiga": ("Pronghorns", "Antelopes"),
+    "Bharal": ("Bighorns",),
+    "Takin": ("Bighorns", "Rams"),
+    "Markhor": ("Rams", "Bighorns"),
+    "Gerenuk": ("Pronghorns",),
+    "Nyala": ("Blacktails", "Bucks"),
+    "Chamois": ("Bighorns", "Blacktails"),
+    "Tahr": ("Bighorns",),
+    "Ibex": ("Bighorns", "Rams", "Stags"),
+    "Dik-Diks": ("Blacktails",),
+    "Bongos": ("Bucks", "Stags"),
+    "Okapi": ("Blacktails",),
+    "Wisent": ("Bison",),
+    "Water Buffalo": ("Bison",),
+    "Springbok": ("Pronghorns",),
+    "Oryx": ("Pronghorns", "Longhorns"),
+    # ── cats, canids and other exotic mammals → cougars and company ──
+    "Snow Leopards": ("Lynx", "Cougars", "Bobcats", "Mountain Lions"),
+    "Servals": ("Bobcats", "Lynx"),
+    "Caracals": ("Bobcats",),
+    "Maned Wolves": ("Coyotes", "Timberwolves", "Wolves", "Red Wolves"),
+    "Dholes": ("Coyotes",),
+    "Dingoes": ("Coyotes", "Timberwolves", "Wolves"),
+    "Binturongs": ("Marmots", "Otters"),
+    "Kinkajous": ("Raccoons", "Martens"),
+    "Coatis": ("Raccoons",),
+    "Langurs": ("Wolverines", "Badgers", "Bobcats", "Marmots", "Otters"),
+    "Tapirs": ("Boars", "Bison", "Badgers"),
+    "Pangolins": ("Porcupines", "Armadillos"),
+    "Aardvarks": ("Badgers", "Porcupines"),
+    "Meerkats": ("Prairie Dogs", "Marmots"),
+    "Numbats": ("Chipmunks", "Martens", "Marmots"),
+    "Bilbies": ("Jackrabbits",),
+    "Quolls": ("Martens", "Weasels"),
+    "Wombats": ("Badgers", "Beavers"),
+    "Stoats": ("Weasels", "Martens", "Badgers", "Wolverines"),
+    # ── exotic birds → the birds actually overhead here ──
+    "Hamerkops": ("Herons", "Kingfishers"),
+    "Shoebills": ("Herons", "Egrets"),
+    "Hoatzins": ("Herons", "Grebes"),
+    "Oropendolas": ("Orioles",),
+    "Weaverbirds": ("Kingfishers", "Orioles"),
+    "Secretarybirds": ("Harriers",),
+    "Capercaillie": ("Sage Grouse", "Chukars"),
+    "Galahs": ("Kestrels", "Harriers"),
+    "Kookaburras": ("Kingfishers", "Ravens"),
+    "Lyrebirds": ("Meadowlarks", "Kingfishers"),
+    "Hornbills": ("Ravens", "Ospreys"),
+    "Rheas": ("Cranes",),
+    "Firecrests": ("Kestrels",),
+    # ── the foraged insect shelf → the bugs American schools really use ──
+    # Every name here is either already elsewhere in this association (Hornets,
+    # Yellowjackets, Monarchs, Fireflies, Dragonflies) or a documented real one:
+    # Alva High School, Oklahoma are the Goldbugs.
+    "Bogongs": ("Wasps", "Honeybees", "Fireflies"),
+    "Army Ants": ("Yellowjackets", "Fireflies"),
+    "Giant Hornets": ("Hornets", "Wasps", "Yellowjackets"),
+    "Goliath Beetles": ("Goldbugs", "Yellowjackets", "Hornets"),
+    "Stag Beetles": ("Goldbugs", "Wasps", "Yellowjackets"),
+    "Hornbeetles": ("Goldbugs", "Hornets", "Wasps"),
+    "Leafcutters": ("Honeybees", "Monarchs"),
+    "Weevils": ("Goldbugs", "Honeybees", "Fireflies"),
+    "Katydids": ("Fireflies",),
+    "Damselflies": ("Dragonflies",),
+    "Mantids": ("Wasps", "Hornets", "Dragonflies"),
+    "Locusts": ("Yellowjackets", "Hornets"),
+    "Atlas Moths": ("Monarchs",),
+    "Scarabs": ("Goldbugs",),
+    # ── the rest ──
+    "Taipans": ("Sidewinders", "Rattlers", "Cobras"),
+    "Frilled Lizards": ("Horned Lizards", "Sidewinders"),
+    "Tuatara": ("Sidewinders",),
+    "Moon Jellies": ("Tidepools", "Undertow"),
+    # A berry and a butte, not a team: the one PNW-local word here that still reads
+    # as a place rather than as a nickname.
+    "Olallie": ("Huckleberries", "Brambles", "Junipers", "Thistles"),
+}
+
+
+def fix_mascot(display: str, mascot: str) -> str:
+    """`mascot` unless it is one of the foreign-fauna names above, in which case a
+    replacement drawn STABLY from that name's pool — the same school always lands on
+    the same one, and two schools sharing a bad name usually do not share its fix."""
+    pool = MASCOT_FIXES.get(mascot)
+    if not pool:
+        return mascot
+    return pool[int(hashlib.sha1(f"{display}|mascot".encode()).hexdigest(), 16) % len(pool)]
+
+
 MASCOTS = {
+    # ── owner picks (2026-08) ──
+    "Plainfield": "Cardinals",
+    "Condotti Vanguard Academy": "Valiant",
     # ── the private-school layer (see the RENAMES block) ──────────────────
     # Real-world mascots where the institution has one everybody knows, which is
     # half of what makes the name land. ⚠️ NO AQUATIC ANIMALS (the rule at the head
@@ -3277,7 +3403,9 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
             # record's: a public high school that becomes Sacred Heart Cathedral
             # is a private school (see PRIVATE_SCHOOLS).
             "private": s["private"] or display in PRIVATE_SCHOOLS,
-            "mascot": MASCOTS.get(display, s["mascot"]),
+            # The per-school override first, then the foreign-fauna cleanup —
+            # an owner pick is a decision and must outrank a table.
+            "mascot": MASCOTS.get(display) or fix_mascot(display, s["mascot"]),
             "colors": COLORS.get(display, s["colors"]),
             "girls": name in girls,
             "boys": name in boys,

@@ -1772,6 +1772,33 @@ was a school marker, shipped "Baptist HS High School".
     Baldwin, Gwendolyn Brooks, Thurgood Marshall, Mae Jemison, Barack Obama, John
     Lewis and every president. The presidents and justices are in `OWNER_EDICTS`; the
     rest are NOT, so "looks like a person" is not the test.
+- **‼️ MASCOTS: THE FOREIGN-FAUNA CLEANUP (owner rule 2026-08,
+  `import_jhsaa.MASCOT_FIXES` + `scripts/jhsaa_mascots.py`).** An earlier pass was
+  asked to forage the world's animals so the state would not be five hundred Eagles.
+  It worked at the head of the list and left ~130 programs named after animals no
+  American high school has ever used — Muntjac (7), Sitatunga, Bogongs, Serows,
+  Saiga, Takin, Markhor, Hamerkops, Kookaburras, Quolls, plus a shelf of foraged
+  insects. 134 schools changed, 70 names retired; the head is untouched (Eagles 19).
+  - **‼️ THE BAR IS "WOULD A US HIGH SCHOOL PUT THIS ON A JERSEY", NOT "IS IT
+    OBSCURE".** The genuinely strange AMERICAN names are the best thing in the file
+    and none was touched — Beetdiggers, Cornjerkers, Whistlepunks, Shingle Weavers,
+    Highclimbers, Tie Hackers, Gandy Dancers, Cheesemongers, Onion Toppers, Hop
+    Pickers, Sugarbeeters, Hardrockers, Orediggers, Lava Bears, Vaudevillians, Poets,
+    Pelotaris, Bar Pilots, Fogbells all have real counterparts (Jordan HS
+    Beetdiggers, Hoopeston Cornjerkers, Shelton Highclimbers, Bend Lava Bears,
+    Whittier Poets, Alva Goldbugs). Local fauna stays too, however unusual —
+    Ensatinas, Giant Salamanders, Kokanee, Chukars, Sage Grouse, Rockchucks,
+    Skookums, Chinook — because it belongs to this ground. Overlaps are fine and
+    expected ("like real life").
+  - **Keyed on the MASCOT, not the school**: the offending NAME is what is wrong, so
+    one entry fixes every program carrying it and any future import that draws it.
+    Each maps to a POOL, picked per school on a stable hash, so seven Muntjac do not
+    become seven of anything else — check the script's "names that grew by 4+" line
+    after any retune, which is what caught Goldbugs +11 and Hornets +14 in drafts.
+  - Per-school OWNER PICKS go in `MASCOTS` (keyed on the display name) and outrank the
+    table: Plainfield are the Cardinals, Condotti Vanguard Academy the Valiant.
+  - Nothing keys on a mascot string and no archive stores one — it is read live off
+    the school row — so this is display-only and cannot disturb a played season.
 - **‼️ A JHSAA display rename MUST stamp `School.source`** with the pre-rename name
   (generation keys pids on `source or name` — move the name without it and the
   program gets twelve strangers and archived awards point at nobody), and

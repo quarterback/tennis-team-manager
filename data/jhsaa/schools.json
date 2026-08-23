@@ -192,7 +192,7 @@
       "group": "7A",
       "enrollment": 1444,
       "private": false,
-      "mascot": "Muntjac",
+      "mascot": "Stags",
       "colors": [
         "#3a5a78",
         "#f5e9d0"
@@ -232,7 +232,7 @@
       "group": "3A",
       "enrollment": 447,
       "private": true,
-      "mascot": "Kinkajous",
+      "mascot": "Martens",
       "colors": [
         "#0e7490",
         "#fbbf24"
@@ -841,7 +841,7 @@
       "group": "1A",
       "enrollment": 126,
       "private": true,
-      "mascot": "Numbats",
+      "mascot": "Martens",
       "colors": [
         "#14294e",
         "#c8ccd4"
@@ -883,7 +883,7 @@
       "group": "1A",
       "enrollment": 195,
       "private": true,
-      "mascot": "Tahr",
+      "mascot": "Bighorns",
       "colors": [
         "#0f6a70",
         "#f4f1ea"
@@ -980,7 +980,7 @@
       "group": "4A",
       "enrollment": 591,
       "private": false,
-      "mascot": "Dingoes",
+      "mascot": "Timberwolves",
       "colors": [
         "#14294e",
         "#c8ccd4"
@@ -1117,7 +1117,7 @@
       "group": "2A",
       "enrollment": 202,
       "private": false,
-      "mascot": "Gerenuk",
+      "mascot": "Pronghorns",
       "colors": [
         "#1e2a4a",
         "#c05621"
@@ -1276,7 +1276,7 @@
       "group": "6A",
       "enrollment": 1257,
       "private": true,
-      "mascot": "Taipans",
+      "mascot": "Cobras",
       "colors": [
         "#1d4e9e",
         "#f2f2ee"
@@ -1315,7 +1315,7 @@
       "group": "5A",
       "enrollment": 929,
       "private": false,
-      "mascot": "Hornbeetles",
+      "mascot": "Goldbugs",
       "colors": [
         "#167339",
         "#e8e6df"
@@ -1354,7 +1354,7 @@
       "group": "3A",
       "enrollment": 303,
       "private": false,
-      "mascot": "Wisent",
+      "mascot": "Bison",
       "colors": [
         "#8c1d40",
         "#f0b323"
@@ -1492,7 +1492,7 @@
       "group": "2A",
       "enrollment": 244,
       "private": true,
-      "mascot": "Maned Wolves",
+      "mascot": "Coyotes",
       "colors": [
         "#4b2e83",
         "#b7a57a"
@@ -1593,7 +1593,7 @@
       "group": "2A",
       "enrollment": 256,
       "private": true,
-      "mascot": "Quolls",
+      "mascot": "Weasels",
       "colors": [
         "#1d1d1f",
         "#d97706"
@@ -1773,7 +1773,7 @@
       "group": "4A",
       "enrollment": 639,
       "private": false,
-      "mascot": "Army Ants",
+      "mascot": "Yellowjackets",
       "colors": [
         "#8c1d40",
         "#f0b323"
@@ -1896,7 +1896,7 @@
       "group": "5A",
       "enrollment": 944,
       "private": false,
-      "mascot": "Muntjac",
+      "mascot": "Bighorns",
       "colors": [
         "#3a5a78",
         "#f5e9d0"
@@ -2195,7 +2195,7 @@
       "group": "4A",
       "enrollment": 651,
       "private": true,
-      "mascot": "Kookaburras",
+      "mascot": "Kingfishers",
       "colors": [
         "#14294e",
         "#c8ccd4"
@@ -2217,7 +2217,7 @@
       "group": "4A",
       "enrollment": 769,
       "private": true,
-      "mascot": "Giant Hornets",
+      "mascot": "Wasps",
       "colors": [
         "#167339",
         "#e8e6df"
@@ -2376,7 +2376,7 @@
       "group": "1A",
       "enrollment": 151,
       "private": false,
-      "mascot": "Water Buffalo",
+      "mascot": "Bison",
       "colors": [
         "#7f1d1d",
         "#d4d4d8"
@@ -2395,7 +2395,7 @@
       "group": "2A",
       "enrollment": 352,
       "private": false,
-      "mascot": "Caracals",
+      "mascot": "Bobcats",
       "colors": [
         "#1e5631",
         "#f2f2ee"
@@ -2733,7 +2733,7 @@
       "group": "5A",
       "enrollment": 834,
       "private": false,
-      "mascot": "Goliath Beetles",
+      "mascot": "Goldbugs",
       "colors": [
         "#14532d",
         "#e8c46b"
@@ -2754,7 +2754,7 @@
       "group": "3A",
       "enrollment": 372,
       "private": false,
-      "mascot": "Ibex",
+      "mascot": "Rams",
       "colors": [
         "#0f6a70",
         "#f4f1ea"
@@ -3170,7 +3170,7 @@
       "group": "5A",
       "enrollment": 876,
       "private": false,
-      "mascot": "Sitatunga",
+      "mascot": "Rams",
       "colors": [
         "#4b2e83",
         "#b7a57a"
@@ -3415,7 +3415,7 @@
       "group": "5A",
       "enrollment": 948,
       "private": false,
-      "mascot": "Locusts",
+      "mascot": "Yellowjackets",
       "colors": [
         "#3f2a56",
         "#3ba55d"
@@ -3434,7 +3434,7 @@
       "group": "1A",
       "enrollment": 112,
       "private": true,
-      "mascot": "Katydids",
+      "mascot": "Fireflies",
       "colors": [
         "#0e7490",
         "#fbbf24"
@@ -3513,7 +3513,7 @@
       "talent": "9A",
       "enrollment": 531,
       "private": true,
-      "mascot": "Bogongs",
+      "mascot": "Valiant",
       "colors": [
         "#7f1d1d",
         "#d4d4d8"
@@ -3592,7 +3592,7 @@
       "group": "1A",
       "enrollment": 68,
       "private": true,
-      "mascot": "Servals",
+      "mascot": "Lynx",
       "colors": [
         "#8c1d40",
         "#f0b323"
@@ -3631,7 +3631,7 @@
       "group": "1A",
       "enrollment": 188,
       "private": false,
-      "mascot": "Locusts",
+      "mascot": "Hornets",
       "colors": [
         "#3f2a56",
         "#3ba55d"
@@ -3767,7 +3767,7 @@
       "group": "4A",
       "enrollment": 776,
       "private": false,
-      "mascot": "Galahs",
+      "mascot": "Harriers",
       "colors": [
         "#7f1d1d",
         "#d4d4d8"
@@ -3847,7 +3847,7 @@
       "group": "9A",
       "enrollment": 2436,
       "private": false,
-      "mascot": "Stag Beetles",
+      "mascot": "Goldbugs",
       "colors": [
         "#1d1d1f",
         "#d97706"
@@ -4121,7 +4121,7 @@
       "group": "7A",
       "enrollment": 1462,
       "private": false,
-      "mascot": "Maned Wolves",
+      "mascot": "Red Wolves",
       "colors": [
         "#1e5631",
         "#f2f2ee"
@@ -4436,7 +4436,7 @@
       "group": "5A",
       "enrollment": 953,
       "private": false,
-      "mascot": "Damselflies",
+      "mascot": "Dragonflies",
       "colors": [
         "#5b2a86",
         "#e5e7eb"
@@ -4476,7 +4476,7 @@
       "group": "5A",
       "enrollment": 860,
       "private": false,
-      "mascot": "Kookaburras",
+      "mascot": "Ravens",
       "colors": [
         "#6d1a36",
         "#9fb4c7"
@@ -4535,7 +4535,7 @@
       "group": "3A",
       "enrollment": 385,
       "private": true,
-      "mascot": "Ibex",
+      "mascot": "Stags",
       "colors": [
         "#204e39",
         "#c8a24a"
@@ -4790,7 +4790,7 @@
       "group": "6A",
       "enrollment": 1185,
       "private": false,
-      "mascot": "Springbok",
+      "mascot": "Pronghorns",
       "colors": [
         "#204e39",
         "#c8a24a"
@@ -4810,7 +4810,7 @@
       "group": "5A",
       "enrollment": 956,
       "private": false,
-      "mascot": "Tapirs",
+      "mascot": "Badgers",
       "colors": [
         "#6d1a36",
         "#9fb4c7"
@@ -5485,7 +5485,7 @@
       "group": "5A",
       "enrollment": 910,
       "private": false,
-      "mascot": "Mantids",
+      "mascot": "Dragonflies",
       "colors": [
         "#7b1e2b",
         "#e8c46b"
@@ -5645,7 +5645,7 @@
       "group": "4A",
       "enrollment": 644,
       "private": false,
-      "mascot": "Hamerkops",
+      "mascot": "Herons",
       "colors": [
         "#3a5a78",
         "#f5e9d0"
@@ -5804,7 +5804,7 @@
       "group": "6A",
       "enrollment": 1275,
       "private": false,
-      "mascot": "Giant Hornets",
+      "mascot": "Wasps",
       "colors": [
         "#167339",
         "#e8e6df"
@@ -5864,7 +5864,7 @@
       "group": "2A",
       "enrollment": 279,
       "private": true,
-      "mascot": "Numbats",
+      "mascot": "Chipmunks",
       "colors": [
         "#167339",
         "#e8e6df"
@@ -6100,7 +6100,7 @@
       "group": "1A",
       "enrollment": 84,
       "private": true,
-      "mascot": "Sitatunga",
+      "mascot": "Blacktails",
       "colors": [
         "#333d29",
         "#d97706"
@@ -6218,7 +6218,7 @@
       "group": "9A",
       "enrollment": 2275,
       "private": false,
-      "mascot": "Army Ants",
+      "mascot": "Fireflies",
       "colors": [
         "#8c1d40",
         "#f0b323"
@@ -6276,7 +6276,7 @@
       "group": "7A",
       "enrollment": 1540,
       "private": false,
-      "mascot": "Weaverbirds",
+      "mascot": "Orioles",
       "colors": [
         "#1d1d1f",
         "#d97706"
@@ -6551,7 +6551,7 @@
       "group": "4A",
       "enrollment": 748,
       "private": false,
-      "mascot": "Wombats",
+      "mascot": "Beavers",
       "colors": [
         "#3f2a56",
         "#3ba55d"
@@ -6647,7 +6647,7 @@
       "group": "9A",
       "enrollment": 2524,
       "private": false,
-      "mascot": "Oropendolas",
+      "mascot": "Orioles",
       "colors": [
         "#1e2a4a",
         "#c05621"
@@ -6668,7 +6668,7 @@
       "group": "8A",
       "enrollment": 1669,
       "private": true,
-      "mascot": "Tuatara",
+      "mascot": "Sidewinders",
       "colors": [
         "#333d29",
         "#d97706"
@@ -6707,7 +6707,7 @@
       "group": "7A",
       "enrollment": 1323,
       "private": true,
-      "mascot": "Shoebills",
+      "mascot": "Herons",
       "colors": [
         "#5b2a86",
         "#e5e7eb"
@@ -6922,7 +6922,7 @@
       "group": "8A",
       "enrollment": 1949,
       "private": true,
-      "mascot": "Capercaillie",
+      "mascot": "Sage Grouse",
       "colors": [
         "#167339",
         "#e8e6df"
@@ -6941,7 +6941,7 @@
       "group": "8A",
       "enrollment": 1643,
       "private": false,
-      "mascot": "Bongos",
+      "mascot": "Stags",
       "colors": [
         "#5b2a86",
         "#e5e7eb"
@@ -7057,7 +7057,7 @@
       "group": "8A",
       "enrollment": 1684,
       "private": false,
-      "mascot": "Taipans",
+      "mascot": "Sidewinders",
       "colors": [
         "#3a5a78",
         "#f5e9d0"
@@ -7077,7 +7077,7 @@
       "group": "4A",
       "enrollment": 789,
       "private": false,
-      "mascot": "Langurs",
+      "mascot": "Badgers",
       "colors": [
         "#167339",
         "#e8e6df"
@@ -7096,7 +7096,7 @@
       "group": "2A",
       "enrollment": 324,
       "private": false,
-      "mascot": "Dingoes",
+      "mascot": "Timberwolves",
       "colors": [
         "#3a5a78",
         "#f5e9d0"
@@ -7116,7 +7116,7 @@
       "group": "4A",
       "enrollment": 676,
       "private": false,
-      "mascot": "Nyala",
+      "mascot": "Bucks",
       "colors": [
         "#7f1d1d",
         "#d4d4d8"
@@ -7154,7 +7154,7 @@
       "group": "6A",
       "enrollment": 1141,
       "private": false,
-      "mascot": "Sitatunga",
+      "mascot": "Rams",
       "colors": [
         "#14532d",
         "#e8c46b"
@@ -7174,7 +7174,7 @@
       "group": "8A",
       "enrollment": 1747,
       "private": false,
-      "mascot": "Coatis",
+      "mascot": "Raccoons",
       "colors": [
         "#14294e",
         "#c8ccd4"
@@ -7234,7 +7234,7 @@
       "group": "8A",
       "enrollment": 2058,
       "private": false,
-      "mascot": "Dholes",
+      "mascot": "Coyotes",
       "colors": [
         "#3f2a56",
         "#3ba55d"
@@ -7356,7 +7356,7 @@
       "group": "9A",
       "enrollment": 2162,
       "private": false,
-      "mascot": "Muntjac",
+      "mascot": "Stags",
       "colors": [
         "#1e5631",
         "#f2f2ee"
@@ -7396,7 +7396,7 @@
       "group": "4A",
       "enrollment": 730,
       "private": false,
-      "mascot": "Army Ants",
+      "mascot": "Yellowjackets",
       "colors": [
         "#6d1a36",
         "#9fb4c7"
@@ -7553,7 +7553,7 @@
       "group": "7A",
       "enrollment": 1539,
       "private": false,
-      "mascot": "Tapirs",
+      "mascot": "Boars",
       "colors": [
         "#167339",
         "#e8e6df"
@@ -7807,7 +7807,7 @@
       "group": "1A",
       "enrollment": 193,
       "private": true,
-      "mascot": "Leafcutters",
+      "mascot": "Monarchs",
       "colors": [
         "#92400e",
         "#1d1d1f"
@@ -7845,7 +7845,7 @@
       "group": "6A",
       "enrollment": 1262,
       "private": true,
-      "mascot": "Snow Leopards",
+      "mascot": "Cougars",
       "colors": [
         "#1e2a4a",
         "#c05621"
@@ -8265,7 +8265,7 @@
       "group": "3A",
       "enrollment": 511,
       "private": false,
-      "mascot": "Bogongs",
+      "mascot": "Fireflies",
       "colors": [
         "#14294e",
         "#c8ccd4"
@@ -8342,7 +8342,7 @@
       "group": "2A",
       "enrollment": 366,
       "private": false,
-      "mascot": "Stag Beetles",
+      "mascot": "Goldbugs",
       "colors": [
         "#7f1d1d",
         "#d4d4d8"
@@ -8441,7 +8441,7 @@
       "group": "2A",
       "enrollment": 250,
       "private": false,
-      "mascot": "Weevils",
+      "mascot": "Honeybees",
       "colors": [
         "#6d1a36",
         "#9fb4c7"
@@ -8460,7 +8460,7 @@
       "group": "7A",
       "enrollment": 1350,
       "private": false,
-      "mascot": "Tapirs",
+      "mascot": "Boars",
       "colors": [
         "#6d1a36",
         "#9fb4c7"
@@ -8596,7 +8596,7 @@
       "group": "1A",
       "enrollment": 311,
       "private": false,
-      "mascot": "Olallie",
+      "mascot": "Brambles",
       "colors": [
         "#14294e",
         "#c8ccd4"
@@ -8852,7 +8852,7 @@
       "group": "1A",
       "enrollment": 134,
       "private": false,
-      "mascot": "Maned Wolves",
+      "mascot": "Coyotes",
       "colors": [
         "#4b2e83",
         "#b7a57a"
@@ -8951,7 +8951,7 @@
       "group": "4A",
       "enrollment": 655,
       "private": false,
-      "mascot": "Markhor",
+      "mascot": "Bighorns",
       "colors": [
         "#204e39",
         "#c8a24a"
@@ -9010,7 +9010,7 @@
       "group": "1A",
       "enrollment": 187,
       "private": true,
-      "mascot": "Frilled Lizards",
+      "mascot": "Sidewinders",
       "colors": [
         "#1d4e9e",
         "#f2f2ee"
@@ -9110,7 +9110,7 @@
       "group": "8A",
       "enrollment": 1970,
       "private": false,
-      "mascot": "Rheas",
+      "mascot": "Cranes",
       "colors": [
         "#6d1a36",
         "#9fb4c7"
@@ -9266,7 +9266,7 @@
       "group": "8A",
       "enrollment": 1868,
       "private": true,
-      "mascot": "Hoatzins",
+      "mascot": "Herons",
       "colors": [
         "#92400e",
         "#1d1d1f"
@@ -9404,7 +9404,7 @@
       "group": "2A",
       "enrollment": 215,
       "private": false,
-      "mascot": "Hornbills",
+      "mascot": "Ravens",
       "colors": [
         "#0f6a70",
         "#f4f1ea"
@@ -9481,7 +9481,7 @@
       "group": "2A",
       "enrollment": 244,
       "private": false,
-      "mascot": "Leafcutters",
+      "mascot": "Honeybees",
       "colors": [
         "#4b2e83",
         "#b7a57a"
@@ -9598,7 +9598,7 @@
       "group": "5A",
       "enrollment": 851,
       "private": false,
-      "mascot": "Pangolins",
+      "mascot": "Armadillos",
       "colors": [
         "#14532d",
         "#e8c46b"
@@ -9777,7 +9777,7 @@
       "group": "5A",
       "enrollment": 881,
       "private": false,
-      "mascot": "Goliath Beetles",
+      "mascot": "Yellowjackets",
       "colors": [
         "#14532d",
         "#e8c46b"
@@ -9882,7 +9882,7 @@
       "group": "8A",
       "enrollment": 2128,
       "private": false,
-      "mascot": "Olallie",
+      "mascot": "Brambles",
       "colors": [
         "#1e5631",
         "#f2f2ee"
@@ -9903,7 +9903,7 @@
       "group": "5A",
       "enrollment": 894,
       "private": true,
-      "mascot": "Serows",
+      "mascot": "Bighorns",
       "colors": [
         "#3a5a78",
         "#f5e9d0"
@@ -9943,7 +9943,7 @@
       "group": "2A",
       "enrollment": 349,
       "private": false,
-      "mascot": "Olallie",
+      "mascot": "Thistles",
       "colors": [
         "#167339",
         "#e8e6df"
@@ -9962,7 +9962,7 @@
       "group": "2A",
       "enrollment": 344,
       "private": false,
-      "mascot": "Galahs",
+      "mascot": "Harriers",
       "colors": [
         "#3a5a78",
         "#f5e9d0"
@@ -10022,7 +10022,7 @@
       "group": "1A",
       "enrollment": 187,
       "private": true,
-      "mascot": "Kinkajous",
+      "mascot": "Martens",
       "colors": [
         "#1e2a4a",
         "#c05621"
@@ -10217,7 +10217,7 @@
       "group": "1A",
       "enrollment": 197,
       "private": false,
-      "mascot": "Bilbies",
+      "mascot": "Jackrabbits",
       "colors": [
         "#0e7490",
         "#fbbf24"
@@ -10393,7 +10393,7 @@
       "group": "4A",
       "enrollment": 569,
       "private": false,
-      "mascot": "Serows",
+      "mascot": "Rams",
       "colors": [
         "#333d29",
         "#d97706"
@@ -10475,7 +10475,7 @@
       "group": "7A",
       "enrollment": 1357,
       "private": false,
-      "mascot": "Saiga",
+      "mascot": "Pronghorns",
       "colors": [
         "#1d4e9e",
         "#f2f2ee"
@@ -10592,7 +10592,7 @@
       "group": "3A",
       "enrollment": 320,
       "private": true,
-      "mascot": "Langurs",
+      "mascot": "Otters",
       "colors": [
         "#6d1a36",
         "#9fb4c7"
@@ -11367,7 +11367,7 @@
       "group": "6A",
       "enrollment": 1297,
       "private": false,
-      "mascot": "Fallers",
+      "mascot": "Cardinals",
       "colors": [
         "#1d4e9e",
         "#f2f2ee"
@@ -11685,7 +11685,7 @@
       "group": "9A",
       "enrollment": 2491,
       "private": false,
-      "mascot": "Oryx",
+      "mascot": "Longhorns",
       "colors": [
         "#14294e",
         "#c8ccd4"
@@ -11860,7 +11860,7 @@
       "group": "8A",
       "enrollment": 1848,
       "private": false,
-      "mascot": "Saiga",
+      "mascot": "Pronghorns",
       "colors": [
         "#92400e",
         "#1d1d1f"
@@ -11996,7 +11996,7 @@
       "group": "7A",
       "enrollment": 1557,
       "private": false,
-      "mascot": "Hornbills",
+      "mascot": "Ravens",
       "colors": [
         "#0e7490",
         "#fbbf24"
@@ -12016,7 +12016,7 @@
       "group": "7A",
       "enrollment": 1323,
       "private": false,
-      "mascot": "Dik-Diks",
+      "mascot": "Blacktails",
       "colors": [
         "#5b2a86",
         "#e5e7eb"
@@ -12115,7 +12115,7 @@
       "group": "8A",
       "enrollment": 1729,
       "private": false,
-      "mascot": "Bharal",
+      "mascot": "Bighorns",
       "colors": [
         "#167339",
         "#e8e6df"
@@ -12212,7 +12212,7 @@
       "group": "5A",
       "enrollment": 873,
       "private": false,
-      "mascot": "Pangolins",
+      "mascot": "Porcupines",
       "colors": [
         "#8c1d40",
         "#f0b323"
@@ -12290,7 +12290,7 @@
       "group": "6A",
       "enrollment": 1179,
       "private": false,
-      "mascot": "Giant Hornets",
+      "mascot": "Yellowjackets",
       "colors": [
         "#167339",
         "#e8e6df"
@@ -12490,7 +12490,7 @@
       "group": "7A",
       "enrollment": 1402,
       "private": false,
-      "mascot": "Muntjac",
+      "mascot": "Bucks",
       "colors": [
         "#1e2a4a",
         "#c05621"
@@ -12570,7 +12570,7 @@
       "group": "5A",
       "enrollment": 863,
       "private": false,
-      "mascot": "Stoats",
+      "mascot": "Weasels",
       "colors": [
         "#5b2a86",
         "#e5e7eb"
@@ -12590,7 +12590,7 @@
       "group": "6A",
       "enrollment": 1059,
       "private": false,
-      "mascot": "Meerkats",
+      "mascot": "Marmots",
       "colors": [
         "#167339",
         "#e8e6df"
@@ -12748,7 +12748,7 @@
       "group": "2A",
       "enrollment": 349,
       "private": false,
-      "mascot": "Lyrebirds",
+      "mascot": "Meadowlarks",
       "colors": [
         "#167339",
         "#e8e6df"
@@ -12947,7 +12947,7 @@
       "group": "1A",
       "enrollment": 187,
       "private": false,
-      "mascot": "Muntjac",
+      "mascot": "Blacktails",
       "colors": [
         "#0e7490",
         "#fbbf24"
@@ -13082,7 +13082,7 @@
       "group": "3A",
       "enrollment": 489,
       "private": false,
-      "mascot": "Mantids",
+      "mascot": "Wasps",
       "colors": [
         "#333d29",
         "#d97706"
@@ -13179,7 +13179,7 @@
       "group": "9A",
       "enrollment": 2190,
       "private": false,
-      "mascot": "Secretarybirds",
+      "mascot": "Harriers",
       "colors": [
         "#6d1a36",
         "#9fb4c7"
@@ -13417,7 +13417,7 @@
       "group": "7A",
       "enrollment": 1550,
       "private": false,
-      "mascot": "Stoats",
+      "mascot": "Weasels",
       "colors": [
         "#5b2a86",
         "#e5e7eb"
@@ -13476,7 +13476,7 @@
       "group": "6A",
       "enrollment": 1130,
       "private": false,
-      "mascot": "Mantids",
+      "mascot": "Wasps",
       "colors": [
         "#7b1e2b",
         "#e8c46b"
@@ -13598,7 +13598,7 @@
       "group": "8A",
       "enrollment": 1789,
       "private": false,
-      "mascot": "Chamois",
+      "mascot": "Blacktails",
       "colors": [
         "#167339",
         "#e8e6df"
@@ -13777,7 +13777,7 @@
       "group": "5A",
       "enrollment": 854,
       "private": true,
-      "mascot": "Stoats",
+      "mascot": "Martens",
       "colors": [
         "#4b2e83",
         "#b7a57a"
@@ -13797,7 +13797,7 @@
       "group": "1A",
       "enrollment": 157,
       "private": false,
-      "mascot": "Servals",
+      "mascot": "Lynx",
       "colors": [
         "#1d4e9e",
         "#f2f2ee"
@@ -13855,7 +13855,7 @@
       "group": "6A",
       "enrollment": 1074,
       "private": false,
-      "mascot": "Aardvarks",
+      "mascot": "Porcupines",
       "colors": [
         "#4b2e83",
         "#b7a57a"
@@ -13993,7 +13993,7 @@
       "group": "1A",
       "enrollment": 93,
       "private": true,
-      "mascot": "Bogongs",
+      "mascot": "Fireflies",
       "colors": [
         "#3f2a56",
         "#3ba55d"
@@ -14012,7 +14012,7 @@
       "group": "9A",
       "enrollment": 2292,
       "private": false,
-      "mascot": "Okapi",
+      "mascot": "Blacktails",
       "colors": [
         "#3f2a56",
         "#3ba55d"
@@ -14132,7 +14132,7 @@
       "group": "7A",
       "enrollment": 1422,
       "private": false,
-      "mascot": "Stoats",
+      "mascot": "Wolverines",
       "colors": [
         "#1e2a4a",
         "#c05621"
@@ -14171,7 +14171,7 @@
       "group": "4A",
       "enrollment": 591,
       "private": true,
-      "mascot": "Snow Leopards",
+      "mascot": "Lynx",
       "colors": [
         "#14294e",
         "#c8ccd4"
@@ -14191,7 +14191,7 @@
       "group": "3A",
       "enrollment": 412,
       "private": true,
-      "mascot": "Snow Leopards",
+      "mascot": "Cougars",
       "colors": [
         "#1e5631",
         "#f2f2ee"
@@ -14211,7 +14211,7 @@
       "group": "6A",
       "enrollment": 1035,
       "private": true,
-      "mascot": "Ibex",
+      "mascot": "Rams",
       "colors": [
         "#0f6a70",
         "#f4f1ea"
@@ -14250,7 +14250,7 @@
       "group": "6A",
       "enrollment": 1035,
       "private": true,
-      "mascot": "Maned Wolves",
+      "mascot": "Coyotes",
       "colors": [
         "#204e39",
         "#c8a24a"
@@ -14345,7 +14345,7 @@
       "group": "4A",
       "enrollment": 730,
       "private": true,
-      "mascot": "Taipans",
+      "mascot": "Rattlers",
       "colors": [
         "#6d1a36",
         "#9fb4c7"
@@ -14540,7 +14540,7 @@
       "group": "1A",
       "enrollment": 179,
       "private": true,
-      "mascot": "Meerkats",
+      "mascot": "Prairie Dogs",
       "colors": [
         "#3a5a78",
         "#f5e9d0"
@@ -14560,7 +14560,7 @@
       "group": "6A",
       "enrollment": 1188,
       "private": true,
-      "mascot": "Scarabs",
+      "mascot": "Goldbugs",
       "colors": [
         "#3f2a56",
         "#3ba55d"
@@ -14617,7 +14617,7 @@
       "group": "5A",
       "enrollment": 996,
       "private": true,
-      "mascot": "Weaverbirds",
+      "mascot": "Orioles",
       "colors": [
         "#1d1d1f",
         "#d97706"
@@ -14636,7 +14636,7 @@
       "group": "6A",
       "enrollment": 1255,
       "private": true,
-      "mascot": "Weevils",
+      "mascot": "Fireflies",
       "colors": [
         "#0f6a70",
         "#f4f1ea"
@@ -14656,7 +14656,7 @@
       "group": "5A",
       "enrollment": 904,
       "private": true,
-      "mascot": "Hoatzins",
+      "mascot": "Herons",
       "colors": [
         "#4b2e83",
         "#b7a57a"
@@ -14694,7 +14694,7 @@
       "group": "2A",
       "enrollment": 285,
       "private": true,
-      "mascot": "Snow Leopards",
+      "mascot": "Bobcats",
       "colors": [
         "#204e39",
         "#c8a24a"
@@ -14811,7 +14811,7 @@
       "group": "3A",
       "enrollment": 464,
       "private": true,
-      "mascot": "Muntjac",
+      "mascot": "Bucks",
       "colors": [
         "#3a5a78",
         "#f5e9d0"
@@ -14967,7 +14967,7 @@
       "group": "6A",
       "enrollment": 1157,
       "private": false,
-      "mascot": "Firecrests",
+      "mascot": "Kestrels",
       "colors": [
         "#92400e",
         "#1d1d1f"
@@ -15288,7 +15288,7 @@
       "group": "2A",
       "enrollment": 249,
       "private": false,
-      "mascot": "Frilled Lizards",
+      "mascot": "Horned Lizards",
       "colors": [
         "#333d29",
         "#d97706"
@@ -15487,7 +15487,7 @@
       "group": "5A",
       "enrollment": 931,
       "private": false,
-      "mascot": "Binturongs",
+      "mascot": "Marmots",
       "colors": [
         "#14532d",
         "#e8c46b"
@@ -15527,7 +15527,7 @@
       "group": "9A",
       "enrollment": 2361,
       "private": false,
-      "mascot": "Muntjac",
+      "mascot": "Pronghorns",
       "colors": [
         "#333d29",
         "#d97706"
@@ -15648,7 +15648,7 @@
       "group": "9A",
       "enrollment": 2547,
       "private": false,
-      "mascot": "Aardvarks",
+      "mascot": "Badgers",
       "colors": [
         "#14294e",
         "#c8ccd4"
@@ -15688,7 +15688,7 @@
       "group": "1A",
       "enrollment": 91,
       "private": true,
-      "mascot": "Sitatunga",
+      "mascot": "Bighorns",
       "colors": [
         "#14294e",
         "#c8ccd4"
@@ -15747,7 +15747,7 @@
       "group": "3A",
       "enrollment": 464,
       "private": false,
-      "mascot": "Shoebills",
+      "mascot": "Egrets",
       "colors": [
         "#3a5a78",
         "#f5e9d0"
@@ -15805,7 +15805,7 @@
       "group": "4A",
       "enrollment": 718,
       "private": false,
-      "mascot": "Hornbeetles",
+      "mascot": "Wasps",
       "colors": [
         "#3f2a56",
         "#3ba55d"
@@ -15843,7 +15843,7 @@
       "group": "8A",
       "enrollment": 2082,
       "private": false,
-      "mascot": "Olallie",
+      "mascot": "Brambles",
       "colors": [
         "#1e5631",
         "#f2f2ee"
@@ -15864,7 +15864,7 @@
       "group": "6A",
       "enrollment": 1304,
       "private": false,
-      "mascot": "Taipans",
+      "mascot": "Rattlers",
       "colors": [
         "#3a5a78",
         "#f5e9d0"
@@ -15926,7 +15926,7 @@
       "group": "2A",
       "enrollment": 274,
       "private": false,
-      "mascot": "Atlas Moths",
+      "mascot": "Monarchs",
       "colors": [
         "#4b2e83",
         "#b7a57a"
@@ -16321,7 +16321,7 @@
       "group": "8A",
       "enrollment": 2040,
       "private": false,
-      "mascot": "Takin",
+      "mascot": "Bighorns",
       "colors": [
         "#7b1e2b",
         "#e8c46b"
@@ -16341,7 +16341,7 @@
       "group": "5A",
       "enrollment": 949,
       "private": false,
-      "mascot": "Dingoes",
+      "mascot": "Wolves",
       "colors": [
         "#333d29",
         "#d97706"
@@ -16360,7 +16360,7 @@
       "group": "3A",
       "enrollment": 467,
       "private": false,
-      "mascot": "Hamerkops",
+      "mascot": "Kingfishers",
       "colors": [
         "#0e7490",
         "#fbbf24"
@@ -16439,7 +16439,7 @@
       "group": "4A",
       "enrollment": 766,
       "private": false,
-      "mascot": "Dingoes",
+      "mascot": "Wolves",
       "colors": [
         "#7f1d1d",
         "#d4d4d8"
@@ -16556,7 +16556,7 @@
       "group": "6A",
       "enrollment": 1297,
       "private": false,
-      "mascot": "Chamois",
+      "mascot": "Bighorns",
       "colors": [
         "#1d4e9e",
         "#f2f2ee"
@@ -17073,7 +17073,7 @@
       "group": "7A",
       "enrollment": 1466,
       "private": false,
-      "mascot": "Langurs",
+      "mascot": "Marmots",
       "colors": [
         "#1d1d1f",
         "#d97706"
