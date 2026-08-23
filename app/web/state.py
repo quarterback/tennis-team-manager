@@ -4832,17 +4832,18 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
     # missing rows. `moved` resolves the (at most one) transfer this pid has;
     # `_school_for_year` below picks origin vs destination per season.
     moved = jh.transfer_for(pid)
-    origin_sc = dest_sc = None
-    if moved:
-        origin_sc = next((s for s in jh.load_schools(g) if s.name == moved.get("from")), None)
-        dest_sc = next((s for s in jh.load_schools(g) if s.name == moved.get("to")), None)
+    # ‼️ A CAREER CAN HOLD SEVERAL MOVES — a third school, or a move back to the
+    # first. `jh.transfer_school` is the ONE authority on where a player is in a
+    # given season (`build_roster` asks it too), so the card and the roster cannot
+    # disagree about which school a season belonged to. This used to branch on a
+    # single stored move, which is why erasing one silently re-attributed the
+    # seasons played under it and zeroed their results.
+    by_name = {s.name: s for s in jh.load_schools(g)}
 
     def _school_for_year(season_year):
-        if moved and moved.get("year") is not None:
-            if season_year < moved["year"]:
-                return origin_sc or sc
-            return dest_sc or sc
-        return sc
+        if not moved:
+            return sc
+        return by_name.get(jh.transfer_school(moved, season_year)) or sc
 
     # Per-school ledgers, built lazily and cached by school name — a two-school
     # career needs both, a one-school career needs only the one it always did.
@@ -4915,7 +4916,13 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         "honors": [h for s in seasons for h in s["honors"]], "flights": flights,
         # For the transfer form — the identity a `set_jhsaa_transfer` row is keyed on.
         "entry_year": player.entry_year,
-        "transfer": jh.transfer_for(pid),
+        "transfer": moved,
+        # The whole history, each hop reading FROM where they were before it — what
+        # the card lists, and what makes a move back to the old school legible.
+        "transfer_moves": [
+            {**m, "from": (jh.transfer_moves(moved)[i - 1]["to"] if i
+                           else moved.get("from"))}
+            for i, m in enumerate(jh.transfer_moves(moved))],
         # The grad year is what the college recruit board keys a Jefferson signee on,
         # so it is the hand-off between this career and the rest of the game.
         "grad_year": (seasons[0]["season_year"] + (12 - seasons[0]["grade"])

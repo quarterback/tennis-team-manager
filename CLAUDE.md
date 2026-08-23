@@ -1291,6 +1291,33 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   resting below the card wraps one player onto two lines). A weak-LOOKING roster
   that is actually winning is never rested on. Pinned by
   `tests/test_jhsaa_rest.py`.
+- **‼️ AN OFFSEASON TRANSFER IS A HISTORY, NOT A CURRENT SETTING (owner rule
+  2026-08, `overrides` kind `jhsaa_transfer`).** The record is
+  `{from, gender, entry, seat, moves: [{to, year}, …]}` — `from` is the ORIGIN and is
+  NEVER rewritten, because the pid is a one-way hash of (origin identity, gender,
+  entry year, seat) and is the only school the player can be regenerated from; a
+  later move records a destination, never a new origin. It held ONE move, so a second
+  one had to cancel the first — and since the career card DERIVES each season's
+  school from this record, the seasons played at the forgotten school were
+  re-attributed to the origin and their results read 0-0, while `world_jhsaa_dual`
+  still named the right school. Nothing errored; two surfaces just disagreed. The
+  college side has always written a history row per player per season
+  (`_record_world_history`); this is that idea in the shape high school needs.
+  - **`jhsaa.transfer_school(rec, season_year)` is the ONE authority on where a player
+    is** — the outbound skip in `build_roster`, its inbound pull, and the card all ask
+    it, so they cannot disagree. Records written before `moves` existed read back as a
+    one-move history (**derived on READ, never migrated**).
+  - **‼️ A MOVE BACK TO THE ORIGIN WOULD ROSTER THEM TWICE.** The origin's own seat
+    loop generates them (it no longer skips them once they are back) AND the inbound
+    pull would add them again, so the pull refuses anyone whose `from` IS this school.
+    A phantom team-mate reads as a roster quirk, never as a bug.
+  - Undo is per MOVE (`clear_jhsaa_transfer(pid, year)`); the rest of the career
+    stands, and a record left with no moves is deleted rather than kept as a row
+    saying the player transferred nowhere. Re-recording a move for a year that already
+    has one EDITS it — one decision changed, not two moves.
+  - The ledger is **one row per move**, each row's `from` being where they were
+    BEFORE it (the previous destination), which is the only reading where a move home
+    does not print as a move from itself. `tests/test_jhsaa_transfers.py`.
 - **‼️ FAMILY TIES ARE OWNER-AUTHORED METADATA (owner rule 2026-08, `jhsaa.family_add`
   / `overrides` kind `jhsaa_family`).** A tie links two PIDS and never touches a name —
   required, since `world_jhsaa_dual.lines` archives NAMES and `_jh_line_records` keys

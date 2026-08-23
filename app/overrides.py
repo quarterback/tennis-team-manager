@@ -364,16 +364,62 @@ def get_jhsaa_transfers() -> dict:
 def set_jhsaa_transfer(pid: str, from_school: str, gender: str, entry: int, seat: int,
                        to_school: str, year: int) -> None:
     """Record that `pid` (a real seat: school+gender+entry year+seat, so their
-    generated identity can be rebuilt) plays for `to_school` starting `year`."""
-    value = json.dumps({"from": from_school, "gender": gender, "entry": entry,
-                        "seat": seat, "to": to_school, "year": year})
+    generated identity can be rebuilt) moves to `to_school` for season `year`.
+
+    ‼️ APPENDS TO A HISTORY, never replaces the record (owner rule 2026-08). A
+    career can hold several moves — a third school, or a move back to the first —
+    and each one is a fact about a season that was played. Replacing meant a second
+    move erased the first, and because the player card DERIVES which school each
+    season belonged to from this record, the seasons at the forgotten school were
+    silently re-attributed to the origin and their results read 0-0.
+
+    `from` is always the ORIGIN and is never rewritten: the pid is a one-way hash of
+    (origin identity, gender, entry year, seat), so it is the only school this player
+    can be regenerated from. A later move records a destination, never a new origin.
+
+    Re-recording a move for a year that already has one REPLACES that entry — that is
+    an edit of one decision, not a second move."""
+    rows = get_jhsaa_transfers()
+    rec = rows.get(pid) or {}
+    moves = rec.get("moves")
+    if moves is None:                       # legacy single-move record, or brand new
+        moves = ([{"to": rec.get("to"), "year": rec.get("year")}]
+                 if rec.get("to") else [])
+    moves = [m for m in moves if m.get("to") and m.get("year") != year]
+    moves.append({"to": to_school, "year": year})
+    moves.sort(key=lambda m: (m.get("year") or 0))
+    value = json.dumps({"from": rec.get("from") or from_school,
+                        "gender": rec.get("gender") or gender,
+                        "entry": rec.get("entry", entry), "seat": rec.get("seat", seat),
+                        "moves": moves})
     conn = _db()
     conn.execute("INSERT OR REPLACE INTO roster_overrides (kind, key, value)"
                  " VALUES ('jhsaa_transfer',?,?)", (pid, value))
     conn.commit(); conn.close()
 
 
-def clear_jhsaa_transfer(pid: str) -> None:
+def clear_jhsaa_transfer(pid: str, year: int | None = None) -> None:
+    """Undo. With `year`, drop just that MOVE — the rest of the career stands, and a
+    record left with no moves is deleted outright rather than kept as a row that says
+    a player transferred nowhere. Without it, drop the whole history."""
+    if year is not None:
+        rec = get_jhsaa_transfers().get(pid)
+        if rec is not None:
+            moves = rec.get("moves")
+            if moves is None:
+                moves = ([{"to": rec.get("to"), "year": rec.get("year")}]
+                         if rec.get("to") else [])
+            moves = [m for m in moves if m.get("to") and m.get("year") != year]
+            if moves:
+                conn = _db()
+                conn.execute(
+                    "INSERT OR REPLACE INTO roster_overrides (kind, key, value)"
+                    " VALUES ('jhsaa_transfer',?,?)",
+                    (pid, json.dumps({**{k: v for k, v in rec.items()
+                                         if k not in ("to", "year")},
+                                      "moves": moves})))
+                conn.commit(); conn.close()
+                return
     conn = _db()
     conn.execute("DELETE FROM roster_overrides WHERE kind='jhsaa_transfer' AND key=?", (pid,))
     conn.commit(); conn.close()

@@ -172,7 +172,8 @@
         <tr data-k="{{ (r.name ~ ' ' ~ r.from ~ ' ' ~ r.to)|lower }}"
             data-from="{{ r.from }}" data-to="{{ r.to }}" data-yr="{{ r.year }}"
             data-name="{{ r.name }}">
-          <td><a href="{{ url_for('jhsaa_player', school=r.to, pid=r.pid, u=u, g=r.gender) }}">{{ r.name }}</a></td>
+          <td><a href="{{ url_for('jhsaa_player', school=r.to, pid=r.pid, u=u, g=r.gender) }}">{{ r.name }}</a>{% if r.steps and r.steps > 1 %}
+            <span class="jh-chip ghost" title="move {{ r.step }} of {{ r.steps }} in this career">{{ r.step }}/{{ r.steps }}</span>{% endif %}</td>
           <td><a href="{{ url_for('jhsaa_school', school=r.from, u=u, g=r.gender) }}">{{ r.from }}</a></td>
           <td><a href="{{ url_for('jhsaa_school', school=r.to, u=u, g=r.gender) }}">{{ r.to }}</a></td>
           <td>{{ r.year }}</td>
@@ -182,7 +183,12 @@
               <input type="hidden" name="jh_from_school" value="{{ r.from }}">
               <input type="hidden" name="jh_pid" value="{{ r.pid }}">
               <input type="hidden" name="jh_entry" value="{{ r.entry }}">
-              <input type="hidden" name="jh_to_school" value="">
+              {# ‼️ ONE ROW IS ONE MOVE, so Cancel undoes THAT move and leaves the
+                 rest of the career standing. It used to clear the whole record,
+                 which on a multi-move career would delete moves nobody was
+                 looking at. #}
+              <input type="hidden" name="do" value="undo">
+              <input type="hidden" name="jh_undo_year" value="{{ r.year }}">
               <input type="hidden" name="u" value="{{ u }}">
               <button type="submit" class="bl-pill" style="cursor:pointer">Cancel</button>
             </form>
@@ -236,7 +242,8 @@
         <tr data-k="{{ (r.name ~ ' ' ~ r.from ~ ' ' ~ r.to)|lower }}"
             data-from="{{ r.from }}" data-to="{{ r.to }}" data-yr="{{ r.year }}"
             data-name="{{ r.name }}">
-          <td><a href="{{ url_for('jhsaa_player', school=r.to, pid=r.pid, u=u, g=r.gender) }}">{{ r.name }}</a></td>
+          <td><a href="{{ url_for('jhsaa_player', school=r.to, pid=r.pid, u=u, g=r.gender) }}">{{ r.name }}</a>{% if r.steps and r.steps > 1 %}
+            <span class="jh-chip ghost" title="move {{ r.step }} of {{ r.steps }} in this career">{{ r.step }}/{{ r.steps }}</span>{% endif %}</td>
           <td><a href="{{ url_for('jhsaa_school', school=r.from, u=u, g=r.gender) }}">{{ r.from }}</a></td>
           <td><a href="{{ url_for('jhsaa_school', school=r.to, u=u, g=r.gender) }}">{{ r.to }}</a></td>
           <td>{{ r.year }}</td>

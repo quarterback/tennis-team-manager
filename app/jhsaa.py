@@ -1387,6 +1387,49 @@ def transfer_for(pid: str) -> dict | None:
     return transfers().get(pid)
 
 
+def transfer_moves(rec: dict | None) -> list[dict]:
+    """A record's moves as `[{to, year}, …]`, oldest first.
+
+    ‼️ A CAREER CAN HOLD MORE THAN ONE MOVE (owner rule 2026-08). It used to hold
+    exactly one — `{to, year}` on the record — so a player who moved a second time
+    had to have the first move CANCELLED, which did not just forget it: the card
+    derives which school each season belonged to from this record, so the seasons
+    actually played at the second school were re-attributed to the origin and their
+    results silently went 0-0 (the archived duals still named the right school, so
+    the two surfaces disagreed with nothing erroring). The college side has always
+    written a history row per player per season; this is the same idea in the shape
+    high school needs — moves only ever happen between seasons.
+
+    Records written before `moves` existed carry the single `to`/`year` pair and are
+    read back as a one-move history. Derived on READ, never migrated — the section's
+    own idiom, and the next shape change needs no migration either."""
+    if not rec:
+        return []
+    moves = rec.get("moves")
+    if moves is None:
+        return ([{"to": rec.get("to"), "year": rec.get("year")}]
+                if rec.get("to") else [])
+    return sorted((dict(m) for m in moves if m.get("to")),
+                  key=lambda m: (m.get("year") or 0))
+
+
+def transfer_school(rec: dict | None, season_year: int) -> str:
+    """Which school this record says the player attends in `season_year` — the LAST
+    move effective by then, or their origin if none is.
+
+    ‼️ ONE AUTHORITY FOR "WHERE ARE THEY". `build_roster` (both the outbound skip and
+    the inbound pull) and the career card all ask this, so a move back to the origin
+    school resolves the same way everywhere. Asking it in three places with three
+    inline comparisons is what let the card and the roster disagree."""
+    if not rec:
+        return ""
+    where = rec.get("from", "")
+    for m in transfer_moves(rec):
+        if (m.get("year") or 0) <= season_year:
+            where = m["to"]
+    return where
+
+
 def transfer_rows() -> list[dict]:
     """Every recorded transfer, with the mover's NAME resolved for display — the
     list the `/jhsaa/transfers` board reads. Player identity is regenerated (same
@@ -1402,13 +1445,24 @@ def transfer_rows() -> list[dict]:
             # `grade` only steers maturity/talent in `_gen_seat`, not identity or pid
             # (both keyed on entry+seat alone) — 9 is an arbitrary valid choice here,
             # this call exists only to read the name back off the regenerated Prospect.
-            mod = _program_mod(origin, rec.get("year", 0), "")
+            mod = _program_mod(origin, 0, "")
             p = _gen_seat(origin, mod, entry, rec.get("seat"), 9, "")
             if p.pid == pid:
                 name = p.name
-        rows.append({"pid": pid, "name": name or "(unresolved)", "gender": gender,
-                     "from": rec.get("from"), "to": rec.get("to"), "year": rec.get("year"),
-                     "entry": rec.get("entry")})
+        # ‼️ ONE ROW PER MOVE, not per player: the ledger is the record of what
+        # happened, and a career with three schools happened three times. Each row's
+        # `from` is where they were BEFORE that move (the previous destination, or
+        # the origin for the first), which is the only reading that makes a
+        # multi-move career legible — and the only one where a move back to the old
+        # school does not read as a move from itself.
+        moves = transfer_moves(rec)
+        where = rec.get("from")
+        for i, m in enumerate(moves):
+            rows.append({"pid": pid, "name": name or "(unresolved)", "gender": gender,
+                         "from": where, "to": m.get("to"), "year": m.get("year"),
+                         "entry": rec.get("entry"), "origin": rec.get("from"),
+                         "step": i + 1, "steps": len(moves)})
+            where = m.get("to")
     rows.sort(key=lambda r: (-(r["year"] or 0), r["name"]))
     return rows
 
@@ -1994,9 +2048,11 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
         for seat in range(n_seats):
             p = _gen_seat(school, mod, entry, seat, grade, salt)
             rec = tmap.get(p.pid)
-            # Left FOR somewhere else, effective this year or earlier — they play
-            # for their new school now, not this one.
-            if rec and rec.get("to") != school.name and rec.get("year", 0) <= year:
+            # Somewhere else THIS season — `transfer_school` walks every recorded
+            # move and returns where they actually are, so a player who moved away
+            # and later moved BACK is on this roster again for the years they
+            # returned for, without a second rule saying so.
+            if rec and transfer_school(rec, year) != school.name:
                 continue
             out.append(p)
     # ‼️ THE HARD FLOOR — see `ROSTER_FLOOR` above. Grown on THIS year's freshman
@@ -2012,8 +2068,15 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     # versa — `_gen_seat` would then place an origin-gender Prospect straight onto
     # the opposite-gender team.
     for pid, rec in tmap.items():
-        if (rec.get("to") != school.name or rec.get("gender") != school.gender
-                or rec.get("year", 0) > year):
+        if rec.get("gender") != school.gender:
+            continue
+        # ‼️ AND NEVER PULL SOMEBODY THIS SCHOOL ALREADY GENERATED. A player whose
+        # moves bring them back to their ORIGIN is produced by the seat loop above
+        # (which no longer skips them), so adding them here too would put the same
+        # person on the roster twice — the one new failure a multi-move history can
+        # cause, and it would read as a phantom team-mate rather than as a bug.
+        if (transfer_school(rec, year) != school.name
+                or rec.get("from") == school.name):
             continue
         entry = rec.get("entry")
         grade = year - entry + 9

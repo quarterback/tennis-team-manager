@@ -3245,16 +3245,35 @@ def create_app() -> Flask:
         # unrecognized destination — a redirect back to an unchanged page with
         # nothing to say why. Every branch below now leaves a one-line result.
         result = None
-        if from_school and pid and entry is not None and year is not None:
-            origin = next((s for s in _jh.load_schools(gender) if s.name == from_school), None)
+        # ‼️ THE ORIGIN COMES OFF THE RECORD, NEVER OFF THE PAGE. A pid is a one-way
+        # hash of (ORIGIN identity, gender, entry year, seat), so it is the only
+        # school this player can be regenerated from — and once they have moved, the
+        # page you are looking at is their NEW school. Resolving the seat against
+        # that fails, which is exactly why a second move used to be impossible.
+        existing = _jh.transfer_for(pid) if pid else None
+        origin_name = (existing or {}).get("from") or from_school
+        undo_year = request.form.get("jh_undo_year", type=int)
+        if pid and request.form.get("do") == "undo":
+            # One hop, or the lot. Undoing a MOVE leaves the rest of the career
+            # standing — the whole point of keeping a history.
+            ov.clear_jhsaa_transfer(pid, undo_year)
+            reset_all()
+            result = ("Move undone." if undo_year is not None
+                      else "Transfer history cleared.")
+        elif from_school and pid and entry is not None and year is not None:
+            origin = next((s for s in _jh.load_schools(gender) if s.name == origin_name), None)
+            # Where they play in the season this move takes effect — which is what a
+            # destination has to differ from, and is NOT the origin once they have
+            # already moved once.
+            now_at = _jh.transfer_school(existing, year) if existing else from_school
             if origin is None:
-                result = f"Could not find {from_school} — try again."
+                result = f"Could not find {origin_name} — try again."
             elif not to_school:
                 ov.clear_jhsaa_transfer(pid)
                 reset_all()
                 result = "Transfer cancelled."
-            elif to_school == from_school:
-                result = f"{to_school} is already their current school."
+            elif to_school == now_at:
+                result = f"{to_school} is already their school in {year}."
             elif not any(s.name == to_school for s in _jh.load_schools(gender)):
                 result = f'No {gender} program named "{to_school}" — pick one from the list.'
             else:
@@ -3262,10 +3281,11 @@ def create_app() -> Flask:
                 if seat is None:
                     result = "Could not resolve this player's roster seat — transfer not saved."
                 else:
-                    ov.set_jhsaa_transfer(pid, from_school, gender, entry, seat,
+                    ov.set_jhsaa_transfer(pid, origin_name, gender, entry, seat,
                                           to_school, year)
                     reset_all()
-                    result = f"Moving to {to_school}, effective the {year} offseason."
+                    back = " back" if to_school == origin_name else ""
+                    result = f"Moving{back} to {to_school}, effective the {year} offseason."
         else:
             result = "Missing information — transfer not saved."
         # A move made inline from the transfers page's candidates board returns

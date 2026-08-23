@@ -256,27 +256,36 @@
         {% if request.cookies.get('jh_transfer_result') %}
         <p class="bit" style="margin-bottom:10px;color:var(--brand-strong)">{{ request.cookies.get('jh_transfer_result') }}</p>
         {% endif %}
-        {% if view.transfer %}
-        <p class="bit">Moving to <b>{{ view.transfer.to }}</b>, effective the
-          {{ view.transfer.year }} offseason.</p>
+        {# ‼️ THE MOVES ARE A HISTORY, NOT A CURRENT SETTING (owner rule 2026-08).
+           One stored move meant a second one had to erase the first — and since the
+           career card derives each season's school from this record, the seasons
+           played at the forgotten school were re-attributed to the origin and their
+           results went 0-0, while the archived duals still named the right school.
+           Each hop is listed, each can be undone on its own, and another can always
+           be added — including back to a school they already left. #}
+        {% if view.transfer_moves %}
+        {% for m in view.transfer_moves %}
+        <div class="bit" style="display:flex;align-items:center;gap:8px">
+          <span>{{ m.from }} → <b>{{ m.to }}</b>, effective the {{ m.year }} offseason</span>
+          <form method="post" action="{{ url_for('editor_jhsaa_transfer') }}" style="display:inline">
+            <input type="hidden" name="gender" value="{{ view.gender }}">
+            <input type="hidden" name="jh_pid" value="{{ view.pid }}">
+            <input type="hidden" name="jh_from_school" value="{{ view.school }}">
+            <input type="hidden" name="do" value="undo">
+            <input type="hidden" name="jh_undo_year" value="{{ m.year }}">
+            <input type="hidden" name="u" value="{{ u }}">
+            <button type="submit" class="bl-pill" style="cursor:pointer">Undo</button>
+          </form>
+        </div>
+        {% endfor %}
+        {% endif %}
         <form method="post" action="{{ url_for('editor_jhsaa_transfer') }}">
           <input type="hidden" name="gender" value="{{ view.gender }}">
           <input type="hidden" name="jh_from_school" value="{{ view.school }}">
           <input type="hidden" name="jh_pid" value="{{ view.pid }}">
           <input type="hidden" name="jh_entry" value="{{ view.entry_year }}">
-          <input type="hidden" name="jh_year" value="{{ view.transfer.year }}">
-          <input type="hidden" name="jh_to_school" value="">
           <input type="hidden" name="u" value="{{ u }}">
-          <button type="submit" class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">Cancel transfer</button>
-        </form>
-        {% else %}
-        <form method="post" action="{{ url_for('editor_jhsaa_transfer') }}">
-          <input type="hidden" name="gender" value="{{ view.gender }}">
-          <input type="hidden" name="jh_from_school" value="{{ view.school }}">
-          <input type="hidden" name="jh_pid" value="{{ view.pid }}">
-          <input type="hidden" name="jh_entry" value="{{ view.entry_year }}">
-          <input type="hidden" name="u" value="{{ u }}">
-          <label class="s">Move to
+          <label class="s">{{ 'Move again to' if view.transfer_moves else 'Move to' }}
             <input type="text" name="jh_to_school" list="jh-transfer-schools"
                    placeholder="Start typing a school…" autocomplete="off" required></label>
           <datalist id="jh-transfer-schools">
@@ -292,8 +301,10 @@
           <button type="submit" class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">Transfer</button>
         </form>
         <p class="bit">Manual and always-approved — no eligibility rules, no
-          sit-out. Takes effect the FOLLOWING season, never mid-year.</p>
-        {% endif %}
+          sit-out. Takes effect the FOLLOWING season, never mid-year.
+          {% if view.transfer_moves %}A further move is recorded beside the ones
+          above rather than replacing them, so the seasons already played keep the
+          school they were played at.{% endif %}</p>
       </div>
     </div>
     {% endif %}
