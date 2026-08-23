@@ -98,14 +98,22 @@ def test_a_jv_season_writes_nothing_to_the_varsity_season():
         assert t.wins + t.losses + t.ties == len(t.schedule), t.school.name
 
 
-def test_jv_rows_carry_no_lines():
+def test_jv_rows_carry_a_box_score_of_the_right_shape():
     jv = jh.play_jv_season(_slice(groups=("9A",), per=1), 0, "girls", "jvtest")
     rows = [d for t in jv.values() for d in t.schedule]
     assert rows
     for d in rows:
-        assert d["lines"] == []
         assert d["level"] == jh.LEVEL_JV
-        assert d["shape"]
+        s, _, dd = d["shape"].partition("S/")
+        n_s, n_d = int(s), int(dd.rstrip("D"))
+        # doubles are played first, so compare the SET — the order is the engine's
+        slots = sorted(ln["slot"] for ln in d["lines"])
+        assert slots == sorted([f"S{i}" for i in range(1, n_s + 1)] +
+                               [f"D{i}" for i in range(1, n_d + 1)]), d["shape"]
+        for ln in d["lines"]:
+            assert len(ln["home"]) == len(ln["away"]) == (
+                1 if ln["slot"].startswith("S") else 2)
+            assert ln["score"]
 
 
 def test_varsity_rows_are_stamped_too():
@@ -153,17 +161,19 @@ def test_the_jv_pool_is_the_ladder_below_varsity():
 
 # --- participation -----------------------------------------------------------
 
-def test_a_jv_row_records_who_dressed_and_lines_stays_empty():
-    """`played` is what makes a player page able to say "played JV, 8-3"; `lines`
-    staying empty is what stops it reaching a varsity card."""
+def test_the_box_score_names_exactly_the_players_who_dressed():
+    """`played` and `lines` must agree — `_slot_players` resolves doubles off
+    `f.n_singles`, so the elastic `fmt` has to reach it or D-slots name the wrong
+    people off the varsity singles count, silently."""
     jv = jh.play_jv_season(_slice(groups=("9A",), per=1), 0, "girls", "jvtest")
     rows = [d for t in jv.values() for d in t.schedule]
     assert rows
     for d in rows:
-        assert d["lines"] == []
         assert d["played"], d
-        assert len(d["played"]) == jh.jv_lineup_need(
-            jh.jv_format(len(d["played"]))), d["shape"]
+        on_court = {nm for ln in d["lines"]
+                    for nm in (ln["home"] if d["home"] else ln["away"])}
+        assert on_court == set(d["played"]), d["shape"]
+        assert len(d["played"]) == len(on_court), "a player was dressed twice"
 
 
 def test_a_player_takes_the_teams_result_in_the_duals_they_dressed_for():

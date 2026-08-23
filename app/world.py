@@ -3757,25 +3757,24 @@ def run_jhsaa(seed: int, world: dict) -> dict:
             # without replaying it. Its own table, not a blob on the summary row:
             # ~10k duals a year per gender would make every summary read heavy.
             # ‼️ VARSITY AND JV GO IN THE SAME TABLE, separated by `level` and nothing
-            # else. A JV row carries `lines` as '[]' DELIBERATELY (owner rule 2026-08):
-            # the dual persists so the JV schedule and record survive every season, the
-            # per-court detail does not. That is ~2.6 MB a season against ~22 MEASURED
-            # (not the 15.3 first estimated — the uncapped format table took
-            # courts/dual from 4.8 to 5.22) — and, more usefully, it makes it
-            # structurally impossible for `state._jh_line_records` to merge a JV
-            # appearance into a varsity player card, since that reads by NAME out of
-            # `lines` and finds none here. WHO dressed rides in `played` instead, which
-            # is ~7 MB and answers the participation question without the courts.
+            # else — and BOTH now carry per-court `lines` (owner rule 2026-08: the JV
+            # box score is worth its ~22 MB a season). `level` is therefore the ONLY
+            # thing keeping a JV appearance out of a varsity record; it used to be
+            # guaranteed by JV rows having no lines to read, and it is not any more.
+            # Every reader of `lines` filters on it — see `_jh_line_records`'s callers
+            # and `jhsaa_underplayed`.
             rows = [(world["id"], year, gender, t.school.name, d["opp"], int(d["home"]),
                      d["phase"], d["pf"], d["pa"], int(d["won"]), int(d["district"]),
                      json.dumps(d.get("lines", [])), d.get("level", "v"),
                      int(bool(d.get("tied"))), d.get("shape", ""), "[]")
                     for t in season["teams"].values() for d in t.schedule]
-            # A varsity row's participants are already IN its lines; only JV carries
-            # `played`, which is the whole reason the column is cheap.
+            # `played` is JV-only: a varsity row's participants are already in its
+            # lines, and the career ledger's JV column folds this without having to
+            # parse court detail it does not show.
             rows += [(world["id"], year, gender, t.school.name, d["opp"], int(d["home"]),
                       d["phase"], d["pf"], d["pa"], int(d["won"]), int(d["district"]),
-                      "[]", d.get("level", "jv"), int(bool(d.get("tied"))),
+                      json.dumps(d.get("lines", [])), d.get("level", "jv"),
+                      int(bool(d.get("tied"))),
                       d.get("shape", ""), json.dumps(d.get("played", [])))
                      for t in (season.get("jv") or {}).values() for d in t.schedule]
             conn.executemany(
@@ -3919,9 +3918,14 @@ def jhsaa_underplayed(world_id: int, gender: str, salt: str = "",
     conn = _db()
     try:
         played: dict[str, dict] = defaultdict(lambda: defaultdict(int))
+        # ‼️ VARSITY ONLY. This board finds players the LEAGUE season is not dressing,
+        # so that they can be moved; JV is exactly where those players already are, and
+        # counting it would hide every one of them behind a full JV card. The filter is
+        # load-bearing since the JV box score landed — JV rows carry lines now.
         for d in conn.execute(
                 "SELECT school, home, lines FROM world_jhsaa_dual"
-                " WHERE world_id=? AND year=? AND gender=?",
+                " WHERE world_id=? AND year=? AND gender=?"
+                " AND COALESCE(level,'v')='v'",
                 (world_id, year, gender)):
             side = "home" if d["home"] else "away"
             school = alias.get(d["school"], d["school"])
@@ -5022,12 +5026,13 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
     # The individual courts still come off the school's own duals — the match-level
     # archive is the source for drilling into a season, exactly as it is for the
     # schedule view. Cheap: one indexed read of ~26 rows for the year.
-    # ‼️ A JV ROW CANNOT REACH THE COURT COUNTS, and not by being filtered out here:
-    # JV duals archive with `lines` EMPTY, so this loop finds nothing to credit. That
-    # is option B's real dividend — the varsity ledger is immune to the JV season by
-    # the shape of the data rather than by a guard somebody has to remember. If
-    # per-court JV detail is ever archived, this loop needs a `level` filter that day.
+    # ‼️ VARSITY ONLY. This used to hold because JV rows archived with `lines` EMPTY,
+    # and the comment here said the filter would be needed the day per-court JV detail
+    # landed. It landed (owner rule 2026-08, the JV box score) — so the filter is real
+    # now, and the courts_won/courts_lost on a program's season stay the varsity ones.
     for d in sched:
+        if (d.get("level") or "v") != "v":
+            continue
         for ln in d.get("lines") or ():
             ours = bool(ln.get("home_won")) if d.get("home") else not ln.get("home_won")
             row["courts_won" if ours else "courts_lost"] += 1
@@ -5220,14 +5225,20 @@ def jhsaa_history_rows(world_id: int, gender: str) -> dict[str, list[dict]]:
                 continue
             arc = _relabel(json.loads(r["data"]))
             sched: dict[str, list[dict]] = defaultdict(list)
+            # ‼️ `level` AND `tied` COME TOO. `_season_row` scopes its court counts to
+            # varsity by `level` and folds the JV record off `level`/`tied`, so a row
+            # dict missing them reads as varsity-with-no-tie: JV courts join the
+            # program's varsity court totals and its JV record comes back empty. Both
+            # are silent — the numbers are all plausible.
             for d in conn.execute(
-                    "SELECT school, home, lines FROM world_jhsaa_dual"
+                    "SELECT school, home, lines, level, tied FROM world_jhsaa_dual"
                     " WHERE world_id=? AND year=? AND gender=?",
                     (world_id, year, gender)):
                 # Grouped under the CURRENT name, matching the relabelled standings —
                 # otherwise a renamed program's duals never meet its own season row.
                 sched[_alias.get(d["school"], d["school"])].append(
-                    {"home": bool(d["home"]),
+                    {"home": bool(d["home"]), "level": d["level"] or "v",
+                     "tied": bool(d["tied"]),
                      "lines": json.loads(d["lines"] or "[]")})
             schools = {row["school"]
                        for dists in (arc.get("standings") or {}).values()

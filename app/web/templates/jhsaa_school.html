@@ -202,8 +202,11 @@
           <tr><th style="width:62px">Date</th><th style="width:26px"></th><th>Opponent</th>
             <th style="width:34px">Res</th><th style="width:56px">Score</th><th style="width:92px">Format</th></tr>
           {% for d in view.jv_schedule %}
-          {# No line scores to expand: per-court detail is deliberately not archived. #}
-          <tr class="{{ 'dist' if d.district }}">
+          {# The JV box score expands exactly as the varsity one does. `data-lines`
+             must not collide with the varsity pane's indices — `jh-linerow` is matched
+             on it — so the JV rows are keyed on a prefixed value of their own. #}
+          <tr class="{{ 'dist' if d.district }}{{ ' has-lines' if d.lines }}"
+              {% if d.lines %}data-lines="jv{{ loop.index }}" title="line scores"{% endif %}>
             <td class="dt">{{ d.date }}</td>
             <td class="ha">{{ 'vs' if d.home else 'at' }}</td>
             <td class="op">
@@ -216,8 +219,26 @@
             <td class="sc">{{ d.pf|int }}–{{ d.pa|int }}</td>
             {% set jvk = 'DIST' if d.district else 'WEEKEND' if d.phase.startswith('showcase') else 'INVITE' %}
             <td><span class="jh-tag {{ 'dist' if jvk == 'DIST' else 'show' if jvk == 'SHOWCASE' }}">{{ jvk }}</span>
-              {% if d.shape %}<span class="jh-tag rd">{{ d.shape }}</span>{% endif %}</td>
+              {% if d.shape %}<span class="jh-tag rd">{{ d.shape }}</span>{% endif %}
+              {% if d.lines %}<span class="jh-caret" aria-hidden="true">›</span>{% endif %}</td>
           </tr>
+          {% if d.lines %}
+          <tr class="jh-linerow" data-for="jv{{ loop.index }}" hidden><td colspan="6" style="padding:0">
+            <div class="jh-lines">
+              {% for ln in d.lines %}
+              {% set us = ln.home if d.home else ln.away %}{% set them = ln.away if d.home else ln.home %}
+              {% set we = ln.home_won if d.home else not ln.home_won %}
+              <div class="jh-line">
+                <span class="sl">{{ ln.slot }}</span>
+                <span class="nm {{ 'won' if we }}">{{ us|join(' / ') }}</span>
+                <span class="sl">{{ 'd.' if we else 'l.' }}</span>
+                <span class="nm {{ 'won' if not we }}">{{ them|join(' / ') }}</span>
+                <span class="st">{{ ln.score }}</span>
+              </div>
+              {% endfor %}
+            </div>
+          </td></tr>
+          {% endif %}
           {% endfor %}
         </table>
       </div>

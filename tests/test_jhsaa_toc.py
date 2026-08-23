@@ -723,7 +723,7 @@ def test_played_survives_the_archive_and_reaches_the_player_page(archived):
     jv = [d for d in sched if (d.get("level") or "v") == "jv"]
     assert jv, "no JV duals archived for this program"
     assert all(d["played"] for d in jv), "played did not survive the archive"
-    assert all(not d["lines"] for d in jv), "a JV row came back with per-court detail"
+    assert all(d["lines"] for d in jv), "the JV box score did not survive the archive"
 
     # somebody who actually dressed, and their record off the archive
     name = jv[0]["played"][0]

@@ -3628,9 +3628,17 @@ def _jh_line_records(sched: list[dict]) -> dict:
 
     Keyed by NAME because that is what a line carries. A season's individual records
     therefore come from the same duals the team record does — a senior shown at 27-4
-    and the school's season are the one simulated season, never two computations."""
+    and the school's season are the one simulated season, never two computations.
+
+    ‼️ VARSITY ONLY, and the filter lives HERE rather than in the callers. JV duals
+    carry per-court lines too now (owner rule 2026-08 — the box score), so nothing
+    about the data keeps them out any more; they are a separate competition and a JV
+    court must never land on a varsity record. `state.py`'s player view hands this the
+    whole schedule, both levels, and always has."""
     rec: dict = {}
     for d in sched:
+        if (d.get("level") or "v") != "v":
+            continue
         side = "home" if d.get("home") else "away"
         for ln in d.get("lines") or ():
             we_won = bool(ln.get("home_won")) if d.get("home") else not ln.get("home_won")
@@ -3646,9 +3654,13 @@ def _jh_slot_records(sched: list[dict]) -> dict:
     D1-D4 — the union of both league formats, `EARLY_FORMAT_PHASE`'s 5S/2D and the
     regular season's 3S/4D), off the same match-level archive `_jh_line_records`
     reads. This is the college career-record box's per-line breakdown, ported to
-    high school — mirrors `player_career_records`'s `_box`."""
+    high school — mirrors `player_career_records`'s `_box`.
+
+    ‼️ VARSITY ONLY, filtered here — same reason as `_jh_line_records`."""
     rec: dict = {}
     for d in sched:
+        if (d.get("level") or "v") != "v":
+            continue
         side = "home" if d.get("home") else "away"
         for ln in d.get("lines") or ():
             slot = ln.get("slot") or ""
@@ -4547,7 +4559,11 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         # The JV season — schedule and record only, no ranking or finish. `shape` is
         # on the row because the JV format is chosen per dual from what both sides
         # could dress.
-        "jv_schedule": [{**d, "date": jv_dates[i],
+        # ‼️ `_jh_reported_lines` HERE TOO. The archived score string is home-first and
+        # a tennis set score is always written from the WINNER's side, so a JV box
+        # score rendered raw reads backwards on every dual the away team won — the
+        # exact fault `AAR-jhsaa-bracket-score-sides.md` records, one surface over.
+        "jv_schedule": [{**d, "date": jv_dates[i], "lines": _jh_reported_lines(d),
                          "opp_deco": _jh_deco(schools, d["opp"], 22)}
                         for i, d in enumerate(jv_sched)],
         "jv_record": (f"{jv_w}-{jv_l}-{jv_t}" if jv_t else f"{jv_w}-{jv_l}") if
@@ -4912,12 +4928,9 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
             continue                       # not enrolled that year (pre-9th, or graduated)
         player = player or hit
         sched = world.jhsaa_schedule(w["id"], yr, g, yr_sc.name)
-        # ‼️ `sched` IS BOTH LEVELS AND IS PASSED WHOLE, DELIBERATELY. The two varsity
-        # readers below are blind to JV by construction, not by filtering: a JV row
-        # carries no `lines`, and both of them iterate `lines`. The JV read is the
-        # third one, off `played`, which only JV rows carry. Keep it that way — the
-        # moment per-court JV detail lands in `lines`, every JV appearance silently
-        # joins the varsity singles/doubles record and the flight box right here.
+        # `sched` is both levels; the three readers each scope themselves — the two
+        # varsity ones filter to `level == "v"` internally, the JV one reads `played`,
+        # which only a JV row carries.
         rec = _jh_line_records(sched).get(hit.name, {"s": [0, 0], "d": [0, 0]})
         slots = _jh_slot_records(sched).get(hit.name, {})
         jv_w, jv_l, jv_t = world.jhsaa_jv_player_record(sched, hit.name)

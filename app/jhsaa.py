@@ -2812,14 +2812,22 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None) -> list:
     return nine
 
 
-def _slot_players(lineup: list, phase: str, slot: str) -> list:
+def _slot_players(lineup: list, phase: str, slot: str,
+                  fmt: DualFormat | None = None) -> list:
     """The players who played `slot` ("S3", "D2"), by the SAME indexing the squad was
-    dressed with — never a second opinion on who was on court."""
+    dressed with — never a second opinion on who was on court.
+
+    `fmt` overrides the phase's shape, exactly as in `_squad` and for the same reason:
+    a JV dual's format is sized per DUAL off the thinner roster, so it cannot be looked
+    up from `phase`. ‼️ It must be the same override `_squad` was given — the doubles
+    base is `f.n_singles + 2*(i-1)`, so resolving D2 against the varsity singles count
+    while the squad was dressed on the JV one names the wrong players and raises
+    nothing."""
     m = _SLOT.match(slot or "")
     if not m or not lineup:
         return []
     kind, i = m.group(1), int(m.group(2))
-    f = dual_format(phase)
+    f = fmt or dual_format(phase)
     at = lambda k: lineup[k % len(lineup)]                        # noqa: E731
     if kind == "S":
         return [at(i - 1)]
@@ -2904,15 +2912,17 @@ def play_jv_dual(a: JVTeam, b: JVTeam, *, seed: int, phase: str = "regular",
     function's part — `JVTeam` simply has nowhere to put them, which is why it is a
     separate type.
 
-    ‼️ WHO PLAYED GOES IN `played`, NEVER IN `lines` (owner rule 2026-08). A player's
-    JV season is a participation record — "played JV, 8-3" — so the archive needs the
-    names and the row's own `won`/`tied`, not the per-court detail. Keeping them in a
-    SEPARATE field is what makes that cheap AND safe: `lines` stays empty, so
-    `state._jh_line_records` and `_jh_slot_records` remain STRUCTURALLY unable to see a
-    JV appearance at all, and a varsity player card cannot absorb one however the
-    schedule is sliced upstream. Put these names in `lines` instead and that immunity
-    becomes a level filter somebody has to remember on every reader — `state.py`'s
-    player view hands the WHOLE schedule to `_jh_line_records` and always has."""
+    `lines` carries the per-court BOX SCORE (owner rule 2026-08) — who played S1, who
+    played D2, and what they won — because a JV schedule that cannot be opened up is
+    the varsity page with the interesting half removed. `played` stays beside it as the
+    participation list the career ledger's JV column folds; it is derivable from `lines`
+    now, and is kept because that column should not depend on parsing court detail it
+    does not use.
+
+    ‼️ EVERY READER OF `lines` MUST NOW FILTER ON `level`. While JV rows carried none,
+    `state._jh_line_records` / `_jh_slot_records` / `world.jhsaa_underplayed` were blind
+    to JV as a property of the data; they are not any more, and all three take a whole
+    schedule from callers that pass both levels."""
     fmt = jv_dual_format(jv_spare(a.team), jv_spare(b.team))
     if fmt is None:
         return
@@ -2928,22 +2938,30 @@ def play_jv_dual(a: JVTeam, b: JVTeam, *, seed: int, phase: str = "regular",
     b.points_for += res.away_points
     b.points_against += res.home_points
     shape = f"{fmt.n_singles}S/{fmt.n_doubles}D"
-    # ‼️ `lines` is EMPTY BY DESIGN, not unfinished (owner rule 2026-08, option B in
-    # `docs/BRIEF-jhsaa-jv-and-varsity-2-feasibility.md` §8a). The dual row persists so
-    # the JV schedule and record survive every season; the per-court detail does not,
-    # which is ~2.6 MB a season against ~22 (measured) — and, the part that matters,
-    # keeps `_jh_line_records` structurally blind to JV. `played` carries WHO dressed,
-    # which is a different and much cheaper question than who played which court: the
-    # names alone, credited W-L-T off this row's own `won`/`tied`.
+    # ‼️ NO `_credit` (owner rule 2026-08). The lines are recorded for the BOX SCORE and
+    # nothing else — they never reach `records` (the ladder), `matches` (the awards) or
+    # TOSS. That is the whole difference from `play_dual`, which credits as it builds.
+    # ‼️ `fmt` MUST be passed to `_slot_players` — the same override `_squad` was
+    # dressed with. Without it D-slots resolve against the varsity singles count.
+    lines = []
+    for ln in res.lines:
+        hw = getattr(ln, "home_won", None)
+        if hw is None:
+            continue
+        slot = getattr(ln, "slot", "")
+        lines.append({"slot": slot,
+                      "home": [x.name for x in _slot_players(la, phase, slot, fmt)],
+                      "away": [x.name for x in _slot_players(lb, phase, slot, fmt)],
+                      "score": _score_str(ln), "home_won": bool(hw)})
     a.schedule.append({"opp": b.school.name, "home": True, "phase": phase,
                        "pf": res.home_points, "pa": res.away_points,
                        "won": out > 0, "tied": out == 0, "district": district,
-                       "level": LEVEL_JV, "shape": shape, "lines": [],
+                       "level": LEVEL_JV, "shape": shape, "lines": lines,
                        "played": [p.name for p in la]})
     b.schedule.append({"opp": a.school.name, "home": False, "phase": phase,
                        "pf": res.away_points, "pa": res.home_points,
                        "won": out < 0, "tied": out == 0, "district": district,
-                       "level": LEVEL_JV, "shape": shape, "lines": [],
+                       "level": LEVEL_JV, "shape": shape, "lines": lines,
                        "played": [p.name for p in lb]})
     if out > 0:
         a.wins += 1

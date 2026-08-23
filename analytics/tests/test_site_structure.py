@@ -152,3 +152,56 @@ def test_every_archived_program_row_carries_class_and_district(site):
     html = read(site, f"seasons/{SCOPE}.html")
     # 16 programs, one rankings row each, every one classed and districted
     assert html.count("data-class=") >= 16
+
+
+def test_a_season_with_a_jv_slate_exports_and_ingests_unchanged(tmp_path):
+    """‼️ THE SIDECAR IS VARSITY-ONLY AND MUST STAY THAT WAY (owner rule 2026-08).
+
+    JV duals live in `season["jv"]`, a collection the exporter never iterates, so a
+    JV slate must change nothing in the zip. This pins that: the same season exported
+    with and without a JV block produces byte-identical tables, and ingest still
+    works. If JV is ever wanted here, `duals.csv` needs a `level` column FIRST —
+    `aggregate` DERIVES each phase's dual shape by counting lines, and JV's elastic
+    shapes at phase="regular" would corrupt the varsity shape rather than add a
+    section."""
+    import zipfile
+    from app.research_export import build_jhsaa
+    from ptc_analytics import ingest
+    from fixture_season import build_season
+
+    plain = build_jhsaa(2028, "girls", season=build_season())
+
+    # A JV slate hung off the same season, shaped like jhsaa.play_jv_dual writes it.
+    season = build_season()
+    a, b = list(season["teams"].values())[:2]
+
+    class _JV:
+        def __init__(self, team):
+            self.school, self.schedule = team.school, []
+    ja, jb = _JV(a), _JV(b)
+    for side, other, home in ((ja, jb, True), (jb, ja, False)):
+        side.schedule.append({
+            "opp": other.school.name, "home": home, "phase": "regular",
+            "pf": 4.0, "pa": 3.0, "won": home, "tied": False, "district": True,
+            "level": "jv", "shape": "3S/2D", "played": ["JV Kid"],
+            "lines": [{"slot": "S1", "home": ["JV Kid"], "away": ["Other Kid"],
+                       "score": "6-1, 6-2", "home_won": True}]})
+    season["jv"] = {ja.school.name: ja, jb.school.name: jb}
+
+    withjv = build_jhsaa(2028, "girls", season=season)
+
+    assert set(withjv) == set(plain)
+    for name in plain:
+        if name == "manifest.json":
+            continue                     # carries a `generated_at` wall clock
+        assert withjv[name] == plain[name], f"{name} changed when a JV slate existed"
+    a_m, b_m = (json.loads(x["manifest.json"]) for x in (plain, withjv))
+    a_m.pop("generated_at", None); b_m.pop("generated_at", None)
+    assert a_m == b_m
+    assert b"JV Kid" not in b"".join(withjv[n] for n in withjv if n.endswith(".csv"))
+
+    zpath = tmp_path / "jv.zip"
+    with zipfile.ZipFile(zpath, "w") as zf:
+        for name, blob in withjv.items():
+            zf.writestr(name, blob)
+    assert ingest.ingest_zip(zpath)

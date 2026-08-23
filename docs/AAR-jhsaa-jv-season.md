@@ -24,16 +24,17 @@ median-19 roster, so ranks #12 and below were effectively invisible.
 * **Ties**, the association's first: points, then sets, then games, then a draw.
 * **`JVTeam`**, a separate type with no `records` and no `matches`.
 * **Archive**: `world_jhsaa_dual` gains `level` / `tied` / `shape` / `played`; JV rows
-  store `lines` empty and the participants in `played` (§11).
+  carry a full per-court `lines` box score AND `played` (§11, §12).
 * **Schedule**: district single round robin → invitationals to a 16 cap → one showcase
   pod, outside the cap.
 * **Calendar**: JV is dated by `_jh_jv_dates`, entirely outside the varsity allocator,
   opening a month later and allowed to use Sundays.
-* **UI**: the school page's schedule is Varsity/JV tabs; a player's career ledger
-  carries a **JV** column — the team's result in the duals they dressed for.
+* **UI**: the school page's schedule is Varsity/JV tabs, both with expandable box
+  scores; a player's career ledger carries a **JV** column — the team's result in the
+  duals they dressed for.
 
-No playoffs, no JV ranking, no per-COURT JV data, no effect on development, and JV
-touches no record, résumé or rating that the varsity season owns.
+No playoffs, no JV ranking, no effect on development, and JV touches no record,
+résumé or rating that the varsity season owns.
 
 ---
 
@@ -160,10 +161,15 @@ genders against varsity's 40.0 MB:
 
 | | persists | pages can show | cost |
 |---|---|---|---|
-| A | dual + per-court `lines` | schedule · record · player FLIGHT box | ~22 MB |
-| **B+** (chosen) | dual + `played` names | schedule · record · player PARTICIPATION | **~9 MB** |
+| **A** (shipped) | dual + per-court `lines` + `played` | schedule · record · **BOX SCORE** · participation | **23.4 MB** |
+| B+ | dual + `played` names | schedule · record · participation | ~9 MB |
 | B | dual only, `lines=[]` | schedule · record | 2.6 MB |
 | C | a record field only | record only | 0.07 MB |
+
+A was taken in the end (owner: *"the jv box score is worth the small annual MB add
+it's trivial"*) — B+ shipped first and is kept underneath it, because the career
+ledger's JV column folds `played` and should not have to parse court detail it does
+not show.
 
 > ⚠️ **A was quoted at 15.3 MB when the decision was taken and it is ~22.** The estimate
 > predated the uncapped format table, which took courts/dual from 4.8 to **5.22** (max 9
@@ -325,3 +331,81 @@ claims to mirror, is easy to describe as a design obstacle if you only read the 
 *(Left as-is deliberately: `_jh_flight_box` is not widened here, because option B+
 archives no flights to widen it for. It becomes real work the day A is chosen, and
 then it is a port, not a design.)*
+
+## 12. The box score, and the six readers that were only safe by accident
+
+Owner: *"yes, the jv box score is worth the small annual MB add it's trivial."*
+Measured at **23.4 MB** a season for both genders (590 B of lines + 125 B of `played`
+per row), against varsity's 40.0.
+
+The recording is a near-copy of `play_dual`'s loop with one deliberate omission and one
+trap:
+
+* **No `_credit`.** `play_dual` credits each line to its players as it builds them —
+  that is what feeds the ladder, the awards résumé and TOSS. The JV loop builds the same
+  rows and credits nothing, which is the entire difference between a box score and a
+  competition.
+* **‼️ `_slot_players` had to take the elastic `fmt`.** It resolved doubles as
+  `f.n_singles + 2*(i-1)` off `dual_format(phase)` — the varsity shape — so a JV D2
+  would have named the players sitting at the varsity singles offset. Wrong names, right
+  count, no error: exactly the `_squad` override that already existed, needed a second
+  time in the function that answers *who was on that court*.
+
+### What actually made this a change worth doing carefully
+
+Until now, "JV cannot contaminate varsity" was a property of the DATA — JV rows had no
+`lines`, and every varsity reader iterates `lines`. Adding the box score turns that into
+a rule six readers have to follow, and **five of them were reached by callers that pass
+both levels**:
+
+| reader | what it feeds | now |
+|---|---|---|
+| `state._jh_line_records` | a player's season singles/doubles record | filters `level` **inside** |
+| `state._jh_slot_records` | the per-flight box on a player card | filters `level` inside |
+| `world._season_row` | a program's `courts_won`/`courts_lost` | filters `level` |
+| `world.jhsaa_underplayed` | the transfer-portal board | `AND COALESCE(level,'v')='v'` in SQL |
+| `world.jhsaa_history_rows` | the research export's program ledger | **had dropped `level` from its SELECT** |
+| `jhsaa.rating_duals` / `_weighted_lines` | TOSS | safe by TYPE — they take `TeamSeason`, and JV teams are `JVTeam` |
+
+Two things worth keeping:
+
+**The filters went INSIDE the readers, not at the call sites.** `_jh_line_records` is
+called from three places and `_season_row` from two; a filter per caller is five chances
+to forget, and the sixth caller written next year has no way to know. A reader that
+means "varsity" should say so itself.
+
+**`jhsaa_history_rows` is the one that would have shipped broken.** It re-reads the dual
+table in bulk for the research export and built its row dicts with only `home` and
+`lines` — so `_season_row`'s new `level` filter saw no key, read every row as varsity,
+and would have added JV courts to every program's court totals in the export. The same
+omission already had `jhsaa_jv_record` returning 0-0 there. **A filter is only as good as
+the field reaching it**, and a bulk re-reader that hand-builds row dicts is exactly where
+a column goes missing — it does not share `_schedule_rows`, which is what made this
+invisible.
+
+`jhsaa.rating_duals` is worth naming for the opposite reason: it needs no filter, because
+`JVTeam` is a different type and never enters the list. That is the separation earning
+its keep — the strongest guard here is still the one that is structural.
+
+### The analytics sidecar is untouched
+
+Checked directly, because it is the obvious downstream: `analytics/` reads
+research-export zips, and `research_export.build_jhsaa` iterates
+`season["teams"]` — varsity `TeamSeason` objects only. `season["jv"]` is never read,
+so **no JV dual, line or line-player row has ever reached a zip**, box score or not.
+
+The one place JV did reach it is the program-history table, via `jhsaa_history_rows` —
+the bug above. Fixed before it shipped.
+
+**And it should stay that way** — owner, asked directly: *"it can ignore JV generally
+i do not need JV analytics."* So the export deliberately remains varsity-only; this is
+a decision now, not just an accident of which collection the exporter iterates.
+
+‼️ If that is ever revisited, **the exporter needs a `level` column first.**
+`duals.csv` has none, and `aggregate.py` DERIVES each phase's card shape by counting
+the singles and doubles lines it sees (*"Card shapes … are DERIVED from the actual
+exported lines"*). JV duals are `phase="regular"` with an elastic shape, so dropping
+them in unlabelled would not add a JV section — it would corrupt the derived shape of
+the varsity regular season. (Owner, same message: the analytics app *"needs a
+refurbish at some point"* — that is the moment to do it, not by widening the export
+underneath it.)
