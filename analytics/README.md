@@ -158,6 +158,25 @@ The transfer batch is JHSAA-only for the same reason: its only consumer,
 `/editor/jhsaa-transfer-batch`, resolves ids through the girls'/boys' rosters,
 so a college row would be rejected as an unknown player.
 
+## ‼️ Varsity only — the JV season shares one schedule table
+
+The JHSAA plays a JV season now, and both levels are archived in
+`world_jhsaa_dual`, so **`duals.csv` carries both**. Owner rule: JV never needs
+to reach analytics. `aggregate.Bundle` filters to `level == "v"` at the one
+chokepoint everything downstream reads through.
+
+Left unfiltered a JV dual is not a cosmetic extra row: it inflates every record
+derived from the schedule while `jhsaa_standings.csv` stays varsity-only, so a
+team page's KPI record and its own schedule disagree — and
+`_derive_card_shape`, which finds the varsity shape by counting lines per dual,
+averages JV's elastic lineup into it.
+
+**A missing `level` means varsity, not unknown** — seasons exported before the
+JV season existed have no such column and every dual in one is a varsity dual.
+And "carries no lines" is NOT a usable substitute for the column: that is also
+what a varsity dual whose lines failed to record looks like, which is why the
+export was given `duals.level` rather than this side being taught to guess.
+
 ## The ability layer — the one input the engine reads (`ptc_analytics/ability.py`)
 
 Everything in `metrics.py` measures OUTCOMES, and its win-probability model

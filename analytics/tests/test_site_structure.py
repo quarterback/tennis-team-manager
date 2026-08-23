@@ -467,3 +467,53 @@ def test_a_max_only_filter_shows_results(site):
     # one list, read by both consumers — that is what stops them drifting again
     assert "TEXT_FILTERS.concat(NUM_FILTERS)" in html
     assert "NUM_FILTERS.some" in html
+
+
+def test_jv_duals_never_reach_the_analytics(site):
+    # The JHSAA now plays a JV season and both levels share one schedule table,
+    # so duals.csv carries both. Owner rule: JV never reaches analytics. A JV
+    # dual left in inflates every schedule-derived record (while the standings
+    # file stays varsity-only, so a team page disagrees with itself) and
+    # averages JV's elastic lineup into the derived varsity shape.
+    from ptc_analytics import aggregate
+
+    raw = {
+        "family": "jhsaa",
+        "scope": {"year": 2028, "gender": "girls", "classification": "all"},
+        "manifest": {},
+        "tables": {"duals": [
+            {"dual_id": "v1", "level": "v", "phase": "regular",
+             "home_program_id": "A", "away_program_id": "B",
+             "home_points": "5", "away_points": "2", "winner_program_id": "A"},
+            {"dual_id": "jv1", "level": "jv", "phase": "regular",
+             "home_program_id": "A", "away_program_id": "B",
+             "home_points": "5", "away_points": "2", "winner_program_id": "A"},
+            # pre-JV export: no `level` at all, and every dual in one is varsity
+            {"dual_id": "old", "phase": "regular",
+             "home_program_id": "A", "away_program_id": "B",
+             "home_points": "5", "away_points": "2", "winner_program_id": "A"},
+        ]},
+    }
+    b = aggregate.Bundle(raw)
+    assert set(b.duals) == {"v1", "old"}, "a JV dual reached the aggregator"
+    assert "jv1" not in b.duals_full
+
+
+def test_the_export_marks_a_duals_level(site):
+    # The filter above is only possible because the export says which level a
+    # dual was: "carries no lines" is also what a varsity dual whose lines
+    # failed to record looks like, so the column has to exist.
+    import csv, io
+    from app.research_export import build_jhsaa
+
+    season = build_season(2028)
+    teams = list(season["teams"].values())
+    teams[0].schedule.append({
+        "opp": teams[1].school.name, "home": True, "phase": "regular",
+        "pf": 5.0, "pa": 2.0, "won": True, "district": True,
+        "date": "2028-04-01", "level": "jv", "lines": []})
+    files = build_jhsaa(2028, "girls", season=season)
+    rows = list(csv.DictReader(io.StringIO(files["duals.csv"].decode())))
+    assert "level" in rows[0], "duals.csv must mark a dual's level"
+    assert sum(1 for r in rows if r["level"] == "jv") == 1
+    assert all(r["level"] in ("v", "jv") for r in rows)

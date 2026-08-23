@@ -300,6 +300,40 @@ and the control appeared to do nothing. Both now read ONE list. When a
 predicate and a reset walk the same set, derive them from a single declaration;
 the bug is not the two missing entries, it is that there were two lists.
 
+## 10c. ‼️ The JV season landed mid-branch and made `duals.csv` ambiguous
+
+The JV season merged into this branch while the analytics work was in flight,
+and it changed what an export MEANS without changing its schema. Both levels
+are archived in `world_jhsaa_dual`, and `_load_archived_jhsaa_season` reads the
+table without filtering, so a JV dual now arrives in `duals.csv` with nothing
+on the row to mark it. Measured, not assumed: a fixture season with one JV dual
+attached produced 62 duals, no `level` column, and one dual carrying no lines.
+
+Left alone that is not an extra row, it is two wrong numbers:
+
+- every record derived from the schedule inflates, while
+  `jhsaa_standings.csv` stays varsity-only — so a team page's KPI record and
+  its own schedule table disagree, each internally consistent;
+- `_derive_card_shape` finds the varsity shape by counting lines per dual and
+  would average JV's elastic lineup into it — the exact thing deriving the
+  shape from the data was supposed to protect against.
+
+The fix is the one the incoming brief had already specified, and the ORDER in
+it is the point: **`duals.csv` needs a `level` column first**, then the reader
+filters. Inferring JV from "carries no lines" is unavailable, and the game's
+own archive loader says why in a comment — that is also what a varsity dual
+whose lines failed to record looks like. So this is one additive export field
+plus a filter at `aggregate.Bundle`'s single chokepoint, with a missing `level`
+read as varsity (a pre-JV export has no such column and every dual in it is
+varsity).
+
+**The lesson is about merges, not about JV.** Nothing conflicted; `git merge`
+was clean and every test on both sides passed. A feature landing elsewhere
+changed the semantics of a table this tool reads, and the only signal was a new
+column in a `SELECT` in another module. After merging into a long-running
+branch, re-read what your inputs now contain — not just whether they still
+parse.
+
 ## 11. Standing traps carried over (still live)
 
 - **Join on `program_id`, never a display name.** ~300 of 1,644 programs have been

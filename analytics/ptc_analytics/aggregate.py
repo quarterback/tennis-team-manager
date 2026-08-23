@@ -174,7 +174,23 @@ class Bundle:
         t = raw["tables"]
         self.programs = {p["program_id"]: p for p in t.get("programs", [])}
         self.players = {p["player_id"]: p for p in t.get("players", [])}
-        self.duals = {d["dual_id"]: d for d in t.get("duals", [])}
+        # ‼️ VARSITY ONLY, filtered at the ONE chokepoint everything downstream
+        # reads through. The JHSAA now plays a JV season and both levels share
+        # `world_jhsaa_dual`, so `duals.csv` carries both. Unfiltered, a JV dual
+        # inflates every record derived from the schedule — while
+        # `jhsaa_standings.csv` stays varsity-only, so a team page's KPI record
+        # and its own schedule would disagree — and `_derive_card_shape` would
+        # average JV's elastic lineup into the varsity shape it exists to find.
+        # Owner rule: JV never needs to reach analytics.
+        #
+        # A missing `level` means VARSITY, not unknown: seasons exported before
+        # the JV season existed have no such column and every dual in them is a
+        # varsity dual. "Carries no lines" is NOT a usable substitute for the
+        # column — that is also what a varsity dual whose lines failed to
+        # record looks like, which is exactly why the export was given `level`
+        # rather than the sidecar being taught to guess.
+        self.duals = {d["dual_id"]: d for d in t.get("duals", [])
+                      if (d.get("level") or "v") == "v"}
         self.lines_by_dual = defaultdict(list)
         for line in t.get("lines", []):
             self.lines_by_dual[line["dual_id"]].append(line)
