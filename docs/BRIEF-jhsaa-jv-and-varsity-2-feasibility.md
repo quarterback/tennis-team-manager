@@ -19,6 +19,17 @@ arithmetic on top of the real save — clearly derived, not simulated.
    is where the season's variability comes from. The existing `_order` / `_lineup` /
    `_rest_count` / `_ROTATE_*` machinery is the whole mechanism; nothing new is needed
    to make it porous. Late-season the ladder settles on its own, which is also real.
+
+   > ⚠️ **AS BUILT, THIS IS NOT TEMPORAL — the decision above is the intent, not the
+   > shipped behaviour.** `run_season` plays the whole varsity regular season and then
+   > the whole JV season, so the JV pool is cut ONCE from the finished ladder and every
+   > JV dual uses that cut whatever date it carries; "everyone below is JV **that day**"
+   > is not what the code does. Flagged in review of PR #320, measured at **4.1%** of
+   > the JV pool (median rank change over a season: 0 places), and left in place
+   > deliberately — the error is small only because `LADDER_SWING` is 7 and scales if
+   > that rises. Full account and the interleave that would fix it:
+   > `docs/AAR-jhsaa-jv-season.md` §13. This note stays because a decisions record
+   > whose decisions were only half-implemented is worse than no record.
 2. **"Available that day" = the per-program constant.** Top 11 go varsity, the rest are
    JV. No absence or attendance model — the JHSAA has none and is not getting one.
 3. **The JV lineup is ELASTIC — fit to what the program has, never dogmatic:**

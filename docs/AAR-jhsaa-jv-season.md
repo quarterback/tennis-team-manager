@@ -15,9 +15,10 @@ median-19 roster, so ranks #12 and below were effectively invisible.
 ## What shipped
 
 * **One roster, one ladder, best eleven play.** `_order` ranks the roster, the top
-  eleven dress varsity, everyone below is JV that day (`jv_pool`). Nothing was added to
-  make it porous — a varsity player who loses through the season falls past a JV
-  player's seed and they swap, which the ladder already did.
+  eleven dress varsity, everyone below is JV (`jv_pool`). Nothing was added to make it
+  porous — a varsity player who lost through the season has fallen past a JV player's
+  seed and they swap, which the ladder already did. **The swap is not date-by-date
+  though — see §13.**
 * **An elastic lineup** (`JV_FORMATS` + `jv_format`): 1S/2D at five spare and upward
   with no ceiling, the shape taken from the **thinner** side.
 * **`ROSTER_FLOOR` 12 → 16**, so every program can field a JV.
@@ -242,8 +243,8 @@ Asked directly, and the answer is that there is no good shape for one:
 
 * a playoff needs a **ranking to seed it**, and JV has none by design — building one
   re-introduces exactly what was excluded;
-* a JV team is **not a stable entity** — it is a daily slice of one ladder, so the squad
-  that qualified in April is not the squad that plays in May;
+* a JV team is **not a stable entity** — it is a slice of one ladder rather than a
+  standing squad, so the squad that qualified need not be the squad that plays;
 * the format is **elastic and opponent-dependent**, so a semifinal could be 4S/4D and
   the final 1S/2D;
 * real associations agree — the MIAA sanctions no sub-varsity tournament at all.
@@ -409,3 +410,72 @@ them in unlabelled would not add a JV section — it would corrupt the derived s
 the varsity regular season. (Owner, same message: the analytics app *"needs a
 refurbish at some point"* — that is the moment to do it, not by widening the export
 underneath it.)
+
+## 13. ‼️ The porousness is real but NOT temporal — and the docs said otherwise
+
+Flagged on the PR, and correct:
+
+> *"the implementation says JV is a 'daily slice' of the ladder, but it actually runs
+> the entire JV season only after the varsity regular season has finished. That means
+> every JV lineup is selected from the end-of-regular-season ladder, not from the ladder
+> as it existed on that date. So the code currently models a porous JV in name, but not
+> temporally."*
+
+The mechanism is exactly that. `run_season` calls `play_regular_season` to completion,
+then `play_jv_season`; `jv_pool` reads `_order`, which reads `ts.records`, which by then
+hold the whole varsity season; and `play_jv_dual` deliberately never calls `_credit`, so
+nothing moves the ladder *during* the JV season either. **Every JV dual of the year
+therefore resolves `jv_pool` to one identical ordering.** A JV dual dated 12 April is
+staffed off the ladder as it finished in June. "Daily slice" is right that it is derived
+rather than a standing squad, and wrong that it is re-cut per date — it is cut once, at
+the end, and applied to every date.
+
+### How big it is, measured
+
+Reconstructing each player's ladder position from their own appearance log
+(`ts.matches` is ordered), over 42 programs:
+
+| ladder read at | JV pool differing from the end-of-season pool |
+|---|---|
+| 10% into the season | **4.1%** (13 of 408 players) |
+| 25% | 3.8% |
+| 50% | 3.1% |
+| 75% | 2.8% |
+
+Median rank change for a player across an entire season: **0 places** (mean 0.5, max 4).
+
+### Why it is small, and the condition under which it stops being
+
+Not because the shortcut is sound — because of a decision made somewhere else.
+`ladder_score` is `ovr + LADDER_SWING × (pct − ½) × n/(n + LADDER_PRIOR)`: results are
+worth at most ±7 OVR and are damped by how much evidence there is, deliberately, so that
+"a 1-2 opening week cannot outrank a season" (§AAR-jhsaa-order-of-ability). **A ladder
+built not to move is a ladder whose read TIME barely matters.** The critique assumes a
+swingier ladder than this association has.
+
+‼️ **So the error scales with `LADDER_SWING`.** At 7 it is 3-4% of JV slots. Raise it —
+or add anything else that moves players faster (injuries, fatigue, a challenge-match
+system) — and this shortcut degrades proportionally, silently, with every JV lineup
+still looking perfectly plausible.
+
+### What the fix would be, when it is worth doing
+
+The reason the JV season sits after the varsity one is real: `jv_pool` reads a
+results-moved ladder, so running it *first* would staff every JV dual off opening seeds.
+But that is a false dichotomy — **the alternative to "all at the start" is not "all at
+the end", it is interleaved.** `play_regular_season` already has clean block seams
+(early non-district → district pass 1 → mid-season window → district pass 2 → late
+tune-up), and the JV district slate is already generated as rounds, so JV could be
+played one block at a time at those seams and read the ladder as it stood.
+
+Not done here (owner decision): it is real surgery on both functions' control flow —
+`play_jv_season` carries cumulative state across its windows (the `JV_DUAL_CAP`
+accounting, the `played` set, the showcase) — for a measured 4.1%. Documented instead,
+at `jv_pool`, at the `run_season` call site, and in CLAUDE.md, each carrying the number
+and the `LADDER_SWING` trigger.
+
+**The transferable bit:** the docstring described the *design intent* and the code
+implemented a cheaper approximation of it, and nothing in between flagged the gap —
+no test could, because both behaviours produce a complete, plausible JV season. When a
+comment claims a property (*porous*, *daily*, *live*), the thing to check is whether
+the call ORDER actually delivers it, not whether the function it points at is correct.

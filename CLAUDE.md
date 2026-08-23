@@ -841,10 +841,24 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   ranks #12-down play. Design + measurements: `docs/BRIEF-jhsaa-jv-and-varsity-2-
   feasibility.md`; lessons: `docs/AAR-jhsaa-jv-season.md`.
   - **ONE roster, ONE ladder, no JV squad.** `jv_pool(ts)` is literally
-    `_order(ts)[lineup_need("regular"):]` — a daily SLICE, not a standing team, so it
-    is porous for free (a varsity player who loses through the season falls past a JV
-    player's seed and they swap, which the ladder already did). Nothing was added to
-    make it porous; do not add anything.
+    `_order(ts)[lineup_need("regular"):]` — a SLICE of the one ladder, not a standing
+    team, so it is porous for free (a varsity player who lost through the season has
+    fallen past a JV player's seed and they swap, which the ladder already did).
+    Nothing was added to make it porous; do not add anything.
+  - **‼️ THE POROUSNESS IS NOT TEMPORAL — do not describe JV as a "daily slice".**
+    `run_season` plays the ENTIRE varsity regular season, then the entire JV season, so
+    `ts.records` is complete before the first JV dual and `play_jv_dual` credits nothing
+    back: every JV dual of the year resolves `jv_pool` to the SAME ordering. The swap
+    happens once, ahead of the JV season, not date by date within it — a JV dual dated
+    12 April is staffed off the June ladder. This was written up as a daily re-cut and
+    it never was one; a reviewer caught it. **Measured before re-deriving it:** reading
+    the ladder 10% into the season instead of at the end moves **4.1% of the JV pool**
+    (13 of 408 players, 42 programs), median rank change over a season **0 places**
+    (mean 0.5, max 4) — small only because `ladder_score` is deliberately sticky
+    (±`LADDER_SWING` 7 OVR, damped by evidence). ‼️ **The error scales with
+    `LADDER_SWING`**: raise it and the shortcut bites, at which point the fix is to
+    interleave `play_jv_season` with `play_regular_season`'s block seams (early → pass
+    1 → mid-season → pass 2 → tune-up) rather than calling it once at the end.
   - **‼️ THE ELASTIC FORMAT IS THE WHOLE FEATURE, and the reason is arithmetic.** A
     FIXED JV format must be fielded by BOTH schools, so its reach is the PRODUCT of two
     roster constraints — measured as a share of real league dates where both sides could
@@ -947,8 +961,8 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     travel is not a real cost in a simulation and a JV player facing their own level is
     the entire point. Classification is deliberately NOT a gate.
   - **NO PLAYOFFS** (asked directly, 2026-08): a bracket needs a ranking to seed it and
-    JV has none by design; a JV team is a daily slice, so the squad that qualified is not
-    the squad that plays; and the elastic format means a semifinal and a final could be
+    JV has none by design; a JV team is a ladder slice rather than a standing squad, so
+    the squad that qualified need not be the squad that plays; and the elastic format means a semifinal and a final could be
     different shapes. More showcase weekends are the shape that works.
   - Cost: the week-0 rung goes **~5 → ~7 minutes** for both genders (+40%).
     `tests/test_jhsaa_jv.py`.

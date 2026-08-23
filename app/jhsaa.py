@@ -173,11 +173,16 @@ def lineup_need(phase: str) -> int:
 # --- THE JV SEASON (owner rule 2026-08) --------------------------------------
 #
 # ‼️ ONE ROSTER, ONE LADDER, BEST ELEVEN PLAY. There is no varsity squad and no JV
-# squad — `_order` ranks the whole roster, the top eleven dress varsity, and EVERYONE
-# BELOW THEM IS JV THAT DAY. A JV player who gets good enough walks into the varsity
-# lineup, which is what happens in life, and with no injuries or fatigue in this
-# association it is where the season's variability comes from. Nothing new was needed
-# to make that porous: `_order` / `_rest_count` / `_ROTATE_*` already move the line.
+# squad — `_order` ranks the whole roster, the top eleven dress varsity, and everyone
+# below them is JV. A JV player who gets good enough walks into the varsity lineup,
+# which is what happens in life, and with no injuries or fatigue in this association it
+# is where the season's variability comes from. Nothing new was needed to make that
+# porous: `_order` / `_rest_count` / `_ROTATE_*` already move the line.
+#
+# ‼️ THE POROUSNESS IS NOT TEMPORAL — see `jv_pool`. The varsity season is played to
+# completion before the JV season starts, so the JV pool is fixed for the whole JV
+# season rather than re-cut per date. Measured at 4.1% of the pool; do not describe it
+# as "everyone below them is JV THAT DAY", which is what this comment used to say.
 #
 # ‼️ THE JV LINEUP IS ELASTIC — fit to what the program has, never dogmatic. A fixed JV
 # format has to be fielded by BOTH schools, so its reach is the PRODUCT of two roster
@@ -270,10 +275,10 @@ JV_DUAL_CAP = 16
 #: reused wholesale.
 #:
 #: It is also the answer to "should JV have playoffs", which is no: a playoff needs a
-#: ranking to seed it and JV has none by design, a JV team is a daily slice of the
-#: ladder rather than a standing squad, and the format is elastic so a semifinal and a
-#: final could be different shapes. A showcase weekend needs none of that — no bracket,
-#: no advancement, no seeding.
+#: ranking to seed it and JV has none by design, a JV team is a slice of the ladder
+#: rather than a standing squad, and the format is elastic so a semifinal and a final
+#: could be different shapes. A showcase weekend needs none of that — no bracket, no
+#: advancement, no seeding.
 JV_SHOWCASES_PER_PROGRAM = 1
 JV_SHOWCASE_NAME = 'JV Showcase Weekend'
 
@@ -1236,12 +1241,28 @@ class JVTeam:
 
 
 def jv_pool(ts: TeamSeason) -> list:
-    """The players below the varsity eleven on TODAY's ladder — the JV, in order.
+    """The players below the varsity eleven on the ladder — the JV, in order.
 
     ‼️ Read off `_order`, which is the ONE ladder (owner rule 2026-08): there is no
-    standing JV squad to keep in step with anything. A varsity player who loses through
-    the season falls past a JV player's seed and they swap, which is the whole
-    porousness mechanism and it costs nothing to have.
+    standing JV squad to keep in step with anything. A varsity player who lost through
+    the season has already fallen past a JV player's seed, and they swap — that is the
+    porousness, and it costs nothing to have.
+
+    ‼️ BUT IT IS NOT TEMPORAL, AND THE DOCS USED TO SAY IT WAS. `run_season` plays the
+    whole varsity regular season and only THEN the whole JV season, so `ts.records` is
+    complete before the first JV dual and `play_jv_dual` credits nothing back — every
+    JV dual of the year therefore resolves this to the SAME ordering. The swap happens
+    once, ahead of the JV season, not date by date within it: a JV dual dated 12 April
+    is staffed off the ladder as it finished in June.
+
+    Measured before anyone re-derives it: reading the ladder 10% into the season
+    instead of at the end changes **4.1% of the JV pool** (13 of 408 players over 42
+    programs), and a player's median rank change across a whole season is **0 places**
+    (mean 0.5, max 4). That is small because `ladder_score` is deliberately sticky —
+    ±`LADDER_SWING` (7) OVR, damped by evidence — so *when* the ladder is read barely
+    matters. ‼️ The error scales with `LADDER_SWING`: make the ladder more
+    results-sensitive and this shortcut starts to bite, at which point the fix is to
+    interleave `play_jv_season` with `play_regular_season`'s blocks.
 
     Deliberately takes the plain top-eleven cut and NOT `_lineup`'s: resting (which
     sits 1-2 starters out entirely) and bench rotation are per-DUAL decisions about a
@@ -5337,12 +5358,22 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
                         for dname, schools in sorted(districts(gender, group).items())}
                 for group in GROUPS}
     every_team, power = play_regular_season(by_group, year, gender, salt)
-    # THE JV SEASON, played here and nowhere else: `jv_pool` reads `_order`, the
-    # results-moved ladder, so it has to run AFTER the varsity regular season or every
-    # JV dual would be sized and staffed off opening seeds. It runs BEFORE the
-    # postseason because that is where it sits on the calendar (April-May against the
-    # varsity league season) — and because the postseason FREEZES the Order of Ability,
-    # which is a varsity rule the JV has no business either reading or tripping.
+    # THE JV SEASON, played here and nowhere else. It runs BEFORE the postseason
+    # because that is where it sits on the calendar (April-May against the varsity
+    # league season) — and because the postseason FREEZES the Order of Ability, which
+    # is a varsity rule the JV has no business either reading or tripping.
+    #
+    # ‼️ IT RUNS AFTER THE WHOLE VARSITY REGULAR SEASON, AND THAT IS A SHORTCUT, NOT A
+    # REQUIREMENT. `jv_pool` reads `_order`, the results-moved ladder, so running it
+    # first would staff every JV dual off opening seeds — but the alternative to "all
+    # at the start" is not "all at the end", it is INTERLEAVED, one JV block per
+    # varsity block at this function's own seams (early → pass 1 → mid-season → pass 2
+    # → tune-up). Playing it all here means the JV pool is cut ONCE, from the finished
+    # ladder, and every JV dual of the year uses that same cut however it is dated.
+    # Measured cost: 4.1% of the JV pool differs from a ladder read early in the season
+    # (13 of 408 players over 42 programs), median rank change 0 places — small only
+    # because `LADDER_SWING` is 7 and the ladder is deliberately sticky. Raise that and
+    # this needs the interleave. See `jv_pool`.
     #
     # It writes nothing any line below this can see: no `records`, no `matches`, no
     # `power`, no standings row. That is `JVTeam`'s doing, not this call's.
