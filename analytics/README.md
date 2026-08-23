@@ -135,6 +135,9 @@ re-export a season to get real dates.
   rebuild them — the Scouting desk, the classification report and the Talent
   view replaced them, and each answers a question somebody actually asked.
 
+Design notes and the reasoning behind the sections below:
+`docs/AAR-analytics-ability-layer-and-scouting-desk.md`.
+
 ## The ability layer — the one input the engine reads (`ptc_analytics/ability.py`)
 
 Everything in `metrics.py` measures OUTCOMES, and its win-probability model
