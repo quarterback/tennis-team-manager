@@ -37,8 +37,10 @@ arithmetic on top of the real save — clearly derived, not simulated.
 4. **Ties are accepted.** Even-court formats can draw; broken on sets, then games, and
    **a dual still level after that is a TIE**. This is the association's first tie —
    nothing in `jhsaa` has tie logic today, by explicit design.
-5. **`ROSTER_FLOOR` rises from 12 to 15.** ‼️ See §3 — 15 is one player short of what
-   the table above needs, and **16** is the number that does the job.
+5. **`ROSTER_FLOOR` rises from 12 to 16** (decided after §3: 15 was one player short of
+   the elastic table's smallest entry and would have left 105 girls'/89 boys' programs
+   unable to field a JV at all). At 16, **every program in the association can field a
+   JV**.
 6. **The JV calendar:** season **starts in April**; **invitationals in March**; **one
    showcase in May**; **district round robin once**, which lands at or near 16.
    **16 is a LIMIT, not a floor.** Showcases **do not** count against the 16, and a
@@ -55,6 +57,16 @@ arithmetic on top of the real save — clearly derived, not simulated.
    postseason. Varsity is untouched. Real associations agree — see §6.
 9. **JV showcases reuse the varsity showcase machinery**, same material tool.
 10. **The JV tab lives on the school's own page**, showing that program's JV schedule.
+11. **‼️ A JV RECORD IS KEPT AND SHOWN.** "We're playing the games, so why not" — and it
+    is narrative: a program whose varsity is poor while its JV wins is a program about
+    to get good, and that story is only legible if the JV record is on the page. This
+    does **not** reopen decision §0.8: a RECORD is not a RATING. No TOSS, no power
+    index, no seeding, no awards, no postseason — just W-L-T.
+12. **‼️ JV MATCH DATA IS NOT ARCHIVED — it goes away after the season.** Only the
+    RECORD persists, on the program page, and only if that is easy. It is (§8a).
+    ‼️ This collides with an earlier decision — see §8a — because in the JHSAA there
+    is no "current season" to read from: every page reads the archive.
+13. **The opponent reads `San Borrego (JV)`** — parentheses, not OSAA's `[JV]` brackets.
 11. **No Varsity 2.** Dropped — see §7 for why the numbers agreed.
 12. **Results→development stays out of scope.** (Flagged because today *no* JHSAA
     result affects development at all: `_dev_maturity` rolls a four-year trajectory at
@@ -368,6 +380,53 @@ elastic table taking the smaller side, and it is the right price.
 
 ---
 
+## 8a. ‼️ What "don't archive JV match data" costs — THERE IS NO LIVE SEASON
+
+Decision §0.12 says JV match data is not archived. Decision §0.10 says the school page
+carries a JV tab showing that program's **JV schedule**, and an earlier decision put a
+JV tab on the **player** page. Those cannot all hold, for a reason specific to this
+association:
+
+**‼️ THE JHSAA HAS NO LIVE SEASON TO READ.** The whole thing runs in one rung at world
+week 0 and every surface — hub, standings, school page, player card, rankings, brackets
+— reads `world_jhsaa` / `world_jhsaa_dual`. `run_season`'s `_season_cache` is an
+in-process memo, not persistence: it dies on restart and is keyed on salt/year/override
+fingerprints. So a JV dual that is not written to the archive **cannot be displayed at
+all** — not next season, and not the day it is played. The only way to show it would be
+to re-simulate on a page request, which is precisely the fault
+`docs/AAR-jhsaa-research-export-resimulation-hang.md` exists to prevent.
+
+So the choice is what to write, and it is a three-way, not a yes/no:
+
+| | what persists | what the pages can show | **cost/season** (both genders) |
+|---|---|---|---|
+| **A** — full rows | dual + per-court `lines` | JV schedule · JV record · **JV player tab** (per-court W-L by name) | **15.3 MB** |
+| **B** — rows, `lines=[]` | dual only (opp, home, phase, pf/pa, won) | JV schedule · JV record · **no player tab** | **2.6 MB** |
+| **C** — record only | a `jvrecord` field on the existing standings rows | **JV record only — no schedule anywhere** | **0.07 MB** |
+
+Varsity today is 40.0 MB/season by the same measure (MEASURED: 22,983 duals, mean 875
+bytes of `lines` JSON per dual, stored twice because a dual sits on both schools'
+schedules).
+
+**B is almost certainly what §0.12 means.** "Match data" naturally reads as the
+per-court detail — the thing that is genuinely voluminous — and dropping it kills only
+the JV *player* tab. The JV *schedule* survives, at 6% of the cost of A and ~6.5% of
+what varsity already spends. C is the literal reading and it retires the JV schedule
+tab that §0.10 asks for.
+
+**C is trivially easy either way**, which answers the "only if it can be done easily"
+condition: the JV record rides on the standings rows already in `world_jhsaa`'s summary
+blob (beside `record` / `drecord` / `place` / `pi`), so it needs **no new table, no new
+read, and no new query** — the program page and its season-by-season history already
+walk exactly those rows. Note it must be STORED rather than derived, which is the one
+place this feature legitimately departs from the "a fold, not a store" rule
+(`jhsaa_school_history`): with no JV duals archived there is nothing to fold.
+
+Under B or C, `jhsaa_underplayed` keeps counting varsity appearances only for free —
+it counts names inside `lines`, and JV rows carry none.
+
+---
+
 ## 9. Open questions
 
 1. **The boys' JV calendar** — confirm the month-offset reading in §4 (Aug
@@ -375,16 +434,16 @@ elastic table taking the smaller side, and it is the right price.
    supports it: every boys' early-window dual falls in August, exactly parallel to the
    girls' March, so "month 1 = the 5S/2D window, month 2 = JV opens" holds on both
    calendars.
-2. **`ROSTER_FLOOR` 15 or 16?** §3 shows 15 leaves 105 girls' and 89 boys' programs
-   unable to field a JV at all. 16 takes it to 100%.
-3. **Does the JV tab show a record?** OSAA shows none at JV; MaxPreps shows Overall +
-   League with a place. Decision §0.8 points at OSAA's shape — schedule and roster, no
-   table — but a bare W-L-T for the season is a middle option.
-4. **Do JV duals carry scores in the archive**, or a bare result? OSAA mostly shows
-   "Done" with no score. Storing full `lines` is what makes the player-page JV tab
-   possible at all, so presumably yes — but it is ~6,500 extra dual rows a gender a
-   year with line JSON, and worth confirming.
-5. **Does the JV opponent get the "[JV]" suffix** on a card, per OSAA?
+2. ~~`ROSTER_FLOOR` 15 or 16~~ — settled: **16**, so every program can field a JV.
+3. **‼️ A, B or C in §8a?** Decision §0.12 (no archived JV match data) and decision
+   §0.10 (a JV schedule tab) cannot both hold, because the JHSAA has no live season to
+   read from. B keeps the JV schedule and drops the per-court detail for 2.6 MB a
+   season; C is the literal reading and retires the schedule tab. This is the last
+   blocking decision.
+4. **If B: does a JV schedule row show a SCORE?** A dual-level `pf-pa` (5-2) comes
+   free with the row; OSAA mostly shows a bare "Done". Per-court scorelines are the
+   thing B drops.
+5. ~~JV opponent suffix~~ — settled: `San Borrego (JV)`, parentheses.
 6. **Invitational pairing rule** — the §2 model pairs within one classification and
    prefers the same area. Same rule as varsity's `_nondistrict_pairs` (geography then
    talent), or simpler?
