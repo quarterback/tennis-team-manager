@@ -1772,6 +1772,31 @@ was a school marker, shipped "Baptist HS High School".
     Baldwin, Gwendolyn Brooks, Thurgood Marshall, Mae Jemison, Barack Obama, John
     Lewis and every president. The presidents and justices are in `OWNER_EDICTS`; the
     rest are NOT, so "looks like a person" is not the test.
+- **‼️ A PROGRAM THAT STOPS SPONSORING KEEPS ITS PAGE (owner rule 2026-08,
+  `jhsaa.former_school` / `sponsors_sport`).** `load_schools` filters on the
+  `girls`/`boys` flag — correct for every CURRENT-season surface (the directory, the
+  leagues, the ladder, the rankings) and it also meant the program page and every
+  player page 404'd the moment the flag went off. The archive is untouched by a
+  sponsorship change, so the school's state title went on standing on the title board
+  and the champions grid with a DEAD LINK under it: the trophies stayed and the pages
+  that explain them died. Measured, not theorised.
+  - The two views fall back to `former_school`, which builds the School from its data
+    row whatever the flag says; `None` still means a name no row carries, which is a
+    real 404. **Resolved on READ, nothing migrated** — the same answer a rename gets
+    (`world._relabel`), for the same reason.
+  - **It opens on the LAST SEASON THEY PLAYED.** The default year is the newest the
+    association has archived, which a former program has no row in, so the page would
+    render its header over an empty season and read as a bug. An explicit `year` is
+    still honoured.
+  - `former_school` is deliberately NOT part of `load_schools`: that is the hot path
+    (~1,600 roster builds a season) and every caller of it means "the programs playing
+    this year". It is a fallback, and the only way a non-sponsor is ever built.
+  - Sponsorship is per SPORT — dropping the girls' team leaves the boys' program live.
+  - A sponsorship change still redraws the leagues of the classes it touches
+    (`scripts/jhsaa_sponsors.py`); that is unavoidable and is the section's own rule.
+    An incoming 1:1 replacement is a new row with a new name, so it generates twelve
+    new players and inherits nothing — which is what an expansion program should do.
+    `tests/test_jhsaa_former_program.py`.
 - **‼️ MASCOTS: THE FOREIGN-FAUNA CLEANUP (owner rule 2026-08,
   `import_jhsaa.MASCOT_FIXES` + `scripts/jhsaa_mascots.py`).** An earlier pass was
   asked to forage the world's animals so the state would not be five hundred Eagles.

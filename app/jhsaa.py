@@ -1644,7 +1644,7 @@ def program_editor(selected: str = "", board: str = "", cat: str = "",
     # `girls_district`/`boys_district` names the program's OLD class's league;
     # reading it here is what made this card disagree with the district page for
     # every played-up program on the board.
-    moved = _playup_league(version, _schools_cache, pmap)
+    moved = _playup_league(version, rows, pmap)
     amap = _arch_map(ov.jhsaa_archetype_version())
     arch_ov, play_ov = ov.get_jhsaa_archetypes(), ov.get_jhsaa_playups()
     by_name = {r["name"]: r for r in _schools_cache}
@@ -1777,14 +1777,14 @@ def load_schools(gender: str) -> list[School]:
     hit = _schoolobj_cache.get(ck)
     if hit is not None:
         return hit
-    global _schools_cache
-    if _schools_cache is None:
-        with open(_DATA, encoding="utf-8") as fh:
-            _schools_cache = json.load(fh)["schools"]
+    rows = _rows()
     pmap = _playup_map(version)
-    moved = _playup_league(version, _schools_cache, pmap)
+    # `rows`, not the module global: `_rows()` is the one accessor that guarantees
+    # the file is loaded, and reading the global directly here passed None into the
+    # league map on any path that had just cleared it.
+    moved = _playup_league(version, rows, pmap)
     out = []
-    for r in _schools_cache:
+    for r in rows:
         if not r.get(gender):
             continue
         # ‼️ PLAYING UP MOVES `group` AND LEAVES `classification` ALONE. `group` is
@@ -1814,6 +1814,63 @@ def load_schools(gender: str) -> list[School]:
     _schoolobj_cache.clear()          # one version is live at a time
     _schoolobj_cache[ck] = out
     return out
+
+
+def former_school(name: str, gender: str) -> School | None:
+    """A program that no longer sponsors this sport, built from its data row anyway.
+
+    ‼️ A PROGRAM THAT STOPS SPONSORING MUST NOT LOSE ITS HISTORY (owner rule
+    2026-08). `load_schools` filters on the sponsorship flag, which is right for
+    every CURRENT-season surface — the directory, the leagues, the ladder — and it
+    also meant the program page and every player page 404'd the moment the flag went
+    off. The archive was untouched (their state title still stood on the title board
+    and on the champions grid), so the trophies stayed and the pages that explain
+    them died, with every link into them dead. That is the same fault a rename used
+    to cause, and it gets the same answer: resolve it on READ rather than migrating
+    anything.
+
+    Deliberately NOT part of `load_schools`. That call is the hot path — a season
+    builds ~1,600 rosters through it — and every one of its callers means "the
+    programs playing this year". This is the fallback a page takes when the live
+    lookup misses, and it is the ONLY way a non-sponsor is ever built.
+
+    Returns None for a name no data row carries, which is a genuine 404: the school
+    does not exist, rather than existing and not fielding a team."""
+    live = next((s for s in load_schools(gender) if s.name == name), None)
+    if live is not None:
+        return live
+    for r in _rows():
+        if r["name"] != name:
+            continue
+        return School(
+            name=r["name"], city=r["city"], county=r["county"], area=r["area"],
+            classification=r["classification"], group=r["group"],
+            enrollment=r["enrollment"], private=r["private"], mascot=r["mascot"],
+            colors=r["colors"], talent=r.get("talent", ""),
+            # Their last known league. A former sponsor plays in none, but the
+            # archive's own rows carry the league they played in each season, so
+            # this is only what the header prints beside the town.
+            district=r.get(f"{gender}_district") or _row_league(r) or "",
+            gender=gender, source=r.get("source", ""),
+            locality=r.get("locality", ""))
+    return None
+
+
+def sponsors_sport(name: str, gender: str) -> bool:
+    """Does this program field a team in `gender` TODAY? The one question that
+    separates a former program from a current one — everything else about them
+    (their archive, their pages, their honours) is the same."""
+    return any(s.name == name for s in load_schools(gender))
+
+
+def _rows() -> list[dict]:
+    """The raw school records, loaded once. `load_schools` owns the same file and
+    the same module-global; this is the unfiltered read behind it."""
+    global _schools_cache
+    if _schools_cache is None:
+        with open(_DATA, encoding="utf-8") as fh:
+            _schools_cache = json.load(fh)["schools"]
+    return _schools_cache
 
 
 def _row_league(row: dict) -> str | None:
