@@ -101,14 +101,10 @@
     <div class="bl-panel">
       <div class="bl-panel-head">
         <span class="bl-panel-title">{{ view.season_year }} Schedule</span></div>
-      {# Varsity and JV are two views of ONE season, so they are TABS — the section's
-         own layout rule for parallel views, and the shape OSAA's program pages use.
-         The JV pane carries a schedule and a record and nothing else: no ranking, no
-         seed, no finish, because JV counts for nothing (owner rule 2026-08). #}
+      {# Varsity and JV are two views of one season, so they are tabs. #}
       {% if view.jv_schedule %}
       {{ jh_tabs([('v', 'Varsity', view.schedule|length),
-                  ('jv', 'JV', view.jv_schedule|length)], 'jhsch',
-                 'JV results count for nothing — no ranking, seeding or postseason.') }}
+                  ('jv', 'JV ' ~ view.jv_record, view.jv_schedule|length)], 'jhsch') }}
       {% endif %}
       <div class="jh-pane tbl-scroll" data-pane="v">
         {% if view.schedule %}
@@ -206,22 +202,20 @@
           <tr><th style="width:62px">Date</th><th style="width:26px"></th><th>Opponent</th>
             <th style="width:34px">Res</th><th style="width:56px">Score</th><th style="width:92px">Format</th></tr>
           {% for d in view.jv_schedule %}
-          {# A JV dual has no line scores to expand — per-court detail is deliberately
-             not archived — so the row is a plain row, never a toggle. #}
+          {# No line scores to expand: per-court detail is deliberately not archived. #}
           <tr class="{{ 'dist' if d.district }}">
             <td class="dt">{{ d.date }}</td>
             <td class="ha">{{ 'vs' if d.home else 'at' }}</td>
             <td class="op">
               <span class="jh-schoolcell">{{ d.opp_deco.mark|safe }}
                 <a href="{{ url_for('jhsaa_school', school=d.opp, u=u, g=view.gender, year=view.scope.pin) }}">{{ d.opp }}</a>
-                <span class="jh-chip ghost">JV</span></span>
+                </span>
             </td>
-            {# ‼️ THREE outcomes, not two. A JV dual can be DRAWN — three of the eight
-               formats have an even court count — so a `won ? W : L` here would print
-               every tie as a loss. #}
+            {# Three outcomes: a JV dual can be drawn. #}
             <td class="{{ 'T' if d.tied else 'W' if d.won else 'L' }}">{{ 'T' if d.tied else 'W' if d.won else 'L' }}</td>
             <td class="sc">{{ d.pf|int }}–{{ d.pa|int }}</td>
-            <td><span class="jh-tag {{ 'dist' if d.district }}">{{ 'DIST' if d.district else 'INVITE' }}</span>
+            {% set jvk = 'DIST' if d.district else 'WEEKEND' if d.phase.startswith('showcase') else 'INVITE' %}
+            <td><span class="jh-tag {{ 'dist' if jvk == 'DIST' else 'show' if jvk == 'SHOWCASE' }}">{{ jvk }}</span>
               {% if d.shape %}<span class="jh-tag rd">{{ d.shape }}</span>{% endif %}</td>
           </tr>
           {% endfor %}

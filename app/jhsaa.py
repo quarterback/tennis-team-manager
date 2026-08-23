@@ -208,9 +208,18 @@ JV_MAX_SPARE = max(JV_FORMATS)          # 12 — the card never grows past 4S/4D
 #: plays fewer. Showcases are NOT counted here — see `JV_SHOWCASES_PER_PROGRAM`.
 JV_DUAL_CAP = 16
 
-#: One showcase per program per season, and it does not count against `JV_DUAL_CAP`
-#: (owner rule 2026-08). The varsity machinery is reused wholesale.
+#: The JV SHOWCASE WEEKEND — the season-ending event, and the only JV event there is
+#: (owner rule 2026-08). One per program, played after the invitational cap has bound,
+#: and it does NOT count against `JV_DUAL_CAP`. The varsity showcase machinery is
+#: reused wholesale.
+#:
+#: It is also the answer to "should JV have playoffs", which is no: a playoff needs a
+#: ranking to seed it and JV has none by design, a JV team is a daily slice of the
+#: ladder rather than a standing squad, and the format is elastic so a semifinal and a
+#: final could be different shapes. A showcase weekend needs none of that — no bracket,
+#: no advancement, no seeding.
 JV_SHOWCASES_PER_PROGRAM = 1
+JV_SHOWCASE_NAME = 'JV Showcase Weekend'
 
 #: The JV level marker, on the schedule entry and on `world_jhsaa_dual.level`.
 #: ‼️ A LEVEL, NEVER A PHASE. A phase is the archive's identity for an EVENT and it
@@ -4788,13 +4797,6 @@ def play_regular_season(by_group: dict, year: int, gender: str,
 # window while every individual card still read correctly. JV gets its own date pass,
 # on its own day pattern, and it may use SUNDAYS, which varsity never does.
 
-#: Talent proximity is bucketed before geography is consulted, so distance only ever
-#: breaks a genuine near-tie. Measured on the real 2038 save, a pure talent sort pairs
-#: at a median gap of 0.0 OVR and a p90 of 0.1, so half an OVR point is comfortably
-#: "the same team" — geography decides inside that and nowhere else.
-JV_MATCH_BUCKET = 0.5
-JV_MATCH_WINDOW = 8          # candidates scanned past a team before giving up
-
 
 def jv_teams(by_group: dict) -> dict[str, JVTeam]:
     """A JV team per program, hanging off its varsity `TeamSeason`."""
@@ -4834,58 +4836,44 @@ def jv_district_slate(by_group: dict, jv: dict[str, JVTeam], year: int,
 
 def jv_invitational_pairs(jv: dict[str, JVTeam], played: dict[str, set],
                           rng: random.Random) -> list[tuple]:
-    """One window of JV invitationals, paired TALENT FIRST and geography second.
+    """One window of JV invitationals: sort on JV strength, walk the list, pair each
+    team with the next one still free.
 
-    ‼️ THE INVERSE OF VARSITY'S `_nondistrict_pairs`, deliberately (owner rule
-    2026-08). Varsity draws on geography and then picks the nearest strength inside
-    it; JV does the opposite, because this is a simulation and travel is not a real
-    cost in it, while a JV player facing someone their own level is the entire reason
-    the JV season exists. Measured over the real 2038 save: talent-first pairs at a
-    median gap of 0.0 OVR (p90 0.1), geography-first at 4.2-5.2 (p90 12-14) — roughly
-    a fortyfold difference on the thing the rule is for.
-
-    ‼️ AND CLASSIFICATION IS NOT A GATE HERE. Varsity's window is held to the same
-    class or one apart; JV is not, because talent proximity already subsumes it —
-    78-79% of the pairs this makes land within two classes anyway, and the ones that
-    do not are, by construction, two equally strong JV squads. Gating them would force
-    a WORSE match to satisfy a rule about enrollment.
-
-    A league-mate is refused: they have already met in the round robin."""
-    free = [t for t in jv.values() if _jv_can_play(t, t)]
-    free.sort(key=lambda t: (-jv_strength(t.team), t.school.name))
+    Talent-ordered and nothing else — no search, no geography term, no scoring. This
+    was a windowed scorer first and that was precision spent on a decision that does
+    not matter, the same mistake `_showcase_groups` already made and had removed
+    (owner rule 2026-08): at JV it is whoever has somebody, and a talent sort already
+    puts comparable teams next to each other. A league-mate is refused because they
+    have met in the round robin.
+    """
+    free = sorted(jv.values(), key=lambda t: (-jv_strength(t.team), t.school.name))
     taken: set[str] = set()
     pairs = []
     for i, a in enumerate(free):
         if a.school.name in taken:
             continue
-        best, best_key = None, None
-        for b in free[i + 1: i + 1 + JV_MATCH_WINDOW]:
+        for b in free[i + 1:]:
             if b.school.name in taken or b.school.name in played[a.school.name]:
                 continue
             if _dkey(a) == _dkey(b) or not _jv_can_play(a, b):
                 continue
-            gap = abs(jv_strength(a.team) - jv_strength(b.team))
-            key = (round(gap / JV_MATCH_BUCKET), _geo_gap(a.school, b.school), gap)
-            if best_key is None or key < best_key:
-                best, best_key = b, key
-        if best is None:
-            continue
-        taken.add(a.school.name)
-        taken.add(best.school.name)
-        played[a.school.name].add(best.school.name)
-        played[best.school.name].add(a.school.name)
-        pairs.append((a, best) if rng.random() < 0.5 else (best, a))
+            taken.add(a.school.name)
+            taken.add(b.school.name)
+            played[a.school.name].add(b.school.name)
+            played[b.school.name].add(a.school.name)
+            pairs.append((a, b) if rng.random() < 0.5 else (b, a))
+            break
     return pairs
 
 
 def jv_showcase(jv: dict[str, JVTeam], year: int, salt: str,
                 played: dict[str, set], rng: random.Random) -> None:
-    """One pod per program per season — four programs, a full round robin, three duals.
+    """The JV Showcase Weekend — four programs, a full round robin, three duals, once
+    per program at the END of the season.
 
     Reuses the varsity `_showcase_groups` wholesale (owner rule 2026-08: "yes reuse"),
-    including its hard district guardrail; `JVTeam` exposes `.school`, which is all
-    that helper reads. Does NOT count against `JV_DUAL_CAP`, so it is played after the
-    cap has already bound."""
+    including its hard district guardrail; `JVTeam` exposes `.school`, which is all that
+    helper reads. Played after the invitational cap has bound, and outside it."""
     pool = [t for t in jv.values() if _jv_can_play(t, t)]
     seen = {id(t): played[t.school.name] for t in pool}
     for grp in _showcase_groups(pool, 4, seen, rng):
@@ -4896,7 +4884,11 @@ def jv_showcase(jv: dict[str, JVTeam], year: int, salt: str,
                     continue
                 seed = abs(hash((salt, "jv-showcase", year,
                                  a.school.name, b.school.name))) % (1 << 30)
-                play_jv_dual(a, b, seed=seed, district=False)
+                # The POD phase, not "regular": a phase is the archive's identity for
+                # an EVENT, and without it a showcase dual is indistinguishable from an
+                # invitational on the card and in the cap arithmetic. It also picks up
+                # `match_format`'s 8-game pro set, which is what a pod plays.
+                play_jv_dual(a, b, seed=seed, phase="showcase_pod", district=False)
 
 
 def play_jv_season(by_group: dict, year: int, gender: str,

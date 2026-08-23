@@ -4544,11 +4544,9 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                       "round": (state_round if k == "STATE" else
                                 toc_round if k == "TOC" else {}).get(d["opp"], "")}
                      for i, (d, k) in enumerate(zip(sched, kinds))],
-        # The JV season — schedule and record only. No ranking, no seed, no finish:
-        # JV counts for nothing (owner rule 2026-08), and OSAA's own program pages
-        # give a JV level Schedule and Roster and no Ranking tab for the same reason.
-        # `shape` is on the row because the JV format is chosen PER DUAL from what the
-        # two sides could dress, so "who did we play" is only half the story.
+        # The JV season — schedule and record only, no ranking or finish. `shape` is
+        # on the row because the JV format is chosen per dual from what both sides
+        # could dress.
         "jv_schedule": [{**d, "date": jv_dates[i],
                          "opp_deco": _jh_deco(schools, d["opp"], 22)}
                         for i, d in enumerate(jv_sched)],

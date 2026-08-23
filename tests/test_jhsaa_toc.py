@@ -158,8 +158,9 @@ def test_a_toc_run_lands_on_the_season_record(archived):
     try:
         for school in archived["arc"]["toc"]["field"]:
             row = wd.jhsaa_school_history(w["id"], "girls", school)["seasons"][0]
+            # level='v': the JV season shares this table and is not on this record.
             n = conn.execute("SELECT COUNT(*) c FROM world_jhsaa_dual WHERE world_id=?"
-                             " AND year=? AND gender='girls' AND school=?",
+                             " AND year=? AND gender='girls' AND school=? AND level='v'",
                              (w["id"], w["year"], school)).fetchone()["c"]
             assert row["wins"] + row["losses"] == n, (school, row["record"], n)
             assert row["made_toc"]
@@ -175,9 +176,11 @@ def test_every_archived_record_covers_every_dual_played(archived):
     conn.row_factory = sqlite3.Row
     w, off = archived["world"], []
     try:
+        # Varsity rows only: the JV season shares this table.
         played = {r["school"]: r["n"] for r in conn.execute(
             "SELECT school, COUNT(*) n FROM world_jhsaa_dual WHERE world_id=? AND"
-            " year=? AND gender='girls' GROUP BY school", (w["id"], w["year"]))}
+            " year=? AND gender='girls' AND level='v' GROUP BY school",
+            (w["id"], w["year"]))}
     finally:
         conn.close()
     for grp, dists in (archived["arc"]["standings"] or {}).items():
