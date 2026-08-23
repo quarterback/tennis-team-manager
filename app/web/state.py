@@ -3709,11 +3709,11 @@ def _jh_flight_box(seasons: list[dict], key: str = "slots",
                         "overall": f"{ov[0]}-{ov[1]}"})
         tcells = {s: (f"{totals[s][0]}-{totals[s][1]}" if (totals[s][0] or totals[s][1]) else "–")
                   for s in slots}
-        # `any` is MATCH-based, not row-based: a career with three archived seasons and
-        # no play at this level rendered three rows of 0-0 instead of saying so.
+        # `any` is ROW-based on purpose: a season with no play at this level shows 0-0,
+        # which is the answer in the grid's own units. Swapping it for a "No matches
+        # yet" line puts prose where the panel is numbers.
         return {"slots": slots, "rows": rows, "tcells": tcells,
-                "toverall": f"{tov[0]}-{tov[1]}",
-                "any": bool(rows) and (tov[0] + tov[1]) > 0}
+                "toverall": f"{tov[0]}-{tov[1]}", "any": bool(rows)}
     def _width(prefix: str, floor: int) -> int:
         seen = [int(sl[1:]) for s in seasons for sl in (s[key] or {})
                 if sl.startswith(prefix) and sl[1:].isdigit()]
