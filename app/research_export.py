@@ -57,10 +57,26 @@ def _load_archived_jhsaa_season(year: int, gender: str) -> dict:
 
     conn = wd._db()
     try:
+        # ‼️ VARSITY ONLY. The JV season and the varsity season share this one
+        # table, and this loader is the ONLY thing standing between them and
+        # the export — `build_jhsaa` just walks whatever schedule it is handed.
+        #
+        # Unfiltered, JV duals reach `duals.csv` with nothing on the row to
+        # mark them, and a consumer cannot tell the two apart: the 2039 boys
+        # export carried 18,096 duals against 2038's 10,709, and under
+        # `phase="regular"` only 62% of them were the varsity 3S/4D shape, the
+        # rest being the elastic `JV_FORMATS` table. Anything deriving a
+        # phase's shape from the most common line count is then one JV growth
+        # step from inverting — in `showcase_pod` it already had, where a
+        # 5-line JV shape outnumbered the varsity 7.
+        #
+        # COALESCE, not `level='v'`: seasons archived before the JV column
+        # existed can read back NULL, and those are all varsity.
         rows = conn.execute(
             "SELECT school, opp, home, phase, pf, pa, won, district, lines,"
             " level, tied, shape"
             " FROM world_jhsaa_dual WHERE world_id=? AND year=? AND gender=?"
+            " AND COALESCE(level, 'v') = 'v'"
             " ORDER BY school, rowid",
             (world["id"], world_year, gender)).fetchall()
     finally:
@@ -171,6 +187,16 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                 "home_program_id": team.school.key,
                 "away_program_id": next((x.school.key for x in all_teams if x.school.name == dual["opp"]), dual["opp"]),
                 "date": dual.get("date") or "",
+                # ‼️ `level` must be on the row. The archive loader reads JV and
+                # varsity duals together, so without this a JV dual arrives in
+                # duals.csv indistinguishable from a varsity one: it inflates
+                # the record a reader derives from the schedule (while
+                # jhsaa_standings.csv stays varsity-only, so the two disagree),
+                # and any consumer that derives a dual's SHAPE by counting its
+                # lines averages JV's elastic lineup into the varsity one.
+                # "no lines" is not a usable substitute — that is also what a
+                # varsity dual whose lines failed to record looks like.
+                "level": dual.get("level") or "v",
                 "phase": dual["phase"], "district": int(bool(dual.get("district"))),
                 "home_points": dual["pf"], "away_points": dual["pa"],
                 "winner_program_id": team.school.key if dual["won"] else next((x.school.key for x in all_teams if x.school.name == dual["opp"]), dual["opp"]),
@@ -248,6 +274,9 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "jhsaa_program_history.csv spans EVERY archived season for this gender (one row "
             "per program per year — the app's program-history ledger), not just this export's "
             "scope year; it is empty only when the save has no archived seasons.",
+            "duals.level is 'v' for varsity and 'jv' for the JV season; they share a "
+            "schedule table, so a consumer that wants one must filter on it. Absent on "
+            "seasons exported before the JV season existed, where every dual is varsity.",
             "duals.date is the game's own display calendar (world.jhsaa_match_dates — one date "
             "per dual, identical from both sides); empty on seasons archived before dates existed. "
             "It is the play order: there is no clock inside a JHSAA season.",

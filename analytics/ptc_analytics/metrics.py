@@ -15,12 +15,25 @@ Design rules (owner spec, first-pass library):
     is a missing DECISION"). RCI/SCI/Fmt/State-Win% all return None when a
     bundle's derived shape is unknown (empty scope, or a family/round bucket
     with no duals on record) rather than guessing — see TeamMetrics.
-  - This is a first pass, not the full 70-metric wishlist: it computes the
-    raw substrate (S%/D%, per-flight win%, line/game share) plus the first
-    tier of derived stats (RCI/SCI/Fmt, Doubles Reliance/Balance, State Dual
-    Win Probability, opponent-quartile splits, close-match record) and flags
-    statistical extremes as storylines. Everything else in the wishlist slots
-    in later against this same substrate.
+  - It computes the raw substrate (S%/D%, per-flight win%, line/game share)
+    plus derived stats (RCI/SCI/Fmt, Doubles Reliance/Balance, State Dual Win
+    Probability, opponent-quartile splits, close-match record).
+  - ‼️ EVERYTHING IN HERE IS RESULTS-ONLY, INCLUDING THE POWER MODEL, and that
+    is the module's boundary rather than an oversight. The engine reads one
+    number — a player's current overall — and none of it appears here; the
+    win-probability model runs on TOSS, which correlates with strength at
+    about 0.76 and is a rating, not an ability. So these metrics can say what
+    happened and cannot say what should have. `ability.py` is the other half:
+    it joins the OVR every flight was contested at and answers the "should"
+    questions, and the two are deliberately kept apart so a results number is
+    never quietly reweighted by an ability one.
+  - STORYLINES ARE GONE (owner call, 2029-08: "useless, can be sunset
+    entirely"). They were auto-flagged extremes sorted by how extreme the
+    number was, which tells you a number is unusual and never why — the kind
+    of finding that needs flight-by-flight gaps and a look at the lineup, and
+    no threshold detector was ever going to produce it. Do not rebuild them;
+    the Player Stat Center, the market finders and the classification report
+    are what replaced them, and each answers a question somebody asked.
 """
 from __future__ import annotations
 
@@ -669,85 +682,3 @@ def compute_player_value(careers: dict) -> dict:
                                "actual": actual, "replacement": rep, "value": contribution})
         pvar[pid] = {"total": total, "breakdown": sorted(breakdown, key=lambda x: -abs(x["value"]))}
     return pvar
-
-
-def storylines(metrics: dict) -> list[dict]:
-    """Flag statistical extremes worth a human look, grouped by kind."""
-    stories = []
-    for (pid, scope_id), m in metrics.items():
-        if m.lines_played < 10:
-            continue    # too little sample for any of these to mean much
-        fmt = m.fmt_lift
-        if fmt is not None and abs(fmt) >= 10:
-            direction = "gains" if fmt > 0 else "loses"
-            reg_txt = "%dS/%dD" % m.regular_shape if m.regular_shape else "regular"
-            state_txt = "%dS/%dD" % m.state_shape if m.state_shape else "State"
-            stories.append({
-                "kind": "format-lift", "program_id": pid, "scope_id": scope_id, "name": m.name,
-                "value": fmt,
-                "text": f"{m.name} {direction} {abs(fmt):.1f} points of expected court share when "
-                        f"the card shifts from the {reg_txt} shape to {state_txt} weighting "
-                        f"(S% {m.s_pct:.3f}, D% {m.d_pct:.3f})." if m.s_pct is not None else "",
-            })
-        dr = m.doubles_reliance
-        if dr is not None and abs(dr) >= 25:
-            shape = "doubles-driven" if dr > 0 else "singles-driven"
-            stories.append({
-                "kind": "team-shape", "program_id": pid, "scope_id": scope_id, "name": m.name,
-                "value": dr,
-                "text": f"{m.name} is sharply {shape}: S% {m.s_pct:.3f} vs D% {m.d_pct:.3f}, "
-                        f"a {abs(dr):.1f}-point gap.",
-            })
-        cw = m.close_win_pct
-        if cw is not None and m.close_duals >= 4 and (cw >= 0.75 or cw <= 0.25):
-            tone = "thrives" if cw >= 0.75 else "struggles"
-            stories.append({
-                "kind": "close-matches", "program_id": pid, "scope_id": scope_id, "name": m.name,
-                "value": cw,
-                "text": f"{m.name} {tone} in one-point duals: {m.close_wins}-{m.close_duals - m.close_wins} "
-                        f"({cw:.3f}) in {m.close_duals} decided by a single point. Small-sample caveat applies.",
-            })
-        if m.volatility is not None and m.volatility >= 0.22 and m.duals >= 6:
-            stories.append({
-                "kind": "volatility", "program_id": pid, "scope_id": scope_id, "name": m.name,
-                "value": m.volatility,
-                "text": f"{m.name}'s court share swings hard match to match (stdev {m.volatility:.3f} "
-                        f"across {m.duals} duals) — a volatile team, not a steady one.",
-            })
-        luck = m.record_luck
-        if luck is not None and m.duals >= 6 and abs(luck) >= 2.5:
-            tone = "outperforming" if luck > 0 else "underperforming"
-            stories.append({
-                "kind": "record-luck", "program_id": pid, "scope_id": scope_id, "name": m.name,
-                "value": luck,
-                "text": f"{m.name} is {m.dual_wins}-{m.duals - m.dual_wins}, {tone} a power-based "
-                        f"expected record of {m.expected_wins:.1f} wins by {abs(luck):.1f}.",
-            })
-        if m.upset_value >= 1.0:
-            stories.append({
-                "kind": "upsets", "program_id": pid, "scope_id": scope_id, "name": m.name,
-                "value": m.upset_value,
-                "text": f"{m.name} has banked {m.upsets} win(s) as a clear underdog (upset value "
-                        f"{m.upset_value:.2f}) — a résumé worth more than its raw record.",
-            })
-        q1 = m.quartile_record.get("Q1")
-        q4 = m.quartile_record.get("Q4")
-        if q1 and (q1["w"] + q1["l"]) >= 3:
-            pct = q1["w"] / (q1["w"] + q1["l"])
-            if pct >= 0.7:
-                stories.append({
-                    "kind": "quality-wins", "program_id": pid, "scope_id": scope_id, "name": m.name,
-                    "value": pct,
-                    "text": f"{m.name} is {q1['w']}-{q1['l']} against top-quartile-power opponents.",
-                })
-        if q4 and (q4["w"] + q4["l"]) >= 3:
-            pct = q4["w"] / (q4["w"] + q4["l"])
-            if pct <= 0.5:
-                stories.append({
-                    "kind": "bad-losses", "program_id": pid, "scope_id": scope_id, "name": m.name,
-                    "value": pct,
-                    "text": f"{m.name} is only {q4['w']}-{q4['l']} against bottom-quartile-power "
-                            f"opponents — a résumé worth a second look.",
-                })
-    stories.sort(key=lambda s: -abs(s["value"]) if isinstance(s["value"], (int, float)) else 0)
-    return stories

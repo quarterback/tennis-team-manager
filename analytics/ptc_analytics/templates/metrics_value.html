@@ -2,8 +2,19 @@
 {% block title %}Player Value{% endblock %}
 {% block content %}
 <div class="pt-crumbs"><a href="../index.html">Home</a> / <a href="index.html">Analytics</a> / Player Value</div>
-<h1 class="pt-h1">Player Value (PVAR)</h1>
-<p class="t-dek">Crude Player Value Above Replacement: for every slot a player logged 3+ matches at, replacement level is the 25th-percentile win rate among other players at that same slot in that same season. PVAR = (their win rate − replacement) × matches played, summed across every slot and season on record. Deliberately not split by singles/doubles — the point is a number that looks past S%/D% at what a player was worth wherever the coach used them. No opponent adjustment yet; a first cut, not a finished model.</p>
+<h1 class="pt-h1">Player Value</h1>
+<p class="t-dek">
+  Two numbers that measure the same career from opposite ends, and they are
+  meant to disagree. <strong>PVAR</strong> asks whether the seat was filled
+  better than the next player would have filled it: replacement level is the
+  25th-percentile win rate among other players at that same flight in that same
+  season, and PVAR is (their rate − replacement) × matches, summed. It never
+  looks at ability. <strong>WAE</strong> asks whether they beat the matches they
+  were actually handed: every flight is priced on the OVR gap it was contested
+  at, and WAE is wins minus that price. A player can lead one and not the other
+  — a strong player winning the matches their ability says they should wins
+  PVAR and sits near zero on WAE, which is the correct reading of both.
+</p>
 <div class="pt-panel">
   <div class="pt-panel-head"><div class="pt-panel-title">Top 100 careers by PVAR</div>
     <div class="pt-panel-meta">across every season ingested</div></div>
@@ -11,7 +22,7 @@
     <input class="pt-searchbox" type="search" id="q" placeholder="Filter by player or team…"
            oninput="var q=this.value.toLowerCase();document.querySelectorAll('#pvar-table tbody tr').forEach(function(r){r.style.display=r.dataset.name.indexOf(q)===-1?'none':'';})">
     <table class="pt-table pt-sortable" id="pvar-table">
-      <thead><tr><th class="num">#</th><th data-nosort>Player</th><th class="num">Gr</th><th data-nosort>Team(s)</th><th class="num">Record</th><th class="num">PVAR</th></tr></thead>
+      <thead><tr><th class="num">#</th><th data-nosort>Player</th><th class="num">Gr</th><th data-nosort>Team(s)</th><th class="num">Record</th><th class="num">PVAR</th><th class="num" title="Wins above what the OVR gaps priced">WAE</th></tr></thead>
       <tbody>
       {% for r in rows %}
         <tr data-name="{{ r.name|lower }} {{ r.teams|join(' ')|lower }}">
@@ -21,10 +32,42 @@
           <td>{{ r.teams|join(', ') }}</td>
           <td class="num t-num" data-sort="{{ r.wins }}">{{ r.wins }}-{{ r.losses }}</td>
           <td class="num t-num" data-sort="{{ r.pvar }}">{{ "%+.2f"|format(r.pvar) }}</td>
+          <td class="num t-num" data-sort="{{ r.wae if r.wae is not none else '' }}">{% if r.wae is none %}—{% else %}{{ "%+.1f"|format(r.wae) }}{% endif %}</td>
         </tr>
       {% endfor %}
       </tbody>
     </table>
+  </div>
+</div>
+
+<div class="pt-panel">
+  <div class="pt-panel-head"><div class="pt-panel-title">The win curve WAE is priced on</div>
+    <div class="pt-panel-meta">fitted on the ingested seasons, never hard-coded</div></div>
+  <div class="pt-panel-body">
+    <p class="pt-note">
+      Fitted from the flights on record rather than copied out of the engine:
+      the engine's gap response has been retuned before, and a table copied in
+      here would go stale silently. The observed column is the receipt — if it
+      and the fitted column disagree, believe the observed one and treat the
+      model as broken. Read from the favourite's side, so an even gap is a coin
+      flip by construction.
+    </p>
+    {% for cv in curves %}
+    <div class="pt-tablewrap">
+      <table class="pt-table">
+        <caption class="pt-caption">{{ cv.family|upper }} · {{ "Singles" if cv.kind == "S" else "Doubles" }} —
+          {{ "{:,}".format(cv.samples) }} flights{% if not cv.fitted %} · too few to fit{% endif %}</caption>
+        <thead><tr><th>OVR gap</th><th class="num">Flights</th><th class="num">Favourite won</th><th class="num">Model says</th></tr></thead>
+        <tbody>
+        {% for name, row in cv.bands.items() %}
+          <tr><td>{{ name }}</td><td class="num t-num">{{ "{:,}".format(row.n) }}</td>
+            <td class="num t-num">{{ "%.3f"|format(row.pct) if row.pct is not none else "—" }}</td>
+            <td class="num t-num pt-dim">{{ "%.3f"|format(row.fit) if row.fit is not none else "—" }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endfor %}
   </div>
 </div>
 {% endblock %}

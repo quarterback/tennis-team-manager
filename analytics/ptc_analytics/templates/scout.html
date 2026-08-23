@@ -1,0 +1,607 @@
+{% extends "base.html" %}
+{% block title %}Scouting — {{ scope.label }}{% endblock %}
+{% block content %}
+<div class="pt-crumbs"><a href="../index.html">Home</a> / <a href="index.html">Scouting</a> / {{ scope.label }}</div>
+<h1 class="pt-h1">Scouting <span class="pt-h1-sub">{{ scope.label }}</span></h1>
+
+<div class="pt-tabs" data-tabscope="scout-panes">
+  <button type="button" data-tab="search">Search</button>
+  <button type="button" data-tab="shortlist">Shortlist <span class="pt-count" id="sl-count">0</span></button>
+  <button type="button" data-tab="cohort">Cohort builder</button>
+</div>
+
+<div id="scout-panes">
+<div data-tabpane="search">
+
+  <div class="pt-panel">
+    <div class="pt-panel-head">
+      <span>New search</span>
+      <span class="pt-panel-note">
+        {% for f in finders %}<button type="button" class="pt-preset" data-finder="{{ f.key }}" title="{{ f.blurb }}">{{ f.label }} <span class="pt-count">{{ f.found }}</span></button>{% endfor %}
+        <button type="button" class="pt-preset" onclick="resetFilters()">Clear</button>
+      </span>
+    </div>
+    <div class="pt-panel-body">
+      <p class="pt-finder-blurb" id="finder-blurb"></p>
+      <div class="pt-filtergrid">
+        <label>Area
+          <select id="f-area" onchange="onArea()"><option value="">Any</option></select>
+        </label>
+        <label>County
+          <select id="f-county" onchange="run()"><option value="">Any</option></select>
+        </label>
+        <label>Town
+          <input type="search" id="f-town" placeholder="Any" oninput="run()">
+        </label>
+        <label>Classification
+          <select id="f-class" onchange="onClass()"><option value="">Any</option></select>
+        </label>
+        <label>League
+          <select id="f-league" onchange="run()"><option value="">Any</option></select>
+        </label>
+        <label class="pt-filtergrid-wide">Search
+          <input type="search" id="f-q" placeholder="Player, program, town, county…" oninput="run()">
+        </label>
+      </div>
+      <details class="pt-advanced" id="adv">
+        <summary>Advanced</summary>
+        <div class="pt-filtergrid">
+          <label>Grade
+            <select id="f-grade" onchange="run()">
+              <option value="">Any</option>
+              <option value="9">9th</option><option value="10">10th</option>
+              <option value="11">11th</option><option value="12">12th</option>
+              <option value="ret">Returning (9–11)</option>
+            </select>
+          </label>
+          <label>OVR min <input type="number" id="f-ovrmin" min="0" max="80" oninput="run()"></label>
+          <label>OVR max <input type="number" id="f-ovrmax" min="0" max="80" oninput="run()"></label>
+          <label>POT min <input type="number" id="f-potmin" min="0" max="80" oninput="run()"></label>
+          <label>Matches max <input type="number" id="f-mmax" min="0" oninput="run()"></label>
+          <label>Ladder rank at least
+            <input type="number" id="f-rankmin" min="1" oninput="run()" title="1 = anyone; 12 = twelfth on their own ladder or deeper">
+          </label>
+          <label>Would start in
+            <select id="f-starts" onchange="run()"><option value="">Any</option></select>
+          </label>
+          <label class="pt-check"><input type="checkbox" id="f-benched" onchange="run()"> Outside the lineup</label>
+          <label class="pt-check"><input type="checkbox" id="f-moved" onchange="run()"> Arrived this season</label>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div class="pt-tabs pt-tabs-sub" id="view-tabs">
+    <button type="button" data-view="ability" class="active">Ability</button>
+    <button type="button" data-view="usage">Usage</button>
+    <button type="button" data-view="value">Value</button>
+    <button type="button" data-view="dev">Development</button>
+    <button type="button" data-view="place">Placement</button>
+  </div>
+
+  <div id="empty-state" class="pt-myteams-empty">
+    Set an area, a classification, or a search term to load players — this page
+    never opens on the whole association at once.
+  </div>
+
+  <div class="pt-panel" id="results" style="display:none">
+    <div class="pt-panel-head"><span id="result-count"></span>
+      <span class="pt-panel-note" id="result-note"></span></div>
+    <div class="pt-panel-body pt-tablewrap">
+      <table class="pt-table" id="scout-table" data-view="ability">
+        <thead><tr>
+          <th data-nosort></th>
+          <th data-key="name">Player</th>
+          <th data-key="grade" class="num">Gr</th>
+          <th data-key="program">Program</th>
+          <th data-key="cls">Cls</th>
+          <th data-key="county">County</th>
+          <th class="num v-ability" data-key="ovr" title="Current overall — the only number the match engine reads">OVR</th>
+          <th class="num v-ability" data-key="pot" title="Hidden ceiling">POT</th>
+          <th class="num v-ability" data-key="head" title="Potential − current">Head</th>
+          <th class="num v-ability" data-key="rank" title="Position on their own program's ladder by OVR">Ldr</th>
+          <th class="num v-usage" data-key="matches">Matches</th>
+          <th class="num v-usage" data-key="rec" data-nosort>W–L</th>
+          <th class="v-usage" data-key="flight" title="Most-played flight">Flight</th>
+          <th class="num v-usage" data-key="pct">Win%</th>
+          <th class="num v-value" data-key="lift" title="Their win rate minus their team's dual win rate — the good-player-on-a-bad-team detector">Lift</th>
+          <th class="num v-value" data-key="wae" title="Wins above what the OVR gaps in their own matches priced">WAE</th>
+          <th class="num v-value" data-key="vs" title="OVR above/below a median starter in their own classification">vs Start</th>
+          <th class="num v-dev" data-key="dev" title="One-year OVR gain against the fitted headroom curve">Dev±</th>
+          <th class="num v-dev" data-key="pot2">POT</th>
+          <th class="num v-dev" data-key="head2">Head</th>
+          <th class="v-place" data-key="starts" title="Strongest classification whose median starting line they clear">Starts in</th>
+          <th class="num v-place" data-key="rank2">Ldr</th>
+          <th class="v-place" data-key="moved" title="Where they came from, if they moved into this program this season">From</th>
+          <th class="num v-place" data-key="teamrank" title="Their program's rank in its class">Team</th>
+        </tr></thead>
+        <tbody id="scout-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div data-tabpane="shortlist" style="display:none">
+  <div class="pt-panel">
+    <div class="pt-panel-head"><span>Shortlist</span>
+      <span class="pt-panel-note">Stored in this browser only. Survives a rebuild.</span></div>
+    <div class="pt-panel-body">
+      <div class="pt-filtergrid">
+        <label class="pt-filtergrid-wide">Set destination for every empty row
+          <input type="search" id="bulk-dest" list="prog-names" placeholder="Program name…">
+        </label>
+        <label class="pt-check" style="align-self:end">
+          <button type="button" class="pt-btn" onclick="bulkDest()">Apply</button>
+          <button type="button" class="pt-btn" onclick="exportBatch()">Download batch CSV</button>
+          <button type="button" class="pt-btn" onclick="copyBatch()">Copy to clipboard</button>
+          <button type="button" class="pt-btn pt-btn-quiet" onclick="clearList()">Clear list</button>
+        </label>
+      </div>
+      <p class="pt-note" id="batch-note">
+        The batch is exactly what the game's bulk transfer field takes:
+        <code>player_id,DestinationSchool</code>, one per line, no header.
+        A row with no destination, or one pointing at the program the player
+        already attends, is held back and reported rather than exported.
+      </p>
+      <div class="pt-tablewrap">
+        <table class="pt-table">
+          <thead><tr>
+            <th></th><th>Player</th><th class="num">Gr</th><th class="num">OVR</th>
+            <th>Currently</th><th>Destination</th>
+            <th class="num" title="Ladder position they would take at the destination">Fit</th>
+            <th>Note</th>
+          </tr></thead>
+          <tbody id="sl-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <datalist id="prog-names"></datalist>
+</div>
+
+<div data-tabpane="cohort" style="display:none">
+  <div class="pt-panel">
+    <div class="pt-panel-head"><span>Cohort builder</span>
+      <span class="pt-panel-note">Best players near one program, so a group can move together</span></div>
+    <div class="pt-panel-body">
+      <div class="pt-filtergrid">
+        <label class="pt-filtergrid-wide">Build up
+          <input type="search" id="co-dest" list="prog-names2" placeholder="Program name…" oninput="cohort()">
+        </label>
+        <label>Radius
+          <select id="co-scope" onchange="cohort()">
+            <option value="county">Same county</option>
+            <option value="area">Same area</option>
+          </select>
+        </label>
+      </div>
+      <div id="co-out"></div>
+    </div>
+  </div>
+  <datalist id="prog-names2"></datalist>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{# `|safe` is load-bearing and is NOT a hole: render._json_for_script has
+   already turned < > & into \u escapes, so nothing here can close the element.
+   Autoescaping instead would emit &#34; into raw script text, which the
+   browser never decodes back — JSON.parse would throw on a page whose source
+   looks correct. #}
+<script id="scout-data" type="application/json">{{ payload|safe }}</script>
+<script>
+var D = JSON.parse(document.getElementById('scout-data').textContent);
+var P = D.players, G = D.programs;
+// packed player indices — see render.build_site's scout payload
+var PID=0, NAME=1, PROG=2, GRADE=3, OVR=4, POT=5, RANK=6, MATCH=7, W=8, L=9,
+    FLIGHT=10, LIFT=11, WAE=12, STARTS=13, DEV=14, MOVED=15, VSSTART=16;
+// packed program indices
+var gNAME=0, gCLS=1, gLEAGUE=2, gTOWN=3, gCOUNTY=4, gAREA=5, gRANK=6, gSIZE=7,
+    gW=8, gL=9, gLADDER=10;
+
+var SHOW_CAP = 400;
+var SL_KEY = 'ptc_shortlist__' + D.scope;
+var haystack = new Array(P.length);   // built lazily; a full pass up front is wasted on a filter that never runs
+var byId = {};
+P.forEach(function(r, i){ byId[r[PID]] = i; });
+var progByName = {};
+G.forEach(function(g, i){ progByName[g[gNAME]] = i; });
+
+function hay(i){
+  if (haystack[i] === undefined){
+    var r = P[i], g = G[r[PROG]] || [];
+    haystack[i] = (r[NAME] + ' ' + (g[gNAME]||'') + ' ' + (g[gTOWN]||'') + ' ' +
+                   (g[gCOUNTY]||'') + ' ' + (g[gAREA]||'') + ' ' + (g[gLEAGUE]||'')).toLowerCase();
+  }
+  return haystack[i];
+}
+function el(id){ return document.getElementById(id); }
+function val(id){ return el(id).value.trim(); }
+function numval(id){ var v = el(id).value; return v === '' ? null : parseFloat(v); }
+function fmt(v, d){ return (v === null || v === undefined) ? '—' : v.toFixed(d); }
+function sgn(v, d){ return (v === null || v === undefined) ? '—' : (v > 0 ? '+' : '') + v.toFixed(d); }
+
+// ---- filters -------------------------------------------------------------
+var finderSet = null;      // Set of player ids when a preset is active
+
+function matches(i){
+  var r = P[i], g = G[r[PROG]] || [];
+  if (finderSet && !finderSet.has(r[PID])) return false;
+  var a = val('f-area'); if (a && g[gAREA] !== a) return false;
+  var c = val('f-county'); if (c && g[gCOUNTY] !== c) return false;
+  var t = val('f-town').toLowerCase();
+  if (t && (g[gTOWN]||'').toLowerCase().indexOf(t) === -1) return false;
+  var cl = val('f-class'); if (cl && g[gCLS] !== cl) return false;
+  var lg = val('f-league'); if (lg && g[gLEAGUE] !== lg) return false;
+  var gr = val('f-grade');
+  if (gr === 'ret'){ if (!(r[GRADE] && r[GRADE] < 12)) return false; }
+  else if (gr && String(r[GRADE]) !== gr) return false;
+  var lo = numval('f-ovrmin'); if (lo !== null && !(r[OVR] >= lo)) return false;
+  var hi = numval('f-ovrmax'); if (hi !== null && !(r[OVR] <= hi)) return false;
+  var pm = numval('f-potmin'); if (pm !== null && !(r[POT] >= pm)) return false;
+  var mm = numval('f-mmax'); if (mm !== null && !(r[MATCH] <= mm)) return false;
+  var rk = numval('f-rankmin'); if (rk !== null && !(r[RANK] >= rk)) return false;
+  var st = val('f-starts'); if (st && r[STARTS] !== st) return false;
+  if (el('f-benched').checked && !(D.dressed && r[RANK] > D.dressed)) return false;
+  if (el('f-moved').checked && !r[MOVED]) return false;
+  var q = val('f-q').toLowerCase();
+  if (q && hay(i).indexOf(q) === -1) return false;
+  return true;
+}
+
+// ‼️ ONE list of controls, read by BOTH anyFilter() and resetFilters().
+// They were two hand-maintained lists and they drifted: 'f-ovrmax' and
+// 'f-mmax' were in the reset list and missing from the predicate, so setting
+// only "OVR max" or only "Matches max" — "who never played" is exactly that
+// query — left the grid hidden and the control looked broken. Add a control
+// here, not in two places.
+var TEXT_FILTERS  = ['f-area','f-county','f-town','f-class','f-league','f-q','f-grade','f-starts'];
+var NUM_FILTERS   = ['f-ovrmin','f-ovrmax','f-potmin','f-mmax','f-rankmin'];
+var CHECK_FILTERS = ['f-benched','f-moved'];
+
+function anyFilter(){
+  if (finderSet) return true;
+  if (TEXT_FILTERS.some(function(id){ return val(id) !== ''; })) return true;
+  if (NUM_FILTERS.some(function(id){ return numval(id) !== null; })) return true;
+  return CHECK_FILTERS.some(function(id){ return el(id).checked; });
+}
+
+// ---- sorting -------------------------------------------------------------
+var sortKey = 'ovr', sortDir = -1;
+function keyOf(i, k){
+  var r = P[i], g = G[r[PROG]] || [];
+  switch(k){
+    case 'name': return r[NAME].toLowerCase();
+    case 'program': return (g[gNAME]||'').toLowerCase();
+    case 'cls': return g[gCLS]||'';
+    case 'county': return g[gCOUNTY]||'';
+    case 'grade': return r[GRADE];
+    case 'ovr': return r[OVR];
+    case 'pot': case 'pot2': return r[POT];
+    case 'head': case 'head2':
+      return (r[POT] === null || r[OVR] === null) ? null : r[POT] - r[OVR];
+    case 'rank': case 'rank2': return r[RANK];
+    case 'matches': return r[MATCH];
+    case 'pct': return r[MATCH] ? r[W] / r[MATCH] : null;
+    case 'flight': return r[FLIGHT]||'';
+    case 'lift': return r[LIFT];
+    case 'wae': return r[WAE];
+    case 'vs': return r[VSSTART];
+    case 'dev': return r[DEV];
+    case 'starts': return r[STARTS]||'';
+    case 'moved': return r[MOVED]||'';
+    case 'teamrank': return g[gRANK];
+  }
+  return null;
+}
+
+function run(){
+  var on = anyFilter();
+  el('results').style.display = on ? '' : 'none';
+  el('empty-state').style.display = on ? 'none' : '';
+  if (!on) return;
+  var hits = [];
+  for (var i = 0; i < P.length; i++) if (matches(i)) hits.push(i);
+  hits.sort(function(a, b){
+    var ka = keyOf(a, sortKey), kb = keyOf(b, sortKey);
+    if (ka === null || ka === undefined) return 1;
+    if (kb === null || kb === undefined) return -1;
+    if (ka < kb) return -sortDir;
+    if (ka > kb) return sortDir;
+    return 0;
+  });
+  el('result-count').textContent = hits.length + (hits.length === 1 ? ' player' : ' players');
+  el('result-note').textContent = hits.length > SHOW_CAP
+    ? ('showing the first ' + SHOW_CAP + ' — narrow the search to see the rest') : '';
+  render(hits.slice(0, SHOW_CAP));
+}
+
+function render(hits){
+  var list = shortlist();
+  var out = [];
+  hits.forEach(function(i){
+    var r = P[i], g = G[r[PROG]] || [];
+    var head = (r[POT] === null || r[OVR] === null) ? null : r[POT] - r[OVR];
+    var pct = r[MATCH] ? r[W] / r[MATCH] : null;
+    var starred = list[r[PID]] ? ' is-fav' : '';
+    out.push('<tr>' +
+      '<td><button type="button" class="pt-star pt-star-inline' + starred + '" data-pid="' + r[PID] +
+        '" onclick="toggleShort(this)">' + (list[r[PID]] ? '★' : '☆') + '</button></td>' +
+      '<td><a href="' + player_href(r[PID]) + '">' + esc(r[NAME]) + '</a></td>' +
+      '<td class="num">' + (r[GRADE] || '—') + '</td>' +
+      '<td>' + esc(g[gNAME] || '') + '</td>' +
+      '<td><span class="pt-chip">' + esc(g[gCLS] || '') + '</span></td>' +
+      '<td>' + esc(g[gCOUNTY] || '') + '</td>' +
+      td('ability', fmt(r[OVR], 1)) + td('ability', fmt(r[POT], 1)) +
+      td('ability', fmt(head, 1)) + td('ability', r[RANK] || '—') +
+      td('usage', r[MATCH]) + td('usage', r[W] + '–' + r[L]) +
+      td('usage', esc(r[FLIGHT] || '—'), true) +
+      td('usage', pct === null ? '—' : pct.toFixed(3)) +
+      td('value', sgn(r[LIFT], 3)) + td('value', sgn(r[WAE], 1)) +
+      td('value', sgn(r[VSSTART], 1)) +
+      td('dev', sgn(r[DEV], 1)) + td('dev', fmt(r[POT], 1)) + td('dev', fmt(head, 1)) +
+      td('place', esc(r[STARTS] || '—'), true) + td('place', r[RANK] || '—') +
+      td('place', esc(r[MOVED] || '—'), true) +
+      td('place', g[gRANK] ? (g[gRANK] + '/' + g[gSIZE]) : '—') +
+      '</tr>');
+  });
+  el('scout-body').innerHTML = out.join('');
+}
+function td(view, v, isText){
+  return '<td class="' + (isText ? '' : 'num ') + 'v-' + view + '">' + v + '</td>';
+}
+function esc(s){
+  return String(s).replace(/[&<>"]/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; });
+}
+function player_href(pid){
+  return '../players/' + String(pid).toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/^-+|-+$/g, '') + '.html';
+}
+
+// ---- shortlist -----------------------------------------------------------
+function shortlist(){
+  try { return JSON.parse(localStorage.getItem(SL_KEY) || '{}'); } catch(e){ return {}; }
+}
+function saveList(o){
+  try { localStorage.setItem(SL_KEY, JSON.stringify(o)); } catch(e){}
+  el('sl-count').textContent = Object.keys(o).length;
+}
+function toggleShort(btn){
+  var pid = btn.dataset.pid, list = shortlist();
+  if (list[pid]){ delete list[pid]; btn.classList.remove('is-fav'); btn.textContent = '☆'; }
+  else {
+    var r = P[byId[pid]], g = G[r[PROG]] || [];
+    list[pid] = {name: r[NAME], from: g[gNAME] || '', ovr: r[OVR], grade: r[GRADE], dest: ''};
+    btn.classList.add('is-fav'); btn.textContent = '★';
+  }
+  saveList(list);
+  drawList();
+}
+function slotIn(progName, ovr){
+  var gi = progByName[progName];
+  if (gi === undefined || ovr === null || ovr === undefined) return null;
+  var ladder = G[gi][gLADDER] || [];
+  var n = 0;
+  for (var i = 0; i < ladder.length; i++) if (ladder[i] > ovr) n++;
+  return n + 1;
+}
+function drawList(){
+  var list = shortlist(), out = [], keys = Object.keys(list);
+  keys.sort(function(a, b){ return (list[b].ovr || 0) - (list[a].ovr || 0); });
+  keys.forEach(function(pid){
+    var e = list[pid];
+    var fit = e.dest ? slotIn(e.dest, e.ovr) : null;
+    var note = '';
+    if (!e.dest) note = 'no destination yet';
+    else if (progByName[e.dest] === undefined) note = 'not a program in this season';
+    else if (e.dest === e.from) note = 'already at this program';
+    else if (fit && D.dressed && fit > D.dressed) note = 'would sit outside the lineup there';
+    out.push('<tr>' +
+      '<td><button type="button" class="pt-star pt-star-inline is-fav" data-pid="' + pid +
+        '" onclick="removeFromList(this)">★</button></td>' +
+      '<td><a href="' + player_href(pid) + '">' + esc(e.name) + '</a></td>' +
+      '<td class="num">' + (e.grade || '—') + '</td>' +
+      '<td class="num">' + fmt(e.ovr, 1) + '</td>' +
+      '<td>' + esc(e.from) + '</td>' +
+      '<td><input class="pt-dest" list="prog-names" value="' + esc(e.dest || '') +
+        '" data-pid="' + pid + '" oninput="setDest(this)" placeholder="Program name…"></td>' +
+      '<td class="num">' + (fit === null ? '—' : ('No. ' + fit)) + '</td>' +
+      '<td class="pt-warn">' + esc(note) + '</td>' +
+      '</tr>');
+  });
+  el('sl-body').innerHTML = out.join('') ||
+    '<tr><td colspan="8" class="pt-empty">Nothing shortlisted yet. Star a player on the Search or Cohort tab.</td></tr>';
+  el('sl-count').textContent = keys.length;
+}
+function removeFromList(btn){
+  var list = shortlist(); delete list[btn.dataset.pid]; saveList(list); drawList(); run();
+}
+function setDest(input){
+  var list = shortlist();
+  if (list[input.dataset.pid]){ list[input.dataset.pid].dest = input.value.trim(); saveList(list); }
+  drawList();
+}
+function bulkDest(){
+  var v = val('bulk-dest'); if (!v) return;
+  var list = shortlist();
+  Object.keys(list).forEach(function(pid){ if (!list[pid].dest) list[pid].dest = v; });
+  saveList(list); drawList();
+}
+function clearList(){
+  if (!confirm('Clear the whole shortlist for ' + D.label + '?')) return;
+  saveList({}); drawList(); run();
+}
+function batchText(){
+  var list = shortlist(), lines = [], held = 0;
+  Object.keys(list).forEach(function(pid){
+    var e = list[pid];
+    // Never export a row that would be a no-op or a miss: no destination, a
+    // name this season has no program for, or the program they already attend.
+    if (!e.dest || progByName[e.dest] === undefined || e.dest === e.from){ held++; return; }
+    lines.push(pid + ',' + e.dest);
+  });
+  return {text: lines.join('\n') + (lines.length ? '\n' : ''), n: lines.length, held: held};
+}
+function reportBatch(b){
+  el('batch-note').textContent = b.n + ' row' + (b.n === 1 ? '' : 's') + ' ready' +
+    (b.held ? ('; ' + b.held + ' held back (no destination, unknown program, or already there)') : '') + '.';
+}
+function exportBatch(){
+  var b = batchText(); reportBatch(b);
+  if (!b.n) return;
+  var blob = new Blob([b.text], {type: 'text/csv'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = D.scope + '-transfers.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+}
+function copyBatch(){
+  var b = batchText(); reportBatch(b);
+  if (!b.n) return;
+  if (navigator.clipboard) navigator.clipboard.writeText(b.text);
+  else window.prompt('Copy the batch:', b.text);
+}
+
+// ---- cohort builder ------------------------------------------------------
+function cohort(){
+  var dest = val('co-dest'), gi = progByName[dest];
+  if (gi === undefined){
+    el('co-out').innerHTML = '<p class="pt-note">Pick a program to build up. The list below ' +
+      'is the best available talent in its own county or area, with the ladder position each ' +
+      'would take there — a cohort moves together, so read it as a group.</p>';
+    return;
+  }
+  var g = G[gi];
+  var mode = val('co-scope');
+  var key = mode === 'area' ? g[gAREA] : g[gCOUNTY];
+  var ids = (D.catchment[mode] || {})[key] || [];
+  var list = shortlist();
+  var rows = ids.map(function(pid){ return P[byId[pid]]; })
+                .filter(function(r){ return r && G[r[PROG]] && G[r[PROG]][gNAME] !== dest; });
+  var body = rows.map(function(r){
+    var pg = G[r[PROG]] || [];
+    var fit = slotIn(dest, r[OVR]);
+    return '<tr>' +
+      '<td><button type="button" class="pt-star pt-star-inline' + (list[r[PID]] ? ' is-fav' : '') +
+        '" data-pid="' + r[PID] + '" onclick="toggleShortTo(this)">' +
+        (list[r[PID]] ? '★' : '☆') + '</button></td>' +
+      '<td><a href="' + player_href(r[PID]) + '">' + esc(r[NAME]) + '</a></td>' +
+      '<td class="num">' + (r[GRADE] || '—') + '</td>' +
+      '<td class="num">' + fmt(r[OVR], 1) + '</td>' +
+      '<td>' + esc(pg[gNAME] || '') + '</td>' +
+      '<td><span class="pt-chip">' + esc(pg[gCLS] || '') + '</span></td>' +
+      '<td>' + esc(pg[gTOWN] || '') + '</td>' +
+      '<td class="num">' + (r[RANK] || '—') + '</td>' +
+      '<td class="num">' + (fit === null ? '—' : 'No. ' + fit) + '</td></tr>';
+  }).join('');
+  var ladder = (g[gLADDER] || []).slice(0, D.dressed || 11)
+                 .map(function(v, i){ return '<span class="pt-pip">' + (i + 1) + ' · ' + v.toFixed(1) + '</span>'; }).join('');
+  el('co-out').innerHTML =
+    '<p class="pt-note"><strong>' + esc(dest) + '</strong> — ' + esc(g[gCLS]) + ', ' +
+      esc(g[gLEAGUE]) + ', ' + esc(g[gTOWN]) + ' (' + esc(g[gCOUNTY]) + ' County, ' +
+      esc(g[gAREA]) + '). Current lineup: ' + ladder + '</p>' +
+    '<div class="pt-tablewrap"><table class="pt-table"><thead><tr><th></th><th>Player</th>' +
+    '<th class="num">Gr</th><th class="num">OVR</th><th>Currently</th><th>Cls</th><th>Town</th>' +
+    '<th class="num" title="Ladder position at their own program">Ldr</th>' +
+    '<th class="num" title="Ladder position they would take here">Fit</th></tr></thead><tbody>' +
+    (body || '<tr><td colspan="9" class="pt-empty">Nobody else on record in this ' + mode + '.</td></tr>') +
+    '</tbody></table></div>';
+}
+function toggleShortTo(btn){
+  var dest = val('co-dest');
+  toggleShort(btn);
+  var list = shortlist();
+  if (list[btn.dataset.pid] && dest && progByName[dest] !== undefined){
+    list[btn.dataset.pid].dest = dest; saveList(list); drawList();
+  }
+  cohort();
+}
+
+// ---- presets -------------------------------------------------------------
+document.querySelectorAll('button[data-finder]').forEach(function(b){
+  b.addEventListener('click', function(){
+    var f = D.finders[b.dataset.finder] || {ids: [], sort: 'ovr', dir: -1};
+    resetFilters(true);
+    finderSet = new Set(f.ids);
+    // Carry the finder's OWN ranking into the grid — a reservoir list ordered
+    // by ability answers a different question from one ordered by how little
+    // the player has played, and an id set alone loses that.
+    sortKey = f.sort; sortDir = f.dir;
+    document.querySelectorAll('#scout-table thead th').forEach(function(o){ o.classList.remove('sorted'); });
+    var th = document.querySelector('#scout-table thead th[data-key="' + f.sort + '"]');
+    if (th) th.classList.add('sorted');
+    document.querySelectorAll('button[data-finder]').forEach(function(o){ o.classList.remove('active'); });
+    b.classList.add('active');
+    el('finder-blurb').textContent = b.title;
+    el('adv').open = true;
+    run();
+  });
+});
+function resetFilters(keepBlurb){
+  TEXT_FILTERS.concat(NUM_FILTERS).forEach(function(id){ el(id).value = ''; });
+  CHECK_FILTERS.forEach(function(id){ el(id).checked = false; });
+  finderSet = null;
+  if (!keepBlurb){
+    el('finder-blurb').textContent = '';
+    document.querySelectorAll('button[data-finder]').forEach(function(o){ o.classList.remove('active'); });
+  }
+  onArea(); onClass();
+}
+
+// ---- wiring --------------------------------------------------------------
+function fillSelect(id, options){
+  var sel = el(id), keep = sel.value;
+  sel.innerHTML = '<option value="">Any</option>';
+  options.forEach(function(o){
+    var opt = document.createElement('option'); opt.value = o; opt.textContent = o; sel.appendChild(opt);
+  });
+  if (options.indexOf(keep) !== -1) sel.value = keep;
+}
+function onArea(){
+  var a = val('f-area');
+  var counties = {};
+  G.forEach(function(g){ if (g[gCOUNTY] && (!a || g[gAREA] === a)) counties[g[gCOUNTY]] = 1; });
+  fillSelect('f-county', Object.keys(counties).sort());
+  run();
+}
+function onClass(){
+  var c = val('f-class');
+  var leagues = {};
+  G.forEach(function(g){ if (g[gLEAGUE] && g[gLEAGUE] !== '—' && (!c || g[gCLS] === c)) leagues[g[gLEAGUE]] = 1; });
+  fillSelect('f-league', Object.keys(leagues).sort());
+  run();
+}
+document.querySelectorAll('#view-tabs button[data-view]').forEach(function(b){
+  b.addEventListener('click', function(){
+    document.querySelectorAll('#view-tabs button').forEach(function(o){ o.classList.remove('active'); });
+    b.classList.add('active');
+    el('scout-table').dataset.view = b.dataset.view;
+  });
+});
+document.querySelectorAll('#scout-table thead th[data-key]').forEach(function(th){
+  th.classList.add('pt-sort');
+  th.addEventListener('click', function(){
+    if (sortKey === th.dataset.key) sortDir = -sortDir;
+    else { sortKey = th.dataset.key; sortDir = -1; }
+    document.querySelectorAll('#scout-table thead th').forEach(function(o){ o.classList.remove('sorted'); });
+    th.classList.add('sorted');
+    run();
+  });
+});
+
+fillSelect('f-area', D.areas);
+fillSelect('f-class', D.classes);
+fillSelect('f-starts', D.classes);
+onArea(); onClass();
+['prog-names', 'prog-names2'].forEach(function(id){
+  var dl = document.getElementById(id);
+  G.forEach(function(g){
+    var o = document.createElement('option'); o.value = g[gNAME]; dl.appendChild(o);
+  });
+});
+drawList();
+cohort();
+</script>
+{% endblock %}

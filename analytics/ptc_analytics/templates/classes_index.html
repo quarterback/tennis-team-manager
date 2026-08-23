@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Classifications{% endblock %}
+{% block content %}
+<div class="pt-crumbs"><a href="../index.html">Home</a> / Classifications</div>
+<h1 class="pt-h1">Classifications</h1>
+<p class="pt-lede">
+  Three questions about a class: whether it is actually stronger than the one
+  below it (answered on court, from the duals where the two met), whether the
+  talent shape the design promises is holding up in a live world, and whether
+  the class is competitive.
+</p>
+<div class="pt-index-grid">
+  {% for rep in reports %}
+  <a class="pt-index-card" href="{{ rep.scope_id }}.html">
+    <h4>{{ rep.label }}</h4>
+    <div class="sub">{{ rep.classes|length }} classifications{% if not rep.any_cross_class %} · no cross-class duals in scope{% endif %}</div>
+  </a>
+  {% endfor %}
+</div>
+{% if not reports %}<p class="pt-note">No seasons ingested yet.</p>{% endif %}
+{% if skipped %}
+<div class="pt-panel">
+  <div class="pt-panel-body">
+    <p class="pt-note"><strong>Not covered here:</strong>
+      {% for s in skipped %}{{ s.label }}{{ ", " if not loop.last }}{% endfor %}.
+      This desk is built on ability, and those exports carry
+      {{ skipped[0].why }} — so an OVR read off one would price a flight at a
+      number nobody played it at. Named rather than quietly omitted.</p>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

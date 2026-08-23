@@ -1322,6 +1322,27 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
 - **The rung runs at week 0, BEFORE anything college**, marked done by the `world_jhsaa`
   rows it writes (the cups' pattern, not a flag). It must simulate the SAME season the
   recruit hand-off does — `world.jhsaa_season_year()` and seed 0, never the world index.
+- **‼️ THE JV SEASON AND VARSITY SHARE `world_jhsaa_dual`, so EVERY READER OF THAT
+  TABLE MUST FILTER ON `level` — the research export did not, and shipped corrupt
+  zips.** `research_export._load_archived_jhsaa_season` SELECTed `level` and never
+  used it, so JV duals reached `duals.csv` with nothing marking them: 2039 boys
+  carried **18,096 duals against 2038's 10,709**, and under `phase="regular"` only
+  62% were the varsity 3S/4D shape. That matters beyond row counts — `analytics/
+  aggregate.py` derives a phase's dual shape from the most common line count, so
+  the elastic `JV_FORMATS` shapes were one growth step from inverting it (in
+  `showcase_pod` they already had), and any join of `line_players` → `lines` →
+  `duals` merged JV appearances into varsity player and program totals while
+  `jhsaa_standings.csv` stayed varsity-only. Fixed with `AND COALESCE(level,'v')
+  = 'v'` — **COALESCE, because a pre-JV archive reads back NULL and those are all
+  varsity** — plus a `level` column on the exported row so the guarantee is
+  assertable rather than implied. ‼️ "Carries no lines" is NOT a substitute for
+  the column: that is also what a varsity dual whose lines failed to record looks
+  like. ‼️ AND EVERY EXPORT TEST INJECTS A SEASON (`build_jhsaa(season=...)`),
+  where JV lives in `season["jv"]` and cannot reach a team's schedule — so the
+  whole suite stayed green while the ARCHIVE path, the only one a real export
+  uses, was broken. When a builder takes an injectable input, the injected path
+  and the database path are two different code paths. See
+  `docs/AAR-jv-duals-leaked-into-the-research-export.md`.
 - **`talent` on `generate_prospect` is the CEILING**, current is maturity-derived, so the
   `_TALENT` bands look absurdly high next to the college ones. Don't "fix" them down.
 - **‼️ SMALLER CLASSIFICATIONS ARE THINNER, NOT CAPPED (owner rule 2027-08).** Tennis is

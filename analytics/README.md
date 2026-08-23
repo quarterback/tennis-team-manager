@@ -94,6 +94,8 @@ senior), and **no tutorial help text** on the pages themselves.
   so they're never relabeled by distance-from-final the way the tail is.
 - **Players** — search-only by design (a flat index at this scale is not
   useful); rosters are the real way in.
+- **Scouting** (`scout/`) — one page per season; its own section below.
+- **Classifications** (`classes/`) — one report per season, three tabs.
 - **My Teams** — a star/pin button on any team card or team page, stored in
   the browser's `localStorage` (no server, no account) and surfaced on the
   home page, so you don't re-search your own team/league every visit.
@@ -117,13 +119,209 @@ re-export a season to get real dates.
 - `seasons/` — the per-season dashboards.
 - `metrics/` — the analytics library: ONE **Team Stat Center** grid
   (season → classification → district scoped, switchable column-group views:
-  Shape / Format lift / Résumé / Depth & volatility / Predictive, every
-  column sortable) plus **Player Value (PVAR)**. The seven separate
-  single-metric pages of the first analytics pass are gone — a new metric is
-  a new column (or view) in the grid, never a new page of everything.
-- **Storylines are ARCHIVED, not rendered** (owner call 2028-08: "not useful
-  as rendered at all") — `metrics_mod.storylines()` still runs on every
-  build and writes `analytics/data/storylines.json`; there is no page for it.
+  Shape / Format lift / Résumé / Depth & volatility / Predictive / **Talent** /
+  **Movement**, every column sortable) plus **Player Value**. The seven
+  separate single-metric pages of the first analytics pass are gone — a new
+  metric is a new column (or view) in the grid, never a new page of everything.
+- `scout/` — the **Scouting** desk, one page per season: a player search whose
+  axes include geography, three preset finders, a shortlist, and a cohort
+  builder. Its own section below.
+- `classes/` — the **classification report**, one per season.
+- **Storylines are GONE** (owner call 2029-08: "useless, can be sunset
+  entirely"). The 2028 pass removed the page and left the computation writing
+  `analytics/data/storylines.json` on every build; this one removed the
+  function too. They were auto-flagged extremes sorted by how extreme the
+  number was, which tells you a number is unusual and never why. Do not
+  rebuild them — the Scouting desk, the classification report and the Talent
+  view replaced them, and each answers a question somebody actually asked.
+
+Design notes and the reasoning behind the sections below:
+`docs/AAR-analytics-ability-layer-and-scouting-desk.md`.
+
+## ‼️ This is the JHSAA desk
+
+Owner, 2029-08: "the analytics tool has nothing to do with the college game at
+all." College exports still ingest and still render the results-only pages they
+always did, but **nothing ability-derived is computed from one** and there is no
+Scouting or Classifications page for them. That is not only scope — it is what
+the export says about itself. `research_export.build_college`: "Player and
+program fields reflect the CURRENT roster/program config … not a per-season
+historical snapshot." So a four-year-old college season lists TODAY's roster,
+and reading OVR off it would price old flights at later numbers while silently
+dropping every flight whose players have since graduated; a movement diff would
+see everyone at their current program in every season and conclude nobody has
+ever transferred. `aggregate.Bundle.roster_is_snapshot` is the gate and
+`aggregate.snapshot_bundles()` the accessor; the Scouting and Classifications
+indexes NAME what they left out rather than quietly rendering a shorter list.
+
+The transfer batch is JHSAA-only for the same reason: its only consumer,
+`/editor/jhsaa-transfer-batch`, resolves ids through the girls'/boys' rosters,
+so a college row would be rejected as an unknown player.
+
+## ‼️ Varsity only — the JV season shares one schedule table
+
+The JHSAA plays a JV season now, and both levels are archived in
+`world_jhsaa_dual`, so **`duals.csv` carries both**. Owner rule: JV never needs
+to reach analytics. `aggregate.Bundle` filters to `level == "v"` at the one
+chokepoint everything downstream reads through.
+
+Left unfiltered a JV dual is not a cosmetic extra row: it inflates every record
+derived from the schedule while `jhsaa_standings.csv` stays varsity-only, so a
+team page's KPI record and its own schedule disagree — and
+`_derive_card_shape`, which finds the varsity shape by counting lines per dual,
+averages JV's elastic lineup into it.
+
+**A missing `level` means varsity, not unknown** — seasons exported before the
+JV season existed have no such column and every dual in one is a varsity dual.
+And "carries no lines" is NOT a usable substitute for the column: that is also
+what a varsity dual whose lines failed to record looks like, which is why the
+export was given `duals.level` rather than this side being taught to guess.
+
+## The ability layer — the one input the engine reads (`ptc_analytics/ability.py`)
+
+Everything in `metrics.py` measures OUTCOMES, and its win-probability model
+runs on TOSS. The match engine reads exactly one number: a player's current
+overall. So the library modelled the output and ignored the only input, which
+is why it could describe a season and never say whether it should have gone
+that way.
+
+`ability.py` joins `lines` → `line_players` → `players.current_grade`, so every
+flight on record carries the OVR gap it was contested at. **No export change
+was needed** — `current_grade` has always been in `players.csv`, and within a
+season it is constant (development lands at the rollover), so a season's value
+IS the number every dual that season was played at. That matters: every zip
+already downloaded works, with no re-export.
+
+What it produces:
+
+- **A fitted win curve**, one per (family, singles/doubles). ‼️ **Fitted from
+  the ingested flights, never hard-coded.** The engine's gap response has been
+  retuned before, and a table copied in here would go stale silently — the same
+  failure mode the derived `regular_shape`/`state_shape` exists to avoid, and
+  the one the game's own flight-weight AAR is about. The curve publishes its
+  OBSERVED bands beside the fitted ones on the Player Value page: the bands are
+  the receipt, and if the two disagree the bands win the argument.
+  Doubles gets its own curve because it is measurably steeper at the same gap.
+- **xShare / Talent luck** per team — expected flight share against the share
+  actually taken. This is Record Luck computed against the engine's input
+  rather than against a rating, and it is the only thing on the site that can
+  answer "did this roster underperform its talent".
+- **WAE** per player — wins above what their own matches priced. It sits beside
+  PVAR on the Player Value page and the two are *meant* to disagree: PVAR asks
+  whether the seat was filled better than the next player would have filled it,
+  WAE asks whether they beat the matches they were handed.
+- **Ladder position** — a program's roster sorted on OVR, which turns the team
+  roster panel into a depth chart and makes "where would this player slot in
+  over there" a lookup rather than a model.
+
+## Scouting (`scout/`) — the market desk
+
+Modelled on Football Manager's search → shortlist loop, because that is the
+loop the roster passes already ran by hand. One page per season, three tabs.
+
+**‼️ GEOGRAPHY IS A TOP-LEVEL AXIS, not a filter under classification.**
+Classification → district is the organizing hierarchy on every other page and
+is right for a competition, but it is the wrong index for a market: a cohort
+build is "the best players within one county", and a class-first tree makes
+that query unaskable — you would walk nine class pages and re-filter each one.
+The search therefore carries BOTH cascades over one list (area → county → town,
+and class → league) and narrows on whichever the question uses. It still never
+opens on the whole association: nothing renders until an axis is set, and the
+grid draws at most 400 rows and says so.
+
+**Several kinds of candidate, not one list.** A mismatch between ability and
+playing time is a FACT, not a problem — a 67 at No. 1 singles for a bad team is
+an ordinary thing to be. What makes a move interesting is a pull somewhere
+else, so each finder reports the pull:
+
+| Finder | Who | The move |
+|---|---|---|
+| **Buried** | outside the lineup, above their own class's median starter | across |
+| **Reservoir** | returning, barely played, below that line now *and at their ceiling* | down |
+| **Stranded** | top-decile in class, top three on their ladder, bottom-third program | out |
+| **Cohort builder** | everyone in a destination's county or area, with the ladder slot each would take there | together |
+
+The ceiling test is what separates Buried from Reservoir; drop it and the two
+collapse into one list under two names. ‼️ **The finders are not capped** — an
+earlier version kept the best 60 per class, which reads on screen as "these are
+the candidates" while being "these are 60 of 1,022". Only the grid's display
+limit applies, and it announces itself.
+
+**The shortlist is the batch.** Star players, set a destination (with a live
+"Fit" column showing the ladder position they would take there), and export
+`player_id,DestinationSchool` — exactly what the game's bulk transfer field
+takes, no header, LF endings. Rows with no destination, an unknown program, or
+the program the player already attends are held back and reported rather than
+exported. It lives in `localStorage`, so **browse over `http://localhost`, not
+`file://`** (same reason as My Teams — see the top of this file).
+
+**Two derived columns do most of the work.** `starts_in` is the strongest
+classification whose median starting line a player clears — that single number
+is the whole cascade decision. `lift` is their win rate minus their team's dual
+win rate: the good-player-on-a-bad-team detector.
+
+## Classifications (`classes/`)
+
+Three questions about a class, as three tabs.
+
+1. **Is 6A actually better than 5A?** Answerable on court and only on court:
+   league play is inside a class by construction, so the classes meet in
+   non-district play and nowhere else, and those duals are the entire evidence
+   base. Comparing two classes' TOSS instead would compare how each class rates
+   *itself*, since the index is opponent-adjusted inside a near-self-contained
+   schedule. ‼️ A per-classification export contains one class, so the matrix
+   is legitimately empty in one — the page says so rather than rendering a
+   blank grid. Export with classification "all".
+2. **Is the talent shape holding?** Mean OVR at each ladder position, per
+   class. The design's claim is that the top ends sit close together and
+   enrollment buys DEPTH, so the classes should fan out going down a lineup.
+   Worth measuring in a LIVE world rather than at generation: the generator's
+   guarantee says nothing about where talent ends up after nine seasons of
+   hand transfers.
+3. **Is the class healthy?** Spread across the top 16, how many different
+   programs have won it, title concentration, and how often a dual is decided
+   by one flight.
+
+## Movement
+
+Transfers were absent from the tool entirely, and every input was already in
+the career stitch: diff `program_id` across consecutive seasons on the stable
+`player_id`. On a team page that becomes In / Out / Net, who arrived and from
+where, who left and for where, the share of the season's flight wins that came
+from arrivals (a title built by arrivals and one built at home look identical
+on a standings row), and development for arrivals vs stayers against the fitted
+headroom curve.
+
+‼️ **Departures are read from the season the player turns up in**, so the
+NEWEST ingested season has nothing to read them from and reports unknown, not
+zero — a program that lost seven and one that lost none must not print the same
+number. Freshmen arriving and seniors leaving are never movement: a player
+absent from either side of a year pair is a player the export does not cover.
+
+‼️ **The growth curve is refitted, not copied.** An earlier pass wrote down
+0.7 / 3.6 / 5.8 / 6.8 / 7.6 per headroom decade from one year pair. The game's
+development model has since been rebuilt and is era-gated by entry year, so a
+copied table describes whichever era it was measured in and mis-scores every
+other one.
+
+## Two traps that will bite any pass over this data
+
+- **Join on `program_id`, never on a display name.** Roughly 300 of 1,644
+  programs have been renamed across the archive, and an id often matches
+  neither the old name nor the new one.
+- **`classification` is enrollment; `championship_group` is who they play.**
+  Six programs differ, two of them by four classes. Every competitive
+  comparison here keys on the group (`aggregate.program_class`).
+
+## Vocabulary
+
+A player plays **matches**, at a **flight** / position / line, in a **dual**.
+A *court* is the physical surface — "courts played" is wrong, and so is "the D3
+court" (it is the No. 3 doubles flight). Aggregates over flights are **flight
+share**. The older "court share" wording survives in `metrics.py`'s tier-1
+metric names (RCI/SCI are documented as expected court share); it is fixed in
+the surfaces this pass touched rather than swept, the same way the game repo
+handles its own "card" problem.
 
 ## Analytics library
 
@@ -146,10 +344,6 @@ First pass:
   independent-court binomial approximation.
 - **Opponent-power quartiles, league vs non-league split, close-match
   record** — résumé questions: who are they beating, is the record padded.
-- **Storylines** — auto-flagged extremes (big Fmt, lopsided team shape,
-  volatile results, suspiciously good/bad quality-win splits) with plain-
-  English explanations, sorted by how extreme the number is. Archived, not
-  rendered — see above.
 
 Second pass, added the same session as the first: Format Dependency, Format
 Win-Probability Lift, State score profile / three-court / sweep probability,

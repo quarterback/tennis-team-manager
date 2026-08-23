@@ -174,7 +174,23 @@ class Bundle:
         t = raw["tables"]
         self.programs = {p["program_id"]: p for p in t.get("programs", [])}
         self.players = {p["player_id"]: p for p in t.get("players", [])}
-        self.duals = {d["dual_id"]: d for d in t.get("duals", [])}
+        # ‼️ VARSITY ONLY, filtered at the ONE chokepoint everything downstream
+        # reads through. The JHSAA now plays a JV season and both levels share
+        # `world_jhsaa_dual`, so `duals.csv` carries both. Unfiltered, a JV dual
+        # inflates every record derived from the schedule — while
+        # `jhsaa_standings.csv` stays varsity-only, so a team page's KPI record
+        # and its own schedule would disagree — and `_derive_card_shape` would
+        # average JV's elastic lineup into the varsity shape it exists to find.
+        # Owner rule: JV never needs to reach analytics.
+        #
+        # A missing `level` means VARSITY, not unknown: seasons exported before
+        # the JV season existed have no such column and every dual in them is a
+        # varsity dual. "Carries no lines" is NOT a usable substitute for the
+        # column — that is also what a varsity dual whose lines failed to
+        # record looks like, which is exactly why the export was given `level`
+        # rather than the sidecar being taught to guess.
+        self.duals = {d["dual_id"]: d for d in t.get("duals", [])
+                      if (d.get("level") or "v") == "v"}
         self.lines_by_dual = defaultdict(list)
         for line in t.get("lines", []):
             self.lines_by_dual[line["dual_id"]].append(line)
@@ -218,6 +234,38 @@ class Bundle:
                 players = self.line_players.get(line["line_id"], [])
                 lines.append({**line, "players": players})
             self.duals_full[did] = {**d, "lines": lines}
+
+        # ‼️ DOES players.csv DESCRIBE THE ROSTER THAT PLAYED THIS SEASON?
+        #
+        # This tool is the JHSAA desk (owner, 2029-08: "the analytics tool has
+        # nothing to do with the college game at all"). College exports still
+        # ingest and still render the results-only pages they always did — but
+        # nothing ability-derived may be computed from one, and the reason is
+        # a property of the export rather than a matter of scope:
+        #
+        #   JHSAA   YES. build_jhsaa reads the archived season and its roster
+        #           is regenerated deterministically for that roster YEAR;
+        #           keeping an archived roster reproducible is the entire
+        #           reason the name and development eras are gated on entry
+        #           year. Within a season OVR is constant, so the value IS the
+        #           number every dual that season was played at.
+        #   COLLEGE NO, and research_export.build_college says so outright:
+        #           "Player and program fields reflect the CURRENT roster/
+        #           program config (ncaa.build_roster) … not a per-season
+        #           historical snapshot." A four-year-old college season
+        #           therefore lists TODAY's roster: the OVRs are today's, and
+        #           everyone who has since graduated is simply absent.
+        #
+        # Three consequences, none of which raise:
+        #   * an ability join prices old flights at later OVRs and DROPS every
+        #     flight whose players have left, so a fitted curve trains on a
+        #     biased subsample with the wrong x-axis;
+        #   * a growth curve diffs one roster against itself and reports ~0;
+        #   * a movement diff sees every player at their CURRENT program in
+        #     every season and reports that nobody ever transferred.
+        # Gated rather than degraded, per the game's own rule that a graceful
+        # fallback turns a should-be-crash into plausible-looking wrong data.
+        self.roster_is_snapshot = self.family == "jhsaa"
 
         # ‼️ Card shapes (how many singles/doubles lines a "regular" or
         # "postseason" dual plays) are DERIVED from the actual exported lines,
@@ -267,6 +315,15 @@ class Bundle:
 
 def load_bundles(raw_bundles: list[dict]) -> list[Bundle]:
     return [Bundle(r) for r in raw_bundles]
+
+
+def snapshot_bundles(bundles: list[Bundle]) -> list[Bundle]:
+    """The bundles whose players.csv is the roster that actually played — the
+    only ones any ability-derived number may be computed from. See
+    `Bundle.roster_is_snapshot` for why, and pair every use with a visible
+    note naming what was left out; a silently shorter list is the failure this
+    gate exists to prevent."""
+    return [b for b in bundles if b.roster_is_snapshot]
 
 
 def team_pages(bundles: list[Bundle]) -> dict:
