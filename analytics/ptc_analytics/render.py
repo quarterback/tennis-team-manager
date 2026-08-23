@@ -402,8 +402,15 @@ def build_site(raw_bundles: list[dict]) -> None:
     # by side (area -> county -> town, and class -> district) over one list,
     # and narrows on whichever the question uses. It still never opens on the
     # whole state: nothing renders until at least one axis is set.
+    # ‼️ Snapshot scopes only, and the ones left out are NAMED on the index.
+    # A scouting page for a non-snapshot export would price players at OVRs
+    # they did not play at — and its batch would be rejected anyway, since
+    # /editor/jhsaa-transfer-batch resolves ids through JHSAA rosters alone.
     scout_scopes = []
-    for b in bundles:
+    skipped_scopes = [{"label": b.label,
+                       "why": "players.csv reflects the current roster, not the one that played"}
+                      for b in bundles if not b.roster_is_snapshot]
+    for b in aggregate.snapshot_bundles(bundles):
         rows = scout_rows.get(b.scope_id, [])
         if not rows:
             continue
@@ -460,7 +467,8 @@ def build_site(raw_bundles: list[dict]) -> None:
             },
         })
 
-    w("scout_index.html", SITE / "scout" / "index.html", rel="../", scopes=scout_scopes)
+    w("scout_index.html", SITE / "scout" / "index.html", rel="../", scopes=scout_scopes,
+      skipped=skipped_scopes)
     for s in scout_scopes:
         w("scout.html", SITE / "scout" / s["href"], rel="../", scope=s,
           payload=_json_for_script(s["payload"]),
@@ -469,6 +477,7 @@ def build_site(raw_bundles: list[dict]) -> None:
                    for k, lb, _fn, bl, _sort in market_mod.FINDERS])
 
     # ---- Classification report ----
-    w("classes_index.html", SITE / "classes" / "index.html", rel="../", reports=class_reports)
+    w("classes_index.html", SITE / "classes" / "index.html", rel="../", reports=class_reports,
+      skipped=skipped_scopes)
     for rep in class_reports:
         w("classes.html", SITE / "classes" / f"{rep['scope_id']}.html", rel="../", rep=rep)

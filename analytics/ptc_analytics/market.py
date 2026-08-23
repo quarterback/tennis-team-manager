@@ -90,6 +90,11 @@ def movement(bundles) -> dict:
     player the export does not cover — freshmen arriving and seniors leaving
     must never read as movement.
     """
+    # ‼️ Snapshot scopes only. A college export lists TODAY's roster in every
+    # season, so diffing two of them finds the same player at the same program
+    # both times and concludes nobody has ever transferred — a wrong answer
+    # that looks exactly like a quiet year.
+    bundles = aggregate.snapshot_bundles(bundles)
     seen: dict[tuple, dict] = defaultdict(dict)
     names: dict[tuple, dict] = defaultdict(dict)
     who: dict[str, str] = {}
@@ -139,9 +144,11 @@ def fit_growth(bundles, ability) -> dict:
 
     Returns {decade: mean_gain} plus {"n": {decade: count}}.
     """
+    # Snapshot scopes only: diffing a non-snapshot export against itself
+    # reports a one-year gain of ~0 for everyone still on the roster.
     buckets: dict[int, list] = defaultdict(list)
     by_year: dict[tuple, dict] = defaultdict(dict)
-    for b in bundles:
+    for b in aggregate.snapshot_bundles(bundles):
         sa = ability.ability(b.scope_id)
         if sa is None:
             continue
@@ -215,7 +222,7 @@ def player_rows(bundles, careers, boards, ability, move, growth) -> dict:
     Player Stat Center and every finder need. Built once; nothing downstream
     re-walks the raw tables."""
     out: dict[str, list[dict]] = {}
-    for b in bundles:
+    for b in aggregate.snapshot_bundles(bundles):
         sa = ability.ability(b.scope_id)
         board = boards.get(b.scope_id, {})
         by_program = board.get("by_program", {})
@@ -434,6 +441,7 @@ def team_movement(bundles, rows_by_scope: dict, move: dict, ability) -> dict:
     lost none must not print the same number.
     """
     out: dict[tuple, dict] = {}
+    bundles = aggregate.snapshot_bundles(bundles)
     scope_of: dict[tuple, str] = {}
     for b in bundles:
         scope_of[(b.family, b.gender, b.year)] = b.scope_id

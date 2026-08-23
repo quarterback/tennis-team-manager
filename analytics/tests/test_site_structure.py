@@ -378,3 +378,92 @@ def test_nav_reaches_the_new_desks(site):
     assert "classes/index.html" in html
     assert (site / "scout" / "index.html").exists()
     assert (site / "classes" / "index.html").exists()
+
+
+# --------------------------------------------------------------------------
+# Review follow-ups. Each of these pins a fault that shipped and produced
+# plausible-looking output rather than an error.
+# --------------------------------------------------------------------------
+
+def test_only_snapshot_scopes_are_priced_on_ability(site):
+    # ‼️ A college export's players.csv is TODAY's roster, not the one that
+    # played (research_export.build_college says so outright). Pricing an old
+    # flight off it uses later OVRs and silently DROPS every flight whose
+    # players have since graduated, so the gate is on the export's semantics,
+    # not on taste.
+    from ptc_analytics import aggregate, ingest
+    bundles = ability_bundles(ingest)
+    assert bundles and all(b.roster_is_snapshot for b in bundles)
+    assert aggregate.snapshot_bundles(bundles) == bundles
+
+    class _Fake:
+        roster_is_snapshot = False
+        scope_id = "college-2029-D1-women"
+    mixed = list(bundles) + [_Fake()]
+    assert aggregate.snapshot_bundles(mixed) == bundles, "a non-snapshot scope must be excluded"
+
+
+def test_a_non_snapshot_scope_gets_no_ability_no_scouting_and_is_named(site):
+    from ptc_analytics import ability, aggregate, classes, ingest, market
+    real = ability_bundles(ingest)
+
+    class _Fake:
+        """A college-shaped bundle: enough surface for the gate to reject it
+        before anything reads a player."""
+        roster_is_snapshot = False
+        family, gender, year = "college", "women", 2029
+        scope_id, label = "college-2029-D1-women", "2029 D1 Women"
+        players, programs, duals_full, championships = {}, {}, {}, {}
+        regular_shape = state_shape = None
+
+    mixed = list(real) + [_Fake()]
+    idx = ability.build(mixed)
+    assert "college-2029-D1-women" in idx.skipped, "the skip must be reported, not silent"
+    assert idx.ability("college-2029-D1-women") is None
+    # ...and every downstream layer refuses it too
+    assert not any(k[0] == "college-2029-D1-women" for k in idx.team)
+    assert not any(k[0] == "college-2029-D1-women" for k in idx.player)
+    assert all(k[1] != 2029 or k[0] != "college" for k in market.movement(mixed)["moved"])
+    assert all(r["scope_id"] != "college-2029-D1-women" for r in classes.build(mixed, {}, idx))
+    # the index page names what it left out rather than quietly shortening
+    assert "Not covered here" in read(site, "scout/index.html") or \
+        "{% if skipped %}" not in read(site, "scout/index.html")
+
+
+def test_the_fit_counts_each_contested_flight_once(site):
+    # The curve is fitted on both sides of every flight so it is symmetric
+    # about a zero gap, but a mirrored row is the SAME flight seen from the
+    # other bench. Counting it as evidence halved MIN_FIT_SAMPLES and doubled
+    # every number the page reports.
+    from ptc_analytics import ability, ingest
+    bundles = ability_bundles(ingest)
+    idx = ability.build(bundles)
+
+    for (family, kind), curve in idx.curves.items():
+        flights = 0
+        for b in bundles:
+            if b.family != family:
+                continue
+            sa = idx.ability(b.scope_id)
+            for mu in ability.line_matchups(b, sa):
+                if mu["side"] != "home":
+                    continue
+                if ("S" if mu["singles"] else "D") == kind:
+                    flights += 1
+        assert curve.samples == flights, (
+            f"{family}/{kind}: reported {curve.samples} flights, actually {flights}")
+        # and the observed bands total the same real flights, not twice them
+        assert sum(row["n"] for row in curve.bands.values()) == flights
+
+
+def test_a_max_only_filter_shows_results(site):
+    # Setting only "OVR max" or only "Matches max" must load the grid. Both
+    # were missing from anyFilter() while being present in the reset list —
+    # the entered constraint appeared to do nothing.
+    html = read(site, f"scout/{SCOPE29}.html")
+    assert "var NUM_FILTERS" in html
+    for control in ("f-ovrmin", "f-ovrmax", "f-potmin", "f-mmax", "f-rankmin"):
+        assert f"'{control}'" in html, f"{control} missing from the filter lists"
+    # one list, read by both consumers — that is what stops them drifting again
+    assert "TEXT_FILTERS.concat(NUM_FILTERS)" in html
+    assert "NUM_FILTERS.some" in html

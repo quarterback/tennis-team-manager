@@ -184,7 +184,10 @@ def build(bundles, boards, ability) -> list[dict]:
     """One report per scope: [{scope_id, label, classes, shape, h2h, order}]."""
     champs = champions(bundles)
     reports = []
-    for b in bundles:
+    # Snapshot scopes only — every column here reads OVR. (A college export is
+    # also one division per scope, so a cross-class table would have exactly
+    # one row and nothing to compare it against.)
+    for b in aggregate.snapshot_bundles(bundles):
         sa = ability.ability(b.scope_id)
         if sa is None:
             continue

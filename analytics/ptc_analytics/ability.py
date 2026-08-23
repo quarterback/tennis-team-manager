@@ -95,21 +95,41 @@ class WinCurve:
         return e / (1.0 + e)
 
 
-def _fit(kind: str, family: str, binned: Counter, wins: Counter) -> WinCurve:
+def _fit(kind: str, family: str, real: Counter, wins: Counter) -> WinCurve:
     """Two-parameter logistic fitted by Newton-Raphson over GAP BINS rather
     than raw samples — a season is hundreds of thousands of flights and the
     likelihood only depends on (gap, n, wins), so binning at 0.25 of a grade
-    point makes the fit cost nothing and changes nothing."""
-    n_total = sum(binned.values())
+    point makes the fit cost nothing and changes nothing.
+
+    `real` / `wins` are counted ONE ROW PER CONTESTED FLIGHT, signed from the
+    home side. ‼️ The mirror is added inside this function and deliberately
+    NOT counted as sample: a mirrored row is the same flight seen from the
+    other bench, so folding it into the total halves the real bar
+    `MIN_FIT_SAMPLES` sets and doubles the flight count the page reports.
+    """
+    n_total = sum(real.values())
     curve = WinCurve(kind=kind, family=family, samples=n_total)
     if n_total < MIN_FIT_SAMPLES:
         return curve
+
+    # The FIT sees both sides, so the curve is symmetric about a zero gap and
+    # the intercept has a reason to sit at zero. This is a modelling choice
+    # about the likelihood, not a claim about how much evidence there is —
+    # which is why it goes in its OWN counters and never rebinds `real`/`wins`.
+    binned: Counter = Counter()
+    fit_wins: Counter = Counter()
+    for gap, n in real.items():
+        y = wins[gap]
+        binned[gap] += n
+        fit_wins[gap] += y
+        binned[-gap] += n
+        fit_wins[-gap] += n - y
 
     a, b = 0.0, 0.1
     for _ in range(40):
         g0 = g1 = h00 = h01 = h11 = 0.0
         for gap, n in binned.items():
-            y = wins[gap]
+            y = fit_wins[gap]
             z = a + b * gap
             p = 1.0 / (1.0 + math.exp(-z)) if z >= 0 else math.exp(z) / (1.0 + math.exp(z))
             w = n * p * (1.0 - p)
@@ -131,17 +151,21 @@ def _fit(kind: str, family: str, binned: Counter, wins: Counter) -> WinCurve:
 
     curve.a, curve.b, curve.fitted = a, b, True
 
-    # Observed vs fitted by band, read from the FAVOURITE's side so the two
-    # halves of every flight don't cancel to .500 and say nothing.
+    # Observed vs fitted by band, folded onto the FAVOURITE's side so the two
+    # halves of every flight don't cancel to .500 and say nothing. Folded from
+    # `real`, not from the mirrored fit input — the counts here are the number
+    # of flights actually played at that gap, which is what makes the column a
+    # receipt rather than a restatement of the model.
     agg: dict[str, list[float]] = {}
-    for gap, n in binned.items():
-        if gap < 0:
-            continue
-        y = wins[gap]
-        row = agg.setdefault(band_of(gap), [0.0, 0.0, 0.0])
+    for gap, n in real.items():
+        # Fold the underdog's rows onto the favourite's side: a flight played
+        # at -8 and won is the SAME evidence as one played at +8 and lost.
+        y = (n - wins[gap]) if gap < 0 else wins[gap]
+        mag = abs(gap)
+        row = agg.setdefault(band_of(mag), [0.0, 0.0, 0.0])
         row[0] += n
         row[1] += y
-        row[2] += n * (curve.p(gap) or 0.0)
+        row[2] += n * (curve.p(mag) or 0.0)
     # In band order, not dict order — the table reads as a curve.
     for _edge, name in GAP_BANDS:
         if name not in agg:
@@ -263,7 +287,12 @@ def fit_curves(bundles, abilities: dict) -> dict:
     of that family. The curve is a property of the engine, not of a season, so
     pooling seasons is what makes it well-determined — and it means a single
     exported season still gets a usable model."""
-    binned: dict[tuple, Counter] = defaultdict(Counter)
+    # ONE ROW PER CONTESTED FLIGHT, signed from the home side. ‼️ The mirror
+    # belongs to `_fit` and must not also be added here — it was, and the two
+    # together made `samples` (and every observed band's n) twice the number
+    # of flights that were actually played, which in turn halved the real bar
+    # `MIN_FIT_SAMPLES` sets.
+    real: dict[tuple, Counter] = defaultdict(Counter)
     wins: dict[tuple, Counter] = defaultdict(Counter)
     for b in bundles:
         sa = abilities.get(b.scope_id)
@@ -274,12 +303,9 @@ def fit_curves(bundles, abilities: dict) -> dict:
                 continue    # one row per flight: both sides would double-count
             key = (b.family, "S" if mu["singles"] else "D")
             gap = round(mu["gap"] * 4) / 4
-            binned[key][gap] += 1
+            real[key][gap] += 1
             wins[key][gap] += 1 if mu["won"] else 0
-            # ...and the mirror, so the fit sees underdogs too.
-            binned[key][-gap] += 1
-            wins[key][-gap] += 0 if mu["won"] else 1
-    return {key: _fit(key[1], key[0], binned[key], wins[key]) for key in binned}
+    return {key: _fit(key[1], key[0], real[key], wins[key]) for key in real}
 
 
 @dataclass
@@ -292,6 +318,8 @@ class AbilityIndex:
     player: dict = field(default_factory=dict)
     # (scope_id, program_id) -> {"flights","won","x_won","x_share","share","luck"}
     team: dict = field(default_factory=dict)
+    # scope_ids deliberately left unpriced — reported, never silently dropped
+    skipped: list = field(default_factory=list)
 
     def curve_for(self, family: str, singles: bool) -> WinCurve | None:
         return self.curves.get((family, "S" if singles else "D"))
@@ -301,12 +329,19 @@ class AbilityIndex:
 
 
 def build(bundles) -> AbilityIndex:
+    """‼️ Only scopes whose players.csv is the roster that PLAYED are indexed
+    (`Bundle.roster_is_snapshot`). A scope that is left out has no entry in
+    `abilities`, so every downstream lookup returns None and renders an
+    em-dash — which is the correct answer, and is why nothing here degrades
+    into pricing old flights at today's OVRs."""
     idx = AbilityIndex()
-    for b in bundles:
+    scoped = [b for b in bundles if b.roster_is_snapshot]
+    idx.skipped = [b.scope_id for b in bundles if not b.roster_is_snapshot]
+    for b in scoped:
         idx.abilities[b.scope_id] = scope_ability(b)
-    idx.curves = fit_curves(bundles, idx.abilities)
+    idx.curves = fit_curves(scoped, idx.abilities)
 
-    for b in bundles:
+    for b in scoped:
         sa = idx.abilities[b.scope_id]
         for mu in line_matchups(b, sa):
             curve = idx.curve_for(b.family, mu["singles"])

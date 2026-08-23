@@ -18,4 +18,15 @@
   {% endfor %}
 </div>
 {% if not reports %}<p class="pt-note">No seasons ingested yet.</p>{% endif %}
+{% if skipped %}
+<div class="pt-panel">
+  <div class="pt-panel-body">
+    <p class="pt-note"><strong>Not covered here:</strong>
+      {% for s in skipped %}{{ s.label }}{{ ", " if not loop.last }}{% endfor %}.
+      This desk is built on ability, and those exports carry
+      {{ skipped[0].why }} — so an OVR read off one would price a flight at a
+      number nobody played it at. Named rather than quietly omitted.</p>
+  </div>
+</div>
+{% endif %}
 {% endblock %}

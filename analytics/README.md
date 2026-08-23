@@ -138,6 +138,26 @@ re-export a season to get real dates.
 Design notes and the reasoning behind the sections below:
 `docs/AAR-analytics-ability-layer-and-scouting-desk.md`.
 
+## ‼️ This is the JHSAA desk
+
+Owner, 2029-08: "the analytics tool has nothing to do with the college game at
+all." College exports still ingest and still render the results-only pages they
+always did, but **nothing ability-derived is computed from one** and there is no
+Scouting or Classifications page for them. That is not only scope — it is what
+the export says about itself. `research_export.build_college`: "Player and
+program fields reflect the CURRENT roster/program config … not a per-season
+historical snapshot." So a four-year-old college season lists TODAY's roster,
+and reading OVR off it would price old flights at later numbers while silently
+dropping every flight whose players have since graduated; a movement diff would
+see everyone at their current program in every season and conclude nobody has
+ever transferred. `aggregate.Bundle.roster_is_snapshot` is the gate and
+`aggregate.snapshot_bundles()` the accessor; the Scouting and Classifications
+indexes NAME what they left out rather than quietly rendering a shorter list.
+
+The transfer batch is JHSAA-only for the same reason: its only consumer,
+`/editor/jhsaa-transfer-batch`, resolves ids through the girls'/boys' rosters,
+so a college row would be rejected as an unknown player.
+
 ## The ability layer — the one input the engine reads (`ptc_analytics/ability.py`)
 
 Everything in `metrics.py` measures OUTCOMES, and its win-probability model

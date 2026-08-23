@@ -250,12 +250,21 @@ function matches(i){
   return true;
 }
 
+// ‼️ ONE list of controls, read by BOTH anyFilter() and resetFilters().
+// They were two hand-maintained lists and they drifted: 'f-ovrmax' and
+// 'f-mmax' were in the reset list and missing from the predicate, so setting
+// only "OVR max" or only "Matches max" — "who never played" is exactly that
+// query — left the grid hidden and the control looked broken. Add a control
+// here, not in two places.
+var TEXT_FILTERS  = ['f-area','f-county','f-town','f-class','f-league','f-q','f-grade','f-starts'];
+var NUM_FILTERS   = ['f-ovrmin','f-ovrmax','f-potmin','f-mmax','f-rankmin'];
+var CHECK_FILTERS = ['f-benched','f-moved'];
+
 function anyFilter(){
-  return !!(finderSet || val('f-area') || val('f-county') || val('f-town') ||
-            val('f-class') || val('f-league') || val('f-q') || val('f-grade') ||
-            numval('f-ovrmin') !== null || numval('f-potmin') !== null ||
-            numval('f-rankmin') !== null || val('f-starts') ||
-            el('f-benched').checked || el('f-moved').checked);
+  if (finderSet) return true;
+  if (TEXT_FILTERS.some(function(id){ return val(id) !== ''; })) return true;
+  if (NUM_FILTERS.some(function(id){ return numval(id) !== null; })) return true;
+  return CHECK_FILTERS.some(function(id){ return el(id).checked; });
 }
 
 // ---- sorting -------------------------------------------------------------
@@ -531,10 +540,8 @@ document.querySelectorAll('button[data-finder]').forEach(function(b){
   });
 });
 function resetFilters(keepBlurb){
-  ['f-area','f-county','f-town','f-class','f-league','f-q','f-grade','f-starts',
-   'f-ovrmin','f-ovrmax','f-potmin','f-mmax','f-rankmin'].forEach(function(id){ el(id).value = ''; });
-  el('f-benched').checked = false;
-  el('f-moved').checked = false;
+  TEXT_FILTERS.concat(NUM_FILTERS).forEach(function(id){ el(id).value = ''; });
+  CHECK_FILTERS.forEach(function(id){ el(id).checked = false; });
   finderSet = null;
   if (!keepBlurb){
     el('finder-blurb').textContent = '';
