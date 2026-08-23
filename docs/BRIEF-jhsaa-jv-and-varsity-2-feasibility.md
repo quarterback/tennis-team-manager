@@ -62,10 +62,11 @@ arithmetic on top of the real save — clearly derived, not simulated.
     to get good, and that story is only legible if the JV record is on the page. This
     does **not** reopen decision §0.8: a RECORD is not a RATING. No TOSS, no power
     index, no seeding, no awards, no postseason — just W-L-T.
-12. **‼️ JV MATCH DATA IS NOT ARCHIVED — it goes away after the season.** Only the
-    RECORD persists, on the program page, and only if that is easy. It is (§8a).
-    ‼️ This collides with an earlier decision — see §8a — because in the JHSAA there
-    is no "current season" to read from: every page reads the archive.
+12. **‼️ JV DUALS ARE ARCHIVED; PER-COURT DETAIL IS NOT** (option B, §8a). The dual
+    rows persist — opponent, home/away, the 5-2 score, won/lost — so the JV schedule
+    and record survive every season. The `lines` JSON (who played which flight, against
+    whom, the set score) is NOT written, so there is **no JV tab on a player's page**.
+    2.6 MB a season against varsity's 40.0 MB.
 13. **The opponent reads `San Borrego (JV)`** — parentheses, not OSAA's `[JV]` brackets.
 14. **No Varsity 2.** Dropped — see §7 for why the numbers agreed.
 15. **Results→development stays out of scope.** (Flagged because today *no* JHSAA
@@ -341,8 +342,10 @@ under floor 16 and takes ≤5-match players from 41% to under 5%. Correctly drop
 
 ## 8. What still needs building
 
-* **A `level` axis on the archive.** `world_jhsaa_dual` (world.py:213) has none. It must
-  be a level, **not a phase** — phase is the archive's identity for an EVENT and it
+* **A `level` axis on the archive.** `world_jhsaa_dual` (world.py:213) has none. Under
+  option B it is the ONLY thing separating a JV row from a varsity row — both can carry
+  an empty `lines` — so it is load-bearing for IDENTITY, not merely for filtering. It
+  must be a level, **not a phase** — phase is the archive's identity for an EVENT and it
   selects the dual format and the postseason lane, but JV plays inside its own league
   and its invitationals alike. There is an `ALTER TABLE` idiom already (world.py:264).
 * **‼️ `jh_match_key` will break silently.** It is `(phase, district, home, away)`
@@ -360,10 +363,13 @@ under floor 16 and takes ≤5-match players from 41% to under 5%. Correctly drop
   eight in-memory `t.schedule` readers (`rating_duals` jhsaa.py:3156, `_district_duals`
   :2998, `district_oowp` :3014, the non-district `spent` tally :4487,
   `_flat_format_profile` :5015, `_last_opponent` :3699).
-* **‼️ The one that bites silently:** `_jh_line_records` (web/state.py:3626) builds a
-  player's season record by **matching NAMES inside the archived `lines`** of that
-  school's card. Miss it and JV lines merge into the varsity player card with no error
-  anywhere — the same name-keying fragility already flagged for family ties.
+* **~~The one that bites silently~~ — RETIRED by option B.** `_jh_line_records`
+  (web/state.py:3626) builds a player's season record by **matching NAMES inside the
+  archived `lines`**, and would have merged JV appearances into the varsity player card
+  with no error anywhere — the name-keying fragility already flagged for family ties.
+  Under B a JV row carries no lines, so there is nothing to match: the hazard is gone
+  by construction rather than guarded against. ‼️ It returns the moment anyone adds
+  per-court detail to a JV row.
 * **Ties** — §5.
 * **`ROSTER_FLOOR` 12 → 16** — §3.
 * **The band comment.** `ROSTER_SIZE_BAND_BY_CLASS` (jhsaa.py:193) says the bands are
@@ -449,14 +455,10 @@ reading of §0.12 and would have retired the schedule tab §0.10 asks for.
    girls' March, so "month 1 = the 5S/2D window, month 2 = JV opens" holds on both
    calendars.
 2. ~~`ROSTER_FLOOR` 15 or 16~~ — settled: **16**, so every program can field a JV.
-3. **‼️ A, B or C in §8a?** Decision §0.12 (no archived JV match data) and decision
-   §0.10 (a JV schedule tab) cannot both hold, because the JHSAA has no live season to
-   read from. B keeps the JV schedule and drops the per-court detail for 2.6 MB a
-   season; C is the literal reading and retires the schedule tab. This is the last
-   blocking decision.
-4. **If B: does a JV schedule row show a SCORE?** A dual-level `pf-pa` (5-2) comes
-   free with the row; OSAA mostly shows a bare "Done". Per-court scorelines are the
-   thing B drops.
+3. ~~A, B or C~~ — settled: **B**. JV dual rows archived, per-court `lines` dropped,
+   no JV player tab. See §8a.
+4. ~~Does a JV row carry a score~~ — settled by B: the dual-level `pf-pa` (5-2) comes
+   free with the row. Per-court scorelines are what B drops.
 5. ~~JV opponent suffix~~ — settled: `San Borrego (JV)`, parentheses.
 6. **Invitational pairing rule** — the §2 model pairs within one classification and
    prefers the same area. Same rule as varsity's `_nondistrict_pairs` (geography then
