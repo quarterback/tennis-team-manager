@@ -31,8 +31,8 @@ median-19 roster, so ranks #12 and below were effectively invisible.
 * **Calendar**: JV is dated by `_jh_jv_dates`, entirely outside the varsity allocator,
   opening a month later and allowed to use Sundays.
 * **UI**: the school page's schedule is Varsity/JV tabs, both with expandable box
-  scores; a player's career ledger carries a **JV** column — the team's result in the
-  duals they dressed for.
+  scores; a player's career ledger carries a **JV** column (their OWN per-court record)
+  and the flight box toggles Varsity/JV (§14).
 
 No playoffs, no JV ranking, no effect on development, and JV touches no record,
 résumé or rating that the varsity season owns.
