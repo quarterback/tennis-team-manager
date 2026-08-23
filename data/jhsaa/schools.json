@@ -841,7 +841,7 @@
       "group": "1A",
       "enrollment": 126,
       "private": true,
-      "mascot": "Martens",
+      "mascot": "Chipmunks",
       "colors": [
         "#14294e",
         "#c8ccd4"
@@ -4476,7 +4476,7 @@
       "group": "5A",
       "enrollment": 860,
       "private": false,
-      "mascot": "Ravens",
+      "mascot": "Darkwings",
       "colors": [
         "#6d1a36",
         "#9fb4c7"
@@ -5864,7 +5864,7 @@
       "group": "2A",
       "enrollment": 279,
       "private": true,
-      "mascot": "Chipmunks",
+      "mascot": "Flapjacks",
       "colors": [
         "#167339",
         "#e8e6df"
@@ -6551,7 +6551,7 @@
       "group": "4A",
       "enrollment": 748,
       "private": false,
-      "mascot": "Beavers",
+      "mascot": "Flapjacks",
       "colors": [
         "#3f2a56",
         "#3ba55d"
@@ -9404,7 +9404,7 @@
       "group": "2A",
       "enrollment": 215,
       "private": false,
-      "mascot": "Ravens",
+      "mascot": "Darkwings",
       "colors": [
         "#0f6a70",
         "#f4f1ea"
@@ -9882,7 +9882,7 @@
       "group": "8A",
       "enrollment": 2128,
       "private": false,
-      "mascot": "Brambles",
+      "mascot": "Daffies",
       "colors": [
         "#1e5631",
         "#f2f2ee"
@@ -9943,7 +9943,7 @@
       "group": "2A",
       "enrollment": 349,
       "private": false,
-      "mascot": "Thistles",
+      "mascot": "Dandy Lions",
       "colors": [
         "#167339",
         "#e8e6df"
@@ -11996,7 +11996,7 @@
       "group": "7A",
       "enrollment": 1557,
       "private": false,
-      "mascot": "Ravens",
+      "mascot": "Darkwings",
       "colors": [
         "#0e7490",
         "#fbbf24"

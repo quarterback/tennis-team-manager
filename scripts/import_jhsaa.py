@@ -2564,10 +2564,10 @@ MASCOT_FIXES = {
     "Pangolins": ("Porcupines", "Armadillos"),
     "Aardvarks": ("Badgers", "Porcupines"),
     "Meerkats": ("Prairie Dogs", "Marmots"),
-    "Numbats": ("Chipmunks", "Martens", "Marmots"),
+    "Numbats": ("Flapjacks", "Chipmunks", "Marmots"),
     "Bilbies": ("Jackrabbits",),
     "Quolls": ("Martens", "Weasels"),
-    "Wombats": ("Badgers", "Beavers"),
+    "Wombats": ("Flapjacks",),
     "Stoats": ("Weasels", "Martens", "Badgers", "Wolverines"),
     # ── exotic birds → the birds actually overhead here ──
     "Hamerkops": ("Herons", "Kingfishers"),
@@ -2578,9 +2578,9 @@ MASCOT_FIXES = {
     "Secretarybirds": ("Harriers",),
     "Capercaillie": ("Sage Grouse", "Chukars"),
     "Galahs": ("Kestrels", "Harriers"),
-    "Kookaburras": ("Kingfishers", "Ravens"),
+    "Kookaburras": ("Kingfishers", "Darkwings"),
     "Lyrebirds": ("Meadowlarks", "Kingfishers"),
-    "Hornbills": ("Ravens", "Ospreys"),
+    "Hornbills": ("Darkwings", "Ravens"),
     "Rheas": ("Cranes",),
     "Firecrests": ("Kestrels",),
     # ── the foraged insect shelf → the bugs American schools really use ──
@@ -2602,13 +2602,19 @@ MASCOT_FIXES = {
     "Atlas Moths": ("Monarchs",),
     "Scarabs": ("Goldbugs",),
     # ── the rest ──
+    # ‼️ OWNER-SUPPLIED NAMES (2026-08): Flapjacks, Darkwings, Daffies, Dandy Lions.
+    # Placed in the pools they fit rather than assigned to a school by hand —
+    # Flapjacks in timber country, Darkwings among the birds, the two botanical puns
+    # where the berry-and-butte name was. They are exactly the register the American
+    # oddities in this file already live in (Alva's Goldbugs, Effingham's Flaming
+    # Hearts), which is why they belong in the pools and not in a special case.
     "Taipans": ("Sidewinders", "Rattlers", "Cobras"),
     "Frilled Lizards": ("Horned Lizards", "Sidewinders"),
     "Tuatara": ("Sidewinders",),
     "Moon Jellies": ("Tidepools", "Undertow"),
     # A berry and a butte, not a team: the one PNW-local word here that still reads
     # as a place rather than as a nickname.
-    "Olallie": ("Huckleberries", "Brambles", "Junipers", "Thistles"),
+    "Olallie": ("Huckleberries", "Brambles"),
 }
 
 
@@ -2626,6 +2632,13 @@ MASCOTS = {
     # ── owner picks (2026-08) ──
     "Plainfield": "Cardinals",
     "Condotti Vanguard Academy": "Valiant",
+    # ‼️ PINNED PER SCHOOL, NOT POOLED. Both were Olallie, and both names are the
+    # owner's. A pool of two names over four schools kept dropping one of them
+    # depending on how the hashes fell — a name you were given should not survive at
+    # the mercy of a later pool edit, so the two botanical puns are placed by hand and
+    # the pool keeps the rest.
+    "Netherwood": "Dandy Lions",
+    "Natchitoches": "Daffies",
     # ── the private-school layer (see the RENAMES block) ──────────────────
     # Real-world mascots where the institution has one everybody knows, which is
     # half of what makes the name land. ⚠️ NO AQUATIC ANIMALS (the rule at the head
