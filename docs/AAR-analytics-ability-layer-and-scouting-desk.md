@@ -241,6 +241,65 @@ left behind.
 
 ---
 
+## 10b. Review follow-ups — three faults the first pass shipped
+
+**‼️ THE ABILITY JOIN WAS ONLY VALID FOR JHSAA, AND NOTHING SAID SO.** §2 above
+is right that the OVR join needs no export change — for JHSAA. It is wrong for
+college, and the first pass applied it to every ingested scope. A college
+export's `players.csv` is TODAY's roster: `research_export.build_college` says
+"Player and program fields reflect the CURRENT roster/program config … not a
+per-season historical snapshot." Three silent consequences, only the first of
+which was reported:
+
+- the ability join priced old flights at LATER OVRs, and dropped every flight
+  whose players had since graduated — so the curve trained on a biased
+  subsample with the wrong x-axis;
+- `fit_growth` diffed one roster against itself and reported a one-year gain
+  of ~0;
+- `movement` saw every player at their CURRENT program in every season and
+  concluded nobody had ever transferred.
+
+The owner settled the scope question directly — "the analytics tool has nothing
+to do with the college game at all" — so the fix is a GATE, not a college code
+path: `aggregate.Bundle.roster_is_snapshot`, with `snapshot_bundles()` as the
+accessor, and the Scouting and Classifications indexes NAME what they excluded
+rather than rendering a quietly shorter list. It also disposes of a fourth
+finding for free: no college scope gets a Scouting page, so no college batch is
+ever offered to `/editor/jhsaa-transfer-batch`, which resolves ids through the
+girls'/boys' rosters alone and would reject every row.
+
+**The lesson generalises past this repo:** "the join is exact" was a property
+of ONE producer, and I wrote it in the commit message as though it were a
+property of the export format. Before building on a table, read what its
+producer says the table MEANS — `build_college`'s docstring stated the problem
+in plain English and had done all along.
+
+**‼️ A SYMMETRY TRICK IS NOT EVIDENCE.** The curve is fitted on both sides of
+every flight so it is symmetric about a zero gap — correct as a modelling
+choice, and a mirrored row is still the SAME flight seen from the other bench.
+The mirror was added in `fit_curves` and then again inside `_fit`, so
+`MIN_FIT_SAMPLES` was satisfied at half the stated evidence and every count the
+page reported — including each observed band's `n` — was double the truth. The
+mirror now lives in `_fit` alone and `samples` is the real flight count; on the
+2030 boys export the two curves report 41,912 + 30,008 = 71,920, which is
+exactly the number of rows in `lines.csv`. **Reconcile a reported total against
+something countable from outside the module** — the doubling was invisible for
+as long as the only check was that the curve looked plausible.
+
+Fixing it also revealed that the corrected bands land on figures measured
+independently before this tool existed (singles .491 at an even gap, .734 at
+5-8, .889 at 8-12; doubles steeper at the same gap, .803), which is the
+validation the fitted-not-copied decision in §3 was hoping for.
+
+**‼️ TWO HAND-MAINTAINED LISTS OF THE SAME THING DRIFT.** `anyFilter()` decided
+whether the grid renders, `resetFilters()` decided what gets cleared, and both
+enumerated the control ids by hand. `f-ovrmax` and `f-mmax` were in the second
+and missing from the first, so setting only "OVR max" — or only "Matches max",
+which is exactly how you ask "who never played" — left the results panel hidden
+and the control appeared to do nothing. Both now read ONE list. When a
+predicate and a reset walk the same set, derive them from a single declaration;
+the bug is not the two missing entries, it is that there were two lists.
+
 ## 11. Standing traps carried over (still live)
 
 - **Join on `program_id`, never a display name.** ~300 of 1,644 programs have been
