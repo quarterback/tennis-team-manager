@@ -3628,9 +3628,17 @@ def _jh_line_records(sched: list[dict]) -> dict:
 
     Keyed by NAME because that is what a line carries. A season's individual records
     therefore come from the same duals the team record does — a senior shown at 27-4
-    and the school's season are the one simulated season, never two computations."""
+    and the school's season are the one simulated season, never two computations.
+
+    ‼️ VARSITY ONLY, and the filter lives HERE rather than in the callers. JV duals
+    carry per-court lines too now (owner rule 2026-08 — the box score), so nothing
+    about the data keeps them out any more; they are a separate competition and a JV
+    court must never land on a varsity record. `state.py`'s player view hands this the
+    whole schedule, both levels, and always has."""
     rec: dict = {}
     for d in sched:
+        if (d.get("level") or "v") != "v":
+            continue
         side = "home" if d.get("home") else "away"
         for ln in d.get("lines") or ():
             we_won = bool(ln.get("home_won")) if d.get("home") else not ln.get("home_won")
@@ -3646,9 +3654,13 @@ def _jh_slot_records(sched: list[dict]) -> dict:
     D1-D4 — the union of both league formats, `EARLY_FORMAT_PHASE`'s 5S/2D and the
     regular season's 3S/4D), off the same match-level archive `_jh_line_records`
     reads. This is the college career-record box's per-line breakdown, ported to
-    high school — mirrors `player_career_records`'s `_box`."""
+    high school — mirrors `player_career_records`'s `_box`.
+
+    ‼️ VARSITY ONLY, filtered here — same reason as `_jh_line_records`."""
     rec: dict = {}
     for d in sched:
+        if (d.get("level") or "v") != "v":
+            continue
         side = "home" if d.get("home") else "away"
         for ln in d.get("lines") or ():
             slot = ln.get("slot") or ""
@@ -4389,9 +4401,18 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     # uses, never the world index. See world.run_jhsaa.
     season_year = ((arc or {}).get("season_year")
                    or (season or {}).get("season_year") or world.jhsaa_season_year(w))
-    sched = world.jhsaa_schedule(w["id"], yr, g, school)
-    dates = _jh_dates(sched, season_year,
-                      world.jhsaa_match_dates(w["id"], yr, g, season_year))
+    # ‼️ SPLIT BY LEVEL BEFORE ANYTHING ELSE TOUCHES IT. `kinds` and `dates` below are
+    # built INDEX-PARALLEL to this list, so a JV row left in it does not merely show up
+    # on the varsity card — it shifts every tag and date after it by one. The JV season
+    # is a separate tab on this page (owner rule 2026-08), never a second kind of row in
+    # the varsity one.
+    all_sched = world.jhsaa_schedule(w["id"], yr, g, school)
+    cal = world.jhsaa_match_dates(w["id"], yr, g, season_year)
+    sched = [d for d in all_sched if (d.get("level") or "v") != "jv"]
+    jv_sched = [d for d in all_sched if (d.get("level") or "v") == "jv"]
+    dates = _jh_dates(sched, season_year, cal)
+    jv_dates = _jh_dates(jv_sched, season_year, cal)
+    jv_w, jv_l, jv_t = world.jhsaa_jv_record(all_sched)
     lines = _jh_line_records(sched)
     roster = jh.build_roster(sc, season_year, salt)
     br = (arc or {}).get("brackets", {}).get(sc.group) or {}
@@ -4535,6 +4556,19 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                       "round": (state_round if k == "STATE" else
                                 toc_round if k == "TOC" else {}).get(d["opp"], "")}
                      for i, (d, k) in enumerate(zip(sched, kinds))],
+        # The JV season — schedule and record only, no ranking or finish. `shape` is
+        # on the row because the JV format is chosen per dual from what both sides
+        # could dress.
+        # ‼️ `_jh_reported_lines` HERE TOO. The archived score string is home-first and
+        # a tennis set score is always written from the WINNER's side, so a JV box
+        # score rendered raw reads backwards on every dual the away team won — the
+        # exact fault `AAR-jhsaa-bracket-score-sides.md` records, one surface over.
+        "jv_schedule": [{**d, "date": jv_dates[i], "lines": _jh_reported_lines(d),
+                         "opp_deco": _jh_deco(schools, d["opp"], 22)}
+                        for i, d in enumerate(jv_sched)],
+        "jv_record": (f"{jv_w}-{jv_l}-{jv_t}" if jv_t else f"{jv_w}-{jv_l}") if
+                     (jv_w + jv_l + jv_t) else "",
+        "jv_wins": jv_w, "jv_losses": jv_l, "jv_ties": jv_t,
         "roster": [{"pid": p.pid, "name": p.name, "grade": p.grade,
                     "ovr": round(p.current_overall(), 1),
                     # Talent/potential visibility (owner request) — the ceiling and
@@ -4894,8 +4928,12 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
             continue                       # not enrolled that year (pre-9th, or graduated)
         player = player or hit
         sched = world.jhsaa_schedule(w["id"], yr, g, yr_sc.name)
+        # `sched` is both levels; the three readers each scope themselves — the two
+        # varsity ones filter to `level == "v"` internally, the JV one reads `played`,
+        # which only a JV row carries.
         rec = _jh_line_records(sched).get(hit.name, {"s": [0, 0], "d": [0, 0]})
         slots = _jh_slot_records(sched).get(hit.name, {})
+        jv_w, jv_l, jv_t = world.jhsaa_jv_player_record(sched, hit.name)
         aw = (arc.get("awards") or {}).get(yr_sc.group) or {}
         # Both `all_district` and `all_region` live on the SEASON rather than in a
         # class's slate — the district because it is keyed (class, name), the
@@ -4917,6 +4955,14 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
             "singles": "{}-{}".format(*rec["s"]), "doubles": "{}-{}".format(*rec["d"]),
             "record": f"{w_}-{l_}", "wins": w_, "losses": l_,
             "honors": honors, "team": team, "slots": slots,
+            # The JV line is the TEAM's result in the duals they dressed for, so it is
+            # deliberately not summed into `record` and not shown beside singles and
+            # doubles — those are per-court and this is not the same measurement.
+            # Empty when they never dressed JV, and on any season archived before
+            # `played` existed.
+            "jv": (f"{jv_w}-{jv_l}-{jv_t}" if jv_t else f"{jv_w}-{jv_l}")
+                  if (jv_w or jv_l or jv_t) else "",
+            "jv_duals": jv_w + jv_l + jv_t,
         })
     if player is None:
         return {"found": False, "school": school, "gender": g, "pid": pid}
@@ -4940,6 +4986,10 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
                            years[0] if years else 0, years, None, None),
         "seasons": seasons, "record": f"{wins}-{losses}", "wins": wins, "losses": losses,
         "honors": [h for s in seasons for h in s["honors"]], "flights": flights,
+        # The JV column is shown only for a career that HAS one, so a save archived
+        # before the JV season — or a player who never dressed for one — does not get
+        # a column of dashes on every row.
+        "any_jv": any(s["jv"] for s in seasons),
         # For the transfer form — the identity a `set_jhsaa_transfer` row is keyed on.
         "entry_year": player.entry_year,
         "transfer": moved,

@@ -424,8 +424,9 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   completion; there is no clinch in high school.
 - **‼️ THE EARLY NON-DISTRICT WINDOW PLAYS 3S/4D, not 5S/2D (owner rule 2027-08,
   `jhsaa.EARLY_FORMAT_PHASE = "early"`).** A JHSAA roster carries 12 players but the
-  league card only gives nine of them a real match; this association has no JV system
-  to develop the rest, so the FIRST non-district window (played in `play_regular_season`
+  league card only gives nine of them a real match; this association had no JV system
+  to develop the rest (it does now — see the JV § below, which does NOT supersede this
+  window), so the FIRST non-district window (played in `play_regular_season`
   BEFORE any district round — `NONDISTRICT_MIN/MAX` × `EARLY_SHARE` already lands most
   programs at 1-3 duals here) plays 3 singles / 4 doubles instead, putting roster spots
   #10-11 on court. **Scoped to that one block only**: the mid-season non-district window
@@ -807,9 +808,13 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   in its band via `roster_size(classification, school_key, salt)`, same idiom as a
   recruiting budget band — same `ncaa.ROSTER_CAP` pattern, same talent metrics, not
   weaker filler) because 3S/4D dressing 11-of-12 left almost no bench.
-  **`ROSTER_FLOOR` (12 — ONE MORE than the regular-season format's 11 distinct
-  players, owner rule 2026-08, so a program at the floor still has a bench of one
-  rather than exactly enough bodies to dress) is a HARD floor UNDER that band, and
+  **`ROSTER_FLOOR` (**16** — the regular-season format's 11 distinct players PLUS
+  `JV_MIN_SPARE` (5), raised from 12 for the JV season, owner rule 2026-08; it is
+  ASSERTED as `lineup_need("regular") + JV_MIN_SPARE`, never a literal, so raising
+  the smallest JV format without the floor fails loudly at import. ‼️ 15 would have
+  changed NOTHING — it lifts the 12-14 rosters to 15 and leaves them, plus the 61
+  girls'/42 boys' already AT 15, still one short of 11+5; it looks like a fix and
+  moves zero programs. 16 takes JV participation to 100%) is a HARD floor UNDER that band, and
   there is NO CEILING: the band is a target `_freshman_class_size` draws around, real
   rosters run 12-36, and the transfer portal appends on top without a check. Both are
   deliberate — the owner reallocates talent by hand, and a big school rolling a deep
@@ -828,6 +833,139 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   a TRANSFER (scaled from the college portal, not built yet), never a
   generation roll pretending to be one. See
   `docs/AAR-jhsaa-doubles-lineup-and-league-format.md`.
+- **‼️ THE JV SEASON — every program fields one, concurrently (owner rule 2026-08,
+  `jhsaa.play_jv_season`).** Measured on the real 2038 save, **40.8% of girls' and
+  42.3% of boys' players finished a season on ≤5 matches** and 18-19% of SENIORS
+  reached the college hand-off that way — ~750 a gender arriving on the recruit board
+  at 0-0, because the league format dresses eleven of a median-19 roster. JV is where
+  ranks #12-down play. Design + measurements: `docs/BRIEF-jhsaa-jv-and-varsity-2-
+  feasibility.md`; lessons: `docs/AAR-jhsaa-jv-season.md`.
+  - **ONE roster, ONE ladder, no JV squad.** `jv_pool(ts)` is literally
+    `_order(ts)[lineup_need("regular"):]` — a SLICE of the one ladder, not a standing
+    team, so it is porous for free (a varsity player who lost through the season has
+    fallen past a JV player's seed and they swap, which the ladder already did).
+    Nothing was added to make it porous; do not add anything.
+  - **‼️ THE POROUSNESS IS NOT TEMPORAL — do not describe JV as a "daily slice".**
+    `run_season` plays the ENTIRE varsity regular season, then the entire JV season, so
+    `ts.records` is complete before the first JV dual and `play_jv_dual` credits nothing
+    back: every JV dual of the year resolves `jv_pool` to the SAME ordering. The swap
+    happens once, ahead of the JV season, not date by date within it — a JV dual dated
+    12 April is staffed off the June ladder. This was written up as a daily re-cut and
+    it never was one; a reviewer caught it. **Measured before re-deriving it:** reading
+    the ladder 10% into the season instead of at the end moves **4.1% of the JV pool**
+    (13 of 408 players, 42 programs), median rank change over a season **0 places**
+    (mean 0.5, max 4) — small only because `ladder_score` is deliberately sticky
+    (±`LADDER_SWING` 7 OVR, damped by evidence). ‼️ **The error scales with
+    `LADDER_SWING`**: raise it and the shortcut bites, at which point the fix is to
+    interleave `play_jv_season` with `play_regular_season`'s block seams (early → pass
+    1 → mid-season → pass 2 → tune-up) rather than calling it once at the end.
+  - **‼️ THE ELASTIC FORMAT IS THE WHOLE FEATURE, and the reason is arithmetic.** A
+    FIXED JV format must be fielded by BOTH schools, so its reach is the PRODUCT of two
+    roster constraints — measured as a share of real league dates where both sides could
+    dress: 3S/4D **7-9%**, 2S/3D 32-36%, 2S/2D 61-64%, 1S/2D 78-79%. `jv_format(spare)`
+    takes the THINNER side's spare, so there is no product and the condition collapses
+    to "both sides have 5 spare" — 100% of programs with the floor at 16. Do NOT
+    "improve" the table to a nicer fixed shape.
+  - **‼️ THE TABLE IS ONE RULE, UNCAPPED**: `D = (spare + 1) // 3`, `S = spare - 2D`.
+    `JV_FORMATS`' eight authored literals (5→1S/2D … 12→4S/4D) stay as the record of
+    what was decided and an **import-time assertion pins the rule to them**, so the two
+    cannot drift; past 12 it continues 14→4S/5D, 15→5S/5D, 17→5S/6D. No ceiling, and
+    none is needed — the shape is always the SMALLER side's capacity, and only 2.0%
+    girls'/3.3% boys' of real pairings exceed 4S/4D at all. **A table a rule reproduces
+    is a rule with a cache in front of it** — check for that before extending an
+    authored table by hand.
+  - **‼️ `jv_outcome` NEVER READS `res.winner` — it is WRONG for any even-court dual.**
+    `engine.dual` computes `winner = 0 if points[0] > points[1] else 1`, so a **level
+    dual reports an AWAY win**. Every VARSITY format here has an odd court count and can
+    never draw, which is exactly why that has always been safe and why it would have
+    been silent: three of the eight JV shapes are even and 2S/2D is among the commonest.
+    JV therefore has the association's first **ties** — points, then sets, then games,
+    then a draw (~0.24% of JV duals; 21% of even-court duals are level on points).
+  - **‼️ `world.jh_match_key` GAINED `level` AND FOUR CONSUMERS READ IT POSITIONALLY.**
+    Without it a varsity and a JV dual between the same two programs in the same phase
+    hash to ONE key, `_jh_global_order` takes a self-edge and the whole gender's
+    topological sort falls into its cycle fallback — nothing raises, every card just
+    stops reading in play order. The key went 4-tuple → 5-tuple and **three of the four
+    positional readers fail SILENTLY** (the stage sort, the monotonic pass,
+    `_jh_showcase_days`). **A positional read of a shared key is a latent dependency on
+    that key's arity** — grep every index of it before changing its shape.
+  - **‼️ JV MUST NEVER ENTER THE VARSITY DATE ALLOCATOR.** `jhsaa_match_dates` advances
+    a per-school cursor on every distinct key, so a JV dual sharing a school pushes the
+    varsity one to a later round and the two seasons SERIALISE — the calendar overruns
+    its window, `_jh_pattern` degrades to a six-day week, and every individual card
+    still reads correctly because only the SPAN is wrong (exactly how
+    `AAR-jhsaa-postseason-calendar-lanes.md` hid). JV is dated by its own
+    `world._jh_jv_dates`, may use **Sundays** (varsity never does), and opens a month
+    late (girls April, boys September) — which also steps past the early window where
+    `lineup_need` is nine rather than eleven.
+  - **‼️ THE ARCHIVE PERSISTS THE FULL BOX SCORE** (`world_jhsaa_dual` gains
+    `level`/`tied`/`shape`/`played`; JV rows carry per-court `lines` exactly as varsity
+    does). **23.4 MB a season, MEASURED**, against varsity's 40.0 — owner rule 2026-08:
+    *"the jv box score is worth the small annual MB add it's trivial."* ‼️ **A cost
+    figure that DECIDED something has to be re-measured when the thing it measured
+    changes shape** — this was quoted at 15.3 before the uncapped table took
+    courts/dual from 4.8 to 5.22, and the owner decided against it on the low number.
+  - **‼️ `level` IS NOW THE ONLY THING KEEPING JV OUT OF A VARSITY RECORD.** It used to
+    be structural — JV rows had no `lines`, and every varsity reader iterates `lines`.
+    That is gone. **Six readers, and the filter lives INSIDE each one, never at the call
+    site** (`_jh_line_records` has three callers, `_season_row` two; a filter per caller
+    is a chance to forget, and next year's caller cannot know): `state._jh_line_records`
+    · `state._jh_slot_records` · `world._season_row` (courts won/lost) ·
+    `world.jhsaa_underplayed` (SQL). `jhsaa.rating_duals`/`_weighted_lines` need none —
+    they take `TeamSeason` and JV teams are `JVTeam`, which is that separation earning
+    its keep. ‼️ **`world.jhsaa_history_rows` is the trap**: it re-reads the dual table
+    in BULK for the research export and hand-builds its row dicts, so it does not share
+    `_schedule_rows` — it dropped `level`, every row read as varsity, and JV courts
+    joined each program's exported court totals. **A filter is only as good as the field
+    reaching it.**
+  - **`played` stays beside `lines`** — the names that dressed, folded by
+    `world.jhsaa_jv_player_record` into the **JV column on the career ledger**. Derivable
+    from `lines` now, and kept because that column should not parse court detail it does
+    not show. ‼️ A JV record is the TEAM's result in the duals a player dressed for, so
+    never render it as though it were a per-court W-L beside the varsity
+    singles/doubles figures. A season archived before `played` folds to (0,0,0) and
+    shows nothing, which is honest.
+  - **‼️ THE ANALYTICS SIDECAR IS VARSITY-ONLY, BY DECISION** (owner 2026-08: *"it can
+    ignore JV generally i do not need JV analytics"*). `research_export.build_jhsaa`
+    iterates `season["teams"]` and never `season["jv"]`, so no JV dual has ever reached
+    a zip. If that is revisited, `duals.csv` needs a `level` column FIRST: `analytics/
+    ptc_analytics/aggregate.py` DERIVES each phase's dual shape by counting the lines it
+    sees, and JV duals are `phase="regular"` with an elastic shape — dropped in
+    unlabelled they would corrupt the derived shape of the varsity regular season rather
+    than adding a JV section.
+  - **‼️ AND WHEN THE JHSAA NEEDS SOMETHING, CHECK WHAT THE COLLEGE SIDE ALREADY HAS.**
+    Full per-court JV detail was argued against partly on "the JHSAA flight box is
+    fixed at S1-S5/D1-D4 and elastic JV needs dynamic columns" — which was WRONG:
+    `state.player_career_records` has flexed since divisions stopped sharing a lineup
+    size (`n_s = max([f.n_singles] + [...])`, *"widened to any line they actually
+    played … career history can span formats"*), the exact problem. `_jh_flight_box`'s
+    own docstring says it mirrors that helper and it is a DEGRADED COPY that hardcodes
+    the ranges. Owner: *"the college game has everything i'm asking for (save for JV)
+    and works perfectly fine, which is why it's all in the same repo."* Widen the
+    shared helper; do not describe a solved problem as a design obstacle because you
+    only read the copy.
+  - **`JVTeam` is a SEPARATE type** with no `records` and no `matches` — a JV result
+    cannot reach a varsity counter, an award résumé or TOSS by construction. JV is
+    excluded from TOSS, seeding, awards, development and the recruit hand-off entirely.
+  - **Schedule**: district single round robin → invitationals to `JV_DUAL_CAP` (16) →
+    one **JV Showcase Weekend** (`showcase_pod`), OUTSIDE the cap. ‼️ It needed its own
+    PHASE — at `phase="regular"` it was indistinguishable from an invitational in the
+    archive and the cap arithmetic could not even be checked. The section's own rule: **a
+    phase is the archive's identity for an EVENT.**
+  - **Pairing is a talent SORT and a WALK** — pair each team with the next one still
+    free, one rule surviving (no league-mate). It was a windowed scorer first; owner:
+    *"it's literally whoever has someone, the precision isn't crucial."* Same lesson
+    `_showcase_groups` already learned — **when the quality of a matchup comes from the
+    ORDERING, searching inside the ordering buys nothing.** Deliberately the INVERSE of
+    varsity's geography-first `_nondistrict_pairs` (median gap 0.0 OVR vs 4.2-5.2):
+    travel is not a real cost in a simulation and a JV player facing their own level is
+    the entire point. Classification is deliberately NOT a gate.
+  - **NO PLAYOFFS** (asked directly, 2026-08): a bracket needs a ranking to seed it and
+    JV has none by design; a JV team is a ladder slice rather than a standing squad, so
+    the squad that qualified need not be the squad that plays; and the elastic format means a semifinal and a final could be
+    different shapes. More showcase weekends are the shape that works.
+  - Cost: the week-0 rung goes **~5 → ~7 minutes** for both genders (+40%).
+    `tests/test_jhsaa_jv.py`.
 - **Team honours exist beyond titles (same rule):** every unit won is an honour in
   ROMAN numerals ("Region IX", "Ward IV"; Zonals keep letters), all on ONE line —
   led by the DISTRICT TITLE when the program won its district (owner rule 2027-08:
@@ -1285,8 +1423,9 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   `tests/test_jhsaa_development.py`; see
   `docs/AAR-jhsaa-development-curves-and-rest-staffing.md`.
 - **‼️ TALENT-AWARE REST STAFFING vs. truly bad teams (owner rule 2026-08,
-  `jhsaa._rest_count`).** In lieu of V2 squads / injuries / fatigue (all owner-
-  declined for the JHSAA): against a clearly weaker regular-season opponent — a
+  `jhsaa._rest_count`).** Written when injuries and fatigue were owner-declined for
+  the JHSAA and there was no JV (there IS one now — see the JV § below; rest staffing
+  is UNCHANGED by it and still the reason a starter sits): against a clearly weaker regular-season opponent — a
   `REST_GAP` (10 OVR top-nine-mean) strength gap ALWAYS, plus a ≤.300 record once
   the opponent has `REST_MIN_SAMPLE` duals (gap alone before that) — a coach
   rests 1-2 starters from the TOP of the ladder at `REST_RATE` 0.75; everyone
