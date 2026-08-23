@@ -1580,13 +1580,9 @@ def archetype_board() -> dict:
     association to scroll. ~91 programs carry a tag, so it is longer than the play-up
     board and is grouped by kind for that reason."""
     from app import overrides as ov
-    global _schools_cache
-    if _schools_cache is None:
-        with open(_DATA, encoding="utf-8") as fh:
-            _schools_cache = json.load(fh)["schools"]
     amap = _arch_map(ov.jhsaa_archetype_version())
     seed = _arch_seed()
-    cls = {r["name"]: r["classification"] for r in _schools_cache}
+    cls = {r["name"]: r["classification"] for r in _rows()}
     rows = [{"name": n, "kind": k, "classification": cls.get(n, ""),
              # As on the play-up board: REMOVING a seeded program is a demotion
              # ("none"), removing an added one is a clear. One button, two meanings.
@@ -1645,10 +1641,7 @@ def program_editor(selected: str = "", board: str = "", cat: str = "",
     genuinely wants the reference view. Find what I need, see only that, optionally
     browse everything."""
     from app import overrides as ov
-    global _schools_cache
-    if _schools_cache is None:
-        with open(_DATA, encoding="utf-8") as fh:
-            _schools_cache = json.load(fh)["schools"]
+    rows = _rows()
     version = ov.jhsaa_playup_version()
     pmap = _playup_map(version)
     # The league a played-up program actually competes in — LIVE, via the same
@@ -1659,7 +1652,7 @@ def program_editor(selected: str = "", board: str = "", cat: str = "",
     moved = _playup_league(version, rows, pmap)
     amap = _arch_map(ov.jhsaa_archetype_version())
     arch_ov, play_ov = ov.get_jhsaa_archetypes(), ov.get_jhsaa_playups()
-    by_name = {r["name"]: r for r in _schools_cache}
+    by_name = {r["name"]: r for r in rows}
 
     def card(name):
         r = by_name.get(name)
@@ -1684,7 +1677,7 @@ def program_editor(selected: str = "", board: str = "", cat: str = "",
                 "targets": targets,
                 "arch_edited": name in arch_ov, "play_edited": name in play_ov}
 
-    up = {r["name"] for r in _schools_cache
+    up = {r["name"] for r in rows
           if plays_up(r["name"], bool(r.get("play_up")), pmap, r["classification"])}
     held = {n for n, v in pmap.items() if v == "no"}
 
@@ -1717,12 +1710,8 @@ def program_editor(selected: str = "", board: str = "", cat: str = "",
 def playup_rows() -> list[dict]:
     """Every JHSAA school as {name, classification} — the raw rows, for a caller that
     has to VALIDATE a submitted name rather than offer one."""
-    global _schools_cache
-    if _schools_cache is None:
-        with open(_DATA, encoding="utf-8") as fh:
-            _schools_cache = json.load(fh)["schools"]
     return [{"name": r["name"], "classification": r["classification"]}
-            for r in _schools_cache]
+            for r in _rows()]
 
 
 def playup_board() -> dict:
@@ -1737,13 +1726,9 @@ def playup_board() -> dict:
     Play-up is a property of the SCHOOL, not of a gender's team, so this reads the raw
     rows rather than `load_schools`: both genders of one program always move together."""
     from app import overrides as ov
-    global _schools_cache
-    if _schools_cache is None:
-        with open(_DATA, encoding="utf-8") as fh:
-            _schools_cache = json.load(fh)["schools"]
     pmap = _playup_map(ov.jhsaa_playup_version())
     up, names = [], []
-    for r in _schools_cache:
+    for r in _rows():
         # ‼️ The picker offers only ELIGIBLE schools. Listing the whole association
         # invited a 5A-9A program to be submitted with play_up=yes, which the route
         # then stored — the small-school rule lived in the import script and nothing

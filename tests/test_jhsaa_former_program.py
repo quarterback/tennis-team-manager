@@ -64,3 +64,25 @@ def test_a_current_program_is_never_reported_as_former():
     live = jh.load_schools("girls")[0]
     assert jh.sponsors_sport(live.name, "girls")
     assert jh.former_school(live.name, "girls").name == live.name
+
+
+# --- the raw-row readers all go through one accessor --------------------------------
+
+def test_every_raw_row_reader_works_from_a_cold_cache():
+    """‼️ `_rows()` IS THE ONLY READ. Four functions used to open the data file
+    themselves with their own `global _schools_cache; if None: load` preamble, and
+    when one of them was converted to the accessor its local name went with it — the
+    Programs page raised `NameError: name 'rows' is not defined` on a line that had
+    read the module global a moment earlier. Nothing caught it because these are the
+    editor surfaces, which no data-bearing test renders.
+
+    `reset_schools()` first, so each call is the COLD path: a reader that depends on
+    somebody else having populated the global works fine until it is the first one
+    through the door."""
+    for call in (lambda: jh.playup_rows(),
+                 lambda: jh.playup_board(),
+                 lambda: jh.archetype_board(),
+                 lambda: jh.program_editor("", "", "", False, [])):
+        jh.reset_schools()
+        got = call()
+        assert got, call
