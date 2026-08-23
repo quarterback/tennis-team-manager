@@ -8,7 +8,7 @@
 </div>
 <h1 class="pt-h1">
   <span class="pt-crest" style="background:{{ color }}">{{ initials }}</span> {{ team.program.name }}
-  <button class="pt-star" style="position:static;font-size:20px;vertical-align:middle" data-team-id="{{ own_href }}" data-team-name="{{ team.program.name }}" onclick="return toggleFav(event,this)" title="Pin to My Teams">☆</button>
+  <button class="pt-star pt-star-inline" style="font-size:20px;vertical-align:middle" data-team-id="{{ own_href }}" data-team-name="{{ team.program.name }}" onclick="return toggleFav(event,this)" title="Pin to My Teams">☆</button>
 </h1>
 <div class="pt-subline">
   {% if team.program.mascot %}{{ team.program.mascot }} · {% endif %}
@@ -71,20 +71,104 @@
     <div class="pt-panel-head"><div class="pt-panel-title">Roster</div><div class="pt-panel-meta">season records</div></div>
     <div class="pt-panel-body pt-tablewrap">
       <table class="pt-table pt-sortable">
-        <thead><tr><th data-nosort>Player</th><th class="num">Gr</th><th class="num">Singles</th><th class="num">Doubles</th></tr></thead>
+        <thead><tr><th data-nosort>Player</th><th class="num">Gr</th>
+          <th class="num" title="Current overall">OVR</th>
+          <th class="num" title="Hidden ceiling">POT</th>
+          <th class="num">Singles</th><th class="num">Doubles</th></tr></thead>
         <tbody>
         {% for p in roster %}
-          <tr>
-            <td><a href="{{ player_href(p.player_id) }}">{{ p.name }}</a></td>
+          {# The roster is ordered by LADDER POSITION, not alphabetically: the
+             depth chart is what every lineup and market question is read off,
+             and the dressing line is drawn where a league dual stops. #}
+          <tr{% if dressed and p.ladder_rank == dressed + 1 %} class="pt-below-line"{% endif %}>
+            <td><span class="pt-ldr">{{ p.ladder_rank or "" }}</span>
+              <a href="{{ player_href(p.player_id) }}">{{ p.name }}</a></td>
             <td class="num t-num" data-sort="{{ p.grade_sort }}">{{ p.grade_label }}</td>
+            <td class="num t-num">{{ "%.1f"|format(p.ovr) if p.ovr is not none else "—" }}</td>
+            <td class="num t-num">{{ "%.1f"|format(p.pot) if p.pot is not none else "—" }}</td>
             <td class="num t-num">{{ p.s_rec }}</td>
             <td class="num t-num">{{ p.d_rec }}</td>
           </tr>
         {% endfor %}
         </tbody>
       </table>
+      {% if dressed %}
+      <p class="pt-note">A league dual here dresses {{ dressed }}; the rule below
+        that row is where the lineup stops. <a href="{{ scout_href }}">Scout this season →</a></p>
+      {% endif %}
     </div>
   </div>
+
+  {% if mv %}
+  <div class="pt-panel">
+    <div class="pt-panel-head"><div class="pt-panel-title">Movement</div>
+      <div class="pt-panel-meta">season to season</div></div>
+    <div class="pt-panel-body">
+      <div class="pt-kpis pt-kpis-tight">
+        <div class="pt-kpi"><div class="pt-kpi-k">In</div><div class="pt-kpi-v">{{ mv["in"] }}</div>
+          <div class="pt-kpi-sub">arrived this season</div></div>
+        <div class="pt-kpi"><div class="pt-kpi-k">Out</div>
+          <div class="pt-kpi-v">{% if mv["out"] is none %}—{% else %}{{ mv["out"] }}{% endif %}</div>
+          <div class="pt-kpi-sub">{% if mv["out"] is none %}next season not ingested{% else %}left after this season{% endif %}</div></div>
+        <div class="pt-kpi"><div class="pt-kpi-k">Net</div>
+          <div class="pt-kpi-v">{% if mv["net"] is none %}—{% else %}{{ "%+d"|format(mv["net"]) }}{% endif %}</div>
+          <div class="pt-kpi-sub">in minus out</div></div>
+        {% if mv.arrival_win_share is not none %}
+        <div class="pt-kpi"><div class="pt-kpi-k">From arrivals</div>
+          <div class="pt-kpi-v">{{ "%.0f%%"|format(100 * mv.arrival_win_share) }}</div>
+          <div class="pt-kpi-sub">of this season's flight wins</div></div>
+        {% endif %}
+      </div>
+      {% if mv["out"] is none %}
+      <p class="pt-note">
+        Departures are read from the season players turn up in, so the newest
+        ingested season has nothing to read them from yet. That is unknown, not
+        zero — a program that lost seven and one that lost none must not print
+        the same number.
+      </p>
+      {% endif %}
+      {% if mv.dev_arrivals is not none and mv.dev_stayers is not none %}
+      <p class="pt-note">
+        Development against the fitted headroom curve:
+        arrivals {{ "%+.2f"|format(mv.dev_arrivals) }}, stayers
+        {{ "%+.2f"|format(mv.dev_stayers) }}. Playing time buys careers and
+        match records; it is not a growth cheat, and this is where that shows.
+      </p>
+      {% endif %}
+      {% if mv.arrivals %}
+      <div class="pt-tablewrap">
+        <table class="pt-table">
+          <thead><tr><th>In</th><th class="num">Gr</th><th class="num">OVR</th><th>From</th><th class="num">W–L</th></tr></thead>
+          <tbody>
+          {% for a in mv.arrivals %}
+            <tr><td><a href="{{ player_href(a.player_id) }}">{{ a.name }}</a></td>
+              <td class="num t-num">{{ a.grade }}</td>
+              <td class="num t-num">{{ "%.1f"|format(a.ovr) if a.ovr is not none else "—" }}</td>
+              <td>{{ a.moved_from }}</td>
+              <td class="num t-num">{{ a.w }}–{{ a.l }}</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+      {% if mv.departures %}
+      <div class="pt-tablewrap">
+        <table class="pt-table">
+          <thead><tr><th>Out</th><th>To</th></tr></thead>
+          <tbody>
+          {% for d in mv.departures %}
+            <tr><td><a href="{{ player_href(d.player_id) }}">{{ d.name }}</a></td><td>{{ d.to }}</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+      {% if not mv.arrivals and not mv.departures %}
+      <p class="pt-note">No movement on record either way for this program.</p>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
 
   {% if m and m.duals %}
   <div class="pt-panel">

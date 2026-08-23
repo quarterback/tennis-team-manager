@@ -39,7 +39,17 @@
   <button type="button" data-view="resume">Résumé</button>
   <button type="button" data-view="depth">Depth &amp; volatility</button>
   <button type="button" data-view="pred">Predictive</button>
+  <button type="button" data-view="talent">Talent</button>
+  <button type="button" data-view="move">Movement</button>
 </div>
+<p class="pt-note">
+  <strong>Talent</strong> is the only view built on what the engine actually
+  reads. Every other column here measures results, and the Predictive view's
+  expected wins come off TOSS — a rating, which correlates with strength at
+  about 0.76. xShare prices each flight on the OVR gap it was contested at, so
+  Talent luck answers “did this roster underperform its talent”, which nothing
+  else on this page can.
+</p>
 
 <div id="empty-state" class="pt-myteams-empty" style="margin:24px 0">Pick a season above to load the grid.</div>
 
@@ -74,6 +84,15 @@
         <th class="num v-pred" title="Σ max(0, .5 − p) over wins">Upset val</th>
         <th class="num v-pred" title="Σ max(0, p − .5) over losses">Bad loss</th>
         <th class="num v-pred" title="share of wins vs top-decile power">Elite%</th>
+        <th class="num v-talent" title="Expected flight share from the OVR gap every flight was contested at">xShare</th>
+        <th class="num v-talent" title="Actual flights won minus expected — the roster's talent, cashed or not">Talent luck</th>
+        <th class="num v-talent" title="Mean OVR gap this team played at, own side minus opponent">Avg gap</th>
+        <th class="num v-move" title="Players who arrived this season">In</th>
+        <th class="num v-move" title="Players who left after this season — blank on the newest ingested season">Out</th>
+        <th class="num v-move">Net</th>
+        <th class="num v-move" title="Share of this season's flight wins taken by players who weren't here last year">From arrivals</th>
+        <th class="num v-move" title="Mean development against the fitted headroom curve, arrivals">Dev in</th>
+        <th class="num v-move" title="…and for players who stayed">Dev stay</th>
       </tr></thead>
       <tbody>
       {% for r in rows %}
@@ -110,6 +129,15 @@
           {{ num(r.uv, "%.2f", "pred") }}
           {{ num(r.blv, "%.2f", "pred") }}
           {{ num(r.ews, "%.3f", "pred") }}
+          {{ num(r.x_share, "%.3f", "talent") }}
+          {{ num(r.talent_luck, "%+.1f", "talent") }}
+          {{ num(r.avg_gap, "%+.1f", "talent") }}
+          {{ num(r["in"], "%d", "move") }}
+          {{ num(r["out"], "%d", "move") }}
+          {{ num(r.net, "%+d", "move") }}
+          {{ num(r.arrival_share, "%.2f", "move") }}
+          {{ num(r.dev_arrivals, "%+.2f", "move") }}
+          {{ num(r.dev_stayers, "%+.2f", "move") }}
         </tr>
       {% endfor %}
       </tbody>

@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Classifications — {{ rep.label }}{% endblock %}
+{% macro n(v, spec="%.1f") %}{% if v is none %}—{% else %}{{ spec|format(v) }}{% endif %}{% endmacro %}
+{% block content %}
+<div class="pt-crumbs"><a href="../index.html">Home</a> / <a href="index.html">Classifications</a> / {{ rep.label }}</div>
+<h1 class="pt-h1">Classifications <span class="pt-h1-sub">{{ rep.label }}</span></h1>
+
+<div class="pt-tabs" data-tabscope="cls-panes">
+  <button type="button" data-tab="strength">Is 6A better than 5A</button>
+  <button type="button" data-tab="shape">Talent shape</button>
+  <button type="button" data-tab="health">Competitive health</button>
+</div>
+
+<div id="cls-panes">
+<div data-tabpane="strength">
+  <div class="pt-panel">
+    <div class="pt-panel-head"><span>Cross-class results</span>
+      <span class="pt-panel-note">League play is inside a class, so this is every dual where two classes actually met</span></div>
+    <div class="pt-panel-body">
+      {% if rep.any_cross_class %}
+      <p class="pt-note">
+        Read a row as “this class against that one”. A class's own column is
+        blank: it plays itself constantly and the record is .500 by
+        construction. This is the only direct evidence there is — comparing two
+        classes' TOSS compares how each class rates <em>itself</em>, since the
+        index is opponent-adjusted inside a mostly self-contained schedule.
+      </p>
+      <div class="pt-tablewrap">
+        <table class="pt-table pt-sortable">
+          <thead><tr><th data-nosort>Class</th>
+            {% for c in rep.order %}<th class="num">vs {{ c }}</th>{% endfor %}
+            <th class="num">All cross-class</th></tr></thead>
+          <tbody>
+          {% for row in rep.matrix %}
+            <tr><td><span class="pt-chip">{{ row.classification }}</span></td>
+            {% for cell in row.cells %}
+              {% if cell.self %}<td class="num pt-dim">—</td>
+              {% elif cell.n %}
+                <td class="num{{ ' pt-pos' if cell.pct > 0.5 else (' pt-neg' if cell.pct < 0.5 else '') }}"
+                    data-sort="{{ cell.pct }}" title="{{ cell.n }} duals">{{ cell.w }}–{{ cell.l }}</td>
+              {% else %}<td class="num pt-dim">·</td>{% endif %}
+            {% endfor %}
+              <td class="num" data-sort="{{ row.pct if row.pct is not none else -1 }}">
+                {% if row.n %}{{ row.w }}–{{ row.l }} <span class="pt-dim">({{ "%.3f"|format(row.pct) }})</span>{% else %}—{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="pt-note">
+        No cross-class duals in this export. That is a SCOPE result, not a
+        finding: a per-classification export contains one class, so the classes
+        never meet inside it. Re-export the season with classification “all” to
+        answer this.
+      </p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="pt-panel">
+    <div class="pt-panel-head"><span>Where each class actually sits</span></div>
+    <div class="pt-panel-body pt-tablewrap">
+      <table class="pt-table pt-sortable">
+        <thead><tr>
+          <th data-nosort>Class</th><th class="num">Programs</th>
+          <th class="num" title="Mean OVR of the players a league dual puts on court, averaged over every program">Strength</th>
+          <th class="num" title="The same, over the top {{ 16 }} programs only">Top 16</th>
+          <th class="num" title="Top 16 mean minus the whole class's mean">Top vs field</th>
+        </tr></thead>
+        <tbody>
+        {% for r in rep.classes %}
+          <tr><td><span class="pt-chip">{{ r.classification }}</span></td>
+            <td class="num">{{ r.programs }}</td>
+            <td class="num">{{ n(r.strength) }}</td>
+            <td class="num">{{ n(r.top_strength) }}</td>
+            <td class="num">{{ n(r.gap_top_to_field) }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <p class="pt-note">
+        Strength is the mean OVR of the {{ rep.depth }} players a league dual
+        dresses, not of the whole roster — rosters run from the floor to the
+        mid-thirties and a whole-roster mean measures how many bodies a program
+        carries.
+      </p>
+    </div>
+  </div>
+</div>
+
+<div data-tabpane="shape" style="display:none">
+  <div class="pt-panel">
+    <div class="pt-panel-head"><span>Mean OVR by ladder position</span>
+      <span class="pt-panel-note">Position 1 is each program's best player</span></div>
+    <div class="pt-panel-body">
+      <p class="pt-note">
+        The design's claim is that a bigger school does not simply have better
+        players: the top ends sit close together and enrollment buys DEPTH, so
+        the gap between classes should be small at position 1 and widen going
+        down. Read the columns left to right — if the classes fan out as you
+        go, the shape is holding; if they are already far apart at position 1,
+        it is not. This is a live world, so this measures where talent ENDED
+        UP after every transfer, which is a different question from what the
+        generator promises.
+      </p>
+      <div class="pt-tablewrap">
+        <table class="pt-table">
+          <thead><tr><th>Class</th>
+            {% for i in range(1, rep.depth + 1) %}<th class="num">{{ i }}</th>{% endfor %}
+            <th class="num" title="Position 1 minus the deepest position shown">Drop</th></tr></thead>
+          <tbody>
+          {% for cls in rep.order %}
+            {% if cls in rep.shape %}
+            {% set sh = rep.shape[cls] %}
+            <tr><td><span class="pt-chip">{{ cls }}</span></td>
+              {% for i in range(1, rep.depth + 1) %}
+                {% set cell = (sh.positions | selectattr("pos", "equalto", i) | list | first) %}
+                <td class="num">{% if cell %}{{ "%.1f"|format(cell.mean) }}{% else %}—{% endif %}</td>
+              {% endfor %}
+              <td class="num">{{ n(sh.drop) }}</td></tr>
+            {% endif %}
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div data-tabpane="health" style="display:none">
+  <div class="pt-panel">
+    <div class="pt-panel-head"><span>Competitive health</span></div>
+    <div class="pt-panel-body pt-tablewrap">
+      <table class="pt-table pt-sortable">
+        <thead><tr>
+          <th data-nosort>Class</th>
+          <th class="num" title="Standard deviation of strength across the top 16 — how stretched the contenders are">Spread (top 16)</th>
+          <th class="num" title="Standard deviation across every program in the class">Spread (all)</th>
+          <th class="num" title="Duals inside this class decided by a single flight">One-flight duals</th>
+          <th class="num" title="Seasons of this class in the ingested archive">Seasons</th>
+          <th class="num" title="How many different programs have won it">Champions</th>
+          <th class="num" title="Herfindahl on titles: 1.00 = one program wins everything, low = a different winner every year">Concentration</th>
+          <th data-nosort>Most titles</th>
+        </tr></thead>
+        <tbody>
+        {% for r in rep.classes %}
+          <tr><td><span class="pt-chip">{{ r.classification }}</span></td>
+            <td class="num">{{ n(r.spread_top, "%.2f") }}</td>
+            <td class="num">{{ n(r.spread_all, "%.2f") }}</td>
+            <td class="num" data-sort="{{ r.close_rate if r.close_rate is not none else -1 }}">
+              {% if r.close_rate is not none %}{{ "%.1f%%"|format(100 * r.close_rate) }}
+              <span class="pt-dim">({{ r.close_duals }}/{{ r.in_class_duals }})</span>{% else %}—{% endif %}</td>
+            <td class="num">{{ r.seasons or "—" }}</td>
+            <td class="num">{{ r.distinct_champions or "—" }}</td>
+            <td class="num">{{ n(r.title_hhi, "%.3f") }}</td>
+            <td>{% for name, count in r.champions %}<span class="pt-chip">{{ name }} ×{{ count }}</span> {% endfor %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      <p class="pt-note">
+        A wide spread with many different champions is the interesting case and
+        not a contradiction: the spread says the class is unequal at the top,
+        the champion count says that inequality is not converting. Titles are
+        counted across every ingested season of this gender, so the column is
+        as deep as the archive you have loaded — one season means one champion
+        everywhere and says nothing.
+      </p>
+    </div>
+  </div>
+</div>
+</div>
+{% endblock %}

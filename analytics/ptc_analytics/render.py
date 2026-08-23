@@ -7,7 +7,9 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from . import aggregate, metrics as metrics_mod, prose
+from . import ability as ability_mod
+from . import aggregate, classes as classes_mod, market as market_mod
+from . import metrics as metrics_mod, prose
 
 HERE = Path(__file__).resolve().parent
 TEMPLATES = HERE / "templates"
@@ -79,17 +81,68 @@ def _fmt_opt(v, spec="%.3f"):
     return spec % v if v is not None else None
 
 
-def _team_stat_row(pid: str, scope_id: str, m, b) -> dict:
-    """One Stat Center row: identity + every first-pass team metric, formatted
-    for the grid (None -> None, rendered as em-dash by the template)."""
+def _json_for_script(obj) -> str:
+    """Serialise a payload for embedding in a <script> element.
+
+    ‼️ It must NOT be HTML-escaped and it must NOT be emitted raw either.
+    Script content is raw text, so Jinja's autoescape turns `"` into `&#34;`
+    and the browser does NOT decode it back — `JSON.parse` throws on a page
+    that looks perfectly fine in the source. Emitting it unescaped instead
+    lets a `</script>` inside a school or player name close the element early.
+    Escaping the three characters that can start markup as \\u sequences is
+    still valid JSON and is safe in both directions.
+    """
+    return (json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
+            .replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026"))
+
+
+def _round(v, places):
+    """Round for the packed scouting payload. None stays None — the grid
+    renders it as an em-dash, which is a different statement from 0."""
+    return None if v is None else round(v, places)
+
+
+def _r1(v):
+    return _round(v, 1)
+
+
+def _r2(v):
+    return _round(v, 2)
+
+
+def _r3(v):
+    return _round(v, 3)
+
+
+def _team_stat_row(pid: str, scope_id: str, m, b, abil=None, mv=None) -> dict:
+    """One Stat Center row: identity + every team metric, formatted for the
+    grid (None -> None, rendered as em-dash by the template).
+
+    `abil` is this team's ability row and `mv` its movement row — the two
+    column groups the grid gained: **Talent** (what the roster's OVR says
+    should have happened, against what did) and **Movement** (who came and
+    went). Both are None-safe: a scope with no OVR on file, or the newest
+    season with no following one to read departures from, renders em-dashes
+    rather than zeroes."""
     prog = b.programs.get(pid, {})
     q = m.quartile_record
     lg = m.league_record
+    abil = abil or {}
+    mv = mv or {}
 
     def rec(d):
         return f"{d.get('w', 0)}-{d.get('l', 0)}" if d else "—"
 
     return {
+        # talent: expected flight share from the OVR gaps every flight was
+        # actually contested at, vs the share the team took. This is Record
+        # Luck computed against the engine's own input instead of against
+        # TOSS — the one question a results-only library cannot ask.
+        "x_share": abil.get("x_share"), "talent_luck": abil.get("luck"),
+        "avg_gap": abil.get("avg_gap"),
+        "in": mv.get("in"), "out": mv.get("out"), "net": mv.get("net"),
+        "arrival_share": mv.get("arrival_win_share"),
+        "dev_arrivals": mv.get("dev_arrivals"), "dev_stayers": mv.get("dev_stayers"),
         "program_id": pid, "scope_id": scope_id, "name": m.name,
         "scope_label": b.label,
         "classification": aggregate.program_class(prog),
@@ -126,6 +179,8 @@ def build_site(raw_bundles: list[dict]) -> None:
     (SITE / "seasons").mkdir(parents=True, exist_ok=True)
     (SITE / "metrics").mkdir(parents=True, exist_ok=True)
     (SITE / "brackets").mkdir(parents=True, exist_ok=True)
+    (SITE / "scout").mkdir(parents=True, exist_ok=True)
+    (SITE / "classes").mkdir(parents=True, exist_ok=True)
     shutil.copytree(STATIC, SITE / "static")
 
     env = Environment(loader=FileSystemLoader(TEMPLATES),
@@ -141,12 +196,16 @@ def build_site(raw_bundles: list[dict]) -> None:
     player_value = metrics_mod.compute_player_value(careers)
     roster_records = _roster_records(careers)
 
-    # Storylines are ARCHIVED, not rendered (owner call 2028-08: the prose
-    # list was unusable on screen). The computation stays — it's substrate
-    # for later passes — and lands beside the ingest cache as JSON.
-    DATA.mkdir(parents=True, exist_ok=True)
-    (DATA / "storylines.json").write_text(json.dumps(
-        metrics_mod.storylines(team_metrics), indent=2, ensure_ascii=False))
+    # The ability layer: OVR joined onto every flight, and the win curve
+    # fitted on the gaps those flights were played at. Built before anything
+    # that reads it, and pooled across every ingested season because the curve
+    # is a property of the engine rather than of a season.
+    ability = ability_mod.build(bundles)
+    move = market_mod.movement(bundles)
+    growth = market_mod.fit_growth(bundles, ability)
+    scout_rows = market_mod.player_rows(bundles, careers, boards, ability, move, growth)
+    team_move = market_mod.team_movement(bundles, scout_rows, move, ability)
+    class_reports = classes_mod.build(bundles, boards, ability)
 
     def w(tmpl: str, out: Path, rel: str, **ctx):
         html = env.get_template(tmpl).render(rel=rel, **ctx)
@@ -239,11 +298,23 @@ def build_site(raw_bundles: list[dict]) -> None:
             roster.append({**p, "grade_label": glabel, "grade_sort": gsort,
                             "s_rec": f"{rec['s'][0]}-{rec['s'][1]}" if rec and sum(rec["s"]) else "—",
                             "d_rec": f"{rec['d'][0]}-{rec['d'][1]}" if rec and sum(rec["d"]) else "—"})
+        # Roster rows carry the ability layer too: a ladder position and an
+        # OVR turn the roster panel from a list of names into the depth chart
+        # every market decision is actually read off.
+        sa = ability.ability(scope_id)
+        for r in roster:
+            r["ovr"] = sa.ovr.get(r["player_id"]) if sa else None
+            r["pot"] = sa.pot.get(r["player_id"]) if sa else None
+            r["ladder_rank"] = sa.rank_of(r["player_id"]) if sa else None
+        roster.sort(key=lambda r: (r["ladder_rank"] is None, r["ladder_rank"] or 0))
         w("team.html", SITE / "teams" / fname, rel="../", team=t,
           blurb=prose.team_blurb(t), color=crest_color(name), initials=initials(name),
           classification=classification, league=league, own_href=fname, bracket_href=bracket_href,
           standing=standing_row, sections=aggregate.schedule_sections(t["schedule"]),
-          roster=roster, m=team_metrics.get((pid, scope_id)))
+          roster=roster, m=team_metrics.get((pid, scope_id)),
+          abil=ability.team.get((scope_id, pid)), mv=team_move.get((scope_id, pid)),
+          dressed=sa.dressed if sa else None,
+          scout_href=f"../scout/{aggregate.slug(scope_id)}.html")
 
     # players/index.html + player pages
     cards = [{"player_id": pid, "name": c["name"], "teams": sorted(c["teams"]),
@@ -276,7 +347,9 @@ def build_site(raw_bundles: list[dict]) -> None:
         if m.duals == 0:
             continue    # context-only program rows (scope_member=0) have no season here
         b = next(bb for bb in bundles if bb.scope_id == scope_id)
-        stat_rows.append(_team_stat_row(pid, scope_id, m, b))
+        stat_rows.append(_team_stat_row(pid, scope_id, m, b,
+                                        ability.team.get((scope_id, pid)),
+                                        team_move.get((scope_id, pid))))
     stat_rows.sort(key=lambda r: (r["scope_label"], r["classification"], r["name"]))
     stat_scopes = []
     for b in bundles:
@@ -291,12 +364,111 @@ def build_site(raw_bundles: list[dict]) -> None:
     w("metrics_teams.html", SITE / "metrics" / "teams.html", rel="../",
       rows=stat_rows, scopes=stat_scopes)
 
+    # Career value board: PVAR (results vs a slot's replacement level) beside
+    # WAE (results vs what the OVR gaps priced). They disagree on purpose and
+    # the disagreement is the point — PVAR asks "was this seat filled better
+    # than the next player would have", WAE asks "did they beat the matches
+    # they were actually given". A player can lead one and not the other.
+    career_wae: dict[str, dict] = {}
+    for (scope_id, pid), row in ability.player.items():
+        acc = career_wae.setdefault(pid, {"wae": 0.0, "priced": 0, "matches": 0, "known": True})
+        acc["matches"] += row["matches"]
+        if row.get("wae") is None:
+            acc["known"] = False
+        else:
+            acc["wae"] += row["wae"]
+            acc["priced"] += row["matches"]
+
     value_rows = []
     for pid, pv in player_value.items():
         c = careers[pid]
         glabel, gsort = aggregate.grade_label(c["bio"])
+        cw = career_wae.get(pid)
         value_rows.append({"player_id": pid, "name": c["name"], "teams": sorted(c["teams"]),
                             "wins": c["wins"], "losses": c["losses"], "pvar": pv["total"],
+                            "wae": cw["wae"] if cw and cw["known"] else None,
                             "grade": glabel, "grade_sort": gsort})
     value_rows.sort(key=lambda r: -r["pvar"])
-    w("metrics_value.html", SITE / "metrics" / "value.html", rel="../", rows=value_rows[:100])
+    w("metrics_value.html", SITE / "metrics" / "value.html", rel="../",
+      rows=value_rows[:100], curves=sorted(ability.curves.values(),
+                                           key=lambda cv: (cv.family, cv.kind)))
+
+    # ---- Scouting: search the association by AREA, not only by class ----
+    # The organizing hierarchy on every OTHER page is classification ->
+    # district, and that is right for a competition. It is the wrong index for
+    # a market: a cohort build is "the best players within one county", and a
+    # class-first tree makes that query unaskable — you would walk nine class
+    # pages and re-filter each one. So this surface carries BOTH cascades side
+    # by side (area -> county -> town, and class -> district) over one list,
+    # and narrows on whichever the question uses. It still never opens on the
+    # whole state: nothing renders until at least one axis is set.
+    scout_scopes = []
+    for b in bundles:
+        rows = scout_rows.get(b.scope_id, [])
+        if not rows:
+            continue
+        sa = ability.ability(b.scope_id)
+        board = boards.get(b.scope_id, {}).get("by_program", {})
+        prog_index, prog_pos = [], {}
+        for program_id, prog in sorted(b.programs.items(),
+                                       key=lambda kv: kv[1].get("name") or kv[0]):
+            standing = board.get(program_id, {})
+            ladder = [round(sa.ovr[p], 1) for p in (sa.ladder.get(program_id) or [])
+                      if p in sa.ovr] if sa else []
+            prog_pos[program_id] = len(prog_index)
+            prog_index.append([
+                prog.get("name") or program_id, aggregate.program_class(prog),
+                aggregate.program_league(prog), prog.get("city") or "",
+                prog.get("county") or "", prog.get("area") or "",
+                standing.get("class_rank"), standing.get("class_size"),
+                standing.get("wins"), standing.get("losses"), ladder,
+            ])
+
+        packed = []
+        for r in rows:
+            packed.append([
+                r["player_id"], r["name"], prog_pos.get(r["program_id"], -1),
+                r["grade_sort"], _r1(r["ovr"]), _r1(r["pot"]), r["ladder_rank"],
+                r["matches"], r["w"], r["l"], r["top_flight"],
+                _r3(r["lift"]), _r2(r["wae"]), r["starts_in"],
+                _r2(r["dev_vs_expected"]), r["moved_from"], _r1(r["vs_starter"]),
+            ])
+
+        # Every qualifying player, not a per-class top slice: the grid's own
+        # display cap is the only limit, and it announces itself on screen.
+        finders_out = {}
+        for key, _label, fn, _blurb, (sort_key, sort_dir) in market_mod.FINDERS:
+            hits = fn(rows)
+            finders_out[key] = {"ids": [r["player_id"] for r in hits],
+                                "sort": sort_key, "dir": sort_dir}
+        scout_scopes.append({
+            "scope_id": b.scope_id, "label": b.label,
+            "href": f"{aggregate.slug(b.scope_id)}.html",
+            "players": len(rows),
+            "payload": {
+                "scope": b.scope_id, "label": b.label,
+                "dressed": sa.dressed if sa else None,
+                "programs": prog_index, "players": packed,
+                "areas": sorted({p[5] for p in prog_index if p[5]}),
+                "counties": sorted({p[4] for p in prog_index if p[4]}),
+                "classes": sorted({p[1] for p in prog_index if p[1] and p[1] != "—"},
+                                  key=aggregate.classification_sort_key),
+                "finders": finders_out,
+                "catchment": market_mod.catchments(rows),
+                "lines": {k: round(v, 1) for k, v in
+                          market_mod.starting_lines(rows, sa.dressed if sa else None).items()},
+            },
+        })
+
+    w("scout_index.html", SITE / "scout" / "index.html", rel="../", scopes=scout_scopes)
+    for s in scout_scopes:
+        w("scout.html", SITE / "scout" / s["href"], rel="../", scope=s,
+          payload=_json_for_script(s["payload"]),
+          finders=[{"key": k, "label": lb, "blurb": bl,
+                    "found": len(s["payload"]["finders"][k]["ids"])}
+                   for k, lb, _fn, bl, _sort in market_mod.FINDERS])
+
+    # ---- Classification report ----
+    w("classes_index.html", SITE / "classes" / "index.html", rel="../", reports=class_reports)
+    for rep in class_reports:
+        w("classes.html", SITE / "classes" / f"{rep['scope_id']}.html", rel="../", rep=rep)

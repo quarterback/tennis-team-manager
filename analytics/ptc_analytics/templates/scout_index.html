@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Scouting{% endblock %}
+{% block content %}
+<div class="pt-crumbs"><a href="../index.html">Home</a> / Scouting</div>
+<h1 class="pt-h1">Scouting</h1>
+<p class="pt-lede">
+  Search the association by <strong>where players are</strong>, not only by what
+  class they play in — area, county and town sit beside classification and
+  league as equal axes. Each season carries its own shortlist, and a shortlist
+  exports as the two-column batch the game's bulk transfer field takes.
+</p>
+<div class="pt-index-grid">
+  {% for s in scopes %}
+  <a class="pt-index-card" href="{{ s.href }}">
+    <h4>{{ s.label }}</h4>
+    <div class="sub">{{ "{:,}".format(s.players) }} players on record</div>
+  </a>
+  {% endfor %}
+</div>
+{% if not scopes %}<p class="pt-note">No seasons ingested yet.</p>{% endif %}
+{% endblock %}
