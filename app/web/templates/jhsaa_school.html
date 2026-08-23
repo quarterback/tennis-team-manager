@@ -179,19 +179,6 @@
           {% endif %}
           {% endfor %}
         </table>
-        <script>
-        (function () {
-          var tbl = document.currentScript.previousElementSibling;
-          if (!tbl) return;
-          tbl.addEventListener('click', function (e) {
-            if (e.target.closest('a')) return;              // a school link is still a link
-            var row = e.target.closest('tr[data-lines]');
-            if (!row) return;
-            var det = tbl.querySelector('tr.jh-linerow[data-for="' + row.dataset.lines + '"]');
-            if (det) { det.hidden = !det.hidden; row.classList.toggle('open', !det.hidden); }
-          });
-        })();
-        </script>
         {% else %}
         <p class="jh-empty">Season not played yet this world year.</p>
         {% endif %}
@@ -243,6 +230,27 @@
         </table>
       </div>
       {% endif %}
+      {# ‼️ ONE handler for BOTH panes, delegated from the panel. It used to bind to
+         `document.currentScript.previousElementSibling` — i.e. the varsity table alone —
+         so when the JV pane arrived its rows rendered the caret and the hidden line row
+         and simply had nothing listening. The markup looked right, which is exactly why
+         it read as "JV toggling is broken" rather than as a missing script. Resolving
+         the detail row within the clicked row's OWN table is what keeps the two panes
+         from matching each other's indices. #}
+      <script>
+      (function () {
+        var panel = document.currentScript.closest('.bl-panel') || document;
+        panel.addEventListener('click', function (e) {
+          if (e.target.closest('a')) return;                // a school link is still a link
+          var row = e.target.closest('tr[data-lines]');
+          if (!row) return;
+          var tbl = row.closest('table');
+          if (!tbl) return;
+          var det = tbl.querySelector('tr.jh-linerow[data-for="' + row.dataset.lines + '"]');
+          if (det) { det.hidden = !det.hidden; row.classList.toggle('open', !det.hidden); }
+        });
+      })();
+      </script>
     </div>
   </div>
 

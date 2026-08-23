@@ -756,3 +756,66 @@ def test_a_jv_dual_never_lands_on_the_varsity_record(archived):
     from app.web.state import _jh_line_records
     both, only_v = _jh_line_records(sched), _jh_line_records(varsity)
     assert both == only_v, "filtering by level changed the varsity records — JV leaked"
+
+
+# --- the toggles actually being wired ----------------------------------------
+
+def test_the_jv_schedule_rows_are_expandable_like_the_varsity_ones(archived):
+    """‼️ MARKUP IS NOT WIRING. The JV rows rendered the caret and the hidden line row
+    from day one; the click handler bound to `document.currentScript.previousElement-
+    Sibling`, i.e. the VARSITY table alone, so nothing listened on the JV one. It looked
+    correct and did nothing, which is why it read as "JV toggling is broken"."""
+    w, g = archived["world"], "girls"
+    school = next(iter(archived["arc"]["standings"]["9A"].values()))[0]["school"]
+    html = archived["client"].get(
+        f"/jhsaa/school/{school}?g={g}").get_data(as_text=True)
+    assert 'data-pane="jv"' in html
+    assert 'data-lines="jv' in html, "no expandable JV row rendered"
+    assert 'data-for="jv' in html, "no JV line-score row rendered"
+    # the handler must be delegated from the panel, not bound to one table
+    assert "previousElementSibling" not in html
+    assert "tr[data-lines]" in html and "row.closest('table')" in html
+    assert html.count("jh_tabs_script") == 0        # macro, not a literal
+
+
+def test_the_player_flight_box_toggles_varsity_and_jv(archived):
+    """Both halves: the JV pane exists, and `jh_tabs_script` was actually called for
+    each bar — `jh_tabs` alone renders a bar that does nothing."""
+    w, g = archived["world"], "girls"
+    school = next(iter(archived["arc"]["standings"]["9A"].values()))[0]["school"]
+    sched = wd.jhsaa_schedule(w["id"], w["year"], g, school)
+    jv = [d for d in sched if (d.get("level") or "v") == "jv"]
+    name = next(nm for d in jv for ln in d["lines"]
+                for nm in (ln["home"] if d["home"] else ln["away"]))
+    salt = wd.active_salt(wd.DEFAULT_SEED)
+    sc = next(s for s in jh.load_schools(g) if s.name == school)
+    hit = next(p for p in jh.build_roster(sc, archived["arc"]["season_year"], salt)
+               if p.name == name)
+    html = archived["client"].get(
+        f"/jhsaa/player/{school}/{hit.pid}?g={g}").get_data(as_text=True)
+    assert 'data-tabs="jhflsingles"' in html and 'data-tabs="jhfldoubles"' in html
+    assert '[data-tabs="jhflsingles"]' in html, "the singles tab bar has no script"
+    assert '[data-tabs="jhfldoubles"]' in html, "the doubles tab bar has no script"
+    assert html.count('data-pane="jv"') >= 2      # one pane per flight box
+
+
+def test_a_players_jv_record_is_their_own_not_the_teams(archived):
+    """The JV column showed the TEAM's result in the duals a player dressed for, so a
+    kid who dressed for every JV dual carried the program's 15-3-1 beside his own 2-1
+    in singles. A record next to a person's name has to be that person's."""
+    from app.web.state import _jh_line_records
+    w, g = archived["world"], "girls"
+    school = next(iter(archived["arc"]["standings"]["9A"].values()))[0]["school"]
+    sched = wd.jhsaa_schedule(w["id"], w["year"], g, school)
+    jv = [d for d in sched if (d.get("level") or "v") == "jv"]
+    assert jv
+    mine = _jh_line_records(sched, "jv")
+    assert mine, "no JV line records resolved"
+    # nobody's own JV record can exceed the courts they were actually named on
+    for nm, r in mine.items():
+        played = sum(1 for d in jv for ln in d["lines"]
+                     if nm in (ln["home"] if d["home"] else ln["away"]))
+        assert sum(r["s"]) + sum(r["d"]) == played, nm
+    # and the varsity read is untouched by any of it
+    assert _jh_line_records(sched) == _jh_line_records(
+        [d for d in sched if (d.get("level") or "v") == "v"])

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_jhsaa.html" import jh_header %}
+{% from "_jhsaa.html" import jh_header, jh_tabs, jh_tabs_script %}
 {% from "_stars.html" import stars %}
 {% block title %}{{ view.name }} — {{ view.school }} — JHSAA{% endblock %}
 {% block content %}
@@ -71,29 +71,41 @@
       </div>
     </div>
 
-    {% for title, box in [('Flight record — Singles', view.flights.singles),
-                          ('Flight record — Doubles', view.flights.doubles)] %}
+    {# The flight record is ONE question — which courts did this player hold — asked of
+       two competitions, so Varsity/JV are tabs over it rather than four stacked panels.
+       The JV pane exists only for a career that has one. #}
+    {% macro recbox(box) -%}
+      {% if box.any %}
+      <table class="rc-recbox"><thead><tr>
+        <th class="yr">Season</th>{% for sl in box.slots %}<th>{{ sl }}</th>{% endfor %}<th>Overall</th>
+      </tr></thead><tbody>
+        {% for r in box.rows %}
+        <tr><td class="yr">{{ r.year }}</td>
+          {% for sl in box.slots %}<td>{{ r.cells[sl] }}</td>{% endfor %}
+          <td class="tot">{{ r.overall }}</td></tr>
+        {% endfor %}
+        <tr class="totrow"><td class="yr">TOTALS</td>
+          {% for sl in box.slots %}<td>{{ box.tcells[sl] }}</td>{% endfor %}
+          <td>{{ box.toverall }}</td></tr>
+      </tbody></table>
+      {% else %}
+      <p class="aw-empty" style="padding:8px 2px">No matches yet.</p>
+      {% endif %}
+    {%- endmacro %}
+
+    {% for disc in ['singles', 'doubles'] %}
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">{{ title }}</span>
-        <span class="bit">W–L by court, S1-S5/D1-D4 cover both league formats</span></div>
-      <div class="tbl-scroll">
-        {% if box.any %}
-        <table class="rc-recbox"><thead><tr>
-          <th class="yr">Season</th>{% for sl in box.slots %}<th>{{ sl }}</th>{% endfor %}<th>Overall</th>
-        </tr></thead><tbody>
-          {% for r in box.rows %}
-          <tr><td class="yr">{{ r.year }}</td>
-            {% for sl in box.slots %}<td>{{ r.cells[sl] }}</td>{% endfor %}
-            <td class="tot">{{ r.overall }}</td></tr>
-          {% endfor %}
-          <tr class="totrow"><td class="yr">TOTALS</td>
-            {% for sl in box.slots %}<td>{{ box.tcells[sl] }}</td>{% endfor %}
-            <td>{{ box.toverall }}</td></tr>
-        </tbody></table>
-        {% else %}
-        <p class="aw-empty" style="padding:8px 2px">No matches yet.</p>
-        {% endif %}
-      </div>
+      <div class="bl-panel-head">
+        <span class="bl-panel-title">Flight record — {{ disc|capitalize }}</span>
+        <span class="bit">W–L by court</span></div>
+      {% if view.any_jv %}
+      {{ jh_tabs([('v', 'Varsity', view.flights[disc].rows|length),
+                  ('jv', 'JV', view.jv_flights[disc].rows|length)], 'jhfl' ~ disc) }}
+      {% endif %}
+      <div class="jh-pane tbl-scroll" data-pane="v">{{ recbox(view.flights[disc]) }}</div>
+      {% if view.any_jv %}
+      <div class="jh-pane tbl-scroll" data-pane="jv" hidden>{{ recbox(view.jv_flights[disc]) }}</div>
+      {% endif %}
     </div>
     {% endfor %}
   </div>
@@ -313,4 +325,12 @@
   </div>
 </div>
 </div>
+{# ‼️ `jh_tabs` EMITS ONLY THE BAR — `jh_tabs_script` is a separate macro and must be
+   called per tab id, or the tabs render, look right and do nothing. That is exactly the
+   bug reported against the JV schedule toggle, so it is worth naming here: on this page
+   the two flight boxes are two independent tab bars and each needs its own call. #}
+{% if view.any_jv %}
+{{ jh_tabs_script('jhflsingles') }}
+{{ jh_tabs_script('jhfldoubles') }}
+{% endif %}
 {% endblock %}
