@@ -59,7 +59,7 @@
             <td>{{ s.singles }}</td>
             <td>{{ s.doubles }}</td>
             <td><b>{{ s.record }}</b></td>
-            {% if view.any_jv %}<td style="color:var(--text-secondary)">{{ s.jv or '—' }}</td>{% endif %}
+            {% if view.any_jv %}<td style="color:var(--text-secondary)">{{ s.jv or s.jv_dressed or '—' }}</td>{% endif %}
             <td class="jh-scout">{{ s.ovr }}</td>
             <td>{{ s.team.record if s.team else '—' }}</td>
             <td style="font-variant-numeric:normal;font-size:12.5px;color:var(--text-secondary)">

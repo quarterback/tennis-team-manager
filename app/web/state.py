@@ -4961,6 +4961,14 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         # name has to be that person's.
         jrec = _jh_line_records(sched, "jv").get(hit.name, {"s": [0, 0], "d": [0, 0]})
         jslots = _jh_slot_records(sched, "jv").get(hit.name, {})
+        # ‼️ TWO ARCHIVE GENERATIONS, AND ONLY ONE HAS COURTS. JV rows written before
+        # the box score carry `played` (who dressed) and an EMPTY `lines`, so reading
+        # the per-court record alone reports 0-0 for a kid who played a full JV season
+        # — which silently drops the JV column and both JV tabs off his card, since
+        # they are gated on having any. `played` is the fallback: it cannot say which
+        # court, but it can say they were there. A save only gains courts for seasons
+        # simulated after that commit; the archive is written once and never rewritten.
+        jv_dressed = sum(world.jhsaa_jv_player_record(sched, hit.name))
         aw = (arc.get("awards") or {}).get(yr_sc.group) or {}
         # Both `all_district` and `all_region` live on the SEASON rather than in a
         # class's slate — the district because it is keyed (class, name), the
@@ -4991,6 +4999,10 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
             "jv_doubles": "{}-{}".format(*jrec["d"]),
             "jv": (f"{jrec['s'][0] + jrec['d'][0]}-{jrec['s'][1] + jrec['d'][1]}"
                    if any(jrec["s"] + jrec["d"]) else ""),
+            # A bare count, shown only where the courts were never archived — "19" and
+            # "13-1" read as different things, which is right: one is how many they
+            # played, the other how they did.
+            "jv_dressed": jv_dressed,
             "jv_matches": sum(jrec["s"]) + sum(jrec["d"]),
         })
     if player is None:
@@ -5023,7 +5035,7 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         # so a save archived before the JV season — or a player who never dressed for
         # one — does not get a column of dashes on every row.
         "jv_flights": jv_flights,
-        "any_jv": any(s["jv"] for s in seasons),
+        "any_jv": any(s["jv"] or s["jv_dressed"] for s in seasons),
         "jv_matches": sum(s["jv_matches"] for s in seasons),
         # For the transfer form — the identity a `set_jhsaa_transfer` row is keyed on.
         "entry_year": player.entry_year,
