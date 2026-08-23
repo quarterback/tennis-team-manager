@@ -27,14 +27,24 @@ def test_the_floor_is_what_lets_every_program_field_a_jv():
         assert jh.jv_spare(t) >= jh.JV_MIN_SPARE, t.school.name
 
 
-def test_the_format_takes_the_thinner_side_and_clamps():
+def test_the_format_takes_the_thinner_side():
     assert jh.jv_format(jh.JV_MIN_SPARE - 1) is None
     assert jh.jv_dual_format(4, 30) is None
     assert jh.jv_dual_format(12, 6) is jh.JV_FORMATS[6]
-    assert jh.jv_dual_format(30, 40) is jh.JV_FORMATS[jh.JV_MAX_SPARE]
-    for spare, fmt in jh.JV_FORMATS.items():
-        assert jh.jv_lineup_need(fmt) == spare
+
+
+def test_the_table_has_no_ceiling_and_every_size_dresses_exactly():
+    """The authored 5-12 continue as one rule, so a deep pair plays a bigger card
+    rather than being clamped back to 4S/4D."""
+    for spare in range(jh.JV_MIN_SPARE, 41):
+        fmt = jh.jv_format(spare)
+        assert jh.jv_lineup_need(fmt) == spare, spare
         assert not fmt.doubles_team_point
+        # doubles-forward at every size: singles never runs more than one past doubles
+        assert fmt.n_singles <= fmt.n_doubles + 1, spare
+    assert (jh.jv_format(14).n_singles, jh.jv_format(14).n_doubles) == (4, 5)
+    assert (jh.jv_format(15).n_singles, jh.jv_format(15).n_doubles) == (5, 5)
+    assert (jh.jv_format(17).n_singles, jh.jv_format(17).n_doubles) == (5, 6)
 
 
 # --- the tie ladder ----------------------------------------------------------

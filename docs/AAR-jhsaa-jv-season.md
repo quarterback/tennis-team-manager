@@ -18,8 +18,8 @@ median-19 roster, so ranks #12 and below were effectively invisible.
   eleven dress varsity, everyone below is JV that day (`jv_pool`). Nothing was added to
   make it porous — a varsity player who loses through the season falls past a JV
   player's seed and they swap, which the ladder already did.
-* **An elastic lineup** (`JV_FORMATS`): 1S/2D at five spare through 4S/4D at twelve,
-  the shape taken from the **thinner** side.
+* **An elastic lineup** (`JV_FORMATS` + `jv_format`): 1S/2D at five spare and upward
+  with no ceiling, the shape taken from the **thinner** side.
 * **`ROSTER_FLOOR` 12 → 16**, so every program can field a JV.
 * **Ties**, the association's first: points, then sets, then games, then a draw.
 * **`JVTeam`**, a separate type with no `records` and no `matches`.
@@ -51,6 +51,34 @@ The projected payoff (≤5-match players 41% → ~5%) is nearly **flat** from 1S
 2S/3D, because a bigger format reaches fewer programs but gives each reached player more
 lines and the two effects cancel. That is worth knowing before anyone "improves" the
 table: the format is a presentation choice, not a data one.
+
+## 1a. ‼️ The table was eight literals; it is one rule
+
+It shipped clamped at twelve — a deep program dressed 4S/4D and the rest watched.
+Owner: *"if two teams have bigger than 4/4 can we add those formats to go bigger? 5/5,
+4/5, 5/6, whatever to fit their jv roster avail."*
+
+The eight authored entries are not eight arbitrary shapes. They are:
+
+    D = (spare + 1) // 3        S = spare - 2D
+
+which reproduces all eight exactly and then keeps going — 13 → 5S/4D, 14 → **4S/5D**,
+15 → **5S/5D**, 16 → 6S/5D, 17 → **5S/6D**, 18 → 6S/6D — i.e. the three examples asked
+for, in order. Read another way: doubles steps up, and singles runs D−1, D, D+1
+beneath it, which is what keeps the card doubles-forward at every size, matching the
+varsity 3S/4D league format's character.
+
+The literals stay (they are what was decided) and an import-time assertion checks the
+rule against them, so the two cannot drift. **A table that a rule reproduces is a rule
+with a cache in front of it** — worth checking for before extending any authored table
+by hand.
+
+No ceiling was needed as a safety rail either. The shape is always the *smaller* side's
+capacity, so a big card needs BOTH programs that deep, and the association's own roster
+distribution bounds it: measured over the real 2038 league pairings, **only 2.0% of
+girls' and 3.3% of boys' pairings go past 4S/4D at all**, and the largest single
+pairing in the state is 5S/6D (girls) / 7S/7D (boys). A constant would have been
+picking a number the data already picks.
 
 ## 2. ‼️ A floor of 15 would have changed nothing
 
@@ -208,6 +236,15 @@ Asked directly, and the answer is that there is no good shape for one:
 
 If a season-ending event is ever wanted, more **showcase weekends** are the shape that
 works: pods, no bracket, no advancement, no seeding, and the machinery already exists.
+
+## A near miss worth recording
+
+Swapping the table for the rule left the OLD `jv_dual_format` and `jv_lineup_need`
+definitions further down the module. Python keeps the last one, so the clamped version
+would have won and the whole change would have been inert — `jv_format` uncapped,
+`jv_dual_format` still clamping it back to twelve. Exactly the shape of `flavor.py`'s
+double `roll_us_hometown`, which CLAUDE.md already warns about. `grep -n "^def "` after
+any block replacement.
 
 ## Pre-existing failures, not touched
 

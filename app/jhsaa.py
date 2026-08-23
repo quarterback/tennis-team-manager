@@ -189,6 +189,10 @@ def lineup_need(phase: str) -> int:
 # The table is the owner's. Note that three entries have an EVEN court count and can
 # therefore be drawn; that is accepted and handled (`_tie_break`), and it is not a
 # corner case — 2S/2D alone is ~20% of the JV slate.
+#: The owner's authored table, 5 through 12 — and the FLOOR of a rule that continues
+#: past it. Kept as literals because these eight are the ones that were decided; the
+#: rule below is checked against them at import, so a future edit here cannot silently
+#: diverge from what the generator produces.
 JV_FORMATS = {
     5:  DualFormat(n_singles=1, n_doubles=2, doubles_team_point=False),   # 3 courts
     6:  DualFormat(n_singles=2, n_doubles=2, doubles_team_point=False),   # 4 — even
@@ -200,12 +204,64 @@ JV_FORMATS = {
     12: DualFormat(n_singles=4, n_doubles=4, doubles_team_point=False),   # 8 — even
 }
 JV_MIN_SPARE = min(JV_FORMATS)          # 5 — below this a program cannot field a JV
-JV_MAX_SPARE = max(JV_FORMATS)          # 12 — the card never grows past 4S/4D
+
+#: ‼️ AND THERE IS NO CEILING (owner rule 2026-08): "if two teams have bigger than 4/4
+#: can we add those formats to go bigger? 5/5, 4/5, 5/6, whatever to fit their jv roster
+#: avail". The table above is not eight arbitrary shapes — it is one rule, and the rule
+#: keeps going:
+#:
+#:     D = (spare + 1) // 3        S = spare - 2D
+#:
+#: which reproduces all eight authored entries exactly and then continues
+#: 13 → 5S/4D · 14 → 4S/5D · 15 → 5S/5D · 16 → 6S/5D · 17 → 5S/6D · 18 → 6S/6D …
+#: i.e. the owner's three examples in order. Read another way, doubles steps up and
+#: singles runs D-1, D, D+1 beneath it, which is what keeps the card doubles-forward
+#: at every size — the same character as the varsity 3S/4D league format.
+#:
+#: A twelve-player clamp was here first and is gone. It is not needed as a safety
+#: rail either: the shape is always the SMALLER side's capacity, so a huge card needs
+#: BOTH programs to be that deep, and the association's own roster distribution is
+#: what bounds it in practice rather than a constant nobody chose.
+
+
+def jv_format(spare: int) -> DualFormat | None:
+    """The JV dual shape for a side with `spare` players available below varsity's
+    eleven, or None if it cannot field one at all. Unbounded above."""
+    if spare < JV_MIN_SPARE:
+        return None
+    got = JV_FORMATS.get(spare)
+    if got is not None:
+        return got
+    d = (spare + 1) // 3
+    return DualFormat(n_singles=spare - 2 * d, n_doubles=d, doubles_team_point=False)
+
+
+# The authored table and the rule are ONE decision; if they ever disagree the table is
+# a set of magic numbers and the rule is a guess about them.
+for _n, _f in JV_FORMATS.items():
+    _d = (_n + 1) // 3
+    assert (_f.n_singles, _f.n_doubles) == (_n - 2 * _d, _d), f"JV_FORMATS[{_n}]"
+del _n, _f, _d
+
+
+def jv_lineup_need(fmt: DualFormat) -> int:
+    return fmt.n_singles + 2 * fmt.n_doubles
+
+
+def jv_dual_format(a_spare: int, b_spare: int) -> DualFormat | None:
+    """The shape TWO sides play: the SMALLER side's capacity. Both dress the same
+    number of courts, so a deep program is throttled by a thin opponent — the accepted
+    price of the elastic table, and now also the thing that keeps the card's size
+    honest at the top end, since a 9S/8D needs both sides carrying 25 spare."""
+    if min(a_spare, b_spare) < JV_MIN_SPARE:
+        return None
+    return jv_format(min(a_spare, b_spare))
+
 
 #: A JV program plays at most this many duals. ‼️ A LIMIT, NOT A FLOOR (owner rule
 #: 2026-08): the district single round robin gets most programs to 9-11 and the
 #: invitational window fills toward the cap, but a program in a small league simply
-#: plays fewer. Showcases are NOT counted here — see `JV_SHOWCASES_PER_PROGRAM`.
+#: plays fewer. The showcase weekend is NOT counted here.
 JV_DUAL_CAP = 16
 
 #: The JV SHOWCASE WEEKEND — the season-ending event, and the only JV event there is
@@ -229,28 +285,6 @@ JV_SHOWCASE_NAME = 'JV Showcase Weekend'
 #: can BOTH carry an empty `lines`, so `level` is the only thing telling them apart.
 LEVEL_VARSITY = "v"
 LEVEL_JV = "jv"
-
-
-def jv_format(spare: int) -> DualFormat | None:
-    """The JV dual shape for a side with `spare` players available below varsity's
-    eleven, or None if it cannot field one at all. Clamped at `JV_MAX_SPARE` — a
-    deep program dresses twelve and the rest watch."""
-    if spare < JV_MIN_SPARE:
-        return None
-    return JV_FORMATS[min(spare, JV_MAX_SPARE)]
-
-
-def jv_lineup_need(fmt: DualFormat) -> int:
-    return fmt.n_singles + 2 * fmt.n_doubles
-
-
-def jv_dual_format(a_spare: int, b_spare: int) -> DualFormat | None:
-    """The shape TWO sides play: the SMALLER side's capacity. Both dress the same
-    number of courts, so a deep program is throttled by a thin opponent — measured at
-    46% of side-appearances, and the accepted price of the elastic table."""
-    if min(a_spare, b_spare) < JV_MIN_SPARE:
-        return None
-    return jv_format(min(a_spare, b_spare))
 
 
 ROSTER_SIZE = 12          # legacy flat default; real depth is per-classification, see below
