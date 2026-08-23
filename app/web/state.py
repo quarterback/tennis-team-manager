@@ -3623,21 +3623,22 @@ def _jh_reported_lines(d: dict) -> list[dict]:
     return out
 
 
-def _jh_line_records(sched: list[dict]) -> dict:
+def _jh_line_records(sched: list[dict], level: str = "v") -> dict:
     """Every player's singles and doubles record for a season, off the match-level archive.
 
     Keyed by NAME because that is what a line carries. A season's individual records
     therefore come from the same duals the team record does — a senior shown at 27-4
     and the school's season are the one simulated season, never two computations.
 
-    ‼️ VARSITY ONLY, and the filter lives HERE rather than in the callers. JV duals
-    carry per-court lines too now (owner rule 2026-08 — the box score), so nothing
-    about the data keeps them out any more; they are a separate competition and a JV
+    ‼️ ONE LEVEL AT A TIME, and the filter lives HERE rather than in the callers. JV
+    duals carry per-court lines too now (owner rule 2026-08 — the box score), so nothing
+    about the data keeps them apart any more; they are separate competitions and a JV
     court must never land on a varsity record. `state.py`'s player view hands this the
-    whole schedule, both levels, and always has."""
+    whole schedule, both levels, and always has. Pass `level="jv"` for the JV side —
+    the SAME reader, so a JV court is counted by exactly the rules a varsity one is."""
     rec: dict = {}
     for d in sched:
-        if (d.get("level") or "v") != "v":
+        if (d.get("level") or "v") != level:
             continue
         side = "home" if d.get("home") else "away"
         for ln in d.get("lines") or ():
@@ -3649,17 +3650,17 @@ def _jh_line_records(sched: list[dict]) -> dict:
     return rec
 
 
-def _jh_slot_records(sched: list[dict]) -> dict:
+def _jh_slot_records(sched: list[dict], level: str = "v") -> dict:
     """Every player's W-L broken out by the actual FLIGHT they played (S1-S5,
     D1-D4 — the union of both league formats, `EARLY_FORMAT_PHASE`'s 5S/2D and the
     regular season's 3S/4D), off the same match-level archive `_jh_line_records`
     reads. This is the college career-record box's per-line breakdown, ported to
     high school — mirrors `player_career_records`'s `_box`.
 
-    ‼️ VARSITY ONLY, filtered here — same reason as `_jh_line_records`."""
+    ‼️ ONE LEVEL AT A TIME, filtered here — same reason as `_jh_line_records`."""
     rec: dict = {}
     for d in sched:
-        if (d.get("level") or "v") != "v":
+        if (d.get("level") or "v") != level:
             continue
         side = "home" if d.get("home") else "away"
         for ln in d.get("lines") or ():
@@ -3674,17 +3675,31 @@ def _jh_slot_records(sched: list[dict]) -> dict:
     return rec
 
 
-def _jh_flight_box(seasons: list[dict]) -> dict:
-    """The player-card flight box: singles S1-S5, doubles D1-D4, one row per season
-    plus a TOTALS row — same shape as `player_career_records`'s `_box`, so the
-    template can share the `.rc-recbox` markup."""
+def _jh_flight_box(seasons: list[dict], key: str = "slots",
+                   min_s: int = 5, min_d: int = 4) -> dict:
+    """The player-card flight box: one row per season plus a TOTALS row — same shape as
+    `player_career_records`'s `_box`, so the template can share the `.rc-recbox` markup.
+
+    ‼️ THE WIDTH IS DERIVED, NOT HARDCODED. This mirrored `player_career_records`, which
+    has flexed since divisions stopped sharing a lineup size — *"widened to any line they
+    actually played … career history can span formats"* — and this was a DEGRADED COPY of
+    it that pinned `range(1, 6)` / `range(1, 5)`. That was survivable while both league
+    formats fitted inside S1-S5/D1-D4, and stopped being the moment the JV box score
+    landed: `JV_FORMATS` is uncapped, so a deep JV pairing plays S6, D6 and beyond, and a
+    fixed box would have silently dropped those courts while every row still added up.
+    Owner: *"the college game has everything i'm asking for … which is why it's all in
+    the same repo."*
+
+    `min_s`/`min_d` are the FLOOR, not the width — the varsity box still shows its full
+    S1-S5/D1-D4 even in a season nobody reached S5, so the card reads the same from year
+    to year. The JV box passes 0 and shows exactly the courts that were played."""
     def _box(kind: str, slots: list[str]):
         rows, totals = [], {s: [0, 0] for s in slots}
         tov = [0, 0]
         for s in seasons:
             cells, ov = {}, [0, 0]
             for slot in slots:
-                wl = (s["slots"] or {}).get(slot)
+                wl = (s[key] or {}).get(slot)
                 cells[slot] = (f"{wl[0]}-{wl[1]}" if wl else "–")
                 if wl:
                     ov[0] += wl[0]; ov[1] += wl[1]
@@ -3696,8 +3711,12 @@ def _jh_flight_box(seasons: list[dict]) -> dict:
                   for s in slots}
         return {"slots": slots, "rows": rows, "tcells": tcells,
                 "toverall": f"{tov[0]}-{tov[1]}", "any": bool(rows)}
-    singles = [f"S{i}" for i in range(1, 6)]
-    doubles = [f"D{i}" for i in range(1, 5)]
+    def _width(prefix: str, floor: int) -> int:
+        seen = [int(sl[1:]) for s in seasons for sl in (s[key] or {})
+                if sl.startswith(prefix) and sl[1:].isdigit()]
+        return max([floor] + seen)
+    singles = [f"S{i}" for i in range(1, _width("S", min_s) + 1)]
+    doubles = [f"D{i}" for i in range(1, _width("D", min_d) + 1)]
     return {"singles": _box("singles", singles), "doubles": _box("doubles", doubles)}
 
 
@@ -4928,12 +4947,17 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
             continue                       # not enrolled that year (pre-9th, or graduated)
         player = player or hit
         sched = world.jhsaa_schedule(w["id"], yr, g, yr_sc.name)
-        # `sched` is both levels; the three readers each scope themselves — the two
-        # varsity ones filter to `level == "v"` internally, the JV one reads `played`,
-        # which only a JV row carries.
+        # `sched` is both levels; every reader scopes itself by `level`.
         rec = _jh_line_records(sched).get(hit.name, {"s": [0, 0], "d": [0, 0]})
         slots = _jh_slot_records(sched).get(hit.name, {})
-        jv_w, jv_l, jv_t = world.jhsaa_jv_player_record(sched, hit.name)
+        # ‼️ THE PLAYER'S OWN JV RECORD, off the same lines the varsity one comes from —
+        # NOT `jhsaa_jv_player_record`, which is the TEAM's result in the duals they
+        # dressed for. That is what the JV column showed first and it read as nonsense
+        # on a career card: a kid who dressed for every JV dual carried "15-3-1", the
+        # program's record, beside his own 2-1 in singles. A record next to a person's
+        # name has to be that person's.
+        jrec = _jh_line_records(sched, "jv").get(hit.name, {"s": [0, 0], "d": [0, 0]})
+        jslots = _jh_slot_records(sched, "jv").get(hit.name, {})
         aw = (arc.get("awards") or {}).get(yr_sc.group) or {}
         # Both `all_district` and `all_region` live on the SEASON rather than in a
         # class's slate — the district because it is keyed (class, name), the
@@ -4955,14 +4979,16 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
             "singles": "{}-{}".format(*rec["s"]), "doubles": "{}-{}".format(*rec["d"]),
             "record": f"{w_}-{l_}", "wins": w_, "losses": l_,
             "honors": honors, "team": team, "slots": slots,
-            # The JV line is the TEAM's result in the duals they dressed for, so it is
-            # deliberately not summed into `record` and not shown beside singles and
-            # doubles — those are per-court and this is not the same measurement.
-            # Empty when they never dressed JV, and on any season archived before
-            # `played` existed.
-            "jv": (f"{jv_w}-{jv_l}-{jv_t}" if jv_t else f"{jv_w}-{jv_l}")
-                  if (jv_w or jv_l or jv_t) else "",
-            "jv_duals": jv_w + jv_l + jv_t,
+            # THE PLAYER'S OWN JV record, per court, on exactly the varsity terms —
+            # so "did this kid play JV, and how did they do" is answerable from the
+            # ledger and the flight box drills into WHERE. Never summed into `record`:
+            # JV is a separate competition, not more of the varsity season.
+            "jv_slots": jslots,
+            "jv_singles": "{}-{}".format(*jrec["s"]),
+            "jv_doubles": "{}-{}".format(*jrec["d"]),
+            "jv": (f"{jrec['s'][0] + jrec['d'][0]}-{jrec['s'][1] + jrec['d'][1]}"
+                   if any(jrec["s"] + jrec["d"]) else ""),
+            "jv_matches": sum(jrec["s"]) + sum(jrec["d"]),
         })
     if player is None:
         return {"found": False, "school": school, "gender": g, "pid": pid}
@@ -4970,7 +4996,11 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
     # Flight box wants OLDEST-first rows (freshman year on top, like the college
     # career-record box), so it's built before `seasons` above sorts newest-first
     # for the ledger table.
-    flights = _jh_flight_box(sorted(seasons, key=lambda s: s["year"]))
+    _by_year = sorted(seasons, key=lambda s: s["year"])
+    flights = _jh_flight_box(_by_year)
+    # The JV box floors at 0 — it shows the courts actually played and no more, because
+    # the JV format is elastic and there is no canonical set of flights to hold open.
+    jv_flights = _jh_flight_box(_by_year, key="jv_slots", min_s=0, min_d=0)
     wins = sum(s["wins"] for s in seasons)
     losses = sum(s["losses"] for s in seasons)
     return {
@@ -4986,10 +5016,12 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
                            years[0] if years else 0, years, None, None),
         "seasons": seasons, "record": f"{wins}-{losses}", "wins": wins, "losses": losses,
         "honors": [h for s in seasons for h in s["honors"]], "flights": flights,
-        # The JV column is shown only for a career that HAS one, so a save archived
-        # before the JV season — or a player who never dressed for one — does not get
-        # a column of dashes on every row.
+        # The JV column and the JV flight box are shown only for a career that HAS one,
+        # so a save archived before the JV season — or a player who never dressed for
+        # one — does not get a column of dashes on every row.
+        "jv_flights": jv_flights,
         "any_jv": any(s["jv"] for s in seasons),
+        "jv_matches": sum(s["jv_matches"] for s in seasons),
         # For the transfer form — the identity a `set_jhsaa_transfer` row is keyed on.
         "entry_year": player.entry_year,
         "transfer": moved,

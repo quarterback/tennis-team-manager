@@ -31,8 +31,8 @@ median-19 roster, so ranks #12 and below were effectively invisible.
 * **Calendar**: JV is dated by `_jh_jv_dates`, entirely outside the varsity allocator,
   opening a month later and allowed to use Sundays.
 * **UI**: the school page's schedule is Varsity/JV tabs, both with expandable box
-  scores; a player's career ledger carries a **JV** column — the team's result in the
-  duals they dressed for.
+  scores; a player's career ledger carries a **JV** column (their OWN per-court record)
+  and the flight box toggles Varsity/JV (§14).
 
 No playoffs, no JV ranking, no effect on development, and JV touches no record,
 résumé or rating that the varsity season owns.
@@ -479,3 +479,43 @@ implemented a cheaper approximation of it, and nothing in between flagged the ga
 no test could, because both behaviours produce a complete, plausible JV season. When a
 comment claims a property (*porous*, *daily*, *live*), the thing to check is whether
 the call ORDER actually delivers it, not whether the function it points at is correct.
+
+## 14. ‼️ Markup is not wiring — twice, in one feature
+
+Both bugs reported against the shipped JV UI were the same fault:
+
+* **The JV schedule rows never expanded.** They rendered the caret, the `data-lines`
+  key and the hidden `jh-linerow` from the moment the box score landed. The click
+  handler bound to `document.currentScript.previousElementSibling` — the VARSITY table
+  — so nothing listened on the JV one. Now one delegated handler on the panel serves
+  both panes, resolving the detail row inside the clicked row's own table.
+* **The new flight tabs would have shipped with it.** `jh_tabs` emits only the bar;
+  `jh_tabs_script` is a SEPARATE macro that must be called per tab id. Caught only
+  because fixing the first bug meant reading the macro.
+
+**A component split across a markup macro and a script macro has an invisible required
+second call**, and every page that gets it right is evidence the pattern works, not that
+you followed it. Assert the WIRING, not the markup — the tests here check that the
+handler is delegated and that each tab bar has a matching script, because a screenshot
+of correct-looking markup was exactly what shipped.
+
+### And the player page showed a team record next to a person's name
+
+`jhsaa_jv_player_record` folds the TEAM's result over the duals a player dressed for, so
+a kid who dressed for every JV dual carried the program's **15-3-1** beside his own 2-1
+in singles. It answered "how did the JV do while he was on it", which is not a thing a
+career ledger should say. The column now comes from `_jh_line_records(sched, "jv")` —
+the same reader the varsity record uses, so a JV court is counted by exactly the rules a
+varsity one is, and both readers take `level` instead of hardcoding varsity.
+
+### Which forced the port §12 predicted
+
+`_jh_flight_box` hardcoded `range(1, 6)` / `range(1, 5)` while its docstring claimed to
+mirror `player_career_records` — which has DERIVED its width ever since divisions
+stopped sharing a lineup size. That was survivable while both league formats fitted
+inside S1-S5/D1-D4, and wrong the moment JV arrived: `JV_FORMATS` is uncapped, so a deep
+pairing plays S6/D6 and beyond and a fixed box would have dropped those courts **while
+every row still added up**. Width is derived now; `min_s`/`min_d` are a FLOOR, so the
+varsity box still shows its full S1-S5/D1-D4 and the JV box (floor 0) shows exactly the
+courts played. §12 said this would be "a port, not a design" the day per-court JV detail
+landed. It was.
