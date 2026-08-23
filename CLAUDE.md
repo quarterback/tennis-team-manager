@@ -1326,12 +1326,24 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     member it describes ("Jane Doe · sibling"), which has no perspective to invert,
     and seniority is not stated at all. PARENT keeps its direction: that asymmetry is
     the content of the tie.
-  - `_family_pairs` (the doubles nudge) stays keyed on the HOUSEHOLD, not the stated
-    link — two siblings joined through a third grew up hitting together just the same,
-    and narrowing it would silently move lineups in every save holding a family.
+  - **‼️ REMOVING A MEMBER MAY SPLIT THE FAMILY.** A family IS the connected
+    component of the tie graph, so dropping a BRIDGE (A-B, B-C, C-D, remove B) leaves
+    two households, not one row of three: `family_remove` re-splits, gives each
+    surviving component its own row, and drops anyone left with no ties (they are not
+    a household of one). And `family_links` tests for an ABSENT `links` key, never a
+    falsy one — an empty list is a real new-format family with no stated ties, and
+    reading it as legacy synthesised a tie nobody made, then refused the genuine one
+    as a duplicate.
+  - **‼️ THE DOUBLES NUDGE IS SIBLINGS ONLY** (owner rule 2026-08: "only siblings get
+    the bonus NOT family connections at all"). `_family_pairs` asked whether two pids
+    shared a family ID, so under the per-pair model cousins — and anyone merely
+    reachable through a third member's tie — drew it. `TeamSeason.sibling_ids` is
+    therefore `{pid: {sibling pids}}`, not `{pid: family_id}`, still resolved once per
+    team from one `families()` read. Low stakes by construction (owner: "you only get
+    the bump if you're a doubles pairing anyway") — but it is a stated fact or nothing.
   Doubles:
   `FAMILY_CHEMISTRY` (0.025, ~¼ sd of pair-rating spread) is a TIEBREAK in both
-  arrangers, applied under the anti-stacking boundary; `TeamSeason.family_ids` is
+  arrangers, applied under the anti-stacking boundary; `TeamSeason.sibling_ids` is
   resolved once in `district_teams`, never per dual. ‼️ `_resolve_member` NEVER
   defaults the salt — the name draw is salted but `make_pid` is not, so the wrong salt
   resolves the same pid to a DIFFERENT PERSON and stores the stranger's name. ‼️ A

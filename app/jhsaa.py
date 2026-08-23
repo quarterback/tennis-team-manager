@@ -1023,12 +1023,15 @@ class TeamSeason:
     # first postseason dual and FROZEN for the rest of the season. Empty until
     # then; the regular season runs on the live ladder. See `_postseason_nine`.
     order_of_ability: list = field(default_factory=list)
-    # {pid: family_id} for THIS roster only — the doubles nudge's whole input.
+    # {pid: {sibling pids}} for THIS roster only — the doubles nudge's whole input.
+    # SIBLINGS, not the household (owner rule 2026-08): it held a family_id and the
+    # arrangers compared two of them, so cousins — and anyone merely reachable
+    # through a third member's tie — drew the partnering bonus too.
     # ‼️ Resolved once when the team is built, never inside `_lineup`. `families()`
     # resolves an override fingerprint, which costs a SQLite connect+query: called
     # per dual that is ~5,100 queries a gender, the exact shape of the play-up
     # fingerprint storm. A dual reads this dict instead.
-    family_ids: dict = field(default_factory=dict)
+    sibling_ids: dict = field(default_factory=dict)
 
     @property
     def record(self) -> str:
@@ -2211,7 +2214,7 @@ def _pair_partitions(pool: list):
             yield [(a, b)] + tail
 
 
-def _arrange_state(nine: list, family_ids: dict | None = None) -> list:
+def _arrange_state(nine: list, sibling_ids: dict | None = None) -> list:
     """Arrange a frozen-order top nine into SLOT ORDER for the 1S/4D card:
     [S1, D1a, D1b, D2a, D2b, D3a, D3b, D4a, D4b]. `_squad` dresses by position
     and `_slot_players` reads it back the same way, so this list IS the lineup.
@@ -2222,7 +2225,7 @@ def _arrange_state(nine: list, family_ids: dict | None = None) -> list:
     eng = {p.pid: p.engine_player() for p in nine}
     rank = {p.pid: i + 1 for i, p in enumerate(nine)}          # frozen OoA rank
 
-    fam = family_ids or {}
+    sibs = sibling_ids or {}
 
     def pair_rating(a, b):
         r = doubles_rating(eng[a.pid], eng[b.pid])
@@ -2230,7 +2233,7 @@ def _arrange_state(nine: list, family_ids: dict | None = None) -> list:
         # pair-rating spread, so it settles a near-tie and never overrides a real
         # difference — and `_order_pairs` still enforces the anti-stacking rank-sum
         # boundary afterwards, so this cannot produce an illegal lineup.
-        if fam.get(a.pid) and fam.get(a.pid) == fam.get(b.pid):
+        if b.pid in sibs.get(a.pid, ()):
             r += FAMILY_CHEMISTRY
         return r
 
@@ -2348,7 +2351,7 @@ def _flip_strategy(strategy: str) -> str:
 
 
 def _arrange_regular(eleven: list, strategy: str,
-                     family_ids: dict | None = None) -> list:
+                     sibling_ids: dict | None = None) -> list:
     """The 3S/4D card under `strategy`, in SLOT ORDER
     [S1, S2, S3, D1a, D1b, D2a, D2b, D3a, D3b, D4a, D4b] — same contract as
     `_arrange_state`: `_squad` dresses by position, `_slot_players` reads it
@@ -2384,11 +2387,11 @@ def _arrange_regular(eleven: list, strategy: str,
         from engine.doubles import doubles_rating, serve_rating, return_rating
         eng = {p.pid: p.engine_player() for p in eleven}
 
-        fam = family_ids or {}
+        sibs = sibling_ids or {}
 
         def dr(a, b):
             r = doubles_rating(eng[a.pid], eng[b.pid])
-            if fam.get(a.pid) and fam.get(a.pid) == fam.get(b.pid):
+            if b.pid in sibs.get(a.pid, ()):
                 r += FAMILY_CHEMISTRY      # see `_arrange_state` — a tiebreak only
             return r
 
@@ -2432,7 +2435,7 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None) -> list:
     TeamSeason, regular season only) lets the coach rest starters against a
     truly weaker side — see `_rest_count`."""
     if phase in POSTSEASON:                        # strict, frozen, arranged
-        return _arrange_state(_postseason_nine(ts), ts.family_ids)
+        return _arrange_state(_postseason_nine(ts), ts.sibling_ids)
     if phase in SHOWCASE:
         # ‼️ A SHOWCASE MUST NOT FREEZE THE ORDER OF ABILITY. The freeze is the
         # association's anti-stacking rule and it binds from a program's first
@@ -2447,7 +2450,7 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None) -> list:
         nine, bench = order[:need], order[need:]
         if bench and rng.random() < _ROTATE_ONE:
             nine[-1] = bench[rng.randrange(len(bench))]
-        return _arrange_state(nine, ts.family_ids)
+        return _arrange_state(nine, ts.sibling_ids)
     order = _order(ts)
     need = lineup_need(phase)
     # Talent-aware staffing: sit 1-2 from the TOP against a truly weaker side and
@@ -2476,7 +2479,7 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None) -> list:
         strategy = _coach_strategy(ts.school.key)
         if flip:
             strategy = _flip_strategy(strategy)
-        return _arrange_regular(nine, strategy, ts.family_ids)
+        return _arrange_regular(nine, strategy, ts.sibling_ids)
     return nine
 
 
@@ -2613,9 +2616,20 @@ def district_teams(schools: list[School], year: int, salt: str = "") -> list[Tea
     out = []
     for s in schools:
         roster = build_roster(s, year, salt)
-        out.append(TeamSeason(
-            school=s, roster=roster,
-            family_ids={p.pid: fam[p.pid][0] for p in roster if p.pid in fam}))
+        # ‼️ SIBLINGS, not the household — `{pid: {sibling pids}}`. This used to carry
+        # the family ID and the arrangers compared two of them, which gave cousins
+        # (and anyone merely reachable through a third member's tie) the partnering
+        # bonus. Still resolved once per team from the one `families()` read.
+        sibs = {}
+        for p in roster:
+            if p.pid not in fam:
+                continue
+            kin = {q for l in family_links(fam[p.pid][1])
+                   if l.get("relation") == "sibling" and p.pid in (l.get("a"), l.get("b"))
+                   for q in (l.get("a"), l.get("b")) if q != p.pid}
+            if kin:
+                sibs[p.pid] = kin
+        out.append(TeamSeason(school=s, roster=roster, sibling_ids=sibs))
     return out
 
 
@@ -5092,10 +5106,15 @@ def family_links(fam: dict) -> list[dict]:
     Families written before links existed carry only `relation`, which is exactly what
     they displayed for every pair — so they read back as the complete graph at that
     relation. Derived on READ rather than migrated: the same call the rest of this
-    section makes, and the next shape change needs no migration either."""
-    links = fam.get("links")
-    if links:
-        return [dict(l) for l in links]
+    section makes, and the next shape change needs no migration either.
+
+    ‼️ THE LEGACY TEST IS AN ABSENT KEY, NEVER AN EMPTY LIST. A new-format family can
+    legitimately hold NO stated ties — remove the middle member of A-B-C and what is
+    left is two people who were never tied to each other — and a truthiness check read
+    that as "legacy", synthesised a tie nobody stated, and then refused the real one as
+    a duplicate when the owner tried to add it."""
+    if "links" in fam:
+        return [dict(l) for l in (fam.get("links") or ())]
     rel = fam.get("relation", "sibling")
     pids = [m.get("pid") for m in (fam.get("members") or ()) if m.get("pid")]
     return [{"a": pids[i], "b": p, "relation": rel}
@@ -5165,16 +5184,20 @@ def _relation_from(fam: dict, me: dict | None, them: dict) -> str:
 
 
 def _family_pairs(a_pid: str, b_pid: str, fam_map: dict | None = None) -> bool:
-    """True when these two share a family — the doubles nudge's only question.
+    """True when these two are SIBLINGS — the doubles nudge's only question.
     Takes a PRE-RESOLVED map so a lineup call never re-resolves the fingerprint.
 
-    ⚠️ HOUSEHOLD, NOT STATED TIE, and deliberately so: the nudge is about growing up
-    hitting together, which two siblings joined through a third sibling did just as
-    much as the pairs the owner happened to name. Narrowing this to `_link_between`
-    would also silently move lineups in every save that has a family in it."""
+    ‼️ SIBLINGS, NOT THE HOUSEHOLD (owner rule 2026-08: "only siblings get the bonus
+    NOT family connections at all"). It asked whether two pids shared a family id,
+    which under the per-pair model means cousins — and second cousins reachable only
+    through somebody else's tie — drew a partnering bonus nobody asked for. The
+    stated link is the fact; anything else is the graph being over-read."""
     m = families() if fam_map is None else fam_map
     ha, hb = m.get(a_pid), m.get(b_pid)
-    return bool(ha and hb and ha[0] == hb[0])
+    if not (ha and hb and ha[0] == hb[0]):
+        return False
+    link = _link_between(ha[1], a_pid, b_pid)
+    return bool(link and link.get("relation") == "sibling")
 
 
 def family_add(pid_a: str, pid_b: str, relation: str = "sibling",
@@ -5293,8 +5316,61 @@ def family_remove(family_id: str, pid: str = "") -> dict:
     # longer a member is a tie to nobody: `_link_between` would keep matching it and
     # a re-added member would silently inherit the old relation.
     links = [l for l in family_links(fam) if pid not in (l.get("a"), l.get("b"))]
-    ov.set_jhsaa_family(family_id, {**fam, "members": members, "links": links})
+    # ‼️ AND THE HOUSEHOLD MAY NO LONGER BE ONE. A family IS the connected component
+    # of the tie graph, so removing a BRIDGE splits it: take A-B, B-C, C-D and drop B
+    # and only C-D still holds anything together. Left in one row, A went on being
+    # presented as D's family — and shared a family id with them, which is the only
+    # thing `_family_pairs` looks at. A member with no ties left is not a household
+    # of one; they are simply out.
+    parts = _components(members, links)
+    if not parts:
+        ov.clear_jhsaa_family(family_id)
+        return {"ok": True, "msg": "family removed (no ties left)"}
+    keep_members, keep_links = parts[0]
+    ov.set_jhsaa_family(family_id, {**fam, "members": keep_members,
+                                    "links": keep_links})
+    # Every other surviving component becomes a family in its own right, under a new
+    # id: one pid, one family, whatever the tie graph does.
+    for split_members, split_links in parts[1:]:
+        ov.set_jhsaa_family(uuid.uuid4().hex[:12],
+                            {**fam, "members": split_members, "links": split_links})
+    if len(parts) > 1:
+        return {"ok": True,
+                "msg": f"member removed — the family split into {len(parts)}"}
     return {"ok": True, "msg": "member removed"}
+
+
+def _components(members: list, links: list) -> list[tuple[list, list]]:
+    """The tie graph's connected components, as `(members, links)` pairs, largest
+    first — dropping anyone left with no ties at all.
+
+    A family is a component by definition, so this is what makes a removal honest:
+    the alternative is a row whose members are only "related" through somebody who
+    is no longer in it."""
+    adj: dict = {}
+    for l in links:
+        a, b = l.get("a"), l.get("b")
+        if a and b:
+            adj.setdefault(a, set()).add(b)
+            adj.setdefault(b, set()).add(a)
+    seen, out = set(), []
+    for m in members:
+        start = m.get("pid")
+        if not start or start in seen or start not in adj:
+            continue                    # no ties left: not a household of one
+        group, stack = set(), [start]
+        while stack:
+            cur = stack.pop()
+            if cur in group:
+                continue
+            group.add(cur)
+            stack.extend(adj.get(cur, ()))
+        seen |= group
+        out.append((
+            [mm for mm in members if mm.get("pid") in group],
+            [l for l in links if l.get("a") in group and l.get("b") in group]))
+    out.sort(key=lambda part: -len(part[0]))
+    return out
 
 
 def _where(w: dict) -> dict:

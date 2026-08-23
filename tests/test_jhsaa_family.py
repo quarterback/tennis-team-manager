@@ -216,3 +216,100 @@ def test_removing_a_member_takes_their_ties_with_them(three_siblings):
     assert jh.family_remove(fid, "pid-c")["ok"]
     links = jh.family_for("pid-a")["links"]
     assert all("pid-c" not in (l["a"], l["b"]) for l in links), links
+
+
+def test_an_empty_link_list_is_explicit_not_legacy():
+    """‼️ THE LEGACY TEST IS AN ABSENT KEY, NEVER AN EMPTY LIST. A new-format family
+    can hold no stated ties at all — remove the middle of A-B-C and the two left were
+    never tied to each other — and a truthiness check read that as a legacy row,
+    synthesised a tie nobody stated, and then refused the real one as a duplicate."""
+    fam = {"relation": "cousin", "links": [],
+           "members": [{"pid": "a"}, {"pid": "b"}]}
+    assert jh.family_links(fam) == []
+    assert jh._relation_from(fam, _m("a", 2030), _m("b", 2029)) == ""
+
+
+def test_removing_a_bridge_splits_the_family(three_siblings, monkeypatch):
+    """‼️ A FAMILY IS A CONNECTED COMPONENT, so removing a BRIDGE splits it. With
+    A-B, B-C, C-D and B gone, only C-D still holds anything together — but the row
+    kept all three, so A went on being presented as D's family and shared a family id
+    with them, which is the only thing the doubles nudge ever looked at."""
+    from app import overrides as ov
+    people = three_siblings
+    people["pid-d"] = {**_m("pid-d", 2028), "gender": "girls"}
+    monkeypatch.setattr(jh, "_resolve_member",
+                        lambda pid, **kw: dict(people[pid]) if pid in people else None)
+    jh.family_add("pid-a", "pid-b", "sibling")
+    jh.family_add("pid-b", "pid-c", "cousin")
+    jh.family_add("pid-c", "pid-d", "sibling")
+    fid = jh.family_for("pid-a")["family_id"]
+    assert jh.family_remove(fid, "pid-b")["ok"]
+    # A had only the one tie, through B: they are out, not a household of one.
+    assert jh.family_for("pid-a") is None
+    # C-D survive as their own family, and nobody else is in it.
+    cd = jh.family_for("pid-c")
+    assert {m["pid"] for m in cd["members"]} == {"pid-c", "pid-d"}
+    assert jh.family_for("pid-d")["family_id"] == cd["family_id"]
+    assert len(ov.get_jhsaa_families()) == 1
+
+
+def test_two_surviving_components_each_become_a_family(three_siblings, monkeypatch):
+    """A bridge between two real pairs leaves TWO families, not one row holding four
+    people who are no longer all related."""
+    from app import overrides as ov
+    people = three_siblings
+    for extra, entry in (("pid-d", 2028), ("pid-e", 2027)):
+        people[extra] = {**_m(extra, entry), "gender": "girls"}
+    monkeypatch.setattr(jh, "_resolve_member",
+                        lambda pid, **kw: dict(people[pid]) if pid in people else None)
+    jh.family_add("pid-a", "pid-b", "sibling")     # A-B
+    jh.family_add("pid-b", "pid-c", "cousin")      # bridge
+    jh.family_add("pid-c", "pid-d", "sibling")     # C-D
+    jh.family_add("pid-d", "pid-e", "sibling")     # C-D-E
+    fid = jh.family_for("pid-a")["family_id"]
+    jh.family_remove(fid, "pid-c")                 # drop the OTHER end of the bridge
+    assert len(ov.get_jhsaa_families()) == 2
+    assert {m["pid"] for m in jh.family_for("pid-a")["members"]} == {"pid-a", "pid-b"}
+    assert {m["pid"] for m in jh.family_for("pid-d")["members"]} == {"pid-d", "pid-e"}
+    assert jh.family_for("pid-a")["family_id"] != jh.family_for("pid-d")["family_id"]
+
+
+def test_a_severed_pair_can_then_be_tied_for_real(three_siblings):
+    """The empty-list bug's real cost: after a split the survivors could not be tied,
+    because the synthesised legacy tie made the genuine one look like a duplicate."""
+    jh.family_add("pid-a", "pid-b", "sibling")
+    jh.family_add("pid-b", "pid-c", "sibling")
+    fid = jh.family_for("pid-a")["family_id"]
+    jh.family_remove(fid, "pid-b")
+    assert jh.family_for("pid-a") is None and jh.family_for("pid-c") is None
+    again = jh.family_add("pid-a", "pid-c", "sibling")
+    assert again["ok"], again
+
+
+# --- the doubles nudge is SIBLINGS ONLY --------------------------------------------
+
+def test_only_siblings_draw_the_doubles_bonus(three_siblings):
+    """‼️ Owner rule 2026-08: "only siblings get the bonus NOT family connections at
+    all". It asked whether two pids shared a family ID, so cousins — and anyone merely
+    reachable through a third member's tie — partnered with a thumb on the scale."""
+    jh.family_add("pid-a", "pid-b", "sibling")
+    jh.family_add("pid-b", "pid-c", "cousin")
+    m = jh.families()
+    assert jh._family_pairs("pid-a", "pid-b", m)          # stated siblings
+    assert not jh._family_pairs("pid-b", "pid-c", m)      # stated cousins
+    assert not jh._family_pairs("pid-a", "pid-c", m)      # same household, no tie
+
+
+def test_a_legacy_sibling_family_still_draws_it(three_siblings):
+    """A row written before links carries one relation for every pair, which is what
+    it always meant — so a legacy SIBLING family keeps its nudge and a legacy cousin
+    family never had one to lose."""
+    from app import overrides as ov
+    ov.set_jhsaa_family("legacy-sib", {"label": "L", "relation": "sibling",
+                                       "members": [{"pid": "x"}, {"pid": "y"}]})
+    ov.set_jhsaa_family("legacy-cuz", {"label": "M", "relation": "cousin",
+                                       "members": [{"pid": "p"}, {"pid": "q"}]})
+    jh._family_cache.clear()
+    m = jh.families()
+    assert jh._family_pairs("x", "y", m)
+    assert not jh._family_pairs("p", "q", m)
