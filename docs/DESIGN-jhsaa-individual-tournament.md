@@ -319,11 +319,38 @@ This is the recurring shape in this codebase: a helper whose invariant is true f
 existing caller, reused by a new caller for which it is silently false. The docstring
 even asserts the field-independence that the new caller breaks.
 
-Fix: give the individual event its own banding —
-**CHAMP · F · SF · QF · OF · R32 · R64 · R128** — rather than adding a field parameter
-to a function that documents itself as not needing one. `_FINISH_SHORT`'s named labels
-(Champion / Runner-up / Semifinalist / Quarterfinalist / Octofinalist) all carry over
-unchanged; only the "Round of N" arm differs.
+### The fix, as specified
+
+Owner: *"just needs to change the finish-label logic for individual tournaments so
+those rounds display correctly as R128, R64, R32, then R16/OF, QF, SF, F, CHAMP as
+appropriate."*
+
+So: **a separate banding for the individual event**, scoped to it —
+
+| Round | Alive | Tag |
+|---|---:|---|
+| Round of 128 | 128 | `R128` |
+| Round of 64 | 64 | `R64` |
+| Round of 32 | 32 | `R32` |
+| Octofinals (Round of 16) | 16 | `OF` |
+| Quarterfinals | 8 | `QF` |
+| Semifinals | 4 | `SF` |
+| Final | 2 | `F` |
+| Champion | 1 | `CHAMP` |
+
+Notes that matter for whoever builds it:
+
+- **`R16` and `OF` are the same round.** The association already says *Octofinals* for
+  the team event, so `OF` is the tag; `R16` is only the arithmetic name for it. Do not
+  emit both.
+- **‼️ DO NOT TOUCH THE TEAM PATH.** `_finish_short`'s `> 24 → QUAL` rule is *correct*
+  for the team event and load-bearing there — every team field converges on a 24-team
+  main draw, so a team out above 24 genuinely went out in the qualifiers. The bug is
+  reusing it here, not the rule itself. The individual event needs its **own** function;
+  do not add a field parameter to one whose docstring states it needs none.
+- `_FINISH_SHORT`'s named labels (Champion / Runner-up / Semifinalist / Quarterfinalist
+  / Octofinalist) carry over unchanged — only the "Round of N" arm differs, and only for
+  this event.
 
 ---
 
