@@ -27,12 +27,24 @@ import argparse
 import hashlib
 import os
 import statistics
+import subprocess
 import sys
+import tempfile
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO = os.path.dirname(_HERE)
 sys.path.insert(0, _REPO)
-os.environ.setdefault("TENNIS_DB_PATH", os.path.join(_REPO, ".format-pilot-tmp.db"))
+
+# ‼️ HERMETIC BY CONSTRUCTION — an EMPTY throwaway database, never `setdefault`.
+# `build_roster` reads the override tables (archetype, play-up, transfer), so the
+# rosters this script measures — and therefore every number it prints — depend on
+# whatever those tables hold. `setdefault` let an inherited TENNIS_DB_PATH win
+# silently, which meant "run the committed script with default arguments" did NOT
+# name one experiment: two people could run the same commit and get tables that
+# differ by a point or two per metric, with nothing looking wrong. A calibration
+# whose output is an argument has to pin its own inputs.
+_DB = os.path.join(tempfile.mkdtemp(prefix="jh-1a-pilot-"), "calib.db")
+os.environ["TENNIS_DB_PATH"] = _DB
 
 from app import jhsaa as jh                                     # noqa: E402
 from engine.dual import Team, simulate_dual                     # noqa: E402
@@ -88,6 +100,19 @@ def main() -> None:
                          "One is far too few to separate a format effect from "
                          "dual-to-dual variance.")
     trials = ap.parse_args().trials
+    # Provenance, so a pasted table can always be traced back to what produced it.
+    # A number in a document that cannot be tied to a commit is an assertion, not
+    # evidence — and this report's figures have already been queried once.
+    try:
+        rev = subprocess.run(["git", "-C", _REPO, "rev-parse", "--short", "HEAD"],
+                             capture_output=True, text=True, timeout=10).stdout.strip()
+        dirty = subprocess.run(["git", "-C", _REPO, "status", "--porcelain"],
+                               capture_output=True, text=True, timeout=10).stdout.strip()
+    except Exception:                       # git absent / not a checkout — not fatal
+        rev, dirty = "", ""
+    print(f"commit {rev or '(unknown)'}{' +dirty' if dirty else ''} · "
+          f"trials {trials} · year {YEAR} · salt {SALT!r} · empty db")
+
     programs = []             # (gender, school, ranked_roster)
     for gender in jh.GENDERS:
         for school in jh.load_schools(gender):

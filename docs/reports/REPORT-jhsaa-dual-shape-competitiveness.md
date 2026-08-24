@@ -327,7 +327,12 @@ the outlier at eleven.
 - **Evenly-matched pairings** in the sweep tables, deliberately: that is where a format
   can change an outcome at all. The mismatched control is §2.
 - The pilot's own numbers (§1-§3) reproduce with
-  `scripts/jhsaa_1a_format_pilot_calibration.py` (default `--trials 20`). The
+  `scripts/jhsaa_1a_format_pilot_calibration.py` (default `--trials 20`). It pins an
+  EMPTY throwaway database rather than honouring `TENNIS_DB_PATH`: `build_roster`
+  reads the override tables (archetype, play-up, transfer), so a populated database
+  silently changes the rosters and shifts every metric a point or two, with nothing
+  looking wrong. It also prints a provenance line (commit, trials, year, salt) — quote
+  it alongside any table taken from a fresh run. The
   cross-shape sweep (§4) was a one-off measurement; its parameters are recorded in
   Method above rather than committed as a script. **If it is re-run, read both traps
   first.**
