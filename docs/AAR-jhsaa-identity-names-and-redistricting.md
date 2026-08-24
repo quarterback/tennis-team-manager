@@ -321,6 +321,81 @@ wants 11). Two classes crossed a `district_count` boundary and got a full geogra
 redraw: **1A** (81→91, 8 leagues→9) and **2A** (95→94, 10 leagues→9). Nothing else was
 touched.
 
+### Who actually moved, and where they landed
+
+| School | class change | new enrollment | league joined |
+|---|---|---|---|
+| Vesper | 4A → 1A | 129 | Desert Sky League |
+| Pope Victor I | 6A → 1A | 180 | East Cascades League |
+| St. Gabriel Preparatory | 6A → 1A | 242 | Dual County League |
+| Ansotegui Siding | 6A → 1A | 241 | Orchard League |
+| Pointe Coupee Catholic | 6A → 1A | 100 | South Coast League |
+| Riviere Salee | 6A → 1A | 68 | Dual County League |
+| Aspen Hollow | 6A → 1A | 105 | Desert Sky League |
+| Belmonte Catholic | 6A → 1A | 256 | Dual County League |
+| Northrup I-50 Tech | 6A → 1A | 203 | Dual County League |
+| St. Lucia Academy | 6A → 1A | 105 | Dual County League |
+| St. Norbert Abbey | 6A → 1A | 93 | Orchard League |
+| Fletcher-Garrison Hall | 6A → 3A | 454 | Coastal Range League |
+| Pacific Friends | 8A → 5A | 814 | Ambassador League |
+| Metropolitan Country Day | 8A → 5A | 856 | Ambassador League |
+| Hazel Country Day | 8A → 5A | 1019 | Valley Coast Interscholastic League |
+| Blackpine | 4A → 5A | 825 | Ambassador League |
+| Chaminade | 7A → 6A | 1074 | Metro League |
+| St. Vincent | 7A → 6A | 1257 | Black Canyon League |
+| Dry Lake | 5A → 6A | 1201 | Fiesta Athletic Association |
+| Valley Christian | 3A → 6A | 1260 | Cascade Divide League |
+| Casa Linda | 5A → 6A | 1211 | Three Rivers League |
+| Belmonte | 5A → 6A | 1225 | Big Basin League |
+| Archbishop Doyle Prep | 5A → 6A | 1214 | Big Basin League |
+| Baptist | 1A → 6A | 1029 | Black Canyon League |
+| Mater Dei | 9A → 8A | 2067 | Halbrook Basin League |
+| Lincoln | 9A → 8A | 1995 | Halbrook Basin League |
+| Larchmont Ridge | 2A → 8A | 1891 | Del Rey Athletic Association |
+| Washington | 4A → 8A | 1947 | Narpes Interscholastic League |
+| Ronald Reagan | 4A → 9A | 2187 | Forks League |
+| I-50 Tech | 8A → 9A | 2550 | Forks League |
+
+### 1A, redrawn to nine leagues (81 → 91 programs)
+
+| League | Programs |
+|---|---|
+| Desert Sky League (10) | Aspen Hollow, Copper Gap, Fort Wren, Galactica Plains, Kuusamo, Meridian Regional, Ninemile, Silton Ridge, Thorn Summit, Vesper |
+| Dual County League (10) | Archbishop Quinlan, Belmonte Catholic, Copper Prairie, Marlow County, New Hope Christian, Northrup I-50 Tech, Riviere Salee, St. Gabriel Preparatory, St. Genevieve, St. Lucia Academy |
+| East Cascades League (10) | Ashstead, Brackwood Pass, Halemere, Linden, Mount Dylan Lake, Pope Victor I, Ransom Pass, Río Salado, Wheatley, Yarmere |
+| High Lakes League (10) | Assay, Brynildson Hill, High Prairie, Huckle Butte, Mabryville, Mirage Crossing, Oscar Michaeux, Sage Village, Saltbush Reach, Union Prairie |
+| Marble Valley League (10) | Banfield Day, Barley Gap, Camden Flat, Christ the King, Gottschalk-Herman, Heritage Christian, Jamaica, Kilbride Hall, Trinity Christian, Tumbleweed Lutheran |
+| Orchard League (11) | Alfalfa City, Ansotegui Siding, Bidwell, County Line, Manzanita Junction, Pine Siding, Ransoms Landing, Redwood Glen, Sablewood Union, St. Norbert Abbey, Whistle Stop |
+| South Coast League (10) | California Beach, Carolina Island, Coastal Christian, Los Remolinos, New Penzance Island, Pointe Coupee Catholic, Salmon Bay, San Aurelio, Serra Caverly, Windrow |
+| Tailings League (10) | Cassius, Featherstone Tech, Foothills Christian, Grace Christian, Kernwood Lutheran, Levee Bluff, Martin Luther, St. Cecilia Academy, St. Josephine Bakhita, Tailingford Union |
+| Vesterheim Athletic Association (10) | Antler Prairie, Basalt Prairie Union, Dovetail, Espoo, Kendricks Landing, North Simmons, Raahe, Sixes, Southern Jefferson Christian, Weller Regional |
+
+### 2A, redrawn to nine leagues (95 → 94 — Larchmont Ridge left for 8A)
+
+| League | Programs |
+|---|---|
+| Chinook League (10) | Bay Oregon, Cape Angeles, Los Maderos, New Ballard, Newark River, Oak Meyer, Our Lady of the Coast, Pointe des Brumes, Río Seco, Tallow |
+| Foundry League (11) | Annes Summit, Belden Springs, Gold Hollow, Granite Basin, Gruesome Ridge, Haverly, Netherwood, Pellburg, Springdale, Wolf Gap International, Yarburg |
+| Kokkola Athletic Association (10) | Blue Valley, Latgaway, Minnesota City, Norstead, Nurmes, Rilland, River Market, Silver Lake, Sotkamo Union, Twin Rivers |
+| Marble Valley League (10) | Bishop Ferraro, Chaff Crossing, Chaff Head, Jessup Bar, Lanphere, Paddock Tech, Río Verde, South Simmons, Vessey Junction, Wardlow Depot |
+| Norheim League (11) | Agate, Canal Lock, Cornerstone Christian, Diamante, Iisalmi Union, Lieksa, Lodestone, Mt Jacqueline, Ocean Park, Seamus Town, Trout Lake |
+| North Range League (10) | East Simmons, Estuary Bay, Etchart, Fort Lassiter, Georgia Mills, Halfway House, Puerto Alma, St. Dominic Academy, St. Raphael College Prep, Tungsten Reach |
+| Sluice League (10) | Alben Barkley, Bethel Christian, Cradle Reach, Fort Tabor, Fountain Park, Gilhooly, Hydraulicwood, Madison, Sluice Landing, Texas Beach |
+| Three Rivers League (11) | Benton Cross, Eagleton, Haddon Siding, Juniper Crossing, Meridia, Porterfield, St. Francis Xavier, Starlake, Villard, Willowbrook, Yazoo |
+| Valle Vista League (11) | Abbey Vale Orchard Hill, Annie Springs, Draybrook Union, Hawk Bar, High Bar, John Lewis, Mineral Springs, Mission Ridge, Pope Francis, Quillan, St. Elian |
+
+### 3A, 5A, 6A, 8A, 9A — league count unchanged; moved schools joined existing leagues (see the move table above for which one). Current membership:
+
+**3A** — Coastal Range League gained Fletcher-Garrison Hall (now 11): Copperview, Crater View, Fletcher-Garrison Hall, Gallego Bay, Katherine Johnson, Los Alisos, Mesa Dorada, Quarmont, River North, San Lorenzo, Selby Tech. Every other 3A league is unchanged from round two.
+
+**5A** — Ambassador League gained Blackpine, Metropolitan Country Day, Pacific Friends (now 11): Blackpine, Cascade Mutual, East Range Agricultural, Loomis City, Metropolitan Country Day, Montpelier, Pacific Friends, Pine Barrens, Providence Academy, Tindall, Wyalusing Providence. Valley Coast Interscholastic League gained Hazel Country Day (now 10): Abbey Prep, Hazel Country Day, Kingwood, Natchitoches Catholic, Pointe Coupee, Portola, San Borondón, Scheelite County, Trailhead, Verde Highlands.
+
+**6A** — Metro League gained Chaminade (12): Bridgewater, Carden Pass, Chaminade, Charlotte, Eastgate North, Golden State Packing, Hawk Lake, Oakhaven, Perryville, St. Varian. Black Canyon League gained St. Vincent and Baptist (11): Adams, Baptist, Calvin Coolidge, Charles Harbor, Cleveland, River Plain, Roosevelt, Rutherford Hayes, Severn, Sluice Gate, St. Vincent. Fiesta Athletic Association gained Dry Lake (10). Cascade Divide League gained Valley Christian (11). Three Rivers League gained Casa Linda (11). Big Basin League gained Belmonte and Archbishop Doyle Prep (12) — the max under `MAX_DISTRICT`.
+
+**8A** — Halbrook Basin League gained Mater Dei and Lincoln (12) — at the cap. Del Rey Athletic Association gained Larchmont Ridge (10). Narpes Interscholastic League gained Washington (12) — at the cap.
+
+**9A** — Forks League gained Ronald Reagan and I-50 Tech (12) — at the cap.
+
 ## The thing that did NOT happen: no tennis was added
 
 The owner's instruction authorized adding boys tennis sponsorship where needed "to
