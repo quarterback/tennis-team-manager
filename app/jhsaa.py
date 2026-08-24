@@ -15,6 +15,14 @@ FORMATS (owner rule 2027-08) — read them through `dual_format()`, never by lit
   * early non-district  5 singles / 2 doubles → 7 points
   * regular season      3 singles / 4 doubles → 7 points
   * state tournament    1 singles / 4 doubles → 5 points
+‼️ 1A PILOT (owner rule 2026-08, `docs/AAR-jhsaa-1a-2s3d-postseason-pilot.md`): 1A
+ALONE plays 2 singles / 3 doubles → 5 points for its ROAD-TO-STATE-THROUGH-STATE
+postseason (`dual_format(phase, group)` — every other class, and 1A's own TOC entry,
+keep 1S/4D). Nothing else about 1A changes: its regular season stays the universal
+3S/4D league card and its mid-season Match Showcases stay 1S/4D — the owner's call,
+since the regular season's 3-singles structure already exercises multi-singles-court
+management, so a showcase specifically rehearsing a 2S/3D shape adds nothing a coach
+hasn't already run all year. See the AAR for the calibration data behind the call.
 All totals are ODD, so a dual cannot be tied and no tie-breaking exists anywhere.
 Every match plays to completion — there is no clinch in high school
 (`simulate_dual(play_all=True)`, as D3/D4 already do).
@@ -33,6 +41,7 @@ See docs/DESIGN-jhsaa-high-school-season.md.
 from __future__ import annotations
 
 import hashlib
+import itertools
 import json
 import logging
 import os
@@ -71,10 +80,13 @@ GENDERS = ("girls", "boys")
 
 # --- formats ----------------------------------------------------------------
 FORMATS = {
-    "early":   DualFormat(n_singles=5, n_doubles=2, doubles_team_point=False),
-    "regular": DualFormat(n_singles=3, n_doubles=4, doubles_team_point=False),
-    "state":   DualFormat(n_singles=1, n_doubles=4, doubles_team_point=False),
+    "early":    DualFormat(n_singles=5, n_doubles=2, doubles_team_point=False),
+    "regular":  DualFormat(n_singles=3, n_doubles=4, doubles_team_point=False),
+    "state":    DualFormat(n_singles=1, n_doubles=4, doubles_team_point=False),
+    # 1A's pilot postseason shape (owner rule 2026-08) — see `dual_format()`.
+    "state_1a": DualFormat(n_singles=2, n_doubles=3, doubles_team_point=False),
 }
+PILOT_GROUPS = ("1A",)          # groups whose road-to-State plays `state_1a`
 
 # THE LEAGUE CARD PLAYS 3S/4D (owner rule 2027-08, swapped from the original 5S/2D so
 # it matches the 1S/4D postseason's doubles-forward character all season, not just in
@@ -114,12 +126,22 @@ POSTSEASON = ("sectional", "ward", "regional", "zonal",
 SHOWCASE = ("showcase_pod", "showcase_tiered")
 
 
-def dual_format(phase: str) -> DualFormat:
+def dual_format(phase: str, group: str | None = None) -> DualFormat:
     """The dual shape for `phase` ("early" | "regular" | a showcase | one of
     `POSTSEASON`). District duals play the regular-season shape (they are always
     `phase="regular"`); the postseason switches — and so do the showcases, which exist
     precisely to play the 1S/4D card in the middle of a 3S/4D league season. The early
-    non-district window switches the other way, to 5S/2D."""
+    non-district window switches the other way, to 5S/2D.
+
+    ‼️ THE 1A PILOT IS SCOPED TO THE ROAD-TO-STATE, NOT `POSTSEASON` WHOLESALE
+    (owner rule 2026-08). `POSTSEASON` includes `"toc"` — the Tournament of
+    Champions fields every classification's champion at the SAME shape, so 1A's
+    entrant plays it at 1S/4D like everyone else; only its OWN road (Sectionals
+    through State) plays `state_1a`. Showcases are untouched for every group,
+    1A included — pass `group` only for a `POSTSEASON` phase; it does nothing
+    for `SHOWCASE` or any other phase."""
+    if (group in PILOT_GROUPS and phase in POSTSEASON and phase != "toc"):
+        return FORMATS["state_1a"]
     if phase in POSTSEASON or phase in SHOWCASE:
         return FORMATS["state"]
     if phase == EARLY_FORMAT_PHASE:
@@ -164,10 +186,10 @@ def match_format(phase: str):
     return SHOWCASE_FORMAT.get(phase, MATCH_FORMAT)
 
 
-def lineup_need(phase: str) -> int:
+def lineup_need(phase: str, group: str | None = None) -> int:
     """Players a program must dress for `phase` with nobody doubling up."""
-    f = dual_format(phase)
-    return f.n_singles + 2 * f.n_doubles          # 3+8 = 11 regular, 1+8 = 9 state
+    f = dual_format(phase, group)
+    return f.n_singles + 2 * f.n_doubles          # 3+8=11 regular, 1+8=9 state, 2+6=8 1A
 
 
 # --- THE JV SEASON (owner rule 2026-08) --------------------------------------
@@ -2438,8 +2460,8 @@ def _squad(ts: TeamSeason, phase: str, lineup: list | None = None,
 
     `fmt` overrides the phase's shape — the JV season plays one of `JV_FORMATS`, which
     is sized per dual rather than per phase, so it cannot be looked up from `phase`."""
-    f = fmt or dual_format(phase)
-    r = lineup if lineup is not None else _order(ts)[:lineup_need(phase)]
+    f = fmt or dual_format(phase, ts.school.group)
+    r = lineup if lineup is not None else _order(ts)[:lineup_need(phase, ts.school.group)]
     if not r:
         raise ValueError(f"{ts.school.name} has an empty roster")
     def at(i):
@@ -2664,6 +2686,69 @@ def _arrange_state(nine: list, sibling_ids: dict | None = None) -> list:
     return out
 
 
+def _arrange_1a_postseason(eight: list, sibling_ids: dict | None = None) -> list:
+    """1A's PILOT road-to-State shape (owner rule 2026-08): arrange a frozen-order
+    top EIGHT into SLOT ORDER for the 2S/3D card: [S1, S2, D1a, D1b, D2a, D2b,
+    D3a, D3b]. Same contract as `_arrange_state`: `_squad` dresses by position,
+    `_slot_players` reads it back the same way.
+
+    ‼️ THE SAME MECHANISM AS 1S/4D's, GENERALISED — NOT A DIFFERENT RULE (owner
+    correction 2026-08). `_arrange_state` pools the top THREE and searches which
+    ONE plays singles (the other two form D1) — the association's best player is
+    NOT pinned to S1; a team can pair its #1 into D1 and start #2 or #3 at
+    singles if that scores better. 2S/3D pools the top FOUR and searches which
+    TWO play singles (the other two form D1) — same idea, one seat wider. The
+    real, and only, difference 2S/3D adds is a genuine SECOND singles court: a
+    real player from the top-four pool starts there, not the tenth-best kid on
+    the roster forced into a doubles-adjacent role. D2/D3 replay `_arrange_state`'s
+    own logic on the remaining four (#5-#8): a search over the three ways to pair
+    them, best total doubles ability wins, then `_order_pairs`'s rank-sum
+    boundary. Anything short of eight (a degraded side) plays the plain order."""
+    if len(eight) < 8:
+        return eight
+    from engine.doubles import doubles_rating
+    eng = {p.pid: p.engine_player() for p in eight}
+    rank = {p.pid: i + 1 for i, p in enumerate(eight)}
+
+    sibs = sibling_ids or {}
+
+    def pair_rating(a, b):
+        r = doubles_rating(eng[a.pid], eng[b.pid])
+        if b.pid in sibs.get(a.pid, ()):
+            r += FAMILY_CHEMISTRY
+        return r
+
+    # S1 + S2 + D1 consume ranks #1-#4: every way to pick TWO of the four for
+    # singles, the other two pairing for D1 — the direct generalisation of
+    # `_arrange_state`'s "pick ONE of three for S1" search.
+    top4, rest = eight[:4], eight[4:8]
+    combos = list(itertools.combinations(range(4), 2))
+
+    def cfg_score(combo):
+        s = [top4[i] for i in combo]
+        d = [top4[i] for i in range(4) if i not in combo]
+        return sum(eng[x.pid].overall for x in s) + pair_rating(d[0], d[1])
+    # tie: prefer the combo drawing on the higher-ranked (lower-index) pool
+    # members for singles, same spirit as `_arrange_state`'s `-i` tiebreak.
+    combo = max(combos, key=lambda c: (cfg_score(c), -sum(c)))
+    singles = sorted((top4[i] for i in combo), key=lambda p: rank[p.pid])
+    s1, s2 = singles
+    d1 = [top4[i] for i in range(4) if i not in combo]
+
+    def part_key(part):
+        return (-sum(pair_rating(a, b) for a, b in part),
+                [rank[a.pid] + rank[b.pid] for a, b in part])
+    pairs = min(_pair_partitions(rest), key=part_key)
+
+    pairs = _order_pairs(pairs,
+                         {_pk(pr): rank[pr[0].pid] + rank[pr[1].pid] for pr in pairs},
+                         {_pk(pr): pair_rating(*pr) for pr in pairs})
+    out = [s1, s2] + list(d1)
+    for a, b in pairs:
+        out += [a, b]
+    return out
+
+
 def _order_pairs(pairs: list, rank_sum: dict, rating: dict) -> list:
     """Order the D2-D4 pairs: real doubles ability first, then the
     anti-stacking boundary — a pair whose rank sum beats the ONE ABOVE IT by
@@ -2818,24 +2903,31 @@ def _arrange_regular(eleven: list, strategy: str,
     return out
 
 
-def _postseason_nine(ts: TeamSeason) -> list:
-    """The frozen Order of Ability's top nine, freezing it on first use — the
+def _postseason_nine(ts: TeamSeason, phase: str = "state") -> list:
+    """The frozen Order of Ability's top N for `phase` (nine, or 1A's pilot
+    eight — see `dual_format`), freezing the ORDER on first use — the
     association establishes it before a program's first postseason dual and it
     binds until the season ends. Stored as pids on the TeamSeason (the archive
-    never sees it; lineups are recorded per dual as always)."""
+    never sees it; lineups are recorded per dual as always). Freezing the full
+    ladder rather than a fixed-length slice is what lets 1A's road (eight) and
+    its TOC entry (nine, back to 1S/4D — see `dual_format`) read the SAME
+    frozen order at different slice lengths without a second freeze."""
     if not ts.order_of_ability:
         ts.order_of_ability = [p.pid for p in _order(ts)]
     by_pid = {p.pid: p for p in ts.roster}
     ranked = [by_pid[pid] for pid in ts.order_of_ability if pid in by_pid]
-    return ranked[:lineup_need("state")]
+    return ranked[:lineup_need(phase, ts.school.group)]
 
 
 def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None) -> list:
-    """The nine who dress for THIS dual, in slot order. `opp` (the opposing
-    TeamSeason, regular season only) lets the coach rest starters against a
-    truly weaker side — see `_rest_count`."""
+    """The nine (or, for 1A's road to State, eight) who dress for THIS dual, in
+    slot order. `opp` (the opposing TeamSeason, regular season only) lets the
+    coach rest starters against a truly weaker side — see `_rest_count`."""
     if phase in POSTSEASON:                        # strict, frozen, arranged
-        return _arrange_state(_postseason_nine(ts), ts.sibling_ids)
+        pool = _postseason_nine(ts, phase)
+        if ts.school.group in PILOT_GROUPS and phase != "toc":
+            return _arrange_1a_postseason(pool, ts.sibling_ids)
+        return _arrange_state(pool, ts.sibling_ids)
     if phase in SHOWCASE:
         # ‼️ A SHOWCASE MUST NOT FREEZE THE ORDER OF ABILITY. The freeze is the
         # association's anti-stacking rule and it binds from a program's first
@@ -2907,16 +2999,24 @@ def _slot_players(lineup: list, phase: str, slot: str,
 
 
 def _credit(ts: TeamSeason, lineup: list, phase: str, slot: str, won: bool,
-            opp_lineup: list | None = None, opp_school: str = "") -> None:
+            opp_lineup: list | None = None, opp_school: str = "",
+            opp_group: str | None = None) -> None:
     """Credit a line to the players who played it — and LOG the match.
 
     The W-L counters alone cannot answer any of the questions the awards ask
     (`jhsaa_awards`): who you beat, from which court, and when. So each
     appearance also records the opponent's pids, the slot and the phase — a
     résumé, not a record. Kept as a tuple rather than a dict because a gender's
-    season logs ~100k of these."""
-    mates = _slot_players(lineup, phase, slot)
-    opps = tuple(p.pid for p in _slot_players(opp_lineup, phase, slot)) if opp_lineup else ()
+    season logs ~100k of these.
+
+    ‼️ `_slot_players` MUST be told the shape THIS side was dressed with — see
+    its own docstring. `ts.school.group`/`opp_group` are threaded through so a
+    1A postseason dual (2S/3D) resolves D-slots against 2 singles, not the
+    1S/4D default `dual_format(phase, None)` would silently fall back to."""
+    mates = _slot_players(lineup, phase, slot, dual_format(phase, ts.school.group))
+    opps = (tuple(p.pid for p in _slot_players(opp_lineup, phase, slot,
+                                               dual_format(phase, opp_group)))
+            if opp_lineup else ())
     for p in mates:
         rec = ts.records.setdefault(p.pid, [0, 0])
         rec[0 if won else 1] += 1
@@ -3065,8 +3165,12 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     lrng = random.Random(f"lineup|{seed}")
     la, lb = _lineup(a, phase, lrng, b), _lineup(b, phase, lrng, a)
     fmt = match_format(phase)
+    # `a`/`b` share a classification in every postseason pairing (a bracket never
+    # crosses groups), so either side's group is the right one to resolve the
+    # shape from — see `dual_format`'s 1A-pilot branch.
     res = simulate_dual(_squad(a, phase, la), _squad(b, phase, lb), seed=seed,
-                        play_all=True, fidelity=FIDELITY, dual_fmt=dual_format(phase),
+                        play_all=True, fidelity=FIDELITY,
+                        dual_fmt=dual_format(phase, a.school.group),
                         singles_fmt=fmt, doubles_fmt=fmt)
     lines = []
     for ln in res.lines:                       # individual records, for awards
@@ -3074,11 +3178,15 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
         if hw is None:
             continue
         slot = getattr(ln, "slot", "")
-        _credit(a, la, phase, slot, bool(hw), lb, b.school.name)
-        _credit(b, lb, phase, slot, not hw, la, a.school.name)
+        _credit(a, la, phase, slot, bool(hw), lb, b.school.name, b.school.group)
+        _credit(b, lb, phase, slot, not hw, la, a.school.name, a.school.group)
         lines.append({"slot": slot,
-                      "home": [x.name for x in _slot_players(la, phase, slot)],
-                      "away": [x.name for x in _slot_players(lb, phase, slot)],
+                      "home": [x.name for x in
+                               _slot_players(la, phase, slot,
+                                            dual_format(phase, a.school.group))],
+                      "away": [x.name for x in
+                               _slot_players(lb, phase, slot,
+                                            dual_format(phase, b.school.group))],
                       "score": _score_str(ln), "home_won": bool(hw)})
     a.points_for += res.home_points
     a.points_against += res.away_points
