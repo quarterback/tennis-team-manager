@@ -819,17 +819,59 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   - `FLIGHT_WEIGHTS` needed nothing (S1/S2/D1-D3 all already weighted; TOSS
     normalises by weight CONTESTED per dual). `ROSTER_FLOOR`/`jv_pool` key off the
     REGULAR shape and are untouched.
-  - **Measured** (`scripts/jhsaa_1a_format_pilot_calibration.py`, 179 programs): the
-    format decides **~30-35% of evenly-matched duals** (same winner only 65-70%) while
-    mismatched duals agree 89-93% and the upset rate moves ≤3 points — it flips close
-    matches without making the association chaotic. Cost: the postseason roster drops
-    9→8, and for **71% of programs the cut player is within 2 OVR** of dressing.
-    The new S2 goes to the #2 player 79% of the time, #3 20%, #4 2%.
+  - **Measured** (`scripts/jhsaa_1a_format_pilot_calibration.py`, 179 programs ×
+    20 trials): the format decides **~27-30% of evenly-matched duals** (same winner
+    only 70-73%) while mismatched duals agree 85-90% and the upset rate moves ≤3
+    points — it flips close matches without making the association chaotic. Cost: the
+    postseason roster drops 9→8, and for **71% of programs the cut player is within
+    2 OVR** of dressing. The new S2 goes to the #2 player 79% of the time, #3 20%.
+  - **‼️ THE NAILBITER RATE IS A FEATURE, NOT A CAVEAT (owner, 2026-08).** An
+    evenly-matched 1A dual lands **3-2 ~70% of the time under BOTH formats** — a
+    five-point shape in a flat field is coin-flip-adjacent by construction, and that
+    is the juice a 24-team 1A bracket is meant to have. A draft filed this under
+    "noise" and buried the most characteristic number in the study.
+  - **‼️ CLOSENESS COMES MOSTLY FROM COURT COUNT** (owner preference "I prefer the
+    1/4 format over something more traditional", MEASURED —
+    `docs/reports/REPORT-jhsaa-dual-shape-competitiveness.md`). Five-court shapes
+    finish on ONE court **61-73%** of the time, seven-court shapes **58-60%**, and
+    every seven-court shape sits in that band whatever its composition; holding
+    doubles share fixed and changing only court count moves it **8-13 points**. A
+    dual is an average over its courts and fewer courts average less. **Doubles share
+    is a REAL SECONDARY term** — ~6-10 points across a full 80%→0% sweep at five
+    courts (girls 68/73/70/65/63, boys 67/67/62/62/61). **That is why 2S/3D was the
+    only workable pilot shape**: it holds five courts while adding the singles seat,
+    2S/4D and 3S/3D are six courts and can TIE (no tie-break exists, by design), and
+    anything at seven gives the closeness up — and it sits at/near the PEAK of that
+    curve. **3S/2D**, the classic American format, is 70%/62% (G/B) and dresses only
+    seven — legitimate, not adopted. Upset rate is flat across every shape (44-51%):
+    shape buys CLOSENESS, not chaos.
+    ‼️ **TWO measurement traps, both of which shipped a confident wrong answer once.**
+    (1) That report's first run included EVEN-court shapes: at an even court count
+    `margin` has even parity, so `margin <= 1` silently stops measuring "decided by
+    one court" and starts measuring TIES — and an even dual also trips `winner = 0 if
+    points[0] > points[1] else 1` (the `jv_outcome` trap). Compare only ODD shapes.
+    (2) Its first conclusion was "doubles share is irrelevant", generalised from a
+    SEVEN-court sweep spanning only 57%→14% — which is genuinely flat. The full
+    five-court sweep (80%→0%, which needed 3S/2D and 4S/1D) reversed that qualitative
+    claim. **Do not state a conclusion wider than the range you swept.**
+  - **‼️ THE BOYS/GIRLS SPLIT IS THE FIELD, NOT THE FORMAT.** Boys' 1A is stronger
+    AND more spread (top-9 mean OVR 42.09 vs 38.52, sd 4.64 vs 4.27, p90−p10 12.11
+    vs 10.78 — the good programs separate; girls are flatter *by design*). So 2S/3D
+    has MORE leverage in girls' 1A: mismatched duals agree 85% (girls) vs 90%
+    (boys), upsets 16% vs 10%. Never read a gender gap in a future run as a format
+    regression without checking the strength distribution first.
   - **‼️ A CALIBRATION SEED MUST BE A STABLE DIGEST, NEVER `hash()`** — Python salts
     str/tuple hashes per process, so a `hash()` seed moved concordance 8 points and
     upset rate 16 between ordinary runs, with nothing looking wrong. Use `blake2s`,
     the idiom this module already uses. And a calibration must call the SHIPPED
     functions, not a reimplementation — the two drift silently.
+  - **‼️ AND ONE SEED PER PAIRING IS NOT A SAMPLE.** Determinism is necessary, not
+    sufficient: the reproducible one-trial run still reported a gender divergence in
+    the nailbiter rate (boys 81→53%, girls 63→72%) that **does not exist** — gone at
+    20 trials (70→68%, 67→70%). It looked like a census because it covered every 1A
+    program; it was exhaustive over PROGRAMS and a single draw over OUTCOMES. **When
+    the quantity is a rate over simulated results, the sample size is the number of
+    DUALS, never the number of teams.**
 - **‼️ THE LEAGUE SEASON PLAYS 3S/4D, NOT 5S/2D (owner rule 2027-08, swapped).**
   `FORMATS['regular']`/`['early']` were swapped so the whole league year trains
   the postseason's doubles-forward shape, not just the early non-district
