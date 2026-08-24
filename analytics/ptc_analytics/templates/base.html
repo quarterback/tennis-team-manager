@@ -1,3 +1,10 @@
+{% macro player_link(pid, name) -%}
+{#- ‼️ ONE place decides whether a player's name is a link. With
+    --no-player-pages there is no page to link to, and a link to a 404 is worse
+    than plain text. Every surface that names a player uses this. -#}
+{%- set href = player_href(pid) -%}
+{%- if href %}<a href="{{ href }}">{{ name }}</a>{% else %}{{ name }}{% endif -%}
+{%- endmacro %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -18,7 +25,7 @@
       <a href="{{ rel }}seasons/index.html">Seasons</a>
       <a href="{{ rel }}teams/index.html">Teams</a>
       <a href="{{ rel }}brackets/index.html">Brackets</a>
-      <a href="{{ rel }}players/index.html">Players</a>
+      {% if player_pages %}<a href="{{ rel }}players/index.html">Players</a>{% endif %}
       <a href="{{ rel }}scout/index.html">Scouting</a>
       <details class="pt-dd">
         <summary>Analytics</summary>

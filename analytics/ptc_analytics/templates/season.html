@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "base.html" import player_link %}
 {% block title %}{{ board.bundle.label }}{% endblock %}
 {% block content %}
 {% set classes = board.classifications %}
@@ -109,7 +110,7 @@
           <tr data-class="{{ r.classification }}" data-district="{{ r.league }}" data-name="{{ r.name|lower }} {{ r.team|lower }}">
             <td class="num t-num">{{ r.class_rank }}</td>
             <td class="num t-num">{{ r.state_rank }}</td>
-            <td><a href="{{ player_href(r.player_id) }}">{{ r.name }}</a></td>
+            <td>{{ player_link(r.player_id, r.name) }}</td>
             <td class="num t-num" data-sort="{{ r.grade_sort }}">{{ r.grade }}</td>
             <td>{{ r.team }}</td>
             <td><span class="pt-chip">{{ r.classification }}</span></td>
