@@ -108,30 +108,74 @@ been a fixed allocation wearing a search's clothes; this one is a real decision.
 
 Two pairing sets per gender: **evenly matched** (adjacent by team strength — what a
 bracket's later rounds look like) and **mismatched** (top half vs bottom half).
+**20 trials per pairing** (`--trials`, the default): each pairing is replayed under 20
+distinct seeds, both formats always seeing the same one, so the comparison stays
+paired. That is ~1,780 duals a cell against the ~45 a single trial gives.
 
 | | Girls, even | Boys, even | Girls, mismatched | Boys, mismatched |
 |---|---|---|---|---|
-| Pairings | 46 | 43 | 46 | 43 |
-| **Same winner under both formats** | **65%** | **70%** | 89% | 93% |
-| Upset rate, 1S/4D → 2S/3D | 39% → 43% | 37% → 40% | 17% → 20% | 9% → 12% |
-| Mean margin (of 5 points), 1S/4D → 2S/3D | 1.83 → 1.61 | 1.42 → 2.07 | 2.87 → 2.87 | 2.86 → 2.86 |
-| Nailbiters (3-2), 1S/4D → 2S/3D | 63% → 72% | 81% → 53% | 35% → 37% | 37% → 40% |
+| Duals | 920 | 860 | 920 | 860 |
+| **Same winner under both formats** | **70%** | **73%** | 85% | 90% |
+| Upset rate, 1S/4D → 2S/3D | 47% → 50% | 49% → 50% | 16% → 16% | 11% → 10% |
+| Mean margin (of 5 points), 1S/4D → 2S/3D | 1.73 → 1.67 | 1.66 → 1.76 | 2.79 → 2.72 | 3.05 → 3.09 |
+| **Nailbiters (3-2), 1S/4D → 2S/3D** | **67% → 70%** | **70% → 68%** | 35% → 40% | 33% → 33% |
 
-**The headline: in evenly-matched duals the format decides ~30-35% of outcomes.**
-Only 65% (girls) / 70% (boys) of close pairings produce the same winner under both
-shapes — the same eight or nine kids, the same opponent, the same seed, a different
-answer. That is the "flips outcomes" property the owner wanted, and it is exactly
-where you want it: in the bracket's close matches, not in the blowouts.
+**Headline 1: in evenly-matched duals the format decides ~27-30% of outcomes.** Only
+70% (girls) / 73% (boys) of close pairings produce the same winner under both shapes —
+the same eight or nine kids, the same opponent, the same seed, a different answer.
+That is the "flips outcomes" property the owner wanted, and it is exactly where you
+want it: in the bracket's close matches, not in the blowouts.
 
-**And it does NOT make the association more chaotic.** Mismatched duals agree 89-93%
-of the time, and the statewide upset rate moves 3 points at most (39→43%, 37→40%,
-17→20%, 9→12%). A clearly better team stays clearly better under either shape. 2S/3D
-reshuffles WHICH close matches flip; it does not hand the tournament to underdogs.
+**Headline 2 — and this is a FEATURE, not a caveat (owner, 2026-08):** an
+evenly-matched 1A dual lands on **3-2 about 70% of the time, under BOTH formats**. A
+five-point shape in a flat field is a coin-flip-adjacent tournament by construction,
+and that is the juice a 24-team 1A bracket is supposed to have. An earlier draft of
+this document filed the nailbiter row under "noise, do not build a rule on it", which
+buried the most characteristic number in the study. The format does not create the
+nailbiters — the field does — but it is the reason they matter, and 2S/3D preserves
+the property rather than flattening it.
 
-The margin and nailbiter rows move in **opposite directions by gender** (girls' mean
-margin falls, boys' rises; boys' nailbiter rate drops 81%→53% while girls' rises
-63%→72%). At n=43-46 per cell that is noise, not signal — do not build a rule on it.
-The concordance and upset numbers are the ones with a real sample behind them.
+**It does NOT make the association more chaotic.** Mismatched duals agree 85-90% of
+the time and the upset rate barely moves in any cell (≤3 points, and DOWN in boys'
+mismatched). A clearly better team stays clearly better under either shape; 2S/3D
+reshuffles WHICH close matches flip.
+
+### ‼️ THE BOYS/GIRLS SPLIT IS STRUCTURAL, AND IT IS NOT A FORMAT EFFECT
+
+A single-trial run reported the nailbiter rate moving in **opposite directions by
+gender** (boys 81%→53%, girls 63%→72%). That specific swing was **sampling noise** and
+is gone at 20 trials (boys 70%→68%, girls 67%→70%) — which is exactly why the trial
+count exists, and why no rule should ever be built on a ~45-dual cell.
+
+But there IS a real gender difference underneath, and it belongs on the record because
+it explains the durable part of the table. Owner's read — *"1A teams are kind of
+balanced weird; boys tennis has higher STR abilities meaning the top teams kind of
+separate themselves, whereas the girls are more evenly matched by design"* — is
+confirmed by direct measurement of the 1A field:
+
+| 1A programs | Girls (93) | Boys (86) |
+|---|---:|---:|
+| Team strength, top-9 mean OVR | 38.52 | **42.09** |
+| Spread (sd) | 4.27 | **4.64** |
+| p90 − p10 | 10.78 | **12.11** |
+| Best player OVR | 58.22 | **60.76** |
+| Best player STR | 47.56 | **48.66** |
+
+Boys' 1A is both **stronger and more spread**: the good programs separate. Girls' 1A
+is flatter. That shows up in the calibration exactly where you would expect — the
+**mismatched** cells, not the nailbiter row:
+
+| Mismatched | Girls | Boys |
+|---|---:|---:|
+| Same winner under both formats | 85% | **90%** |
+| Upset rate (2S/3D) | 16% | **10%** |
+| Mean margin | 2.79 | **3.09** |
+
+**More separation → bigger margins, fewer upsets, and less room for the format to
+change anything.** So 2S/3D has more leverage in girls' 1A than boys', and that is a
+property of the FIELD, not of the shape. Do not "fix" it, and do not read a
+girls/boys gap in a future run as a format regression without checking the strength
+distribution first.
 
 ---
 
@@ -153,6 +197,20 @@ different `PYTHONHASHSEED` values and diffing the output: byte-identical.
 **A calibration script's output is an ARGUMENT, and an irreproducible argument is
 worth nothing.** Any number in this document could have decided the feature; check
 determinism before quoting one.
+
+## ‼️ AND ONE SEED PER PAIRING IS NOT A SAMPLE
+
+Determinism is necessary and not sufficient. The first run was perfectly
+reproducible and still reported a gender divergence that does not exist, because
+~45 duals a cell cannot separate a format effect from dual-to-dual variance. The
+`--trials` default is **20** (~1,780 duals a cell) and the divergence vanishes at
+that size.
+
+The trap is that a one-trial run looks like a census, not a sample: it covers EVERY
+1A program, so "n = every program in the classification" reads as exhaustive. It is
+exhaustive over PROGRAMS and a single draw over OUTCOMES, and the outcome is the
+thing being measured. **When the quantity is a rate over simulated results, the
+sample size is the number of DUALS, never the number of teams.**
 
 ## ‼️ AND A CALIBRATION MUST EXERCISE THE SHIPPED CODE
 

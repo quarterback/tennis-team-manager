@@ -23,6 +23,7 @@ module already uses everywhere else it needs a stable per-entity seed
 
     python3 scripts/jhsaa_1a_format_pilot_calibration.py
 """
+import argparse
 import hashlib
 import os
 import statistics
@@ -40,10 +41,18 @@ YEAR = 2039
 SALT = "format-pilot-2027-08"
 
 
-def _pair_seed(name_a: str, name_b: str) -> int:
+def _pair_seed(name_a: str, name_b: str, trial: int = 0) -> int:
     """A stable, reproducible seed for one pairing — never Python's `hash()`,
-    which is salted per-process and would make this report irreproducible."""
-    h = hashlib.blake2s(f"jh-1a-pilot|{name_a}|{name_b}".encode(), digest_size=4)
+    which is salted per-process and would make this report irreproducible.
+
+    `trial` re-rolls the SAME pairing under a different seed. One seed per
+    pairing gives ~45 duals a cell, which is far too few to separate a real
+    format effect from dual-to-dual variance — the first run of this script
+    reported the nailbiter rate moving in OPPOSITE directions by gender off
+    exactly that sample. Both formats always see the same trial seed, so the
+    comparison stays paired however many trials are run."""
+    h = hashlib.blake2s(f"jh-1a-pilot|{name_a}|{name_b}|{trial}".encode(),
+                        digest_size=4)
     return int(h.hexdigest(), 16) % (2**31)
 
 
@@ -62,6 +71,13 @@ def make_team(name: str, lineup: list, fmt) -> Team:
 
 
 def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--trials", type=int, default=20,
+                    help="duals simulated per pairing per format (default 20). "
+                         "One is far too few to separate a format effect from "
+                         "dual-to-dual variance.")
+    trials = ap.parse_args().trials
     programs = []             # (gender, school, ranked_roster)
     for gender in jh.GENDERS:
         for school in jh.load_schools(gender):
@@ -106,7 +122,7 @@ def main() -> None:
         print(f"  rank #{rk}: {n} programs ({n/len(programs):.0%})")
 
     # --- 2. COMPETITIVENESS ----------------------------------------------------
-    print("\n--- COMPETITIVENESS (same pairings, both formats, stable seeds) ---")
+    print(f"\n--- COMPETITIVENESS (same pairings, both formats, stable seeds,\n    {trials} trials each) ---")
     for gender in jh.GENDERS:
         pool = [(s, r) for g, s, r in programs if g == gender]
         pool.sort(key=lambda sr: -statistics.mean(
@@ -116,51 +132,55 @@ def main() -> None:
         mismatched = list(zip(pool[:half], reversed(pool[half:])))
         for label, pairs in (("evenly matched (adjacent-strength)", adjacent),
                              ("mismatched (top half vs bottom half)", mismatched)):
-            _run_pairings(gender, label, pairs)
+            _run_pairings(gender, label, pairs, trials)
 
 
-def _run_pairings(gender: str, label: str, pairs: list) -> None:
+def _run_pairings(gender: str, label: str, pairs: list, trials: int = 1) -> None:
     concord = upsets14 = upsets23 = nailbiters14 = nailbiters23 = 0
     margins14, margins23 = [], []
+    fmt14 = jh.dual_format("state", None)
+    fmt23 = jh.dual_format("state", "1A")
     for (sa, ra), (sb, rb) in pairs:
         nine_a, nine_b = ra[:9], rb[:9]
         eight_a, eight_b = ra[:8], rb[:8]
+        # Arranged ONCE per pairing, outside the trial loop: the lineup is a
+        # function of the frozen order, not of the dual's seed.
         arr_a14 = jh._arrange_state(nine_a, {})
         arr_b14 = jh._arrange_state(nine_b, {})
         arr_a23 = jh._arrange_1a_postseason(eight_a, {})
         arr_b23 = jh._arrange_1a_postseason(eight_b, {})
-        fmt14 = jh.dual_format("state", None)
-        fmt23 = jh.dual_format("state", "1A")
-        seed = _pair_seed(sa.name, sb.name)
-        res14 = simulate_dual(make_team(sa.name, arr_a14, fmt14),
-                              make_team(sb.name, arr_b14, fmt14),
-                              seed=seed, play_all=True, fidelity=jh.FIDELITY,
-                              dual_fmt=fmt14, singles_fmt=jh.MATCH_FORMAT,
-                              doubles_fmt=jh.MATCH_FORMAT)
-        res23 = simulate_dual(make_team(sa.name, arr_a23, fmt23),
-                              make_team(sb.name, arr_b23, fmt23),
-                              seed=seed, play_all=True, fidelity=jh.FIDELITY,
-                              dual_fmt=fmt23, singles_fmt=jh.MATCH_FORMAT,
-                              doubles_fmt=jh.MATCH_FORMAT)
         fav_a = statistics.mean(p.current_overall() for p in nine_a) >= \
                 statistics.mean(p.current_overall() for p in nine_b)
-        win14_a, win23_a = res14.winner == 0, res23.winner == 0
-        if win14_a == win23_a:
-            concord += 1
-        if win14_a != fav_a:
-            upsets14 += 1
-        if win23_a != fav_a:
-            upsets23 += 1
-        m14 = abs(res14.home_points - res14.away_points)
-        m23 = abs(res23.home_points - res23.away_points)
-        margins14.append(m14)
-        margins23.append(m23)
-        if m14 <= 1:
-            nailbiters14 += 1
-        if m23 <= 1:
-            nailbiters23 += 1
-    n = len(pairs)
-    print(f"\n{gender} — {n} pairings, {label}:")
+        for t in range(trials):
+            seed = _pair_seed(sa.name, sb.name, t)
+            res14 = simulate_dual(make_team(sa.name, arr_a14, fmt14),
+                                  make_team(sb.name, arr_b14, fmt14),
+                                  seed=seed, play_all=True, fidelity=jh.FIDELITY,
+                                  dual_fmt=fmt14, singles_fmt=jh.MATCH_FORMAT,
+                                  doubles_fmt=jh.MATCH_FORMAT)
+            res23 = simulate_dual(make_team(sa.name, arr_a23, fmt23),
+                                  make_team(sb.name, arr_b23, fmt23),
+                                  seed=seed, play_all=True, fidelity=jh.FIDELITY,
+                                  dual_fmt=fmt23, singles_fmt=jh.MATCH_FORMAT,
+                                  doubles_fmt=jh.MATCH_FORMAT)
+            win14_a, win23_a = res14.winner == 0, res23.winner == 0
+            if win14_a == win23_a:
+                concord += 1
+            if win14_a != fav_a:
+                upsets14 += 1
+            if win23_a != fav_a:
+                upsets23 += 1
+            m14 = abs(res14.home_points - res14.away_points)
+            m23 = abs(res23.home_points - res23.away_points)
+            margins14.append(m14)
+            margins23.append(m23)
+            if m14 <= 1:
+                nailbiters14 += 1
+            if m23 <= 1:
+                nailbiters23 += 1
+    n = len(pairs) * trials
+    print(f"\n{gender} — {len(pairs)} pairings × {trials} "
+          f"trial{'s' if trials != 1 else ''} = {n} duals, {label}:")
     print(f"  same winner under both formats: {concord}/{n} ({concord/n:.0%})")
     print(f"  upset rate (weaker team by OVR wins): "
           f"1S/4D {upsets14/n:.0%} · 2S/3D {upsets23/n:.0%}")
