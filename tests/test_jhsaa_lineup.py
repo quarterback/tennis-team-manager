@@ -305,3 +305,76 @@ def test_the_pair_boundary_is_adjacent_only_and_tolerance_may_chain():
     # ...but a NEIGHBOUR gap beyond the tolerance still swaps, chemistry or not
     sums2 = {a: 15, b: 9, c: 11}
     assert jh._order_pairs([c, b, a], sums2, rating)[0] == b
+
+
+# --- the 1A 2S/3D postseason pilot (owner rule 2026-08) ----------------------
+# See docs/AAR-jhsaa-1a-2s3d-postseason-pilot.md. 1A alone plays 2 singles /
+# 3 doubles on its ROAD TO STATE; its TOC entry and every other class stay
+# 1S/4D, and 1A's own regular season and showcases are untouched.
+
+def _ts_in_group(group="1A", gender="boys", year=2031):
+    for sc in jh.load_schools(gender):
+        if sc.group == group:
+            ts = jh.TeamSeason(school=sc, roster=jh.build_roster(sc, year))
+            if len(ts.roster) >= 9:
+                return ts
+    return None
+
+
+def test_only_1a_road_to_state_plays_2s3d():
+    """The pilot is scoped THREE ways, and each is a separate way to get it wrong:
+    by group (1A only), by phase (road-to-State only, never the TOC), and by
+    season half (postseason only — the league card and showcases are untouched)."""
+    road = jh.dual_format("state", "1A")
+    assert (road.n_singles, road.n_doubles) == (2, 3)
+    # the TOC fields every class's champion, so it stays one shape for everyone
+    assert jh.dual_format("toc", "1A") == jh.FORMATS["state"]
+    for g in ("2A", "5A", "9A", None):
+        assert jh.dual_format("state", g) == jh.FORMATS["state"], g
+    # untouched outside the postseason, 1A included
+    assert jh.dual_format("regular", "1A") == jh.FORMATS["regular"]
+    assert jh.dual_format("showcase_pod", "1A") == jh.FORMATS["state"]
+    assert jh.dual_format("early", "1A") == jh.FORMATS["early"]
+    # ...and the roster the shape demands follows it
+    assert jh.lineup_need("state", "1A") == 8
+    assert jh.lineup_need("toc", "1A") == 9
+    assert jh.lineup_need("state", "2A") == 9
+
+
+def test_the_1a_postseason_lineup_is_legal_under_the_order_of_ability():
+    """The same anti-stacking mechanism as 1S/4D's, one seat wider: ranks #1-#4
+    are consumed by S1/S2/D1 (nobody from the top four hides at D2-D3), and the
+    remaining pairs respect the rank-sum boundary."""
+    ts = _ts_in_group("1A")
+    if ts is None:
+        pytest.skip("no 1A program in the patched association")
+    lu = jh._lineup(ts, "sectional", _random.Random(1))
+    oo = ts.order_of_ability
+    assert oo, "the Order of Ability still freezes on first postseason use"
+    rank = {pid: k + 1 for k, pid in enumerate(oo)}
+    assert len(lu) == 8, "2S/3D dresses eight, one fewer than 1S/4D"
+    assert {p.pid for p in lu} == set(oo[:8])
+    # S1 + S2 + D1 consume ranks #1-#4 — the top-four pool, not a pinned #1
+    assert {rank[p.pid] for p in lu[:4]} == {1, 2, 3, 4}
+    assert all(rank[p.pid] > 4 for p in lu[4:])
+    # the two singles seats are ordered by ladder rank between themselves
+    assert rank[lu[0].pid] < rank[lu[1].pid]
+    sums = [rank[lu[k].pid] + rank[lu[k + 1].pid] for k in (4, 6)]
+    for hi, lo in zip(sums, sums[1:]):
+        assert hi <= lo + jh.PAIR_SUM_TOL, sums
+
+
+def test_a_1a_program_reads_one_frozen_order_at_two_slice_lengths():
+    """1A's road dresses eight and its TOC entry nine — off the SAME frozen
+    Order of Ability. Freezing a fixed-length slice instead of the full ladder
+    would need a second freeze for the TOC, which is exactly the mid-postseason
+    re-rank the anti-stacking rule exists to forbid."""
+    ts = _ts_in_group("1A")
+    if ts is None:
+        pytest.skip("no 1A program in the patched association")
+    road = jh._lineup(ts, "sectional", _random.Random(1))
+    frozen = list(ts.order_of_ability)
+    toc = jh._lineup(ts, "toc", _random.Random(1))
+    assert ts.order_of_ability == frozen, "the TOC must not re-freeze the order"
+    assert len(road) == 8 and len(toc) == 9
+    assert {p.pid for p in toc} == set(frozen[:9])

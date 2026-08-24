@@ -787,6 +787,49 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   branch (seeds 1-8 bye, 9-24 play in), never the Qualifiers-Round expansion.
   District-champion `PROTECTED` entry at Regionals is unchanged. See
   `docs/AAR-jhsaa-1a-2a-classification-split.md`.
+- **‼️ 1A'S ROAD TO STATE PLAYS 2S/3D — a PILOT, scoped three ways (owner rule
+  2026-08, `docs/AAR-jhsaa-1a-2s3d-postseason-pilot.md`).** `dual_format(phase,
+  group)` / `lineup_need(phase, group)` / `_arrange_1a_postseason`. 1A alone, its
+  ROAD ONLY (Sectionals→State), postseason only. Read the shape through
+  `dual_format(phase, group)`, never `dual_format(phase)` — the bare call resolves to
+  1S/4D and is now a WRONG ANSWER for a 1A postseason dual.
+  - **‼️ `POSTSEASON` IS NOT THE RIGHT SET — it contains `"toc"`.** The Tournament of
+    Champions fields every class's champion at ONE shape, so 1A's entrant plays it at
+    1S/4D like everyone else (owner: "1A just goes back to 1/4 for TOC"). The branch is
+    `phase in POSTSEASON and phase != "toc"`.
+  - **The REGULAR SEASON and the SHOWCASES are untouched, 1A included** — owner: "3/4
+    is fundamentally contained within 2/3 so a coach can see it without any tweaks". A
+    1A coach already manages three singles courts every league dual.
+  - **‼️ THE ANTI-STACKING RULE IS ONE MECHANISM, GENERALISED — not a second regime.**
+    The top N of the frozen order are consumed by the singles seats PLUS D1 and the
+    coach picks which of them plays singles; **the best player is NOT pinned to S1**
+    (a team may pair #1 into D1 and start #2 or #3). 1S/4D pools the top THREE and
+    picks ONE; 2S/3D pools the top FOUR and picks TWO. `_arrange_state` already
+    implemented the general rule and needed NO change. Do not "fix" the pilot to pin
+    S1 — that draft was written and explicitly corrected.
+  - **The freeze stores the FULL ladder**, sliced per phase — that is what lets 1A's
+    road dress eight and its TOC entry nine off ONE frozen order. A fixed-length
+    freeze would force a re-freeze for the TOC, i.e. the mid-postseason re-rank the
+    rule forbids.
+  - **‼️ `_slot_players` MUST be told the shape its side was DRESSED with** (the JV
+    season's trap, second instance): without it a 1A postseason D-slot resolves
+    against 1 singles instead of 2 and names the WRONG PLAYERS in the box score,
+    the award résumés and the archive, raising nothing. `_credit` takes `opp_group`
+    for the same reason.
+  - `FLIGHT_WEIGHTS` needed nothing (S1/S2/D1-D3 all already weighted; TOSS
+    normalises by weight CONTESTED per dual). `ROSTER_FLOOR`/`jv_pool` key off the
+    REGULAR shape and are untouched.
+  - **Measured** (`scripts/jhsaa_1a_format_pilot_calibration.py`, 179 programs): the
+    format decides **~30-35% of evenly-matched duals** (same winner only 65-70%) while
+    mismatched duals agree 89-93% and the upset rate moves ≤3 points — it flips close
+    matches without making the association chaotic. Cost: the postseason roster drops
+    9→8, and for **71% of programs the cut player is within 2 OVR** of dressing.
+    The new S2 goes to the #2 player 79% of the time, #3 20%, #4 2%.
+  - **‼️ A CALIBRATION SEED MUST BE A STABLE DIGEST, NEVER `hash()`** — Python salts
+    str/tuple hashes per process, so a `hash()` seed moved concordance 8 points and
+    upset rate 16 between ordinary runs, with nothing looking wrong. Use `blake2s`,
+    the idiom this module already uses. And a calibration must call the SHIPPED
+    functions, not a reimplementation — the two drift silently.
 - **‼️ THE LEAGUE SEASON PLAYS 3S/4D, NOT 5S/2D (owner rule 2027-08, swapped).**
   `FORMATS['regular']`/`['early']` were swapped so the whole league year trains
   the postseason's doubles-forward shape, not just the early non-district
