@@ -179,23 +179,37 @@ distribution first.
 
 ### ‼️ WHY FIVE COURTS — and why 2S/3D was the only shape that could work
 
-The owner's standing preference is for 1S/4D *over* a traditional shape, and the
-follow-up measurement (`docs/reports/REPORT-jhsaa-dual-shape-competitiveness.md`)
-confirms it while correcting the reason usually given for it.
+The owner's standing preference is for 1S/4D *over* a traditional shape. A follow-up
+sweep across eight odd-court shapes — **full tables, method and caveats in
+`docs/reports/REPORT-jhsaa-dual-shape-competitiveness.md`** — confirms the preference
+and identifies what actually drives it.
 
-A five-court dual finishes on a single court **67-73%** of the time; a seven-court one
-**58-60%**. But sweeping the doubles share across three SEVEN-court shapes (3S/4D 57%
-doubles, 5S/2D 29%, 6S/1D 14%) moves closeness by ~2 points — **flat**. It is not that
-doubles is the volatile discipline. **A dual is an average over its courts, and fewer
-courts average less**: five near-even coin flips land 3-2 more often than seven land
-4-3.
+**Court count dominates.** A five-court dual finishes on a single court **61-73%** of
+the time; a seven-court one **58-60%**, and every seven-court shape sits in that band
+regardless of composition. Holding the doubles share roughly fixed and changing only
+the court count (3S/4D, 57% doubles, 7 courts → 2S/3D, 60% doubles, 5 courts) moves it
+**8-13 points**. The mechanism is sampling, not tennis: a dual is an average over its
+courts and fewer courts average less.
 
-That makes the pilot's shape the *only* one available. Adding a real second singles
+**Doubles share is a real secondary term** — worth ~6-10 points across the full sweep
+at constant five courts (80% → 0% doubles: girls 68/73/70/65/63, boys 67/67/62/62/61).
+⚠️ The first version of this said doubles was irrelevant, on the strength of a narrow
+seven-court sweep that really is flat; the full sweep reversed that qualitative claim.
+See the report's §2 — **do not state a conclusion wider than the range swept.**
+
+Either way the pilot's shape is the *only* one available. Adding a real second singles
 seat while holding five courts means taking it from doubles — 2S/3D. **2S/4D and 3S/3D
 are six courts and can TIE** (the association has no tie-break and wants none), and
-2S/5D or 3S/4D drop to seven courts and give up the closeness outright. So 2S/3D is
-not a step toward tradition; it is the maximum singles content available at five
-courts, which is where the owner drew the line.
+2S/5D or 3S/4D drop to seven courts and give up the closeness. So 2S/3D is not a step
+toward tradition; it is the maximum singles content available at five courts, and it
+happens to sit at or near the PEAK of the doubles-share curve in both genders
+(girls 73%, the highest of any shape measured; boys 67%, tied with 1S/4D).
+
+For reference, since it is the natural comparison and was asked for directly: **3S/2D,
+the classic American high-school format**, lands at 70% (girls) / 62% (boys) — level
+with 1S/4D in girls, ~5 points below in boys, clear of every seven-court shape, and
+the cheapest roster of any shape measured (dresses **seven**). A legitimate format,
+not adopted; it is where the doubles-forward identity starts to go.
 
 ---
 

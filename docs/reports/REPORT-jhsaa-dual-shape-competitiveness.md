@@ -6,8 +6,12 @@ design preference — *"this is also why I prefer the 1/4 format over something 
 traditional"* — and a preference that decides the association's championship format
 is worth having numbers under rather than leaving in a chat log.
 
-**Short version: the preference is right, and the reason for it is not the obvious
-one.** Doubles-forwardness is not what makes 1S/4D close. **Court count is.**
+**Short version: the preference is right, and the biggest reason for it is not the
+obvious one.** **Court count dominates** — five-court shapes finish on a single court
+61-73% of the time against 58-60% for seven-court ones, whatever their composition.
+Doubles share is a real but **secondary** term, worth ~6-10 points across a full
+sweep. (An earlier version of this report said doubles share was irrelevant; that was
+generalised from too narrow a sweep and is corrected in §2.)
 
 ---
 
@@ -56,23 +60,29 @@ dual one court represents, i.e. the most a single player can be worth.
 
 ### Girls (46 pairings × 20 = 920 duals per shape)
 
-| Shape | Courts | Dresses | **1-court** | Upset | margin% | best plyr | doubles share | |
-|---|---:|---:|---:|---:|---:|---:|---:|---|
-| **1S/4D** | 5 | 9 | **68%** | 49% | 34% | 20% | 80% | current postseason |
-| **2S/3D** | 5 | 8 | **73%** | 48% | 32% | 20% | 60% | the 1A pilot |
-| 3S/4D | 7 | 11 | 60% | 44% | 28% | 14% | 57% | the league card |
-| 5S/2D | 7 | 9 | 60% | 45% | 28% | 14% | 29% | traditional |
-| 6S/1D | 7 | 8 | 58% | 46% | 29% | 14% | 14% | very traditional |
+| Shape | Courts | doubles% | Dresses | **1-court** | Upset | margin% | |
+|---|---:|---:|---:|---:|---:|---:|---|
+| **1S/4D** | 5 | 80% | 9 | **68%** | 49% | 34% | current postseason |
+| **2S/3D** | 5 | 60% | 8 | **73%** | 48% | 32% | the 1A pilot |
+| 3S/2D | 5 | 40% | 7 | 70% | 49% | 33% | the classic HS format |
+| 4S/1D | 5 | 20% | 6 | 65% | 49% | 35% | singles-heavy |
+| 5S/0D | 5 | 0% | 5 | 63% | 49% | 36% | no doubles at all |
+| 3S/4D | 7 | 57% | 11 | 60% | 44% | 28% | the league card |
+| 5S/2D | 7 | 29% | 9 | 60% | 45% | 28% | traditional |
+| 6S/1D | 7 | 14% | 8 | 58% | 46% | 29% | very traditional |
 
 ### Boys (43 pairings × 20 = 860 duals per shape)
 
-| Shape | Courts | Dresses | **1-court** | Upset | margin% | best plyr | doubles share | |
-|---|---:|---:|---:|---:|---:|---:|---:|---|
-| **1S/4D** | 5 | 9 | **67%** | 48% | 35% | 20% | 80% | current postseason |
-| **2S/3D** | 5 | 8 | **67%** | 49% | 35% | 20% | 60% | the 1A pilot |
-| 3S/4D | 7 | 11 | 59% | 51% | 29% | 14% | 57% | the league card |
-| 5S/2D | 7 | 9 | 58% | 50% | 29% | 14% | 29% | traditional |
-| 6S/1D | 7 | 8 | 59% | 47% | 29% | 14% | 14% | very traditional |
+| Shape | Courts | doubles% | Dresses | **1-court** | Upset | margin% | |
+|---|---:|---:|---:|---:|---:|---:|---|
+| **1S/4D** | 5 | 80% | 9 | **67%** | 48% | 35% | current postseason |
+| **2S/3D** | 5 | 60% | 8 | **67%** | 49% | 35% | the 1A pilot |
+| 3S/2D | 5 | 40% | 7 | 62% | 52% | 37% | the classic HS format |
+| 4S/1D | 5 | 20% | 6 | 62% | 53% | 38% | singles-heavy |
+| 5S/0D | 5 | 0% | 5 | 61% | 53% | 38% | no doubles at all |
+| 3S/4D | 7 | 57% | 11 | 59% | 51% | 29% | the league card |
+| 5S/2D | 7 | 29% | 9 | 58% | 50% | 29% | traditional |
+| 6S/1D | 7 | 14% | 8 | 59% | 47% | 29% | very traditional |
 
 ---
 
@@ -86,11 +96,10 @@ Both genders, same direction, ~1,800 duals a cell. **1S/4D and 2S/3D produce
 materially closer championship duals than any traditional shape tested**, and the
 owner's preference for it over "something more traditional" is well founded.
 
-### 2. ‼️ BUT THE MECHANISM IS COURT COUNT, NOT DOUBLES
+### 2. ‼️ COURT COUNT DOMINATES; DOUBLES SHARE IS A REAL SECONDARY TERM
 
-The intuitive story — *doubles is the volatile discipline, so a doubles-forward shape
-produces closer matches* — **is not what the data shows.** Hold the court count at
-seven and sweep the doubles share from 57% to 14%:
+**‼️ A CORRECTION TO THE FIRST VERSION OF THIS REPORT.** It concluded flatly that
+doubles share does not matter, on the strength of the SEVEN-court band alone:
 
 | 7-court shape | doubles share | 1-court (girls / boys) |
 |---|---:|---:|
@@ -98,16 +107,36 @@ seven and sweep the doubles share from 57% to 14%:
 | 5S/2D | 29% | 60% / 58% |
 | 6S/1D | 14% | 58% / 59% |
 
-**Flat.** Quadrupling the singles content of a seven-court dual moves closeness by
-~2 points, inside noise. Meanwhile dropping from seven courts to five moves it by
-**8-13 points** at a constant doubles share (compare 3S/4D at 57% doubles to 2S/3D at
-60% doubles: 59-60% → 67-73%).
+That band really is flat — but it sweeps doubles only from 57% to 14%, and the
+conclusion was generalised past the range measured. **Sweeping the FULL range at a
+constant five courts shows a real gradient** (the owner asked for 3S/2D, the classic
+American high-school format, which is the five-court shape the first pass omitted —
+and it is exactly the control that exposes this):
 
-The reason is ordinary sampling, not tennis: **a dual is an average over its courts,
-and fewer courts average less.** Five roughly even coin-flips land 3-2 more often than
-seven land 4-3. The doubles-forward character of 1S/4D is a *separate* design property
-(it decides who plays, and how a roster is built) — it is not what makes the format
-close.
+| 5-court, doubles share | 80% | 60% | 40% | 20% | 0% |
+|---|---:|---:|---:|---:|---:|
+| shape | 1S/4D | 2S/3D | 3S/2D | 4S/1D | 5S/0D |
+| 1-court, girls | 68% | **73%** | 70% | 65% | 63% |
+| 1-court, boys | 67% | **67%** | 62% | 62% | 61% |
+
+So doubles contributes roughly **6-10 points** across the full sweep — modest, real,
+and not nothing.
+
+**Court count is still the dominant term**, and it is the one that holds at constant
+doubles share: 3S/4D (57% doubles, 7 courts) gives 59-60% while 2S/3D (60% doubles,
+5 courts) gives 67-73% — **8-13 points for the court count alone**, with the doubles
+share held fixed. Every seven-court shape sits in a 58-60% band regardless of its
+composition; every five-court shape sits at 61-73%.
+
+The dominant mechanism is ordinary sampling, not tennis: **a dual is an average over
+its courts, and fewer courts average less.** Five roughly even coin-flips land 3-2
+more often than seven land 4-3. Doubles then adds a second-order lift on top, most
+likely because a pair's result is itself noisier than a singles court's.
+
+**The lesson, and it is the same one this report already carries about even court
+counts: do not state a conclusion wider than the range you swept.** A three-point
+sweep across a narrow band read as "flat" and was written up as a general law about
+doubles; the full sweep needed two more shapes and reversed the qualitative claim.
 
 ### 3. This is the strongest argument FOR the pilot's specific shape
 
@@ -122,6 +151,33 @@ adds the singles court by taking one from doubles. Every alternative fails:
 
 So the pilot is not a compromise toward tradition. It is the *maximum* singles content
 available at five courts, which is exactly where the owner drew the line.
+
+### 3b. How 3S/2D — the classic American format — compares
+
+Asked directly (owner, 2026-08: *"I'm not gonna switch to it, but I am curious how it
+compares to what we're doing"*). 3S/2D is the format a large share of US states play,
+and it is a five-court shape, so it belongs in the same band as the association's own:
+
+| | Courts | Dresses | 1-court (G / B) | Upset (G / B) | margin% (G / B) |
+|---|---:|---:|---:|---:|---:|
+| 1S/4D (current) | 5 | 9 | 68% / 67% | 49% / 48% | 34% / 35% |
+| 2S/3D (pilot) | 5 | 8 | **73% / 67%** | 48% / 49% | 32% / 35% |
+| **3S/2D (classic)** | 5 | **7** | **70% / 62%** | 49% / 52% | 33% / 37% |
+| 5S/2D (7-court trad) | 7 | 9 | 60% / 58% | 45% / 50% | 28% / 29% |
+
+**It holds up well** — level with 1S/4D in girls (70% vs 68%), about five points
+less close in boys (62% vs 67%), and comfortably clear of every seven-court shape.
+It is a legitimately competitive format in this engine, not a straw man.
+
+What it costs is the doubles-forward character: at 40% doubles it is the point on the
+curve where the association's identity starts to go. And what it saves is roster —
+**it dresses SEVEN**, the cheapest of any shape here, two fewer than 1S/4D. If roster
+depth were ever the binding constraint (it is not; `ROSTER_FLOOR` is 16), this is the
+shape that would answer it.
+
+Not adopted, and not proposed: recorded because the comparison is the natural question
+to ask of any format decision, and because running it is what caught the overstated
+"doubles doesn't matter" claim in §2.
 
 ### 4. Upset rate is flat across every shape (44-51%)
 
