@@ -122,23 +122,28 @@ def demote(rows: list[dict], m) -> list[tuple[dict, str, str]]:
     return moved
 
 
-def reclassify_named(rows: list[dict], m) -> list[tuple[dict, str, str]]:
-    """Apply `import_jhsaa.RECLASSIFY_2039` — a second named cross-class
-    realignment, same shape as `demote()`'s 2033 pass and for the same reason: the
-    owner named the schools and their target classes directly.
+def reclassify_named(rows: list[dict], m, table=None, table_name="RECLASSIFY_2039"):
+    """Apply a named cross-class realignment table — same shape as `demote()`'s
+    2033 pass and for the same reason: the owner named the schools and their
+    target classes directly.
 
-    ‼️ UNLIKE THE 2033 PASS, THE ENROLLMENT ALWAYS NEEDS SCALING. None of these 30
-    schools already sit in their target class's committed enrollment band — moves
-    span up to seven classes (a 216-enrollment program to 8A) — so every one gets a
-    fresh `_reclass_enrollment` draw. `demote()`'s "only needed when the number
-    would otherwise contradict the move" is the general rule; this table is the
-    case where it always fires.
+    Defaults to `import_jhsaa.RECLASSIFY_2039` (the 30-school round). Pass
+    `table`/`table_name` to apply a different one, e.g. `m.RECLASSIFY_2039B`
+    — the 17-school correction batch the owner named after reviewing who was
+    left in 9A/8A. Same mechanism, kept as a SEPARATE named table rather than
+    merged, exactly like `RECLASSIFY_2039` itself relative to `RECLASSIFY_TO_2A`.
+
+    ‼️ THE ENROLLMENT ALWAYS NEEDS SCALING. None of these schools already sit in
+    their target class's committed enrollment band — moves span several classes
+    — so every one gets a fresh `_reclass_enrollment` draw. `demote()`'s "only
+    needed when the number would otherwise contradict the move" is the general
+    rule; these tables are the case where it always fires.
     """
-    down = dict(m.RECLASSIFY_2039)
+    down = dict(table if table is not None else m.RECLASSIFY_2039)
     by_name = {r["name"] for r in rows}
     unknown = sorted(set(down) - by_name)
     if unknown:
-        sys.exit(f"RECLASSIFY_2039 names {len(unknown)} school(s) that do not "
+        sys.exit(f"{table_name} names {len(unknown)} school(s) that do not "
                  f"exist: {unknown}")
     moved = []
     for r in rows:
@@ -148,11 +153,10 @@ def reclassify_named(rows: list[dict], m) -> list[tuple[dict, str, str]]:
             r["classification"] = r["group"] = dst
             r["enrollment"] = m._reclass_enrollment(r["name"], dst)
             # A school this table names IS its new class now, not playing up TO
-            # it — Valley Christian and Baptist both carried a seeded `play_up`
-            # flag from their old, smaller class; leaving it would be a stale
-            # artifact (harmless, since `can_play_up` gates on classification and
-            # blocks it the moment a school reclassifies out of eligibility, but
-            # a lying field is still worth not writing).
+            # it — a stale seeded `play_up` flag from an old, smaller class
+            # would be a lying field (harmless, since `can_play_up` gates on
+            # classification and blocks it the moment a school reclassifies out
+            # of eligibility, but still worth not writing).
             r.pop("play_up", None)
     return moved
 
@@ -302,7 +306,8 @@ def main() -> None:
         doc = json.load(fh)
     rows = doc["schools"]
 
-    moved = promote(rows, m) + demote(rows, m) + reclassify_named(rows, m)
+    moved = (promote(rows, m) + demote(rows, m) + reclassify_named(rows, m)
+             + reclassify_named(rows, m, m.RECLASSIFY_2039B, "RECLASSIFY_2039B"))
     rehome(rows, moved, m)
     for r, src, dst in moved:
         print(f"  {r['name'][:30]:30} {src} -> {dst}  {r['enrollment']:5}  "

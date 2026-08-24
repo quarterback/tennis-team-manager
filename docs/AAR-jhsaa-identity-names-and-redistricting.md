@@ -561,3 +561,56 @@ any rename batch:
 | `docs/GAZETTEER-jefferson.md` | where a school is — in the association's own names |
 | `prep-network/docs/JHSAA-name-map.txt` | why the two repos disagree, and by how much |
 | `data/jhsaa/former_names.json` | what a school used to be called |
+
+## Correction batch — RECLASSIFY_2039B, 17 schools
+
+After the move table above went up, the owner reviewed who was still sitting in 9A
+and 8A and named 17 more schools to move — mostly private schools that had drifted
+to the top of the ladder ("i haven't heard of and for sure are in the wrong place"),
+plus five 9A seats backfilled from below. Same mechanism as `RECLASSIFY_2039`
+(`scripts/import_jhsaa.py::RECLASSIFY_2039B`, applied through
+`scripts/jhsaa_reclassify.py::reclassify_named`, now generalized to take a table
+instead of hardcoding one) — kept as a SEPARATE named table rather than merged into
+the first, same reason the first is separate from `RECLASSIFY_TO_2A`: each is the
+owner naming a distinct batch at a distinct moment.
+
+### Who moved, and where they landed
+
+| School | Class change | New enrollment | League joined |
+|---|---|---:|---|
+| Archbishop Gregory | 9A → 8A | 1,778 | Del Rey Athletic Association |
+| Bellarmine Prep | 8A → 7A | 1,632 | Halbrook Basin League |
+| Bishop Valera | 8A → 1A | 229 | Dual County League |
+| Charlotte | 6A → 9A | 2,411 | Gateway League |
+| Cherry Hill South | 5A → 8A | 1,706 | Four Rivers Interscholastic League |
+| Covenant Christian | 8A → 2A | 297 | Mountain Pass League |
+| Natchez Mercy | 9A → 3A | 373 | Timber Valley League |
+| Palisade Prep | 9A → 3A | 511 | Dual County League |
+| Port Veles Episcopal | 8A → 4A | 775 | Chinook League |
+| Roosevelt | 6A → 8A | 2,010 | Narpes Interscholastic League |
+| Ruth Bader Ginsburg | 6A → 9A | 2,556 | Ironwood League |
+| Sacred Heart Cathedral | 8A → 7A | 1,371 | Chinook League |
+| Sandra Day O'Connor | 6A → 9A | 2,592 | Forks League |
+| St. Jerome Academy | 8A → 1A | 306 | South Coast League |
+| St. Sebastian Prep | 9A → 3A | 459 | Timber Valley League |
+| Thurgood Marshall | 5A → 8A | 2,048 | Ambassador League |
+| Valley Providence | 9A → 3A | 379 | Pori League |
+
+Every enrollment number was freshly drawn inside its new class's committed band
+(`_reclass_enrollment`) and verified to land there; every rivalry pair still shares
+a classification and league; no league sits over `MAX_DISTRICT` (12); every
+class-gender is still clear of `jhsaa.sponsor_floor` (76 for the 40-field classes,
+48 for 1A). Three classes needed a league redraw because the move changed how many
+leagues the pool wants (`district_count`): **2A** 95→94 sponsors, 9→10 leagues;
+**3A** 87→97 sponsors, 9→10 leagues; **8A** 90→85 sponsors, 9→8 leagues. 6A, 7A, 9A,
+5A, 4A, 1A kept their existing league counts and the moved schools joined the
+nearest league with room (the "League joined" column above).
+
+**Port Veles Episcopal — the one open call.** The owner listed it as "(3A? 4A?)"
+and left the choice open. I picked **4A**, the milder of the two drops — 3A would
+have been a five-class fall from 9A instead of four. This has NOT been confirmed;
+revisit if 4A was the wrong read. `Port Veles Episcopal` is also a live Jefferson
+town name (see the identity-relabelling fault above), which is irrelevant to this
+move (nothing here renames the school) but worth knowing if it turns up again.
+
+No `play_up` flags needed clearing on this batch — none of the 17 carried one.

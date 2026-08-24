@@ -2224,6 +2224,29 @@ RECLASSIFY_2039 = {
     "Baptist": "6A", "Blackpine": "5A",
 }
 
+# ⚠️ THE 2039 REALIGNMENT, CORRECTION BATCH (owner rule 2026-08) — same table shape
+# and mechanism as `RECLASSIFY_2039`, kept SEPARATE rather than merged into it: the
+# owner named these after reviewing who was left in 9A/8A, mostly private schools
+# nobody recognised sitting at the top of the ladder. A second named table, not a
+# second mechanism.
+#
+# ‼️ Port Veles Episcopal moved to 4A, not 3A — the owner flagged both as
+# possibilities ("3A? 4A?") and left the choice open; 4A was picked as the milder
+# of the two drops. Revisit if that guess was wrong.
+RECLASSIFY_2039B = {
+    # Down — mostly private schools that had drifted to the top of the ladder.
+    "Natchez Mercy": "3A", "Valley Providence": "3A", "Palisade Prep": "3A",
+    "St. Sebastian Prep": "3A",
+    "Archbishop Gregory": "8A",
+    "Sacred Heart Cathedral": "7A", "Bellarmine Prep": "7A",
+    "Port Veles Episcopal": "4A",
+    "Covenant Christian": "2A",
+    "Bishop Valera": "1A", "St. Jerome Academy": "1A",
+    # Up — backfilling the seats the moves above emptied.
+    "Thurgood Marshall": "8A", "Cherry Hill South": "8A", "Roosevelt": "8A",
+    "Charlotte": "9A", "Sandra Day O'Connor": "9A", "Ruth Bader Ginsburg": "9A",
+}
+
 # ⚠️ RECLASSIFICATION, ROUND 3 (owner rule 2027-08) — THE TOP OF THE LADDER, and the
 # reason is the Semi-Conference. `jhsaa.sponsor_floor` says a 40-field class needs 76
 # sponsors per gender to field a full qualifying round, and 9A BOYS had 72: four short,
@@ -2371,6 +2394,14 @@ def reclassify(schools: list[dict]) -> int:
             # `group` is not a field yet at this point in the pipeline (`build()`
             # derives it from `classification` via `champ_group()` at emit) — same
             # as the RECLASSIFY_TO_2A block above, which sets classification alone.
+            s["classification"] = dst
+            s["enrollment"] = _reclass_enrollment(s["name"], dst)
+            moved += 1
+    # ‼️ THE CORRECTION BATCH RUNS LAST, same reason as the others: it must see
+    # every earlier move's result, not the pre-2039 class.
+    for s in schools:
+        dst = RECLASSIFY_2039B.get(_display_name(RENAMES.get(s["name"], s["name"])))
+        if dst is not None:
             s["classification"] = dst
             s["enrollment"] = _reclass_enrollment(s["name"], dst)
             moved += 1
