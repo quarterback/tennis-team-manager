@@ -830,6 +830,23 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     five-point shape in a flat field is coin-flip-adjacent by construction, and that
     is the juice a 24-team 1A bracket is meant to have. A draft filed this under
     "noise" and buried the most characteristic number in the study.
+  - **‼️ AND CLOSENESS COMES FROM COURT COUNT, NOT FROM DOUBLES** (owner preference
+    "I prefer the 1/4 format over something more traditional", MEASURED —
+    `docs/reports/REPORT-jhsaa-dual-shape-competitiveness.md`). Five-court shapes
+    finish on ONE court 67-73% of the time, seven-court shapes 58-60% — but sweeping
+    the doubles share across three SEVEN-court shapes (3S/4D 57% doubles · 5S/2D 29%
+    · 6S/1D 14%) moves it ~2 points, i.e. **flat**. A dual is an average over its
+    courts and fewer courts average less; doubles-forwardness is a separate design
+    property and is NOT what makes the postseason close. **That is why 2S/3D was the
+    only workable pilot shape** — it holds five courts while adding the singles seat;
+    2S/4D and 3S/3D are six courts and can TIE (no tie-break exists, by design), and
+    anything at seven gives the closeness up. Upset rate is flat across every shape
+    (44-51%): shape buys CLOSENESS, not chaos.
+    ‼️ That report's first run included EVEN-court shapes and produced a strong,
+    plausible, WRONG result: at an even court count `margin` has even parity, so
+    `margin <= 1` silently stops measuring "decided by one court" and starts
+    measuring TIES — and an even dual also trips `winner = 0 if points[0] >
+    points[1] else 1` (the `jv_outcome` trap). Compare only ODD shapes.
   - **‼️ THE BOYS/GIRLS SPLIT IS THE FIELD, NOT THE FORMAT.** Boys' 1A is stronger
     AND more spread (top-9 mean OVR 42.09 vs 38.52, sd 4.64 vs 4.27, p90−p10 12.11
     vs 10.78 — the good programs separate; girls are flatter *by design*). So 2S/3D

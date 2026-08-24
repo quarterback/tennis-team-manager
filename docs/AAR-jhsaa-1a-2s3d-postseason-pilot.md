@@ -177,6 +177,26 @@ property of the FIELD, not of the shape. Do not "fix" it, and do not read a
 girls/boys gap in a future run as a format regression without checking the strength
 distribution first.
 
+### ‼️ WHY FIVE COURTS — and why 2S/3D was the only shape that could work
+
+The owner's standing preference is for 1S/4D *over* a traditional shape, and the
+follow-up measurement (`docs/reports/REPORT-jhsaa-dual-shape-competitiveness.md`)
+confirms it while correcting the reason usually given for it.
+
+A five-court dual finishes on a single court **67-73%** of the time; a seven-court one
+**58-60%**. But sweeping the doubles share across three SEVEN-court shapes (3S/4D 57%
+doubles, 5S/2D 29%, 6S/1D 14%) moves closeness by ~2 points — **flat**. It is not that
+doubles is the volatile discipline. **A dual is an average over its courts, and fewer
+courts average less**: five near-even coin flips land 3-2 more often than seven land
+4-3.
+
+That makes the pilot's shape the *only* one available. Adding a real second singles
+seat while holding five courts means taking it from doubles — 2S/3D. **2S/4D and 3S/3D
+are six courts and can TIE** (the association has no tie-break and wants none), and
+2S/5D or 3S/4D drop to seven courts and give up the closeness outright. So 2S/3D is
+not a step toward tradition; it is the maximum singles content available at five
+courts, which is where the owner drew the line.
+
 ---
 
 ## ‼️ THE CALIBRATION SEED MUST BE A STABLE DIGEST, NEVER `hash()`
