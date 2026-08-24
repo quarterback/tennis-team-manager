@@ -9,6 +9,8 @@ on a school name.
   blue_blood   generates better, and clusters
   development  ordinary freshmen, best-in-association seniors — arrive good vs leave great
   doubles      generates normally; the edge is in doubles only, per match
+  neglect      ordinary freshmen AND ordinary ceiling, but the climb toward it is
+               throttled — the mirror of development, run negative
   upstart      a temporary multi-year run, rolled per world and expiring by itself
 """
 import statistics as stat
@@ -118,6 +120,35 @@ def test_a_development_program_arrives_ordinary_and_climbs_hardest():
     assert (dev[12] - dev[9]) > (blue[12] - blue[9]) > (base[12] - base[9])
 
 
+def test_a_neglected_program_arrives_normal_and_climbs_slowest():
+    """"Doesn't mean players won't get what they get normally, it just dampens it"
+    (owner) — the exact mirror of the development test above. Ceiling is untouched
+    (arrival is IDENTICAL to an untagged program — not just close, since `mature`
+    contributes nothing at grade 9), and only the CLIMB is throttled."""
+    peers = _peers()
+    base = _profile(peers)
+    neg = _profile(peers, "neglect")
+    assert neg[9] == pytest.approx(base[9])              # arrival: no effect at all
+    assert 0 < (neg[12] - neg[9]) < (base[12] - base[9])  # dampened, never reversed
+
+
+def test_neglect_severity_varies_by_program_and_stays_under_the_dev_floor():
+    """"I want to be able to constrain some programs partially" (owner) — Neglect is a
+    RANGE, not one constant every tagged school shares, unlike every other archetype's
+    fixed numbers. And the range has a hard ceiling of its own: `_gen_seat` adds this
+    once per grade elapsed, so its magnitude must stay under `DEV_MIN_STEP` (the
+    per-year development floor) or a harshly-neglected senior could read as LESS
+    mature than they were as a junior — reversing development, not dampening it."""
+    names = [s.name for s in jhsaa.load_schools("boys")][:60]
+    severities = {jhsaa.neglect_severity(n) for n in names}
+    assert len(severities) > 1, "a single shared constant, not a range"
+    lo, hi = jhsaa.NEGLECT_MATURE
+    assert all(lo <= v <= hi for v in severities)
+    assert abs(lo) < jhsaa.DEV_MIN_STEP and abs(hi) < jhsaa.DEV_MIN_STEP
+    # durable per school, not re-rolled
+    assert jhsaa.neglect_severity(names[0]) == jhsaa.neglect_severity(names[0])
+
+
 def test_a_doubles_school_generates_completely_normally():
     """The roster is not better; the doubles is."""
     peers = _peers()
@@ -201,16 +232,20 @@ def test_upstarts_are_deterministic_and_skip_tagged_programs():
 
 def test_upstart_is_not_a_storable_tag():
     """It is a RUN. A stored tag would make it permanent, which is the one thing it must
-    not be — so the editor never offers it."""
-    assert "upstart" in jhsaa.ARCHETYPES              # it is a real archetype...
-    from app.web import server                        # ...but not an editable one
-    import inspect
+    not be — so the editor never offers it. `EDITABLE_ARCHETYPES` is the ONE list this
+    is asked of — the route used to repeat it as a literal tuple in two places, which is
+    exactly the kind of drift a new archetype (`neglect`) would have had to be added to
+    twice, so the route is also checked to be reading the constant rather than a second
+    copy of it."""
+    assert "upstart" in jhsaa.ARCHETYPES               # it is a real archetype...
+    assert "upstart" not in jhsaa.EDITABLE_ARCHETYPES  # ...but not an editable one
+    for kind in ("blue_blood", "development", "doubles", "neglect"):
+        assert kind in jhsaa.EDITABLE_ARCHETYPES, kind
+    from app.web import server                         # the route reads the constant,
+    import inspect                                      # not a second, driftable copy
     src = inspect.getsource(server)
-    import re
-    body = src.split("def editor_jhsaa_archetype")[1][:1500]
-    accepted = re.search(r"if kind in \(([^)]*)\)", body).group(1)
-    assert "upstart" not in accepted, accepted
-    assert "blue_blood" in accepted and "development" in accepted and "doubles" in accepted
+    body = src.split("def editor_jhsaa_archetype(")[1][:1500]
+    assert "EDITABLE_ARCHETYPES" in body, body
 
 
 # --- the two layers -----------------------------------------------------------

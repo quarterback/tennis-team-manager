@@ -3133,6 +3133,7 @@ def create_app() -> Flask:
         is a temporary run the world rolls and expires by itself."""
         # ‼️ `jh_school`, not `school` — see the play-up route below. `school` on the
         # editor page is the COLLEGE program `_editor_redirect` returns to.
+        from app import jhsaa as _jh
         school = request.form.get("jh_school") or request.form.get("school", "")
         kind = request.form.get("archetype", "")
         if school:
@@ -3140,7 +3141,10 @@ def create_app() -> Flask:
             # these"); anything else clears the override entirely, reverting the school to
             # whatever `data/jhsaa/archetypes.json` says it is. Two different intentions,
             # and a single "clear" could only express one of them.
-            if kind in ("blue_blood", "development", "doubles", "none"):
+            # ‼️ READ THE WHITELIST FROM `jhsaa.EDITABLE_ARCHETYPES`, never repeat it —
+            # a literal tuple here is exactly the drift a new archetype (`neglect`) would
+            # have to be added to twice, and the first version of this route was.
+            if kind in _jh.EDITABLE_ARCHETYPES or kind == "none":
                 ov.set_jhsaa_archetype(school, kind)
             else:
                 ov.clear_jhsaa_archetype(school)
@@ -3160,7 +3164,7 @@ def create_app() -> Flask:
         result = {"applied": [], "unknown": []}
         if action == "remove":
             result = _jh.bulk_edit_archetype_seed(None, names, remove=True)
-        elif kind in ("blue_blood", "development", "doubles"):
+        elif kind in _jh.EDITABLE_ARCHETYPES:
             result = _jh.bulk_edit_archetype_seed(kind, names, remove=False)
         reset_all()
         resp = redirect(url_for("jhsaa_programs", u=request.form.get("u", "D1-men"),

@@ -745,6 +745,9 @@ _TALENT = {
 #                faster, so the effect shows over a four-year career rather than on
 #                arrival
 #   doubles      generates normally; the edge is in DOUBLES ONLY, as a per-match boost
+#   neglect      generates normal CEILING but develops it SLOWER — a governor on the
+#                same mechanism `development` accelerates, run in reverse; see
+#                `neglect_severity()`
 #   upstart      a TEMPORARY multi-year run, rolled per world — see `upstarts()`
 #   (untagged)   normal
 #
@@ -769,6 +772,17 @@ ARCHETYPES = {
                     "label": "Development program"},
     "doubles":     {"mean":  0.0, "spread": 1.00, "pot": 0.0, "mature": 0.00,
                     "label": "Doubles school"},
+    # ⚠️ NEGLECT (owner rule 2026-08) — bad coaching, bad facilities, a program that
+    # wastes what its players walk in with. "Doesn't mean players won't get what they
+    # get normally, it just dampens it" (owner) is the exact spec: CEILING is left
+    # alone (`mean`/`spread`/`pot` all 0.0, same as `doubles`) and only the RATE a
+    # player reaches that ceiling is throttled — a governor on the SAME `mature` lever
+    # `development` accelerates, run negative. The real per-school number is drawn by
+    # `neglect_severity()`, not read from this table (`mature` sits at the placeholder
+    # 0.0 here for the same reason `upstart`'s row is all zeros: the effect is
+    # per-program, not one constant every tagged school shares equally).
+    "neglect":     {"mean":  0.0, "spread": 1.00, "pot": 0.0, "mature": 0.00,
+                    "label": "Neglected program"},
     "upstart":     {"mean":  0.0, "spread": 1.00, "pot": 0.0, "mature": 0.00,
                     "label": "Upstart"},
 }
@@ -792,6 +806,37 @@ UPSTART_LIFT = (0.15, 0.30)       # 15-30% stronger than the program's own basel
 # its OWN lineup (`Team.doubles_players`), so a boosted copy of those players is confined
 # to doubles by construction and cannot leak into a singles court.
 DOUBLES_BOOST = (5.0, 11.0)
+
+# NEGLECT — a per-grade maturity DRAG, the mirror of `development`'s +0.038 `mature`
+# bonus. ⚠️ ITS MAGNITUDE MUST STAY WELL UNDER `DEV_MIN_STEP` (0.045, the per-year
+# development floor "nobody stagnates" is built on): `_gen_seat` adds this constant
+# once per grade elapsed (`step = mature * (grade - 9)`), so the year-over-year CHANGE
+# in that step is the constant itself, and if it ever exceeded `DEV_MIN_STEP` a
+# neglected senior could read as LESS mature than they were as a junior — reversing
+# development, not dampening it, which contradicts the owner's own framing ("doesn't
+# mean players won't get what they get normally, it just dampens it"). At -0.030 the
+# worst case (three grade-years) is a 0.09 drag against a guaranteed minimum 0.135
+# rise over the same span — real, but a player under even the harshest Neglect roll
+# still improves every season.
+#
+# ‼️ A RANGE, NOT ONE CONSTANT — deliberately, unlike every other archetype's fixed
+# numbers. "I want to be able to constrain some programs partially" (owner): a real
+# under-resourced program is not a uniform, on/off kind of bad, and a single number
+# would flatten Neglect into exactly the binary switch the owner asked NOT to build.
+# `neglect_severity()` draws each tagged school ONE stable point in this band — same
+# one-point-per-band idiom as `roster_size` — so severity varies continuously across
+# the tagged population, which is also what makes it usable as an A/B surface: compare
+# development outcomes against the DRAWN severity, not just against a tag.
+NEGLECT_MATURE = (-0.030, -0.012)
+
+
+def neglect_severity(school_name: str, salt: str = "") -> float:
+    """This program's stable per-grade maturity drag — negative, drawn once from
+    `NEGLECT_MATURE` and durable for as long as the school is tagged `neglect`.
+    Seeded on the school alone, never the year or the player, so it reads as a
+    durable program trait (bad facilities don't get better or worse season to
+    season) rather than something that reshuffles on read."""
+    return random.Random(f"{salt}|jhsaa-neglect|{school_name}").uniform(*NEGLECT_MATURE)
 
 
 # TWO LAYERS, as the owner specified: the SEED list ships with the repo as school data
@@ -929,6 +974,11 @@ def _program_mod(school: School, year: int, salt: str) -> dict:
     mod = {"mean": a.get("mean", 0.0), "spread": a.get("spread", 1.0),
            "pot": a.get("pot", 0.0), "mature": a.get("mature", 0.0),
            "kind": kind}
+    if kind == "neglect":
+        # The table row is a 0.0 placeholder (see ARCHETYPES) — the real, per-school
+        # number lives here, same reason `upstart`'s lift is layered on below rather
+        # than read off the table.
+        mod["mature"] += neglect_severity(school.name, salt)
     lift = upstarts(year, salt).get(school.name)
     if lift:
         # A percentage of the program's OWN baseline, so an upstart 1A is a strong 1A.
@@ -1799,7 +1849,7 @@ def transfer_batch(pairs: list[tuple[str, str]], year: int, salt: str = "",
 #: The archetypes an owner can ASSIGN. `upstart` is deliberately absent: it is a
 #: temporary run the world rolls from the salt and expires by itself, and storing one
 #: would make it permanent — the one thing an upstart must never be.
-EDITABLE_ARCHETYPES = ("blue_blood", "development", "doubles")
+EDITABLE_ARCHETYPES = ("blue_blood", "development", "doubles", "neglect")
 
 
 def archetype_board() -> dict:
