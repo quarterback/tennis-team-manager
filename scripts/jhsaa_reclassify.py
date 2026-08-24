@@ -122,6 +122,41 @@ def demote(rows: list[dict], m) -> list[tuple[dict, str, str]]:
     return moved
 
 
+def reclassify_named(rows: list[dict], m) -> list[tuple[dict, str, str]]:
+    """Apply `import_jhsaa.RECLASSIFY_2039` — a second named cross-class
+    realignment, same shape as `demote()`'s 2033 pass and for the same reason: the
+    owner named the schools and their target classes directly.
+
+    ‼️ UNLIKE THE 2033 PASS, THE ENROLLMENT ALWAYS NEEDS SCALING. None of these 30
+    schools already sit in their target class's committed enrollment band — moves
+    span up to seven classes (a 216-enrollment program to 8A) — so every one gets a
+    fresh `_reclass_enrollment` draw. `demote()`'s "only needed when the number
+    would otherwise contradict the move" is the general rule; this table is the
+    case where it always fires.
+    """
+    down = dict(m.RECLASSIFY_2039)
+    by_name = {r["name"] for r in rows}
+    unknown = sorted(set(down) - by_name)
+    if unknown:
+        sys.exit(f"RECLASSIFY_2039 names {len(unknown)} school(s) that do not "
+                 f"exist: {unknown}")
+    moved = []
+    for r in rows:
+        dst = down.get(r["name"])
+        if dst is not None and r["group"] != dst:
+            moved.append((r, r["group"], dst))
+            r["classification"] = r["group"] = dst
+            r["enrollment"] = m._reclass_enrollment(r["name"], dst)
+            # A school this table names IS its new class now, not playing up TO
+            # it — Valley Christian and Baptist both carried a seeded `play_up`
+            # flag from their old, smaller class; leaving it would be a stale
+            # artifact (harmless, since `can_play_up` gates on classification and
+            # blocks it the moment a school reclassifies out of eligibility, but
+            # a lying field is still worth not writing).
+            r.pop("play_up", None)
+    return moved
+
+
 def check_rivals(rows: list[dict], m) -> None:
     """Rivals share a classification AND a league, in both genders. ASSERTED rather
     than repaired: if a pair has drifted apart, the mechanism that moved them is what
@@ -267,7 +302,7 @@ def main() -> None:
         doc = json.load(fh)
     rows = doc["schools"]
 
-    moved = promote(rows, m) + demote(rows, m)
+    moved = promote(rows, m) + demote(rows, m) + reclassify_named(rows, m)
     rehome(rows, moved, m)
     for r, src, dst in moved:
         print(f"  {r['name'][:30]:30} {src} -> {dst}  {r['enrollment']:5}  "

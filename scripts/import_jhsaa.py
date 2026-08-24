@@ -342,6 +342,7 @@ OWNER_EDICTS = frozenset({
 # name is excluded here, and `jhsaa.resolve_school` checks live names first in any
 # case: an alias must never outrank a school that exists.
 FORMER_NAMES = {
+    "Abraham Lincoln":                             "Lincoln",
     "Academy of Arts and Communication":           "Junction",
     "Adams Point":                                 "Cedar Point",
     "Adela Robles":                                "Biloxi Heights",
@@ -811,6 +812,7 @@ FORMER_NAMES = {
     "Petra Jansen":                                "Southern Pacific Tech",
     "Petra Weiss North":                           "Las Colinas",
     "Pine Creek":                                  "Bois Rouge",
+    "Plainfield Science":                          "Plainfield",
     "Playa Vista":                                 "Riviere Salee",
     "Pointe Coupee Central":                       "Pointe Coupee",
     "Port Meridian Polytechnic":                   "Port Meridian North",
@@ -2158,6 +2160,55 @@ RECLASSIFY_TO_2A = (
     "Starlake", "Trout Lake", "Willowbrook", "Yazoo",
 )
 
+# ⚠️ THE COMMITTED ENROLLMENT BAND PER CLASSIFICATION (owner rule 2026-08) — the
+# contiguous range every real school in a class already sits inside, measured off
+# `data/jhsaa/schools.json` and stable because `reclassify()`'s own cut lines are
+# what produced it. Existing solely to give a RECLASSIFIED school (see
+# `RECLASSIFY_2039` below) a number that belongs in its new class: enrollment is
+# fictional and the number follows the decision, but "follows" still means
+# "lands inside the band the rest of the class occupies", not any value at all.
+_CLASS_ENROLLMENT_BAND = {
+    "1A": (57, 311), "2A": (86, 431), "3A": (303, 548), "4A": (552, 798),
+    "5A": (806, 1020), "6A": (1022, 1319), "7A": (1323, 1636),
+    "8A": (1638, 2143), "9A": (2148, 2597),
+}
+
+
+def _reclass_enrollment(name: str, group: str) -> int:
+    """A stable, band-legal enrollment for a school reclassified INTO `group` — the
+    same one-point-per-band idiom as `jhsaa.roster_size` (seeded on the school
+    alone, so it reads as a durable trait and not something that reshuffles on
+    re-import)."""
+    lo, hi = _CLASS_ENROLLMENT_BAND[group]
+    return random.Random(f"jhsaa-reclass-enrollment|{name}").randint(lo, hi)
+
+
+# ⚠️ THE 2039 CROSS-CLASS REALIGNMENT (owner rule 2026-08) — a SECOND named
+# reclassification table, same shape as `RECLASSIFY_TO_2A` and the same reason it
+# exists: the owner named the schools and the classes they move to directly, not a
+# cut line for a script to reverse-engineer. Unlike the 2033 pass, none of these 30
+# already sit in their target class's enrollment band (moves span up to seven
+# classes, e.g. a 216-enrollment 2A program to 8A), so `_reclass_enrollment` gives
+# each a fresh number inside the band it is moving to — this is the case
+# `RECLASSIFY_TO_2A`'s docstring flagged as "only needed when the number would
+# otherwise contradict the move": here it always does.
+RECLASSIFY_2039 = {
+    "Mater Dei": "8A", "Lincoln": "8A", "Ronald Reagan": "9A",
+    "I-50 Tech": "9A", "Larchmont Ridge": "8A", "Washington": "8A",
+    "Pacific Friends": "5A", "Metropolitan Country Day": "5A",
+    "Hazel Country Day": "5A",
+    "Chaminade": "6A", "St. Vincent": "6A", "Dry Lake": "6A",
+    "Fletcher-Garrison Hall": "3A", "Valley Christian": "6A",
+    "Vesper": "1A",
+    "Pope Victor I": "1A", "St. Gabriel Preparatory": "1A",
+    "Ansotegui Siding": "1A", "Pointe Coupee Catholic": "1A",
+    "Riviere Salee": "1A", "Aspen Hollow": "1A", "Belmonte Catholic": "1A",
+    "Northrup I-50 Tech": "1A", "St. Lucia Academy": "1A",
+    "St. Norbert Abbey": "1A",
+    "Casa Linda": "6A", "Belmonte": "6A", "Archbishop Doyle Prep": "6A",
+    "Baptist": "6A", "Blackpine": "5A",
+}
+
 # ⚠️ RECLASSIFICATION, ROUND 3 (owner rule 2027-08) — THE TOP OF THE LADDER, and the
 # reason is the Semi-Conference. `jhsaa.sponsor_floor` says a 40-field class needs 76
 # sponsors per gender to field a full qualifying round, and 9A BOYS had 72: four short,
@@ -2295,6 +2346,18 @@ def reclassify(schools: list[dict]) -> int:
     for s in schools:
         if _display_name(RENAMES.get(s["name"], s["name"])) in down:
             s["classification"] = "2A"
+            moved += 1
+    # ‼️ THE 2039 REALIGNMENT RUNS AFTER IT, same reason: several of its targets
+    # (e.g. Mater Dei, Lincoln -> 8A) are 9A-band schools the cascade above would
+    # otherwise pass straight through on its way up. Same DISPLAY-name matching.
+    for s in schools:
+        dst = RECLASSIFY_2039.get(_display_name(RENAMES.get(s["name"], s["name"])))
+        if dst is not None:
+            # `group` is not a field yet at this point in the pipeline (`build()`
+            # derives it from `classification` via `champ_group()` at emit) — same
+            # as the RECLASSIFY_TO_2A block above, which sets classification alone.
+            s["classification"] = dst
+            s["enrollment"] = _reclass_enrollment(s["name"], dst)
             moved += 1
     return moved
 

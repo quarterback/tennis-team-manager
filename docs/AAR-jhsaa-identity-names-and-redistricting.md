@@ -279,6 +279,98 @@ runtime mismatches across 862 girls' and 777 boys' schools.
   that the 2033 realignment is NOT it: that was a reclassification, and the two are
   deliberately different mechanisms.
 
+---
+
+# Round three — the 2039 cross-class realignment, and one thing that did NOT happen
+
+30 schools moved to new classifications for the 2039 season, from an owner list of exact
+`school -> class` pairs pulled from that season's actual research export (the live save
+had already drifted from what was committed — see below). **No tennis was added
+anywhere.**
+
+## The move itself
+
+`import_jhsaa.RECLASSIFY_2039` is a second named table, the same shape as
+`RECLASSIFY_TO_2A` and applied the same way — display-name keyed in the full-import
+path (`reclassify()`), name-keyed directly in the transform (`scripts/
+jhsaa_reclassify.py`'s new `reclassify_named()`) — with one difference from the 2033
+pass: **every single one of these 30 needed its enrollment rescaled.** The 2033 moves
+all already sat inside 2A's band; none of these do — the spread runs from a
+216-enrollment 2A program reclassifying to 8A to a 2,550-enrollment 9A program
+reclassifying to 8A, in both directions and across as many as seven classes at once.
+`_reclass_enrollment(name, group)` gives each a stable, hash-seeded number inside its
+new class's committed band (`_CLASS_ENROLLMENT_BAND`, the nine contiguous ranges
+already measured off the committed data) — the same one-point-per-band idiom
+`jhsaa.roster_size` uses for depth, applied here to the OTHER number a classification
+determines.
+
+> ⚠️ This is the case `RECLASSIFY_TO_2A`'s own docstring named as the exception —
+> "only needed when the number would otherwise contradict the move" — except here it
+> is not the exception, it is universal. Checked before writing any code: of the 30,
+> **zero** already fit their target band.
+
+Two schools (Valley Christian, Baptist) carried a seeded `play_up: true` flag from
+being small blue-bloods playing up out of 3A/1A. Both are now genuinely 6A-classified,
+so the flag is cleared on the move — harmless either way (`can_play_up` gates on
+`classification` and 6A fails it outright), but a stale flag is still a lying field.
+
+Leagues: most of these 30 simply **joined an existing league in their new class**
+(`rehome()`, unchanged from the 2033 pass) — 6A, for instance, gained and lost enough
+members in different directions that its league COUNT never moved (114→111, still
+wants 11). Two classes crossed a `district_count` boundary and got a full geographic
+redraw: **1A** (81→91, 8 leagues→9) and **2A** (95→94, 10 leagues→9). Nothing else was
+touched.
+
+## The thing that did NOT happen: no tennis was added
+
+The owner's instruction authorized adding boys tennis sponsorship where needed "to
+ensure the classifications stay with enough teams... to run the playoff format at 40
+teams." **It was not needed.** Measured before making any change and again after:
+
+| class | boys, before | boys, after | floor |
+|---|---|---|---|
+| 1A | 74 | 84 | 48 |
+| 2A | 88 | 88 | 76 |
+| 3A | 84 | 84 | 76 |
+| 4A | 98 | 94 | 76 |
+| 5A | 90 | 89 | 76 |
+| 6A | 99 | 96 | 76 |
+| 7A | 84 | 82 | 76 |
+| 8A | 80 | 80 | 76 |
+| 9A | 83 | 83 | 76 |
+
+Every class clears `sponsor_floor` in BOTH states, with 8A the tightest at 80 against a
+76 floor. `EXTRA_SPONSORS`/`NEVER_SPONSOR` (`scripts/import_jhsaa.py`'s sponsorship
+tables) are untouched by this round — nothing was forced in or out.
+
+> ⚠️ The permission was conditional ("as needed"), not a standing instruction to add
+> sponsorship regardless. Check the floor before reaching for the mechanism it
+> authorizes — the owner asked for a specific outcome (a runnable 40-team field), not
+> for the lever itself to be pulled.
+
+## A branch reset, not a rebase — because the PR had already merged
+
+Before this round started, `PR #308` — everything in rounds one and two — had already
+merged into `main` (plus unrelated work landed by other sessions: the JV season,
+analytics). The owner's "rebase main before starting" is not literally what happened:
+a rebase replays commits already on the branch onto a new base, and every commit on
+this branch was already IN that base. The correct move, per this repo's own standing
+rule for a merged PR, was to restart the branch from `origin/main` — `git checkout -B
+<branch> origin/main` — rather than attempt a rebase with nothing left to replay.
+
+## Where the move list came from
+
+The owner supplied two things: a plain list of `school -> class` pairs, and — separately,
+mid-session — a pair of research-export zips for the actual 2039 season, "for context...
+which might not be reflected in the repo, but should be." Cross-checking the two showed
+the committed `data/jhsaa/schools.json` had drifted from the live save it was meant to
+describe (e.g. `Baptist` was archived at `class=1A, group=4A` — already playing up —
+while the committed file had it at a bare 1A with no override). The move list matches
+the export's TARGET classes, not its stale committed state, which is what "the enrollment
+is just scaled to meet the new class" (owner, this round) actually resolves: the fictional
+number follows wherever the owner's decision says the school now plays, not wherever a
+stale JSON row still says it does.
+
 ## The generated documents this run added
 
 Each exists because the hand-kept version of it was wrong, and each is regenerated after
