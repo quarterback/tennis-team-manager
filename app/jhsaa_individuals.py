@@ -52,6 +52,7 @@ eight and the league season eleven, and neither is relevant here.
 """
 from __future__ import annotations
 
+import hashlib
 import random
 from dataclasses import dataclass, field
 
@@ -77,6 +78,23 @@ INDIV_FORMAT = INDIV_FMT
 SINGLES_FLIGHTS = ("S1", "S2", "S3")
 DOUBLES_FLIGHTS = ("D1", "D2", "D3")
 FLIGHTS = SINGLES_FLIGHTS + DOUBLES_FLIGHTS
+
+#: How a flight is written out. The chip stays terse (S1) and the heading is the
+#: sport's own phrasing — "No. 1 Singles", never "first flight" or "S1 draw"; see
+#: CLAUDE.md's VOCABULARY section, which is emphatic that positions are named
+#: No. 1 through No. 3.
+FLIGHT_NAMES = {"S1": "No. 1 Singles", "S2": "No. 2 Singles", "S3": "No. 3 Singles",
+                "D1": "No. 1 Doubles", "D2": "No. 2 Doubles", "D3": "No. 3 Doubles",
+                "XD": "Mixed Doubles"}
+
+#: ‼️ ONE DESTINATION, SEVEN VIEWS (owner, 2026-08). The event is reached from the
+#: **Championship** sub-rail — beside State, Bracket and TOC — under this label.
+#: The flights switch INSIDE that view, as a second sub-rail or a `<select>`;
+#: what they are NOT is six items on the Championship rail, or one page with
+#: every draw splayed down it. The association's own layout rule is that sibling
+#: views of one thing get a switcher, and this is exactly the control a real
+#: state association puts on the page ("Select a position: 1S 2S 3S …").
+SUBRAIL_LABEL = "Individual State"
 
 #: Ability-ladder ranks each flight draws from (0-based) — nine players per school,
 #: the SAME for every classification. NOT the league card's allocation, and not tied
@@ -321,6 +339,102 @@ def run_flight(teams: list, gender: str, group: str, flight: str, *,
     return _assemble(gender, group, flight, result, played)
 
 
+def _draw_seed(base: int, *parts: str) -> int:
+    """A stable per-draw seed.
+
+    ‼️ NEVER `hash()`. Python salts `hash()` of a str per PROCESS, so a seed built
+    that way reproduces a draw only within one interpreter — and this draw is
+    ARCHIVED, which means "the same season" has to mean the same thing across
+    restarts, not merely inside the run that wrote it. (`run_season`'s own
+    `hash(group) % 9973` is an older wart with the same shape; it is not copied
+    here and should not be copied anywhere else.)"""
+    h = hashlib.blake2s("|".join(("jh-indiv", *parts)).encode(), digest_size=4)
+    return (base + int(h.hexdigest(), 16)) % (2 ** 31)
+
+
+def run_preseason(by_group: dict, gender: str, year: int, *,
+                  seed: int = 0) -> dict:
+    """Every classification's six flight draws, played and CREDITED, returned
+    archive-flattened as `{group: {flight: dict}}`.
+
+    ‼️ IT RUNS BEFORE THE LEAGUE SEASON, WHICH IS WHAT MAKES IT HONEST. Selecting
+    entries off ability would be a plain violation of the association's "berths
+    are earned on court" rule at any other point in the year. Preseason there are
+    no results to earn anything on — `ts.records` is empty, so `_order` IS ability
+    order — and the event is therefore an INPUT to the season rather than a
+    summary of it: `credit_draw` writes into the same `records` that
+    `ladder_score` reads, so a deep run in August moves a player up the ladder
+    before the first league dual.
+
+    `by_group` is `run_season`'s own `{group: {district: [TeamSeason]}}`; a flight
+    draw is statewide within a classification, so the districts are flattened."""
+    out: dict = {}
+    for group, districts in by_group.items():
+        teams = [t for ts in districts.values() for t in ts]
+        by_school = {t.school.name: t for t in teams}
+        drawn = {}
+        for flight in FLIGHTS:
+            d = run_flight(teams, gender, group, flight,
+                           seed=_draw_seed(seed, gender, str(year), group, flight))
+            if d is None:                   # fewer than two entries — no event
+                continue
+            credit_draw(d, by_school)
+            drawn[flight] = draw_to_dict(d)
+        if drawn:
+            out[group] = drawn
+    return out
+
+
+# --- crediting the season ---------------------------------------------------
+
+def credit_draw(draw: FlightDraw, teams: dict) -> int:
+    """Credit every match of a completed flight draw to the players who played
+    it. Returns the number of appearances credited (two a match).
+
+    ‼️ FULL CREDIT, AND IT COST NO NEW CODE PATH (owner rule): a state individual
+    match counts exactly the way a league dual's court does — the same `records`
+    W-L that moves `ladder_score`, and the same `matches` résumé row the awards
+    read. Three existing decisions are what make that free rather than a special
+    case:
+
+      * **The flight names ARE the dual slot names.** `FLIGHT_WEIGHTS` already
+        prices S1 above S3 and D1 above D3, so an individual result is weighted
+        by the court it was won on with no new entry in that table.
+      * **`PHASE` is deliberately NOT in `jhsaa.POSTSEASON`**, so
+        `jhsaa_awards._phase_weight` prices these at 1.0 — an ordinary match, not
+        a postseason one. "Treat them like the regular season" is the default
+        with nothing to configure. (It is still its OWN phase, because a phase is
+        the archive's identity for an event — that is what lets a card tag these
+        and what keeps them out of `rating_duals`.)
+      * **A pair is credited to BOTH members** with `partner` set, which is what
+        `jhsaa_awards._pairs` keys a partnership on. A doubles title is a
+        partnership's résumé, exactly as it is in a dual.
+
+    ‼️ IT DOES NOT GO THROUGH `jhsaa._credit`. That resolves WHO played by
+    slotting a lineup through `_slot_players`, because a dual only records the
+    lineup; here the Entry already names the two people, so re-deriving them
+    from a lineup would be inventing a lineup to read it back."""
+    n = 0
+    for rnd in draw.rounds:
+        for m in rnd:
+            win, lose = (m.hi, m.lo) if m.winner_is_hi else (m.lo, m.hi)
+            for side, other, won in ((win, lose, True), (lose, win, False)):
+                ts = teams.get(side.school)
+                if ts is None:              # a school with no TeamSeason this year
+                    continue
+                opps = tuple(other.pids)
+                for p in side.players:
+                    rec = ts.records.setdefault(p.pid, [0, 0])
+                    rec[0 if won else 1] += 1
+                    ts.by_pid.setdefault(p.pid, p)
+                    partner = next((q.pid for q in side.players
+                                    if q.pid != p.pid), "")
+                    ts.matches.setdefault(p.pid, []).append(
+                        (draw.flight, won, PHASE, opps, partner, other.school))
+                    n += 1
+    return n
+
+
 # --- mixed doubles ----------------------------------------------------------
 
 def mixed_entry(boys_ts, girls_ts) -> Entry | None:
@@ -353,7 +467,14 @@ def run_mixed(boys_by_school: dict, girls_by_school: dict, group: str, *,
 
     ONE flight, ONE bracket, one entry per school (owner rule) — not a flighted
     ladder. Only schools sponsoring BOTH genders can enter, which is 786 of the
-    association's programs."""
+    association's programs.
+
+    ‼️ IT CREDITS NOTHING — never pass this draw to `credit_draw` (owner rule:
+    "mixed doubles gets no credit for anything for awards"). It is also the one
+    event played in the SUMMER, after the season it sits beside has finished, so
+    there is no open `records`/`matches` for it to land in even if something
+    tried. The archive is where a mixed title lives, and the honours page reads
+    it from there."""
     entries = []
     for name in sorted(set(boys_by_school) & set(girls_by_school)):
         e = mixed_entry(boys_by_school[name], girls_by_school[name])
@@ -375,26 +496,69 @@ def run_mixed(boys_by_school: dict, girls_by_school: dict, group: str, *,
     return _assemble("mixed", group, "XD", result, played)
 
 
+def run_mixed_season(boys_teams: dict, girls_teams: dict, year: int, *,
+                     seed: int = 0) -> dict:
+    """The whole association's mixed doubles, one draw per classification,
+    archive-flattened as `{group: dict}`.
+
+    ‼️ THIS CANNOT LIVE IN `run_season`, AND THE REASON IS STRUCTURAL, NOT A
+    PREFERENCE. `run_season` takes ONE gender; a mixed pair is one player from
+    each, so the event cannot be assembled until both genders' seasons exist.
+    It therefore runs at the world rung after both — the same place
+    `renumber_divisions` and `reletter_conferences` run, and for the same reason.
+    That also happens to be where it belongs on the calendar: mixed is the SUMMER
+    event (owner rule), played when nothing else is.
+
+    Both arguments are `run_season`'s `season["teams"]` — `{school: TeamSeason}`
+    for that gender. A school is in the draw only if it sponsors BOTH.
+
+    ‼️ Nothing here credits anything. See `run_mixed`."""
+    groups: dict = {}
+    for name, ts in boys_teams.items():
+        if name in girls_teams:
+            groups.setdefault(ts.school.group, []).append(name)
+    out: dict = {}
+    for group, names in groups.items():
+        d = run_mixed({n: boys_teams[n] for n in names},
+                      {n: girls_teams[n] for n in names}, group,
+                      seed=_draw_seed(seed, "mixed", str(year), group))
+        if d is not None:
+            out[group] = draw_to_dict(d)
+    return out
+
+
 # --- persistence ------------------------------------------------------------
 
 def draw_to_dict(d: FlightDraw) -> dict:
     """Flatten a FlightDraw for the archive. The live objects carry engine players
     that cannot and need not be stored; everything a page needs to render the
-    bracket, credit an honour or link a player is kept."""
-    def ed(e: Entry | None):
-        if e is None:
-            return None
+    bracket, credit an honour or link a player is kept.
+
+    ‼️ A MATCH STORES INDICES INTO `entries`, NEVER COPIES OF THEM. The first
+    version wrote the full entrant dict — school, label, seed and both players'
+    pid and name — on BOTH sides of every match, so a 128 draw carried each
+    entrant up to eight times over and a gender's slate came to **3.5 MB**
+    against 1.0 MB indexed. `entries` is already the entrant list and a draw is
+    a graph over it; the engine's own `TourneyMatch` indexes it exactly this way.
+    A reader resolves with `entries[m["hi"]]`, and `seed` lives on the entry
+    because it is a property of the entrant, not of a match it appears in.
+
+    `finishes` is likewise keyed on the entry's `school` — the entry key — so it
+    stays a small map rather than a per-round annotation."""
+    def ed(e: Entry) -> dict:
         return {"school": e.school, "label": e.label, "seed": d.seed_of(e),
                 "players": [{"pid": p.pid, "name": p.name} for p in e.players]}
+    ix = {e.key: i for i, e in enumerate(d.entries)}
     fin = d.finishes()
     return {
         "gender": d.gender, "group": d.group, "flight": d.flight,
         "n_seeds": d.n_seeds,
         "entries": [ed(e) for e in d.entries],
-        "champion": ed(d.champion), "runner_up": ed(d.runner_up),
+        "champion": ix.get(d.champion.key) if d.champion else None,
+        "runner_up": ix.get(d.runner_up.key) if d.runner_up else None,
         "finishes": {k: {"label": v[0], "tag": v[1]} for k, v in fin.items()},
-        "rounds": [[{"rnd": m.rnd, "hi_seed": m.hi_seed, "lo_seed": m.lo_seed,
+        "rounds": [[{"rnd": m.rnd, "hi": ix[m.hi.key], "lo": ix[m.lo.key],
                      "winner_is_hi": m.winner_is_hi, "scoreline": m.scoreline,
-                     "upset": m.upset, "hi": ed(m.hi), "lo": ed(m.lo)}
+                     "upset": m.upset}
                     for m in rnd] for rnd in d.rounds],
     }

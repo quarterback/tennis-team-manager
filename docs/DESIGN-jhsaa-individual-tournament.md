@@ -403,26 +403,42 @@ must be **stored**, not folded — nothing else can reproduce it.
 | Championship draws | *included above* | the split is free — `entries − 1` either way |
 | **Total** | **~10,600** | **+15%** on the ~71,400-match season |
 
-The week-0 rung is currently ~7 minutes for both genders including JV. ~10,600 added
-matches should land it around **8–9 minutes** — **an estimate from a match-rate guess,
-not a measurement.** Time it before committing; the JV season's +40% was measured, and
-this should be too.
+The week-0 rung is currently ~7 minutes for both genders including JV. An earlier
+version of this line **estimated** ~10,600 added matches would land it at 8–9 minutes.
+
+**MEASURED, on the real association:** 54 draws and 5,130 matches in **18s** for the
+girls, 4,662 in **17s** for the boys — ~35s in total, about **8%** on a ~7-minute rung,
+not the ~15% the estimate implied. The estimate was pessimistic. Recorded here because
+a cost figure that decides something must be measured; see the AAR.
 
 ---
 
-## Open decisions
+## Decisions, all now settled
 
-1. **Number of seeds.** `run_tournament` defaults to a quarter of the bracket
-   (128 → 32). Fine unless a reason appears.
-2. **Match format.** The NCAA event uses best-of-3, no-ad, with a 10-point match
-   tiebreak as the final set (`INDIV_FMT`). JHSAA play is all no-ad and doubles is a
-   full best-of-3, so a decision is needed on whether the individual event keeps the
-   match tiebreak or plays a real third set.
-3. **Does 1A's 2S/3D pilot touch this?** It should not — the tournament flights are
-   defined independently of any dual format — but worth an explicit test.
-4. **Round naming on the card.** "Octofinals" is the association's existing word (the
-   team event uses it); R128/R64/R32 need labels that read as rounds of one tournament,
-   not as a qualifying stage — see the `_finish_short` section above.
+1. **Number of seeds — a QUARTER of the draw (128 → 32), the engine's default.**
+   `engine.tournament.seed_count` is already the tennis convention and `seeded_draw`
+   already places seeds in TIERS ([1], [2], [3-4], [5-8], [9-16], …) rather than as a
+   flat 1..32 ranking. An NJSIAA seeding release the owner sent publishes exactly that
+   shape ("SEEDS 5-8 (Alphabetical)"), for exactly that reason — a No. 6 seed is not
+   ranked below No. 5, it is a member of the 5-8 tier. So nothing changed in the engine;
+   the page publishes them in tiers instead of flat.
+2. **Match format — the college individual championships', IMPORTED.**
+   `individuals.INDIV_FMT`: best-of-3, no-ad, set tiebreaks, **10-point match tiebreak**
+   for the deciding set. A draft added an ads preset on the theory that a championship
+   warranted one; the owner asked whether the college event already ran 2-of-3 with a
+   10-point tiebreak, and it does. The preset was deleted and the constant is imported,
+   so the two events cannot drift. This is the one place JHSAA scoring differs from
+   `jhsaa.MATCH_FORMAT`, whose third set is a full set.
+3. **Does 1A's 2S/3D pilot touch this? NO — and nor does any other dual format.**
+   Owner: *"so the 1/4, 2/3, 3/4 discussion is irrelevant"*, *"even in 1A, it's still a
+   3/3 event"*. Every classification crowns the same six individual titles; no branch in
+   `jhsaa_individuals` reads a group's dual shape.
+4. **Round naming — `ROUND_LABELS`.** The engine names a round by its size; the only
+   rename needed is "Round of 16" → **Octofinals**, the association's existing word.
+   R128/R64/R32/QF/SF/Final it already writes the way this association does.
+5. **Where it lives — the Championship sub-rail, labelled "Individual State"**, with
+   the flights switched INSIDE that view (a second sub-rail). Not six items on the
+   Championship rail, and not one page with every draw splayed down it.
 
 ---
 

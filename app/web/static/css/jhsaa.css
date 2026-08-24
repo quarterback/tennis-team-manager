@@ -88,6 +88,40 @@
 .jh-subrail a:hover { color: var(--brand-strong); }
 .jh-subrail a.on { color: var(--text-primary); border-bottom-color: var(--brand); }
 
+/* The FLIGHT rail on the individual state tournaments — a second sub-rail one
+   level in, selecting which of the six draws is on screen. Quieter again than the
+   rail above it, and it wraps, because seven items do not fit a phone in one row.
+   The separator sets MIXED apart: it is a different event, not a seventh flight. */
+.jh-flightrail { flex-wrap: wrap; gap: 14px; padding-top: 4px; align-items: center; }
+.jh-flightrail a { font-size: 12px; }
+.jh-flightrail .sep {
+  width: 1px; align-self: stretch; margin: 4px 2px 10px;
+  background: var(--border-default);
+}
+
+/* Seeds, published in TIERS (1 · 2 · 3-4 · 5-8 · 9-16 · …) the way the draw
+   places them and the way an association releases them. */
+.jh-seedtiers {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px; padding: 14px 16px;
+}
+.jh-seedtiers .tier { min-width: 0; }
+.jh-seedtiers .lbl {
+  font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--text-muted); padding-bottom: 6px; margin-bottom: 6px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.jh-seedtiers .row { display: flex; flex-direction: column; padding: 3px 0; min-width: 0; }
+.jh-seedtiers .row a {
+  font-size: 13px; font-weight: 650; color: var(--text-primary); text-decoration: none;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.jh-seedtiers .row a:hover { color: var(--brand-strong); }
+.jh-seedtiers .row .sch {
+  font-size: 11.5px; color: var(--text-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
 /* ---- Program directory (/jhsaa/schools) ---- */
 .jh-dirbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 14px; }
 .jh-dirfind {

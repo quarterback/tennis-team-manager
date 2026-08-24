@@ -73,8 +73,16 @@ HOW A RÉSUMÉ IS SCORED (the SOP's criteria, in the order it lists them):
      direct results reorder them. Evidence, not an override: it only moves
      candidates already tied on everything else.
   7. POSTSEASON — Sectionals through State count, weighted up (`PHASE_WEIGHT`).
-     Jefferson has no individual tournament and none is invented; this is the
-     team postseason a player actually played.
+     This is the TEAM postseason a player actually played.
+     ‼️ Jefferson DOES now have individual state tournaments (`jhsaa_individuals`,
+     owner rule 2026-08 — this line used to say it did not), and their results are
+     on these résumés at FULL, ORDINARY weight. Two existing decisions carry that
+     with no code here: the six flights are named S1-S3/D1-D3, the same slots a
+     dual uses, so `FLIGHT_WEIGHTS` prices them already; and their phase is
+     deliberately outside `jhsaa.POSTSEASON`, so `_phase_weight` gives them 1.0 —
+     an individual title is real evidence, but it is played PRESEASON and is not
+     the state run this criterion is about. MIXED doubles credits nothing at all
+     (owner rule) and never reaches this module.
   8. TEAM — never an eligibility gate. It enters only through opposition
      quality: playing (and beating) good players is what a good team gives you.
   9. THIS SEASON ONLY — nothing here reads class year, talent, potential,

@@ -43,7 +43,7 @@ from .state import (jhsaa_view, jhsaa_scope_view, jhsaa_school_view, jhsaa_past_
                     jhsaa_honors_view,
                     jhsaa_rankings_view, jhsaa_player_view, jhsaa_players_search,
                     jhsaa_misapplied_players, jhsaa_lineup_lab, jhsaa_schools_view,
-                    jhsaa_titles_view)
+                    jhsaa_titles_view, jhsaa_individual_view)
 from .state import (preseason_portal_view, recruit_economy_view, portal_class_rankings,
                     wire_view)
 from .state import my_program_view, my_schedule_plan, my_season_report, job_offers
@@ -2259,6 +2259,20 @@ def create_app() -> Flask:
         view = jhsaa_bracket_view(DEFAULT_SEED, g, group, year)
         return render_template("jhsaa_bracket.html", active="High School", view=view,
                                gender=gender, u=u, uni_label=label)
+
+    @app.route("/jhsaa/individuals")
+    def jhsaa_individuals():
+        """The individual state tournaments — one flight's draw, on the SAME
+        server-positioned tree the team bracket uses.
+
+        `flight` is a scope of its own and rides in the query string beside the
+        section's gender/class/season, so the header's scope switches carry it (see
+        `jh_scope_url`) and swapping class keeps the flight you were reading."""
+        gender, label, u, g, group, year = _jh_scope_args()
+        view = jhsaa_individual_view(DEFAULT_SEED, g, group,
+                                     request.args.get("flight"), year)
+        return render_template("jhsaa_individuals.html", active="High School",
+                               view=view, gender=gender, u=u, uni_label=label)
 
     @app.route("/jhsaa/toc")
     def jhsaa_toc():

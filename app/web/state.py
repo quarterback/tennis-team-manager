@@ -4287,6 +4287,126 @@ def jhsaa_honors_view(seed: int, gender: str, group: str | None = None,
     }
 
 
+def _jh_indiv_card_side(e: dict, won: bool, schools: dict) -> dict:
+    """One side of an individual bracket card.
+
+    The entrant is a PLAYER or a PAIR, so the card shows a person and links to the
+    player page — `name`/`pid`, the two overrides `_bracket.html` grew for exactly
+    this. `school` stays the school underneath, which is what the tooltip and the
+    card-highlight key off, and it is also half of the player URL.
+
+    A PAIR links to its first member: a partnership has no page of its own and one
+    of the two names has to carry the link. Both are named in the label."""
+    school = e["school"]
+    players = e.get("players") or []
+    return {"school": school, "name": e.get("label") or school,
+            "pid": players[0]["pid"] if players else "",
+            "abbr": "", "color": "var(--gray-400)", "won": won,
+            "seed": e.get("seed") or "",
+            "conf": (schools.get(school).district if schools.get(school) else ""),
+            "aq": False, "tbd": False,
+            "mark": _jh_deco(schools, school, 18)["mark"]}
+
+
+def jhsaa_individual_view(seed: int, gender: str, group: str | None = None,
+                          flight: str | None = None,
+                          year: int | None = None) -> dict:
+    """ONE flight of the individual state tournaments, on the shared bracket tree.
+
+    ‼️ ONE FLIGHT AT A TIME, WHICH IS THE POINT OF THE SWITCHER. Six 128-draws down
+    one page is six screens of bracket nobody asked for; the flight is a question
+    you answer once you are here, which is the section's own rule for sibling views
+    (`jh_tabs`, the district `<select>`, the History sub-rail). It is also exactly
+    the control a real association puts on the page.
+
+    ‼️ AND IT NEEDS NO BYE CARDS. `_jh_bracket_cols` materialises byes because the
+    TEAM archive stores rounds as played and a 24-team field collapses unevenly. An
+    individual draw is `engine.run_tournament`'s output, whose rounds already halve
+    cleanly from the opening round on — the byes are consumed before round one and
+    every later column is exactly half the one before it, which is precisely the
+    shape `_bracket_canvas` links positionally. Feed it the rounds as archived."""
+    import app.jhsaa as jh
+    import app.jhsaa_individuals as ji
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    years = world.jhsaa_years(w["id"], g)
+    yr = (years[0] if years else w["year"]) if year is None else year
+    grp = group if group in jh.GROUPS else jh.GROUPS[0]
+    fl = flight if flight in ji.FLIGHTS or flight == "XD" else ji.FLIGHTS[0]
+    arc = world.get_jhsaa(w["id"], yr, g)
+    scope = _jh_scope(g, grp, list(jh.GROUPS), yr, years,
+                      (arc or {}).get("season_year"), arc)
+    base = {"gender": g, "year": yr, "years": years, "group": grp,
+            "groups": list(jh.GROUPS), "flight": fl,
+            "flights": [(f, ji.FLIGHT_NAMES[f]) for f in ji.FLIGHTS],
+            "flight_name": ji.FLIGHT_NAMES[fl],
+            "mixed_flight": "XD", "mixed_name": ji.FLIGHT_NAMES["XD"],
+            "season_year": (arc or {}).get("season_year",
+                                           world.jhsaa_season_year(w)),
+            "scope": scope}
+    # Mixed doubles is archived under its own gender: it belongs to neither field.
+    draw = world.jhsaa_individual_draw(w["id"], yr,
+                                       "mixed" if fl == "XD" else g, grp, fl)
+    if not draw:
+        return {**base, "ready": False}
+    schools = _jh_schools(g if fl != "XD" else "girls")
+    entries = draw["entries"]
+    cols = []
+    for rnd in draw["rounds"]:
+        ms = []
+        for m in rnd:
+            hi, lo = entries[m["hi"]], entries[m["lo"]]
+            hw = m["winner_is_hi"]
+            ms.append({
+                "home": _jh_indiv_card_side(hi, hw, schools),
+                "away": _jh_indiv_card_side(lo, not hw, schools),
+                "played": True, "id": None, "tbd": False, "region": None,
+                "bpos": 0, "home_won": hw, "winner": None,
+                # WINNER-FIRST, like every other card on this surface: `brk_row`
+                # picks its half by who WON. A tennis set score is written from the
+                # winner's side by convention, and `MatchResult.scoreline` already
+                # is — so it is passed through, never re-oriented to the "home" side
+                # (a draw has no home side to orient to).
+                "score": m["scoreline"]})
+        cols.append({"name": ji.round_label(m["rnd"]), "matchups": ms})
+    champ = entries[draw["champion"]] if draw.get("champion") is not None else None
+    runner = entries[draw["runner_up"]] if draw.get("runner_up") is not None else None
+    return {
+        **base, "ready": True,
+        "n_seeds": draw["n_seeds"], "field_n": len(entries),
+        "champion": champ, "runner_up": runner,
+        "champion_deco": _jh_deco(schools, champ["school"], 34) if champ else None,
+        "final_score": (draw["rounds"][-1][0]["scoreline"]
+                        if draw["rounds"] and draw["rounds"][-1] else ""),
+        # The seeded head of the field, as an association publishes it: real
+        # associations print seeds in TIERS (1, 2, 3-4, 5-8, …) because that is how
+        # they are PLACED — `engine.tournament.seeded_draw` shuffles inside each
+        # tier onto mirror anchors, so a "No. 6 seed" is not a finer ranking than
+        # No. 5, it is a member of the 5-8 tier. Listing 1..32 flat would claim a
+        # precision the draw does not have.
+        "seed_tiers": _jh_seed_tiers(entries, draw["n_seeds"]),
+        "canvas": _bracket_canvas(cols, card_w=214, card_h=56, gutter=44,
+                                  leaf_gap=12),
+        "rounds": [{"name": c["name"], "games": c["matchups"]} for c in cols],
+    }
+
+
+def _jh_seed_tiers(entries: list, n_seeds: int) -> list[dict]:
+    """The seeded entrants grouped into the tiers they were PLACED in — [1], [2],
+    [3-4], [5-8], [9-16], … — which is how the draw actually treats them and how a
+    real association publishes them."""
+    out, lo = [], 1
+    while lo <= n_seeds:
+        hi = min(n_seeds, 1 if lo == 1 else (2 if lo == 2 else lo * 2 - 1))
+        rows = entries[lo - 1:hi]
+        if rows:
+            out.append({"label": str(lo) if lo == hi else f"{lo}-{hi}",
+                        "entries": rows})
+        lo = hi + 1
+    return out
+
+
 def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
                        year: int | None = None) -> dict:
     """The full state draw on its own surface — the same server-positioned tree the

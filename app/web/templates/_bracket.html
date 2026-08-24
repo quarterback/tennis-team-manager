@@ -18,7 +18,22 @@
    `ep`/`epq` are the endpoint a team name links to and any extra query args, so a
    league that isn't the college one (the JHSAA) draws on THIS tree instead of
    forking a third bracket; a team carrying its own `mark` (inline SVG) renders that
-   where college renders a crest. #}
+   where college renders a crest.
+
+   ⚠️ `t.name` and `t.pid` OVERRIDE the two things a card otherwise assumes — that
+   the entrant IS a school, and that `epq` holds every link argument that isn't the
+   school. An INDIVIDUAL draw (`jhsaa_individuals`) breaks both: the entrant is a
+   player or a pair, so the card must SHOW a person and LINK to
+   `/jhsaa/player/<school>/<pid>`, whose pid varies card by card and so cannot ride
+   in `epq`, which is constant for the whole canvas. `t.school` stays the school
+   underneath, because that is what the tooltip and the `data-school` highlight key
+   off. Both are optional and both existing callers pass neither, so the college
+   tree is untouched — the shared surface stretching by two attributes rather than
+   a fourth bracket.
+
+   The pid is passed as DATA and the URL is built here, in the template, because
+   `state.py` is a view-model layer with no request context — calling `url_for`
+   there would couple it to Flask for the sake of one link. #}
 {% macro brk_row(t, m, u, bids=true, ep='teams', epq={}) %}
 {# `label` names an empty slot that ISN'T undecided — a bye has no opponent to
    name, and calling it TBD reads as "this round hasn't been played". #}
@@ -30,7 +45,8 @@
      title="{{ t.school }}{% if t.conf %} · {{ t.conf }}{% if bids %} · {{ 'automatic qualifier' if t.aq else 'at-large' }}{% endif %}{% endif %}">
   <span class="brk-seed">{{ t.seed if t.seed else '' }}</span>
   {% if t.mark %}<span class="brk-mark">{{ t.mark|safe }}</span>{% else %}{{ crest_box(t.school, t.abbr, t.color, 'xs') }}{% endif %}
-  <a class="brk-name" href="{{ url_for(ep, school=t.school, u=u, **epq) }}">{{ t.school }}</a>
+  {% set lq = dict(epq, pid=t.pid) if t.pid else epq %}
+  <a class="brk-name" href="{{ url_for(ep, school=t.school, u=u, **lq) }}">{{ t.name or t.school }}</a>
   {% if bids and t.aq %}<span class="brk-bid" aria-label="automatic qualifier">AQ</span>{% endif %}
   {# ⚠️ `m.score` is WINNER-FIRST, not home-first — this picks the half by who WON, so a
      home-first string silently swaps the two numbers on every card the away side won

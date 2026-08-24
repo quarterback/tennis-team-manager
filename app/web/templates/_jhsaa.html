@@ -157,10 +157,13 @@
     </div>
   </div>
 
-  {# The championship's three views. A sub-rail rather than three top-level tabs:
-     they are one destination, and which of them you want is a question you ask
-     once you are there. #}
-  {% if tab in ('state', 'bracket', 'toc') %}
+  {# The championship's views. A sub-rail rather than top-level tabs: they are one
+     destination, and which of them you want is a question you ask once you are
+     there. The INDIVIDUAL state tournaments joined it in 2026-08 — six flighted
+     draws plus mixed doubles, which are a championship the association crowns and
+     therefore belong here, not on a tab of their own. The flight is switched
+     INSIDE that view. #}
+  {% if tab in ('state', 'bracket', 'toc', 'individuals') %}
   <div class="jh-subrail">
     <a class="{{ 'on' if tab == 'state' }}"
        href="{{ url_for('jhsaa_page', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Overview</a>
@@ -173,6 +176,8 @@
        to the class you were browsing. #}
     <a class="{{ 'on' if tab == 'toc' }}"
        href="{{ url_for('jhsaa_toc', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Tournament of Champions</a>
+    <a class="{{ 'on' if tab == 'individuals' }}" title="No. 1-3 singles and doubles — six individual state champions, plus mixed"
+       href="{{ url_for('jhsaa_individuals', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Individual State</a>
   </div>
   {% endif %}
 
