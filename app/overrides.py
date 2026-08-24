@@ -224,7 +224,7 @@ def clear_prestige(school: str) -> None:
 
 
 # --- JHSAA program archetype (durable program conditions) ---------------------
-# A per-PROGRAM tag — blue_blood / development / doubles — describing facilities, feeder
+# A per-PROGRAM tag — blue_blood / development / doubles / neglect — describing facilities, feeder
 # networks, community participation, coaching tradition and reputation. NOT current team
 # strength, and NOT derived from classification or public/private: those may inform who
 # gets seeded onto the list, but the property belongs to the individual school and is

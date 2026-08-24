@@ -279,6 +279,202 @@ runtime mismatches across 862 girls' and 777 boys' schools.
   that the 2033 realignment is NOT it: that was a reclassification, and the two are
   deliberately different mechanisms.
 
+---
+
+# Round three — the 2039 cross-class realignment, and one thing that did NOT happen
+
+30 schools moved to new classifications for the 2039 season, from an owner list of exact
+`school -> class` pairs pulled from that season's actual research export (the live save
+had already drifted from what was committed — see below). **No tennis was added
+anywhere.**
+
+## The move itself
+
+`import_jhsaa.RECLASSIFY_2039` is a second named table, the same shape as
+`RECLASSIFY_TO_2A` and applied the same way — display-name keyed in the full-import
+path (`reclassify()`), name-keyed directly in the transform (`scripts/
+jhsaa_reclassify.py`'s new `reclassify_named()`) — with one difference from the 2033
+pass: **every single one of these 30 needed its enrollment rescaled.** The 2033 moves
+all already sat inside 2A's band; none of these do — the spread runs from a
+216-enrollment 2A program reclassifying to 8A to a 2,550-enrollment 9A program
+reclassifying to 8A, in both directions and across as many as seven classes at once.
+`_reclass_enrollment(name, group)` gives each a stable, hash-seeded number inside its
+new class's committed band (`_CLASS_ENROLLMENT_BAND`, the nine contiguous ranges
+already measured off the committed data) — the same one-point-per-band idiom
+`jhsaa.roster_size` uses for depth, applied here to the OTHER number a classification
+determines.
+
+> ⚠️ This is the case `RECLASSIFY_TO_2A`'s own docstring named as the exception —
+> "only needed when the number would otherwise contradict the move" — except here it
+> is not the exception, it is universal. Checked before writing any code: of the 30,
+> **zero** already fit their target band.
+
+Two schools (Valley Christian, Baptist) carried a seeded `play_up: true` flag from
+being small blue-bloods playing up out of 3A/1A. Both are now genuinely 6A-classified,
+so the flag is cleared on the move — harmless either way (`can_play_up` gates on
+`classification` and 6A fails it outright), but a stale flag is still a lying field.
+
+Leagues: most of these 30 simply **joined an existing league in their new class**
+(`rehome()`, unchanged from the 2033 pass) — 6A, for instance, gained and lost enough
+members in different directions that its league COUNT never moved (114→111, still
+wants 11). Two classes crossed a `district_count` boundary and got a full geographic
+redraw: **1A** (81→91, 8 leagues→9) and **2A** (95→94, 10 leagues→9). Nothing else was
+touched.
+
+## The thing that did NOT happen: no tennis was added
+
+The owner's instruction authorized adding boys tennis sponsorship where needed "to
+ensure the classifications stay with enough teams... to run the playoff format at 40
+teams." **It was not needed.** Measured before making any change and again after:
+
+| class | boys, before | boys, after | floor |
+|---|---|---|---|
+| 1A | 74 | 84 | 48 |
+| 2A | 88 | 88 | 76 |
+| 3A | 84 | 84 | 76 |
+| 4A | 98 | 94 | 76 |
+| 5A | 90 | 89 | 76 |
+| 6A | 99 | 96 | 76 |
+| 7A | 84 | 82 | 76 |
+| 8A | 80 | 80 | 76 |
+| 9A | 83 | 83 | 76 |
+
+Every class clears `sponsor_floor` in BOTH states, with 8A the tightest at 80 against a
+76 floor. `EXTRA_SPONSORS`/`NEVER_SPONSOR` (`scripts/import_jhsaa.py`'s sponsorship
+tables) are untouched by this round — nothing was forced in or out.
+
+> ⚠️ The permission was conditional ("as needed"), not a standing instruction to add
+> sponsorship regardless. Check the floor before reaching for the mechanism it
+> authorizes — the owner asked for a specific outcome (a runnable 40-team field), not
+> for the lever itself to be pulled.
+
+---
+
+# Round four — a fifth archetype, and a DRY fix it exposed
+
+## There is a fourth archetype already, and it explains some of what you've seen
+
+Before Neglect, `jhsaa.ARCHETYPES` already had four entries, not three: `blue_blood`,
+`development`, `doubles` — and **`upstart`**. The owner had forgotten this one existed,
+which is worth writing down since it explains program surges observed in play that had
+no other cause on the books.
+
+`upstart` is deliberately NOT in the editor and never appears on `/jhsaa/programs` —
+that is by design, not an oversight. It is a temporary, self-expiring run the WORLD
+rolls automatically from the save's own seed, never something an owner assigns: at any
+time roughly ten programs statewide are "having a moment" — 15-30% stronger than their
+own baseline for 2-4 seasons — and then the run ends and they revert, with a fresh set
+picked up elsewhere. Storing it as an editable tag would make it permanent, which is
+the one thing an upstart is not supposed to be (`jhsaa.upstarts()`).
+
+So the full roster, with Neglect added below, is five archetypes: three assignable and
+durable (blue_blood, development, doubles), one assignable and now also durable
+(neglect), and one that is neither assignable nor durable (upstart) — a program
+appearing to catch fire for a season or two with nothing in the editor explaining why
+is very likely this, not a bug.
+
+## Neglect
+
+A new program archetype, alongside `blue_blood` / `development` / `doubles` / `upstart`
+(owner rule 2026-08): bad coaching, bad facilities, a program that wastes what its
+players walk in with. The spec, in the owner's own words: *"doesn't mean players won't
+get what they get normally, it just dampens it somehow."*
+
+That sentence is the whole design. It rules out touching CEILING (`mean`/`spread`/`pot`
+— what a player is capable of) and points at exactly one existing lever: `mature`, the
+per-grade step `_gen_seat` already uses to accelerate `development`'s climb toward its
+ceiling. Neglect is that same mechanism, run negative — a governor on the exact thing
+`development` is a booster for, which is why the two read as mirrors of each other in
+both the code and the tests.
+
+**Verified empirically, not just by the arithmetic**: a neglected program's freshmen are
+BYTE-IDENTICAL to an untagged program's (ceiling generation never reads `mature`, and
+the maturity step is `mature * (grade - 9)` — zero at grade 9), and its seniors' growth
+sits below baseline, which sits below `development`'s. `arrival diff neglect vs base:
+0.0` in the first test run — not "close", exactly zero, which is the strongest
+confirmation the spec landed where it was supposed to.
+
+> ⚠️ **The magnitude has a hard ceiling of its own, and it is not the classification
+> band.** `_gen_seat` adds this constant once per grade elapsed, so the year-over-year
+> CHANGE in a neglected player's maturity is the constant itself. If it ever exceeded
+> `DEV_MIN_STEP` (0.045 — the per-year development floor "nobody stagnates" is built
+> on), a harshly-neglected senior could read as LESS mature than they were as a junior:
+> reversing development, not dampening it, which directly contradicts the owner's
+> framing. `NEGLECT_MATURE = (-0.030, -0.012)` was chosen with that ceiling checked
+> first, then confirmed by simulating both eras' trajectory models at the harshest
+> roll across ten entry years — monotonic in every case.
+
+**"I want to be able to constrain some programs partially"** turned out to be a
+statement about the ARCHETYPE's own shape, not about which programs get tagged. Every
+other archetype in the table is one fixed constant; Neglect is the first to be a RANGE
+— `neglect_severity(school_name)` draws each tagged school ONE stable point in it, the
+same one-point-per-band idiom `roster_size` already uses for depth. A real
+under-resourced program is not a uniform, on/off kind of bad, and a single shared
+number would have flattened "partially" into exactly the binary switch the owner asked
+not to build. It also makes severity itself usable as the A/B axis — compare outcomes
+against the DRAWN number, not just against the tag — on top of the ordinary A/B the tag
+already gives for free (tag some programs, not others).
+
+## The DRY fix Neglect's own wiring surfaced
+
+Adding a fifth archetype meant touching every place that names the editable four, and
+one of them was duplicated: `jhsaa.EDITABLE_ARCHETYPES` is the ONE list the whole
+association is supposed to read, but `/editor/jhsaa-archetype` and
+`/editor/jhsaa-archetype-bulk` each hardcoded their OWN literal tuple of the same three
+names to validate a POST against. Adding `neglect` to the real list and not to those
+two would have made it appear on the editor's dropdown (which reads `EDITABLE_ARCHETYPES`
+correctly) while every submission of it silently no-opped — a control that looks like
+it works and writes nothing.
+
+Both routes now read `jhsaa.EDITABLE_ARCHETYPES` directly. A regression test
+(`test_upstart_is_not_a_storable_tag`) used to assert this by regex-parsing the route's
+source for a literal `if kind in (...)` tuple — which broke the moment the tuple became
+a name — so it was rewritten to assert the constant's membership directly AND that the
+route's source references `EDITABLE_ARCHETYPES` by name, so a future archetype can't
+reintroduce the same silent duplication without failing a test for it.
+
+> ⚠️ Same shape as the `RENAMES`/`LOCALITIES`/`MASCOTS` display-name-keyed-table class of
+> bug from round one, in miniature: a single list that TWO call sites are each supposed
+> to agree with, with nothing enforcing that they do. The fix is the same in both cases
+> — there should be exactly one copy, and every reader should read IT.
+
+## Six 8A expansions
+
+Six of the seven 8A girls-only programs found earlier this round (Covenant Christian,
+Crow Basin, Leonard Coleman, Malcolm X Shabazz, Quarry Workers, Red Mesa) gained boys
+tennis, added to `EXTRA_SPONSORS` beside the existing Minnesota City precedent — the
+exact same shape (a school already sponsoring girls that lost the boys' sub-roll), so
+no new mechanism was needed. `Larchmont Ridge` was named explicitly and held back;
+it is the one 8A girls-only program left. No league redraw was needed for any of the
+six — every one already carried a `boys_district` identical to its `girls_district`
+(a league is drawn once per classification over the girls-inclusive pool, so the row
+was always there; only the `boys` flag was false), and every affected league's boys
+count lands well under `MAX_DISTRICT` (11 the highest, Four Rivers Interscholastic
+League).
+
+## A branch reset, not a rebase — because the PR had already merged
+
+Before this round started, `PR #308` — everything in rounds one and two — had already
+merged into `main` (plus unrelated work landed by other sessions: the JV season,
+analytics). The owner's "rebase main before starting" is not literally what happened:
+a rebase replays commits already on the branch onto a new base, and every commit on
+this branch was already IN that base. The correct move, per this repo's own standing
+rule for a merged PR, was to restart the branch from `origin/main` — `git checkout -B
+<branch> origin/main` — rather than attempt a rebase with nothing left to replay.
+
+## Where the move list came from
+
+The owner supplied two things: a plain list of `school -> class` pairs, and — separately,
+mid-session — a pair of research-export zips for the actual 2039 season, "for context...
+which might not be reflected in the repo, but should be." Cross-checking the two showed
+the committed `data/jhsaa/schools.json` had drifted from the live save it was meant to
+describe (e.g. `Baptist` was archived at `class=1A, group=4A` — already playing up —
+while the committed file had it at a bare 1A with no override). The move list matches
+the export's TARGET classes, not its stale committed state, which is what "the enrollment
+is just scaled to meet the new class" (owner, this round) actually resolves: the fictional
+number follows wherever the owner's decision says the school now plays, not wherever a
+stale JSON row still says it does.
+
 ## The generated documents this run added
 
 Each exists because the hand-kept version of it was wrong, and each is regenerated after
