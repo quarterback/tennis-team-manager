@@ -17,12 +17,12 @@ questions still open, so nothing gets re-litigated or silently re-invented.
 |---|---|
 | **Format** | **Flighted** — 3 singles + 3 doubles per classification per gender |
 | **Flights** | S1 · S2 · S3 · D1 · D2 · D3 (six per class per gender = **108 titles**) |
-| **Mixed doubles** | A separate state title, run **in the summer** |
+| **Mixed doubles** | A **consolation** event — **one entry per school** from below #9, run **in the summer** |
 | **When** | **PRESEASON**, before the league season |
 | **Field** | Every school enters its holder of each flight — **no district quota** |
 | **Draw** | Statewide qualifying rounds → a **32-team championship draw** |
-| **Results** | **Credit `records`** (so they move the ladder) |
-| **Awards** | **Excluded** — no interaction with All-State / POY |
+| **Results** | **Full credit** — `records` (ladder) *and* `matches` (awards), like any other match |
+| **Awards** | **Included** for the six same-gender flights (zero new code). **Mixed doubles: no awards credit at all** |
 | **Honours** | Champion gets its own colour tag; OF / QF / SF / F recorded per player |
 
 ### Why preseason
@@ -154,39 +154,128 @@ nothing yet to stack against.
 
 ---
 
-## Mixed doubles
+## Mixed doubles — the consolation event
 
-A separate state title, **run in the summer** (owner: *"running mixed doubles state
-title in the summer is the best idea when there are no matches"*).
+**‼️ THIS IS NOT A MARQUEE EVENT.** Owner, correcting a draft that offered "each
+school's top boy + top girl" as an option: it is *"a consolation event essentially for
+all those kids who don't get into the main draw flighted state tournament"* — i.e.
+**everyone below #9**, the players the six-flight slate has no seat for.
+
+- **Pool: roster ranks #10 and down**, both genders, same school.
+- **Run in the summer** (owner: *"when there are no matches"*). Boys play a fall
+  calendar and girls a spring one, so no in-season date has both squads available;
+  summer sits after the girls' season and before the boys', the only window where both
+  rosters are idle. That is why it works, not merely where it fits.
+
+### ONE ENTRY PER SCHOOL
+
+Owner rule: **each school enters exactly one mixed pair.** So the event is a single
+flight, not a ladder of them — one draw per classification, 82-95 entries, a 128
+bracket like every other flight.
+
+The entry is each school's **best available pair from below #9** — its rank #10 boy
+with its rank #10 girl. Every roster clears this trivially: `ROSTER_FLOOR` is 16 and
+the main draw consumes the top nine, so **every school in the association carries at
+least 16 − 9 = 7 players below #9 in each gender**, measured median 8 and never fewer
+than 7 across a 25-school-per-class sample of real 2039 rosters. There is no
+eligibility edge case to handle.
+
+That depth is worth recording anyway, because it is what a future "more than one entry"
+decision would be sized against:
+
+| Class | Girls below #9 (median) | Boys below #9 | Fieldable pairs (median) | Worst case |
+|---|---:|---:|---:|---:|
+| 9A | 13 | 13 | 12 | 8 |
+| 8A | 14 | 12 | 10 | 7 |
+| 7A | 11 | 10 | 9 | 7 |
+| 6A | 12 | 12 | 10 | 7 |
+| 5A | 10 | 8 | 7 | 7 |
+| 4A | 10 | 9 | 8 | 7 |
+| 3A | 9 | 10 | 7 | 7 |
+| 2A | 7 | 8 | 7 | 7 |
+| 1A | 7 | 7 | 7 | 7 |
+
+Seven flights would have been fieldable association-wide and would have served the
+entire below-#9 cohort — at 5,439 matches against 777, i.e. +21% on the season rather
+than +15%. **One entry per school was chosen instead**; the alternative is priced here
+rather than re-derived later.
 
 - **Mechanically free.** `engine/gtt.py` already runs mixed doubles (*"one man + one
   woman a side"*) and `engine.doubles` is gender-agnostic, so `simulate_doubles` on a
-  (boy, girl) pair works today. The GTT tour is the existing model — it has simply
-  never been run as a tournament.
-- **Eligibility: 786 schools sponsor both genders**, so every boys' program has a
-  girls' program at the same school. 82–95 per classification.
-- **Why summer.** Boys play a fall calendar and girls a spring one, so no in-season
-  date has both squads available. Summer sits after the girls' spring season and
-  before the boys' fall one — the only slot where both rosters are idle, which is
-  exactly why it works.
-- Cost: ~1,000 matches (777 qualifying-equivalent + 279 championship), **+1.4%**.
+  (boy, girl) pair works today. The GTT tour is the model; it has simply never been run
+  as a tournament.
+- **Eligibility: 786 schools sponsor both genders** — every boys' program has a girls'
+  program at the same school. 82-95 per classification.
+
+### Cost
+
+**777 matches** (786 eligible schools − 9 classification draws), **+1.1%** on the
+season. The cheapest part of the whole event.
 
 ---
 
-## Records, ladder and awards
+## Records, ladder and awards — FULL CREDIT
 
-- **Results credit `TeamSeason.records`** — this is what produces the ladder effect
-  described above, and it is the main reason the event is preseason.
-- **Results do NOT enter `TeamSeason.matches`** — which is what keeps them out of the
-  awards. `jhsaa_awards.build_pool` reads `matches` (via `_collect`), so writing
-  records only is a one-line separation rather than a filter every award reader has
-  to remember. ‼️ `_credit` currently writes **both**; the individual tournament needs
-  a records-only credit path.
-- **Awards are explicitly out of scope** (owner: *"we can exclude this from awards if
-  it's not included currently and adds more complexity, that's easy"*). `jhsaa_awards`
-  today states in as many words that Jefferson has no individual tournament and none
-  is invented — that comment needs updating to say the event exists but is deliberately
-  not an awards input, so a future pass does not "fix" the omission.
+Owner call: *"the easiest implementation is full credit to state matches, treat them
+like the regular season + playoffs, easiest idea no fuss."* Correct, and it is not
+merely easier — **for the six same-gender flights it is literally zero new code.**
+
+The options, which an earlier draft asserted past instead of presenting:
+
+| Option | Ladder | Awards | Work |
+|---|---|---|---|
+| **A — full credit (CHOSEN)** | yes | yes | **none** |
+| B — records only | yes | no | a records-only path on `_credit` |
+| C — neither | no | no | none, but loses the whole point |
+
+Why A is free:
+
+- `_credit` **already** writes both `ts.records` and `ts.matches`.
+- `_phase_weight` applies `PHASE_WEIGHT` only `if phase in postseason`, so a new phase
+  that is simply *not* in `POSTSEASON` weights at **1.0** — an ordinary match — with
+  nothing to configure. "Treat them like the regular season" is the default behaviour.
+- The flights price themselves: `FLIGHT_WEIGHTS` already carries **S1 1.00 · S2 0.75 ·
+  S3 0.25 · D1 1.00 · D2 0.50 · D3 0.25**, which is exactly the tournament's six.
+- Opponents are real players with real pids, so `_q_singles` / `_q_pairs` resolve
+  normally.
+
+Option B was the version needing new machinery. Good instinct.
+
+### ‼️ BUT MIXED DOUBLES CANNOT TAKE FULL CREDIT — two concrete faults
+
+`jhsaa_awards.build_pool` is **per gender**, and a mixed pair spans both. Credit an XD
+match into `matches` and two things go wrong, neither loudly:
+
+1. **`_weight` silently prices an unknown flight at 0.25** —
+   `FLIGHT_WEIGHTS.get(slot, 0.25)`. An `XD3` slot is not in the table, so it takes a
+   default nobody chose. This is the same class of fault CLAUDE.md already documents
+   for `rating._flight_score` (*"a missing weight is a missing DECISION"*) — except the
+   rating path **raises** and the awards copy **defaults**.
+2. **A mixed partnership can reach an All-State doubles team with a cross-gender
+   partner.** `_pairs` builds EVERY partnership keyed on sorted pids, deliberately
+   ungated by discipline, so a (boy, girl) pairing logged in the boys' pool is a
+   candidate there. `MIN_PAIR_MATCHES` is 6 and a mixed finalist plays 6-7 matches, so
+   this is **reachable, not hypothetical** — and it would put a girl on the boys'
+   All-State team. Opponent pids from the other gender also fail to resolve in
+   `_q_pairs` and fall back to 0.5, the documented cross-class default.
+
+**‼️ OWNER RULE: mixed doubles gets NO awards credit for anything.** It credits
+`records` only — it still moves the ladder, which is the whole point of a consolation
+event for depth players — and never enters `matches`. One boolean on the credit call
+for one event, rather than the blanket split option B would have imposed everywhere.
+
+That rule is what makes the two faults above moot rather than merely mitigated: an XD
+slot never reaches `_weight`, so nothing is priced at a default nobody chose, and a
+cross-gender pairing never reaches `_pairs`, so it cannot surface on an All-State team.
+**Do not "complete" the integration later** — reversing this needs XD entries in
+`FLIGHT_WEIGHTS` *and* a same-gender gate in `_pairs`, and it was declined on purpose,
+not left undone.
+
+`jhsaa_awards`'s module docstring currently states that Jefferson has no individual
+tournament and none is invented. It must be updated to say the event exists, that the
+six same-gender flights **are** an awards input, and that **mixed doubles is excluded
+by owner rule** — so a later pass neither "fixes" the omission nor reads the exclusion
+as an oversight.
 
 > ⚠️ Known consequence of crediting records: entering and losing early is a small
 > ladder *penalty* relative to a teammate who did not enter. At `LADDER_PRIOR` 8 a 1-1
@@ -240,7 +329,7 @@ must be **stored**, not folded — nothing else can reproduce it.
 | | Matches | Note |
 |---|---:|---|
 | Six flights, all schools | 9,792 | 82–107 per flight × 6 × 18 class-genders |
-| Mixed doubles | 777 | 786 eligible schools, 9 classes |
+| Mixed doubles | 777 | 786 eligible schools, 9 classes, one entry each |
 | Championship draws | *included above* | the split is free — `entries − 1` either way |
 | **Total** | **~10,600** | **+15%** on the ~71,400-match season |
 
@@ -253,21 +342,17 @@ this should be too.
 
 ## Open decisions
 
-1. **Mixed doubles entry pool.** Owner suggested *"in lieu of 4th doubles… those kids
-   in that pool"*. With three doubles flights covering ranks #4-#9, the D4-equivalent
-   tier is roughly #10-#11 in each gender — a depth event. The alternative is each
-   school's **top boy + top girl**, which makes it a marquee event instead. Not decided.
-2. **Qualifying/main-draw cut size.** 32 is the working assumption; 16, 48 and 64 are
+1. **Qualifying/main-draw cut size.** 32 is the working assumption; 16, 48 and 64 are
    all free to choose since cost depends only on the field.
-3. **Number of seeds.** `run_tournament` defaults to a quarter of the bracket
+2. **Number of seeds.** `run_tournament` defaults to a quarter of the bracket
    (128 → 32). Fine unless a reason appears.
-4. **Match format.** The NCAA event uses best-of-3, no-ad, with a 10-point match
+3. **Match format.** The NCAA event uses best-of-3, no-ad, with a 10-point match
    tiebreak as the final set (`INDIV_FMT`). JHSAA play is all no-ad and doubles is a
    full best-of-3, so a decision is needed on whether the individual event keeps the
    match tiebreak or plays a real third set.
-5. **Does 1A's 2S/3D pilot touch this?** It should not — the tournament flights are
+4. **Does 1A's 2S/3D pilot touch this?** It should not — the tournament flights are
    defined independently of any dual format — but worth an explicit test.
-6. **Naming.** "State qualifying" for the preliminary rounds (owner's phrasing: *"it's
+5. **Naming.** "State qualifying" for the preliminary rounds (owner's phrasing: *"it's
    still state it's just called state qualifying"*).
 
 ---
