@@ -417,6 +417,20 @@ reintroduce the same silent duplication without failing a test for it.
 > to agree with, with nothing enforcing that they do. The fix is the same in both cases
 > — there should be exactly one copy, and every reader should read IT.
 
+## Six 8A expansions
+
+Six of the seven 8A girls-only programs found earlier this round (Covenant Christian,
+Crow Basin, Leonard Coleman, Malcolm X Shabazz, Quarry Workers, Red Mesa) gained boys
+tennis, added to `EXTRA_SPONSORS` beside the existing Minnesota City precedent — the
+exact same shape (a school already sponsoring girls that lost the boys' sub-roll), so
+no new mechanism was needed. `Larchmont Ridge` was named explicitly and held back;
+it is the one 8A girls-only program left. No league redraw was needed for any of the
+six — every one already carried a `boys_district` identical to its `girls_district`
+(a league is drawn once per classification over the girls-inclusive pool, so the row
+was always there; only the `boys` flag was false), and every affected league's boys
+count lands well under `MAX_DISTRICT` (11 the highest, Four Rivers Interscholastic
+League).
+
 ## A branch reset, not a rebase — because the PR had already merged
 
 Before this round started, `PR #308` — everything in rounds one and two — had already

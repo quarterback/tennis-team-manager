@@ -1944,6 +1944,21 @@ EXTRA_SPONSORS = frozenset({
     # over the girls-inclusive pool), so their `boys_district` was already filled in
     # and the 2A Desert Sky boys' half simply goes 7 → 8, well inside MAX_DISTRICT.
     "Minnesota City",
+    # ‼️ SIX MORE EXPANSIONS, same shape as Minnesota City above (owner rule 2026-08):
+    # each already sponsored girls and lost the boys' sub-roll, leaving 8A with seven
+    # girls-only programs. `Larchmont Ridge` was the seventh and is deliberately left
+    # off this list — the owner named the other six explicitly and held it back. No
+    # league redraw needed for any of these either: all six already carry a
+    # `boys_district` identical to their `girls_district`.
+    "Covenant Christian",           # 8A 1878 — Ashbury Metro, Ambassador League
+    "Llerena School of Science and Industry",   # Crow Basin, 8A 1988 — Halbrook Basin,
+                                     # Four Rivers Interscholastic League
+    "Leonard Coleman",              # 8A 2024 — Ashbury Metro, Ambassador League
+    "Sergei Belov",                 # Malcolm X Shabazz, 8A 1751 — Sebastian Cape,
+                                     # South Coast League
+    "Rosa Salcedo",                 # Quarry Workers, 8A 1745 — Sebastian Cape,
+                                     # Pacific Coast League
+    "Clara Cross",                  # Red Mesa, 8A 1713 — Gold Valley, Gold Valley League
 })
 
 # ‼️ LOCALITY — the settlement a school belongs to INSIDE its city (owner spec,

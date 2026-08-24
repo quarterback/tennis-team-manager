@@ -3831,7 +3831,7 @@
         "#3ba55d"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Ambassador League",
       "boys_district": "Ambassador League",
       "locality": "Tuskegee"
@@ -3970,7 +3970,7 @@
         "#1d1d1f"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Four Rivers Interscholastic League",
       "boys_district": "Four Rivers Interscholastic League"
     },
@@ -8289,7 +8289,7 @@
         "#b7a57a"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Ambassador League",
       "boys_district": "Ambassador League"
     },
@@ -8796,7 +8796,7 @@
         "#e8c46b"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "South Coast League",
       "boys_district": "South Coast League",
       "source": "Sergei Belov",
@@ -11942,7 +11942,7 @@
         "#f4f1ea"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Pacific Coast League",
       "boys_district": "Pacific Coast League",
       "source": "Rosa Salcedo"
@@ -12139,7 +12139,7 @@
         "#e5e7eb"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Gold Valley League",
       "boys_district": "Gold Valley League",
       "source": "Clara Cross"
