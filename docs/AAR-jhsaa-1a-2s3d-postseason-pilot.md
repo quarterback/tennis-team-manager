@@ -70,148 +70,76 @@ case stays legal, per the standing owner ruling in `AAR-jhsaa-order-of-ability.m
 
 ---
 
-## The calibration, in full
+## The calibration — headline numbers
 
-`scripts/jhsaa_1a_format_pilot_calibration.py`, run against all **179** 1A programs
-with a full postseason roster (**93 girls / 86 boys**), 2039 rosters, `FIDELITY="fast"`.
-The ladder here is pure ability (no season played), so this measures the FORMAT, not
-a particular year's results.
+**‼️ THE FULL DATA RECORD IS `docs/reports/REPORT-jhsaa-dual-shape-competitiveness.md`**
+— every table, the method, the cross-shape sweep and both measurement traps. It is the
+single source; what follows is the summary the decision was made on, and if the two
+ever disagree the report is right.
 
-### Participation — what it costs, and who it promotes
+Measured with `scripts/jhsaa_1a_format_pilot_calibration.py` over all **179** 1A
+programs (93 girls / 86 boys), 2039 rosters, **20 trials per pairing** (~1,800 duals a
+cell), `FIDELITY="fast"`. Ladder is pure ability, so this measures the FORMAT rather
+than a particular year's results.
 
-| | |
-|---|---|
-| Player cut entirely from the postseason roster (was seat #9 of 9) | mean OVR **27.8**, median 28.0 |
-| Gap from that player up to seat #8, the last who still dresses | mean **2.03** OVR, **median 1.00** |
-| Programs where the cut player is within 2 OVR of dressing | **127 / 179 (71%)** |
+**What it costs.** 2S/3D dresses eight where 1S/4D dresses nine. The cut player
+averages 27.8 OVR and sits a **median 1.0 OVR** below the last player who still
+dresses; for **71% of programs (127/179)** that gap is inside 2 OVR. This is a close
+call 179 times over, not a scrub being trimmed — the number belongs beside the upside,
+not under it.
 
-**This is the cost, stated plainly: for 71% of 1A programs the kid who loses their
-postseason spot is within two OVR of the last player who keeps one.** It is not a
-scrub being trimmed; it is a close call, 179 times. The owner accepted it knowingly —
-a 24-team playoff where a program needs one fewer kid to contend is worth it — but
-the number belongs on the record beside the upside, not under it.
+**What it buys.** The new S2 court goes to the **#2 player 79%** of the time, #3 20%,
+#4 2% — the stated point of the change, with a coaching choice that genuinely fires
+~21% of the time rather than a fixed allocation wearing a search's clothes.
 
-Who gets the new S2 court, by rank in the top-four pool:
+**What it does to a match.** In evenly-matched duals the format decides **~27-30% of
+outcomes** (same winner under both shapes only 70% girls / 73% boys) — the same kids,
+opponent and seed, a different answer. Mismatched duals agree **85-90%** and the upset
+rate moves ≤3 points in any cell, so it flips close matches without making the
+association chaotic.
 
-| Rank | Programs | Share |
-|---|---|---|
-| #2 | 141 | **79%** |
-| #3 | 35 | 20% |
-| #4 | 3 | 2% |
+**And the nailbiter rate is a FEATURE, not a caveat** (owner, 2026-08): an
+evenly-matched 1A dual lands 3-2 **~70% of the time under BOTH formats**. A five-point
+shape in a flat field is coin-flip-adjacent by construction, and that is the juice a
+24-team 1A bracket is meant to have. An early draft of this document filed that row
+under "noise" and buried the most characteristic number in the study.
 
-So the format overwhelmingly promotes the **#2 player to a real singles court** —
-which is the stated point of the change — while leaving the coach a live choice that
-actually fires ~21% of the time. A rule that produced 100% "#2 plays S2" would have
-been a fixed allocation wearing a search's clothes; this one is a real decision.
+### ‼️ THE BOYS/GIRLS SPLIT IS THE FIELD, NOT THE FORMAT
 
-### Competitiveness — same pairings, both formats, matching seeds
-
-Two pairing sets per gender: **evenly matched** (adjacent by team strength — what a
-bracket's later rounds look like) and **mismatched** (top half vs bottom half).
-**20 trials per pairing** (`--trials`, the default): each pairing is replayed under 20
-distinct seeds, both formats always seeing the same one, so the comparison stays
-paired. That is ~1,780 duals a cell against the ~45 a single trial gives.
-
-| | Girls, even | Boys, even | Girls, mismatched | Boys, mismatched |
-|---|---|---|---|---|
-| Duals | 920 | 860 | 920 | 860 |
-| **Same winner under both formats** | **70%** | **73%** | 85% | 90% |
-| Upset rate, 1S/4D → 2S/3D | 47% → 50% | 49% → 50% | 16% → 16% | 11% → 10% |
-| Mean margin (of 5 points), 1S/4D → 2S/3D | 1.73 → 1.67 | 1.66 → 1.76 | 2.79 → 2.72 | 3.05 → 3.09 |
-| **Nailbiters (3-2), 1S/4D → 2S/3D** | **67% → 70%** | **70% → 68%** | 35% → 40% | 33% → 33% |
-
-**Headline 1: in evenly-matched duals the format decides ~27-30% of outcomes.** Only
-70% (girls) / 73% (boys) of close pairings produce the same winner under both shapes —
-the same eight or nine kids, the same opponent, the same seed, a different answer.
-That is the "flips outcomes" property the owner wanted, and it is exactly where you
-want it: in the bracket's close matches, not in the blowouts.
-
-**Headline 2 — and this is a FEATURE, not a caveat (owner, 2026-08):** an
-evenly-matched 1A dual lands on **3-2 about 70% of the time, under BOTH formats**. A
-five-point shape in a flat field is a coin-flip-adjacent tournament by construction,
-and that is the juice a 24-team 1A bracket is supposed to have. An earlier draft of
-this document filed the nailbiter row under "noise, do not build a rule on it", which
-buried the most characteristic number in the study. The format does not create the
-nailbiters — the field does — but it is the reason they matter, and 2S/3D preserves
-the property rather than flattening it.
-
-**It does NOT make the association more chaotic.** Mismatched duals agree 85-90% of
-the time and the upset rate barely moves in any cell (≤3 points, and DOWN in boys'
-mismatched). A clearly better team stays clearly better under either shape; 2S/3D
-reshuffles WHICH close matches flip.
-
-### ‼️ THE BOYS/GIRLS SPLIT IS STRUCTURAL, AND IT IS NOT A FORMAT EFFECT
-
-A single-trial run reported the nailbiter rate moving in **opposite directions by
-gender** (boys 81%→53%, girls 63%→72%). That specific swing was **sampling noise** and
-is gone at 20 trials (boys 70%→68%, girls 67%→70%) — which is exactly why the trial
-count exists, and why no rule should ever be built on a ~45-dual cell.
-
-But there IS a real gender difference underneath, and it belongs on the record because
-it explains the durable part of the table. Owner's read — *"1A teams are kind of
-balanced weird; boys tennis has higher STR abilities meaning the top teams kind of
-separate themselves, whereas the girls are more evenly matched by design"* — is
-confirmed by direct measurement of the 1A field:
-
-| 1A programs | Girls (93) | Boys (86) |
-|---|---:|---:|
-| Team strength, top-9 mean OVR | 38.52 | **42.09** |
-| Spread (sd) | 4.27 | **4.64** |
-| p90 − p10 | 10.78 | **12.11** |
-| Best player OVR | 58.22 | **60.76** |
-| Best player STR | 47.56 | **48.66** |
-
-Boys' 1A is both **stronger and more spread**: the good programs separate. Girls' 1A
-is flatter. That shows up in the calibration exactly where you would expect — the
-**mismatched** cells, not the nailbiter row:
-
-| Mismatched | Girls | Boys |
-|---|---:|---:|
-| Same winner under both formats | 85% | **90%** |
-| Upset rate (2S/3D) | 16% | **10%** |
-| Mean margin | 2.79 | **3.09** |
-
-**More separation → bigger margins, fewer upsets, and less room for the format to
-change anything.** So 2S/3D has more leverage in girls' 1A than boys', and that is a
-property of the FIELD, not of the shape. Do not "fix" it, and do not read a
-girls/boys gap in a future run as a format regression without checking the strength
-distribution first.
+Boys' 1A is both stronger and more spread (top-9 mean OVR **42.09 vs 38.52**, sd 4.64
+vs 4.27, p90−p10 12.11 vs 10.78) — the good programs separate, while the girls' field
+stays flat by design. So 2S/3D has **more leverage in girls' 1A**: mismatched duals
+agree 85% (girls) against 90% (boys), upsets 16% against 10%. That is a property of the
+FIELD, not of the shape — never read a gender gap in a future run as a format
+regression without checking the strength distribution first. Full table in the report.
 
 ### ‼️ WHY FIVE COURTS — and why 2S/3D was the only shape that could work
 
-The owner's standing preference is for 1S/4D *over* a traditional shape. A follow-up
-sweep across eight odd-court shapes — **full tables, method and caveats in
-`docs/reports/REPORT-jhsaa-dual-shape-competitiveness.md`** — confirms the preference
-and identifies what actually drives it.
+The report's cross-shape sweep (eight odd shapes, both genders) is what justifies the
+pilot's *particular* shape rather than any other second-singles format.
 
-**Court count dominates.** A five-court dual finishes on a single court **61-73%** of
-the time; a seven-court one **58-60%**, and every seven-court shape sits in that band
-regardless of composition. Holding the doubles share roughly fixed and changing only
-the court count (3S/4D, 57% doubles, 7 courts → 2S/3D, 60% doubles, 5 courts) moves it
-**8-13 points**. The mechanism is sampling, not tennis: a dual is an average over its
-courts and fewer courts average less.
+**Court count dominates.** Five-court duals finish on a single court **61-73%** of the
+time; seven-court duals **58-60%**, whatever their composition. Holding doubles share
+roughly fixed and changing only court count (3S/4D, 57% doubles, 7 courts → 2S/3D, 60%
+doubles, 5 courts) moves it **8-13 points**. The mechanism is sampling, not tennis: a
+dual is an average over its courts and fewer courts average less.
 
-**Doubles share is a real secondary term** — worth ~6-10 points across the full sweep
-at constant five courts (80% → 0% doubles: girls 68/73/70/65/63, boys 67/67/62/62/61).
-⚠️ The first version of this said doubles was irrelevant, on the strength of a narrow
-seven-court sweep that really is flat; the full sweep reversed that qualitative claim.
-See the report's §2 — **do not state a conclusion wider than the range swept.**
+**Doubles share is a real secondary term** — ~6-10 points across a full 80%→0% sweep at
+five courts. ⚠️ An earlier version of both documents said doubles was irrelevant, on
+the strength of a narrow seven-court sweep that genuinely is flat; the full sweep
+reversed that. **Do not state a conclusion wider than the range swept.**
 
-Either way the pilot's shape is the *only* one available. Adding a real second singles
-seat while holding five courts means taking it from doubles — 2S/3D. **2S/4D and 3S/3D
-are six courts and can TIE** (the association has no tie-break and wants none), and
-2S/5D or 3S/4D drop to seven courts and give up the closeness. So 2S/3D is not a step
-toward tradition; it is the maximum singles content available at five courts, and it
-happens to sit at or near the PEAK of the doubles-share curve in both genders
-(girls 73%, the highest of any shape measured; boys 67%, tied with 1S/4D).
+So the shape is forced: adding a real second singles seat while holding five courts
+means taking it from doubles — **2S/3D**. 2S/4D and 3S/3D are six courts and can TIE
+(no tie-break exists, by design); 2S/5D and 3S/4D are seven and give the closeness up.
+The pilot is not a step toward tradition — it is the maximum singles content available
+at five courts, and it sits at or near the **peak** of the doubles-share curve in both
+genders (girls 73%, highest of any shape measured; boys 67%, tied with 1S/4D).
 
-For reference, since it is the natural comparison and was asked for directly: **3S/2D,
-the classic American high-school format**, lands at 70% (girls) / 62% (boys) — level
-with 1S/4D in girls, ~5 points below in boys, clear of every seven-court shape, and
-the cheapest roster of any shape measured (dresses **seven**). A legitimate format,
-not adopted; it is where the doubles-forward identity starts to go.
-
----
+For reference, **3S/2D — the classic American format** — lands at 70% (girls) / 62%
+(boys), level with 1S/4D in girls and clear of every seven-court shape, dressing only
+seven. Legitimate, measured, not adopted (owner: *"I'm not gonna switch to it, but I am
+curious how it compares"*); 40% doubles is where the doubles-forward identity goes.
 
 ## ‼️ THE CALIBRATION SEED MUST BE A STABLE DIGEST, NEVER `hash()`
 
