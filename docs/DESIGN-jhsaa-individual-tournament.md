@@ -17,10 +17,10 @@ questions still open, so nothing gets re-litigated or silently re-invented.
 |---|---|
 | **Format** | **Flighted** — 3 singles + 3 doubles per classification per gender |
 | **Flights** | S1 · S2 · S3 · D1 · D2 · D3 (six per class per gender = **108 titles**) |
-| **Mixed doubles** | A **consolation** event — **one entry per school** from below #9, run **in the summer** |
+| **Mixed doubles** | A **consolation** event — **one flight, one bracket**, one entry per school from below #9, run **in the summer** |
 | **When** | **PRESEASON**, before the league season |
 | **Field** | Every school enters its holder of each flight — **no district quota** |
-| **Draw** | Statewide qualifying rounds → a **32-team championship draw** |
+| **Draw** | **One flat 128 bracket** — R128 · R64 · R32 · Octofinals · QF · SF · Final, with byes |
 | **Results** | **Full credit** — `records` (ladder) *and* `matches` (awards), like any other match |
 | **Awards** | **Included** for the six same-gender flights (zero new code). **Mixed doubles: no awards credit at all** |
 | **Honours** | Champion gets its own colour tag; OF / QF / SF / F recorded per player |
@@ -81,15 +81,23 @@ plainly. Per-flight fields are **82–107** (see below), so:
 A district gate makes every program's matches *extra*, on top of the state draw.
 An open field pays for them once.
 
-### ‼️ THE QUALIFYING / MAIN-DRAW SPLIT IS FREE
+### ONE FLAT 128 DRAW — no qualifying event
 
-Single-elimination total matches = **entries − 1**, whatever shape it is cut into. So
-"state qualifying rounds feeding a 32-team championship draw" costs *exactly* the
-same as one flat 128 bracket. The split is presentation, not cost — which means it
-should be chosen for how it reads, and it reads well: it mirrors the team side's
-own **"a 40 is a 24 with a qualifiers round in front of it"** (`run_state(champions=)`),
-whose bracket page already renders **two trees** (`state._jh_split_state`) precisely
-because there is no positional path from a qualifying slot to a main-draw slot.
+Owner rule: *"NJSIAA runs a 128-person state tournament over several weeks, so JHSAA
+can run one too… R128, R64, R32, 8F, QF, SF, F and byes work."*
+
+So there is **no separate qualifying event and no two-tree bracket.** Every school's
+flight holder enters one draw; the field (82-107) sits in a 128 bracket and the top
+seeds take byes into R64. `engine.run_tournament` produces exactly this natively —
+it sizes the bracket to the next power of two and `seeded_draw` places the byes on the
+top seeds, so a partial first round is the normal case, not a special one.
+
+Rounds: **R128 → R64 → R32 → Octofinals → Quarterfinals → Semifinals → Final.**
+
+**Cost is identical either way**, which is why the structure could be chosen purely on
+how it reads: single-elimination total matches = **entries − 1** whatever shape it is
+cut into, so a flat 128 and a qualifying-plus-32 split cost exactly the same. The flat
+draw simply needs less machinery — no `_jh_split_state` equivalent, one tree, one page.
 
 ### Per-flight field, by classification
 
@@ -109,8 +117,9 @@ Every school enters one entry per flight, so the field IS the program count:
 
 `engine.run_tournament` already sizes the bracket itself (next power of two, byes to
 the top seeds via `seeded_draw`), so a 107-entry field needs no special handling. The
-byes are a large share, but the team State draw already runs 24-in-32 (33% byes), so
-this is the association's existing shape at a larger size.
+byes are a large share — 21-46, i.e. a 43-107 match R128 and a full 64 into R64 — but
+the team State draw already runs 24-in-32 (33% byes), so this is the association's
+existing shape at a larger size.
 
 ### If a smaller field is ever wanted
 
@@ -123,8 +132,9 @@ Cost scales with field size only:
 | Top 48 | 5,076 | 423 | 5,499 | +8% |
 | Top 32 | 3,348 | 279 | 3,627 | +5% |
 
-A cut of any kind must be **statewide by seed**, never per-district — that is the
-whole point of the rule above.
+No cut is currently applied — the whole field enters the 128 draw. Were one ever
+wanted, it must be **statewide by seed**, never per-district; that is the whole point
+of the rule above.
 
 ---
 
@@ -167,11 +177,14 @@ all those kids who don't get into the main draw flighted state tournament"* — 
   summer sits after the girls' season and before the boys', the only window where both
   rosters are idle. That is why it works, not merely where it fits.
 
-### ONE ENTRY PER SCHOOL
+### ONE FLIGHT, ONE BRACKET, ONE ENTRY PER SCHOOL
 
-Owner rule: **each school enters exactly one mixed pair.** So the event is a single
-flight, not a ladder of them — one draw per classification, 82-95 entries, a 128
-bracket like every other flight.
+**‼️ MIXED DOUBLES IS NOT FLIGHTED** (owner rule). Unlike the main event's six flights,
+it is a **single draw**: one bracket per classification per year, **one entry per
+school**, 82-95 entries in a 128 bracket with byes — the same shape as one main-event
+flight, but it is the whole event rather than one seventh of it.
+
+There is therefore no XD1/XD2/XD3 ladder, and no per-flight seeding question.
 
 The entry is each school's **best available pair from below #9** — its rank #10 boy
 with its rank #10 girl. Every roster clears this trivially: `ROSTER_FLOOR` is 16 and
@@ -284,6 +297,36 @@ as an oversight.
 
 ---
 
+## ‼️ `_finish_short` IS WRONG FOR A 128 DRAW — fix before shipping
+
+`state._finish_short` bands a finish for the narrow column, and its "Round of N" arm is:
+
+```python
+return "QUAL" if (n.isdigit() and int(n) > 24) else "R1"
+```
+
+That is correct for the TEAM event and its own docstring explains why — *"every field
+converges on the same 24-team main draw at the Octofinals, so a team still alive above
+24 went out in the QUALIFIERS… That holds at any field size, which is why this needs no
+field parameter."*
+
+**It does not hold here.** A 128 individual draw has no qualifying round and no 24-team
+convergence, so under the current function **"Round of 128", "Round of 64" and "Round
+of 32" all render as `QUAL`** — a round nobody played — and three distinct rounds
+collapse into one label.
+
+This is the recurring shape in this codebase: a helper whose invariant is true for every
+existing caller, reused by a new caller for which it is silently false. The docstring
+even asserts the field-independence that the new caller breaks.
+
+Fix: give the individual event its own banding —
+**CHAMP · F · SF · QF · OF · R32 · R64 · R128** — rather than adding a field parameter
+to a function that documents itself as not needing one. `_FINISH_SHORT`'s named labels
+(Champion / Runner-up / Semifinalist / Quarterfinalist / Octofinalist) all carry over
+unchanged; only the "Round of N" arm differs.
+
+---
+
 ## Honours and surfacing
 
 Modelled on the TOC, which already has its own gold tag distinct from the state
@@ -342,18 +385,17 @@ this should be too.
 
 ## Open decisions
 
-1. **Qualifying/main-draw cut size.** 32 is the working assumption; 16, 48 and 64 are
-   all free to choose since cost depends only on the field.
-2. **Number of seeds.** `run_tournament` defaults to a quarter of the bracket
+1. **Number of seeds.** `run_tournament` defaults to a quarter of the bracket
    (128 → 32). Fine unless a reason appears.
-3. **Match format.** The NCAA event uses best-of-3, no-ad, with a 10-point match
+2. **Match format.** The NCAA event uses best-of-3, no-ad, with a 10-point match
    tiebreak as the final set (`INDIV_FMT`). JHSAA play is all no-ad and doubles is a
    full best-of-3, so a decision is needed on whether the individual event keeps the
    match tiebreak or plays a real third set.
-4. **Does 1A's 2S/3D pilot touch this?** It should not — the tournament flights are
+3. **Does 1A's 2S/3D pilot touch this?** It should not — the tournament flights are
    defined independently of any dual format — but worth an explicit test.
-5. **Naming.** "State qualifying" for the preliminary rounds (owner's phrasing: *"it's
-   still state it's just called state qualifying"*).
+4. **Round naming on the card.** "Octofinals" is the association's existing word (the
+   team event uses it); R128/R64/R32 need labels that read as rounds of one tournament,
+   not as a qualifying stage — see the `_finish_short` section above.
 
 ---
 
