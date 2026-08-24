@@ -328,7 +328,7 @@ function render(hits){
     out.push('<tr>' +
       '<td><button type="button" class="pt-star pt-star-inline' + starred + '" data-pid="' + r[PID] +
         '" onclick="toggleShort(this)">' + (list[r[PID]] ? '★' : '☆') + '</button></td>' +
-      '<td><a href="' + player_href(r[PID]) + '">' + esc(r[NAME]) + '</a></td>' +
+      '<td>' + player_link(r[PID], r[NAME]) + '</td>' +
       '<td class="num">' + (r[GRADE] || '—') + '</td>' +
       '<td>' + esc(g[gNAME] || '') + '</td>' +
       '<td><span class="pt-chip">' + esc(g[gCLS] || '') + '</span></td>' +
@@ -355,8 +355,17 @@ function esc(s){
   return String(s).replace(/[&<>"]/g, function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; });
 }
-function player_href(pid){
-  return '../players/' + String(pid).toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/^-+|-+$/g, '') + '.html';
+// ‼️ The JS twin of base.html's `player_link` macro, and it exists for the same
+// reason: ONE place decides whether a player's name is a link. This grid builds
+// its rows in the browser, so it cannot call the macro — but --no-player-pages
+// renders no player HTML at all, and three hand-written anchors here sent every
+// name on the scouting desk, the shortlist and the cohort table to a 404. It
+// escapes the name itself so a call site cannot apply half the rule.
+var PLAYER_PAGES = {{ 'true' if player_pages else 'false' }};
+function player_link(pid, name){
+  if (!PLAYER_PAGES) return esc(name);
+  var slug = String(pid).toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/^-+|-+$/g, '');
+  return '<a href="../players/' + slug + '.html">' + esc(name) + '</a>';
 }
 
 // ---- shortlist -----------------------------------------------------------
@@ -400,7 +409,7 @@ function drawList(){
     out.push('<tr>' +
       '<td><button type="button" class="pt-star pt-star-inline is-fav" data-pid="' + pid +
         '" onclick="removeFromList(this)">★</button></td>' +
-      '<td><a href="' + player_href(pid) + '">' + esc(e.name) + '</a></td>' +
+      '<td>' + player_link(pid, e.name) + '</td>' +
       '<td class="num">' + (e.grade || '—') + '</td>' +
       '<td class="num">' + fmt(e.ovr, 1) + '</td>' +
       '<td>' + esc(e.from) + '</td>' +
@@ -487,7 +496,7 @@ function cohort(){
       '<td><button type="button" class="pt-star pt-star-inline' + (list[r[PID]] ? ' is-fav' : '') +
         '" data-pid="' + r[PID] + '" onclick="toggleShortTo(this)">' +
         (list[r[PID]] ? '★' : '☆') + '</button></td>' +
-      '<td><a href="' + player_href(r[PID]) + '">' + esc(r[NAME]) + '</a></td>' +
+      '<td>' + player_link(r[PID], r[NAME]) + '</td>' +
       '<td class="num">' + (r[GRADE] || '—') + '</td>' +
       '<td class="num">' + fmt(r[OVR], 1) + '</td>' +
       '<td>' + esc(pg[gNAME] || '') + '</td>' +
