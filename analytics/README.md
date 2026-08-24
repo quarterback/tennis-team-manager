@@ -37,6 +37,42 @@ Re-run `python3 build.py` with no arguments to re-render from everything already
 to add/refresh seasons — ingested raw data is cached under `analytics/data/`
 (gitignored) so a season only needs re-passing if you re-exported it.
 
+### ‼️ Ingesting and rendering are separate, and past ~10 seasons that matters
+
+The CACHE is the almanac and costs a few MB of CSV a season; every season you
+have ever ingested stays there whatever you render. The SITE is what gets big,
+because it is O(seasons × entities):
+
+| One season-gender, measured | |
+|---|---|
+| `players/` | **221 MB** · 13,506 pages |
+| `teams/` | 25 MB · 778 pages |
+| everything else | ~4 MB |
+| **total** | **250 MB** |
+
+Fourteen years of both genders is several GB and will run a disk out of space.
+Two levers, and they compose:
+
+```
+python3 build.py --latest 2          # only the newest 2 years, per gender
+python3 build.py --years 2038-2039   # or name them
+python3 build.py --no-player-pages   # drop the career pages: 250 MB -> 27 MB
+```
+
+**`--latest 2`, not `--latest 1`.** Movement and development are differences
+between CONSECUTIVE seasons, so a single rendered season has no prior year to
+diff against and every transfer and growth number is legitimately blank.
+
+`--no-player-pages` keeps every other surface — the scouting desk, the Stat
+Center, the classification report, team pages, rosters and their ladders all
+render; a player's name is simply text instead of a link (one `player_link`
+macro, so no template can forget), and the Players nav item is dropped rather
+than left pointing at a 404 from every page on the site. It is the right flag
+when you are doing market work, which is what the scouting grid serves anyway.
+
+Nothing is lost from the cache either way: re-run without the flags whenever you
+want the whole almanac back.
+
 ## Structure (owner rewrite ×2: 2027-08 nav, 2028-08 data organization)
 
 ‼️ **CLASSIFICATION → DISTRICT IS THE ORGANIZING HIERARCHY ON EVERY PAGE,
