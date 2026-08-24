@@ -352,6 +352,27 @@ tables) are untouched by this round — nothing was forced in or out.
 
 # Round four — a fifth archetype, and a DRY fix it exposed
 
+## There is a fourth archetype already, and it explains some of what you've seen
+
+Before Neglect, `jhsaa.ARCHETYPES` already had four entries, not three: `blue_blood`,
+`development`, `doubles` — and **`upstart`**. The owner had forgotten this one existed,
+which is worth writing down since it explains program surges observed in play that had
+no other cause on the books.
+
+`upstart` is deliberately NOT in the editor and never appears on `/jhsaa/programs` —
+that is by design, not an oversight. It is a temporary, self-expiring run the WORLD
+rolls automatically from the save's own seed, never something an owner assigns: at any
+time roughly ten programs statewide are "having a moment" — 15-30% stronger than their
+own baseline for 2-4 seasons — and then the run ends and they revert, with a fresh set
+picked up elsewhere. Storing it as an editable tag would make it permanent, which is
+the one thing an upstart is not supposed to be (`jhsaa.upstarts()`).
+
+So the full roster, with Neglect added below, is five archetypes: three assignable and
+durable (blue_blood, development, doubles), one assignable and now also durable
+(neglect), and one that is neither assignable nor durable (upstart) — a program
+appearing to catch fire for a season or two with nothing in the editor explaining why
+is very likely this, not a bug.
+
 ## Neglect
 
 A new program archetype, alongside `blue_blood` / `development` / `doubles` / `upstart`
