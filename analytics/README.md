@@ -10,32 +10,174 @@ game's own design system, written like a state-desk beat outlet.
 This tool never touches the game's database or app code. It only reads zips
 you export and drop in.
 
-## Use
+## Running it
 
-```
+Everything operational lives in this section: setup, the everyday commands, how
+to keep the build from filling your disk, and the end-to-end loop from a game
+export to a pasted transfer batch.
+
+### First time only — setup
+
+The sidecar has exactly one dependency (Jinja2), and the game already pulls it
+in via Flask. **Try running it before installing anything:**
+
+```bash
 cd analytics
-pip install -r requirements.txt   # just Jinja2
-python3 build.py path/to/export.zip [more.zip ...]
+python3 build.py
 ```
 
-**Browse it over a local server, not by double-clicking the file.** `cd site &&
-python3 -m http.server 8000`, then open `http://localhost:8000/`. This isn't
-optional cosmetics: "My Teams" (the pin/star feature) stores its data in
-`localStorage`, and browsers scope `localStorage` per ORIGIN — a `file://`
-page has no real origin, so several browsers (Firefox in particular; Chromium
-is inconsistent about it) silently give every `file://…/teams/x.html` and
-`file://…/index.html` its OWN separate storage bucket. Pin a team from a team
-page and it can look empty on the home page's My Teams panel even though
-nothing failed — the star toggled, the write happened, it just didn't land
-anywhere the next page can see. A shared `http://localhost` origin is the
-actual fix; nothing in this app can paper over a browser storage-partitioning
-policy from inside a static page. Everything else on the site (browsing pages,
-filters, search) works fine either way — only the cross-page favorites feature
-needs the server.
+If that works, skip the rest of this subsection. If it errors on Jinja2, and
+`pip install` refuses with *externally-managed-environment*, that is Debian and
+Ubuntu's PEP 668 rule — make a venv:
 
-Re-run `python3 build.py` with no arguments to re-render from everything already ingested, or pass more zips
-to add/refresh seasons — ingested raw data is cached under `analytics/data/`
-(gitignored) so a season only needs re-passing if you re-exported it.
+```bash
+cd analytics
+python3 -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+Once only. Afterwards it is `source .venv/bin/activate` then `python3 build.py`.
+If `python3 -m venv` itself fails, `sudo apt install python3-venv` first.
+`.venv/` and `venv/` are gitignored here.
+
+### The three commands
+
+```bash
+python3 build.py                      # re-render from everything already ingested
+python3 build.py path/to/export.zip   # ingest new/changed seasons, then re-render
+cd site && python3 -m http.server 8000
+```
+
+**`build.py` with NO arguments rebuilds the whole site from the cache.** You
+never need to re-pass a zip to pick up new features or a code change — pass one
+only to add a season or replace one you re-exported. Re-ingesting a scope
+overwrites it, so a re-export is a one-step fix.
+
+Serving needs no venv (`http.server` is stdlib). Open `http://localhost:8000/`.
+
+### ‼️ Browse over `http://localhost`, never `file://`
+
+Not cosmetics. **My Teams** (the pin/star) and the **scouting shortlist** both
+store their data in `localStorage`, and browsers scope that per ORIGIN — a
+`file://` page has no real origin, so several browsers (Firefox in particular;
+Chromium is inconsistent) give every `file://…/x.html` its OWN storage bucket.
+Star a player on the Search tab and the Shortlist tab can come up empty even
+though nothing failed: the write happened, it just did not land anywhere the
+next page can see. A shared `http://localhost` origin is the actual fix, and
+nothing inside a static page can paper over a browser storage policy. Browsing,
+filtering and searching work fine either way — only the features that remember
+things across pages need the server.
+
+### ‼️ Ingesting and rendering are separate, and past ~10 seasons that matters
+
+The CACHE is the almanac and costs a few MB of CSV a season; every season you
+have ever ingested stays in `analytics/data/` whatever you render. The SITE is
+what gets big, because it is O(seasons × entities):
+
+| One season-gender, measured | |
+|---|---|
+| `players/` | **221 MB** · 13,506 pages |
+| `teams/` | 25 MB · 778 pages |
+| everything else | ~4 MB |
+| **total** | **250 MB** |
+
+Fourteen years of both genders is several GB and will run a disk out of space.
+Two levers, and they compose:
+
+```bash
+python3 build.py --latest 2          # only the newest 2 years, per gender
+python3 build.py --years 2038-2039   # or name them (2039 / 2038-2039 / 2031,2038-2039)
+python3 build.py --gender boys       # one gender
+python3 build.py --no-player-pages   # drop the career pages: 250 MB -> 27 MB
+```
+
+`--latest 2 --no-player-pages` is about 54 MB and is the practical default for
+market work. The build prints the finished size and names any season it left
+out, so a shorter site always explains itself.
+
+**`--latest 2`, not `--latest 1`.** Movement and development are differences
+between CONSECUTIVE seasons, so a single rendered season has no prior year to
+diff against and every transfer and growth number is legitimately blank.
+`--latest` counts years PER GENDER, not bundles.
+
+`--no-player-pages` keeps every other surface — the scouting desk, the Stat
+Center, the classification report, team pages, rosters and their ladders all
+render. A player's name is simply text instead of a link, and the Players nav
+item is dropped rather than left pointing at a 404.
+
+Nothing is lost from the cache either way: re-run without the flags whenever you
+want the whole almanac back.
+
+### ‼️ Re-export any season taken before the JV fix
+
+The JHSAA plays a JV season now, and for a while `duals.csv` carried JV duals
+with nothing marking them (the 2039 boys export had 18,096 duals against 2038's
+10,709). Those zips inflate every record, player total and program court total
+if you ingest them, and this side cannot filter them out — they have no `level`
+column, and "missing level" has to mean varsity or every pre-JV season would be
+silently truncated.
+
+**Re-export those seasons from the game and re-ingest them.** New exports carry
+`duals.level`, this side filters to varsity, and the problem is gone:
+
+```bash
+python3 build.py ~/Downloads/*2039*.zip     # overwrites the bad cache entry
+```
+
+### The market loop, end to end
+
+1. **Export** the season from the game's `/research/export`.
+2. **Ingest + build**: `python3 build.py path/to/export.zip --latest 2 --no-player-pages`
+3. **Serve**: `cd site && python3 -m http.server 8000`
+4. **Scout** → pick the season → search by area/county/town or class/league, or
+   click a preset finder (Buried / Reservoir / Stranded), or use the **Cohort
+   builder** to pull everyone near one program.
+5. **Shortlist** them with the ☆ on any row. The Shortlist tab holds them, with
+   a **Destination** box per row and a **Fit** column showing the ladder
+   position they would take there.
+6. **Export the batch** — *Download batch CSV* or *Copy to clipboard*. The
+   format is exactly what the game's bulk transfer field takes:
+
+   ```
+   15ea169de75a3fa3,Plainfield
+   beeb50343e24e61a,Plainfield
+   ```
+
+   `player_id,DestinationSchool`, one per line, no header, LF endings.
+   Destinations must match a program name exactly, accents included.
+7. **Paste** it into the game's bulk transfer field. Transfers take effect the
+   FOLLOWING season, so nothing shows up in analytics until you export that one.
+
+Rows with no destination, an unknown program, or the program the player already
+attends are held back from the export and reported rather than silently dropped.
+The shortlist is per season and survives a rebuild.
+
+### Where to look for what
+
+| Question | Page |
+|---|---|
+| Who should move, and where | **Scouting** → Search / the three finders |
+| Everyone near one program, to move a group together | **Scouting** → Cohort builder |
+| Is 6A really better than 5A · is the talent shape holding · is a class healthy | **Classifications** |
+| Did this roster underperform its talent | **Team Stat Center** → Talent view (xShare, Talent luck) |
+| Who came and went, and what the arrivals were worth | a **team page** → Movement · or Stat Center → Movement view |
+| Best careers on record | **Player Value** (PVAR beside WAE) |
+| What the win curve is priced on | **Player Value**, bottom panel (observed bands beside fitted) |
+
+### Troubleshooting
+
+| Symptom | Cause / fix |
+|---|---|
+| "No space left on device" | The site, not the cache. Use `--latest 2 --no-player-pages` (above). |
+| `pip install` refuses, *externally-managed-environment* | PEP 668. Make a venv (above), or try running without installing — Jinja2 may already be there. |
+| Shortlist looks empty after starring players | You are on `file://`. Serve over `http://localhost` (above). |
+| In / Out / Net and Dev± are all blank | Only one season rendered. Movement is a diff — render at least two consecutive years. |
+| A team's newest season shows `Out —` | Correct. Departures are read from the season players turn up in, and there is no following season yet. That is unknown, not zero. |
+| A season's records look inflated | A pre-JV-fix export. Re-export and re-ingest it (above). |
+| Cross-class table says "no cross-class duals in this export" | The season was exported for ONE classification. Re-export with classification "all". |
+| Nothing renders / "none matched that selection" | Your `--years` / `--latest` / `--gender` filter excluded everything. The message lists what is cached. |
+| No Scouting or Classifications page for a season | It is a college export. This is the JHSAA desk — see below. |
 
 ## Structure (owner rewrite ×2: 2027-08 nav, 2028-08 data organization)
 

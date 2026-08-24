@@ -37,8 +37,16 @@ def team_href(program_id: str, scope_id: str) -> str:
     return f"../teams/{aggregate.slug(scope_id)}__{aggregate.slug(program_id)}.html"
 
 
+# Set False by `build_site(player_pages=False)`. The per-player career pages
+# are ~88% of the rendered site (13,506 pages / 221 MB for ONE season-gender),
+# so at fourteen seasons they are the difference between a site that builds and
+# one that fills the disk. With them off a player's name still renders — it
+# just is not a link, rather than being a link to a 404.
+_PLAYER_PAGES = True
+
+
 def player_href(pid: str) -> str:
-    return f"../players/{aggregate.slug(pid)}.html"
+    return f"../players/{aggregate.slug(pid)}.html" if _PLAYER_PAGES else ""
 
 
 def _round_names(n: int, explicit: list[str] | None = None) -> list[str]:
@@ -171,7 +179,9 @@ def _team_stat_row(pid: str, scope_id: str, m, b, abil=None, mv=None) -> dict:
     }
 
 
-def build_site(raw_bundles: list[dict]) -> None:
+def build_site(raw_bundles: list[dict], player_pages: bool = True) -> None:
+    global _PLAYER_PAGES
+    _PLAYER_PAGES = player_pages
     if SITE.exists():
         shutil.rmtree(SITE)
     (SITE / "teams").mkdir(parents=True, exist_ok=True)
@@ -187,6 +197,10 @@ def build_site(raw_bundles: list[dict]) -> None:
                        autoescape=select_autoescape(["html"]), trim_blocks=True, lstrip_blocks=True)
     env.globals["team_href"] = team_href
     env.globals["player_href"] = player_href
+    # ‼️ The NAV has to know too. Dropping the pages while leaving "Players" in
+    # the masthead points every page at a 404 — the one link a reader is most
+    # likely to try, on every page of the site.
+    env.globals["player_pages"] = player_pages
 
     bundles = aggregate.load_bundles(raw_bundles)
     teams = aggregate.team_pages(bundles)
@@ -322,14 +336,15 @@ def build_site(raw_bundles: list[dict]) -> None:
               "grade": aggregate.grade_label(c["bio"])[0],
               "href": f"{aggregate.slug(pid)}.html"} for pid, c in
              sorted(careers.items(), key=lambda kv: kv[1]["name"])]
-    w("players_index.html", SITE / "players" / "index.html", rel="../", careers=cards)
-
-    for pid, c in careers.items():
-        total = c["wins"] + c["losses"]
-        pct = c["wins"] / total if total else 0.0
-        fname = f"{aggregate.slug(pid)}.html"
-        w("player.html", SITE / "players" / fname, rel="../", career=c, blurb=prose.player_blurb(c),
-          pct=pct, total=total or 1, pvar=player_value.get(pid))
+    if player_pages:
+        w("players_index.html", SITE / "players" / "index.html", rel="../", careers=cards)
+        for pid, c in careers.items():
+            total = c["wins"] + c["losses"]
+            pct = c["wins"] / total if total else 0.0
+            fname = f"{aggregate.slug(pid)}.html"
+            w("player.html", SITE / "players" / fname, rel="../", career=c,
+              blurb=prose.player_blurb(c), pct=pct, total=total or 1,
+              pvar=player_value.get(pid))
 
     # seasons — one dashboard per scope: class-first rankings on the archived
     # power index, league standings, individual leaders and awards as views

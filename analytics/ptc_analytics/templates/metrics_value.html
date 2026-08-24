@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "base.html" import player_link %}
 {% block title %}Player Value{% endblock %}
 {% block content %}
 <div class="pt-crumbs"><a href="../index.html">Home</a> / <a href="index.html">Analytics</a> / Player Value</div>
@@ -27,7 +28,7 @@
       {% for r in rows %}
         <tr data-name="{{ r.name|lower }} {{ r.teams|join(' ')|lower }}">
           <td class="num t-num">{{ loop.index }}</td>
-          <td><a href="{{ player_href(r.player_id) }}">{{ r.name }}</a></td>
+          <td>{{ player_link(r.player_id, r.name) }}</td>
           <td class="num t-num" data-sort="{{ r.grade_sort }}">{{ r.grade }}</td>
           <td>{{ r.teams|join(', ') }}</td>
           <td class="num t-num" data-sort="{{ r.wins }}">{{ r.wins }}-{{ r.losses }}</td>
