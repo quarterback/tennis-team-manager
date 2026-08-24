@@ -78,9 +78,9 @@ single source; what follows is the summary the decision was made on, and if the 
 ever disagree the report is right.
 
 Measured with `scripts/jhsaa_1a_format_pilot_calibration.py` over all **179** 1A
-programs (93 girls / 86 boys), 2039 rosters, **20 trials per pairing** (~1,800 duals a
-cell), `FIDELITY="fast"`. Ladder is pure ability, so this measures the FORMAT rather
-than a particular year's results.
+programs (93 girls / 86 boys), 2039 rosters, **20 trials per pairing** (920 duals a
+cell in girls, 860 in boys), `FIDELITY="fast"`. Ladder is pure ability, so this
+measures the FORMAT rather than a particular year's results.
 
 **What it costs.** 2S/3D dresses eight where 1S/4D dresses nine. The cut player
 averages 27.8 OVR and sits a **median 1.0 OVR** below the last player who still
@@ -165,8 +165,8 @@ determinism before quoting one.
 Determinism is necessary and not sufficient. The first run was perfectly
 reproducible and still reported a gender divergence that does not exist, because
 ~45 duals a cell cannot separate a format effect from dual-to-dual variance. The
-`--trials` default is **20** (~1,780 duals a cell) and the divergence vanishes at
-that size.
+`--trials` default is **20** — 920 duals a cell in girls, 860 in boys, against the
+~45 a single trial gives — and the divergence vanishes at that size.
 
 The trap is that a one-trial run looks like a census, not a sample: it covers EVERY
 1A program, so "n = every program in the classification" reads as exhaustive. It is

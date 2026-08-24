@@ -214,8 +214,9 @@ All odd court counts. Evenly-matched pairings only.
 
 Five-court shapes finish on a single court **61-73%** of the time; seven-court shapes
 **58-60%**. Mean margin as a share of the dual is **32-38%** against **28-29%**. Both
-genders, same direction, ~1,800 duals a cell. **1S/4D and 2S/3D produce materially
-closer championship duals than any traditional shape tested.**
+genders, same direction, 920 duals a cell in girls and 860 in boys. **1S/4D and
+2S/3D produce materially closer championship duals than any traditional shape
+tested.**
 
 ### ‼️ Court count dominates; doubles share is a real secondary term
 

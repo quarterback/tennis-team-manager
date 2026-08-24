@@ -70,10 +70,20 @@ def make_team(name: str, lineup: list, fmt) -> Team:
                 doubles_players=dbl)
 
 
+def _positive(v: str) -> int:
+    """`--trials` must be >= 1. Left unvalidated, 0 or a negative value builds
+    every roster, runs no duals, and dies on a ZeroDivisionError while printing
+    the FIRST result cell — minutes of setup for a traceback. Fail at parse."""
+    n = int(v)
+    if n < 1:
+        raise argparse.ArgumentTypeError(f"must be a positive integer, got {n}")
+    return n
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--trials", type=int, default=20,
+    ap.add_argument("--trials", type=_positive, default=20,
                     help="duals simulated per pairing per format (default 20). "
                          "One is far too few to separate a format effect from "
                          "dual-to-dual variance.")
