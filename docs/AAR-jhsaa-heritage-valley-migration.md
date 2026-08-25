@@ -84,23 +84,32 @@ program with no prep-network origin).
   407-1059, meaningfully stronger. `_TALENT`/`ROSTER_SIZE_BAND_BY_CLASS`/
   `_GROUP_IX` for Group 1 and Group 2 were RETUNED to their new ranges, not
   just extended with a Group 3 entry alongside the old numbers.
-- **Group 1 and Group 2 both drop below `sponsor_floor` (76) as a direct,
-  structural consequence of adding a third group** — splitting 184 schools
-  three ways instead of two puts every band at 74, under the 76-body
-  Semi-Conference floor a 40-field class needs. This is **reported, not
-  patched** — the exact `sc_head` degrade-loudly precedent CLAUDE.md documents
-  for 8A/9A after the original 2046 split, and for the same reason: a real
-  geographic/structural realignment cost, not a bug to paper over by
-  re-cutting band sizes to dodge the floor. Group 3 avoids it entirely by
-  using the BYELESS 24-field shape (`state_field_size(group) == 24` routes to
-  `_recovery_24`, which "has no floor of its own" per `sponsor_floor`'s own
-  docstring) rather than the dynamic 40-field ladder.
-- **The eastern moves also pull real boys sponsors out of 6A and 5A**, which
-  were sitting at 77 and 76 — one and zero above the floor — before the
-  migration. Both now read 71, also under floor, also reported rather than
-  backfilled (no `backfill_boys_sponsorship` pass was run for this migration;
-  the guide does not call for one, unlike the 2046 script which needed it for
-  its own 5A shortfall).
+- **‼️ `STATE_FIELD` NEEDED A REAL RETUNE, not just a floor report — the exact
+  precedent an earlier session (`33cb858`) already set for 9A/8A/7A when the
+  ORIGINAL 2046 Great Basin departure thinned them.** Group 1, Group 2, 6A
+  and 5A all dropped below the 76-sponsor Semi-Conference floor a 40-field
+  class needs (Group 1 74/66, Group 2 74/71, 6A 81/71, 5A 80/71 G/B) —
+  Group 1/Group 2 from splitting 184 schools three ways instead of two,
+  6A/5A from the eastern moves pulling real boys sponsors out (77→71,
+  76→71). A first pass reported these as `sc_head` degrades and left it
+  there, reasoning the floor breach was "a real geographic cost, not a bug
+  to paper over." That was wrong to stop at: `STATE_FIELD` is a
+  **classification's own owner-tiering decision**, and the established
+  pattern for exactly this situation — a class thinned under its current
+  field's floor — is to drop it to the next field size down, the way 9A/8A/7A
+  already did (76-floor 40-field → 44-floor 32-field) rather than shipping a
+  season that silently degrades. **All four classes clear a 32-field's
+  44-sponsor floor with the same comfortable margin 9A/8A/7A already do**, so
+  `STATE_FIELD` moves them there too: 9A/8A/7A/6A/5A/Group 1/Group 2 all now
+  crown from the byeless 32, 4A/3A stay at the full 40 (well clear of 76),
+  and 2A/1A/Group 3 stay on the fixed 24 (a TALENT decision per the owner's
+  "the talent really degrades at that level" rule, unrelated to headcount —
+  2A/1A sit at 77-87 sponsors, Group 3 at 74/69, all far past the 24-field's
+  48 floor regardless). Verified: every one of the 12 groups clears its
+  field's floor in both genders with real margin post-migration, zero
+  `sc_head` degrades anywhere. **Do not revert this to 40 without
+  re-checking sponsor counts** — only a future realignment that refills
+  6A/5A/Group 1/Group 2 back above 76 should move them back.
 - **A guide's roll-up total can be off by one without the plan being wrong.**
   Section 3 states Halbrook Basin reallocates 12 slots; the per-school tables
   in Sections 5/6/10 sum to 11 (5 intact moves + 4 sunsets + 2 Louisville

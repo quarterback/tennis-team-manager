@@ -654,35 +654,56 @@ WARD_FIELD = 32
 #
 # The 2046 expansion re-tiered the table on TALENT, not just headcount (owner
 # rule 2026-08): the big-school classes legitimately carry more playoff-worthy
-# programs, the smallest carry fewer whatever their size. Three tiers:
+# programs, the smallest carry fewer whatever their size. Tiers, as of the
+# Heritage Valley migration:
 #   9A/8A/7A — 32, the byeless full bracket (Zonal champions seeded 1-8 with
 #     nobody sitting out — the seeding guarantee, not a bye rule, exactly as
 #     `test_zonal_champions_are_the_top_seeds_byes_or_not` pins it). The Great
 #     Basin departure thinned them under the 40-field's 76-sponsor floor
-#     (9A 73/65, 8A 75/73, 7A 85/76 G/B) but a 32-field's floor is only 44,
+#     (9A 73/65, 8A 74/72, 7A 81/73 G/B) but a 32-field's floor is only 44,
 #     which all three clear comfortably.
-#   6A-3A — the full 40 (all clear the 76 floor).
+#   4A/3A — the full 40 (86/83 and 93/84 G/B, well clear of the 76 floor).
+#   ‼️ 6A/5A JOINED 9A/8A/7A ON THE 32-FIELD IN THE HERITAGE VALLEY MIGRATION
+#     -- the SAME retune, for the SAME reason, one class-band lower than
+#     where it first landed. 24 MOVES + 14 RETIRE_AND_REPLACE schools left
+#     the 1A-9A ladder for the new Group 3, and 6A/5A's boys sponsorship
+#     (71/71) fell under the 40-field's 76 floor -- a real geographic cost
+#     of the realignment, not something to paper over by re-cutting bands.
+#     Following the exact precedent this table already set for 9A/8A/7A: a
+#     class thinned under its current field's floor moves DOWN a field size
+#     rather than degrading loudly (`sc_head`), the moment it clears the
+#     smaller field's floor with real room -- 6A/5A sit at 80-81 girls',
+#     71 boys' against the 32-field's 44 floor, the same comfortable margin
+#     9A/8A/7A clear it by. Do NOT "fix" this back to 40 without re-checking
+#     sponsor counts first; a future realignment that refills 6A/5A above 76
+#     is the only thing that should move it back.
 #   2A/1A — 24 on the fixed `_recovery_24` shape: "the talent really degrades
 #     at that level and there's no point even with a lot of teams" (owner).
-#     2A returns to the 24 it left in 2033; 1A never left it.
+#     2A returns to the 24 it left in 2033; 1A never left it. This is a
+#     TALENT decision, not a headcount one -- 2A/1A sit at 77-87 sponsors,
+#     far past any floor, and stay on 24 anyway.
 # `_recovery_24` keys on the FIELD SIZE, so the table move is the whole change —
 # the "a class could be moved back without touching anything else" promise above.
-STATE_FIELD = {"9A": 32, "8A": 32, "7A": 32,
-               "6A": 40, "5A": 40, "4A": 40, "3A": 40, "2A": 24, "1A": 24,
+STATE_FIELD = {"9A": 32, "8A": 32, "7A": 32, "6A": 32, "5A": 32,
+               "4A": 40, "3A": 40, "2A": 24, "1A": 24,
                # 2046 expansion (owner rule): the Great Basin groups are more
                # classifications, full stop -- "think of them more as 10A and
                # 11A than thinking of them as anything weird." Group 1/Group 2
                # each carried 92 sponsors and cleared the dynamic-ladder floor
-               # comfortably (76 required at a 40-field). The Heritage Valley
-               # migration re-cut that same 184-school pool (plus 38 eastern
-               # arrivals) into THREE even bands of 74, which drops Group 1 and
-               # Group 2 below the 76 floor -- reported (`sc_head` degrades
-               # loudly), not patched, the same as any other class a real
-               # realignment thins below the line. Group 3's 57-396 enrollment
-               # band sits far enough down the ladder that it plays the
-               # BYELESS 24-field shape instead (`_recovery_24`, 1A/2A's own
-               # format), which needs no Semi-Conference floor at all.
-               "Group 1": 40, "Group 2": 40, "Group 3": 24}
+               # comfortably (76 required at a 40-field) before the Heritage
+               # Valley migration re-cut that same 184-school pool (plus 38
+               # eastern arrivals) into THREE even bands of 74. That drops
+               # both under the 40-field's 76 floor (Group 1 74/66, Group 2
+               # 74/71 G/B) -- but BOTH clear a 32-field's 44 floor with the
+               # same comfortable margin as 9A/8A/7A/6A/5A, so they take the
+               # SAME retune rather than degrading loudly: down a field size,
+               # not a reported-and-ignored floor breach. Group 3's 57-396
+               # enrollment band sits far enough down the ladder that it
+               # plays the BYELESS 24-field shape instead (`_recovery_24`,
+               # 1A/2A's own format, a TALENT decision like theirs) --
+               # 74/69 sponsors against the 24-field's 48 floor, comfortable
+               # either way.
+               "Group 1": 32, "Group 2": 32, "Group 3": 24}
 STATE_FIELD_DEFAULT = 24
 
 #: The preliminary round of an expanded field — "Qualies" on a chip. It is PART OF
