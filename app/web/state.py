@@ -4543,6 +4543,13 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     salt = world.active_salt(seed)
     schools = _jh_schools(g)
     hist = world.jhsaa_school_history(w["id"], g, school)
+    # Class year formatting is a view-model concern (`_JH_CLASS_YEAR`, the same
+    # table the player page uses) — `world.jhsaa_school_individual_champions`
+    # returns the raw grade so the data layer stays free of display strings.
+    hist = {**hist, "individual_champions": [
+        {**r, "players": [{**p, "class_year": _JH_CLASS_YEAR.get(p.get("grade"), "")}
+                          for p in r["players"]]}
+        for r in hist["individual_champions"]]}
     # ‼️ AND IT OPENS ON THE LAST SEASON IT PLAYED. The default year is the newest the
     # ASSOCIATION has archived, which a former program has no row in — so the page
     # would render its own header over an empty season and read as a bug rather than

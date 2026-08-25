@@ -379,7 +379,8 @@
    entry in the individual-awards list, so filtering on that list alone hid the very
    seasons this panel exists for. #}
 {% set honor_years = view.history.seasons | selectattr('honoured') | list %}
-{% if honor_years %}
+{% set indiv_champs = view.history.individual_champions %}
+{% if honor_years or indiv_champs %}
 {# ‼️ TWO KINDS OF HONOUR, TWO TABS (owner rule 2026-08). Trophies the PROGRAM won and
    awards its PLAYERS won were one interleaved list, so a decorated program's page ran
    to hundreds of rows and the two questions it answers — "how good has this team been"
@@ -395,20 +396,37 @@
   {% set ns.team = ns.team + (s.team_honors|length) %}
   {% set ns.players = ns.players + s.honors|length %}
 {% endfor %}
+{# A third view of the same "who's this program's history" question — every
+   individual-flight state title a player of theirs has won, over EVERY archived
+   season, not just the ones that also carry a team honour (owner rule 2026-08:
+   "append it to the team history page in its own tab"). `indiv_champs` is set
+   above the `honor_years` gate for exactly this: a program can have a state
+   singles/doubles champion in a season with no All-State pick and no State
+   trip, and hiding this tab behind `honor_years` would bury exactly the
+   seasons it exists to surface. #}
 {# ‼️ THE FIRST TAB IS THE ACTIVE ONE, so it must not be the empty one. `jh_tabs`
    always activates the first pane, and a program with All-District players but no
    title, State trip or unit win has honours while `ns.team` is zero — that page
    opened on "No team trophies yet" with every real honour hidden behind a tab.
    Common, not an edge case: most programs never win anything team-level. So the
    panes are ORDERED by which has content rather than fixed. #}
-{% set team_first = ns.team > 0 or ns.players == 0 %}
+{% set team_first = ns.team > 0 %}
+{% set players_first = not team_first and ns.players > 0 %}
 <div class="bl-panel" style="margin-top:14px">
   {% set team_tab = ('team', 'Team trophies', ns.team) %}
   {% set player_tab = ('players', 'Player honours', ns.players) %}
-  {{ jh_tabs([team_tab, player_tab] if team_first else [player_tab, team_tab],
-              'jhhon') }}
+  {% set indiv_tab = ('indiv', 'Individual State Champions', indiv_champs|length) %}
+  {% if team_first %}
+    {% set tabs = [team_tab, player_tab, indiv_tab] %}
+  {% elif players_first %}
+    {% set tabs = [player_tab, team_tab, indiv_tab] %}
+  {% else %}
+    {% set tabs = [indiv_tab, team_tab, player_tab] %}
+  {% endif %}
+  {% set active = tabs[0][0] %}
+  {{ jh_tabs(tabs, 'jhhon') }}
 
-  <div class="jh-pane" data-pane="team"{{ '' if team_first else ' hidden' }}>
+  <div class="jh-pane" data-pane="team"{{ '' if active == 'team' else ' hidden' }}>
     {% if ns.team %}
     {% for s in honor_years %}
     {% if s.champion %}
@@ -446,7 +464,7 @@
     {% endif %}
   </div>
 
-  <div class="jh-pane" data-pane="players"{{ ' hidden' if team_first else '' }}>
+  <div class="jh-pane" data-pane="players"{{ '' if active == 'players' else ' hidden' }}>
     {% if ns.players %}
     {% for s in honor_years %}
     {% for h in s.honors %}
@@ -455,6 +473,23 @@
     {% endfor %}
     {% else %}
     <p class="jh-empty">No player honours yet.</p>
+    {% endif %}
+  </div>
+
+  {# One row per title, newest first — name (class year), the flight, and the
+     season. A doubles title names both partners; `jh_award_names`-style "and"
+     joins were built for award ROWS (which carry a `partner` field), not this
+     shape, so it's joined here directly. No match log, no microcopy — the same
+     restraint the player page's own section keeps. #}
+  <div class="jh-pane" data-pane="indiv"{{ '' if active == 'indiv' else ' hidden' }}>
+    {% if indiv_champs %}
+    {% for r in indiv_champs %}
+    <div class="jh-honor"><span class="y">{{ r.season_year }}</span>
+      <span>{% for p in r.players %}{{ p.name }}{% if p.class_year %} ({{ p.class_year }}){% endif %}{% if not loop.last %} &amp; {% endif %}{% endfor %}
+        <span class="jh-chip gold" style="margin-left:6px">{{ r.flight_name }}</span></span></div>
+    {% endfor %}
+    {% else %}
+    <p class="jh-empty">No individual state champions yet.</p>
     {% endif %}
   </div>
 </div>

@@ -5419,17 +5419,63 @@ def jhsaa_history_rows(world_id: int, gender: str) -> dict[str, list[dict]]:
 
 
 def jhsaa_school_history(world_id: int, gender: str, school: str) -> dict:
-    """A program's whole history, as the two DISTINCT things it is:
+    """A program's whole history, as the three DISTINCT things it is:
 
-      * `totals`  — the career: seasons played, all-time record, district titles, state
-                    appearances / semifinals / finals / championships, POY and All-State
-                    counts, the last title, the best and worst seasons.
-      * `seasons` — the ledger: one row per archived season, newest first.
+      * `totals`      — the career: seasons played, all-time record, district titles,
+                        state appearances / semifinals / finals / championships, POY
+                        and All-State counts, the last title, the best and worst seasons.
+      * `seasons`      — the ledger: one row per archived season, newest first.
+      * `individual_champions` — every individual-flight state title a player of this
+                        program has ever won, newest first — the program-history
+                        counterpart of the player page's "State tournament results".
 
     Honours ride along on the season they were won in. They annotate the history; the
     season rows ARE the history."""
     seasons = jhsaa_school_seasons(world_id, gender, school)
-    return {"totals": jhsaa_program_totals(seasons), "seasons": seasons}
+    return {"totals": jhsaa_program_totals(seasons), "seasons": seasons,
+            "individual_champions": jhsaa_school_individual_champions(
+                world_id, gender, school, seasons)}
+
+
+def jhsaa_school_individual_champions(world_id: int, gender: str, school: str,
+                                      seasons: list[dict]) -> list[dict]:
+    """Every individual-flight (No. 1-3 singles / No. 1-3 doubles) state title a
+    school's players have won, newest first — the program-history counterpart of
+    `jhsaa_individual_results`'s player-page section, folded across every archived
+    season rather than one player's career.
+
+    Takes `seasons` rather than re-deriving them: each row already carries the
+    CLASSIFICATION the program actually played that year (`jhsaa_school_seasons`'
+    own `group`), so this reads at most the one set of six flight draws that year's
+    program could possibly have won — never every classification for every year,
+    which a program in one class a season could never appear in anyway.
+
+    ‼️ Mixed doubles is deliberately excluded — it credits no gender's field (a
+    mixed pair is one player from each of a school's two SEPARATE teams; see
+    `jhsaa_individuals.run_mixed`), so a program page scoped to one gender has no
+    single flight-box row to hang it from without inventing one."""
+    from . import jhsaa_individuals as ji
+    out = []
+    for s in seasons:
+        grp = s.get("group")
+        if not grp:
+            continue
+        champs = jhsaa_individual_champions(world_id, s["year"], gender, grp)
+        for flight, c in champs.items():
+            champion = c.get("champion") or {}
+            if champion.get("school") != school:
+                continue
+            out.append({
+                "year": s["year"], "season_year": s.get("season_year") or s["year"],
+                "group": grp, "flight": flight,
+                "flight_name": ji.FLIGHT_NAMES.get(flight, flight),
+                "players": [{"pid": p.get("pid"), "name": p.get("name"),
+                            "grade": p.get("grade")}
+                           for p in champion.get("players") or ()],
+            })
+    order = {f: i for i, f in enumerate(ji.FLIGHTS)}
+    out.sort(key=lambda r: (-r["year"], order.get(r["flight"], 99)))
+    return out
 
 
 def cups_done(world: dict) -> bool:
