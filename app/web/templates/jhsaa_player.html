@@ -22,7 +22,9 @@
   <span class="crest">{{ view.mark|safe }}</span>
   <div class="jh-ident-body">
     <span class="jh-chip c-{{ view.group|replace(' ','') }}">{{ view.classification }}</span>
-    <h1>{{ view.name }}</h1>
+    {# A champion's name in gold — set from the same title count the Individual
+       State panel header uses (titles, not appearances; mixed included). #}
+    <h1{% if view.individual_titles %} class="champ"{% endif %}>{{ view.name }}</h1>
     <div class="mascot">
       <a style="color:inherit" href="{{ url_for('jhsaa_school', school=view.school, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.school }}</a>
       · grade {{ view.grade }}</div>
@@ -31,7 +33,13 @@
       <span class="rec">{{ view.record }}</span>
       <span class="bit">career, all lines · {{ view.seasons|length }} high-school season{{ '' if view.seasons|length == 1 else 's' }}</span>
       <span class="bit jh-scout">OVR {{ view.ovr }} · Pot {{ view.ceiling }} · {{ stars(view.stars) }}</span>
-      {% for h in view.honors %}<span class="jh-chip {{ 'gold' if 'Player of the Year' in h }}">{{ h }}</span>{% endfor %}
+      {# Individual state TITLES lead the chip row, in gold — champion first,
+         then the season honours. #}
+      {% for c in view.title_chips %}<span class="jh-chip gold">{{ c }}</span>{% endfor %}
+      {# One chip per distinct honour, carrying the year(s) it was won — the
+         merging (and the gold flag) live in the view-model, not in string
+         matching here. #}
+      {% for h in view.honors %}<span class="jh-chip {{ 'gold' if h.gold }}">{{ h.text }} {{ h.years }}</span>{% endfor %}
     </div>
   </div>
 </div>
@@ -182,7 +190,7 @@
             <span class="s">all lines</span></div>
           <div class="jh-metric"><span class="k">Class of</span><span class="v">{{ view.grad_year or '—' }}</span>
             <span class="s">grade {{ view.grade }} now</span></div>
-          <div class="jh-metric"><span class="k">Honours</span><span class="v">{{ view.honors|length }}</span>
+          <div class="jh-metric"><span class="k">Honours</span><span class="v">{{ view.honors_total }}</span>
             <span class="s">across the career</span></div>
         </div>
       </div>
