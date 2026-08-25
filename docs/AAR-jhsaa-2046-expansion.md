@@ -255,5 +255,8 @@ razor margin. Instead the table is tiered on TALENT:
 the 32 is the byeless power-of-two shape the seeding-guarantee test
 (`test_zonal_champions_are_the_top_seeds_byes_or_not`) has always pinned as
 valid, chosen deliberately (owner: "that's probably the better option than
-going to 40 for the big classes"). Every group clears its floor in both
+going to 40 for the big classes", and on the shape itself: "the talent in
+that classification is so deep that having no byes is the most honest way to
+do things" — in the top tier a bye is an unearned round, so the byeless
+bracket is the POINT there, not a fallback from failing to fill a 40). Every group clears its floor in both
 genders with real margin; the tightest is 6A boys at 77 vs 76.
