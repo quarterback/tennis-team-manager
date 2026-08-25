@@ -4287,6 +4287,20 @@ def jhsaa_honors_view(seed: int, gender: str, group: str | None = None,
     }
 
 
+def _jh_indiv_grade_note(players: list, city: str) -> str:
+    """The champion/runner-up's grade and hometown, as a PARENTHETICAL under the
+    name (owner, 2026-08: folded into the name itself it "looks like part of
+    their name and it's ugly") — "(Grade 12, Valderra, JF)". A doubles pair
+    states both grades, de-duped, since both play for the same school and
+    hometown. Jefferson is the ONLY state this event is played in, so "JF" is
+    never looked up — it is always Jefferson's own abbreviation."""
+    grades = [str(p["grade"]) for p in players if p.get("grade")]
+    if not grades:
+        return ""
+    g = " & ".join(dict.fromkeys(grades))
+    return f"(Grade {g}, {city}, JF)" if city else f"(Grade {g})"
+
+
 def _jh_indiv_grade_label(players: list, full: bool = False) -> str:
     """A bracket label with each player's class year appended, IN PARENS —
     "Finn Johnson (12)"; a doubles pair carries each name with its OWN grade,
@@ -4401,16 +4415,21 @@ def jhsaa_individual_view(seed: int, gender: str, group: str | None = None,
         cols.append({"name": ji.round_label(m["rnd"]), "matchups": ms})
     champ = entries[draw["champion"]] if draw.get("champion") is not None else None
     runner = entries[draw["runner_up"]] if draw.get("runner_up") is not None else None
+    champ_sc = schools.get(champ["school"]) if champ else None
+    runner_sc = schools.get(runner["school"]) if runner else None
     return {
         **base, "ready": True,
         "n_seeds": draw["n_seeds"], "field_n": len(entries),
         "champion": champ, "runner_up": runner,
-        # Full name, grade appended — the same OSAA convention the bracket cards
-        # carry, on the hero announcement. `full_label`/`label` (baked into the
-        # archive at write time) predate the grade addition and stay bare, so
-        # this is computed here rather than re-baked.
-        "champion_name": _jh_indiv_grade_label(champ["players"], full=True) if champ else "",
-        "runner_up_name": _jh_indiv_grade_label(runner["players"], full=True) if runner else "",
+        # Grade/hometown sit UNDER the name on the hero announcement, never
+        # folded into it — owner, 2026-08: merged into the name it "looks like
+        # part of their name and it's ugly". The school comes first (already in
+        # the sub line), THEN the parenthetical: "Rogers Park (Grade 12,
+        # Valderra, JF)".
+        "champion_grade_note": (_jh_indiv_grade_note(champ["players"], champ_sc.city)
+                                if champ and champ_sc else ""),
+        "runner_up_grade_note": (_jh_indiv_grade_note(runner["players"], runner_sc.city)
+                                 if runner and runner_sc else ""),
         "champion_deco": _jh_deco(schools, champ["school"], 34) if champ else None,
         "final_score": (draw["rounds"][-1][0]["scoreline"]
                         if draw["rounds"] and draw["rounds"][-1] else ""),
