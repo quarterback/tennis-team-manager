@@ -260,3 +260,8 @@ that classification is so deep that having no byes is the most honest way to
 do things" — in the top tier a bye is an unearned round, so the byeless
 bracket is the POINT there, not a fallback from failing to fill a 40). Every group clears its floor in both
 genders with real margin; the tightest is 6A boys at 77 vs 76.
+
+> **2026-08 follow-on:** the Halbrook Basin area (222 girls'/204 boys' programs)
+> was split four ways — Belmonte Metro / Halbrook Basin / Boise Frontier /
+> Silver Basin (the last absorbing the Vance Group 1/2 departures alongside this
+> expansion's 3-program Ruby County area). See `docs/AAR-jhsaa-region-split.md`.

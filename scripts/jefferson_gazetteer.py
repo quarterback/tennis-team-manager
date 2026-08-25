@@ -105,10 +105,17 @@ def build(m, rows: list[dict], cities: list[dict]) -> str:
     # the name a reader will actually meet in the app.
     place = {}
     for c in cities:
-        place[m.CITY_RENAMES.get(c["name"], c["name"])] = {
+        # AREA_RENAMES, then the 2026-08 Halbrook Basin four-way split — the SAME
+        # function the importer applies at emit (`import_jhsaa.split_area`), run on
+        # prep-network's place rows so the two-repo area assertion below keeps
+        # holding without an allowlist entry: both sides now say Belmonte Metro /
+        # Boise Frontier / Silver Basin for the split ground.
+        name = m.CITY_RENAMES.get(c["name"], c["name"])
+        area = m.AREA_RENAMES.get(c["area"], c["area"])
+        place[name] = {
             **c,
-            "name": m.CITY_RENAMES.get(c["name"], c["name"]),
-            "area": m.AREA_RENAMES.get(c["area"], c["area"]),
+            "name": name,
+            "area": m.split_area(area, c.get("county", ""), name),
         }
     # The 2046 Great Basin territory is net-new — prep-network has no rows for
     # it, so its places are anchored locally (see _EXPANSION_2046_PLACES above).

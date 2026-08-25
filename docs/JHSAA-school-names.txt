@@ -500,7 +500,7 @@ Afton — 1 program (Star Valley County, Bear River Country)
 Agate — 1 program (Emigrant County, Kangas)
    Group 2   286 pub  Agate                                                     Vesterheim Athletic Association    Agate
 
-Aldecoa — 9 programs (Vance County, Halbrook Basin)
+Aldecoa — 9 programs (Vance County, Silver Basin)
    Group 1  2258 pub  Point Loma                                                Twin Counties Athletic Association Aitor Echevarria
    Group 1  2225 pub  Deadwood                                                  Twin Counties Athletic Association Aldecoa Applied Sciences Institute
    Group 1  2197 pub  Coyote Springs                                            Twin Counties Athletic Association Aldecoa Academy of Arts and Letters
@@ -653,7 +653,7 @@ Bellacosta — 2 programs (Ferris County, Gold Valley)
     7A  1397 pub  Bellacosta                                                Valle Vista League                 Bellacosta
     4A   736 priv De La Salle                                               Valle Vista League                 César Mendoza
 
-Belmonte — 44 programs (Halbrook County, Halbrook Basin)
+Belmonte — 44 programs (Halbrook County, Belmonte Metro)
     9A  2592 pub  Sandra Day O'Connor                    Choctaw            Forks League                       Iker Aramburu
     9A  2550 pub  I-50 Tech                                                 Forks League                       I-50 Technical
     9A  2509 pub  Kinnickinny                            Kinnickinny        Big Basin League                   River Plain
@@ -699,7 +699,7 @@ Belmonte — 44 programs (Halbrook County, Halbrook Basin)
     1A   256 priv Belmonte Catholic                                         Desert Sky League                  Amaia Aramburu North
     1A   105 priv St. Lucia Academy                                         Desert Sky League                  St. Lucia Academy
 
-Belyakov — 29 programs (Vance County, Halbrook Basin)
+Belyakov — 29 programs (Vance County, Boise Frontier)
     9A  2546 pub  Grande-Savane Arts                                        River Valley League                Belyakov School of Design and Engineering
     9A  2537 pub  Bayard Rustin                          Wilberforce        River Valley League                Bayard Rustin
     9A  2383 pub  Mickey Mantle                                             River Valley League                Belyakov Agricultural Sciences Academy
@@ -730,10 +730,10 @@ Belyakov — 29 programs (Vance County, Halbrook Basin)
     4A   616 pub  La Savane                              La Savane          Dual County League                 Sycamore Flat
     1A    68 pub  Riviere Salee                          Riviere Salee      Desert Sky League                  Anya Orlov
 
-Bench Head — 1 program (Barlowe County, Halbrook Basin)
+Bench Head — 1 program (Barlowe County, Boise Frontier)
     4A   520 pub  Barlowe County High                                       Mission League                     Barlowe County High
 
-Benchton — 2 programs (Barlowe County, Halbrook Basin)
+Benchton — 2 programs (Barlowe County, Boise Frontier)
     5A   965 pub  Benchton                                                  Valle Vista League                 Benchton
     1A   129 priv St. Genevieve                                             Hacienda League                    St. Genevieve
 
@@ -817,7 +817,7 @@ Canaan Bend — 1 program (Paddock County, Yarrowmere)
 Cape Angeles — 1 program (Weller County, Selquah)
     2A   309 pub  Cape Angeles                                              Del Rey Athletic Association       Aldermont
 
-Carden City — 4 programs (Vance County, Halbrook Basin)
+Carden City — 4 programs (Vance County, Silver Basin)
    Group 1  1703 pub  Boyle Heights                                             Twin Counties Athletic Association Amaia Etxeberria
    Group 1  1424 pub  Carden City                                               Twin Counties Athletic Association Carden City
    Group 1  1228 pub  Granite Water & Power                                     Dual County League                 Opal Tillman
@@ -826,7 +826,7 @@ Carden City — 4 programs (Vance County, Halbrook Basin)
 Carlin — 1 program (Ruby County, Silver Basin)
    Group 2   620 priv Ruby County Catholic                                      Basalt League                      Ruby County Catholic
 
-Carmina — 1 program (Vance County, Halbrook Basin)
+Carmina — 1 program (Vance County, Silver Basin)
    Group 2   506 pub  Carmina                                                   Dual County League                 Carmina
 
 Carolina Island — 1 program (Ostrander County, Sebastian Cape)
@@ -841,7 +841,7 @@ Carroway — 4 programs (Rimrock County, Juniper Highlands)
 Carverstead — 1 program (Sablewood County, Gold Valley)
     1A   122 pub  Carverstead                                               Hacienda League                    Carverstead
 
-Caswell — 14 programs (Halbrook County, Halbrook Basin)
+Caswell — 14 programs (Halbrook County, Belmonte Metro)
     8A  2140 pub  Chaparral                                                 Sunkist League                     Andrew Jackson North
     8A  2139 pub  Cherry Hill North                                         Four Rivers Interscholastic League Caswell Depot High
     8A  2028 pub  Caswell                                                   Four Rivers Interscholastic League Caswell
@@ -863,7 +863,7 @@ Caverly — 1 program (Featherstone County, Southern Jefferson)
 Caverlyville — 1 program (Featherstone County, Southern Jefferson)
     1A    95 pub  Sierra Works                                              Tailings League                    Sierra Works
 
-Cañada Grande — 4 programs (Vance County, Halbrook Basin)
+Cañada Grande — 4 programs (Vance County, Silver Basin)
    Group 1  2067 priv Mater Dei                                                 Dual County League                 Nikolai Orlov
    Group 1  1929 pub  Cañada Grande                                             Dual County League                 Cañada Grande
    Group 1  1165 pub  Noe Valley                                                Dual County League                 Itziar Lertxundi
@@ -875,7 +875,7 @@ Chaff Crossing — 1 program (Kernwood County, Yarrowmere)
 Chaff Head — 1 program (Kernwood County, Yarrowmere)
     2A   314 pub  Chaff Head                                                Old Jefferson Athletic Association Chaff Head
 
-Ciderhaven — 1 program (Barlowe County, Halbrook Basin)
+Ciderhaven — 1 program (Barlowe County, Boise Frontier)
     3A   468 pub  Ciderhaven                                                Dual County League                 Ciderhaven
 
 Cinder — 1 program (Antler County, Alderwold)
@@ -970,7 +970,7 @@ Doyleville — 1 program (Windrow County, Millersylvania)
 Draybrook — 1 program (Cinder County, Cascade Divide)
     2A   245 pub  Draybrook Union                                           Mountain Pass League               Draybrook Union
 
-Drayfield — 3 programs (Vance County, Halbrook Basin)
+Drayfield — 3 programs (Vance County, Silver Basin)
    Group 1   881 pub  Drayfield                                                 Dual County League                 Drayfield
    Group 1   873 pub  Reservoir Park                                            Dual County League                 Garfield Park
    Group 1   845 pub  Empire                                                    Dual County League                 Drayfield Foundry High
@@ -978,13 +978,13 @@ Drayfield — 3 programs (Vance County, Halbrook Basin)
 Dry Bar — 1 program (Scheelite County, Millersylvania)
    Group 2   836 pub  Scheelite County                                          North Range League                 Scheelite County
 
-Eagleton — 1 program (Vance County, Halbrook Basin)
+Eagleton — 1 program (Vance County, Silver Basin)
    Group 2   315 pub  Eagleton                                                  Dual County League                 Eagleton
 
 East Simmons — 1 program (Windrow County, Millersylvania)
    Group 2   293 pub  East Simmons                                              North Range League                 Aspen Harbor
 
-Echevarria — 8 programs (Vance County, Halbrook Basin)
+Echevarria — 8 programs (Vance County, Silver Basin)
    Group 1  2513 pub  Redwood Mutual                                            Dual County League                 Amaia Echevarria
    Group 1  2503 pub  Bitterroot                                                Dual County League                 Echevarria Foundry High
    Group 1  2422 pub  Furnace Creek                                             Upper Basin League                 Leire Aramburu
@@ -1023,7 +1023,7 @@ Espoo — 1 program (Stagewater County, Kangas)
 Etchart — 1 program (Lodestone County, Millersylvania)
    Group 2   270 pub  Etchart                                                   High Lakes League                  Etchart
 
-Etchartville — 3 programs (Vance County, Halbrook Basin)
+Etchartville — 3 programs (Vance County, Silver Basin)
    Group 1  1645 pub  Etchartville                                              Upper Basin League                 Etchartville
    Group 1  1219 pub  Terrace Park                                              Upper Basin League                 Terrace Park
    Group 1  1158 pub  High Desert Cooperative                                   Upper Basin League                 Sadie Freeman
@@ -1104,7 +1104,7 @@ Franklin — 1 program (Cub River County, Bear River Country)
 Free Hill — 1 program (Paddock County, Yarrowmere)
     1A   106 pub  Free Hill                                                 Vermilion Valley League            Free Hill
 
-Furrow Crossing — 6 programs (Barlowe County, Halbrook Basin)
+Furrow Crossing — 6 programs (Barlowe County, Boise Frontier)
     9A  2187 pub  Ronald Reagan                                             Forks League                       Ronald Reagan
     5A  1019 pub  Furrow Crossing                                           Twin Counties Athletic Association Furrow Crossing
     4A   742 pub  Herbert Hoover                                            Mission League                     Herbert Hoover
@@ -1136,7 +1136,7 @@ Garrow — 7 programs (Kernwood County, Yarrowmere)
     3A   447 priv All Saints Episcopal                                      Quarry League                      All Saints Episcopal
     2A   256 priv Bishop Ferraro                                            Marble Valley League               Bishop Ferraro
 
-Garrow Depot — 1 program (Barlowe County, Halbrook Basin)
+Garrow Depot — 1 program (Barlowe County, Boise Frontier)
     2A   340 pub  Willow Gate                                               Three Rivers League                Willow Gate
 
 Garrow Switch — 1 program (Olivet County, Yarrowmere)
@@ -1154,7 +1154,7 @@ Gilhooly — 1 program (Featherstone County, Southern Jefferson)
 Gold Hollow — 1 program (Antler County, Alderwold)
     2A   253 pub  Gold Hollow                                               Foundry League                     Gold Hollow
 
-Greaves — 4 programs (Vance County, Halbrook Basin)
+Greaves — 4 programs (Vance County, Silver Basin)
    Group 1  1381 pub  Armour Fields                                             Upper Basin League                 Viktor Gromov
    Group 1  1080 pub  Greaves                                                   Upper Basin League                 Greaves
    Group 1   916 pub  Skypark                                                   Upper Basin League                 Greaves Aviation and Engineering Academy
@@ -1166,7 +1166,7 @@ Greaves Junction — 1 program (Halbrook County, Halbrook Basin)
 Gruesome Ridge — 1 program (Antler County, Alderwold)
     2A   297 pub  Gruesome Ridge                                            Foundry League                     Ashwood
 
-Haddon Siding — 1 program (Barlowe County, Halbrook Basin)
+Haddon Siding — 1 program (Barlowe County, Boise Frontier)
     2A   291 pub  Haddon Siding                                             Three Rivers League                Haddon Siding
 
 Halbrook — 13 programs (Halbrook County, Halbrook Basin)
@@ -1237,7 +1237,7 @@ Hazelton — 1 program (Eden County, Snake River Plain)
 High Bar — 1 program (Ferris County, Gold Valley)
     2A   291 pub  High Bar                                                  Mountain Pass League               High Bar
 
-Homecroft — 3 programs (Vance County, Halbrook Basin)
+Homecroft — 3 programs (Vance County, Silver Basin)
    Group 1  1643 pub  Homecroft                                                 Four Rivers Interscholastic League Homecroft
    Group 2   520 priv Cardinal Newman                                           Dual County League                 Miren Garmendia
    Group 2   393 pub  West Burlington                                           Dual County League                 Homecroft Manufacturing and Technology Academy
@@ -1426,7 +1426,7 @@ Mercer City — 9 programs (Ferris County, Gold Valley)
     7A  1625 pub  Mercer City                                               Valle Vista League                 Mercer City
     5A   904 priv St. Olga College Prep                                     Valle Vista League                 St. Olga College Prep
 
-Meridia — 1 program (Vance County, Halbrook Basin)
+Meridia — 1 program (Vance County, Silver Basin)
    Group 2   288 pub  Meridia                                                   Dual County League                 Meridia
 
 Meridian Passage — 1 program (Galena County, Millersylvania)
@@ -1545,7 +1545,7 @@ North San Francisco — 3 programs (Ferris County, Gold Valley)
 North Simmons — 1 program (Stagewater County, Kangas)
    Group 2   197 pub  North Simmons                                             Kajaani League                     Trout Point
 
-Northrup — 2 programs (Vance County, Halbrook Basin)
+Northrup — 2 programs (Vance County, Silver Basin)
    Group 1  1249 pub  Western Sky                                               Four Rivers Interscholastic League Ander Aramburu
    Group 2   203 pub  Northrup I-50 Tech                                        Dual County League                 Northrup I-50 Technical
 
@@ -1579,7 +1579,7 @@ Olive Reach — 6 programs (Kernwood County, Yarrowmere)
     1A   193 priv Kilbride Hall                                             Marble Valley League               Kilbride Hall
     1A    91 priv Trinity Christian                                         Marble Valley League               Trinity Christian
 
-Orellana — 11 programs (Vance County, Halbrook Basin)
+Orellana — 11 programs (Vance County, Boise Frontier)
     9A  2578 pub  Canal View                                                River Valley League                Orellana Canal View
     9A  2547 pub  Treasure Valley                                           Del Rey Athletic Association       Orellana Treasure Valley
     9A  2524 pub  Hayes Valley                                              River Valley League                Lev Kareva
@@ -1603,7 +1603,7 @@ Paris — 1 program (Beargrass County, Bear River Country)
 Pasquale — 1 program (Sablewood County, Gold Valley)
     2A   269 pub  Pasquale                                                  Three Rivers League                Pasquale
 
-Pear Slough — 2 programs (Barlowe County, Halbrook Basin)
+Pear Slough — 2 programs (Barlowe County, Boise Frontier)
     5A   929 pub  Pear Slough                                               Twin Counties Athletic Association Pear Slough
     1A   187 priv New Hope Christian                                        Hacienda League                    New Hope Christian
 
@@ -1947,7 +1947,7 @@ Silver Glen — 2 programs (Ferris County, Gold Valley)
 Silver Junction — 1 program (Stagewater County, Kangas)
    Group 2   160 pub  Silver Junction                                           Kajaani League                     Silver Junction
 
-Simmons — 3 programs (Vance County, Halbrook Basin)
+Simmons — 3 programs (Vance County, Silver Basin)
    Group 1  1429 pub  Simmons                                                   Four Rivers Interscholastic League Stone Springs
    Group 1  1082 pub  Charles Harbor                                            Four Rivers Interscholastic League Ainhoa Mendizabal
    Group 2   569 pub  Oak Forest                                                Dual County League                 Oksana Petrov
@@ -1984,7 +1984,7 @@ St. Varian — 5 programs (Marlow County, Ashbury Metro)
 Stagewater — 1 program (Stagewater County, Kangas)
    Group 2   168 pub  Oscar Michaeux                                            Kajaani League                     Oscar Michaeux
 
-Starlake — 2 programs (Vance County, Halbrook Basin)
+Starlake — 2 programs (Vance County, Silver Basin)
    Group 2   352 pub  Canal Lock                                                Vesterheim Athletic Association    Starlake Canal View
    Group 2   347 pub  Starlake                                                  Dual County League                 Starlake
 
@@ -2056,7 +2056,7 @@ Tindall — 3 programs (Camas County, Ashbury Metro)
 Tindall Spur — 1 program (Ostrander County, Sebastian Cape)
     3A   473 pub  Tidelands Union                                           Pori League                        Tidelands Union
 
-Tolland — 1 program (Vance County, Halbrook Basin)
+Tolland — 1 program (Vance County, Silver Basin)
    Group 1   917 pub  Cedar Exchange                                            Four Rivers Interscholastic League Garazi Mendizabal
 
 Trout Lake — 1 program (Rimrock County, Juniper Highlands)
@@ -2187,7 +2187,7 @@ Yarmere — 1 program (Tamarack County, Cascade Divide)
 Zion Hill — 1 program (Paddock County, Yarrowmere)
     2A   249 pub  Zion Hill                                                 Marble Valley League               Zion Hill
 
-Zubieta — 4 programs (Vance County, Halbrook Basin)
+Zubieta — 4 programs (Vance County, Silver Basin)
    Group 1  1466 pub  Zubieta                                                   Four Rivers Interscholastic League Zubieta
    Group 1  1441 pub  Spring Branch                                             Four Rivers Interscholastic League Beatriz Salcedo
    Group 1  1316 pub  River Plain                                               Four Rivers Interscholastic League Zubieta River Plain

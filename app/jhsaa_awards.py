@@ -116,25 +116,29 @@ AD_SINGLES, AD_DOUBLES = TEAM_SINGLES, TEAM_DOUBLES
 MIN_REGION_PROGRAMS = 4
 
 # ‼️ A BIG REGION CROWNS TWO TEAMS (owner rule 2027-08). The association's regions
-# are nowhere near the same size — Halbrook Basin has 115 boys' programs and North
-# Range has 17 — so one team of ten singles is a far scarcer honour in one than in
-# the other. Regions at or above this many programs crown a First AND a Second
-# Team; the rest crown a single unnumbered All-Region team.
+# are nowhere near the same size — pre-split Halbrook Basin had 115 boys' programs
+# and North Range 17 — so one team of ten singles is a far scarcer honour in one
+# than in the other. Regions at or above this many programs crown a First AND a
+# Second Team; the rest crown a single unnumbered All-Region team.
 #
 # Derived from the PROGRAM COUNT, never a list of region names: the association's
 # shape changes when schools are added, and the reason for the rule is the size,
-# not the name. Measured — boys: Halbrook 115 · Gold Valley 65 · Selquah 51 ·
-# Sebastian Cape 49 · Ashbury Metro 45, then a clean break to Kangas 36. Girls
-# is the same five, 50-128 against 38. So 45 splits exactly the regions the owner
-# named, plus Sebastian Cape, which is BIGGER than Ashbury Metro on the boys' side
-# and so cannot be left out on the owner's own reasoning.
+# not the name — which is exactly what let the 2026-08 Halbrook Basin four-way
+# split (Belmonte Metro / Halbrook Basin / Boise Frontier / Silver Basin, see
+# `import_jhsaa.split_area`) land with no change here: each of the four measures
+# 50-58 girls' / 50-55 boys' programs, so all four clear this bar in both genders
+# and crown two teams, matching the other big regions' density.
 AR_TIER2_MIN_PROGRAMS = 45
 
 # ‼️ AND THE BIGGEST REGION GETS AN HONORABLE MENTION TOO (owner rule 2027-08):
 # "Halbrook should have honorable mention too, it's so much bigger than everywhere
-# else." It is not a close call — Halbrook Basin has 115 boys' / 128 girls'
-# programs and the next region down, Gold Valley, has 65 / 77. Two full teams
-# still only reach 36 athletes out of a region the size of a small classification.
+# else." At the time it was not a close call — pre-split Halbrook Basin had 115
+# boys' / 128 girls' programs against Gold Valley's 65 / 77, and two full teams
+# only reach 36 athletes out of a region the size of a small classification.
+# Since the 2026-08 four-way split (each piece 50-58 programs), NO region clears
+# this bar — that is the rule working, not a dead constant: the whole point of
+# the split was that no region should be that outsized, and the threshold stays
+# for whenever one grows back.
 #
 # Same rule as All-State's HM and for the same reason: a THRESHOLD, not a team.
 # No slot count, so the size is an OUTPUT of how deep the region actually was,
