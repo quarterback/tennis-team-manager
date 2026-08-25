@@ -74,6 +74,20 @@ LADDER_GROUPS = GROUPS[:9]                       # 9A … 1A, a real size orderi
 GB_GROUPS = GROUPS[9:]                     # ("Group 1", "Group 2")
 assert LADDER_GROUPS[-1] == "1A" and GB_GROUPS == ("Group 1", "Group 2")
 
+#: DISPLAY-only abbreviation (owner, 2026-08). "Group 1"/"Group 2" is the STORED
+#: identity — it keys the standings dict, the archive, `School.group`, and every
+#: URL's `group=` argument — and none of that changes here. Every ladder class
+#: (9A…1A) is already <= 2 characters and every narrow column/chip in the section
+#: was sized for that; "Group 1" is 8, so it wrapped a 46px Class column and ran
+#: off a pill-shaped chip. `group_short` is read at RENDER time only.
+GROUP_SHORT = {"Group 1": "G1", "Group 2": "G2"}
+
+
+def group_short(group: str) -> str:
+    """The short form for a tight space (a table column, a chip). Any ladder class
+    is already short and passes through unchanged."""
+    return GROUP_SHORT.get(group, group)
+
 
 def champ_group(classification: str) -> str:
     """The championship group a raw classification plays in.

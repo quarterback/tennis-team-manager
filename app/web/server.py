@@ -2215,6 +2215,10 @@ def create_app() -> Flask:
         return url_for(ep, **{k: v for k, v in args.items() if v is not None})
 
     app.jinja_env.globals["jh_scope_url"] = jh_scope_url
+    # A tight-space display form for a classification — "Group 1" -> "G1" — for
+    # narrow table columns and chips. Never the stored identity; see jhsaa.group_short.
+    from app.jhsaa import group_short as _jh_group_short
+    app.jinja_env.filters["jh_group_short"] = _jh_group_short
 
     @app.route("/jhsaa/schools")
     def jhsaa_schools():

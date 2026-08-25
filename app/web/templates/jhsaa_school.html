@@ -348,12 +348,15 @@
       {% for s in view.history.seasons %}
       <tr class="{{ 'title' if s.champion }}">
         <td class="yr"><a href="{{ url_for('jhsaa_school', school=view.school, year=s.year, u=u, g=view.gender) }}">{{ s.season_year }}</a></td>
-        <td>{{ s.group }}</td>
+        {# ‼️ SHORT FORM — this column is a fixed 46px in a `nowrap` ledger, sized for
+           the ladder's 9A..1A (<=2 chars); "Group 1" ran past it and clipped to
+           "Group" (`.jh-ledger td { overflow: hidden }`, no ellipsis). #}
+        <td>{{ s.group|jh_group_short }}</td>
         <td><b>{{ s.record }}</b></td>
         <td>{{ s.district_record or '—' }}</td>
         <td>{{ s.place or '—' }}{% if s.district_title %} <span class="jh-chip" style="background:var(--brand)">D</span>{% endif %}</td>
         <td>{{ s.seed or '—' }}</td>
-        <td class="fin">{% if s.champion %}<span class="jh-chip gold">{{ s.group }} CHAMPION</span>
+        <td class="fin">{% if s.champion %}<span class="jh-chip gold">{{ s.group|jh_group_short }} CHAMPION</span>
           {% elif s.state_finish %}{{ s.state_finish }}{% else %}<span style="color:var(--text-faint)">—</span>{% endif %}
           {% if s.made_toc %}<span class="jh-chip {{ 'gold' if s.toc_champion }}">{{ s.toc_finish|upper }}</span>{% endif %}</td>
         <td>{{ s.state_rank or '—' }}</td>

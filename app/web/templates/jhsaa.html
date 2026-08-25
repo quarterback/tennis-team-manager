@@ -169,7 +169,7 @@
       <div class="bl-panel-body">
         {% for gp, ch in view.champions.items() %}
         <a class="jh-modrow" href="{{ url_for('jhsaa_page', u=u, g=view.gender, group=gp, year=view.year) }}">
-          <span class="jh-chip c-{{ gp|replace(' ','') }}" style="width:46px;justify-content:center">{{ gp }}</span>
+          <span class="jh-chip c-{{ gp|replace(' ','') }}" style="width:46px;justify-content:center">{{ gp|jh_group_short }}</span>
           {{ ch.mark|safe }}
           <span class="bd"><span class="n">{{ ch.name }}</span></span>
         </a>
