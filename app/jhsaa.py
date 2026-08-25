@@ -4890,22 +4890,34 @@ def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
                      "home_points": res.home_points, "away_points": res.away_points,
                      "winner": win.school.name}
 
-    # ‼️ A "FIRST FOUR" PLAY-IN FOR AN OVERSIZED FIELD (owner rule 2027-08, nine
-    # classifications). `champions` grew from eight to nine at the 1A/2A split;
-    # the cut-to-four math below was written and only ever exercised at exactly
-    # eight (`2*(n-4)` play-in slots fits an n-team field only for n<=8). Rather
-    # than reworking that math for an odd field, this reduces any field bigger
-    # than eight the real-bracket way: the lowest TWO seeds play ONE game, and
-    # the winner takes the vacated 8-seed slot — so an 8/9 upset means the
-    # winner faces the 1-seed next, same as if they'd been the 8-seed all
-    # along. Everything below this is completely unchanged from the original
-    # eight-team design and is never asked to handle more than eight again.
+    # ‼️ A TWO-TIER CUT FOR AN OVERSIZED FIELD (owner rule 2027-08 through
+    # 2027-08, eleven classifications now that Great Basin Group 1/Group 2
+    # joined the ladder). This used to be a CHAINED play-in — one game at a
+    # time, `alive[-2]` vs `alive[-1]`, winner appended to the END of the
+    # list — which was only ever exercised at exactly nine classifications
+    # (a single 8-vs-9 game). Once Group 1/2 pushed the field past ten, the
+    # chain broke: with 11 teams it played 10v11, then 9-vs-that-winner, then
+    # 8-vs-THAT-winner — seed 8 fighting through three sequential do-or-die
+    # games while seeds 1-7 sat idle, and each single game landing in `rounds`
+    # as its own one-game "round" (wrecking the bracket renderer's assumption
+    # that a round is a set of PARALLEL games). Fixed the same way real
+    # brackets seed a play-in round: cut to eight in ONE parallel round,
+    # generalising the cut-to-four block below one tier up (8 plays 9, 7 plays
+    # 11, 6 plays 10 for an 11-team field — the top five sit out), THEN run
+    # the cut-to-four Octofinals on the resulting eight. At nine teams this
+    # still reduces to the single 8-vs-9 game it always was.
     rounds: list[list[dict]] = []
     alive = list(field)
-    while len(alive) > 8:
-        w, gm = play(alive[-2], alive[-1])
-        rounds.append([gm])
-        alive = alive[:-2] + [w]
+    if len(alive) > 8:
+        n_in = 2 * (len(alive) - 8)
+        block, byes = alive[-n_in:], alive[:-n_in]
+        games, won = [], []
+        for i in range(n_in // 2):
+            w, gm = play(block[i], block[n_in - 1 - i])
+            games.append(gm)
+            won.append(w)
+        rounds.append(games)
+        alive = byes + won
 
     # Cut to four, then semifinals, then the final: 6 -> 4 -> 2 -> 1. The play-in
     # takes the bottom 2*(n-4) seeds and pairs them highest-against-lowest, so at
