@@ -5655,9 +5655,19 @@ def jhsaa_individual_winners(seed: int, gender: str, group: str | None = None,
                                years[0] if years else 0, years, None, None)}
 
 
-def jhsaa_past_winners(seed: int, gender: str, group: str | None = None) -> dict:
+def jhsaa_past_winners(seed: int, gender: str, group: str | None = None,
+                       layout: str | None = None) -> dict:
     """Champions and Players of the Year for every archived JHSAA year — the
-    high-school analogue of the college past-winners boards."""
+    high-school analogue of the college past-winners boards.
+
+    ‼️ THE CHAMPION CARRIES ITS RECORD (owner, 2026-08: "i want Jesuit (25-6)").
+    It is scan context a bare name cannot give — whether a title came off a perfect
+    year or a 17-9 grind — and it costs nothing to read: `record` is already on the
+    archived standings row, so this is a lookup in the season already loaded, never
+    a second pass over the duals.
+
+    `layout` picks between two presentations of the SAME rows (owner asked to see it
+    both ways) — see the template. It changes nothing about what is computed."""
     import app.jhsaa as jh
     import app.world as world
     w = world.get_or_create(seed)
@@ -5666,14 +5676,25 @@ def jhsaa_past_winners(seed: int, gender: str, group: str | None = None) -> dict
     years = []
     for year in world.jhsaa_years(w["id"], g):
         arc = world.get_jhsaa(w["id"], year, g)
-        if arc:
-            years.append({"year": year, "season_year": arc.get("season_year"),
-                          "champions": {gp: _jh_deco(schools, nm, 20)
-                                        for gp, nm in (arc.get("champions") or {}).items()
-                                        if nm},
-                          "poy": {grp: (aw.get("poy") or {})
-                                  for grp, aw in (arc.get("awards") or {}).items()}})
+        if not arc:
+            continue
+        # {group: {school: record}} for this season, off the archived standings —
+        # one flat walk of rows already in memory.
+        recs = {}
+        for gp, districts in (arc.get("standings") or {}).items():
+            for rows in (districts or {}).values():
+                for r in rows or ():
+                    recs.setdefault(gp, {})[r.get("school")] = r.get("record", "")
+        years.append({
+            "year": year, "season_year": arc.get("season_year"),
+            "champions": {gp: {**_jh_deco(schools, nm, 20),
+                               "record": (recs.get(gp) or {}).get(nm, "")}
+                          for gp, nm in (arc.get("champions") or {}).items() if nm},
+            "poy": {grp: (aw.get("poy") or {})
+                    for grp, aw in (arc.get("awards") or {}).items()}})
     return {"gender": g, "groups": list(jh.GROUPS), "years": years,
+            "layout": layout if layout in ("grid", "stack") else "stack",
+            "layouts": [("stack", "By year"), ("grid", "Grid")],
             # class-blind page; `group` rides the scope bar so the class you were
             # browsing is still selected when you leave.
             "scope": _jh_scope(g, group if group in jh.GROUPS else jh.GROUPS[0],

@@ -11,10 +11,39 @@
 {% if not view.years %}
 <div class="bl-panel"><div class="jh-empty">No seasons archived yet.</div></div>
 {% else %}
+
+{# ‼️ TWO PRESENTATIONS OF THE SAME ROWS, and the reason is the class count.
+   The grid puts one column per classification, which was fine at six and is
+   breaking at eleven: "Stagewater" wrapped to "Stagewat / er", "Mesa Cooperative"
+   to three lines. Group 1 and Group 2 (2046) took it from nine columns to eleven
+   and the next expansion takes it further — a layout whose readability decays as
+   the association grows is the wrong default.
+
+   BY YEAR stacks the classes down a season instead of across it, so a champion's
+   name has the width of the page rather than a ninth of it, and it does not care
+   how many classes exist. The GRID is kept because scanning DOWN one class across
+   seasons is a real question the stack answers worse. Owner asked to see both. #}
+<div class="jh-laypick">
+  <span class="lbl">Layout</span>
+  {% for key, name in view.layouts %}
+  <a class="{{ 'on' if view.layout == key }}"
+     href="{{ url_for('jhsaa_champions', u=u, g=view.gender, group=view.scope.group, layout=key) }}">{{ name }}</a>
+  {% endfor %}
+</div>
+
+{% if view.layout == 'grid' %}
 <div class="bl-panel">
   <div class="bl-panel-head"><span class="bl-panel-title">State champions</span></div>
   <div class="tbl-scroll">
-    <table class="jh-ledger">
+    {# ‼️ THE GRID SCROLLS RATHER THAN COMPRESSES, and the min-width is computed from
+       the CLASS COUNT so it keeps working as the association grows. A `width:100%`
+       fixed-layout table is never wider than its container, so the `.tbl-scroll`
+       wrapper never scrolled and eleven columns just squeezed instead — names broke
+       mid-word ("Natchitoc / hes", "Housatoni / c"). The app rule is that wide
+       content scrolls in its own container; a champion whose name cannot be read is
+       not a champion cell. #}
+    <table class="jh-ledger jh-champgrid"
+           style="min-width:{{ 64 + view.groups|length * 136 }}px">
       <tr><th style="width:64px">Season</th>
         {% for gp in view.groups %}<th>{{ gp }}</th>{% endfor %}</tr>
       {% for y in view.years %}
@@ -24,17 +53,17 @@
         {% set ch = y.champions.get(gp) %}
         {# ‼️ CHAMPIONS ONLY, AND THE NAME MUST FIT (owner, 2026-08). Nine
            classifications across one row leaves each column narrow, and stacking a
-           Player of the Year under every champion made both unreadable — the school
-           names truncated to "Halfway Ho…" and the POY line competed with them for
-           the same few pixels. The champion is what this table is FOR; the POY has
-           its own place on the honours page. Names WRAP rather than truncate: a
-           table of champions whose champions cannot be read is not a table. #}
+           Player of the Year under every champion made both unreadable. The
+           champion is what this table is FOR; the POY has its own place on the
+           honours page. Names WRAP rather than truncate: a table of champions whose
+           champions cannot be read is not a table. #}
         <td class="jh-champ-cell">
           {% if ch %}
           {# Each row is a DIFFERENT season, so a champion links to the season it won,
              not to whatever the newest archived one happens to be. #}
           <span class="jh-schoolcell">{{ ch.mark|safe }}
             <a href="{{ url_for('jhsaa_school', school=ch.name, u=u, g=view.gender, year=y.year) }}">{{ ch.name }}</a></span>
+          {% if ch.record %}<span class="rec">{{ ch.record }}</span>{% endif %}
           {% else %}<span style="color:var(--text-faint)">—</span>{% endif %}
         </td>
         {% endfor %}
@@ -43,6 +72,36 @@
     </table>
   </div>
 </div>
+
+{% else %}
+{# BY YEAR — one panel a season, the classes stacked inside it. #}
+{% for y in view.years %}
+<div class="bl-panel jh-yearpanel">
+  <div class="bl-panel-head">
+    <span class="bl-panel-title">
+      <a href="{{ url_for('jhsaa_page', u=u, g=view.gender, group=view.groups[0], year=y.year) }}">{{ y.season_year }}</a>
+    </span>
+    <span class="bit">{{ y.champions|length }} champions</span>
+  </div>
+  <div class="jh-yearchamps">
+    {% for gp in view.groups %}
+    {% set ch = y.champions.get(gp) %}
+    {% if ch %}
+    <div class="row">
+      <span class="jh-chip c-{{ gp|replace(' ','') }}">{{ gp }}</span>
+      <span class="mk">{{ ch.mark|safe }}</span>
+      <a class="nm" href="{{ url_for('jhsaa_school', school=ch.name, u=u, g=view.gender, year=y.year) }}">{{ ch.name }}</a>
+      {# The record is the scan context a bare name cannot give — a 25-6 title and
+         a 17-9 one are different seasons. #}
+      {% if ch.record %}<span class="rec">({{ ch.record }})</span>{% endif %}
+    </div>
+    {% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
 {% endif %}
 </div>
 {% endblock %}

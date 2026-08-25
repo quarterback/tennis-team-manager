@@ -2769,7 +2769,8 @@ def create_app() -> Flask:
     @app.route("/jhsaa/champions")
     def jhsaa_champions():
         gender, label, u, g, group, _year = _jh_scope_args()
-        view = jhsaa_past_winners(DEFAULT_SEED, g, group)
+        view = jhsaa_past_winners(DEFAULT_SEED, g, group,
+                                  request.args.get("layout"))
         return render_template("jhsaa_champions.html", active="High School", view=view,
                                gender=gender, u=u, uni_label=label)
 
