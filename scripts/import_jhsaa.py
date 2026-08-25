@@ -293,6 +293,10 @@ OWNER_EDICTS = frozenset({
     "Earl Warren", "Sonia Sotomayor", "Ketanji Brown Jackson",
     "Sandra Day O'Connor", "Ruth Bader Ginsburg", "John Quincy Adams",
     "John F. Kennedy", "Western Sky",
+    # 2046 expansion (owner edict 2026-08): the new 1A activation in Ransom,
+    # Tamarack County — dictated by name after the "Ransom City Union" source
+    # name collided with a former name of Ransom Pass.
+    "Reverend City",
     # towns
     "Cape Angeles", "Fort Tabor", "New Penzance Island", "Bay Oregon",
     "Carolina Island", "North San Francisco", "California Canyons", "Vonjo City",

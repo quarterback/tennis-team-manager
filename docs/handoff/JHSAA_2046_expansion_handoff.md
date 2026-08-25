@@ -21,7 +21,7 @@
 - All current Kangas schools
 - All current Millersylvania schools
 - Vance County except Belyakov and Orellana
-- New Snake River Plain and Bear River Country schools
+- New Silver Basin, Snake River Plain and Bear River Country schools
 
 Belyakov and Orellana stay in the 1A–9A JHSAA system.
 

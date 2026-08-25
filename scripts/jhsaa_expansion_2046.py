@@ -67,10 +67,13 @@ _RIVALRY_OVERRIDE = {
 # explicit that `source or name` must be globally unique -- a new program using
 # a retired alias would either misresolve through `jhsaa.current_name`/
 # `_relabel` or silently share an identity with Ransom Pass's archived history.
-# Renamed to the nearest name that collides with nothing in either the display-
-# name set or the former-names table.
+# Renamed to a name that collides with nothing in either the display-name set
+# or the former-names table. "Reverend City" is an OWNER EDICT (2026-08 — it is
+# in `import_jhsaa.OWNER_EDICTS`); an earlier draft used "Ransom City Regional".
+# The town stays Ransom, Tamarack County, per the handoff. The school has never
+# been archived, so no former_names/alias entry is needed.
 _NAME_OVERRIDE = {
-    "Ransom City Union": "Ransom City Regional",
+    "Ransom City Union": "Reverend City",
 }
 
 # A small bank of ordinary American high-school mascots (no foreign fauna, per
