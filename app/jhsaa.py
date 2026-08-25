@@ -60,27 +60,33 @@ from .development import Prospect, generate_prospect, make_pid, overall_to_str
 _DATA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                      "data", "jhsaa", "schools.json")
 
-GROUPS = ("9A", "8A", "7A", "6A", "5A", "4A", "3A", "2A", "1A", "Group 1", "Group 2")
+GROUPS = ("9A", "8A", "7A", "6A", "5A", "4A", "3A", "2A", "1A",
+          "Group 1", "Group 2", "Group 3")
 
-# ‼️ GROUPS IS NO LONGER ONE ORDERED LADDER (2046 expansion). The first nine entries
-# are the enrollment LADDER, biggest to smallest; the two "Group" groups (Great Basin) are the
-# Great Basin's own big/small PAIR ("think of them more as 10A and 11A than thinking
-# of them as anything weird" — two more classifications, but NOT rungs above or below
-# 1A). Anything that walks GROUPS as a single size ordering — play-up, "classes
-# apart" pairing gates, "every class above mine" menus — must use LADDER_GROUPS and
-# treat GB_GROUPS separately; plain enumeration (archiving, scope bars,
-# renumbering passes) may keep iterating GROUPS.
+# ‼️ GROUPS IS NO LONGER ONE ORDERED LADDER (2046 expansion, extended by the
+# Heritage Valley migration). The first nine entries are the enrollment LADDER,
+# biggest to smallest; the three "Group" groups (Great Basin + Heritage Valley) are
+# their OWN size ordering, big to small ("think of them more as 10A/11A/12A than
+# thinking of them as anything weird" — more classifications, but NOT rungs above or
+# below 1A). Heritage Valley's eastern arrivals joined this pool rather than the
+# ladder because they play in the SAME three geographic areas (Silver Basin/Snake
+# River Plain/Bear River Country) the original Great Basin counties already stood
+# on — one shared Group system for one shared footprint, split three ways once the
+# combined population (222) supported it. Anything that walks GROUPS as a single
+# size ordering — play-up, "classes apart" pairing gates, "every class above mine"
+# menus — must use LADDER_GROUPS and treat GB_GROUPS separately; plain enumeration
+# (archiving, scope bars, renumbering passes) may keep iterating GROUPS.
 LADDER_GROUPS = GROUPS[:9]                       # 9A … 1A, a real size ordering
-GB_GROUPS = GROUPS[9:]                     # ("Group 1", "Group 2")
-assert LADDER_GROUPS[-1] == "1A" and GB_GROUPS == ("Group 1", "Group 2")
+GB_GROUPS = GROUPS[9:]                     # ("Group 1", "Group 2", "Group 3")
+assert LADDER_GROUPS[-1] == "1A" and GB_GROUPS == ("Group 1", "Group 2", "Group 3")
 
-#: DISPLAY-only abbreviation (owner, 2026-08). "Group 1"/"Group 2" is the STORED
-#: identity — it keys the standings dict, the archive, `School.group`, and every
-#: URL's `group=` argument — and none of that changes here. Every ladder class
+#: DISPLAY-only abbreviation (owner, 2026-08). "Group 1"/"Group 2"/"Group 3" is the
+#: STORED identity — it keys the standings dict, the archive, `School.group`, and
+#: every URL's `group=` argument — and none of that changes here. Every ladder class
 #: (9A…1A) is already <= 2 characters and every narrow column/chip in the section
 #: was sized for that; "Group 1" is 8, so it wrapped a 46px Class column and ran
 #: off a pill-shaped chip. `group_short` is read at RENDER time only.
-GROUP_SHORT = {"Group 1": "G1", "Group 2": "G2"}
+GROUP_SHORT = {"Group 1": "G1", "Group 2": "G2", "Group 3": "G3"}
 
 
 def group_short(group: str) -> str:
@@ -367,12 +373,17 @@ ROSTER_SIZE_BAND_BY_CLASS = {
     "3A": (17, 19),
     "2A": (15, 17),
     "1A": (14, 16),
-    # 2046 Great Basin groups: each spans a wide enrollment range rather than one
-    # rung, so the bands blend the ladder classes they cover — Group 1
-    # (845-2556, roughly 5A-9A) blends the 6A/5A bands; Group 2 (57-836,
-    # roughly 1A-4A/low-5A) blends the 4A-2A bands.
-    "Group 1": (18, 22),
-    "Group 2": (15, 19),
+    # 2046 Great Basin groups, retiered three ways by the Heritage Valley
+    # migration (which pooled the original 184 Group 1/2 schools with 38
+    # eastern arrivals and re-cut the enrollment-sorted 222 into three even
+    # bands rather than two): each spans a wide enrollment range rather than
+    # one rung, so the bands blend the ladder classes they cover — Group 1
+    # (1066-2556, roughly 6A-9A) blends the 7A/6A bands; Group 2 (407-1059,
+    # roughly 3A-5A) blends the 5A/4A bands; Group 3 (57-396, roughly 1A-2A)
+    # blends the 2A/1A bands.
+    "Group 1": (19, 22),
+    "Group 2": (17, 20),
+    "Group 3": (14, 17),
 }
 
 
@@ -658,12 +669,20 @@ WARD_FIELD = 32
 # the "a class could be moved back without touching anything else" promise above.
 STATE_FIELD = {"9A": 32, "8A": 32, "7A": 32,
                "6A": 40, "5A": 40, "4A": 40, "3A": 40, "2A": 24, "1A": 24,
-               # 2046 expansion (owner rule): the two Great Basin groups are two
-               # more classifications, full stop -- "think of them more as 10A
-               # and 11A than thinking of them as anything weird." 92 sponsors
-               # each clears the dynamic-ladder floor comfortably (76 required
-               # at a 40-field) so they play the standard shape, not `_recovery_24`.
-               "Group 1": 40, "Group 2": 40}
+               # 2046 expansion (owner rule): the Great Basin groups are more
+               # classifications, full stop -- "think of them more as 10A and
+               # 11A than thinking of them as anything weird." Group 1/Group 2
+               # each carried 92 sponsors and cleared the dynamic-ladder floor
+               # comfortably (76 required at a 40-field). The Heritage Valley
+               # migration re-cut that same 184-school pool (plus 38 eastern
+               # arrivals) into THREE even bands of 74, which drops Group 1 and
+               # Group 2 below the 76 floor -- reported (`sc_head` degrades
+               # loudly), not patched, the same as any other class a real
+               # realignment thins below the line. Group 3's 57-396 enrollment
+               # band sits far enough down the ladder that it plays the
+               # BYELESS 24-field shape instead (`_recovery_24`, 1A/2A's own
+               # format), which needs no Semi-Conference floor at all.
+               "Group 1": 40, "Group 2": 40, "Group 3": 24}
 STATE_FIELD_DEFAULT = 24
 
 #: The preliminary round of an expanded field — "Qualies" on a chip. It is PART OF
@@ -803,15 +822,20 @@ _TALENT = {
     ("3A", "boys"):    (43.5, 20.0), ("3A", "girls"):    (38.0, 19.0),
     ("2A", "boys"):    (41.0, 21.0), ("2A", "girls"):    (36.5, 20.0),
     ("1A", "boys"):    (36.0, 23.0), ("1A", "girls"):    (32.5, 22.0),
-    # 2046 Great Basin groups. Each classification spans several ladder classes'
-    # worth of enrollment, so the band is a BLEND of the classes it covers, per
-    # the section rule (smaller = thinner mean, wider spread): Group 1
-    # (845-2556 ≈ a 5A-9A mix) sits between 6A and 5A; Group 2 (57-836 ≈ a
-    # 1A-4A mix) sits between 3A and 2A. `classification` on these schools IS
-    # "Group 1"/"Group 2", so `School.talent_group` reads these keys —
-    # without them every Great Basin roster build KeyErrors.
-    ("Group 1", "boys"): (54.5, 16.5), ("Group 1", "girls"): (49.5, 15.5),
-    ("Group 2", "boys"): (42.0, 20.5), ("Group 2", "girls"): (37.5, 19.5),
+    # 2046 Great Basin groups, retiered three ways by the Heritage Valley
+    # migration (see the ROSTER_SIZE_BAND_BY_CLASS note above — same enrollment
+    # ranges). Each classification spans several ladder classes' worth of
+    # enrollment, so the band is a BLEND of the classes it covers, per the
+    # section rule (smaller = thinner mean, wider spread): Group 1
+    # (1066-2556 ≈ a 6A-9A mix) sits between 7A and 6A; Group 2 (407-1059 ≈
+    # a 3A-5A mix) sits between 5A and 4A; Group 3 (57-396 ≈ a 1A-2A mix) sits
+    # between 2A and 1A. `classification` on these schools IS
+    # "Group 1"/"Group 2"/"Group 3", so `School.talent_group` reads these
+    # keys — without them every Great Basin/Heritage Valley roster build
+    # KeyErrors.
+    ("Group 1", "boys"): (57.0, 15.0), ("Group 1", "girls"): (52.0, 14.0),
+    ("Group 2", "boys"): (48.5, 18.5), ("Group 2", "girls"): (44.0, 17.5),
+    ("Group 3", "boys"): (38.5, 21.5), ("Group 3", "girls"): (34.5, 20.5),
 }
 # --- PROGRAM ARCHETYPES (owner rule 2027-08) ---------------------------------
 #
@@ -4951,17 +4975,21 @@ def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
 
 
 # 9A=0 … 1A=8, so |i-j| = classes apart on the enrollment ladder. The Great Basin
-# groups (2046) are NOT ladder rungs — enumerating GROUPS raw put Group 1 at 9,
-# "one apart" from 1A, i.e. a 2,500-enrollment school gated onto 100-student
-# opponents. They get FRACTIONAL positions on the same scale instead, chosen from
-# their enrollment midpoints so the existing |i-j| <= 1 gate does the right thing:
-# Group 1 (845-2556, mid ≈ 6A/5A) at 3.5 pairs with 6A, 5A and Group 2;
-# Group 2 (57-836, mid ≈ 5A/4A boundary) at 4.5 pairs with 5A, 4A and Group 1.
-# Crucially the two are exactly 1.0 apart, so the Great Basin pair can always meet
-# non-district — which geography (their own three areas) makes the common case.
+# groups (2046, retiered three ways by the Heritage Valley migration) are NOT ladder
+# rungs — enumerating GROUPS raw put Group 1 at 9, "one apart" from 1A, i.e. a
+# 2,500-enrollment school gated onto 100-student opponents. They get FRACTIONAL
+# positions on the same scale instead, chosen from their enrollment midpoints so the
+# existing |i-j| <= 1 gate does the right thing: Group 1 (1066-2556, mid ≈ 7A/6A) at
+# 2.5 pairs with 7A, 6A and Group 2; Group 2 (407-1059, mid ≈ 5A/4A) at 3.5 pairs
+# with 6A, 5A, 4A and its neighbours; Group 3 (57-396, mid ≈ 2A/1A) at 4.5 pairs with
+# 5A, 4A and Group 2. Each pair of neighbours is exactly 1.0 apart, so Group 1/2/3
+# can always meet each other non-district — though geography (their own three
+# areas — Silver Basin/Snake River Plain/Bear River Country, the SAME ground the
+# original Great Basin counties stood on) makes that the common case regardless.
 _GROUP_IX = {g: i for i, g in enumerate(LADDER_GROUPS)}
-_GROUP_IX["Group 1"] = 3.5
-_GROUP_IX["Group 2"] = 4.5
+_GROUP_IX["Group 1"] = 2.5
+_GROUP_IX["Group 2"] = 3.5
+_GROUP_IX["Group 3"] = 4.5
 
 # How a non-district opponent is chosen (owner rule 2027-08): geography first — you do
 # not bus across Jefferson for a non-league dual — then talent, so a weak program isn't
