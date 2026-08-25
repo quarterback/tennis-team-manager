@@ -122,6 +122,55 @@
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
+/* ---- Collapsible panel (owner, 2026-08) ----------------------------------
+   `<details>`/`<summary>`, not a JS toggle: the open/closed state, the keyboard
+   behaviour and the accessibility semantics are all native, and a panel that fails
+   to run its script still renders its contents rather than hiding them. The head
+   keeps `.bl-panel-head` so a folding panel and a fixed one are the same object. */
+.jh-fold > summary { cursor: pointer; list-style: none; user-select: none; }
+.jh-fold > summary::-webkit-details-marker { display: none; }
+/* `align-self` because `.bl-panel-head` is a BASELINE flex row — a bordered box has
+   no text baseline to sit on and rides high without it. */
+.jh-fold > summary::after {
+  content: ""; margin-left: auto; align-self: center;
+  width: 7px; height: 7px; flex: 0 0 auto;
+  border-right: 2px solid var(--text-faint); border-bottom: 2px solid var(--text-faint);
+  transform: rotate(45deg) translate(-2px, -2px); transition: transform .12s ease;
+}
+.jh-fold[open] > summary::after { transform: rotate(-135deg) translate(-3px, -3px); }
+.jh-fold > summary:hover::after { border-color: var(--brand-strong); }
+.jh-fold > summary:hover .bl-panel-title { color: var(--brand-strong); }
+
+/* ---- State tournament results (the individual championships) ----
+   The FLIGHT column absorbs the slack and the FINISH is right-aligned against the
+   panel edge. Left to size themselves the five columns spread evenly, pushed the
+   table past the panel, and clipped the champion's tag clean off — the one cell on
+   the row anybody is looking for. */
+/* ‼️ `min-width: 0` OVERRIDES `.bl-table`'s 920px floor, and that floor was the whole
+   bug — not the column widths a first two attempts chased. The shared class carries
+   it for the wide career tables; this one has five columns in a ~725px panel, so the
+   table sat 920px wide inside an `overflow-x: auto` wrapper and the FINISH column —
+   the only cell anyone opens this section to read — was parked off-screen, reachable
+   only by scrolling sideways. It read as a missing column, not a scroll. */
+.jh-solo { width: 100%; min-width: 0; table-layout: fixed; }
+.jh-solo th, .jh-solo td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jh-solo th:nth-child(1), .jh-solo td:nth-child(1) { width: 15%; }
+.jh-solo th:nth-child(2), .jh-solo td:nth-child(2) { width: 8%; }
+.jh-solo th:nth-child(3), .jh-solo td:nth-child(3) { width: 40%; white-space: normal; }
+.jh-solo th:nth-child(4), .jh-solo td:nth-child(4) { width: 13%; }
+.jh-solo th:last-child, .jh-solo td:last-child { width: 24%; text-align: right; }
+.jh-solo .pt { display: block; font-size: 11.5px; color: var(--text-faint); }
+.jh-solo-fin {
+  display: inline-block; padding: 1px 7px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 800; letter-spacing: .02em;
+  background: var(--surface-sunken, rgba(0,0,0,.05)); color: var(--text-muted);
+}
+/* A state champion carries the association's gold — the same slot a TOC title uses
+   on a schedule, because it is the same kind of thing: a title, not a round. */
+.jh-solo-fin.f-champ { background: var(--rank-gold); color: #fff; }
+.jh-solo-fin.f-f { background: var(--tint-road-bg); color: var(--tint-road-fg); }
+.jh-solo-fin.f-sf { background: var(--tint-even-bg); color: var(--tint-even-fg); }
+
 /* ---- Program directory (/jhsaa/schools) ---- */
 .jh-dirbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 14px; }
 .jh-dirfind {

@@ -93,11 +93,50 @@
       {% endif %}
     {%- endmacro %}
 
+    {# ‼️ STATE TOURNAMENT RESULTS — the individual championships, ABOVE the flight
+       record and collapsible like it (owner, 2026-08; neither was collapsible
+       before). A FINISH per draw, not a match log: the season's dual card already
+       logs matches, and what anyone wants from a state tournament is how far they
+       got. Shown only where there is one, so a career from before the event
+       existed does not get an empty panel.
+
+       These deliberately do NOT feed the Career W–L above — that is the player's
+       DUAL record, and an individual title is a separate competition rather than
+       more of that one. #}
+    {% if view.any_individual %}
+    <details class="bl-panel jh-fold" open>
+      <summary class="bl-panel-head">
+        <span class="bl-panel-title">State tournament results</span>
+        <span class="bit">{% if view.individual_titles %}{{ view.individual_titles }}
+          state title{{ 's' if view.individual_titles != 1 }}{% else %}individual championships{% endif %}</span>
+      </summary>
+      <div class="tbl-scroll">
+        <table class="bl-table jh-solo">
+          <thead><tr><th>Season</th><th>Yr</th><th>Flight</th><th>Seed</th><th>Finish</th></tr></thead>
+          <tbody>
+            {% for r in view.individuals %}
+            <tr>
+              <td>{{ r.season.season_year }}</td>
+              <td>{{ r.season.class_year }}</td>
+              <td>{{ r.flight_name }}{% if r.partner %}
+                <span class="pt">with {{ r.partner }}</span>{% endif %}</td>
+              <td>{{ ('No. ' ~ r.seed) if r.seed else '—' }}</td>
+              {# The champion carries the event's own gold, the way a TOC title does
+                 on a school's schedule — the rest state the round plainly. #}
+              <td><span class="jh-solo-fin f-{{ r.tag|lower }}">{{ r.finish }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </details>
+    {% endif %}
+
     {% for disc in ['singles', 'doubles'] %}
-    <div class="bl-panel">
-      <div class="bl-panel-head">
+    <details class="bl-panel jh-fold" open>
+      <summary class="bl-panel-head">
         <span class="bl-panel-title">Flight record — {{ disc|capitalize }}</span>
-        <span class="bit">W–L by court</span></div>
+        <span class="bit">W–L by court</span></summary>
       {% if view.any_jv %}
       {# No count on these tabs — `jh_tabs` skips the badge on 0. A number here counted
          SEASON ROWS, which is identical for both tabs and says nothing about either. #}
@@ -107,7 +146,7 @@
       {% if view.any_jv %}
       <div class="jh-pane tbl-scroll" data-pane="jv" hidden>{{ recbox(view.jv_flights[disc]) }}</div>
       {% endif %}
-    </div>
+    </details>
     {% endfor %}
   </div>
 

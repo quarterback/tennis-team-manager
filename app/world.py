@@ -3689,7 +3689,6 @@ def run_jhsaa(seed: int, world: dict) -> dict:
     season_year = jhsaa_season_year(world)
     conn = _db()
     champs = {}
-    seasons = {}                      # gender -> season, kept for the mixed draw
     try:
         # Divisions are numbered STATEWIDE, girls first then boys, bottom-up by
         # classification — so the counter runs across both genders' seasons.
@@ -3814,15 +3813,19 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                 [(world["id"], year, gender, grp, flight, json.dumps(draw))
                  for grp, flights in (season.get("individuals") or {}).items()
                  for flight, draw in flights.items()])
-            seasons[gender] = season
-        # MIXED DOUBLES — after BOTH genders, because a mixed pair is one player from
-        # each and `run_season` only ever sees one. It is archived under gender
+        # MIXED DOUBLES — run here because a mixed pair is one player from each
+        # gender and `run_season` only ever sees one. It is archived under gender
         # 'mixed': it belongs to neither field, so storing it on one gender's rows
         # would make "which one?" a question, and on both would duplicate it.
         # It credits nothing to anybody (owner rule) — the archive is where a mixed
-        # title lives, which is why it can run here, outside any season, at all.
-        mixed = jhsaa_individuals.run_mixed_season(
-            seasons["boys"]["teams"], seasons["girls"]["teams"], season_year, seed=0)
+        # title lives, which is why it can run outside a season at all.
+        #
+        # ‼️ IT BUILDS ITS OWN ROSTERS AND IS NOT HANDED THE SEASONS ABOVE. The
+        # league year begins in JULY (owner rule): summer mixed → fall boys →
+        # spring girls, so this is the FIRST event of the year and its pool must be
+        # cut from the preseason ability ladder, not from one moved by seasons that
+        # on this calendar have not been played yet. See `run_mixed_season`.
+        mixed = jhsaa_individuals.run_mixed_season(season_year, salt=salt, seed=0)
         conn.executemany(
             "INSERT INTO world_jhsaa_individual"
             " (world_id, year, gender, grp, flight, data) VALUES (?,?,?,?,?,?)",
@@ -3949,6 +3952,49 @@ def jhsaa_individual_champions(world_id: int, year: int, gender: str,
         ix = d.get("champion")
         if ix is not None:
             out[r["flight"]] = d["entries"][ix]
+    return out
+
+
+def jhsaa_individual_results(world_id: int, year: int, gender: str, group: str,
+                             pid: str) -> list[dict]:
+    """One player's individual-tournament results for ONE season — the flight they
+    entered and how far they got, per draw. Empty for a season played before the
+    event existed, which is honest.
+
+    ‼️ THE `LIKE` IS A PREFILTER, NOT THE ANSWER. A season's draws for one class are
+    seven ~30KB JSON blobs, and `json.loads` on all seven for every player page is
+    the cost this avoids: a pid is a 16-hex string, so a blob that does not contain
+    it cannot contain the player, and SQLite can decide that without parsing. The
+    entry is then located properly, by walking `entries`.
+
+    Mixed doubles is included (gender 'mixed'). It is a state title the player won
+    and belongs on their page; it credits no AWARD, which is a different thing."""
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT gender, flight, data FROM world_jhsaa_individual"
+            " WHERE world_id=? AND year=? AND grp=? AND gender IN (?, 'mixed')"
+            " AND data LIKE ?",
+            (world_id, year, group, gender, f"%{pid}%")).fetchall()
+    finally:
+        conn.close()
+    from . import jhsaa_individuals as ji
+    out = []
+    for r in rows:
+        d = _relabel(json.loads(r["data"]))
+        ix = ji.entry_index_of(d, pid)
+        if ix is None:                 # a LIKE hit that was not this player
+            continue
+        e = d["entries"][ix]
+        label, tag = ji.finish_for_index(d, ix)
+        partner = next((p["name"] for p in e["players"] if p["pid"] != pid), "")
+        out.append({"flight": r["flight"], "gender": r["gender"],
+                    "flight_name": ji.FLIGHT_NAMES.get(r["flight"], r["flight"]),
+                    "finish": label, "tag": tag, "seed": e.get("seed") or 0,
+                    "partner": partner, "entries": len(d["entries"]),
+                    "champion": tag == "CHAMP"})
+    order = {f: i for i, f in enumerate(ji.FLIGHTS + ("XD",))}
+    out.sort(key=lambda r: order.get(r["flight"], 99))
     return out
 
 

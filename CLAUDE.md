@@ -1169,6 +1169,20 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     open field is CHEAPER than qualifying, not dearer: a single-elimination draw plays
     `entries − 1` matches whatever its shape, so qualifying rounds ADD matches (10,569
     open vs 12,204 with a quota).
+  - **‼️ EXCESS BYES MUST NEVER DOUBLE UP IN ONE PAIRING — a bug in the SHARED
+    `engine.tournament.seeded_draw`, found here and fixed there.** It byes the top
+    seeds' opponents, then dropped the REMAINING byes on random open slots with no
+    partner check. Two byes in one pairing is not a bye, it is a MATCH THAT DOES NOT
+    EXIST: the player opposite advances twice unplayed, the next round stops being
+    half the one before it, and `state._bracket_canvas` — which links columns
+    positionally on exactly that halving — draws the tree wrong. Latent until byes
+    outnumber seeds: **measured, fields of 82-92 in a 128 draw leaked one in most
+    draws, 93+ never did** — i.e. most boys' classifications in the real association.
+    Always avoidable (`n_real > n/2`, so byes < pairings), so the fix takes NO
+    fallback; verified over 3,564 draws, sizes 3-299. Pinned in
+    `tests/test_bracketing.py`. ‼️ The owner offered to drop to 16 seeds to fix it;
+    that was unnecessary and declined — the defect was in how byes were PLACED, not
+    how many seeds exist. **Diagnose the defect before spending a design decision.**
   - **‼️ SEEDS ARE THE ENGINE'S EXISTING RULE AND ARE PUBLISHED IN TIERS.**
     `seed_count` is already a quarter of the draw and `seeded_draw` already places
     [1], [2], [3-4], [5-8], [9-16] onto mirror anchors — which is exactly how a real
@@ -1205,14 +1219,24 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     untouched. A function documenting itself as needing no parameter is stating an
     assumption — adding the parameter is the wrong repair.
   - **‼️ MIXED DOUBLES CANNOT LIVE IN `run_season`.** That takes ONE gender and a mixed
-    pair is one player from each, so it runs at the WORLD rung after both
-    (`run_mixed_season`) — where `renumber_divisions`/`reletter_conferences` run, and
-    where it belongs on the calendar (the owner put it in the **summer**). One flight,
-    one bracket, **one entry per school**, drawn from **below #9** (a consolation event
-    for the players the six flights have no seat for; `ROSTER_FLOOR` 16 − 9 leaves ≥7,
-    median 8). It is archived under gender **`'mixed'`** — it belongs to neither field —
-    and **credits NOTHING to anybody** (owner rule), which is what lets it run outside
-    any season at all.
+    pair is one player from each, so it runs at the WORLD rung (`run_mixed_season`) —
+    where `renumber_divisions`/`reletter_conferences` run. One flight, one bracket,
+    **one entry per school**, drawn from **below #9** (a consolation event for the
+    players the six flights have no seat for; `ROSTER_FLOOR` 16 − 9 leaves ≥7, median
+    8). It is archived under gender **`'mixed'`** — it belongs to neither field — and
+    **credits NOTHING to anybody** (owner rule), which is what lets it run outside any
+    season at all.
+  - **‼️ THE LEAGUE YEAR BEGINS IN JULY (owner rule 2026-08): summer mixed → fall boys
+    → spring girls, ONE unit.** So mixed is the FIRST event of the year, not the last:
+    June's seniors have graduated and the RISING squads play it. A reviewer read the
+    summer date the other way (a last hurrah for departing seniors) and concluded the
+    event needed the previous year's rosters and a gender-specific credit policy — it
+    needs neither. ‼️ But it DID surface a real fault: `run_mixed_season` was handed
+    `run_season`'s `season["teams"]`, whose `records` hold a season that on this
+    calendar HAS NOT BEEN PLAYED YET, and `_ladder` reads `records` — so the below-#9
+    pool was cut from a finished ladder for the event that OPENS the year. It now
+    builds its own `district_teams` (no results → `_order` is ability order, the same
+    basis the six flights use). **Never hand it a played season.**
   - **‼️ THE ARCHIVE IS ITS OWN TABLE (`world_jhsaa_individual`), one row per draw**, and
     two size mistakes got it there. (1) Matches stored full COPIES of their entrants on
     both sides, repeating each up to eight times over — **3.5 MB** a gender; they now

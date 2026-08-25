@@ -235,6 +235,72 @@ change every archived season, so it is left alone and flagged.)
 
 ---
 
+## ‼️ Three review findings, and only two were real
+
+A review raised three. The discipline that mattered was **checking each against the
+shipped code and the real association rather than against the plan**, because they
+did not all survive that.
+
+### 1. REAL, and a bug in the SHARED draw — excess byes doubled up
+
+`seeded_draw` gives byes to the top seeds' first-round opponents, then dropped any
+REMAINING byes on random open slots **with no check that the pairing partner was not
+also a bye**. A pairing with two empty slots is not a bye, it is a match that does not
+exist: whoever is drawn opposite it advances twice without playing, the round after
+the first stops being half the one before it, and `state._bracket_canvas` — which
+links columns positionally on exactly that halving — then draws the tree wrong.
+
+Invisible until byes outnumber seeds, which needs a field well under the bracket size.
+**Measured, 25 draws per size:** fields of **82-92** leaked a bye past round one in
+most draws; **93+** (≤35 byes against 32 seeds) never did. Against the real 2041
+association that is most of the boys' classifications (82, 83, 84, 86, 87, 88, 89, 92)
+and three girls' (85, 90, 92) — a live fault, not a hypothetical.
+
+It is **always** avoidable, so the fix takes no fallback: `n` is the smallest power of
+two ≥ `n_real`, so `n_real > n/2`, so the byes needed (`n − n_real`) are fewer than the
+`n/2` pairings available to hold them. Verified over **3,564 draws across field sizes
+3-299: zero failures.** Pinned by two tests in `test_bracketing.py`.
+
+‼️ The owner offered to trade seeding away to fix it ("I'm fine with 16 byes vs 32 if
+it helps"). It was not necessary and the offer was declined: the bug was in how extra
+byes were PLACED, not how many seeds exist, so the USTA 32-seed convention survives
+untouched. **Check what the defect actually is before spending a design decision on it.**
+
+### 2. REAL in effect, though not for the reason given — the summer pool
+
+The review argued a summer event cannot be preseason input to both genders' ladders.
+The owner's calendar answers it: **the league year begins in JULY** — summer mixed →
+fall boys → spring girls, one unit — so mixed is the FIRST event of the year, not the
+last. June's seniors have already graduated and it is the RISING squads who play it.
+The review had assumed the opposite (a last hurrah for departing seniors), which would
+have needed the previous year's rosters and a gender-specific credit policy. It needs
+neither, and mixed credits nothing anyway.
+
+But it did surface a genuine fault. `run_mixed_season` was handed `run_season`'s
+`season["teams"]`, whose `records` are full of a season that on this calendar **has not
+been played yet** — and `_ladder` reads `records` through `ladder_score`, so the pool
+below #9 was being cut from a finished ladder for the event that opens the year. It now
+builds its own `district_teams`, which have no results, so `_order` is ability order —
+the same basis the six flights use.
+
+### 3. NOT REAL — the finish labels
+
+The claim was that `run_tournament` emits `Finalist` and `R16` while `_FINISH_SHORT`
+expects `Runner-up`, so the labels need translating. Both halves are wrong here:
+
+* this module **never reads an engine finish label or `_FINISH_SHORT`**. It has its own
+  `FINISH_BANDS`, keyed on the ALIVE COUNT, precisely because `_finish_short` is wrong
+  for a 128 draw (see above);
+* and the engine does not emit `R16` — measured, its round labels are
+  `Round of 128 · Round of 64 · Round of 32 · Round of 16 · Quarterfinals · Semifinals ·
+  Final`. The one rename needed is `Round of 16 → Octofinals`, which `ROUND_LABELS`
+  does.
+
+The finding described a plan that was not the implementation. **A review of a design
+note is not a review of the code.**
+
+---
+
 ## Measurements
 
 | | |

@@ -5013,6 +5013,12 @@ def _family_row(fam_map: dict, pid: str) -> dict | None:
             "others": [m for m in (fam.get("members") or []) if m.get("pid") != pid]}
 
 
+#: Grade -> class year, the name a results line calls a player by. The same four
+#: labels the college side already uses (`scout_intel._CLASS_ORD`); high school has
+#: no fifth year, so there is no RS- case to strip here.
+_JH_CLASS_YEAR = {9: "Fr", 10: "So", 11: "Jr", 12: "Sr"}
+
+
 def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
     """One high-school player's whole career at a program: four seasons, what they
     did in each, and the honours that came with them.
@@ -5116,6 +5122,9 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         seasons.append({
             "year": yr, "season_year": season_year, "grade": hit.grade,
             "class": str(hit.grade),
+            # The CLASS YEAR, which is what a results line names a player by — the
+            # ledger's bare grade number is a different thing and both are kept.
+            "class_year": _JH_CLASS_YEAR.get(hit.grade, str(hit.grade)),
             "school": yr_sc.name, "school_mark": jh.mark(yr_sc, 20),
             "transferred": bool(moved) and yr_sc.name != school,
             "ladder": next((i for i, p in enumerate(roster, 1) if p.pid == pid), 0),
@@ -5123,6 +5132,15 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
             "singles": "{}-{}".format(*rec["s"]), "doubles": "{}-{}".format(*rec["d"]),
             "record": f"{w_}-{l_}", "wins": w_, "losses": l_,
             "honors": honors, "team": team, "slots": slots,
+            # THE INDIVIDUAL STATE TOURNAMENTS — the flight entered and how far they
+            # got, read straight off the archived draw. ‼️ NOT a match log (owner,
+            # 2026-08: "not sure it's necessary to keep a log of those on the player
+            # page"): the season's dual card is already the log, and what a reader
+            # wants from a state tournament is the FINISH. Deliberately kept OUT of
+            # `record`/`singles`/`doubles` — those are the player's DUAL record, and
+            # an individual title is a different competition, not more of that one.
+            "individuals": world.jhsaa_individual_results(
+                w["id"], yr, g, yr_sc.group, pid),
             # THE PLAYER'S OWN JV record, per court, on exactly the varsity terms —
             # so "did this kid play JV, and how did they do" is answerable from the
             # ledger and the flight box drills into WHERE. Never summed into `record`:
@@ -5168,6 +5186,14 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         # so a save archived before the JV season — or a player who never dressed for
         # one — does not get a column of dashes on every row.
         "jv_flights": jv_flights,
+        # The State Tournament Results section, newest season first, and shown only
+        # for a career that HAS one — a save archived before the event existed does
+        # not get an empty panel on every player.
+        "individuals": [{**s_, "season": s} for s in seasons
+                        for s_ in s["individuals"]],
+        "any_individual": any(s["individuals"] for s in seasons),
+        "individual_titles": sum(1 for s in seasons for r in s["individuals"]
+                                 if r["champion"]),
         "any_jv": any(s["jv"] or s["jv_dressed"] for s in seasons),
         "jv_matches": sum(s["jv_matches"] for s in seasons),
         # For the transfer form — the identity a `set_jhsaa_transfer` row is keyed on.

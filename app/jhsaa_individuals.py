@@ -157,6 +157,39 @@ def round_label(rnd: str) -> str:
     return ROUND_LABELS.get(rnd, rnd)
 
 
+def finish_for_index(d: dict, ix: int) -> tuple[str, str]:
+    """The finish of ONE entry of an archived draw, addressed by its INDEX.
+
+    ‼️ BY INDEX, NOT THROUGH THE `finishes` MAP, and the reason is renames. That map
+    is keyed on the entry's SCHOOL — fine inside a draw, but an archived draw is
+    relabelled into today's school names on read (`world._relabel`), and a lookup
+    that has to agree with a relabelled key is one rename away from silently missing
+    and reporting nothing. The rounds carry indices, which no rename touches.
+
+    Same arithmetic as `FlightDraw.finishes()`: every entrant is alive until the
+    round they lose in, and the band is read off how many were still standing when
+    that round began."""
+    alive = len(d.get("entries") or ())
+    for rnd in d.get("rounds") or ():
+        for m in rnd:
+            if ix in (m["hi"], m["lo"]):
+                won = (ix == m["hi"]) == bool(m["winner_is_hi"])
+                if not won:
+                    return finish_band(alive)
+                break
+        alive -= len(rnd)
+    return FINISH_BANDS[1] if d.get("champion") == ix else finish_band(max(alive, 1))
+
+
+def entry_index_of(d: dict, pid: str) -> int | None:
+    """Which entry of an archived draw a player is in, or None. A pair is two people
+    and either of them finds it."""
+    for i, e in enumerate(d.get("entries") or ()):
+        if any(p.get("pid") == pid for p in (e.get("players") or ())):
+            return i
+    return None
+
+
 def finish_band(alive: int) -> tuple[str, str]:
     """(label, tag) for a player still alive in a draw of `alive` — the round they
     went out in. Rounds UP to the next band, so an odd count from a partial first
@@ -506,39 +539,52 @@ def run_mixed(boys_by_school: dict, girls_by_school: dict, group: str, *,
     return _assemble("mixed", group, "XD", result, played)
 
 
-def run_mixed_season(boys_teams: dict, girls_teams: dict, year: int, *,
-                     seed: int = 0) -> dict:
+def run_mixed_season(year: int, *, salt: str = "", seed: int = 0) -> dict:
     """The whole association's mixed doubles, one draw per classification,
     archive-flattened as `{group: dict}`.
 
-    ‼️ THIS CANNOT LIVE IN `run_season`, AND THE REASON IS STRUCTURAL, NOT A
-    PREFERENCE. `run_season` takes ONE gender; a mixed pair is one player from
-    each, so the event cannot be assembled until both genders' seasons exist.
-    It therefore runs at the world rung after both — the same place
-    `renumber_divisions` and `reletter_conferences` run, and for the same reason.
-    That also happens to be where it belongs on the calendar: mixed is the SUMMER
-    event (owner rule), played when nothing else is.
+    ‼️ THE LEAGUE YEAR BEGINS IN JULY (owner rule 2026-08), and that fixes both the
+    timing and the rosters. One league year is **summer mixed → fall boys → spring
+    girls**, so mixed is the FIRST event of the year, not the last: June's seniors
+    have already graduated and it is the RISING squads who take the court. A
+    reviewer read the summer date the other way — as a last hurrah for departing
+    seniors — which would have needed the previous year's rosters and a
+    gender-specific credit policy. It needs neither.
 
-    Both arguments are `run_season`'s `season["teams"]` — `{school: TeamSeason}`
-    for that gender. A school is in the draw only if it sponsors BOTH.
+    ‼️ SO IT BUILDS ITS OWN TEAMS, and does NOT take `run_season`'s. Handing it
+    `season["teams"]` gave it TeamSeasons whose `records` were full of a season
+    that, on this calendar, HAS NOT BEEN PLAYED YET — `_ladder` reads `records`
+    through `ladder_score`, so the pool below #9 was cut from a finished ladder for
+    an event that opens the year. Fresh `district_teams` have no results, so
+    `_order` is ability order, exactly as it is for the six flights.
+
+    ‼️ It still cannot live in `run_season`: that takes ONE gender and a mixed pair
+    is one player from each. It runs at the world rung, where `renumber_divisions`
+    and `reletter_conferences` also run, for the same reason.
 
     ‼️ Nothing here credits anything. See `run_mixed`."""
-    # ‼️ THE GROUP IS TAKEN FROM THE BOYS' TEAM, which is only correct because a
-    # school's two teams always play in the same one — a league belongs to the
-    # SCHOOL and is drawn once per classification over every sponsor, so both
-    # gender fields read it (CLAUDE.md, league identity). Verified on the real 2041
+    from .jhsaa import district_teams, load_schools
+    # ‼️ THE GROUP IS TAKEN FROM THE BOYS' SCHOOL ROW, which is only correct because
+    # a school's two teams always play in the same one — a league belongs to the
+    # SCHOOL and is drawn once per classification over every sponsor, so both gender
+    # fields read it (CLAUDE.md, league identity). Verified on the real 2041
     # association: 786 schools sponsor both and ZERO have their two teams in
     # different groups. It is an unstated dependency rather than a guarantee, so it
     # is stated here — if a play-up ever moved one gender's team alone, a school
     # would enter the mixed draw of the boys' class with a girl from another.
+    boys = {s.name: s for s in load_schools("boys")}
+    girls = {s.name: s for s in load_schools("girls")}
     groups: dict = {}
-    for name, ts in boys_teams.items():
-        if name in girls_teams:
-            groups.setdefault(ts.school.group, []).append(name)
+    for name, s in boys.items():
+        if name in girls:
+            groups.setdefault(s.group, []).append(name)
     out: dict = {}
-    for group, names in groups.items():
-        d = run_mixed({n: boys_teams[n] for n in names},
-                      {n: girls_teams[n] for n in names}, group,
+    for group, names in sorted(groups.items()):
+        bt = {t.school.name: t
+              for t in district_teams([boys[n] for n in names], year, salt)}
+        gt = {t.school.name: t
+              for t in district_teams([girls[n] for n in names], year, salt)}
+        d = run_mixed(bt, gt, group,
                       seed=_draw_seed(seed, "mixed", str(year), group))
         if d is not None:
             out[group] = draw_to_dict(d)
