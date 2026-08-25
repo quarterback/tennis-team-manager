@@ -817,6 +817,65 @@ html[data-jh-scout="on"] .jh-scout { visibility: visible; }
   overflow-wrap: anywhere; line-height: 1.25;
 }
 .jh-champ-cell .jh-schoolcell .mk { margin-top: 1px; }
+/* The champion's RECORD, on its own line under the name — scan context a bare name
+   cannot give (owner, 2026-08: "i want Jesuit (25-6)"). Under, not beside: the grid
+   is `table-layout: fixed` with eleven classification columns and the name is
+   already wrapping there, so a record on the same line would be the thing that
+   pushes it to a third. */
+.jh-champ-cell .rec {
+  display: block; margin-top: 1px; font-size: 11.5px; color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+/* Bigger rows in the grid, and NO mid-word breaking. `overflow-wrap: anywhere` is
+   right when a cell must fit a fixed width whatever happens; it is wrong here now
+   that the table scrolls to a min-width computed from the class count, because the
+   column has room and the break was only ever a symptom of not having it. Wrapping
+   at spaces keeps "Natchitoches" whole and lets "North Coast Packing" take two
+   lines, which is what a reader wants. */
+.jh-champgrid td { padding: 10px 10px; }
+.jh-champgrid .jh-schoolcell a { overflow-wrap: break-word; word-break: normal; }
+
+/* ---- Layout switcher (By year · Grid) ---- */
+.jh-laypick { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; }
+.jh-laypick .lbl {
+  font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+.jh-laypick a {
+  padding: 4px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 700;
+  text-decoration: none; color: var(--text-secondary);
+  border: 1px solid var(--border-default); background: var(--surface-card);
+}
+.jh-laypick a:hover { border-color: var(--brand); color: var(--brand-strong); }
+.jh-laypick a.on { background: var(--gray-800); border-color: var(--gray-800); color: #fff; }
+
+/* ---- BY YEAR: one panel a season, classes stacked inside ----
+   The classification chip is a fixed-width leading column so the eye runs straight
+   down it, and the school name then has the whole width of the page instead of a
+   ninth of it — which is the point of stacking rather than gridding. Adding a class
+   adds a ROW here, never a column, so this layout does not decay as the association
+   grows. */
+.jh-yearpanel { margin-bottom: 12px; }
+.jh-yearpanel .bl-panel-title a { color: inherit; text-decoration: none; }
+.jh-yearpanel .bl-panel-title a:hover { color: var(--brand-strong); }
+.jh-yearchamps { display: flex; flex-direction: column; }
+.jh-yearchamps .row {
+  display: flex; align-items: center; gap: 10px; min-width: 0;
+  padding: 8px 14px; border-top: 1px solid var(--border-subtle);
+}
+.jh-yearchamps .row:first-child { border-top: 0; }
+.jh-yearchamps .row:hover { background: var(--surface-hover); }
+.jh-yearchamps .jh-chip { flex: 0 0 auto; min-width: 58px; text-align: center; }
+.jh-yearchamps .mk { flex: 0 0 auto; display: flex; }
+.jh-yearchamps .nm {
+  min-width: 0; font-size: 14.5px; font-weight: 700; color: var(--text-primary);
+  text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.jh-yearchamps .nm:hover { color: var(--brand-strong); }
+.jh-yearchamps .rec {
+  flex: 0 0 auto; font-size: 12.5px; color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
 
 /* The season picker sits in the scope rail beside two segmented controls, so it has
    to read as their sibling rather than as a form field dropped into a header. */
