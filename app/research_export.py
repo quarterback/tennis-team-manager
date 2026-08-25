@@ -79,6 +79,19 @@ def _load_archived_jhsaa_season(year: int, gender: str) -> dict:
             " AND COALESCE(level, 'v') = 'v'"
             " ORDER BY school, rowid",
             (world["id"], world_year, gender)).fetchall()
+
+        # Individual State was added after the original research-export shape.
+        # Its draws deliberately live outside `world_jhsaa` (they are large and
+        # the ordinary season pages must not deserialize all of them), so reading
+        # only that summary silently omitted an event which the site could show.
+        # Read the scoped gender plus mixed doubles in one bulk query.  Mixed is
+        # shown on both boys' and girls' player histories, but is stored under its
+        # own gender because a pair spans both fields.
+        individual_rows = conn.execute(
+            "SELECT gender, grp, flight, data FROM world_jhsaa_individual"
+            " WHERE world_id=? AND year=? AND gender IN (?, 'mixed')"
+            " ORDER BY gender, grp, flight",
+            (world["id"], world_year, gender)).fetchall()
     finally:
         conn.close()
     # The display calendar the game's own schedule pages show (one date per
@@ -103,6 +116,14 @@ def _load_archived_jhsaa_season(year: int, gender: str) -> dict:
         d["date"] = played.isoformat() if played else ""
         schedule_by_school.setdefault(d.pop("school"), []).append(d)
 
+    individuals = {}
+    for r in individual_rows:
+        # Match every other archived JHSAA reader: school renames are applied on
+        # read while the persisted bracket remains untouched.
+        draw = wd._relabel(json.loads(r["data"]))
+        individuals.setdefault(r["gender"], {}).setdefault(r["grp"], {})[
+            r["flight"]] = draw
+
     standings_by_school = {}
     for group_rows in data.get("standings", {}).values():
         for district_rows in group_rows.values():
@@ -123,7 +144,7 @@ def _load_archived_jhsaa_season(year: int, gender: str) -> dict:
             schedule=schedule_by_school.get(school.name, []))
     return {"teams": teams, "groups": {g: {"state": data.get("brackets", {}).get(g, {})}
                                        for g in jhsaa.GROUPS},
-            "awards": data.get("awards", {})}
+            "awards": data.get("awards", {}), "individuals": individuals}
 
 
 def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=None) -> dict[str, bytes]:
@@ -251,6 +272,18 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
     json_files = {
         "jhsaa_championships.json": {g: season["groups"][g].get("state", {}) for g in jhsaa.GROUPS},
         "jhsaa_awards.json": season.get("awards", {}),
+        # Keep the draw's native archive representation: entries, rounds,
+        # champion/runner-up indices and match scorelines are all research data.
+        # Gender remains an outer key so mixed doubles cannot be mistaken for a
+        # boys- or girls-only flight.  Classification scope applies just as it
+        # does to the team championship JSON.
+        "jhsaa_individuals.json": {
+            draw_gender: {
+                group: flights for group, flights in groups.items()
+                if classification == "all" or group == classification
+            }
+            for draw_gender, groups in season.get("individuals", {}).items()
+        },
     }
     tables = {"programs.csv": programs, "players.csv": players, "duals.csv": duals,
               "lines.csv": lines, "line_players.csv": line_players,
@@ -271,6 +304,10 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "toss_power_raw": "JHSAA opponent-adjusted team power used for selection/seeding; compare only within this season and gender."
         },
         "domain_rules": ["JHSAA gender values are girls/boys (college uses women/men).",
+            "jhsaa_individuals.json contains the archived Individual State brackets "
+            "for this gender plus mixed doubles. Its outer keys are gender, then "
+            "classification, then flight (S1-S3, D1-D3, or XD); mixed is stored "
+            "separately because each pair contains one boy and one girl.",
             "jhsaa_program_history.csv spans EVERY archived season for this gender (one row "
             "per program per year — the app's program-history ledger), not just this export's "
             "scope year; it is empty only when the save has no archived seasons.",
@@ -301,7 +338,7 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
     files["manifest.json"] = json.dumps(manifest, indent=2, ensure_ascii=False).encode()
     files["README.md"] = (f"# Play to Clinch research export\n\n**Family:** JHSAA  \n**Scope:** {year} {gender}, {classification}\n\n"
         "Start with `manifest.json`. Shared entity tables are `programs`, `players`, `duals`, `lines`, and `line_players`; "
-        "JHSAA-only standings, awards, and championship structures remain separate rather than being forced into a college schema.\n").encode()
+        "JHSAA-only standings, awards, team championships, and individual championship brackets remain separate rather than being forced into a college schema.\n").encode()
     return files
 
 
