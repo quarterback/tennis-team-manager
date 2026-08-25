@@ -60,7 +60,7 @@ from .development import Prospect, generate_prospect, make_pid, overall_to_str
 _DATA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                      "data", "jhsaa", "schools.json")
 
-GROUPS = ("9A", "8A", "7A", "6A", "5A", "4A", "3A", "2A", "1A")
+GROUPS = ("9A", "8A", "7A", "6A", "5A", "4A", "3A", "2A", "1A", "Division 1", "Division 2")
 
 
 def champ_group(classification: str) -> str:
@@ -610,7 +610,14 @@ WARD_FIELD = 32
 # `sponsor_floor` comfortably: 95 girls' programs and 87 boys' against a floor of 76.
 # 1A is unchanged and stays the one class on the 24 (`_recovery_24`).
 STATE_FIELD = {"9A": 40, "8A": 40, "7A": 40,
-               "6A": 40, "5A": 40, "4A": 40, "3A": 40, "2A": 40, "1A": 24}
+               "6A": 40, "5A": 40, "4A": 40, "3A": 40, "2A": 40, "1A": 24,
+               # 2046 expansion (owner rule): the two Great Basin groups are two
+               # more classifications, full stop -- "think of them more as 10A
+               # and 11A than thinking of them as anything weird." 92 sponsors
+               # each clears the dynamic-ladder floor comfortably (76 required
+               # at a 40-field) so they play the standard shape, not `_recovery_24`
+               # (that shape stays 1A-only per its own owner rule).
+               "Division 1": 40, "Division 2": 40}
 STATE_FIELD_DEFAULT = 24
 
 #: The preliminary round of an expanded field — "Qualies" on a chip. It is PART OF

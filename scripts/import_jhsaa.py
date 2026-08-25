@@ -3263,7 +3263,7 @@ def champ_group(classification: str) -> str:
     return classification
 
 
-GROUPS = ("9A", "8A", "7A", "6A", "5A", "4A", "3A", "2A", "1A")
+GROUPS = ("9A", "8A", "7A", "6A", "5A", "4A", "3A", "2A", "1A", "Division 1", "Division 2")
 
 
 def _load(prep: str) -> tuple[list[dict], dict[str, dict]]:
