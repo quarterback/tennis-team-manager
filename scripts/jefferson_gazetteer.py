@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Write `docs/GAZETTEER-jefferson.md` — the state's geography, in the association's
-own names.
+"""Write Jefferson gazetteers — the state's geography, in the association's own names.
 
     python3 scripts/jefferson_gazetteer.py [--prep-network PATH]
+
+The generator writes both `docs/GAZETTEER-jefferson.md` and the root-level
+`GAZETTEERjefferson.md` so the two references cannot drift.
 
 ‼️ WHY THIS EXISTS. An agent asked to work on a school has no idea where it is. The
 geography lives in `prep-network` (populations, counties, real coordinates) and the
@@ -29,7 +31,10 @@ import os
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO = os.path.dirname(_HERE)
 _DATA = os.path.join(_REPO, "data", "jhsaa", "schools.json")
-_OUT = os.path.join(_REPO, "docs", "GAZETTEER-jefferson.md")
+_OUTS = (
+    os.path.join(_REPO, "docs", "GAZETTEER-jefferson.md"),
+    os.path.join(_REPO, "GAZETTEERjefferson.md"),
+)
 
 
 def _import_jhsaa():
@@ -105,16 +110,38 @@ def build(m, rows: list[dict], cities: list[dict]) -> str:
       "coastal school given a high-desert name, two towns treated as neighbours when\n"
       "they are three hundred miles apart, a league described as regional when its\n"
       "members share nothing. **This is the document to read first.**\n\n")
-    w("The geography is real. Jefferson's counties are fictional but each stands on the\n"
-      "ground of a real county in southern Oregon, northern California, northern Nevada\n"
-      "or western Idaho, and every town sits at real coordinates — so distances,\n"
-      "bearings and \"is this coastal?\" are all answerable, and are computed here rather\n"
-      "than asserted.\n\n")
+    w("Jefferson is an alternate-history western state spanning territory in what are\n"
+      "present-day Oregon, California, Nevada, Idaho, Utah, and Wyoming. The geography\n"
+      "uses real coordinates and recognizable western landscapes, while the state's\n"
+      "borders, population distribution, institutions, and settlement hierarchy are\n"
+      "counterfactual. Existing fictional settlements remain canon; selected real-world\n"
+      "city and place names may also be used where they fit.\n\n")
+    w("The generated town tables below reflect the city and school source data currently\n"
+      "present in `prep-network` and the JHSAA import. During the eastern expansion pass,\n"
+      "new counties and settlements will appear here as those source tables are populated.\n\n")
     w("**‼️ The names here are the ASSOCIATION's.** `prep-network` holds the same places\n"
       "under their original names and the two differ on purpose; that is why a gazetteer\n"
       "read from that repo will not match what you see in the app. Its version has more\n"
-      "detail per town — see `prep-network/docs/GAZETTEER-jefferson.md` — but the wrong\n"
+      "detail per town — see `prep-network/jefferson_data/REFERENCE.md` — but the wrong\n"
       "names for this question.\n\n")
+
+    w("## Expanded eastern Jefferson and FSAC\n\n")
+    w("The expanded eastern territory has **always been part of Jefferson**. This is a\n"
+      "retcon of the state's historical footprint, not a future annexation. The added\n"
+      "territory corresponds to Elko County in Nevada; Jerome, Cassia, Oneida, Franklin,\n"
+      "and Bear Lake counties in Idaho; Cache and Rich counties in Utah; and Lincoln and\n"
+      "Uinta counties in Wyoming.\n\n")
+    w("High schools in much of this eastern territory historically competed under the\n"
+      "**Frontier Schools Athletic Commission (FSAC)** rather than JHSAA. FSAC operated\n"
+      "inside Jefferson and awarded its own state championships. After fifteen years of\n"
+      "negotiations, FSAC and JHSAA are scheduled to merge five years after the 2041\n"
+      "season. A permanent merger condition preserves a separate geographic state title\n"
+      "for the former FSAC territory. In tennis that becomes a tenth championship beside\n"
+      "1A through 9A; it is geographic rather than enrollment-based. The permanent public\n"
+      "name for that championship region is still to be chosen.\n\n")
+    w("The prep-network canon for the enlarged state is recorded in\n"
+      "`jefferson_data/EXPANSION_CANON.md`, `jefferson_data/REFERENCE.md`, and\n"
+      "`jefferson_data/regions.json`.\n\n")
 
     w("## How the state is organised\n\n")
     w("Four layers, and they are NOT interchangeable:\n\n")
@@ -196,9 +223,10 @@ def main() -> None:
     cities = cities["cities"] if isinstance(cities, dict) else cities
 
     text = build(m, rows, cities)
-    with open(_OUT, "w", encoding="utf-8") as fh:
-        fh.write(text)
-    print(f"wrote {_OUT} ({text.count(chr(10))} lines)")
+    for out_path in _OUTS:
+        with open(out_path, "w", encoding="utf-8") as fh:
+            fh.write(text)
+        print(f"wrote {out_path} ({text.count(chr(10))} lines)")
 
 
 if __name__ == "__main__":
