@@ -189,6 +189,31 @@ The pid is passed as **data** and the URL built in the template, because `state.
 view-model layer with no request context; calling `url_for` there would couple it to
 Flask for the sake of one link. (A draft did exactly that and it had to come back out.)
 
+### ‼️ Three display faults the shared card had, all found by LOOKING at it
+
+None would have raised. All three were caught by rendering the page and reading it.
+
+1. **The score displayed as fragments.** `brk_row` splits `m.score` on the hyphen and
+   gives each side its half — right for a dual's "5-2", garbage for a tennis scoreline:
+   "6-1 6-0" became "6" on one row and "1 6" on the other. A set score is written from
+   the *winner's* side by convention — the string describes the match, not one player's
+   share of it — so `score_full` prints it once, in full, on the winner's row.
+2. **The school wasn't on the card at all.** Owner: *"the logos are there for that
+   but…they don't tell me much and it's what most states do with this thing"* — and the
+   CHSAA brackets they sent print it inline ("Alec Rodriguez, Regis Jesuit"). Added as
+   `t.sub`, which is empty on a team bracket where the name IS the school.
+3. **…and then the wrong half truncated.** `.brk-team` is a **CSS grid**
+   (`20px 18px minmax(0,1fr) auto auto`), not a flex row, so the flex-shrink ratio a
+   first fix reached for did nothing. The sub landed in a trailing `auto` track, `auto`
+   sizes to content, and the NAME — the `1fr` track — gave up width instead: "Sydney
+   Richardson" truncated while "Southern Jefferson Christian" stayed whole. A row with a
+   sub now gets its own template where the name takes content width and the school is
+   the flexible track.
+
+Also: **a champion is NAMED.** `Entry.label` is surnames-only for a pair, which is what
+a draw sheet prints and what keeps a card readable; a title announcement needs
+`full_label` — "Dylan Holloway / Hilary Rimando", not "Holloway / Rimando".
+
 ### ‼️ The mobile round-tabs fallback was NOT shipped, deliberately
 
 The team draw hides its canvas below the mobile breakpoint and hands over to

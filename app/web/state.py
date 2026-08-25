@@ -4300,6 +4300,9 @@ def _jh_indiv_card_side(e: dict, won: bool, schools: dict) -> dict:
     school = e["school"]
     players = e.get("players") or []
     return {"school": school, "name": e.get("label") or school,
+            # ON the card, not only in the tooltip: a crest does not tell a reader
+            # which program a person plays for, and every association prints it.
+            "sub": school,
             "pid": players[0]["pid"] if players else "",
             "abbr": "", "color": "var(--gray-400)", "won": won,
             "seed": e.get("seed") or "",
@@ -4363,12 +4366,16 @@ def jhsaa_individual_view(seed: int, gender: str, group: str | None = None,
                 "away": _jh_indiv_card_side(lo, not hw, schools),
                 "played": True, "id": None, "tbd": False, "region": None,
                 "bpos": 0, "home_won": hw, "winner": None,
-                # WINNER-FIRST, like every other card on this surface: `brk_row`
-                # picks its half by who WON. A tennis set score is written from the
-                # winner's side by convention, and `MatchResult.scoreline` already
-                # is — so it is passed through, never re-oriented to the "home" side
-                # (a draw has no home side to orient to).
-                "score": m["scoreline"]})
+                # ‼️ A SCORELINE, NOT TWO POINT TOTALS — hence `score_full`. Every
+                # other card on this surface carries a dual's "5-2" and `brk_row`
+                # gives each side its half; "6-1 6-0" has no halves, and splitting
+                # it on the hyphen yields "6" and "1 6". A tennis set score is
+                # written from the WINNER's side by convention — the string
+                # describes the match, not one player's share of it — so it is
+                # printed once, in full, on the winner's row. `MatchResult.
+                # scoreline` is already winner-oriented, so it passes straight
+                # through; there is no home side here to re-orient to anyway.
+                "score": m["scoreline"], "score_full": True})
         cols.append({"name": ji.round_label(m["rnd"]), "matchups": ms})
     champ = entries[draw["champion"]] if draw.get("champion") is not None else None
     runner = entries[draw["runner_up"]] if draw.get("runner_up") is not None else None
@@ -4386,7 +4393,13 @@ def jhsaa_individual_view(seed: int, gender: str, group: str | None = None,
         # No. 5, it is a member of the 5-8 tier. Listing 1..32 flat would claim a
         # precision the draw does not have.
         "seed_tiers": _jh_seed_tiers(entries, draw["n_seeds"]),
-        "canvas": _bracket_canvas(cols, card_w=214, card_h=56, gutter=44,
+        # ‼️ WIDER CARDS THAN THE TEAM DRAW (206px), and the card holds more. A team
+        # card carries a school and one digit; an individual card carries a PERSON, the
+        # SCHOOL they play for, and a full scoreline ("7-5 4-6 14-12"). At 206 the
+        # scoreline alone truncated "Delilah Ervin" to "Delilah Er…" on every card she
+        # won. Geometry is the knob here — never CSS, since the cards and the SVG
+        # elbows share `_bracket_canvas`'s one coordinate system.
+        "canvas": _bracket_canvas(cols, card_w=380, card_h=56, gutter=40,
                                   leaf_gap=12),
         "rounds": [{"name": c["name"], "games": c["matchups"]} for c in cols],
     }

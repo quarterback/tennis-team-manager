@@ -184,9 +184,19 @@ class Entry:
 
     @property
     def label(self) -> str:
+        """The COMPACT label, for a bracket card — surnames only for a pair, which
+        is how a draw sheet prints one and what keeps a 300px card readable."""
         if len(self.players) == 1:
             return self.players[0].name
         return " / ".join(p.name.split()[-1] for p in self.players)
+
+    @property
+    def full_label(self) -> str:
+        """Both people, in full. ‼️ A champion is NAMED, not abbreviated (owner,
+        2026-08): the hero on a title page must read "Ava Smith / Noah Hall", never
+        the draw sheet's "Smith / Hall". Anywhere the event announces a winner uses
+        this; the bracket cards keep `label`."""
+        return " / ".join(p.name for p in self.players)
 
     @property
     def key(self):
@@ -546,7 +556,12 @@ def draw_to_dict(d: FlightDraw) -> dict:
     `finishes` is likewise keyed on the entry's `school` — the entry key — so it
     stays a small map rather than a per-round annotation."""
     def ed(e: Entry) -> dict:
-        return {"school": e.school, "label": e.label, "seed": d.seed_of(e),
+        # BOTH labels are stored. `full_label` is derivable from `players`, and it is
+        # kept anyway so every surface that announces a champion joins the names the
+        # same way rather than each one re-deriving it — the same reason `played`
+        # sits beside `lines` on a JV dual.
+        return {"school": e.school, "label": e.label,
+                "full_label": e.full_label, "seed": d.seed_of(e),
                 "players": [{"pid": p.pid, "name": p.name} for p in e.players]}
     ix = {e.key: i for i, e in enumerate(d.entries)}
     fin = d.finishes()
