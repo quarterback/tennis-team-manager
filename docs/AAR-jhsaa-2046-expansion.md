@@ -1,9 +1,18 @@
-# AAR: the 2046 JHSAA expansion — Division 1 and Division 2
+# AAR: the 2046 JHSAA expansion — Group 1 and Group 2
+
+> **RENAMED (owner rule 2026-08, NJSIAA language):** the two classifications were
+> shipped as "Division 1"/"Division 2" and renamed to **"Group 1"/"Group 2"**
+> (the NJSIAA crowns "Group 1 state champions") so the group names never collide
+> with the recovery-round unit names — `renumber_divisions` already names units
+> "Division N". No season was ever archived under the old names, so this was a
+> plain string rename with no former-name machinery. The handoff CSVs in
+> `docs/handoff/` keep "Division 1/2"; `scripts/jhsaa_expansion_2046.py`
+> translates at the read (`GROUP_RENAME`).
 
 Owner spec (verbatim): "great basin counties are just gonna be called Division 1
 and Division 2 for JHSAA purposes with their own leagues, think of them more as
 10A and 11A than thinking of them as anything weird. just keeping the same
-setup, just adding two classifications." So `Division 1` / `Division 2` are two
+setup, just adding two classifications." So `Group 1` / `Group 2` are two
 more entries in `jhsaa.GROUPS` / `jhsaa.STATE_FIELD` (`app/jhsaa.py`,
 `scripts/import_jhsaa.py`) — not a parallel subsystem. Everything that already
 iterates `GROUPS` (State field, TOC, awards, sponsor floor, rankings, title
@@ -12,9 +21,9 @@ special case beyond the constant tables.
 
 ## What changed
 
-- `GROUPS` gained `"Division 1"`, `"Division 2"` in both `app/jhsaa.py` and
+- `GROUPS` gained `"Group 1"`, `"Group 2"` in both `app/jhsaa.py` and
   `scripts/import_jhsaa.py` (kept identical, per the existing convention).
-- `STATE_FIELD["Division 1"] = STATE_FIELD["Division 2"] = 40` — the standard
+- `STATE_FIELD["Group 1"] = STATE_FIELD["Group 2"] = 40` — the standard
   dynamic 40-team ladder, same shape as 9A-2A. 92 sponsors a gender clears the
   76-sponsor floor the dynamic shape needs comfortably. Neither uses the 1A-only
   fixed 24-team shape (`_recovery_24`) — that stays 1A-only per its own owner
@@ -81,8 +90,8 @@ every group clears it after the fix; the script refuses to write otherwise.
 | 3A | 85 | 85 | 78 | 8 |
 | 2A | 86 | 86 | 83 | 9 |
 | 1A | 85 | 85 | 79 | 8 |
-| Division 1 | 92 | 92 | 85 | 9 |
-| Division 2 | 92 | 92 | 87 | 9 |
+| Group 1 | 92 | 92 | 85 | 9 |
+| Group 2 | 92 | 92 | 87 | 9 |
 
 957 total schools (864 existing + 93 new), matching the handoff's target count.
 No league over `MAX_DISTRICT` (12); every league in the 9-12 band `district_count`
@@ -98,27 +107,27 @@ every consumer that read `GROUPS` as a single size ordering. Fixed:
   is the 9A→1A enrollment ladder; the Division pair is a geographic system, not
   rungs below 1A. Anything ordering-sensitive now reads the split.
 - **Play-up was promotable into 1A.** `can_play_up` used `GROUPS.index`, so
-  Division 1/2 (indices 9/10) read as "4A or below" and `play_up_group` handed
-  Division 1 → `GROUPS[8]` = 1A. Now: `can_play_up` is False for both Division
+  Group 1/2 (indices 9/10) read as "4A or below" and `play_up_group` handed
+  Group 1 → `GROUPS[8]` = 1A. Now: `can_play_up` is False for both Division
   groups, `play_up_group` is an identity there, `valid_playup_target` requires
   ladder-only targets, and the editor's `targets` menu slices `LADDER_GROUPS`.
   Same fix in `scripts/jhsaa_playup.py`'s seed pool.
-- **`_GROUP_IX` "classes apart" pairing gate**: raw enumeration put Division 1
+- **`_GROUP_IX` "classes apart" pairing gate**: raw enumeration put Group 1
   "one apart" from 1A (a 2,500-enrollment school gated onto 100-student
   opponents). The Division groups now take FRACTIONAL ladder positions from
-  their enrollment midpoints — Division 1 = 3.5 (pairs 6A/5A/Division 2),
-  Division 2 = 4.5 (pairs 5A/4A/Division 1) — exactly 1.0 apart, so the Great
+  their enrollment midpoints — Group 1 = 3.5 (pairs 6A/5A/Group 2),
+  Group 2 = 4.5 (pairs 5A/4A/Group 1) — exactly 1.0 apart, so the Great
   Basin pair can always meet non-district (geography makes that the common
   case anyway).
 - **`_TALENT` and `ROSTER_SIZE_BAND_BY_CLASS` had NO Division entries** — every
   Great Basin roster build KeyError'd. Added blended bands per the "smaller =
-  thinner mean, wider spread" rule: Division 1 (845–2556, ≈5A–9A mix) boys
-  (54.5, 16.5) / girls (49.5, 15.5), roster band (18, 22); Division 2 (57–836,
+  thinner mean, wider spread" rule: Group 1 (845–2556, ≈5A–9A mix) boys
+  (54.5, 16.5) / girls (49.5, 15.5), roster band (18, 22); Group 2 (57–836,
   ≈1A–4A mix) boys (42.0, 20.5) / girls (37.5, 19.5), roster band (15, 19).
 - **`renumber_divisions` / `reletter_conferences`**: `reversed(GROUPS)` now
-  runs Division 2, Division 1, then 1A→9A — documented as the deliberate
+  runs Group 2, Group 1, then 1A→9A — documented as the deliberate
   bottom-up order. **Name-collision check**: the recovery round's unit label
-  "Division {n}" vs the group names "Division 1"/"Division 2" is COSMETIC only
+  "Division {n}" vs the group names "Group 1"/"Group 2" is COSMETIC only
   — no lookup anywhere keys a group name against a unit string (units are
   values inside stage dicts; title-board buckets key on stage `round_names`
   like "Divisionals"), and the honours chip renders units in ROMAN numerals
@@ -141,7 +150,7 @@ every consumer that read `GROUPS` as a single size ordering. Fixed:
   applying that machine rule would wrongly exclude the three Ruby County
   schools (Vermillion, Atlanta, Ruby County Catholic). Fixed both; verified the
   expansion script trusted the per-row championship_group column, so all three
-  are correctly in Division 1/2 in `data/jhsaa/schools.json`.
+  are correctly in Group 1/2 in `data/jhsaa/schools.json`.
 - **Smoke-tested** (no full suite, per owner): `load_schools` both genders,
   `state_field_size`/`sponsor_floor` (76, cleared by 92/92 girls and 85/87
   boys)/`recovery_shape`/`dual_format` for both Division groups, and real

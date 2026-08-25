@@ -21,7 +21,7 @@
 <div class="jh-ident" style="margin-bottom:14px">
   <span class="crest">{{ view.mark|safe }}</span>
   <div class="jh-ident-body">
-    <span class="jh-chip c-{{ view.group }}">{{ view.classification }}</span>
+    <span class="jh-chip c-{{ view.group|replace(' ','') }}">{{ view.classification }}</span>
     <h1>{{ view.name }}</h1>
     <div class="mascot">
       <a style="color:inherit" href="{{ url_for('jhsaa_school', school=view.school, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.school }}</a>

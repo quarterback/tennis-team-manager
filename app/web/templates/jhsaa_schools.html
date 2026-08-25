@@ -62,7 +62,7 @@
                    then telling you something the enrollment does not. The title carries
                    the enrollment behind both. #}
                 {% if view.mode != 'class' or r.plays_up %}
-                <span class="jh-chip c-{{ r.group }}"
+                <span class="jh-chip c-{{ r.group|replace(' ','') }}"
                       title="{{ r.enrollment }} students{% if r.private %} · private{% endif %}{% if r.plays_up %} · plays up from {{ r.classification }}{% endif %}">{{ r.group }}{% if r.plays_up %} ↑{% endif %}</span>
                 {% endif %}
                 {# Under a league sub-heading the league is already on screen — the

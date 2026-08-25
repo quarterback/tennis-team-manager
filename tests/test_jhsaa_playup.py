@@ -55,7 +55,7 @@ def _ups(gender="girls"):
 # --- the ladder step ---------------------------------------------------------------
 
 def test_playing_up_is_exactly_one_classification():
-    # LADDER only (2046 expansion): the Great Basin Division 1/2 groups sit
+    # LADDER only (2046 expansion): the Great Basin Group 1/2 groups sit
     # after 1A in GROUPS but are NOT rungs on the size ladder.
     for i, g in enumerate(jh.LADDER_GROUPS):
         if i == 0:
@@ -63,12 +63,12 @@ def test_playing_up_is_exactly_one_classification():
         assert jh.play_up_group(g) == jh.LADDER_GROUPS[i - 1], g
 
 
-def test_division_groups_are_outside_the_play_up_ladder():
-    """Division 1/2 (2046) are a geographic pair, not classes above or below 1A:
+def test_great_basin_groups_are_outside_the_play_up_ladder():
+    """Group 1/2 (2046) are a geographic pair, not classes above or below 1A:
     they can never play up, never be a play-up target, and the ladder step is an
-    identity for them — a naive GROUPS.index would have promoted Division 1
+    identity for them — a naive GROUPS.index would have promoted Group 1
     'up' into 1A."""
-    for g in jh.DIVISION_GROUPS:
+    for g in jh.GB_GROUPS:
         assert not jh.can_play_up(g)
         assert jh.play_up_group(g) == g
         for other in jh.GROUPS:

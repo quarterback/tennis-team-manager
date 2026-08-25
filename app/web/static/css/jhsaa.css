@@ -68,6 +68,13 @@
 .jh-class a.on.c-3A { background: var(--gray-500); }
 .jh-class a.on.c-2A { background: var(--gray-600); }
 .jh-class a.on.c-1A { background: var(--gray-700); }
+/* 2046 Great Basin pair (Group 1/Group 2 — NJSIAA language, owner 2026-08).
+   Class names are the group with spaces stripped (templates emit
+   `c-{{ group|replace(' ','') }}`) — a raw two-word group would put a space in
+   the class attribute. Group 1 is the pair's big class (≈5A-9A blend), Group 2
+   the small one, so they reuse the brand/bronze slots the mid-ladder carries. */
+.jh-class a.on.c-Group1 { background: var(--brand); }
+.jh-class a.on.c-Group2 { background: var(--rank-bronze); }
 
 .jh-tabs { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
 .jh-tabs a {
@@ -396,6 +403,8 @@
 .jh-chip.c-3A { background: var(--gray-500); }
 .jh-chip.c-2A { background: var(--gray-600); }
 .jh-chip.c-1A { background: var(--gray-700); }
+.jh-chip.c-Group1 { background: var(--brand); }
+.jh-chip.c-Group2 { background: var(--rank-bronze); }
 .jh-chip.gold { background: var(--rank-gold); }
 /* Honours tiers (owner rule 2027-08): gold = the title, silver = finalist,
    bronze = semifinalist, BLUE = every other State finish — reaching State is an

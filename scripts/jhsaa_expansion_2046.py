@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""The 2046 JHSAA expansion: two new classifications, Division 1 and Division 2.
+"""The 2046 JHSAA expansion: two new classifications, Group 1 and Group 2.
 
     python3 scripts/jhsaa_expansion_2046.py [--dry-run]
 
 Owner spec (verbatim): "great basin counties are just gonna be called Division 1
 and Division 2 for JHSAA purposes with their own leagues, think of them more as
 10A and 11A than thinking of them as anything weird. just keeping the same setup,
-just adding two classifications." So `Division 1`/`Division 2` are two more
+just adding two classifications." So the pair (renamed to `Group 1`/`Group 2` — see GROUP_RENAME) are two more
 entries in `GROUPS`/`STATE_FIELD` (done in `app/jhsaa.py` and this module already,
 see those files) -- NOT a parallel subsystem. This script is the one-time data
 migration, same shape as `jhsaa_reclassify.py` / `jhsaa_redistrict.py`: it reads
@@ -52,7 +52,12 @@ _REPO = os.path.dirname(_HERE)
 _DATA = os.path.join(_REPO, "data", "jhsaa", "schools.json")
 _ROSTER_CSV = os.path.join(_REPO, "docs", "handoff", "JHSAA_2046_expansion_roster.csv")
 
-NEW_GROUPS = ("Division 1", "Division 2")
+# Owner rename (2026-08, NJSIAA language): the groups the handoff CSVs call
+# "Division 1"/"Division 2" are implemented as "Group 1"/"Group 2" so they never
+# collide with the recovery-round unit names ("Division N", `renumber_divisions`).
+# The handoff CSVs are immutable, so the translation happens at the READ.
+GROUP_RENAME = {"Division 1": "Group 1", "Division 2": "Group 2"}
+NEW_GROUPS = ("Group 1", "Group 2")
 
 # Rivalry override -- see module docstring. Both members go to this group
 # whatever the roster CSV says for either of them.
@@ -145,7 +150,7 @@ def apply_current(rows: dict, roster: list[dict]) -> int:
         if s is None:
             unmatched.append(r["name"])
             continue
-        grp = override.get(r["name"], r["championship_group"])
+        grp = override.get(r["name"], GROUP_RENAME.get(r["championship_group"], r["championship_group"]))
         if s["group"] != grp:
             s["classification"] = s["group"] = grp
             n += 1
@@ -156,7 +161,7 @@ def apply_current(rows: dict, roster: list[dict]) -> int:
 
 
 def new_school(r: dict) -> dict:
-    grp = r["championship_group"]
+    grp = GROUP_RENAME.get(r["championship_group"], r["championship_group"])
     name = _NAME_OVERRIDE.get(r["name"], r["name"])
     mascot = _stable(f"jhsaa-2046-mascot|{name}", _MASCOT_POOL)
     colors = list(_stable(f"jhsaa-2046-colors|{name}", _COLOR_PAIRS))

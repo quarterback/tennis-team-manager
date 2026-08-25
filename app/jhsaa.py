@@ -60,19 +60,19 @@ from .development import Prospect, generate_prospect, make_pid, overall_to_str
 _DATA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                      "data", "jhsaa", "schools.json")
 
-GROUPS = ("9A", "8A", "7A", "6A", "5A", "4A", "3A", "2A", "1A", "Division 1", "Division 2")
+GROUPS = ("9A", "8A", "7A", "6A", "5A", "4A", "3A", "2A", "1A", "Group 1", "Group 2")
 
 # ‼️ GROUPS IS NO LONGER ONE ORDERED LADDER (2046 expansion). The first nine entries
-# are the enrollment LADDER, biggest to smallest; the two "Division" groups are the
+# are the enrollment LADDER, biggest to smallest; the two "Group" groups (Great Basin) are the
 # Great Basin's own big/small PAIR ("think of them more as 10A and 11A than thinking
 # of them as anything weird" — two more classifications, but NOT rungs above or below
 # 1A). Anything that walks GROUPS as a single size ordering — play-up, "classes
 # apart" pairing gates, "every class above mine" menus — must use LADDER_GROUPS and
-# treat DIVISION_GROUPS separately; plain enumeration (archiving, scope bars,
+# treat GB_GROUPS separately; plain enumeration (archiving, scope bars,
 # renumbering passes) may keep iterating GROUPS.
 LADDER_GROUPS = GROUPS[:9]                       # 9A … 1A, a real size ordering
-DIVISION_GROUPS = GROUPS[9:]                     # ("Division 1", "Division 2")
-assert LADDER_GROUPS[-1] == "1A" and DIVISION_GROUPS == ("Division 1", "Division 2")
+GB_GROUPS = GROUPS[9:]                     # ("Group 1", "Group 2")
+assert LADDER_GROUPS[-1] == "1A" and GB_GROUPS == ("Group 1", "Group 2")
 
 
 def champ_group(classification: str) -> str:
@@ -354,11 +354,11 @@ ROSTER_SIZE_BAND_BY_CLASS = {
     "2A": (15, 17),
     "1A": (14, 16),
     # 2046 Great Basin groups: each spans a wide enrollment range rather than one
-    # rung, so the bands blend the ladder classes they cover — Division 1
-    # (845-2556, roughly 5A-9A) blends the 6A/5A bands; Division 2 (57-836,
+    # rung, so the bands blend the ladder classes they cover — Group 1
+    # (845-2556, roughly 5A-9A) blends the 6A/5A bands; Group 2 (57-836,
     # roughly 1A-4A/low-5A) blends the 4A-2A bands.
-    "Division 1": (18, 22),
-    "Division 2": (15, 19),
+    "Group 1": (18, 22),
+    "Group 2": (15, 19),
 }
 
 
@@ -635,7 +635,7 @@ STATE_FIELD = {"9A": 40, "8A": 40, "7A": 40,
                # each clears the dynamic-ladder floor comfortably (76 required
                # at a 40-field) so they play the standard shape, not `_recovery_24`
                # (that shape stays 1A-only per its own owner rule).
-               "Division 1": 40, "Division 2": 40}
+               "Group 1": 40, "Group 2": 40}
 STATE_FIELD_DEFAULT = 24
 
 #: The preliminary round of an expanded field — "Qualies" on a chip. It is PART OF
@@ -777,13 +777,13 @@ _TALENT = {
     ("1A", "boys"):    (36.0, 23.0), ("1A", "girls"):    (32.5, 22.0),
     # 2046 Great Basin groups. Each classification spans several ladder classes'
     # worth of enrollment, so the band is a BLEND of the classes it covers, per
-    # the section rule (smaller = thinner mean, wider spread): Division 1
-    # (845-2556 ≈ a 5A-9A mix) sits between 6A and 5A; Division 2 (57-836 ≈ a
+    # the section rule (smaller = thinner mean, wider spread): Group 1
+    # (845-2556 ≈ a 5A-9A mix) sits between 6A and 5A; Group 2 (57-836 ≈ a
     # 1A-4A mix) sits between 3A and 2A. `classification` on these schools IS
-    # "Division 1"/"Division 2", so `School.talent_group` reads these keys —
+    # "Group 1"/"Group 2", so `School.talent_group` reads these keys —
     # without them every Great Basin roster build KeyErrors.
-    ("Division 1", "boys"): (54.5, 16.5), ("Division 1", "girls"): (49.5, 15.5),
-    ("Division 2", "boys"): (42.0, 20.5), ("Division 2", "girls"): (37.5, 19.5),
+    ("Group 1", "boys"): (54.5, 16.5), ("Group 1", "girls"): (49.5, 15.5),
+    ("Group 2", "boys"): (42.0, 20.5), ("Group 2", "girls"): (37.5, 19.5),
 }
 # --- PROGRAM ARCHETYPES (owner rule 2027-08) ---------------------------------
 #
@@ -1610,11 +1610,11 @@ PLAY_UP_MAX_GROUP = "4A"
 def can_play_up(classification: str) -> bool:
     """Whether a program of this size is allowed to play up at all.
 
-    ‼️ SCOPED TO THE 1A-9A LADDER (2046 expansion). The Great Basin's Division
-    1/Division 2 are a geographic PAIR appended after 1A in `GROUPS`, not rungs
+    ‼️ SCOPED TO THE 1A-9A LADDER (2046 expansion). The Great Basin's Group
+    1/Group 2 are a geographic PAIR appended after 1A in `GROUPS`, not rungs
     on the size ladder — a naive `GROUPS.index` test read them as "below 4A" and
-    would have promoted a 2,500-enrollment Division 1 program "up" into 1A.
-    Play-up does not exist in the Division system at all."""
+    would have promoted a 2,500-enrollment Group 1 program "up" into 1A.
+    Play-up does not exist in the Group system at all."""
     g = champ_group(classification)
     if g not in LADDER_GROUPS:
         return False
@@ -1628,7 +1628,7 @@ def play_up_group(classification: str) -> str:
     moves exactly one class) — an explicit override can name any class further up;
     see `plays_up`."""
     g = champ_group(classification)
-    if g not in LADDER_GROUPS:      # Division 1/2: no ladder above or below them
+    if g not in LADDER_GROUPS:      # Group 1/2: no ladder above or below them
         return g
     i = LADDER_GROUPS.index(g)
     return LADDER_GROUPS[i - 1] if i else g
@@ -2009,8 +2009,8 @@ def program_editor(selected: str = "", board: str = "", cat: str = "",
         cls = r["classification"]
         # Every group strictly above the program's own class — the picker's real
         # menu (owner rule 2027-09, multi-step play-up), not just a one-step toggle.
-        # Ladder only: Division 1/2 are not "above" anything (can_play_up is
-        # False there, and the slice must never hand a Division as a target).
+        # Ladder only: Group 1/2 are not "above" anything (can_play_up is
+        # False there, and the slice must never hand a Group as a target).
         targets = ([g for g in LADDER_GROUPS[:LADDER_GROUPS.index(champ_group(cls))]]
                   if can_play_up(cls) else [])
         district = moved.get(name) if target else _row_league(r)
@@ -4196,10 +4196,10 @@ def renumber_divisions(season: dict, start: int = 1) -> int:
 
     ‼️ DIVISIONS ARE NUMBERED STATEWIDE, not within a classification (owner rule
     2027-08) — every other unit counts inside its own class ("Region IX" exists
-    once per classification), but there is exactly one Division 1 in Jefferson
+    once per classification), but there is exactly one Group 1 in Jefferson
     each year. The sequence runs **girls first, then boys**, and **bottom-up by
     classification** (1A up to 9A), continuing across both, so 1A girls hold
-    Division 1 and the highest number lands on 9A boys — "(9A) Division 11", if
+    Group 1 and the highest number lands on 9A boys — "(9A) Group 11", if
     the state played that many that year. How many there are
     depends on how many Divisional duals the berths actually require, which
     varies by year, so the numbers are assigned here — once both genders are
@@ -4208,13 +4208,13 @@ def renumber_divisions(season: dict, start: int = 1) -> int:
     Idempotent: the number is always recomputed and overwritten, so re-running
     against a memoised season cannot double-count."""
     n = start
-    # Bottom-up, DELIBERATELY: reversed(GROUPS) runs Division 2, Division 1,
+    # Bottom-up, DELIBERATELY: reversed(GROUPS) runs Group 2, Group 1,
     # then 1A up to 9A — the Great Basin pair (appended after 1A) leads the
     # sequence as the "newest/smallest" block. Any deterministic documented
     # order satisfies the invariant; this is the one we ship. (The unit label
     # "Division {n}" renders as ROMAN numerals on honours chips via
     # `world._unit_honour` — "Division XI" — so it stays visually distinct from
-    # the GROUP names "Division 1"/"Division 2", which keep arabic digits.)
+    # the GROUP names "Group 1"/"Group 2", which keep arabic digits.)
     for g in reversed(GROUPS):
         dv = ((season.get("groups") or {}).get(g) or {}).get("divisional") or {}
         for games in dv.get("rounds") or ():
@@ -4250,7 +4250,7 @@ def reletter_conferences(season: dict, start: int = 0) -> int:
     reason exactly; idempotent the same way (always recomputed, memoised season
     safe)."""
     n = start
-    for g in reversed(GROUPS):        # Division 2, Division 1, then 1A up to 9A
+    for g in reversed(GROUPS):        # Group 2, Group 1, then 1A up to 9A
         cf = ((season.get("groups") or {}).get(g) or {}).get("conference") or {}
         for games in cf.get("rounds") or ():
             for gm in games:
@@ -4910,17 +4910,17 @@ def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
 
 
 # 9A=0 … 1A=8, so |i-j| = classes apart on the enrollment ladder. The Great Basin
-# groups (2046) are NOT ladder rungs — enumerating GROUPS raw put Division 1 at 9,
+# groups (2046) are NOT ladder rungs — enumerating GROUPS raw put Group 1 at 9,
 # "one apart" from 1A, i.e. a 2,500-enrollment school gated onto 100-student
 # opponents. They get FRACTIONAL positions on the same scale instead, chosen from
 # their enrollment midpoints so the existing |i-j| <= 1 gate does the right thing:
-# Division 1 (845-2556, mid ≈ 6A/5A) at 3.5 pairs with 6A, 5A and Division 2;
-# Division 2 (57-836, mid ≈ 5A/4A boundary) at 4.5 pairs with 5A, 4A and Division 1.
+# Group 1 (845-2556, mid ≈ 6A/5A) at 3.5 pairs with 6A, 5A and Group 2;
+# Group 2 (57-836, mid ≈ 5A/4A boundary) at 4.5 pairs with 5A, 4A and Group 1.
 # Crucially the two are exactly 1.0 apart, so the Great Basin pair can always meet
 # non-district — which geography (their own three areas) makes the common case.
 _GROUP_IX = {g: i for i, g in enumerate(LADDER_GROUPS)}
-_GROUP_IX["Division 1"] = 3.5
-_GROUP_IX["Division 2"] = 4.5
+_GROUP_IX["Group 1"] = 3.5
+_GROUP_IX["Group 2"] = 4.5
 
 # How a non-district opponent is chosen (owner rule 2027-08): geography first — you do
 # not bus across Jefferson for a non-league dual — then talent, so a weak program isn't

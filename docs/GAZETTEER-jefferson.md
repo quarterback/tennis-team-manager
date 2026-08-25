@@ -147,112 +147,112 @@ class, enrollment, and locality where the school carries one.
 ### Emigrant County — Harney County, OR
 
 - **Harriman** — 450,000 · 43.59N 119.05W
-    - John F. Kennedy — Division 1, 2,425 · Norheim League
-    - Gravel Narrows — Division 1, 2,275 · Norheim League
-    - St. Teresa — Division 1, 2,150 · Sunbelt League
-    - Pinyon Ridge — Division 1, 2,053 · Sunbelt League
-    - Hidden Draw — Division 1, 2,021 · Norheim League
-    - Harriman — Division 1, 1,564 · Norheim League
-    - Garden Plain — Division 1, 1,543 · Sunbelt League
-    - Green Valley — Division 1, 1,540 · Norheim League
-    - Homestead — Division 1, 1,508 · Norheim League
-    - Emigrant — Division 1, 1,401 · Sunbelt League
-    - Box Canyon — Division 1, 1,274 · Sunbelt League
-    - St. Casimir — Division 1, 1,035 · Sunbelt League
-    - St. Michael Academy — Division 1, 996 · Sunbelt League
-    - Frontier — Division 1, 950 · Norheim League
-    - Crown Paper — Division 1, 864 · Sunbelt League
-    - Casimir Creek — Division 2, 372 · Norheim League
+    - John F. Kennedy — Group 1, 2,425 · Norheim League
+    - Gravel Narrows — Group 1, 2,275 · Norheim League
+    - St. Teresa — Group 1, 2,150 · Sunbelt League
+    - Pinyon Ridge — Group 1, 2,053 · Sunbelt League
+    - Hidden Draw — Group 1, 2,021 · Norheim League
+    - Harriman — Group 1, 1,564 · Norheim League
+    - Garden Plain — Group 1, 1,543 · Sunbelt League
+    - Green Valley — Group 1, 1,540 · Norheim League
+    - Homestead — Group 1, 1,508 · Norheim League
+    - Emigrant — Group 1, 1,401 · Sunbelt League
+    - Box Canyon — Group 1, 1,274 · Sunbelt League
+    - St. Casimir — Group 1, 1,035 · Sunbelt League
+    - St. Michael Academy — Group 1, 996 · Sunbelt League
+    - Frontier — Group 1, 950 · Norheim League
+    - Crown Paper — Group 1, 864 · Sunbelt League
+    - Casimir Creek — Group 2, 372 · Norheim League
 - **Rostova Junction** — 120,000 · 43.56N 119.08W
-    - Railyard — Division 1, 1,557 · Wheatland Athletic Association
-    - Fir Valley Grange — Division 1, 1,206 · Wheatland Athletic Association
-    - Rostova Junction — Division 1, 1,059 · Wheatland Athletic Association
-    - Trailhead — Division 1, 932 · Sunbelt League
-    - Portola — Division 2, 823 · Kokkola Athletic Association
-    - Clarendon — Division 2, 552 · Kokkola Athletic Association
+    - Railyard — Group 1, 1,557 · Wheatland Athletic Association
+    - Fir Valley Grange — Group 1, 1,206 · Wheatland Athletic Association
+    - Rostova Junction — Group 1, 1,059 · Wheatland Athletic Association
+    - Trailhead — Group 1, 932 · Sunbelt League
+    - Portola — Group 2, 823 · Kokkola Athletic Association
+    - Clarendon — Group 2, 552 · Kokkola Athletic Association
 - **Aurelia** — 80,000 · 43.42N 118.58W
-    - Ruth Bader Ginsburg — Division 1, 2,556 · Norheim League
-    - Kingsway — Division 1, 1,313 · Norheim League
-    - Goodman — Division 1, 1,043 · Norheim League
-    - Aurelia — Division 1, 1,009 · Confluence Athletic Association
+    - Ruth Bader Ginsburg — Group 1, 2,556 · Norheim League
+    - Kingsway — Group 1, 1,313 · Norheim League
+    - Goodman — Group 1, 1,043 · Norheim League
+    - Aurelia — Group 1, 1,009 · Confluence Athletic Association
 - **Harrow** — 45,000 · 42.46N 118.61W
-    - New Boston — Division 1, 913 · Sunbelt League
-    - Harrow — Division 2, 553 · Norheim League
-    - St. Brigid — Division 2, 412 · Norheim League
+    - New Boston — Group 1, 913 · Sunbelt League
+    - Harrow — Group 2, 553 · Norheim League
+    - St. Brigid — Group 2, 412 · Norheim League
 - **Rilland** — 15,000 · 43.64N 118.63W
-    - Clear Lake — Division 2, 407 · Kokkola Athletic Association
-    - Rilland — Division 2, 250 · Kokkola Athletic Association
+    - Clear Lake — Group 2, 407 · Kokkola Athletic Association
+    - Rilland — Group 2, 250 · Kokkola Athletic Association
 - **Lieksa** — 13,134 · 43.01N 118.67W
-    - Lieksa — Division 2, 366 · Kokkola Athletic Association
-    - Ocean Park — Division 2, 277 · Kokkola Athletic Association
+    - Lieksa — Group 2, 366 · Kokkola Athletic Association
+    - Ocean Park — Group 2, 277 · Kokkola Athletic Association
 - **San Vito** — 10,000 · 43.81N 118.38W
-    - San Vito Regional — Division 1, 920 · Wheatland Athletic Association
+    - San Vito Regional — Group 1, 920 · Wheatland Athletic Association
 - **Diamante** — 8,000 · 43.43N 118.26W
-    - Diamante — Division 2, 338 · Norheim League
+    - Diamante — Group 2, 338 · Norheim League
 - **Iisalmi** — 6,100 · 42.26N 118.68W
-    - Iisalmi Union — Division 2, 324 · Norheim League
+    - Iisalmi Union — Group 2, 324 · Norheim League
 - **Minnesota City** — 6,000 · 42.83N 118.92W
-    - Minnesota City — Division 2, 215 · Kokkola Athletic Association
+    - Minnesota City — Group 2, 215 · Kokkola Athletic Association
 - **Ulery Junction** — 5,800 · 44.03N 118.64W
-    - Twin Rivers — Division 2, 274 · Frontier League
+    - Twin Rivers — Group 2, 274 · Frontier League
 - **Agate** — 5,000 · 43.64N 118.82W
-    - Agate — Division 2, 286 · Norheim League
+    - Agate — Group 2, 286 · Norheim League
 - **Lodestone** — 5,000 · 43.58N 119.08W
-    - Lodestone — Division 2, 250 · Kokkola Athletic Association
+    - Lodestone — Group 2, 250 · Kokkola Athletic Association
 - **Nurmes** — 4,300 · 43.44N 118.80W
-    - Nurmes — Division 2, 242 · Kokkola Athletic Association
+    - Nurmes — Group 2, 242 · Kokkola Athletic Association
 - **Yandell City** — 4,000 · 42.05N 118.80W
-    - Weller Regional — Division 2, 187 · Frontier League
+    - Weller Regional — Group 2, 187 · Frontier League
 - **Ashbrook** — 3,900 · 43.28N 118.96W
-    - Ashbrook — Division 2, 180 · Norheim League
+    - Ashbrook — Group 2, 180 · Norheim League
 - **Galactica Plains** — 2,800 · 43.28N 118.58W
-    - Galactica Plains — Division 2, 105 · Norheim League
+    - Galactica Plains — Group 2, 105 · Norheim League
 - **Kuusamo** — 2,400 · 43.54N 119.50W
-    - Kuusamo — Division 2, 98 · Norheim League
+    - Kuusamo — Group 2, 98 · Norheim League
 - **Ninemile** — 2,100 · 43.59N 119.63W
-    - Ninemile — Division 2, 74 · Kokkola Athletic Association
+    - Ninemile — Group 2, 74 · Kokkola Athletic Association
 
 ### Stagewater County — Malheur County, OR
 
 - **Fort Valois** — 200,000 · 44.03N 116.96W
-    - Sagebrush — Division 1, 2,551 · Wheatland Athletic Association
-    - Cole Valley — Division 1, 2,528 · Wheatland Athletic Association
-    - Fort Valois — Division 1, 2,469 · Wheatland Athletic Association
-    - Stagewater — Division 1, 2,447 · Wheatland Athletic Association
-    - Valois Bluffs — Division 1, 2,318 · Wheatland Athletic Association
-    - Quail Hollow — Division 1, 2,306 · Big Sky League
+    - Sagebrush — Group 1, 2,551 · Wheatland Athletic Association
+    - Cole Valley — Group 1, 2,528 · Wheatland Athletic Association
+    - Fort Valois — Group 1, 2,469 · Wheatland Athletic Association
+    - Stagewater — Group 1, 2,447 · Wheatland Athletic Association
+    - Valois Bluffs — Group 1, 2,318 · Wheatland Athletic Association
+    - Quail Hollow — Group 1, 2,306 · Big Sky League
 - **Latgaway** — 28,411 · 43.88N 116.99W
-    - Latgaway — Division 2, 317 · Frontier League
-    - Southern Jefferson Christian — Division 2, 93 · Frontier League
+    - Latgaway — Group 2, 317 · Frontier League
+    - Southern Jefferson Christian — Group 2, 93 · Frontier League
 - **Cordero Wells** — 18,000 · 43.98N 117.24W
-    - Stagewater County High — Division 1, 980 · Wheatland Athletic Association
+    - Stagewater County High — Group 1, 980 · Wheatland Athletic Association
 - **Dovetail** — 12,000 · 44.24N 116.98W
-    - River Market — Division 2, 336 · Frontier League
-    - Dovetail — Division 2, 276 · Frontier League
+    - River Market — Group 2, 336 · Frontier League
+    - Dovetail — Group 2, 276 · Frontier League
 - **Naylors Landing** — 6,200 · 42.97N 117.05W
-    - Naylors Landing — Division 2, 290 · Inland Empire League
+    - Naylors Landing — Group 2, 290 · Inland Empire League
 - **Sotkamo** — 4,800 · 43.74N 117.07W
-    - Sotkamo Union — Division 2, 297 · Inland Empire League
+    - Sotkamo Union — Group 2, 297 · Inland Empire League
 - **Mabry** — 4,700 · 43.86N 117.61W
-    - Mabry Township — Division 2, 310 · Inland Empire League
+    - Mabry Township — Group 2, 310 · Inland Empire League
 - **North Simmons** — 4,700 · 44.25N 117.52W
-    - North Simmons — Division 2, 197 · Inland Empire League
+    - North Simmons — Group 2, 197 · Inland Empire League
 - **Silver Junction** — 4,500 · 43.74N 118.08W
-    - Silver Junction — Division 2, 160 · Inland Empire League
+    - Silver Junction — Group 2, 160 · Inland Empire League
 - **Antler Prairie** — 4,000 · 43.92N 116.99W
-    - Antler Prairie — Division 2, 192 · Frontier League
+    - Antler Prairie — Group 2, 192 · Frontier League
 - **Sixes** — 3,300 · 42.91N 117.53W
-    - Sixes — Division 2, 157 · Inland Empire League
+    - Sixes — Group 2, 157 · Inland Empire League
 - **Basalt Prairie** — 3,000 · 42.41N 117.87W
-    - Basalt Prairie Union — Division 2, 128 · Frontier League
+    - Basalt Prairie Union — Group 2, 128 · Frontier League
 - **Kendricks Landing** — 3,000 · 43.91N 118.15W
-    - Kendricks Landing — Division 2, 135 · Frontier League
+    - Kendricks Landing — Group 2, 135 · Frontier League
 - **Sage Junction** — 2,400 · 44.25N 117.83W
-    - Sluice Valley — Division 1, 870 · Big Sky League
+    - Sluice Valley — Group 1, 870 · Big Sky League
 - **Raahe** — 2,400 · 44.00N 117.01W
-    - Raahe — Division 2, 71 · Inland Empire League
+    - Raahe — Group 2, 71 · Inland Empire League
 - **Espoo** — 100 · 43.50N 118.01W
-    - Espoo — Division 2, 140 · Frontier League
+    - Espoo — Group 2, 140 · Frontier League
 
 ## Halbrook Basin
 
@@ -459,74 +459,74 @@ class, enrollment, and locality where the school carries one.
     - Sulphur Springs — 5A, 798 · Confluence Athletic Association
     - Grizzly Gulch — 4A, 552 · Twin Counties Athletic Association
 - **Echevarria** — 280,000 · 42.99N 116.09W
-    - Redwood Mutual — Division 1, 2,513 · Upper Basin League
-    - Bitterroot — Division 1, 2,503 · Upper Basin League
-    - Furnace Creek — Division 1, 2,422 · Halbrook Basin League
-    - Mae Jemison — Division 1, 2,186 · Halbrook Basin League
-    - Red Bluff — Division 1, 1,729 · Upper Basin League
-    - Copper Belt — Division 1, 1,019 · Halbrook Basin League
-    - Echevarria — Division 1, 906 · Halbrook Basin League
-    - St. Elias College Prep — Division 2, 730 · Dual County League
+    - Redwood Mutual — Group 1, 2,513 · Upper Basin League
+    - Bitterroot — Group 1, 2,503 · Upper Basin League
+    - Furnace Creek — Group 1, 2,422 · Halbrook Basin League
+    - Mae Jemison — Group 1, 2,186 · Halbrook Basin League
+    - Red Bluff — Group 1, 1,729 · Upper Basin League
+    - Copper Belt — Group 1, 1,019 · Halbrook Basin League
+    - Echevarria — Group 1, 906 · Halbrook Basin League
+    - St. Elias College Prep — Group 2, 730 · Dual County League
 - **Aldecoa** — 250,000 · 43.22N 116.55W
-    - Point Loma — Division 1, 2,258 · River Valley League
-    - Deadwood — Division 1, 2,225 · River Valley League
-    - Coyote Springs — Division 1, 2,197 · River Valley League
-    - Ulysses Grant — Division 1, 2,022 · River Valley League
-    - Aldecoa — Division 1, 1,993 · River Valley League
-    - Coles Creek — Division 1, 1,477 · River Valley League
-    - Pope Leo XIV — Division 1, 1,314 · River Valley League
-    - Sawtelle — Division 1, 1,066 · River Valley League
-    - St. Catherine College Prep — Division 1, 1,035 · River Valley League
+    - Point Loma — Group 1, 2,258 · River Valley League
+    - Deadwood — Group 1, 2,225 · River Valley League
+    - Coyote Springs — Group 1, 2,197 · River Valley League
+    - Ulysses Grant — Group 1, 2,022 · River Valley League
+    - Aldecoa — Group 1, 1,993 · River Valley League
+    - Coles Creek — Group 1, 1,477 · River Valley League
+    - Pope Leo XIV — Group 1, 1,314 · River Valley League
+    - Sawtelle — Group 1, 1,066 · River Valley League
+    - St. Catherine College Prep — Group 1, 1,035 · River Valley League
 - **Carden City** — 120,000 · 42.30N 115.85W
-    - Boyle Heights — Division 1, 1,703 · River Valley League
-    - Carden City — Division 1, 1,424 · River Valley League
-    - Granite Water & Power — Division 1, 1,228 · Upper Basin League
-    - Buckhorn — Division 2, 698 · Timber Valley League
+    - Boyle Heights — Group 1, 1,703 · River Valley League
+    - Carden City — Group 1, 1,424 · River Valley League
+    - Granite Water & Power — Group 1, 1,228 · Upper Basin League
+    - Buckhorn — Group 2, 698 · Timber Valley League
 - **Cañada Grande** — 100,000 · 42.88N 115.80W
-    - Mater Dei — Division 1, 2,067 · Upper Basin League
-    - Cañada Grande — Division 1, 1,929 · Upper Basin League
-    - Noe Valley — Division 1, 1,165 · Upper Basin League
-    - St. Gabriel Academy — Division 2, 597 · Dual County League
+    - Mater Dei — Group 1, 2,067 · Upper Basin League
+    - Cañada Grande — Group 1, 1,929 · Upper Basin League
+    - Noe Valley — Group 1, 1,165 · Upper Basin League
+    - St. Gabriel Academy — Group 2, 597 · Dual County League
 - **Zubieta** — 90,000 · 42.55N 116.02W
-    - Zubieta — Division 1, 1,466 · Confluence Athletic Association
-    - Spring Branch — Division 1, 1,441 · Confluence Athletic Association
-    - River Plain — Division 1, 1,316 · Confluence Athletic Association
-    - Sluice Gate — Division 1, 1,074 · Confluence Athletic Association
+    - Zubieta — Group 1, 1,466 · Confluence Athletic Association
+    - Spring Branch — Group 1, 1,441 · Confluence Athletic Association
+    - River Plain — Group 1, 1,316 · Confluence Athletic Association
+    - Sluice Gate — Group 1, 1,074 · Confluence Athletic Association
 - **Greaves** — 80,000 · 42.10N 115.94W
-    - Armour Fields — Division 1, 1,381 · Halbrook Basin League
-    - Greaves — Division 1, 1,080 · Halbrook Basin League
-    - Skypark — Division 1, 916 · Halbrook Basin League
-    - St. Martin Preparatory — Division 2, 576 · Dual County League
+    - Armour Fields — Group 1, 1,381 · Halbrook Basin League
+    - Greaves — Group 1, 1,080 · Halbrook Basin League
+    - Skypark — Group 1, 916 · Halbrook Basin League
+    - St. Martin Preparatory — Group 2, 576 · Dual County League
 - **Etchartville** — 72,741 · 43.57N 116.83W
-    - Etchartville — Division 1, 1,645 · Halbrook Basin League
-    - Terrace Park — Division 1, 1,219 · Halbrook Basin League
-    - High Desert Cooperative — Division 1, 1,158 · Halbrook Basin League
+    - Etchartville — Group 1, 1,645 · Halbrook Basin League
+    - Terrace Park — Group 1, 1,219 · Halbrook Basin League
+    - High Desert Cooperative — Group 1, 1,158 · Halbrook Basin League
 - **Northrup** — 70,000 · 42.64N 116.98W
-    - Western Sky — Division 1, 1,249 · Confluence Athletic Association
-    - Northrup I-50 Tech — Division 2, 203 · Dual County League
+    - Western Sky — Group 1, 1,249 · Confluence Athletic Association
+    - Northrup I-50 Tech — Group 2, 203 · Dual County League
 - **Simmons** — 70,000 · 42.58N 116.24W
-    - Simmons — Division 1, 1,429 · Confluence Athletic Association
-    - Charles Harbor — Division 1, 1,082 · Confluence Athletic Association
-    - Oak Forest — Division 2, 569 · Dual County League
+    - Simmons — Group 1, 1,429 · Confluence Athletic Association
+    - Charles Harbor — Group 1, 1,082 · Confluence Athletic Association
+    - Oak Forest — Group 2, 569 · Dual County League
 - **Tolland** — 60,000 · 42.56N 116.14W
-    - Cedar Exchange — Division 1, 917 · Confluence Athletic Association
+    - Cedar Exchange — Group 1, 917 · Confluence Athletic Association
 - **Drayfield** — 52,259 · 42.83N 116.45W
-    - Drayfield — Division 1, 881 · Upper Basin League
-    - Reservoir Park — Division 1, 873 · Upper Basin League
-    - Empire — Division 1, 845 · Upper Basin League
+    - Drayfield — Group 1, 881 · Upper Basin League
+    - Reservoir Park — Group 1, 873 · Upper Basin League
+    - Empire — Group 1, 845 · Upper Basin League
 - **Homecroft** — 50,000 · 42.27N 115.83W
-    - Homecroft — Division 1, 1,643 · Confluence Athletic Association
-    - Cardinal Newman — Division 2, 520 · Dual County League
-    - West Burlington — Division 2, 393 · Dual County League
+    - Homecroft — Group 1, 1,643 · Confluence Athletic Association
+    - Cardinal Newman — Group 2, 520 · Dual County League
+    - West Burlington — Group 2, 393 · Dual County League
 - **Starlake** — 18,000 · 43.02N 116.83W
-    - Canal Lock — Division 2, 352 · Norheim League
-    - Starlake — Division 2, 347 · Dual County League
+    - Canal Lock — Group 2, 352 · Norheim League
+    - Starlake — Group 2, 347 · Dual County League
 - **Eagleton** — 15,000 · 43.10N 116.78W
-    - Eagleton — Division 2, 315 · Dual County League
+    - Eagleton — Group 2, 315 · Dual County League
 - **Meridia** — 12,000 · 42.02N 115.94W
-    - Meridia — Division 2, 288 · Dual County League
+    - Meridia — Group 2, 288 · Dual County League
 - **Carmina** — 10,000 · 43.04N 116.76W
-    - Carmina — Division 2, 506 · Dual County League
+    - Carmina — Group 2, 506 · Dual County League
 
 ## Alderwold
 
@@ -740,20 +740,20 @@ class, enrollment, and locality where the school carries one.
 ### Eden County — Jerome County, ID
 
 - **Jerome** — 12,300 · 42.72N 114.52W
-    - Idaho Valley — Division 1, 1,450 · Big Sky League
+    - Idaho Valley — Group 1, 1,450 · Big Sky League
 - **Hazelton** — 750 · 42.59N 114.14W
-    - Pierre — Division 2, 720 · Basalt League
+    - Pierre — Group 2, 720 · Basalt League
 - **Eden** — 400 · 42.60N 114.21W
-    - Eden County Christian — Division 2, 420 · Basalt League
+    - Eden County Christian — Group 2, 420 · Basalt League
 
 ### Raft County — Cassia County, ID
 
 - **Burley** — 11,700 · 42.53N 113.79W
-    - South Wheeler — Division 1, 1,500 · Big Sky League
+    - South Wheeler — Group 1, 1,500 · Big Sky League
 - **Oakley** — 760 · 42.24N 113.88W
-    - New Baltimore — Division 1, 930 · Big Sky League
+    - New Baltimore — Group 1, 930 · Big Sky League
 - **Malta** — 190 · 42.30N 113.37W
-    - Raft County Catholic — Division 2, 390 · Basalt League
+    - Raft County Catholic — Group 2, 390 · Basalt League
 
 ## Ashbury Metro
 
@@ -1047,63 +1047,63 @@ class, enrollment, and locality where the school carries one.
 ### Beargrass County — Bear Lake County, ID
 
 - **Montpelier** — 2,500 · 42.32N 111.30W
-    - Wyoming Valley — Division 1, 1,020 · Black Canyon League
+    - Wyoming Valley — Group 1, 1,020 · Black Canyon League
 - **Paris** — 500 · 42.23N 111.40W
-    - Jean Baptiste — Division 2, 610 · Timber Valley League
+    - Jean Baptiste — Group 2, 610 · Timber Valley League
 - **Georgetown** — 470 · 42.48N 111.37W
-    - Beargrass Christian — Division 2, 330 · Timber Valley League
+    - Beargrass Christian — Group 2, 330 · Timber Valley League
 
 ### Bridger County — Uinta County, WY
 
 - **Evanston** — 11,700 · 41.27N 110.96W
-    - Rio San Juan — Division 1, 1,550 · Black Canyon League
+    - Rio San Juan — Group 1, 1,550 · Black Canyon League
 - **Lyman** — 2,100 · 41.33N 110.29W
-    - Bridger Regional — Division 1, 900 · Black Canyon League
+    - Bridger Regional — Group 1, 900 · Black Canyon League
 - **Mountain View** — 1,200 · 41.27N 110.34W
-    - Bridger County Christian — Division 2, 460 · Timber Valley League
+    - Bridger County Christian — Group 2, 460 · Timber Valley League
 
 ### Cub River County — Franklin County, ID
 
 - **Preston** — 5,600 · 42.10N 111.88W
-    - Irvington — Division 1, 1,380 · Black Canyon League
+    - Irvington — Group 1, 1,380 · Black Canyon League
 - **Franklin** — 640 · 42.01N 111.80W
-    - Dawkins — Division 1, 900 · Black Canyon League
+    - Dawkins — Group 1, 900 · Black Canyon League
 - **Weston** — 440 · 42.04N 111.98W
-    - Cub River Catholic — Division 2, 410 · Timber Valley League
+    - Cub River Catholic — Group 2, 410 · Timber Valley League
 
 ### Laketown County — Rich County, UT
 
 - **Garden City** — 560 · 41.95N 111.39W
-    - Burdensome — Division 1, 950 · Black Canyon League
+    - Burdensome — Group 1, 950 · Black Canyon League
 - **Randolph** — 460 · 41.66N 111.18W
-    - Laketown Regional — Division 2, 540 · Timber Valley League
+    - Laketown Regional — Group 2, 540 · Timber Valley League
 - **Laketown** — 270 · 41.83N 111.32W
-    - Laketown County Christian — Division 2, 280 · Timber Valley League
+    - Laketown County Christian — Group 2, 280 · Timber Valley League
 
 ### Malad County — Oneida County, ID
 
 - **Malad City** — 2,000 · 42.19N 112.25W
-    - Cincinnati — Division 1, 1,200 · Black Canyon League
-    - Bonds — Division 1, 880 · Black Canyon League
-    - Malad County Christian — Division 2, 360 · Timber Valley League
+    - Cincinnati — Group 1, 1,200 · Black Canyon League
+    - Bonds — Group 1, 880 · Black Canyon League
+    - Malad County Christian — Group 2, 360 · Timber Valley League
 
 ### Star Valley County — Lincoln County, WY
 
 - **Kemmerer** — 2,400 · 41.79N 110.54W
-    - Star Valley Regional — Division 1, 1,000 · Black Canyon League
+    - Star Valley Regional — Group 1, 1,000 · Black Canyon League
 - **Afton** — 2,000 · 42.73N 110.93W
-    - Star Valley Catholic — Division 2, 500 · Timber Valley League
+    - Star Valley Catholic — Group 2, 500 · Timber Valley League
 - **Alpine** — 800 · 43.17N 111.02W
-    - Chicago Island — Division 2, 650 · Timber Valley League
+    - Chicago Island — Group 2, 650 · Timber Valley League
 
 ### Wellsville County — Cache County, UT
 
 - **Logan** — 53,000 · 41.74N 111.83W
-    - Utah — Division 1, 1,800 · Black Canyon League
+    - Utah — Group 1, 1,800 · Black Canyon League
 - **Smithfield** — 13,300 · 41.84N 111.83W
-    - West Oberlin — Division 1, 1,250 · Black Canyon League
+    - West Oberlin — Group 1, 1,250 · Black Canyon League
 - **Hyrum** — 8,100 · 41.63N 111.85W
-    - Wellsville County Catholic — Division 2, 780 · Timber Valley League
+    - Wellsville County Catholic — Group 2, 780 · Timber Valley League
 
 ## Sebastian Cape
 
@@ -1215,11 +1215,11 @@ class, enrollment, and locality where the school carries one.
 ### Ruby County — Elko County, NV
 
 - **Elko** — 20,500 · 40.83N 115.76W
-    - Vermillion — Division 1, 1,650 · Big Sky League
+    - Vermillion — Group 1, 1,650 · Big Sky League
 - **Carlin** — 2,000 · 40.71N 116.10W
-    - Ruby County Catholic — Division 2, 620 · Basalt League
+    - Ruby County Catholic — Group 2, 620 · Basalt League
 - **Wells** — 1,200 · 41.11N 114.96W
-    - Atlanta — Division 1, 1,100 · Big Sky League
+    - Atlanta — Group 1, 1,100 · Big Sky League
 
 ## Gold Valley
 
@@ -1392,74 +1392,74 @@ class, enrollment, and locality where the school carries one.
 ### Galena County — Washoe County, NV
 
 - **Galena** — 16,700 · 39.53N 119.81W
-    - Galena — Division 2, 419 · High Lakes League
-    - Blue Valley — Division 2, 211 · High Lakes League
+    - Galena — Group 2, 419 · High Lakes League
+    - Blue Valley — Group 2, 211 · High Lakes League
 - **Meridian Passage** — 6,800 · 39.53N 119.75W
-    - Rimrock — Division 2, 304 · High Lakes League
+    - Rimrock — Group 2, 304 · High Lakes League
 - **Norstead** — 5,300 · 39.60N 119.78W
-    - Norstead — Division 2, 298 · High Lakes League
+    - Norstead — Group 2, 298 · High Lakes League
 - **Ferris** — 4,100 · 39.65N 119.71W
-    - Union Prairie — Division 2, 189 · Inland Empire League
+    - Union Prairie — Group 2, 189 · Inland Empire League
 - **Huckle Butte** — 3,600 · 39.25N 119.97W
-    - Huckle Butte — Division 2, 181 · High Lakes League
+    - Huckle Butte — Group 2, 181 · High Lakes League
 - **Aftdahl Ridge** — 3,300 · 39.68N 119.98W
-    - Silver Lake — Division 2, 147 · Inland Empire League
+    - Silver Lake — Group 2, 147 · Inland Empire League
 - **Windrow** — 2,700 · 39.64N 119.84W
-    - Windrow — Division 2, 118 · Basalt League
+    - Windrow — Group 2, 118 · Basalt League
 - **Mabryville** — 1,800 · 39.62N 119.83W
-    - Mabryville — Division 2, 88 · High Lakes League
+    - Mabryville — Group 2, 88 · High Lakes League
 
 ### Lodestone County — Humboldt County, NV
 
 - **Fort Lassiter** — 16,932 · 40.97N 117.74W
-    - Fort Lassiter — Division 2, 355 · High Lakes League
+    - Fort Lassiter — Group 2, 355 · High Lakes League
 - **Wellers Landing** — 5,500 · 40.95N 117.49W
-    - Lodestone County High — Division 1, 900 · Big Sky League
+    - Lodestone County High — Group 1, 900 · Big Sky League
 - **Etchart** — 4,600 · 42.00N 117.72W
-    - Etchart — Division 2, 270 · High Lakes League
+    - Etchart — Group 2, 270 · High Lakes League
 - **Copper Bar** — 4,500 · 41.57N 117.79W
-    - Copper Bar — Division 2, 480 · High Lakes League
+    - Copper Bar — Group 2, 480 · High Lakes League
 - **Pellburg** — 3,600 · 41.49N 117.53W
     - Pellburg — 2A, 251 · Montview League
 - **Georgia Mills** — 600 · 41.99N 118.63W
-    - Georgia Mills — Division 2, 279 · High Lakes League
+    - Georgia Mills — Group 2, 279 · High Lakes League
 
 ### Scheelite County — Pershing County, NV
 
 - **Dry Bar** — 27,600 · 40.18N 118.47W
-    - Scheelite County — Division 2, 836 · Big Sky League
+    - Scheelite County — Group 2, 836 · Big Sky League
 - **Mirage Siding** — 10,800 · 40.66N 118.15W
-    - Mirage Siding Regional — Division 1, 860 · Big Sky League
+    - Mirage Siding Regional — Group 1, 860 · Big Sky League
 - **Tungsten Reach** — 6,300 · 40.60N 118.25W
-    - Tungsten Reach — Division 2, 231 · Big Sky League
+    - Tungsten Reach — Group 2, 231 · Big Sky League
 - **Mirage Crossing** — 4,200 · 40.36N 118.39W
-    - Mirage Crossing — Division 2, 149 · Big Sky League
+    - Mirage Crossing — Group 2, 149 · Big Sky League
 - **Saltbush Reach** — 3,100 · 40.25N 118.39W
-    - Saltbush Reach — Division 2, 187 · Big Sky League
+    - Saltbush Reach — Group 2, 187 · Big Sky League
 
 ### Windrow County — Lassen County, CA
 
 - **Vonjo City** — 19,058 · 40.42N 120.65W
-    - Vonjo City — Division 2, 548 · Basalt League
-    - St. Dominic Academy — Division 2, 431 · Basalt League
+    - Vonjo City — Group 2, 548 · Basalt League
+    - St. Dominic Academy — Group 2, 431 · Basalt League
 - **Brynildson Hill** — 17,340 · 40.31N 121.01W
-    - Baptist — Division 1, 1,029 · Big Sky League
-    - Brynildson Hill — Division 2, 113 · Big Sky League
+    - Baptist — Group 1, 1,029 · Big Sky League
+    - Brynildson Hill — Group 2, 113 · Big Sky League
 - **Elk Bluff** — 14,749 · 40.30N 120.52W
-    - Elk Bluff — Division 2, 396 · Big Sky League
-    - St. Raphael College Prep — Division 2, 285 · Basalt League
+    - Elk Bluff — Group 2, 396 · Big Sky League
+    - St. Raphael College Prep — Group 2, 285 · Basalt League
 - **East Simmons** — 5,000 · 40.38N 120.59W
-    - East Simmons — Division 2, 293 · Big Sky League
+    - East Simmons — Group 2, 293 · Big Sky League
 - **Cutbank** — 4,800 · 40.14N 120.15W
-    - Cutbank — Division 2, 470 · Big Sky League
+    - Cutbank — Group 2, 470 · Big Sky League
 - **Doyleville** — 4,500 · 40.03N 120.10W
-    - Doyleville Union — Division 2, 150 · Big Sky League
+    - Doyleville Union — Group 2, 150 · Big Sky League
 - **Sage Village** — 3,200 · 41.12N 121.14W
-    - Sage Village — Division 2, 107 · Basalt League
+    - Sage Village — Group 2, 107 · Basalt League
 - **Assay** — 2,200 · 40.14N 120.13W
-    - Assay — Division 2, 100 · Big Sky League
+    - Assay — Group 2, 100 · Big Sky League
 - **Placer** — 1,400 · 40.38N 120.39W
-    - High Prairie — Division 2, 57 · Basalt League
+    - High Prairie — Group 2, 57 · Basalt League
 
 ## Yarrowmere
 

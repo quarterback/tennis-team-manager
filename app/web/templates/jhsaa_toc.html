@@ -66,13 +66,13 @@
             <div class="jh-mside {{ 'win' if gm.winner == gm.home else 'out' }}">
               <span class="sd">{{ gm.home_seed or '' }}</span>
               <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.home, u=u, g=view.gender, year=view.scope.pin) }}">{{ gm.home }}</a>
-                {% if gm.home_group %}<span class="jh-chip c-{{ gm.home_group }}">{{ gm.home_group }}</span>{% endif %}</span>
+                {% if gm.home_group %}<span class="jh-chip c-{{ gm.home_group|replace(' ','') }}">{{ gm.home_group }}</span>{% endif %}</span>
               <span class="pt">{{ gm.home_points|int }}</span>
             </div>
             <div class="jh-mside {{ 'win' if gm.winner == gm.away else 'out' }}">
               <span class="sd">{{ gm.away_seed or '' }}</span>
               <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.away, u=u, g=view.gender, year=view.scope.pin) }}">{{ gm.away }}</a>
-                {% if gm.away_group %}<span class="jh-chip c-{{ gm.away_group }}">{{ gm.away_group }}</span>{% endif %}</span>
+                {% if gm.away_group %}<span class="jh-chip c-{{ gm.away_group|replace(' ','') }}">{{ gm.away_group }}</span>{% endif %}</span>
               <span class="pt">{{ gm.away_points|int }}</span>
             </div>
           </div>
@@ -93,7 +93,7 @@
         <span class="rk">{{ t.seed }}</span>
         {{ t.mark|safe }}
         <span class="bd"><span class="n">{{ t.name }}</span><span class="s">{{ t.district }}</span></span>
-        {% if t.group %}<span class="jh-chip c-{{ t.group }}">{{ t.group }}</span>{% endif %}
+        {% if t.group %}<span class="jh-chip c-{{ t.group|replace(' ','') }}">{{ t.group }}</span>{% endif %}
       </a>
       {% endfor %}
     </div>

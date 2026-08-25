@@ -1,3 +1,5 @@
+> Note: the "Division 1"/"Division 2" championship groups below were implemented in-app as "Group 1"/"Group 2" (owner rename 2026-08, NJSIAA language — avoids the "Division N" recovery-round unit names). This handoff file is the immutable source and keeps the original names.
+
 # JHSAA expansion roster
 
 ## Final championship groups
