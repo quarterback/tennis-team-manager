@@ -4762,7 +4762,14 @@ def _toc_finish_label(alive: int) -> str:
     labels, because the events are different shapes and the shared bands lie about
     this one. `_finish_label` bands 5-8 as "Quarterfinalist"; a six-team meta-event
     has no quarterfinal, so a program that lost its opening dual would be credited
-    with a round it never played."""
+    with a round it never played.
+
+    Now that the field runs to eleven classifications, `run_toc` plays a genuine
+    Octofinals (a real 5-8 QF-round loss) ABOVE a play-in round for the bottom
+    seeds (a 9+ loss) — two different rounds, so they need two different labels;
+    lumping both under "Opening Round" would credit an Octofinals loser with a
+    round they never played, the same fault this function was written to avoid
+    for a six-team field."""
     if alive <= 0:
         return ""
     if alive == 1:
@@ -4771,6 +4778,8 @@ def _toc_finish_label(alive: int) -> str:
         return "TOC Runner-up"
     if alive <= 4:
         return "TOC Semifinalist"
+    if alive <= 8:
+        return "TOC Quarterfinalist"
     return "TOC Opening Round"
 
 
