@@ -306,27 +306,46 @@ def retier_groups(schools: list[dict]) -> None:
         s["classification"] = s["group"] = band
 
 
-def redraw_all_groups(schools: list[dict], m) -> None:
+def redraw_all_groups(schools: list[dict], m, extra_touched: set = frozenset()) -> None:
     """Full redraw for the ladder classes any of the three passes touched
     (the eastern moves/sunsets pull schools OUT of their 1A-9A class,
     Louisville arrivals move city/county within the ladder, and the whole
     Group 1/2/3 pool is entirely new membership) -- exactly the
     `jhsaa_expansion_2046`/`jhsaa_reclassify` idiom: a class whose membership
-    changed gets `import_jhsaa.draw_districts`, never a partial patch."""
+    OR GEOGRAPHY changed gets `import_jhsaa.draw_districts`, never a partial
+    patch.
+
+    ‼️ A CLASS'S LEAGUE *COUNT* CAN STAY RIGHT WHILE ITS LEAGUE *MEMBERSHIP*
+    GOES STALE -- `district_count(len(pool))` only asks "does this class
+    still want the same NUMBER of leagues", which a class can answer yes to
+    while still containing schools whose real location moved out from under
+    their old league assignment. 24 MOVES + 14 RETIRE_AND_REPLACE donors
+    leave their SOURCE ladder class (their `classification` becomes Group
+    1/2/3 in `retier_groups`) without necessarily changing that source
+    class's league COUNT, and the 8 Louisville schools change city/county
+    WITHOUT leaving their class at all -- three relocated 5A Louisville
+    schools stayed split between their old western leagues while a fresh
+    `draw_districts` call would put all three together in one eastern
+    league, with 5A's league count never having moved. `extra_touched` is
+    every class any of the three passes has a school ENTERING OR LEAVING
+    (the MOVES/RETIRE_AND_REPLACE donors' ORIGINAL classes, captured in
+    `main()` before `retier_groups` overwrites them) or CHANGING GEOGRAPHY
+    WITHIN (the LOUISVILLE classes) -- caller-supplied because this function
+    only sees the POST-migration `classification`, which is exactly the
+    field that no longer names where a mover came from."""
     cities = {s["city"]: {"county": s["county"]} for s in schools}
     # Group 1/2/3 membership is ENTIRELY new (a fresh enrollment sort, not an
     # edit of the old Group 1/2 leagues), so it always redraws regardless of
     # whether its size happens to still fit its old league count.
-    touched = {"Group 1", "Group 2", "Group 3"}
+    touched = {"Group 1", "Group 2", "Group 3"} | set(extra_touched)
     by_group = collections.defaultdict(list)
     for s in schools:
         if s["girls"] or s["boys"]:
             by_group[s["group"]].append(s)
     # Every OTHER class redraws only if its CURRENT league count no longer
     # matches what `district_count` wants for its membership -- the general
-    # rule `jhsaa_reclassify.rehome` uses, which also catches the 1A-9A
-    # classes that lost schools to MOVES/RETIRE_AND_REPLACE without this
-    # script needing to enumerate them by name.
+    # rule `jhsaa_reclassify.rehome` uses, catching any class this script's
+    # `touched` set missed by name.
     league = {}
     for g in m.GROUPS:
         pool = by_group.get(g, [])
@@ -405,8 +424,18 @@ def main() -> None:
     print(f"{moved} intact eastern moves, {replaced} retire-and-replace, "
           f"{relocated} Louisville-by-the-Sea relocations")
 
+    # ‼️ CAPTURED BEFORE `retier_groups` OVERWRITES `classification` for the
+    # 38 eastern arrivals -- these are the source 1A-9A classes that LOST a
+    # school (MOVES/RETIRE_AND_REPLACE) or CHANGED a member's geography
+    # in-class (LOUISVILLE), all of which need a real redraw even when the
+    # class's league COUNT still happens to fit (see `redraw_all_groups`).
+    touched_classes = {rows[name]["classification"] for name in MOVES if name in rows}
+    touched_classes |= {rows[name]["classification"]
+                        for name in RETIRE_AND_REPLACE if name in rows}
+    touched_classes |= {rows[name]["classification"] for name in LOUISVILLE if name in rows}
+
     retier_groups(schools)
-    redraw_all_groups(schools, m)
+    redraw_all_groups(schools, m, touched_classes)
     preflight(schools, jh)
     report(schools, jh)
 

@@ -148,6 +148,51 @@ program with no prep-network origin).
   round-trip checking every program's `district` field is non-empty) — no
   full `pytest` run, per explicit standing instruction for this kind of
   data/construction pass ("no full suite at the end").
+- **‼️ A CLASS'S LEAGUE COUNT CAN STAY CORRECT WHILE ITS LEAGUE MEMBERSHIP
+  GOES STALE — a second `redraw_all_groups` gap found on review, after the
+  Group 3 dispatch bug above.** `have != district_count(len(pool)) or g in
+  touched` redraws a class ONLY on a league-count mismatch or explicit
+  membership in `touched` (originally just `{"Group 1", "Group 2", "Group
+  3"}`) — a real check for "did this class gain or lose enough schools to
+  need more/fewer leagues", but blind to "did a school's real location move
+  without changing the class's total". 9A, 7A, 5A and 1A all lost exactly
+  enough (or zero) schools to keep their OLD league count, so they kept
+  their OLD, now-stale `girls_district`/`boys_district` strings: the three
+  relocated 5A Louisville schools sat split between the old western
+  Ambassador League and Capital Athletic Association, while a fresh
+  `draw_districts` call over 5A's real post-migration membership put all
+  three together in one eastern Valley Coast Interscholastic League (the
+  live example a review caught this on) — 21-30 programs in each of the
+  four skipped classes carried assignments from before the migration ever
+  ran. **Fixed by explicitly touching every source class the three passes
+  moved a school INTO OR OUT OF, not just relying on the count check**:
+  `main()` now captures each MOVES/RETIRE_AND_REPLACE school's ORIGINAL
+  `classification` (before `retier_groups` overwrites it to Group 1/2/3) and
+  every LOUISVILLE school's class (unchanged by the move, but its city/
+  county changed WITHIN that class, which is exactly the case a bare
+  count-match can't see), and threads that set into `redraw_all_groups` as
+  `extra_touched`, unioned into the same `touched` set Group 1/2/3 already
+  used. The league-count check stays as the general `jhsaa_reclassify.
+  rehome`-style catch-all for anything this script doesn't name — it is
+  necessary, just not sufficient on its own once geography (not just
+  headcount) can change inside a class.
+  - **Why the existing 9-12 district-size test didn't catch this.** The
+    suite's district-size invariant asserts every league lands in the
+    9-12-team band `import_jhsaa.district_count`/`draw_districts` target —
+    a real, useful check, but one that only ever inspects league SIZES, not
+    WHICH schools ended up in which league. This bug left every league's
+    SIZE untouched (nobody's league count changed) and only scrambled which
+    three schools shared one — a stale assignment is invisible to a test
+    that counts members, not identities. Catching this class of bug needs a
+    membership assertion (e.g. "every school in a class's league roster
+    also appears in a fresh `draw_districts` call for that class"), not a
+    size one; nothing like that exists yet and none was added for this
+    single migration pass, consistent with "no full suite at the end".
+  - The data file was restored from the pre-migration base and the whole
+    migration re-run clean (rather than patched in place) for the same
+    reason as the Group 3 fix — `RETIRE_AND_REPLACE`'s collision guard makes
+    a second pass over already-migrated output fail loudly rather than
+    silently double-applying.
 
 ## What to check before touching this again
 
