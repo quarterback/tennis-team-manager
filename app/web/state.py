@@ -4288,13 +4288,13 @@ def jhsaa_honors_view(seed: int, gender: str, group: str | None = None,
 
 
 def _jh_indiv_grade_label(players: list, full: bool = False) -> str:
-    """A bracket label with each player's class year appended — the OSAA/IHSAA
-    convention ("Finn Johnson 12"; a doubles pair carries each name with its OWN
-    grade, "M. Potter 11 / R. Valverde 11") rather than a bare name. `grade` is
-    ARCHIVED with the entry (`draw_to_dict`) for exactly this — it is a property
-    of the player IN THAT SEASON, so no roster lookup is needed and a season
-    archived before grade existed simply omits it (reads back with no grade,
-    which is honest).
+    """A bracket label with each player's class year appended, IN PARENS —
+    "Finn Johnson (12)"; a doubles pair carries each name with its OWN grade,
+    "M. Potter (11) / R. Valverde (11)" — never a bare trailing number. `grade`
+    is ARCHIVED with the entry (`draw_to_dict`) for exactly this — it is a
+    property of the player IN THAT SEASON, so no roster lookup is needed and a
+    season archived before grade existed simply omits it (reads back with no
+    grade, which is honest).
 
     `full=True` names every player IN FULL (the champion/runner-up announcement,
     which already reads the full name over the compact one); otherwise doubles
@@ -4304,7 +4304,7 @@ def _jh_indiv_grade_label(players: list, full: bool = False) -> str:
     for p in players:
         nm = p["name"] if (full or len(players) == 1) else p["name"].split()[-1]
         g = p.get("grade")
-        parts.append(f"{nm} {g}" if g else nm)
+        parts.append(f"{nm} ({g})" if g else nm)
     return " / ".join(parts)
 
 
