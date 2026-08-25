@@ -235,3 +235,25 @@ named balance moves, everything else byte-identical. No league over
 `MAX_DISTRICT` (12); every class matches `district_count`. 8A/9A under-floor is
 the reported, owner-visible consequence of the boundary — see the correction
 note at the top.
+
+## Field-table re-tier (owner rule 2026-08) — 32 is now a canonical third shape
+
+The under-floor ⚠️ above was resolved by moving the FIELD, not the membership.
+The owner weighed promoting ~15-20 publics up from the middle classes to hold
+40 in the top tier and rejected it — the middle classes' combined slack above
+their own 76 floor is ~26 boys sponsors, so every class would have landed on a
+razor margin. Instead the table is tiered on TALENT:
+
+| Tier | Field | Floor | Shape |
+|---|---:|---:|---|
+| 9A / 8A / 7A | 32 | 44 | byeless full bracket — Zonal champions seeded 1-8, nobody sits |
+| 6A – 3A | 40 | 76 | the standard Qualifiers-Round expansion |
+| 2A / 1A | 24 | 48 | the fixed `_recovery_24` shape (2A returns to it; "the talent really degrades at that level") |
+
+‼️ **Do not "correct" the 32s back to the old 40-or-24 pattern.** "A 40 is a
+24 with a Qualifiers Round in front of it" still explains those two shapes;
+the 32 is the byeless power-of-two shape the seeding-guarantee test
+(`test_zonal_champions_are_the_top_seeds_byes_or_not`) has always pinned as
+valid, chosen deliberately (owner: "that's probably the better option than
+going to 40 for the big classes"). Every group clears its floor in both
+genders with real margin; the tightest is 6A boys at 77 vs 76.
