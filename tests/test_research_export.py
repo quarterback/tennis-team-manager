@@ -38,13 +38,24 @@ def test_jhsaa_bundle_is_self_describing_and_normalized():
 
     a, b = _team("Ace High", "7A", True), _team("Ball High", "7A", False)
     groups = {g: {"state": {"champion": "Ace High"}} for g in GROUPS}
+    individual_draw = {"entries": [{"school": "Ace High", "players": [{"pid": "ana"}]}],
+                       "rounds": [], "champion": 0, "runner_up": None}
     files = build_jhsaa(2027, "girls", "7A",
-                        season={"teams": {"a": a, "b": b}, "groups": groups, "awards": {}})
+                        season={"teams": {"a": a, "b": b}, "groups": groups, "awards": {},
+                                "individuals": {
+                                    "girls": {"7A": {"S1": individual_draw},
+                                              "6A": {"S1": {"not": "in scope"}}},
+                                    "mixed": {"7A": {"XD": individual_draw}}}})
     assert {"README.md", "manifest.json", "programs.csv", "players.csv", "duals.csv",
-            "lines.csv", "line_players.csv", "jhsaa_standings.csv"} <= files.keys()
+            "lines.csv", "line_players.csv", "jhsaa_standings.csv",
+            "jhsaa_individuals.json"} <= files.keys()
     manifest = json.loads(files["manifest.json"])
     assert manifest["dataset_family"] == "jhsaa"
     assert manifest["college_plan"]["status"] == "available"
+    assert manifest["files"]["jhsaa_individuals.json"]["media_type"] == "application/json"
+    individuals = json.loads(files["jhsaa_individuals.json"])
+    assert individuals == {"girls": {"7A": {"S1": individual_draw}},
+                           "mixed": {"7A": {"XD": individual_draw}}}
     duals = list(csv.DictReader(io.StringIO(files["duals.csv"].decode())))
     assert len(duals) == 1
     assert duals[0]["home_program_id"] == "Ace High|girls"
