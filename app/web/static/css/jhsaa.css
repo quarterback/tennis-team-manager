@@ -490,6 +490,12 @@
    long <th> label overruns its neighbour. Both have to be told. */
 .jh-ledger th { overflow: hidden; }
 .jh-ledger.nowrap td, .jh-ledger.nowrap th { white-space: nowrap; }
+/* A `width:100%` fixed-layout table is never wider than its container, so its
+   `.tbl-scroll` wrapper never scrolls — on a narrow viewport the columns compress
+   and the honours chips clip instead. A min-width (the fixed column widths plus a
+   usable honours cell) pushes the overflow into the scroll wrapper, which is the
+   app rule: wide content scrolls in its own container, never clips. */
+.jh-ledger.minw { min-width: 820px; }
 .jh-sched td:last-child { white-space: nowrap; }
 /* The finish cell can carry TWO chips — a classification title and a TOC finish — and
    the table is `table-layout: fixed; overflow: hidden`, so nowrap here doesn't shrink
