@@ -590,7 +590,7 @@ FIDELITY = "fast"
 #      round pairs its whole field, so the shape follows the field size rather
 #      than a constant. `recovery_shape` projects it from the constants alone.
 #
-# `STATE_FIELD`: the owner's field table below. EVERY class now crowns from 40, but
+# `STATE_FIELD`: the owner's field table below. Most classes crown from 40, but
 # the 24 remains the shape underneath it — a 24-team seeded draw has exactly eight
 # first-round byes and those byes ARE the Zonal champions' privilege; a 40 puts a
 # Qualifiers Round in front of that same 24 (see the table's own comment).
@@ -626,15 +626,28 @@ WARD_FIELD = 32
 # is a 95-program class its playoff "mirrors every other classification" (owner) —
 # the dynamic recovery ladder, not the fixed 24-team shape. It clears
 # `sponsor_floor` comfortably: 95 girls' programs and 87 boys' against a floor of 76.
-# 1A is unchanged and stays the one class on the 24 (`_recovery_24`).
-STATE_FIELD = {"9A": 40, "8A": 40, "7A": 40,
-               "6A": 40, "5A": 40, "4A": 40, "3A": 40, "2A": 40, "1A": 24,
+#
+# 9A and 8A went BACK to 24 in the 2046 expansion (owner rule 2026-08): the Great
+# Basin departure thinned them to 73/75 girls' and 65/73 boys' programs — under the
+# 40-field's 76-sponsor floor, with no honest backfill (girls sponsorship IS the
+# membership up there). The 24 keeps their postseason fully-fielded (floor 48)
+# instead of degrading loudly every season; the table is the owner's per-class
+# decision and they can be moved back the day the classes refill. So the 24-shape
+# classes are now 9A, 8A and 1A — `_recovery_24` keys on the FIELD SIZE, exactly
+# the "a class could be moved back without touching anything else" promise above.
+# 1A went UP to 32 in the same pass (owner: "they're big enough now" — 89
+# programs). 32 is the byeless shape: a full bracket with the eight Zonal
+# champions seeded 1-8 and nobody sitting out — the seeding guarantee, not a
+# bye rule, exactly as `test_zonal_champions_are_the_top_seeds_byes_or_not`
+# pins it. It leaves the fixed `_recovery_24` wiring and joins the dynamic
+# recovery ladder like every other non-24 class.
+STATE_FIELD = {"9A": 24, "8A": 24, "7A": 40,
+               "6A": 40, "5A": 40, "4A": 40, "3A": 40, "2A": 40, "1A": 32,
                # 2046 expansion (owner rule): the two Great Basin groups are two
                # more classifications, full stop -- "think of them more as 10A
                # and 11A than thinking of them as anything weird." 92 sponsors
                # each clears the dynamic-ladder floor comfortably (76 required
-               # at a 40-field) so they play the standard shape, not `_recovery_24`
-               # (that shape stays 1A-only per its own owner rule).
+               # at a 40-field) so they play the standard shape, not `_recovery_24`.
                "Group 1": 40, "Group 2": 40}
 STATE_FIELD_DEFAULT = 24
 
@@ -709,7 +722,7 @@ def sponsor_floor(group: str) -> int:
     wants 44 bodies, so the floor is `32 + 44 = 76`; a 24-field class fills without
     a Conference, neither round convenes, and it has no floor of its own.
 
-    ‼️ 1A's FIXED 24-TEAM SHAPE (`_recovery_24`) IS A DIFFERENT FORMULA. Every
+    ‼️ THE FIXED 24-TEAM SHAPE (`_recovery_24` — 9A, 8A) IS A DIFFERENT FORMULA. Every
     round size in that shape (Super Regional/Semi-State 16, Divisional/Semi-
     Conference/Conference 8) is a fixed function of `PROTECTED`/`WARD_FIELD` alone
     — never of total sponsor count — so there is no Semi-Conference body reservoir
@@ -4630,9 +4643,11 @@ def _recovery_24(group: str, by_name: dict, prestate: dict, zonal_champs: list,
                  district_champs: list[str], power: dict, *,
                  seed: int) -> tuple[dict, dict, dict, dict, dict,
                                      list, list[str], dict]:
-    """The FIXED 24-team recovery/qualification shape — 1A alone (owner rule
-    2027-08; 2A left it for the standard ladder in the 2033 realignment, which
-    took it to 95 programs and a 40-team field). Zonal champions are an automatic State berth here exactly as in
+    """The FIXED 24-team recovery/qualification shape — every 24-field class
+    (owner rule 2027-08; 2A left it for the standard ladder in the 2033
+    realignment, and in the 2046 pass 1A left it upward for a byeless 32 while
+    9A and 8A came DOWN to it after the Great Basin departure thinned them
+    under the 40-field's sponsor floor). Zonal champions are an automatic State berth here exactly as in
     every other class (`zonal_champs` — the caller seeds them 1-8, same as
     `_recovery`'s callers do) — this function returns only the 16 EARNED
     qualifiers on top of those 8. Every named round stays in play; what moves
