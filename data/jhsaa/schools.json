@@ -17189,7 +17189,7 @@
       "boys_district": "Gold Valley League"
     },
     {
-      "name": "Bardsley County High",
+      "name": "Violet City",
       "source": "Bardsley County High",
       "city": "Sutter Reach",
       "county": "Bardsley",
@@ -17198,7 +17198,7 @@
       "group": "3A",
       "enrollment": 442,
       "private": false,
-      "mascot": "Tigers",
+      "mascot": "Green Orioles",
       "colors": [
         "#22333b",
         "#c6ac8f"
@@ -17229,7 +17229,7 @@
       "boys_district": "Quarry League"
     },
     {
-      "name": "Olivet Regional",
+      "name": "Silva",
       "source": "Olivet Regional",
       "city": "Garrow Switch",
       "county": "Olivet",
@@ -17238,7 +17238,7 @@
       "group": "3A",
       "enrollment": 411,
       "private": false,
-      "mascot": "Prospectors",
+      "mascot": "Switchbacks",
       "colors": [
         "#2b2d42",
         "#edf2f4"
@@ -18309,7 +18309,7 @@
       "boys_district": "Vesterheim Athletic Association"
     },
     {
-      "name": "Stagewater County High",
+      "name": "Wong",
       "source": "Stagewater County High",
       "city": "Cordero Wells",
       "county": "Stagewater",
@@ -18318,7 +18318,7 @@
       "group": "Group 2",
       "enrollment": 980,
       "private": false,
-      "mascot": "Silvertips",
+      "mascot": "Herons",
       "colors": [
         "#0f3d3e",
         "#f2c14e"
@@ -18929,7 +18929,7 @@
       "boys_district": "Big Sky League"
     },
     {
-      "name": "Boley Union",
+      "name": "Boley",
       "source": "Boley Union",
       "city": "Boley",
       "county": "Minidoka",
@@ -18949,7 +18949,7 @@
       "boys_district": "Confluence Athletic Association"
     },
     {
-      "name": "Langston Central",
+      "name": "Singleton HS",
       "source": "Langston Central",
       "city": "Langston",
       "county": "Minidoka",
@@ -18957,7 +18957,7 @@
       "classification": "Group 3",
       "group": "Group 3",
       "enrollment": 105,
-      "private": true,
+      "private": false,
       "mascot": "Hurstons",
       "colors": [
         "#5e2129",
@@ -18969,7 +18969,7 @@
       "boys_district": "Northwest Assembly"
     },
     {
-      "name": "Hampton Technical",
+      "name": "Hampton",
       "source": "Hampton Technical",
       "city": "Hampton",
       "county": "Minidoka",
@@ -19029,7 +19029,7 @@
       "boys_district": "Confluence Athletic Association"
     },
     {
-      "name": "Quincy Union",
+      "name": "Quincy",
       "source": "Quincy Union",
       "city": "Quincy",
       "county": "Minidoka",
@@ -19049,7 +19049,7 @@
       "boys_district": "Northwest Assembly"
     },
     {
-      "name": "Eatonville Central",
+      "name": "Eatonville",
       "source": "Eatonville Central",
       "city": "Eatonville",
       "county": "Minidoka",
@@ -19069,7 +19069,7 @@
       "boys_district": "Northwest Assembly"
     },
     {
-      "name": "Topeka West",
+      "name": "Topeka",
       "source": "Topeka West",
       "city": "Topeka",
       "county": "Minidoka",
@@ -19089,7 +19089,7 @@
       "boys_district": "Northwest Assembly"
     },
     {
-      "name": "Petersburg High",
+      "name": "Clara Brown HS",
       "source": "Petersburg High",
       "city": "Petersburg",
       "county": "Vance",
@@ -19097,7 +19097,7 @@
       "classification": "Group 2",
       "group": "Group 2",
       "enrollment": 754,
-      "private": true,
+      "private": false,
       "mascot": "Generals",
       "colors": [
         "#432818",
@@ -19109,7 +19109,7 @@
       "boys_district": "Dual County League"
     },
     {
-      "name": "Richmond Technical",
+      "name": "Richmond",
       "source": "Richmond Technical",
       "city": "Richmond",
       "county": "Vance",
@@ -19129,7 +19129,7 @@
       "boys_district": "Dual County League"
     },
     {
-      "name": "Norfolk Central",
+      "name": "Norfolk",
       "source": "Norfolk Central",
       "city": "Norfolk",
       "county": "Vance",
@@ -19189,7 +19189,7 @@
       "boys_district": "Greater Ashbury Interscholastic League"
     },
     {
-      "name": "Guthrie Catholic",
+      "name": "Guthrie",
       "source": "Guthrie Catholic",
       "city": "Guthrie",
       "county": "Lincoln",

@@ -219,3 +219,27 @@ program with no prep-network origin).
   `GROUPS` from `scripts/import_jhsaa.py` — any FUTURE group addition needs
   the same two-tuple check this AAR's first bullet describes, in both
   directions.
+
+## Follow-up: naming cleanup (`scripts/jhsaa_heritage_valley_renames.py`)
+
+A review pass flagged 14 of the RETIRE_AND_REPLACE names as templated too
+literally on their own city ("Boley Union" in Boley, "Hampton Technical" in
+Hampton) — redundant in the same way `docs/JHSAA-school-names.txt`'s
+near-duplicate sweep already flags for real. 10 simplify to the bare city
+name (the ordinary single-school-town convention already used for
+Nicodemus/Muskogee/Kearney/Emporia); two (Langston Central, Petersburg High)
+get a distinct person-named identity instead (**Singleton HS**, **Clara
+Brown HS** — both marked PUBLIC) for variety in that layer, the same
+person-named-school convention already used elsewhere in the JHSAA. The
+same pass also renamed + remascoted three unrelated, PRE-EXISTING schools
+whose names embedded their own county's name (Bardsley County High/county
+"Bardsley", Olivet Regional/county "Olivet", Stagewater County High/county
+"Stagewater") — the school-level version of the "Halbrook Basin" beside
+"Halbrook" league-name collision CLAUDE.md documents — to **Violet City**
+(Green Orioles), **Silva** (Switchbacks) and **Wong** (Herons).
+
+Every rename left `source` untouched — it already held the pre-rename
+identity string in all 13 cases, and per the standing JHSAA rule a display
+rename must never move it (roster generation and pids key on `source`, not
+`name`). Re-verified after: 957 girls'/883 boys' sponsors, 0 empty
+districts, 0 display-name collisions anywhere in the file.
