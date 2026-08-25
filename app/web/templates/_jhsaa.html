@@ -141,7 +141,7 @@
       {# History is TWO pages on its own sub-rail (owner, 2026-08): the champions
          grid (who won each class each season) and the title board (what a program
          has ever won). Same question from the two ends. #}
-      <a class="{{ 'on' if tab in ('history', 'titles') }}"
+      <a class="{{ 'on' if tab in ('history', 'titles', 'indiv_history') }}"
          href="{{ url_for('jhsaa_champions', u=u, g=scope.gender) }}">History</a>
       {# The section's own settings — archetypes and play-up. A tab, because the panels
          were on /editor and nobody could find them there. Carries no group or year:
@@ -181,10 +181,15 @@
   </div>
   {% endif %}
 
-  {% if tab in ('history', 'titles') %}
+  {% if tab in ('history', 'titles', 'indiv_history') %}
   <div class="jh-subrail">
     <a class="{{ 'on' if tab == 'history' }}"
        href="{{ url_for('jhsaa_champions', u=u, g=scope.gender, group=scope.group) }}">State Champions</a>
+    {# The individual titles are their OWN page, not a column on the team grid
+       (owner, 2026-08): that grid crowns one champion per class per year, this event
+       crowns six, so they cannot share a row. #}
+    <a class="{{ 'on' if tab == 'indiv_history' }}"
+       href="{{ url_for('jhsaa_individual_champions', u=u, g=scope.gender, group=scope.group) }}">Individual Champions</a>
     <a class="{{ 'on' if tab == 'titles' }}"
        href="{{ url_for('jhsaa_titles', u=u, g=scope.gender, group=scope.group) }}">Title Board</a>
   </div>

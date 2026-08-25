@@ -1183,6 +1183,28 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     `tests/test_bracketing.py`. ‼️ The owner offered to drop to 16 seeds to fix it;
     that was unnecessary and declined — the defect was in how byes were PLACED, not
     how many seeds exist. **Diagnose the defect before spending a design decision.**
+  - **‼️ THE ENTRY SHEET IS FROZEN BEFORE THE FIRST DRAW (`entry_sheet`) — reading the
+    ladder per flight is a CORRECTNESS bug.** `credit_draw` writes `ts.records` and
+    `_order` sorts on `ladder_score(p, ts.records.get(p.pid))`, so crediting S1 MOVES
+    the ladder S2 is then selected from: a No. 1 who slipped to No. 2 on his own S1
+    result was entered at No. 2 singles as well while somebody else was entered
+    nowhere. **Measured on a real 1A boys field: 23 of 751 players in two flights**,
+    nothing raised, every draw internally consistent. ‼️ Counting SEATS does not catch
+    it (a program still fills nine, 1+1+1+2+2+2, when one person holds two) — count
+    DISTINCT PIDS, and test through `run_preseason`, not `flight_entry` on a fresh
+    TeamSeason, which cannot see it.
+  - **‼️ A MATCH TIEBREAK PRINTS ITS POINTS, NOT `1-0` (owner, 2026-08: "1-0 doesn't
+    tell me anything").** Three of the four code paths got this wrong and it was
+    pre-existing: `engine/doubles.py`'s full model returned the SET score and threw
+    `_tb_points` away three lines after recording it, and BOTH fast models
+    (`fast._play_set`, `doubles._simulate_fast`) had nothing to report because the
+    fast model decides a tiebreak with one coin flip and never plays the points. Live
+    in the **Davis/BJK cups**, which run a 10-point decider at fast fidelity. The fast
+    fix (`fast._mtb_score`) reads the margin out of **the draw already taken** — how
+    far `r` landed from the threshold IS how comfortable the win was — because
+    drawing again would shift every later scoreline and break `engine.boxstats`,
+    which replays the flow on the promise that recording it costs no rng. Win rate is
+    therefore unchanged (the flip is byte-identical); only the detail is new.
   - **‼️ SEEDS ARE THE ENGINE'S EXISTING RULE AND ARE PUBLISHED IN TIERS.**
     `seed_count` is already a quarter of the draw and `seeded_draw` already places
     [1], [2], [3-4], [5-8], [9-16] onto mirror anchors — which is exactly how a real
@@ -1251,6 +1273,32 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     process and these draws are ARCHIVED, so "the same season" must survive a restart.
     `run_season`'s own `hash(group) % 9973` is an older wart of the same shape: it is
     left alone (fixing it would change every archived season) and must not be copied.
+  - **‼️ ON A PLAYER PAGE, MOST APPEARANCES ARE NOT ACCOLADES** (owner layout,
+    2026-08). "State tournament results" sits above the flight records, collapsible
+    like them (neither was), and shows a FINISH per draw — never a match log, since
+    the dual card already logs matches. Three tiers: **gold** (champion only),
+    **podium** (runner-up / SF / QF, honour named, no fill), **plain** (R16 and below
+    — the round and the seed, no honour text at all). Owner: *"the section still
+    matters because making Individual State is part of their record, but the UI
+    doesn't falsely turn every appearance into an accolade."* Every tier gets a REAL
+    licensed icon from `data/jhsaa/medals` (served by `server.jhsaa_medal`), plain
+    included — *"you don't have to default to fake bad monograms"*; what separates
+    the tiers is colour and weight, never whether a row may have a picture. The set
+    splits into PODIUM art (1st/2nd/3rd) and ROUND markers (`final8`, `4th`); `4th`
+    is unused because both semifinalists are third here (no 3/4 playoff). Individual
+    results are deliberately kept OUT of the career W-L, which is the DUAL record.
+  - **‼️ A RESULT IS ONE SENTENCE, AND BOTH SIDES GET A SCHOOL** (owner, 2026-08):
+    `Olivia Miles (9), Foxboro def. Johnnia Jackson (11), Eastmont 6-0, 6-0` — the
+    OSAA's convention, written identically by the IHSAA. **Grade is ARCHIVED with the
+    entry** (`draw_to_dict`) because it is a property of the player in THAT season;
+    deriving it on read would mean rebuilding a decade-old roster to recover what the
+    draw already knew. History lives on the **History sub-rail → Individual
+    Champions**, one flight at a time from a dropdown — this event crowns six titles
+    per class per year, so it cannot show everything at once, and the owner is
+    explicit about not wanting a page "listed all splayed on one page for me to
+    scroll endlessly". ‼️ NO per-school title tally there (the Title Board already
+    counts championships, and by-school individual counts are the NCHSAA shape the
+    owner rejected), and NO explanatory microcopy on any of these surfaces.
   - **UI: the Championship sub-rail, labelled "Individual State"** (owner, 2026-08),
     with the flights switched INSIDE that view as a second sub-rail — never six items on
     the Championship rail, never one page with every draw splayed down it. The draw uses

@@ -157,6 +157,53 @@ def round_label(rnd: str) -> str:
     return ROUND_LABELS.get(rnd, rnd)
 
 
+#: ‼️ A FINISH TIER IS NOT A FINISH — it is how loudly the page should say it (owner
+#: layout, 2026-08). The event crowns one champion and everybody else played in it, so
+#: an interface that dresses every appearance as an accolade is lying about a career:
+#: "the section still matters because making Individual State is part of their record,
+#: but the UI doesn't falsely turn every appearance into an accolade."
+#:
+#:   gold    — the state champion, and nothing else
+#:   podium  — runner-up / semifinalist / quarterfinalist: a real finish, said plainly
+#:   plain   — R16 and below: a neutral row, no icon and no colour. They were there.
+#:
+#: ‼️ EVERY TIER GETS A REAL ICON, INCLUDING THE PLAIN ONE (owner, 2026-08: "there's
+#: a 1,2,3 and others in there too so you don't have to default to fake bad
+#: monograms"). A drawn "R16" disc is a monogram pretending to be a badge; the
+#: licensed set has a neutral mark for exactly this, and a plain row stays plain by
+#: its COLOUR and layout, not by being denied an icon.
+#:
+#: The set splits into two families and they are not interchangeable. 1st/2nd/3rd are
+#: PODIUM art — a placing. `final8` (a bracket of eight) and `4th` (a die showing
+#: four) are ROUND markers — Final 8, Final 4. Semifinalist takes the podium's 3rd
+#: because this association plays no third-place match, so both semifinalists ARE
+#: third; `4th.png` is therefore unused and is the icon to reach for if a 3/4 playoff
+#: is ever added (CHSAA plays one) or if SF is ever re-read as a round rather than a
+#: placing.
+#:
+#: Licensed Noun Project icons live in `data/jhsaa/medals` (owner-supplied), served by
+#: `server.jhsaa_medal`.
+FINISH_TIERS = {
+    "CHAMP": ("gold",   "noun-1st-place-medal-6892193-FFB258.png", "State champion"),
+    "F":     ("podium", "noun-second-4146723-9B9B9B.png",          "Runner-up"),
+    "SF":    ("podium", "noun-3rd-place-trophy-2347008-a47f00.png", "Semifinalist"),
+    "QF":    ("podium", "final8.png",                              "Quarterfinalist"),
+}
+
+#: R16 and below: they played, they did not place. Tennis balls, and no honour text.
+PLAIN_ICON = "tennisball.png"
+
+#: The panel's own mark — a tennis trophy, for the section rather than a result.
+SECTION_ICON = "statetrophy.png"
+
+
+def finish_tier(tag: str) -> tuple[str, str, str]:
+    """(tier, icon file, honour label) for a finish tag. Anything the table does not
+    name is `plain` — it played, it did not place — and the empty honour is what
+    keeps that row from reading as an accolade."""
+    return FINISH_TIERS.get(tag, ("plain", PLAIN_ICON, ""))
+
+
 def finish_for_index(d: dict, ix: int) -> tuple[str, str]:
     """The finish of ONE entry of an archived draw, addressed by its INDEX.
 
@@ -300,16 +347,38 @@ def _ladder(ts) -> list:
     return _order(ts)
 
 
-def flight_entry(ts, flight: str) -> Entry | None:
+def entry_sheet(teams: list) -> dict:
+    """`{school: ladder}` resolved ONCE, before any flight is played.
+
+    ‼️ THE LADDER MUST BE FROZEN BEFORE THE FIRST DRAW, and this is not a
+    micro-optimisation — reading it per flight is a CORRECTNESS bug. `credit_draw`
+    writes results into `ts.records`, and `_order` sorts on `ladder_score(p,
+    ts.records.get(p.pid))`, so crediting S1 MOVES the ladder that S2 is then
+    selected from. Measured on a real 1A boys field before this existed: **23 of 751
+    players were entered in two flights** — a No. 1 who slipped to No. 2 on his own
+    S1 result was entered at No. 2 singles as well, while somebody else was entered
+    nowhere. Nothing raised; each draw was internally consistent.
+
+    It is also what the event MEANS. Every flight's entry is filed at the same
+    moment, in the preseason, off one order of ability — not re-derived after each
+    draw as though a program could re-enter halfway through its own championships."""
+    return {t.school.name: _ladder(t) for t in teams}
+
+
+def flight_entry(ts, flight: str, ladder: list | None = None) -> Entry | None:
     """A program's entry in `flight`, or None if the roster cannot fill it.
 
     A pair is two DIFFERENT people, so unlike a dual — where a short side plays
     someone twice rather than 500-ing (`engine.dual._court`) — there is nothing to
     degrade to and the program simply does not enter. `ROSTER_FLOOR` is 16, so in
     practice this never fires; it is here so a hand-edited roster cannot crash a
-    statewide draw."""
+    statewide draw.
+
+    `ladder` is the program's frozen entry sheet (`entry_sheet`). It falls back to
+    reading the ladder live, which is right for a single lookup but WRONG across a
+    slate — see `entry_sheet`."""
     ranks = FLIGHT_RANKS[flight]
-    ladder = _ladder(ts)
+    ladder = _ladder(ts) if ladder is None else ladder
     if len(ladder) <= max(ranks):
         return None
     picks = [ladder[i] for i in ranks]
@@ -323,7 +392,7 @@ def flight_entry(ts, flight: str) -> Entry | None:
                  rating=doubles_rating(a, b), flight=flight)
 
 
-def select_field(teams: list, flight: str) -> list:
+def select_field(teams: list, flight: str, sheet: dict | None = None) -> list:
     """Every program's entry in `flight`, seed-ordered.
 
     ‼️ NO CUT AND NO DISTRICT QUOTA (owner rule). Talent is not evenly distributed
@@ -331,7 +400,9 @@ def select_field(teams: list, flight: str) -> list:
     league's third-best beats a weak league's champion. The whole field enters and
     `run_tournament` sizes the bracket, byes to the top seeds. Ties break on school
     name so the order is reproducible rather than dict-ordered."""
-    out = [e for e in (flight_entry(t, flight) for t in teams) if e is not None]
+    out = [e for e in (flight_entry(t, flight,
+                                    (sheet or {}).get(t.school.name))
+                       for t in teams) if e is not None]
     out.sort(key=lambda e: (-e.rating, e.school))
     return out
 
@@ -360,10 +431,14 @@ def _assemble(gender, group, flight, result, played) -> FlightDraw:
 
 
 def run_flight(teams: list, gender: str, group: str, flight: str, *,
-               seed: int) -> FlightDraw | None:
+               seed: int, sheet: dict | None = None) -> FlightDraw | None:
     """Select, seed and play one flight's draw. Deterministic: the same
-    (teams, gender, group, flight, seed) reproduces the whole bracket."""
-    entries = select_field(teams, flight)
+    (teams, gender, group, flight, seed) reproduces the whole bracket.
+
+    Pass `sheet` (from `entry_sheet`) whenever more than one flight is being played
+    off these teams — see `entry_sheet` for why leaving it out is a correctness bug
+    rather than a slower path."""
+    entries = select_field(teams, flight, sheet)
     if len(entries) < 2:
         return None
     rng = random.Random(seed)
@@ -415,9 +490,13 @@ def run_preseason(by_group: dict, gender: str, year: int, *,
     for group, districts in by_group.items():
         teams = [t for ts in districts.values() for t in ts]
         by_school = {t.school.name: t for t in teams}
+        # ‼️ ONE ENTRY SHEET FOR ALL SIX FLIGHTS, resolved before a ball is struck.
+        # Re-reading the ladder per flight lets `credit_draw` reorder it mid-slate
+        # and enters somebody twice — see `entry_sheet`.
+        sheet = entry_sheet(teams)
         drawn = {}
         for flight in FLIGHTS:
-            d = run_flight(teams, gender, group, flight,
+            d = run_flight(teams, gender, group, flight, sheet=sheet,
                            seed=_draw_seed(seed, gender, str(year), group, flight))
             if d is None:                   # fewer than two entries — no event
                 continue
@@ -614,9 +693,16 @@ def draw_to_dict(d: FlightDraw) -> dict:
         # kept anyway so every surface that announces a champion joins the names the
         # same way rather than each one re-deriving it — the same reason `played`
         # sits beside `lines` on a JV dual.
+        # ‼️ GRADE IS ARCHIVED WITH THE ENTRY. An individual result is written NAME,
+        # GRADE, SCHOOL (owner, 2026-08 — the OSAA's convention), and the grade is a
+        # property of the player IN THAT SEASON: deriving it on read would mean
+        # rebuilding a roster for a year that may be a decade old, to recover
+        # something the draw already knew. Archives written before this read back
+        # with no grade and simply omit it.
         return {"school": e.school, "label": e.label,
                 "full_label": e.full_label, "seed": d.seed_of(e),
-                "players": [{"pid": p.pid, "name": p.name} for p in e.players]}
+                "players": [{"pid": p.pid, "name": p.name, "grade": p.grade}
+                            for p in e.players]}
     ix = {e.key: i for i, e in enumerate(d.entries)}
     fin = d.finishes()
     return {

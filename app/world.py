@@ -3930,8 +3930,11 @@ def jhsaa_individual_draw(world_id: int, year: int, gender: str, group: str,
 
 def jhsaa_individual_champions(world_id: int, year: int, gender: str,
                                group: str) -> dict:
-    """{flight: champion entry} for a classification — the index the page leads
-    with, read WITHOUT deserialising every bracket in it.
+    """{flight: {champion, runner_up, entries}} for a classification.
+
+    The runner-up rides along because the draw is already parsed to reach the
+    champion — a title reads "def. X" and asking for that separately would mean
+    deserialising every bracket twice.
 
     ‼️ It still loads each draw's JSON to reach its champion, which is the honest
     cost of keeping the champion inside the draw that determined it rather than
@@ -3950,8 +3953,16 @@ def jhsaa_individual_champions(world_id: int, year: int, gender: str,
     for r in rows:
         d = _relabel(json.loads(r["data"]))
         ix = d.get("champion")
-        if ix is not None:
-            out[r["flight"]] = d["entries"][ix]
+        if ix is None:
+            continue
+        ru = d.get("runner_up")
+        out[r["flight"]] = {
+            "champion": d["entries"][ix],
+            "runner_up": d["entries"][ru] if ru is not None else None,
+            "entries": len(d.get("entries") or ()),
+            "final": (d["rounds"][-1][0]["scoreline"]
+                      if d.get("rounds") and d["rounds"][-1] else ""),
+        }
     return out
 
 
@@ -3987,12 +3998,17 @@ def jhsaa_individual_results(world_id: int, year: int, gender: str, group: str,
             continue
         e = d["entries"][ix]
         label, tag = ji.finish_for_index(d, ix)
+        tier, icon, honour = ji.finish_tier(tag)
         partner = next((p["name"] for p in e["players"] if p["pid"] != pid), "")
         out.append({"flight": r["flight"], "gender": r["gender"],
                     "flight_name": ji.FLIGHT_NAMES.get(r["flight"], r["flight"]),
                     "finish": label, "tag": tag, "seed": e.get("seed") or 0,
                     "partner": partner, "entries": len(d["entries"]),
-                    "champion": tag == "CHAMP"})
+                    # How loudly the page says it — see `jhsaa_individuals
+                    # .FINISH_TIERS`. `honour` is empty below the top 8, which is
+                    # what makes those rows read as history rather than accolade.
+                    "tier": tier, "icon": icon, "honour": honour,
+                    "group": group, "champion": tag == "CHAMP"})
     order = {f: i for i, f in enumerate(ji.FLIGHTS + ("XD",))}
     out.sort(key=lambda r: order.get(r["flight"], 99))
     return out

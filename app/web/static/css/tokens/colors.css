@@ -197,6 +197,15 @@ body {
   /* Ranks + classification badges ride the scheme's own chip ramp. */
   --rank-silver: var(--gray-400);
   --rank-bronze: color-mix(in oklab, var(--rank-gold) 74%, var(--ink));
+  /* ‼️ MEDAL AMBER — a real metallic gold, and deliberately NOT `--rank-gold`.
+     That token is the scheme's own "first place" chip and several schemes point it
+     somewhere non-metallic (the default resolves it to OXBLOOD, a deep red), which
+     is right for a chip that has to sit in the palette and wrong for framing a gold
+     MEDAL: the JHSAA's licensed Noun Project art is amber (#FFB258), and a red
+     frame around an amber medal reads as a mistake. This is the one place the app
+     needs the colour of the object itself rather than the scheme's rank ramp, so it
+     is a token here — never a raw literal in a component rule. */
+  --medal-gold: oklch(0.72 0.145 72);
   --cat-sm: var(--cat-3a);
   --cat-d1: var(--cat-6a);
 

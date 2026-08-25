@@ -170,6 +170,32 @@ def _tb_prob(p0: Player, p1: Player, context: MatchContext,
         + TUNE["context_slope"] * _context_edge(p0, p1, context))
 
 
+def _mtb_score(win: int, r: float, p: float, target: int) -> tuple[int, int]:
+    """A MATCH TIEBREAK's score for the fast model — `10-6`, not `1-0`.
+
+    ‼️ THE FAST MODEL DECIDES A TIEBREAK WITH ONE COIN FLIP AND NEVER PLAYS THE
+    POINTS, so there is no real 10-8 to report and this returned the SET score
+    `(1, 0)` instead. "1-0 doesn't tell me anything" (owner, 2026-08) — and it is
+    also inconsistent, because the FULL model plays the points and prints `10-8`,
+    so the same fixture read differently depending on fidelity. It is live in the
+    Davis/BJK cups, which run a 10-point decider at fast fidelity.
+
+    ‼️ IT CONSUMES NO EXTRA RNG DRAW, and that is the load-bearing constraint: the
+    margin is read out of the draw ALREADY TAKEN. `r` is that draw and `p` the win
+    probability, so how far `r` landed from the threshold is exactly how comfortable
+    the win was — a dominant tiebreak and a squeaker are already distinguished by
+    the number in hand. Drawing again would shift every subsequent scoreline in
+    fast mode and break `engine.boxstats`, which replays this flow point by point
+    on the promise that the flow costs nothing.
+
+    The loser's score is therefore a function of that distance: level with the
+    threshold gives a two-point squeaker, the far end a runaway."""
+    edge = abs(r - p) / max(p, 1.0 - p, 1e-9)          # 0 = squeaker, 1 = runaway
+    lo = int(round((1.0 - min(edge, 1.0)) * (target - 2)))
+    lo = max(0, min(target - 2, lo))
+    return (target, lo) if win == 0 else (lo, target)
+
+
 def _play_set(rng, players, server, fmt, final_tb: bool, target_games: int,
               context: MatchContext, edges, decider: bool = False):
     """Returns (winner, (g0,g1), next_server, flow).
@@ -182,10 +208,12 @@ def _play_set(rng, players, server, fmt, final_tb: bool, target_games: int,
     scorelines are bit-identical to the pre-recording model. engine.boxstats
     replays this flow at point level to attach real stats to a fast match."""
     if final_tb:
-        win = 0 if rng.random() < _tb_prob(players[0], players[1], context,
-                                           edges[0], edges[1], decider) else 1
+        p = _tb_prob(players[0], players[1], context, edges[0], edges[1], decider)
+        r = rng.random()
+        win = 0 if r < p else 1
         flow = {"games": [], "tb": [server, win], "mtb": True}
-        return win, ((1, 0) if win == 0 else (0, 1)), 1 - server, flow
+        return (win, _mtb_score(win, r, p, fmt.final_set_tiebreak_target),
+                1 - server, flow)
 
     games = [0, 0]
     flow_games: list[list[int]] = []

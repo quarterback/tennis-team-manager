@@ -141,35 +141,105 @@
 .jh-fold > summary:hover::after { border-color: var(--brand-strong); }
 .jh-fold > summary:hover .bl-panel-title { color: var(--brand-strong); }
 
-/* ---- State tournament results (the individual championships) ----
-   The FLIGHT column absorbs the slack and the FINISH is right-aligned against the
-   panel edge. Left to size themselves the five columns spread evenly, pushed the
-   table past the panel, and clipped the champion's tag clean off — the one cell on
-   the row anybody is looking for. */
-/* ‼️ `min-width: 0` OVERRIDES `.bl-table`'s 920px floor, and that floor was the whole
-   bug — not the column widths a first two attempts chased. The shared class carries
-   it for the wide career tables; this one has five columns in a ~725px panel, so the
-   table sat 920px wide inside an `overflow-x: auto` wrapper and the FINISH column —
-   the only cell anyone opens this section to read — was parked off-screen, reachable
-   only by scrolling sideways. It read as a missing column, not a scroll. */
-.jh-solo { width: 100%; min-width: 0; table-layout: fixed; }
-.jh-solo th, .jh-solo td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.jh-solo th:nth-child(1), .jh-solo td:nth-child(1) { width: 15%; }
-.jh-solo th:nth-child(2), .jh-solo td:nth-child(2) { width: 8%; }
-.jh-solo th:nth-child(3), .jh-solo td:nth-child(3) { width: 40%; white-space: normal; }
-.jh-solo th:nth-child(4), .jh-solo td:nth-child(4) { width: 13%; }
-.jh-solo th:last-child, .jh-solo td:last-child { width: 24%; text-align: right; }
-.jh-solo .pt { display: block; font-size: 11.5px; color: var(--text-faint); }
-.jh-solo-fin {
-  display: inline-block; padding: 1px 7px; border-radius: 999px;
-  font-size: 11.5px; font-weight: 800; letter-spacing: .02em;
+/* ---- Individual State results (owner layout, 2026-08) --------------------
+   ‼️ THREE TIERS, AND MOST ROWS ARE NOT ACCOLADES. The event crowns one champion
+   and everybody else played in it, so an interface that gilds every appearance
+   lies about a career — "the section still matters because making Individual State
+   is part of their record, but the UI doesn't falsely turn every appearance into
+   an accolade."
+     .t-gold   — the state champion: warm ground, a gold rail, gold honour text
+     .t-podium — runner-up / semifinalist / quarterfinalist: bordered, honour named
+     .t-plain  — R16 and below: neutral, the round and the seed, no honour at all
+   Every tier carries a REAL licensed icon (`data/jhsaa/medals`), plain included —
+   a drawn "R16" disc is a monogram pretending to be a badge. What separates the
+   tiers is colour and weight, never whether a row is allowed a picture.
+
+   These rows REPLACED a table. It fought `.bl-table`'s 920px min-width (which
+   parked the finish column off-screen inside a scroll wrapper) and could not have
+   carried the hierarchy anyway — a table row is one visual weight by construction. */
+.jh-solo { display: flex; flex-direction: column; gap: 8px; padding: 12px; }
+.jh-solo .row {
+  display: flex; align-items: center; gap: 12px; min-width: 0;
+  padding: 10px 12px; border-radius: 10px;
+  border: 1px solid var(--border-subtle); background: var(--surface-card);
+}
+.jh-solo .ic { flex: 0 0 auto; width: 44px; height: 44px; object-fit: contain; }
+.jh-solo .meat { min-width: 0; flex: 1 1 auto; }
+.jh-solo .when {
+  font-size: 11.5px; font-weight: 700; color: var(--text-faint);
+  letter-spacing: .02em; margin-bottom: 1px;
+}
+.jh-solo .when .yr {
+  margin-left: 6px; padding: 0 5px; border-radius: 4px;
   background: var(--surface-sunken, rgba(0,0,0,.05)); color: var(--text-muted);
 }
-/* A state champion carries the association's gold — the same slot a TOC title uses
-   on a schedule, because it is the same kind of thing: a title, not a round. */
-.jh-solo-fin.f-champ { background: var(--rank-gold); color: #fff; }
-.jh-solo-fin.f-f { background: var(--tint-road-bg); color: var(--tint-road-fg); }
-.jh-solo-fin.f-sf { background: var(--tint-even-bg); color: var(--tint-even-fg); }
+.jh-solo .what { font-size: 15px; font-weight: 750; color: var(--text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jh-solo .sub { font-size: 11.5px; color: var(--text-faint); }
+.jh-solo .right { flex: 0 0 auto; text-align: right; }
+.jh-solo .right .rnd { font-size: 13px; font-weight: 700; color: var(--text-secondary); }
+.jh-solo .right .seed { font-size: 11.5px; color: var(--text-faint); }
+
+/* GOLD — the champion, and nothing else on the page gets this.
+   ‼️ Mixed off `--medal-gold`, a DEFINED token (see `tokens/colors.css`), never an
+   invented `--rank-gold-bg`: a token that is referenced but never defined silently
+   keeps its hard-coded fallback and ignores all ten schemes. And not `--rank-gold`
+   either — that is the scheme's first-place CHIP and the default resolves it to
+   oxblood, which framed the amber medal in red. */
+.jh-solo .t-gold {
+  background: color-mix(in oklab, var(--medal-gold) 12%, var(--surface-card));
+  border-color: color-mix(in oklab, var(--medal-gold) 60%, var(--surface-card));
+  box-shadow: inset 3px 0 0 var(--medal-gold);
+}
+.jh-solo .t-gold .hon {
+  color: color-mix(in oklab, var(--medal-gold) 72%, var(--ink)); font-weight: 850;
+}
+/* PODIUM — a real finish, said plainly. No fill; the honour carries it. */
+.jh-solo .t-podium .hon { color: var(--text-primary); font-weight: 850; }
+/* PLAIN — they were there. Nothing is emphasised, which is the point. */
+.jh-solo .t-plain { background: transparent; }
+.jh-solo .t-plain .what { font-weight: 650; color: var(--text-secondary); }
+
+/* The panel's own mark sits with the title, not as a bullet. */
+.jh-solo-head .ic { flex: 0 0 auto; align-self: center; opacity: .85; }
+
+/* ---- Individual champions, one flight at a time ---- */
+.jh-flightpick { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; }
+.jh-flightpick label {
+  font-size: 11px; font-weight: 800; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.jh-flightpick select {
+  padding: 6px 10px; border-radius: 8px; font-size: 13px; font-weight: 650;
+  border: 1px solid var(--border-default); background: var(--surface-card);
+  color: var(--text-primary);
+}
+.jh-flightpick .ct { font-size: 12px; color: var(--text-faint); }
+
+.jh-roll { display: flex; flex-direction: column; }
+.jh-roll .row {
+  display: flex; align-items: center; gap: 12px; min-width: 0;
+  padding: 9px 14px; border-top: 1px solid var(--border-subtle);
+}
+.jh-roll .row:first-child { border-top: 0; }
+.jh-roll .ic { flex: 0 0 auto; width: 30px; height: 30px; object-fit: contain; }
+.jh-roll .yr {
+  flex: 0 0 auto; font-size: 13px; font-weight: 800; color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.jh-roll .meat { min-width: 0; flex: 1 1 auto; }
+/* The result is ONE SENTENCE and it wraps as prose — champion, def., runner-up,
+   score. Truncating it would cut the score off the end, which is the half a reader
+   scans for. */
+.jh-roll .line { font-size: 14px; line-height: 1.45; color: var(--text-secondary); }
+.jh-roll .who { font-weight: 750; color: var(--text-primary); text-decoration: none; }
+.jh-roll .who:hover, .jh-roll .ru:hover { color: var(--brand-strong); }
+.jh-roll .def { color: var(--text-faint); }
+.jh-roll .ru { color: var(--text-secondary); text-decoration: none; }
+.jh-roll .sc {
+  margin-left: 4px; font-weight: 700; color: var(--text-primary);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
 
 /* ---- Program directory (/jhsaa/schools) ---- */
 .jh-dirbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 14px; }

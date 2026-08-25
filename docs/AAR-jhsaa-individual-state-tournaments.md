@@ -301,6 +301,75 @@ note is not a review of the code.**
 
 ---
 
+## ‼️ The bug the UI work found: a player entered in TWO flights
+
+Building the player page surfaced a correctness fault the tests could not see.
+`run_preseason` played the flights in order and called `credit_draw` after each;
+`credit_draw` writes `ts.records`, and `_order` sorts on `ladder_score(p,
+ts.records.get(p.pid))`. **So crediting S1 moved the ladder that S2 was then selected
+from.** A No. 1 who slipped to No. 2 on his own S1 result was entered at No. 2 singles
+as well, while somebody else was entered nowhere.
+
+Measured on a real 1A boys field: **23 of 751 players in two flights.** Nothing raised,
+and every individual draw was internally consistent.
+
+Two things about how it hid:
+
+* **The existing test could not catch it.** `test_the_nine_entrants_are_all_different_
+  people` selects from a FRESH `TeamSeason`, and the fault only exists once a draw has
+  been credited. The new test runs the real `run_preseason` path.
+* **Counting SEATS does not catch it either.** A program still fills nine
+  (1+1+1+2+2+2) when one person holds two of them. It only shows in the count of
+  DISTINCT pids — which is how it was found, by checking the archive rather than the
+  code.
+
+`entry_sheet` now resolves every program's ladder ONCE before the first draw. That is
+also what the event means: every flight's entry is filed at the same moment, off one
+order of ability, not re-derived after each draw.
+
+## ‼️ And an engine bug it surfaced: doubles printed a match tiebreak as "1-0"
+
+`engine/doubles.py`'s `_play_set` returned the SET score `(1, 0)` for a final-set match
+tiebreak and threw the points away, so a doubles final decided on a 10-point breaker
+read **"6-4, 2-6, 1-0"** while the identical singles match read **"6-4, 2-6, 10-8"**.
+`_tb_points` was already being recorded three lines below; it was simply never read.
+Pre-existing, and the college doubles championship had it too — `app/individuals.py`
+uses the same format. A display fix only: nothing in this repo rates a match tiebreak
+(the JHSAA's own `MATCH_FORMAT` plays a full third set, and the individual
+championships are excluded from TOSS).
+
+## The layout, and what I got wrong in it
+
+The owner supplied licensed Noun Project icons (`data/jhsaa/medals`) and a tiered
+layout. Three corrections were needed on my drafts, all of the same kind — **inventing
+emphasis, or inventing content, that nobody asked for**:
+
+1. **Every appearance was dressed as an accolade.** My first version was a table, and a
+   table row is one visual weight by construction. The event crowns one champion and
+   everybody else played in it: *"the section still matters because making Individual
+   State is part of their record, but the UI doesn't falsely turn every appearance into
+   an accolade."* Now three tiers — gold / podium / plain — where a plain row states the
+   round and the seed and carries no honour text at all.
+2. **I drew fake monogram badges** ("R16", "QF" discs) for tiers I had not given an icon.
+   Owner: *"there's a 1,2,3 and others in there too so you don't have to default to fake
+   bad monograms."* Every tier now carries real art; what separates them is colour and
+   weight, never whether a row is allowed a picture.
+3. **I added a "Most titles" tally** to the history page. Not asked for, and the wrong
+   page: counting individual titles by school turns a list of PEOPLE into a school
+   leaderboard, and the programme cabinet is the Title Board's job. (The owner then sent
+   NCHSAA's champions-by-school PDF explicitly as a counter-example.)
+
+Two more, on presentation:
+
+* **The microcopy went.** Explanatory subtitles on a page whose controls are visible are
+  noise.
+* **A result is one sentence, and both sides get a school.** `Olivia Miles (9), Foxboro
+  def. Johnnia Jackson (11), Eastmont 6-0, 6-0` — the OSAA's convention, and the IHSAA
+  writes it identically. A runner-up named without their school is half a result. Grade
+  is therefore ARCHIVED with the entry: it is a property of the player in that season,
+  and deriving it on read would mean rebuilding a decade-old roster to recover something
+  the draw already knew.
+
 ## Measurements
 
 | | |

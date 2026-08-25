@@ -80,6 +80,32 @@ def test_the_nine_entrants_are_all_different_people(teams):
         assert len(pids) == len(set(pids)) == 9
 
 
+def test_nobody_is_entered_in_two_flights_once_results_are_credited(teams):
+    """‼️ THE REGRESSION THAT THE TEST ABOVE CANNOT SEE, because it selects from a
+    FRESH TeamSeason and the fault only exists once a draw has been credited.
+
+    `credit_draw` writes into `ts.records`; `_order` sorts on `ladder_score(p,
+    ts.records.get(p.pid))`. So crediting S1 MOVES the ladder that S2 is then
+    selected from, and a No. 1 who slipped to No. 2 on his own S1 result was entered
+    at No. 2 singles as well while somebody else was entered nowhere. Measured on a
+    real 1A boys field: 23 of 751 players in two flights, nothing raised, every draw
+    internally consistent. `entry_sheet` freezes the order before the first draw.
+
+    ‼️ Counting SEATS does not catch it — a program still fills nine (1+1+1+2+2+2)
+    when one person holds two of them. Count DISTINCT PIDS."""
+    by_group = {"1A": {"all": teams}}
+    res = ji.run_preseason(by_group, "girls", YEAR, seed=1)
+    per_school = {}
+    for flight, draw in res["1A"].items():
+        for e in draw["entries"]:
+            per_school.setdefault(e["school"], []).extend(
+                p["pid"] for p in e["players"])
+    assert per_school, "no draws were produced"
+    for school, pids in per_school.items():
+        assert len(pids) == 9, (school, len(pids))
+        assert len(set(pids)) == 9, (school, "a player entered in two flights")
+
+
 # --- the draw ----------------------------------------------------------------
 
 def test_the_field_is_open_every_program_enters(teams, draw):

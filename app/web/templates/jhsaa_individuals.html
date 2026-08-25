@@ -4,9 +4,11 @@
 {% block title %}JHSAA {{ view.group }} {{ view.flight_name }} — Individual State{% endblock %}
 {% block content %}
 
+{# ‼️ NO EXPLANATORY SUBTITLE (owner, 2026-08). The bracket, the flight rail and the
+   counts state what this is; a paragraph explaining the event to its own reader is
+   microcopy nobody asked for. #}
 {{ jh_header(view.scope, u, 'individuals',
-             view.group ~ ' Individual State Tournament',
-             'Six individual state champions — No. 1-3 singles and No. 1-3 doubles — plus summer mixed doubles. Played preseason; results count toward the season.',
+             view.group ~ ' Individual State Tournament', '',
              [('Season', view.season_year), ('Draw', view.field_n), ('Seeds', view.n_seeds)] if view.ready else []) }}
 
 <div class="jh-shell">

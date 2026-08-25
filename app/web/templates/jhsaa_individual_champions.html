@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header %}
+{% block title %}JHSAA {{ view.group }} {{ view.flight_name }} Champions{% endblock %}
+{% block content %}
+
+{# ‼️ NO EXPLANATORY SUBTITLE (owner, 2026-08). A results page states results; a
+   sentence telling the reader what a dropdown is for is noise on a page whose
+   controls are visible. #}
+{{ jh_header(view.scope, u, 'indiv_history',
+             view.group ~ ' Individual Champions', '',
+             [('Seasons', view.rows|length)]) }}
+
+<div class="jh-shell">
+
+{# One flight at a time, from the switcher — this event crowns six titles per class
+   per year, so the page cannot show everything at once and should not try. #}
+<div class="jh-flightpick">
+  <label for="flpick">Flight</label>
+  <select id="flpick" onchange="location.href=this.value">
+    {% for f, name in view.flights %}
+    <option value="{{ url_for('jhsaa_individual_champions', u=u, g=view.gender, group=view.group, flight=f) }}"
+            {{ 'selected' if view.flight == f }}>{{ name }}</option>
+    {% endfor %}
+    <option value="{{ url_for('jhsaa_individual_champions', u=u, g=view.gender, group=view.group, flight=view.mixed_flight) }}"
+            {{ 'selected' if view.flight == view.mixed_flight }}>{{ view.mixed_name }}</option>
+  </select>
+</div>
+
+{% if not view.rows %}
+<div class="bl-panel"><div class="jh-empty">
+  No {{ view.flight_name|lower }} champion archived for {{ view.group }} yet.
+</div></div>
+{% else %}
+
+{# ‼️ NO per-school title TALLY (owner, 2026-08: "there's no reason to do that").
+   A draft added a "Most titles" panel beside this and it was not asked for — a
+   programme cabinet is a TEAM question and the Title Board is where it lives;
+   counting individual titles by school turns a list of PEOPLE into a school
+   leaderboard. #}
+<div class="bl-panel">
+  <div class="bl-panel-head jh-solo-head">
+    <img class="ic" src="{{ url_for('jhsaa_medal', name=view.section_icon) }}"
+         alt="" width="18" height="18">
+    <span class="bl-panel-title">{{ view.flight_name }}</span>
+  </div>
+  <div class="jh-roll">
+    {% for r in view.rows %}
+    {# ‼️ ONE SENTENCE, THE WAY THE ASSOCIATION WRITES A RESULT (owner, 2026-08):
+         Olivia Miles (9), Foxboro def. Johnnia Jackson (11), Eastmont 6-0, 6-0
+       Name, grade, school — for BOTH sides. A runner-up named without their school
+       is half a result. #}
+    <div class="row">
+      <img class="ic" src="{{ url_for('jhsaa_medal', name=view.gold_icon) }}"
+           alt="" width="30" height="30" loading="lazy">
+      <div class="yr">{{ r.season_year }}</div>
+      <div class="meat">
+        <div class="line">
+          <a class="who" href="{{ url_for('jhsaa_player', school=r.champion.school, pid=r.champion.players[0].pid, u=u, g=view.gender, year=r.year) }}">{{ r.champ_line }}</a>
+          {%- if r.ru_line %} <span class="def">def.</span>
+          <a class="ru" href="{{ url_for('jhsaa_player', school=r.runner_up.school, pid=r.runner_up.players[0].pid, u=u, g=view.gender, year=r.year) }}">{{ r.ru_line }}</a>{% endif %}
+          {%- if r.final %} <span class="sc">{{ r.final }}</span>{% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% endif %}
+</div>
+{% endblock %}

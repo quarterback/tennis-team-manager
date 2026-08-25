@@ -43,7 +43,8 @@ from .state import (jhsaa_view, jhsaa_scope_view, jhsaa_school_view, jhsaa_past_
                     jhsaa_honors_view,
                     jhsaa_rankings_view, jhsaa_player_view, jhsaa_players_search,
                     jhsaa_misapplied_players, jhsaa_lineup_lab, jhsaa_schools_view,
-                    jhsaa_titles_view, jhsaa_individual_view)
+                    jhsaa_titles_view, jhsaa_individual_view,
+                    jhsaa_individual_winners)
 from .state import (preseason_portal_view, recruit_economy_view, portal_class_rankings,
                     wire_view)
 from .state import my_program_view, my_schedule_plan, my_season_report, job_offers
@@ -2260,6 +2261,21 @@ def create_app() -> Flask:
         return render_template("jhsaa_bracket.html", active="High School", view=view,
                                gender=gender, u=u, uni_label=label)
 
+    @app.route("/jhsaa/medal/<path:name>")
+    def jhsaa_medal(name):
+        """The individual-tournament finish icons — licensed Noun Project art the
+        owner supplied, living in `data/jhsaa/medals`.
+
+        Served from `data/` rather than copied into `static/`: that directory is
+        where the owner put them and where they are licensed and replaced, and a
+        second copy under `static/` would be a second source of truth for a binary
+        nobody would think to re-sync. `send_from_directory` resolves against the
+        directory and rejects traversal, so the `<path:>` cannot escape it."""
+        from flask import send_from_directory
+        root = os.path.join(os.path.dirname(os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__)))), "data", "jhsaa", "medals")
+        return send_from_directory(root, name, max_age=60 * 60 * 24 * 30)
+
     @app.route("/jhsaa/individuals")
     def jhsaa_individuals():
         """The individual state tournaments — one flight's draw, on the SAME
@@ -2755,6 +2771,19 @@ def create_app() -> Flask:
         gender, label, u, g, group, _year = _jh_scope_args()
         view = jhsaa_past_winners(DEFAULT_SEED, g, group)
         return render_template("jhsaa_champions.html", active="High School", view=view,
+                               gender=gender, u=u, uni_label=label)
+
+    @app.route("/jhsaa/individual-champions")
+    def jhsaa_individual_champions():
+        """Every individual state champion, season by season — the third page on the
+        History sub-rail (owner, 2026-08), beside the team champions grid and the
+        title board. Class-keyed off the scope bar, because this event crowns six
+        titles per class per year rather than the team event's one."""
+        gender, label, u, g, group, _year = _jh_scope_args()
+        view = jhsaa_individual_winners(DEFAULT_SEED, g, group,
+                                        request.args.get("flight"))
+        return render_template("jhsaa_individual_champions.html",
+                               active="High School", view=view,
                                gender=gender, u=u, uni_label=label)
 
     @app.route("/recruiting/team/<school>")
