@@ -99,10 +99,24 @@ def seeded_draw(n_real: int, n: int, n_seeds: int, rng: random.Random) -> list[i
 
     open_slots = [i for i in range(n) if slots[i] is None and i not in bye_slots]
     rng.shuffle(open_slots)
-    # any byes beyond the seed opponents land on random open slots
+    # Any byes beyond the seed opponents land on random open slots.
+    #
+    # ‼️ BUT NEVER ON BOTH HALVES OF ONE PAIRING. A pairing with two empty slots is
+    # not a bye, it is a MATCH THAT DOES NOT EXIST: whoever is drawn opposite it
+    # advances twice without playing, the round after the first stops being half the
+    # size of the one before it, and `state._bracket_canvas` — which links columns
+    # positionally on exactly that halving — then draws the tree wrong. It bit the
+    # JHSAA individual draws, where a field of 82-92 in a 128 bracket needs 36-46
+    # byes against 32 seeded anchors: measured, 82-92 leaked a bye past round one in
+    # most draws, while 93+ (byes <= 35) never did.
+    #
+    # It is ALWAYS avoidable, which is why this takes no fallback: `n` is the
+    # smallest power of two >= `n_real`, so `n_real > n / 2`, so the byes needed
+    # (`n - n_real`) are fewer than the `n / 2` pairings available to hold them.
     extra = need_byes - len(bye_slots)
     for _ in range(max(0, extra)):
-        bye_slots.add(open_slots.pop())
+        pick = next(i for i, s in enumerate(open_slots) if (s ^ 1) not in bye_slots)
+        bye_slots.add(open_slots.pop(pick))
 
     # draw the unseeded entrants (ranks n_seeds..n_real-1) at random
     unseeded = list(range(n_seeds, n_real))

@@ -18,25 +18,58 @@
    `ep`/`epq` are the endpoint a team name links to and any extra query args, so a
    league that isn't the college one (the JHSAA) draws on THIS tree instead of
    forking a third bracket; a team carrying its own `mark` (inline SVG) renders that
-   where college renders a crest. #}
+   where college renders a crest.
+
+   ⚠️ `t.name` and `t.pid` OVERRIDE the two things a card otherwise assumes — that
+   the entrant IS a school, and that `epq` holds every link argument that isn't the
+   school. An INDIVIDUAL draw (`jhsaa_individuals`) breaks both: the entrant is a
+   player or a pair, so the card must SHOW a person and LINK to
+   `/jhsaa/player/<school>/<pid>`, whose pid varies card by card and so cannot ride
+   in `epq`, which is constant for the whole canvas. `t.school` stays the school
+   underneath, because that is what the tooltip and the `data-school` highlight key
+   off. Both are optional and both existing callers pass neither, so the college
+   tree is untouched — the shared surface stretching by two attributes rather than
+   a fourth bracket.
+
+   The pid is passed as DATA and the URL is built here, in the template, because
+   `state.py` is a view-model layer with no request context — calling `url_for`
+   there would couple it to Flask for the sake of one link. #}
 {% macro brk_row(t, m, u, bids=true, ep='teams', epq={}) %}
 {# `label` names an empty slot that ISN'T undecided — a bye has no opponent to
    name, and calling it TBD reads as "this round hasn't been played". #}
 {% if t.tbd %}
 <div class="brk-team is-tbd"><span class="brk-seed"></span><span class="brk-name">{{ t.label or 'TBD' }}</span></div>
 {% else %}
-<div class="brk-team{{ ' is-winner' if t.won }}{{ ' is-out' if m.played and not t.won }}"
+<div class="brk-team{{ ' is-winner' if t.won }}{{ ' is-out' if m.played and not t.won }}{{ ' has-sub' if t.sub }}"
      data-school="{{ t.school }}"
      title="{{ t.school }}{% if t.conf %} · {{ t.conf }}{% if bids %} · {{ 'automatic qualifier' if t.aq else 'at-large' }}{% endif %}{% endif %}">
   <span class="brk-seed">{{ t.seed if t.seed else '' }}</span>
   {% if t.mark %}<span class="brk-mark">{{ t.mark|safe }}</span>{% else %}{{ crest_box(t.school, t.abbr, t.color, 'xs') }}{% endif %}
-  <a class="brk-name" href="{{ url_for(ep, school=t.school, u=u, **epq) }}">{{ t.school }}</a>
+  {% set lq = dict(epq, pid=t.pid) if t.pid else epq %}
+  <a class="brk-name" href="{{ url_for(ep, school=t.school, u=u, **lq) }}">{{ t.name or t.school }}</a>
+  {# ⚠️ `t.sub` — WHERE the entrant is from, on the card itself. On a TEAM bracket the
+     name IS the school and this is empty; on an INDIVIDUAL bracket the name is a
+     person, and a crest alone does not tell a reader which program they play for
+     (owner, 2026-08: "the logos are there for that but…they don't tell me much").
+     Every state association prints it inline — "Alec Rodriguez, Regis Jesuit". It
+     truncates before the name does, so the person always reads in full. #}
+  {% if t.sub %}<span class="brk-sub">{{ t.sub }}</span>{% endif %}
   {% if bids and t.aq %}<span class="brk-bid" aria-label="automatic qualifier">AQ</span>{% endif %}
   {# ⚠️ `m.score` is WINNER-FIRST, not home-first — this picks the half by who WON, so a
      home-first string silently swaps the two numbers on every card the away side won
      (and looks perfectly correct on the ones the home side won, which is what hid it).
-     Build it as `max-min`, or winner then loser; never `home-away`. #}
-  <span class="brk-score">{% if m.played %}{{ m.score.split('-')[0] if t.won else m.score.split('-')[1] }}{% endif %}</span>
+     Build it as `max-min`, or winner then loser; never `home-away`.
+
+     ⚠️ `m.score_full` turns that split OFF, and an INDIVIDUAL draw must set it. The
+     split above assumes the score is one dual's TWO POINT TOTALS ("5-2") with a half
+     belonging to each side. A tennis SCORELINE is not that: "6-1 6-0" splits into "6"
+     and "1 6" — two meaningless fragments, one per row, which is what shipped in the
+     first render of the individual bracket. A set score is written from the WINNER's
+     side by convention (the whole string describes the match, not one player's half),
+     so it is printed once, in full, on the winner's row. #}
+  <span class="brk-score{{ ' is-line' if m.score_full }}">{% if m.played %}{%
+    if m.score_full %}{{ m.score if t.won }}{%
+    else %}{{ m.score.split('-')[0] if t.won else m.score.split('-')[1] }}{% endif %}{% endif %}</span>
 </div>
 {% endif %}
 {% endmacro %}

@@ -47,7 +47,7 @@ from .rally import (
     _first_serve_in_prob, _second_serve_in_prob, _ace_prob,
     _rally_condition_bonus, _logistic, _clamp01, TUNE as RALLY_TUNE,
 )
-from .fast import effective_gap
+from .fast import effective_gap, _mtb_score
 
 # Tunables for the doubles point model — talent shifts these distributions, it
 # does not script outcomes. Kept in one table so the model retunes without
@@ -545,7 +545,19 @@ def _play_set(state: _DState, is_final: bool,
     if is_final and fmt.final_set_tiebreak:
         win = _play_tiebreak(state, target=fmt.final_set_tiebreak_target)
         state.server = 1 - state.server
-        return win, ((1, 0) if win == 0 else (0, 1))
+        # ‼️ THE MATCH TIEBREAK'S REAL POINTS, exactly as singles records them
+        # (`engine/match.py`'s `_play_set`). This returned `(1, 0)` — the SET score
+        # — and threw the points away, so a doubles match decided on a 10-point
+        # breaker printed "6-4, 3-6, 1-0" while the identical singles match printed
+        # "6-4, 3-6, 10-8". `_tb_points` was already being recorded below; it was
+        # simply never read here. Nothing in this repo rates a match tiebreak (the
+        # JHSAA's own MATCH_FORMAT plays a full third set, and the individual
+        # championships are excluded from TOSS), so this is a display fix, and it
+        # makes doubles agree with singles rather than changing either.
+        # `_tb_points` is stored (team0, team1), the same orientation a set score
+        # uses, so it is returned as-is — `scoreline` flips for the winner's view.
+        return win, getattr(state, "_tb_points",
+                            (fmt.final_set_tiebreak_target, 0))
 
     tg = target_games if target_games is not None else fmt.set_games
     tb_at = fmt.set_tiebreak_at if fmt.set_tiebreak_at is not None else tg
@@ -612,6 +624,19 @@ def _fast_tb(state: _DState, s0: int = 0) -> int:
     return 0 if state.rng.random() < _logistic(TUNE["fast_tb_slope"] * gap) else 1
 
 
+def _fast_mtb(state: _DState, target: int) -> tuple[int, tuple[int, int]]:
+    """A MATCH tiebreak in the fast doubles model: the winner AND a real score.
+
+    Mirrors `engine.fast._mtb_score` exactly — see its docstring for why the margin
+    is read out of the draw already taken rather than drawn again (`boxstats`
+    replays this flow on the promise that recording it costs no rng)."""
+    gap = effective_gap(state.teams[0].rating - state.teams[1].rating)
+    p = _logistic(TUNE["fast_tb_slope"] * gap)
+    r = state.rng.random()
+    win = 0 if r < p else 1
+    return win, _mtb_score(win, r, p, target)
+
+
 def _simulate_fast(state: _DState) -> DoublesResult:
     fmt = state.fmt
     rng = state.rng
@@ -622,9 +647,9 @@ def _simulate_fast(state: _DState) -> DoublesResult:
         # [first_server, winner]) without extra rng draws — same contract as
         # engine.fast._play_set, consumed by engine.boxstats.
         if final_tb:
-            win = _fast_tb(state)
+            win, score = _fast_mtb(state, fmt.final_set_tiebreak_target)
             flows.append({"games": [], "tb": [state.server, win], "mtb": True})
-            return win, ((1, 0) if win == 0 else (0, 1))
+            return win, score
         games = [0, 0]
         flow_games: list[list[int]] = []
         while True:

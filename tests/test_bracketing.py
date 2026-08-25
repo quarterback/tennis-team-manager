@@ -94,3 +94,73 @@ def test_seed_bracket_avoids_a_solvable_rematch():
     # that exact rematch should no longer be a first-round pair
     assert not any(frozenset((h, a)) == frozenset((h0, a0)) for _b, h, a in bracket)
     assert _total(bracket, played, aq) == 0
+
+
+# --- byes never double up in one pairing ------------------------------------
+#
+# ‼️ A PAIRING WITH TWO EMPTY SLOTS IS NOT A BYE, IT IS A MATCH THAT DOES NOT EXIST.
+# Whoever is drawn opposite it advances twice without playing, the round after the
+# first stops being half the size of the one before it, and `state._bracket_canvas`
+# — which links bracket columns positionally on exactly that halving — then draws
+# the tree wrong.
+#
+# `seeded_draw` gives byes to the top seeds' first-round opponents and used to drop
+# any REMAINING byes on random open slots with no partner check. That is invisible
+# until byes outnumber seeds, which needs a field well under the bracket size: a 128
+# draw seeds 32, so a field of 82-92 needs 36-46 byes and leaked one past round one
+# in most draws. Measured before the fix: sizes 82-92 failed, 93+ (<= 35 byes) never
+# did — and the JHSAA individual tournaments field 82-107, so most boys'
+# classifications sat in the broken band.
+#
+# It is ALWAYS avoidable: `n` is the smallest power of two >= `n_real`, so
+# `n_real > n / 2` and the byes needed are fewer than the pairings available.
+
+def _round_shape_is_clean(n, sizes):
+    """Every round after the first is exactly half the field still alive."""
+    if sum(sizes) != n - 1:
+        return False
+    alive = n
+    for i, s in enumerate(sizes):
+        if i > 0 and alive - 2 * s:
+            return False
+        alive -= s
+    return True
+
+
+def test_no_pairing_is_given_two_byes_at_any_field_size():
+    import random as _random
+    from engine.tournament import run_tournament
+
+    def play(a, b, *, seed):
+        return a if _random.Random(seed).random() < 0.5 else b
+
+    for n in list(range(3, 40)) + list(range(60, 135)) + [200, 257]:
+        for trial in range(4):
+            r = run_tournament(list(range(n)), seed=9000 + trial, play=play,
+                               key=lambda e: -e)
+            sizes = [len(x) for x in r.rounds]
+            assert _round_shape_is_clean(n, sizes), (n, trial, sizes)
+
+
+def test_the_jhsaa_individual_field_sizes_draw_clean():
+    """The real 2041 association: girls' classes field 85-107 and boys' 82-95, and
+    82-92 is exactly the band that used to leak. Pinned separately from the sweep
+    above so a regression names the league it breaks."""
+    import random as _random
+    from engine.tournament import run_tournament
+
+    def play(a, b, *, seed):
+        return a if _random.Random(seed).random() < 0.5 else b
+
+    for n in (82, 83, 84, 85, 86, 87, 88, 89, 90, 92, 95, 96, 97, 100, 107):
+        for trial in range(6):
+            r = run_tournament(list(range(n)), seed=4200 + trial, play=play,
+                               key=lambda e: -e)
+            sizes = [len(x) for x in r.rounds]
+            assert _round_shape_is_clean(n, sizes), (n, trial, sizes)
+            # …so the opening round reduces the field to exactly the bracket's
+            # half — 64 for every one of these, since they all sit in a 128 draw —
+            # and round two pairs all of it with nobody sitting out.
+            alive_after_r1 = n - sizes[0]
+            assert alive_after_r1 == 64, (n, sizes)
+            assert sizes[1] * 2 == alive_after_r1, (n, sizes)

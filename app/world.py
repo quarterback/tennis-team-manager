@@ -218,6 +218,28 @@ CREATE TABLE IF NOT EXISTS world_jhsaa_dual (
   played TEXT DEFAULT '[]'
 );
 CREATE INDEX IF NOT EXISTS ix_jhsaa_dual ON world_jhsaa_dual(world_id, year, gender, school);
+-- The INDIVIDUAL state tournaments — one row per completed draw, so a page loads the
+-- flight it is showing and nothing else.
+--
+-- ‼️ ITS OWN TABLE, NOT A KEY ON THE `world_jhsaa` SUMMARY, for the reason the duals
+-- table already exists: that summary row is read in FULL by every JHSAA page, and a
+-- gender's fifty-four draws are ~1.7 MB of JSON. Carried on the summary, rendering the
+-- hub's champion list would deserialise every bracket in the association.
+--
+-- ‼️ AND NOT A ROW IN `world_jhsaa_dual`. That table's row is a DUAL between two
+-- SCHOOLS, with pf/pa and a `lines` box score, and six readers fold it into records,
+-- court totals and the research export. An individual match is one court between two
+-- PLAYERS; dropped in there it would land on programs' records and court totals the
+-- way JV duals did before `level` (see the export AAR) — the same fault, one table over.
+--
+-- `gender` is 'girls'/'boys' for the six flights and 'mixed' for the summer mixed
+-- doubles, which belongs to neither and so is stored as its own thing rather than
+-- duplicated onto both.
+CREATE TABLE IF NOT EXISTS world_jhsaa_individual (
+  world_id INTEGER, year INTEGER, gender TEXT, grp TEXT, flight TEXT, data TEXT
+);
+CREATE INDEX IF NOT EXISTS ix_jhsaa_indiv
+  ON world_jhsaa_individual(world_id, year, gender, grp);
 CREATE TABLE IF NOT EXISTS world_cups (
   world_id INTEGER, year INTEGER, gender TEXT, data TEXT
 );
@@ -517,7 +539,8 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     # save. Clear both so each new league starts empty.
     conn = _db()
     conn.executescript("DELETE FROM world_championship; DELETE FROM world_cups;"
-                       " DELETE FROM world_jhsaa; DELETE FROM world_jhsaa_dual;")
+                       " DELETE FROM world_jhsaa; DELETE FROM world_jhsaa_dual;"
+                       " DELETE FROM world_jhsaa_individual;")
     conn.commit()
     conn.close()
     # God-mode editor overrides (player moves, lineups, prestige/academics priors,
@@ -3653,6 +3676,7 @@ def run_jhsaa(seed: int, world: dict) -> dict:
     themselves are deterministic from (school, gender, entry year, seat), so a career
     is rebuilt on demand rather than persisted (`jhsaa.career`)."""
     from . import jhsaa
+    from . import jhsaa_individuals
     salt = active_salt(seed)          # the per-save salt recruit_class also uses
     year = world["year"]              # DB key ONLY — never a season parameter
     # THE season parameters, exactly as the recruit hand-off uses them:
@@ -3781,6 +3805,32 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                 "INSERT INTO world_jhsaa_dual (world_id, year, gender, school, opp,"
                 " home, phase, pf, pa, won, district, lines, level, tied, shape, played)"
                 " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
+            # THE INDIVIDUAL STATE TOURNAMENTS — one row per completed draw, in their
+            # own table rather than on the summary blob above (see the schema note).
+            conn.executemany(
+                "INSERT INTO world_jhsaa_individual"
+                " (world_id, year, gender, grp, flight, data) VALUES (?,?,?,?,?,?)",
+                [(world["id"], year, gender, grp, flight, json.dumps(draw))
+                 for grp, flights in (season.get("individuals") or {}).items()
+                 for flight, draw in flights.items()])
+        # MIXED DOUBLES — run here because a mixed pair is one player from each
+        # gender and `run_season` only ever sees one. It is archived under gender
+        # 'mixed': it belongs to neither field, so storing it on one gender's rows
+        # would make "which one?" a question, and on both would duplicate it.
+        # It credits nothing to anybody (owner rule) — the archive is where a mixed
+        # title lives, which is why it can run outside a season at all.
+        #
+        # ‼️ IT BUILDS ITS OWN ROSTERS AND IS NOT HANDED THE SEASONS ABOVE. The
+        # league year begins in JULY (owner rule): summer mixed → fall boys →
+        # spring girls, so this is the FIRST event of the year and its pool must be
+        # cut from the preseason ability ladder, not from one moved by seasons that
+        # on this calendar have not been played yet. See `run_mixed_season`.
+        mixed = jhsaa_individuals.run_mixed_season(season_year, salt=salt, seed=0)
+        conn.executemany(
+            "INSERT INTO world_jhsaa_individual"
+            " (world_id, year, gender, grp, flight, data) VALUES (?,?,?,?,?,?)",
+            [(world["id"], year, "mixed", grp, "XD", json.dumps(draw))
+             for grp, draw in mixed.items()])
         conn.commit()
     finally:
         conn.close()
@@ -3856,6 +3906,112 @@ def get_jhsaa(world_id: int, year: int, gender: str) -> dict | None:
         conn.close()
     # Relabelled into today's names so a renamed program keeps every row it earned.
     return _relabel(json.loads(r["data"])) if r else None
+
+
+def jhsaa_individual_draw(world_id: int, year: int, gender: str, group: str,
+                          flight: str) -> dict | None:
+    """ONE archived individual-tournament draw, or None.
+
+    Deliberately one draw at a time: the page shows one flight, and a gender's
+    fifty-four draws are ~1.7 MB. `gender` is 'mixed' for the summer mixed
+    doubles, which belongs to neither field."""
+    conn = _db()
+    try:
+        r = conn.execute(
+            "SELECT data FROM world_jhsaa_individual WHERE world_id=? AND year=?"
+            " AND gender=? AND grp=? AND flight=?",
+            (world_id, year, gender, group, flight)).fetchone()
+    finally:
+        conn.close()
+    # Relabelled into today's names, exactly like the season summary: a draw names
+    # schools, and a rename must not orphan a title somebody won.
+    return _relabel(json.loads(r["data"])) if r else None
+
+
+def jhsaa_individual_champions(world_id: int, year: int, gender: str,
+                               group: str) -> dict:
+    """{flight: {champion, runner_up, entries}} for a classification.
+
+    The runner-up rides along because the draw is already parsed to reach the
+    champion — a title reads "def. X" and asking for that separately would mean
+    deserialising every bracket twice.
+
+    ‼️ It still loads each draw's JSON to reach its champion, which is the honest
+    cost of keeping the champion inside the draw that determined it rather than
+    denormalising it onto the row. If this ever shows up on a profile, add a
+    `champion` COLUMN written at archive time — do not start storing a second
+    copy of the draw."""
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT flight, data FROM world_jhsaa_individual WHERE world_id=?"
+            " AND year=? AND gender=? AND grp=?",
+            (world_id, year, gender, group)).fetchall()
+    finally:
+        conn.close()
+    out = {}
+    for r in rows:
+        d = _relabel(json.loads(r["data"]))
+        ix = d.get("champion")
+        if ix is None:
+            continue
+        ru = d.get("runner_up")
+        out[r["flight"]] = {
+            "champion": d["entries"][ix],
+            "runner_up": d["entries"][ru] if ru is not None else None,
+            "entries": len(d.get("entries") or ()),
+            "final": (d["rounds"][-1][0]["scoreline"]
+                      if d.get("rounds") and d["rounds"][-1] else ""),
+        }
+    return out
+
+
+def jhsaa_individual_results(world_id: int, year: int, gender: str, group: str,
+                             pid: str) -> list[dict]:
+    """One player's individual-tournament results for ONE season — the flight they
+    entered and how far they got, per draw. Empty for a season played before the
+    event existed, which is honest.
+
+    ‼️ THE `LIKE` IS A PREFILTER, NOT THE ANSWER. A season's draws for one class are
+    seven ~30KB JSON blobs, and `json.loads` on all seven for every player page is
+    the cost this avoids: a pid is a 16-hex string, so a blob that does not contain
+    it cannot contain the player, and SQLite can decide that without parsing. The
+    entry is then located properly, by walking `entries`.
+
+    Mixed doubles is included (gender 'mixed'). It is a state title the player won
+    and belongs on their page; it credits no AWARD, which is a different thing."""
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT gender, flight, data FROM world_jhsaa_individual"
+            " WHERE world_id=? AND year=? AND grp=? AND gender IN (?, 'mixed')"
+            " AND data LIKE ?",
+            (world_id, year, group, gender, f"%{pid}%")).fetchall()
+    finally:
+        conn.close()
+    from . import jhsaa_individuals as ji
+    out = []
+    for r in rows:
+        d = _relabel(json.loads(r["data"]))
+        ix = ji.entry_index_of(d, pid)
+        if ix is None:                 # a LIKE hit that was not this player
+            continue
+        e = d["entries"][ix]
+        label, tag = ji.finish_for_index(d, ix)
+        tier, icon, honour = ji.finish_tier(tag)
+        partner = next((p["name"] for p in e["players"] if p["pid"] != pid), "")
+        out.append({"flight": r["flight"], "gender": r["gender"],
+                    "flight_name": ji.FLIGHT_NAMES.get(r["flight"], r["flight"]),
+                    "finish": label, "tag": tag, "seed": e.get("seed") or 0,
+                    "partner": partner, "entries": len(d["entries"]),
+                    # How loudly the page says it — see `jhsaa_individuals
+                    # .FINISH_TIERS`. `honour` is empty below the top 8, which is
+                    # what makes those rows read as history rather than accolade.
+                    "tier": tier, "icon": icon, "honour": honour,
+                    "group": group, "champion": tag == "CHAMP"})
+    order = {f: i for i, f in enumerate(ji.FLIGHTS + ("XD",))}
+    out.sort(key=lambda r: order.get(r["flight"], 99))
+    return out
 
 
 def jhsaa_latest_season_year(world_id: int, gender: str) -> int | None:

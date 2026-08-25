@@ -4287,6 +4287,139 @@ def jhsaa_honors_view(seed: int, gender: str, group: str | None = None,
     }
 
 
+def _jh_indiv_card_side(e: dict, won: bool, schools: dict) -> dict:
+    """One side of an individual bracket card.
+
+    The entrant is a PLAYER or a PAIR, so the card shows a person and links to the
+    player page — `name`/`pid`, the two overrides `_bracket.html` grew for exactly
+    this. `school` stays the school underneath, which is what the tooltip and the
+    card-highlight key off, and it is also half of the player URL.
+
+    A PAIR links to its first member: a partnership has no page of its own and one
+    of the two names has to carry the link. Both are named in the label."""
+    school = e["school"]
+    players = e.get("players") or []
+    return {"school": school, "name": e.get("label") or school,
+            # ON the card, not only in the tooltip: a crest does not tell a reader
+            # which program a person plays for, and every association prints it.
+            "sub": school,
+            "pid": players[0]["pid"] if players else "",
+            "abbr": "", "color": "var(--gray-400)", "won": won,
+            "seed": e.get("seed") or "",
+            "conf": (schools.get(school).district if schools.get(school) else ""),
+            "aq": False, "tbd": False,
+            "mark": _jh_deco(schools, school, 18)["mark"]}
+
+
+def jhsaa_individual_view(seed: int, gender: str, group: str | None = None,
+                          flight: str | None = None,
+                          year: int | None = None) -> dict:
+    """ONE flight of the individual state tournaments, on the shared bracket tree.
+
+    ‼️ ONE FLIGHT AT A TIME, WHICH IS THE POINT OF THE SWITCHER. Six 128-draws down
+    one page is six screens of bracket nobody asked for; the flight is a question
+    you answer once you are here, which is the section's own rule for sibling views
+    (`jh_tabs`, the district `<select>`, the History sub-rail). It is also exactly
+    the control a real association puts on the page.
+
+    ‼️ AND IT NEEDS NO BYE CARDS. `_jh_bracket_cols` materialises byes because the
+    TEAM archive stores rounds as played and a 24-team field collapses unevenly. An
+    individual draw is `engine.run_tournament`'s output, whose rounds already halve
+    cleanly from the opening round on — the byes are consumed before round one and
+    every later column is exactly half the one before it, which is precisely the
+    shape `_bracket_canvas` links positionally. Feed it the rounds as archived."""
+    import app.jhsaa as jh
+    import app.jhsaa_individuals as ji
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    years = world.jhsaa_years(w["id"], g)
+    yr = (years[0] if years else w["year"]) if year is None else year
+    grp = group if group in jh.GROUPS else jh.GROUPS[0]
+    fl = flight if flight in ji.FLIGHTS or flight == "XD" else ji.FLIGHTS[0]
+    arc = world.get_jhsaa(w["id"], yr, g)
+    scope = _jh_scope(g, grp, list(jh.GROUPS), yr, years,
+                      (arc or {}).get("season_year"), arc)
+    base = {"gender": g, "year": yr, "years": years, "group": grp,
+            "groups": list(jh.GROUPS), "flight": fl,
+            "flights": [(f, ji.FLIGHT_NAMES[f]) for f in ji.FLIGHTS],
+            "flight_name": ji.FLIGHT_NAMES[fl],
+            "mixed_flight": "XD", "mixed_name": ji.FLIGHT_NAMES["XD"],
+            "season_year": (arc or {}).get("season_year",
+                                           world.jhsaa_season_year(w)),
+            "scope": scope}
+    # Mixed doubles is archived under its own gender: it belongs to neither field.
+    draw = world.jhsaa_individual_draw(w["id"], yr,
+                                       "mixed" if fl == "XD" else g, grp, fl)
+    if not draw:
+        return {**base, "ready": False}
+    schools = _jh_schools(g if fl != "XD" else "girls")
+    entries = draw["entries"]
+    cols = []
+    for rnd in draw["rounds"]:
+        ms = []
+        for m in rnd:
+            hi, lo = entries[m["hi"]], entries[m["lo"]]
+            hw = m["winner_is_hi"]
+            ms.append({
+                "home": _jh_indiv_card_side(hi, hw, schools),
+                "away": _jh_indiv_card_side(lo, not hw, schools),
+                "played": True, "id": None, "tbd": False, "region": None,
+                "bpos": 0, "home_won": hw, "winner": None,
+                # ‼️ A SCORELINE, NOT TWO POINT TOTALS — hence `score_full`. Every
+                # other card on this surface carries a dual's "5-2" and `brk_row`
+                # gives each side its half; "6-1 6-0" has no halves, and splitting
+                # it on the hyphen yields "6" and "1 6". A tennis set score is
+                # written from the WINNER's side by convention — the string
+                # describes the match, not one player's share of it — so it is
+                # printed once, in full, on the winner's row. `MatchResult.
+                # scoreline` is already winner-oriented, so it passes straight
+                # through; there is no home side here to re-orient to anyway.
+                "score": m["scoreline"], "score_full": True})
+        cols.append({"name": ji.round_label(m["rnd"]), "matchups": ms})
+    champ = entries[draw["champion"]] if draw.get("champion") is not None else None
+    runner = entries[draw["runner_up"]] if draw.get("runner_up") is not None else None
+    return {
+        **base, "ready": True,
+        "n_seeds": draw["n_seeds"], "field_n": len(entries),
+        "champion": champ, "runner_up": runner,
+        "champion_deco": _jh_deco(schools, champ["school"], 34) if champ else None,
+        "final_score": (draw["rounds"][-1][0]["scoreline"]
+                        if draw["rounds"] and draw["rounds"][-1] else ""),
+        # The seeded head of the field, as an association publishes it: real
+        # associations print seeds in TIERS (1, 2, 3-4, 5-8, …) because that is how
+        # they are PLACED — `engine.tournament.seeded_draw` shuffles inside each
+        # tier onto mirror anchors, so a "No. 6 seed" is not a finer ranking than
+        # No. 5, it is a member of the 5-8 tier. Listing 1..32 flat would claim a
+        # precision the draw does not have.
+        "seed_tiers": _jh_seed_tiers(entries, draw["n_seeds"]),
+        # ‼️ WIDER CARDS THAN THE TEAM DRAW (206px), and the card holds more. A team
+        # card carries a school and one digit; an individual card carries a PERSON, the
+        # SCHOOL they play for, and a full scoreline ("7-5 4-6 14-12"). At 206 the
+        # scoreline alone truncated "Delilah Ervin" to "Delilah Er…" on every card she
+        # won. Geometry is the knob here — never CSS, since the cards and the SVG
+        # elbows share `_bracket_canvas`'s one coordinate system.
+        "canvas": _bracket_canvas(cols, card_w=380, card_h=56, gutter=40,
+                                  leaf_gap=12),
+        "rounds": [{"name": c["name"], "games": c["matchups"]} for c in cols],
+    }
+
+
+def _jh_seed_tiers(entries: list, n_seeds: int) -> list[dict]:
+    """The seeded entrants grouped into the tiers they were PLACED in — [1], [2],
+    [3-4], [5-8], [9-16], … — which is how the draw actually treats them and how a
+    real association publishes them."""
+    out, lo = [], 1
+    while lo <= n_seeds:
+        hi = min(n_seeds, 1 if lo == 1 else (2 if lo == 2 else lo * 2 - 1))
+        rows = entries[lo - 1:hi]
+        if rows:
+            out.append({"label": str(lo) if lo == hi else f"{lo}-{hi}",
+                        "entries": rows})
+        lo = hi + 1
+    return out
+
+
 def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
                        year: int | None = None) -> dict:
     """The full state draw on its own surface — the same server-positioned tree the
@@ -4880,6 +5013,12 @@ def _family_row(fam_map: dict, pid: str) -> dict | None:
             "others": [m for m in (fam.get("members") or []) if m.get("pid") != pid]}
 
 
+#: Grade -> class year, the name a results line calls a player by. The same four
+#: labels the college side already uses (`scout_intel._CLASS_ORD`); high school has
+#: no fifth year, so there is no RS- case to strip here.
+_JH_CLASS_YEAR = {9: "Fr", 10: "So", 11: "Jr", 12: "Sr"}
+
+
 def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
     """One high-school player's whole career at a program: four seasons, what they
     did in each, and the honours that came with them.
@@ -4889,6 +5028,7 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
     name and it matches the award rows straight off. Careers are rebuilt rather than
     stored, which is why an archived season can show the team that played it."""
     import app.jhsaa as jh
+    import app.jhsaa_individuals as ji
     import app.world as world
     w = world.get_or_create(seed)
     g = _jh_g(gender)
@@ -4983,6 +5123,9 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         seasons.append({
             "year": yr, "season_year": season_year, "grade": hit.grade,
             "class": str(hit.grade),
+            # The CLASS YEAR, which is what a results line names a player by — the
+            # ledger's bare grade number is a different thing and both are kept.
+            "class_year": _JH_CLASS_YEAR.get(hit.grade, str(hit.grade)),
             "school": yr_sc.name, "school_mark": jh.mark(yr_sc, 20),
             "transferred": bool(moved) and yr_sc.name != school,
             "ladder": next((i for i, p in enumerate(roster, 1) if p.pid == pid), 0),
@@ -4990,6 +5133,15 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
             "singles": "{}-{}".format(*rec["s"]), "doubles": "{}-{}".format(*rec["d"]),
             "record": f"{w_}-{l_}", "wins": w_, "losses": l_,
             "honors": honors, "team": team, "slots": slots,
+            # THE INDIVIDUAL STATE TOURNAMENTS — the flight entered and how far they
+            # got, read straight off the archived draw. ‼️ NOT a match log (owner,
+            # 2026-08: "not sure it's necessary to keep a log of those on the player
+            # page"): the season's dual card is already the log, and what a reader
+            # wants from a state tournament is the FINISH. Deliberately kept OUT of
+            # `record`/`singles`/`doubles` — those are the player's DUAL record, and
+            # an individual title is a different competition, not more of that one.
+            "individuals": world.jhsaa_individual_results(
+                w["id"], yr, g, yr_sc.group, pid),
             # THE PLAYER'S OWN JV record, per court, on exactly the varsity terms —
             # so "did this kid play JV, and how did they do" is answerable from the
             # ledger and the flight box drills into WHERE. Never summed into `record`:
@@ -5035,6 +5187,15 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         # so a save archived before the JV season — or a player who never dressed for
         # one — does not get a column of dashes on every row.
         "jv_flights": jv_flights,
+        # The State Tournament Results section, newest season first, and shown only
+        # for a career that HAS one — a save archived before the event existed does
+        # not get an empty panel on every player.
+        "individuals": [{**s_, "season": s} for s in seasons
+                        for s_ in s["individuals"]],
+        "any_individual": any(s["individuals"] for s in seasons),
+        "section_icon": ji.SECTION_ICON,
+        "individual_titles": sum(1 for s in seasons for r in s["individuals"]
+                                 if r["champion"]),
         "any_jv": any(s["jv"] or s["jv_dressed"] for s in seasons),
         "jv_matches": sum(s["jv_matches"] for s in seasons),
         # For the transfer form — the identity a `set_jhsaa_transfer` row is keyed on.
@@ -5357,6 +5518,86 @@ def jhsaa_lineup_lab(seed: int, gender: str, target_group: str = "5A",
             "from_group": from_group, "min_ovr": min_ovr, "max_ovr": max_ovr,
             "min_pot": min_pot, "max_pot": max_pot, "q": q,
             "grade_pools": [(k, lbl) for k, (lbl, _) in JHSAA_LAB_GRADE_POOLS.items()]}
+
+
+def _jh_indiv_who(entry: dict | None) -> str:
+    """An individual result written the way the association writes it — NAME
+    (GRADE), SCHOOL (owner, 2026-08, the OSAA's convention):
+
+        Olivia Miles (9), Foxboro def. Johnnia Jackson (11), Eastmont 6-0, 6-0
+
+    A pair names both players with their own grades before the one school they
+    share. A grade is omitted where the archive predates storing it, rather than
+    guessed."""
+    if not entry:
+        return ""
+    who = "/".join(f"{p['name']} ({p['grade']})" if p.get("grade") else p["name"]
+                   for p in (entry.get("players") or ()))
+    return f"{who}, {entry['school']}" if who else entry.get("school", "")
+
+
+def _jh_indiv_score(scoreline: str) -> str:
+    """`6-3 6-4` -> `6-3, 6-4`. The engine joins sets with spaces; every association
+    that prints a result writes them comma-separated."""
+    return ", ".join((scoreline or "").split())
+
+
+def jhsaa_individual_winners(seed: int, gender: str, group: str | None = None,
+                             flight: str | None = None) -> dict:
+    """ONE flight's roll of honour — its champion in every archived season.
+
+    ‼️ ONE FLIGHT AT A TIME, PICKED FROM A DROPDOWN (owner, 2026-08). A first draft
+    put all six on the page, a panel per season, and that is a page you scroll
+    forever to answer one question. The event crowns SIX titles per class per year —
+    fifty-four across the association — so unlike the TEAM champions grid beside it
+    (one champion per class per year, which fits on a screen) this cannot show
+    everything at once and should not try. Class comes off the scope bar, flight off
+    the switcher; the answer to "who has won No. 2 doubles" is then one short list.
+
+    Reads `world.jhsaa_individual_champions`, which walks the archived draws. There
+    is no second store of champions and there must not be one — the draw that decided
+    a title is where the title lives (the section's own fold-not-store rule)."""
+    import app.jhsaa as jh
+    import app.jhsaa_individuals as ji
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    grp = group if group in jh.GROUPS else jh.GROUPS[0]
+    fl = flight if flight in ji.FLIGHTS or flight == "XD" else ji.FLIGHTS[0]
+    years = world.jhsaa_years(w["id"], g)
+    schools = _jh_schools(g)
+    rows = []
+    for year in years:
+        arc = world.get_jhsaa(w["id"], year, g)
+        # Mixed is archived under its own gender — it belongs to neither field.
+        got = world.jhsaa_individual_champions(
+            w["id"], year, "mixed" if fl == "XD" else g, grp)
+        rec = got.get(fl)
+        if not rec:
+            continue                      # a season played before the event existed
+        c, r = rec["champion"], rec.get("runner_up")
+        rows.append({
+            "year": year, "season_year": (arc or {}).get("season_year"),
+            "champion": c, "runner_up": r,
+            "final": _jh_indiv_score(rec.get("final", "")),
+            # Both sides written NAME (GRADE), SCHOOL — a runner-up needs their
+            # school as much as a champion does.
+            "champ_line": _jh_indiv_who(c), "ru_line": _jh_indiv_who(r),
+            "entries": rec.get("entries", 0),
+            "deco": _jh_deco(schools, c["school"], 18),
+        })
+    # ‼️ NO per-school title TALLY (owner, 2026-08). A draft computed one and put a
+    # "Most titles" panel beside the roll; it was not asked for and it is the wrong
+    # page for it — counting individual titles by school turns a list of PEOPLE into
+    # a school leaderboard, and the programme cabinet is the Title Board's job.
+    return {"gender": g, "group": grp, "groups": list(jh.GROUPS), "rows": rows,
+            "flight": fl, "flight_name": ji.FLIGHT_NAMES[fl],
+            "flights": [(f, ji.FLIGHT_NAMES[f]) for f in ji.FLIGHTS],
+            "mixed_flight": "XD", "mixed_name": ji.FLIGHT_NAMES["XD"],
+            "section_icon": ji.SECTION_ICON,
+            "gold_icon": ji.FINISH_TIERS["CHAMP"][1],
+            "scope": _jh_scope(g, grp, list(jh.GROUPS),
+                               years[0] if years else 0, years, None, None)}
 
 
 def jhsaa_past_winners(seed: int, gender: str, group: str | None = None) -> dict:

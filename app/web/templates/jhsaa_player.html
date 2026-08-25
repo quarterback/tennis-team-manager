@@ -93,11 +93,73 @@
       {% endif %}
     {%- endmacro %}
 
+    {# ‼️ STATE TOURNAMENT RESULTS — the individual championships, ABOVE the flight
+       record and collapsible like it (owner, 2026-08; neither was collapsible
+       before). A FINISH per draw, not a match log: the season's dual card already
+       logs matches, and what anyone wants from a state tournament is how far they
+       got. Shown only where there is one, so a career from before the event
+       existed does not get an empty panel.
+
+       These deliberately do NOT feed the Career W–L above — that is the player's
+       DUAL record, and an individual title is a separate competition rather than
+       more of that one. #}
+    {% if view.any_individual %}
+    <details class="bl-panel jh-fold" open>
+      <summary class="bl-panel-head jh-solo-head">
+        <img class="ic" src="{{ url_for('jhsaa_medal', name=view.section_icon) }}"
+             alt="" width="18" height="18">
+        <span class="bl-panel-title">Individual State</span>
+        {# A title COUNT where there is one, an appearance count otherwise — the
+           header should not imply an accolade the rows below do not carry. #}
+        <span class="bit">{% if view.individual_titles %}{{ view.individual_titles }}
+          state title{{ 's' if view.individual_titles != 1 }}{% else %}{{ view.individuals|length }}
+          appearance{{ 's' if view.individuals|length != 1 }}{% endif %}</span>
+      </summary>
+      {# ‼️ ROWS ARE TIERED, AND MOST OF THEM ARE NOT ACCOLADES (owner layout,
+         2026-08). One champion is crowned and everybody else played in it, so
+         dressing every appearance in gold would lie about a career:
+           gold   — the state champion, and nothing else
+           podium — runner-up / semifinalist / quarterfinalist, said plainly
+           plain  — R16 and below: neutral, the round and the seed, no honour text
+         Seasons stack newest-first in the one panel. #}
+      <div class="jh-solo">
+        {% for r in view.individuals %}
+        <div class="row t-{{ r.tier }}">
+          <img class="ic" src="{{ url_for('jhsaa_medal', name=r.icon) }}"
+               alt="" width="44" height="44" loading="lazy">
+          <div class="meat">
+            <div class="when">{{ r.season.season_year }} · {{ r.group }}
+              <span class="yr">{{ r.season.class_year }}</span></div>
+            <div class="what">
+              <span class="fl">{{ r.flight_name }}</span>
+              {%- if r.honour %} — <span class="hon">{{ r.honour|upper }}</span>{% endif %}
+            </div>
+            {# ‼️ A PLACING CARRIES ITS SEED ON THE LEFT, under the flight — the row
+               reads as one statement ("No. 1 Singles — STATE CHAMPION, No. 1 seed").
+               A PLAIN row has no honour to lead with, so the round IS the result and
+               it moves right with the seed, where the eye scans for an outcome. #}
+            {% if r.honour %}
+            <div class="sub">{{ ('No. ' ~ r.seed ~ ' seed') if r.seed else 'unseeded' }}
+              {%- if r.partner %} · with {{ r.partner }}{% endif %}</div>
+            {% elif r.partner %}<div class="sub">with {{ r.partner }}</div>{% endif %}
+          </div>
+          {% if not r.honour %}
+          <div class="right">
+            <div class="rnd">{{ r.finish }}</div>
+            <div class="seed">{{ ('No. ' ~ r.seed ~ ' seed') if r.seed else 'unseeded' }}</div>
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </details>
+    {% endif %}
+
     {% for disc in ['singles', 'doubles'] %}
-    <div class="bl-panel">
-      <div class="bl-panel-head">
+    <details class="bl-panel jh-fold" open>
+      <summary class="bl-panel-head">
         <span class="bl-panel-title">Flight record — {{ disc|capitalize }}</span>
-        <span class="bit">W–L by court</span></div>
+        <span class="bit">W–L by court</span></summary>
       {% if view.any_jv %}
       {# No count on these tabs — `jh_tabs` skips the badge on 0. A number here counted
          SEASON ROWS, which is identical for both tabs and says nothing about either. #}
@@ -107,7 +169,7 @@
       {% if view.any_jv %}
       <div class="jh-pane tbl-scroll" data-pane="jv" hidden>{{ recbox(view.jv_flights[disc]) }}</div>
       {% endif %}
-    </div>
+    </details>
     {% endfor %}
   </div>
 

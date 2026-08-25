@@ -444,6 +444,18 @@
 .brk-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-size: 13.5px; color: var(--text-secondary); text-decoration: none; }
 a.brk-name:hover { text-decoration: underline; }
+/* WHERE an entrant is from, beside the name on an individual card.
+   ‼️ `.brk-team` IS A GRID, NOT A FLEX ROW — flex-shrink on these does nothing, which
+   is what a first attempt reached for. The sub landed in one of the trailing `auto`
+   columns, `auto` sizes to content, and the NAME (the `1fr` track) gave up its width
+   instead: "Sydney Richardson" truncated while "Southern Jefferson Christian" stayed
+   whole, the wrong half of the two. So a row carrying a sub gets its own template —
+   the name takes its content width and the SCHOOL is the flexible track, so the
+   school ellipses first and the PERSON always reads in full, which is the entire
+   point of putting the school there. */
+.brk-team.has-sub { grid-template-columns: 20px 18px minmax(0, max-content) minmax(0, 1fr) auto; }
+.brk-sub { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 11.5px; color: var(--text-faint); text-align: right; }
 .brk-team.is-winner .brk-name { font-weight: 800; color: var(--text-primary); }
 .brk-team.is-winner .brk-score { color: var(--brand, #0e7c86); font-weight: 800; }
 .brk-team.is-out { opacity: .62; }
@@ -451,6 +463,11 @@ a.brk-name:hover { text-decoration: underline; }
   color: var(--text-faint); background: var(--gray-100, rgba(0,0,0,.05)); }
 .brk-score { font-size: 13.5px; font-weight: 700; color: var(--text-muted); min-width: 12px; text-align: right;
   font-variant-numeric: tabular-nums; }
+/* A full tennis SCORELINE ("6-1 6-0", "5-7 6-1 11-9") rather than one side's point
+   total — several times wider, and it sits on the winner's row only, so it needs
+   room to sit in and must never squeeze the name beside it. */
+.brk-score.is-line { font-size: 11.5px; font-weight: 750; letter-spacing: -.01em;
+  white-space: nowrap; flex: 0 0 auto; }
 .brk-stage.no-seeds .brk-seed, .brk-stage.no-scores .brk-score { visibility: hidden; }
 .brk-region[hidden] { display: none; }
 

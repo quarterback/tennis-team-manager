@@ -5515,6 +5515,27 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     by_group = {group: {dname: district_teams(schools, year, salt)
                         for dname, schools in sorted(districts(gender, group).items())}
                 for group in GROUPS}
+    # THE INDIVIDUAL STATE TOURNAMENTS — six flighted draws (No. 1-3 singles,
+    # No. 1-3 doubles) per classification, played HERE: before a league dual, and
+    # for exactly that reason. Entries are selected off the ability ladder, which
+    # would violate "you win your way in" at any later point in the year; run
+    # preseason there are no results yet, so ability is the only input there is.
+    #
+    # It is therefore an INPUT to the season and not a summary of it. `credit_draw`
+    # writes into the same `records` and `matches` every league court does, so a
+    # deep run moves a player up `ladder_score` before the first dual and lands on
+    # the awards résumé the same way a court does. That full credit needed no new
+    # machinery: the flight names ARE the dual slot names, so `FLIGHT_WEIGHTS`
+    # already prices them, and the phase is deliberately outside `POSTSEASON`, so
+    # `jhsaa_awards._phase_weight` treats them as ordinary matches.
+    #
+    # ‼️ MIXED DOUBLES IS NOT HERE. A mixed pair is one player from each gender and
+    # this function only ever sees one, so that event cannot be assembled until
+    # both seasons exist — it runs at the world rung (`jhsaa_individuals.
+    # run_mixed_season`), which is also where it belongs on the calendar, in the
+    # summer. It credits nothing to anybody.
+    from .jhsaa_individuals import run_preseason as _run_individuals
+    out["individuals"] = _run_individuals(by_group, gender, year, seed=seed)
     every_team, power = play_regular_season(by_group, year, gender, salt)
     # THE JV SEASON, played here and nowhere else. It runs BEFORE the postseason
     # because that is where it sits on the calendar (April-May against the varsity

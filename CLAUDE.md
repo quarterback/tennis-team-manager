@@ -1143,6 +1143,173 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     template dereferences by attribute must be checked by RENDERING it. Same family:
     `jh_round_tabs(rounds, u, gender, id='jhrd', pin=none)` — the fourth positional is the
     DOM id, and passing `scope.pin` there silently un-keys the round list from its script.
+- **‼️ THE INDIVIDUAL STATE TOURNAMENTS — six flighted draws, PRESEASON, fully credited
+  (owner rule 2026-08, `app/jhsaa_individuals.py`).** No. 1-3 singles and No. 1-3
+  doubles, each crowning its own individual state champion, per classification per
+  gender, plus a separate **mixed doubles** event. The high-school port of
+  `app/individuals.py` and deliberately the same shape. Lessons:
+  `docs/AAR-jhsaa-individual-state-tournaments.md`; design:
+  `docs/DESIGN-jhsaa-individual-tournament.md`.
+  - **‼️ IT IS 3 SINGLES + 3 DOUBLES IN EVERY CLASSIFICATION, 1A INCLUDED, AND IT READS
+    NO DUAL FORMAT** (owner: *"so the 1/4, 2/3, 3/4 discussion is irrelevant"*, *"even
+    in 1A, it's still a 3/3 event"*). The 1S/4D postseason, the 3S/4D league season and
+    1A's 2S/3D pilot are all irrelevant here; no branch in the module reads a group's
+    shape. Do not "fix" 1A to six flights of eight.
+  - **‼️ ENTRIES COME OFF THE ABILITY LADDER, NOT THE LEAGUE LINEUP.** The 3S/4D league
+    format is doubles-forward — S1 = #1, the doubles pool = #2-#9, **S2/S3 = #10-#11** —
+    so a program's "No. 2 singles" in a league dual is its TENTH-best player. Entries are
+    `S1=#1 S2=#2 S3=#3 D1=#4+#5 D2=#6+#7 D3=#8+#9` off `_order`.
+  - **PRESEASON is what makes ability-selection honest** and it is why the event is an
+    INPUT: run before a league dual there are no results to earn a berth on, and
+    `credit_draw` writes into the same `records` `ladder_score` reads, so a deep run
+    moves a player up the ladder before the season starts.
+  - **OPEN FIELD, NO DISTRICT QUOTA** (owner: talent is not evenly distributed
+    geographically — "a strong league's third-best beats a weak league's champion").
+    82-107 entries into a flat **128**, byes to the top seeds, the NJSIAA model. ‼️ An
+    open field is CHEAPER than qualifying, not dearer: a single-elimination draw plays
+    `entries − 1` matches whatever its shape, so qualifying rounds ADD matches (10,569
+    open vs 12,204 with a quota).
+  - **‼️ EXCESS BYES MUST NEVER DOUBLE UP IN ONE PAIRING — a bug in the SHARED
+    `engine.tournament.seeded_draw`, found here and fixed there.** It byes the top
+    seeds' opponents, then dropped the REMAINING byes on random open slots with no
+    partner check. Two byes in one pairing is not a bye, it is a MATCH THAT DOES NOT
+    EXIST: the player opposite advances twice unplayed, the next round stops being
+    half the one before it, and `state._bracket_canvas` — which links columns
+    positionally on exactly that halving — draws the tree wrong. Latent until byes
+    outnumber seeds: **measured, fields of 82-92 in a 128 draw leaked one in most
+    draws, 93+ never did** — i.e. most boys' classifications in the real association.
+    Always avoidable (`n_real > n/2`, so byes < pairings), so the fix takes NO
+    fallback; verified over 3,564 draws, sizes 3-299. Pinned in
+    `tests/test_bracketing.py`. ‼️ The owner offered to drop to 16 seeds to fix it;
+    that was unnecessary and declined — the defect was in how byes were PLACED, not
+    how many seeds exist. **Diagnose the defect before spending a design decision.**
+  - **‼️ THE ENTRY SHEET IS FROZEN BEFORE THE FIRST DRAW (`entry_sheet`) — reading the
+    ladder per flight is a CORRECTNESS bug.** `credit_draw` writes `ts.records` and
+    `_order` sorts on `ladder_score(p, ts.records.get(p.pid))`, so crediting S1 MOVES
+    the ladder S2 is then selected from: a No. 1 who slipped to No. 2 on his own S1
+    result was entered at No. 2 singles as well while somebody else was entered
+    nowhere. **Measured on a real 1A boys field: 23 of 751 players in two flights**,
+    nothing raised, every draw internally consistent. ‼️ Counting SEATS does not catch
+    it (a program still fills nine, 1+1+1+2+2+2, when one person holds two) — count
+    DISTINCT PIDS, and test through `run_preseason`, not `flight_entry` on a fresh
+    TeamSeason, which cannot see it.
+  - **‼️ A MATCH TIEBREAK PRINTS ITS POINTS, NOT `1-0` (owner, 2026-08: "1-0 doesn't
+    tell me anything").** Three of the four code paths got this wrong and it was
+    pre-existing: `engine/doubles.py`'s full model returned the SET score and threw
+    `_tb_points` away three lines after recording it, and BOTH fast models
+    (`fast._play_set`, `doubles._simulate_fast`) had nothing to report because the
+    fast model decides a tiebreak with one coin flip and never plays the points. Live
+    in the **Davis/BJK cups**, which run a 10-point decider at fast fidelity. The fast
+    fix (`fast._mtb_score`) reads the margin out of **the draw already taken** — how
+    far `r` landed from the threshold IS how comfortable the win was — because
+    drawing again would shift every later scoreline and break `engine.boxstats`,
+    which replays the flow on the promise that recording it costs no rng. Win rate is
+    therefore unchanged (the flip is byte-identical); only the detail is new.
+  - **‼️ SEEDS ARE THE ENGINE'S EXISTING RULE AND ARE PUBLISHED IN TIERS.**
+    `seed_count` is already a quarter of the draw and `seeded_draw` already places
+    [1], [2], [3-4], [5-8], [9-16] onto mirror anchors — which is exactly how a real
+    association releases them ("SEEDS 5-8 (Alphabetical)"), because a No. 6 seed is not
+    ranked under No. 5, it is a member of that tier. Never print a flat 1..32 list.
+  - **‼️ SCORED WITH `individuals.INDIV_FMT`, IMPORTED — never re-declared.** Best-of-3,
+    no-ad, **10-point match tiebreak** deciding set: the college individual
+    championships' own format. A draft added a `best_of_3_ad` preset to justify a
+    "championships are played with ads" exception; the owner asked whether the college
+    event already did 2-of-3 with a 10-point breaker, and it did. **Look the constant up
+    before writing an exception to a rule.** This is the one place JHSAA scoring differs
+    from `MATCH_FORMAT` (whose third set is full).
+  - **‼️ FULL CREDIT, AND IT NEEDED NO NEW CODE** (owner: *"treat them like the regular
+    season + playoffs, easiest idea no fuss"*). Three earlier decisions carry it: the
+    flights are named **S1-S3/D1-D3, the same slots a dual uses**, so `FLIGHT_WEIGHTS`
+    already prices them; the phase is deliberately **outside `POSTSEASON`**, so
+    `jhsaa_awards._phase_weight` gives 1.0; and a pair credits BOTH members with
+    `partner` set, which is what `_pairs` keys a partnership on. It is still its OWN
+    phase (`"individual"`) — a phase is the archive's identity for an event.
+  - **‼️ AND THE OWN-PHASE DECISION IS LOAD-BEARING FOR A REASON NOBODY PLANNED.**
+    `jhsaa_awards.FLIGHT_S2S3_REGULAR` deflates S2/S3 to roughly **D4's weight**, but
+    ONLY when `phase == "regular"` — because the league's 3S/4D format seats ranks
+    #10-#11 there. This event's S2/S3 are the program's genuine #2/#3. Archived as
+    `phase="regular"` (the obvious way to get "ordinary weight, no fuss"), **every
+    individual No. 2 singles champion in Jefferson would have been scored as a
+    tenth-best player** — silently, with normal-looking résumés. Reusing a phase to
+    inherit its behaviour inherits ALL of it, including corrections written for that
+    phase's particular lineup shape. Pinned by
+    `test_individual_s2_s3_escape_the_LEAGUE_s2_s3_deflation`.
+  - **‼️ `state._finish_short` IS WRONG FOR A 128 DRAW and says so in its own docstring**
+    ("every field converges on the same 24-team main draw… so a team still alive above 24
+    went out in the QUALIFIERS"). True for the TEAM event; here it renders R128, R64 AND
+    R32 all as QUAL. The individual event has its own `FINISH_BANDS`; the team path is
+    untouched. A function documenting itself as needing no parameter is stating an
+    assumption — adding the parameter is the wrong repair.
+  - **‼️ MIXED DOUBLES CANNOT LIVE IN `run_season`.** That takes ONE gender and a mixed
+    pair is one player from each, so it runs at the WORLD rung (`run_mixed_season`) —
+    where `renumber_divisions`/`reletter_conferences` run. One flight, one bracket,
+    **one entry per school**, drawn from **below #9** (a consolation event for the
+    players the six flights have no seat for; `ROSTER_FLOOR` 16 − 9 leaves ≥7, median
+    8). It is archived under gender **`'mixed'`** — it belongs to neither field — and
+    **credits NOTHING to anybody** (owner rule), which is what lets it run outside any
+    season at all.
+  - **‼️ THE LEAGUE YEAR BEGINS IN JULY (owner rule 2026-08): summer mixed → fall boys
+    → spring girls, ONE unit.** So mixed is the FIRST event of the year, not the last:
+    June's seniors have graduated and the RISING squads play it. A reviewer read the
+    summer date the other way (a last hurrah for departing seniors) and concluded the
+    event needed the previous year's rosters and a gender-specific credit policy — it
+    needs neither. ‼️ But it DID surface a real fault: `run_mixed_season` was handed
+    `run_season`'s `season["teams"]`, whose `records` hold a season that on this
+    calendar HAS NOT BEEN PLAYED YET, and `_ladder` reads `records` — so the below-#9
+    pool was cut from a finished ladder for the event that OPENS the year. It now
+    builds its own `district_teams` (no results → `_order` is ability order, the same
+    basis the six flights use). **Never hand it a played season.**
+  - **‼️ THE ARCHIVE IS ITS OWN TABLE (`world_jhsaa_individual`), one row per draw**, and
+    two size mistakes got it there. (1) Matches stored full COPIES of their entrants on
+    both sides, repeating each up to eight times over — **3.5 MB** a gender; they now
+    store INDICES into `entries`, the way the engine's own `TourneyMatch` does (**1.7
+    MB**). (2) 1.7 MB is still far too much for the `world_jhsaa` summary blob, which
+    every JHSAA page reads IN FULL — the hub's champion list would deserialise every
+    bracket in the association. Same reason the duals table exists. ‼️ And NOT a row in
+    `world_jhsaa_dual`: that row is a dual between two SCHOOLS with pf/pa and `lines`,
+    and six readers fold it into records and court totals — an individual match dropped
+    in there lands on programs' records exactly as JV duals did before `level`.
+  - **‼️ `_draw_seed` USES `blake2s`, NEVER `hash()`** — Python salts str hashes per
+    process and these draws are ARCHIVED, so "the same season" must survive a restart.
+    `run_season`'s own `hash(group) % 9973` is an older wart of the same shape: it is
+    left alone (fixing it would change every archived season) and must not be copied.
+  - **‼️ ON A PLAYER PAGE, MOST APPEARANCES ARE NOT ACCOLADES** (owner layout,
+    2026-08). "State tournament results" sits above the flight records, collapsible
+    like them (neither was), and shows a FINISH per draw — never a match log, since
+    the dual card already logs matches. Three tiers: **gold** (champion only),
+    **podium** (runner-up / SF / QF, honour named, no fill), **plain** (R16 and below
+    — the round and the seed, no honour text at all). Owner: *"the section still
+    matters because making Individual State is part of their record, but the UI
+    doesn't falsely turn every appearance into an accolade."* Every tier gets a REAL
+    licensed icon from `data/jhsaa/medals` (served by `server.jhsaa_medal`), plain
+    included — *"you don't have to default to fake bad monograms"*; what separates
+    the tiers is colour and weight, never whether a row may have a picture. The set
+    splits into PODIUM art (1st/2nd/3rd) and ROUND markers (`final8`, `4th`); `4th`
+    is unused because both semifinalists are third here (no 3/4 playoff). Individual
+    results are deliberately kept OUT of the career W-L, which is the DUAL record.
+  - **‼️ A RESULT IS ONE SENTENCE, AND BOTH SIDES GET A SCHOOL** (owner, 2026-08):
+    `Olivia Miles (9), Foxboro def. Johnnia Jackson (11), Eastmont 6-0, 6-0` — the
+    OSAA's convention, written identically by the IHSAA. **Grade is ARCHIVED with the
+    entry** (`draw_to_dict`) because it is a property of the player in THAT season;
+    deriving it on read would mean rebuilding a decade-old roster to recover what the
+    draw already knew. History lives on the **History sub-rail → Individual
+    Champions**, one flight at a time from a dropdown — this event crowns six titles
+    per class per year, so it cannot show everything at once, and the owner is
+    explicit about not wanting a page "listed all splayed on one page for me to
+    scroll endlessly". ‼️ NO per-school title tally there (the Title Board already
+    counts championships, and by-school individual counts are the NCHSAA shape the
+    owner rejected), and NO explanatory microcopy on any of these surfaces.
+  - **UI: the Championship sub-rail, labelled "Individual State"** (owner, 2026-08),
+    with the flights switched INSIDE that view as a second sub-rail — never six items on
+    the Championship rail, never one page with every draw splayed down it. The draw uses
+    the SHARED tree (`_bracket_canvas` + `templates/_bracket.html`), which grew two
+    optional attributes rather than a fourth bracket: **`t.name`** (the card shows a
+    person, not a school) and **`t.pid`** (the link is `/jhsaa/player/<school>/<pid>`,
+    whose pid varies card by card and so cannot ride in the canvas-constant `epq`). The
+    pid is passed as DATA and the URL built in the template — `state.py` is a view-model
+    layer with no request context. ‼️ The mobile `jh_round_tabs` fallback is deliberately
+    NOT wired: `jh_mgame` renders a DUAL (two schools, a points score, a district) and
+    would show empty rows for an individual card while raising nothing.
 - **‼️ THE TOURNAMENT OF CHAMPIONS IS ITS OWN EVENT, with its own PHASE** (`jhsaa.
   POSTSEASON = ("state", "toc")`). It borrows the state event's 1S/4D shape and its strict
   best-nine lineup, but `run_toc` plays `phase="toc"`, because the phase is the ONLY thing
