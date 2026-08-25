@@ -47,7 +47,7 @@
     {# ‼️ `full_label`, not `label` — a champion is NAMED. The draw sheet's compact
        "Smith / Hall" belongs on a 300px bracket card; a title announcement reads
        "Ava Smith / Noah Hall" (owner, 2026-08). #}
-    <a class="nm" href="{{ url_for('jhsaa_player', school=view.champion.school, pid=view.champion.players[0].pid, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.champion.full_label or view.champion.label }}</a>
+    <a class="nm" href="{{ url_for('jhsaa_player', school=view.champion.school, pid=view.champion.players[0].pid, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.champion_name or view.champion.full_label or view.champion.label }}</a>
     <div class="sub">
       {{ view.champion.school }}{% if view.champion_deco.city %} · {{ view.champion_deco.city }}, Jefferson{% endif %}
       {% if view.champion.seed %} · No. {{ view.champion.seed }} seed{% endif %}
@@ -55,7 +55,7 @@
   </div>
   {% if view.runner_up %}
   <div class="sc"><div class="n">{{ view.final_score }}</div>
-    <div class="o">final · def. {{ view.runner_up.full_label or view.runner_up.label }} ({{ view.runner_up.school }})</div></div>
+    <div class="o">final · def. {{ view.runner_up_name or view.runner_up.full_label or view.runner_up.label }} ({{ view.runner_up.school }})</div></div>
   {% endif %}
 </div>
 {% endif %}
@@ -100,7 +100,7 @@
       <div class="rows">
         {% for e in t.entries %}
         <div class="row">
-          <a href="{{ url_for('jhsaa_player', school=e.school, pid=e.players[0].pid, u=u, g=view.gender, year=view.scope.pin) }}">{{ e.label }}</a>
+          <a href="{{ url_for('jhsaa_player', school=e.school, pid=e.players[0].pid, u=u, g=view.gender, year=view.scope.pin) }}">{{ e.name }}</a>
           <span class="sch">{{ e.school }}</span>
         </div>
         {% endfor %}
