@@ -9,6 +9,44 @@
 > `docs/handoff/` keep "Division 1/2"; `scripts/jhsaa_expansion_2046.py`
 > translates at the read (`GROUP_RENAME`).
 
+> **‼️ CORRECTION (owner, 2026-08): THE FLAT-86 REBANDING IS REVERTED — historical
+> classifications stand; "balance" means ≤100 per class, never equal bands.**
+> The first pass applied the roster CSV's `championship_group` to every current
+> school, re-cutting all nine ladder classes to flat ~86 bands and moving ~300
+> schools off their owner-curated classifications. The owner (verbatim): "my only
+> goal was 1) adding more geography to the state since a lot of parts of
+> Jefferson had very few/no tennis schools and 2) balance out so no class had
+> over 100 teams. none of this impacts the new eastern Jefferson schools."
+> Classes are curated HISTORY (the 2033/2039 pattern: moves are NAMED and
+> minimal, never cut-line rebands). The corrected `jhsaa_expansion_2046.py`:
+>
+> - moves ONLY the 142 Great Basin departures to Group 1/Group 2; every other
+>   current school keeps its committed classification, group and enrollment —
+>   verified against the owner's live-save 2042 research export (all 864 current
+>   schools match; the one divergence, Jamaica at group 2A, is the runtime
+>   play-up override, not data). The pre-existing Condotti Vanguard Academy /
+>   Romero-Finniski competitive move (class 3A, group 7A) stands, which also
+>   dissolves the "split rivalry" fix below — both stay together in 7A.
+> - the 93 new schools keep their handoff classes (the 4A–1A ladder additions
+>   and the 42 Great Basin programs) — unchanged from the first pass.
+> - balance moves are a NAMED table (`_BALANCE_MOVES`) and it is **measured
+>   empty**: restored counts are 9A 73 · 8A 75 · 7A 85 · 6A 88 · 5A 85 · 4A 95 ·
+>   3A 96 · 2A 87 · 1A 89 — no class exceeds 100.
+> - leagues fully redrawn for all eleven groups (every membership changed);
+>   `district_count` honored, no league over 12, rivalries intact, boys and
+>   girls share leagues.
+> - **‼️ 8A and 9A now sit UNDER the 76-body `sponsor_floor`** (8A 75 girls/73
+>   boys after a 2-school boys backfill was skipped as futile; 9A 73/65): the
+>   Great Basin boundary thinned them and girls sponsorship IS the membership,
+>   so no backfill exists. Reported loudly, not silently fixed — the qualifying
+>   ladder degrades by design (`sc_head` + a warning naming the class). If the
+>   owner wants them back over the floor, that is a named realignment for them
+>   to call. Boys backfill was applied only where ≤3 schools clear a class's
+>   boys floor: Belle Rive, East Burlington, Gerald Ford (5A), Alameda (7A).
+>
+> The "Final shape", boys-sponsorship and rivalry sections below describe the
+> superseded first pass; the corrected table is at the end of this file.
+
 Owner spec (verbatim): "great basin counties are just gonna be called Division 1
 and Division 2 for JHSAA purposes with their own leagues, think of them more as
 10A and 11A than thinking of them as anything weird. just keeping the same
@@ -174,3 +212,26 @@ every consumer that read `GROUPS` as a single size ordering. Fixed:
 - A literal-group-count test (`len(GROUPS) == 9` or similar) may exist and
   need updating to 11 — not checked, since the suite was not run; grep for it
   before merging.
+
+## Corrected final shape (post-revert, 2026-08)
+
+| Group | Schools | Girls sponsors | Boys sponsors | Leagues | Floor |
+|---|---:|---:|---:|---:|---:|
+| 9A | 73 | 73 | 65 | 7 | 76 ⚠️ |
+| 8A | 75 | 75 | 73 | 8 | 76 ⚠️ |
+| 7A | 85 | 85 | 76 | 8 | 76 |
+| 6A | 88 | 88 | 77 | 9 | 76 |
+| 5A | 85 | 85 | 76 | 8 | 76 |
+| 4A | 95 | 95 | 90 | 10 | 76 |
+| 3A | 96 | 96 | 87 | 10 | 76 |
+| 2A | 87 | 87 | 84 | 9 | 76 |
+| 1A | 89 | 89 | 83 | 9 | 48 |
+| Group 1 | 92 | 92 | 85 | 9 | 76 |
+| Group 2 | 92 | 92 | 87 | 9 | 76 |
+
+957 total schools; exactly 142 classification/group changes against the
+pre-expansion baseline (all Great Basin), 4 boys-sponsorship backfills, zero
+named balance moves, everything else byte-identical. No league over
+`MAX_DISTRICT` (12); every class matches `district_count`. 8A/9A under-floor is
+the reported, owner-visible consequence of the boundary — see the correction
+note at the top.

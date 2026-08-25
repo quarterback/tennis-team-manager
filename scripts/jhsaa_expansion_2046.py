@@ -17,8 +17,22 @@ against the committed `data/jhsaa/schools.json`.
 Three kinds of row:
   - `source == "current"`: an existing school, matched by DISPLAY NAME (every one
     of the 864 matched cleanly against the committed file -- no `RENAMES` lookup
-    was needed). Only `classification`/`group` change; enrollment, county, area,
-    mascot, colors, private and sponsorship are all already correct and untouched.
+    was needed). ‼️ HISTORICAL CLASSIFICATIONS STAND (owner correction, 2026-08):
+    the roster CSV's `championship_group` re-cut every ladder class to a flat ~86
+    band, which moved ~300 current schools off their owner-curated classes -- the
+    exact "cut-line reband" the 2033/2039 realignments exist to forbid (moves are
+    NAMED and minimal). The owner's goals were geography + "no class over 100
+    teams", NOT equal bands. So a current school's `championship_group` is honored
+    ONLY when it names Group 1/Group 2 (the Great Basin boundary move, which does
+    stand); every other current school keeps its committed classification, group
+    AND enrollment exactly as they are -- including the two pre-existing
+    competitive moves (Condotti Vanguard Academy / Romero-Finniski, class 3A,
+    group 7A), which the CSV would have re-cut and split. Verified against the
+    owner's LIVE-SAVE 2042 research export (programs.csv, both genders): all 864
+    current schools match the committed baseline on classification and group,
+    except Jamaica (group 2A in the export vs 1A on file) -- that is the runtime
+    PLAY-UP override applied by `jhsaa.plays_up`, not a data difference, so
+    nothing is baked here.
   - `source in ("activation", "new_territory")`: 93 brand-new programs (63 filling
     out the 1A-4A ladder to its target size, 30 standing on the ten new Great
     Basin counties). Built fresh with `source == name` (no prep-network origin to
@@ -32,11 +46,14 @@ Reuses `import_jhsaa.draw_districts` exactly as `jhsaa_redistrict.py` does, fed 
 synthetic `city -> county` map built off the rows themselves (no prep-network
 checkout needed, since every row already carries its own county/area).
 
-‼️ ONE RIVALRY-SPLITTING INCONSISTENCY IN THE SOURCE DATA, overridden here rather
-than reproduced: the roster puts Condotti Vanguard Academy at 4A and its rival
-Romero-Finniski at 3A. `RIVALRIES` (and `jhsaa_reclassify.check_rivals`) forbid
-that -- a rivalry outranks every other placement rule. Both are placed at 4A
-(Condotti's target) instead; logged loudly below rather than silently dropped.
+‼️ TWO CLASSES END UP UNDER `sponsor_floor` (76) AND THAT IS REPORTED, NOT FIXED:
+the Great Basin boundary takes 10-17 schools out of 8A and 9A, leaving 8A at 75
+girls'/73 boys' and 9A at 73/65. Girls sponsorship is the membership itself, so
+no backfill exists; the association degrades LOUDLY by design (`sc_head` + a
+warning naming the class). Re-cutting the classes to paper over it is the flat-86
+mistake again; if the owner wants 8A/9A back over the floor, that is a named
+realignment for them to call. Boys backfill (the 2039 fallback) IS applied where
+1-3 schools clear a class's boys floor -- see `backfill_boys_sponsorship`.
 """
 import argparse
 import collections
@@ -59,11 +76,16 @@ _ROSTER_CSV = os.path.join(_REPO, "docs", "handoff", "JHSAA_2046_expansion_roste
 GROUP_RENAME = {"Division 1": "Group 1", "Division 2": "Group 2"}
 NEW_GROUPS = ("Group 1", "Group 2")
 
-# Rivalry override -- see module docstring. Both members go to this group
-# whatever the roster CSV says for either of them.
-_RIVALRY_OVERRIDE = {
-    ("Condotti Vanguard Academy", "Romero-Finniski"): "4A",
-}
+# ‼️ BALANCE MOVES -- the repo's convention: a NAMED table, never a cut line
+# (the 2033/2039 pattern; each entry moves classification AND group together).
+# MEASURED EMPTY: after the restore the ladder counts are
+#   9A 73 · 8A 75 · 7A 85 · 6A 88 · 5A 85 · 4A 95 · 3A 96 · 2A 87 · 1A 89
+# (baseline minus Great Basin departures plus the new 4A-1A programs) -- no class
+# exceeds the owner's 100 cap, so zero schools move. The table stays so the next
+# balancing pass has its named home and its rule: minimum moves, enrollment-
+# boundary schools, rivalries never split, OWNER_EDICTS untouched where a choice
+# exists.
+_BALANCE_MOVES: dict[str, str] = {}
 
 # ‼️ ONE NAME COLLISION IN THE SOURCE DATA, renamed here rather than reproduced:
 # the new 1A activation "Ransom City Union" is also a FORMER NAME on file for
@@ -135,12 +157,11 @@ def load_roster() -> list[dict]:
 
 
 def apply_current(rows: dict, roster: list[dict]) -> int:
-    """Update `classification`/`group` on every existing school per the roster's
-    `championship_group`, with the one rivalry override applied."""
-    override = {}
-    for pair, grp in _RIVALRY_OVERRIDE.items():
-        for n in pair:
-            override[n] = grp
+    """Move ONLY the Great Basin departures (`championship_group` naming Group 1
+    or Group 2) -- every other current school keeps its historical classification,
+    group and enrollment untouched (see the module docstring: the CSV's ladder
+    re-cut was a flat reband the owner rejected). `_BALANCE_MOVES` (named,
+    currently empty) is the only other way a current school changes class."""
     n = 0
     unmatched = []
     for r in roster:
@@ -150,9 +171,13 @@ def apply_current(rows: dict, roster: list[dict]) -> int:
         if s is None:
             unmatched.append(r["name"])
             continue
-        grp = override.get(r["name"], GROUP_RENAME.get(r["championship_group"], r["championship_group"]))
-        if s["group"] != grp:
+        grp = GROUP_RENAME.get(r["championship_group"], r["championship_group"])
+        if grp in NEW_GROUPS and s["group"] != grp:
             s["classification"] = s["group"] = grp
+            n += 1
+        bal = _BALANCE_MOVES.get(r["name"])
+        if bal:
+            s["classification"] = s["group"] = bal
             n += 1
     if unmatched:
         sys.exit(f"{len(unmatched)} 'current' roster row(s) matched no school in "
@@ -203,8 +228,9 @@ def add_new_schools(schools: list[dict], rows: dict, roster: list[dict]) -> int:
 
 
 def redraw_all_districts(schools: list[dict], m) -> None:
-    """Full redraw for every group -- every group's membership changed (300 of the
-    864 existing schools moved, and two groups are brand new), so nothing short of
+    """Full redraw for every group -- every group's membership changed (the Great
+    Basin boundary takes 7-27 schools out of every ladder class, the new 4A-1A
+    programs join four of them, and two groups are brand new), so nothing short of
     a full redraw is correct. Reuses `draw_districts` exactly as
     `jhsaa_redistrict.py` does."""
     cities = {s["city"]: {"county": s["county"]} for s in schools}
@@ -241,8 +267,15 @@ def backfill_boys_sponsorship(schools: list[dict], jh) -> list[str]:
         if boys >= floor:
             continue
         need = floor - boys
+        # ‼️ CAPPED AT 3 PER CLASS, AND ONLY WHERE IT ACTUALLY CLEARS THE FLOOR
+        # (owner-approved scale: "small backfill... 1-3 schools"). 9A's boys
+        # shortfall is 11 and its girls membership is itself under the floor --
+        # forcing eight sponsorships there fixes nothing and rewrites a fifth of
+        # the class; `preflight` reports it instead.
         candidates = sorted((s for s in members if s["girls"] and not s["boys"]),
                             key=lambda s: s["name"])
+        if need > 3 or len(candidates) < need:
+            continue
         for s in candidates[:need]:
             s["boys"] = True
             added.append(f"{s['name']} ({g})")
@@ -267,7 +300,17 @@ def preflight(schools: list[dict], jh) -> None:
     if problems:
         lines = "\n".join(f"  {g}: girls={gi} boys={bo} floor={fl}"
                           for g, gi, bo, fl in problems)
-        sys.exit(f"sponsor_floor NOT cleared for {len(problems)} group(s):\n{lines}")
+        # ‼️ 8A AND 9A ARE EXPECTED SHORT (module docstring): the Great Basin
+        # boundary thinned them below the 76-body floor and there is no honest
+        # backfill (girls sponsorship IS the membership). The association degrades
+        # loudly by design (`sc_head`); this is REPORTED, not silently fixed --
+        # anything else short means a mechanism broke and the script stops.
+        unexpected = [p for p in problems if p[0] not in ("8A", "9A")]
+        print(f"‼️ sponsor_floor NOT cleared for {len(problems)} group(s) — the "
+              f"State qualifying ladder will degrade (sc_head) there:\n{lines}")
+        if unexpected:
+            sys.exit("unexpected sponsor_floor shortfall(s): "
+                     + ", ".join(p[0] for p in unexpected))
 
 
 def report(schools: list[dict], jh) -> None:
@@ -309,9 +352,9 @@ def main() -> None:
 
     moved = apply_current(rows, roster)
     added = add_new_schools(schools, rows, roster)
-    print(f"{moved} existing schools reclassified, {added} new schools added")
-    print("⚠️ rivalry override applied: Condotti Vanguard Academy / "
-         "Romero-Finniski both placed at 4A (roster CSV had them split 4A/3A)")
+    print(f"{moved} existing schools moved (Great Basin boundary + "
+          f"{len(_BALANCE_MOVES)} named balance moves), {added} new schools added"
+          "; all other current schools keep their historical classification")
 
     backfilled = backfill_boys_sponsorship(schools, jh)
     if backfilled:
