@@ -523,6 +523,14 @@ def run_mixed_season(boys_teams: dict, girls_teams: dict, year: int, *,
     for that gender. A school is in the draw only if it sponsors BOTH.
 
     ‼️ Nothing here credits anything. See `run_mixed`."""
+    # ‼️ THE GROUP IS TAKEN FROM THE BOYS' TEAM, which is only correct because a
+    # school's two teams always play in the same one — a league belongs to the
+    # SCHOOL and is drawn once per classification over every sponsor, so both
+    # gender fields read it (CLAUDE.md, league identity). Verified on the real 2041
+    # association: 786 schools sponsor both and ZERO have their two teams in
+    # different groups. It is an unstated dependency rather than a guarantee, so it
+    # is stated here — if a play-up ever moved one gender's team alone, a school
+    # would enter the mixed draw of the boys' class with a girl from another.
     groups: dict = {}
     for name, ts in boys_teams.items():
         if name in girls_teams:
