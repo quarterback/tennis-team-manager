@@ -819,3 +819,67 @@ def test_a_players_jv_record_is_their_own_not_the_teams(archived):
     # and the varsity read is untouched by any of it
     assert _jh_line_records(sched) == _jh_line_records(
         [d for d in sched if (d.get("level") or "v") == "v"])
+
+
+# --- individual state titles on the player header ------------------------------
+
+def test_an_individual_state_champion_gets_a_gold_chip_and_a_gold_name(archived):
+    """The header chips, end to end: an archived individual draw's champion ->
+    `title_chips` on the player view -> a gold chip in the identity block, and the
+    name itself carries the `champ` class. Read off the REAL archive, because the
+    chip's champion predicate (`tag == "CHAMP"`) only exists once a draw is stored."""
+    from app import jhsaa_individuals as ji
+    w, g = archived["world"], "girls"
+    conn = sqlite3.connect(archived["db"])
+    conn.row_factory = sqlite3.Row
+    try:
+        row = conn.execute(
+            "SELECT grp, flight, data FROM world_jhsaa_individual"
+            " WHERE world_id=? AND year=? AND gender=? ORDER BY grp, flight",
+            (w["id"], w["year"], g)).fetchone()
+    finally:
+        conn.close()
+    assert row is not None, "no individual draw archived"
+    d = json.loads(row["data"])
+    champ_ix = d.get("champion")
+    assert champ_ix is not None, "the draw crowned nobody"
+    entry = d["entries"][champ_ix]
+    school, pid = entry["school"], entry["players"][0]["pid"]
+
+    view = st.jhsaa_player_view(wd.DEFAULT_SEED, g, school, pid)
+    assert view["found"]
+    assert view["individual_titles"] >= 1
+    chip = (f"{archived['arc']['season_year']} {row['grp']} "
+            f"{ji.FLIGHT_NAMES[row['flight']]} State Champion")
+    assert chip in view["title_chips"]
+
+    # honour chips are structured, MERGED by honour, and never repeat a text —
+    # the "duplicate" chips were per-season honours rendered without their year
+    texts = [h["text"] for h in view["honors"]]
+    assert len(texts) == len(set(texts))
+    for h in view["honors"]:
+        assert h["years"].startswith("'") if h["years"] else True
+    assert view["honors_total"] == sum(len(s["honors"]) for s in view["seasons"])
+
+    html = archived["client"].get(
+        f"/jhsaa/player/{school}/{pid}?g={g}").get_data(as_text=True)
+    assert f'<span class="jh-chip gold">{chip}</span>' in html
+    assert 'class="champ"' in html, "the champion's name is not gold"
+
+
+def test_a_player_without_a_title_keeps_a_plain_name(archived):
+    """The gold name is a champion's alone — a champion's own team-mate who never
+    won a draw renders without the class."""
+    w, g = archived["world"], "girls"
+    school = next(iter(archived["arc"]["standings"]["9A"].values()))[0]["school"]
+    salt = wd.active_salt(wd.DEFAULT_SEED)
+    sc = next(s for s in jh.load_schools(g) if s.name == school)
+    roster = jh.build_roster(sc, archived["arc"]["season_year"], salt)
+    hit = next(p for p in roster
+               if not st.jhsaa_player_view(
+                   wd.DEFAULT_SEED, g, school, p.pid)["individual_titles"])
+    view = st.jhsaa_player_view(wd.DEFAULT_SEED, g, school, hit.pid)
+    assert view["title_chips"] == []
+    html = archived["client"].get(
+        f"/jhsaa/player/{school}/{hit.pid}?g={g}").get_data(as_text=True)
+    assert 'class="champ"' not in html

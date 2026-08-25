@@ -68,6 +68,13 @@
 .jh-class a.on.c-3A { background: var(--gray-500); }
 .jh-class a.on.c-2A { background: var(--gray-600); }
 .jh-class a.on.c-1A { background: var(--gray-700); }
+/* 2046 Great Basin pair (Group 1/Group 2 — NJSIAA language, owner 2026-08).
+   Class names are the group with spaces stripped (templates emit
+   `c-{{ group|replace(' ','') }}`) — a raw two-word group would put a space in
+   the class attribute. Group 1 is the pair's big class (≈5A-9A blend), Group 2
+   the small one, so they reuse the brand/bronze slots the mid-ladder carries. */
+.jh-class a.on.c-Group1 { background: var(--brand); }
+.jh-class a.on.c-Group2 { background: var(--rank-bronze); }
 
 .jh-tabs { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
 .jh-tabs a {
@@ -372,6 +379,13 @@
   margin: 2px 0 0; font-family: var(--font-display); font-size: clamp(21px, 2.6vw, 30px);
   line-height: 1.05; letter-spacing: -0.02em; color: var(--text-primary);
 }
+/* An individual state champion's NAME, gold — the player-page header only.
+   ‼️ Off `--medal-gold` mixed toward ink, the exact recipe `.jh-solo .t-gold .hon`
+   already uses for champion text: `--rank-gold` is the scheme's first-place CHIP
+   colour and the default scheme resolves it to oxblood, which would paint the
+   champion's name RED. The ink mix keeps it readable on the card surface in every
+   scheme, since neither ingredient is scheme-light. */
+.jh-ident h1.champ { color: color-mix(in oklab, var(--medal-gold) 72%, var(--ink)); }
 .jh-ident .mascot { font-size: 14.5px; font-weight: 600; color: var(--text-secondary); margin-top: 2px; }
 .jh-ident .where { margin-top: 6px; font-size: 13.5px; color: var(--text-muted); }
 .jh-ident .where a { color: var(--text-link); text-decoration: none; }
@@ -396,6 +410,8 @@
 .jh-chip.c-3A { background: var(--gray-500); }
 .jh-chip.c-2A { background: var(--gray-600); }
 .jh-chip.c-1A { background: var(--gray-700); }
+.jh-chip.c-Group1 { background: var(--brand); }
+.jh-chip.c-Group2 { background: var(--rank-bronze); }
 .jh-chip.gold { background: var(--rank-gold); }
 /* Honours tiers (owner rule 2027-08): gold = the title, silver = finalist,
    bronze = semifinalist, BLUE = every other State finish — reaching State is an
@@ -490,6 +506,12 @@
    long <th> label overruns its neighbour. Both have to be told. */
 .jh-ledger th { overflow: hidden; }
 .jh-ledger.nowrap td, .jh-ledger.nowrap th { white-space: nowrap; }
+/* A `width:100%` fixed-layout table is never wider than its container, so its
+   `.tbl-scroll` wrapper never scrolls — on a narrow viewport the columns compress
+   and the honours chips clip instead. A min-width (the fixed column widths plus a
+   usable honours cell) pushes the overflow into the scroll wrapper, which is the
+   app rule: wide content scrolls in its own container, never clips. */
+.jh-ledger.minw { min-width: 820px; }
 .jh-sched td:last-child { white-space: nowrap; }
 /* The finish cell can carry TWO chips — a classification title and a TOC finish — and
    the table is `table-layout: fixed; overflow: hidden`, so nowrap here doesn't shrink

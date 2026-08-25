@@ -52,6 +52,51 @@ def _bearing(lat: float, lon: float, mid_lat: float, mid_lon: float) -> str:
     return f"{ns}{ew}" if (ns and ew) else (ns or ew or "central")
 
 
+# --- 2046 Great Basin expansion (owner rule 2026-08) -------------------------
+# The three NEW areas — Silver Basin, Snake River Plain, Bear River Country —
+# are NET-NEW Jefferson territory (real Elko NV / south-central & southeast
+# Idaho / Cache-Rich UT / Lincoln-Uinta WY ground) with NO prep-network
+# counterpart: that repo's cities.json stops at the pre-2046 map. Their places
+# are therefore anchored HERE, on real county-seat/town coordinates, and the
+# areas are exempted from the two-repo agreement assertion below via
+# NET_NEW_AREAS (an allowlist, not a deleted assertion — any OTHER disagreement
+# still fails the run). If prep-network ever grows these counties, delete this
+# table and the allowlist and let the join take over.
+NET_NEW_AREAS = frozenset({"Silver Basin", "Snake River Plain",
+                           "Bear River Country"})
+_EXPANSION_2046_PLACES = [
+    # (name, county, area, real_county, lat, lon, population)
+    ("Elko",          "Ruby",        "Silver Basin",       "Elko County, NV",      40.833, -115.763, 20500),
+    ("Carlin",        "Ruby",        "Silver Basin",       "Elko County, NV",      40.714, -116.104,  2000),
+    ("Wells",         "Ruby",        "Silver Basin",       "Elko County, NV",      41.111, -114.964,  1200),
+    ("Jerome",        "Eden",        "Snake River Plain",  "Jerome County, ID",    42.724, -114.518, 12300),
+    ("Eden",          "Eden",        "Snake River Plain",  "Jerome County, ID",    42.605, -114.212,   400),
+    ("Hazelton",      "Eden",        "Snake River Plain",  "Jerome County, ID",    42.594, -114.135,   750),
+    ("Burley",        "Raft",        "Snake River Plain",  "Cassia County, ID",    42.535, -113.793, 11700),
+    ("Oakley",        "Raft",        "Snake River Plain",  "Cassia County, ID",    42.243, -113.883,   760),
+    ("Malta",         "Raft",        "Snake River Plain",  "Cassia County, ID",    42.305, -113.370,   190),
+    ("Malad City",    "Malad",       "Bear River Country", "Oneida County, ID",    42.191, -112.251,  2000),
+    ("Preston",       "Cub River",   "Bear River Country", "Franklin County, ID",  42.096, -111.877,  5600),
+    ("Franklin",      "Cub River",   "Bear River Country", "Franklin County, ID",  42.013, -111.797,   640),
+    ("Weston",        "Cub River",   "Bear River Country", "Franklin County, ID",  42.038, -111.976,   440),
+    ("Montpelier",    "Beargrass",   "Bear River Country", "Bear Lake County, ID", 42.322, -111.298,  2500),
+    ("Paris",         "Beargrass",   "Bear River Country", "Bear Lake County, ID", 42.227, -111.401,   500),
+    ("Georgetown",    "Beargrass",   "Bear River Country", "Bear Lake County, ID", 42.478, -111.371,   470),
+    ("Logan",         "Wellsville",  "Bear River Country", "Cache County, UT",     41.737, -111.834, 53000),
+    ("Smithfield",    "Wellsville",  "Bear River Country", "Cache County, UT",     41.838, -111.833, 13300),
+    ("Hyrum",         "Wellsville",  "Bear River Country", "Cache County, UT",     41.634, -111.852,  8100),
+    ("Garden City",   "Laketown",    "Bear River Country", "Rich County, UT",      41.946, -111.394,   560),
+    ("Randolph",      "Laketown",    "Bear River Country", "Rich County, UT",      41.665, -111.182,   460),
+    ("Laketown",      "Laketown",    "Bear River Country", "Rich County, UT",      41.826, -111.322,   270),
+    ("Afton",         "Star Valley", "Bear River Country", "Lincoln County, WY",   42.725, -110.933,  2000),
+    ("Alpine",        "Star Valley", "Bear River Country", "Lincoln County, WY",   43.170, -111.020,   800),
+    ("Kemmerer",      "Star Valley", "Bear River Country", "Lincoln County, WY",   41.792, -110.538,  2400),
+    ("Evanston",      "Bridger",     "Bear River Country", "Uinta County, WY",     41.268, -110.963, 11700),
+    ("Lyman",         "Bridger",     "Bear River Country", "Uinta County, WY",     41.327, -110.293,  2100),
+    ("Mountain View", "Bridger",     "Bear River Country", "Uinta County, WY",     41.269, -110.336,  1200),
+]
+
+
 def build(m, rows: list[dict], cities: list[dict]) -> str:
     out = io.StringIO()
     w = out.write
@@ -60,11 +105,24 @@ def build(m, rows: list[dict], cities: list[dict]) -> str:
     # the name a reader will actually meet in the app.
     place = {}
     for c in cities:
-        place[m.CITY_RENAMES.get(c["name"], c["name"])] = {
+        # AREA_RENAMES, then the 2026-08 Halbrook Basin four-way split — the SAME
+        # function the importer applies at emit (`import_jhsaa.split_area`), run on
+        # prep-network's place rows so the two-repo area assertion below keeps
+        # holding without an allowlist entry: both sides now say Belmonte Metro /
+        # Boise Frontier / Silver Basin for the split ground.
+        name = m.CITY_RENAMES.get(c["name"], c["name"])
+        area = m.AREA_RENAMES.get(c["area"], c["area"])
+        place[name] = {
             **c,
-            "name": m.CITY_RENAMES.get(c["name"], c["name"]),
-            "area": m.AREA_RENAMES.get(c["area"], c["area"]),
+            "name": name,
+            "area": m.split_area(area, c.get("county", ""), name),
         }
+    # The 2046 Great Basin territory is net-new — prep-network has no rows for
+    # it, so its places are anchored locally (see _EXPANSION_2046_PLACES above).
+    for name, county, area, realc, lat, lon, pop in _EXPANSION_2046_PLACES:
+        place.setdefault(name, {"name": name, "county": county, "area": area,
+                                "real_county": realc, "lat": lat, "lon": lon,
+                                "population": pop})
     by_town = collections.defaultdict(list)
     for r in rows:
         by_town[r["city"]].append(r)
@@ -76,8 +134,10 @@ def build(m, rows: list[dict], cities: list[dict]) -> str:
     # a full import. Exactly that happened: "Mother Lode" -> Southern Jefferson went
     # dead when prep-network renamed the area to Siskiyou Valley. Comparing the sets
     # here costs nothing and is the only place the drift is visible.
-    from_schools = {r["area"] for r in rows}
-    from_places = {c["area"] for c in place.values()}
+    # NET_NEW_AREAS are exempt: they exist only on the association side, by
+    # design — see the allowlist above. Everything else must still agree.
+    from_schools = {r["area"] for r in rows} - NET_NEW_AREAS
+    from_places = {c["area"] for c in place.values()} - NET_NEW_AREAS
     if from_schools != from_places:
         raise SystemExit(
             "area names disagree — an AREA_RENAMES key has gone stale.\n"

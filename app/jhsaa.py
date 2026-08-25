@@ -60,7 +60,19 @@ from .development import Prospect, generate_prospect, make_pid, overall_to_str
 _DATA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                      "data", "jhsaa", "schools.json")
 
-GROUPS = ("9A", "8A", "7A", "6A", "5A", "4A", "3A", "2A", "1A")
+GROUPS = ("9A", "8A", "7A", "6A", "5A", "4A", "3A", "2A", "1A", "Group 1", "Group 2")
+
+# ‼️ GROUPS IS NO LONGER ONE ORDERED LADDER (2046 expansion). The first nine entries
+# are the enrollment LADDER, biggest to smallest; the two "Group" groups (Great Basin) are the
+# Great Basin's own big/small PAIR ("think of them more as 10A and 11A than thinking
+# of them as anything weird" — two more classifications, but NOT rungs above or below
+# 1A). Anything that walks GROUPS as a single size ordering — play-up, "classes
+# apart" pairing gates, "every class above mine" menus — must use LADDER_GROUPS and
+# treat GB_GROUPS separately; plain enumeration (archiving, scope bars,
+# renumbering passes) may keep iterating GROUPS.
+LADDER_GROUPS = GROUPS[:9]                       # 9A … 1A, a real size ordering
+GB_GROUPS = GROUPS[9:]                     # ("Group 1", "Group 2")
+assert LADDER_GROUPS[-1] == "1A" and GB_GROUPS == ("Group 1", "Group 2")
 
 
 def champ_group(classification: str) -> str:
@@ -341,6 +353,12 @@ ROSTER_SIZE_BAND_BY_CLASS = {
     "3A": (17, 19),
     "2A": (15, 17),
     "1A": (14, 16),
+    # 2046 Great Basin groups: each spans a wide enrollment range rather than one
+    # rung, so the bands blend the ladder classes they cover — Group 1
+    # (845-2556, roughly 5A-9A) blends the 6A/5A bands; Group 2 (57-836,
+    # roughly 1A-4A/low-5A) blends the 4A-2A bands.
+    "Group 1": (18, 22),
+    "Group 2": (15, 19),
 }
 
 
@@ -572,7 +590,7 @@ FIDELITY = "fast"
 #      round pairs its whole field, so the shape follows the field size rather
 #      than a constant. `recovery_shape` projects it from the constants alone.
 #
-# `STATE_FIELD`: the owner's field table below. EVERY class now crowns from 40, but
+# `STATE_FIELD`: the owner's field table below. Most classes crown from 40, but
 # the 24 remains the shape underneath it — a 24-team seeded draw has exactly eight
 # first-round byes and those byes ARE the Zonal champions' privilege; a 40 puts a
 # Qualifiers Round in front of that same 24 (see the table's own comment).
@@ -608,9 +626,30 @@ WARD_FIELD = 32
 # is a 95-program class its playoff "mirrors every other classification" (owner) —
 # the dynamic recovery ladder, not the fixed 24-team shape. It clears
 # `sponsor_floor` comfortably: 95 girls' programs and 87 boys' against a floor of 76.
-# 1A is unchanged and stays the one class on the 24 (`_recovery_24`).
-STATE_FIELD = {"9A": 40, "8A": 40, "7A": 40,
-               "6A": 40, "5A": 40, "4A": 40, "3A": 40, "2A": 40, "1A": 24}
+#
+# The 2046 expansion re-tiered the table on TALENT, not just headcount (owner
+# rule 2026-08): the big-school classes legitimately carry more playoff-worthy
+# programs, the smallest carry fewer whatever their size. Three tiers:
+#   9A/8A/7A — 32, the byeless full bracket (Zonal champions seeded 1-8 with
+#     nobody sitting out — the seeding guarantee, not a bye rule, exactly as
+#     `test_zonal_champions_are_the_top_seeds_byes_or_not` pins it). The Great
+#     Basin departure thinned them under the 40-field's 76-sponsor floor
+#     (9A 73/65, 8A 75/73, 7A 85/76 G/B) but a 32-field's floor is only 44,
+#     which all three clear comfortably.
+#   6A-3A — the full 40 (all clear the 76 floor).
+#   2A/1A — 24 on the fixed `_recovery_24` shape: "the talent really degrades
+#     at that level and there's no point even with a lot of teams" (owner).
+#     2A returns to the 24 it left in 2033; 1A never left it.
+# `_recovery_24` keys on the FIELD SIZE, so the table move is the whole change —
+# the "a class could be moved back without touching anything else" promise above.
+STATE_FIELD = {"9A": 32, "8A": 32, "7A": 32,
+               "6A": 40, "5A": 40, "4A": 40, "3A": 40, "2A": 24, "1A": 24,
+               # 2046 expansion (owner rule): the two Great Basin groups are two
+               # more classifications, full stop -- "think of them more as 10A
+               # and 11A than thinking of them as anything weird." 92 sponsors
+               # each clears the dynamic-ladder floor comfortably (76 required
+               # at a 40-field) so they play the standard shape, not `_recovery_24`.
+               "Group 1": 40, "Group 2": 40}
 STATE_FIELD_DEFAULT = 24
 
 #: The preliminary round of an expanded field — "Qualies" on a chip. It is PART OF
@@ -684,7 +723,7 @@ def sponsor_floor(group: str) -> int:
     wants 44 bodies, so the floor is `32 + 44 = 76`; a 24-field class fills without
     a Conference, neither round convenes, and it has no floor of its own.
 
-    ‼️ 1A's FIXED 24-TEAM SHAPE (`_recovery_24`) IS A DIFFERENT FORMULA. Every
+    ‼️ THE FIXED 24-TEAM SHAPE (`_recovery_24` — 2A and 1A) IS A DIFFERENT FORMULA. Every
     round size in that shape (Super Regional/Semi-State 16, Divisional/Semi-
     Conference/Conference 8) is a fixed function of `PROTECTED`/`WARD_FIELD` alone
     — never of total sponsor count — so there is no Semi-Conference body reservoir
@@ -750,6 +789,15 @@ _TALENT = {
     ("3A", "boys"):    (43.5, 20.0), ("3A", "girls"):    (38.0, 19.0),
     ("2A", "boys"):    (41.0, 21.0), ("2A", "girls"):    (36.5, 20.0),
     ("1A", "boys"):    (36.0, 23.0), ("1A", "girls"):    (32.5, 22.0),
+    # 2046 Great Basin groups. Each classification spans several ladder classes'
+    # worth of enrollment, so the band is a BLEND of the classes it covers, per
+    # the section rule (smaller = thinner mean, wider spread): Group 1
+    # (845-2556 ≈ a 5A-9A mix) sits between 6A and 5A; Group 2 (57-836 ≈ a
+    # 1A-4A mix) sits between 3A and 2A. `classification` on these schools IS
+    # "Group 1"/"Group 2", so `School.talent_group` reads these keys —
+    # without them every Great Basin roster build KeyErrors.
+    ("Group 1", "boys"): (54.5, 16.5), ("Group 1", "girls"): (49.5, 15.5),
+    ("Group 2", "boys"): (42.0, 20.5), ("Group 2", "girls"): (37.5, 19.5),
 }
 # --- PROGRAM ARCHETYPES (owner rule 2027-08) ---------------------------------
 #
@@ -1574,8 +1622,17 @@ PLAY_UP_MAX_GROUP = "4A"
 
 
 def can_play_up(classification: str) -> bool:
-    """Whether a program of this size is allowed to play up at all."""
-    return GROUPS.index(champ_group(classification)) >= GROUPS.index(PLAY_UP_MAX_GROUP)
+    """Whether a program of this size is allowed to play up at all.
+
+    ‼️ SCOPED TO THE 1A-9A LADDER (2046 expansion). The Great Basin's Group
+    1/Group 2 are a geographic PAIR appended after 1A in `GROUPS`, not rungs
+    on the size ladder — a naive `GROUPS.index` test read them as "below 4A" and
+    would have promoted a 2,500-enrollment Group 1 program "up" into 1A.
+    Play-up does not exist in the Group system at all."""
+    g = champ_group(classification)
+    if g not in LADDER_GROUPS:
+        return False
+    return LADDER_GROUPS.index(g) >= LADDER_GROUPS.index(PLAY_UP_MAX_GROUP)
 
 
 def play_up_group(classification: str) -> str:
@@ -1585,8 +1642,10 @@ def play_up_group(classification: str) -> str:
     moves exactly one class) — an explicit override can name any class further up;
     see `plays_up`."""
     g = champ_group(classification)
-    i = GROUPS.index(g)
-    return GROUPS[i - 1] if i else g
+    if g not in LADDER_GROUPS:      # Group 1/2: no ladder above or below them
+        return g
+    i = LADDER_GROUPS.index(g)
+    return LADDER_GROUPS[i - 1] if i else g
 
 
 def valid_playup_target(classification: str, target: str) -> bool:
@@ -1595,9 +1654,10 @@ def valid_playup_target(classification: str, target: str) -> bool:
     (`can_play_up` — 4A and below), and `target` must be a real group STRICTLY
     above the program's own championship group (never sideways, never down —
     owner rule: play-up is never play-down)."""
-    if not can_play_up(classification) or target not in GROUPS:
+    if not can_play_up(classification) or target not in LADDER_GROUPS:
         return False
-    return GROUPS.index(target) < GROUPS.index(champ_group(classification))
+    return (LADDER_GROUPS.index(target)
+            < LADDER_GROUPS.index(champ_group(classification)))
 
 
 def plays_up(school_name: str, seeded: bool, pmap: dict | None = None,
@@ -1963,7 +2023,9 @@ def program_editor(selected: str = "", board: str = "", cat: str = "",
         cls = r["classification"]
         # Every group strictly above the program's own class — the picker's real
         # menu (owner rule 2027-09, multi-step play-up), not just a one-step toggle.
-        targets = ([g for g in GROUPS[:GROUPS.index(champ_group(cls))]]
+        # Ladder only: Group 1/2 are not "above" anything (can_play_up is
+        # False there, and the slice must never hand a Group as a target).
+        targets = ([g for g in LADDER_GROUPS[:LADDER_GROUPS.index(champ_group(cls))]]
                   if can_play_up(cls) else [])
         district = moved.get(name) if target else _row_league(r)
         return {"name": name, "classification": cls, "city": r["city"],
@@ -4148,10 +4210,10 @@ def renumber_divisions(season: dict, start: int = 1) -> int:
 
     ‼️ DIVISIONS ARE NUMBERED STATEWIDE, not within a classification (owner rule
     2027-08) — every other unit counts inside its own class ("Region IX" exists
-    once per classification), but there is exactly one Division 1 in Jefferson
+    once per classification), but there is exactly one Group 1 in Jefferson
     each year. The sequence runs **girls first, then boys**, and **bottom-up by
     classification** (1A up to 9A), continuing across both, so 1A girls hold
-    Division 1 and the highest number lands on 9A boys — "(9A) Division 11", if
+    Group 1 and the highest number lands on 9A boys — "(9A) Group 11", if
     the state played that many that year. How many there are
     depends on how many Divisional duals the berths actually require, which
     varies by year, so the numbers are assigned here — once both genders are
@@ -4160,7 +4222,14 @@ def renumber_divisions(season: dict, start: int = 1) -> int:
     Idempotent: the number is always recomputed and overwritten, so re-running
     against a memoised season cannot double-count."""
     n = start
-    for g in reversed(GROUPS):                    # 1A up to 9A
+    # Bottom-up, DELIBERATELY: reversed(GROUPS) runs Group 2, Group 1,
+    # then 1A up to 9A — the Great Basin pair (appended after 1A) leads the
+    # sequence as the "newest/smallest" block. Any deterministic documented
+    # order satisfies the invariant; this is the one we ship. (The unit label
+    # "Division {n}" renders as ROMAN numerals on honours chips via
+    # `world._unit_honour` — "Division XI" — so it stays visually distinct from
+    # the GROUP names "Group 1"/"Group 2", which keep arabic digits.)
+    for g in reversed(GROUPS):
         dv = ((season.get("groups") or {}).get(g) or {}).get("divisional") or {}
         for games in dv.get("rounds") or ():
             for gm in games:
@@ -4195,7 +4264,7 @@ def reletter_conferences(season: dict, start: int = 0) -> int:
     reason exactly; idempotent the same way (always recomputed, memoised season
     safe)."""
     n = start
-    for g in reversed(GROUPS):                    # 1A up to 9A
+    for g in reversed(GROUPS):        # Group 2, Group 1, then 1A up to 9A
         cf = ((season.get("groups") or {}).get(g) or {}).get("conference") or {}
         for games in cf.get("rounds") or ():
             for gm in games:
@@ -4575,9 +4644,10 @@ def _recovery_24(group: str, by_name: dict, prestate: dict, zonal_champs: list,
                  district_champs: list[str], power: dict, *,
                  seed: int) -> tuple[dict, dict, dict, dict, dict,
                                      list, list[str], dict]:
-    """The FIXED 24-team recovery/qualification shape — 1A alone (owner rule
-    2027-08; 2A left it for the standard ladder in the 2033 realignment, which
-    took it to 95 programs and a 40-team field). Zonal champions are an automatic State berth here exactly as in
+    """The FIXED 24-team recovery/qualification shape — every 24-field class:
+    2A and 1A (owner rule 2026-08 — the talent degrades at that level, so both
+    smallest classes crown from 24 whatever their headcount; 2A returns to the
+    shape it left in the 2033 realignment). Zonal champions are an automatic State berth here exactly as in
     every other class (`zonal_champs` — the caller seeds them 1-8, same as
     `_recovery`'s callers do) — this function returns only the 16 EARNED
     qualifiers on top of those 8. Every named round stays in play; what moves
@@ -4854,7 +4924,18 @@ def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
             "seeds": {t.school.name: i + 1 for i, t in enumerate(field)}}
 
 
-_GROUP_IX = {g: i for i, g in enumerate(GROUPS)}   # 9A=0 … 1A=8, so |i-j| = classes apart
+# 9A=0 … 1A=8, so |i-j| = classes apart on the enrollment ladder. The Great Basin
+# groups (2046) are NOT ladder rungs — enumerating GROUPS raw put Group 1 at 9,
+# "one apart" from 1A, i.e. a 2,500-enrollment school gated onto 100-student
+# opponents. They get FRACTIONAL positions on the same scale instead, chosen from
+# their enrollment midpoints so the existing |i-j| <= 1 gate does the right thing:
+# Group 1 (845-2556, mid ≈ 6A/5A) at 3.5 pairs with 6A, 5A and Group 2;
+# Group 2 (57-836, mid ≈ 5A/4A boundary) at 4.5 pairs with 5A, 4A and Group 1.
+# Crucially the two are exactly 1.0 apart, so the Great Basin pair can always meet
+# non-district — which geography (their own three areas) makes the common case.
+_GROUP_IX = {g: i for i, g in enumerate(LADDER_GROUPS)}
+_GROUP_IX["Group 1"] = 3.5
+_GROUP_IX["Group 2"] = 4.5
 
 # How a non-district opponent is chosen (owner rule 2027-08): geography first — you do
 # not bus across Jefferson for a non-league dual — then talent, so a weak program isn't

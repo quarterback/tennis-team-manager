@@ -55,10 +55,14 @@ def pick(rows: list[dict], m) -> list[dict]:
     # schools." An 8A blue-blood moving to 9A is not playing up — it is a big school in
     # a slightly bigger class — and the first pass shipped exactly that. Eligibility
     # starts at `PLAY_UP_MAX_GROUP` and runs down; 9A's exclusion falls out of it.
-    floor = m.GROUPS.index(m.PLAY_UP_MAX_GROUP)
+    # Ladder only (2046 expansion): the Great Basin Group 1/2 groups sit AFTER
+    # 1A in GROUPS, so a raw index test read them as "4A or below" — but play-up
+    # does not exist in the Division system (see `app.jhsaa.can_play_up`).
+    ladder = [g for g in m.GROUPS if g not in ("Group 1", "Group 2")]
+    floor = ladder.index(m.PLAY_UP_MAX_GROUP)
     pool = [r for r in rows
             if arch.get(r["name"]) == "blue_blood"
-            and m.GROUPS.index(r["group"]) >= floor
+            and r["group"] in ladder and ladder.index(r["group"]) >= floor
             and (r["girls"] or r["boys"])]
     # Rank within the class by enrollment — a school already near the cut line is the
     # one that plausibly plays up — then draw without replacement on that weight.

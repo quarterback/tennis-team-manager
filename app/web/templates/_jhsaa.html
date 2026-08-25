@@ -40,7 +40,7 @@
 {%- endmacro %}
 
 {% macro jh_class_chip(group) -%}
-<span class="jh-chip c-{{ group }}">{{ group }}</span>
+<span class="jh-chip c-{{ group|replace(' ','') }}">{{ group }}</span>
 {%- endmacro %}
 
 {# The section header + scope bar. `tab` marks which JHSAA surface is on screen. #}
@@ -93,7 +93,7 @@
       <span class="jh-scope-label">Class</span>
       <span class="jh-class">
         {% for gp in scope.groups %}
-        <a class="{{ 'on c-' ~ gp if scope.group == gp }}"
+        <a class="{{ 'on c-' ~ gp|replace(' ','') if scope.group == gp }}"
            href="{{ jh_scope_url(scope, u, group=gp) }}">{{ gp }}</a>
         {% endfor %}
       </span>

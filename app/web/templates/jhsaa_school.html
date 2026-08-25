@@ -41,7 +41,7 @@
 <div class="jh-ident" style="margin-bottom:12px">
   <span class="crest">{{ view.mark|safe }}</span>
   <div class="jh-ident-body">
-    <span class="jh-chip c-{{ view.group }}">{{ view.classification }}</span>
+    <span class="jh-chip c-{{ view.group|replace(' ','') }}">{{ view.classification }}</span>
     {% if view.private %}<span class="jh-chip ghost">PRIVATE</span>{% endif %}
     {% if view.former %}<span class="jh-chip ghost" title="no longer sponsors this sport">FORMER PROGRAM</span>{% endif %}
     <h1>{{ view.school }}</h1>

@@ -80,7 +80,7 @@
           <td class="nm">
             <span class="jh-schoolcell">{{ r.mark|safe }}
               <a href="{{ url_for('jhsaa_school', school=r.school, u=u, g=view.gender) }}">{{ r.school }}</a></span>
-            <span class="sub">{% if r.group %}<span class="jh-chip c-{{ r.group }}">{{ r.group }}</span>{% endif %}
+            <span class="sub">{% if r.group %}<span class="jh-chip c-{{ r.group|replace(' ','') }}">{{ r.group }}</span>{% endif %}
               {{ r.city }}{% if r.district %} · {{ r.district }}{% endif %}</span>
           </td>
           <td data-k="toc" data-v="{{ r.toc }}">{% if r.toc %}{{ r.toc }}{% else %}<span class="z">·</span>{% endif %}</td>

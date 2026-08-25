@@ -5019,6 +5019,42 @@ def _family_row(fam_map: dict, pid: str) -> dict | None:
 _JH_CLASS_YEAR = {9: "Fr", 10: "So", 11: "Jr", 12: "Sr"}
 
 
+def _jh_years_abbr(years: list[int]) -> str:
+    """Season years as the header chips abbreviate them: "'42" or "'42, '43"."""
+    return ", ".join(f"'{y % 100:02d}" for y in years)
+
+
+def _jh_honor_chips(seasons: list[dict]) -> list[dict]:
+    """The header's honour chips: ONE chip per distinct honour, listing every
+    season year it was won (abbreviated), most recent honour first — `seasons`
+    arrives newest-first, so first appearance keeps that convention. `gold` is
+    the chip's emphasis, decided here rather than by substring-matching in the
+    template."""
+    merged: dict[str, list[int]] = {}
+    for s in seasons:
+        for h in s["honors"]:
+            merged.setdefault(h, []).append(s["season_year"])
+    return [{"text": h, "years": _jh_years_abbr(sorted(ys)),
+             "gold": "Player of the Year" in h}
+            for h, ys in merged.items()]
+
+
+def _jh_title_chips(seasons: list[dict]) -> list[str]:
+    """Individual state TITLE chips — "2041 4A No. 1 Singles State Champion",
+    oldest first. A repeat of the same title (same class + flight) collapses
+    onto one chip with abbreviated years ("'41, '43 4A No. 1 Singles State
+    Champion"), matching the honour chips' year-merging."""
+    merged: dict[tuple[str, str], list[int]] = {}
+    for s in sorted(seasons, key=lambda s: s["year"]):
+        for r in s["individuals"]:
+            if r["champion"]:
+                merged.setdefault((r["group"], r["flight_name"]),
+                                  []).append(s["season_year"])
+    return [(f"{ys[0]} {grp} {fl} State Champion" if len(ys) == 1
+             else f"{_jh_years_abbr(ys)} {grp} {fl} State Champion")
+            for (grp, fl), ys in merged.items() for ys in [sorted(ys)]]
+
+
 def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
     """One high-school player's whole career at a program: four seasons, what they
     did in each, and the honours that came with them.
@@ -5182,7 +5218,16 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         "scope": _jh_scope(g, sc.group, list(jh.GROUPS),
                            years[0] if years else 0, years, None, None),
         "seasons": seasons, "record": f"{wins}-{losses}", "wins": wins, "losses": losses,
-        "honors": [h for s in seasons for h in s["honors"]], "flights": flights,
+        # ‼️ HONOUR CHIPS ARE MERGED BY HONOUR, WITH THEIR YEARS (owner rule
+        # 2026-08). The flat concatenation printed "All-State First Team (1A)"
+        # once per season it was won, which read as a duplicate — they were
+        # different YEARS rendered without one. One chip per distinct honour,
+        # carrying every year it was won, abbreviated ("'42, '43"). Structured
+        # here, never string-parsed in the template. `honors_total` keeps the
+        # per-season count the Career metric always showed.
+        "honors": _jh_honor_chips(seasons),
+        "honors_total": sum(len(s["honors"]) for s in seasons),
+        "flights": flights,
         # The JV column and the JV flight box are shown only for a career that HAS one,
         # so a save archived before the JV season — or a player who never dressed for
         # one — does not get a column of dashes on every row.
@@ -5196,6 +5241,16 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         "section_icon": ji.SECTION_ICON,
         "individual_titles": sum(1 for s in seasons for r in s["individuals"]
                                  if r["champion"]),
+        # HEADER CHIPS — one per individual state TITLE, ever (owner, 2026-08).
+        # Champion = the archived draw's own predicate (`tag == "CHAMP"`, already
+        # folded into `r["champion"]`), and `individuals` includes the mixed event
+        # (gender 'mixed') by `jhsaa_individual_results`'s own query — so a mixed
+        # title chips like any other. Phrased year · class at the time · flight ·
+        # "State Champion", oldest first; rendered BEFORE `honors` and in gold,
+        # because a title outranks a selection. A REPEAT of the same title (same
+        # flight, same class) collapses onto one chip with its years abbreviated,
+        # the same rule the honour chips use.
+        "title_chips": _jh_title_chips(seasons),
         "any_jv": any(s["jv"] or s["jv_dressed"] for s in seasons),
         "jv_matches": sum(s["jv_matches"] for s in seasons),
         # For the transfer form — the identity a `set_jhsaa_transfer` row is keyed on.

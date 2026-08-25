@@ -11,17 +11,43 @@ coastal school given a high-desert name, two towns treated as neighbours when
 they are three hundred miles apart, a league described as regional when its
 members share nothing. **This is the document to read first.**
 
-The geography is real. Jefferson's counties are fictional but each stands on the
-ground of a real county in southern Oregon, northern California, northern Nevada
-or western Idaho, and every town sits at real coordinates — so distances,
-bearings and "is this coastal?" are all answerable, and are computed here rather
-than asserted.
+Jefferson is an alternate-history western state spanning territory in what are
+present-day Oregon, California, Nevada, Idaho, Utah, and Wyoming. The geography
+uses real coordinates and recognizable western landscapes, while the state's
+borders, population distribution, institutions, and settlement hierarchy are
+counterfactual. Existing fictional settlements remain canon; selected real-world
+city and place names may also be used where they fit.
+
+The generated town tables below reflect the city and school source data currently
+present in `prep-network` and the JHSAA import. During the eastern expansion pass,
+new counties and settlements will appear here as those source tables are populated.
 
 **‼️ The names here are the ASSOCIATION's.** `prep-network` holds the same places
 under their original names and the two differ on purpose; that is why a gazetteer
 read from that repo will not match what you see in the app. Its version has more
-detail per town — see `prep-network/docs/GAZETTEER-jefferson.md` — but the wrong
+detail per town — see `prep-network/jefferson_data/REFERENCE.md` — but the wrong
 names for this question.
+
+## Expanded eastern Jefferson and FSAC
+
+The expanded eastern territory has **always been part of Jefferson**. This is a
+retcon of the state's historical footprint, not a future annexation. The added
+territory corresponds to Elko County in Nevada; Jerome, Cassia, Oneida, Franklin,
+and Bear Lake counties in Idaho; Cache and Rich counties in Utah; and Lincoln and
+Uinta counties in Wyoming.
+
+High schools in much of this eastern territory historically competed under the
+**Frontier Schools Athletic Commission (FSAC)** rather than JHSAA. FSAC operated
+inside Jefferson and awarded its own state championships. After fifteen years of
+negotiations, FSAC and JHSAA are scheduled to merge five years after the 2041
+season. A permanent merger condition preserves a separate geographic state title
+for the former FSAC territory. In tennis that becomes a tenth championship beside
+1A through 9A; it is geographic rather than enrollment-based. The permanent public
+name for that championship region is still to be chosen.
+
+The prep-network canon for the enlarged state is recorded in
+`jefferson_data/EXPANSION_CANON.md`, `jefferson_data/REFERENCE.md`, and
+`jefferson_data/regions.json`.
 
 ## How the state is organised
 
@@ -39,59 +65,74 @@ classification over a geographic order and named from an independent bank, so a
 league name need not describe its members. A district is keyed
 `(classification, name)` — the same name exists in several classes.
 
-## The areas — 12
+## The areas — 17
 
 Bearings are relative to the middle of the state and are derived from the
 coordinates, not written down by hand.
 
 | Area | Where | Counties | Population | Towns | Tennis programs |
 |---|---|---|---:|---:|---:|
-| **Kangas** | northeast (43.5N, 118.2W) | 2 | 1,090,045 | 35 | 62 |
-| **Halbrook Basin** | northeast (43.3N, 116.6W) | 3 | 5,760,100 | 39 | 220 |
-| **Alderwold** | northwest (43.3N, 123.5W) | 1 | 377,584 | 31 | 26 |
-| **Selquah** | northwest (42.8N, 124.3W) | 2 | 2,348,934 | 21 | 96 |
+| **Boise Frontier** | north (43.9N, 116.9W) | 2 | 1,460,100 | 9 | 54 |
+| **Halbrook Basin** | northeast (43.6N, 116.8W) | 1 | 1,400,000 | 12 | 57 |
+| **Belmonte Metro** | northeast (43.6N, 116.6W) | 1 | 1,550,000 | 2 | 58 |
+| **Kangas** | northwest (43.5N, 118.2W) | 2 | 1,090,045 | 35 | 69 |
+| **Alderwold** | northwest (43.3N, 123.5W) | 1 | 377,584 | 31 | 38 |
+| **Selquah** | northwest (42.8N, 124.3W) | 2 | 2,348,934 | 21 | 98 |
+| **Snake River Plain** | northeast (42.5N, 114.0W) | 2 | 26,100 | 6 | 6 |
+| **Silver Basin** | northeast (42.4N, 116.2W) | 2 | 1,373,700 | 19 | 56 |
 | **Ashbury Metro** | northwest (42.4N, 123.1W) | 2 | 1,970,000 | 22 | 88 |
-| **Cascade Divide** | northwest (42.3N, 121.9W) | 2 | 890,158 | 24 | 46 |
-| **Juniper Highlands** | central (42.1N, 120.6W) | 2 | 715,733 | 24 | 43 |
-| **Sebastian Cape** | southwest (41.0N, 124.1W) | 2 | 1,637,000 | 22 | 66 |
-| **Gold Valley** | southwest (40.7N, 122.4W) | 2 | 2,720,904 | 38 | 109 |
-| **Millersylvania** | southeast (40.4N, 119.4W) | 4 | 204,279 | 28 | 27 |
-| **Yarrowmere** | southwest (39.6N, 122.0W) | 4 | 810,000 | 38 | 49 |
-| **Southern Jefferson** | southwest (39.5N, 120.8W) | 3 | 443,000 | 21 | 29 |
+| **Cascade Divide** | northwest (42.3N, 121.9W) | 2 | 890,158 | 24 | 52 |
+| **Juniper Highlands** | west (42.1N, 120.6W) | 2 | 715,733 | 24 | 45 |
+| **Bear River Country** | east (42.0N, 111.3W) | 7 | 108,040 | 19 | 21 |
+| **Sebastian Cape** | southwest (41.0N, 124.1W) | 2 | 1,637,000 | 22 | 71 |
+| **Gold Valley** | southwest (40.7N, 122.4W) | 2 | 2,720,904 | 38 | 116 |
+| **Millersylvania** | southwest (40.4N, 119.4W) | 4 | 204,279 | 28 | 32 |
+| **Yarrowmere** | southwest (39.6N, 122.0W) | 4 | 810,000 | 38 | 60 |
+| **Southern Jefferson** | southwest (39.5N, 120.8W) | 3 | 443,000 | 21 | 33 |
 
 ## Counties
 
 | County | Stands on | Area | Population | Towns | Programs |
 |---|---|---|---:|---:|---:|
-| Antler | Douglas County, OR | Alderwold | 377,584 | 31 | 26 |
-| Bardsley | Colusa County, CA | Yarrowmere | 70,000 | 6 | 5 |
-| Barlowe | Payette County, ID | Halbrook Basin | 190,100 | 7 | 12 |
+| Antler | Douglas County, OR | Alderwold | 377,584 | 31 | 38 |
+| Bardsley | Colusa County, CA | Yarrowmere | 70,000 | 6 | 7 |
+| Barlowe | Payette County, ID | Boise Frontier | 190,100 | 7 | 14 |
+| Beargrass | Bear Lake County, ID | Bear River Country | 3,470 | 3 | 3 |
 | Bidwell | Coos County, OR | Selquah | 1,884,051 | 8 | 72 |
+| Bridger | Uinta County, WY | Bear River Country | 15,000 | 3 | 3 |
 | Camas | Josephine County, OR | Ashbury Metro | 513,000 | 9 | 23 |
-| Cinder | Siskiyou County, CA | Cascade Divide | 39,520 | 6 | 5 |
-| Emigrant | Harney County, OR | Kangas | 788,534 | 19 | 44 |
-| Featherstone | Plumas County, CA | Southern Jefferson | 105,000 | 7 | 6 |
-| Ferris | Shasta County, CA | Gold Valley | 2,270,100 | 25 | 90 |
+| Cinder | Siskiyou County, CA | Cascade Divide | 39,520 | 6 | 7 |
+| Cub River | Franklin County, ID | Bear River Country | 6,680 | 3 | 3 |
+| Eden | Jerome County, ID | Snake River Plain | 13,450 | 3 | 3 |
+| Emigrant | Harney County, OR | Kangas | 788,534 | 19 | 46 |
+| Featherstone | Plumas County, CA | Southern Jefferson | 105,000 | 7 | 9 |
+| Ferris | Shasta County, CA | Gold Valley | 2,270,100 | 25 | 92 |
 | Galena | Washoe County, NV | Millersylvania | 44,300 | 8 | 9 |
-| Goldbank | Nevada County, CA | Southern Jefferson | 300,000 | 10 | 19 |
-| Halbrook | Canyon County, ID | Halbrook Basin | 2,950,000 | 14 | 115 |
+| Goldbank | Nevada County, CA | Southern Jefferson | 300,000 | 10 | 20 |
+| Halbrook | Canyon County, ID | Belmonte Metro | 2,950,000 | 14 | 115 |
 | Highgrade | Sierra County, CA | Southern Jefferson | 38,000 | 4 | 4 |
-| Juniper | Modoc County, CA | Juniper Highlands | 227,800 | 12 | 17 |
-| Kernwood | Butte County, CA | Yarrowmere | 419,900 | 12 | 25 |
-| Lodestone | Humboldt County, NV | Millersylvania | 35,732 | 6 | 4 |
+| Juniper | Modoc County, CA | Juniper Highlands | 227,800 | 12 | 19 |
+| Kernwood | Butte County, CA | Yarrowmere | 419,900 | 12 | 26 |
+| Laketown | Rich County, UT | Bear River Country | 1,290 | 3 | 3 |
+| Lodestone | Humboldt County, NV | Millersylvania | 35,732 | 6 | 6 |
+| Malad | Oneida County, ID | Bear River Country | 2,000 | 1 | 3 |
 | Marlow | Jackson County, OR | Ashbury Metro | 1,457,000 | 13 | 65 |
-| Olivet | Tehama County, CA | Yarrowmere | 179,900 | 9 | 12 |
-| Ostrander | Del Norte County, CA | Sebastian Cape | 33,900 | 6 | 5 |
-| Paddock | Glenn County, CA | Yarrowmere | 140,200 | 11 | 7 |
+| Olivet | Tehama County, CA | Yarrowmere | 179,900 | 9 | 14 |
+| Ostrander | Del Norte County, CA | Sebastian Cape | 33,900 | 6 | 6 |
+| Paddock | Glenn County, CA | Yarrowmere | 140,200 | 11 | 13 |
+| Raft | Cassia County, ID | Snake River Plain | 12,650 | 3 | 3 |
 | Rimrock | Lake County, OR | Juniper Highlands | 487,933 | 12 | 26 |
-| Sablewood | Trinity County, CA | Gold Valley | 450,804 | 13 | 19 |
-| San Marcos | Humboldt County, CA | Sebastian Cape | 1,603,100 | 16 | 61 |
-| Scheelite | Pershing County, NV | Millersylvania | 52,000 | 5 | 4 |
-| Stagewater | Malheur County, OR | Kangas | 301,511 | 16 | 18 |
-| Tamarack | Klamath County, OR | Cascade Divide | 850,638 | 18 | 41 |
-| Vance | Owyhee County, ID | Halbrook Basin | 2,620,000 | 18 | 93 |
-| Weller | Curry County, OR | Selquah | 464,883 | 13 | 24 |
-| Windrow | Lassen County, CA | Millersylvania | 72,247 | 9 | 10 |
+| Ruby | Elko County, NV | Silver Basin | 23,700 | 3 | 3 |
+| Sablewood | Trinity County, CA | Gold Valley | 450,804 | 13 | 24 |
+| San Marcos | Humboldt County, CA | Sebastian Cape | 1,603,100 | 16 | 65 |
+| Scheelite | Pershing County, NV | Millersylvania | 52,000 | 5 | 5 |
+| Stagewater | Malheur County, OR | Kangas | 301,511 | 16 | 23 |
+| Star Valley | Lincoln County, WY | Bear River Country | 5,200 | 3 | 3 |
+| Tamarack | Klamath County, OR | Cascade Divide | 850,638 | 18 | 45 |
+| Vance | Owyhee County, ID | Boise Frontier | 2,620,000 | 18 | 93 |
+| Weller | Curry County, OR | Selquah | 464,883 | 13 | 26 |
+| Wellsville | Cache County, UT | Bear River Country | 74,400 | 3 | 3 |
+| Windrow | Lassen County, CA | Millersylvania | 72,247 | 9 | 12 |
 
 ---
 
@@ -101,166 +142,186 @@ A town with no programs still appears — it is part of the state, and "does thi
 place exist?" is a question worth being able to answer. Programs are listed
 class, enrollment, and locality where the school carries one.
 
-## Kangas
+## Boise Frontier
 
-*Northeast Jefferson · Emigrant, Stagewater · 1,090,045 people · 62 tennis programs*
-
-### Emigrant County — Harney County, OR
-
-- **Harriman** — 450,000 · 43.59N 119.05W
-    - John F. Kennedy — 9A, 2,425 · Ironwood League
-    - Gravel Narrows — 9A, 2,275 · Ironwood League
-    - St. Teresa — 9A, 2,150 · Ironwood League
-    - Pinyon Ridge — 8A, 2,053 · Del Rey Athletic Association
-    - Hidden Draw — 8A, 2,021 · Del Rey Athletic Association
-    - Harriman — 7A, 1,564 · Three Rivers League
-    - Garden Plain — 7A, 1,543 · Three Rivers League
-    - Green Valley — 7A, 1,540 · Three Rivers League
-    - Homestead — 7A, 1,508 · Three Rivers League
-    - Emigrant — 7A, 1,401 · Three Rivers League
-    - Box Canyon — 6A, 1,274 · Northwest Assembly
-    - St. Casimir — 6A, 1,035 · Northwest Assembly
-    - St. Michael Academy — 5A, 996 · Kajaani League
-    - Frontier — 5A, 950 · Kajaani League
-    - Crown Paper — 5A, 864 · Kajaani League
-    - Casimir Creek — 3A, 372 · Basalt League
-- **Rostova Junction** — 120,000 · 43.56N 119.08W
-    - Railyard — 7A, 1,557 · Three Rivers League
-    - Fir Valley Grange — 6A, 1,206 · Northwest Assembly
-    - Rostova Junction — 6A, 1,059 · Northwest Assembly
-    - Trailhead — 5A, 932 · Valley Coast Interscholastic League
-    - Portola — 5A, 823 · Valley Coast Interscholastic League
-    - Clarendon — 4A, 552 · Twin Counties Athletic Association
-- **Aurelia** — 80,000 · 43.42N 118.58W
-    - Ruth Bader Ginsburg — 9A, 2,556 · Ironwood League
-    - Kingsway — 6A, 1,313 · Northwest Assembly
-    - Goodman — 6A, 1,043 · Northwest Assembly
-    - Aurelia — 5A, 1,009 · Kajaani League
-- **Harrow** — 45,000 · 42.46N 118.61W
-    - New Boston — 5A, 913 · Kajaani League
-    - Harrow — 4A, 553 · Twin Counties Athletic Association
-    - St. Brigid — 3A, 412 · Basalt League
-- **Rilland** — 15,000 · 43.64N 118.63W
-    - Clear Lake — 3A, 407 · Basalt League
-    - Rilland — 2A, 250 · Norheim League
-- **Lieksa** — 13,134 · 43.01N 118.67W
-    - Lieksa — 2A, 366 · Norheim League
-    - Ocean Park — 2A, 277 · Norheim League
-- **San Vito** — 10,000 · 43.81N 118.38W · *no tennis programs*
-- **Diamante** — 8,000 · 43.43N 118.26W
-    - Diamante — 2A, 338 · Norheim League
-- **Iisalmi** — 6,100 · 42.26N 118.68W
-    - Iisalmi Union — 2A, 324 · Norheim League
-- **Minnesota City** — 6,000 · 42.83N 118.92W
-    - Minnesota City — 2A, 215 · Norheim League
-- **Ulery Junction** — 5,800 · 44.03N 118.64W
-    - Twin Rivers — 2A, 274 · Norheim League
-- **Agate** — 5,000 · 43.64N 118.82W
-    - Agate — 2A, 286 · Three Rivers League
-- **Lodestone** — 5,000 · 43.58N 119.08W
-    - Lodestone — 2A, 250 · Norheim League
-- **Nurmes** — 4,300 · 43.44N 118.80W
-    - Nurmes — 2A, 242 · Norheim League
-- **Yandell City** — 4,000 · 42.05N 118.80W
-    - Weller Regional — 1A, 187 · Vesterheim Athletic Association
-- **Ashbrook** — 3,900 · 43.28N 118.96W · *no tennis programs*
-- **Galactica Plains** — 2,800 · 43.28N 118.58W
-    - Galactica Plains — 1A, 105 · Desert Sky League
-- **Kuusamo** — 2,400 · 43.54N 119.50W
-    - Kuusamo — 1A, 98 · Desert Sky League
-- **Ninemile** — 2,100 · 43.59N 119.63W
-    - Ninemile — 1A, 74 · Desert Sky League
-
-### Stagewater County — Malheur County, OR
-
-- **Fort Valois** — 200,000 · 44.03N 116.96W
-    - Sagebrush — 9A, 2,551 · Ironwood League
-    - Cole Valley — 9A, 2,528 · Millworks Athletic Association
-    - Fort Valois — 9A, 2,469 · Ironwood League
-    - Stagewater — 9A, 2,447 · Ironwood League
-    - Valois Bluffs — 9A, 2,318 · Ironwood League
-    - Quail Hollow — 9A, 2,306 · Millworks Athletic Association
-- **Latgaway** — 28,411 · 43.88N 116.99W
-    - Latgaway — 2A, 317 · North Range League
-    - Southern Jefferson Christian — 1A, 93 · Vesterheim Athletic Association
-- **Cordero Wells** — 18,000 · 43.98N 117.24W · *no tennis programs*
-- **Dovetail** — 12,000 · 44.24N 116.98W
-    - River Market — 2A, 336 · Norheim League
-    - Dovetail — 1A, 276 · Vesterheim Athletic Association
-- **Naylors Landing** — 6,200 · 42.97N 117.05W · *no tennis programs*
-- **Sotkamo** — 4,800 · 43.74N 117.07W
-    - Sotkamo Union — 2A, 297 · North Range League
-- **Mabry** — 4,700 · 43.86N 117.61W · *no tennis programs*
-- **North Simmons** — 4,700 · 44.25N 117.52W
-    - North Simmons — 1A, 197 · Vesterheim Athletic Association
-- **Silver Junction** — 4,500 · 43.74N 118.08W · *no tennis programs*
-- **Antler Prairie** — 4,000 · 43.92N 116.99W
-    - Antler Prairie — 1A, 192 · Vesterheim Athletic Association
-- **Sixes** — 3,300 · 42.91N 117.53W
-    - Sixes — 1A, 157 · Vesterheim Athletic Association
-- **Basalt Prairie** — 3,000 · 42.41N 117.87W
-    - Basalt Prairie Union — 1A, 128 · Vesterheim Athletic Association
-- **Kendricks Landing** — 3,000 · 43.91N 118.15W
-    - Kendricks Landing — 1A, 135 · Vesterheim Athletic Association
-- **Sage Junction** — 2,400 · 44.25N 117.83W · *no tennis programs*
-- **Raahe** — 2,400 · 44.00N 117.01W
-    - Raahe — 1A, 71 · Vesterheim Athletic Association
-- **Espoo** — 100 · 43.50N 118.01W
-    - Espoo — 1A, 140 · Vesterheim Athletic Association
-
-## Halbrook Basin
-
-*Northeast Jefferson · Barlowe, Halbrook, Vance · 5,760,100 people · 220 tennis programs*
+*North Jefferson · Barlowe, Vance · 1,460,100 people · 54 tennis programs*
 
 ### Barlowe County — Payette County, ID
 
 - **Furrow Crossing** — 92,800 · 44.08N 116.93W
     - Ronald Reagan — 9A, 2,187 · Forks League
     - Furrow Crossing — 5A, 1,019 · Twin Counties Athletic Association
-    - Herbert Hoover — 4A, 742 · Three Rivers League
-    - Indigo Bend — 4A, 676 · Three Rivers League
+    - Herbert Hoover — 4A, 742 · Mission League
+    - Indigo Bend — 4A, 676 · Mission League
     - St. Lucy — 3A, 312 · Dual County League
-    - Archbishop Quinlan — 1A, 153 · Dual County League
+    - Archbishop Quinlan — 1A, 153 · Hacienda League
 - **Pear Slough** — 36,400 · 44.01N 116.92W
     - Pear Slough — 5A, 929 · Twin Counties Athletic Association
-    - New Hope Christian — 1A, 187 · Dual County League
+    - New Hope Christian — 1A, 187 · Hacienda League
 - **Benchton** — 21,000 · 43.97N 116.82W
-    - Benchton — 5A, 965 · Twin Counties Athletic Association
-    - St. Genevieve — 1A, 129 · Dual County League
+    - Benchton — 5A, 965 · Valle Vista League
+    - St. Genevieve — 1A, 129 · Hacienda League
 - **Ciderhaven** — 14,300 · 43.99N 116.89W
     - Ciderhaven — 3A, 468 · Dual County League
-- **Bench Head** — 10,600 · 44.03N 116.92W · *no tennis programs*
+- **Bench Head** — 10,600 · 44.03N 116.92W
+    - Barlowe County High — 4A, 520 · Mission League
 - **Haddon Siding** — 8,300 · 44.03N 116.85W
-    - Haddon Siding — 2A, 291 · Valle Vista League
-- **Garrow Depot** — 6,700 · 44.06N 116.58W · *no tennis programs*
+    - Haddon Siding — 2A, 291 · Three Rivers League
+- **Garrow Depot** — 6,700 · 44.06N 116.58W
+    - Willow Gate — 2A, 340 · Three Rivers League
+
+### Vance County — Owyhee County, ID
+
+- **Belyakov** — 950,000 · 43.62N 116.93W
+    - Grande-Savane Arts — 9A, 2,546 · River Valley League
+    - Bayard Rustin — 9A, 2,537 · Wilberforce · River Valley League
+    - Mickey Mantle — 9A, 2,383 · River Valley League
+    - Bannock — 9A, 2,322 · Bannock · River Valley League
+    - Friendship City — 9A, 2,279 · Friendship · River Valley League
+    - Pennsauke — 9A, 2,224 · Pennsauke · River Valley League
+    - Kongisburg — 8A, 2,132 · Halbrook Basin League
+    - Lincoln — 8A, 1,995 · Halbrook Basin League
+    - Borough Beach — 8A, 1,920 · Bowerstock · Halbrook Basin League
+    - East Moscow — 8A, 1,894 · Halbrook Basin League
+    - Anse Doree — 8A, 1,835 · Anse Doree · Halbrook Basin League
+    - Petoskey Rock — 7A, 1,634 · Petoskey · Halbrook Basin League
+    - Trois Ilets — 7A, 1,629 · Trois Ilets · Halbrook Basin League
+    - St. Agnes Academy — 7A, 1,527 · Coastal Range League
+    - Bellefontaine — 7A, 1,376 · Bellefontaine · Coastal Range League
+    - Morne Rouge — 7A, 1,370 · Morne Rouge · Halbrook Basin League
+    - Saint Marc — 6A, 1,297 · Saint Marc · Halbrook Basin League
+    - Savane Brulee — 6A, 1,184 · Savane Brulee · Halbrook Basin League
+    - Bois Neuf — 6A, 1,181 · Bois Neuf · Halbrook Basin League
+    - Lycee Valmont — 6A, 1,087 · Valmont · Halbrook Basin League
+    - Archbishop Valois — 6A, 1,043 · Juniper League
+    - Morne Caribou Polytechnic — 5A, 961 · Morne Caribou · Confluence Athletic Association
+    - Grand Fond — 5A, 947 · Grand Fond · Confluence Athletic Association
+    - Belle Rive — 5A, 885 · Belle Rive · Confluence Athletic Association
+    - Siberia — 4A, 782 · Dual County League
+    - Walter-Kenny — 4A, 651 · Dual County League
+    - Bois Rouge — 4A, 639 · Bois Rouge · Dual County League
+    - La Savane — 4A, 616 · La Savane · Dual County League
+    - Riviere Salee — 1A, 68 · Riviere Salee · Desert Sky League
+- **Orellana** — 320,000 · 43.55N 116.81W
+    - Canal View — 9A, 2,578 · River Valley League
+    - Treasure Valley — 9A, 2,547 · Del Rey Athletic Association
+    - Hayes Valley — 9A, 2,524 · River Valley League
+    - James K. Polk — 9A, 2,516 · River Valley League
+    - Malpais — 9A, 2,150 · River Valley League
+    - Orellana Central — 8A, 2,116 · Halbrook Basin League
+    - River Oaks — 8A, 1,996 · Halbrook Basin League
+    - Springfield — 6A, 1,281 · Juniper League
+    - Lateral Seven — 5A, 913 · Confluence Athletic Association
+    - Sulphur Springs — 4A, 798 · Rim Country League
+    - Grizzly Gulch — 4A, 552 · Dual County League
+
+## Halbrook Basin
+
+*Northeast Jefferson · Halbrook · 1,400,000 people · 57 tennis programs*
+
+### Halbrook County — Canyon County, ID
+
+- **Llerena** — 380,000 · 43.71N 116.62W
+    - Los Feliz — 9A, 2,328 · Big Basin League
+    - Crow Basin — 8A, 1,988 · Four Rivers Interscholastic League
+    - Kingston — 6A, 1,262 · Halbrook Basin League
+    - Casa Linda — 6A, 1,211 · Halbrook Basin League
+    - Llerena — 6A, 1,058 · Halbrook Basin League
+    - Juniper Well — 5A, 834 · Confluence Athletic Association
+    - Cedar Point — 5A, 821 · Confluence Athletic Association
+    - Ella Baker — 4A, 699 · Dual County League
+    - Arroyo Water District — 4A, 661 · Three Rivers League
+    - Preston Hollow — 4A, 557 · Dual County League
+- **Serrano** — 320,000 · 43.79N 116.94W
+    - Arroyo Seco — 9A, 2,583 · Big Basin League
+    - Forest Park — 9A, 2,427 · Big Basin League
+    - Siskiyou Electric — 9A, 2,359 · Big Basin League
+    - Tower Grove — 9A, 2,359 · Big Basin League
+    - Bellarmine Prep — 7A, 1,632 · Halbrook Basin League
+    - Indigo Rim — 7A, 1,588 · Halbrook Basin League
+    - Romare Bearden — 7A, 1,402 · Halbrook Basin League
+    - Serrano — 5A, 1,006 · Confluence Athletic Association
+    - Cholla Flats — 5A, 871 · Confluence Athletic Association
+- **Halbrook** — 185,000 · 43.68N 116.91W
+    - Halbrook — 9A, 2,444 · Big Basin League
+    - Basin Gate — 9A, 2,360 · Big Basin League
+    - Northgate — 8A, 1,917 · Four Rivers Interscholastic League
+    - Delbarton — 7A, 1,471 · Three Rivers League
+    - Prairie Union — 7A, 1,418 · Halbrook Basin League
+    - Wheeler Academy — 7A, 1,332 · Halbrook Basin League
+    - Archbishop Doyle Prep — 6A, 1,214 · Big Basin League
+    - Doyle Ridge — 6A, 1,185 · Big Basin League
+    - St. Perpetua — 6A, 1,073 · Halbrook Basin League
+    - Fruitvale — 5A, 949 · Twin Counties Athletic Association
+    - Northside Christian — 4A, 754 · Three Rivers League
+    - Fontainebleau — 4A, 668 · Three Rivers League
+    - Toussaint — 4A, 642 · Three Rivers League
+- **Madrigal** — 120,000 · 43.67N 116.82W
+    - Madrigal — 8A, 2,062 · Four Rivers Interscholastic League
+    - Maritime — 6A, 1,199 · Halbrook Basin League
+    - Kenwood — 5A, 978 · Confluence Athletic Association
+    - Benchlands — 5A, 929 · Confluence Athletic Association
+    - Norwood Park — 5A, 847 · Confluence Athletic Association
+    - Edgewater — 4A, 672 · Dual County League
+- **Starlight** — 100,000 · 43.73N 116.80W
+    - Temescal — 8A, 1,745 · Four Rivers Interscholastic League
+    - Starlight — 7A, 1,498 · Halbrook Basin League
+    - Observatory — 7A, 1,357 · Halbrook Basin League
+- **Emerson** — 90,000 · 43.38N 116.53W
+    - Sunset Hills — 8A, 1,937 · Four Rivers Interscholastic League
+    - Glen Park — 6A, 1,275 · Big Basin League
+    - Paul Robeson — 6A, 1,156 · Big Basin League
+    - Emerson — 6A, 1,022 · Big Basin League
+- **Arrieta** — 80,000 · 43.68N 116.87W
+    - Canyonlands — 7A, 1,361 · Three Rivers League
+    - Arrieta — 4A, 604 · Mission League
+    - Bishop Valera — 1A, 229 · Desert Sky League
+- **Weissburg** — 70,000 · 43.76N 116.65W
+    - Ralph Bellamy — 7A, 1,323 · Halbrook Basin League
+    - Bolinas — 6A, 1,081 · Halbrook Basin League
+    - Weissburg — 4A, 766 · Dual County League
+    - Willowbrook — 2A, 375 · Desert Sky League
+- **Pomar** — 18,000 · 43.84N 117.00W
+    - Pomar — 3A, 532 · Dual County League
+    - St. Francis Xavier — 2A, 251 · Three Rivers League
+- **Benton Cross** — 15,000 · 43.46N 116.54W
+    - Benton Cross — 2A, 315 · Three Rivers League
+- **Greaves Junction** — 12,000 · 43.61N 116.86W
+    - Juniper Crossing — 2A, 285 · Three Rivers League
+- **Berrio** — 10,000 · 43.51N 116.54W
+    - Berrio — 3A, 389 · Dual County League
+
+## Belmonte Metro
+
+*Northeast Jefferson · Halbrook · 1,550,000 people · 58 tennis programs*
 
 ### Halbrook County — Canyon County, ID
 
 - **Belmonte** — 1,100,000 · 43.54N 116.56W
     - Sandra Day O'Connor — 9A, 2,592 · Choctaw · Forks League
     - I-50 Tech — 9A, 2,550 · Forks League
-    - Kinnickinny — 9A, 2,509 · Kinnickinny · Forks League
-    - Potrero Hill — 9A, 2,491 · Placer League
-    - Rockridge — 9A, 2,388 · Placer League
-    - Tippecanoe — 9A, 2,361 · Tippecanoe · Forks League
-    - Keeler — 9A, 2,360 · Placer League
-    - Sparrowhawk — 9A, 2,332 · Sparrowhawk · Placer League
-    - Pennsauken — 9A, 2,217 · Pennsauken · Placer League
-    - Bowerstock — 8A, 1,827 · Bowerstock · Four Rivers Interscholastic League
-    - Shirley Chisholm — 8A, 1,789 · Burroughs · Four Rivers Interscholastic League
-    - Chillicothe — 8A, 1,778 · Chillicothe · Four Rivers Interscholastic League
-    - Okefenokee — 8A, 1,652 · Okefenokee · Four Rivers Interscholastic League
-    - Hagerstown — 7A, 1,472 · Hagerstown · Big Basin League
+    - Kinnickinny — 9A, 2,509 · Kinnickinny · Big Basin League
+    - Potrero Hill — 9A, 2,491 · Forks League
+    - Rockridge — 9A, 2,388 · Big Basin League
+    - Tippecanoe — 9A, 2,361 · Tippecanoe · Big Basin League
+    - Keeler — 9A, 2,360 · Forks League
+    - Sparrowhawk — 9A, 2,332 · Sparrowhawk · Forks League
+    - Pennsauken — 9A, 2,217 · Pennsauken · Forks League
+    - Bowerstock — 8A, 1,827 · Bowerstock · Sunkist League
+    - Shirley Chisholm — 8A, 1,789 · Burroughs · Sunkist League
+    - Chillicothe — 8A, 1,778 · Chillicothe · Sunkist League
+    - Okefenokee — 8A, 1,652 · Okefenokee · Sunkist League
+    - Hagerstown — 7A, 1,472 · Hagerstown · Three Rivers League
     - James Madison — 7A, 1,453 · Kishwaukee · Three Rivers League
-    - Benjamin Banneker — 7A, 1,420 · Banneker · Big Basin League
+    - Benjamin Banneker — 7A, 1,420 · Banneker · Three Rivers League
     - Monongahela — 7A, 1,324 · Monongahela · Three Rivers League
     - Cahaba — 6A, 1,304 · Cahaba · Three Rivers League
     - Tuscarora — 6A, 1,304 · Tuscarora · Three Rivers League
     - Belmonte Collegiate — 6A, 1,257 · Three Rivers League
     - Natchez — 6A, 1,254 · Natchez · Three Rivers League
-    - Belmonte — 6A, 1,225 · Big Basin League
-    - Pelican Town — 6A, 1,192 · Mission League
-    - Caney — 6A, 1,190 · Caney · Three Rivers League
+    - Belmonte — 6A, 1,225 · Three Rivers League
+    - Pelican Town — 6A, 1,192 · Three Rivers League
+    - Caney — 6A, 1,190 · Caney · Big Basin League
     - St. Ignatius — 6A, 1,151 · Three Rivers League
     - Kokomo — 6A, 1,119 · Kokomo · Three Rivers League
     - Dusty Spur — 6A, 1,106 · Three Rivers League
@@ -269,236 +330,168 @@ class, enrollment, and locality where the school carries one.
     - Highland Park — 5A, 985 · Allegheny · Twin Counties Athletic Association
     - Petoskey — 5A, 946 · Petoskey · Twin Counties Athletic Association
     - Chickasaw — 5A, 876 · Chickasaw · Twin Counties Athletic Association
-    - Hackensack — 5A, 860 · Hackensack · Confluence Athletic Association
+    - Hackensack — 5A, 860 · Hackensack · Twin Counties Athletic Association
     - Pascagoula — 5A, 845 · Pascagoula · Twin Counties Athletic Association
     - Ketanji Brown Jackson — 5A, 815 · Pontotoc · Twin Counties Athletic Association
-    - Wyalusing — 4A, 696 · Wyalusing · Halbrook Basin League
-    - Cahokia Mounds Catholic — 4A, 651 · Cahokia · Halbrook Basin League
+    - Wyalusing — 4A, 696 · Wyalusing · Three Rivers League
+    - Cahokia Mounds Catholic — 4A, 651 · Cahokia · Three Rivers League
     - Woodrow Wilson — 4A, 629 · Tallulah · Three Rivers League
     - Tippah — 4A, 570 · Tippah · Three Rivers League
-    - Passaic — 4A, 563 · Passaic · Halbrook Basin League
-    - Saddleback Central — 4A, 560 · Halbrook Basin League
-    - Yazoo — 2A, 358 · Yazoo · Valle Vista League
-    - Belmonte Catholic — 1A, 256 · Dual County League
-    - St. Lucia Academy — 1A, 105 · Dual County League
+    - Passaic — 4A, 563 · Passaic · Three Rivers League
+    - Saddleback Central — 4A, 560 · Mission League
+    - Yazoo — 2A, 358 · Yazoo · Three Rivers League
+    - Belmonte Catholic — 1A, 256 · Desert Sky League
+    - St. Lucia Academy — 1A, 105 · Desert Sky League
 - **Caswell** — 450,000 · 43.66N 116.69W
-    - Chaparral — 8A, 2,140 · Four Rivers Interscholastic League
+    - Chaparral — 8A, 2,140 · Sunkist League
     - Cherry Hill North — 8A, 2,139 · Four Rivers Interscholastic League
     - Caswell — 8A, 2,028 · Four Rivers Interscholastic League
-    - Ironwood Flats — 8A, 1,747 · Halbrook Basin League
+    - Ironwood Flats — 8A, 1,747 · Four Rivers Interscholastic League
     - Cherry Hill South — 8A, 1,706 · Four Rivers Interscholastic League
-    - Cape Jean — 7A, 1,636 · Big Basin League
-    - Cherry Hill East — 7A, 1,398 · Big Basin League
+    - Cape Jean — 7A, 1,636 · Three Rivers League
+    - Cherry Hill East — 7A, 1,398 · Three Rivers League
     - Heron Slough — 6A, 1,241 · Big Basin League
     - Pawnee — 6A, 1,206 · Big Basin League
     - Manzanita Ridge — 6A, 1,204 · Big Basin League
     - Stone Ridge — 6A, 1,157 · Big Basin League
-    - Chester A. Arthur — 5A, 884 · Confluence Athletic Association
+    - Chester A. Arthur — 5A, 884 · Twin Counties Athletic Association
     - Basalt Electric — 4A, 762 · Three Rivers League
     - Palisade Prep — 3A, 511 · Dual County League
-- **Llerena** — 380,000 · 43.71N 116.62W
-    - Los Feliz — 9A, 2,328 · Forks League
-    - Crow Basin — 8A, 1,988 · Halbrook Basin League
-    - Kingston — 6A, 1,262 · Halbrook Basin League
-    - Casa Linda — 6A, 1,211 · Three Rivers League
-    - Llerena — 6A, 1,058 · Big Basin League
-    - Juniper Well — 5A, 834 · Confluence Athletic Association
-    - Cedar Point — 5A, 821 · Confluence Athletic Association
-    - Ella Baker — 4A, 699 · Three Rivers League
-    - Arroyo Water District — 4A, 661 · Three Rivers League
-    - Preston Hollow — 4A, 557 · Three Rivers League
-- **Serrano** — 320,000 · 43.79N 116.94W
-    - Arroyo Seco — 9A, 2,583 · Forks League
-    - Forest Park — 9A, 2,427 · Forks League
-    - Siskiyou Electric — 9A, 2,359 · Forks League
-    - Tower Grove — 9A, 2,359 · Forks League
-    - Bellarmine Prep — 7A, 1,632 · Halbrook Basin League
-    - Indigo Rim — 7A, 1,588 · Halbrook Basin League
-    - Romare Bearden — 7A, 1,402 · Halbrook Basin League
-    - Serrano — 5A, 1,006 · Confluence Athletic Association
-    - Cholla Flats — 5A, 871 · Three Rivers League
-- **Halbrook** — 185,000 · 43.68N 116.91W
-    - Halbrook — 9A, 2,444 · Forks League
-    - Basin Gate — 9A, 2,360 · Forks League
-    - Northgate — 8A, 1,917 · Halbrook Basin League
-    - Delbarton — 7A, 1,471 · Halbrook Basin League
-    - Prairie Union — 7A, 1,418 · Halbrook Basin League
-    - Wheeler Academy — 7A, 1,332 · Halbrook Basin League
-    - Archbishop Doyle Prep — 6A, 1,214 · Big Basin League
-    - Doyle Ridge — 6A, 1,185 · Big Basin League
-    - St. Perpetua — 6A, 1,073 · Big Basin League
-    - Fruitvale — 5A, 949 · Confluence Athletic Association
-    - Northside Christian — 4A, 754 · Dual County League
-    - Fontainebleau — 4A, 668 · Dual County League
-    - Toussaint — 4A, 642 · Dual County League
-- **Madrigal** — 120,000 · 43.67N 116.82W
-    - Madrigal — 8A, 2,062 · Halbrook Basin League
-    - Maritime — 6A, 1,199 · Halbrook Basin League
-    - Kenwood — 5A, 978 · Confluence Athletic Association
-    - Benchlands — 5A, 929 · Confluence Athletic Association
-    - Norwood Park — 5A, 847 · Confluence Athletic Association
-    - Edgewater — 4A, 672 · Dual County League
-- **Starlight** — 100,000 · 43.73N 116.80W
-    - Temescal — 8A, 1,745 · Halbrook Basin League
-    - Starlight — 7A, 1,498 · Halbrook Basin League
-    - Observatory — 7A, 1,357 · Halbrook Basin League
-- **Emerson** — 90,000 · 43.38N 116.53W
-    - Sunset Hills — 8A, 1,937 · Halbrook Basin League
-    - Glen Park — 6A, 1,275 · Big Basin League
-    - Paul Robeson — 6A, 1,156 · Big Basin League
-    - Emerson — 6A, 1,022 · Big Basin League
-- **Arrieta** — 80,000 · 43.68N 116.87W
-    - Canyonlands — 7A, 1,361 · Halbrook Basin League
-    - Arrieta — 4A, 604 · Dual County League
-    - Bishop Valera — 1A, 229 · Dual County League
-- **Weissburg** — 70,000 · 43.76N 116.65W
-    - Ralph Bellamy — 7A, 1,323 · Big Basin League
-    - Bolinas — 6A, 1,081 · Halbrook Basin League
-    - Weissburg — 4A, 766 · Three Rivers League
-    - Willowbrook — 2A, 375 · Three Rivers League
-- **Pomar** — 18,000 · 43.84N 117.00W
-    - Pomar — 3A, 532 · Dual County League
-    - St. Francis Xavier — 2A, 251 · Valle Vista League
-- **Benton Cross** — 15,000 · 43.46N 116.54W
-    - Benton Cross — 2A, 315 · Valle Vista League
-- **Greaves Junction** — 12,000 · 43.61N 116.86W
-    - Juniper Crossing — 2A, 285 · Valle Vista League
-- **Berrio** — 10,000 · 43.51N 116.54W
-    - Berrio — 3A, 389 · Dual County League
 
-### Vance County — Owyhee County, ID
+## Kangas
 
-- **Belyakov** — 950,000 · 43.62N 116.93W
-    - Grande-Savane Arts — 9A, 2,546 · Big Basin League
-    - Bayard Rustin — 9A, 2,537 · Wilberforce · Big Basin League
-    - Mickey Mantle — 9A, 2,383 · Big Basin League
-    - Bannock — 9A, 2,322 · Bannock · Big Basin League
-    - Friendship City — 9A, 2,279 · Friendship · Big Basin League
-    - Pennsauke — 9A, 2,224 · Pennsauke · Big Basin League
-    - Kongisburg — 8A, 2,132 · Big Basin League
-    - Lincoln — 8A, 1,995 · Halbrook Basin League
-    - Borough Beach — 8A, 1,920 · Bowerstock · Halbrook Basin League
-    - East Moscow — 8A, 1,894 · Halbrook Basin League
-    - Anse Doree — 8A, 1,835 · Anse Doree · Big Basin League
-    - Petoskey Rock — 7A, 1,634 · Petoskey · Halbrook Basin League
-    - Trois Ilets — 7A, 1,629 · Trois Ilets · Big Basin League
-    - St. Agnes Academy — 7A, 1,527 · Halbrook Basin League
-    - Bellefontaine — 7A, 1,376 · Bellefontaine · Three Rivers League
-    - Morne Rouge — 7A, 1,370 · Morne Rouge · Halbrook Basin League
-    - Saint Marc — 6A, 1,297 · Saint Marc · Halbrook Basin League
-    - Savane Brulee — 6A, 1,184 · Savane Brulee · Halbrook Basin League
-    - Bois Neuf — 6A, 1,181 · Bois Neuf · Dual County League
-    - Lycee Valmont — 6A, 1,087 · Valmont · Halbrook Basin League
-    - Archbishop Valois — 6A, 1,043 · Dual County League
-    - Morne Caribou Polytechnic — 5A, 961 · Morne Caribou · Three Rivers League
-    - Grand Fond — 5A, 947 · Grand Fond · Three Rivers League
-    - Belle Rive — 5A, 885 · Belle Rive · Three Rivers League
-    - Siberia — 4A, 782 · Dual County League
-    - Walter-Kenny — 4A, 651 · Dual County League
-    - Bois Rouge — 4A, 639 · Bois Rouge · Dual County League
-    - La Savane — 4A, 616 · La Savane · Dual County League
-    - Riviere Salee — 1A, 68 · Riviere Salee · Dual County League
-- **Orellana** — 320,000 · 43.55N 116.81W
-    - Canal View — 9A, 2,578 · River Valley League
-    - Treasure Valley — 9A, 2,547 · River Valley League
-    - Hayes Valley — 9A, 2,524 · River Valley League
-    - James K. Polk — 9A, 2,516 · River Valley League
-    - Malpais — 9A, 2,150 · River Valley League
-    - Orellana Central — 8A, 2,116 · Big Basin League
-    - River Oaks — 8A, 1,996 · Big Basin League
-    - Springfield — 6A, 1,281 · Dual County League
-    - Lateral Seven — 5A, 913 · Kajaani League
-    - Sulphur Springs — 4A, 798 · Dual County League
-    - Grizzly Gulch — 4A, 552 · Dual County League
-- **Echevarria** — 280,000 · 42.99N 116.09W
-    - Redwood Mutual — 9A, 2,513 · River Valley League
-    - Bitterroot — 9A, 2,503 · River Valley League
-    - Furnace Creek — 9A, 2,422 · River Valley League
-    - Mae Jemison — 9A, 2,186 · River Valley League
-    - Red Bluff — 8A, 1,729 · Big Basin League
-    - Copper Belt — 5A, 1,019 · Three Rivers League
-    - Echevarria — 5A, 906 · Three Rivers League
-    - St. Elias College Prep — 4A, 730 · Halbrook Basin League
-- **Aldecoa** — 250,000 · 43.22N 116.55W
-    - Point Loma — 9A, 2,258 · Big Basin League
-    - Deadwood — 9A, 2,225 · Big Basin League
-    - Coyote Springs — 9A, 2,197 · Big Basin League
-    - Ulysses Grant — 8A, 2,022 · Halbrook Basin League
-    - Aldecoa — 8A, 1,993 · Halbrook Basin League
-    - Coles Creek — 7A, 1,477 · Big Basin League
-    - Pope Leo XIV — 6A, 1,314 · Halbrook Basin League
-    - Sawtelle — 6A, 1,066 · Halbrook Basin League
-    - St. Catherine College Prep — 6A, 1,035 · Halbrook Basin League
-- **Carden City** — 120,000 · 42.30N 115.85W
-    - Boyle Heights — 8A, 1,703 · Big Basin League
-    - Carden City — 7A, 1,424 · Big Basin League
-    - Granite Water & Power — 6A, 1,228 · Dual County League
-    - Buckhorn — 4A, 698 · Halbrook Basin League
-- **Cañada Grande** — 100,000 · 42.88N 115.80W
-    - Mater Dei — 8A, 2,067 · Big Basin League
-    - Cañada Grande — 8A, 1,929 · Big Basin League
-    - Noe Valley — 6A, 1,165 · Dual County League
-    - St. Gabriel Academy — 4A, 597 · Halbrook Basin League
-- **Zubieta** — 90,000 · 42.55N 116.02W
-    - Zubieta — 7A, 1,466 · Big Basin League
-    - Spring Branch — 7A, 1,441 · Big Basin League
-    - River Plain — 6A, 1,316 · Black Canyon League
-    - Sluice Gate — 6A, 1,074 · Black Canyon League
-- **Greaves** — 80,000 · 42.10N 115.94W
-    - Armour Fields — 7A, 1,381 · Big Basin League
-    - Greaves — 6A, 1,080 · Dual County League
-    - Skypark — 5A, 916 · Three Rivers League
-    - St. Martin Preparatory — 4A, 576 · Halbrook Basin League
-- **Etchartville** — 72,741 · 43.57N 116.83W
-    - Etchartville — 8A, 1,645 · Big Basin League
-    - Terrace Park — 6A, 1,219 · Dual County League
-    - High Desert Cooperative — 6A, 1,158 · Dual County League
-- **Northrup** — 70,000 · 42.64N 116.98W
-    - Western Sky — 6A, 1,249 · Dual County League
-    - Northrup I-50 Tech — 1A, 203 · Dual County League
-- **Simmons** — 70,000 · 42.58N 116.24W
-    - Simmons — 7A, 1,429 · Big Basin League
-    - Charles Harbor — 6A, 1,082 · Black Canyon League
-    - Oak Forest — 4A, 569 · Halbrook Basin League
-- **Tolland** — 60,000 · 42.56N 116.14W
-    - Cedar Exchange — 5A, 917 · Kajaani League
-- **Drayfield** — 52,259 · 42.83N 116.45W
-    - Drayfield — 5A, 881 · Three Rivers League
-    - Reservoir Park — 5A, 873 · Three Rivers League
-    - Empire — 5A, 845 · Three Rivers League
-- **Homecroft** — 50,000 · 42.27N 115.83W
-    - Homecroft — 8A, 1,643 · Big Basin League
-    - Cardinal Newman — 3A, 520 · Dual County League
-    - West Burlington — 3A, 393 · Dual County League
-- **Starlake** — 18,000 · 43.02N 116.83W
-    - Canal Lock — 2A, 352 · Three Rivers League
-    - Starlake — 2A, 347 · Three Rivers League
-- **Eagleton** — 15,000 · 43.10N 116.78W
-    - Eagleton — 2A, 315 · Three Rivers League
-- **Meridia** — 12,000 · 42.02N 115.94W
-    - Meridia — 2A, 288 · Three Rivers League
-- **Carmina** — 10,000 · 43.04N 116.76W
-    - Carmina — 3A, 506 · Dual County League
+*Northwest Jefferson · Emigrant, Stagewater · 1,090,045 people · 69 tennis programs*
+
+### Emigrant County — Harney County, OR
+
+- **Harriman** — 450,000 · 43.59N 119.05W
+    - John F. Kennedy — Group 1, 2,425 · Far West League
+    - Gravel Narrows — Group 1, 2,275 · Far West League
+    - St. Teresa — Group 1, 2,150 · Sage Plains League
+    - Pinyon Ridge — Group 1, 2,053 · Sage Plains League
+    - Hidden Draw — Group 1, 2,021 · Far West League
+    - Harriman — Group 1, 1,564 · Far West League
+    - Garden Plain — Group 1, 1,543 · Sage Plains League
+    - Green Valley — Group 1, 1,540 · Far West League
+    - Homestead — Group 1, 1,508 · Far West League
+    - Emigrant — Group 1, 1,401 · Sage Plains League
+    - Box Canyon — Group 1, 1,274 · Sage Plains League
+    - St. Casimir — Group 1, 1,035 · Sage Plains League
+    - St. Michael Academy — Group 1, 996 · Sage Plains League
+    - Frontier — Group 1, 950 · Far West League
+    - Crown Paper — Group 1, 864 · Sage Plains League
+    - Casimir Creek — Group 2, 372 · Vesterheim Athletic Association
+- **Rostova Junction** — 120,000 · 43.56N 119.08W
+    - Railyard — Group 1, 1,557 · Vesterheim Athletic Association
+    - Fir Valley Grange — Group 1, 1,206 · Vesterheim Athletic Association
+    - Rostova Junction — Group 1, 1,059 · Vesterheim Athletic Association
+    - Trailhead — Group 1, 932 · Sage Plains League
+    - Portola — Group 2, 823 · Far West League
+    - Clarendon — Group 2, 552 · Far West League
+- **Aurelia** — 80,000 · 43.42N 118.58W
+    - Ruth Bader Ginsburg — Group 1, 2,556 · Far West League
+    - Kingsway — Group 1, 1,313 · Far West League
+    - Goodman — Group 1, 1,043 · Far West League
+    - Aurelia — Group 1, 1,009 · Four Rivers Interscholastic League
+- **Harrow** — 45,000 · 42.46N 118.61W
+    - New Boston — Group 1, 913 · Sage Plains League
+    - Harrow — Group 2, 553 · Vesterheim Athletic Association
+    - St. Brigid — Group 2, 412 · Vesterheim Athletic Association
+- **Rilland** — 15,000 · 43.64N 118.63W
+    - Clear Lake — Group 2, 407 · Far West League
+    - Rilland — Group 2, 250 · Far West League
+- **Lieksa** — 13,134 · 43.01N 118.67W
+    - Lieksa — Group 2, 366 · Far West League
+    - Ocean Park — Group 2, 277 · Far West League
+- **San Vito** — 10,000 · 43.81N 118.38W
+    - San Vito Regional — Group 1, 920 · Vesterheim Athletic Association
+- **Diamante** — 8,000 · 43.43N 118.26W
+    - Diamante — Group 2, 338 · Vesterheim Athletic Association
+- **Iisalmi** — 6,100 · 42.26N 118.68W
+    - Iisalmi Union — Group 2, 324 · Vesterheim Athletic Association
+- **Minnesota City** — 6,000 · 42.83N 118.92W
+    - Minnesota City — Group 2, 215 · Far West League
+- **Ulery Junction** — 5,800 · 44.03N 118.64W
+    - Twin Rivers — Group 2, 274 · Pioneer League
+- **Agate** — 5,000 · 43.64N 118.82W
+    - Agate — Group 2, 286 · Vesterheim Athletic Association
+- **Lodestone** — 5,000 · 43.58N 119.08W
+    - Lodestone — Group 2, 250 · Far West League
+- **Nurmes** — 4,300 · 43.44N 118.80W
+    - Nurmes — Group 2, 242 · Far West League
+- **Yandell City** — 4,000 · 42.05N 118.80W
+    - Weller Regional — Group 2, 187 · Pioneer League
+- **Ashbrook** — 3,900 · 43.28N 118.96W
+    - Ashbrook — Group 2, 180 · Vesterheim Athletic Association
+- **Galactica Plains** — 2,800 · 43.28N 118.58W
+    - Galactica Plains — Group 2, 105 · Vesterheim Athletic Association
+- **Kuusamo** — 2,400 · 43.54N 119.50W
+    - Kuusamo — Group 2, 98 · Vesterheim Athletic Association
+- **Ninemile** — 2,100 · 43.59N 119.63W
+    - Ninemile — Group 2, 74 · Far West League
+
+### Stagewater County — Malheur County, OR
+
+- **Fort Valois** — 200,000 · 44.03N 116.96W
+    - Sagebrush — Group 1, 2,551 · Vesterheim Athletic Association
+    - Cole Valley — Group 1, 2,528 · Vesterheim Athletic Association
+    - Fort Valois — Group 1, 2,469 · Vesterheim Athletic Association
+    - Stagewater — Group 1, 2,447 · Vesterheim Athletic Association
+    - Valois Bluffs — Group 1, 2,318 · Vesterheim Athletic Association
+    - Quail Hollow — Group 1, 2,306 · North Range League
+- **Latgaway** — 28,411 · 43.88N 116.99W
+    - Latgaway — Group 2, 317 · Pioneer League
+    - Southern Jefferson Christian — Group 2, 93 · Pioneer League
+- **Cordero Wells** — 18,000 · 43.98N 117.24W
+    - Stagewater County High — Group 1, 980 · Vesterheim Athletic Association
+- **Dovetail** — 12,000 · 44.24N 116.98W
+    - River Market — Group 2, 336 · Pioneer League
+    - Dovetail — Group 2, 276 · Pioneer League
+- **Naylors Landing** — 6,200 · 42.97N 117.05W
+    - Naylors Landing — Group 2, 290 · Kajaani League
+- **Sotkamo** — 4,800 · 43.74N 117.07W
+    - Sotkamo Union — Group 2, 297 · Kajaani League
+- **Mabry** — 4,700 · 43.86N 117.61W
+    - Mabry Township — Group 2, 310 · Kajaani League
+- **North Simmons** — 4,700 · 44.25N 117.52W
+    - North Simmons — Group 2, 197 · Kajaani League
+- **Silver Junction** — 4,500 · 43.74N 118.08W
+    - Silver Junction — Group 2, 160 · Kajaani League
+- **Antler Prairie** — 4,000 · 43.92N 116.99W
+    - Antler Prairie — Group 2, 192 · Pioneer League
+- **Sixes** — 3,300 · 42.91N 117.53W
+    - Sixes — Group 2, 157 · Kajaani League
+- **Basalt Prairie** — 3,000 · 42.41N 117.87W
+    - Basalt Prairie Union — Group 2, 128 · Pioneer League
+- **Kendricks Landing** — 3,000 · 43.91N 118.15W
+    - Kendricks Landing — Group 2, 135 · Pioneer League
+- **Sage Junction** — 2,400 · 44.25N 117.83W
+    - Sluice Valley — Group 1, 870 · North Range League
+- **Raahe** — 2,400 · 44.00N 117.01W
+    - Raahe — Group 2, 71 · Kajaani League
+- **Espoo** — 100 · 43.50N 118.01W
+    - Espoo — Group 2, 140 · Pioneer League
 
 ## Alderwold
 
-*Northwest Jefferson · Antler · 377,584 people · 26 tennis programs*
+*Northwest Jefferson · Antler · 377,584 people · 38 tennis programs*
 
 ### Antler County — Douglas County, OR
 
 - **Plainfield** — 84,323 · 43.22N 123.34W
-    - Plainfield — 6A, 1,297 · Quarry League
-    - George Washington Carver — 6A, 1,140 · Quarry League
-    - Calasanz Prep — 4A, 769 · Valle Vista League
+    - Plainfield — 6A, 1,297 · Metro League
+    - George Washington Carver — 6A, 1,140 · Metro League
+    - Calasanz Prep — 4A, 769 · Gateway League
 - **Blackpine** — 82,218 · 43.39N 123.31W
     - East Range Agricultural — 5A, 860 · Ambassador League
     - Blackpine — 5A, 825 · Ambassador League
-    - Ravenwood — 4A, 671 · Valle Vista League
+    - Ravenwood — 4A, 671 · Gateway League
 - **Netherwood** — 33,052 · 43.16N 123.37W
     - Calvary Christian — 3A, 464 · Timber Valley League
-    - Netherwood — 2A, 349 · Foundry League
+    - Netherwood — 2A, 349 · Millworks Athletic Association
     - North Valley Christian — 3A, 336 · Timber Valley League
-- **Black Springs** — 22,142 · 43.27N 123.35W · *no tennis programs*
+- **Black Springs** — 22,142 · 43.27N 123.35W
+    - Black Springs — 4A, 700 · Gateway League
 - **Tamarack Flat** — 20,129 · 43.12N 123.41W
     - Mill Creek — 3A, 531 · Timber Valley League
 - **Mount Clambake** — 18,574 · 43.70N 124.10W
@@ -507,79 +500,90 @@ class, enrollment, and locality where the school carries one.
     - Corey Canyon — 3A, 477 · Timber Valley League
     - Wolf Gap International — 2A, 258 · Foundry League
 - **Yarburg** — 12,493 · 43.02N 123.29W
-    - Yarburg — 2A, 206 · Foundry League
-- **Kendrickville** — 9,000 · 42.93N 123.28W · *no tennis programs*
+    - Yarburg — 2A, 206 · Millworks Athletic Association
+- **Kendrickville** — 9,000 · 42.93N 123.28W
+    - Kendrickville — 2A, 334 · Foundry League
 - **Gold Hollow** — 5,800 · 43.30N 123.10W
     - Gold Hollow — 2A, 253 · Foundry League
 - **Gruesome Ridge** — 5,700 · 42.95N 123.36W
     - Gruesome Ridge — 2A, 297 · Foundry League
 - **Bidwell** — 5,300 · 43.66N 123.32W
     - Bidwell — 1A, 199 · Orchard League
-- **Purcell Crossing** — 5,200 · 43.60N 123.28W · *no tennis programs*
+- **Purcell Crossing** — 5,200 · 43.60N 123.28W
+    - Antler County High — 2A, 327 · Millworks Athletic Association
 - **Annes Summit** — 4,800 · 43.42N 123.30W
     - Annes Summit — 2A, 244 · Foundry League
 - **Ransoms Landing** — 4,600 · 42.74N 123.42W
-    - Ransoms Landing — 1A, 189 · Orchard League
-- **Harmon Siding** — 4,000 · 43.18N 123.49W · *no tennis programs*
+    - Ransoms Landing — 1A, 189 · East Cascades League
+- **Harmon Siding** — 4,000 · 43.18N 123.49W
+    - Harmon Siding — 2A, 210 · Foundry League
 - **Pine Siding** — 4,000 · 43.25N 123.46W
-    - Pine Siding — 1A, 190 · Orchard League
+    - Pine Siding — 1A, 190 · East Cascades League
 - **Bidwell City** — 3,900 · 43.10N 123.43W
     - Alfalfa City — 1A, 186 · Orchard League
 - **Huckle Glen** — 3,900 · 43.68N 124.17W
     - County Line — 1A, 150 · Orchard League
-- **Pellmont** — 3,900 · 43.42N 123.21W · *no tennis programs*
-- **Salmonberry Glen** — 3,700 · 42.97N 123.17W · *no tennis programs*
-- **Alderwell** — 3,500 · 43.73N 124.11W · *no tennis programs*
+- **Pellmont** — 3,900 · 43.42N 123.21W
+    - Pellmont — 1A, 205 · Orchard League
+- **Salmonberry Glen** — 3,700 · 42.97N 123.17W
+    - Salmonberry Glen — 2A, 321 · Millworks Athletic Association
+- **Alderwell** — 3,500 · 43.73N 124.11W
+    - North Antler Regional — 2A, 314 · Foundry League
 - **Whistle Stop** — 3,300 · 43.64N 123.57W
-    - Whistle Stop — 1A, 152 · Orchard League
+    - Whistle Stop — 1A, 152 · East Cascades League
 - **Mount Ruth** — 3,100 · 43.37N 123.47W
     - Sablewood Union — 1A, 140 · Orchard League
-- **Camas Crossing** — 2,800 · 43.71N 123.22W · *no tennis programs*
+- **Camas Crossing** — 2,800 · 43.71N 123.22W
+    - Elk Run — 2A, 308 · Foundry League
 - **Manzanita Junction** — 2,800 · 43.55N 123.82W
     - Manzanita Junction — 1A, 134 · Orchard League
-- **Ansotegui** — 2,500 · 42.80N 123.26W · *no tennis programs*
+- **Ansotegui** — 2,500 · 42.80N 123.26W
+    - South Fork — 2A, 301 · Foundry League
 - **Cinder** — 2,400 · 43.11N 123.46W
     - Granite Basin — 2A, 86 · Foundry League
-- **Annes Summits Landing** — 2,400 · 43.22N 123.41W · *no tennis programs*
-- **Flume** — 2,000 · 43.27N 123.61W · *no tennis programs*
-- **Aspen Spur** — 1,400 · 43.03N 123.67W · *no tennis programs*
+- **Annes Summits Landing** — 2,400 · 43.22N 123.41W
+    - High Timber — 1A, 199 · Orchard League
+- **Flume** — 2,000 · 43.27N 123.61W
+    - Flume — 1A, 194 · Orchard League
+- **Aspen Spur** — 1,400 · 43.03N 123.67W
+    - Aspen Spur Union — 1A, 188 · Orchard League
 
 ## Selquah
 
-*Northwest Jefferson · Bidwell, Weller · 2,348,934 people · 96 tennis programs*
+*Northwest Jefferson · Bidwell, Weller · 2,348,934 people · 98 tennis programs*
 
 ### Bidwell County — Coos County, OR
 
 - **Port Veles** — 1,200,000 · 43.37N 124.22W
-    - Seafarer — 9A, 2,573 · Capital Athletic Association
-    - Veles Vo-Tech — 9A, 2,458 · Capital Athletic Association
-    - James Monroe — 9A, 2,348 · Susquehanna · Capital Athletic Association
-    - Franklin Pierce — 9A, 2,213 · Patuxent · Capital Athletic Association
-    - Readbury — 9A, 2,178 · Capital Athletic Association
-    - Martin Van Buren — 9A, 2,148 · Piscataway · Capital Athletic Association
+    - Seafarer — 9A, 2,573 · Mariners League
+    - Veles Vo-Tech — 9A, 2,458 · Mariners League
+    - James Monroe — 9A, 2,348 · Susquehanna · Del Rey Athletic Association
+    - Franklin Pierce — 9A, 2,213 · Patuxent · Mariners League
+    - Readbury — 9A, 2,178 · Mariners League
+    - Martin Van Buren — 9A, 2,148 · Piscataway · Mariners League
     - William Henry Harrison — 8A, 2,090 · Rappahannock · Narpes Interscholastic League
     - Roosevelt — 8A, 2,010 · Potomac · Narpes Interscholastic League
     - Washington — 8A, 1,947 · Taunton · Narpes Interscholastic League
     - Seawall — 8A, 1,719 · Narpes Interscholastic League
     - Zachary Taylor — 8A, 1,685 · Pamunkey · Narpes Interscholastic League
     - Chesapeake — 8A, 1,638 · Chesapeake · Narpes Interscholastic League
-    - Narragansett — 7A, 1,630 · Narragansett · Chinook League
+    - Narragansett — 7A, 1,630 · Narragansett · Tidelands League
     - Veles Harbor — 7A, 1,582 · Chinook League
-    - Swiss Hills Prep — 7A, 1,520 · Brandywine · Chinook League
+    - Swiss Hills Prep — 7A, 1,520 · Brandywine · Tidelands League
     - Benjamin Harrison — 7A, 1,348 · Schuylkill · Chinook League
-    - Wicomico — 7A, 1,348 · Wicomico · Chinook League
+    - Wicomico — 7A, 1,348 · Wicomico · Tidelands League
     - Clinton — 7A, 1,346 · Occoquan · Chinook League
     - Fillmore — 7A, 1,342 · Mattaponi · Chinook League
     - Henson Prep — 7A, 1,323 · Chinook League
-    - Obama — 6A, 1,302 · Chickahominy · Fiesta Athletic Association
-    - St. Vincent — 6A, 1,257 · Black Canyon League
-    - Calvin Coolidge — 6A, 1,187 · Shenandoah · Black Canyon League
-    - Tidewater Catholic — 6A, 1,164 · Tidewater · Fiesta Athletic Association
-    - Adams — 6A, 1,151 · Roanoke · Black Canyon League
-    - Severn — 6A, 1,130 · Severn · Black Canyon League
-    - Rutherford Hayes — 6A, 1,124 · Wethersfield · Black Canyon League
-    - Christchurch Episcopal — 6A, 1,117 · Christchurch · Fiesta Athletic Association
-    - Cleveland — 6A, 1,058 · Pocomoke · Black Canyon League
+    - Obama — 6A, 1,302 · Chickahominy · Ostrobothnia League
+    - St. Vincent — 6A, 1,257 · Ostrobothnia League
+    - Calvin Coolidge — 6A, 1,187 · Shenandoah · Mariners League
+    - Tidewater Catholic — 6A, 1,164 · Tidewater · Ostrobothnia League
+    - Adams — 6A, 1,151 · Roanoke · Mariners League
+    - Severn — 6A, 1,130 · Severn · Mariners League
+    - Rutherford Hayes — 6A, 1,124 · Wethersfield · Mariners League
+    - Christchurch Episcopal — 6A, 1,117 · Christchurch · Ostrobothnia League
+    - Cleveland — 6A, 1,058 · Pocomoke · Mariners League
     - Biden — 5A, 1,006 · Choptank · Narpes Interscholastic League
     - Kittery — 5A, 1,005 · Kittery · Mariners League
     - Gerald Ford — 5A, 990 · Sassafras · Narpes Interscholastic League
@@ -593,21 +597,21 @@ class, enrollment, and locality where the school carries one.
     - Port Veles Episcopal — 4A, 775 · Chinook League
     - Beacon Hill — 4A, 724 · Chinook League
     - Garfield — 3A, 389 · Buzzards Bay · Pori League
-    - Seminary — 3A, 372 · Pori League
+    - Seminary — 3A, 372 · Breakwater Athletic Association
 - **Santa Michaela** — 320,000 · 43.41N 124.22W
-    - Benton Park — 9A, 2,409 · Capital Athletic Association
-    - Round Mountain Grange — 9A, 2,372 · Ironwood League
-    - Carondelet — 9A, 2,309 · Capital Athletic Association
-    - Santa Michaela — 9A, 2,190 · Ironwood League
+    - Benton Park — 9A, 2,409 · Mariners League
+    - Round Mountain Grange — 9A, 2,372 · Mariners League
+    - Carondelet — 9A, 2,309 · Mariners League
+    - Santa Michaela — 9A, 2,190 · Mariners League
     - Tidegate — 8A, 1,884 · Narpes Interscholastic League
-    - Sacred Heart Cathedral — 7A, 1,371 · Chinook League
-    - Faith Academy — 4A, 722 · Chinook League
-    - Arroyo Verde — 4A, 683 · Chinook League
+    - Sacred Heart Cathedral — 7A, 1,371 · Tidelands League
+    - Faith Academy — 4A, 722 · Breakwater Athletic Association
+    - Arroyo Verde — 4A, 683 · Breakwater Athletic Association
 - **Port Meridian** — 205,000 · 43.18N 124.19W
-    - Port Meridian West — 9A, 2,189 · Capital Athletic Association
+    - Port Meridian West — 9A, 2,189 · Del Rey Athletic Association
     - Bell — 8A, 2,009 · South Coast League
     - Holy Cross — 8A, 1,949 · South Coast League
-    - Port Meridian North — 8A, 1,877 · Narpes Interscholastic League
+    - Port Meridian North — 8A, 1,877 · South Coast League
     - Port Meridian South — 7A, 1,405 · Chinook League
     - Kettle Ridge — 7A, 1,359 · Chinook League
     - Saint Francis — 5A, 966 · Narpes Interscholastic League
@@ -617,59 +621,168 @@ class, enrollment, and locality where the school carries one.
     - Valley Providence — 3A, 379 · Pori League
 - **San Dámaso** — 82,000 · 43.12N 124.41W
     - Pacific Gate — 8A, 2,043 · Narpes Interscholastic League
-    - San Dámaso — 6A, 1,086 · Fiesta Athletic Association
-    - Jesse Jackson — 4A, 730 · Chinook League
+    - San Dámaso — 6A, 1,086 · Ostrobothnia League
+    - Jesse Jackson — 4A, 730 · Breakwater Athletic Association
     - Sharpstown — 4A, 604 · Chinook League
 - **Los Maderos** — 38,000 · 43.06N 124.14W
     - Excelsior — 4A, 682 · Chinook League
-    - Los Maderos — 2A, 363 · Chinook League
-    - Oak Meyer — 2A, 356 · Chinook League
+    - Los Maderos — 2A, 363 · Del Rey Athletic Association
+    - Oak Meyer — 2A, 356 · Del Rey Athletic Association
 - **New Bergen** — 18,551 · 43.35N 124.31W
     - New Bergen — 3A, 412 · Pori League
 - **Port Ainsley** — 15,000 · 43.58N 124.18W
     - St. Elias Academy — 3A, 338 · Pori League
 - **New Ballard** — 5,500 · 43.36N 124.20W
-    - New Ballard — 2A, 344 · Chinook League
+    - New Ballard — 2A, 344 · Del Rey Athletic Association
 
 ### Weller County — Curry County, OR
 
 - **Fort Meriwether** — 210,000 · 42.05N 124.28W
-    - Weller — 9A, 2,271 · Ironwood League
+    - Weller — 9A, 2,271 · Mariners League
     - Breakwater — 8A, 2,143 · Narpes Interscholastic League
-    - Lighthouse — 7A, 1,441 · Metro League
-    - Ironworks — 6A, 1,047 · Fiesta Athletic Association
+    - Lighthouse — 7A, 1,441 · Tidelands League
+    - Ironworks — 6A, 1,047 · Ostrobothnia League
     - Fort Meriwether — 5A, 845 · Mariners League
     - Tide Point — 5A, 822 · Mariners League
-    - Westfield Friends — 4A, 623 · Surf League
+    - Westfield Friends — 4A, 623 · Breakwater Athletic Association
 - **Wales City** — 68,000 · 42.05N 124.27W
     - Wales City — 5A, 949 · Mariners League
     - Meadowbrook — 5A, 833 · Mariners League
-    - Bracken Works — 4A, 744 · Surf League
+    - Bracken Works — 4A, 744 · Breakwater Athletic Association
 - **Newark River** — 60,029 · 42.41N 124.42W
-    - Ryken — 4A, 616 · Chinook League
-    - Sherwood Estates — 4A, 569 · Chinook League
-    - River North — 3A, 386 · Assay Athletic Association
-    - Newark River — 2A, 361 · Chinook League
+    - Ryken — 4A, 616 · Breakwater Athletic Association
+    - Sherwood Estates — 4A, 569 · Breakwater Athletic Association
+    - River North — 3A, 386 · Breakwater Athletic Association
+    - Newark River — 2A, 361 · Sluice League
 - **Fort Weller** — 42,000 · 42.75N 124.50W
-    - Fort Weller — 4A, 729 · Chinook League
-    - Earl Warren — 4A, 667 · Chinook League
-    - Weller Independent — 3A, 414 · Pori League
+    - Fort Weller — 4A, 729 · Breakwater Athletic Association
+    - Earl Warren — 4A, 667 · Breakwater Athletic Association
+    - Weller Independent — 3A, 414 · Breakwater Athletic Association
 - **Cabo Esperanza** — 25,000 · 42.51N 124.41W
-    - Cabo Esperanza Tech — 3A, 534 · Pori League
+    - Cabo Esperanza Tech — 3A, 534 · Breakwater Athletic Association
 - **Tamarack Harbor** — 20,863 · 42.92N 124.45W
-    - Tidewater — 3A, 509 · Assay Athletic Association
+    - Tidewater — 3A, 509 · Breakwater Athletic Association
 - **Bay Oregon** — 13,491 · 42.28N 124.39W
-    - Bay Oregon — 2A, 225 · Chinook League
-- **Bahía Azúl** — 7,000 · 42.56N 124.07W · *no tennis programs*
+    - Bay Oregon — 2A, 225 · Del Rey Athletic Association
+- **Bahía Azúl** — 7,000 · 42.56N 124.07W
+    - Charleston-on-the-Coast — 3A, 504 · Breakwater Athletic Association
 - **Cape Angeles** — 5,700 · 42.47N 124.37W
-    - Cape Angeles — 2A, 309 · Chinook League
+    - Cape Angeles — 2A, 309 · Del Rey Athletic Association
 - **Texas Beach** — 4,600 · 42.22N 124.34W
-    - Texas Beach — 2A, 249 · Chinook League
+    - Texas Beach — 2A, 249 · Sluice League
 - **New Penzance Island** — 3,600 · 42.89N 124.46W
-    - New Penzance Island — 1A, 195 · South Coast League
-- **Pellford** — 2,600 · 42.39N 124.42W · *no tennis programs*
+    - New Penzance Island — 1A, 195 · Tailings League
+- **Pellford** — 2,600 · 42.39N 124.42W
+    - Pellford — 1A, 183 · Tailings League
 - **Salmon Bay** — 2,000 · 42.63N 124.06W
-    - Salmon Bay — 1A, 82 · South Coast League
+    - Salmon Bay — 1A, 82 · Tailings League
+
+## Snake River Plain
+
+*Northeast Jefferson · Eden, Raft · 26,100 people · 6 tennis programs*
+
+### Eden County — Jerome County, ID
+
+- **Jerome** — 12,300 · 42.72N 114.52W
+    - Idaho Valley — Group 1, 1,450 · North Range League
+- **Hazelton** — 750 · 42.59N 114.14W
+    - Pierre — Group 2, 720 · Basalt League
+- **Eden** — 400 · 42.60N 114.21W
+    - Eden County Christian — Group 2, 420 · Basalt League
+
+### Raft County — Cassia County, ID
+
+- **Burley** — 11,700 · 42.53N 113.79W
+    - South Wheeler — Group 1, 1,500 · North Range League
+- **Oakley** — 760 · 42.24N 113.88W
+    - New Baltimore — Group 1, 930 · North Range League
+- **Malta** — 190 · 42.30N 113.37W
+    - Raft County Catholic — Group 2, 390 · Basalt League
+
+## Silver Basin
+
+*Northeast Jefferson · Ruby, Vance · 1,373,700 people · 56 tennis programs*
+
+### Ruby County — Elko County, NV
+
+- **Elko** — 20,500 · 40.83N 115.76W
+    - Vermillion — Group 1, 1,650 · North Range League
+- **Carlin** — 2,000 · 40.71N 116.10W
+    - Ruby County Catholic — Group 2, 620 · Basalt League
+- **Wells** — 1,200 · 41.11N 114.96W
+    - Atlanta — Group 1, 1,100 · North Range League
+
+### Vance County — Owyhee County, ID
+
+- **Echevarria** — 280,000 · 42.99N 116.09W
+    - Redwood Mutual — Group 1, 2,513 · Dual County League
+    - Bitterroot — Group 1, 2,503 · Dual County League
+    - Furnace Creek — Group 1, 2,422 · Upper Basin League
+    - Mae Jemison — Group 1, 2,186 · Upper Basin League
+    - Red Bluff — Group 1, 1,729 · Dual County League
+    - Copper Belt — Group 1, 1,019 · Upper Basin League
+    - Echevarria — Group 1, 906 · Upper Basin League
+    - St. Elias College Prep — Group 2, 730 · Dual County League
+- **Aldecoa** — 250,000 · 43.22N 116.55W
+    - Point Loma — Group 1, 2,258 · Twin Counties Athletic Association
+    - Deadwood — Group 1, 2,225 · Twin Counties Athletic Association
+    - Coyote Springs — Group 1, 2,197 · Twin Counties Athletic Association
+    - Ulysses Grant — Group 1, 2,022 · Twin Counties Athletic Association
+    - Aldecoa — Group 1, 1,993 · Twin Counties Athletic Association
+    - Coles Creek — Group 1, 1,477 · Twin Counties Athletic Association
+    - Pope Leo XIV — Group 1, 1,314 · Twin Counties Athletic Association
+    - Sawtelle — Group 1, 1,066 · Twin Counties Athletic Association
+    - St. Catherine College Prep — Group 1, 1,035 · Twin Counties Athletic Association
+- **Carden City** — 120,000 · 42.30N 115.85W
+    - Boyle Heights — Group 1, 1,703 · Twin Counties Athletic Association
+    - Carden City — Group 1, 1,424 · Twin Counties Athletic Association
+    - Granite Water & Power — Group 1, 1,228 · Dual County League
+    - Buckhorn — Group 2, 698 · Forks League
+- **Cañada Grande** — 100,000 · 42.88N 115.80W
+    - Mater Dei — Group 1, 2,067 · Dual County League
+    - Cañada Grande — Group 1, 1,929 · Dual County League
+    - Noe Valley — Group 1, 1,165 · Dual County League
+    - St. Gabriel Academy — Group 2, 597 · Dual County League
+- **Zubieta** — 90,000 · 42.55N 116.02W
+    - Zubieta — Group 1, 1,466 · Four Rivers Interscholastic League
+    - Spring Branch — Group 1, 1,441 · Four Rivers Interscholastic League
+    - River Plain — Group 1, 1,316 · Four Rivers Interscholastic League
+    - Sluice Gate — Group 1, 1,074 · Four Rivers Interscholastic League
+- **Greaves** — 80,000 · 42.10N 115.94W
+    - Armour Fields — Group 1, 1,381 · Upper Basin League
+    - Greaves — Group 1, 1,080 · Upper Basin League
+    - Skypark — Group 1, 916 · Upper Basin League
+    - St. Martin Preparatory — Group 2, 576 · Dual County League
+- **Etchartville** — 72,741 · 43.57N 116.83W
+    - Etchartville — Group 1, 1,645 · Upper Basin League
+    - Terrace Park — Group 1, 1,219 · Upper Basin League
+    - High Desert Cooperative — Group 1, 1,158 · Upper Basin League
+- **Northrup** — 70,000 · 42.64N 116.98W
+    - Western Sky — Group 1, 1,249 · Four Rivers Interscholastic League
+    - Northrup I-50 Tech — Group 2, 203 · Dual County League
+- **Simmons** — 70,000 · 42.58N 116.24W
+    - Simmons — Group 1, 1,429 · Four Rivers Interscholastic League
+    - Charles Harbor — Group 1, 1,082 · Four Rivers Interscholastic League
+    - Oak Forest — Group 2, 569 · Dual County League
+- **Tolland** — 60,000 · 42.56N 116.14W
+    - Cedar Exchange — Group 1, 917 · Four Rivers Interscholastic League
+- **Drayfield** — 52,259 · 42.83N 116.45W
+    - Drayfield — Group 1, 881 · Dual County League
+    - Reservoir Park — Group 1, 873 · Dual County League
+    - Empire — Group 1, 845 · Dual County League
+- **Homecroft** — 50,000 · 42.27N 115.83W
+    - Homecroft — Group 1, 1,643 · Four Rivers Interscholastic League
+    - Cardinal Newman — Group 2, 520 · Dual County League
+    - West Burlington — Group 2, 393 · Dual County League
+- **Starlake** — 18,000 · 43.02N 116.83W
+    - Canal Lock — Group 2, 352 · Vesterheim Athletic Association
+    - Starlake — Group 2, 347 · Dual County League
+- **Eagleton** — 15,000 · 43.10N 116.78W
+    - Eagleton — Group 2, 315 · Dual County League
+- **Meridia** — 12,000 · 42.02N 115.94W
+    - Meridia — Group 2, 288 · Dual County League
+- **Carmina** — 10,000 · 43.04N 116.76W
+    - Carmina — Group 2, 506 · Dual County League
 
 ## Ashbury Metro
 
@@ -685,7 +798,7 @@ class, enrollment, and locality where the school carries one.
     - Brookmont — 7A, 1,596 · Metro League
     - Pinebluffs — 7A, 1,548 · Metro League
     - Parkside — 7A, 1,323 · Metro League
-    - Ansotegui Siding — 1A, 241 · Orchard League
+    - Ansotegui Siding — 1A, 241 · East Cascades League
 - **Hawk Lake** — 86,000 · 42.16N 123.65W
     - Oakhaven — 6A, 1,299 · Metro League
     - Hawk Lake — 6A, 1,143 · Metro League
@@ -703,12 +816,12 @@ class, enrollment, and locality where the school carries one.
     - Selby Tech — 3A, 509 · Timber Valley League
 - **Haverly** — 18,000 · 42.22N 123.27W
     - Katherine Johnson — 3A, 512 · Timber Valley League
-    - Haverly — 2A, 254 · Mountain Pass League
+    - Haverly — 2A, 254 · Millworks Athletic Association
 - **Belden Springs** — 15,000 · 42.28N 123.62W
-    - Springdale — 2A, 306 · Foundry League
-    - Belden Springs — 2A, 202 · Foundry League
+    - Springdale — 2A, 306 · Millworks Athletic Association
+    - Belden Springs — 2A, 202 · Millworks Athletic Association
 - **Quillan** — 12,000 · 42.19N 123.65W
-    - Quillan — 2A, 207 · Mountain Pass League
+    - Quillan — 2A, 207 · Millworks Athletic Association
 
 ### Marlow County — Jackson County, OR
 
@@ -721,9 +834,9 @@ class, enrollment, and locality where the school carries one.
     - Dry Fork — 8A, 2,030 · Cahaba · Ambassador League
     - Dogpatch — 8A, 1,909 · Hackensack · Ambassador League
     - Sherwood Bench — 8A, 1,654 · Sherwood · Ambassador League
-    - Tallulah Central — 7A, 1,577 · Tallulah · Crestview League
-    - Junction — 7A, 1,547 · Crestview League
-    - Alameda — 7A, 1,447 · Crestview League
+    - Tallulah Central — 7A, 1,577 · Tallulah · Metro League
+    - Junction — 7A, 1,547 · Metro League
+    - Alameda — 7A, 1,447 · Metro League
     - Chaminade — 6A, 1,074 · Pointe Coupee · Metro League
     - Providence Academy — 5A, 888 · Ambassador League
     - Metropolitan Country Day — 5A, 856 · Ambassador League
@@ -733,14 +846,14 @@ class, enrollment, and locality where the school carries one.
     - Evans Larsen Day — 4A, 792 · Bannock · Gateway League
     - Timberline — 4A, 759 · Monongahela · Gateway League
     - Forge — 4A, 696 · Hagerstown · Gateway League
-    - Allegheny — 4A, 574 · Allegheny · Valle Vista League
+    - Allegheny — 4A, 574 · Allegheny · Gateway League
     - Kishwaukee — 4A, 559 · Kishwaukee · Gateway League
-    - Condotti Vanguard Academy — 3A, 531 · Condotti · Crestview League
-    - Romero-Finniski — 3A, 507 · Finiski · Crestview League
+    - Condotti Vanguard Academy — 3A, 531 · Condotti · Metro League
+    - Romero-Finniski — 3A, 507 · Finiski · Metro League
     - St. Sebastian Prep — 3A, 459 · Timber Valley League
     - Natchez Mercy — 3A, 373 · Natchez · Timber Valley League
-    - Covenant Christian — 2A, 297 · Tuskegee · Mountain Pass League
-    - St. Norbert Abbey — 1A, 93 · Natchitoches · Orchard League
+    - Covenant Christian — 2A, 297 · Tuskegee · Millworks Athletic Association
+    - St. Norbert Abbey — 1A, 93 · Natchitoches · East Cascades League
 - **Boyerstown** — 220,000 · 42.19N 122.71W
     - Notre Dame — 9A, 2,531 · Gateway League
     - Octavia Butler — 9A, 2,217 · Gateway League
@@ -752,39 +865,39 @@ class, enrollment, and locality where the school carries one.
 - **Los Robles** — 150,000 · 42.38N 122.92W
     - Dolores Huerta — 9A, 2,239 · Gateway League
     - Westover — 8A, 1,713 · Ambassador League
-    - St. Francis Catholic — 7A, 1,575 · Metro League
-    - Lost River Irrigation — 7A, 1,518 · Crestview League
-    - Los Robles — 7A, 1,350 · Crestview League
+    - St. Francis Catholic — 7A, 1,575 · Premier Athletic Association
+    - Lost River Irrigation — 7A, 1,518 · Premier Athletic Association
+    - Los Robles — 7A, 1,350 · Premier Athletic Association
 - **St. Varian** — 120,000 · 42.47N 122.80W
     - Commonwealth — 7A, 1,613 · Premier Athletic Association
     - St. Varian — 6A, 1,212 · Metro League
     - St. Catherine Academy — 5A, 1,006 · Capital Athletic Association
     - John Quincy Adams — 5A, 913 · Capital Athletic Association
-    - Marlow — 4A, 655 · Valle Vista League
+    - Marlow — 4A, 655 · Crestview League
 - **Norview** — 93,588 · 42.44N 122.83W
     - Mission Terrace — 7A, 1,544 · Premier Athletic Association
-    - Ortega Terrace — 7A, 1,355 · Crestview League
+    - Ortega Terrace — 7A, 1,355 · Premier Athletic Association
     - Grace Lee Boggs — 5A, 858 · Capital Athletic Association
 - **Perryville** — 90,000 · 42.25N 122.79W
     - James Baldwin — 8A, 2,058 · Ambassador League
     - Perryville — 6A, 1,169 · Metro League
     - Perry Green — 5A, 996 · Capital Athletic Association
 - **Mount Horeb** — 65,000 · 42.28N 122.82W
-    - Sonia Sotomayor — 4A, 727 · Gateway League
-    - Mount Horeb — 4A, 593 · Gateway League
-    - William Howard Taft — 4A, 560 · Gateway League
+    - Sonia Sotomayor — 4A, 727 · Crestview League
+    - Mount Horeb — 4A, 593 · Crestview League
+    - William Howard Taft — 4A, 560 · Crestview League
 - **Rye** — 63,507 · 42.61N 122.81W
-    - Crown Hill — 7A, 1,473 · Metro League
+    - Crown Hill — 7A, 1,473 · Premier Athletic Association
     - Rye — 5A, 900 · Capital Athletic Association
     - Barley Point — 5A, 896 · Capital Athletic Association
-    - Cañada Irrigation — 4A, 640 · Valle Vista League
+    - Cañada Irrigation — 4A, 640 · Crestview League
 - **San Joaquín** — 50,000 · 42.31N 122.97W
     - Golden State Packing — 6A, 1,141 · Metro League
-    - Ida B. Wells — 4A, 789 · Gateway League
+    - Ida B. Wells — 4A, 789 · Crestview League
 - **Fort Halloran** — 45,000 · 42.44N 123.17W
     - Fort Halloran — 4A, 761 · Gateway League
 - **Los Alisos** — 40,000 · 42.43N 123.05W
-    - Yuri Kochiyama — 4A, 608 · Gateway League
+    - Yuri Kochiyama — 4A, 608 · Crestview League
     - Los Alisos — 3A, 511 · Timber Valley League
 - **Purcell** — 39,905 · 42.25N 123.03W
     - Purcell — 9A, 2,564 · Gateway League
@@ -793,7 +906,7 @@ class, enrollment, and locality where the school carries one.
 
 ## Cascade Divide
 
-*Northwest Jefferson · Cinder, Tamarack · 890,158 people · 46 tennis programs*
+*Northwest Jefferson · Cinder, Tamarack · 890,158 people · 52 tennis programs*
 
 ### Cinder County — Siskiyou County, CA
 
@@ -804,10 +917,12 @@ class, enrollment, and locality where the school carries one.
     - Draybrook Union — 2A, 245 · Mountain Pass League
 - **Ashstead** — 3,900 · 41.42N 122.39W
     - Ashstead — 1A, 177 · East Cascades League
-- **Naylor City** — 2,500 · 41.21N 122.27W · *no tennis programs*
+- **Naylor City** — 2,500 · 41.21N 122.27W
+    - Naylor City — 2A, 295 · Mountain Pass League
 - **Mount Dylan Lake** — 1,700 · 41.73N 122.53W
     - Mount Dylan Lake — 1A, 76 · East Cascades League
-- **Sage Spur** — 1,400 · 41.79N 123.38W · *no tennis programs*
+- **Sage Spur** — 1,400 · 41.79N 123.38W
+    - Pine Rim — 1A, 177 · East Cascades League
 
 ### Tamarack County — Klamath County, OR
 
@@ -816,7 +931,7 @@ class, enrollment, and locality where the school carries one.
     - Tamarack — 9A, 2,475 · Gold Valley League
     - Mesa Verde — 9A, 2,453 · Gold Valley League
     - Forks Harbor — 8A, 2,131 · Ambassador League
-    - Thurgood Marshall — 8A, 2,048 · Ambassador League
+    - Thurgood Marshall — 8A, 2,048 · Gold Valley League
     - Gwendolyn Brooks — 8A, 2,032 · Ambassador League
     - Klamath Exchange — 7A, 1,564 · Premier Athletic Association
     - Lakewood — 7A, 1,416 · Premier Athletic Association
@@ -824,22 +939,22 @@ class, enrollment, and locality where the school carries one.
     - Antelope Butte — 6A, 1,172 · Cascade Divide League
     - Mission Butte — 6A, 1,121 · Cascade Divide League
     - Carrollton — 6A, 1,080 · Cascade Divide League
-    - San Cordero Central — 4A, 695 · Valle Vista League
-    - Pope Victor I — 1A, 180 · East Cascades League
+    - San Cordero Central — 4A, 695 · Crestview League
+    - Pope Victor I — 1A, 180 · Summit League
 - **Fort Carden** — 200,000 · 42.21N 121.74W
-    - Snowline — 9A, 2,316 · Gold Valley League
+    - Snowline — 9A, 2,316 · Gateway League
     - Fort Carden — 8A, 2,009 · Ambassador League
     - Jefferson Park — 8A, 1,806 · Ambassador League
     - Albany Park — 7A, 1,518 · Premier Athletic Association
-    - Carden Pass — 6A, 1,072 · Metro League
-    - Crestline — 4A, 597 · Valle Vista League
+    - Carden Pass — 6A, 1,072 · Cascade Divide League
+    - Crestline — 4A, 597 · Crestview League
     - Timber Crest — 3A, 355 · Sky-Em League
 - **Redfork** — 58,000 · 42.03N 121.60W
     - Redfork West — 6A, 1,304 · Cascade Divide League
     - Western Slope Christian — 3A, 447 · Mission League
 - **Orlova** — 50,000 · 42.01N 121.41W
     - Sea Cliff — 5A, 920 · Capital Athletic Association
-    - Orlova — 4A, 609 · Valle Vista League
+    - Orlova — 4A, 609 · Crestview League
     - Mountain Gate — 3A, 500 · Mission League
 - **Dahlberg Summit** — 40,000 · 42.58N 121.87W
     - Hartford City — 3A, 473 · Sky-Em League
@@ -854,113 +969,185 @@ class, enrollment, and locality where the school carries one.
     - John Lewis — 2A, 208 · Mountain Pass League
 - **Klamoya** — 25,000 · 42.44N 121.27W
     - St. Sophia — 3A, 370 · Sky-Em League
-- **Ransom** — 5,200 · 42.40N 121.04W · *no tennis programs*
+- **Ransom** — 5,200 · 42.40N 121.04W
+    - Reverend City — 1A, 172 · Summit League
 - **Tamarack Springs** — 5,100 · 43.22N 121.78W
     - Mineral Springs — 2A, 246 · Mountain Pass League
-- **Juniper Bar** — 4,600 · 43.46N 121.70W · *no tennis programs*
+- **Juniper Bar** — 4,600 · 43.46N 121.70W
+    - Juniper Bar — 1A, 166 · Summit League
 - **Linden** — 4,400 · 43.50N 121.95W
-    - Linden — 1A, 186 · East Cascades League
+    - Linden — 1A, 186 · Summit League
 - **Halemere** — 3,300 · 42.24N 121.52W
-    - Halemere — 1A, 152 · East Cascades League
+    - Halemere — 1A, 152 · Summit League
 - **Ransom Pass** — 3,100 · 42.18N 121.82W
-    - Ransom Pass — 1A, 176 · East Cascades League
+    - Ransom Pass — 1A, 176 · Summit League
 - **Brackwood Pass** — 3,000 · 42.14N 121.76W
-    - Brackwood Pass — 1A, 134 · East Cascades League
+    - Brackwood Pass — 1A, 134 · Summit League
 - **Yarmere** — 1,600 · 42.70N 122.00W
-    - Yarmere — 1A, 77 · East Cascades League
-- **Alderton** — 1,500 · 43.48N 121.69W · *no tennis programs*
-- **Copperton** — 100 · 42.19N 121.70W · *no tennis programs*
+    - Yarmere — 1A, 77 · Summit League
+- **Alderton** — 1,500 · 43.48N 121.69W
+    - Alderton — 1A, 161 · East Cascades League
+- **Copperton** — 100 · 42.19N 121.70W
+    - Copperton Regional — 1A, 155 · Summit League
 
 ## Juniper Highlands
 
-*Central Jefferson · Juniper, Rimrock · 715,733 people · 43 tennis programs*
+*West Jefferson · Juniper, Rimrock · 715,733 people · 45 tennis programs*
 
 ### Juniper County — Modoc County, CA
 
 - **Altamonte** — 150,000 · 41.49N 120.54W
-    - Altamonte — 8A, 2,015 · Big Basin League
+    - Altamonte — 8A, 2,015 · Halbrook Basin League
     - Elysian Valley — 8A, 1,854 · Del Rey Athletic Association
-    - Senator Gray — 8A, 1,776 · Del Rey Athletic Association
-    - Iron Gate Works — 6A, 1,141 · Fiesta Athletic Association
+    - Senator Gray — 8A, 1,776 · Halbrook Basin League
+    - Iron Gate Works — 6A, 1,141 · Juniper League
 - **Summervale** — 43,000 · 41.41N 120.68W
-    - Trinity Catholic — 4A, 634 · Twin Counties Athletic Association
-    - Central Christian — 3A, 515 · Juniper League
+    - Trinity Catholic — 4A, 634 · Rim Country League
+    - Central Christian — 3A, 515 · Dual County League
     - Star Hollow — 3A, 419 · Juniper League
     - Summervale — 3A, 387 · Juniper League
     - Aspen Hollow — 1A, 105 · Desert Sky League
 - **California Canyons** — 7,200 · 41.53N 120.17W
     - California Canyons — 3A, 399 · Dual County League
 - **Mt Jacqueline** — 6,400 · 41.89N 121.37W
-    - Mt Jacqueline — 2A, 347 · Three Rivers League
+    - Mt Jacqueline — 2A, 347 · Desert Sky League
 - **Elk Spur** — 4,400 · 41.44N 120.87W
     - Larchmont Ridge — 8A, 1,891 · Del Rey Athletic Association
 - **Seamus Town** — 4,400 · 41.19N 120.95W
-    - Seamus Town — 2A, 239 · Three Rivers League
-- **Farleymere** — 3,700 · 41.51N 120.55W · *no tennis programs*
+    - Seamus Town — 2A, 239 · Desert Sky League
+- **Farleymere** — 3,700 · 41.51N 120.55W
+    - Farleymere — 2A, 288 · Desert Sky League
 - **Thorn Summit** — 2,800 · 41.86N 120.15W
     - Thorn Summit — 1A, 100 · Desert Sky League
 - **Clear Rim** — 2,400 · 41.99N 120.30W
-    - Marlow County — 1A, 131 · Dual County League
+    - Marlow County — 1A, 131 · Desert Sky League
 - **Fort Wren** — 2,000 · 41.21N 121.16W
     - Fort Wren — 1A, 118 · Desert Sky League
-- **Norbrook** — 900 · 41.23N 120.50W · *no tennis programs*
+- **Norbrook** — 900 · 41.23N 120.50W
+    - Norbrook — 3A, 489 · Dual County League
 - **Copper Gap** — 600 · 41.64N 120.22W
     - Copper Gap — 1A, 68 · Desert Sky League
 
 ### Rimrock County — Lake County, OR
 
 - **Calder** — 90,000 · 42.19N 120.35W
-    - Covenant — 7A, 1,501 · Premier Athletic Association
-    - Calder — 6A, 1,163 · Fiesta Athletic Association
+    - Covenant — 7A, 1,501 · Coastal Range League
+    - Calder — 6A, 1,163 · Juniper League
 - **Carroway** — 75,000 · 42.69N 120.55W
-    - Brookside — 6A, 1,308 · Northwest Assembly
-    - Empire Milling — 6A, 1,185 · Fiesta Athletic Association
-    - Liberty Hill — 6A, 1,029 · Fiesta Athletic Association
+    - Brookside — 6A, 1,308 · Juniper League
+    - Empire Milling — 6A, 1,185 · Juniper League
+    - Liberty Hill — 6A, 1,029 · Juniper League
     - Carroway — 3A, 467 · Juniper League
 - **Navrang** — 70,000 · 43.13N 121.05W
-    - Navrang — 6A, 1,202 · Northwest Assembly
-    - Juniper Ridge — 5A, 938 · Kajaani League
+    - Navrang — 6A, 1,202 · Juniper League
+    - Juniper Ridge — 5A, 938 · Valley Coast Interscholastic League
     - Sinkford — 3A, 541 · Juniper League
 - **Telfair** — 65,000 · 41.99N 120.30W
-    - Central West End — 5A, 992 · Kajaani League
-    - Fairgrounds — 5A, 977 · Kajaani League
-    - Pacersburg — 4A, 557 · Twin Counties Athletic Association
+    - Central West End — 5A, 992 · Valley Coast Interscholastic League
+    - Fairgrounds — 5A, 977 · Valley Coast Interscholastic League
+    - Pacersburg — 4A, 557 · Rim Country League
     - Telfair Country Day — 3A, 415 · Juniper League
 - **Vesper** — 60,000 · 42.41N 119.90W
     - Funtsville — 3A, 430 · Juniper League
-    - Vesper — 1A, 129 · Desert Sky League
+    - Vesper — 1A, 129 · South Coast League
 - **Three Saints** — 50,000 · 42.18N 119.90W
-    - Dry Lake — 6A, 1,201 · Fiesta Athletic Association
-    - Magnolia Park — 4A, 778 · Twin Counties Athletic Association
-    - Three Saints — 4A, 729 · Twin Counties Athletic Association
+    - Dry Lake — 6A, 1,201 · Juniper League
+    - Magnolia Park — 4A, 778 · Rim Country League
+    - Three Saints — 4A, 729 · Rim Country League
 - **Doyle Pass** — 46,000 · 42.38N 120.84W
-    - Doyle Pass — 4A, 620 · Twin Counties Athletic Association
+    - Doyle Pass — 4A, 620 · Rim Country League
     - High Desert Christian — 3A, 380 · Juniper League
 - **Clear Springs** — 14,833 · 43.24N 120.64W
     - Owl Canyon — 3A, 382 · Juniper League
-    - Cornerstone Christian — 2A, 268 · Three Rivers League
+    - Cornerstone Christian — 2A, 268 · Desert Sky League
 - **Trout Lake** — 6,800 · 42.19N 120.43W
-    - Trout Lake — 2A, 320 · Three Rivers League
+    - Trout Lake — 2A, 320 · Desert Sky League
 - **Camas Landing** — 6,200 · 43.36N 121.05W
     - Ostrander Union — 3A, 393 · Juniper League
 - **Stovepipe** — 2,700 · 42.32N 120.82W
-    - Meridian Regional — 1A, 175 · Desert Sky League
+    - Meridian Regional — 1A, 175 · South Coast League
 - **Silton Ridge** — 1,400 · 42.97N 120.78W
     - Silton Ridge — 1A, 59 · Desert Sky League
 
+## Bear River Country
+
+*East Jefferson · Beargrass, Bridger, Cub River, Laketown, Malad, Star Valley, Wellsville · 108,040 people · 21 tennis programs*
+
+### Beargrass County — Bear Lake County, ID
+
+- **Montpelier** — 2,500 · 42.32N 111.30W
+    - Wyoming Valley — Group 1, 1,020 · Ambassador League
+- **Paris** — 500 · 42.23N 111.40W
+    - Jean Baptiste — Group 2, 610 · Forks League
+- **Georgetown** — 470 · 42.48N 111.37W
+    - Beargrass Christian — Group 2, 330 · Forks League
+
+### Bridger County — Uinta County, WY
+
+- **Evanston** — 11,700 · 41.27N 110.96W
+    - Rio San Juan — Group 1, 1,550 · Ambassador League
+- **Lyman** — 2,100 · 41.33N 110.29W
+    - Bridger Regional — Group 1, 900 · Ambassador League
+- **Mountain View** — 1,200 · 41.27N 110.34W
+    - Bridger County Christian — Group 2, 460 · Forks League
+
+### Cub River County — Franklin County, ID
+
+- **Preston** — 5,600 · 42.10N 111.88W
+    - Irvington — Group 1, 1,380 · Ambassador League
+- **Franklin** — 640 · 42.01N 111.80W
+    - Dawkins — Group 1, 900 · Ambassador League
+- **Weston** — 440 · 42.04N 111.98W
+    - Cub River Catholic — Group 2, 410 · Forks League
+
+### Laketown County — Rich County, UT
+
+- **Garden City** — 560 · 41.95N 111.39W
+    - Burdensome — Group 1, 950 · Ambassador League
+- **Randolph** — 460 · 41.66N 111.18W
+    - Laketown Regional — Group 2, 540 · Forks League
+- **Laketown** — 270 · 41.83N 111.32W
+    - Laketown County Christian — Group 2, 280 · Forks League
+
+### Malad County — Oneida County, ID
+
+- **Malad City** — 2,000 · 42.19N 112.25W
+    - Cincinnati — Group 1, 1,200 · Ambassador League
+    - Bonds — Group 1, 880 · Ambassador League
+    - Malad County Christian — Group 2, 360 · Forks League
+
+### Star Valley County — Lincoln County, WY
+
+- **Kemmerer** — 2,400 · 41.79N 110.54W
+    - Star Valley Regional — Group 1, 1,000 · Ambassador League
+- **Afton** — 2,000 · 42.73N 110.93W
+    - Star Valley Catholic — Group 2, 500 · Forks League
+- **Alpine** — 800 · 43.17N 111.02W
+    - Chicago Island — Group 2, 650 · Forks League
+
+### Wellsville County — Cache County, UT
+
+- **Logan** — 53,000 · 41.74N 111.83W
+    - Utah — Group 1, 1,800 · Ambassador League
+- **Smithfield** — 13,300 · 41.84N 111.83W
+    - West Oberlin — Group 1, 1,250 · Ambassador League
+- **Hyrum** — 8,100 · 41.63N 111.85W
+    - Wellsville County Catholic — Group 2, 780 · Forks League
+
 ## Sebastian Cape
 
-*Southwest Jefferson · Ostrander, San Marcos · 1,637,000 people · 66 tennis programs*
+*Southwest Jefferson · Ostrander, San Marcos · 1,637,000 people · 71 tennis programs*
 
 ### Ostrander County — Del Norte County, CA
 
 - **Mesa Dorada** — 9,400 · 41.76N 124.20W
-    - Mesa Dorada — 3A, 536 · Basalt League
+    - Mesa Dorada — 3A, 536 · Juniper League
 - **Quarmont** — 7,500 · 41.75N 124.16W
-    - Quarmont — 3A, 440 · Basalt League
-- **Tindall Spur** — 6,000 · 41.87N 124.15W · *no tennis programs*
+    - Quarmont — 3A, 440 · Pori League
+- **Tindall Spur** — 6,000 · 41.87N 124.15W
+    - Tidelands Union — 3A, 473 · Pori League
 - **Halfway House** — 4,900 · 41.93N 124.15W
-    - Halfway House — 2A, 306 · Del Rey Athletic Association
+    - Halfway House — 2A, 306 · Desert Sky League
 - **California Beach** — 3,800 · 41.53N 124.04W
     - California Beach — 1A, 139 · South Coast League
 - **Carolina Island** — 2,300 · 41.85N 123.97W
@@ -969,109 +1156,113 @@ class, enrollment, and locality where the school carries one.
 ### San Marcos County — Humboldt County, CA
 
 - **San Borondón** — 850,000 · 40.80N 124.16W
-    - Talladega — 9A, 2,597 · Talladega · Millworks Athletic Association
-    - Tuskegee — 9A, 2,480 · Tuskegee · Millworks Athletic Association
-    - Bienville — 9A, 2,410 · Bienville · Millworks Athletic Association
-    - Mission Bay — 9A, 2,238 · Millworks Athletic Association
+    - Talladega — 9A, 2,597 · Talladega · Del Rey Athletic Association
+    - Tuskegee — 9A, 2,480 · Tuskegee · Del Rey Athletic Association
+    - Bienville — 9A, 2,410 · Bienville · Del Rey Athletic Association
+    - Mission Bay — 9A, 2,238 · Del Rey Athletic Association
     - Natchitoches — 8A, 2,128 · Natchitoches · South Coast League
     - Tuscaloosa — 8A, 2,082 · Tuscaloosa · South Coast League
     - Sotavento — 8A, 2,007 · South Coast League
-    - Apalachicola — 8A, 1,908 · Apalachicola · South Coast League
+    - Apalachicola — 8A, 1,908 · Apalachicola · Del Rey Athletic Association
     - Marshfield Prep — 8A, 1,892 · South Coast League
     - Malcolm X Shabazz — 8A, 1,751 · Cahaba · South Coast League
     - Vicksburg — 7A, 1,533 · Vicksburg · Coastal Range League
     - Christian Brothers — 7A, 1,461 · Coastal Range League
     - Rumsfeld Hill — 7A, 1,457 · Coastal Range League
     - Tensas — 7A, 1,371 · Tensas · Coastal Range League
-    - Bogue Chitto — 7A, 1,332 · Bogue Chitto · Coastal Range League
-    - Natchez Prep — 6A, 1,285 · Natchez · Quarry League
-    - Marigny — 6A, 1,271 · Marigny · Quarry League
-    - Bahía Vista — 6A, 1,150 · Biloxi · Quarry League
+    - Bogue Chitto — 7A, 1,332 · Bogue Chitto · Chinook League
+    - Natchez Prep — 6A, 1,285 · Natchez · Mariners League
+    - Marigny — 6A, 1,271 · Marigny · Mariners League
+    - Bahía Vista — 6A, 1,150 · Biloxi · Mariners League
     - Hazel Country Day — 5A, 1,019 · Valley Coast Interscholastic League
     - San Borondón — 5A, 994 · Valley Coast Interscholastic League
     - Natchitoches Catholic — 5A, 894 · Natchitoches · Valley Coast Interscholastic League
     - Pointe Coupee — 5A, 834 · Pointe Coupee · Valley Coast Interscholastic League
-    - Cliffside — 4A, 771 · Natchez · Surf League
-    - Borondón Mesa — 4A, 628 · Surf League
-    - Biloxi Heights — 4A, 605 · Biloxi · Surf League
-    - Tallulah Canyon — 4A, 598 · Tallulah · Surf League
+    - Cliffside — 4A, 771 · Natchez · Rim Country League
+    - Borondón Mesa — 4A, 628 · Chinook League
+    - Biloxi Heights — 4A, 605 · Biloxi · Rim Country League
+    - Tallulah Canyon — 4A, 598 · Tallulah · Chinook League
     - Pointe des Brumes — 2A, 359 · Pointe des Brumes · Del Rey Athletic Association
     - St. Jerome Academy — 1A, 306 · South Coast League
     - Pointe Coupee Catholic — 1A, 100 · Pointe Coupee · South Coast League
 - **Puerto de los Reyes** — 280,000 · 40.87N 124.08W
-    - Morgan Park — 9A, 2,281 · Millworks Athletic Association
+    - Morgan Park — 9A, 2,281 · Del Rey Athletic Association
     - Avalon Park — 8A, 1,916 · Del Rey Athletic Association
     - Puerto de los Reyes — 8A, 1,848 · Del Rey Athletic Association
-    - Montclair — 8A, 1,824 · South Coast League
+    - Montclair — 8A, 1,824 · Del Rey Athletic Association
     - Archbishop Gregory — 8A, 1,778 · Del Rey Athletic Association
     - Quarry Workers — 8A, 1,745 · Del Rey Athletic Association
     - Reyes Landing — 7A, 1,352 · Coastal Range League
-    - Fallon Works — 6A, 1,306 · Quarry League
+    - Fallon Works — 6A, 1,306 · Mariners League
 - **Bahía Leal** — 180,000 · 40.84N 124.06W
-    - Rogue Valley Packing — 9A, 2,594 · Millworks Athletic Association
-    - Housatonic — 9A, 2,474 · Millworks Athletic Association
+    - Rogue Valley Packing — 9A, 2,594 · Del Rey Athletic Association
+    - Housatonic — 9A, 2,474 · Del Rey Athletic Association
     - Pacific Fruit Exchange — 8A, 2,117 · Del Rey Athletic Association
     - El Sereno — 7A, 1,420 · Coastal Range League
-    - Bahía Leal — 7A, 1,384 · Tidelands League
+    - Bahía Leal — 7A, 1,384 · Coastal Range League
     - Verde Highlands — 5A, 930 · Valley Coast Interscholastic League
-    - Costa Verde — 4A, 582 · Surf League
+    - Costa Verde — 4A, 582 · Rim Country League
 - **Santa Cruz del Norte** — 95,000 · 40.95N 124.10W
     - Harlan — 8A, 1,990 · South Coast League
-    - Santa Cruz del Norte — 7A, 1,581 · Coastal Range League
-    - Mesa Cooperative — 7A, 1,421 · Coastal Range League
+    - Santa Cruz del Norte — 7A, 1,581 · Chinook League
+    - Mesa Cooperative — 7A, 1,421 · Chinook League
     - Kingwood — 5A, 987 · Valley Coast Interscholastic League
 - **Santa Laura** — 58,650 · 40.60N 124.16W
-    - Janeaway — 4A, 786 · Surf League
-    - Santa Laura — 4A, 679 · Surf League
-    - Coastal Christian — 1A, 112 · South Coast League
+    - Janeaway — 4A, 786 · Chinook League
+    - Santa Laura — 4A, 679 · Chinook League
+    - Coastal Christian — 1A, 112 · Tailings League
 - **Puerto Gallego** — 55,000 · 40.79N 124.13W
-    - Puerto Gallego — 6A, 1,185 · Quarry League
+    - Puerto Gallego — 6A, 1,185 · Juniper League
     - Gallego Bay — 3A, 498 · Pori League
-- **Punta del Águila** — 18,000 · 40.73N 124.19W · *no tennis programs*
+- **Punta del Águila** — 18,000 · 40.73N 124.19W
+    - Punta del Águila — 1A, 150 · South Coast League
 - **Copperview** — 14,539 · 40.50N 124.11W
-    - Copperview — 3A, 517 · Basalt League
+    - Copperview — 3A, 517 · Pori League
 - **Tallow** — 14,511 · 40.73N 124.15W
     - Our Lady of the Coast — 2A, 226 · Del Rey Athletic Association
-    - Tallow — 2A, 215 · Chinook League
+    - Tallow — 2A, 215 · Del Rey Athletic Association
 - **Los Remolinos** — 12,000 · 40.77N 124.14W
     - Los Remolinos — 1A, 311 · South Coast League
-    - Estuary Bay — 2A, 270 · Del Rey Athletic Association
+    - Estuary Bay — 2A, 270 · Desert Sky League
 - **Río Seco** — 6,200 · 40.77N 124.18W
     - Río Seco — 2A, 349 · Del Rey Athletic Association
-- **Camas Ridge** — 5,900 · 40.94N 123.63W · *no tennis programs*
-- **San Benicio** — 5,000 · 40.58N 124.26W · *no tennis programs*
+- **Camas Ridge** — 5,900 · 40.94N 123.63W
+    - Fogline — 2A, 282 · Desert Sky League
+- **San Benicio** — 5,000 · 40.58N 124.26W
+    - San Benicio Regional — 2A, 275 · Del Rey Athletic Association
 - **Puerto Alma** — 3,800 · 40.88N 123.98W
-    - Puerto Alma — 2A, 217 · Del Rey Athletic Association
-- **Alder Flat** — 2,500 · 40.55N 124.10W · *no tennis programs*
+    - Puerto Alma — 2A, 217 · Desert Sky League
+- **Alder Flat** — 2,500 · 40.55N 124.10W
+    - Coast Prairie — 1A, 144 · South Coast League
 - **San Aurelio** — 2,000 · 40.12N 123.82W
     - San Aurelio — 1A, 58 · South Coast League
 
 ## Gold Valley
 
-*Southwest Jefferson · Ferris, Sablewood · 2,720,904 people · 109 tennis programs*
+*Southwest Jefferson · Ferris, Sablewood · 2,720,904 people · 116 tennis programs*
 
 ### Ferris County — Shasta County, CA
 
 - **Valderra** — 520,000 · 40.59N 122.39W
-    - Ferris — 9A, 2,527 · Placer League
-    - Coyote Bend — 9A, 2,436 · Placer League
-    - Shasta Agricultural — 9A, 2,384 · Placer League
-    - Orchard Hill — 9A, 2,273 · Placer League
-    - Rogers Park — 9A, 2,233 · Placer League
-    - Dwight Eisenhower — 8A, 2,118 · Four Rivers Interscholastic League
-    - Valderra — 8A, 1,888 · Four Rivers Interscholastic League
-    - Red Mesa — 8A, 1,713 · Four Rivers Interscholastic League
-    - Serenity Valley — 7A, 1,550 · Valle Vista League
-    - Topanga — 7A, 1,342 · Valle Vista League
+    - Ferris — 9A, 2,527 · Gold Valley League
+    - Coyote Bend — 9A, 2,436 · Forks League
+    - Shasta Agricultural — 9A, 2,384 · Forks League
+    - Orchard Hill — 9A, 2,273 · Forks League
+    - Rogers Park — 9A, 2,233 · Forks League
+    - Dwight Eisenhower — 8A, 2,118 · Sunkist League
+    - Valderra — 8A, 1,888 · Sunkist League
+    - Red Mesa — 8A, 1,713 · Sunkist League
+    - Serenity Valley — 7A, 1,550 · Three Rivers League
+    - Topanga — 7A, 1,342 · Three Rivers League
     - Gentilly — 6A, 1,275 · Mission League
     - Valley Forge — 6A, 1,247 · Mission League
     - Bridgeport — 6A, 1,243 · Mission League
     - Rita Moreno — 6A, 1,179 · Mission League
     - Roscoe Village — 5A, 863 · Valle Vista League
-    - Harrisburgh — 4A, 731 · Mission League
-    - Las Colinas — 4A, 611 · Mission League
+    - Harrisburgh — 4A, 731 · Valle Vista League
+    - Las Colinas — 4A, 611 · Valle Vista League
     - Forge Hollow — 3A, 416 · Gold Valley League
-    - St. Gabriel Preparatory — 1A, 242 · Dual County League
+    - St. Gabriel Preparatory — 1A, 242 · Hacienda League
 - **Mercer City** — 280,000 · 40.45N 122.30W
     - Jesuit — 9A, 2,586 · Gold Valley League
     - Twin Mills — 9A, 2,409 · Gold Valley League
@@ -1085,47 +1276,47 @@ class, enrollment, and locality where the school carries one.
 - **Montelago** — 250,000 · 40.68N 122.37W
     - Bernal Heights — 9A, 2,545 · Gold Valley League
     - Golden Gate — 8A, 2,090 · Gold Valley League
-    - Lago Vista — 8A, 1,955 · Gold Valley League
+    - Lago Vista — 8A, 1,955 · Sunkist League
     - Montelago — 8A, 1,814 · Gold Valley League
     - Pioneer Electric — 8A, 1,710 · Gold Valley League
     - Bywater — 7A, 1,487 · Valle Vista League
     - Squier Park — 7A, 1,422 · Valle Vista League
-    - St. Agnes Preparatory — 4A, 591 · Mission League
-    - Helena Academy — 4A, 583 · Mission League
+    - St. Agnes Preparatory — 4A, 591 · Valle Vista League
+    - Helena Academy — 4A, 583 · Valle Vista League
 - **Lake Esperanza** — 220,000 · 40.39N 122.28W
     - Foundry — 9A, 2,352 · Gold Valley League
     - Longfellow — 8A, 1,862 · Gold Valley League
-    - Lone Pine Mutual — 7A, 1,350 · Tidelands League
-    - Malheur Flat — 7A, 1,343 · Tidelands League
+    - Lone Pine Mutual — 7A, 1,350 · Valle Vista League
+    - Malheur Flat — 7A, 1,343 · Valle Vista League
     - Lake Esperanza — 6A, 1,078 · Cascade Divide League
     - Esperanza Basin — 5A, 956 · Valle Vista League
     - Willow Creek — 5A, 906 · Valle Vista League
-    - Driftwood — 4A, 774 · Mission League
+    - Driftwood — 4A, 774 · Valle Vista League
 - **Cortland** — 190,000 · 40.88N 121.66W
     - Cortland — 9A, 2,420 · Gold Valley League
     - Waldo — 8A, 2,040 · Gold Valley League
     - Memorial — 8A, 1,970 · Gold Valley League
-    - Juniper Agricultural — 7A, 1,539 · Premier Athletic Association
+    - Juniper Agricultural — 7A, 1,539 · Valle Vista League
     - Sandhill Marsh — 5A, 967 · Valle Vista League
-    - Fair Park — 4A, 556 · Twin Counties Athletic Association
+    - Fair Park — 4A, 556 · Valle Vista League
 - **Moriarty** — 150,000 · 40.64N 122.23W
-    - North Coast Packing — 8A, 1,762 · Gold Valley League
+    - North Coast Packing — 8A, 1,762 · Sunkist League
     - Pendleton Heights — 7A, 1,489 · Valle Vista League
-    - Windmill Ridge — 6A, 1,203 · Cascade Divide League
+    - Windmill Ridge — 6A, 1,203 · Mission League
     - Blue Grama — 6A, 1,105 · Cascade Divide League
     - Moriarty — 6A, 1,063 · Cascade Divide League
 - **North San Francisco** — 96,000 · 40.49N 121.89W
-    - North San Francisco — 7A, 1,587 · Tidelands League
+    - North San Francisco — 7A, 1,587 · Valle Vista League
     - Calderwood — 3A, 497 · Gold Valley League
     - Eastmont Christian — 3A, 385 · Gold Valley League
 - **San Telmo** — 90,000 · 40.60N 122.49W
     - Maxwell Park — 7A, 1,537 · Valle Vista League
     - Orchard Union — 7A, 1,474 · Valle Vista League
-    - Tomales Bay — 6A, 1,129 · Cascade Divide League
+    - Tomales Bay — 6A, 1,129 · Mission League
     - San Telmo — 6A, 1,069 · Mission League
 - **Bellacosta** — 80,000 · 40.56N 122.24W
     - Bellacosta — 7A, 1,397 · Valle Vista League
-    - De La Salle — 4A, 736 · Mission League
+    - De La Salle — 4A, 736 · Valle Vista League
 - **Kelford** — 71,000 · 40.72N 122.33W
     - Kelford — 5A, 813 · Valle Vista League
     - Mercy Academy Valley — 3A, 486 · Mission League
@@ -1135,14 +1326,14 @@ class, enrollment, and locality where the school carries one.
     - Alder Cooperative — 3A, 438 · Mission League
     - Monte Blanco — 3A, 386 · Gold Valley League
 - **Barclay** — 55,000 · 41.00N 121.44W
-    - Gate City — 5A, 960 · Valle Vista League
+    - Gate City — 5A, 960 · Capital Athletic Association
     - Barclay — 3A, 415 · Mission League
 - **San Tomás** — 50,000 · 40.91N 122.38W
     - Elk River Power — 5A, 879 · Valle Vista League
     - Meyerland — 5A, 806 · Valle Vista League
     - San Tomás — 3A, 489 · Gold Valley League
 - **Las Norias** — 45,000 · 40.62N 122.47W
-    - Las Norias — 4A, 764 · Mission League
+    - Las Norias — 4A, 764 · Valle Vista League
     - Anchor Glass — 3A, 440 · Mission League
 - **Bancroft** — 18,000 · 40.70N 122.64W
     - Bancroft — 3A, 535 · Mission League
@@ -1153,29 +1344,31 @@ class, enrollment, and locality where the school carries one.
     - Elk Crossing — 3A, 461 · Mission League
     - Pope Francis — 2A, 248 · Mountain Pass League
 - **Villard** — 15,000 · 40.92N 121.55W
-    - Villard — 2A, 246 · Valle Vista League
-    - Mission Ridge — 2A, 244 · Valle Vista League
+    - Villard — 2A, 246 · Three Rivers League
+    - Mission Ridge — 2A, 244 · Three Rivers League
 - **Abbey Vale** — 12,000 · 40.84N 121.92W
     - Abbey Vale Orchard Hill — 2A, 348 · Mountain Pass League
-- **Velasco** — 8,000 · 40.79N 121.94W · *no tennis programs*
+- **Velasco** — 8,000 · 40.79N 121.94W
+    - Velasco — 1A, 139 · Hacienda League
 - **High Bar** — 6,800 · 41.02N 121.91W
-    - High Bar — 2A, 291 · Valle Vista League
+    - High Bar — 2A, 291 · Mountain Pass League
 - **Hawk Bar** — 6,400 · 40.68N 121.43W
     - Hawk Bar — 2A, 319 · Mountain Pass League
 - **St. Elian** — 6,000 · 40.40N 122.26W
-    - St. Elian — 2A, 224 · Valle Vista League
-- **Ansoteguiville** — 4,000 · 40.90N 122.37W · *no tennis programs*
+    - St. Elian — 2A, 224 · Mountain Pass League
+- **Ansoteguiville** — 4,000 · 40.90N 122.37W
+    - Trinity Fork — 1A, 133 · Summit League
 - **Río Salado** — 3,400 · 40.42N 122.20W
-    - Río Salado — 1A, 144 · East Cascades League
+    - Río Salado — 1A, 144 · Hacienda League
 
 ### Sablewood County — Trinity County, CA
 
 - **Averill** — 118,000 · 40.73N 122.94W
-    - Averill — 4A, 738 · Mission League
-    - St. Isidore — 4A, 613 · Surf League
+    - Averill — 4A, 738 · Valle Vista League
+    - St. Isidore — 4A, 613 · Valle Vista League
     - Pinecrest — 3A, 445 · Gold Valley League
 - **Vespertine** — 85,000 · 40.55N 123.18W
-    - Vespertine — 7A, 1,534 · Premier Athletic Association
+    - Vespertine — 7A, 1,534 · Three Rivers League
     - Nightfall — 6A, 1,084 · Mission League
     - Cascade Christian — 6A, 1,023 · Mission League
 - **Gagarin** — 70,000 · 40.71N 122.81W
@@ -1188,147 +1381,160 @@ class, enrollment, and locality where the school carries one.
     - Blue Mountain Grange — 4A, 588 · Mission League
     - Mill Bar — 3A, 465 · Gold Valley League
 - **Leidesdorff** — 56,304 · 40.73N 123.05W
-    - East Burlington — 5A, 953 · Twin Counties Athletic Association
+    - East Burlington — 5A, 953 · Valle Vista League
     - Leidesdorff — 3A, 511 · Dual County League
 - **Benedetti** — 15,000 · 40.45N 123.51W
     - Benedetti — 3A, 303 · Gold Valley League
-- **McCrory** — 12,000 · 40.88N 123.53W · *no tennis programs*
-- **Pasquale** — 10,000 · 40.81N 123.47W · *no tennis programs*
+- **McCrory** — 12,000 · 40.88N 123.53W
+    - McCrory — 1A, 128 · Hacienda League
+- **Pasquale** — 10,000 · 40.81N 123.47W
+    - Pasquale — 2A, 269 · Three Rivers League
 - **Porterfield** — 10,000 · 40.98N 122.70W
-    - Porterfield — 2A, 351 · Valle Vista League
-- **Sage Springs** — 7,300 · 40.62N 123.45W · *no tennis programs*
+    - Porterfield — 2A, 351 · Three Rivers League
+- **Sage Springs** — 7,300 · 40.62N 123.45W
+    - Mountain House — 3A, 458 · Dual County League
 - **Copper Prairie** — 4,700 · 41.09N 122.71W
-    - Siskiyou Valley — 4A, 554 · Surf League
-    - Copper Prairie — 1A, 188 · Dual County League
-- **Carverstead** — 1,900 · 40.27N 123.32W · *no tennis programs*
-- **Odellville** — 600 · 40.74N 123.26W · *no tennis programs*
+    - Siskiyou Valley — 4A, 554 · Mission League
+    - Copper Prairie — 1A, 188 · Hacienda League
+- **Carverstead** — 1,900 · 40.27N 123.32W
+    - Carverstead — 1A, 122 · Hacienda League
+- **Odellville** — 600 · 40.74N 123.26W
+    - Odellville — 1A, 117 · Hacienda League
 
 ## Millersylvania
 
-*Southeast Jefferson · Galena, Lodestone, Scheelite, Windrow · 204,279 people · 27 tennis programs*
+*Southwest Jefferson · Galena, Lodestone, Scheelite, Windrow · 204,279 people · 32 tennis programs*
 
 ### Galena County — Washoe County, NV
 
 - **Galena** — 16,700 · 39.53N 119.81W
-    - Galena — 3A, 419 · Basalt League
-    - Blue Valley — 2A, 211 · North Range League
+    - Galena — Group 2, 419 · High Lakes League
+    - Blue Valley — Group 2, 211 · High Lakes League
 - **Meridian Passage** — 6,800 · 39.53N 119.75W
-    - Rimrock — 3A, 304 · Basalt League
+    - Rimrock — Group 2, 304 · High Lakes League
 - **Norstead** — 5,300 · 39.60N 119.78W
-    - Norstead — 2A, 298 · North Range League
+    - Norstead — Group 2, 298 · High Lakes League
 - **Ferris** — 4,100 · 39.65N 119.71W
-    - Union Prairie — 1A, 189 · High Lakes League
+    - Union Prairie — Group 2, 189 · Kajaani League
 - **Huckle Butte** — 3,600 · 39.25N 119.97W
-    - Huckle Butte — 1A, 181 · High Lakes League
+    - Huckle Butte — Group 2, 181 · High Lakes League
 - **Aftdahl Ridge** — 3,300 · 39.68N 119.98W
-    - Silver Lake — 2A, 147 · North Range League
+    - Silver Lake — Group 2, 147 · Kajaani League
 - **Windrow** — 2,700 · 39.64N 119.84W
-    - Windrow — 1A, 118 · South Coast League
+    - Windrow — Group 2, 118 · Basalt League
 - **Mabryville** — 1,800 · 39.62N 119.83W
-    - Mabryville — 1A, 88 · High Lakes League
+    - Mabryville — Group 2, 88 · High Lakes League
 
 ### Lodestone County — Humboldt County, NV
 
 - **Fort Lassiter** — 16,932 · 40.97N 117.74W
-    - Fort Lassiter — 2A, 355 · North Range League
-- **Wellers Landing** — 5,500 · 40.95N 117.49W · *no tennis programs*
+    - Fort Lassiter — Group 2, 355 · High Lakes League
+- **Wellers Landing** — 5,500 · 40.95N 117.49W
+    - Lodestone County High — Group 1, 900 · North Range League
 - **Etchart** — 4,600 · 42.00N 117.72W
-    - Etchart — 2A, 270 · North Range League
-- **Copper Bar** — 4,500 · 41.57N 117.79W · *no tennis programs*
+    - Etchart — Group 2, 270 · High Lakes League
+- **Copper Bar** — 4,500 · 41.57N 117.79W
+    - Copper Bar — Group 2, 480 · High Lakes League
 - **Pellburg** — 3,600 · 41.49N 117.53W
-    - Pellburg — 2A, 251 · Foundry League
+    - Pellburg — 2A, 251 · Millworks Athletic Association
 - **Georgia Mills** — 600 · 41.99N 118.63W
-    - Georgia Mills — 2A, 279 · North Range League
+    - Georgia Mills — Group 2, 279 · High Lakes League
 
 ### Scheelite County — Pershing County, NV
 
 - **Dry Bar** — 27,600 · 40.18N 118.47W
-    - Scheelite County — 5A, 836 · Valley Coast Interscholastic League
-- **Mirage Siding** — 10,800 · 40.66N 118.15W · *no tennis programs*
+    - Scheelite County — Group 2, 836 · North Range League
+- **Mirage Siding** — 10,800 · 40.66N 118.15W
+    - Mirage Siding Regional — Group 1, 860 · North Range League
 - **Tungsten Reach** — 6,300 · 40.60N 118.25W
-    - Tungsten Reach — 2A, 231 · North Range League
+    - Tungsten Reach — Group 2, 231 · North Range League
 - **Mirage Crossing** — 4,200 · 40.36N 118.39W
-    - Mirage Crossing — 1A, 149 · High Lakes League
+    - Mirage Crossing — Group 2, 149 · North Range League
 - **Saltbush Reach** — 3,100 · 40.25N 118.39W
-    - Saltbush Reach — 1A, 187 · High Lakes League
+    - Saltbush Reach — Group 2, 187 · North Range League
 
 ### Windrow County — Lassen County, CA
 
 - **Vonjo City** — 19,058 · 40.42N 120.65W
-    - Vonjo City — 3A, 548 · Basalt League
-    - St. Dominic Academy — 2A, 431 · Del Rey Athletic Association
+    - Vonjo City — Group 2, 548 · Basalt League
+    - St. Dominic Academy — Group 2, 431 · Basalt League
 - **Brynildson Hill** — 17,340 · 40.31N 121.01W
-    - Baptist — 6A, 1,029 · Black Canyon League
-    - Brynildson Hill — 1A, 113 · High Lakes League
+    - Baptist — Group 1, 1,029 · North Range League
+    - Brynildson Hill — Group 2, 113 · North Range League
 - **Elk Bluff** — 14,749 · 40.30N 120.52W
-    - Elk Bluff — 3A, 396 · Basalt League
-    - St. Raphael College Prep — 2A, 285 · Del Rey Athletic Association
+    - Elk Bluff — Group 2, 396 · North Range League
+    - St. Raphael College Prep — Group 2, 285 · Basalt League
 - **East Simmons** — 5,000 · 40.38N 120.59W
-    - East Simmons — 2A, 293 · Del Rey Athletic Association
-- **Cutbank** — 4,800 · 40.14N 120.15W · *no tennis programs*
-- **Doyleville** — 4,500 · 40.03N 120.10W · *no tennis programs*
+    - East Simmons — Group 2, 293 · North Range League
+- **Cutbank** — 4,800 · 40.14N 120.15W
+    - Cutbank — Group 2, 470 · North Range League
+- **Doyleville** — 4,500 · 40.03N 120.10W
+    - Doyleville Union — Group 2, 150 · North Range League
 - **Sage Village** — 3,200 · 41.12N 121.14W
-    - Sage Village — 1A, 107 · High Lakes League
+    - Sage Village — Group 2, 107 · Basalt League
 - **Assay** — 2,200 · 40.14N 120.13W
-    - Assay — 1A, 100 · High Lakes League
+    - Assay — Group 2, 100 · North Range League
 - **Placer** — 1,400 · 40.38N 120.39W
-    - High Prairie — 1A, 57 · High Lakes League
+    - High Prairie — Group 2, 57 · Basalt League
 
 ## Yarrowmere
 
-*Southwest Jefferson · Bardsley, Kernwood, Olivet, Paddock · 810,000 people · 49 tennis programs*
+*Southwest Jefferson · Bardsley, Kernwood, Olivet, Paddock · 810,000 people · 60 tennis programs*
 
 ### Bardsley County — Colusa County, CA
 
 - **Prune Springs** — 35,400 · 39.21N 122.01W
-    - Prune Springs — 4A, 698 · Quarry League
-    - Grace Christian — 1A, 84 · Tailings League
+    - Prune Springs — 4A, 698 · Vermilion Valley League
+    - Grace Christian — 1A, 84 · Marble Valley League
 - **Sutter Yard** — 13,900 · 39.15N 122.15W
-    - Bardsley County — 3A, 378 · Assay Athletic Association
-- **Sutter Reach** — 8,000 · 39.02N 122.06W · *no tennis programs*
+    - Bardsley County — 3A, 378 · Quarry League
+- **Sutter Reach** — 8,000 · 39.02N 122.06W
+    - Bardsley County High — 3A, 442 · Quarry League
 - **Río Verde** — 5,500 · 39.28N 122.19W
-    - Río Verde — 2A, 261 · Marble Valley League
-- **Sutter Basin** — 4,000 · 39.07N 121.89W · *no tennis programs*
+    - Río Verde — 2A, 261 · Old Jefferson Athletic Association
+- **Sutter Basin** — 4,000 · 39.07N 121.89W
+    - Sutter Basin — 2A, 262 · Old Jefferson Athletic Association
 - **Levee Bluff** — 3,200 · 39.40N 122.01W
-    - Levee Bluff — 1A, 134 · Tailings League
+    - Levee Bluff — 1A, 134 · Marble Valley League
 
 ### Kernwood County — Butte County, CA
 
 - **Garrow** — 184,300 · 39.73N 121.84W
     - Garrow — 5A, 956 · Mariners League
-    - Cottonrock Point — 4A, 776 · Quarry League
+    - Cottonrock Point — 4A, 776 · Vermilion Valley League
     - Jimmy Carter — 3A, 503 · Quarry League
-    - St. Veronica — 3A, 464 · Quarry League
+    - St. Veronica — 3A, 464 · Vermilion Valley League
     - Presentation Academy — 3A, 455 · Quarry League
-    - All Saints Episcopal — 3A, 447 · Assay Athletic Association
+    - All Saints Episcopal — 3A, 447 · Quarry League
     - Bishop Ferraro — 2A, 256 · Marble Valley League
 - **Olive Reach** — 72,300 · 39.76N 121.62W
     - Olive Reach — 5A, 998 · Mariners League
-    - Buckeye Ridge — 4A, 754 · Quarry League
-    - Coolidge — 4A, 676 · Quarry League
-    - Olive Reach Baptist — 3A, 320 · Quarry League
+    - Buckeye Ridge — 4A, 754 · Vermilion Valley League
+    - Coolidge — 4A, 676 · Vermilion Valley League
+    - Olive Reach Baptist — 3A, 320 · Vermilion Valley League
     - Kilbride Hall — 1A, 193 · Marble Valley League
     - Trinity Christian — 1A, 91 · Marble Valley League
 - **Barleyfield** — 41,800 · 39.51N 121.56W
-    - Barleyfield — 4A, 591 · Quarry League
-    - Steelhead Divide — 3A, 480 · Assay Athletic Association
-    - Kernwood Lutheran — 1A, 141 · Tailings League
+    - Barleyfield — 4A, 591 · Vermilion Valley League
+    - Steelhead Divide — 3A, 480 · Quarry League
+    - Kernwood Lutheran — 1A, 141 · Marble Valley League
 - **Olive Head** — 28,400 · 39.81N 121.58W
     - Olive Head — 7A, 1,423 · Tidelands League
 - **Quill** — 21,000 · 39.51N 121.48W
-    - Kernwood County — 6A, 1,022 · Quarry League
+    - Kernwood County — 6A, 1,022 · Ostrobothnia League
 - **Corliss Junction** — 16,400 · 39.51N 121.59W
     - Heritage Christian — 1A, 188 · Marble Valley League
 - **Tule Flat** — 13,300 · 39.36N 121.69W
-    - Tule Flat — 3A, 464 · Quarry League
+    - Tule Flat — 3A, 464 · Vermilion Valley League
     - Tumbleweed Lutheran — 1A, 123 · Marble Valley League
-- **Corliss** — 11,100 · 39.48N 121.54W · *no tennis programs*
+- **Corliss** — 11,100 · 39.48N 121.54W
+    - Corliss Regional — 3A, 427 · Quarry League
 - **Jersey City** — 9,500 · 39.65N 121.80W
-    - Jersey City — 3A, 449 · Quarry League
+    - Jersey City — 3A, 449 · Vermilion Valley League
 - **Chaff Head** — 8,200 · 39.44N 121.54W
-    - Chaff Head — 2A, 314 · Marble Valley League
+    - Chaff Head — 2A, 314 · Old Jefferson Athletic Association
 - **Chaff Crossing** — 7,200 · 39.41N 121.71W
-    - Chaff Crossing — 2A, 261 · Marble Valley League
+    - Chaff Crossing — 2A, 261 · Old Jefferson Athletic Association
 - **Lanphere** — 6,400 · 39.65N 121.40W
     - Lanphere — 2A, 245 · Marble Valley League
 
@@ -1336,106 +1542,118 @@ class, enrollment, and locality where the school carries one.
 
 - **Kilbride Switch** — 83,300 · 40.18N 122.24W
     - Kilbride Switch — 5A, 815 · Mariners League
-    - Harry Truman — 4A, 748 · Quarry League
-    - Switchback — 3A, 458 · Quarry League
-    - Christ the King — 1A, 198 · Marble Valley League
-    - Gottschalk-Herman — 1A, 113 · Marble Valley League
+    - Harry Truman — 4A, 748 · Vermilion Valley League
+    - Switchback — 3A, 458 · Vermilion Valley League
+    - Christ the King — 1A, 198 · Vermilion Valley League
+    - Gottschalk-Herman — 1A, 113 · Vermilion Valley League
 - **Bracken** — 32,700 · 39.93N 122.18W
     - Olivet County — 7A, 1,632 · Tidelands League
-    - Banfield Day — 1A, 126 · Marble Valley League
+    - Banfield Day — 1A, 126 · Vermilion Valley League
 - **Clover Reach** — 18,900 · 40.02N 122.10W
     - Clover Reach — 5A, 948 · Mariners League
-- **Garrow Switch** — 12,800 · 40.02N 122.40W · *no tennis programs*
+- **Garrow Switch** — 12,800 · 40.02N 122.40W
+    - Olivet Regional — 3A, 411 · Vermilion Valley League
 - **Wardlow Depot** — 9,500 · 40.06N 122.15W
     - Wardlow Depot — 2A, 275 · Marble Valley League
 - **Jessup Bar** — 7,400 · 40.26N 122.21W
     - Jessup Bar — 2A, 238 · Marble Valley League
 - **South Simmons** — 6,000 · 40.03N 122.12W
     - South Simmons — 2A, 317 · Marble Valley League
-- **Prune Siding** — 5,000 · 40.44N 121.87W · *no tennis programs*
+- **Prune Siding** — 5,000 · 40.44N 121.87W
+    - Prune Siding — 2A, 256 · Marble Valley League
 - **Barley Gap** — 4,300 · 39.97N 122.18W
-    - Barley Gap — 1A, 59 · Marble Valley League
+    - Barley Gap — 1A, 59 · Vermilion Valley League
 
 ### Paddock County — Glenn County, CA
 
 - **Welsh Plains** — 62,400 · 39.75N 122.20W
     - Welsh Plains — 5A, 1,019 · Mariners League
-    - Grayston — 3A, 420 · Quarry League
+    - Grayston — 3A, 420 · Vermilion Valley League
     - Paddock Tech — 2A, 292 · Marble Valley League
 - **New Piscataway** — 24,500 · 39.52N 122.19W
-    - Paddock County — 6A, 1,139 · Quarry League
+    - Paddock County — 6A, 1,139 · Ostrobothnia League
 - **Fort Bardsley** — 14,200 · 39.74N 122.01W
-    - Fort Bardsley — 3A, 522 · Quarry League
-- **Shiloh** — 9,600 · 39.62N 122.19W · *no tennis programs*
-- **Zion Hill** — 7,100 · 39.61N 122.54W · *no tennis programs*
-- **Canaan Bend** — 5,600 · 39.42N 121.97W · *no tennis programs*
-- **Beulah Landing** — 4,500 · 39.65N 122.73W · *no tennis programs*
-- **Free Hill** — 3,800 · 39.58N 122.05W · *no tennis programs*
-- **Promise Land** — 3,200 · 39.58N 122.19W · *no tennis programs*
+    - Fort Bardsley — 3A, 522 · Vermilion Valley League
+- **Shiloh** — 9,600 · 39.62N 122.19W
+    - Shiloh — 3A, 396 · Vermilion Valley League
+- **Zion Hill** — 7,100 · 39.61N 122.54W
+    - Zion Hill — 2A, 249 · Marble Valley League
+- **Canaan Bend** — 5,600 · 39.42N 121.97W
+    - Canaan Bend — 2A, 243 · Marble Valley League
+- **Beulah Landing** — 4,500 · 39.65N 122.73W
+    - Beulah Landing — 1A, 111 · Vermilion Valley League
+- **Free Hill** — 3,800 · 39.58N 122.05W
+    - Free Hill — 1A, 106 · Vermilion Valley League
+- **Promise Land** — 3,200 · 39.58N 122.19W
+    - Promise Land — 1A, 100 · Vermilion Valley League
 - **Camden Flat** — 2,800 · 39.46N 121.99W
-    - Camden Flat — 1A, 151 · Marble Valley League
+    - Camden Flat — 1A, 151 · Vermilion Valley League
 - **Jamaica** — 2,500 · 39.80N 122.08W
-    - Jamaica — 1A, 116 · Marble Valley League
+    - Jamaica — 1A, 116 · Vermilion Valley League
 
 ## Southern Jefferson
 
-*Southwest Jefferson · Featherstone, Goldbank, Highgrade · 443,000 people · 29 tennis programs*
+*Southwest Jefferson · Featherstone, Goldbank, Highgrade · 443,000 people · 33 tennis programs*
 
 ### Featherstone County — Plumas County, CA
 
 - **Cook City** — 51,300 · 39.93N 120.90W
     - Cook City — 7A, 1,568 · Tidelands League
-    - Madison — 2A, 360 · Chinook League
+    - Madison — 2A, 360 · Sluice League
     - Featherstone Tech — 1A, 117 · Tailings League
 - **Caverly** — 20,100 · 40.31N 121.23W
-    - Serra Caverly — 1A, 72 · South Coast League
-- **Tunnelwood** — 11,600 · 39.81N 120.47W · *no tennis programs*
-- **Featherton** — 7,900 · 39.94N 120.95W · *no tennis programs*
+    - Serra Caverly — 1A, 72 · Tailings League
+- **Tunnelwood** — 11,600 · 39.81N 120.47W
+    - Tunnelwood — 3A, 380 · Breakwater Athletic Association
+- **Featherton** — 7,900 · 39.94N 120.95W
+    - Featherton — 2A, 236 · Sluice League
 - **Gilhooly** — 5,800 · 40.14N 120.95W
     - Gilhooly — 2A, 319 · Sluice League
 - **Hydraulicwood** — 4,600 · 39.77N 120.62W
     - Hydraulicwood — 2A, 246 · Sluice League
-- **Caverlyville** — 3,700 · 39.81N 120.50W · *no tennis programs*
+- **Caverlyville** — 3,700 · 39.81N 120.50W
+    - Sierra Works — 1A, 95 · Tailings League
 
 ### Goldbank County — Nevada County, CA
 
 - **Tunnel Diggings** — 136,100 · 39.33N 120.18W
-    - Tunnel Diggings — 4A, 718 · Quarry League
-    - Lonepine Canyon — 4A, 714 · Quarry League
-    - Walter Mondale — 3A, 467 · Assay Athletic Association
-    - Alben Barkley — 2A, 354 · Sluice League
-    - Goldbank Hall — 3A, 330 · Assay Athletic Association
-    - Bethel Christian — 2A, 244 · Sluice League
+    - Tunnel Diggings — 4A, 718 · Vermilion Valley League
+    - Lonepine Canyon — 4A, 714 · Vermilion Valley League
+    - Walter Mondale — 3A, 467 · Quarry League
+    - Alben Barkley — 2A, 354 · Old Jefferson Athletic Association
+    - Goldbank Hall — 3A, 330 · Breakwater Athletic Association
+    - Bethel Christian — 2A, 244 · Old Jefferson Athletic Association
     - St. Cecilia Academy — 1A, 127 · Tailings League
 - **Sluice Crossing** — 53,400 · 39.22N 121.06W
     - Sluice Crossing — 7A, 1,519 · Tidelands League
-    - Eisenhower — 4A, 792 · Quarry League
+    - Eisenhower — 4A, 792 · Vermilion Valley League
 - **Ditch Fork** — 30,900 · 39.14N 121.05W
     - Ditch Fork — 7A, 1,462 · Tidelands League
     - Martin Luther — 1A, 187 · Tailings League
     - Cassius — 1A, 70 · Tailings League
 - **West El Paso** — 20,900 · 39.23N 121.20W
-    - West El Paso — 6A, 1,297 · Northwest Assembly
-    - Foothills Christian — 1A, 177 · Tailings League
+    - West El Paso — 6A, 1,297 · Ostrobothnia League
+    - Foothills Christian — 1A, 177 · Marble Valley League
 - **Hydraulic Gap** — 15,500 · 39.04N 121.06W
-    - Goldbank County — 3A, 451 · Assay Athletic Association
+    - Goldbank County — 3A, 451 · Breakwater Athletic Association
 - **Fort Tabor** — 12,100 · 39.26N 121.02W
     - Fort Tabor — 2A, 288 · Sluice League
 - **Tunnelton** — 9,800 · 39.20N 121.19W
-    - Tunnelton — 3A, 437 · Assay Athletic Association
+    - Tunnelton — 3A, 437 · Quarry League
 - **Cradle Reach** — 8,200 · 39.23N 121.14W
     - Cradle Reach — 2A, 282 · Sluice League
-- **Tailing Crossing** — 7,000 · 39.37N 121.10W · *no tennis programs*
+- **Tailing Crossing** — 7,000 · 39.37N 121.10W
+    - Tailing Crossing — 2A, 230 · Old Jefferson Athletic Association
 - **Fountain Park** — 6,100 · 39.36N 120.80W
     - Fountain Park — 2A, 216 · Sluice League
 
 ### Highgrade County — Sierra County, CA
 
 - **Vessey Switch** — 21,400 · 39.68N 120.24W
-    - St. Josephine Bakhita — 1A, 179 · Tailings League
+    - St. Josephine Bakhita — 1A, 179 · Marble Valley League
 - **Sluice Landing** — 8,400 · 39.64N 120.22W
-    - Sluice Landing — 2A, 264 · Sluice League
+    - Sluice Landing — 2A, 264 · Old Jefferson Athletic Association
 - **Vessey Junction** — 4,900 · 39.56N 120.83W
-    - Vessey Junction — 2A, 235 · Sluice League
+    - Vessey Junction — 2A, 235 · Old Jefferson Athletic Association
 - **Tailingford** — 3,300 · 39.57N 120.63W
-    - Tailingford Union — 1A, 120 · Tailings League
+    - Tailingford Union — 1A, 120 · Marble Valley League

@@ -293,6 +293,10 @@ OWNER_EDICTS = frozenset({
     "Earl Warren", "Sonia Sotomayor", "Ketanji Brown Jackson",
     "Sandra Day O'Connor", "Ruth Bader Ginsburg", "John Quincy Adams",
     "John F. Kennedy", "Western Sky",
+    # 2046 expansion (owner edict 2026-08): the new 1A activation in Ransom,
+    # Tamarack County — dictated by name after the "Ransom City Union" source
+    # name collided with a former name of Ransom Pass.
+    "Reverend City",
     # towns
     "Cape Angeles", "Fort Tabor", "New Penzance Island", "Bay Oregon",
     "Carolina Island", "North San Francisco", "California Canyons", "Vonjo City",
@@ -2495,6 +2499,11 @@ LEAGUE_NAMES: list[tuple[str, str | None]] = [
     ("Liberty League", "Ashbury Metro"),
     ("Premier Athletic Association", "Ashbury Metro"),
     # -- basin and river ----------------------------------------------------
+    # ⚠️ Affinity is matched at DRAW time, on the SOURCE area — before the
+    # 2026-08 split_area pass runs at emit — so "Halbrook Basin" here still
+    # covers the whole pre-split basin (today's Belmonte Metro, Boise Frontier
+    # and the Vance side of Silver Basin included). Re-pointing an entry to a
+    # post-split region name would make it never match; leave them keyed as-is.
     ("Halbrook Basin League", "Halbrook Basin"),
     ("Three Rivers League", "Halbrook Basin"),
     ("Upper Basin League", "Halbrook Basin"),
@@ -3037,6 +3046,48 @@ AREA_RENAMES = {
     "Harborline": "Selquah",
 }
 
+# THE HALBROOK BASIN REGION SPLIT (owner rule 2026-08). The Halbrook Basin AREA
+# had grown to ~222 girls'/~204 boys' programs — four times any other region —
+# which mattered because All-Region is the association's newspaper all-area team
+# (owner: "so many kids got screwed out of honors for years"): one ~18-selection
+# team drawn from ~220 programs is the honour every ~55-program region hands out,
+# stretched over four times the field. It splits into FOUR regions, and Silver
+# Basin — until now a 3-program Ruby-County-only area below the All-Region
+# 4-program floor — becomes one of them:
+#
+#   Belmonte Metro   Belmonte + Caswell (both Halbrook County cities)
+#   Halbrook Basin   the rest of Halbrook County (name kept, region shrunk)
+#   Boise Frontier   Barlowe County + Belyakov + Orellana (the two Vance County
+#                    cities that stayed in the 1A-9A ladder)
+#   Silver Basin     the rest of Vance County (the Group 1/2 departures) + Ruby
+#                    County, which already carried the name
+#
+# Same named-table convention as RECLASSIFY_TO_2A: the mapping is a decision on
+# counties and cities, not a threshold. Applied at EMIT beside AREA_RENAMES —
+# district drawing sorts on the SOURCE area, so like every emit-time rename this
+# cannot move a league; LEAGUE_NAMES affinities keyed "Halbrook Basin" therefore
+# still fire at draw time and are left alone. `scripts/jefferson_gazetteer.py`
+# applies the same function to prep-network's place rows so the two-repo area
+# assertion keeps holding without an allowlist entry.
+_SPLIT_METRO_CITIES = frozenset({"Belmonte", "Caswell"})      # Halbrook County
+_SPLIT_FRONTIER_CITIES = frozenset({"Belyakov", "Orellana"})  # Vance County
+
+
+def split_area(area: str, county: str, city: str) -> str:
+    """The 2026-08 four-way Halbrook Basin split, keyed on county then city."""
+    if area != "Halbrook Basin":
+        return area
+    if county == "Barlowe":
+        return "Boise Frontier"
+    if county == "Vance":
+        return "Boise Frontier" if city in _SPLIT_FRONTIER_CITIES else "Silver Basin"
+    if county == "Halbrook":
+        return "Belmonte Metro" if city in _SPLIT_METRO_CITIES else "Halbrook Basin"
+    # A county the owner's table does not name — leave it, loudly: this is a map
+    # change nobody has decided on yet, not a default to absorb silently.
+    print(f"WARNING: split_area: unmapped Halbrook Basin county {county!r} ({city})")
+    return area
+
 # RELOCATIONS (owner rule 2027-08) — a school MOVED to another town in its own
 # area, keyed by SOURCE name and applied at emit like every other override.
 # Gagarin already sponsors four programs, so the renamed Mother Lode goes to
@@ -3263,7 +3314,7 @@ def champ_group(classification: str) -> str:
     return classification
 
 
-GROUPS = ("9A", "8A", "7A", "6A", "5A", "4A", "3A", "2A", "1A")
+GROUPS = ("9A", "8A", "7A", "6A", "5A", "4A", "3A", "2A", "1A", "Group 1", "Group 2")
 
 
 def _load(prep: str) -> tuple[list[dict], dict[str, dict]]:
@@ -3525,8 +3576,10 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
             "city": town,
             "county": city.get("county", ""),
             # Renamed at EMIT, like the school names — district drawing above
-            # sorted on the SOURCE area, so this cannot move a league.
-            "area": AREA_RENAMES.get(s["area"], s["area"]),
+            # sorted on the SOURCE area, so this cannot move a league. The 2026-08
+            # Halbrook Basin split runs on top, keyed on the emitted county/town.
+            "area": split_area(AREA_RENAMES.get(s["area"], s["area"]),
+                               city.get("county", ""), town),
             "classification": s["classification"],
             "group": champ_group(s["classification"]),
             "enrollment": s["enrollment"],
