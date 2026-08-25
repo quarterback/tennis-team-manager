@@ -4764,13 +4764,11 @@ def _toc_finish_label(alive: int) -> str:
     has no quarterfinal, so a program that lost its opening dual would be credited
     with a round it never played.
 
-    Unchanged by the eleven-classification field: `run_toc`'s existing Quarterfinal
-    -> Semifinal -> Final rounds (`_round_label` already names them that on the
-    schedule/bracket) stay under this same catch-all for anything beyond the
-    semis, same as always. The play-in round now in front of them (the round
-    `_round_label` names "Octofinals") is every non-bye team's first game of the
-    event, so it is the TOC's opening round too — it does not get a distinct
-    finish band."""
+    Now that the field runs to eleven classifications, `run_toc` plays a genuine
+    Quarterfinal round (entering alive=8) ABOVE a play-in round for the bottom
+    seeds (entering alive=9+, the round `_round_label` names "Octofinals") — two
+    real, distinct rounds, so each gets its own band, mirroring `_round_label`'s
+    own banding rather than lumping both under one generic "Opening Round"."""
     if alive <= 0:
         return ""
     if alive == 1:
@@ -4779,6 +4777,10 @@ def _toc_finish_label(alive: int) -> str:
         return "TOC Runner-up"
     if alive <= 4:
         return "TOC Semifinalist"
+    if alive <= 8:
+        return "TOC Quarterfinalist"
+    if alive <= 16:
+        return "TOC Octofinalist"
     return "TOC Opening Round"
 
 
