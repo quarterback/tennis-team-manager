@@ -4287,6 +4287,27 @@ def jhsaa_honors_view(seed: int, gender: str, group: str | None = None,
     }
 
 
+def _jh_indiv_grade_label(players: list, full: bool = False) -> str:
+    """A bracket label with each player's class year appended — the OSAA/IHSAA
+    convention ("Finn Johnson 12"; a doubles pair carries each name with its OWN
+    grade, "M. Potter 11 / R. Valverde 11") rather than a bare name. `grade` is
+    ARCHIVED with the entry (`draw_to_dict`) for exactly this — it is a property
+    of the player IN THAT SEASON, so no roster lookup is needed and a season
+    archived before grade existed simply omits it (reads back with no grade,
+    which is honest).
+
+    `full=True` names every player IN FULL (the champion/runner-up announcement,
+    which already reads the full name over the compact one); otherwise doubles
+    compress to surnames only, matching the bracket card's existing compact
+    `label` — grade is the only thing this adds, never a second naming scheme."""
+    parts = []
+    for p in players:
+        nm = p["name"] if (full or len(players) == 1) else p["name"].split()[-1]
+        g = p.get("grade")
+        parts.append(f"{nm} {g}" if g else nm)
+    return " / ".join(parts)
+
+
 def _jh_indiv_card_side(e: dict, won: bool, schools: dict) -> dict:
     """One side of an individual bracket card.
 
@@ -4299,7 +4320,8 @@ def _jh_indiv_card_side(e: dict, won: bool, schools: dict) -> dict:
     of the two names has to carry the link. Both are named in the label."""
     school = e["school"]
     players = e.get("players") or []
-    return {"school": school, "name": e.get("label") or school,
+    return {"school": school,
+            "name": _jh_indiv_grade_label(players) if players else (e.get("label") or school),
             # ON the card, not only in the tooltip: a crest does not tell a reader
             # which program a person plays for, and every association prints it.
             "sub": school,
@@ -4383,6 +4405,12 @@ def jhsaa_individual_view(seed: int, gender: str, group: str | None = None,
         **base, "ready": True,
         "n_seeds": draw["n_seeds"], "field_n": len(entries),
         "champion": champ, "runner_up": runner,
+        # Full name, grade appended — the same OSAA convention the bracket cards
+        # carry, on the hero announcement. `full_label`/`label` (baked into the
+        # archive at write time) predate the grade addition and stay bare, so
+        # this is computed here rather than re-baked.
+        "champion_name": _jh_indiv_grade_label(champ["players"], full=True) if champ else "",
+        "runner_up_name": _jh_indiv_grade_label(runner["players"], full=True) if runner else "",
         "champion_deco": _jh_deco(schools, champ["school"], 34) if champ else None,
         "final_score": (draw["rounds"][-1][0]["scoreline"]
                         if draw["rounds"] and draw["rounds"][-1] else ""),
@@ -4412,7 +4440,10 @@ def _jh_seed_tiers(entries: list, n_seeds: int) -> list[dict]:
     out, lo = [], 1
     while lo <= n_seeds:
         hi = min(n_seeds, 1 if lo == 1 else (2 if lo == 2 else lo * 2 - 1))
-        rows = entries[lo - 1:hi]
+        # `name` carries the grade the same way the bracket cards do; `label`
+        # stays as archived (still read elsewhere) rather than overwritten.
+        rows = [{**e, "name": _jh_indiv_grade_label(e.get("players") or [])}
+                for e in entries[lo - 1:hi]]
         if rows:
             out.append({"label": str(lo) if lo == hi else f"{lo}-{hi}",
                         "entries": rows})
@@ -4543,6 +4574,13 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     salt = world.active_salt(seed)
     schools = _jh_schools(g)
     hist = world.jhsaa_school_history(w["id"], g, school)
+    # Class year formatting is a view-model concern (`_JH_CLASS_YEAR`, the same
+    # table the player page uses) — `world.jhsaa_school_individual_champions`
+    # returns the raw grade so the data layer stays free of display strings.
+    hist = {**hist, "individual_champions": [
+        {**r, "players": [{**p, "class_year": _JH_CLASS_YEAR.get(p.get("grade"), "")}
+                          for p in r["players"]]}
+        for r in hist["individual_champions"]]}
     # ‼️ AND IT OPENS ON THE LAST SEASON IT PLAYED. The default year is the newest the
     # ASSOCIATION has archived, which a former program has no row in — so the page
     # would render its own header over an empty season and read as a bug rather than
