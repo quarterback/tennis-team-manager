@@ -3807,8 +3807,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Rim Country League",
-      "boys_district": "Rim Country League",
+      "girls_district": "Sunkist League",
+      "boys_district": "Sunkist League",
       "source": "Nicolás Quiñones"
     },
     {
@@ -5249,8 +5249,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Summit League",
-      "boys_district": "Summit League",
+      "girls_district": "Sunkist League",
+      "boys_district": "Sunkist League",
       "source": "Ruby Stokes North"
     },
     {
@@ -6337,8 +6337,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Summit League",
-      "boys_district": "Summit League"
+      "girls_district": "Sunkist League",
+      "boys_district": "Sunkist League"
     },
     {
       "name": "Hackensack",
@@ -11361,8 +11361,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Ambassador League",
-      "boys_district": "Ambassador League"
+      "girls_district": "Sunkist League",
+      "boys_district": "Sunkist League"
     },
     {
       "name": "Point Loma",
@@ -16628,8 +16628,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Ambassador League",
-      "boys_district": "Ambassador League"
+      "girls_district": "Sunkist League",
+      "boys_district": "Sunkist League"
     },
     {
       "name": "Westside Christian",
@@ -19268,8 +19268,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Kajaani League",
-      "boys_district": "Kajaani League"
+      "girls_district": "Valle Vista League",
+      "boys_district": "Valle Vista League"
     },
     {
       "name": "Bend Senior",
@@ -19279,7 +19279,7 @@
       "area": "Cascade Divide",
       "state": "Oregon",
       "classification": "6A",
-      "group": "6A",
+      "group": "8A",
       "enrollment": 1086,
       "private": false,
       "mascot": "Lava Bears",
@@ -19289,8 +19289,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Cascade Divide League",
-      "boys_district": "Cascade Divide League"
+      "girls_district": "Sunkist League",
+      "boys_district": "Sunkist League"
     },
     {
       "name": "Mountain View",
@@ -19300,7 +19300,7 @@
       "area": "Cascade Divide",
       "state": "Oregon",
       "classification": "6A",
-      "group": "6A",
+      "group": "8A",
       "enrollment": 1150,
       "private": false,
       "mascot": "Cougars",
@@ -19310,8 +19310,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Cascade Divide League",
-      "boys_district": "Cascade Divide League"
+      "girls_district": "Sunkist League",
+      "boys_district": "Sunkist League"
     },
     {
       "name": "Summit",
@@ -19321,7 +19321,7 @@
       "area": "Cascade Divide",
       "state": "Oregon",
       "classification": "6A",
-      "group": "6A",
+      "group": "8A",
       "enrollment": 1185,
       "private": false,
       "mascot": "Storm",
@@ -19331,8 +19331,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Cascade Divide League",
-      "boys_district": "Cascade Divide League"
+      "girls_district": "Sunkist League",
+      "boys_district": "Sunkist League"
     },
     {
       "name": "Caldera",
@@ -19342,7 +19342,7 @@
       "area": "Cascade Divide",
       "state": "Oregon",
       "classification": "7A",
-      "group": "7A",
+      "group": "8A",
       "enrollment": 1547,
       "private": false,
       "mascot": "Wolfpack",
@@ -19352,8 +19352,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Timber Valley League",
-      "boys_district": "Timber Valley League"
+      "girls_district": "Sunkist League",
+      "boys_district": "Sunkist League"
     },
     {
       "name": "Ukiah",
@@ -19384,7 +19384,7 @@
       "area": "Bear River Country",
       "state": "Wyoming",
       "classification": "Group 1",
-      "group": "Group 1",
+      "group": "Group 2",
       "enrollment": 1401,
       "private": false,
       "mascot": "Tigers",
@@ -19394,8 +19394,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Ambassador League",
-      "boys_district": "Ambassador League"
+      "girls_district": "Olympic League",
+      "boys_district": "Olympic League"
     },
     {
       "name": "Green River",
