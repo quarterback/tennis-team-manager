@@ -17,10 +17,20 @@ nowhere in the current table. They do exist in git, which is what this reads: ev
 revision of `import_jhsaa.py`, the value `RENAMES[source]` held at each, and therefore
 every display name the school has ever carried.
 
-‼️ A LIVE NAME ALWAYS WINS. Three former names are now a DIFFERENT school's live name
-— "Ashbury" was renamed to "Ashbury Central" and is now what Ashbury Heights is
-called. Those are excluded here and `jhsaa.resolve_school` checks live names first
-regardless, because an alias must never outrank a school that actually exists.
+‼️ A LIVE NAME ALWAYS WINS, and the excluded set is REPORTED rather than merely
+dropped. A former name that is now a DIFFERENT school's live name is a REISSUE: the
+bare name was vacated by one program and handed to another (Breakwater was vacated by
+what is now Tide Point and handed to what was Fort Meriwether Breakwater). Such a name
+is genuinely AMBIGUOUS without a year — before the handoff it is the first school's,
+after it the second's — so it is excluded here, and `jhsaa.current_name` / `known_names`
+check live names first regardless, because an alias must never outrank a school that
+actually exists.
+
+The COST of that exclusion is real and belongs on screen rather than in a comment: the
+vacating program cannot reach seasons archived under the name it gave up. So `--check`
+NAMES every reissue it drops. Do not "fix" one by aliasing it — that files the live
+school's own archived seasons under its neighbour, which is strictly worse than a gap.
+(There were three; there are six. A count in prose rots — the report is generated.)
 """
 import argparse
 import collections
@@ -69,7 +79,7 @@ def collect(m, live: set[str]) -> dict[str, str]:
             if not chain[k] or chain[k][-1] != v:
                 chain[k].append(v)
 
-    former = {}
+    former, reissued = {}, {}
     for source, targets in chain.items():
         now = m.RENAMES.get(source)
         if now is None:                       # entry retired; nothing live to point at
@@ -85,7 +95,11 @@ def collect(m, live: set[str]) -> dict[str, str]:
             old = m._display_name(old)
             if old != now and old not in live:
                 former[old] = now
-    return former
+            elif old != now:
+                # A REISSUE, not a no-op: `old` is a name this school gave up that
+                # another program now carries. Recorded so the cost is visible.
+                reissued[old] = now
+    return former, reissued
 
 
 def render(former: dict[str, str]) -> str:
@@ -124,8 +138,15 @@ def main() -> None:
     rows = doc["schools"] if isinstance(doc, dict) else doc
     live = {r["name"] for r in rows}
 
-    former = collect(m, live)
+    former, reissued = collect(m, live)
     block = render(former)
+    if reissued:
+        print(f"{len(reissued)} REISSUED name(s) excluded — a program that gave up "
+              "this name cannot reach seasons archived under it, and the name now "
+              "belongs to somebody else:")
+        for old, now in sorted(reissued.items()):
+            print(f"  {old!r} was given up by {now!r}; it is now a live school")
+        print()
 
     with open(_TARGET, encoding="utf-8") as fh:
         text = fh.read()
