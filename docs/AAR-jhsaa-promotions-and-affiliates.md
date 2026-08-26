@@ -40,19 +40,23 @@ real US state — never a fictional Jefferson county.
 
 | Donor (sunset) | New affiliate | Real location |
 |---|---|---|
-| Mountain House | Peregrine School | Boise, Ada County, Idaho (private) |
-| Copperview | Baker High | Baker City, Baker County, Oregon |
-| Meadowbrook | Lower Lake High | Lower Lake, Lake County, California |
-| Shenango | Bend Senior High | Bend, Deschutes County, Oregon |
-| Bahía Vista | Mountain View High | Bend, Deschutes County, Oregon |
-| Empire Milling | Summit High | Bend, Deschutes County, Oregon |
-| Junction | Caldera High | Bend, Deschutes County, Oregon |
-| Crow Basin | Ukiah High | Ukiah, Mendocino County, California |
-| Emigrant | Rock Springs High | Rock Springs, Sweetwater County, Wyoming |
-| St. Gabriel Academy | Green River High | Green River, Sweetwater County, Wyoming |
-| Harrow | Jackson Hole High | Jackson, Teton County, Wyoming |
+| Mountain House | Peregrine | Boise, Ada County, Idaho (private) |
+| Copperview | Baker | Baker City, Baker County, Oregon |
+| Meadowbrook | Lower Lake | Lower Lake, Lake County, California |
+| Shenango | Bend Senior | Bend, Deschutes County, Oregon |
+| Bahía Vista | Mountain View | Bend, Deschutes County, Oregon |
+| Empire Milling | Summit | Bend, Deschutes County, Oregon |
+| Junction | Caldera | Bend, Deschutes County, Oregon |
+| Crow Basin | Ukiah | Ukiah, Mendocino County, California |
+| Emigrant | Rock Springs | Rock Springs, Sweetwater County, Wyoming |
+| St. Gabriel Academy | Green River | Green River, Sweetwater County, Wyoming |
+| Harrow | Jackson Hole | Jackson, Teton County, Wyoming |
 | Buckhorn | Spring Harvest | Spring Harvest, Box Elder County, Utah |
 | Mirage Siding Regional | Money | Money, Box Elder County, Utah |
+
+(Names shown post-correction — see "Naming correction" below. The affiliates
+were first created carrying "High"/"School" suffixes and renamed once the
+owner flagged it.)
 
 ## A new field: `School.state`
 
@@ -94,13 +98,61 @@ all treat it as an ordinary member, per the owner's explicit rule.
   otherwise print, since that county is internal-only. The header's
   "Counties" count excludes affiliates so it keeps meaning "Jefferson
   counties," not "real + internal-clustering counties combined."
-- **Scoped deliberately**: only the school page and the Program Directory
-  were touched, per the explicit ask. Four other templates print a bare
-  ", Jefferson" string (`jhsaa.html` hub, `jhsaa_bracket.html`,
-  `jhsaa_player.html`, `jhsaa_toc.html`) and were NOT touched — a future pass
-  can extend the same `view.state` branch to them if the owner wants full
-  coverage; this pass matches the two surfaces actually specified rather
-  than sweeping every geography string in the section.
+- **Extended to every surface that prints a school's geography.** The first
+  pass touched only the school page and the Program Directory, per the
+  explicit ask. The owner then asked to "remove the bare string" — four more
+  templates printed a hardcoded `, Jefferson` (`jhsaa.html` hub,
+  `jhsaa_bracket.html`, `jhsaa_player.html`, `jhsaa_toc.html`), each in a
+  champion/header line. All four now branch on `state`/`view.state` the same
+  way: `{{ ...city }}, {{ ...state if ...state else 'Jefferson' }}`. Three of
+  the four (hub, bracket, TOC) read through the ONE shared decoration helper,
+  `state._jh_deco`, so adding `"state": s.state` to its two return dicts fixed
+  all three at once; `jhsaa_player.html` reads `view.state` off
+  `jhsaa_player_view`'s own return dict directly.
+
+## Where affiliate players are "from"
+
+`_gen_seat` (the one function that builds every JHSAA `Prospect`) had
+`hometown`/`region` hardcoded unconditionally to Jefferson —
+`f"{school.city}, JF"` and `region = "Jefferson"` — for every seat on every
+roster, which was silently wrong the moment a school could carry a real
+out-of-state `city`. A Bend Senior player was generating as "Bend, JF" /
+region "Jefferson" instead of "Bend, OR" / region "Oregon". Fixed by keying
+both off `school.state`, matching the `f"{city}, {abbr}"` convention already
+used elsewhere (`development.py`, `juniors.py`, `ncaa.py`):
+```python
+p.hometown = f"{school.city}, {_state_abbr(school.state)}"
+p.region, p.domestic = (school.state or "Jefferson"), True
+```
+`_state_abbr` is a small new helper that reuses `juniors.US_STATES` (the
+canonical `(full_name, abbr)` list) rather than inventing a second
+state-abbreviation table. `region` matters beyond display: it is a player's
+home-STATE string, read by `juniors.state_players` for state-based recruit
+filtering — an affiliate player must show up under their REAL state there,
+not under Jefferson. Verified for all 13 affiliates (e.g. Peregrine →
+"Boise, ID" / region "Idaho"; Rock Springs → "Rock Springs, WY" / region
+"Wyoming"); ordinary Jefferson schools are byte-identical (`school.state`
+empty → falls back to the old "JF"/"Jefferson" values exactly).
+
+## Naming correction — the affiliates missed the no-suffix rule
+
+11 of the 13 new affiliate names were created carrying "High" or "School"
+("Baker High," "Peregrine School," …) — a plain miss of the standing
+CLAUDE.md rule that a JHSAA school's display name carries no institutional
+suffix, which every OTHER school in the association (real or generated)
+already follows. Caught by the owner directly, not by review.
+
+Fixed with a small one-time rename script, `scripts/jhsaa_affiliate_names.py`
+— the same shape as every other rename this session: it only ever touches
+`name` (the display/archive identity), never `source` (the roster identity
+that seeds player generation and pids), per the standing JHSAA
+display-rename rule. `Spring Harvest` and `Money` already carried no suffix
+and were left alone. Verified after running it: 0 name collisions, sponsor
+counts unchanged (957 girls'/883 boys', 0 empty districts), and roster
+generation for four spot-checked renamed schools (Peregrine, Baker, Bend
+Senior, Rock Springs) produces identical players with correct
+hometown/region — renaming `name` alone cannot touch generation, which
+keys on `source`.
 
 ## Verification
 
