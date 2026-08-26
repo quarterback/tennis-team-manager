@@ -5418,6 +5418,32 @@ def jhsaa_history_rows(world_id: int, gender: str) -> dict[str, list[dict]]:
     return out
 
 
+def jhsaa_retired_programs(world_id: int, gender: str) -> list[dict]:
+    """Every program that has archived a `gender` season and does not sponsor
+    the sport today, with its LAST season — so a program's history can be
+    found without guessing which classification it played in when it
+    stopped (`jhsaa.former_school` needs a year to open its page on; this is
+    where that year comes from, instead of hunting the state bracket to spot
+    a name that vanished).
+
+    One pass over the whole archive via `jhsaa_history_rows` — the same
+    reason that function exists. Looping `jhsaa_school_seasons` per program
+    would re-read every season once per program instead of once total."""
+    from . import jhsaa as jh
+    rows = jhsaa_history_rows(world_id, gender)
+    out = []
+    for school, seasons in rows.items():
+        if not seasons or jh.sponsors_sport(school, gender):
+            continue
+        last = seasons[0]                      # seasons come back newest-first
+        out.append({"name": school, "last_year": last["year"],
+                    "last_season_year": last.get("season_year"),
+                    "last_group": last.get("group"), "record": last.get("record", ""),
+                    "seasons": len(seasons)})
+    out.sort(key=lambda r: (-r["last_year"], r["name"]))
+    return out
+
+
 def jhsaa_school_history(world_id: int, gender: str, school: str) -> dict:
     """A program's whole history, as the three DISTINCT things it is:
 

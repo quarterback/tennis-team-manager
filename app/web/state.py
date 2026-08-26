@@ -5731,6 +5731,46 @@ def jhsaa_individual_winners(seed: int, gender: str, group: str | None = None,
                                years[0] if years else 0, years, None, None)}
 
 
+def jhsaa_retired_view(seed: int, gender: str, group: str | None = None) -> dict:
+    """Programs that no longer sponsor `gender` tennis, grouped by the LAST
+    season each one played — same "By year" shape as the champions grid, so a
+    program that stopped in 2044 sits with that year's class of retirements
+    rather than alphabetized against every program that has ever quit.
+
+    Exists so a retired program's history can be found without guessing what
+    classification it played in when it stopped — `jhsaa_school` needs a year
+    to open on for a program that has none archived under the current world
+    week, and until now the only way to find that year was to scan old state
+    brackets for a name that had vanished.
+
+    Decorated through `jhsaa.former_school` (never `load_schools`, which is
+    current sponsors only) so the row still shows the program's mark, city and
+    classification even though it is not on today's schedule anywhere."""
+    import app.jhsaa as jh
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    all_years = world.jhsaa_years(w["id"], g)
+    retired = world.jhsaa_retired_programs(w["id"], g)
+    schools = {r["name"]: sc for r in retired
+               if (sc := jh.former_school(r["name"], g)) is not None}
+    years: dict[int, dict] = {}
+    for r in retired:
+        yr = years.setdefault(r["last_year"], {"year": r["last_year"],
+                              "season_year": r["last_season_year"], "programs": []})
+        yr["programs"].append({**_jh_deco(schools, r["name"], 20),
+                               "record": r["record"], "seasons": r["seasons"]})
+    for yr in years.values():
+        yr["programs"].sort(key=lambda p: p["name"])
+    out_years = [years[y] for y in sorted(years, reverse=True)]
+    return {"gender": g, "years": out_years, "count": len(retired),
+            # class-blind page; `group` rides the scope bar so the class you were
+            # browsing is still selected when you leave, same as the champions grid.
+            "scope": _jh_scope(g, group if group in jh.GROUPS else jh.GROUPS[0],
+                               list(jh.GROUPS), all_years[0] if all_years else 0,
+                               all_years, None, None)}
+
+
 def jhsaa_past_winners(seed: int, gender: str, group: str | None = None,
                        layout: str | None = None) -> dict:
     """Champions and Players of the Year for every archived JHSAA year — the

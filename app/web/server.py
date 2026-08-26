@@ -44,7 +44,7 @@ from .state import (jhsaa_view, jhsaa_scope_view, jhsaa_school_view, jhsaa_past_
                     jhsaa_rankings_view, jhsaa_player_view, jhsaa_players_search,
                     jhsaa_misapplied_players, jhsaa_lineup_lab, jhsaa_schools_view,
                     jhsaa_titles_view, jhsaa_individual_view,
-                    jhsaa_individual_winners)
+                    jhsaa_individual_winners, jhsaa_retired_view)
 from .state import (preseason_portal_view, recruit_economy_view, portal_class_rankings,
                     wire_view)
 from .state import my_program_view, my_schedule_plan, my_season_report, job_offers
@@ -2245,6 +2245,19 @@ def create_app() -> Flask:
         gender, label, u, g, group, year = _jh_scope_args()
         view = jhsaa_titles_view(DEFAULT_SEED, g, group, year)
         return render_template("jhsaa_titles.html", active="High School", view=view,
+                               gender=gender, u=u, uni_label=label)
+
+    @app.route("/jhsaa/retired-programs")
+    def jhsaa_retired():
+        """Retired programs — every school that no longer sponsors this gender's
+        tennis, one row per program, grouped by the last season it played.
+
+        Under History beside the champions grid and the title board: it answers
+        "where did this program go and when" without scanning old state brackets
+        for a name that vanished."""
+        gender, label, u, g, group, _year = _jh_scope_args()
+        view = jhsaa_retired_view(DEFAULT_SEED, g, group)
+        return render_template("jhsaa_retired.html", active="High School", view=view,
                                gender=gender, u=u, uni_label=label)
 
     @app.route("/jhsaa")
