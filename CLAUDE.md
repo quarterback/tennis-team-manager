@@ -2355,6 +2355,41 @@ was a school marker, shipped "Baptist HS High School".
   order is REGRET, not nearest-centroid (which hands one metro every seat while its
   neighbour starves); the floor pass pulls a short league up to strength using its
   NEAREST available member; rivalries are repaired last and outrank geography.
+- **‼️ AN AFFILIATE'S LEAGUE CAN BE WRONG WITHOUT THE AFFILIATE BEING THE CAUSE
+  (owner rule 2026-08, `scripts/jhsaa_affiliate_leagues.py` +
+  `scripts/jhsaa_border_realignment.py`).** The 13 out-of-state affiliates
+  (`School.state`) inherited whatever league their donor's classification
+  happened to occupy, unchecked against real coordinates. Most were fine —
+  measured with-and-without-the-affiliate league span, Baker/Bend/Caldera add
+  **0 miles** to their league, Money/Spring Harvest 5 — so **diagnose the cause
+  before spending a redraw on the symptom**, same lesson as everywhere else in
+  this file. Only Lower Lake (adds 194 mi) and a couple of genuinely
+  mis-grouped clusters needed fixing.
+  - **"These schools should be together" is usually a GROUP mismatch, not a
+    geography problem.** The four Bend schools, the three Wyoming affiliates,
+    and eight Emigrant County Jefferson schools were each split across two
+    `group`s — a league is `(classification, name)`, so schools in different
+    groups cannot share one however close they stand. The fix is a `group`
+    override, **never `classification`** (which stays the talent/enrollment
+    basis `_TALENT` reads — moving it would hand a relocated school a free
+    upgrade instead of a harder field it plays UP into and earns, same
+    distinction as `PLAY_UP`/`COMPETITIVE_MOVES`).
+  - **Filling a vacated league from the nearest Jefferson pool is not always
+    the cheapest fix — check whether the displaced schools can be THEIR OWN
+    league first.** Backfilling costs one displaced Jefferson school per
+    vacated seat; the Emigrant County eight, grouped together instead, needed
+    zero. A cluster that was dragging two different leagues to 400+ miles is
+    usually tight *among itself* — that's the whole reason it was dragging
+    both leagues wide.
+  - **Reclassification is explicit, not a `play_up` flag**, when the owner
+    says so: Lower Lake's `classification`, `group` AND `enrollment` all moved
+    together (the `COMPETITIVE_MOVES` idiom — the number follows the decision).
+  - **A revived EMPTY league is a free seat, not a new invention.** Sunkist
+    League (8A) and Sage Plains League (Group 1) were both down to a single
+    `RETIRE_AND_REPLACE` donor row sponsoring nothing (kept per
+    `former_school`) — reviving them to hold a relocated cluster costs no new
+    league name and no `MAX_DISTRICT` pressure elsewhere.
+  See `docs/AAR-jhsaa-affiliate-league-geography.md`.
 - **‼️ `MAX_DISTRICT` (12) IS A CAP, `DISTRICT_TARGET` (10) IS THE SIZE** (owner rule
   2026-08). `draw_districts` took `k = ceil(n / MAX_DISTRICT)` — the FEWEST blocks that
   fit under the cap — which quietly turned a ceiling into a target: every class packed
