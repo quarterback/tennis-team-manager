@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header %}
+{% block title %}JHSAA Retired Programs{% endblock %}
+{% block content %}
+
+{{ jh_header(view.scope, u, 'retired', 'Retired Programs',
+             'Every program that no longer sponsors tennis, by the last season it played.',
+             [('Programs', view.count)]) }}
+
+<div class="jh-shell">
+{% if not view.years %}
+<div class="bl-panel"><div class="jh-empty">No retired programs — every school that
+  has ever sponsored tennis here still fields a team.</div></div>
+{% else %}
+
+{# Same "By year" shape as the champions grid: a program groups with the year it
+   LAST PLAYED, not alphabetically against every program that has ever quit. #}
+{% for y in view.years %}
+<div class="bl-panel jh-yearpanel">
+  <div class="bl-panel-head">
+    <span class="bl-panel-title">Last played {{ y.season_year }}</span>
+    <span class="bit">{{ y.programs|length }} program{{ '' if y.programs|length == 1 else 's' }}</span>
+  </div>
+  <div class="jh-yearchamps">
+    {% for p in y.programs %}
+    <div class="row">
+      {% if p.group %}<span class="jh-chip c-{{ p.group|replace(' ','') }}">{{ p.group }}</span>{% endif %}
+      <span class="mk">{{ p.mark|safe }}</span>
+      <a class="nm" href="{{ url_for('jhsaa_school', school=p.name, u=u, g=view.gender, year=y.year) }}">{{ p.name }}</a>
+      {% if p.city %}<span class="bit">{{ p.city }}{{ ", " ~ p.state if p.state else "" }}</span>{% endif %}
+      {% if p.record %}<span class="rec">({{ p.record }})</span>{% endif %}
+      <span class="bit">{{ p.seasons }} season{{ '' if p.seasons == 1 else 's' }} archived</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+
+{% endif %}
+</div>
+{% endblock %}

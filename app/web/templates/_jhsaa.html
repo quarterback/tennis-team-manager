@@ -141,7 +141,7 @@
       {# History is TWO pages on its own sub-rail (owner, 2026-08): the champions
          grid (who won each class each season) and the title board (what a program
          has ever won). Same question from the two ends. #}
-      <a class="{{ 'on' if tab in ('history', 'titles', 'indiv_history') }}"
+      <a class="{{ 'on' if tab in ('history', 'titles', 'indiv_history', 'retired') }}"
          href="{{ url_for('jhsaa_champions', u=u, g=scope.gender) }}">History</a>
       {# The section's own settings — archetypes and play-up. A tab, because the panels
          were on /editor and nobody could find them there. Carries no group or year:
@@ -181,7 +181,7 @@
   </div>
   {% endif %}
 
-  {% if tab in ('history', 'titles', 'indiv_history') %}
+  {% if tab in ('history', 'titles', 'indiv_history', 'retired') %}
   <div class="jh-subrail">
     <a class="{{ 'on' if tab == 'history' }}"
        href="{{ url_for('jhsaa_champions', u=u, g=scope.gender, group=scope.group) }}">State Champions</a>
@@ -192,6 +192,11 @@
        href="{{ url_for('jhsaa_individual_champions', u=u, g=scope.gender, group=scope.group) }}">Individual Champions</a>
     <a class="{{ 'on' if tab == 'titles' }}"
        href="{{ url_for('jhsaa_titles', u=u, g=scope.gender, group=scope.group) }}">Title Board</a>
+    {# Programs that no longer sponsor the sport — a school and its last season,
+       so its history is findable without guessing what class it played in when
+       it stopped. #}
+    <a class="{{ 'on' if tab == 'retired' }}"
+       href="{{ url_for('jhsaa_retired', u=u, g=scope.gender, group=scope.group) }}">Retired Programs</a>
   </div>
   {% endif %}
 </div></div>
