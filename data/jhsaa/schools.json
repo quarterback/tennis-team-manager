@@ -700,7 +700,7 @@
       "county": "Emigrant",
       "area": "Kangas",
       "classification": "Group 2",
-      "group": "Group 2",
+      "group": "Group 1",
       "enrollment": 1009,
       "private": false,
       "mascot": "Vikings",
@@ -710,8 +710,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Olympic League",
-      "boys_district": "Olympic League"
+      "girls_district": "Sage Plains League",
+      "boys_district": "Sage Plains League"
     },
     {
       "name": "Avalon Park",
@@ -1980,8 +1980,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Mariners League",
-      "boys_district": "Mariners League",
+      "girls_district": "Rim Country League",
+      "boys_district": "Rim Country League",
       "source": "Fort Meriwether Breakwater"
     },
     {
@@ -3132,8 +3132,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Mariners League",
-      "boys_district": "Mariners League",
+      "girls_district": "Narpes Interscholastic League",
+      "boys_district": "Narpes Interscholastic League",
       "source": "Sofia Romanov",
       "locality": "Chesapeake"
     },
@@ -5537,7 +5537,7 @@
       "county": "Emigrant",
       "area": "Kangas",
       "classification": "Group 2",
-      "group": "Group 2",
+      "group": "Group 1",
       "enrollment": 950,
       "private": false,
       "mascot": "Gladiators",
@@ -5547,8 +5547,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Olympic League",
-      "boys_district": "Olympic League",
+      "girls_district": "Sage Plains League",
+      "boys_district": "Sage Plains League",
       "source": "Frontier High"
     },
     {
@@ -6051,7 +6051,7 @@
       "county": "Emigrant",
       "area": "Kangas",
       "classification": "Group 2",
-      "group": "Group 2",
+      "group": "Group 1",
       "enrollment": 1043,
       "private": false,
       "mascot": "Jackrabbits",
@@ -6061,8 +6061,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Olympic League",
-      "boys_district": "Olympic League",
+      "girls_district": "Sage Plains League",
+      "boys_district": "Sage Plains League",
       "source": "Aurelia Classical Academy"
     },
     {
@@ -6219,8 +6219,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Ambassador League",
-      "boys_district": "Ambassador League"
+      "girls_district": "Sage Plains League",
+      "boys_district": "Sage Plains League"
     },
     {
       "name": "Grayston",
@@ -6277,8 +6277,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Ambassador League",
-      "boys_district": "Ambassador League",
+      "girls_district": "Sage Plains League",
+      "boys_district": "Sage Plains League",
       "source": "St. Michael Academy North"
     },
     {
@@ -6493,8 +6493,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Ambassador League",
-      "boys_district": "Ambassador League"
+      "girls_district": "Sage Plains League",
+      "boys_district": "Sage Plains League"
     },
     {
       "name": "Harrisburgh",
@@ -7865,8 +7865,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Ambassador League",
-      "boys_district": "Ambassador League",
+      "girls_district": "Sage Plains League",
+      "boys_district": "Sage Plains League",
       "source": "Elena Petrenko"
     },
     {
@@ -10861,8 +10861,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Mariners League",
-      "boys_district": "Mariners League"
+      "girls_district": "Narpes Interscholastic League",
+      "boys_district": "Narpes Interscholastic League"
     },
     {
       "name": "Paddock County",
@@ -12644,8 +12644,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Ambassador League",
-      "boys_district": "Ambassador League",
+      "girls_district": "Sage Plains League",
+      "boys_district": "Sage Plains League",
       "source": "Nicolás Cordero"
     },
     {
@@ -15381,8 +15381,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Mariners League",
-      "boys_district": "Mariners League",
+      "girls_district": "Sunkist League",
+      "boys_district": "Sunkist League",
       "source": "Santa Michaela Harbor Gate"
     },
     {
@@ -18405,8 +18405,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Forks League",
-      "boys_district": "Forks League"
+      "girls_district": "Olympic League",
+      "boys_district": "Olympic League"
     },
     {
       "name": "Dawkins",
@@ -18705,8 +18705,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Forks League",
-      "boys_district": "Forks League"
+      "girls_district": "Olympic League",
+      "boys_district": "Olympic League"
     },
     {
       "name": "Eden County Christian",
@@ -19257,9 +19257,9 @@
       "county": "Lake",
       "area": "Cascade Divide",
       "state": "California",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 833,
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 1450,
       "private": false,
       "mascot": "Trojans",
       "colors": [
@@ -19268,8 +19268,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Valle Vista League",
-      "boys_district": "Valle Vista League"
+      "girls_district": "Mariners League",
+      "boys_district": "Mariners League"
     },
     {
       "name": "Bend Senior",
@@ -19373,8 +19373,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Summit League",
-      "boys_district": "Summit League"
+      "girls_district": "Mariners League",
+      "boys_district": "Mariners League"
     },
     {
       "name": "Rock Springs",
@@ -19384,7 +19384,7 @@
       "area": "Bear River Country",
       "state": "Wyoming",
       "classification": "Group 1",
-      "group": "Group 2",
+      "group": "Group 1",
       "enrollment": 1401,
       "private": false,
       "mascot": "Tigers",
@@ -19394,8 +19394,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Olympic League",
-      "boys_district": "Olympic League"
+      "girls_district": "Ambassador League",
+      "boys_district": "Ambassador League"
     },
     {
       "name": "Green River",
@@ -19405,7 +19405,7 @@
       "area": "Bear River Country",
       "state": "Wyoming",
       "classification": "Group 2",
-      "group": "Group 2",
+      "group": "Group 1",
       "enrollment": 597,
       "private": false,
       "mascot": "Wolves",
@@ -19415,8 +19415,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Olympic League",
-      "boys_district": "Olympic League"
+      "girls_district": "Ambassador League",
+      "boys_district": "Ambassador League"
     },
     {
       "name": "Jackson Hole",
@@ -19426,7 +19426,7 @@
       "area": "Bear River Country",
       "state": "Wyoming",
       "classification": "Group 2",
-      "group": "Group 2",
+      "group": "Group 1",
       "enrollment": 553,
       "private": false,
       "mascot": "Broncs",
@@ -19436,8 +19436,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Olympic League",
-      "boys_district": "Olympic League"
+      "girls_district": "Ambassador League",
+      "boys_district": "Ambassador League"
     },
     {
       "name": "Spring Harvest",
