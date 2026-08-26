@@ -2501,10 +2501,36 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
     p.class_year = str(grade)
     p.grade = grade
     p.entry_year = entry
-    p.hometown = f"{school.city}, JF"
+    # ‼️ AN AFFILIATE'S KIDS ARE BORN AT HOME, NOT IN JEFFERSON. `school.state`
+    # is empty for every ordinary Jefferson program (hometown "City, JF",
+    # region "Jefferson" — the pre-affiliate behaviour, unchanged) and a real
+    # state name for an out-of-state affiliate (`School.state`'s docstring):
+    # Bend Senior High's players are from Bend, OREGON, the same convention
+    # `development._gen_hometown`/`juniors._roll_hometown` use elsewhere
+    # (`f"{city}, {abbr}"`) — never `f"{school.city}, JF"` regardless of where
+    # the school actually is. `region` drives `juniors.state_players` (a
+    # domestic recruit's home-state filter), so an affiliate's kids must read
+    # as their real state there too, or an Oregon recruiter's board would show
+    # nobody home-grown from Bend and Jefferson's own board would over-count.
+    p.hometown = f"{school.city}, {_state_abbr(school.state)}"
     p.high_school = school.name
-    p.region, p.domestic = "Jefferson", True
+    p.region, p.domestic = (school.state or "Jefferson"), True
     return p
+
+
+_US_STATE_ABBR: dict[str, str] | None = None
+
+
+def _state_abbr(state: str) -> str:
+    """The postal abbreviation for a real state name, or "JF" for an
+    ordinary (non-affiliate) Jefferson program — see `School.state`."""
+    global _US_STATE_ABBR
+    if not state:
+        return "JF"
+    if _US_STATE_ABBR is None:
+        from . import juniors
+        _US_STATE_ABBR = dict(juniors.US_STATES)
+    return _US_STATE_ABBR.get(state, state)
 
 
 def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
