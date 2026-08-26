@@ -3553,10 +3553,13 @@ def _jh_deco(schools: dict, name: str, size: int = 34) -> dict:
     s = schools.get(name)
     if s is None:
         return {"name": name, "mark": "", "city": "", "county": "", "district": "",
-                "group": "", "classification": "", "mascot": "", "found": False}
+                "group": "", "classification": "", "mascot": "", "state": "",
+                "found": False}
     return {"name": name, "mark": jh.mark(s, size), "city": s.city, "county": s.county,
             "district": s.district, "group": s.group, "classification": s.classification,
             "mascot": s.mascot, "enrollment": s.enrollment, "private": s.private,
+            # An affiliate's real geography is city/state — see School.state.
+            "state": s.state,
             "found": True}
 
 
@@ -5287,7 +5290,7 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         "stars": player.star_rating(),
         "mark": jh.mark(sc, 44), "group": sc.group, "district": sc.district,
         "classification": sc.classification, "city": sc.city,
-        "locality": sc.locality,
+        "locality": sc.locality, "state": sc.state,
         "scope": _jh_scope(g, sc.group, list(jh.GROUPS),
                            years[0] if years else 0, years, None, None),
         "seasons": seasons, "record": f"{wins}-{losses}", "wins": wins, "losses": losses,

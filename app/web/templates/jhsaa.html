@@ -29,7 +29,9 @@
       <div style="min-width:0">
         <span class="lbl">{{ view.season_year }} JHSAA {{ view.group }} State Champions</span>
         <a class="nm" href="{{ url_for('jhsaa_school', school=st.champion.name, u=u, g=view.gender, year=view.scope.pin) }}">{{ st.champion.name }}</a>
-        <div class="sub">{{ st.champion.mascot }} · {{ st.champion.city }}, Jefferson ·
+        {# An affiliate's real geography is city/state, never "city, Jefferson"
+           — see School.state. #}
+        <div class="sub">{{ st.champion.mascot }} · {{ st.champion.city }}, {{ st.champion.state if st.champion.state else 'Jefferson' }} ·
           {# No TOSS rank beside a champion: they won the thing the rank exists to
              predict, and nobody cares where a state champion was ranked. #}
           {{ st.champion.district }}</div>
