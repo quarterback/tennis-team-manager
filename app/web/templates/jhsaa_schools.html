@@ -53,7 +53,10 @@
                    would end "· Antler" under a heading that says Antler; grouped by
                    class, every chip would say 9A under a 9A heading. Both read as data
                    and carry none. #}
-                <span class="s">{{ r.where }}{% if r.county and view.mode != 'county' %} · {{ r.county }}{% endif %}</span>
+                {# An affiliate's `county` is internal clustering geography only
+                   (see School.state) and must never render -- its `where`
+                   already carries its real city/state. #}
+                <span class="s">{{ r.where }}{% if r.county and not r.state and view.mode != 'county' %} · {{ r.county }}{% endif %}</span>
               </span>
               <span class="rt">
                 {# The chip is the class the program COMPETES in (`group`), which is not

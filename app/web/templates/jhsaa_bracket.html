@@ -20,7 +20,8 @@
   <div style="min-width:0">
     <span class="lbl">{{ view.season_year }} JHSAA {{ view.group }} State Champions</span>
     <a class="nm" href="{{ url_for('jhsaa_school', school=view.champion.name, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.champion.name }}</a>
-    <div class="sub">{{ view.champion.mascot }} · {{ view.champion.city }}, Jefferson · {{ view.champion.district }}</div>
+    {# An affiliate's real geography is city/state — see School.state. #}
+    <div class="sub">{{ view.champion.mascot }} · {{ view.champion.city }}, {{ view.champion.state if view.champion.state else 'Jefferson' }} · {{ view.champion.district }}</div>
   </div>
   {% if view.final %}
   <div class="sc"><div class="n">{{ view.final.win_points }}–{{ view.final.lose_points }}</div>

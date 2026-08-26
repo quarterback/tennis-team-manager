@@ -1279,6 +1279,20 @@ class School:
     # default, talent; group drives the championship; this decouples talent
     # alone). Read ONLY through `talent_group`.
     talent: str = ""
+    # ‼️ OUT-OF-STATE AFFILIATE MARKER (owner rule -- JHSAA's first affiliate
+    # members, the same as OSAA/WIAA/CIF/AZ/NV admitting border schools).
+    # Empty for every ordinary Jefferson school. A real state name (e.g.
+    # "Oregon", "Wyoming") means this program's REAL geography is that city/
+    # state, not a Jefferson city/county -- `area`/`county` on an affiliate
+    # exist ONLY for internal district/league-draw clustering and are NEVER
+    # shown; the display layer must show the real `city`/`state` and "Out of
+    # State" instead of the ordinary Jefferson county line. NEVER append a
+    # state suffix to `name` anywhere (standings, brackets, awards, title
+    # board...) -- "Bend Senior High", never "Bend Senior High (OR)". These
+    # schools are ordinary members competitively (classification, leagues,
+    # districts, rankings, honors, postseason, TOSS) -- only their GEOGRAPHY
+    # display differs. See `scripts/jhsaa_promotions_and_affiliates.py`.
+    state: str = ""
 
     @property
     def ident(self) -> str:
@@ -2227,6 +2241,7 @@ def load_schools(gender: str) -> list[School]:
             district=moved.get(r["name"], r[f"{gender}_district"]),
             gender=gender, source=r.get("source", ""),
             locality=r.get("locality", ""),
+            state=r.get("state", ""),
         ))
     # Compute into a local, publish, return the LOCAL (the gthread rule): a sibling
     # thread can clear this between the store and the return.
@@ -2271,7 +2286,7 @@ def former_school(name: str, gender: str) -> School | None:
             # this is only what the header prints beside the town.
             district=r.get(f"{gender}_district") or _row_league(r) or "",
             gender=gender, source=r.get("source", ""),
-            locality=r.get("locality", ""))
+            locality=r.get("locality", ""), state=r.get("state", ""))
     return None
 
 
@@ -2486,10 +2501,36 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
     p.class_year = str(grade)
     p.grade = grade
     p.entry_year = entry
-    p.hometown = f"{school.city}, JF"
+    # ‼️ AN AFFILIATE'S KIDS ARE BORN AT HOME, NOT IN JEFFERSON. `school.state`
+    # is empty for every ordinary Jefferson program (hometown "City, JF",
+    # region "Jefferson" — the pre-affiliate behaviour, unchanged) and a real
+    # state name for an out-of-state affiliate (`School.state`'s docstring):
+    # Bend Senior High's players are from Bend, OREGON, the same convention
+    # `development._gen_hometown`/`juniors._roll_hometown` use elsewhere
+    # (`f"{city}, {abbr}"`) — never `f"{school.city}, JF"` regardless of where
+    # the school actually is. `region` drives `juniors.state_players` (a
+    # domestic recruit's home-state filter), so an affiliate's kids must read
+    # as their real state there too, or an Oregon recruiter's board would show
+    # nobody home-grown from Bend and Jefferson's own board would over-count.
+    p.hometown = f"{school.city}, {_state_abbr(school.state)}"
     p.high_school = school.name
-    p.region, p.domestic = "Jefferson", True
+    p.region, p.domestic = (school.state or "Jefferson"), True
     return p
+
+
+_US_STATE_ABBR: dict[str, str] | None = None
+
+
+def _state_abbr(state: str) -> str:
+    """The postal abbreviation for a real state name, or "JF" for an
+    ordinary (non-affiliate) Jefferson program — see `School.state`."""
+    global _US_STATE_ABBR
+    if not state:
+        return "JF"
+    if _US_STATE_ABBR is None:
+        from . import juniors
+        _US_STATE_ABBR = dict(juniors.US_STATES)
+    return _US_STATE_ABBR.get(state, state)
 
 
 def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:

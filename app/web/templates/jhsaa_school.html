@@ -5,8 +5,10 @@
 {% block content %}
 {% set t = view.history.totals %}
 
+{# An affiliate's real geography is city, state — never a Jefferson-style
+   "city, Jefferson" line, and never a state abbreviation on the name. #}
 {{ jh_header(view.scope, u, 'state', view.school,
-             view.mascot ~ ' · ' ~ view.city ~ ', Jefferson',
+             view.mascot ~ ' · ' ~ view.city ~ ', ' ~ (view.state if view.state else 'Jefferson'),
              [('Season', view.season_year), ('Class', view.group)]) }}
 
 <div class="jh-shell">
@@ -47,8 +49,12 @@
     <h1>{{ view.school }}</h1>
     <div class="mascot">{{ view.mascot }}</div>
     {# A locality reads as part of the address, not as a second city: the school
-       is in Natchez, which is in Belmonte. A core-city school shows only the city. #}
-    <div class="where">{% if view.locality %}{{ view.locality }}, {% endif %}{{ view.city }}, Jefferson · {{ view.county }} County ·
+       is in Natchez, which is in Belmonte. A core-city school shows only the city.
+       An out-of-state affiliate shows its REAL city/state and "Out of State" —
+       never its internal-clustering county/area (see School.state) and never a
+       state abbreviation appended to the name. #}
+    <div class="where">{% if view.state %}{{ view.city }}, {{ view.state }} · Out of State
+      {% else %}{% if view.locality %}{{ view.locality }}, {% endif %}{{ view.city }}, Jefferson · {{ view.county }} County{% endif %} ·
       <a href="{{ url_for('jhsaa_district', group=view.group, district=view.district, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.district }}</a>
       · {{ "{:,}".format(view.enrollment) }} students</div>
     <div class="now">
