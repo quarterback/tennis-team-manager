@@ -5430,27 +5430,25 @@ def jhsaa_retired_programs(world_id: int, gender: str) -> list[dict]:
     reason that function exists. Looping `jhsaa_school_seasons` per program
     would re-read every season once per program instead of once total.
 
-    ‼️ A RENAMED SCHOOL IS STILL ACTIVE — `sponsors_sport` alone is not
-    enough. `jhsaa_history_rows` relabels archived rows through
-    `world._relabel` / `jhsaa.former_names()`, which is generated from the
-    git history of `import_jhsaa.RENAMES` — a rename applied directly to
-    `data/jhsaa/schools.json` outside that pipeline (every rename this
-    session) never reaches that alias table, so an archived season still
-    reads under the OLD name. `sponsors_sport(old_name, gender)` then
-    correctly finds nobody sponsoring under that exact string and the
-    program reads as retired, even though it is the school playing today
-    under its new name — shipped once, "Bardsley County High" (now "Violet
-    City") and "Olivet Regional" (now "Silva") both showed up as retired.
-    `School.source` is the fix already in the data (a JHSAA display rename
-    MUST stamp it with the pre-rename name), so a school is genuinely
-    retired only if NEITHER its own name sponsors NOR any live school's
-    `source` is this name."""
+    ‼️ A RENAMED SCHOOL IS STILL ACTIVE, and it is `jhsaa.former_names()`
+    that has to know it — NOT a filter here. This shipped once listing
+    "Bardsley County High" (now Violet City) and "Olivet Regional" (now
+    Silva) as retired, because a rename applied straight to the committed
+    data never reaches the git-derived half of that alias table. Excluding
+    them HERE was the wrong repair: it hides the row from this page while
+    leaving the underlying breakage — the pre-rename seasons still file
+    under the old name, so Violet City's own page omits them from its
+    ledger and career totals, and the old-name entry that would have led a
+    reader there is gone too. `former_names()` now merges the live
+    `source` -> `name` mapping, so those seasons are RELABELLED onto the
+    active school everywhere (the ledger, the totals, the title board,
+    this page) and `sponsors_sport` then excludes them for the ordinary
+    reason: they are playing today."""
     from . import jhsaa as jh
-    live_sources = {s.source for s in jh.load_schools(gender) if s.source}
     rows = jhsaa_history_rows(world_id, gender)
     out = []
     for school, seasons in rows.items():
-        if not seasons or jh.sponsors_sport(school, gender) or school in live_sources:
+        if not seasons or jh.sponsors_sport(school, gender):
             continue
         last = seasons[0]                      # seasons come back newest-first
         out.append({"name": school, "last_year": last["year"],
