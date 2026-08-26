@@ -4740,6 +4740,10 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         # --- identity ---
         "mark": jh.mark(sc, 76), "city": sc.city, "county": sc.county, "area": sc.area,
         "locality": sc.locality,
+        # An affiliate's real geography is `city`/`state`; `county`/`area` on
+        # its row are internal district-draw clustering only and must never
+        # render — see `School.state`'s docstring.
+        "state": sc.state,
         "classification": sc.classification, "group": sc.group, "district": sc.district,
         "mascot": sc.mascot, "enrollment": sc.enrollment, "private": sc.private,
         "colors": sc.colors,
@@ -5010,9 +5014,14 @@ def jhsaa_schools_view(seed: int, gender: str, mode: str = "county",
              "locality": s.locality, "county": s.county, "area": s.area,
              "classification": s.classification, "group": s.group,
              "district": s.district, "enrollment": s.enrollment,
-             "private": s.private, "plays_up": s.plays_up}
-        r["where"] = f"{s.locality}, {s.city}" if s.locality else s.city
-        r["q"] = " ".join((s.name, s.city, s.locality, s.county, s.area,
+             "private": s.private, "plays_up": s.plays_up, "state": s.state}
+        # ‼️ AN AFFILIATE SHOWS ITS REAL CITY/STATE, NEVER ITS INTERNAL
+        # CLUSTERING GEOGRAPHY. `s.area`/`s.county` on an affiliate exist only
+        # so district/league draws have something to sort on and must never
+        # reach a page — see `School.state`'s docstring.
+        r["where"] = (f"{s.city}, {s.state}" if s.state else
+                      (f"{s.locality}, {s.city}" if s.locality else s.city))
+        r["q"] = " ".join((s.name, s.city, s.state, s.locality, s.county, s.area,
                            s.district, s.group, s.classification)).lower()
         rows.append(r)
 
@@ -5027,10 +5036,15 @@ def jhsaa_schools_view(seed: int, gender: str, mode: str = "county",
                 for k, v in sorted(buckets.items(), key=order)]
 
     if mode == "county":
-        by_area = {r["county"]: r["area"] for r in rows}
-        sections = _flat(lambda r: r["county"],
-                         lambda k, v: by_area.get(k, ""),
-                         lambda kv: (by_area.get(kv[0], ""), kv[0]))
+        # Out-of-state affiliates group under one "Out of State" heading —
+        # each row already shows its own real city/state (`r["where"]`), so
+        # the section meta stays blank rather than naming one state for a
+        # bucket that spans several. Never their internal-clustering
+        # county/area, which is never shown, per `School.state`'s rule.
+        by_area = {r["county"]: r["area"] for r in rows if not r["state"]}
+        sections = _flat(lambda r: "Out of State" if r["state"] else r["county"],
+                         lambda k, v: "" if k == "Out of State" else by_area.get(k, ""),
+                         lambda kv: ("~" if kv[0] == "Out of State" else by_area.get(kv[0], ""), kv[0]))
     elif mode == "az":
         sections = _flat(lambda r: (r["name"][:1] or "#").upper(),
                          lambda k, v: "", lambda kv: kv[0])
@@ -5054,7 +5068,9 @@ def jhsaa_schools_view(seed: int, gender: str, mode: str = "county",
             "year": yr, "years": years, "mode": mode,
             "modes": [{"key": k, "label": lbl} for k, lbl in JH_DIRECTORY_MODES],
             "sections": sections, "total": len(rows),
-            "counties": len({r["county"] for r in rows}),
+            # Affiliate `county` values are internal clustering geography, never
+            # real Jefferson counties -- excluded from the header count.
+            "counties": len({r["county"] for r in rows if not r["state"]}),
             "season_year": world.jhsaa_season_year(w),
             "scope": _jh_scope(g, grp, list(jh.GROUPS), yr, years, None, None)}
 

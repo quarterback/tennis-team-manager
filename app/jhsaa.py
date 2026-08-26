@@ -1279,6 +1279,20 @@ class School:
     # default, talent; group drives the championship; this decouples talent
     # alone). Read ONLY through `talent_group`.
     talent: str = ""
+    # ‼️ OUT-OF-STATE AFFILIATE MARKER (owner rule -- JHSAA's first affiliate
+    # members, the same as OSAA/WIAA/CIF/AZ/NV admitting border schools).
+    # Empty for every ordinary Jefferson school. A real state name (e.g.
+    # "Oregon", "Wyoming") means this program's REAL geography is that city/
+    # state, not a Jefferson city/county -- `area`/`county` on an affiliate
+    # exist ONLY for internal district/league-draw clustering and are NEVER
+    # shown; the display layer must show the real `city`/`state` and "Out of
+    # State" instead of the ordinary Jefferson county line. NEVER append a
+    # state suffix to `name` anywhere (standings, brackets, awards, title
+    # board...) -- "Bend Senior High", never "Bend Senior High (OR)". These
+    # schools are ordinary members competitively (classification, leagues,
+    # districts, rankings, honors, postseason, TOSS) -- only their GEOGRAPHY
+    # display differs. See `scripts/jhsaa_promotions_and_affiliates.py`.
+    state: str = ""
 
     @property
     def ident(self) -> str:
@@ -2227,6 +2241,7 @@ def load_schools(gender: str) -> list[School]:
             district=moved.get(r["name"], r[f"{gender}_district"]),
             gender=gender, source=r.get("source", ""),
             locality=r.get("locality", ""),
+            state=r.get("state", ""),
         ))
     # Compute into a local, publish, return the LOCAL (the gthread rule): a sibling
     # thread can clear this between the store and the return.
@@ -2271,7 +2286,7 @@ def former_school(name: str, gender: str) -> School | None:
             # this is only what the header prints beside the town.
             district=r.get(f"{gender}_district") or _row_league(r) or "",
             gender=gender, source=r.get("source", ""),
-            locality=r.get("locality", ""))
+            locality=r.get("locality", ""), state=r.get("state", ""))
     return None
 
 
