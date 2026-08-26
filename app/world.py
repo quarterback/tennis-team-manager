@@ -5428,12 +5428,29 @@ def jhsaa_retired_programs(world_id: int, gender: str) -> list[dict]:
 
     One pass over the whole archive via `jhsaa_history_rows` — the same
     reason that function exists. Looping `jhsaa_school_seasons` per program
-    would re-read every season once per program instead of once total."""
+    would re-read every season once per program instead of once total.
+
+    ‼️ A RENAMED SCHOOL IS STILL ACTIVE — `sponsors_sport` alone is not
+    enough. `jhsaa_history_rows` relabels archived rows through
+    `world._relabel` / `jhsaa.former_names()`, which is generated from the
+    git history of `import_jhsaa.RENAMES` — a rename applied directly to
+    `data/jhsaa/schools.json` outside that pipeline (every rename this
+    session) never reaches that alias table, so an archived season still
+    reads under the OLD name. `sponsors_sport(old_name, gender)` then
+    correctly finds nobody sponsoring under that exact string and the
+    program reads as retired, even though it is the school playing today
+    under its new name — shipped once, "Bardsley County High" (now "Violet
+    City") and "Olivet Regional" (now "Silva") both showed up as retired.
+    `School.source` is the fix already in the data (a JHSAA display rename
+    MUST stamp it with the pre-rename name), so a school is genuinely
+    retired only if NEITHER its own name sponsors NOR any live school's
+    `source` is this name."""
     from . import jhsaa as jh
+    live_sources = {s.source for s in jh.load_schools(gender) if s.source}
     rows = jhsaa_history_rows(world_id, gender)
     out = []
     for school, seasons in rows.items():
-        if not seasons or jh.sponsors_sport(school, gender):
+        if not seasons or jh.sponsors_sport(school, gender) or school in live_sources:
             continue
         last = seasons[0]                      # seasons come back newest-first
         out.append({"name": school, "last_year": last["year"],

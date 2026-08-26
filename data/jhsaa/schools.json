@@ -532,7 +532,7 @@
         "#c8ccd4"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Metro League",
       "boys_district": "Metro League",
       "source": "Viktor Gromov"
@@ -631,7 +631,7 @@
         "#e8e6df"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Gateway League",
       "boys_district": "Gateway League",
       "source": "Ashbury Heights"
@@ -3112,7 +3112,7 @@
         "#f4f1ea"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Four Rivers Interscholastic League",
       "boys_district": "Four Rivers Interscholastic League"
     },
@@ -3923,7 +3923,7 @@
         "#f0b323"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Summit League",
       "boys_district": "Summit League",
       "source": "Annie Springs Crater View"
@@ -6276,7 +6276,7 @@
         "#d97706"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Ambassador League",
       "boys_district": "Ambassador League",
       "source": "St. Michael Academy North"
@@ -6395,7 +6395,7 @@
         "#e5e7eb"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Marble Valley League",
       "boys_district": "Marble Valley League",
       "source": "James Madison North"
@@ -6415,7 +6415,7 @@
         "#9fb4c7"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Forks League",
       "boys_district": "Forks League"
     },
@@ -7864,7 +7864,7 @@
         "#f0b323"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Ambassador League",
       "boys_district": "Ambassador League",
       "source": "Elena Petrenko"
@@ -8145,7 +8145,7 @@
         "#d4d4d8"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Rim Country League",
       "boys_district": "Rim Country League"
     },
@@ -8672,7 +8672,7 @@
         "#c05621"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Gold Valley League",
       "boys_district": "Gold Valley League",
       "source": "Amos Cross"
@@ -9026,7 +9026,7 @@
         "#e8e6df"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Mariners League",
       "boys_district": "Mariners League",
       "source": "Harbor Gate North",
@@ -9243,7 +9243,7 @@
         "#e5e7eb"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Gold Valley League",
       "boys_district": "Gold Valley League"
     },
@@ -9816,7 +9816,7 @@
         "#f0b323"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Marble Valley League",
       "boys_district": "Marble Valley League",
       "source": "Depot High North"
@@ -10133,7 +10133,7 @@
         "#c8a24a"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Citrus Belt League",
       "boys_district": "Citrus Belt League",
       "source": "Itziar Lertxundi"
@@ -12363,7 +12363,7 @@
         "#d97706"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Ostrobothnia League",
       "boys_district": "Ostrobothnia League",
       "source": "Zubieta River Plain"
@@ -12464,7 +12464,7 @@
         "#c05621"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Del Rey Athletic Association",
       "boys_district": "Del Rey Athletic Association",
       "source": "James Gaines"
@@ -14066,7 +14066,7 @@
         "#e8c46b"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Ostrobothnia League",
       "boys_district": "Ostrobothnia League",
       "source": "Beatriz Salcedo"
@@ -15182,7 +15182,7 @@
         "#d97706"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Gold Valley League",
       "boys_district": "Gold Valley League",
       "source": "Svenja Bianchi"
@@ -16115,7 +16115,7 @@
         "#f2f2ee"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Mariners League",
       "boys_district": "Mariners League",
       "source": "Port Veles Maritime Academy"
@@ -19246,7 +19246,7 @@
         "#ffffff"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Sky-Em League",
       "boys_district": "Sky-Em League"
     },
@@ -19267,7 +19267,7 @@
         "#ffffff"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Kajaani League",
       "boys_district": "Kajaani League"
     },
@@ -19288,7 +19288,7 @@
         "#f47c20"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Cascade Divide League",
       "boys_district": "Cascade Divide League"
     },
@@ -19309,7 +19309,7 @@
         "#ffffff"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Cascade Divide League",
       "boys_district": "Cascade Divide League"
     },
