@@ -19335,12 +19335,11 @@
       "boys_district": "Sunkist League"
     },
     {
-      "name": "Caldera",
-      "source": "Caldera High",
-      "city": "Bend",
-      "county": "Deschutes",
-      "area": "Cascade Divide",
-      "state": "Oregon",
+      "name": "Portola-Caverly",
+      "source": "Serra Caverly",
+      "city": "Caverly",
+      "county": "Featherstone",
+      "area": "Southern Jefferson",
       "classification": "7A",
       "group": "8A",
       "enrollment": 1547,
@@ -19431,8 +19430,8 @@
       "private": false,
       "mascot": "Broncs",
       "colors": [
-        "#0c2340",
-        "#ffffff"
+        "#0f6a70",
+        "#f4f1ea"
       ],
       "girls": true,
       "boys": true,
@@ -19440,46 +19439,44 @@
       "boys_district": "Ambassador League"
     },
     {
-      "name": "Spring Harvest",
-      "source": "Spring Harvest",
-      "city": "Spring Harvest",
-      "county": "Box Elder",
-      "area": "Bear River Country",
-      "state": "Utah",
+      "name": "Homeland",
+      "source": "Mikel Garmendia",
+      "city": "Rostova Junction",
+      "county": "Emigrant",
+      "area": "Kangas",
       "classification": "Group 2",
       "group": "Group 2",
-      "enrollment": 698,
+      "enrollment": 823,
       "private": false,
-      "mascot": "Reapers",
+      "mascot": "Portolas",
       "colors": [
-        "#3a2a1c",
-        "#d9a441"
+        "#0f6a70",
+        "#f4f1ea"
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Forks League",
-      "boys_district": "Forks League"
+      "girls_district": "Far West League",
+      "boys_district": "Far West League"
     },
     {
-      "name": "Money",
-      "source": "Money",
-      "city": "Money",
-      "county": "Box Elder",
-      "area": "Bear River Country",
-      "state": "Utah",
+      "name": "Virginia City",
+      "city": "Virginia City",
+      "county": "Storey",
+      "state": "Nevada",
+      "area": "Millersylvania",
       "classification": "Group 2",
       "group": "Group 2",
-      "enrollment": 860,
+      "enrollment": 88,
       "private": false,
-      "mascot": "Prospectors",
+      "mascot": "Comstock",
       "colors": [
-        "#5c4a1c",
-        "#c9a961"
+        "#0f6a70",
+        "#f4f1ea"
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Forks League",
-      "boys_district": "Forks League"
+      "girls_district": "High Lakes League",
+      "boys_district": "High Lakes League"
     }
   ]
 }
