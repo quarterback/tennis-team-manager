@@ -1518,14 +1518,50 @@ _former_cache: dict | None = None
 
 
 def former_names() -> dict[str, str]:
-    """Old display name -> the name that school goes by now."""
+    """Old display name -> the name that school goes by now.
+
+    ‼️ THIS IS TWO SOURCES MERGED, and the second one is the only one a rename
+    applied straight to `data/jhsaa/schools.json` ever reaches.
+
+    The FILE half is generated from the git history of `import_jhsaa.RENAMES`
+    (`scripts/jhsaa_former_names.py`) and covers every rename that went through the
+    importer. But the association is also renamed by one-time transform scripts that
+    edit the committed data directly — the whole 2026-08 batch did — and those never
+    touch `RENAMES`, so they produce no row in that file. An archived season then
+    keeps reading under the OLD name with nothing to relabel it: the program page
+    under the NEW name shows no pre-rename seasons and career totals that silently
+    start at the rename, while the old name is no longer a school and 404s. That is
+    exactly the fault this table exists to prevent, arriving through the door the
+    table's generator cannot see.
+
+    The LIVE half closes it, and needs no new store: **a JHSAA display rename MUST
+    stamp `School.source` with the pre-rename name** (generation keys pids on
+    `source or name`), so the mapping is already in the data — `source` IS the old
+    display name and `name` is what the school goes by now. Reading it here is a
+    PROJECTION of a fact the rows already carry, not a second source of truth.
+
+    ‼️ A LIVE NAME ALWAYS WINS, so a `source` that is ALSO some school's current
+    display name is dropped rather than aliased — 6 of them exist (Ashbury Central,
+    River Plain, Breakwater, Goodman, Canal View, Treasure Valley are each one
+    school's former identity and a DIFFERENT school's live name). Aliasing those
+    would file the live school's own archived seasons under its neighbour, which is
+    the reissued-name trap `current_name` was written for one level up.
+
+    Read over ALL rows, both genders: an alias is a fact about the SCHOOL, and the
+    two gender fields carry the same `name`/`source` strings."""
     global _former_cache
     if _former_cache is None:
         try:
             with open(_FORMER, encoding="utf-8") as fh:
-                built = json.load(fh)["former_names"]
+                built = dict(json.load(fh)["former_names"])
         except (FileNotFoundError, ValueError, KeyError):
             built = {}
+        rows = _rows()
+        live = {r["name"] for r in rows}
+        for r in rows:
+            src = r.get("source")
+            if src and src != r["name"] and src not in live:
+                built[src] = r["name"]
         _former_cache = built          # publish a local (the gthread rule)
     return _former_cache
 

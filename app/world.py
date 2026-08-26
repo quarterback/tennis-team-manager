@@ -5428,7 +5428,22 @@ def jhsaa_retired_programs(world_id: int, gender: str) -> list[dict]:
 
     One pass over the whole archive via `jhsaa_history_rows` — the same
     reason that function exists. Looping `jhsaa_school_seasons` per program
-    would re-read every season once per program instead of once total."""
+    would re-read every season once per program instead of once total.
+
+    ‼️ A RENAMED SCHOOL IS STILL ACTIVE, and it is `jhsaa.former_names()`
+    that has to know it — NOT a filter here. This shipped once listing
+    "Bardsley County High" (now Violet City) and "Olivet Regional" (now
+    Silva) as retired, because a rename applied straight to the committed
+    data never reaches the git-derived half of that alias table. Excluding
+    them HERE was the wrong repair: it hides the row from this page while
+    leaving the underlying breakage — the pre-rename seasons still file
+    under the old name, so Violet City's own page omits them from its
+    ledger and career totals, and the old-name entry that would have led a
+    reader there is gone too. `former_names()` now merges the live
+    `source` -> `name` mapping, so those seasons are RELABELLED onto the
+    active school everywhere (the ledger, the totals, the title board,
+    this page) and `sponsors_sport` then excludes them for the ordinary
+    reason: they are playing today."""
     from . import jhsaa as jh
     rows = jhsaa_history_rows(world_id, gender)
     out = []
