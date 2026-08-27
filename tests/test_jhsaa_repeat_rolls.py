@@ -214,15 +214,26 @@ def test_each_title_carries_its_flight_class_and_school(archive):
             (2, "XD", "9A", "Coles Creek")]
 
 
-def test_the_flight_rank_pairs_each_singles_flight_with_its_doubles(archive):
-    """‼️ S1, D1, S2, D2, S3, D3, XD (owner, 2026-08) — the association's own
-    ranking of how hard a flight is to win, NOT `jhsaa_individuals.FLIGHTS`, which
-    is S1-S3 then D1-D3 because that is how a draw sheet reads. A school's No. 1
-    doubles comes off ranks #4-#5 and is a harder title than its No. 2 singles."""
-    assert wd.JH_FLIGHT_RANK == ("S1", "D1", "S2", "D2", "S3", "D3", "XD")
-    assert set(wd.JH_FLIGHT_RANK) == set(__import__(
-        "app.jhsaa_individuals", fromlist=["x"]).FLIGHTS) | {"XD"}, \
-        "a flight nobody ranked would be dropped from every row, silently"
+def test_the_flight_rank_comes_from_the_associations_own_weights():
+    """‼️ S1, D1, S2, D2, S3, D3, XD (owner, 2026-08) — DERIVED from
+    `jhsaa.FLIGHT_WEIGHTS`, which already prices every flight for TOSS and for the
+    award résumés, never typed. A first pass built it off
+    `jhsaa_individuals.FLIGHTS` (S1-S3 then D1-D3 — how a DRAW SHEET reads) and got
+    a ranking the association does not use, with No. 1 doubles below No. 3 singles.
+
+    D1 sits level with S1 because a state dual is 1S/4D and the anti-stacking rule
+    makes S1+D1 consume ranks #1-#3: measured over 40 5A girls programs, S1 is
+    staffed at mean ability rank 1.2 and D1 at 2.4, and most classes have no No. 2
+    singles seat at all."""
+    from app import jhsaa as jh, jhsaa_individuals as ji
+    assert wd._jh_flight_rank() == ("S1", "D1", "S2", "D2", "S3", "D3", "XD")
+    # A flight nobody ranked would drop out of every row silently — the roll would
+    # look complete and be missing titles.
+    assert set(wd._jh_flight_rank()) == set(ji.FLIGHTS) | {"XD"}
+    # and the order IS the weights, so the two cannot drift apart
+    ranked = [f for f in wd._jh_flight_rank() if f != "XD"]
+    assert [jh.FLIGHT_WEIGHTS[f] for f in ranked] == sorted(
+        (jh.FLIGHT_WEIGHTS[f] for f in ranked), reverse=True)
 
 
 def test_ties_break_on_flight_quality(archive):

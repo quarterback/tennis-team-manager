@@ -1485,11 +1485,18 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     pair is credited**: the archived entry is `[boy, girl]` by construction
     (`jhsaa_individuals.mixed_entry` is its only builder), so the side is an INDEX,
     and crediting both would put a boy on the girls' roll. The tie-break between two players on the SAME
-    COUNT is `world.JH_FLIGHT_RANK` — **S1, D1, S2, D2, S3, D3, XD** (owner
-    2026-08), the association's own ranking of how hard a flight is to win, which
-    pairs each singles flight with the doubles flight beside it and is NOT
-    `jhsaa_individuals.FLIGHTS` (S1-S3 then D1-D3, how a draw sheet reads). It only
-    decides who is listed first; every title counts the same toward the count.
+    COUNT is **S1, D1, S2, D2, S3, D3, XD** (owner 2026-08) and is **DERIVED from
+    `jhsaa.FLIGHT_WEIGHTS`** (`world._jh_flight_rank`), never typed — that table
+    already prices every flight for TOSS and the award résumés, and sorts to exactly
+    this order. A first pass built the rank off `jhsaa_individuals.FLIGHTS`, which is
+    S1-S3 then D1-D3 because that is how a DRAW SHEET reads, and shipped a ranking
+    the association does not use (No. 1 doubles below No. 3 singles). **D1 sits level
+    with S1 because the dual does**: a state dual is 1S/4D and anti-stacking makes
+    S1+D1 consume ranks #1-#3 — measured over 40 5A girls programs, S1 is staffed at
+    mean ability rank 1.2 and D1 at 2.4, and most classes have no No. 2 singles seat
+    at all. (The INDIVIDUAL entry sheet is the other way — S2 = #2, D1 = #4+#5 — which
+    is why this reads as arguable from that event alone.) It only decides who is
+    listed first; every title counts the same toward the count.
   - `tests/test_jhsaa_repeat_rolls.py` hand-archives four small seasons — one played
     season cannot contain a repeat.
 - **A classification's rankings have a PAGE, not a rail panel** (`/jhsaa/rankings`,
