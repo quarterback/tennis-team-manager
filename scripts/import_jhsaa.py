@@ -732,7 +732,8 @@ FORMER_NAMES = {
     "Mercy Academy":                               "Natchez Mercy",
     "Mid-City":                                    "Hackensack",
     "Mikel Echevarria":                            "Fir Valley Grange",
-    "Mikel Garmendia":                             "Portola",
+    "Mikel Garmendia":                             "Homeland",
+    "Portola":                                     "Homeland",
     "Mikel Zubieta":                               "Cornerstone Christian",
     "Mikhail Sidorov":                             "Saint Marc",
     "Mila Chernov North":                          "Siberia",
@@ -1686,7 +1687,7 @@ RENAMES = {
     "Lev Voronin":                 "Cole Valley",             # 9A Fort Valois
     "Lucía Villaseñor":            "Glen Park",               # 6A Emerson
     "Maksim Karev":                "Excelsior",               # 4A Los Maderos
-    "Mikel Garmendia":             "Portola",                 # 5A Rostova Junction
+    "Mikel Garmendia":             "Homeland",                # 5A Rostova Junction
     "Mila Melnick":                "Sea Cliff",               # 5A Orlova
     "Miren Elorriaga":             "Pennsauken",             # 9A Belmonte
     "Nicolás Ordoñez":             "Rockridge",               # 9A Belmonte
