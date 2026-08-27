@@ -745,39 +745,56 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     ("Division XI"). Pinned by `test_no_recovery_round_has_a_bye`; explainer in
     `docs/JHSAA-road-to-state.md`.
   See `docs/AAR-jhsaa-state-expansion-recovery-rounds.md`.
-- **‼️ STATE STARTS FULL — THE STATE SPECIALS are the reconciliation round (owner
-  rule 2026-08, `jhsaa._state_specials`).** The recovery ladder is SUPPOSED to
-  deliver `STATE_FIELD − 8` berths; when it cannot, `run_state` used to pad the
-  short field with byes (teams advancing unplayed round after round on the
-  bracket page). ‼️ CORRECTED 2026-08: the "9A delivered 20 of 24" that motivated
-  this was measured in the then-broken floor-sized ladder FIXTURE, not the real
-  association — at real size the road delivers EVERY class in full (verified,
-  three full seasons both genders + a salt) and the owner's phantom-bye brackets
-  were Fault 1 alone (a FULL 32 field tripping the old expansion gate). The
-  Specials is the net for what remains genuinely possible — parity trims, a
-  class-gender sliding under `sponsor_floor`, a future `STATE_FIELD` retune —
-  so it convening AT ALL still means investigate. Two rules came out of it:
+- **‼️ THE STATE SPECIALS ARE THE ROAD'S REQUIRED FINAL ROUND (owner rule
+  2026-08, superseding the reconciliation-only design —
+  `jhsaa._state_specials_round`).** The data showed losing-record teams reaching
+  the playoffs through the Conference's automatic access, so **Conference
+  winners no longer qualify for State** — they advance to the Specials and must
+  each beat a CHALLENGER for the berth. The rule, exactly:
+  `bids = len(conference_winners)`; challengers = the `bids` best
+  **REGULAR-SEASON** teams (reg-season win % → reg-season wins → ATR, and the
+  ranking must NEVER see postseason results — `_reg_season_record` filters on
+  `phase not in POSTSEASON`) drawn from the **ENTIRE classification** — anyone
+  not already qualified and not a Conference winner, wherever or WHETHER they
+  were eliminated (a great season that never reached the road outranks a deep
+  run with a worse one; do not restrict the pool to a postseason round). One
+  dual per bid, **seeded best-vs-worst** (best challenger plays the weakest
+  Conference winner by ATR, the winner hosts, deliberately NO rematch repair —
+  the pairing IS the seeding); every winner is a normal State qualifier, every
+  loser finishes at **"Specials"**. Zonal champions, Semi-State and Divisional
+  qualifiers (Super Regional winners on the fixed 24) stay automatic;
+  Conference/Semi-Conference STRUCTURE is untouched — only the qualification
+  consequence moved. Bids derive from the ACTUAL Conference winners, so the
+  arithmetic closes any field size by construction: 8+12+6+**6** = 32,
+  8+12+6+**14** = 40, 8+8+4+**4** = 24 (pinned by
+  `test_bids_derive_from_conference_winners_at_every_shape` off
+  `recovery_shape` itself, never retyped).
+  - **`jhsaa._state_specials` stays behind it as the EMERGENCY reconciliation**,
+    only if the played round still leaves State short (the Conference itself
+    under-delivered winners, or a tiny world ran dry): the original
+    `2·missing`-latest-eliminated rule, its pool now including the Specials' own
+    losers, its games MERGED into the one `state_special` arc (a phase is the
+    archive's identity for an event). At real size the road + Specials always
+    fill the field (verified, three full seasons both genders + a salt), so the
+    "State starts short" warning still means a broken fixture. A dry challenger
+    pool direct-admits the unpaired Conference winners loudly (the `sc_head`
+    idiom) — a short State field is the one outcome worse than an uncontested
+    berth.
   - **A field that fits one bracket plays one bracket** (`run_state`): the
     qualifying expansion fires ONLY when the padding byes would OUTNUMBER the
     champions (`size − field > c`) — a 32 is simply 32→16→8→4→2 with the Zonal
     champions as the top 8 SEEDS (owner: "32 can happen with no byes"), never
     three Octofinals columns. The champions' privilege is the SEEDING; a
     24-field's byes are a consequence of its shape.
-  - **THE STATE SPECIALS**, field-size agnostic: `missing = STATE_FIELD −
-    qualified; 2·missing latest-eliminated teams play `missing` duals; winners
-    take the missing berths`. Pool = every non-qualified postseason loser
-    (BROADER than the Conference's, so it cannot inherit the same shortage),
-    latest elimination first, ATR within a tier only. It is the association's
-    field-integrity rule, NOT a ladder rung: convening at all is logged loudly —
-    once in several years is it working, regularly means an upstream rung is
-    losing berths and THAT needs diagnosing. A dry pool direct-admits the
-    difference with a warning (the `sc_head` idiom). Phase `"state_special"`;
-    finish string **"Specials"** (`STATE_SPECIAL_FINISH`, owner — never the event
-    heading); duals numbered STATEWIDE per season from 1
-    (`renumber_state_specials`, the Divisions' pattern, at the world rung).
-    `tests/test_jhsaa_state_specials.py` + `tests/test_jhsaa_state_draw_shapes.py`
-    (every field size 17-40 rendered through the real bracket pipeline: no team
-    ever byes twice running, every column halves).
+  - Phase `"state_special"`; finish string **"Specials"** (`STATE_SPECIAL_FINISH`,
+    owner — never the event heading), superseding whatever rung sent a team in,
+    for Conference winners and challengers alike (a challenger from outside the
+    road gets its only postseason row here); duals numbered STATEWIDE per season
+    from 1 (`renumber_state_specials`, the Divisions' pattern, at the world
+    rung). `tests/test_jhsaa_state_specials.py` +
+    `tests/test_jhsaa_state_draw_shapes.py` (every field size 17-40 rendered
+    through the real bracket pipeline: no team ever byes twice running, every
+    column halves).
 - **‼️ 1A CROWNS ON A FIXED 24-team shape — not the dynamic format above (owner
   rule 2027-08; 2A left it in the 2033 realignment).** 1A and 2A used to share one
   combined "2A-1A" group (neither cleared the 76-sponsor floor the dynamic

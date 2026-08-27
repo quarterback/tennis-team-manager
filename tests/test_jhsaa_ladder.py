@@ -125,14 +125,16 @@ def test_the_ladder_shape_is_fixed_and_proportional(archived):
         assert set(pre["field"]) == set(ward["survivors"]) | set(protected)
 
 
-def _berth_survivors(g, sr, ss, dv, lc):
-    """The survivors of the BERTH-BEARING recovery rounds — which rounds those
-    are depends on the shape (the `_recovery_24` distinction, stale here since
-    2A left the dynamic ladder in the 2033 realignment): the dynamic ladder's
-    berths come from Semi-State/Divisionals/Conference, the fixed 24's from
-    SUPER REGIONALS/Divisionals/Conference (its 8 SR winners are automatic — its
-    Semi-State winners merely advance to the Divisionals)."""
-    rounds = (sr, dv, lc) if jh.state_field_size(g) == 24 else (ss, dv, lc)
+def _berth_survivors(g, sr, ss, dv):
+    """The survivors of the AUTOMATIC berth-bearing recovery rounds — which
+    rounds those are depends on the shape (the `_recovery_24` distinction): the
+    dynamic ladder's automatics come from Semi-State/Divisionals, the fixed 24's
+    from SUPER REGIONALS/Divisionals (its 8 SR winners are automatic — its
+    Semi-State winners merely advance to the Divisionals). ‼️ THE CONFERENCE IS
+    NOT HERE (owner rule 2026-08): its winners advance to the STATE SPECIALS
+    and must beat a challenger for the berth, so the Specials' survivors —
+    fetched via `_specials` — are the road's final door, not the Conference."""
+    rounds = (sr, dv) if jh.state_field_size(g) == 24 else (ss, dv)
     out = set()
     for a in rounds:
         out |= set(a["survivors"])
@@ -140,12 +142,13 @@ def _berth_survivors(g, sr, ss, dv, lc):
 
 
 def _specials(archived, g, gender="girls"):
-    """The State Specials arc for a class — the reconciliation round (owner rule
-    2026-08), a THIRD door into State beside a Zonal title and the recovery
-    ladder: it convenes only when the road delivered fewer qualifiers than
-    STATE_FIELD, and its winners took the missing berths on court. Fetched per
-    test rather than appended to `_stages`, whose 11-tuple is unpacked
-    positionally in a dozen places (the jh_match_key arity trap)."""
+    """The State Specials arc for a class — the REQUIRED final round of the road
+    (owner rule 2026-08): every Conference winner plays a challenger (the best
+    remaining regular-season teams from the whole classification) for the berth,
+    so its survivors are a standing door into State beside a Zonal title and the
+    automatic recovery rounds. Fetched per test rather than appended to
+    `_stages`, whose 11-tuple is unpacked positionally in a dozen places (the
+    jh_match_key arity trap)."""
     key = "arc" if gender == "girls" else "arc_boys"
     return (archived[key].get("state_special") or {}).get(g) or \
         {"field": [], "survivors": [], "rounds": [[]]}
@@ -168,7 +171,7 @@ def test_the_state_field_is_champions_and_recovery_survivors(archived):
         assert len(state["field"]) == jh.state_field_size(g)
         assert not dq, (g, dq)          # the guarantee is retired
         assert set(state["field"]) == (zonal_champs
-                                       | _berth_survivors(g, sr, ss, dv, lc)
+                                       | _berth_survivors(g, sr, ss, dv)
                                        | set(_specials(archived, g)["survivors"]))
         # the privileged path: champions are the draw's TOP seeds
         assert set(state["field"][:len(zonal_champs)]) == zonal_champs
@@ -214,7 +217,7 @@ def test_a_district_champion_has_to_win_its_way_in(archived):
         sec, ward, pre, state, protected, dq, sr, ss, dv, sc, lc = _stages(archived, g)
         champs = {rows[0]["school"]
                   for rows in archived["arc"]["standings"][g].values() if rows}
-        earned = (set(pre["survivors"]) | _berth_survivors(g, sr, ss, dv, lc)
+        earned = (set(pre["survivors"]) | _berth_survivors(g, sr, ss, dv)
                   | set(_specials(archived, g)["survivors"]))
         for c in champs & set(state["field"]):
             assert c in earned, (g, c)          # nobody was handed a berth
@@ -238,8 +241,15 @@ def test_recovery_berths_are_earned_on_court(archived):
     for g in jh.GROUPS:
         sec, ward, pre, state, protected, dq, sr, ss, dv, sc, lc = _stages(archived, g)
         earned = set(state["field"]) - set(pre["survivors"])
-        assert earned == (_berth_survivors(g, sr, ss, dv, lc)
+        assert earned == (_berth_survivors(g, sr, ss, dv)
                           | set(_specials(archived, g)["survivors"]))
+        # ‼️ A CONFERENCE WINNER IS NOT A STATE QUALIFIER (owner rule 2026-08):
+        # it reaches the field ONLY as a State Specials survivor.
+        sp = _specials(archived, g)
+        for name in set(lc["survivors"]) & set(state["field"]):
+            assert name in set(sp["survivors"]), (g, name)
+        assert set(lc["survivors"]) <= set(sp["field"]) | set(sp.get("head") or ()), \
+            (g, "every Conference winner plays the Specials")
         reg_losers = {(gm["away"] if gm["winner"] == gm["home"] else gm["home"])
                       for gm in pre["rounds"][0]}
         zon_losers = {(gm["away"] if gm["winner"] == gm["home"] else gm["home"])
@@ -699,9 +709,10 @@ def test_no_recovery_round_has_a_bye(archived):
             assert set(arc["field"]) == played, (g, name, "bye in recovery")
         # ...so every recovery qualifier won its LAST dual, and the only other
         # doors into State are a Zonal title, the district guarantee — and the
-        # STATE SPECIALS reconciliation round (owner, 2026-08), whose winners
-        # also won their last dual. A direct-admitted Specials head is the
-        # documented dry-pool degradation (warned loudly), sc_head's standing.
+        # STATE SPECIALS (owner, 2026-08), the road's required final round,
+        # whose winners (Conference winners and challengers alike) also won
+        # their last dual. A direct-admitted Specials head is the documented
+        # dry-pool degradation (warned loudly), sc_head's standing.
         sp = _specials(archived, g)
         earned = set(state["field"]) - set(pre["survivors"]) - set(dq)
         # `sr` included for the fixed 24-shape, whose 8 SR winners qualify

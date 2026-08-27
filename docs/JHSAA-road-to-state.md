@@ -55,12 +55,30 @@ byes anywhere in recovery, so nobody can advance without playing.
 | **Semi-State** | Super Regional winners + Zonal losers + readmitted Super Regional losers | **take berths** |
 | **Divisionals** | the best Semi-State losers | **take the last berths** |
 | **Semi-Conference** *(only if berths remain)* | everyone still alive and outside the field except the Divisional losers | qualify for the Conference |
-| **Conference** *(only if berths remain)* | Divisional losers + Semi-Conference winners | **take every berth still outstanding** |
+| **Conference** *(only if berths remain)* | Divisional losers + Semi-Conference winners | **advance to the State Specials** |
+| **State Specials** | every Conference winner vs a challenger | **take every berth still outstanding** |
 
-The last two convene only when berths are still outstanding, so whether they
-happen depends on the size of the field: the 24-team classifications fill
-without them and never play either, while the 40-team classifications need them
-every year — a 44-team Semi-Conference into a 28-team Conference.
+The Semi-Conference and Conference convene only when berths are still
+outstanding, so whether they happen depends on the size of the field: the
+24-team classifications fill without them and never play either, while the
+40-team classifications need them every year — a 44-team Semi-Conference into a
+28-team Conference.
+
+### The State Specials: a Conference win is not a berth
+
+Winning the Conference used to be the last door into State, and the data showed
+losing-record teams walking through it — the Conference was an automatic-access
+round at the end of a ladder built to prevent exactly that. So a Conference
+winner now advances to the **State Specials** and must beat a **challenger**
+for the berth: the best remaining **regular-season** teams in the whole
+classification — anyone not already qualified and not a Conference winner,
+wherever (or whether) they were eliminated. Challengers are ranked on
+regular-season winning percentage, then regular-season wins, then ATR; the
+postseason contributes nothing to the ranking. One dual per Conference winner,
+seeded best-vs-worst (the top challenger plays the weakest winner), winners
+qualify, losers are done — their finish reads **Specials**. The berth count
+takes care of itself at every field size, because each Conference winner's old
+automatic seat became exactly one Specials dual.
 
 ### Why the Semi-Conference exists
 

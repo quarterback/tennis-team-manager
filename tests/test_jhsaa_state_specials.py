@@ -1,13 +1,11 @@
-"""State Specials — the final reconciliation round (owner rule, 2026-08).
+"""State Specials — the REQUIRED final round of the Road (owner rule 2026-08).
 
-    missing = STATE_FIELD[group] - qualified
-    if missing > 0: 2 × missing latest-eliminated teams play `missing` duals,
-    the winners take the missing berths, and State starts full.
-
-Field-size agnostic by design: it knows nothing about 24, 32 or 40. The fault it
-ends: the recovery ladder delivered 20 of 9A's 24 earned berths and `run_state`
-padded the difference with byes — four teams advancing unplayed, round after round,
-on the bracket page.
+Conference winners no longer qualify for State directly: each must beat a
+CHALLENGER — the best remaining regular-season teams from the ENTIRE
+classification — in one State Specials dual. `bids = len(conference_winners)`,
+winners qualify, losers finish at Specials, and the arithmetic closes every
+field size by construction. `_state_specials` survives behind it as the
+emergency reconciliation, only if the played round still leaves State short.
 """
 import random
 
@@ -24,9 +22,17 @@ class _School:
 
 
 class _Team:
-    def __init__(self, name, pct=0.5):
-        self.school, self.win_pct = _School(name), pct
-        self.schedule = []          # `_pair_penalty` reads it for the rematch rule
+    def __init__(self, name, reg=(8, 8), post=(0, 0)):
+        """`reg`/`post` are (wins, losses); the schedule carries them at the
+        phases the challenger ranking reads them from."""
+        self.school = _School(name)
+        self.schedule = (
+            [{"opp": "x", "phase": "regular", "won": True}] * reg[0]
+            + [{"opp": "x", "phase": "regular", "won": False}] * reg[1]
+            + [{"opp": "x", "phase": "conference", "won": True}] * post[0]
+            + [{"opp": "x", "phase": "conference", "won": False}] * post[1])
+        w, l = reg[0] + post[0], reg[1] + post[1]
+        self.win_pct = w / (w + l) if w + l else 0.0
 
 
 class _Res:
@@ -36,13 +42,130 @@ class _Res:
 
 @pytest.fixture(autouse=True)
 def stub_dual(monkeypatch):
+    # home (the Conference winner in the new round) wins every stubbed dual
     monkeypatch.setattr(jh, "play_dual",
                         lambda a, b, *, seed, phase: _Res(0))
 
 
+def teams(*names, reg=None):
+    """win_pct DESCENDS through the argument order unless `reg` says otherwise,
+    so rankings inside a tier are the name order and assertions can say exactly
+    who gets picked."""
+    out = {}
+    for i, n in enumerate(names):
+        r = reg[i] if reg else (16 - i, i)
+        out[n] = _Team(n, reg=r)
+    return out
+
+
+# --- the arithmetic the change is built on -----------------------------------------
+
+def test_bids_derive_from_conference_winners_at_every_shape():
+    """‼️ THE MATH CLOSES EVERY FIELD SIZE BY CONSTRUCTION: a Conference
+    winner's old automatic seat became a Specials dual one-for-one, so
+    champions + Semi-State + Divisional + Specials winners == STATE_FIELD —
+    the owner's 8 + 12 + 6 + 6 = 32, and the same identity at 40 and on the
+    fixed 24 (8 Zonal + 8 Super Regional + 4 Divisional + 4 Specials)."""
+    for g in jh.GROUPS:
+        field = jh.state_field_size(g)
+        if field == 24:
+            assert 8 + 8 + 4 + 4 == field, g
+            continue
+        shape = jh.recovery_shape(g)
+        assert (8 + shape["semi_state"] // 2 + shape["divisional"] // 2
+                + shape["conference"] // 2) == field, (g, shape)
+
+
+def test_conference_winners_play_one_dual_per_bid(monkeypatch):
+    """32-shape: 6 Conference winners -> 6 duals against 6 challengers -> 6
+    qualifiers, and 8 champions + 18 automatics + 6 winners == 32."""
+    monkeypatch.setitem(jh.STATE_FIELD, "9A", 32)
+    by = teams(*[f"T{i:02}" for i in range(40)])
+    qualified = {f"T{i:02}" for i in range(26)}          # 8 zonal + 18 automatic
+    cw = [by[f"T{i:02}"] for i in range(26, 32)]         # the 6 Conference winners
+    arc, winners = jh._state_specials_round(
+        "9A", by, cw, qualified, {}, seed=7)
+    assert len(arc["rounds"][0]) == len(cw) == 6
+    assert len(winners) == 6
+    assert len(arc["field"]) == 12
+    assert len(qualified) + len(winners) == 32 == jh.state_field_size("9A")
+    assert arc["round_names"] == [jh.STATE_SPECIAL_NAME]
+    for gm in arc["rounds"][0]:                          # CW hosts a challenger
+        assert gm["home"] in {t.school.name for t in cw}
+        assert gm["away"] not in qualified | {t.school.name for t in cw}
+
+
+def test_no_conference_winners_plays_no_specials(monkeypatch):
+    monkeypatch.setitem(jh.STATE_FIELD, "9A", 24)
+    by = teams(*[f"T{i:02}" for i in range(30)])
+    arc, winners = jh._state_specials_round(
+        "9A", by, [], {f"T{i:02}" for i in range(24)}, {}, seed=7)
+    assert winners == [] and arc["rounds"] == [[]]
+
+
+# --- the challengers ----------------------------------------------------------------
+
+def test_challengers_come_from_the_whole_classification(monkeypatch):
+    """A challenger is ANY non-qualified, non-winner team in the classification —
+    a great regular season that never reached the postseason path outranks a
+    deep postseason run with a worse one, because the ranking reads the
+    REGULAR SEASON ONLY."""
+    monkeypatch.setitem(jh.STATE_FIELD, "9A", 32)
+    by = {
+        "Winner": _Team("Winner", reg=(6, 10)),          # losing-record CW
+        "NoPost": _Team("NoPost", reg=(15, 1)),          # never made the road
+        "DeepRun": _Team("DeepRun", reg=(9, 7), post=(4, 1)),
+        "Qualified": _Team("Qualified", reg=(16, 0)),
+    }
+    arc, winners = jh._state_specials_round(
+        "9A", by, [by["Winner"]], {"Qualified"}, {}, seed=7)
+    assert arc["rounds"][0][0]["away"] == "NoPost", \
+        "the best regular-season non-qualified team challenges — postseason " \
+        "depth buys nothing and a qualified team is never drafted"
+
+
+def test_challenger_ranking_ignores_postseason_results():
+    """reg pct, then reg wins, then ATR — and the postseason contributes to NONE
+    of the first two (a 12-4 regular season outranks 11-5 whatever the bracket
+    then added)."""
+    a = _Team("A", reg=(12, 4), post=(0, 3))
+    b = _Team("B", reg=(11, 5), post=(3, 0))
+    assert jh._reg_season_record(a) == (12, 4)
+    assert jh._reg_season_record(b) == (11, 5)
+    assert sorted([b, a], key=jh._challenger_key({}))[0] is a
+
+
+def test_pairing_is_best_challenger_vs_weakest_winner(monkeypatch):
+    """Seeded, best-vs-worst (owner rule 2026-08): the top-ranked challenger
+    draws the weakest Conference winner by ATR."""
+    monkeypatch.setitem(jh.STATE_FIELD, "9A", 32)
+    by = teams("StrongCW", "WeakCW", "BestCh", "NextCh",
+               reg=[(14, 2), (5, 11), (13, 3), (10, 6)])
+    arc, _ = jh._state_specials_round(
+        "9A", by, [by["StrongCW"], by["WeakCW"]], set(), {}, seed=7)
+    games = arc["rounds"][0]
+    assert (games[0]["home"], games[0]["away"]) == ("WeakCW", "BestCh")
+    assert (games[1]["home"], games[1]["away"]) == ("StrongCW", "NextCh")
+
+
+def test_a_dry_challenger_pool_admits_winners_unopposed(monkeypatch, caplog):
+    """Fewer challengers than bids (a tiny test world — statewide the pool is
+    every non-qualified team): the unpaired Conference winners qualify
+    unopposed, loudly, because a short State field is the one outcome worse
+    than an uncontested berth."""
+    monkeypatch.setitem(jh.STATE_FIELD, "9A", 32)
+    by = teams("CW1", "CW2", "CW3", "OnlyCh")
+    with caplog.at_level("WARNING"):
+        arc, winners = jh._state_specials_round(
+            "9A", by, [by["CW1"], by["CW2"], by["CW3"]], set(), {}, seed=7)
+    assert len(winners) == 3, "every bid is still filled"
+    assert len(arc["rounds"][0]) == 1 and len(arc["head"]) == 2
+    assert "short of challengers" in caplog.text
+
+
+# --- the emergency reconciliation stays behind it -----------------------------------
+
 def stages(*rounds_of_names):
-    """Ladder-ordered stage arcs, shallowest first — each stage one round of
-    pairings over the named teams."""
     out = []
     for names in rounds_of_names:
         games = [{"home": names[i], "away": names[i + 1], "winner": names[i]}
@@ -51,24 +174,19 @@ def stages(*rounds_of_names):
     return out
 
 
-def teams(*names):
-    # win_pct DESCENDS through the alphabet, so ATR order inside a tier is the
-    # name order and the assertions can say exactly who gets picked.
-    return {n: _Team(n, pct=1.0 - i * 0.01) for i, n in enumerate(names)}
-
-
-def test_it_fills_exactly_the_missing_berths(monkeypatch):
+def test_emergency_reconciliation_still_fills_a_short_field(monkeypatch):
+    """`_state_specials` is unchanged behind the played round: 2 x missing
+    latest-eliminated teams play for exactly the missing berths."""
     monkeypatch.setitem(jh.STATE_FIELD, "9A", 32)
     by = teams(*[f"T{i:02}" for i in range(40)])
-    taken = {f"T{i:02}" for i in range(28)}          # 28 of 32 — 4 missing
+    taken = {f"T{i:02}" for i in range(28)}              # 28 of 32 — 4 missing
     arc, winners = jh._state_specials(
         "9A", by, stages([f"T{i:02}" for i in range(28, 40)]), taken, {}, seed=7)
-    assert len(winners) == 4, "8 teams play for the 4 missing bids"
+    assert len(winners) == 4
     assert len(arc["rounds"][0]) == 4
-    assert arc["round_names"] == [jh.STATE_SPECIAL_NAME]
 
 
-def test_a_full_road_plays_no_specials(monkeypatch):
+def test_emergency_reconciliation_is_a_no_op_on_a_full_field(monkeypatch):
     monkeypatch.setitem(jh.STATE_FIELD, "9A", 24)
     by = teams(*[f"T{i:02}" for i in range(30)])
     arc, winners = jh._state_specials(
@@ -76,50 +194,20 @@ def test_a_full_road_plays_no_specials(monkeypatch):
     assert winners == [] and arc["rounds"] == [[]]
 
 
-def test_selection_walks_back_by_latest_elimination_then_atr(monkeypatch):
-    """Conference losers before Semi-Conference losers before anyone earlier —
-    ATR orders WITHIN a tier, never across one (the Semi-Conference pool's own
-    rule, one round further)."""
-    monkeypatch.setitem(jh.STATE_FIELD, "9A", 32)
-    by = teams("Early1", "Early2", "Deep1", "Deep2", "Deep3", "Deep4", "Q1", "Q2")
-    st = stages(["Early1", "Early2", "Deep1", "Deep2", "Deep3", "Deep4"],  # shallow
-                ["Deep1", "Deep2", "Deep3", "Deep4"])                      # deepest
-    taken = {f"Q{i}" for i in range(1, 31)}          # 30 of 32 — 2 missing
-    arc, winners = jh._state_specials("9A", by, st, taken, {}, seed=7)
-    assert set(arc["field"]) == {"Deep1", "Deep2", "Deep3", "Deep4"}, \
-        "the four eliminated deepest play; the shallow pair never gets in"
-    assert len(winners) == 2
+# --- finishes -----------------------------------------------------------------------
 
-
-def test_a_dry_pool_admits_directly_and_loudly(monkeypatch, caplog):
-    """Fewer than 2×missing bodies: enough enter without playing that the rest can
-    still settle the remainder on court — the sc_head idiom — because a short State
-    field is the one outcome worse than an unearned entry. Cannot happen at
-    association size; a tiny test world hits it."""
-    monkeypatch.setitem(jh.STATE_FIELD, "9A", 32)
-    by = teams("A", "B", "C", "D")
-    taken = {f"Q{i}" for i in range(29)}             # 29 of 32 — 3 missing, 4 bodies
-    with caplog.at_level("WARNING"):
-        arc, winners = jh._state_specials("9A", by, stages(["A", "B", "C", "D"]),
-                                          taken, {}, seed=7)
-    assert len(winners) == 3, "the field still ends full"
-    # d = 2·missing − pool = 2: two direct, the remaining two play for the third.
-    assert len(arc["head"]) == 2
-    assert "State Specials short of bodies" in caplog.text
-
-
-def test_a_specials_loser_finishes_at_state_specials():
-    """The finish supersedes the rung that sent them in — one round further than
-    the Conference, one short of State."""
+def test_a_specials_loser_finishes_at_specials():
+    """A Conference winner OR a challenger that loses the Specials finishes at
+    Specials — one round further than the Conference, one short of State — and
+    a Specials winner is a normal State qualifier (read off the state field)."""
     grp = {"state": {}, "state_special": {"field": ["Loser", "Winner"],
                                           "survivors": ["Winner"]},
            "conference": {"field": ["Loser", "Elsewhere"]}}
-    assert wd.jhsaa_postseason_result(grp, "Loser")["finish"] == jh.STATE_SPECIAL_FINISH == "Specials"
+    assert wd.jhsaa_postseason_result(grp, "Loser")["finish"] \
+        == jh.STATE_SPECIAL_FINISH == "Specials"
 
 
 def test_the_road_ladder_ranks_it_deepest():
-    """The ladder ranks FINISHES, so it carries the finish string ("Specials"),
-    not the event heading."""
     ladder = wd.jh_road_ladder()
     assert ladder[-1] == jh.STATE_SPECIAL_FINISH
     assert ladder[-2] == jh.CONFERENCE_NAME

@@ -152,3 +152,22 @@ case.
   was found by eye. `test_jhsaa_state_draw_shapes.py` renders every field size
   through the real pipeline and asserts no team byes twice running and every
   column halves.
+
+## Addendum (owner rule 2026-08): the Specials became the road's REQUIRED final round
+
+Season data showed a significant number of losing-record teams reaching the
+playoffs through the Conference — an automatic-access round at the end of a
+ladder built to prevent exactly that. So the design above was superseded:
+**Conference winners no longer qualify for State.** They advance to the State
+Specials and must each beat a **challenger** — the `len(conference_winners)`
+best REGULAR-SEASON teams (reg-season win % → reg-season wins → ATR, postseason
+results excluded) drawn from the ENTIRE classification, anyone not already
+qualified and not a Conference winner, wherever or whether they were
+eliminated. One dual per bid, seeded best-vs-worst (top challenger vs the
+weakest winner by ATR), winners qualify, losers finish at "Specials". Bids
+derive from the actual Conference winners, so the arithmetic closes every
+field size by construction (8+12+6+6 = 32 · 8+12+6+14 = 40 · 8+8+4+4 = 24,
+pinned off `recovery_shape` itself). Zonal/Semi-State/Divisional automatics
+and every round's STRUCTURE are untouched; `_state_specials` survives as the
+emergency reconciliation, only if the played round still leaves State short,
+its games merged into the one `state_special` arc.
