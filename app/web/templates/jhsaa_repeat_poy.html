@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header %}
+{% block title %}JHSAA Repeat Players of the Year{% endblock %}
+{% block content %}
+
+{{ jh_header(view.scope, u, 'repeat_poy', 'Repeat Players of the Year',
+             'Every player who has won a classification Player of the Year more than once.',
+             [('Players', view.rows|length)]) }}
+
+<div class="jh-shell">
+
+{# ‼️ BANDED BY COUNT, NOT A SORTED TABLE (owner layout, 2026-08): "4-time Players of
+   the Year", then 3-time, then 2-time. A column of numbers makes the reader compare
+   down the page to find the rarest thing on it; a heading states it. The bands come
+   from the data, so a season that produces a five-timer grows one.
+
+   ‼️ CLASS-BLIND, and the class rides on each AWARD. A career crosses
+   reclassification and play-up, so a 2A run and a 9A run are one career — shown, and
+   deliberately not weighted. Uncapped: the list scrolls.
+
+   ‼️ Jinja comments, not HTML ones — an `<!-- -->` block ships to every browser. #}
+{% for band in view.bands %}
+<div class="bl-panel jh-yearpanel" {{ 'style=margin-top:14px'|safe if not loop.first }}>
+  <div class="bl-panel-head">
+    <span class="bl-panel-title">{{ band.heading }}</span>
+    <span class="bit">{{ band.rows|length }} player{{ '' if band.rows|length == 1 else 's' }}</span>
+  </div>
+  <div class="jh-roll">
+    {# ‼️ AN EMPTY BAND IS STILL RENDERED (owner, 2026-08). "If no one is in the
+       4-time category yet, you should still make the sections and leave them empty
+       til someone does it" — an empty 4-time band says the association has never
+       produced one, where an absent band reads as a page that just stops. #}
+    {% if not band.rows %}<div class="row none">Nobody yet.</div>{% endif %}
+    {% for r in band.rows %}
+    <div class="row">
+      <a class="nm" href="{{ url_for('jhsaa_player', school=r.link, pid=r.pid, u=u, g=view.gender) }}">{{ r.name }}</a>
+      {# One clause per school, in career order: the school, then the years won there
+         with the classification each was won in. A player who moved shows both. #}
+      {% for st in r.stints %}<span class="stint">{% if st.deco.mark %}<span class="mk">{{ st.deco.mark|safe }}</span>{% endif %}<span class="sch">{{ st.school }}</span>
+        <span class="yrs">({% for a in st.won %}{{ a.season_year }} {{ a.group }}{{ ', ' if not loop.last }}{% endfor %})</span>
+      </span>{% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+
+</div>
+{% endblock %}

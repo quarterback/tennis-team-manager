@@ -71,35 +71,13 @@
   </div>
 </div>
 
-<!-- ============ Program summary: this season next to the whole history ============ -->
-<div class="jh-metrics" style="margin-bottom:14px">
-  <div class="jh-metric hot"><span class="k">{{ view.season_year }}</span>
-    <span class="v">{{ view.record }}</span><span class="s">overall</span></div>
-  <div class="jh-metric"><span class="k">District</span>
-    <span class="v">{{ view.district_record }}</span>
-    <span class="s">{{ view.district }}</span></div>
-  {# A finish, not a second record: `view.record` above already contains the state
-     duals and the TOC ones, the way every level of the sport counts a season. #}
-  <div class="jh-metric"><span class="k">Postseason</span>
-    <span class="v sm">{{ view.toc_finish or view.state_finish or '—' }}</span>
-    <span class="s">{% if view.state_finish %}{{ view.group }} state{% if view.state_seed %} · seed {{ view.state_seed }}{% endif %}{% else %}did not qualify{% endif %}</span></div>
-  <div class="jh-metric"><span class="k">Last title</span>
-    <span class="v {{ 'sm' if not t.last_title }}">{{ t.last_title.season_year if t.last_title else '—' }}</span>
-    <span class="s">{{ t.state_titles }} all-time</span></div>
-  <div class="jh-metric"><span class="k">All-time</span>
-    <span class="v">{{ t.record }}</span>
-    <span class="s">{{ t.seasons }} season{{ '' if t.seasons == 1 else 's' }} · {{ '%.3f'|format(t.pct)|replace('0.', '.') }}</span></div>
-  <div class="jh-metric"><span class="k">State trips</span>
-    <span class="v">{{ t.state_appearances }}</span>
-    <span class="s">{% if t.state_streak > 1 %}{{ t.state_streak }} in a row{% else %}{{ t.state_semis }} semifinal{{ '' if t.state_semis == 1 else 's' }}{% endif %}</span></div>
-  {# A TOC appearance is rare enough that the tile only earns its place once a program
-     has one — six of ~335 programs a season reach it. #}
-  {% if t.toc_appearances %}
-  <div class="jh-metric {{ 'hot' if t.toc_titles }}"><span class="k">TOC</span>
-    <span class="v">{{ t.toc_titles }}</span>
-    <span class="s">{{ t.toc_appearances }} appearance{{ '' if t.toc_appearances == 1 else 's' }}{% if t.last_toc %} · last {{ t.last_toc.season_year }}{% endif %}</span></div>
-  {% endif %}
-</div>
+{# ‼️ NO SEASON-SUMMARY STRIP (owner rule 2026-08). A row of tiles used to sit here
+   restating the season that the identity block directly above already states — the
+   overall record, the district record, the postseason finish — and then restating
+   the CAREER that the Program panel below states, all-time record and state trips
+   included. "The data on the page is redundant… all-time is reported twice."
+   The identity block owns THIS season; the Program panel owns the career; nothing
+   owns both. #}
 
 <div class="jh-layout wide">
   <!-- ============ LEFT: the season, match by match ============ -->
@@ -324,12 +302,26 @@
       <div class="jh-metric"><span class="k">Tour. of Champions</span>
         <span class="v">{{ t.toc_titles }}</span>
         {% if t.toc_appearances %}<span class="s">{{ t.toc_appearances }} appearance{{ '' if t.toc_appearances == 1 else 's' }}</span>{% endif %}</div>
+      {# ROAD TO STATE — the units won on the way up (Areas through the Conference),
+         which is what a program actually collects in a season that ends short of the
+         State draw. The district title is counted in its own tile and is not
+         double-counted here. #}
+      <div class="jh-metric"><span class="k">Road to State</span><span class="v">{{ t.road_titles }}</span>
+        <span class="s">units won</span></div>
+      {# One title per FLIGHT — a doubles championship is one state champion, not two
+         (the row carries both players). #}
+      <div class="jh-metric"><span class="k">Individual state champs</span>
+        <span class="v">{{ view.history.individual_champions|length }}</span>
+        {% if view.history.individual_champions %}<span class="s">last {{ view.history.individual_champions[0].season_year }}</span>{% endif %}</div>
+      {# ‼️ THE BEST SEASON IS THE FURTHEST RUN, NOT THE BEST RECORD (owner rule
+         2026-08) — so the FINISH is the number and the record is the subcopy. A
+         28-4 that lost in the Octofinals used to outrank a 22-7 that reached the
+         semifinal; the semifinal is the better season, and the record only breaks a
+         tie between two runs that got equally far (`world.jhsaa_season_depth`).
+         Worst season was dropped outright: nobody scans a program page for it. #}
       <div class="jh-metric"><span class="k">Best season</span>
-        <span class="v sm">{{ t.best.record if t.best else '—' }}</span>
-        {% if t.best %}<span class="s">{{ t.best.season_year }}{% if t.best.state_finish %} · {{ t.best.state_finish }}{% endif %}</span>{% endif %}</div>
-      <div class="jh-metric"><span class="k">Worst season</span>
-        <span class="v sm">{{ t.worst.record if t.worst else '—' }}</span>
-        {% if t.worst %}<span class="s">{{ t.worst.season_year }}</span>{% endif %}</div>
+        <span class="v sm">{{ (t.best.toc_finish or t.best.state_finish or '—') if t.best else '—' }}</span>
+        {% if t.best %}<span class="s">{{ t.best.season_year }} · {{ t.best.record }}</span>{% endif %}</div>
       <div class="jh-metric"><span class="k">Honours</span>
         <span class="v sm">{{ t.poy }} POY · {{ t.all_state }} A-S</span>
         {% if t.all_district %}<span class="s">{{ t.all_district }} all-district</span>{% endif %}</div>

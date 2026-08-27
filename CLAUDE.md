@@ -1425,6 +1425,80 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     an INDEX of the page, not a copy of it. `.jh-award` is a fixed-column CSS grid —
     **always emit the rank cell**, empty or not, or every unnumbered team shifts a
     column. Data-bearing coverage lives in `tests/test_jhsaa_toc.py`.
+- **‼️ THE BEST SEASON IS THE FURTHEST RUN, NOT THE BEST RECORD (owner rule 2026-08,
+  `world.jhsaa_season_depth`).** The program page ranked "Best season" on win
+  percentage, so a 28-4 that lost in the State Octofinals outranked a 22-7 that
+  reached the State semifinal — and the semifinal is plainly the better year. The
+  measure is the postseason FINISH, tiered TOC > State > the road to it > no
+  postseason, with the RECORD only breaking a tie between two runs that got equally
+  far. A State finish is `state_place` (teams still alive, 1 = champion), NEGATED —
+  never a string compared to a label; a pre-State exit ranks on `world.jh_road_ladder`,
+  whose names come from `jhsaa`'s own constants for the `jhsaa_title_stages` reason (a
+  renamed rung would silently stop ranking). **`worst` was deleted** (owner: "nobody
+  wants to see that"), and so was the whole season-summary tile strip: it restated the
+  identity block's record/district/finish and then the Program panel's all-time record
+  and state trips — **the identity block owns THIS season, the Program panel owns the
+  career, and nothing owns both**. The panel counts ROAD TO STATE units won
+  (`road_titles`, which subtracts the district title `unit_wins` leads with) and
+  INDIVIDUAL STATE CHAMPS — one per FLIGHT, so a doubles title is one champion and not
+  two. `tests/test_jhsaa_best_season.py` pins the order as a pure fold; it needs no
+  archived season.
+- **‼️ THE TWO CAREER ROLLS — Repeat POY and Repeat State Champs (owner request
+  2026-08, `world.jhsaa_poy_repeats` / `world.jhsaa_individual_title_repeats`).**
+  Every other JHSAA surface is scoped to ONE season, so a multi-year run is
+  invisible: the champions grid shows a name in 2028 and the same name in 2030 with
+  nothing joining them. These fold across every archived season and sit on the
+  **History sub-rail between the Title Board and Retired Programs**. Both are
+  CLASS-BLIND (the Title Board's rule — a career crosses reclassification and
+  play-up) and the classification rides on each AWARD/TITLE instead; both are
+  **uncapped** and include everyone with **2+**, sorted by count then recency (the
+  titles roll breaks a tie on flight quality first). The page shows the class and
+  the flight and does NOT weight them — a 2A run and a 9A run are for the reader to
+  judge.
+  - **‼️ A DOUBLES POY CREDITS BOTH ATHLETES, and a DOUBLES TITLE CREDITS EACH
+    PARTNER SEPARATELY — for two different reasons.** The POY is one award row
+    describing a pairing, so it reads `jhsaa_awards.row_pids` like every other "was
+    this person honoured?" question. The individual titles are the OPPOSITE of the
+    awards module's pairing rule ON PURPOSE: a career is a person's, and the same
+    player wins with different partners in different years, so keying doubles on the
+    pair splits one career into two half-careers and counts neither. The partner is
+    shown per title as context, never as a co-holder of the row.
+  - **Keyed on the PID, never the name** — a pid survives a transfer and a rename,
+    which is what lets one row read "Coles Creek 2028-29, Mater Dei 2030-31"
+    (`state._jh_school_run`, which collapses only CONSECUTIVE years so a player who
+    left and came back reads as two stints).
+  - **‼️ THE CHAMPION IS EXTRACTED IN SQLITE (`json_extract`), not by parsing every
+    draw in Python.** This walks EVERY draw of every archived season — eleven classes
+    × six flights × N years, where the individual-champions page loads one class —
+    and a draw is a ~30KB blob. The blob already stores `champion` as an INDEX into
+    `entries`, so json1 returns just that entrant and `_relabel` runs on the small
+    dict. Parsing the lot on the one gthread is the hazard this section keeps
+    relearning.
+  - **Explicitly out of scope (owner): no All-State roll and no League/District POY
+    roll.** The association crowns a district POY per league per class per year, so
+    aggregating those is a longer list of more people, not a harder achievement.
+  - **‼️ MIXED DOUBLES COUNTS ON THE TITLES ROLL** (owner correction 2026-08: "if a
+    kid wins a mixed doubles title it counts"). A first pass excluded it by reading
+    across from the rule that mixed credits NOTHING — but those are different
+    things: that rule is about awards, TOSS and the recruit hand-off, and this roll
+    is a record of state titles a person has won. **Only THIS gender's half of the
+    pair is credited**: the archived entry is `[boy, girl]` by construction
+    (`jhsaa_individuals.mixed_entry` is its only builder), so the side is an INDEX,
+    and crediting both would put a boy on the girls' roll. The tie-break between two players on the SAME
+    COUNT is **S1, D1, S2, D2, S3, D3, XD** (owner 2026-08) and is **DERIVED from
+    `jhsaa.FLIGHT_WEIGHTS`** (`world._jh_flight_rank`), never typed — that table
+    already prices every flight for TOSS and the award résumés, and sorts to exactly
+    this order. A first pass built the rank off `jhsaa_individuals.FLIGHTS`, which is
+    S1-S3 then D1-D3 because that is how a DRAW SHEET reads, and shipped a ranking
+    the association does not use (No. 1 doubles below No. 3 singles). **D1 sits level
+    with S1 because the dual does**: a state dual is 1S/4D and anti-stacking makes
+    S1+D1 consume ranks #1-#3 — measured over 40 5A girls programs, S1 is staffed at
+    mean ability rank 1.2 and D1 at 2.4, and most classes have no No. 2 singles seat
+    at all. (The INDIVIDUAL entry sheet is the other way — S2 = #2, D1 = #4+#5 — which
+    is why this reads as arguable from that event alone.) It only decides who is
+    listed first; every title counts the same toward the count.
+  - `tests/test_jhsaa_repeat_rolls.py` hand-archives four small seasons — one played
+    season cannot contain a repeat.
 - **A classification's rankings have a PAGE, not a rail panel** (`/jhsaa/rankings`,
   `jhsaa_rankings_view`). `jhsaa_group_ranking` always returned every program in the
   class; the hub shows the first twelve of it beside the bracket and links to the rest.

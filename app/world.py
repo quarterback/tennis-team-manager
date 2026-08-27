@@ -3966,6 +3966,183 @@ def jhsaa_individual_champions(world_id: int, year: int, gender: str,
     return out
 
 
+def jhsaa_poy_repeats(world_id: int, gender: str, minimum: int = 2) -> list[dict]:
+    """Players who have won a CLASSIFICATION Player of the Year more than once,
+    across every archived season (owner request, 2026-08).
+
+    The History section shows names year by year, so a multi-year run is invisible
+    there — a player who won 9A POY three times reads as three unrelated rows. This
+    is the only surface that can see it, because seeing it means folding over every
+    season at once.
+
+    ‼️ CLASS POY ONLY. The District POY (`awards[group]["district_poy"]`) is
+    deliberately not counted: the association crowns one per league per class per
+    year — hundreds a season — so aggregating it produces a longer list of more
+    people rather than a harder achievement. Same reason there is no All-State roll.
+
+    ‼️ CREDITED THROUGH `row_pids`, so a DOUBLES POY honours BOTH athletes. The award
+    row is one selection describing a pairing (`jhsaa_awards._row`), and the
+    section's own rule is that every "was this person honoured?" question reads
+    `pids` — matching on `row["pid"]` credits half of every doubles POY and looks
+    perfectly correct on the page it is on.
+
+    ‼️ KEYED ON THE PID, NEVER THE NAME. A pid hashes (origin school, gender, entry
+    year, seat), so it survives a transfer and a school rename alike — which is what
+    lets one row read "Coles Creek 2028-29, Mater Dei 2030-31". Two players sharing a
+    name would otherwise merge into one impossible career.
+
+    A run is returned with the CLASSIFICATION of each award, never a single class per
+    player: a 2A run and a 9A run are different achievements and the page shows both
+    rather than deciding between them."""
+    from . import jhsaa_awards as ja
+    out: dict[str, dict] = {}
+    for year in jhsaa_years(world_id, gender):
+        arc = get_jhsaa(world_id, year, gender)
+        if not arc:
+            continue
+        for grp, aw in (arc.get("awards") or {}).items():
+            poy = (aw or {}).get("poy")
+            pids = ja.row_pids(poy)
+            if not pids:
+                continue
+            names = list(poy.get("names") or [poy.get("name", "")])
+            for i, pid in enumerate(pids):
+                nm = names[i] if i < len(names) else poy.get("name", "")
+                rec = out.setdefault(pid, {"pid": pid, "name": nm, "awards": []})
+                rec["name"] = nm          # the newest spelling wins; years run newest-first
+                rec["awards"].append({
+                    "year": year, "season_year": arc.get("season_year") or year,
+                    "group": grp, "school": poy.get("school", ""),
+                    "kind": poy.get("kind", ""),
+                })
+    rows = [r for r in out.values() if len(r["awards"]) >= minimum]
+    for r in rows:
+        r["awards"].sort(key=lambda a: a["year"])
+        r["count"] = len(r["awards"])
+        r["schools"] = list(dict.fromkeys(a["school"] for a in r["awards"]))
+        r["groups"] = list(dict.fromkeys(a["group"] for a in r["awards"]))
+        r["last"] = r["awards"][-1]["year"]
+    rows.sort(key=lambda r: (-r["count"], -r["last"], r["name"]))
+    return rows
+
+
+def _jh_flight_rank() -> tuple[str, ...]:
+    """How hard a flight is to win, hardest first — the tie-break on the
+    repeat-champions roll: **S1, D1, S2, D2, S3, D3, XD**.
+
+    ‼️ IT IS DERIVED FROM `jhsaa.FLIGHT_WEIGHTS`, NOT TYPED. The association already
+    prices its flights for TOSS and for every award résumé — S1 1.00 · D1 1.00 ·
+    S2 0.75 · D2 0.50 · S3 0.25 · D3 0.25 — and that table sorts to exactly this
+    order. A first pass hand-typed a tuple built off `jhsaa_individuals.FLIGHTS`
+    instead, which is S1-S3 then D1-D3 because that is how a DRAW SHEET reads, and
+    got a ranking the association does not use (No. 1 doubles below No. 3 singles).
+    Look the constant up before inventing an ordering.
+
+    ‼️ AND WHY D1 SITS LEVEL WITH S1 — measured, 40 5A girls programs. A state dual
+    is 1S/4D and the anti-stacking rule makes S1+D1 consume ranks #1-#3, so S1 is
+    staffed at mean ability rank **1.2** and D1 at **2.4**, both only ever from the
+    top three — and most classes have no No. 2 singles seat at all. Owner, 2026-08:
+    "generally in Jefferson your best players are at 1st doubles as well as 1
+    singles versus other places." The INDIVIDUAL event's own entry sheet is the
+    other way (S2 = #2, D1 = #4+#5), which is why this looks arguable from that
+    event alone; the association's weighting is the authority, and it follows the
+    dual.
+
+    Ties in the table (S1/D1 at 1.00, S3/D3 at 0.25) break SINGLES FIRST, which is
+    the sequence the owner stated. `XD` carries no weight — it is not a dual flight
+    — and is last: a consolation draw entered from below No. 9.
+
+    This only ever decides which of two players with the SAME NUMBER of titles is
+    listed first. Every title counts identically toward the count itself."""
+    from . import jhsaa as _jh
+    from . import jhsaa_individuals as ji
+    return tuple(sorted(ji.FLIGHTS,
+                        key=lambda f: (-_jh.FLIGHT_WEIGHTS[f], f[0] != "S", f))) + ("XD",)
+
+
+def jhsaa_individual_title_repeats(world_id: int, gender: str,
+                                   minimum: int = 2) -> list[dict]:
+    """Players with more than one INDIVIDUAL STATE title, across every archived
+    season (owner request, 2026-08).
+
+    ‼️ THIS IS A PERSON-LEVEL LIST, NOT A PAIRING ONE — the opposite of how the
+    awards module treats doubles. A doubles TITLE credits each partner
+    individually, because the same player can win with a different partner in a
+    different year and those two titles are one career. Keying doubles here on the
+    pair would split that career in two and count neither run. The partner rides
+    along per title as context; the row and the count belong to the individual.
+
+    ‼️ MIXED DOUBLES COUNTS HERE (owner correction, 2026-08: "if a kid wins a mixed
+    doubles title it counts"). A first pass excluded it by reading across from the
+    rule that it credits no AWARD — but those are different things: this roll is a
+    record of state titles a person has won, and a mixed title is one of them. The
+    no-credit rule is about résumés (`jhsaa_awards`), TOSS and the recruit hand-off,
+    and it is untouched.
+    ‼️ AND A MIXED PAIR IS ONE PLAYER FROM EACH FIELD, so only THIS gender's half of
+    it may be credited on this page. The archived entry is always `[boy, girl]` —
+    `jhsaa_individuals.mixed_entry` is the only thing that builds one and it pairs
+    them in that order — so the side is an INDEX, not a guess. Crediting both would
+    put a boy on the girls' roll, which is the one thing the `gender` column exists
+    to prevent.
+
+    ‼️ THE CHAMPION IS EXTRACTED IN SQLITE, NOT IN PYTHON. A draw is a ~30KB blob
+    and this walks EVERY draw of every archived season — eleven classes × six
+    flights × N years, where the individual-champions page loads one class. Parsing
+    all of that on the request thread is the one-gthread hazard this section keeps
+    relearning, and none of it is needed: the blob already stores `champion` as an
+    INDEX into `entries`, so json1 can return just that entrant. `_relabel` then
+    runs on the small dict rather than the whole draw."""
+    from . import jhsaa_individuals as ji
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT year, grp, gender, flight,"
+            " json_extract(data, '$.entries[' ||"
+            "   json_extract(data, '$.champion') || ']') AS champ"
+            " FROM world_jhsaa_individual WHERE world_id=? AND gender IN (?, 'mixed')"
+            " AND json_extract(data, '$.champion') IS NOT NULL",
+            (world_id, gender)).fetchall()
+    finally:
+        conn.close()
+    order = {f: i for i, f in enumerate(_jh_flight_rank())}
+    out: dict[str, dict] = {}
+    for r in rows:
+        if r["flight"] not in order or not r["champ"]:
+            continue
+        champ = _relabel(json.loads(r["champ"]))
+        players = champ.get("players") or ()
+        # The mixed pair's own gender split: [boy, girl], by construction.
+        mine = (0 if gender == "boys" else 1) if r["gender"] == "mixed" else None
+        for i, p in enumerate(players):
+            pid = p.get("pid")
+            if not pid or (mine is not None and i != mine):
+                continue
+            rec = out.setdefault(pid, {"pid": pid, "name": p.get("name", ""),
+                                       "titles": []})
+            rec["titles"].append({
+                "year": r["year"], "group": r["grp"], "flight": r["flight"],
+                "flight_name": ji.FLIGHT_NAMES.get(r["flight"], r["flight"]),
+                "school": champ.get("school", ""),
+                "grade": p.get("grade"),
+                # Context, not a co-holder: the count on this row is the person's.
+                "partner": next((q.get("name", "") for j, q in enumerate(players)
+                                 if j != i), ""),
+            })
+    keep = [v for v in out.values() if len(v["titles"]) >= minimum]
+    for rec in keep:
+        rec["titles"].sort(key=lambda t: (t["year"], order[t["flight"]]))
+        rec["count"] = len(rec["titles"])
+        rec["schools"] = list(dict.fromkeys(t["school"] for t in rec["titles"]))
+        rec["last"] = rec["titles"][-1]["year"]
+        # The tie-break the owner asked for: by flight QUALITY, best first, compared
+        # as a whole run — so two S1s outrank an S1 and an S3, which outrank two S3s.
+        rec["_quality"] = sorted(order[t["flight"]] for t in rec["titles"])
+    keep.sort(key=lambda r: (-r["count"], r["_quality"], -r["last"], r["name"]))
+    for rec in keep:
+        rec.pop("_quality")
+    return keep
+
+
 def jhsaa_individual_results(world_id: int, year: int, gender: str, group: str,
                              pid: str) -> list[dict]:
     """One player's individual-tournament results for ONE season — the flight they
@@ -5308,6 +5485,56 @@ def jhsaa_school_seasons(world_id: int, gender: str, school: str) -> list[dict]:
     return out
 
 
+def jh_road_ladder() -> tuple[str, ...]:
+    """The road to State, shallowest rung first — the ORDER `jhsaa_season_depth`
+    ranks a pre-State exit on.
+
+    ‼️ THE NAMES COME FROM `jhsaa`'S OWN CONSTANTS, never typed here — the same rule
+    `jhsaa_title_stages` runs on. A rung's archived `round_names` is what a finish is
+    read off (`jhsaa_postseason_result`), and `DIVISIONAL_NAME` has moved once
+    already: a typed copy would silently stop matching and every Divisionals run
+    would rank as though the program had not played a postseason at all.
+
+    It is the exact REVERSE of the walk in `jhsaa_postseason_result`, which tries the
+    deepest rung first — one ladder, read from either end."""
+    from . import jhsaa as _jh
+    return ("Areas", "Sectionals", "Wards", "Regionals", "Zonals",
+            "Super Regionals", "Semi-State", _jh.DIVISIONAL_NAME,
+            _jh.SEMI_CONFERENCE_NAME, _jh.CONFERENCE_NAME)
+
+
+def jhsaa_season_depth(row: dict) -> tuple:
+    """HOW FAR a season went, as a sortable key — bigger is further.
+
+    ‼️ A RECORD IS NOT A SEASON'S RESULT (owner rule 2026-08). "Best season" used to
+    be the best win percentage, which ranked a 28-4 that lost in the Octofinals above
+    a 22-7 that reached the State semifinal — and the semifinal is plainly the better
+    year. So the measure is the postseason FINISH, and the record is only the
+    tie-break ("if the measures are tied, then the record counts").
+
+    The tiers are the sport's own rungs: the Tournament of Champions is above the
+    State draw, the State draw is above the road to it, and inside each the deeper
+    run wins. A State place is a COUNT OF TEAMS STILL ALIVE (1 = champion), so it is
+    negated rather than compared to a label — the `state_place <= 4` rule, one level
+    up. A road exit ranks on `jh_road_ladder`; a stage nobody has heard of ranks at
+    the bottom of its tier rather than raising, because an archive written before a
+    rung existed is a real thing to render."""
+    if row.get("made_toc"):
+        # Only a classification champion is in the field, so every TOC entrant is
+        # also a State champion — the tier exists to separate the six of them.
+        tier, level = 3, -(row.get("toc_place") or 99)
+    elif row.get("made_state"):
+        tier, level = 2, -(row.get("state_place") or 99)
+    elif row.get("state_finish"):
+        ladder = jh_road_ladder()
+        tier = 1
+        level = ladder.index(row["state_finish"]) if row["state_finish"] in ladder else -1
+    else:
+        tier, level = 0, 0
+    w, l = row.get("wins", 0), row.get("losses", 0)
+    return (tier, level, w / (w + l) if w + l else 0.0, w)
+
+
 def jhsaa_program_totals(seasons: list[dict]) -> dict:
     """The career side of a program's history: what the ledger ADDS UP TO.
 
@@ -5326,8 +5553,6 @@ def jhsaa_program_totals(seasons: list[dict]) -> dict:
     for s in asc:
         streak = streak + 1 if s["made_state"] else 0
         best_streak = max(best_streak, streak)
-    by_pct = sorted(played, key=lambda s: (s["wins"] / (s["wins"] + s["losses"]),
-                                           s["wins"]))
     groups = [s["group"] for s in asc if s["group"]]
     return {
         "seasons": len(seasons), "wins": wins, "losses": losses,
@@ -5358,8 +5583,17 @@ def jhsaa_program_totals(seasons: list[dict]) -> dict:
         "last_title": titles[0] if titles else None,           # seasons are newest-first
         "last_state": states[0] if states else None,
         "state_streak": streak, "longest_state_streak": best_streak,
-        "best": by_pct[-1] if by_pct else None,
-        "worst": by_pct[0] if by_pct else None,
+        # ‼️ THE BEST SEASON IS THE FURTHEST RUN, not the best record — see
+        # `jhsaa_season_depth`. There is no `worst` beside it any more (owner rule
+        # 2026-08: "nobody wants to see that") — a program page is a record of what a
+        # program achieved, and the ledger below shows every losing season anyway.
+        "best": max(played, key=jhsaa_season_depth) if played else None,
+        # ROAD TO STATE titles — the units a program won on the way (Areas through
+        # the Conference). `unit_wins` leads with the DISTRICT title when there is
+        # one (owner rule 2027-08), and that is counted separately above, so it is
+        # subtracted here rather than the list being re-derived.
+        "road_titles": sum(len(s["unit_wins"]) - (1 if s["district_title"] else 0)
+                           for s in seasons),
         # Classifications the program has played in, oldest first — a program that has
         # moved up or down shows more than one, which is the question the ledger exists
         # to answer ("have they changed class?").

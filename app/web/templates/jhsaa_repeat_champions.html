@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header %}
+{% block title %}JHSAA Repeat Individual State Champions{% endblock %}
+{% block content %}
+
+{{ jh_header(view.scope, u, 'repeat_champs', 'Repeat Individual State Champions',
+             'Every player with more than one individual state title.',
+             [('Players', view.rows|length)]) }}
+
+<div class="jh-shell">
+
+{# ‼️ A PERSON-LEVEL LIST. A doubles title credits each partner INDIVIDUALLY — the
+   same player wins with different partners in different years, and that is one
+   career, not two half-careers. The partner is context on the title, never a
+   co-holder of the row. MIXED DOUBLES COUNTS (owner, 2026-08) — it credits no
+   award, but this is a record of titles won, not a résumé — and only THIS gender's
+   half of a mixed pair is credited, since the pair is one player from each field.
+
+   FLIGHT AND CLASS RIDE ON EACH TITLE so two No. 3 doubles titles in 1A read
+   differently from two No. 1 singles titles in 9A — without the page judging. The
+   only judgement made anywhere here is the tie-break inside a band, on flight
+   quality. #}
+{% for band in view.bands %}
+<div class="bl-panel jh-yearpanel" {{ 'style=margin-top:14px'|safe if not loop.first }}>
+  <div class="bl-panel-head">
+    <span class="bl-panel-title">{{ band.heading }}</span>
+    <span class="bit">{{ band.rows|length }} player{{ '' if band.rows|length == 1 else 's' }}</span>
+  </div>
+  <div class="jh-roll">
+    {# An empty band is still rendered — see the POY roll. #}
+    {% if not band.rows %}<div class="row none">Nobody yet.</div>{% endif %}
+    {% for r in band.rows %}
+    <div class="row">
+      <a class="nm" href="{{ url_for('jhsaa_player', school=r.link, pid=r.pid, u=u, g=view.gender) }}">{{ r.name }}</a>
+      {# ‼️ RENDERED SOLO, EVEN FOR DOUBLES (owner, 2026-08): "doubles players are
+         individuals who can win with other people, so they're rendered as solo for
+         this list even if they won two together." The partner is context and rides
+         in the title attribute; putting it on the line turns a person's career back
+         into a pairing's, which is exactly what this list is not. #}
+      {% for st in r.stints %}<span class="stint">{% if st.deco.mark %}<span class="mk">{{ st.deco.mark|safe }}</span>{% endif %}<span class="sch">{{ st.school }}</span>
+        <span class="yrs">({% for t in st.won %}<span
+          title="{{ t.flight_name }}{% if t.partner %} · with {{ t.partner }}{% endif %}"
+          >{{ t.season_year }} {{ t.group }} {{ t.flight_name }}</span>{{ ', ' if not loop.last }}{% endfor %})</span>
+      </span>{% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+
+</div>
+{% endblock %}

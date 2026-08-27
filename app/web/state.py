@@ -5731,6 +5731,133 @@ def jhsaa_individual_winners(seed: int, gender: str, group: str | None = None,
                                years[0] if years else 0, years, None, None)}
 
 
+#: A career honour roll needs this many to be a career (owner: "only those who have
+#: won 4 or 3" led, the spec that followed said "2 or more" for BOTH lists and is what
+#: is built — two is the smallest number that makes a REPEAT, which is the thing the
+#: page exists to show, and the lists are deliberately uncapped and scroll).
+JH_REPEAT_MIN = 2
+
+
+def jhsaa_repeat_poy(seed: int, gender: str, group: str | None = None) -> dict:
+    """Players who have won a classification POY more than once — a CAREER list, on
+    the History sub-rail (owner request, 2026-08).
+
+    Every other JHSAA surface is scoped to one season, so a multi-year run is
+    invisible: the champions grid shows a name in 2028 and the same name in 2030 with
+    nothing joining them. This is the only page that folds across seasons, which is
+    exactly why it is worth having and why it is not a panel on an existing one.
+
+    ‼️ CLASS-BLIND, like the Title Board and All-Region. A career crosses
+    reclassification and play-up, so a player's 2A run and their 6A run are one
+    career and the class rides on each AWARD instead (`world.jhsaa_poy_repeats`).
+    `group` is carried for the scope bar's memory only."""
+    import app.jhsaa as jh
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    years = world.jhsaa_years(w["id"], g)
+    schools = _jh_schools(g)
+    rows = world.jhsaa_poy_repeats(w["id"], g, JH_REPEAT_MIN)
+    for r in rows:
+        for a in r["awards"]:
+            a["deco"] = _jh_deco(schools, a["school"], 18)
+        # The school LINE the owner asked for — "Coles Creek 2028-29, Mater Dei
+        # 2030-31" — built here rather than in the template, because grouping
+        # consecutive years under a school is data shaping, not markup.
+        r["stints"] = _jh_career_stints(r["awards"], schools)
+        r["link"] = r["awards"][-1]["school"]      # newest school — the pid's page
+    return {"gender": g, "rows": rows, "minimum": JH_REPEAT_MIN,
+            "bands": _jh_by_count(rows, "Players of the Year"),
+            "scope": _jh_scope(g, group if group in jh.GROUPS else jh.GROUPS[0],
+                               list(jh.GROUPS), years[0] if years else 0,
+                               years, None, None)}
+
+
+def jhsaa_repeat_individual_champions(seed: int, gender: str,
+                                      group: str | None = None) -> dict:
+    """Players with more than one individual state title — the same career fold, for
+    the six flighted draws (owner request, 2026-08).
+
+    ‼️ A DOUBLES TITLE IS ONE PERSON'S, HERE. The awards module rates doubles as a
+    PAIRING because a résumé belongs to a partnership; a career does not — the same
+    player wins with different partners in different years, and keying on the pair
+    would split one career into two half-careers and rank neither. The partner is
+    shown per title as context. Mixed doubles is excluded by `world`'s gender filter,
+    which is the same rule that keeps it out of every other credit."""
+    import app.jhsaa as jh
+    import app.jhsaa_individuals as ji
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    years = world.jhsaa_years(w["id"], g)
+    schools = _jh_schools(g)
+    rows = world.jhsaa_individual_title_repeats(w["id"], g, JH_REPEAT_MIN)
+    for r in rows:
+        for t in r["titles"]:
+            # ‼️ NEVER PRINT THE BARE WORLD INDEX. A draw is archived under the world
+            # year; the season it stands for is the calendar year, and a history
+            # reading "Year 0, Year 1" is what made the old program page unreadable.
+            t["season_year"] = world.BASE_YEAR + t["year"] + 1
+            t["deco"] = _jh_deco(schools, t["school"], 18)
+        r["stints"] = _jh_career_stints(r["titles"], schools)
+        r["link"] = r["titles"][-1]["school"]      # newest school — the pid's page
+    return {"gender": g, "rows": rows, "minimum": JH_REPEAT_MIN,
+            "bands": _jh_by_count(rows, "Individual State Champions"),
+            "flights": [(f, ji.FLIGHT_NAMES[f]) for f in ji.FLIGHTS],
+            "gold_icon": ji.FINISH_TIERS["CHAMP"][1],
+            "section_icon": ji.SECTION_ICON,
+            "scope": _jh_scope(g, group if group in jh.GROUPS else jh.GROUPS[0],
+                               list(jh.GROUPS), years[0] if years else 0,
+                               years, None, None)}
+
+
+def _jh_career_stints(items: list[dict], schools: dict) -> list[dict]:
+    """A career split into STINTS — consecutive awards at one school, in order.
+
+    The owner's own shape for a row: `Larchmont Ridge (2045 No. 1 Doubles)
+    Knoxville City (2046 No. 3 Singles)`. Grouping is data shaping rather than
+    markup, so it happens here; a school that recurs after a gap starts a NEW stint,
+    because a player who left and came back did not have one long spell."""
+    out: list[dict] = []
+    for it in items:
+        if not out or out[-1]["school"] != it.get("school", ""):
+            out.append({"school": it.get("school", ""),
+                        "deco": _jh_deco(schools, it.get("school", ""), 18),
+                        # ‼️ NOT `items`. Jinja resolves `stint.items` to the dict's
+                        # own METHOD, so the loop raised "builtin_function_or_method
+                        # object is not iterable" — a template is the one place here
+                        # where a plausible key name silently means something else.
+                        "won": []})
+        out[-1]["won"].append(it)
+    return out
+
+
+#: The bands a career roll always shows, even with nobody in them (owner, 2026-08:
+#: "if no one is in the 4-time category yet, you should still make the sections and
+#: you leave them empty til someone does it"). An empty 4-time band is a statement —
+#: it says the association has never produced one — where an absent band just looks
+#: like a page that stops. Bands DEEPER than this appear as soon as somebody earns
+#: them, so a five-timer grows the page rather than needing a constant changed.
+JH_ROLL_BANDS = 4
+
+
+def _jh_by_count(rows: list[dict], noun: str) -> list[dict]:
+    """The rows banded by how many they won — "4-time …", "3-time …", "2-time …"
+    (owner layout, 2026-08), deepest first and NEVER below `JH_REPEAT_MIN`.
+
+    A flat table makes the reader compare a number down a column to find the rarest
+    thing on the page; a banded list states it."""
+    # ‼️ EVERY COUNT SOMEBODY HOLDS, PLUS THE FIXED LADDER — never the whole range
+    # between them. A ten-time champion would otherwise open nine empty sections
+    # between themselves and the next name, which reads as a broken page rather than
+    # as a rare achievement. The kept empties stop at `JH_ROLL_BANDS`, which is what
+    # the owner asked to see standing empty.
+    counts = sorted({r["count"] for r in rows}
+                    | set(range(JH_REPEAT_MIN, JH_ROLL_BANDS + 1)), reverse=True)
+    return [{"count": n, "heading": f"{n}-time {noun}",
+             "rows": [r for r in rows if r["count"] == n]} for n in counts]
+
+
 def jhsaa_retired_view(seed: int, gender: str, group: str | None = None) -> dict:
     """Programs that no longer sponsor `gender` tennis, grouped by the LAST
     season each one played — same "By year" shape as the champions grid, so a

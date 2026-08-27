@@ -29,6 +29,13 @@ ROUTES = [
     "/jhsaa/bracket",
     "/jhsaa/districts",
     "/jhsaa/champions",
+    # The two CAREER rolls on the History sub-rail. Both fold over every archived
+    # season, so with nothing archived they must render an empty state rather than
+    # raise on the first fold.
+    "/jhsaa/repeat-poy",
+    "/jhsaa/repeat-poy?g=boys",
+    "/jhsaa/repeat-champions",
+    "/jhsaa/repeat-champions?g=boys",
 ]
 
 
