@@ -3966,6 +3966,138 @@ def jhsaa_individual_champions(world_id: int, year: int, gender: str,
     return out
 
 
+def jhsaa_poy_repeats(world_id: int, gender: str, minimum: int = 2) -> list[dict]:
+    """Players who have won a CLASSIFICATION Player of the Year more than once,
+    across every archived season (owner request, 2026-08).
+
+    The History section shows names year by year, so a multi-year run is invisible
+    there — a player who won 9A POY three times reads as three unrelated rows. This
+    is the only surface that can see it, because seeing it means folding over every
+    season at once.
+
+    ‼️ CLASS POY ONLY. The District POY (`awards[group]["district_poy"]`) is
+    deliberately not counted: the association crowns one per league per class per
+    year — hundreds a season — so aggregating it produces a longer list of more
+    people rather than a harder achievement. Same reason there is no All-State roll.
+
+    ‼️ CREDITED THROUGH `row_pids`, so a DOUBLES POY honours BOTH athletes. The award
+    row is one selection describing a pairing (`jhsaa_awards._row`), and the
+    section's own rule is that every "was this person honoured?" question reads
+    `pids` — matching on `row["pid"]` credits half of every doubles POY and looks
+    perfectly correct on the page it is on.
+
+    ‼️ KEYED ON THE PID, NEVER THE NAME. A pid hashes (origin school, gender, entry
+    year, seat), so it survives a transfer and a school rename alike — which is what
+    lets one row read "Coles Creek 2028-29, Mater Dei 2030-31". Two players sharing a
+    name would otherwise merge into one impossible career.
+
+    A run is returned with the CLASSIFICATION of each award, never a single class per
+    player: a 2A run and a 9A run are different achievements and the page shows both
+    rather than deciding between them."""
+    from . import jhsaa_awards as ja
+    out: dict[str, dict] = {}
+    for year in jhsaa_years(world_id, gender):
+        arc = get_jhsaa(world_id, year, gender)
+        if not arc:
+            continue
+        for grp, aw in (arc.get("awards") or {}).items():
+            poy = (aw or {}).get("poy")
+            pids = ja.row_pids(poy)
+            if not pids:
+                continue
+            names = list(poy.get("names") or [poy.get("name", "")])
+            for i, pid in enumerate(pids):
+                nm = names[i] if i < len(names) else poy.get("name", "")
+                rec = out.setdefault(pid, {"pid": pid, "name": nm, "awards": []})
+                rec["name"] = nm          # the newest spelling wins; years run newest-first
+                rec["awards"].append({
+                    "year": year, "season_year": arc.get("season_year") or year,
+                    "group": grp, "school": poy.get("school", ""),
+                    "kind": poy.get("kind", ""),
+                })
+    rows = [r for r in out.values() if len(r["awards"]) >= minimum]
+    for r in rows:
+        r["awards"].sort(key=lambda a: a["year"])
+        r["count"] = len(r["awards"])
+        r["schools"] = list(dict.fromkeys(a["school"] for a in r["awards"]))
+        r["groups"] = list(dict.fromkeys(a["group"] for a in r["awards"]))
+        r["last"] = r["awards"][-1]["year"]
+    rows.sort(key=lambda r: (-r["count"], -r["last"], r["name"]))
+    return rows
+
+
+def jhsaa_individual_title_repeats(world_id: int, gender: str,
+                                   minimum: int = 2) -> list[dict]:
+    """Players with more than one INDIVIDUAL STATE title, across every archived
+    season (owner request, 2026-08).
+
+    ‼️ THIS IS A PERSON-LEVEL LIST, NOT A PAIRING ONE — the opposite of how the
+    awards module treats doubles. A doubles TITLE credits each partner
+    individually, because the same player can win with a different partner in a
+    different year and those two titles are one career. Keying doubles here on the
+    pair would split that career in two and count neither run. The partner rides
+    along per title as context; the row and the count belong to the individual.
+
+    All six flights (S1-S3, D1-D3). **Mixed doubles is excluded**: it is archived
+    under gender `'mixed'` and credits nothing anywhere else by owner rule, so the
+    `gender=?` filter leaves it out by construction rather than by a special case.
+
+    ‼️ THE CHAMPION IS EXTRACTED IN SQLITE, NOT IN PYTHON. A draw is a ~30KB blob
+    and this walks EVERY draw of every archived season — eleven classes × six
+    flights × N years, where the individual-champions page loads one class. Parsing
+    all of that on the request thread is the one-gthread hazard this section keeps
+    relearning, and none of it is needed: the blob already stores `champion` as an
+    INDEX into `entries`, so json1 can return just that entrant. `_relabel` then
+    runs on the small dict rather than the whole draw."""
+    from . import jhsaa_individuals as ji
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT year, grp, flight,"
+            " json_extract(data, '$.entries[' ||"
+            "   json_extract(data, '$.champion') || ']') AS champ"
+            " FROM world_jhsaa_individual WHERE world_id=? AND gender=?"
+            " AND json_extract(data, '$.champion') IS NOT NULL",
+            (world_id, gender)).fetchall()
+    finally:
+        conn.close()
+    order = {f: i for i, f in enumerate(ji.FLIGHTS)}
+    out: dict[str, dict] = {}
+    for r in rows:
+        if r["flight"] not in order or not r["champ"]:
+            continue
+        champ = _relabel(json.loads(r["champ"]))
+        players = champ.get("players") or ()
+        for i, p in enumerate(players):
+            pid = p.get("pid")
+            if not pid:
+                continue
+            rec = out.setdefault(pid, {"pid": pid, "name": p.get("name", ""),
+                                       "titles": []})
+            rec["titles"].append({
+                "year": r["year"], "group": r["grp"], "flight": r["flight"],
+                "flight_name": ji.FLIGHT_NAMES.get(r["flight"], r["flight"]),
+                "school": champ.get("school", ""),
+                "grade": p.get("grade"),
+                # Context, not a co-holder: the count on this row is the person's.
+                "partner": next((q.get("name", "") for j, q in enumerate(players)
+                                 if j != i), ""),
+            })
+    keep = [v for v in out.values() if len(v["titles"]) >= minimum]
+    for rec in keep:
+        rec["titles"].sort(key=lambda t: (t["year"], order[t["flight"]]))
+        rec["count"] = len(rec["titles"])
+        rec["schools"] = list(dict.fromkeys(t["school"] for t in rec["titles"]))
+        rec["last"] = rec["titles"][-1]["year"]
+        # The tie-break the owner asked for: by flight QUALITY, best first, compared
+        # as a whole run — so two S1s outrank an S1 and an S3, which outrank two S3s.
+        rec["_quality"] = sorted(order[t["flight"]] for t in rec["titles"])
+    keep.sort(key=lambda r: (-r["count"], r["_quality"], -r["last"], r["name"]))
+    for rec in keep:
+        rec.pop("_quality")
+    return keep
+
+
 def jhsaa_individual_results(world_id: int, year: int, gender: str, group: str,
                              pid: str) -> list[dict]:
     """One player's individual-tournament results for ONE season — the flight they

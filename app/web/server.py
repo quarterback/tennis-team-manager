@@ -44,7 +44,8 @@ from .state import (jhsaa_view, jhsaa_scope_view, jhsaa_school_view, jhsaa_past_
                     jhsaa_rankings_view, jhsaa_player_view, jhsaa_players_search,
                     jhsaa_misapplied_players, jhsaa_lineup_lab, jhsaa_schools_view,
                     jhsaa_titles_view, jhsaa_individual_view,
-                    jhsaa_individual_winners, jhsaa_retired_view)
+                    jhsaa_individual_winners, jhsaa_retired_view,
+                    jhsaa_repeat_poy, jhsaa_repeat_individual_champions)
 from .state import (preseason_portal_view, recruit_economy_view, portal_class_rankings,
                     wire_view)
 from .state import my_program_view, my_schedule_plan, my_season_report, job_offers
@@ -2246,6 +2247,31 @@ def create_app() -> Flask:
         view = jhsaa_titles_view(DEFAULT_SEED, g, group, year)
         return render_template("jhsaa_titles.html", active="High School", view=view,
                                gender=gender, u=u, uni_label=label)
+
+    @app.route("/jhsaa/repeat-poy")
+    def jhsaa_repeat_poy_view():
+        """Repeat Players of the Year — a CAREER list, on the History sub-rail
+        (owner request, 2026-08).
+
+        Class POY only, every player with two or more, uncapped and scrolling. It
+        is class-BLIND like the Title Board: a career crosses reclassification and
+        play-up, so the classification rides on each award instead of filtering the
+        page. `group` is carried for the scope bar's memory alone."""
+        gender, label, u, g, group, _year = _jh_scope_args()
+        view = jhsaa_repeat_poy(DEFAULT_SEED, g, group)
+        return render_template("jhsaa_repeat_poy.html", active="High School",
+                               view=view, gender=gender, u=u, uni_label=label)
+
+    @app.route("/jhsaa/repeat-champions")
+    def jhsaa_repeat_champions():
+        """Repeat individual state champions — the same career fold over the six
+        flighted draws. A doubles title credits each partner INDIVIDUALLY, because
+        a player can win with different partners in different years and that is one
+        career; the partner is shown per title as context."""
+        gender, label, u, g, group, _year = _jh_scope_args()
+        view = jhsaa_repeat_individual_champions(DEFAULT_SEED, g, group)
+        return render_template("jhsaa_repeat_champions.html", active="High School",
+                               view=view, gender=gender, u=u, uni_label=label)
 
     @app.route("/jhsaa/retired-programs")
     def jhsaa_retired():

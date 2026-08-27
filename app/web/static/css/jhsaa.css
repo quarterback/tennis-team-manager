@@ -877,6 +877,31 @@ html[data-jh-scout="on"] .jh-scout { visibility: visible; }
   font-variant-numeric: tabular-nums;
 }
 
+/* THE CAREER ROLLS — Repeat POY and Repeat State Champs, on the History sub-rail.
+   A row is a SENTENCE, not a table row (owner layout, 2026-08): the player, then a
+   clause per school naming the years won there. It wraps rather than scrolling
+   sideways, because a four-title career at two schools is a long line and the thing
+   the reader wants is all of it, not the first 60% of it. */
+.jh-roll { display: flex; flex-direction: column; }
+.jh-roll .row {
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px;
+  padding: 9px 14px; border-top: 1px solid var(--border-subtle);
+}
+.jh-roll .row:first-child { border-top: 0; }
+.jh-roll .row:hover { background: var(--surface-hover); }
+.jh-roll .nm {
+  font-size: 15px; font-weight: 800; color: var(--text-primary); text-decoration: none;
+}
+.jh-roll .nm:hover { color: var(--brand-strong); }
+.jh-roll .stint { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+.jh-roll .mk { display: flex; flex: 0 0 auto; }
+/* An empty band is a statement, not a gap — it reads as quiet rather than broken. */
+.jh-roll .row.none { color: var(--text-faint); font-size: 13px; font-style: italic; }
+.jh-roll .sch { font-size: 13.5px; font-weight: 700; color: var(--text-secondary); }
+.jh-roll .yrs {
+  font-size: 13px; color: var(--text-faint); font-variant-numeric: tabular-nums;
+}
+
 /* The season picker sits in the scope rail beside two segmented controls, so it has
    to read as their sibling rather than as a form field dropped into a header. */
 .jh-season-pick { height: 30px; padding: 0 26px 0 10px; font-size: 14px; font-weight: 700; }

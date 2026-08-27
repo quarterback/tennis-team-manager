@@ -1443,6 +1443,43 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   INDIVIDUAL STATE CHAMPS — one per FLIGHT, so a doubles title is one champion and not
   two. `tests/test_jhsaa_best_season.py` pins the order as a pure fold; it needs no
   archived season.
+- **‼️ THE TWO CAREER ROLLS — Repeat POY and Repeat State Champs (owner request
+  2026-08, `world.jhsaa_poy_repeats` / `world.jhsaa_individual_title_repeats`).**
+  Every other JHSAA surface is scoped to ONE season, so a multi-year run is
+  invisible: the champions grid shows a name in 2028 and the same name in 2030 with
+  nothing joining them. These fold across every archived season and sit on the
+  **History sub-rail between the Title Board and Retired Programs**. Both are
+  CLASS-BLIND (the Title Board's rule — a career crosses reclassification and
+  play-up) and the classification rides on each AWARD/TITLE instead; both are
+  **uncapped** and include everyone with **2+**, sorted by count then recency (the
+  titles roll breaks a tie on flight quality first). The page shows the class and
+  the flight and does NOT weight them — a 2A run and a 9A run are for the reader to
+  judge.
+  - **‼️ A DOUBLES POY CREDITS BOTH ATHLETES, and a DOUBLES TITLE CREDITS EACH
+    PARTNER SEPARATELY — for two different reasons.** The POY is one award row
+    describing a pairing, so it reads `jhsaa_awards.row_pids` like every other "was
+    this person honoured?" question. The individual titles are the OPPOSITE of the
+    awards module's pairing rule ON PURPOSE: a career is a person's, and the same
+    player wins with different partners in different years, so keying doubles on the
+    pair splits one career into two half-careers and counts neither. The partner is
+    shown per title as context, never as a co-holder of the row.
+  - **Keyed on the PID, never the name** — a pid survives a transfer and a rename,
+    which is what lets one row read "Coles Creek 2028-29, Mater Dei 2030-31"
+    (`state._jh_school_run`, which collapses only CONSECUTIVE years so a player who
+    left and came back reads as two stints).
+  - **‼️ THE CHAMPION IS EXTRACTED IN SQLITE (`json_extract`), not by parsing every
+    draw in Python.** This walks EVERY draw of every archived season — eleven classes
+    × six flights × N years, where the individual-champions page loads one class —
+    and a draw is a ~30KB blob. The blob already stores `champion` as an INDEX into
+    `entries`, so json1 returns just that entrant and `_relabel` runs on the small
+    dict. Parsing the lot on the one gthread is the hazard this section keeps
+    relearning.
+  - **Explicitly out of scope (owner): no All-State roll and no League/District POY
+    roll.** The association crowns a district POY per league per class per year, so
+    aggregating those is a longer list of more people, not a harder achievement.
+  - Mixed doubles is excluded by the `gender=?` filter (it is archived under
+    `'mixed'` and credits nothing anywhere else). `tests/test_jhsaa_repeat_rolls.py`
+    hand-archives four small seasons — one played season cannot contain a repeat.
 - **A classification's rankings have a PAGE, not a rail panel** (`/jhsaa/rankings`,
   `jhsaa_rankings_view`). `jhsaa_group_ranking` always returned every program in the
   class; the hub shows the first twelve of it beside the bracket and links to the rest.
