@@ -280,3 +280,40 @@ def test_a_player_who_left_and_came_back_is_two_stints():
         {"year": 2, "season_year": 2032, "school": "Sixes"},
     ], {})
     assert [s_["school"] for s_ in stints] == ["Sixes", "Harrow", "Sixes"]
+
+
+# --- the PROGRAM's individual state champions -------------------------------------
+
+def test_a_mixed_title_credits_both_programs(archive):
+    """‼️ A MIXED TITLE IS THE SCHOOL'S (owner correction, 2026-08): "it should be
+    crediting both the boys and girls program with the honor when it's won, just like
+    the other doubles and singles brackets." It was excluded on the grounds that a
+    mixed pair is one player from each of the school's two SEPARATE teams and a page
+    scoped to one gender had no flight box to hang it on — which answered a layout
+    question by dropping a title the school won.
+
+    The program-level counterpart of the CAREER rule, and deliberately the opposite
+    of it: a career belongs to a person and a person has one gender, so the rolls
+    credit only the winner's own; a PROGRAM has both teams."""
+    seasons = [{"year": 2, "season_year": 2032, "group": "9A"}]
+    for gender in ("girls", "boys"):
+        rows = wd.jhsaa_school_individual_champions(
+            archive["id"], gender, "Coles Creek", seasons)
+        mixed = [r for r in rows if r["flight"] == "XD"]
+        assert len(mixed) == 1, f"{gender} program lost its mixed title"
+        assert mixed[0]["mixed"] is True
+        # the ROW names both players — the pair is what won it
+        assert [p["name"] for p in mixed[0]["players"]] == ["Eli Ward", "Ada Kane"]
+
+
+def test_a_program_still_gets_its_own_flighted_titles(archive):
+    """The mixed lookup is an addition, not a replacement — the girls' own No. 1
+    singles title that season must still be there, and the boys (who won nothing
+    flighted here) must not inherit it."""
+    seasons = [{"year": 2, "season_year": 2032, "group": "6A"}]
+    girls = wd.jhsaa_school_individual_champions(
+        archive["id"], "girls", "Mater Dei", seasons)
+    assert [r["flight"] for r in girls] == ["S1"]
+    boys = wd.jhsaa_school_individual_champions(
+        archive["id"], "boys", "Mater Dei", seasons)
+    assert boys == []

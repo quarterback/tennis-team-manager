@@ -1425,6 +1425,17 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     an INDEX of the page, not a copy of it. `.jh-award` is a fixed-column CSS grid —
     **always emit the rank cell**, empty or not, or every unnumbered team shifts a
     column. Data-bearing coverage lives in `tests/test_jhsaa_toc.py`.
+- **‼️ A MIXED DOUBLES TITLE CREDITS BOTH PROGRAMS (owner correction 2026-08).**
+  `world.jhsaa_school_individual_champions` excluded it — a mixed pair is one player
+  from each of a school's two SEPARATE teams, so a page scoped to one gender "had no
+  flight-box row to hang it from". That answered a LAYOUT question by dropping a title
+  the school actually won. The entry's `school` is the SCHOOL (one name, shared by
+  both its teams), so the boys' page and the girls' page each show it, exactly as they
+  each show their own No. 1 doubles title, and the row names both players because the
+  pair is what won it. It counts in the program page's "Individual state champs" tile.
+  ‼️ It is deliberately the OPPOSITE of the career rolls one level down, where a mixed
+  title credits only the winner's own gender: a career belongs to a PERSON and a person
+  has one gender; a PROGRAM has both teams.
 - **‼️ THE BEST SEASON IS THE FURTHEST RUN, NOT THE BEST RECORD (owner rule 2026-08,
   `world.jhsaa_season_depth`).** The program page ranked "Best season" on win
   percentage, so a 28-4 that lost in the State Octofinals outranked a 22-7 that
