@@ -57,6 +57,18 @@ def archived(tmp_path_factory):
         return out
 
     real_primed, real_prime = wd.is_primed, wd.prime
+    real_fields = dict(jh.STATE_FIELD)
+    # ‼️ SCALE THE FIELD TABLE WITH THE POOLS (2026-08). Field size is PER-CLASS
+    # CONFIGURATION, not a function of sponsor count — so a tenth-size class
+    # under the real 32/40 tables is SMALLER than its own State field, the
+    # Specials fill State with literally every program, and every premise of the
+    # form "a program that missed State" or "a program with nothing to show"
+    # stops existing (these tests passed pre-Specials only because the road ran
+    # short and left teams out). 32→16 and 40→20 keep the three shapes distinct
+    # and both draw branches live (20 expands through the Qualifiers Round,
+    # 16 is the power-of-two, 24 keeps its byes and the fixed-24 ladder).
+    for grp, real in real_fields.items():
+        jh.STATE_FIELD[grp] = {24: 24, 32: 16, 40: 20}[real]
     jh.load_schools = small
     jh._season_cache.clear()
     wd.WORLD_DB = db
@@ -75,6 +87,8 @@ def archived(tmp_path_factory):
                "arc": wd.get_jhsaa(w["id"], w["year"], "girls")}
     finally:
         jh.load_schools = real_load
+        jh.STATE_FIELD.clear()
+        jh.STATE_FIELD.update(real_fields)
         jh._season_cache.clear()
         wd.WORLD_DB, wd._schema_ready_for = real_db, real_ready
         wd.is_primed, wd.prime = real_primed, real_prime
@@ -89,22 +103,31 @@ def test_the_field_is_one_champion_per_classification(archived):
     assert len(toc["field"]) == len(jh.GROUPS)
 
 
-def test_the_draw_halves_cleanly_to_one(archived):
-    """One champion per classification, seeded into a play-in round (the field
-    is `len(GROUPS)` — eleven now that Great Basin Group 1/Group 2 joined the
-    ladder, an odd number over eight) and then a clean 8-team Octofinals bracket
-    that halves cleanly from there: `[11, 8, 4, 2]` — the play-in round cuts
-    straight to eight IN ONE PARALLEL ROUND (owner spec: "8 plays 9, 7 plays 11,
-    6 plays 10, then you do quarterfinals"), not one game at a time. A field of
-    nine (the old nine-class shape) reduces to the same single 8-vs-9 game this
-    always played; the two-tier cut is what makes an arbitrary field size above
-    eight resolve in one play-in round instead of chaining sequential games."""
+def test_the_toc_is_a_standard_seeded_bracket(archived):
+    """‼️ COMMON BRACKET LOGIC, nothing else (owner rule 2026-08): the field sits
+    on the standard seed lines of the next power of two, byes fall to the top
+    seeds, and the bracket is FIXED — a winner takes the beaten seed's line, no
+    re-pairing between rounds. At twelve that is 5v12 · 6v11 · 7v10 · 8v9 with
+    seeds 1-4 sitting; a 9 is the lone 8v9 game into the 1 line; a 14 would add
+    4v13 — the same rule at every count, so this asserts the RULE (round-one
+    pairs sum to m+1, byes are exactly the top seeds, every later round halves),
+    never a hand-typed shape."""
     toc = archived["arc"]["toc"]
-    alive, shape = len(toc["field"]), []
+    seeds, n = toc["seeds"], len(toc["field"])
+    m = 1
+    while m < n:
+        m *= 2
+    r1 = toc["rounds"][0]
+    assert all(seeds[g["home"]] + seeds[g["away"]] == m + 1 for g in r1)
+    played = {seeds[g[k]] for g in r1 for k in ("home", "away")}
+    assert played == set(range(m - n + 1, n + 1)), \
+        "byes go to the top seeds and nobody else"
+    alive = n
     for games in toc["rounds"]:
-        shape.append(alive)
         alive -= len(games)
-    assert shape == [len(jh.GROUPS), 8, 4, 2] and alive == 1
+    assert alive == 1
+    for prev, nxt in zip(toc["rounds"][1:], toc["rounds"][2:]):
+        assert len(prev) == 2 * len(nxt), "every column halves into the next"
     assert toc["champion"] in toc["field"]
 
 
@@ -389,14 +412,19 @@ def test_every_jhsaa_page_renders_against_a_real_season(archived):
 # --- the rankings page ------------------------------------------------------------
 
 def test_the_rankings_page_shows_the_whole_classification(archived):
-    """The hub's rail panel cuts the list at twelve; the page must not."""
+    """The hub's rail panel cuts the list at twelve; the page must not.
+    ‼️ Compare ESCAPED names: Jinja autoescape writes Sandra Day O'Connor as
+    O&#39;Connor, so a raw substring check fails on exactly the apostrophe
+    schools while every plain name passes — which is how this hid until the
+    fixture's district cut picked one up."""
+    from markupsafe import escape
     grp = jh.GROUPS[0]
     rows = wd.jhsaa_group_ranking(archived["arc"], grp)
     assert len(rows) > 12
     html = archived["client"].get(
         f"/jhsaa/rankings?g=girls&group={grp}").get_data(as_text=True)
     for r in rows:
-        assert r["school"] in html, r["school"]
+        assert str(escape(r["school"])) in html, r["school"]
 
 
 # --- the honors page, over the SAME archived season --------------------------

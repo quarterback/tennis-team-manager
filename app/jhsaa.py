@@ -5222,9 +5222,9 @@ def run_state(field: list[TeamSeason], *, seed: int, champions: int = 8) -> dict
 def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
     """The TOURNAMENT OF CHAMPIONS — one dual-team champion for all of Jefferson.
 
-    ONE champion per classification and nobody else — nine teams now that every
-    classification, including 1A and 2A, crowns separately. The field is not a
-    `FIELD` size and never has been: it is exactly
+    ONE champion per classification and nobody else — twelve teams now that every
+    classification, the Great Basin groups included, crowns separately. The field
+    is not a `FIELD` size and never has been: it is exactly
     `len(GROUPS)`, and it grows or shrinks only when the association adds or merges a
     championship. (`FIELD` is the STATE tournament's bracket size per classification and
     has nothing to do with this event.)
@@ -5234,9 +5234,18 @@ def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
     rated above the 6A one is the higher seed, which is the whole reason the event is
     interesting.
 
-    Six into a four-team semifinal, so the two lowest-rated pairs play in and the top two
-    sit out; five would give one play-in and three byes. Then the semifinals and the
-    final, under the state format (1S/4D) like the events that fed it.
+    ‼️ A REAL FIXED BRACKET ON STRICT SEED LINES (owner rule 2026-08 — "it's not
+    complicated"). The field goes onto the standard seed-line slots of the next
+    power of two, byes fall to the top seeds because their round-one opponents
+    (the highest slot numbers) do not exist, and the bracket is then FIXED: a
+    winner takes the beaten seed's LINE, and no round is ever re-paired ("if 11
+    beats 6, they take the 6-seed line"). So 12 teams is exactly 5v12 · 6v11 ·
+    7v10 · 8v9 with seeds 1-4 sitting; a 14 would add 4v13 and 3v14; a 15 would
+    put 2 against 15; a 9 is the lone 8v9 game whose winner meets the 1 seed —
+    every one of those is the SAME rule at a different count, never a special
+    case. This replaced a two-tier "cut to eight, then cut to four" that
+    re-paired the survivors best-vs-worst between rounds — reseeding by another
+    name, which no real dual-team bracket does.
 
     Returned in the same shape `run_state` uses, so it renders on the shared bracket tree
     with no new geometry."""
@@ -5256,62 +5265,30 @@ def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
                      "home_points": res.home_points, "away_points": res.away_points,
                      "winner": win.school.name}
 
-    # ‼️ A TWO-TIER CUT FOR AN OVERSIZED FIELD (owner rule 2027-08 through
-    # 2027-08, eleven classifications now that Great Basin Group 1/Group 2
-    # joined the ladder). This used to be a CHAINED play-in — one game at a
-    # time, `alive[-2]` vs `alive[-1]`, winner appended to the END of the
-    # list — which was only ever exercised at exactly nine classifications
-    # (a single 8-vs-9 game). Once Group 1/2 pushed the field past ten, the
-    # chain broke: with 11 teams it played 10v11, then 9-vs-that-winner, then
-    # 8-vs-THAT-winner — seed 8 fighting through three sequential do-or-die
-    # games while seeds 1-7 sat idle, and each single game landing in `rounds`
-    # as its own one-game "round" (wrecking the bracket renderer's assumption
-    # that a round is a set of PARALLEL games). Fixed the same way real
-    # brackets seed a play-in round: cut to eight in ONE parallel round,
-    # generalising the cut-to-four block below one tier up (8 plays 9, 7 plays
-    # 11, 6 plays 10 for an 11-team field — the top five sit out), THEN run
-    # the cut-to-four Octofinals on the resulting eight. At nine teams this
-    # still reduces to the single 8-vs-9 game it always was.
+    # The standard seed-line order: seed s meets seed (m+1-s) in round one, and
+    # the quarters/halves nest so 1 and 2 can only meet in the final. For 16:
+    # (1,16)(8,9)(4,13)(5,12) | (2,15)(7,10)(3,14)(6,11).
+    order = [1]
+    while len(order) < len(field):
+        m = 2 * len(order)
+        order = [s for a in order for s in (a, m + 1 - a)]
+    slots: list[TeamSeason | None] = [
+        field[s - 1] if s <= len(field) else None for s in order]
     rounds: list[list[dict]] = []
-    alive = list(field)
-    if len(alive) > 8:
-        n_in = 2 * (len(alive) - 8)
-        block, byes = alive[-n_in:], alive[:-n_in]
-        games, won = [], []
-        for i in range(n_in // 2):
-            w, gm = play(block[i], block[n_in - 1 - i])
-            games.append(gm)
-            won.append(w)
-        rounds.append(games)
-        alive = byes + won
-
-    # Cut to four, then semifinals, then the final: 6 -> 4 -> 2 -> 1. The play-in
-    # takes the bottom 2*(n-4) seeds and pairs them highest-against-lowest, so at
-    # six the top two sit out while 3v6 and 4v5 play, and at five only 4v5 does. Playing
-    # a single play-in regardless left five teams standing and produced a 6 -> 5 -> 3 -> 1
-    # ladder — a three-team "semifinal" and a bye nobody earned.
-    if len(alive) > 4:
-        n_in = 2 * (len(alive) - 4)
-        block, byes = alive[-n_in:], alive[:-n_in]
-        games, won = [], []
-        for i in range(n_in // 2):
-            w, gm = play(block[i], block[n_in - 1 - i])
-            games.append(gm)
-            won.append(w)
-        rounds.append(games)
-        alive = byes + won
-    while len(alive) > 1:
+    while len(slots) > 1:
         games, nxt = [], []
-        for i in range(len(alive) // 2):
-            w, gm = play(alive[i], alive[len(alive) - 1 - i])   # 1 v lowest, 2 v next
+        for i in range(0, len(slots), 2):
+            a, b = slots[i], slots[i + 1]
+            if a is None or b is None:
+                nxt.append(a or b)      # a missing slot is the top seed's bye
+                continue
+            w, gm = play(a, b)
             games.append(gm)
             nxt.append(w)
-        if len(alive) % 2:
-            nxt.append(alive[len(alive) // 2])
-        rounds.append(games)
-        alive = nxt
-    nxt = alive
-    return {"champion": nxt[0].school.name if nxt else None,
+        if games:
+            rounds.append(games)
+        slots = nxt
+    return {"champion": slots[0].school.name if slots else None,
             "rounds": rounds, "field": [t.school.name for t in field],
             "seeds": {t.school.name: i + 1 for i, t in enumerate(field)}}
 
