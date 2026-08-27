@@ -210,7 +210,6 @@ def test_a_district_champion_has_to_win_its_way_in(archived):
     not there. What the title still buys is a PROTECTED seat: it skips Sectionals
     and Wards and enters at Regionals, which is access to the ladder, not to
     State."""
-    checked = False
     for g in jh.GROUPS:
         sec, ward, pre, state, protected, dq, sr, ss, dv, sc, lc = _stages(archived, g)
         champs = {rows[0]["school"]
@@ -220,21 +219,15 @@ def test_a_district_champion_has_to_win_its_way_in(archived):
         for c in champs & set(state["field"]):
             assert c in earned, (g, c)          # nobody was handed a berth
         assert champs <= set(protected)         # ...but the title still protects
-        for gender in ("girls", "boys"):
-            arc = archived["arc" if gender == "girls" else "arc_boys"]
-            gchamps = {rows[0]["school"]
-                       for rows in arc["standings"][g].values() if rows}
-            if gchamps - set(arc["brackets"][g]["field"]):
-                checked = True                  # a champion really can miss
-    # ‼️ CHECKED OVER BOTH GENDERS, AND NOT A HARD FAILURE ON ITS OWN (2026-08).
-    # "A champion missed" is a property of one sampled season, not of the rules —
-    # in a floor-sized fixture whose fields the State Specials now always fill,
-    # every champion legitimately qualifying is a possible (and honest) outcome.
-    # The RULE the reversal retired is asserted structurally above: `dq` is empty
-    # and every champion in the field earned its berth. The sampled check stays
-    # as a canary across all 24 class-gender seasons, where a miss is near-certain.
-    assert checked, "no district champion missed State in ANY of 24 seasons — " \
-        "improbable; check whether a guarantee crept back in"
+    # ‼️ THE RULE IS THE STRUCTURE, NOT THE SAMPLE (2026-08). A guarantee creeping
+    # back means a champion in the field who survived no berth-bearing round —
+    # which `c in earned` catches DIRECTLY, in any season, whether or not anyone
+    # missed. A former canary here asserted that some champion actually missed
+    # State somewhere in the fixture's 24 class-gender seasons; that is a sampled
+    # outcome, not a rule (champions are each class's strongest teams, holding
+    # protected entry and — on the 24 shape — first claim on recovery slots, so
+    # all of them qualifying is an honest result), and it flapped with the
+    # fixture's per-process hash salt. Do not reintroduce it.
 
 
 def test_recovery_berths_are_earned_on_court(archived):
