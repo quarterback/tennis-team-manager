@@ -1425,6 +1425,24 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     an INDEX of the page, not a copy of it. `.jh-award` is a fixed-column CSS grid —
     **always emit the rank cell**, empty or not, or every unnumbered team shifts a
     column. Data-bearing coverage lives in `tests/test_jhsaa_toc.py`.
+- **‼️ THE BEST SEASON IS THE FURTHEST RUN, NOT THE BEST RECORD (owner rule 2026-08,
+  `world.jhsaa_season_depth`).** The program page ranked "Best season" on win
+  percentage, so a 28-4 that lost in the State Octofinals outranked a 22-7 that
+  reached the State semifinal — and the semifinal is plainly the better year. The
+  measure is the postseason FINISH, tiered TOC > State > the road to it > no
+  postseason, with the RECORD only breaking a tie between two runs that got equally
+  far. A State finish is `state_place` (teams still alive, 1 = champion), NEGATED —
+  never a string compared to a label; a pre-State exit ranks on `world.jh_road_ladder`,
+  whose names come from `jhsaa`'s own constants for the `jhsaa_title_stages` reason (a
+  renamed rung would silently stop ranking). **`worst` was deleted** (owner: "nobody
+  wants to see that"), and so was the whole season-summary tile strip: it restated the
+  identity block's record/district/finish and then the Program panel's all-time record
+  and state trips — **the identity block owns THIS season, the Program panel owns the
+  career, and nothing owns both**. The panel counts ROAD TO STATE units won
+  (`road_titles`, which subtracts the district title `unit_wins` leads with) and
+  INDIVIDUAL STATE CHAMPS — one per FLIGHT, so a doubles title is one champion and not
+  two. `tests/test_jhsaa_best_season.py` pins the order as a pure fold; it needs no
+  archived season.
 - **A classification's rankings have a PAGE, not a rail panel** (`/jhsaa/rankings`,
   `jhsaa_rankings_view`). `jhsaa_group_ranking` always returned every program in the
   class; the hub shows the first twelve of it beside the bracket and links to the rest.

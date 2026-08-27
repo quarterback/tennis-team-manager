@@ -5308,6 +5308,56 @@ def jhsaa_school_seasons(world_id: int, gender: str, school: str) -> list[dict]:
     return out
 
 
+def jh_road_ladder() -> tuple[str, ...]:
+    """The road to State, shallowest rung first — the ORDER `jhsaa_season_depth`
+    ranks a pre-State exit on.
+
+    ‼️ THE NAMES COME FROM `jhsaa`'S OWN CONSTANTS, never typed here — the same rule
+    `jhsaa_title_stages` runs on. A rung's archived `round_names` is what a finish is
+    read off (`jhsaa_postseason_result`), and `DIVISIONAL_NAME` has moved once
+    already: a typed copy would silently stop matching and every Divisionals run
+    would rank as though the program had not played a postseason at all.
+
+    It is the exact REVERSE of the walk in `jhsaa_postseason_result`, which tries the
+    deepest rung first — one ladder, read from either end."""
+    from . import jhsaa as _jh
+    return ("Areas", "Sectionals", "Wards", "Regionals", "Zonals",
+            "Super Regionals", "Semi-State", _jh.DIVISIONAL_NAME,
+            _jh.SEMI_CONFERENCE_NAME, _jh.CONFERENCE_NAME)
+
+
+def jhsaa_season_depth(row: dict) -> tuple:
+    """HOW FAR a season went, as a sortable key — bigger is further.
+
+    ‼️ A RECORD IS NOT A SEASON'S RESULT (owner rule 2026-08). "Best season" used to
+    be the best win percentage, which ranked a 28-4 that lost in the Octofinals above
+    a 22-7 that reached the State semifinal — and the semifinal is plainly the better
+    year. So the measure is the postseason FINISH, and the record is only the
+    tie-break ("if the measures are tied, then the record counts").
+
+    The tiers are the sport's own rungs: the Tournament of Champions is above the
+    State draw, the State draw is above the road to it, and inside each the deeper
+    run wins. A State place is a COUNT OF TEAMS STILL ALIVE (1 = champion), so it is
+    negated rather than compared to a label — the `state_place <= 4` rule, one level
+    up. A road exit ranks on `jh_road_ladder`; a stage nobody has heard of ranks at
+    the bottom of its tier rather than raising, because an archive written before a
+    rung existed is a real thing to render."""
+    if row.get("made_toc"):
+        # Only a classification champion is in the field, so every TOC entrant is
+        # also a State champion — the tier exists to separate the six of them.
+        tier, level = 3, -(row.get("toc_place") or 99)
+    elif row.get("made_state"):
+        tier, level = 2, -(row.get("state_place") or 99)
+    elif row.get("state_finish"):
+        ladder = jh_road_ladder()
+        tier = 1
+        level = ladder.index(row["state_finish"]) if row["state_finish"] in ladder else -1
+    else:
+        tier, level = 0, 0
+    w, l = row.get("wins", 0), row.get("losses", 0)
+    return (tier, level, w / (w + l) if w + l else 0.0, w)
+
+
 def jhsaa_program_totals(seasons: list[dict]) -> dict:
     """The career side of a program's history: what the ledger ADDS UP TO.
 
@@ -5326,8 +5376,6 @@ def jhsaa_program_totals(seasons: list[dict]) -> dict:
     for s in asc:
         streak = streak + 1 if s["made_state"] else 0
         best_streak = max(best_streak, streak)
-    by_pct = sorted(played, key=lambda s: (s["wins"] / (s["wins"] + s["losses"]),
-                                           s["wins"]))
     groups = [s["group"] for s in asc if s["group"]]
     return {
         "seasons": len(seasons), "wins": wins, "losses": losses,
@@ -5358,8 +5406,17 @@ def jhsaa_program_totals(seasons: list[dict]) -> dict:
         "last_title": titles[0] if titles else None,           # seasons are newest-first
         "last_state": states[0] if states else None,
         "state_streak": streak, "longest_state_streak": best_streak,
-        "best": by_pct[-1] if by_pct else None,
-        "worst": by_pct[0] if by_pct else None,
+        # ‼️ THE BEST SEASON IS THE FURTHEST RUN, not the best record — see
+        # `jhsaa_season_depth`. There is no `worst` beside it any more (owner rule
+        # 2026-08: "nobody wants to see that") — a program page is a record of what a
+        # program achieved, and the ledger below shows every losing season anyway.
+        "best": max(played, key=jhsaa_season_depth) if played else None,
+        # ROAD TO STATE titles — the units a program won on the way (Areas through
+        # the Conference). `unit_wins` leads with the DISTRICT title when there is
+        # one (owner rule 2027-08), and that is counted separately above, so it is
+        # subtracted here rather than the list being re-derived.
+        "road_titles": sum(len(s["unit_wins"]) - (1 if s["district_title"] else 0)
+                           for s in seasons),
         # Classifications the program has played in, oldest first — a program that has
         # moved up or down shows more than one, which is the question the ledger exists
         # to answer ("have they changed class?").
