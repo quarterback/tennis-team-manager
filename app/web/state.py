@@ -3858,7 +3858,13 @@ def _jh_split_state(br: dict) -> tuple[dict, dict | None]:
     k = len(names)
     seed_map = _jh_seeds(br)
     pre, main = list(rounds[:k]), list(rounds[k:])
-    qual_field = [t for gm in pre[0] for t in (gm["home"], gm["away"])]
+    # ‼️ EVERY PRELIMINARY ROUND, NOT JUST THE FIRST. A team that byed the opening
+    # Qualies round appears only in the SECOND one, so reading `pre[0]` alone filed
+    # it with the double-bye champions — the main draw's `field` then over-counted
+    # and every round after it was named off a team count that never existed
+    # ("Round of 20", then Octofinals twice). It shows up whenever the field is short
+    # of its table size, which is exactly when a bracket is already worth checking.
+    qual_field = [t for rd in pre for gm in rd for t in (gm["home"], gm["away"])]
     survivors = [gm["winner"] for gm in pre[-1]]
     champs = [t for t in (br.get("field") or ()) if t not in set(qual_field)]
     qual = {"field": qual_field, "rounds": pre, "round_names": list(names),
@@ -4512,9 +4518,12 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
     # numbers). Empty on archives from before the ladder existed.
     stages = []
     # The RECOVERY rounds sit closest to State, so their folds come first
-    # (the list is reverse-chronological: the stage that fed State on top).
-    for key in ("conference", "semi_conference", "divisional", "semi_state",
-                "super_regional"):
+    # (the list is reverse-chronological: the stage that fed State on top) —
+    # and the STATE SPECIALS are the road's required final round (owner rule
+    # 2026-08: every Conference winner plays a challenger for the berth), so
+    # their fold tops the list. Its "byes" are the dry-pool direct admits.
+    for key in ("state_special", "conference", "semi_conference", "divisional",
+                "semi_state", "super_regional"):
         d = (arc.get(key) or {}).get(grp) or {}
         if d.get("rounds") and d["rounds"][0]:
             # Recovery rounds are BYELESS BY CONSTRUCTION — each pairs its entire
@@ -4645,13 +4654,15 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     dv_seeds = _jh_seeds((arc or {}).get("divisional", {}).get(sc.group) or {})
     sc_seeds = _jh_seeds((arc or {}).get("semi_conference", {}).get(sc.group) or {})
     cf_seeds = _jh_seeds((arc or {}).get("conference", {}).get(sc.group) or {})
+    sp_seeds = _jh_seeds((arc or {}).get("state_special", {}).get(sc.group) or {})
     # A non-district dual is an INVITATIONAL (owner rule 2027-08) — that is what the
     # association calls the duals a program arranges outside its league, and the card
     # should say what they are rather than what they are not. "Non-district" is still
     # the right word for the SCHEDULING rule (the allowance, the matcher, the district
     # guardrail); it was only ever wrong as a label on a match.
     _KIND = {"showcase_pod": "SHOWCASE", "showcase_tiered": "SHOWCASE",
-             "toc": "TOC", "state": "STATE", "conference": "CONFERENCE",
+             "toc": "TOC", "state": "STATE",
+             "state_special": "STATE SPECIAL", "conference": "CONFERENCE",
              "semi_conference": "SEMI-CONFERENCE",
              "divisional": "DIVISIONAL", "semi_state": "SEMI-STATE",
              "super_regional": "SUPER REGIONAL", "zonal": "ZONAL",
@@ -4698,7 +4709,8 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     state_round = _round_of(br)
     toc_round = _round_of((arc or {}).get("toc") or {})
 
-    _SEEDS = {"TOC": toc_seeds, "STATE": seeds, "CONFERENCE": cf_seeds,
+    _SEEDS = {"TOC": toc_seeds, "STATE": seeds,
+              "STATE SPECIAL": sp_seeds, "CONFERENCE": cf_seeds,
               "SEMI-CONFERENCE": sc_seeds,
               "DIVISIONAL": dv_seeds,
               "SEMI-STATE": ss_seeds,

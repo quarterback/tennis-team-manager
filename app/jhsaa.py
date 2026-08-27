@@ -147,7 +147,7 @@ EARLY_FORMAT_PHASE = "early"
 # the second-chance ladder that earns the non-automatic State berths on court.
 POSTSEASON = ("sectional", "ward", "regional", "zonal",
               "super_regional", "semi_state", "divisional", "semi_conference",
-              "conference", "state", "toc")
+              "conference", "state_special", "state", "toc")
 
 # The mid-season MATCH SHOWCASES (owner spec 2027-08) — see the INVITATIONALS section
 # below for the scheduling rules. Two phases rather than one, because the phase is the
@@ -787,7 +787,18 @@ def sponsor_floor(group: str) -> int:
     if state_field_size(group) == 24:
         return PROTECTED + WARD_FIELD
     shape = recovery_shape(group)
-    return WARD_FIELD + shape["semi_conference"] if shape["conference"] else 0
+    # ‼️ THE WARD GATE IS A FLOOR OF ITS OWN (2026-08). The body-reservoir term
+    # alone returned 44 for a 32-field class — but 44 sponsors minus PROTECTED
+    # leaves 28 Sectional entrants for a 32-team Ward field, so Wards ran SHORT
+    # and an odd field silently sat a team every round after. `run_sectional`
+    # cannot manufacture entrants; a class must clear BOTH gates: enough sponsors
+    # to fill Wards (PROTECTED + WARD_FIELD) and enough eliminated bodies for the
+    # Semi-Conference. The 40-field's 76 already dominated the ward gate, which
+    # is why the miss was invisible until the 32 retune created a shape where the
+    # reservoir term was the smaller of the two.
+    if not shape["conference"]:
+        return 0
+    return max(PROTECTED + WARD_FIELD, WARD_FIELD + shape["semi_conference"])
 
 
 # --- talent ------------------------------------------------------------------
@@ -4331,14 +4342,34 @@ CONFERENCE_NAME = "Conference"
 #: conditional on the same trigger as the Conference — dormant wherever the ladder's
 #: own losers already fill the field (the 24-field classes).
 SEMI_CONFERENCE_NAME = "Semi-Conference"
+#: ‼️ THE REQUIRED FINAL ROUND OF THE ROAD (owner rule 2026-08, superseding the
+#: reconciliation-only design). Conference winners no longer qualify for State
+#: directly — the data showed losing-record teams reaching the playoffs through
+#: the Conference's automatic access — they advance to STATE SPECIALS, where each
+#: one must beat a CHALLENGER: the best remaining REGULAR-SEASON teams drawn from
+#: the ENTIRE classification (anyone not already qualified and not a Conference
+#: winner, wherever or whether they were eliminated). `bids = len(conference_
+#: winners)`, one dual per bid, winners qualify, losers finish at Specials — so
+#: the arithmetic closes every field size by construction. See
+#: `_state_specials_round`; `_state_specials` remains the emergency
+#: reconciliation behind it, only if the played round still leaves State short.
+STATE_SPECIAL_NAME = "State Specials"
+#: The FINISH a Specials loser carries (owner, 2026-08: "a specials loser ends at
+#: Specials, not State Specials") — the event heading keeps the full name; the
+#: ledger/finish string is the short one, the way "Semi-State" is not "the
+#: Semi-State Round".
+STATE_SPECIAL_FINISH = "Specials"
+
 _RECOVERY_NAMES = {"super_regional": "Super Regionals", "semi_state": "Semi-State",
                    "divisional": DIVISIONAL_NAME,
                    "semi_conference": SEMI_CONFERENCE_NAME,
-                   "conference": CONFERENCE_NAME}
+                   "conference": CONFERENCE_NAME,
+                   "state_special": STATE_SPECIAL_NAME}
 _RECOVERY_UNITS = {"super_regional": "Super Regional", "semi_state": "Semi-State",
                    "divisional": "Division",
                    "semi_conference": SEMI_CONFERENCE_NAME,
-                   "conference": "Conference"}
+                   "conference": "Conference",
+                   "state_special": "State Special"}
 
 
 def renumber_divisions(season: dict, start: int = 1) -> int:
@@ -4370,6 +4401,27 @@ def renumber_divisions(season: dict, start: int = 1) -> int:
         for games in dv.get("rounds") or ():
             for gm in games:
                 gm["unit"] = f"Division {n}"
+                n += 1
+    return n
+
+
+def renumber_state_specials(season: dict, start: int = 1) -> int:
+    """Number this gender's State Special duals and return the next number.
+
+    ‼️ NUMBERED STATEWIDE FOR THE SEASON, STARTING AT 1 (owner rule 2026-08) — the
+    Divisions' pattern exactly, and for the Divisions' reason: how many there are
+    depends on how many berths the road failed to deliver that year (usually
+    zero), so the numbers are assigned once both genders are known, never inside
+    the round that plays them. Same order: girls first, then boys, classifications
+    bottom-up, continuing across both.
+
+    Idempotent: recomputed and overwritten, so a re-run cannot double-count."""
+    n = start
+    for g in reversed(GROUPS):
+        sp = ((season.get("groups") or {}).get(g) or {}).get("state_special") or {}
+        for games in sp.get("rounds") or ():
+            for gm in games:
+                gm["unit"] = f"State Special {n}"
                 n += 1
     return n
 
@@ -4876,6 +4928,178 @@ def _recovery_24(group: str, by_name: dict, prestate: dict, zonal_champs: list,
             qualifiers, district_qualifiers, atr_used)
 
 
+def _reg_season_record(t: TeamSeason) -> tuple[int, int]:
+    """Regular-season W-L ONLY (owner rule 2026-08): every dual played outside the
+    `POSTSEASON` phases — district play, invitationals, showcases, the early
+    window. The State Specials challenger ranking must not see postseason results:
+    the round exists because Conference access was letting losing-record teams in,
+    and a challenger's claim is what they did across the season, not how far the
+    bracket happened to carry them."""
+    w = sum(1 for e in t.schedule
+            if e.get("phase") not in POSTSEASON and e.get("won"))
+    l = sum(1 for e in t.schedule
+            if e.get("phase") not in POSTSEASON and not e.get("won"))
+    return w, l
+
+
+def _challenger_key(power: dict):
+    """The State Specials challenger ranking (owner rule 2026-08), best first:
+    regular-season winning percentage, then regular-season wins, then ATR as the
+    final tiebreak (with `_atr_key`'s name tiebreak keeping it reproducible)."""
+    def key(t: TeamSeason):
+        w, l = _reg_season_record(t)
+        pct = w / (w + l) if w + l else 0.0
+        return (-pct, -w) + _atr_key(power)(t)
+    return key
+
+
+def _state_specials_round(group: str, by_name: dict, conference_winners: list,
+                          qualified: set[str], power: dict, *,
+                          seed: int) -> tuple[dict, list]:
+    """‼️ THE REQUIRED FINAL ROUND OF THE ROAD (owner rule 2026-08). Conference
+    winners do NOT qualify for State — they advance here and must beat a
+    challenger for the berth. The rule, exactly:
+
+        specials_bids = len(conference_winners)
+        challengers   = the `specials_bids` best REGULAR-SEASON teams in the
+                        classification not already qualified and not Conference
+                        winners — drawn from the ENTIRE classification, wherever
+                        (or whether) they were eliminated
+        one dual per bid; every winner qualifies; every loser is eliminated
+
+    Bids derive from the actual Conference winners, so the arithmetic closes any
+    field size by construction: the 32-shape's 8 Zonal + 12 Semi-State + 6
+    Divisional + 6 Specials winners = 32; the 40's Conference sends 14; the fixed
+    24's sends 4. It knows nothing about 24, 32 or 40.
+
+    Pairing is SEEDED, best-vs-worst (owner rule 2026-08): the best-ranked
+    challenger plays the weakest Conference winner by ATR. The Conference winner
+    hosts. ‼️ Deliberately NO rematch repair here — the pairing is the seeding,
+    and a Conference winner drawing the strong team it beat last round is the
+    point of the exercise, not a defect to rotate away.
+
+    A challenger pool smaller than the bids (a tiny test world — statewide it is
+    every non-qualified team, hundreds deep) direct-admits the unpaired
+    Conference winners with a loud warning: a short State field is the one
+    outcome worse than an uncontested berth."""
+    empty = {"field": [], "rounds": [[]], "survivors": [],
+             "round_names": [STATE_SPECIAL_NAME], "head": []}
+    cw = list(conference_winners)
+    if not cw:
+        return empty, []
+    excluded = set(qualified) | {t.school.name for t in cw}
+    pool = [t for n, t in by_name.items() if n not in excluded]
+    challengers = sorted(pool, key=_challenger_key(power))[:len(cw)]
+    # weakest Conference winner first, so zip pairs them with the BEST challenger
+    cw_weak_first = sorted(cw, key=_atr_key(power))[::-1]
+    head = cw_weak_first[len(challengers):]        # unpaired: dry pool only
+    if head:
+        log.warning("JHSAA %s State Specials short of challengers: %d of %d "
+                    "Conference winner(s) admitted unopposed (pool %d)", group,
+                    len(head), len(cw), len(pool))
+    rng = random.Random(seed)
+    games, winners = [], []
+    for n, (ch, w_) in enumerate(zip(challengers, cw_weak_first)):
+        res = play_dual(w_, ch, seed=rng.randrange(1 << 30),
+                        phase="state_special")
+        win = w_ if res.winner == 0 else ch
+        games.append({"home": w_.school.name, "away": ch.school.name,
+                      "home_points": res.home_points,
+                      "away_points": res.away_points,
+                      "winner": win.school.name,
+                      "unit": f"{_RECOVERY_UNITS['state_special']} {n + 1}"})
+        winners.append(win)
+    field = [t.school.name for t in cw_weak_first] \
+        + [t.school.name for t in challengers]
+    return ({"field": field, "rounds": [games],
+             "survivors": [t.school.name for t in head]
+             + [t.school.name for t in winners],
+             "round_names": [STATE_SPECIAL_NAME],
+             "head": [t.school.name for t in head]}, head + winners)
+
+
+def _state_specials(group: str, by_name: dict, stages: list[dict],
+                    taken: set[str], power: dict, *,
+                    seed: int) -> tuple[dict, list]:
+    """‼️ THE EMERGENCY RECONCILIATION (owner rule 2026-08), field-size agnostic.
+
+    Since the Conference-winners rule, the PLAYED State Specials round is
+    `_state_specials_round` above; this remains behind it for the one case the
+    spec keeps it for — the completed round still leaving the State field short
+    (the Conference itself under-delivered winners, or a tiny world ran dry).
+
+    The normal Road to State should fill the field; this round exists only when it
+    does not. The rule is exactly the owner's:
+
+        missing = STATE_FIELD[group] - qualified
+        if missing > 0:
+            take 2 × missing eligible eliminated teams
+            play `missing` State Specials duals
+            the winners take the missing berths
+
+    It knows NOTHING about 24, 32 or 40 — 28-of-32 is 8 teams playing for 4 bids,
+    35-of-40 is 10 for 5, and a future 64 would reconcile the same way. State never
+    has to care why a team qualified, and `run_state` never again turns missing
+    qualifiers into byes (the fault that shipped: a 9A bracket with four teams
+    advancing unplayed round after round — the ladder had delivered 20 of its 24
+    earned berths and the draw padded the difference).
+
+    SELECTION walks the postseason BACKWARD by latest elimination — Conference
+    losers first, then Semi-Conference, and only then the earlier rounds — with ATR
+    ordering teams WITHIN a tier, never across one (`stages` is ladder order,
+    shallowest first, and a team's tier is the deepest stage it appeared in). ATR is
+    the recovery ladder's own body-ranking rule: this decides who gets one final
+    chance to play for a berth, not a seed.
+
+    ‼️ THE POOL CAN GENUINELY RUN DRY only when the classification has fewer
+    postseason teams than the field wants (a broken fixture, or a two-district test
+    world). Then the best `2·missing − pool` enter DIRECTLY with a loud warning —
+    the `sc_head` idiom — because a short State field is the one outcome worse than
+    an unearned entry. At full association size the pool is always deep enough and
+    the head is empty."""
+    target = state_field_size(group)
+    missing = target - len(taken)
+    empty = {"field": [], "rounds": [[]], "survivors": [],
+             "round_names": [STATE_SPECIAL_NAME]}
+    if missing <= 0:
+        return empty, []
+    # ‼️ FIRING AT ALL IS A SIGNAL, so it logs every time (owner, 2026-08): the
+    # Conference is supposed to fill the field, and in a healthy class the
+    # arithmetic cannot come up short. Once every several years — membership,
+    # parity and qualification lining up badly — is the round doing its job;
+    # firing regularly means an upstream rung is losing berths (a candidate pool
+    # built too small, an eligibility walk skipping a loser tier, a parity trim
+    # eating a bid) and THAT is what needs diagnosing, not this.
+    log.warning("JHSAA %s road delivered %d of %d — State Specials convene for "
+                "%d berth(s)", group, len(taken), target, missing)
+    depth: dict[str, int] = {}
+    for i, arc in enumerate(stages):
+        for rd in (arc or {}).get("rounds") or ():
+            for gm in rd:
+                for nm in (gm.get("home"), gm.get("away")):
+                    if nm and nm in by_name and nm not in taken:
+                        depth[nm] = i          # ladder order: later stage wins
+    ranked = sorted(depth, key=lambda nm: (-depth[nm],) + _atr_key(power)(by_name[nm]))
+    pool = [by_name[nm] for nm in ranked[:2 * missing]]
+    # d direct entries leave pool-d playing for missing-d bids: d = 2·missing − pool.
+    direct = max(0, 2 * missing - len(pool))
+    head, playing = pool[:direct], pool[direct:]
+    if head:
+        log.warning("JHSAA %s State Specials short of bodies: %d of %d berths "
+                    "granted directly (pool %d)", group, len(head), missing,
+                    len(pool))
+    rng = random.Random(seed)
+    if len(playing) >= 2:
+        arc, winners = _recovery_round(playing, phase="state_special", rng=rng)
+    else:
+        arc, winners = dict(empty), []
+        head += playing                        # a lone leftover cannot pair
+    arc["field"] = [t.school.name for t in head] + arc["field"]
+    arc["survivors"] = [t.school.name for t in head] + arc["survivors"]
+    arc["head"] = [t.school.name for t in head]
+    return arc, head + winners
+
+
 def run_state(field: list[TeamSeason], *, seed: int, champions: int = 8) -> dict:
     """The State Tournament: a fresh seeded draw (24 teams in the three largest
     classes, 40 elsewhere — Zonal champions first, then the district-guarantee and
@@ -4933,7 +5157,27 @@ def run_state(field: list[TeamSeason], *, seed: int, champions: int = 8) -> dict
     while size < len(field):
         size *= 2
 
-    if len(field) > 2 * c and size - len(field) != c:
+    # ‼️ A FIELD THAT FITS ONE DRAW PLAYS ONE DRAW. The qualifying expansion exists
+    # only because a 40 will not fit a bracket whose byes are the champions'
+    # privilege — it is not a shape to reach for whenever the field is not exactly
+    # 24. The test used to be `size - len(field) != c`, which is TRUE of a 32-team
+    # field (a bracket exactly full, zero byes) and of every short field, so five
+    # classifications and every under-filled draw were sent through a Qualifiers
+    # Round they should never have played.
+    #
+    # A 32 is straightforward and needs nothing added: **32 → 16 → 8 → 4 → 2 with
+    # the Zonal champions as the top eight SEEDS** (owner, 2026-08 — "32 can happen
+    # with no byes… people just play"). The champions' privilege is a SEEDING
+    # guarantee; the eight byes of a 24-field are a consequence of that field's
+    # shape, not the rule itself (`test_zonal_champions_are_the_top_seeds_byes_or_not`
+    # pins both shapes).
+    #
+    # So the condition is the rule stated directly: expand only when the padding
+    # byes would OUTNUMBER the champions, i.e. when they could not all be the
+    # champions' own. 24 → 8 byes, plain. 32 → 0 byes, plain. 28 → 4 byes to the top
+    # four seeds, plain. 40 → 24 byes in a 64 bracket, and only then does the
+    # Qualifiers Round earn its place.
+    if len(field) > 2 * c and size - len(field) > c:
         # THE EXPANDED FIELD. The top `c` seeds are the Zonal champions and sit
         # out the whole preliminary — the double bye; everyone else plays the
         # Qualifiers Round and then the First Round, and the `c` who survive
@@ -4978,9 +5222,9 @@ def run_state(field: list[TeamSeason], *, seed: int, champions: int = 8) -> dict
 def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
     """The TOURNAMENT OF CHAMPIONS — one dual-team champion for all of Jefferson.
 
-    ONE champion per classification and nobody else — nine teams now that every
-    classification, including 1A and 2A, crowns separately. The field is not a
-    `FIELD` size and never has been: it is exactly
+    ONE champion per classification and nobody else — twelve teams now that every
+    classification, the Great Basin groups included, crowns separately. The field
+    is not a `FIELD` size and never has been: it is exactly
     `len(GROUPS)`, and it grows or shrinks only when the association adds or merges a
     championship. (`FIELD` is the STATE tournament's bracket size per classification and
     has nothing to do with this event.)
@@ -4990,9 +5234,18 @@ def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
     rated above the 6A one is the higher seed, which is the whole reason the event is
     interesting.
 
-    Six into a four-team semifinal, so the two lowest-rated pairs play in and the top two
-    sit out; five would give one play-in and three byes. Then the semifinals and the
-    final, under the state format (1S/4D) like the events that fed it.
+    ‼️ A REAL FIXED BRACKET ON STRICT SEED LINES (owner rule 2026-08 — "it's not
+    complicated"). The field goes onto the standard seed-line slots of the next
+    power of two, byes fall to the top seeds because their round-one opponents
+    (the highest slot numbers) do not exist, and the bracket is then FIXED: a
+    winner takes the beaten seed's LINE, and no round is ever re-paired ("if 11
+    beats 6, they take the 6-seed line"). So 12 teams is exactly 5v12 · 6v11 ·
+    7v10 · 8v9 with seeds 1-4 sitting; a 14 would add 4v13 and 3v14; a 15 would
+    put 2 against 15; a 9 is the lone 8v9 game whose winner meets the 1 seed —
+    every one of those is the SAME rule at a different count, never a special
+    case. This replaced a two-tier "cut to eight, then cut to four" that
+    re-paired the survivors best-vs-worst between rounds — reseeding by another
+    name, which no real dual-team bracket does.
 
     Returned in the same shape `run_state` uses, so it renders on the shared bracket tree
     with no new geometry."""
@@ -5012,62 +5265,30 @@ def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
                      "home_points": res.home_points, "away_points": res.away_points,
                      "winner": win.school.name}
 
-    # ‼️ A TWO-TIER CUT FOR AN OVERSIZED FIELD (owner rule 2027-08 through
-    # 2027-08, eleven classifications now that Great Basin Group 1/Group 2
-    # joined the ladder). This used to be a CHAINED play-in — one game at a
-    # time, `alive[-2]` vs `alive[-1]`, winner appended to the END of the
-    # list — which was only ever exercised at exactly nine classifications
-    # (a single 8-vs-9 game). Once Group 1/2 pushed the field past ten, the
-    # chain broke: with 11 teams it played 10v11, then 9-vs-that-winner, then
-    # 8-vs-THAT-winner — seed 8 fighting through three sequential do-or-die
-    # games while seeds 1-7 sat idle, and each single game landing in `rounds`
-    # as its own one-game "round" (wrecking the bracket renderer's assumption
-    # that a round is a set of PARALLEL games). Fixed the same way real
-    # brackets seed a play-in round: cut to eight in ONE parallel round,
-    # generalising the cut-to-four block below one tier up (8 plays 9, 7 plays
-    # 11, 6 plays 10 for an 11-team field — the top five sit out), THEN run
-    # the cut-to-four Octofinals on the resulting eight. At nine teams this
-    # still reduces to the single 8-vs-9 game it always was.
+    # The standard seed-line order: seed s meets seed (m+1-s) in round one, and
+    # the quarters/halves nest so 1 and 2 can only meet in the final. For 16:
+    # (1,16)(8,9)(4,13)(5,12) | (2,15)(7,10)(3,14)(6,11).
+    order = [1]
+    while len(order) < len(field):
+        m = 2 * len(order)
+        order = [s for a in order for s in (a, m + 1 - a)]
+    slots: list[TeamSeason | None] = [
+        field[s - 1] if s <= len(field) else None for s in order]
     rounds: list[list[dict]] = []
-    alive = list(field)
-    if len(alive) > 8:
-        n_in = 2 * (len(alive) - 8)
-        block, byes = alive[-n_in:], alive[:-n_in]
-        games, won = [], []
-        for i in range(n_in // 2):
-            w, gm = play(block[i], block[n_in - 1 - i])
-            games.append(gm)
-            won.append(w)
-        rounds.append(games)
-        alive = byes + won
-
-    # Cut to four, then semifinals, then the final: 6 -> 4 -> 2 -> 1. The play-in
-    # takes the bottom 2*(n-4) seeds and pairs them highest-against-lowest, so at
-    # six the top two sit out while 3v6 and 4v5 play, and at five only 4v5 does. Playing
-    # a single play-in regardless left five teams standing and produced a 6 -> 5 -> 3 -> 1
-    # ladder — a three-team "semifinal" and a bye nobody earned.
-    if len(alive) > 4:
-        n_in = 2 * (len(alive) - 4)
-        block, byes = alive[-n_in:], alive[:-n_in]
-        games, won = [], []
-        for i in range(n_in // 2):
-            w, gm = play(block[i], block[n_in - 1 - i])
-            games.append(gm)
-            won.append(w)
-        rounds.append(games)
-        alive = byes + won
-    while len(alive) > 1:
+    while len(slots) > 1:
         games, nxt = [], []
-        for i in range(len(alive) // 2):
-            w, gm = play(alive[i], alive[len(alive) - 1 - i])   # 1 v lowest, 2 v next
+        for i in range(0, len(slots), 2):
+            a, b = slots[i], slots[i + 1]
+            if a is None or b is None:
+                nxt.append(a or b)      # a missing slot is the top seed's bye
+                continue
+            w, gm = play(a, b)
             games.append(gm)
             nxt.append(w)
-        if len(alive) % 2:
-            nxt.append(alive[len(alive) // 2])
-        rounds.append(games)
-        alive = nxt
-    nxt = alive
-    return {"champion": nxt[0].school.name if nxt else None,
+        if games:
+            rounds.append(games)
+        slots = nxt
+    return {"champion": slots[0].school.name if slots else None,
             "rounds": rounds, "field": [t.school.name for t in field],
             "seeds": {t.school.name: i + 1 for i, t in enumerate(field)}}
 
@@ -5855,11 +6076,69 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
         conferences[group] = cf
         recovery_q[group], district_q[group] = quals, dq
         atr_snap.update(atr_used)
-    final_power = power_index(every_team, prestate=True)
-    states = {}
+    states, state_specials = {}, {}
+    state_pools: dict[str, list] = {}
     for group in GROUPS:
         by_name_g = {t.school.name: t
                      for ts in by_group[group].values() for t in ts}
+        # ‼️ CONFERENCE WINNERS DO NOT QUALIFY (owner rule 2026-08): they advance
+        # to the STATE SPECIALS and must beat a challenger — the best remaining
+        # regular-season teams from the WHOLE classification — for the berth.
+        # Every other berth-bearing round is untouched: Zonal champions,
+        # Semi-State and Divisional qualifiers (Super Regional winners on the
+        # fixed 24) enter State automatically, exactly as before. Bids derive
+        # from the actual Conference winners, so the count closes every field
+        # size by construction (a Conference winner's seat became a Specials
+        # dual, one-for-one).
+        zc_names = {t.school.name for t in zonal_champs[group]}
+        cw_names = set(conferences[group].get("survivors") or ())
+        cw = [t for t in recovery_q[group] if t.school.name in cw_names]
+        auto = [t for t in recovery_q[group] if t.school.name not in cw_names]
+        sp_arc, sp_winners = _state_specials_round(
+            group, by_name_g, cw,
+            zc_names | {t.school.name for t in auto},
+            post_power, seed=seed + hash(group) % 9973 + 4409)
+        rest = auto + sp_winners
+        if len(zc_names) + len(rest) < state_field_size(group):
+            # ‼️ THE EMERGENCY RECONCILIATION, kept ONLY for a played Specials
+            # round that still leaves State short (the Conference itself
+            # under-delivered winners, or a tiny world ran dry) — the original
+            # 2·missing-latest-eliminated rule, over a pool that now includes
+            # the Specials' own losers. Merged into the ONE state_special arc:
+            # a phase is the archive's identity for an event, and this is the
+            # same event finishing its job.
+            e_arc, e_winners = _state_specials(
+                group, by_name_g,
+                [sectionals[group], wards[group], prestates[group],
+                 super_regionals[group], semi_states[group], divisionals[group],
+                 semi_conferences[group], conferences[group], sp_arc],
+                zc_names | {t.school.name for t in rest},
+                post_power, seed=seed + hash(group) % 9973 + 6733)
+            sp_arc = {"field": sp_arc["field"] + e_arc["field"],
+                      "rounds": [sp_arc["rounds"][0] + e_arc["rounds"][0]],
+                      "survivors": sp_arc["survivors"] + e_arc["survivors"],
+                      "round_names": [STATE_SPECIAL_NAME],
+                      "head": (sp_arc.get("head") or [])
+                      + (e_arc.get("head") or [])}
+            rest = rest + e_winners
+        state_specials[group] = sp_arc
+        state_pools[group] = rest
+        if len(zc_names) + len(rest) != state_field_size(group):
+            # Only a pool that genuinely ran dry lands here (a class with fewer
+            # teams than the field wants — a broken fixture or a tiny test
+            # world). Both specials paths direct-admit before they under-fill,
+            # so at association size this warning cannot fire.
+            log.warning("JHSAA %s State starts short: %d of %d after State "
+                        "Specials", group, len(zc_names) + len(rest),
+                        state_field_size(group))
+    # ‼️ THE FINAL TOSS RECOMPUTE COMES AFTER THE SPECIALS, for every group —
+    # `rating_duals(prestate=True)` drops only ("state", "toc"), so the State
+    # Specials duals ARE part of the pre-State results graph, and seeding off a
+    # rating frozen before they were played would ignore the road's own final
+    # round (the archived-not-recomputed rule cuts the other way here: the seeds
+    # are the DECISION, and they must be taken off the complete input).
+    final_power = power_index(every_team, prestate=True)
+    for group in GROUPS:
         # ‼️ ZONAL CHAMPIONS ARE THE TOP SEEDS — the whole privileged path, and
         # it is a SEEDING guarantee in its own right, not a side effect of byes
         # (owner clarification 2027-08). Winning a Zonal buys seeds 1-8 in every
@@ -5868,16 +6147,18 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
         # the Qualifiers Round, and a power-of-two draw would give them neither —
         # the guarantee is that they are seeded 1-8, whatever the shape.
         #
-        # TWO WAYS IN AND NO OTHERS (owner rule 2027-08): win a Zonal, or win
-        # your way through recovery. Everyone below the champions is a recovery
-        # survivor, seeded in post-recovery TOSS order. This holds for 1A's
+        # THE WAYS IN (owner rule 2026-08): win a Zonal, win an AUTOMATIC
+        # recovery round (Semi-State/Divisionals — Super Regionals on the fixed
+        # 24), or win your State Specials dual (Conference winners and their
+        # challengers alike). Everyone below the champions is seeded in
+        # post-recovery TOSS order. This holds for 1A's
         # fixed 24-team shape too (`_recovery_24`) — Zonal champions are an
         # automatic State berth there exactly like every other class; only the
         # RECOVERY ladder underneath them is wired differently. `champions=
         # len(zc)` (8) on a 24-team field lands on `run_state`'s single-draw
         # branch (no Qualifiers Round), so "seeds 1-8 bye" falls out for free.
         zc = sorted(zonal_champs[group], key=_power_key(final_power))
-        rest = sorted(recovery_q[group], key=_power_key(final_power))
+        rest = sorted(state_pools[group], key=_power_key(final_power))
         states[group] = run_state(zc + rest, champions=len(zc),
                                   seed=seed + hash(group) % 9973 + 12281)
     champs = [t for group, st in states.items()
@@ -5952,6 +6233,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
             "divisional": divisionals[group],
             "semi_conference": semi_conferences[group],
             "conference": conferences[group],
+            "state_special": state_specials[group],
             # The names admitted by the DISTRICT GUARANTEE alone (champions who
             # did not win a Zonal) — access without a bye. Replaces the retired
             # TOSS wild cards; old archives keep their "wildcards" key.

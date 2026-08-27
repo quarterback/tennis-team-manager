@@ -745,6 +745,56 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     ("Division XI"). Pinned by `test_no_recovery_round_has_a_bye`; explainer in
     `docs/JHSAA-road-to-state.md`.
   See `docs/AAR-jhsaa-state-expansion-recovery-rounds.md`.
+- **‼️ THE STATE SPECIALS ARE THE ROAD'S REQUIRED FINAL ROUND (owner rule
+  2026-08, superseding the reconciliation-only design —
+  `jhsaa._state_specials_round`).** The data showed losing-record teams reaching
+  the playoffs through the Conference's automatic access, so **Conference
+  winners no longer qualify for State** — they advance to the Specials and must
+  each beat a CHALLENGER for the berth. The rule, exactly:
+  `bids = len(conference_winners)`; challengers = the `bids` best
+  **REGULAR-SEASON** teams (reg-season win % → reg-season wins → ATR, and the
+  ranking must NEVER see postseason results — `_reg_season_record` filters on
+  `phase not in POSTSEASON`) drawn from the **ENTIRE classification** — anyone
+  not already qualified and not a Conference winner, wherever or WHETHER they
+  were eliminated (a great season that never reached the road outranks a deep
+  run with a worse one; do not restrict the pool to a postseason round). One
+  dual per bid, **seeded best-vs-worst** (best challenger plays the weakest
+  Conference winner by ATR, the winner hosts, deliberately NO rematch repair —
+  the pairing IS the seeding); every winner is a normal State qualifier, every
+  loser finishes at **"Specials"**. Zonal champions, Semi-State and Divisional
+  qualifiers (Super Regional winners on the fixed 24) stay automatic;
+  Conference/Semi-Conference STRUCTURE is untouched — only the qualification
+  consequence moved. Bids derive from the ACTUAL Conference winners, so the
+  arithmetic closes any field size by construction: 8+12+6+**6** = 32,
+  8+12+6+**14** = 40, 8+8+4+**4** = 24 (pinned by
+  `test_bids_derive_from_conference_winners_at_every_shape` off
+  `recovery_shape` itself, never retyped).
+  - **`jhsaa._state_specials` stays behind it as the EMERGENCY reconciliation**,
+    only if the played round still leaves State short (the Conference itself
+    under-delivered winners, or a tiny world ran dry): the original
+    `2·missing`-latest-eliminated rule, its pool now including the Specials' own
+    losers, its games MERGED into the one `state_special` arc (a phase is the
+    archive's identity for an event). At real size the road + Specials always
+    fill the field (verified, three full seasons both genders + a salt), so the
+    "State starts short" warning still means a broken fixture. A dry challenger
+    pool direct-admits the unpaired Conference winners loudly (the `sc_head`
+    idiom) — a short State field is the one outcome worse than an uncontested
+    berth.
+  - **A field that fits one bracket plays one bracket** (`run_state`): the
+    qualifying expansion fires ONLY when the padding byes would OUTNUMBER the
+    champions (`size − field > c`) — a 32 is simply 32→16→8→4→2 with the Zonal
+    champions as the top 8 SEEDS (owner: "32 can happen with no byes"), never
+    three Octofinals columns. The champions' privilege is the SEEDING; a
+    24-field's byes are a consequence of its shape.
+  - Phase `"state_special"`; finish string **"Specials"** (`STATE_SPECIAL_FINISH`,
+    owner — never the event heading), superseding whatever rung sent a team in,
+    for Conference winners and challengers alike (a challenger from outside the
+    road gets its only postseason row here); duals numbered STATEWIDE per season
+    from 1 (`renumber_state_specials`, the Divisions' pattern, at the world
+    rung). `tests/test_jhsaa_state_specials.py` +
+    `tests/test_jhsaa_state_draw_shapes.py` (every field size 17-40 rendered
+    through the real bracket pipeline: no team ever byes twice running, every
+    column halves).
 - **‼️ 1A CROWNS ON A FIXED 24-team shape — not the dynamic format above (owner
   rule 2027-08; 2A left it in the 2033 realignment).** 1A and 2A used to share one
   combined "2A-1A" group (neither cleared the 76-sponsor floor the dynamic
@@ -1066,6 +1116,17 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   to pad the field with `None` at the END, which meant the byes paired off with each
   other and went to nobody, and slot order was finishing order — so **round one paired
   seed 1 against seed 2** at every field size. Don't reintroduce positional padding.
+  - **‼️ STATE STAYS TIERED; THE TOC ALONE IS STRICT RANK-FOR-RANK (owner decision
+    2026-08, on 2045-50 data — 140 tournaments).** `seeded_draw` fixes 1 and 2 and
+    shuffles within the bands (3-4 · 5-8 · 9-16), which is deliberate: a JHSAA seed
+    is an ESTIMATED ordering, so "#5 deserves a strictly easier path than #8" is
+    precision the ranking cannot back — the bands are the claim the evidence
+    supports. Measured: the #1 seed won 74 of 140, top-4 won 86%, one champion in
+    six years came from outside the top 16 — the elite already survive the tier
+    shuffle, so #1 needs no extra bracket protection. The **TOC is the opposite on
+    purpose** (`run_toc`, strict seed lines, winner takes the beaten seed's line):
+    a tiny championship-of-champions explicitly ordering proven champions. Do not
+    "unify" the two draws in either direction.
 - **A state finish is TEAMS STILL ALIVE, counted down — never `2**n`.** A field that
   isn't a power of two doesn't halve out of the gate: a 24-team draw plays
   **24 → 16 → 8 → 4 → 2** (eight byes), and saves archived BEFORE the seeding fix hold

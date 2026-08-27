@@ -3696,10 +3696,15 @@ def run_jhsaa(seed: int, world: dict) -> dict:
         # Conferences are LETTERED statewide the same way, Z backwards, letters
         # never recycled — the index runs across both genders too.
         conference_ix = 0
+        # State Specials are numbered statewide the same way, starting at 1 —
+        # usually the counter never moves, because the round convenes only when
+        # the road left a field short.
+        special_no = 1
         for gender in ("girls", "boys"):
             season = jhsaa.run_season(gender, season_year, seed=0, salt=salt)
             division_no = jhsaa.renumber_divisions(season, division_no)
             conference_ix = jhsaa.reletter_conferences(season, conference_ix)
+            special_no = jhsaa.renumber_state_specials(season, special_no)
             summary = {
                 "year": year, "season_year": season_year, "gender": gender,
                 "champions": {g: season["groups"][g]["state"]["champion"]
@@ -3759,6 +3764,12 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                 # because seasons archived before they existed have no key at all.
                 "semi_conference": {g: season["groups"][g].get("semi_conference")
                                     for g in jhsaa.GROUPS},
+                # STATE SPECIALS — the final reconciliation round (owner rule
+                # 2026-08): played only when the road delivered fewer qualifiers
+                # than STATE_FIELD, present and empty otherwise. `.get` for
+                # seasons archived before it existed.
+                "state_special": {g: season["groups"][g].get("state_special")
+                                  for g in jhsaa.GROUPS},
                 "conference": {g: season["groups"][g].get("conference")
                                 for g in jhsaa.GROUPS},
                 "semi_state": {g: season["groups"][g]["semi_state"]
@@ -4880,6 +4891,13 @@ def jhsaa_postseason_result(grp: dict, school: str) -> dict:
     # A recovery run supersedes the ladder loss that sent the school there,
     # deepest rung first — the CONFERENCE is the last one played, so a school
     # that reached it did not end its year at Sectionals.
+    # STATE SPECIALS sit between the Conference and the State draw — a team whose
+    # year ended there got the road's very last dual, so its finish supersedes
+    # whatever rung sent it in (the recovery-supersedes rule, one round further).
+    if school in ((grp.get("state_special") or {}).get("field") or ()):
+        from . import jhsaa as _jh
+        out["finish"] = _jh.STATE_SPECIAL_FINISH        # "Specials" (owner, 2026-08)
+        return out
     if school in ((grp.get("conference") or {}).get("field") or ()):
         from . import jhsaa as _jh
         out["finish"] = _jh.CONFERENCE_NAME
@@ -4993,12 +5011,15 @@ def jhsaa_title_stages() -> list[tuple[str, str, str]]:
             (jh._RECOVERY_NAMES["divisional"], "DIV", "Divisional titles — a State berth"),
             (jh._RECOVERY_NAMES["semi_conference"], "S-CON",
              "Semi-Conference wins — a seat in the Conference, never a berth"),
-            (jh._RECOVERY_NAMES["conference"], "CON", "Conference titles — a State berth")]
+            (jh._RECOVERY_NAMES["conference"], "CON", "Conference titles — a State berth"),
+            (jh._RECOVERY_NAMES["state_special"], "SPEC",
+             "State Special wins — the reconciliation berth, played only when the "
+             "road left the field short")]
 
 
 #: The archive keys every unit-bearing stage is written under, in ladder order.
 _JH_STAGE_KEYS = ("sectionals", "wards", "prestate", "super_regional", "semi_state",
-                  "divisional", "semi_conference", "conference")
+                  "divisional", "semi_conference", "conference", "state_special")
 
 #: A State finish, as a title-board column: `(key, full label)`. Keyed on the
 #: `_finish_label` BAND rather than on a round index, because a field that is not a
@@ -5219,7 +5240,8 @@ def _unit_wins(arc: dict, group: str, school: str) -> list[str]:
     from before units existed carry no `unit` keys and yield nothing."""
     out = []
     for key in ("sectionals", "wards", "prestate", "super_regional",
-                "semi_state", "divisional", "semi_conference", "conference"):
+                "semi_state", "divisional", "semi_conference", "conference",
+                "state_special"):
         d = (arc.get(key) or {}).get(group) or {}
         for games in d.get("rounds") or ():
             for gm in games:
@@ -5335,6 +5357,7 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
          "divisional": (arc.get("divisional") or {}).get(g),
          "semi_conference": (arc.get("semi_conference") or {}).get(g),
          "conference": (arc.get("conference") or {}).get(g),
+         "state_special": (arc.get("state_special") or {}).get(g),
          "state": (arc.get("brackets") or {}).get(g),
          "wildcards": (arc.get("wildcards") or {}).get(g),
          "district_qualifiers": (arc.get("district_qualifiers") or {}).get(g)}, school)
@@ -5500,7 +5523,8 @@ def jh_road_ladder() -> tuple[str, ...]:
     from . import jhsaa as _jh
     return ("Areas", "Sectionals", "Wards", "Regionals", "Zonals",
             "Super Regionals", "Semi-State", _jh.DIVISIONAL_NAME,
-            _jh.SEMI_CONFERENCE_NAME, _jh.CONFERENCE_NAME)
+            _jh.SEMI_CONFERENCE_NAME, _jh.CONFERENCE_NAME,
+            _jh.STATE_SPECIAL_FINISH)
 
 
 def jhsaa_season_depth(row: dict) -> tuple:
