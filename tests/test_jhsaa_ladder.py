@@ -53,20 +53,29 @@ def archived(tmp_path_factory):
     # dropped 8A boys to exactly 16 — Sectionals got ZERO entrants, and the ladder
     # was handed an empty field. The fixture is a scaled association, so it has to
     # scale against the constant that decides whether a ladder can run at all.
-    _FLOOR = jh.PROTECTED + 8
-
+    # ‼️ AND SCALE IT AGAINST `sponsor_floor`, NOT ONLY `PROTECTED` (2026-08). A
+    # ladder suite exists to assert the FULL ladder's arithmetic, and the ladder's
+    # own data invariant is the sponsor floor: under it the pools legitimately run
+    # dry, the Semi-Conference degrades, and — since the State Specials landed —
+    # the reconciliation round direct-admits, so every full-shape assertion here
+    # fails for a reason that is the FIXTURE's, not the code's. That is exactly the
+    # "a pool too small for it is a broken fixture, not a format to accommodate"
+    # rule, applied to the suite itself: the whole file had been red since the
+    # 32-field retune, because the fixture stayed sized to the old 24.
     def small(gender):
-        """The fewest whole districts per classification that still leave Sectionals
-        a real field — a real association, roughly a tenth the size."""
+        """The fewest whole districts per classification that still clear that
+        class's OWN sponsor floor — a real association at the smallest size the
+        ladder is defined for."""
         out = []
         for grp in jh.GROUPS:
+            floor = max(jh.PROTECTED + 8, jh.sponsor_floor(grp))
             names = sorted({s.district for s in real_load(gender) if s.group == grp})
             pool, keep = [], set()
             for name in names:
                 keep.add(name)
                 pool = [s for s in real_load(gender)
                         if s.group == grp and s.district in keep]
-                if len(pool) > _FLOOR:
+                if len(pool) > floor:
                     break
             out += pool
         return out
@@ -347,15 +356,18 @@ def test_every_prestate_dual_is_a_numbered_unit(archived):
 def test_finishes_name_the_stage_a_run_ended_at(archived):
     for g in jh.GROUPS:
         sec, ward, pre, state, protected, dq, sr, ss, dv, sc, lc = _stages(archived, g)
+        sp = archived["arc"].get("state_special", {}).get(g) or {"field": []}
         grp = {"sectional": sec, "ward": ward, "prestate": pre,
                "super_regional": sr, "semi_state": ss, "divisional": dv,
-               "conference": lc, "state": state, "district_qualifiers": dq}
-        # Sectional/Area losers can be pulled back in as recovery BODIES, and a
-        # recovery run supersedes the round that sent them there — so only the
-        # ones that stayed out name a Sectionals/Areas finish.
+               "conference": lc, "state_special": sp, "state": state,
+               "district_qualifiers": dq}
+        # Sectional/Area losers can be pulled back in as recovery BODIES — or by
+        # the STATE SPECIALS reconciliation round — and a recovery run supersedes
+        # the round that sent them there, so only the ones that stayed out name a
+        # Sectionals/Areas finish.
         sec_out = (set(sec["field"]) - set(sec["survivors"])
                    - set(sr["field"]) - set(ss["field"]) - set(dv["field"])
-                   - set(lc["field"]))
+                   - set(lc["field"]) - set(sp["field"]))
         for name in sec_out:
             # A multi-round Sectionals opens with AREAS (owner rule): the finish
             # names the round the run actually ended in, so an Area-round exit
@@ -367,7 +379,7 @@ def test_finishes_name_the_stage_a_run_ended_at(archived):
         # A Ward loser is out at Wards — unless TOSS handed it a recovery chance.
         for name in (set(ward["field"]) - set(ward["survivors"])
                      - set(sr["field"]) - set(ss["field"]) - set(dv["field"])
-                     - set(lc["field"])):
+                     - set(lc["field"]) - set(sp["field"])):
             r = wd.jhsaa_postseason_result(grp, name)
             assert (r["finish"], r["made_state"]) == ("Wards", False)
         # A ladder loser's year ends at the RECOVERY stage it fell out of, never
@@ -375,23 +387,29 @@ def test_finishes_name_the_stage_a_run_ended_at(archived):
         # readmitted to Semi-State goes further still, so only the ones that
         # stopped there name "Super Regionals".
         for name in (set(sr["field"]) - set(sr["survivors"]) - set(ss["field"])
-                     - set(lc["field"])):
+                     - set(lc["field"]) - set(sp["field"])):
             r = wd.jhsaa_postseason_result(grp, name)
             assert (r["finish"], r["made_state"]) == ("Super Regionals", False)
         # ...and a Semi-State loser drawn into the Divisional Round goes further
         # still, so only the ones that stopped there name "Semi-State".
         for name in (set(ss["field"]) - set(ss["survivors"]) - set(dv["field"])
-                     - set(lc["field"])):
+                     - set(lc["field"]) - set(sp["field"])):
             r = wd.jhsaa_postseason_result(grp, name)
             assert (r["finish"], r["made_state"]) == ("Semi-State", False)
-        for name in (set(dv["field"]) - set(dv["survivors"]) - set(lc["field"])):
+        for name in (set(dv["field"]) - set(dv["survivors"]) - set(lc["field"])
+                     - set(sp["field"])):
             r = wd.jhsaa_postseason_result(grp, name)
             assert (r["finish"], r["made_state"]) == (jh.DIVISIONAL_NAME, False)
         # ...and a Conference loser's year ends at the CONFERENCE, whatever
         # rung — or none — sent it there.
-        for name in set(lc["field"]) - set(lc["survivors"]):
+        for name in set(lc["field"]) - set(lc["survivors"]) - set(sp["field"]):
             r = wd.jhsaa_postseason_result(grp, name)
             assert (r["finish"], r["made_state"]) == (jh.CONFERENCE_NAME, False)
+        # ...and a STATE SPECIALS loser's year ends there — the reconciliation
+        # round is the road's last dual (owner rule 2026-08).
+        for name in set(sp["field"]) - set(sp.get("survivors") or ()):
+            r = wd.jhsaa_postseason_result(grp, name)
+            assert (r["finish"], r["made_state"]) == (jh.STATE_SPECIAL_FINISH, False)
         for name in dq:
             r = wd.jhsaa_postseason_result(grp, name)
             assert r["made_state"] and r["district_qualifier"]

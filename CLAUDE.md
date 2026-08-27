@@ -745,6 +745,33 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     ("Division XI"). Pinned by `test_no_recovery_round_has_a_bye`; explainer in
     `docs/JHSAA-road-to-state.md`.
   See `docs/AAR-jhsaa-state-expansion-recovery-rounds.md`.
+- **‼️ STATE STARTS FULL — THE STATE SPECIALS are the reconciliation round (owner
+  rule 2026-08, `jhsaa._state_specials`).** The recovery ladder is SUPPOSED to
+  deliver `STATE_FIELD − 8` berths and did not always manage it (measured: 9A
+  delivered 20 of 24; `run_state` then padded the 28-team field with byes and the
+  bracket page showed four teams advancing unplayed round after round). Two rules
+  came out of it:
+  - **A field that fits one bracket plays one bracket** (`run_state`): the
+    qualifying expansion fires ONLY when the padding byes would OUTNUMBER the
+    champions (`size − field > c`) — a 32 is simply 32→16→8→4→2 with the Zonal
+    champions as the top 8 SEEDS (owner: "32 can happen with no byes"), never
+    three Octofinals columns. The champions' privilege is the SEEDING; a
+    24-field's byes are a consequence of its shape.
+  - **THE STATE SPECIALS**, field-size agnostic: `missing = STATE_FIELD −
+    qualified; 2·missing latest-eliminated teams play `missing` duals; winners
+    take the missing berths`. Pool = every non-qualified postseason loser
+    (BROADER than the Conference's, so it cannot inherit the same shortage),
+    latest elimination first, ATR within a tier only. It is the association's
+    field-integrity rule, NOT a ladder rung: convening at all is logged loudly —
+    once in several years is it working, regularly means an upstream rung is
+    losing berths and THAT needs diagnosing. A dry pool direct-admits the
+    difference with a warning (the `sc_head` idiom). Phase `"state_special"`;
+    finish string **"Specials"** (`STATE_SPECIAL_FINISH`, owner — never the event
+    heading); duals numbered STATEWIDE per season from 1
+    (`renumber_state_specials`, the Divisions' pattern, at the world rung).
+    `tests/test_jhsaa_state_specials.py` + `tests/test_jhsaa_state_draw_shapes.py`
+    (every field size 17-40 rendered through the real bracket pipeline: no team
+    ever byes twice running, every column halves).
 - **‼️ 1A CROWNS ON A FIXED 24-team shape — not the dynamic format above (owner
   rule 2027-08; 2A left it in the 2033 realignment).** 1A and 2A used to share one
   combined "2A-1A" group (neither cleared the 76-sponsor floor the dynamic
