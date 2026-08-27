@@ -554,7 +554,7 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     conn = _db()
     conn.executescript("DELETE FROM world_championship; DELETE FROM world_cups;"
                        " DELETE FROM world_jhsaa; DELETE FROM world_jhsaa_dual;"
-                       " DELETE FROM world_jhsaa_individual;")
+                       " DELETE FROM world_jhsaa_individual; DELETE FROM world_jhsaa_injury;")
     conn.commit()
     conn.close()
     # God-mode editor overrides (player moves, lineups, prestige/academics priors,
