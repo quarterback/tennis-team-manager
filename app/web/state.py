@@ -5233,6 +5233,11 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         # court, but it can say they were there. A save only gains courts for seasons
         # simulated after that commit; the archive is written once and never rewritten.
         jv_dressed = sum(world.jhsaa_jv_player_record(sched, hit.name))
+        # ‼️ THE INJURY LOG — this player's own varsity injuries this season, off
+        # the archive `world_jhsaa_injury` (owner rule 2026-08, ported off the
+        # college model). JV never carries one — see `jhsaa.TeamSeason`.
+        injuries = [r for r in world.jhsaa_school_injuries(w["id"], yr, g, yr_sc.name)
+                   if r["pid"] == pid]
         aw = (arc.get("awards") or {}).get(yr_sc.group) or {}
         # Both `all_district` and `all_region` live on the SEASON rather than in a
         # class's slate — the district because it is keyed (class, name), the
@@ -5280,6 +5285,7 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
             # played, the other how they did.
             "jv_dressed": jv_dressed,
             "jv_matches": sum(jrec["s"]) + sum(jrec["d"]),
+            "injuries": injuries,
         })
     if player is None:
         return {"found": False, "school": school, "gender": g, "pid": pid}
@@ -5326,6 +5332,10 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         "individuals": [{**s_, "season": s} for s in seasons
                         for s_ in s["individuals"]],
         "any_individual": any(s["individuals"] for s in seasons),
+        # THE INJURY LOG, newest season first (same fold as `individuals`) — a
+        # career from before the model existed just shows none, which is honest.
+        "injuries": [{**i, "season": s} for s in seasons for i in s["injuries"]],
+        "any_injuries": any(s["injuries"] for s in seasons),
         "section_icon": ji.SECTION_ICON,
         "individual_titles": sum(1 for s in seasons for r in s["individuals"]
                                  if r["champion"]),

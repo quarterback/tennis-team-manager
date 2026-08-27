@@ -1,8 +1,10 @@
-"""Talent-aware staffing vs. truly bad teams (owner rule 2026-08).
+"""Talent-aware staffing vs. truly bad teams (owner rule 2026-08, rest count
+expanded 2026-08 alongside injuries).
 
-A coach facing a clearly weaker regular-season opponent rests 1-2 starters from
-the TOP of the ladder; everyone shifts up a rung so the card still reads as the
-ladder. Never in the postseason, never at a showcase, never past the bench.
+A coach facing a clearly weaker regular-season opponent rests a run of starters
+(1 up to REST_MAX, tapering off) from the TOP of the ladder; everyone shifts up
+a rung so the card still reads as the ladder. Never in the postseason, never at
+a showcase, never past the bench.
 """
 import random
 
@@ -71,9 +73,10 @@ def test_lineup_rests_from_the_top_and_keeps_ladder_order():
         if order[0] not in pids:
             rested += 1
             # everyone shifts up: the dressed card is a contiguous ladder slice
-            # apart from the ordinary bench rotation at the bottom seats.
+            # apart from the ordinary bench rotation at the bottom seats. `k` can
+            # now run up to REST_MAX (tapering off), not just 1-2.
             k = order.index(pids[0])
-            assert 1 <= k <= 2
+            assert 1 <= k <= jhsaa.REST_MAX
             assert pids[:need - 2] == order[k:k + need - 2]
     assert rested > 10, rested
 

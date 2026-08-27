@@ -240,6 +240,20 @@ CREATE TABLE IF NOT EXISTS world_jhsaa_individual (
 );
 CREATE INDEX IF NOT EXISTS ix_jhsaa_indiv
   ON world_jhsaa_individual(world_id, year, gender, grp);
+-- INJURIES (owner rule 2026-08, ported off the college model) — one row per injury
+-- actually rolled, VARSITY only (JV is deliberately injury-blind, see jhsaa.TeamSeason).
+-- Its own table, same reason `world_jhsaa_individual` has one: this is per-PLAYER
+-- event data with no home on the per-dual `world_jhsaa_dual` row (an injury is rolled
+-- AFTER a dual, for a future one) and no home on the `world_jhsaa` summary either (it
+-- would bloat the one blob every JHSAA page reads in full). `dual_index` is the
+-- injured player's OWN TEAM's dual count when it happened — an ordinal within their
+-- season, not a calendar week; the JHSAA has no clock inside a season.
+CREATE TABLE IF NOT EXISTS world_jhsaa_injury (
+  world_id INTEGER, year INTEGER, gender TEXT, school TEXT, pid TEXT, name TEXT,
+  dual_index INTEGER, duals_out INTEGER DEFAULT 0, season_ending INTEGER DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS ix_jhsaa_injury
+  ON world_jhsaa_injury(world_id, year, gender, school);
 CREATE TABLE IF NOT EXISTS world_cups (
   world_id INTEGER, year INTEGER, gender TEXT, data TEXT
 );
@@ -540,7 +554,7 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     conn = _db()
     conn.executescript("DELETE FROM world_championship; DELETE FROM world_cups;"
                        " DELETE FROM world_jhsaa; DELETE FROM world_jhsaa_dual;"
-                       " DELETE FROM world_jhsaa_individual;")
+                       " DELETE FROM world_jhsaa_individual; DELETE FROM world_jhsaa_injury;")
     conn.commit()
     conn.close()
     # God-mode editor overrides (player moves, lineups, prestige/academics priors,
@@ -3824,6 +3838,15 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                 [(world["id"], year, gender, grp, flight, json.dumps(draw))
                  for grp, flights in (season.get("individuals") or {}).items()
                  for flight, draw in flights.items()])
+            # INJURIES — VARSITY only, one row per injury actually rolled
+            # (`t.injury_log`, see `jhsaa.TeamSeason`). JV never carries one.
+            conn.executemany(
+                "INSERT INTO world_jhsaa_injury"
+                " (world_id, year, gender, school, pid, name, dual_index,"
+                " duals_out, season_ending) VALUES (?,?,?,?,?,?,?,?,?)",
+                [(world["id"], year, gender, t.school.name, e["pid"], e["name"],
+                  e["dual_index"], e["duals_out"], int(e["season_ending"]))
+                 for t in season["teams"].values() for e in t.injury_log])
         # MIXED DOUBLES — run here because a mixed pair is one player from each
         # gender and `run_season` only ever sees one. It is archived under gender
         # 'mixed': it belongs to neither field, so storing it on one gender's rows
@@ -4768,6 +4791,22 @@ def jhsaa_schedule(world_id: int, year: int, gender: str, school: str) -> list[d
         return _schedule_rows(conn, world_id, year, gender, school)
     finally:
         conn.close()
+
+
+def jhsaa_school_injuries(world_id: int, year: int, gender: str,
+                          school: str) -> list[dict]:
+    """One VARSITY season's injury log for one school, in the order they
+    happened. JV never appears here — see `jhsaa.TeamSeason`."""
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT pid, name, dual_index, duals_out, season_ending"
+            " FROM world_jhsaa_injury"
+            " WHERE world_id=? AND year=? AND gender=? AND school=?"
+            " ORDER BY dual_index", (world_id, year, gender, school)).fetchall()
+    finally:
+        conn.close()
+    return [dict(r) for r in rows]
 
 
 # --- reading the archive back: a program's SEASON LEDGER ----------------------
