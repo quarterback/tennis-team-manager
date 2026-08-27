@@ -220,9 +220,21 @@ def test_a_district_champion_has_to_win_its_way_in(archived):
         for c in champs & set(state["field"]):
             assert c in earned, (g, c)          # nobody was handed a berth
         assert champs <= set(protected)         # ...but the title still protects
-        if champs - set(state["field"]):
-            checked = True                      # a champion really can miss
-    assert checked, "no district champion missed State — the reversal is untested"
+        for gender in ("girls", "boys"):
+            arc = archived["arc" if gender == "girls" else "arc_boys"]
+            gchamps = {rows[0]["school"]
+                       for rows in arc["standings"][g].values() if rows}
+            if gchamps - set(arc["brackets"][g]["field"]):
+                checked = True                  # a champion really can miss
+    # ‼️ CHECKED OVER BOTH GENDERS, AND NOT A HARD FAILURE ON ITS OWN (2026-08).
+    # "A champion missed" is a property of one sampled season, not of the rules —
+    # in a floor-sized fixture whose fields the State Specials now always fill,
+    # every champion legitimately qualifying is a possible (and honest) outcome.
+    # The RULE the reversal retired is asserted structurally above: `dq` is empty
+    # and every champion in the field earned its berth. The sampled check stays
+    # as a canary across all 24 class-gender seasons, where a miss is near-certain.
+    assert checked, "no district champion missed State in ANY of 24 seasons — " \
+        "improbable; check whether a guarantee crept back in"
 
 
 def test_recovery_berths_are_earned_on_court(archived):
@@ -260,11 +272,21 @@ def test_recovery_berths_are_earned_on_court(archived):
         # the Conference draws on the recovery losers, the district champions
         # still outside the field, and the last-resort Ward/Sectional pools
         assert set(lc["field"]).isdisjoint(set(pre["survivors"]))
-        # Semi-State = Super Regional winners + Zonal losers + readmitted Super
-        # Regional losers; the Divisional Round is drawn from Semi-State losers.
-        assert set(ss["field"]) <= set(sr["field"]) | (zon_losers - set(dq))
-        assert set(sr["survivors"]) <= set(ss["field"])
-        assert set(dv["field"]) <= set(ss["field"]) - set(ss["survivors"])
+        # The two shapes plumb Semi-State OPPOSITE ways (`_recovery_24`):
+        if jh.state_field_size(g) == 24:
+            # Fixed 24: SR winners qualified DIRECTLY, so Semi-State is the 8
+            # held-back Regional losers + the 8 SR losers — and its WINNERS go on
+            # to the Divisionals.
+            assert set(ss["field"]) <= reg_losers | (set(sr["field"])
+                                                     - set(sr["survivors"]))
+            assert set(ss["field"]).isdisjoint(set(sr["survivors"]))
+            assert set(dv["field"]) <= set(ss["survivors"])
+        else:
+            # Dynamic: Semi-State = SR winners + Zonal losers + readmitted SR
+            # losers; its winners take berths and the Divisionals draw its losers.
+            assert set(ss["field"]) <= set(sr["field"]) | (zon_losers - set(dq))
+            assert set(sr["survivors"]) <= set(ss["field"])
+            assert set(dv["field"]) <= set(ss["field"]) - set(ss["survivors"])
 
 
 def test_boys_and_girls_play_the_same_format(archived):
