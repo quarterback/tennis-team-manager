@@ -787,7 +787,18 @@ def sponsor_floor(group: str) -> int:
     if state_field_size(group) == 24:
         return PROTECTED + WARD_FIELD
     shape = recovery_shape(group)
-    return WARD_FIELD + shape["semi_conference"] if shape["conference"] else 0
+    # ‼️ THE WARD GATE IS A FLOOR OF ITS OWN (2026-08). The body-reservoir term
+    # alone returned 44 for a 32-field class — but 44 sponsors minus PROTECTED
+    # leaves 28 Sectional entrants for a 32-team Ward field, so Wards ran SHORT
+    # and an odd field silently sat a team every round after. `run_sectional`
+    # cannot manufacture entrants; a class must clear BOTH gates: enough sponsors
+    # to fill Wards (PROTECTED + WARD_FIELD) and enough eliminated bodies for the
+    # Semi-Conference. The 40-field's 76 already dominated the ward gate, which
+    # is why the miss was invisible until the 32 retune created a shape where the
+    # reservoir term was the smaller of the two.
+    if not shape["conference"]:
+        return 0
+    return max(PROTECTED + WARD_FIELD, WARD_FIELD + shape["semi_conference"])
 
 
 # --- talent ------------------------------------------------------------------

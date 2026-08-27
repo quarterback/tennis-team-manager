@@ -125,6 +125,32 @@ def test_the_ladder_shape_is_fixed_and_proportional(archived):
         assert set(pre["field"]) == set(ward["survivors"]) | set(protected)
 
 
+def _berth_survivors(g, sr, ss, dv, lc):
+    """The survivors of the BERTH-BEARING recovery rounds — which rounds those
+    are depends on the shape (the `_recovery_24` distinction, stale here since
+    2A left the dynamic ladder in the 2033 realignment): the dynamic ladder's
+    berths come from Semi-State/Divisionals/Conference, the fixed 24's from
+    SUPER REGIONALS/Divisionals/Conference (its 8 SR winners are automatic — its
+    Semi-State winners merely advance to the Divisionals)."""
+    rounds = (sr, dv, lc) if jh.state_field_size(g) == 24 else (ss, dv, lc)
+    out = set()
+    for a in rounds:
+        out |= set(a["survivors"])
+    return out
+
+
+def _specials(archived, g, gender="girls"):
+    """The State Specials arc for a class — the reconciliation round (owner rule
+    2026-08), a THIRD door into State beside a Zonal title and the recovery
+    ladder: it convenes only when the road delivered fewer qualifiers than
+    STATE_FIELD, and its winners took the missing berths on court. Fetched per
+    test rather than appended to `_stages`, whose 11-tuple is unpacked
+    positionally in a dozen places (the jh_match_key arity trap)."""
+    key = "arc" if gender == "girls" else "arc_boys"
+    return (archived[key].get("state_special") or {}).get(g) or \
+        {"field": [], "survivors": [], "rounds": [[]]}
+
+
 def test_the_state_field_is_champions_and_recovery_survivors(archived):
     """‼️ TWO ways in and no others (owner rule 2027-08, REVERSING the district
     guarantee): win a Zonal, or win your way through recovery. A district title
@@ -141,8 +167,9 @@ def test_the_state_field_is_champions_and_recovery_survivors(archived):
         # never by extra duals, a deeper cut, or a short field.
         assert len(state["field"]) == jh.state_field_size(g)
         assert not dq, (g, dq)          # the guarantee is retired
-        assert set(state["field"]) == (zonal_champs | set(ss["survivors"])
-                                       | set(dv["survivors"]) | set(lc["survivors"]))
+        assert set(state["field"]) == (zonal_champs
+                                       | _berth_survivors(g, sr, ss, dv, lc)
+                                       | set(_specials(archived, g)["survivors"]))
         # the privileged path: champions are the draw's TOP seeds
         assert set(state["field"][:len(zonal_champs)]) == zonal_champs
 
@@ -188,8 +215,8 @@ def test_a_district_champion_has_to_win_its_way_in(archived):
         sec, ward, pre, state, protected, dq, sr, ss, dv, sc, lc = _stages(archived, g)
         champs = {rows[0]["school"]
                   for rows in archived["arc"]["standings"][g].values() if rows}
-        earned = (set(pre["survivors"]) | set(ss["survivors"])
-                  | set(dv["survivors"]) | set(lc["survivors"]))
+        earned = (set(pre["survivors"]) | _berth_survivors(g, sr, ss, dv, lc)
+                  | set(_specials(archived, g)["survivors"]))
         for c in champs & set(state["field"]):
             assert c in earned, (g, c)          # nobody was handed a berth
         assert champs <= set(protected)         # ...but the title still protects
@@ -206,8 +233,8 @@ def test_recovery_berths_are_earned_on_court(archived):
     for g in jh.GROUPS:
         sec, ward, pre, state, protected, dq, sr, ss, dv, sc, lc = _stages(archived, g)
         earned = set(state["field"]) - set(pre["survivors"])
-        assert earned == (set(ss["survivors"]) | set(dv["survivors"])
-                          | set(lc["survivors"]))
+        assert earned == (_berth_survivors(g, sr, ss, dv, lc)
+                          | set(_specials(archived, g)["survivors"]))
         reg_losers = {(gm["away"] if gm["winner"] == gm["home"] else gm["home"])
                       for gm in pre["rounds"][0]}
         zon_losers = {(gm["away"] if gm["winner"] == gm["home"] else gm["home"])
@@ -222,8 +249,14 @@ def test_recovery_berths_are_earned_on_court(archived):
                       for games in sec["rounds"] for gm in games}
         # Super Regionals is the ladder's own losers now — Ward and Sectional
         # losers get their one shot at the CONFERENCE instead (owner rule
-        # 2027-08: no Ward playbacks).
-        assert set(sr["field"]) <= reg_losers | ward_losers | sec_losers
+        # 2027-08: no Ward playbacks). The pool is SHAPE-DEPENDENT: on the fixed
+        # 24 (2A/1A/Group 3) SR = 8 Zonal losers + 8 preferred Regional losers,
+        # while the dynamic ladder's Zonal losers wait for Semi-State — so the
+        # allowed set widens for the 24 rather than loosening the dynamic check.
+        allowed = reg_losers | ward_losers | sec_losers
+        if jh.state_field_size(g) == 24:
+            allowed |= zon_losers
+        assert set(sr["field"]) <= allowed
         # the Conference draws on the recovery losers, the district champions
         # still outside the field, and the last-resort Ward/Sectional pools
         assert set(lc["field"]).isdisjoint(set(pre["survivors"]))
@@ -489,9 +522,15 @@ def test_every_archived_record_covers_every_dual_played(archived):
             for dname, rows in arc["standings"][g].items():
                 for r in rows:
                     school = r["school"]
+                    # ‼️ VARSITY ONLY — the dual table holds JV rows too, and every
+                    # reader filters on level (the research export shipped corrupt
+                    # zips forgetting exactly this). COALESCE, because a pre-JV
+                    # archive reads back NULL and those are all varsity.
                     sched = conn.execute(
                         "SELECT COUNT(*) c, SUM(won) w FROM world_jhsaa_dual"
-                        " WHERE gender=? AND school=?", (gender, school)).fetchone()
+                        " WHERE gender=? AND school=?"
+                        " AND COALESCE(level, 'v') = 'v'",
+                        (gender, school)).fetchone()
                     wins, losses = (int(x) for x in r["record"].split("-"))
                     assert sched["c"] == wins + losses, (gender, school, r["record"])
                     assert sched["w"] == wins, (gender, school, r["record"])
@@ -524,9 +563,13 @@ def test_every_unit_win_becomes_a_team_honour(archived):
               for g in jh.GROUPS}
     for g in jh.GROUPS:
         won = {}
+        # EVERY unit-bearing stage `_unit_wins` reads — semi_conference and
+        # state_special were missing here, so an SC win looked like a spurious
+        # extra honour when it is a real unit the program keeps.
         for key in ("sectionals", "wards", "prestate", "super_regional",
-                    "semi_state", "divisional", "conference"):
-            for games in (arc[key][g].get("rounds") or ()):
+                    "semi_state", "divisional", "semi_conference", "conference",
+                    "state_special"):
+            for games in ((arc.get(key) or {}).get(g, {}) or {}).get("rounds") or ():
                 for gm in games:
                     won.setdefault(gm["winner"], []).append(wd._unit_honour(gm["unit"]))
         for school, units in won.items():
@@ -640,10 +683,16 @@ def test_no_recovery_round_has_a_bye(archived):
                       for nm in (gm["home"], gm["away"])}
             assert set(arc["field"]) == played, (g, name, "bye in recovery")
         # ...so every recovery qualifier won its LAST dual, and the only other
-        # doors into State are a Zonal title and the district guarantee.
+        # doors into State are a Zonal title, the district guarantee — and the
+        # STATE SPECIALS reconciliation round (owner, 2026-08), whose winners
+        # also won their last dual. A direct-admitted Specials head is the
+        # documented dry-pool degradation (warned loudly), sc_head's standing.
+        sp = _specials(archived, g)
         earned = set(state["field"]) - set(pre["survivors"]) - set(dq)
-        won = {gm["winner"] for arc in (ss, dv, lc)
-               for games in arc["rounds"] for gm in games}
+        # `sr` included for the fixed 24-shape, whose 8 SR winners qualify
+        # DIRECTLY; a superset is safe for the dynamic shape (this is a <=).
+        won = {gm["winner"] for arc in (sr, ss, dv, lc, sp)
+               for games in arc["rounds"] for gm in games} | set(sp.get("head") or ())
         assert earned <= won, (g, sorted(earned - won))
 
 
