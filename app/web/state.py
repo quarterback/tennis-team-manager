@@ -4518,9 +4518,12 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
     # numbers). Empty on archives from before the ladder existed.
     stages = []
     # The RECOVERY rounds sit closest to State, so their folds come first
-    # (the list is reverse-chronological: the stage that fed State on top).
-    for key in ("conference", "semi_conference", "divisional", "semi_state",
-                "super_regional"):
+    # (the list is reverse-chronological: the stage that fed State on top) —
+    # and the STATE SPECIALS are the road's required final round (owner rule
+    # 2026-08: every Conference winner plays a challenger for the berth), so
+    # their fold tops the list. Its "byes" are the dry-pool direct admits.
+    for key in ("state_special", "conference", "semi_conference", "divisional",
+                "semi_state", "super_regional"):
         d = (arc.get(key) or {}).get(grp) or {}
         if d.get("rounds") and d["rounds"][0]:
             # Recovery rounds are BYELESS BY CONSTRUCTION — each pairs its entire

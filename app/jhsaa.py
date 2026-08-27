@@ -6099,11 +6099,69 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
         conferences[group] = cf
         recovery_q[group], district_q[group] = quals, dq
         atr_snap.update(atr_used)
-    final_power = power_index(every_team, prestate=True)
     states, state_specials = {}, {}
+    state_pools: dict[str, list] = {}
     for group in GROUPS:
         by_name_g = {t.school.name: t
                      for ts in by_group[group].values() for t in ts}
+        # ‼️ CONFERENCE WINNERS DO NOT QUALIFY (owner rule 2026-08): they advance
+        # to the STATE SPECIALS and must beat a challenger — the best remaining
+        # regular-season teams from the WHOLE classification — for the berth.
+        # Every other berth-bearing round is untouched: Zonal champions,
+        # Semi-State and Divisional qualifiers (Super Regional winners on the
+        # fixed 24) enter State automatically, exactly as before. Bids derive
+        # from the actual Conference winners, so the count closes every field
+        # size by construction (a Conference winner's seat became a Specials
+        # dual, one-for-one).
+        zc_names = {t.school.name for t in zonal_champs[group]}
+        cw_names = set(conferences[group].get("survivors") or ())
+        cw = [t for t in recovery_q[group] if t.school.name in cw_names]
+        auto = [t for t in recovery_q[group] if t.school.name not in cw_names]
+        sp_arc, sp_winners = _state_specials_round(
+            group, by_name_g, cw,
+            zc_names | {t.school.name for t in auto},
+            post_power, seed=seed + hash(group) % 9973 + 4409)
+        rest = auto + sp_winners
+        if len(zc_names) + len(rest) < state_field_size(group):
+            # ‼️ THE EMERGENCY RECONCILIATION, kept ONLY for a played Specials
+            # round that still leaves State short (the Conference itself
+            # under-delivered winners, or a tiny world ran dry) — the original
+            # 2·missing-latest-eliminated rule, over a pool that now includes
+            # the Specials' own losers. Merged into the ONE state_special arc:
+            # a phase is the archive's identity for an event, and this is the
+            # same event finishing its job.
+            e_arc, e_winners = _state_specials(
+                group, by_name_g,
+                [sectionals[group], wards[group], prestates[group],
+                 super_regionals[group], semi_states[group], divisionals[group],
+                 semi_conferences[group], conferences[group], sp_arc],
+                zc_names | {t.school.name for t in rest},
+                post_power, seed=seed + hash(group) % 9973 + 6733)
+            sp_arc = {"field": sp_arc["field"] + e_arc["field"],
+                      "rounds": [sp_arc["rounds"][0] + e_arc["rounds"][0]],
+                      "survivors": sp_arc["survivors"] + e_arc["survivors"],
+                      "round_names": [STATE_SPECIAL_NAME],
+                      "head": (sp_arc.get("head") or [])
+                      + (e_arc.get("head") or [])}
+            rest = rest + e_winners
+        state_specials[group] = sp_arc
+        state_pools[group] = rest
+        if len(zc_names) + len(rest) != state_field_size(group):
+            # Only a pool that genuinely ran dry lands here (a class with fewer
+            # teams than the field wants — a broken fixture or a tiny test
+            # world). Both specials paths direct-admit before they under-fill,
+            # so at association size this warning cannot fire.
+            log.warning("JHSAA %s State starts short: %d of %d after State "
+                        "Specials", group, len(zc_names) + len(rest),
+                        state_field_size(group))
+    # ‼️ THE FINAL TOSS RECOMPUTE COMES AFTER THE SPECIALS, for every group —
+    # `rating_duals(prestate=True)` drops only ("state", "toc"), so the State
+    # Specials duals ARE part of the pre-State results graph, and seeding off a
+    # rating frozen before they were played would ignore the road's own final
+    # round (the archived-not-recomputed rule cuts the other way here: the seeds
+    # are the DECISION, and they must be taken off the complete input).
+    final_power = power_index(every_team, prestate=True)
+    for group in GROUPS:
         # ‼️ ZONAL CHAMPIONS ARE THE TOP SEEDS — the whole privileged path, and
         # it is a SEEDING guarantee in its own right, not a side effect of byes
         # (owner clarification 2027-08). Winning a Zonal buys seeds 1-8 in every
@@ -6123,54 +6181,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
         # len(zc)` (8) on a 24-team field lands on `run_state`'s single-draw
         # branch (no Qualifiers Round), so "seeds 1-8 bye" falls out for free.
         zc = sorted(zonal_champs[group], key=_power_key(final_power))
-        # ‼️ CONFERENCE WINNERS DO NOT QUALIFY (owner rule 2026-08): they advance
-        # to the STATE SPECIALS and must beat a challenger — the best remaining
-        # regular-season teams from the WHOLE classification — for the berth.
-        # Every other berth-bearing round is untouched: Zonal champions,
-        # Semi-State and Divisional qualifiers (Super Regional winners on the
-        # fixed 24) enter State automatically, exactly as before. Bids derive
-        # from the actual Conference winners, so the count closes every field
-        # size by construction (a Conference winner's seat became a Specials
-        # dual, one-for-one).
-        cw_names = set(conferences[group].get("survivors") or ())
-        cw = [t for t in recovery_q[group] if t.school.name in cw_names]
-        auto = [t for t in recovery_q[group] if t.school.name not in cw_names]
-        sp_arc, sp_winners = _state_specials_round(
-            group, by_name_g, cw,
-            {t.school.name for t in zc} | {t.school.name for t in auto},
-            post_power, seed=seed + hash(group) % 9973 + 4409)
-        rest = sorted(auto + sp_winners, key=_power_key(final_power))
-        if len(zc) + len(rest) < state_field_size(group):
-            # ‼️ THE EMERGENCY RECONCILIATION, kept ONLY for a played Specials
-            # round that still leaves State short (the Conference itself
-            # under-delivered winners, or a tiny world ran dry) — the original
-            # 2·missing-latest-eliminated rule, over a pool that now includes
-            # the Specials' own losers. Merged into the ONE state_special arc:
-            # a phase is the archive's identity for an event, and this is the
-            # same event finishing its job.
-            e_arc, e_winners = _state_specials(
-                group, by_name_g,
-                [sectionals[group], wards[group], prestates[group],
-                 super_regionals[group], semi_states[group], divisionals[group],
-                 semi_conferences[group], conferences[group], sp_arc],
-                {t.school.name for t in zc} | {t.school.name for t in rest},
-                post_power, seed=seed + hash(group) % 9973 + 6733)
-            sp_arc = {"field": sp_arc["field"] + e_arc["field"],
-                      "rounds": [sp_arc["rounds"][0] + e_arc["rounds"][0]],
-                      "survivors": sp_arc["survivors"] + e_arc["survivors"],
-                      "round_names": [STATE_SPECIAL_NAME],
-                      "head": (sp_arc.get("head") or [])
-                      + (e_arc.get("head") or [])}
-            rest = sorted(rest + e_winners, key=_power_key(final_power))
-        state_specials[group] = sp_arc
-        if len(zc) + len(rest) != state_field_size(group):
-            # Only a pool that genuinely ran dry lands here (a class with fewer
-            # teams than the field wants — a broken fixture or a tiny test
-            # world). Both specials paths direct-admit before they under-fill,
-            # so at association size this warning cannot fire.
-            log.warning("JHSAA %s State starts short: %d of %d after State "
-                        "Specials", group, len(zc) + len(rest),
-                        state_field_size(group))
+        rest = sorted(state_pools[group], key=_power_key(final_power))
         states[group] = run_state(zc + rest, champions=len(zc),
                                   seed=seed + hash(group) % 9973 + 12281)
     champs = [t for group, st in states.items()
