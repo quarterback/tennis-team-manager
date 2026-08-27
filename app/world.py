@@ -4026,6 +4026,21 @@ def jhsaa_poy_repeats(world_id: int, gender: str, minimum: int = 2) -> list[dict
     return rows
 
 
+#: ‼️ HOW HARD A FLIGHT IS TO WIN — the tie-break order on the repeat-champions
+#: roll, and NOT the order the flights are listed in (`jhsaa_individuals.FLIGHTS`
+#: is S1-S3 then D1-D3, which is how a draw sheet reads).
+#:
+#: The association's own ranking pairs each singles flight with the doubles flight
+#: beside it (owner, 2026-08): No. 1 singles, No. 1 doubles, No. 2 singles, No. 2
+#: doubles, and so on — a school's No. 1 doubles is drawn from ranks #4-#5 and is a
+#: harder title than its No. 2 singles. MIXED IS LAST: it is a consolation draw
+#: entered from below No. 9.
+#:
+#: It only ever decides which of two players with the SAME NUMBER of titles is
+#: listed first. Every title counts identically toward the count itself.
+JH_FLIGHT_RANK = ("S1", "D1", "S2", "D2", "S3", "D3", "XD")
+
+
 def jhsaa_individual_title_repeats(world_id: int, gender: str,
                                    minimum: int = 2) -> list[dict]:
     """Players with more than one INDIVIDUAL STATE title, across every archived
@@ -4059,6 +4074,9 @@ def jhsaa_individual_title_repeats(world_id: int, gender: str,
     INDEX into `entries`, so json1 can return just that entrant. `_relabel` then
     runs on the small dict rather than the whole draw."""
     from . import jhsaa_individuals as ji
+    # A flight nobody ranked would be dropped from every row silently — the roll
+    # would look complete and be missing titles. Cheap, and it fails loudly.
+    assert set(JH_FLIGHT_RANK) == set(ji.FLIGHTS) | {"XD"}, JH_FLIGHT_RANK
     conn = _db()
     try:
         rows = conn.execute(
@@ -4070,10 +4088,7 @@ def jhsaa_individual_title_repeats(world_id: int, gender: str,
             (world_id, gender)).fetchall()
     finally:
         conn.close()
-    # XD sits after the six flights for the tie-break ONLY — it is a consolation
-    # event drawn from below No. 9, so it does not outrank a flighted title at the
-    # same count. It counts exactly the same toward the count itself.
-    order = {f: i for i, f in enumerate(ji.FLIGHTS + ("XD",))}
+    order = {f: i for i, f in enumerate(JH_FLIGHT_RANK)}
     out: dict[str, dict] = {}
     for r in rows:
         if r["flight"] not in order or not r["champ"]:

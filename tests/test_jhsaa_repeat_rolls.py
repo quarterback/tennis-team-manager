@@ -189,9 +189,7 @@ def test_a_mixed_doubles_title_counts(archive):
     row = next(r for r in wd.jhsaa_individual_title_repeats(archive["id"], "girls")
                if r["pid"] == "aaaa")
     assert row["count"] == 3
-    # Ordered by year, then by flight quality within a year — XD sits after the six
-    # flights for that ordering ONLY (a consolation draw from below No. 9); it counts
-    # the same toward the total.
+    # Ordered by year, then by how hard the flight is to win (`JH_FLIGHT_RANK`).
     assert [(t["year"], t["flight"]) for t in row["titles"]] == [
         (0, "S1"), (2, "S1"), (2, "XD")]
 
@@ -214,6 +212,17 @@ def test_each_title_carries_its_flight_class_and_school(archive):
     assert [(t["year"], t["flight"], t["group"], t["school"]) for t in row["titles"]] \
         == [(0, "S1", "9A", "Coles Creek"), (2, "S1", "6A", "Mater Dei"),
             (2, "XD", "9A", "Coles Creek")]
+
+
+def test_the_flight_rank_pairs_each_singles_flight_with_its_doubles(archive):
+    """‼️ S1, D1, S2, D2, S3, D3, XD (owner, 2026-08) — the association's own
+    ranking of how hard a flight is to win, NOT `jhsaa_individuals.FLIGHTS`, which
+    is S1-S3 then D1-D3 because that is how a draw sheet reads. A school's No. 1
+    doubles comes off ranks #4-#5 and is a harder title than its No. 2 singles."""
+    assert wd.JH_FLIGHT_RANK == ("S1", "D1", "S2", "D2", "S3", "D3", "XD")
+    assert set(wd.JH_FLIGHT_RANK) == set(__import__(
+        "app.jhsaa_individuals", fromlist=["x"]).FLIGHTS) | {"XD"}, \
+        "a flight nobody ranked would be dropped from every row, silently"
 
 
 def test_ties_break_on_flight_quality(archive):

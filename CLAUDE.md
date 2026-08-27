@@ -1484,9 +1484,12 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     is a record of state titles a person has won. **Only THIS gender's half of the
     pair is credited**: the archived entry is `[boy, girl]` by construction
     (`jhsaa_individuals.mixed_entry` is its only builder), so the side is an INDEX,
-    and crediting both would put a boy on the girls' roll. XD sorts after the six
-    flights in the tie-break only — a consolation draw from below No. 9 does not
-    outrank a flighted title at the same count.
+    and crediting both would put a boy on the girls' roll. The tie-break between two players on the SAME
+    COUNT is `world.JH_FLIGHT_RANK` — **S1, D1, S2, D2, S3, D3, XD** (owner
+    2026-08), the association's own ranking of how hard a flight is to win, which
+    pairs each singles flight with the doubles flight beside it and is NOT
+    `jhsaa_individuals.FLIGHTS` (S1-S3 then D1-D3, how a draw sheet reads). It only
+    decides who is listed first; every title counts the same toward the count.
   - `tests/test_jhsaa_repeat_rolls.py` hand-archives four small seasons — one played
     season cannot contain a repeat.
 - **A classification's rankings have a PAGE, not a rail panel** (`/jhsaa/rankings`,
