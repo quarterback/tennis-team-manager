@@ -1116,6 +1116,17 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   to pad the field with `None` at the END, which meant the byes paired off with each
   other and went to nobody, and slot order was finishing order — so **round one paired
   seed 1 against seed 2** at every field size. Don't reintroduce positional padding.
+  - **‼️ STATE STAYS TIERED; THE TOC ALONE IS STRICT RANK-FOR-RANK (owner decision
+    2026-08, on 2045-50 data — 140 tournaments).** `seeded_draw` fixes 1 and 2 and
+    shuffles within the bands (3-4 · 5-8 · 9-16), which is deliberate: a JHSAA seed
+    is an ESTIMATED ordering, so "#5 deserves a strictly easier path than #8" is
+    precision the ranking cannot back — the bands are the claim the evidence
+    supports. Measured: the #1 seed won 74 of 140, top-4 won 86%, one champion in
+    six years came from outside the top 16 — the elite already survive the tier
+    shuffle, so #1 needs no extra bracket protection. The **TOC is the opposite on
+    purpose** (`run_toc`, strict seed lines, winner takes the beaten seed's line):
+    a tiny championship-of-champions explicitly ordering proven champions. Do not
+    "unify" the two draws in either direction.
 - **A state finish is TEAMS STILL ALIVE, counted down — never `2**n`.** A field that
   isn't a power of two doesn't halve out of the gate: a 24-team draw plays
   **24 → 16 → 8 → 4 → 2** (eight byes), and saves archived BEFORE the seeding fix hold
