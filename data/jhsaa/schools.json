@@ -8678,7 +8678,7 @@
       "source": "Amos Cross"
     },
     {
-      "name": "Mabryville",
+      "name": "Virginia City",
       "city": "Mabryville",
       "county": "Galena",
       "area": "Millersylvania",
@@ -8694,7 +8694,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Basalt League",
-      "boys_district": "Basalt League"
+      "boys_district": "Basalt League",
+      "source": "Mabryville"
     },
     {
       "name": "Madison",
@@ -11644,7 +11645,7 @@
       "boys_district": "Desert Sky League"
     },
     {
-      "name": "Portola",
+      "name": "Homeland",
       "city": "Rostova Junction",
       "county": "Emigrant",
       "area": "Kangas",
@@ -13417,7 +13418,7 @@
       "source": "Thelma Moss North"
     },
     {
-      "name": "Serra Caverly",
+      "name": "Portola-Caverly",
       "city": "Caverly",
       "county": "Featherstone",
       "area": "Southern Jefferson",
@@ -13433,7 +13434,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Tailings League",
-      "boys_district": "Tailings League"
+      "boys_district": "Tailings League",
+      "source": "Serra Caverly"
     },
     {
       "name": "Serrano",
@@ -19335,11 +19337,12 @@
       "boys_district": "Sunkist League"
     },
     {
-      "name": "Portola-Caverly",
-      "source": "Serra Caverly",
-      "city": "Caverly",
-      "county": "Featherstone",
-      "area": "Southern Jefferson",
+      "name": "Caldera",
+      "source": "Caldera High",
+      "city": "Bend",
+      "county": "Deschutes",
+      "area": "Cascade Divide",
+      "state": "Oregon",
       "classification": "7A",
       "group": "8A",
       "enrollment": 1547,
@@ -19430,8 +19433,8 @@
       "private": false,
       "mascot": "Broncs",
       "colors": [
-        "#0f6a70",
-        "#f4f1ea"
+        "#0c2340",
+        "#ffffff"
       ],
       "girls": true,
       "boys": true,
@@ -19439,44 +19442,46 @@
       "boys_district": "Ambassador League"
     },
     {
-      "name": "Homeland",
-      "source": "Mikel Garmendia",
-      "city": "Rostova Junction",
-      "county": "Emigrant",
-      "area": "Kangas",
+      "name": "Spring Harvest",
+      "source": "Spring Harvest",
+      "city": "Spring Harvest",
+      "county": "Box Elder",
+      "area": "Bear River Country",
+      "state": "Utah",
       "classification": "Group 2",
       "group": "Group 2",
-      "enrollment": 823,
+      "enrollment": 698,
       "private": false,
-      "mascot": "Portolas",
+      "mascot": "Reapers",
       "colors": [
-        "#0f6a70",
-        "#f4f1ea"
+        "#3a2a1c",
+        "#d9a441"
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Far West League",
-      "boys_district": "Far West League"
+      "girls_district": "Forks League",
+      "boys_district": "Forks League"
     },
     {
-      "name": "Virginia City",
-      "city": "Virginia City",
-      "county": "Storey",
-      "state": "Nevada",
-      "area": "Millersylvania",
+      "name": "Money",
+      "source": "Money",
+      "city": "Money",
+      "county": "Box Elder",
+      "area": "Bear River Country",
+      "state": "Utah",
       "classification": "Group 2",
       "group": "Group 2",
-      "enrollment": 88,
+      "enrollment": 860,
       "private": false,
-      "mascot": "Comstock",
+      "mascot": "Prospectors",
       "colors": [
-        "#0f6a70",
-        "#f4f1ea"
+        "#5c4a1c",
+        "#c9a961"
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "High Lakes League",
-      "boys_district": "High Lakes League"
+      "girls_district": "Forks League",
+      "boys_district": "Forks League"
     }
   ]
 }
