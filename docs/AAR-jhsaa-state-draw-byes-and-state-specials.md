@@ -37,17 +37,23 @@ The gate is now the rule stated directly: expand only when the padding byes woul
 not all be the champions' own privilege. 24 → 8 byes, plain draw. 32 → 0 byes,
 plain draw. 40 → 24 byes in a 64, and only then does qualifying earn its place.
 
-### Fault 2: the road delivered 28 teams to a 32-team table
+### Fault 2 — CORRECTED (2026-08): the road was never short at real size
 
-The qualifying expansion did not invent the byes out of nothing: the recovery
-ladder had delivered only **20 of its 24 earned berths**, so `run_state` received
-28 teams and padded. The `_recovery` machinery projects the correct arithmetic
-(Semi-State 12 + Divisionals 6 + Conference 6 + 8 Zonal champions = 32) and the
-live path fails to match its own projection — a candidate pool built smaller than
-the format assumed, an eligibility walk skipping a loser tier, or a parity trim
-turning one missing body into one missing berth. The existing
-`recovery filled N of M` warning had been logging exactly this and nobody was
-downstream of it.
+The first draft of this AAR claimed the recovery ladder had delivered "20 of its
+24 earned berths" to the real 9A. **That measurement was the FIXTURE's, not the
+association's**: the ladder suite at the time sized its pools to `PROTECTED + 8`
+(~24 sponsors) against the full-size field tables — the "broken fixture" the
+no-scaling rule names — and a 24-team world feeding a 32-team field table
+starves any recovery ladder. A contained diagnostic at real association size
+(three full seasons: boys seed 0, girls seed 0, salted boys) shows **every
+class delivering its berths in full, both shapes, zero Specials**: Super
+Regionals 16→8, Semi-State 24→12, Divisionals 12→6, Semi-Conference and
+Conference full, in every classification.
+
+The owner's phantom-bye brackets therefore needed no missing berths at all —
+a **FULL 32-team field** trips the Fault-1 gate on its own (`size − len(field)
+= 0 ≠ c`), and the qualifying path's structure manufactures the chained byes
+from a complete field. Fault 1 alone explains everything on screen.
 
 ### Fault 3 (background): 32 was never a designed shape
 
@@ -130,8 +136,17 @@ case.
   teams advance unplayed", which looks like a rendering bug and hides the real
   fault. The Specials round makes the reconciliation EXPLICIT and on-court; the
   short-field warning names the group.
-- **The warning was already firing.** `recovery filled 20 of 24` had been in the
-  logs the whole time. A warning nobody is downstream of is a comment.
+- **A measurement carries the world it was taken in.** "9A delivered 20 of 24"
+  was true of a floor-sized test fixture and was written down as a fact about
+  the association; a design decision (the Specials' whole framing as "the road
+  under-delivers") was hung on it before anyone re-took the number at real
+  size. State the WORLD beside the number, and re-measure in the real one
+  before diagnosing it. (The Specials survives the correction on its own
+  merits — it is the field-integrity net for parity trims, thin classes and
+  future field-size retunes, and at real size it correctly never convenes.)
+- **A warning nobody is downstream of is a comment.** `recovery filled N of M`
+  had been logging in every starved fixture run and nobody read it as a signal;
+  it is now the Specials' loudly-logged convening, which a test pins.
 - **Test the render, not just the archive.** The archive was internally
   consistent through all of this — only the drawn tree was wrong, which is why it
   was found by eye. `test_jhsaa_state_draw_shapes.py` renders every field size

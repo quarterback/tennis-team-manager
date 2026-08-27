@@ -747,10 +747,16 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   See `docs/AAR-jhsaa-state-expansion-recovery-rounds.md`.
 - **‼️ STATE STARTS FULL — THE STATE SPECIALS are the reconciliation round (owner
   rule 2026-08, `jhsaa._state_specials`).** The recovery ladder is SUPPOSED to
-  deliver `STATE_FIELD − 8` berths and did not always manage it (measured: 9A
-  delivered 20 of 24; `run_state` then padded the 28-team field with byes and the
-  bracket page showed four teams advancing unplayed round after round). Two rules
-  came out of it:
+  deliver `STATE_FIELD − 8` berths; when it cannot, `run_state` used to pad the
+  short field with byes (teams advancing unplayed round after round on the
+  bracket page). ‼️ CORRECTED 2026-08: the "9A delivered 20 of 24" that motivated
+  this was measured in the then-broken floor-sized ladder FIXTURE, not the real
+  association — at real size the road delivers EVERY class in full (verified,
+  three full seasons both genders + a salt) and the owner's phantom-bye brackets
+  were Fault 1 alone (a FULL 32 field tripping the old expansion gate). The
+  Specials is the net for what remains genuinely possible — parity trims, a
+  class-gender sliding under `sponsor_floor`, a future `STATE_FIELD` retune —
+  so it convening AT ALL still means investigate. Two rules came out of it:
   - **A field that fits one bracket plays one bracket** (`run_state`): the
     qualifying expansion fires ONLY when the padding byes would OUTNUMBER the
     champions (`size − field > c`) — a 32 is simply 32→16→8→4→2 with the Zonal
