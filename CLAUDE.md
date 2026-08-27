@@ -1477,9 +1477,18 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   - **Explicitly out of scope (owner): no All-State roll and no League/District POY
     roll.** The association crowns a district POY per league per class per year, so
     aggregating those is a longer list of more people, not a harder achievement.
-  - Mixed doubles is excluded by the `gender=?` filter (it is archived under
-    `'mixed'` and credits nothing anywhere else). `tests/test_jhsaa_repeat_rolls.py`
-    hand-archives four small seasons — one played season cannot contain a repeat.
+  - **‼️ MIXED DOUBLES COUNTS ON THE TITLES ROLL** (owner correction 2026-08: "if a
+    kid wins a mixed doubles title it counts"). A first pass excluded it by reading
+    across from the rule that mixed credits NOTHING — but those are different
+    things: that rule is about awards, TOSS and the recruit hand-off, and this roll
+    is a record of state titles a person has won. **Only THIS gender's half of the
+    pair is credited**: the archived entry is `[boy, girl]` by construction
+    (`jhsaa_individuals.mixed_entry` is its only builder), so the side is an INDEX,
+    and crediting both would put a boy on the girls' roll. XD sorts after the six
+    flights in the tie-break only — a consolation draw from below No. 9 does not
+    outrank a flighted title at the same count.
+  - `tests/test_jhsaa_repeat_rolls.py` hand-archives four small seasons — one played
+    season cannot contain a repeat.
 - **A classification's rankings have a PAGE, not a rail panel** (`/jhsaa/rankings`,
   `jhsaa_rankings_view`). `jhsaa_group_ranking` always returned every program in the
   class; the hub shows the first twelve of it beside the bracket and links to the rest.

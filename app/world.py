@@ -4038,9 +4038,18 @@ def jhsaa_individual_title_repeats(world_id: int, gender: str,
     pair would split that career in two and count neither run. The partner rides
     along per title as context; the row and the count belong to the individual.
 
-    All six flights (S1-S3, D1-D3). **Mixed doubles is excluded**: it is archived
-    under gender `'mixed'` and credits nothing anywhere else by owner rule, so the
-    `gender=?` filter leaves it out by construction rather than by a special case.
+    ‼️ MIXED DOUBLES COUNTS HERE (owner correction, 2026-08: "if a kid wins a mixed
+    doubles title it counts"). A first pass excluded it by reading across from the
+    rule that it credits no AWARD — but those are different things: this roll is a
+    record of state titles a person has won, and a mixed title is one of them. The
+    no-credit rule is about résumés (`jhsaa_awards`), TOSS and the recruit hand-off,
+    and it is untouched.
+    ‼️ AND A MIXED PAIR IS ONE PLAYER FROM EACH FIELD, so only THIS gender's half of
+    it may be credited on this page. The archived entry is always `[boy, girl]` —
+    `jhsaa_individuals.mixed_entry` is the only thing that builds one and it pairs
+    them in that order — so the side is an INDEX, not a guess. Crediting both would
+    put a boy on the girls' roll, which is the one thing the `gender` column exists
+    to prevent.
 
     ‼️ THE CHAMPION IS EXTRACTED IN SQLITE, NOT IN PYTHON. A draw is a ~30KB blob
     and this walks EVERY draw of every archived season — eleven classes × six
@@ -4053,24 +4062,29 @@ def jhsaa_individual_title_repeats(world_id: int, gender: str,
     conn = _db()
     try:
         rows = conn.execute(
-            "SELECT year, grp, flight,"
+            "SELECT year, grp, gender, flight,"
             " json_extract(data, '$.entries[' ||"
             "   json_extract(data, '$.champion') || ']') AS champ"
-            " FROM world_jhsaa_individual WHERE world_id=? AND gender=?"
+            " FROM world_jhsaa_individual WHERE world_id=? AND gender IN (?, 'mixed')"
             " AND json_extract(data, '$.champion') IS NOT NULL",
             (world_id, gender)).fetchall()
     finally:
         conn.close()
-    order = {f: i for i, f in enumerate(ji.FLIGHTS)}
+    # XD sits after the six flights for the tie-break ONLY — it is a consolation
+    # event drawn from below No. 9, so it does not outrank a flighted title at the
+    # same count. It counts exactly the same toward the count itself.
+    order = {f: i for i, f in enumerate(ji.FLIGHTS + ("XD",))}
     out: dict[str, dict] = {}
     for r in rows:
         if r["flight"] not in order or not r["champ"]:
             continue
         champ = _relabel(json.loads(r["champ"]))
         players = champ.get("players") or ()
+        # The mixed pair's own gender split: [boy, girl], by construction.
+        mine = (0 if gender == "boys" else 1) if r["gender"] == "mixed" else None
         for i, p in enumerate(players):
             pid = p.get("pid")
-            if not pid:
+            if not pid or (mine is not None and i != mine):
                 continue
             rec = out.setdefault(pid, {"pid": pid, "name": p.get("name", ""),
                                        "titles": []})

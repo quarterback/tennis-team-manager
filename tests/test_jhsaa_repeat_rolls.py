@@ -79,11 +79,14 @@ def archive():
             "INSERT INTO world_jhsaa_individual (world_id, year, gender, grp, flight,"
             " data) VALUES (?,?,?,?,?,?)",
             [(w["id"], y, "girls", g, f, d) for y, g, f, d in titles])
+        # MIXED DOUBLES — archived under gender 'mixed', and its entry is always
+        # [boy, girl] (`jhsaa_individuals.mixed_entry` is the only builder). Ada is
+        # the GIRL, so she is the second player; the boy must never reach this page.
         conn.execute(
             "INSERT INTO world_jhsaa_individual (world_id, year, gender, grp, flight,"
             " data) VALUES (?,?,?,?,?,?)",
-            (w["id"], 0, "mixed", "9A", "XD",
-             draw(ada + [{"pid": "eeee", "name": "Eli Ward", "grade": 12}],
+            (w["id"], 2, "mixed", "9A", "XD",
+             draw([{"pid": "eeee", "name": "Eli Ward", "grade": 12}] + ada,
                   "Coles Creek", 1)))
         conn.commit()
     finally:
@@ -178,20 +181,39 @@ def test_a_doubles_title_belongs_to_the_person_not_the_pairing(archive):
     assert "cccc" not in rows, "one title with each of two partners is not a repeat"
 
 
-def test_mixed_doubles_is_excluded(archive):
-    """It credits nothing anywhere else (owner rule) and is archived under gender
-    'mixed', so the gender filter leaves it out by construction."""
+def test_a_mixed_doubles_title_counts(archive):
+    """‼️ IT COUNTS (owner correction, 2026-08: "if a kid wins a mixed doubles title
+    it counts"). A first pass read across from the rule that mixed credits no AWARD
+    and excluded it — but that rule is about résumés, TOSS and the recruit hand-off.
+    This roll is a record of state titles a person has won, and this is one."""
     row = next(r for r in wd.jhsaa_individual_title_repeats(archive["id"], "girls")
                if r["pid"] == "aaaa")
-    assert row["count"] == 2, "the mixed title was counted"
-    assert all(t["flight"] != "XD" for t in row["titles"])
+    assert row["count"] == 3
+    # Ordered by year, then by flight quality within a year — XD sits after the six
+    # flights for that ordering ONLY (a consolation draw from below No. 9); it counts
+    # the same toward the total.
+    assert [(t["year"], t["flight"]) for t in row["titles"]] == [
+        (0, "S1"), (2, "S1"), (2, "XD")]
+
+
+def test_only_this_gender_half_of_a_mixed_pair_is_credited(archive):
+    """A mixed pair is one player from each field, so the boy in it must never
+    appear on the girls' roll — the entry is [boy, girl] by construction, so the
+    side is an index rather than a guess."""
+    girls = {r["pid"] for r in wd.jhsaa_individual_title_repeats(archive["id"], "girls")}
+    assert "eeee" not in girls
+    # and the boy's own page sees his half (one title — not a repeat, so not listed,
+    # but the fold must have credited him rather than her).
+    boys = wd.jhsaa_individual_title_repeats(archive["id"], "boys", minimum=1)
+    assert [(r["pid"], r["count"]) for r in boys] == [("eeee", 1)]
 
 
 def test_each_title_carries_its_flight_class_and_school(archive):
     row = next(r for r in wd.jhsaa_individual_title_repeats(archive["id"], "girls")
                if r["pid"] == "aaaa")
     assert [(t["year"], t["flight"], t["group"], t["school"]) for t in row["titles"]] \
-        == [(0, "S1", "9A", "Coles Creek"), (2, "S1", "6A", "Mater Dei")]
+        == [(0, "S1", "9A", "Coles Creek"), (2, "S1", "6A", "Mater Dei"),
+            (2, "XD", "9A", "Coles Creek")]
 
 
 def test_ties_break_on_flight_quality(archive):
