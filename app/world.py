@@ -5714,28 +5714,41 @@ def jhsaa_school_history(world_id: int, gender: str, school: str) -> dict:
 
 def jhsaa_school_individual_champions(world_id: int, gender: str, school: str,
                                       seasons: list[dict]) -> list[dict]:
-    """Every individual-flight (No. 1-3 singles / No. 1-3 doubles) state title a
-    school's players have won, newest first — the program-history counterpart of
+    """Every individual state title a school has won — the six flights AND mixed
+    doubles — newest first, the program-history counterpart of
     `jhsaa_individual_results`'s player-page section, folded across every archived
     season rather than one player's career.
 
     Takes `seasons` rather than re-deriving them: each row already carries the
     CLASSIFICATION the program actually played that year (`jhsaa_school_seasons`'
-    own `group`), so this reads at most the one set of six flight draws that year's
-    program could possibly have won — never every classification for every year,
-    which a program in one class a season could never appear in anyway.
+    own `group`), so this reads at most the one set of draws that year's program
+    could possibly have won — never every classification for every year, which a
+    program in one class a season could never appear in anyway.
 
-    ‼️ Mixed doubles is deliberately excluded — it credits no gender's field (a
-    mixed pair is one player from each of a school's two SEPARATE teams; see
-    `jhsaa_individuals.run_mixed`), so a program page scoped to one gender has no
-    single flight-box row to hang it from without inventing one."""
+    ‼️ MIXED DOUBLES CREDITS BOTH PROGRAMS (owner correction, 2026-08: "it should be
+    crediting both the boys and girls program with the honor when it's won, just
+    like the other doubles and singles brackets"). It was excluded on the grounds
+    that a mixed pair is one player from each of a school's two SEPARATE teams, so a
+    page scoped to one gender had "no flight-box row to hang it from" — which
+    answered a LAYOUT question by dropping a title the school actually won. The
+    entry's `school` is the school (one name, shared by both its teams), so the boys'
+    page and the girls' page each show it, exactly as they each show their own No. 1
+    doubles title. The ROW names both players, because the pair is what won it.
+
+    That is the program-level counterpart of the rule one level down: on the career
+    rolls a mixed title credits only the winner's own gender, since a career belongs
+    to a person and a person has one. A PROGRAM has both teams."""
     from . import jhsaa_individuals as ji
     out = []
     for s in seasons:
         grp = s.get("group")
         if not grp:
             continue
-        champs = jhsaa_individual_champions(world_id, s["year"], gender, grp)
+        # The mixed draw is archived under gender 'mixed' and its group comes off the
+        # school's row, which both its teams share — so this year's class is the
+        # right key for it too.
+        champs = {**jhsaa_individual_champions(world_id, s["year"], gender, grp),
+                  **jhsaa_individual_champions(world_id, s["year"], "mixed", grp)}
         for flight, c in champs.items():
             champion = c.get("champion") or {}
             if champion.get("school") != school:
@@ -5744,11 +5757,12 @@ def jhsaa_school_individual_champions(world_id: int, gender: str, school: str,
                 "year": s["year"], "season_year": s.get("season_year") or s["year"],
                 "group": grp, "flight": flight,
                 "flight_name": ji.FLIGHT_NAMES.get(flight, flight),
+                "mixed": flight == "XD",
                 "players": [{"pid": p.get("pid"), "name": p.get("name"),
                             "grade": p.get("grade")}
                            for p in champion.get("players") or ()],
             })
-    order = {f: i for i, f in enumerate(ji.FLIGHTS)}
+    order = {f: i for i, f in enumerate(_jh_flight_rank())}
     out.sort(key=lambda r: (-r["year"], order.get(r["flight"], 99)))
     return out
 
