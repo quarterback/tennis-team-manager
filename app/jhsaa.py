@@ -55,6 +55,7 @@ log = logging.getLogger(__name__)
 
 from engine.dual import DualFormat, Team, simulate_dual
 from engine.format import PRESETS
+from . import injuries as _injuries
 from .development import Prospect, generate_prospect, make_pid, overall_to_str
 
 _DATA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -1378,6 +1379,27 @@ class TeamSeason:
     # per dual that is ~5,100 queries a gender, the exact shape of the play-up
     # fingerprint storm. A dual reads this dict instead.
     sibling_ids: dict = field(default_factory=dict)
+    # ‼️ INJURIES (owner rule 2026-08, ported off the college model — see
+    # `app/injuries.py`). VARSITY ONLY: `play_dual` rolls these, `play_jv_dual`
+    # never touches this dict — JV is deliberately injury-blind (`jv_pool`),
+    # because the whole point of JV is more of the roster getting real minutes,
+    # not fewer.
+    #
+    # `injuries`: pid -> duals remaining out. A healthy player has NO key (never
+    # 0 — recovery deletes the row), so `pid in ts.injuries` is the whole
+    # availability check. `injuries.SEASON_ENDING` (-1) is stored for a
+    # season-ending injury and never ticks down.
+    #
+    # `injury_log`: the archived record — one row per injury actually rolled,
+    # `{pid, name, dual_index, duals_out, season_ending}` — `dual_index` is this
+    # team's OWN dual count (`len(ts.schedule)`) at the moment it happened, an
+    # ordinal within their season, not a calendar week (the JHSAA has no clock
+    # inside a season — see `world.jhsaa_match_dates`). Kept as a list of dicts,
+    # like `matches`, because a season logs one of these per injury, not per
+    # player. Never on the Prospect — see `injuries.py`'s own note on cached,
+    # globally-shared Prospects.
+    injuries: dict = field(default_factory=dict)
+    injury_log: list = field(default_factory=list)
 
     @property
     def record(self) -> str:
@@ -2717,33 +2739,43 @@ _SLOT = re.compile(r"^([SD])(\d+)$")
 # way in. On top of that, coaches USE the bench in the regular season: most duals a
 # reserve or two rotates into the bottom of the lineup, so nobody persisted plays zero
 # times across a ~26-dual year (which would be absurd). The POSTSEASON is strict:
-# your best nine, no rotation. (No injuries here — the JHSAA has no injury system.)
+# your best nine, no rotation — an injury there SUBSTITUTES within the frozen order
+# rather than reopening it (see `_healthy`, `_postseason_nine`); it never adds a
+# second rotation on top.
 _ROTATE_ONE = 0.45          # chance the 9th seat goes to a bench player, per dual
 _ROTATE_TWO = 0.15          # chance the 8th seat does too
 
-# TALENT-AWARE STAFFING vs. truly bad teams (owner rule 2026-08). Colorado's big
-# programs field V2/V3 squads; everywhere else the same depth is exercised by coaches
-# SITTING starters against overmatched opponents and moving everyone up a rung. We do
-# not model a V2 — instead, in the REGULAR SEASON ONLY, a coach facing a clearly weaker
-# side (a strength gap always, plus a .300-or-worse record once the opponent has a real
-# sample; before that the gap alone decides) rests one — sometimes two — starters from
-# the TOP of the ladder. Everybody shifts up one, so the card still reads as the ladder
-# (the clear-ladder requirement) and the bottom seats reach two more bench players than
-# the ordinary `_ROTATE_*` churn alone. ‼️ NEVER in the postseason (the Order of
-# Ability is frozen and strict) and never at a showcase (the whole point of the weekend
-# is playing your best against power programs) — both branches of `_lineup` sit above
-# this check by construction. Guarded so a thin roster never rests below the card —
-# resting past the bench would wrap the same player onto two lines of one dual.
+# TALENT-AWARE STAFFING vs. truly bad teams (owner rule 2026-08, rest count expanded
+# 2026-08 alongside injuries). Colorado's big programs field V2/V3 squads; everywhere
+# else the same depth is exercised by coaches SITTING starters against overmatched
+# opponents and moving everyone up a rung. We do not model a V2 — instead, in the
+# REGULAR SEASON ONLY, a coach facing a clearly weaker side (a strength gap always,
+# plus a .300-or-worse record once the opponent has a real sample; before that the gap
+# alone decides) rests a run of starters from the TOP of the ladder. Everybody shifts
+# up, so the card still reads as the ladder (the clear-ladder requirement) and the
+# bottom seats reach several more bench players than the ordinary `_ROTATE_*` churn
+# alone — same goal injuries serve, one more lever pulling the bench onto real courts.
+# ‼️ NEVER in the postseason (the Order of Ability is frozen and strict) and never at a
+# showcase (the whole point of the weekend is playing your best against power
+# programs) — both branches of `_lineup` sit above this check by construction. Guarded
+# so a thin roster never rests below the card — resting past the bench would wrap the
+# same player onto two lines of one dual. Composes with injuries for free: `_lineup`
+# filters hurt players out BEFORE this runs, so `spare` is already healthy bench only.
 REST_OPP_PCT = 0.300        # the record that marks an opponent "truly bad"
 REST_MIN_SAMPLE = 6         # duals before a record means anything
 REST_GAP = 10.0             # OVR gap (top-nine mean) that must ALWAYS hold
 REST_RATE = 0.75            # chance a qualifying dual actually rests anyone
-REST_TWO = 0.35             # ...and that a second starter sits too
+REST_TWO = 0.35             # chance a 2nd starter sits, same calibration as before
+REST_FALLOFF = 0.45         # chance each SEAT BEYOND the 2nd also sits — a further
+                             # roll per seat, so the count decays rather than jumping
+                             # straight to the cap
+REST_MAX = 6                # never rest more than this many starters in one dual
 
 
 def _rest_count(ts: TeamSeason, opp, rng: random.Random, spare: int) -> int:
-    """How many starters sit this dual: 0 most of the time, 1-2 against a truly
-    weaker side, never more than the bench can absorb (`spare`)."""
+    """How many starters sit this dual: 0 most of the time, a handful (up to
+    `REST_MAX`, tapering off) against a truly weaker side, never more than the
+    healthy bench can absorb (`spare`)."""
     if opp is None or spare <= 0:
         return 0
     if _strength(ts) - _strength(opp) < REST_GAP:
@@ -2753,8 +2785,13 @@ def _rest_count(ts: TeamSeason, opp, rng: random.Random, spare: int) -> int:
         return 0                       # a real record says they aren't that bad
     if rng.random() >= REST_RATE:
         return 0
-    k = 2 if (spare > 1 and rng.random() < REST_TWO) else 1
-    return min(k, spare)
+    k, cap = 1, min(REST_MAX, spare)
+    while k < cap:
+        chance = REST_TWO if k == 1 else REST_FALLOFF
+        if rng.random() >= chance:
+            break
+        k += 1
+    return k
 
 
 # ‼️ A CHALLENGE LADDER IS SEEDED ON ABILITY AND MOVED BY RESULTS — never ranked on a
@@ -2794,6 +2831,19 @@ def _order(ts: TeamSeason) -> list:
     return sorted(ts.roster,
                   key=lambda p: (-ladder_score(p, ts.records.get(p.pid)),
                                  -p.str_value()))
+
+
+def _healthy(ts: TeamSeason, order: list) -> list:
+    """`order` with any currently-injured player skipped — a SUBSTITUTION within
+    the given priority order, never a re-rank: the postseason's frozen Order of
+    Ability stays exactly as frozen, an injured player just steps aside for the
+    next name on the same list. Called at dress time only (`_lineup`,
+    `_postseason_nine`), never inside `_order` itself — `jv_pool` reads `_order`
+    straight, and JV is deliberately injury-blind (owner rule 2026-08): the
+    whole point of JV is more of the roster getting real minutes, not fewer."""
+    if not ts.injuries:
+        return order
+    return [p for p in order if p.pid not in ts.injuries]
 
 
 # --- the ORDER OF ABILITY (owner rule 2027-08, docs/AAR-jhsaa-order-of-ability.md) ---
@@ -3125,13 +3175,18 @@ def _postseason_nine(ts: TeamSeason, phase: str = "state") -> list:
         ts.order_of_ability = [p.pid for p in _order(ts)]
     by_pid = {p.pid: p for p in ts.roster}
     ranked = [by_pid[pid] for pid in ts.order_of_ability if pid in by_pid]
+    # An injury SUBSTITUTES within the frozen order rather than reopening it — the
+    # rest of the order does not move, an unavailable name is simply skipped.
+    ranked = _healthy(ts, ranked)
     return ranked[:lineup_need(phase, ts.school.group)]
 
 
 def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None) -> list:
     """The nine (or, for 1A's road to State, eight) who dress for THIS dual, in
     slot order. `opp` (the opposing TeamSeason, regular season only) lets the
-    coach rest starters against a truly weaker side — see `_rest_count`."""
+    coach rest starters against a truly weaker side — see `_rest_count`. Every
+    branch pulls from a HEALTHY pool first (`_healthy`) — an injured player is
+    skipped, and depth steps up, without changing anyone's rank."""
     if phase in POSTSEASON:                        # strict, frozen, arranged
         pool = _postseason_nine(ts, phase)
         if ts.school.group in PILOT_GROUPS and phase != "toc":
@@ -3146,17 +3201,18 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None) -> list:
         # So: the LIVE ladder, with the league's bench rotation (a showcase is
         # where a coach tries people), arranged onto the 1S/4D card by the same
         # anti-stacking arrangement the postseason uses.
-        order = _order(ts)
+        order = _healthy(ts, _order(ts))
         need = lineup_need(phase)
         nine, bench = order[:need], order[need:]
         if bench and rng.random() < _ROTATE_ONE:
             nine[-1] = bench[rng.randrange(len(bench))]
         return _arrange_state(nine, ts.sibling_ids)
-    order = _order(ts)
+    order = _healthy(ts, _order(ts))
     need = lineup_need(phase)
-    # Talent-aware staffing: sit 1-2 from the TOP against a truly weaker side and
-    # shift everyone up a rung — the ladder ORDER is untouched, so the card still
-    # reads as the ladder. Regular-season phases only (this branch).
+    # Talent-aware staffing: sit a run of starters from the TOP against a truly
+    # weaker side and shift everyone up a rung — the ladder ORDER is untouched, so
+    # the card still reads as the ladder. Regular-season phases only (this branch).
+    # `order` is already injury-filtered, so `spare` here is healthy bench only.
     rest = _rest_count(ts, opp, rng, len(order) - need)
     if rest:
         order = order[rest:]
@@ -3354,6 +3410,46 @@ def play_jv_dual(a: JVTeam, b: JVTeam, *, seed: int, phase: str = "regular",
         b.ties += 1
 
 
+def _injury_tick_and_roll(ts: TeamSeason, dressed: list, dual_index: int) -> None:
+    """After one VARSITY dual: tick every hurt player's clock down, then roll
+    fresh injuries on exactly the players who dressed (`dressed`) — the same dice
+    every league uses (`injuries.roll_injury`), so the autouse test fixture that
+    disables them for the whole suite (determinism) disables them here too, and
+    production ships on real entropy same as everywhere else in the engine.
+
+    Never called for a JV dual — see `TeamSeason.injuries`."""
+    if not _injuries.is_enabled():
+        return
+    for pid in list(ts.injuries):
+        n = ts.injuries[pid]
+        if n == _injuries.SEASON_ENDING:
+            continue
+        n -= 1
+        if n <= 0:
+            del ts.injuries[pid]
+        else:
+            ts.injuries[pid] = n
+    if not dressed:
+        return
+    # Team-level calibration, same rule as the college model: BASE_RATE is tuned on
+    # six competitors a dual, so a bigger card (the 3S/4D format dresses 11) scales
+    # each roll down to keep the TEAM's injury volume where it was tuned.
+    scale = min(1.0, _injuries.EXPOSURE_BASELINE / len(dressed))
+    for p in dressed:
+        if p.pid in ts.injuries:
+            continue
+        out = _injuries.roll_injury(p, scale)
+        if not out:
+            continue
+        season_ending = out == _injuries.SEASON_ENDING
+        ts.injuries[p.pid] = _injuries.SEASON_ENDING if season_ending else out
+        ts.injury_log.append({
+            "pid": p.pid, "name": p.name, "dual_index": dual_index,
+            "duals_out": 0 if season_ending else out,
+            "season_ending": season_ending,
+        })
+
+
 def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular",
               district: bool = False, challenge: bool = False):
     """One dual. Always to completion — high school has no clinch. `district` marks it
@@ -3430,6 +3526,11 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
         if district:
             b.dwins += 1
             a.dlosses += 1
+    # Injuries roll last, on the lineups that actually took the court — after the
+    # schedule rows above, so `len(a.schedule)`/`len(b.schedule)` are this dual's
+    # own ordinal in each team's season.
+    _injury_tick_and_roll(a, la, len(a.schedule))
+    _injury_tick_and_roll(b, lb, len(b.schedule))
     return res
 
 

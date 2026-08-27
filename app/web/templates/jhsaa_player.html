@@ -102,67 +102,105 @@
       {% endif %}
     {%- endmacro %}
 
-    {# ‼️ STATE TOURNAMENT RESULTS — the individual championships, ABOVE the flight
-       record and collapsible like it (owner, 2026-08; neither was collapsible
-       before). A FINISH per draw, not a match log: the season's dual card already
-       logs matches, and what anyone wants from a state tournament is how far they
-       got. Shown only where there is one, so a career from before the event
-       existed does not get an empty panel.
+    {# ‼️ THREE VIEWS OF THIS PLAYER'S OWN RECORD BEYOND THE DUAL LEDGER —
+       PLAYER HONOURS, INDIVIDUAL STATE RESULTS, INJURY LOG — the same `jh_tabs`
+       idiom the team page uses for its own trophies/honours/individual-champions
+       split (owner rule, injury-model integration). A printed player page has no
+       way to see a header chip's tooltip, so this puts the same data in text,
+       one row per season, the way the team page already does for its own
+       honours. Always rendered (not gated on any single pane having content) —
+       most careers have honours but no state trip, or a state trip and no
+       injuries, and the tab bar itself should not depend on which. #}
+    <div class="bl-panel">
+      {% set honors_tab = ('honors', 'Player honours', view.honors_total) %}
+      {% set indiv_tab = ('indiv', 'Individual State', view.individuals|length) %}
+      {% set injury_tab = ('injury', 'Injury log', view.injuries|length) %}
+      {{ jh_tabs([honors_tab, indiv_tab, injury_tab], 'jhph') }}
 
-       These deliberately do NOT feed the Career W–L above — that is the player's
-       DUAL record, and an individual title is a separate competition rather than
-       more of that one. #}
-    {% if view.any_individual %}
-    <details class="bl-panel jh-fold" open>
-      <summary class="bl-panel-head jh-solo-head">
-        <img class="ic" src="{{ url_for('jhsaa_medal', name=view.section_icon) }}"
-             alt="" width="18" height="18">
-        <span class="bl-panel-title">Individual State</span>
-        {# A title COUNT where there is one, an appearance count otherwise — the
-           header should not imply an accolade the rows below do not carry. #}
-        <span class="bit">{% if view.individual_titles %}{{ view.individual_titles }}
-          state title{{ 's' if view.individual_titles != 1 }}{% else %}{{ view.individuals|length }}
-          appearance{{ 's' if view.individuals|length != 1 }}{% endif %}</span>
-      </summary>
-      {# ‼️ ROWS ARE TIERED, AND MOST OF THEM ARE NOT ACCOLADES (owner layout,
-         2026-08). One champion is crowned and everybody else played in it, so
-         dressing every appearance in gold would lie about a career:
-           gold   — the state champion, and nothing else
-           podium — runner-up / semifinalist / quarterfinalist, said plainly
-           plain  — R16 and below: neutral, the round and the seed, no honour text
-         Seasons stack newest-first in the one panel. #}
-      <div class="jh-solo">
-        {% for r in view.individuals %}
-        <div class="row t-{{ r.tier }}">
-          <img class="ic" src="{{ url_for('jhsaa_medal', name=r.icon) }}"
-               alt="" width="44" height="44" loading="lazy">
-          <div class="meat">
-            <div class="when">{{ r.season.season_year }} · {{ r.group }}
-              <span class="yr">{{ r.season.class_year }}</span></div>
-            <div class="what">
-              <span class="fl">{{ r.flight_name }}</span>
-              {%- if r.honour %} — <span class="hon">{{ r.honour|upper }}</span>{% endif %}
-            </div>
-            {# ‼️ A PLACING CARRIES ITS SEED ON THE LEFT, under the flight — the row
-               reads as one statement ("No. 1 Singles — STATE CHAMPION, No. 1 seed").
-               A PLAIN row has no honour to lead with, so the round IS the result and
-               it moves right with the seed, where the eye scans for an outcome. #}
-            {% if r.honour %}
-            <div class="sub">{{ ('No. ' ~ r.seed ~ ' seed') if r.seed else 'unseeded' }}
-              {%- if r.partner %} · with {{ r.partner }}{% endif %}</div>
-            {% elif r.partner %}<div class="sub">with {{ r.partner }}</div>{% endif %}
-          </div>
-          {% if not r.honour %}
-          <div class="right">
-            <div class="rnd">{{ r.finish }}</div>
-            <div class="seed">{{ ('No. ' ~ r.seed ~ ' seed') if r.seed else 'unseeded' }}</div>
-          </div>
-          {% endif %}
-        </div>
+      <div class="jh-pane" data-pane="honors">
+        {% if view.honors_total %}
+        {% for s in view.seasons %}
+        {% for h in s.honors %}
+        <div class="jh-honor"><span class="y">{{ s.season_year }}</span><span>{{ h }}</span></div>
         {% endfor %}
+        {% endfor %}
+        {% else %}
+        <p class="jh-empty">No player honours yet.</p>
+        {% endif %}
       </div>
-    </details>
-    {% endif %}
+
+      {# ‼️ STATE TOURNAMENT RESULTS — a FINISH per draw, not a match log: the
+         season's dual card already logs matches, and what anyone wants from a
+         state tournament is how far they got. These deliberately do NOT feed the
+         Career W–L above — that is the player's DUAL record, and an individual
+         title is a separate competition rather than more of that one. #}
+      <div class="jh-pane" data-pane="indiv" hidden>
+        {% if view.individuals %}
+        {# A title COUNT where there is one, an appearance count otherwise — this
+           line should not imply an accolade the rows below do not carry. #}
+        <p class="bit" style="margin-bottom:10px">
+          {% if view.individual_titles %}{{ view.individual_titles }}
+            state title{{ 's' if view.individual_titles != 1 }}{% else %}{{ view.individuals|length }}
+            appearance{{ 's' if view.individuals|length != 1 }}{% endif %}</p>
+        {# ‼️ ROWS ARE TIERED, AND MOST OF THEM ARE NOT ACCOLADES (owner layout,
+           2026-08). One champion is crowned and everybody else played in it, so
+           dressing every appearance in gold would lie about a career:
+             gold   — the state champion, and nothing else
+             podium — runner-up / semifinalist / quarterfinalist, said plainly
+             plain  — R16 and below: neutral, the round and the seed, no honour text
+           Seasons stack newest-first in the one panel. #}
+        <div class="jh-solo">
+          {% for r in view.individuals %}
+          <div class="row t-{{ r.tier }}">
+            <img class="ic" src="{{ url_for('jhsaa_medal', name=r.icon) }}"
+                 alt="" width="44" height="44" loading="lazy">
+            <div class="meat">
+              <div class="when">{{ r.season.season_year }} · {{ r.group }}
+                <span class="yr">{{ r.season.class_year }}</span></div>
+              <div class="what">
+                <span class="fl">{{ r.flight_name }}</span>
+                {%- if r.honour %} — <span class="hon">{{ r.honour|upper }}</span>{% endif %}
+              </div>
+              {# ‼️ A PLACING CARRIES ITS SEED ON THE LEFT, under the flight — the row
+                 reads as one statement ("No. 1 Singles — STATE CHAMPION, No. 1 seed").
+                 A PLAIN row has no honour to lead with, so the round IS the result and
+                 it moves right with the seed, where the eye scans for an outcome. #}
+              {% if r.honour %}
+              <div class="sub">{{ ('No. ' ~ r.seed ~ ' seed') if r.seed else 'unseeded' }}
+                {%- if r.partner %} · with {{ r.partner }}{% endif %}</div>
+              {% elif r.partner %}<div class="sub">with {{ r.partner }}</div>{% endif %}
+            </div>
+            {% if not r.honour %}
+            <div class="right">
+              <div class="rnd">{{ r.finish }}</div>
+              <div class="seed">{{ ('No. ' ~ r.seed ~ ' seed') if r.seed else 'unseeded' }}</div>
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="jh-empty">No individual state results yet.</p>
+        {% endif %}
+      </div>
+
+      {# ‼️ THE INJURY LOG — season and duration, nothing more (owner rule
+         2026-08: "that's all the detail we'd need"). `dual_index` is the team's
+         own dual count when it happened, not a calendar week — the JHSAA has no
+         clock inside a season — so it is not shown here. #}
+      <div class="jh-pane" data-pane="injury" hidden>
+        {% if view.injuries %}
+        {% for i in view.injuries %}
+        <div class="jh-honor"><span class="y">{{ i.season.season_year }}</span>
+          <span>{% if i.season_ending %}Season-ending injury{% else %}Out {{ i.duals_out }}
+            dual{{ 's' if i.duals_out != 1 }}{% endif %}</span></div>
+        {% endfor %}
+        {% else %}
+        <p class="jh-empty">No injuries logged.</p>
+        {% endif %}
+      </div>
+    </div>
+    {{ jh_tabs_script('jhph') }}
 
     {% for disc in ['singles', 'doubles'] %}
     <details class="bl-panel jh-fold" open>
