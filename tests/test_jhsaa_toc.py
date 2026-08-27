@@ -332,10 +332,15 @@ def test_a_toc_title_is_listed_in_the_honours_exactly_once(archived):
     html = archived["client"].get(
         f"/jhsaa/school/{champ}?g=girls").get_data(as_text=True)
     assert html.count("TOURNAMENT OF CHAMPIONS") == 1
-    # A beaten entrant has no banner, so it keeps the text line.
+    # A beaten entrant has no banner, so it keeps the text line — in
+    # `team_honors`, because a TOC finish is a TEAM honour (`_season_row`'s own
+    # rule: `honors` is individual awards, full stop; the school page files the
+    # two lists on separate tabs, and this line belongs with the trophies).
     other = next(n for n in archived["arc"]["toc"]["field"] if n != champ)
     beaten = wd.jhsaa_school_history(w["id"], "girls", other)["seasons"][0]
-    assert [h for h in beaten["honors"] if h.startswith("Tournament of Champions")]
+    assert [h for h in beaten["team_honors"]
+            if h.startswith("Tournament of Champions")]
+    assert not [h for h in beaten["honors"] if "Tournament of Champions" in h]
 
 
 def test_a_program_that_missed_the_toc_carries_nothing(archived):
@@ -755,10 +760,13 @@ def test_played_survives_the_archive_and_reaches_the_player_page(archived):
     assert all(d["played"] for d in jv), "played did not survive the archive"
     assert all(d["lines"] for d in jv), "the JV box score did not survive the archive"
 
-    # somebody who actually dressed, and their record off the archive
-    name = jv[0]["played"][0]
+    # somebody who dressed AND took a court, and their record off the archive
+    jv_recs = st._jh_line_records(sched, "jv")
+    name = next(n for d in jv for n in d["played"]
+                if any(jv_recs.get(n, {"s": [0, 0], "d": [0, 0]})["s"]
+                       + jv_recs.get(n, {"s": [0, 0], "d": [0, 0]})["d"]))
     jw, jl, jt = wd.jhsaa_jv_player_record(sched, name)
-    assert jw + jl + jt > 0
+    assert jw + jl + jt > 0, "played did not round-trip for a courted player"
 
     # ‼️ THE SALT, NOT "". The name draw is salted, so `build_roster` on a bare salt
     # returns the right pids attached to DIFFERENT PEOPLE and the lookup by name finds
@@ -772,7 +780,14 @@ def test_played_survives_the_archive_and_reaches_the_player_page(archived):
     html = archived["client"].get(
         f"/jhsaa/player/{school}/{hit.pid}?g={g}").get_data(as_text=True)
     assert "<th style=\"width:58px\">JV</th>" in html
-    assert (f"{jw}-{jl}-{jt}" if jt else f"{jw}-{jl}") in html
+    # ‼️ THE LEDGER CELL IS THE PLAYER'S OWN PER-COURT JV RECORD (owner
+    # correction — "a record next to a person's name has to be that person's"),
+    # NEVER `jhsaa_jv_player_record`: that is the TEAM's result in the duals
+    # they dressed for, asserted above only as the archive round-trip. This
+    # test asserted the team string for a while and passed by coincidence.
+    rec = jv_recs[name]
+    own = f"{rec['s'][0] + rec['d'][0]}-{rec['s'][1] + rec['d'][1]}"
+    assert own in html
 
 
 def test_a_jv_dual_never_lands_on_the_varsity_record(archived):
