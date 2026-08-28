@@ -140,9 +140,10 @@ AMELIA = {
     "boys_district": "Capital Athletic Association",
 }
 
-# The 40 sunsets, owner-named (2026-08). 16×1A, 15×2A, 4×3A, 4×9A, 1×Group 1.
-# Rows KEEP their data (former_school serves their pages and archives); only the
-# sponsorship flags go off — the Pennsauken mechanism, batch-sized.
+# The sunsets, owner-named (2026-08): the batch's 40 (16×1A, 15×2A, 4×3A,
+# 4×9A, 1×Group 1) plus Pennsauken, sunset separately the same session. Rows
+# KEEP their data (former_school serves their pages and archives); only the
+# sponsorship flags go off.
 SUNSET = [
     "Pellmont", "San Benicio Regional", "Carverstead", "Juniper Bar",
     "Reverend City", "Harmon Siding", "South Fork", "Kendrickville",
@@ -160,7 +161,21 @@ SUNSET = [
     "Tailing Crossing", "Chaff Crossing", "Sluice Landing", "Annes Summit",
     "Katherine Johnson", "Mercy Academy Valley", "Tidelands Union",
     "Alder Cooperative",
+    # Pennsauken (9A) predates the batch — the decades-old duplicate of
+    # Pennsauke, sunset by hand earlier the same session. Folded in here so
+    # this script's claim to hold every table is TRUE: a full re-import
+    # would otherwise resurrect it.
+    "Pennsauken",
 ]
+
+# Every 3A girls-only program fields a boys team (owner rule 2026-08 — it took
+# boys' 3A from 75 sponsors to 82, clearing the 76 sponsor floor the sunsets
+# had broken). A gender GAINED needs no league redraw: the league belongs to
+# the school and these rows already carried `boys_district`.
+FIELD_BOYS = (
+    "Benedetti", "Funtsville", "Garfield", "Glassell Park", "Goldbank Hall",
+    "Tidewater", "Valley Providence",
+)
 
 
 def apply(rows: list[dict]) -> list[str]:
@@ -175,6 +190,15 @@ def apply(rows: list[dict]) -> list[str]:
         if r.get("girls") or r.get("boys"):
             r["girls"] = r["boys"] = False
             log.append(f"sunset: {name} ({r['classification']})")
+
+    # 1b. The 3A girls-only programs field boys teams.
+    for name in FIELD_BOYS:
+        r = by_name.get(name)
+        if r is None:
+            raise SystemExit(f"FIELD_BOYS names a school the data does not have: {name}")
+        if not r.get("boys"):
+            r["boys"] = True
+            log.append(f"boys team: {name} (3A)")
 
     # 2. Baker moves up. Name/source/city/county/state untouched — the archive
     # keys on the display name and the rosters on the source, so its history and
