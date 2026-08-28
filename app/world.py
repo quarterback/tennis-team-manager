@@ -4336,6 +4336,97 @@ def jhsaa_years(world_id: int, gender: str) -> list[int]:
 
 
 _careerwins_cache: dict = {}
+_progwins_cache: dict = {}
+
+
+def jhsaa_program_wins(world_id: int, gender: str, school: str,
+                       salt: str = "", limit: int = 10) -> list[dict]:
+    """The one program's "Most Program Wins" top-10 — the same numbers
+    `jhsaa_career_wins(...)["by_program"][school]` returns, but scoped to a
+    SINGLE program's own duals instead of folding the whole gender's archive.
+
+    ‼️ THE SCHOOL PAGE ONLY EVER NEEDS ONE PROGRAM'S ROW, and `jhsaa_career_wins`
+    was written for the History boards, which genuinely need every player and
+    every program at once. Calling it from the school page meant every single
+    program-page view — whichever school, whichever click — paid the cost of
+    tallying every archived varsity line for the WHOLE gender across EVERY
+    season, just to read one program's slice back out. That scan grows with
+    total schools AND total years, so it got slower every time either grew,
+    and it never looked "done" from the outside — it re-pays a large share of
+    that cost on every cache miss (a new season archived, a transfer-table
+    edit, a different gender clicked), which reads exactly like "loading
+    something every time" on a big, long-running save.
+
+    Scoped by `world_jhsaa_dual`'s own `(world_id, year, gender, school)`
+    index via `known_names` (every display name this program has ever
+    carried, so a renamed program's older seasons still count) — no full-table
+    scan, no player-career or transfer-merge logic (`by_program` never used
+    either: it credits every court to whichever school archived it, transfer
+    or not). Cached per (world, gender, school, newest year, salt, limit)."""
+    from collections import defaultdict
+    from . import jhsaa as _jh
+
+    years = jhsaa_years(world_id, gender)
+    if not years:
+        return []
+    if not salt:
+        salt = active_salt(DEFAULT_SEED)
+    key = (world_id, gender, school, years[0], salt, limit)
+    got = _progwins_cache.get(key)
+    if got is not None:
+        return got
+
+    names = _jh.known_names(school, gender)
+    tal: dict = defaultdict(lambda: [0, 0, 0, 0])        # (name, year) -> [sw, sl, dw, dl]
+    conn = _db()
+    try:
+        qmarks = ",".join("?" * len(names))
+        for d in conn.execute(
+                "SELECT year, home, lines FROM world_jhsaa_dual"
+                f" WHERE world_id=? AND gender=? AND COALESCE(level,'v')='v'"
+                f" AND school IN ({qmarks})",
+                (world_id, gender, *names)):
+            side = "home" if d["home"] else "away"
+            for ln in json.loads(d["lines"] or "[]"):
+                slot = ln.get("slot") or ""
+                hw = ln.get("home_won")
+                if hw is None or not slot:
+                    continue
+                won = bool(hw) == bool(d["home"])
+                i = (0 if won else 1) if slot[0] == "S" else (2 if won else 3)
+                for nm in (ln.get(side) or ()):
+                    tal[(nm, d["year"])][i] += 1
+    finally:
+        conn.close()
+
+    by_player: dict = defaultdict(list)
+    for (name, year), t in tal.items():
+        by_player[name].append((year, t))
+    runs = []
+    for name, items in by_player.items():
+        items.sort()
+        run: list[tuple] = []
+        for year, t in items:
+            if run and year > run[-1][0] + 1:
+                runs.append(_career_run(school, name, run))
+                run = []
+            run.append((year, t))
+        if run:
+            runs.append(_career_run(school, name, run))
+    out = sorted(runs, key=lambda r: (-r["w"], r["l"], r["name"]))[:limit]
+
+    sc = next((s for s in _jh.load_schools(gender) if s.name == school), None)
+    if sc is not None:
+        for r in out:
+            for p in _jh.build_roster(sc, r["last"], salt):
+                if p.name == r["name"]:
+                    r["pid"] = p.pid
+                    break
+
+    for k in [k for k in _progwins_cache if k[:3] == key[:3]]:
+        _progwins_cache.pop(k, None)
+    _progwins_cache[key] = out
+    return out
 
 
 def jhsaa_career_wins(world_id: int, gender: str, salt: str = "",
