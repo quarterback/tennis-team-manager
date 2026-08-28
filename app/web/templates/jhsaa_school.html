@@ -415,12 +415,19 @@
   {% set team_tab = ('team', 'Team trophies', ns.team) %}
   {% set player_tab = ('players', 'Player honours', ns.players) %}
   {% set indiv_tab = ('indiv', 'Individual State Champions', indiv_champs|length) %}
+  {# The program's all-time top ten by career wins (owner, 2026-08) — singles
+     and doubles combined by explicit rule. It sits LAST unless it is the only
+     tab with content: a played program with no honours at all still has wins,
+     and the first tab is the active one, so it must not be the empty one. #}
+  {% set career_tab = ('careerwins', 'Most Program Wins', view.career_wins|length) %}
   {% if team_first %}
-    {% set tabs = [team_tab, player_tab, indiv_tab] %}
+    {% set tabs = [team_tab, player_tab, indiv_tab, career_tab] %}
   {% elif players_first %}
-    {% set tabs = [player_tab, team_tab, indiv_tab] %}
+    {% set tabs = [player_tab, team_tab, indiv_tab, career_tab] %}
+  {% elif indiv_champs %}
+    {% set tabs = [indiv_tab, team_tab, player_tab, career_tab] %}
   {% else %}
-    {% set tabs = [indiv_tab, team_tab, player_tab] %}
+    {% set tabs = [career_tab, team_tab, player_tab, indiv_tab] %}
   {% endif %}
   {% set active = tabs[0][0] %}
   {{ jh_tabs(tabs, 'jhhon') }}
@@ -489,6 +496,23 @@
     {% endfor %}
     {% else %}
     <p class="jh-empty">No individual state champions yet.</p>
+    {% endif %}
+  </div>
+
+  {# The program's ten winningest careers — every varsity court won wearing this
+     shirt, singles and doubles combined (owner rule: no need to differentiate).
+     A transfer shows the wins they earned HERE; their other school's are on its
+     own page. #}
+  <div class="jh-pane" data-pane="careerwins"{{ '' if active == 'careerwins' else ' hidden' }}>
+    {% if view.career_wins %}
+    {% for r in view.career_wins %}
+    <div class="jh-honor"><span class="y">{{ loop.index }}</span>
+      <span>{% if r.pid %}<a href="{{ url_for('jhsaa_player', school=view.school, pid=r.pid, u=u, g=view.gender) }}">{{ r.name }}</a>{% else %}{{ r.name }}{% endif %}
+        <span style="color:var(--text-muted)">{{ r.span }}</span>
+        <span class="jh-chip unit" style="margin-left:6px">{{ r.w }}–{{ r.l }}</span></span></div>
+    {% endfor %}
+    {% else %}
+    <p class="jh-empty">No varsity matches archived yet.</p>
     {% endif %}
   </div>
 </div>

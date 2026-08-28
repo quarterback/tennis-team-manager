@@ -181,7 +181,7 @@
   </div>
   {% endif %}
 
-  {% if tab in ('history', 'titles', 'indiv_history', 'repeat_poy', 'repeat_champs', 'retired') %}
+  {% if tab in ('history', 'titles', 'indiv_history', 'repeat_poy', 'repeat_champs', 'retired', 'career_wins', 'program_wins') %}
   <div class="jh-subrail">
     <a class="{{ 'on' if tab == 'history' }}"
        href="{{ url_for('jhsaa_champions', u=u, g=scope.gender, group=scope.group) }}">State Champions</a>
@@ -192,6 +192,12 @@
        href="{{ url_for('jhsaa_individual_champions', u=u, g=scope.gender, group=scope.group) }}">Individual Champions</a>
     <a class="{{ 'on' if tab == 'titles' }}"
        href="{{ url_for('jhsaa_titles', u=u, g=scope.gender, group=scope.group) }}">Title Board</a>
+    {# The all-time WINS board (owner, 2026-08) — the Title Board's format, a
+       separate view: trophies and wins are different questions. #}
+    <a class="{{ 'on' if tab == 'program_wins' }}" title="All-time program wins — the whole association, sortable"
+       href="{{ url_for('jhsaa_program_wins', u=u, g=scope.gender, group=scope.group) }}">Program Wins</a>
+    <a class="{{ 'on' if tab == 'career_wins' }}" title="Most match wins over a high-school career — singles, doubles, overall"
+       href="{{ url_for('jhsaa_career_wins', u=u, g=scope.gender, group=scope.group) }}">Career Wins</a>
     {# The two CAREER rolls (owner, 2026-08). Every other page in this section is
        scoped to one season, so a multi-year run is invisible — a name in 2028 and
        the same name in 2030 with nothing joining them. These fold across seasons,

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header %}
+{% block title %}JHSAA Career Wins{% endblock %}
+{% block content %}
+
+{{ jh_header(view.scope, u, 'career_wins', 'Most Career Wins',
+             'The most match wins over a high-school career — every varsity court on a dual, singles and doubles, league season and postseason alike.',
+             [('Seasons folded', view.seasons)]) }}
+
+<div class="jh-shell">
+{% if not view.ready %}
+<div class="bl-panel"><div class="jh-empty">
+  Nothing archived yet — the board is a fold over played seasons, so it fills in as
+  the association plays them.
+</div></div>
+{% else %}
+
+{# The category dropdown — the Individual Champions pattern: one page, a <select>
+   for the axis. All three boards ship in this page (they are one fold sorted three
+   ways), so the switch is client-side and instant. #}
+<div class="jh-dirbar">
+  <label class="jh-ttfilter"><span class="k">Category</span>
+    <select class="bl-select" id="jh-cwcat">
+      {% for key, label in view.cats %}
+      <option value="{{ key }}" {{ 'selected' if key == view.cat }}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <span class="jh-dircount">Top {{ view.boards[view.cat]|length }} careers</span>
+</div>
+
+{% for key, label in view.cats %}
+<div class="bl-panel jh-cwboard" data-cat="{{ key }}" {{ 'hidden' if key != view.cat }}>
+  <div class="bl-panel-head">
+    <span class="bl-panel-title">{{ label }} — most career wins</span>
+    <span class="bl-panel-meta">A career is a run of consecutive seasons; a player who
+      transferred carries both stints. JV and the individual state tournaments are
+      not part of the dual record and do not count here.</span>
+  </div>
+  <div class="tbl-scroll">
+    <table class="jh-tt">
+      <thead><tr>
+        <th class="rk">#</th>
+        <th class="nm">Player</th>
+        <th title="Seasons on a varsity card">Years</th>
+        {% if key != 'doubles' %}<th title="Singles courts won–lost">Singles</th>{% endif %}
+        {% if key != 'singles' %}<th title="Doubles courts won–lost">Doubles</th>{% endif %}
+        <th class="tot" title="{{ label }} wins — the board's rank">W</th>
+        <th title="{{ label }} losses">L</th>
+      </tr></thead>
+      <tbody>
+        {% for r in view.boards[key] %}
+        {% set w = r.w if key == 'overall' else (r.s_w if key == 'singles' else r.d_w) %}
+        {% set l = r.l if key == 'overall' else (r.s_l if key == 'singles' else r.d_l) %}
+        <tr>
+          <td class="rk">{{ loop.index }}</td>
+          <td class="nm">
+            {% if r.pid %}<a href="{{ url_for('jhsaa_player', school=r.school, pid=r.pid, u=u, g=view.gender) }}">{{ r.name }}</a>
+            {% else %}{{ r.name }}{% endif %}
+            <span class="sub">{% for st in r.stint_rows %}{% if st.deco.mark %}<span class="mk">{{ st.deco.mark|safe }}</span>{% endif %}{{ st.school }}{{ ' · ' if not loop.last }}{% endfor %}</span>
+          </td>
+          <td>{{ r.span }}</td>
+          {% if key != 'doubles' %}<td>{{ r.s_w }}–{{ r.s_l }}</td>{% endif %}
+          {% if key != 'singles' %}<td>{{ r.d_w }}–{{ r.d_l }}</td>{% endif %}
+          <td class="tot">{{ w }}</td>
+          <td>{{ l }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+</div>
+
+<script>
+(function () {
+  var sel = document.getElementById('jh-cwcat');
+  if (!sel) return;
+  var boards = document.querySelectorAll('.jh-cwboard');
+  sel.addEventListener('change', function () {
+    boards.forEach(function (b) { b.hidden = b.dataset.cat !== sel.value; });
+    // Keep the URL shareable: the chosen category survives a copy-paste.
+    var url = new URL(window.location);
+    url.searchParams.set('cat', sel.value);
+    window.history.replaceState(null, '', url);
+  });
+})();
+</script>
+{% endblock %}

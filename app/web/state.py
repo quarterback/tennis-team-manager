@@ -4743,6 +4743,24 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         for r in rs:
             badge(r, "All-District")
 
+    # The program's all-time top ten by career wins (owner request, 2026-08) —
+    # the 4th honours tab. Singles and doubles COMBINED by the owner's explicit
+    # rule ("no need to differentiate"); wins earned AT this school, so a
+    # transfer appears with the wins they won wearing this shirt. Served from
+    # the same cached fold the History boards read; pids are resolved here (the
+    # school is known, so it is one cached roster build per distinct last year).
+    career_wins = []
+    for r in (world.jhsaa_career_wins(w["id"], g).get("by_program") or {}).get(school, ()):
+        pid = r.get("pid", "")
+        if not pid:
+            for p in jh.build_roster(sc, r["last"], salt):
+                if p.name == r["name"]:
+                    pid = p.pid
+                    break
+        career_wins.append({**r, "pid": pid,
+                            "span": (str(r["first"]) if r["first"] == r["last"]
+                                     else f"{r['first']}–{str(r['last'])[2:]}")})
+
     return {
         "found": True, "school": school, "gender": g, "year": yr, "years": years,
         "season_year": season_year, "is_current": bool(years) and yr == years[0],
@@ -4819,6 +4837,7 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                    for p in roster],
         "honors": (season or {}).get("honors", []),
         "history": hist,
+        "career_wins": career_wins,
     }
 
 
@@ -5831,6 +5850,82 @@ def jhsaa_repeat_individual_champions(seed: int, gender: str,
             "scope": _jh_scope(g, group if group in jh.GROUPS else jh.GROUPS[0],
                                list(jh.GROUPS), years[0] if years else 0,
                                years, None, None)}
+
+
+#: The career-wins boards' categories, in the owner's order; the page opens on
+#: overall because that is the headline question the sub-rail item asks.
+JH_CAREER_CATS = (("overall", "Overall"), ("singles", "Singles"),
+                  ("doubles", "Doubles"))
+
+
+def jhsaa_career_wins_view(seed: int, gender: str, cat: str | None = None,
+                           group: str | None = None) -> dict:
+    """MOST CAREER WINS — players (owner request, 2026-08): the top of the
+    association by match wins over a high-school career, with a category dropdown
+    switching Singles / Doubles / Overall (the Individual Champions page's
+    pattern — one page, a `<select>` for the axis).
+
+    All three boards ship in the one page and the dropdown switches panes
+    client-side: they are the same fold sorted three ways, and a reload per
+    category would re-pay nothing but latency. CLASS-BLIND like every career
+    surface (a career crosses reclassification); `group` is scope memory only.
+    """
+    import app.jhsaa as jh
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    years = world.jhsaa_years(w["id"], g)
+    schools = _jh_schools(g)
+    data = world.jhsaa_career_wins(w["id"], g)
+    boards = {}
+    for key, _label in JH_CAREER_CATS:
+        rows = []
+        for r in data["players"][key]:
+            rows.append({**r,
+                         "deco": _jh_deco(schools, r["school"], 18),
+                         "stint_rows": [{**st, "deco": _jh_deco(schools, st["school"], 18)}
+                                        for st in r["stints"]],
+                         "span": (str(r["first"]) if r["first"] == r["last"]
+                                  else f"{r['first']}–{str(r['last'])[2:]}")})
+        boards[key] = rows
+    c = cat if cat in dict(JH_CAREER_CATS) else "overall"
+    return {"gender": g, "cat": c, "cats": list(JH_CAREER_CATS),
+            "boards": boards, "ready": bool(years), "seasons": len(years),
+            "scope": _jh_scope(g, group if group in jh.GROUPS else jh.GROUPS[0],
+                               list(jh.GROUPS), years[0] if years else 0,
+                               years, None, None)}
+
+
+def jhsaa_program_wins_view(seed: int, gender: str, group: str | None = None,
+                            year: int | None = None) -> dict:
+    """MOST PROGRAM WINS — the all-time W-L table, one row per program (owner
+    request, 2026-08): the Title Board's format — the whole board in one page,
+    sorted and filtered in the browser — answering the other all-time question,
+    wins rather than trophies. A SEPARATE view from the Title Board by the
+    owner's explicit ask; the two share the fold-not-store rule and nothing
+    else."""
+    import app.jhsaa as jh
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    years = world.jhsaa_years(w["id"], g)
+    yr = (years[0] if years else w["year"]) if year is None else year
+    grp = group if group in jh.GROUPS else jh.GROUPS[0]
+    data = world.jhsaa_career_wins(w["id"], g)
+    schools = _jh_schools(g)
+    rows = []
+    for r in data["programs"]:
+        s = schools.get(r["school"])
+        rows.append({**r, "mark": jh.mark(s, 20) if s else "",
+                     "city": s.city if s else "", "district": s.district if s else "",
+                     "pct_s": f"{r['pct']:.3f}".lstrip("0") or ".000",
+                     "q": " ".join((r["school"], r["group"],
+                                    s.city if s else "", s.county if s else "",
+                                    s.district if s else "")).lower()})
+    return {"ready": bool(years), "gender": g, "group": grp,
+            "groups": list(jh.GROUPS), "seasons": len(years),
+            "rows": rows, "total": len(rows),
+            "scope": _jh_scope(g, grp, list(jh.GROUPS), yr, years, None, None)}
 
 
 def _jh_career_stints(items: list[dict], schools: dict) -> list[dict]:
