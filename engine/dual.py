@@ -207,7 +207,8 @@ def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
                   box_stats: bool = False, play_all: bool = False,
                   dual_fmt: DualFormat = CLASSIC,
                   singles_fmt: "MatchFormat | None" = None,
-                  doubles_fmt: "MatchFormat | None" = None) -> DualResult:
+                  doubles_fmt: "MatchFormat | None" = None,
+                  profile: dict | None = None) -> DualResult:
     """Simulate an NCAA dual of shape `dual_fmt` (default: the classic 6+3 with a
     consolidated doubles point). `priority_finish` lists singles court indices
     (0-based) that should finish among the first matches off the court — used by
@@ -247,7 +248,8 @@ def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
     for i in range(n_d):
         res = simulate_doubles(_pair(home, _pairing(home, i)), _pair(away, _pairing(away, i)),
                                seed=seed + 10 + i, fmt=doubles_pro,
-                               fidelity=fidelity, context=context)
+                               fidelity=fidelity, context=context,
+                               profile=profile)
         if box_stats:
             _overlay_stats(res, seed=seed + 10 + i, fmt=doubles_pro, context=context)
         d_wins[0 if res.winner == 0 else 1] += 1
@@ -274,7 +276,8 @@ def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
     for i in range(n_s):
         res = simulate_match(_court(home, i), _court(away, i),
                              seed=seed + 100 + i, fmt=singles_fmt,
-                             fidelity=fidelity, context=context)
+                             fidelity=fidelity, context=context,
+                             profile=profile)
         results[i] = res
         # Running length = games played + a tiny seeded jitter so equal-length
         # matches still settle into a stable, varied order.

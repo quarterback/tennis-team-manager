@@ -201,17 +201,22 @@ def simulate_match(
     first_server: int = 0,
     fidelity: str = "full",
     context: Optional[MatchContext] = None,
+    profile: Optional[dict] = None,
 ) -> MatchResult:
     """Simulate a singles match under `fmt`.
 
     `fidelity="fast"` routes to the game-level hold model. `context` is optional
     hardcourt weather/venue context; omitted means neutral outdoor conditions.
+    `profile` overlays the fast model's tuning for this match (engine.fast.
+    HS_PROFILE — high-school scoreline realism); fast fidelity only, None
+    everywhere else.
     """
     fmt = fmt or DEFAULT
     context = context or MatchContext()
     if fidelity == "fast":
         from .fast import simulate_fast
-        return simulate_fast(p0, p1, seed=seed, fmt=fmt, first_server=first_server, context=context)
+        return simulate_fast(p0, p1, seed=seed, fmt=fmt, first_server=first_server,
+                             context=context, profile=profile)
 
     state = MatchState(players=(p0, p1), rng=random.Random(seed), fmt=fmt,
                        server=first_server, context=context)
