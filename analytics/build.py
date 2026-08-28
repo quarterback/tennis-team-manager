@@ -107,8 +107,9 @@ def main(argv: list[str]) -> int:
     args = ap.parse_args(argv)
 
     for path in args.zips:
-        key = ingest.ingest_zip(path)
-        print(f"ingested {path} -> data/{key}")
+        keys = ingest.ingest_zip(path)
+        for key in keys:
+            print(f"ingested {path} -> data/{key}")
 
     cached = ingest.all_bundles()
     if not cached:

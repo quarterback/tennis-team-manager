@@ -537,7 +537,24 @@ paste them into the Batch import panel on /jhsaa/transfers or run
 effective the NEXT season ({year + 1}) and are validated row by row — an
 invalid row is reported and skipped, never silently dropped.
 """
+    tables = {"underplayed_candidates.csv": csv_rows}
+    manifest = {
+        "format": "play-to-clinch-research-export", "format_version": 1,
+        "dataset_family": "underplayed",
+        "scope": {"year": year, "gender": gender, "classification": classification},
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "files": {
+            "underplayed_candidates.csv": {"media_type": "text/csv", "rows": len(csv_rows)},
+            "manifest.json": {"media_type": "application/json", "rows": None},
+            "README.md": {"media_type": "text/markdown", "rows": None},
+        },
+        "domain_rules": [
+            "This is a candidate list, not a full season bundle — it has no "
+            "programs/players/duals tables of its own.",
+        ],
+    }
     return {"underplayed_candidates.csv": _csv(csv_rows),
+            "manifest.json": json.dumps(manifest, indent=2, ensure_ascii=False).encode(),
             "README.md": readme.encode()}
 
 
