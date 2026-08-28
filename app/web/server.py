@@ -1708,8 +1708,9 @@ def create_app() -> Flask:
         meetings = gs.prior_meetings(league["id"], detail["home_fid"], detail["away_fid"], dual_id)
         for m in meetings:
             m["url"] = url_for("gtt_dual", dual_id=m["id"], lg=league["id"])
+        series = mc.summarize_series(meetings, detail["home_name"], detail["away_name"])
         return render_template("gtt_dual.html", active="GTT", league=league, d=detail,
-                               stat_groups=stat_groups, meetings=meetings)
+                               stat_groups=stat_groups, meetings=meetings, series=series)
 
     @app.route("/gtt/franchise/<int:fid>")
     def gtt_franchise(fid):
@@ -3762,9 +3763,10 @@ def create_app() -> Flask:
         meetings = sm.prior_meetings(d["home"], d["away"], dual_id)
         for m in meetings:
             m["url"] = url_for("season_dual", dual_id=m["id"], u=u)
+        series = mc.summarize_series(meetings, d["home"], d["away"])
         return render_template("season_dual.html", active="Season", u=u, uni_label=label,
                                d=d, crest=crest, dbl_label=dbl_label, sgl_label=sgl_label,
-                               stat_groups=stat_groups, meetings=meetings)
+                               stat_groups=stat_groups, meetings=meetings, series=series)
 
     return app
 

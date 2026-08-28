@@ -356,6 +356,29 @@
 .bl-h2hrow .score { text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .bl-h2hrow .score a { color: inherit; text-decoration: none; }
 .bl-h2hrow .score a:hover { text-decoration: underline; }
+.bl-h2h-ps {
+  font-size: 10px; font-weight: 800; letter-spacing: 0.03em; color: var(--brand-strong);
+  background: var(--green-50); border-radius: 3px; padding: 1px 4px; margin-left: 5px; vertical-align: 1px;
+}
+
+/* ---- Head-to-head: the career SERIES record (leads with the record, not
+   a "recent form" list — matchcenter.summarize_series) ---- */
+.bl-h2h-series { margin-bottom: 14px; }
+.bl-h2h-lead { font-size: 17px; font-weight: 700; text-align: center; }
+.bl-h2h-lead strong { color: var(--brand-strong); }
+.bl-h2h-sub { font-size: 13.5px; color: var(--text-muted); text-align: center; margin-top: 2px; }
+.bl-h2h-bar { display: flex; height: 10px; border-radius: var(--radius-pill); overflow: hidden; background: var(--gray-200); margin-top: 12px; }
+.bl-h2h-bar .a { background: var(--stat-good); }
+.bl-h2h-bar .t { background: var(--text-faint); }
+.bl-h2h-bar .b { background: var(--border-default); }
+.bl-h2h-barlbl { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-top: 6px; }
+.bl-h2h-stats {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px 20px;
+  padding: 14px 16px; border-top: 1px solid var(--border-subtle); margin-top: 14px;
+}
+.bl-h2h-stats > div { display: flex; flex-direction: column; gap: 2px; }
+.bl-h2h-stats .lbl { font-size: 12px; text-transform: uppercase; letter-spacing: var(--ls-eyebrow); color: var(--text-muted); font-weight: 600; }
+.bl-h2h-stats .val { font-size: 14.5px; font-weight: 600; color: var(--text-primary); }
 
 /* ---- Bracket ---- */
 .bl-champ {

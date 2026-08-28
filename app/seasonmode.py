@@ -2229,23 +2229,27 @@ def dual_detail(dual_id: int) -> dict | None:
     return d
 
 
-def prior_meetings(school_a: str, school_b: str, exclude_dual_id: int,
-                    limit: int = 5) -> list[dict]:
-    """The Match Center's head-to-head tab: this pair's past completed duals
-    (either order, any season), most recent first. `week`/`round` are the
-    label — `duals` carries no year column (a season row doesn't either), so
-    a meeting reads "Wk N" rather than inventing a year."""
+def prior_meetings(school_a: str, school_b: str, exclude_dual_id: int) -> list[dict]:
+    """The Match Center's head-to-head tab: EVERY past completed dual between
+    this pair (either order, any season), most recent first — the full
+    series, not a capped "recent form" list (see `matchcenter.
+    summarize_series`, which needs the complete history to be honest about
+    who leads). `week`/`round` are the label — `duals` carries no year
+    column (a season row doesn't either), so a meeting reads "Wk N" rather
+    than inventing a year. `postseason` is `round in ('CT', 'NCAA')` — the
+    Preseason NIT (`ITAK`/`ITAI`) is a PRE-season event and doesn't count."""
     conn = _db()
     rows = conn.execute(
         "SELECT id, season_id, week, round, home, away, home_points, away_points"
         " FROM duals WHERE status='final' AND id!=?"
         " AND ((home=? AND away=?) OR (home=? AND away=?))"
-        " ORDER BY season_id DESC, week DESC, id DESC LIMIT ?",
-        (exclude_dual_id, school_a, school_b, school_b, school_a, limit)).fetchall()
+        " ORDER BY season_id DESC, week DESC, id DESC",
+        (exclude_dual_id, school_a, school_b, school_b, school_a)).fetchall()
     conn.close()
     return [{"id": r["id"], "label": f"Wk {r['week']}" if r["round"] == "REG" else r["round"],
              "home": r["home"], "away": r["away"],
-             "home_points": r["home_points"], "away_points": r["away_points"]}
+             "home_points": r["home_points"], "away_points": r["away_points"],
+             "postseason": r["round"] in ("CT", "NCAA")}
             for r in rows]
 
 

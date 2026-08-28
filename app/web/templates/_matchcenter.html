@@ -90,25 +90,56 @@
 {% endif %}
 {% endmacro %}
 
-{# `m.url`, when present, is built by the route (each division generates its
-   own dual-detail URL) — the macro just links to it if given one. #}
-{% macro mc_h2h(meetings) %}
-{% if not meetings %}
+{# One row of the game-by-game list. `m.url`, when present, is built by the
+   route (each division generates its own dual-detail URL). #}
+{% macro mc_h2h_row(m) %}
+<div class="bl-h2hrow">
+  <span class="lbl">{{ m.label }}{% if m.postseason %}<span class="bl-h2h-ps">PS</span>{% endif %}</span>
+  <span class="side {{ 'win' if m.home_points > m.away_points }}">{{ m.home }}</span>
+  <span class="score">{% if m.url %}<a href="{{ m.url }}">{{ m.home_points }}–{{ m.away_points }}</a>{% else %}{{ m.home_points }}–{{ m.away_points }}{% endif %}</span>
+  <span class="side {{ 'win' if m.away_points > m.home_points }}">{{ m.away }}</span>
+</div>
+{% endmacro %}
+
+{# The head-to-head tab: a CAREER SERIES record first (who leads, the full
+   sample size, since when), then the complete game-by-game list — never a
+   silently-capped "recent form" snippet. `series` is `matchcenter.
+   summarize_series(meetings, home, away)`; `meetings` is the SAME list that
+   was fed into it, most-recent-first, so the two can never disagree. #}
+{% macro mc_h2h(meetings, series, home, away) %}
+{% if not series %}
 <div class="bl-panel"><div class="bl-panel-body" style="color:var(--text-muted)">
   No prior meetings recorded.</div></div>
 {% else %}
+<div class="bl-panel bl-h2h-series">
+  <div class="bl-panel-body">
+    <div class="bl-h2h-lead">
+      {% if series.leader %}<strong>{{ series.leader }}</strong> leads the series {{ series.record_str }}
+      {% else %}Series tied {{ series.record_str }}{% endif %}
+    </div>
+    <div class="bl-h2h-sub">{{ series.total }} meeting{{ 's' if series.total != 1 }} · {{ series.first_label }}–{{ series.last_label }}</div>
+    <div class="bl-h2h-bar">
+      <span class="a" style="width:{{ (100 * series.wins[home] / series.total)|round(1) }}%"></span>
+      {% if series.ties %}<span class="t" style="width:{{ (100 * series.ties / series.total)|round(1) }}%"></span>{% endif %}
+      <span class="b" style="width:{{ (100 * series.wins[away] / series.total)|round(1) }}%"></span>
+    </div>
+    <div class="bl-h2h-barlbl"><span>{{ home }} {{ series.wins[home] }}</span>{% if series.ties %}<span>{{ series.ties }} tied</span>{% endif %}<span>{{ series.wins[away] }} {{ away }}</span></div>
+  </div>
+  <div class="bl-h2h-stats">
+    <div><span class="lbl">Current streak</span><span class="val">{% if series.streak_team %}{{ series.streak_team }} W{{ series.streak_n }}{% else %}—{% endif %}</span></div>
+    <div><span class="lbl">Last meeting</span><span class="val">{% if series.last_meeting.winner %}{{ series.last_meeting.winner }} won {{ [series.last_meeting.home_points, series.last_meeting.away_points]|max }}–{{ [series.last_meeting.home_points, series.last_meeting.away_points]|min }}{% else %}Tied {{ series.last_meeting.home_points }}–{{ series.last_meeting.away_points }}{% endif %} · {{ series.last_meeting.label }}</span></div>
+    <div><span class="lbl">Last {{ series.last10_n }}</span><span class="val">{{ home }} {{ series.last10_wins[home] }}–{{ series.last10_wins[away] }} {{ away }}</span></div>
+    {% if series.postseason_total %}
+    <div><span class="lbl">Postseason</span><span class="val">{% if series.postseason_wins[home] == series.postseason_wins[away] %}Tied {{ series.postseason_wins[home] }}–{{ series.postseason_wins[away] }}{% elif series.postseason_wins[home] > series.postseason_wins[away] %}{{ home }} leads {{ series.postseason_wins[home] }}–{{ series.postseason_wins[away] }}{% else %}{{ away }} leads {{ series.postseason_wins[away] }}–{{ series.postseason_wins[home] }}{% endif %}</span></div>
+    {% endif %}
+    {% if series.largest_margin[home] %}<div><span class="lbl">Largest margin · {{ home }}</span><span class="val">{{ series.largest_margin[home].margin }} ({{ series.largest_margin[home].label }})</span></div>{% endif %}
+    {% if series.largest_margin[away] %}<div><span class="lbl">Largest margin · {{ away }}</span><span class="val">{{ series.largest_margin[away].margin }} ({{ series.largest_margin[away].label }})</span></div>{% endif %}
+  </div>
+</div>
+
 <div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">Head-to-head</span></div>
-  <div>
-  {% for m in meetings %}
-  <div class="bl-h2hrow">
-    <span class="lbl">{{ m.label }}</span>
-    <span class="side {{ 'win' if m.home_points > m.away_points }}">{{ m.home }}</span>
-    <span class="score">{% if m.url %}<a href="{{ m.url }}">{{ m.home_points }}–{{ m.away_points }}</a>{% else %}{{ m.home_points }}–{{ m.away_points }}{% endif %}</span>
-    <span class="side {{ 'win' if m.away_points > m.home_points }}">{{ m.away }}</span>
-  </div>
-  {% endfor %}
-  </div>
+  <div class="bl-panel-head"><span class="bl-panel-title">All meetings</span><span class="bl-panel-meta">{{ meetings|length }}</span></div>
+  <div>{% for m in meetings %}{{ mc_h2h_row(m) }}{% endfor %}</div>
 </div>
 {% endif %}
 {% endmacro %}

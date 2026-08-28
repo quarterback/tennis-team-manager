@@ -1,5 +1,48 @@
 # AAR — Match Center (flashscore/sofascore-style dual detail pages)
 
+## Head-to-head rewrite (owner correction, 2026-08)
+
+The Matches tab shipped as a 5-row "recent form" list, capped and silently
+truncated — copied from flashscore/sofascore's H2H widget without noticing
+*why* those sites cap it: their players mostly haven't met much. This sim
+can run a single save for 25+ years, and two programs in the same league
+play every year — a real rivalry has dozens of meetings, and capping at 5
+with no indicator just reads as broken data.
+
+**The fix reorders the whole tab around the real-world convention (rivalry
+pages, Winsipedia-style team-compare pages): the CAREER SERIES RECORD
+first, the complete game list second — never a recency snippet standing in
+for the record.** `matchcenter.summarize_series(meetings, team_a, team_b)`
+takes EVERY known meeting (the three `prior_meetings` functions no longer
+cap or `LIMIT` — they return the full history) and computes: who leads and
+by how much (W-L, or W-L-T since JV can tie), total meetings and the date
+range, current streak, last meeting, last-10 split, a postseason-only split
+(when there's been a postseason meeting), and largest margin of victory per
+side. `mc_h2h` renders that summary plus a win/tie/loss comparison bar,
+then lists every meeting underneath — no cap, no "show more," because
+nothing is hidden.
+
+‼️ **`summarize_series` needs the postseason flag threaded through, and
+"postseason" means something different per division** — college is
+`round in ('CT', 'NCAA')` (the Preseason NIT, `ITAK`/`ITAI`, is a
+PRE-season event and does NOT count), GTT is `round == 'PO'`, JHSAA is
+`phase in jhsaa.POSTSEASON`. Each `prior_meetings` computes its own division's
+flag; `summarize_series` itself is division-agnostic and just reads it off
+each meeting dict.
+
+‼️ **A meeting's `home`/`away` name is per-GAME (venue alternates); the
+series record is keyed on the two PROGRAMS.** `summarize_series` tallies a
+win against `team_a`/`team_b` (the two programs' current display names),
+never against "home"/"away," which is why every `mc_h2h(...)` call site
+passes the SAME two name strings it used server-side to build `series` —
+`series.wins[home]` in the template only resolves correctly because `home`
+is that exact string.
+
+Verified by hand-tracing `summarize_series` against several constructed
+series (a mixed win/loss/tie/postseason sequence, a single-meeting series,
+an all-tie series) and by running it through `tests/test_web_gtt.py`'s real
+box-score page end to end.
+
 Owner request 2026-08: model the college/GTT/JHSAA dual-detail pages on
 flashscore.com/sofascore.com's live-match UI (score header, grouped
 stat-comparison bars, tabs). Read the two sibling docs first if you're

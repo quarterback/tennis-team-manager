@@ -166,3 +166,95 @@ def stat_groups(totals: tuple[dict, dict] | None) -> list[dict] | None:
     groups = [{"title": t, "rows": r} for t, r in
               (("Service", service), ("Return", ret), ("Points", pts)) if r]
     return groups or None
+
+
+# ---------------------------------------------------------------------------
+# Head-to-head — a career SERIES record, not a "recent form" snapshot
+# ---------------------------------------------------------------------------
+# The Matches tab was originally a 5-row recency list, styled after flashscore/
+# sofascore's H2H widget. That's the wrong model here: those sites cap it
+# because the players it's showing rarely have a long history together. Two
+# programs in the same league play every year for decades — the real-world
+# pattern (rivalry pages, Winsipedia-style team-compare pages) leads with the
+# CAREER series record (who leads, by how much, since when), then a full
+# game-by-game list underneath, never a silently-truncated "top 5". See
+# docs/AAR-match-center.md for the full writeup.
+
+def summarize_series(meetings: list[dict], team_a: str, team_b: str) -> dict | None:
+    """A full head-to-head record built from EVERY known meeting between two
+    programs, not a capped list — `meetings` should be every row the
+    caller's `prior_meetings`-style query can find, most-recent-first, each
+    `{label, home, away, home_points, away_points, postseason}`. `team_a`/
+    `team_b` are the two programs' current display names; a meeting's
+    winner is tallied against whichever of the two it matches (a meeting's
+    own `home`/`away` only says who hosted THAT game, which alternates)."""
+    if not meetings:
+        return None
+
+    def winner_of(m: dict) -> str | None:
+        if m["home_points"] == m["away_points"]:
+            return None
+        return m["home"] if m["home_points"] > m["away_points"] else m["away"]
+
+    wins = {team_a: 0, team_b: 0}
+    ties = 0
+    ps_wins = {team_a: 0, team_b: 0}
+    ps_total = 0
+    largest_margin = {team_a: None, team_b: None}
+    longest_streak = {team_a: 0, team_b: 0}
+    run_team, run_n = None, 0
+
+    # Oldest-first pass, so a "streak" is built chronologically — both the
+    # longest ever (kept running per side) and, once the loop ends, the
+    # CURRENT streak (whatever run is still open at the most recent game).
+    for m in reversed(meetings):
+        w = winner_of(m)
+        if w is None:
+            ties += 1
+            run_team, run_n = None, 0
+            continue
+        if w in wins:
+            wins[w] += 1
+        margin = abs(m["home_points"] - m["away_points"])
+        best = largest_margin.get(w)
+        if w in largest_margin and (best is None or margin > best["margin"]):
+            largest_margin[w] = {"margin": margin, "label": m["label"]}
+        if m.get("postseason"):
+            ps_total += 1
+            if w in ps_wins:
+                ps_wins[w] += 1
+        run_team, run_n = (w, run_n + 1) if w == run_team else (w, 1)
+        if w in longest_streak:
+            longest_streak[w] = max(longest_streak[w], run_n)
+
+    a_w, b_w = wins[team_a], wins[team_b]
+    if a_w > b_w:
+        leader = team_a
+    elif b_w > a_w:
+        leader = team_b
+    else:
+        leader = None
+    record_str = f"{a_w}-{b_w}" + (f"-{ties}" if ties else "")
+
+    last10 = meetings[:10]
+    last10_wins = {team_a: 0, team_b: 0}
+    for m in last10:
+        w = winner_of(m)
+        if w in last10_wins:
+            last10_wins[w] += 1
+
+    last = meetings[0]
+    return {
+        "total": len(meetings), "wins": wins, "ties": ties, "record_str": record_str,
+        "leader": leader,
+        "first_label": meetings[-1]["label"], "last_label": last["label"],
+        "streak_team": run_team, "streak_n": run_n,
+        "last_meeting": {"winner": winner_of(last), "home": last["home"], "away": last["away"],
+                         "home_points": last["home_points"], "away_points": last["away_points"],
+                         "label": last["label"]},
+        "last10_wins": last10_wins, "last10_n": len(last10),
+        "postseason_total": ps_total,
+        "postseason_wins": ps_wins if ps_total else None,
+        "largest_margin": largest_margin,
+        "longest_streak": longest_streak,
+    }

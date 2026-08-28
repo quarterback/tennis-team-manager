@@ -3673,6 +3673,8 @@ def jhsaa_dual_view(dual_id: int) -> dict | None:
     winner = 0 if home_pts > away_pts else (1 if away_pts > home_pts else None)
     meetings = world.jhsaa_prior_meetings(row["world_id"], row["gender"], home, away,
                                           level=level, exclude_id=home_row_id)
+    import app.matchcenter as mc
+    series = mc.summarize_series(meetings, home, away)
     # `phase` is only a special string for postseason/showcase duals (see
     # `jhsaa_school_view`'s `_kind`); an ordinary league-season dual is phase
     # "regular" and is told apart from a non-league one by `district` alone.
@@ -3683,7 +3685,8 @@ def jhsaa_dual_view(dual_id: int) -> dict | None:
             "phase_label": phase_label,
             "level": level, "year": row["year"],
             "season_year": world.BASE_YEAR + row["year"] + 1, "gender": row["gender"],
-            "lines": _jh_reported_lines(row), "stat_groups": None, "meetings": meetings}
+            "lines": _jh_reported_lines(row), "stat_groups": None,
+            "meetings": meetings, "series": series}
 
 
 def _jh_line_records(sched: list[dict], level: str = "v") -> dict:

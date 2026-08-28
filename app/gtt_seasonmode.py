@@ -2240,23 +2240,25 @@ def dual_detail(league_id, dual_id):
             "winner": d["winner"], "status": d["status"], "lines": lines}
 
 
-def prior_meetings(league_id: int, fid_a: int, fid_b: int, exclude_dual_id: int,
-                    limit: int = 5) -> list[dict]:
-    """The Match Center's head-to-head tab: this pair's past completed duals,
-    most recent first."""
+def prior_meetings(league_id: int, fid_a: int, fid_b: int, exclude_dual_id: int) -> list[dict]:
+    """The Match Center's head-to-head tab: EVERY past completed dual between
+    this pair, most recent first — the full series (see `matchcenter.
+    summarize_series`), not a capped "recent form" list. `postseason` is
+    `round == 'PO'` (`_advance_playoff_round`'s tag; regular season is 'REG')."""
     conn = _db()
     rows = conn.execute(
-        "SELECT id, year, week, home, away, home_points, away_points FROM gtt_duals"
+        "SELECT id, year, week, round, home, away, home_points, away_points FROM gtt_duals"
         " WHERE league_id=? AND status='final' AND id!=?"
         " AND ((home=? AND away=?) OR (home=? AND away=?))"
-        " ORDER BY year DESC, week DESC, id DESC LIMIT ?",
-        (league_id, exclude_dual_id, fid_a, fid_b, fid_b, fid_a, limit)).fetchall()
+        " ORDER BY year DESC, week DESC, id DESC",
+        (league_id, exclude_dual_id, fid_a, fid_b, fid_b, fid_a)).fetchall()
     names = _fr_names(conn, league_id)
     conn.close()
     return [{"id": r["id"], "label": f"{r['year']} Wk {r['week']}",
              "home": names.get(r["home"], str(r["home"])),
              "away": names.get(r["away"], str(r["away"])),
-             "home_points": r["home_points"], "away_points": r["away_points"]}
+             "home_points": r["home_points"], "away_points": r["away_points"],
+             "postseason": r["round"] == "PO"}
             for r in rows]
 
 

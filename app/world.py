@@ -5089,25 +5089,27 @@ def jhsaa_home_row_id(world_id: int, year: int, gender: str, level: str,
 
 
 def jhsaa_prior_meetings(world_id: int, gender: str, home: str, away: str,
-                         level: str = "v", exclude_id: int | None = None,
-                         limit: int = 5) -> list[dict]:
-    """The Match Center's head-to-head tab: this pair's past meetings, most
-    recent first. Reads only the HOME side's row of each past dual (`home=1`)
-    since the two rows of one dual duplicate each other from either school's
-    perspective — without that filter every past meeting would double-count.
+                         level: str = "v", exclude_id: int | None = None) -> list[dict]:
+    """The Match Center's head-to-head tab: EVERY past meeting between this
+    pair, most recent first — the full series (see `matchcenter.
+    summarize_series`), not a capped "recent form" list. Reads only the HOME
+    side's row of each past dual (`home=1`) since the two rows of one dual
+    duplicate each other from either school's perspective — without that
+    filter every past meeting would double-count.
 
     ‼️ SCOPED TO ONE `level`. Varsity and JV share `world_jhsaa_dual`,
     distinguished only by that column (same trap as everywhere else in this
     table — see `_jh_line_records`'s docstring); without the filter a
-    varsity Match Center could show JV results as head-to-head history, and
-    JV rows (there are many more of them) could crowd every varsity meeting
-    out of the `limit`.
+    varsity Match Center could show JV results as head-to-head history.
 
     ‼️ MATCHES ON EVERY NAME EITHER PROGRAM HAS EVER CARRIED
     (`jhsaa.known_names`), not just today's — a renamed program's older
     meetings are archived under its old name, on both sides of the pairing,
     so a lookup on the current names alone silently drops them (the same
-    reason `world._schedule_rows` resolves `known_names` before querying)."""
+    reason `world._schedule_rows` resolves `known_names` before querying).
+
+    `postseason` is `phase in jhsaa.POSTSEASON` (Sectional through TOC —
+    everything past the league season and the mid-season showcases)."""
     from . import jhsaa as _jh
     home_names = _jh.known_names(home, gender)
     away_names = _jh.known_names(away, gender)
@@ -5117,7 +5119,7 @@ def jhsaa_prior_meetings(world_id: int, gender: str, home: str, away: str,
         qmarks_h = ",".join("?" * len(home_names))
         qmarks_a = ",".join("?" * len(away_names))
         rows = conn.execute(
-            "SELECT rowid AS id, year, school, opp, pf, pa FROM world_jhsaa_dual"
+            "SELECT rowid AS id, year, school, opp, pf, pa, phase FROM world_jhsaa_dual"
             " WHERE world_id=? AND gender=? AND home=1 AND COALESCE(level,'v')=?"
             f" AND ((school IN ({qmarks_h}) AND opp IN ({qmarks_a}))"
             f"  OR (school IN ({qmarks_a}) AND opp IN ({qmarks_h})))"
@@ -5133,9 +5135,8 @@ def jhsaa_prior_meetings(world_id: int, gender: str, home: str, away: str,
         out.append({"id": r["id"], "label": str(BASE_YEAR + r["year"] + 1),
                     "home": alias.get(r["school"], r["school"]),
                     "away": alias.get(r["opp"], r["opp"]),
-                    "home_points": int(r["pf"]), "away_points": int(r["pa"])})
-        if len(out) >= limit:
-            break
+                    "home_points": int(r["pf"]), "away_points": int(r["pa"]),
+                    "postseason": r["phase"] in _jh.POSTSEASON})
     return out
 
 
