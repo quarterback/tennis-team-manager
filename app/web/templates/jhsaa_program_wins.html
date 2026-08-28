@@ -4,7 +4,7 @@
 {% block content %}
 
 {{ jh_header(view.scope, u, 'program_wins', 'Most Program Wins',
-             'Every program by all-time dual wins — the whole association in one sortable table, with singles and doubles courts won beside the dual record.',
+             'Every program by all-time dual wins.',
              [('Programs', view.total), ('Seasons', view.seasons)]) }}
 
 <div class="jh-shell">
@@ -33,21 +33,19 @@
 <div class="bl-panel">
   <div class="bl-panel-head">
     <span class="bl-panel-title">All-time — every archived season</span>
-    <span class="bl-panel-meta">W–L is the DUAL record, postseason inside the season
-      total as the association counts it. Courts are individual singles and doubles
-      matches won on those cards; JV is not part of a varsity record.</span>
   </div>
   <div class="tbl-scroll">
     <table class="jh-tt" id="jh-tt">
       <thead>
+        <tr class="grp"><th class="nm" colspan="7"></th></tr>
         <tr>
           <th class="nm" data-sort="s" data-dir="asc">School</th>
-          <th data-sort="n" data-k="seasons" title="Seasons archived">SEA</th>
-          <th data-sort="n" data-k="w" title="All-time dual wins">W</th>
-          <th data-sort="n" data-k="l" title="All-time dual losses">L</th>
-          <th data-sort="n" data-k="pct" title="All-time winning percentage">PCT</th>
-          <th data-sort="n" data-k="s_w" title="Singles courts won">S W</th>
-          <th data-sort="n" data-k="d_w" title="Doubles courts won">D W</th>
+          <th data-sort="n" data-k="seasons">SEA</th>
+          <th data-sort="n" data-k="w">W</th>
+          <th data-sort="n" data-k="l">L</th>
+          <th data-sort="n" data-k="pct">PCT</th>
+          <th data-sort="n" data-k="s_w">S W</th>
+          <th data-sort="n" data-k="d_w">D W</th>
         </tr>
       </thead>
       <tbody>
