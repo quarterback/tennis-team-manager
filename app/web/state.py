@@ -3642,20 +3642,37 @@ def jhsaa_dual_view(dual_id: int) -> dict | None:
     ‼️ NO PLAYER-LEVEL BOX STATS EXIST HERE. `jhsaa.FIDELITY` is always "fast"
     (a full point-level state bracket would stall the request thread — see
     CLAUDE.md), so `stat_groups` is always None and the Statistics tab shows
-    "not recorded" rather than fabricating a comparison."""
+    "not recorded" rather than fabricating a comparison.
+
+    ‼️ `year` IS A ZERO-BASED ARCHIVE KEY, NOT A CALENDAR SEASON. It stays
+    raw in the returned dict (`year`) because `jhsaa_school`'s `year` URL
+    param — and every other cross-link in this section (`pin`, per the scope
+    rules) — expects that same raw key; `season_year` is the BASE_YEAR-offset
+    calendar year (`world.jhsaa_season_year`'s own arithmetic) for DISPLAY
+    only. Printing the raw key is why an early draft of this page read
+    "Final · 0"."""
     import app.world as world
     row = world.jhsaa_dual_row(dual_id)
     if not row:
         return None
+    level = row.get("level") or "v"
     if row["home"]:
         home, away = row["school"], row["opp"]
         home_pts, away_pts = int(row["pf"]), int(row["pa"])
+        home_row_id = dual_id
     else:
         home, away = row["opp"], row["school"]
         home_pts, away_pts = int(row["pa"]), int(row["pf"])
+        # The page was opened from the AWAY school's schedule: `dual_id` is
+        # that `home=0` row, which `jhsaa_prior_meetings` (home=1 rows only)
+        # can never match on id. Resolve the sibling home-side row — by the
+        # RAW archived names, since that is what's actually stored on it —
+        # so exclusion works from either side.
+        home_row_id = world.jhsaa_home_row_id(row["world_id"], row["year"], row["gender"],
+                                              level, row["opp_raw"], row["school_raw"])
     winner = 0 if home_pts > away_pts else (1 if away_pts > home_pts else None)
     meetings = world.jhsaa_prior_meetings(row["world_id"], row["gender"], home, away,
-                                          exclude_id=dual_id)
+                                          level=level, exclude_id=home_row_id)
     # `phase` is only a special string for postseason/showcase duals (see
     # `jhsaa_school_view`'s `_kind`); an ordinary league-season dual is phase
     # "regular" and is told apart from a non-league one by `district` alone.
@@ -3664,7 +3681,8 @@ def jhsaa_dual_view(dual_id: int) -> dict | None:
     return {"id": dual_id, "home": home, "away": away,
             "home_points": home_pts, "away_points": away_pts, "winner": winner,
             "phase_label": phase_label,
-            "level": row.get("level") or "v", "year": row["year"], "gender": row["gender"],
+            "level": level, "year": row["year"],
+            "season_year": world.BASE_YEAR + row["year"] + 1, "gender": row["gender"],
             "lines": _jh_reported_lines(row), "stat_groups": None, "meetings": meetings}
 
 

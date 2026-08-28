@@ -11,7 +11,7 @@
 
 <div class="bl-board">
   {{ mc_scorehdr(d.home, d.away, d.home_points, d.away_points, d.winner,
-                'Final · ' ~ d.year ~ ' · ' ~ d.phase_label) }}
+                'Final · ' ~ d.season_year|string ~ ' · ' ~ d.phase_label) }}
 
   {{ mc_tabs('mc') }}
 

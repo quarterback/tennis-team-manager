@@ -95,6 +95,48 @@ than the value justified for a first pass. If you want it: college can sum
 (drop the group entirely for divisions that can't supply it) rather than
 showing an asymmetric fourth group only on some pages.
 
+## Four bugs found in review, all in the JHSAA wiring (fixed same day)
+
+- **Year was the raw archive key, not the calendar season.** `world_jhsaa_dual.
+  year` is zero-based (`BASE_YEAR + year + 1` is the real season, same
+  arithmetic as `jhsaa_season_year`); printing it raw read "Final · 0" on
+  every dual. `jhsaa_dual_view` now returns BOTH — `year` stays raw (every
+  other cross-link in this section, including the `jhsaa_school` URL, expects
+  that same raw key) and `season_year` is the converted value for display
+  only. Meeting labels in `jhsaa_prior_meetings` get the same conversion.
+- **Exclusion by raw id silently failed from the away side.**
+  `jhsaa_prior_meetings` only ever returns `home=1` rows, but a dual opened
+  from the away school's schedule hands `jhsaa_dual_view` the `home=0`
+  sibling's rowid — which can never match anything in that result set, so
+  the dual being viewed showed up in its own head-to-head history.
+  `jhsaa_home_row_id` resolves the actual home-side rowid (by the RAW
+  archived names, not the canonicalized ones — see next point) when needed,
+  and `jhsaa_dual_view` always passes that as `exclude_id`.
+- **Only `opp` was canonicalized, not `school`.** A renamed program's OWN
+  archived rows kept the historical name for `school` while `opp` got
+  aliased — so its old schedule rendered the retired name, and worse,
+  `jhsaa_home_row_id`'s companion-row lookup (which must match what's
+  literally stored) would have broken if I'd aliased before that lookup.
+  Fixed by keeping BOTH: `school_raw`/`opp_raw` (for the companion-row
+  query) alongside the now-consistently-aliased `school`/`opp` (for
+  display). `jhsaa_prior_meetings` also now searches every name either
+  program has ever had (`jhsaa.known_names`), not just today's — the same
+  reasoning `world._schedule_rows` already uses.
+- **Varsity and JV history were mixed.** `world_jhsaa_dual` stores both
+  levels in one table, told apart only by `level` (CLAUDE.md's own
+  standing warning about this table). `jhsaa_prior_meetings` didn't filter
+  on it, so a varsity Match Center could list a JV result as a prior
+  meeting, and since JV rows outnumber varsity ones, a handful of them
+  could crowd every real varsity meeting out of the 5-result limit.
+  `jhsaa_dual_view` now threads the current dual's own `level` through to
+  the lookup.
+
+All four verified directly against a generated JHSAA season (not
+screenshots): a genuine district rematch pair, viewed from both its home
+and away rows, each correctly excludes only itself and shows the other
+meeting; a pair with both a varsity and a JV meeting the same season
+resolves the two lookups to disjoint results.
+
 ## `world_jhsaa_dual` has no dual-level id — how the JHSAA route works
 
 Every JHSAA dual is TWO rows in `world_jhsaa_dual` (one per school, `home`
