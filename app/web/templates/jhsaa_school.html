@@ -481,7 +481,15 @@
     {% if ns.players %}
     {% for s in honor_years %}
     {% for h in s.honors %}
-    <div class="jh-honor"><span class="y">{{ s.season_year }}</span><span>{{ h }}</span></div>
+    {# `h` is always built as "AWARD LABEL — Player Name" (`world._season_row`'s
+       `row["honors"].append(f"... — {r['name']}")` — every call site uses the
+       same " — " separator). Bold just the name so it stands out from the
+       label the way the roster/box-score names already do elsewhere; falls
+       back to the whole string unbolded if a future honour type ever drops
+       the separator, rather than mis-splitting it. #}
+    {% set parts = h.rsplit(' — ', 1) %}
+    <div class="jh-honor"><span class="y">{{ s.season_year }}</span>
+      <span>{% if parts|length == 2 %}{{ parts[0] }} — <strong>{{ parts[1] }}</strong>{% else %}{{ h }}{% endif %}</span></div>
     {% endfor %}
     {% endfor %}
     {% else %}
@@ -513,10 +521,15 @@
   <div class="jh-pane" data-pane="careerwins"{{ '' if active == 'careerwins' else ' hidden' }}>
     {% if view.career_wins %}
     {% for r in view.career_wins %}
+    {# Name bolded so it reads as the row's subject; the years are a TAG (the
+       "when", secondary) and the record is bold TEXT (the "how good", the
+       actual stat) — the record used to be the chip and the years plain,
+       which buried the number that matters behind a border and left the
+       name no more visible than either. #}
     <div class="jh-honor"><span class="y">{{ loop.index }}</span>
-      <span>{% if r.pid %}<a href="{{ url_for('jhsaa_player', school=view.school, pid=r.pid, u=u, g=view.gender) }}">{{ r.name }}</a>{% else %}{{ r.name }}{% endif %}
-        <span style="color:var(--text-muted)">{{ r.span }}</span>
-        <span class="jh-chip unit" style="margin-left:6px">{{ r.w }}–{{ r.l }}</span></span></div>
+      <span><strong>{% if r.pid %}<a href="{{ url_for('jhsaa_player', school=view.school, pid=r.pid, u=u, g=view.gender) }}">{{ r.name }}</a>{% else %}{{ r.name }}{% endif %}</strong>
+        <span class="jh-chip ghost" style="margin-left:6px">{{ r.span }}</span>
+        <strong style="color:var(--stat-power);margin-left:6px">{{ r.w }}–{{ r.l }}</strong></span></div>
     {% endfor %}
     {% else %}
     <p class="jh-empty">No varsity matches archived yet.</p>
