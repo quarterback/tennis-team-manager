@@ -35,11 +35,15 @@ nothing.
   owner's "Columbia / Blue Mountain" — a slash cannot live in the
   `/jhsaa/district/<group>/<district>` route segment) and was then renamed
   "Columbia Range League" by the owner in the same session.
-- The real Trout Lake, WA collided with the invented Jefferson 2A "Trout
-  Lake" (Rimrock County) — a display name IS the archive identity and must be
-  unique. The owner renamed the invented one to San Fernando
-  (`import_jhsaa.RENAMES`, source stamped), freeing the plain name for the
-  affiliate.
+- ‼️ TROUT LAKE IS A RELOCATION, NOT A NEW SCHOOL (owner decision 2026-08,
+  superseding a same-session San Fernando rename that never reached an
+  archive). The real Trout Lake, WA shares its name with the invented
+  Jefferson 2A (Rimrock County), and a display name IS the archive identity —
+  two rows cannot both hold it. The owner's resolution: the invented program
+  RELOCATES to Klickitat County, WA and simply IS the affiliate — same name,
+  same archive key, one continuous history, roster identity (and every pid)
+  intact. Do not split them back into two schools, and do not re-introduce
+  the San Fernando rename: its RENAMES entry was removed as a dead key.
 - "Amelia High School" is committed as "Amelia" — school names carry no
   institutional suffix (owner rule 2027-08).
 
@@ -118,9 +122,8 @@ NEW_SCHOOLS = [
     ("Klickitat",    "Klickitat High",    "Klickitat",        "Klickitat", GORGE, "Washington", "2A",  95, "Vandals",   ["#8a1538", "#f2f2ee"], CGD),
     ("Lyle",         "Lyle High",         "Lyle",             "Klickitat", GORGE, "Washington", "2A", 105, "Cougars",   ["#00205b", "#a2aaad"], CGD),
     ("Wishram",      "Wishram High",      "Wishram",          "Klickitat", GORGE, "Washington", "2A",  88, "Falcons",   ["#231f20", "#f2a900"], CGD),
-    # Plain "Trout Lake": the invented Jefferson 2A that held the name was
-    # renamed San Fernando (owner, 2026-08 — import_jhsaa.RENAMES), freeing it.
-    ("Trout Lake",   "Trout Lake School", "Trout Lake",       "Klickitat", GORGE, "Washington", "2A", 110, "Mustangs", ["#1d3c34", "#e8e6df"], CGD),
+    # NB: no "Trout Lake" entry here — that seat is filled by RELOCATION, not
+    # creation. See the merge step in apply() below.
 ]
 
 # Amelia — the one net-new JEFFERSON program of the batch (owner: a revived
@@ -184,7 +187,35 @@ def apply(rows: list[dict]) -> list[str]:
                       "area": BMC, "girls_district": EOL, "boys_district": EOL})
         log.append("moved: Baker -> 5A Eastern Oregon League")
 
-    # 3. The affiliates.
+    # 3. Trout Lake relocates (owner decision 2026-08): the invented Jefferson
+    # 2A moves to Klickitat County, WA and IS the Columbia Gorge affiliate —
+    # one school, one archive, one history. Keyed on the ROSTER IDENTITY
+    # (`source or name`), so it finds the row whatever display name it carries
+    # (a transient same-session San Fernando rename included). Enrollment
+    # follows the decision (the COMPETITIVE_MOVES idiom); mascot and colors
+    # stay the owner's Silverlegs — named for the fish, which swims in
+    # Klickitat County too.
+    tl = next((r for r in rows
+               if (r.get("source") or r["name"]) == "Trout Lake"), None)
+    if tl is None:
+        raise SystemExit("Trout Lake is missing from the data")
+    if tl.get("state") != "Washington":
+        stale = next((r for r in rows
+                      if (r.get("source") or r["name"]) == "Trout Lake School"),
+                     None)
+        if stale is not None:                 # the pre-merge affiliate row
+            rows.remove(stale)
+            by_name.pop(stale["name"], None)
+        by_name.pop(tl["name"], None)
+        tl.pop("source", None)                # name == identity again
+        tl.update({"name": "Trout Lake", "city": "Trout Lake",
+                   "county": "Klickitat", "area": GORGE, "state": "Washington",
+                   "enrollment": 110,
+                   "girls_district": CGD, "boys_district": CGD})
+        by_name["Trout Lake"] = tl
+        log.append("relocated: Trout Lake -> Klickitat, WA (Columbia Gorge District)")
+
+    # 4. The affiliates.
     for (name, source, city, county, area, state, cls, enr,
          mascot, colors, league) in NEW_SCHOOLS:
         if name == "Baker":
@@ -201,7 +232,7 @@ def apply(rows: list[dict]) -> list[str]:
         by_name[name] = rows[-1]
         log.append(f"added: {name} ({cls}, {league})")
 
-    # 4. Amelia.
+    # 5. Amelia.
     if AMELIA["name"] not in by_name:
         rows.append(dict(AMELIA))
         by_name[AMELIA["name"]] = rows[-1]

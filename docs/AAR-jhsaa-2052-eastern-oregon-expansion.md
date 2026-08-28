@@ -51,19 +51,27 @@ JEFFERSON city on the real Amelia City, OR ghost-town site (44.3903,
   a slash cannot live in the `/jhsaa/district/<group>/<district>` segment),
   then renamed by the owner in the same session. Safe pre-season: no dual had
   been archived under the old string.
-- **Trout Lake / San Fernando**: the real Trout Lake, WA collided with the
-  invented Jefferson 2A "Trout Lake" (Rimrock County), and a display name IS
-  the archive identity (unique by pinned test). The owner renamed the
-  INVENTED one to **San Fernando** — `import_jhsaa.RENAMES` entry, data row
-  stamped `source: "Trout Lake"` (roster identity + pids verified
-  byte-identical), the display-keyed tables moved with it (`MASCOTS`,
-  `COLORS`, `RECLASSIFY_TO_2A`; the continuity sponsor list keys on the PREP
-  name and stays), `former_names.json` regenerated so the archive relabels on
-  read. The affiliate then took the plain name. The town of Trout Lake
-  (Rimrock) keeps its name — a school renames, its town does not — so the
-  state now has two towns named Trout Lake, which is ordinary; the gazetteer
-  generator keys towns on name alone and will file the WA town under the
-  Jefferson one until it learns (name, county).
+- **‼️ TROUT LAKE IS A RELOCATION — one school, one continuous history**
+  (owner decision 2026-08, reached in two steps the same session). The real
+  Trout Lake, WA shares its name with the invented Jefferson 2A (Rimrock
+  County), and a display name IS the archive identity (unique by pinned
+  test). The first resolution renamed the invented one to San Fernando and
+  seated the affiliate as a fresh school — which surfaced the REISSUED-NAME
+  consequence: the renamed program's archive cannot follow it (a live name
+  always wins), so its decades of seasons would have shown under the new
+  school's page while its own started blank. Shown that, the owner chose the
+  merge: the invented program RELOCATES to Klickitat County, WA and simply IS
+  the affiliate. Same name, same archive key, roster identity and every pid
+  verified byte-identical across the move; mascot stays the owner's
+  Silverlegs (the fish swims in Klickitat County too); enrollment follows the
+  decision (110, the affiliate's authored band value). The transient
+  San Fernando `RENAMES` entry was REMOVED — no season was ever archived
+  under it, and left behind it would be a dead key aimed at a live school's
+  own name. Desert Sky League (2A) runs a member thinner; the Rimrock town of
+  Trout Lake keeps its name, school-less, so the state has two towns named
+  Trout Lake — ordinary, though the gazetteer generator keys towns on name
+  alone and will file the WA town under the Jefferson one until it learns
+  (name, county).
 - **Owner-name resolutions** (confirmed in-session): "Ginsburg" = Ruth Bader
   Ginsburg (Group 1), "Talling Crossing" = Tailing Crossing (2A), bare
   "Harmon" = Annes Summit (source `Harmon` — Harmon Siding was already named

@@ -15463,26 +15463,6 @@
       "boys_district": "Mariners League"
     },
     {
-      "name": "San Fernando",
-      "city": "Trout Lake",
-      "county": "Rimrock",
-      "area": "Juniper Highlands",
-      "classification": "2A",
-      "group": "2A",
-      "enrollment": 320,
-      "private": false,
-      "mascot": "Silverlegs",
-      "colors": [
-        "#2F3328",
-        "#C0C5CE"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Desert Sky League",
-      "boys_district": "Desert Sky League",
-      "source": "Trout Lake"
-    },
-    {
       "name": "San Lorenzo",
       "city": "San Lorenzo",
       "county": "Marlow",
@@ -18574,24 +18554,23 @@
     },
     {
       "name": "Trout Lake",
-      "source": "Trout Lake School",
       "city": "Trout Lake",
       "county": "Klickitat",
       "area": "Columbia Gorge",
-      "state": "Washington",
       "classification": "2A",
       "group": "2A",
       "enrollment": 110,
       "private": false,
-      "mascot": "Mustangs",
+      "mascot": "Silverlegs",
       "colors": [
-        "#1d3c34",
-        "#e8e6df"
+        "#2F3328",
+        "#C0C5CE"
       ],
       "girls": true,
       "boys": true,
       "girls_district": "Columbia Gorge District",
-      "boys_district": "Columbia Gorge District"
+      "boys_district": "Columbia Gorge District",
+      "state": "Washington"
     },
     {
       "name": "Tule Flat",
