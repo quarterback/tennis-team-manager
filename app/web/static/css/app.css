@@ -326,6 +326,37 @@
 .bl-pips { display: flex; gap: 5px; }
 .bl-pip { width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--border-default); }
 
+/* ---- Match Center: tab strip + Statistics/Matches panels (_matchcenter.html) ---- */
+.bl-mctabs { display: flex; gap: 4px; margin-bottom: 14px; border-bottom: 1px solid var(--border-subtle); }
+.bl-mctab {
+  appearance: none; background: none; border: none; cursor: pointer; padding: 9px 14px;
+  font-size: 14.5px; font-weight: 600; color: var(--text-muted);
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.bl-mctab.active { color: var(--brand-strong); border-bottom-color: var(--brand); }
+.bl-mctab:hover:not(.active) { color: var(--text-primary); }
+
+.bl-statrow { padding: 7px 0; }
+.bl-statvals { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; font-size: 14.5px; }
+.bl-statvals .h, .bl-statvals .a { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bl-statvals .lbl { color: var(--text-muted); font-size: 13.5px; text-align: center; flex: 1; }
+.bl-statbar { display: flex; height: 6px; border-radius: var(--radius-pill); overflow: hidden; background: var(--gray-200); margin-top: 6px; }
+.bl-statbar .h { background: var(--stat-good); }
+.bl-statbar .a { background: var(--border-default); }
+
+.bl-h2hrow {
+  display: grid; grid-template-columns: 56px 1fr auto 1fr; align-items: center; gap: 10px;
+  padding: 9px 16px; border-bottom: 1px solid var(--border-subtle); font-size: 14.5px;
+}
+.bl-h2hrow:last-child { border-bottom: none; }
+.bl-h2hrow .lbl { color: var(--text-faint); font-size: 12.5px; }
+.bl-h2hrow .side { color: var(--text-muted); }
+.bl-h2hrow .side.win { color: var(--text-primary); font-weight: 700; }
+.bl-h2hrow .side:last-child { text-align: right; }
+.bl-h2hrow .score { text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bl-h2hrow .score a { color: inherit; text-decoration: none; }
+.bl-h2hrow .score a:hover { text-decoration: underline; }
+
 /* ---- Bracket ---- */
 .bl-champ {
   display: flex; align-items: center; gap: 18px; background: var(--green-50);
@@ -572,6 +603,11 @@ img, svg, table { max-width: 100%; }
   .bl-matchrow .bl-final { display: none; }
   .bl-side .nm { white-space: normal; }
   .bl-court-team { display: block; margin-left: 0; }
+
+  .bl-h2hrow { grid-template-columns: 1fr auto; row-gap: 2px; }
+  .bl-h2hrow .lbl { grid-column: 1 / -1; }
+  .bl-h2hrow .side:last-child { text-align: left; }
+  .bl-mctab { padding: 8px 10px; font-size: 13.5px; }
 }
 
 /* ---- Standings: league table headers + projected auto-bid leader -------- */

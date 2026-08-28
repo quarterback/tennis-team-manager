@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_matchcenter.html" import mc_scorehdr, mc_tabs, mc_panel_open, mc_panel_close, mc_stat_bars, mc_h2h %}
 {% block title %}Play to Clinch — {{ d.home_name }} vs {{ d.away_name }}{% endblock %}
 {% block content %}
 
@@ -16,14 +17,17 @@
 
   <a class="bl-pill" style="text-decoration:none" href="{{ url_for('gtt_hub', lg=league.id) }}">← {{ league.name }}</a>
 
-  <div class="bl-panel" style="margin-top:14px;margin-bottom:16px">
-    <div class="bl-panel-head">
-      <span class="bl-panel-title">
-        <a href="{{ url_for('gtt_franchise', fid=d.home_fid, lg=league.id) }}" style="text-decoration:none;{{ 'font-weight:800' if d.winner == 0 else 'color:var(--text-muted)' }}">{{ d.home_name }}</a>
-        <span style="margin:0 6px">{{ d.home_points }}–{{ d.away_points }}</span>
-        <a href="{{ url_for('gtt_franchise', fid=d.away_fid, lg=league.id) }}" style="text-decoration:none;{{ 'font-weight:800' if d.winner == 1 else 'color:var(--text-muted)' }}">{{ d.away_name }}</a>
-      </span>
-    </div>
+  <div style="margin-top:14px">
+  {{ mc_scorehdr(d.home_name, d.away_name, d.home_points, d.away_points, d.winner,
+                'Final · Week ' ~ d.week ~ ' · ' ~ d.year,
+                home_link=url_for('gtt_franchise', fid=d.home_fid, lg=league.id),
+                away_link=url_for('gtt_franchise', fid=d.away_fid, lg=league.id)) }}
+  </div>
+
+  {{ mc_tabs('mc') }}
+
+  {{ mc_panel_open('mc', 'details') }}
+  <div class="bl-panel" style="margin:0 0 16px">
     <div style="padding:6px 16px 14px;color:var(--text-muted);font-size:14.5px">
       Click any line for the full match stats. First to 5 of 9 lines clinches.
     </div>
@@ -68,6 +72,15 @@
   </div>
   {% endif %}
   {% endfor %}
+  {{ mc_panel_close() }}
+
+  {{ mc_panel_open('mc', 'stats') }}
+  {{ mc_stat_bars(stat_groups) }}
+  {{ mc_panel_close() }}
+
+  {{ mc_panel_open('mc', 'h2h') }}
+  {{ mc_h2h(meetings) }}
+  {{ mc_panel_close() }}
 </div>
 
 <style>

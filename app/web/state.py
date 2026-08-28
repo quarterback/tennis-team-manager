@@ -3626,6 +3626,48 @@ def _jh_reported_lines(d: dict) -> list[dict]:
     return out
 
 
+_JH_PHASE_LABEL = {"showcase_pod": "Showcase (Pod)", "showcase_tiered": "Showcase (Tiered)",
+                   "toc": "Tournament of Champions", "state": "State Tournament",
+                   "state_special": "State Specials", "conference": "Conference",
+                   "semi_conference": "Semi-Conference", "divisional": "Divisionals",
+                   "semi_state": "Semi-State", "super_regional": "Super Regional",
+                   "zonal": "Zonal", "regional": "Regional", "ward": "Ward",
+                   "sectional": "Sectional"}
+
+
+def jhsaa_dual_view(dual_id: int) -> dict | None:
+    """One JHSAA dual as a Match Center page — the shared macros
+    (`_matchcenter.html`) that the college and GTT dual pages use.
+
+    ‼️ NO PLAYER-LEVEL BOX STATS EXIST HERE. `jhsaa.FIDELITY` is always "fast"
+    (a full point-level state bracket would stall the request thread — see
+    CLAUDE.md), so `stat_groups` is always None and the Statistics tab shows
+    "not recorded" rather than fabricating a comparison."""
+    import app.world as world
+    row = world.jhsaa_dual_row(dual_id)
+    if not row:
+        return None
+    if row["home"]:
+        home, away = row["school"], row["opp"]
+        home_pts, away_pts = int(row["pf"]), int(row["pa"])
+    else:
+        home, away = row["opp"], row["school"]
+        home_pts, away_pts = int(row["pa"]), int(row["pf"])
+    winner = 0 if home_pts > away_pts else (1 if away_pts > home_pts else None)
+    meetings = world.jhsaa_prior_meetings(row["world_id"], row["gender"], home, away,
+                                          exclude_id=dual_id)
+    # `phase` is only a special string for postseason/showcase duals (see
+    # `jhsaa_school_view`'s `_kind`); an ordinary league-season dual is phase
+    # "regular" and is told apart from a non-league one by `district` alone.
+    phase_label = (_JH_PHASE_LABEL.get(row["phase"])
+                   or ("League Play" if row["district"] else "Invitational"))
+    return {"id": dual_id, "home": home, "away": away,
+            "home_points": home_pts, "away_points": away_pts, "winner": winner,
+            "phase_label": phase_label,
+            "level": row.get("level") or "v", "year": row["year"], "gender": row["gender"],
+            "lines": _jh_reported_lines(row), "stat_groups": None, "meetings": meetings}
+
+
 def _jh_line_records(sched: list[dict], level: str = "v") -> dict:
     """Every player's singles and doubles record for a season, off the match-level archive.
 

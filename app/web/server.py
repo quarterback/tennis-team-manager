@@ -46,7 +46,7 @@ from .state import (jhsaa_view, jhsaa_scope_view, jhsaa_school_view, jhsaa_past_
                     jhsaa_titles_view, jhsaa_individual_view,
                     jhsaa_individual_winners, jhsaa_retired_view,
                     jhsaa_repeat_poy, jhsaa_repeat_individual_champions,
-                    jhsaa_career_wins_view, jhsaa_program_wins_view)
+                    jhsaa_career_wins_view, jhsaa_program_wins_view, jhsaa_dual_view)
 from .state import (preseason_portal_view, recruit_economy_view, portal_class_rankings,
                     wire_view)
 from .state import my_program_view, my_schedule_plan, my_season_report, job_offers
@@ -1703,7 +1703,13 @@ def create_app() -> Flask:
         detail = gs.dual_detail(league["id"], dual_id)
         if not detail:
             abort(404)
-        return render_template("gtt_dual.html", active="GTT", league=league, d=detail)
+        import app.matchcenter as mc
+        stat_groups = mc.stat_groups(mc.sum_gtt_lines(detail["lines"]))
+        meetings = gs.prior_meetings(league["id"], detail["home_fid"], detail["away_fid"], dual_id)
+        for m in meetings:
+            m["url"] = url_for("gtt_dual", dual_id=m["id"], lg=league["id"])
+        return render_template("gtt_dual.html", active="GTT", league=league, d=detail,
+                               stat_groups=stat_groups, meetings=meetings)
 
     @app.route("/gtt/franchise/<int:fid>")
     def gtt_franchise(fid):
@@ -2777,6 +2783,17 @@ def create_app() -> Flask:
         return render_template("jhsaa_school.html", active="High School", view=view,
                                gender=gender, u=u, uni_label=label)
 
+    @app.route("/jhsaa/dual/<int:dual_id>")
+    def jhsaa_dual(dual_id):
+        gender, label, u, g, _group, _qyear = _jh_scope_args()
+        d = jhsaa_dual_view(dual_id)
+        if not d:
+            abort(404)
+        for m in d["meetings"]:
+            m["url"] = url_for("jhsaa_dual", dual_id=m["id"], u=u)
+        return render_template("jhsaa_dual.html", active="High School", d=d,
+                               gender=gender, u=u, uni_label=label)
+
     @app.route("/jhsaa/player/<school>/<pid>")
     def jhsaa_player(school, pid):
         """One player's four high-school years. Keyed by pid at their school, which is
@@ -3737,8 +3754,17 @@ def create_app() -> Flask:
         dbl_label = (f"win {fmt.n_doubles // 2 + 1} of {fmt.n_doubles} → 1 team point"
                      if fmt.doubles_team_point else f"{n_d} pairs · 1 team point each")
         sgl_label = f"{n_s} courts · 1 team point each · clinch at {fmt.clinch}"
+        # Match Center — Statistics tab (grouped box-stat comparison, read-only
+        # off data already persisted on this dual) and Matches tab (past
+        # meetings between these two same schools). See app/matchcenter.py.
+        import app.matchcenter as mc
+        stat_groups = mc.stat_groups(mc.sum_college_lines(d["lines"]))
+        meetings = sm.prior_meetings(d["home"], d["away"], dual_id)
+        for m in meetings:
+            m["url"] = url_for("season_dual", dual_id=m["id"], u=u)
         return render_template("season_dual.html", active="Season", u=u, uni_label=label,
-                               d=d, crest=crest, dbl_label=dbl_label, sgl_label=sgl_label)
+                               d=d, crest=crest, dbl_label=dbl_label, sgl_label=sgl_label,
+                               stat_groups=stat_groups, meetings=meetings)
 
     return app
 

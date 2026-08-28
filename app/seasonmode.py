@@ -2229,6 +2229,26 @@ def dual_detail(dual_id: int) -> dict | None:
     return d
 
 
+def prior_meetings(school_a: str, school_b: str, exclude_dual_id: int,
+                    limit: int = 5) -> list[dict]:
+    """The Match Center's head-to-head tab: this pair's past completed duals
+    (either order, any season), most recent first. `week`/`round` are the
+    label — `duals` carries no year column (a season row doesn't either), so
+    a meeting reads "Wk N" rather than inventing a year."""
+    conn = _db()
+    rows = conn.execute(
+        "SELECT id, season_id, week, round, home, away, home_points, away_points"
+        " FROM duals WHERE status='final' AND id!=?"
+        " AND ((home=? AND away=?) OR (home=? AND away=?))"
+        " ORDER BY season_id DESC, week DESC, id DESC LIMIT ?",
+        (exclude_dual_id, school_a, school_b, school_b, school_a, limit)).fetchall()
+    conn.close()
+    return [{"id": r["id"], "label": f"Wk {r['week']}" if r["round"] == "REG" else r["round"],
+             "home": r["home"], "away": r["away"],
+             "home_points": r["home_points"], "away_points": r["away_points"]}
+            for r in rows]
+
+
 def team_schedule(season_id: int, school: str) -> list[dict]:
     """A team's full season slate — regular season AND postseason (conference
     tournament + NCAAs), week-ordered. All of it counts toward the season record,

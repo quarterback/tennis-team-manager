@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% from "_crest.html" import crest_box %}
+{% from "_matchcenter.html" import mc_scorehdr, mc_tabs, mc_panel_open, mc_panel_close, mc_stat_bars, mc_h2h %}
 {% block title %}Play to Clinch — {{ d.home }} vs {{ d.away }}{% endblock %}
 {% block content %}
 {% set ha, hc = crest(d.home) %}
@@ -76,18 +77,19 @@
 </div></div>
 
 <div class="bl-board">
-  <div class="bl-scorehdr">
-    <div class="team">{{ crest_box(d.home, ha, hc, 'lg') }}
-      <div><div class="tname">{{ d.home }}</div><div class="tsub">Home</div></div></div>
-    <div class="status"><div class="bl-bigscore">
-      <span class="n{% if d.winner==0 %} win{% endif %}">{{ d.home_points }}</span>
-      <span class="dash">–</span>
-      <span class="n{% if d.winner==1 %} win{% endif %}">{{ d.away_points }}</span></div>
-      <div class="bl-th" style="justify-content:center;margin-top:6px">Final · {% if d.round == 'ITAK' %}Preseason NIT — Kickoff Weekend{% elif d.round == 'ITAI' %}Preseason NIT — National Indoor Tournament · {{ d.conf }}{% elif d.round == 'NCAA' %}NCAA Championship · {{ d.conf }}{% elif d.round == 'CT' %}{{ d.conf }} Tournament{% elif d.is_conf %}Conference{% else %}Non-conference{% endif %}</div></div>
-    <div class="team away"><div style="text-align:right"><div class="tname">{{ d.away }}</div><div class="tsub">Away</div></div>
-      {{ crest_box(d.away, aa, ac, 'lg') }}</div>
-  </div>
+  {% if d.round == 'ITAK' %}{% set status = 'Preseason NIT — Kickoff Weekend' %}
+  {% elif d.round == 'ITAI' %}{% set status = 'Preseason NIT — National Indoor Tournament · ' ~ d.conf %}
+  {% elif d.round == 'NCAA' %}{% set status = 'NCAA Championship · ' ~ d.conf %}
+  {% elif d.round == 'CT' %}{% set status = d.conf ~ ' Tournament' %}
+  {% elif d.is_conf %}{% set status = 'Conference' %}
+  {% else %}{% set status = 'Non-conference' %}{% endif %}
+  {{ mc_scorehdr(d.home, d.away, d.home_points, d.away_points, d.winner, 'Final · ' ~ status,
+                home_html=crest_box(d.home, ha, hc, 'lg'), away_html=crest_box(d.away, aa, ac, 'lg'),
+                home_sub='Home', away_sub='Away') }}
 
+  {{ mc_tabs('mc') }}
+
+  {{ mc_panel_open('mc', 'details') }}
   <div style="display:flex;flex-direction:column;gap:16px">
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">Doubles</span></div>
@@ -100,5 +102,14 @@
       {{ order_of_finish(d.lines, 'S') }}
     </div>
   </div>
+  {{ mc_panel_close() }}
+
+  {{ mc_panel_open('mc', 'stats') }}
+  {{ mc_stat_bars(stat_groups) }}
+  {{ mc_panel_close() }}
+
+  {{ mc_panel_open('mc', 'h2h') }}
+  {{ mc_h2h(meetings) }}
+  {{ mc_panel_close() }}
 </div>
 {% endblock %}

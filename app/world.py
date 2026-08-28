@@ -4574,8 +4574,8 @@ def _schedule_rows(conn, world_id: int, year: int, gender: str, school: str) -> 
     from . import jhsaa as _jh
     names = _jh.known_names(school, gender)
     rows = conn.execute(
-        "SELECT opp, home, phase, pf, pa, won, district, lines, level, tied, shape,"
-        " played FROM world_jhsaa_dual"
+        "SELECT rowid AS id, opp, home, phase, pf, pa, won, district, lines, level,"
+        " tied, shape, played FROM world_jhsaa_dual"
         " WHERE world_id=? AND year=? AND gender=? AND school IN (%s) ORDER BY rowid"
         % ",".join("?" * len(names)),
         (world_id, year, gender, *names)).fetchall()
@@ -5020,6 +5020,60 @@ def jhsaa_schedule(world_id: int, year: int, gender: str, school: str) -> list[d
         return _schedule_rows(conn, world_id, year, gender, school)
     finally:
         conn.close()
+
+
+def jhsaa_dual_row(dual_id: int) -> dict | None:
+    """Raw read of ONE side of a JHSAA dual, by `world_jhsaa_dual` rowid — the
+    Match Center's lookup key (`state.jhsaa_dual_view`). Either side's row is
+    enough to render the whole dual: `lines` is the SAME shared list on both
+    (`play_dual` appends it to both teams' schedule entries — see
+    `state._jh_reported_lines`'s docstring), and each line's `home_won`/`home`/
+    `away` keys already name the true home team regardless of which row this
+    is. Only this school's own `pf`/`pa`/`home` flag differ by row, and the
+    caller normalizes those against `home` to get true home/away points."""
+    conn = _db()
+    try:
+        r = conn.execute(
+            "SELECT rowid AS id, world_id, year, gender, school, opp, home, phase,"
+            " pf, pa, won, district, lines, level, tied, shape, played"
+            " FROM world_jhsaa_dual WHERE rowid=?", (dual_id,)).fetchone()
+    finally:
+        conn.close()
+    if not r:
+        return None
+    from . import jhsaa as _jh
+    d = dict(r)
+    alias = _jh.former_names()
+    d["opp"] = alias.get(d["opp"], d["opp"])
+    d["lines"] = json.loads(d["lines"] or "[]")
+    return d
+
+
+def jhsaa_prior_meetings(world_id: int, gender: str, home: str, away: str,
+                         exclude_id: int | None = None, limit: int = 5) -> list[dict]:
+    """The Match Center's head-to-head tab: this pair's past meetings, most
+    recent first. Reads only the HOME side's row of each past dual (`home=1`)
+    since the two rows of one dual duplicate each other from either school's
+    perspective — without that filter every past meeting would double-count."""
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT rowid AS id, year, school, opp, pf, pa FROM world_jhsaa_dual"
+            " WHERE world_id=? AND gender=? AND home=1"
+            " AND ((school=? AND opp=?) OR (school=? AND opp=?))"
+            " ORDER BY year DESC, rowid DESC",
+            (world_id, gender, home, away, away, home)).fetchall()
+    finally:
+        conn.close()
+    out = []
+    for r in rows:
+        if exclude_id is not None and r["id"] == exclude_id:
+            continue
+        out.append({"id": r["id"], "label": str(r["year"]), "home": r["school"],
+                    "away": r["opp"], "home_points": int(r["pf"]), "away_points": int(r["pa"])})
+        if len(out) >= limit:
+            break
+    return out
 
 
 def jhsaa_school_injuries(world_id: int, year: int, gender: str,
