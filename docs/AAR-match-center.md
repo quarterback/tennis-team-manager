@@ -1,5 +1,41 @@
 # AAR — Match Center (flashscore/sofascore-style dual detail pages)
 
+## Real calendar dates on meetings (owner correction, 2026-08)
+
+Every real-world example the owner pointed at (Winsipedia, Army-Navy,
+Penn State/Rutgers game logs) shows an actual calendar date per meeting,
+not a week number or a bare year — and every match counts toward the
+series record regardless of round (postseason included; the `postseason`
+flag is a supplementary breakdown, never an exclusion — see below).
+
+- **JHSAA** now uses `world.jhsaa_match_dates` — the SAME per-dual display
+  calendar the school schedule page already builds (`state._jh_dates`) —
+  for both the Matches-tab meeting list and the dual's own score-header
+  date. That function is already cached per `(world_id, year, gender)`
+  (`_JH_CAL_CACHE`), so calling it once per meeting costs nothing beyond
+  the first meeting of a given year. Falls back to the season year alone
+  when a date can't be found (pre-calendar-system archive, or an edge case
+  the calendar doesn't cover) — a missing date is a display gap, not a
+  reason to drop the meeting.
+- **GTT** had a real bug caught in the same pass: the label showed the RAW
+  internal `year` counter ("5 Wk 3"), not a real year, even though
+  `BASE_YEAR + year` (GTT runs concurrent with the college calendar — see
+  the comment above `gtt_seasonmode.BASE_YEAR`) is an established
+  conversion already used elsewhere in that module (`cal_year` in the
+  stats functions). Fixed to show the real year; the day-within-year is
+  still synthetic (no per-dual calendar exists for GTT), using the SAME
+  week-offset formula `season_schedule`'s college page already uses, just
+  anchored to the correct year instead of a fixed one.
+- **College genuinely has no year stored anywhere** — `seasons`/`duals`
+  carry no year column at all (confirmed by grep, unlike GTT there is no
+  missed `BASE_YEAR`-style conversion to find). Fixing this needs a real
+  schema addition (a nullable `year` column, populated where `world.py`
+  calls `sm.get_or_create` from a world context) — a small but real change
+  to core season-creation code, deliberately NOT made without asking
+  first. College still shows "Wk N"/round as its label until that's
+  decided. Do not fabricate a year here; showing "Wk N" honestly is better
+  than a fake date.
+
 ## Head-to-head rewrite (owner correction, 2026-08)
 
 The Matches tab shipped as a 5-row "recent form" list, capped and silently

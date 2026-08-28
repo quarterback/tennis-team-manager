@@ -5109,7 +5109,17 @@ def jhsaa_prior_meetings(world_id: int, gender: str, home: str, away: str,
     reason `world._schedule_rows` resolves `known_names` before querying).
 
     `postseason` is `phase in jhsaa.POSTSEASON` (Sectional through TOC —
-    everything past the league season and the mid-season showcases)."""
+    everything past the league season and the mid-season showcases).
+
+    ‼️ `label` IS A REAL CALENDAR DATE where one exists (`jhsaa_match_dates`
+    — the same per-dual display calendar the school schedule page already
+    reads, see `state._jh_dates`), not just a year. That function is ALREADY
+    cached per `(world_id, year, gender)` (`_JH_CAL_CACHE`), so calling it
+    once per meeting costs nothing extra past the first meeting of a given
+    year — no second cache needed here. Falls back to the season year alone
+    when a date can't be found (an archive older than the calendar system,
+    or the rare row a showcase/edge case doesn't cover) — a missing date is
+    a display gap, not a reason to drop the meeting."""
     from . import jhsaa as _jh
     home_names = _jh.known_names(home, gender)
     away_names = _jh.known_names(away, gender)
@@ -5119,7 +5129,8 @@ def jhsaa_prior_meetings(world_id: int, gender: str, home: str, away: str,
         qmarks_h = ",".join("?" * len(home_names))
         qmarks_a = ",".join("?" * len(away_names))
         rows = conn.execute(
-            "SELECT rowid AS id, year, school, opp, pf, pa, phase FROM world_jhsaa_dual"
+            "SELECT rowid AS id, year, school, opp, pf, pa, phase, district"
+            " FROM world_jhsaa_dual"
             " WHERE world_id=? AND gender=? AND home=1 AND COALESCE(level,'v')=?"
             f" AND ((school IN ({qmarks_h}) AND opp IN ({qmarks_a}))"
             f"  OR (school IN ({qmarks_a}) AND opp IN ({qmarks_h})))"
@@ -5132,7 +5143,14 @@ def jhsaa_prior_meetings(world_id: int, gender: str, home: str, away: str,
     for r in rows:
         if exclude_id is not None and r["id"] == exclude_id:
             continue
-        out.append({"id": r["id"], "label": str(BASE_YEAR + r["year"] + 1),
+        season_year = BASE_YEAR + r["year"] + 1
+        cal = jhsaa_match_dates(world_id, r["year"], gender, season_year)
+        # `home=1` on every fetched row, so this row's own (school, opp) IS
+        # the (home, away) pair `jh_match_key` wants — no need to rebuild a
+        # dict just to hand it to that function.
+        day = cal.get((level, r["phase"] or "", int(bool(r["district"])), r["school"], r["opp"]))
+        label = f"{day:%b} {day.day}, {season_year}" if day else str(season_year)
+        out.append({"id": r["id"], "label": label,
                     "home": alias.get(r["school"], r["school"]),
                     "away": alias.get(r["opp"], r["opp"]),
                     "home_points": int(r["pf"]), "away_points": int(r["pa"]),

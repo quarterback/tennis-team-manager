@@ -3680,11 +3680,21 @@ def jhsaa_dual_view(dual_id: int) -> dict | None:
     # "regular" and is told apart from a non-league one by `district` alone.
     phase_label = (_JH_PHASE_LABEL.get(row["phase"])
                    or ("League Play" if row["district"] else "Invitational"))
+    season_year = world.BASE_YEAR + row["year"] + 1
+    # This DUAL'S OWN calendar date, off the same display calendar
+    # `jhsaa_prior_meetings` reads for the Matches tab (`jhsaa_match_dates`)
+    # — the raw archived names, not the aliased ones, since that's how the
+    # calendar's own keys are built.
+    raw_home, raw_away = ((row["school_raw"], row["opp_raw"]) if row["home"]
+                          else (row["opp_raw"], row["school_raw"]))
+    cal = world.jhsaa_match_dates(row["world_id"], row["year"], row["gender"], season_year)
+    day = cal.get((level, row["phase"] or "", int(bool(row["district"])), raw_home, raw_away))
+    date_label = f"{day:%b} {day.day}, {season_year}" if day else str(season_year)
     return {"id": dual_id, "home": home, "away": away,
             "home_points": home_pts, "away_points": away_pts, "winner": winner,
-            "phase_label": phase_label,
+            "phase_label": phase_label, "date_label": date_label,
             "level": level, "year": row["year"],
-            "season_year": world.BASE_YEAR + row["year"] + 1, "gender": row["gender"],
+            "season_year": season_year, "gender": row["gender"],
             "lines": _jh_reported_lines(row), "stat_groups": None,
             "meetings": meetings, "series": series}
 
