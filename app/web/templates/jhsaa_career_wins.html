@@ -26,11 +26,15 @@
       {% endfor %}
     </select>
   </label>
-  <span class="jh-dircount">Top {{ view.boards[view.cat]|length }} careers</span>
+  {# Per-board length lives on each panel's own data attribute (below) — the
+     count text reads whichever panel is showing, so a category switch never
+     goes stale even though tied cutoffs give the boards different lengths. #}
+  <span class="jh-dircount" id="jh-cwcount">Top {{ view.boards[view.cat]|length }} careers</span>
 </div>
 
 {% for key, label in view.cats %}
-<div class="bl-panel jh-cwboard" data-cat="{{ key }}" {{ 'hidden' if key != view.cat }}>
+<div class="bl-panel jh-cwboard" data-cat="{{ key }}" data-count="{{ view.boards[key]|length }}"
+     {{ 'hidden' if key != view.cat }}>
   <div class="bl-panel-head">
     <span class="bl-panel-title">{{ label }} — most career wins</span>
   </div>
@@ -52,7 +56,7 @@
         {% set w = r.w if key == 'overall' else (r.s_w if key == 'singles' else r.d_w) %}
         {% set l = r.l if key == 'overall' else (r.s_l if key == 'singles' else r.d_l) %}
         <tr>
-          <td class="rk">{{ loop.index }}</td>
+          <td class="rk">{{ r.rank }}</td>
           <td class="nm">
             {% if r.pid %}<a href="{{ url_for('jhsaa_player', school=r.school, pid=r.pid, u=u, g=view.gender) }}">{{ r.name }}</a>
             {% else %}{{ r.name }}{% endif %}
@@ -78,8 +82,18 @@
   var sel = document.getElementById('jh-cwcat');
   if (!sel) return;
   var boards = document.querySelectorAll('.jh-cwboard');
+  var count = document.getElementById('jh-cwcount');
   sel.addEventListener('change', function () {
-    boards.forEach(function (b) { b.hidden = b.dataset.cat !== sel.value; });
+    var shown;
+    boards.forEach(function (b) {
+      var on = b.dataset.cat === sel.value;
+      b.hidden = !on;
+      if (on) shown = b.dataset.count;
+    });
+    // Tied cutoffs give the boards different lengths (e.g. 10 overall, 12
+    // singles) — read the count off the board just shown, never the
+    // server-rendered value from the category the page opened on.
+    count.textContent = 'Top ' + shown + (shown === '1' ? ' career' : ' careers');
     // Keep the URL shareable: the chosen category survives a copy-paste.
     var url = new URL(window.location);
     url.searchParams.set('cat', sel.value);

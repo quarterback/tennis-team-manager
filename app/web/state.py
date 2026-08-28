@@ -5877,11 +5877,22 @@ def jhsaa_career_wins_view(seed: int, gender: str, cat: str | None = None,
     years = world.jhsaa_years(w["id"], g)
     schools = _jh_schools(g)
     data = world.jhsaa_career_wins(w["id"], g)
+    win_key = {"overall": "w", "singles": "s_w", "doubles": "d_w"}
     boards = {}
     for key, _label in JH_CAREER_CATS:
         rows = []
-        for r in data["players"][key]:
-            rows.append({**r,
+        # ‼️ RANK IS COMPETITION RANK (1,2,2,4…), NOT THE ROW INDEX. The fold
+        # deliberately keeps every career tied at the cutoff win total, so two
+        # careers tied for 10th must both read "10" — `loop.index` numbered them
+        # 10 and 11, which reads as though the second earned a worse finish than
+        # the tie it was included FOR. Rank moves only when the win count drops.
+        wk = win_key[key]
+        prev_wins, prev_rank = None, 0
+        for i, r in enumerate(data["players"][key], 1):
+            wins = r[wk]
+            rank = prev_rank if wins == prev_wins else i
+            prev_wins, prev_rank = wins, rank
+            rows.append({**r, "rank": rank,
                          "deco": _jh_deco(schools, r["school"], 18),
                          "stint_rows": [{**st, "deco": _jh_deco(schools, st["school"], 18)}
                                         for st in r["stints"]],
