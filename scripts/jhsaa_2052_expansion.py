@@ -31,13 +31,15 @@ nothing.
   only the owner's relative-stature ordering within the band.
 
 ‼️ NAME NOTES (owner-visible decisions, flagged in the session summary too):
-- "Columbia / Blue Mountain District" is committed as "Columbia-Blue Mountain
-  District": a slash cannot live in the `/jhsaa/district/<group>/<district>`
-  route segment.
-- The real Trout Lake, WA collides with the invented Jefferson 2A "Trout Lake"
-  (Rimrock County) — a display name IS the archive identity and must be unique,
-  so the affiliate enters as "Trout Lake (WA)". If the owner prefers the
-  invented one renamed instead, that is a separate rename pass.
+- The 2A district first landed as "Columbia-Blue Mountain District" (the
+  owner's "Columbia / Blue Mountain" — a slash cannot live in the
+  `/jhsaa/district/<group>/<district>` route segment) and was then renamed
+  "Columbia Range League" by the owner in the same session.
+- The real Trout Lake, WA collided with the invented Jefferson 2A "Trout
+  Lake" (Rimrock County) — a display name IS the archive identity and must be
+  unique. The owner renamed the invented one to San Fernando
+  (`import_jhsaa.RENAMES`, source stamped), freeing the plain name for the
+  affiliate.
 - "Amelia High School" is committed as "Amelia" — school names carry no
   institutional suffix (owner rule 2027-08).
 
@@ -53,7 +55,10 @@ _REPO = os.path.dirname(_HERE)
 _DATA = os.path.join(_REPO, "data", "jhsaa", "schools.json")
 
 EOL = "Eastern Oregon League"            # 5A
-CBM = "Columbia-Blue Mountain District"  # 2A
+CBM = "Columbia Range League"            # 2A — the owner's rename of the batch's
+                                         # original "Columbia / Blue Mountain
+                                         # District" (whose slash could not live
+                                         # in the district route segment anyway)
 GRD = "Grande Ronde District"            # 2A
 SRD = "Snake River District"             # 2A
 CGD = "Columbia Gorge District"          # 2A
@@ -113,7 +118,9 @@ NEW_SCHOOLS = [
     ("Klickitat",    "Klickitat High",    "Klickitat",        "Klickitat", GORGE, "Washington", "2A",  95, "Vandals",   ["#8a1538", "#f2f2ee"], CGD),
     ("Lyle",         "Lyle High",         "Lyle",             "Klickitat", GORGE, "Washington", "2A", 105, "Cougars",   ["#00205b", "#a2aaad"], CGD),
     ("Wishram",      "Wishram High",      "Wishram",          "Klickitat", GORGE, "Washington", "2A",  88, "Falcons",   ["#231f20", "#f2a900"], CGD),
-    ("Trout Lake (WA)", "Trout Lake School", "Trout Lake (WA)", "Klickitat", GORGE, "Washington", "2A", 110, "Mustangs", ["#1d3c34", "#e8e6df"], CGD),
+    # Plain "Trout Lake": the invented Jefferson 2A that held the name was
+    # renamed San Fernando (owner, 2026-08 — import_jhsaa.RENAMES), freeing it.
+    ("Trout Lake",   "Trout Lake School", "Trout Lake",       "Klickitat", GORGE, "Washington", "2A", 110, "Mustangs", ["#1d3c34", "#e8e6df"], CGD),
 ]
 
 # Amelia — the one net-new JEFFERSON program of the batch (owner: a revived

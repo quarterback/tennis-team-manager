@@ -615,8 +615,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Columbia-Blue Mountain District",
-      "boys_district": "Columbia-Blue Mountain District"
+      "girls_district": "Columbia Range League",
+      "boys_district": "Columbia Range League"
     },
     {
       "name": "Armour Fields",
@@ -1601,7 +1601,7 @@
         "#f0b323"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Gold Valley League",
       "boys_district": "Gold Valley League"
     },
@@ -5365,8 +5365,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Columbia-Blue Mountain District",
-      "boys_district": "Columbia-Blue Mountain District"
+      "girls_district": "Columbia Range League",
+      "boys_district": "Columbia Range League"
     },
     {
       "name": "Eden County Christian",
@@ -6618,7 +6618,7 @@
         "#e8c46b"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Rim Country League",
       "boys_district": "Rim Country League",
       "source": "Vesper Polytechnic Institute"
@@ -6776,7 +6776,7 @@
         "#f5e9d0"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Pori League",
       "boys_district": "Pori League",
       "source": "Marcus Langston North",
@@ -6956,7 +6956,7 @@
         "#d97706"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Gold Valley League",
       "boys_district": "Gold Valley League",
       "source": "Greta Bellini"
@@ -7055,7 +7055,7 @@
         "#9fb4c7"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Assay Athletic Association",
       "boys_district": "Assay Athletic Association"
     },
@@ -8413,8 +8413,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Columbia-Blue Mountain District",
-      "boys_district": "Columbia-Blue Mountain District"
+      "girls_district": "Columbia Range League",
+      "boys_district": "Columbia Range League"
     },
     {
       "name": "Iron Gate Works",
@@ -8494,8 +8494,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Columbia-Blue Mountain District",
-      "boys_district": "Columbia-Blue Mountain District"
+      "girls_district": "Columbia Range League",
+      "boys_district": "Columbia Range League"
     },
     {
       "name": "Irvington",
@@ -10716,8 +10716,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Columbia-Blue Mountain District",
-      "boys_district": "Columbia-Blue Mountain District"
+      "girls_district": "Columbia Range League",
+      "boys_district": "Columbia Range League"
     },
     {
       "name": "Meadowbrook",
@@ -11965,8 +11965,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Columbia-Blue Mountain District",
-      "boys_district": "Columbia-Blue Mountain District"
+      "girls_district": "Columbia Range League",
+      "boys_district": "Columbia Range League"
     },
     {
       "name": "Noe Valley",
@@ -13336,8 +13336,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Columbia-Blue Mountain District",
-      "boys_district": "Columbia-Blue Mountain District"
+      "girls_district": "Columbia Range League",
+      "boys_district": "Columbia Range League"
     },
     {
       "name": "Pine Barrens",
@@ -15463,6 +15463,26 @@
       "boys_district": "Mariners League"
     },
     {
+      "name": "San Fernando",
+      "city": "Trout Lake",
+      "county": "Rimrock",
+      "area": "Juniper Highlands",
+      "classification": "2A",
+      "group": "2A",
+      "enrollment": 320,
+      "private": false,
+      "mascot": "Silverlegs",
+      "colors": [
+        "#2F3328",
+        "#C0C5CE"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Desert Sky League",
+      "boys_district": "Desert Sky League",
+      "source": "Trout Lake"
+    },
+    {
       "name": "San Lorenzo",
       "city": "San Lorenzo",
       "county": "Marlow",
@@ -17510,8 +17530,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Columbia-Blue Mountain District",
-      "boys_district": "Columbia-Blue Mountain District"
+      "girls_district": "Columbia Range League",
+      "boys_district": "Columbia Range League"
     },
     {
       "name": "Star City",
@@ -18205,7 +18225,7 @@
         "#d97706"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Pori League",
       "boys_district": "Pori League",
       "source": "Tamarack Harbor"
@@ -18554,27 +18574,8 @@
     },
     {
       "name": "Trout Lake",
-      "city": "Trout Lake",
-      "county": "Rimrock",
-      "area": "Juniper Highlands",
-      "classification": "2A",
-      "group": "2A",
-      "enrollment": 320,
-      "private": false,
-      "mascot": "Silverlegs",
-      "colors": [
-        "#2F3328",
-        "#C0C5CE"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Desert Sky League",
-      "boys_district": "Desert Sky League"
-    },
-    {
-      "name": "Trout Lake (WA)",
       "source": "Trout Lake School",
-      "city": "Trout Lake (WA)",
+      "city": "Trout Lake",
       "county": "Klickitat",
       "area": "Columbia Gorge",
       "state": "Washington",
@@ -19025,7 +19026,7 @@
         "#f2f2ee"
       ],
       "girls": true,
-      "boys": false,
+      "boys": true,
       "girls_district": "Pori League",
       "boys_district": "Pori League",
       "source": "Providence Academy Valley"
@@ -19761,8 +19762,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Columbia-Blue Mountain District",
-      "boys_district": "Columbia-Blue Mountain District"
+      "girls_district": "Columbia Range League",
+      "boys_district": "Columbia Range League"
     },
     {
       "name": "Westover",

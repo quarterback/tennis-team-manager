@@ -733,7 +733,6 @@ FORMER_NAMES = {
     "Mid-City":                                    "Hackensack",
     "Mikel Echevarria":                            "Fir Valley Grange",
     "Mikel Garmendia":                             "Homeland",
-    "Portola":                                     "Homeland",
     "Mikel Zubieta":                               "Cornerstone Christian",
     "Mikhail Sidorov":                             "Saint Marc",
     "Mila Chernov North":                          "Siberia",
@@ -841,6 +840,7 @@ FORMER_NAMES = {
     "Port Veles Science":                          "Seawall",
     "Port Veles South":                            "Severn",
     "Port Veles Union":                            "Port Veles Lutheran",
+    "Portola":                                     "Homeland",
     "Prairie Crossing":                            "Pacersburg",
     "Providence Academy North":                    "Wyalusing Providence",
     "Providence Academy Valley":                   "Valley Providence",
@@ -1065,6 +1065,12 @@ RENAMES = {
     # Owner picks, 2026-08 — both enter the association via EXTRA_SPONSORS:
     "Plainfield Science": "Plainfield",              # 6A Plainfield
     "Abraham Lincoln": "Lincoln",                    # 9A Belyakov — the state's Lincoln
+
+    # Owner pick, 2026-08 (the 2052 expansion): the invented 2A gives its name
+    # up to the real Trout Lake, WA affiliate. The town stays Trout Lake; the
+    # school renames, and its data row stamps source="Trout Lake" so the roster
+    # identity and every pid survive.
+    "Trout Lake": "San Fernando",                    # 2A Trout Lake, Rimrock
 
     "Belyakov Academy of Music and Media": "Walter-Kenny School",
     "Belyakov Environmental Sciences Academy": "Friendship City",
@@ -2186,7 +2192,9 @@ RECLASSIFY_TO_2A = (
     "Lieksa", "Los Maderos", "Madison", "Mt Jacqueline", "Netherwood",
     "New Ballard", "Newark River", "Oak Meyer", "Pointe des Brumes",
     "Porterfield", "Río Seco", "River Market", "South Simmons", "Springdale",
-    "Starlake", "Trout Lake", "Willowbrook", "Yazoo",
+    "Starlake", "San Fernando", "Willowbrook", "Yazoo",   # San Fernando was
+    # displayed "Trout Lake" until the 2052 rename — this table keys on the
+    # DISPLAY name and runs after RENAMES, so the entry moves with it.
 )
 
 # ⚠️ THE COMMITTED ENROLLMENT BAND PER CLASSIFICATION (owner rule 2026-08) — the
@@ -2956,7 +2964,9 @@ MASCOTS = {
     "Meridian Regional": "Tinsmiths",           # Stovepipe
     "Pacersburg": "Kangaroo Rats",
     "Dry Lake": "Mirages",
-    "Trout Lake": "Silverlegs",             # the ask: named for its own fish
+    "San Fernando": "Silverlegs",           # the ask: named for its town's own fish
+                                            # (displayed Trout Lake until the 2052
+                                            # rename; the town keeps the name)
 
     # ── Millersylvania: the mines and the snow ──────────────────────────────────
     "Galena": "Silver Kings",                   # galena — the silver-lead ore
@@ -2988,8 +2998,9 @@ MASCOTS = {
 # Two-colour crests: the FIRST is the crest ground and must be dark enough to
 # carry the monogram, the second is the accent.
 COLORS = {
-    # rainbow trout: olive back over a silver flank
-    "Trout Lake": ["#2F3328", "#C0C5CE"],
+    # rainbow trout: olive back over a silver flank (school displayed Trout
+    # Lake until the 2052 rename)
+    "San Fernando": ["#2F3328", "#C0C5CE"],
     "Caney": ["#4E1533", "#DED3B4"],      # beet root over refined sugar
     "Bahía Azúl": ["#173A5E", "#E0733A"],           # bay water, cooked crab
     "Yarmere": ["#2B2118", "#E08A2E"],              # the ensatina's orange

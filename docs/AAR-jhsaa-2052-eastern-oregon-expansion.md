@@ -46,14 +46,24 @@ JEFFERSON city on the real Amelia City, OR ghost-town site (44.3903,
 
 ## Decisions a later agent must not "fix"
 
-- **"Columbia / Blue Mountain District" is committed hyphenated** —
-  `/jhsaa/district/<group>/<district>` cannot carry a slash in the segment.
-- **"Trout Lake (WA)"**: the real Trout Lake, WA collides with the invented
-  Jefferson 2A "Trout Lake" (Rimrock County), and a display name IS the
-  archive identity (unique by pinned test). The affiliate carries the
-  qualifier; if the owner prefers the invented program renamed instead, that
-  is a rename pass with all its machinery (RENAMES, former_names, source
-  stamping) — do not do it casually.
+- **The 2A district is "Columbia Range League"** — first committed as
+  "Columbia-Blue Mountain District" (the owner's "Columbia / Blue Mountain";
+  a slash cannot live in the `/jhsaa/district/<group>/<district>` segment),
+  then renamed by the owner in the same session. Safe pre-season: no dual had
+  been archived under the old string.
+- **Trout Lake / San Fernando**: the real Trout Lake, WA collided with the
+  invented Jefferson 2A "Trout Lake" (Rimrock County), and a display name IS
+  the archive identity (unique by pinned test). The owner renamed the
+  INVENTED one to **San Fernando** — `import_jhsaa.RENAMES` entry, data row
+  stamped `source: "Trout Lake"` (roster identity + pids verified
+  byte-identical), the display-keyed tables moved with it (`MASCOTS`,
+  `COLORS`, `RECLASSIFY_TO_2A`; the continuity sponsor list keys on the PREP
+  name and stays), `former_names.json` regenerated so the archive relabels on
+  read. The affiliate then took the plain name. The town of Trout Lake
+  (Rimrock) keeps its name — a school renames, its town does not — so the
+  state now has two towns named Trout Lake, which is ordinary; the gazetteer
+  generator keys towns on name alone and will file the WA town under the
+  Jefferson one until it learns (name, county).
 - **Owner-name resolutions** (confirmed in-session): "Ginsburg" = Ruth Bader
   Ginsburg (Group 1), "Talling Crossing" = Tailing Crossing (2A), bare
   "Harmon" = Annes Summit (source `Harmon` — Harmon Siding was already named
@@ -75,16 +85,21 @@ JEFFERSON city on the real Amelia City, OR ghost-town site (44.3903,
 
 ## Known consequences (flagged to the owner, accepted or pending)
 
-- **Boys' 3A drops to 75 sponsors against `sponsor_floor("3A")` = 76** (all
-  four 3A sunsets fielded boys). The Semi-Conference degrades LOUDLY by
-  design — best bodies direct-admit to the Conference (`sc_head`) with a
-  warning naming the class — rather than shipping a short State field. One
-  more 3A boys' program (an `EXTRA_SPONSORS` add or one fewer 3A sunset)
-  clears it.
+- **Boys' 3A briefly dropped to 75 sponsors against `sponsor_floor("3A")` =
+  76** (all four 3A sunsets fielded boys) — RESOLVED same session by the
+  owner's rule that every 3A girls-only program fields a boys team: seven
+  programs (Benedetti, Funtsville, Garfield, Glassell Park, Goldbank Hall,
+  Tidewater, Valley Providence) flipped `boys: true`, taking boys' 3A to 82.
+  A gender GAINED needs no league redraw (`jhsaa_sponsors.py`'s own rule —
+  the league belongs to the school and the rows already carried
+  `boys_district`).
 - **Gazetteer doc regeneration is deferred** — `jefferson_gazetteer.py` needs
   a prep-network clone, unavailable in this session. The script tables are in
   place; run it (with `jhsaa_name_list.py` and `prep_network_name_map.py`)
   next time that repo is on disk.
-- Amelia City is not yet in the JF hometown pool (`us_states["JF"]`) — that is
-  `scripts/build_hometowns.py` / `import_jefferson.py` territory, a separate
-  pass if the owner wants Amelia City kids appearing as recruits' hometowns.
+- **Amelia City is in the JF recruit hometown pool** (owner ask, same
+  session): one slot in `hometowns.json` `us_states["JF"]` (pop ~4,500 —
+  repeats ARE the weighting, one slot per 25k), and in
+  `hometowns_curated.json`'s baseline so a `build_hometowns.py` rebuild keeps
+  it. Hometown caches are module-global and cleared by nothing — a running
+  server needs a restart to see it; new players only, as always.

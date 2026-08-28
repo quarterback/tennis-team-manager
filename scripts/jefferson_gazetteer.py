@@ -147,7 +147,11 @@ _EXPANSION_2052_PLACES = [
     ("Klickitat",        "Klickitat", "Columbia Gorge",        "Klickitat County, WA", 45.816, -121.155,   400),
     ("Lyle",             "Klickitat", "Columbia Gorge",        "Klickitat County, WA", 45.696, -121.288,   530),
     ("Wishram",          "Klickitat", "Columbia Gorge",        "Klickitat County, WA", 45.658, -120.965,   340),
-    ("Trout Lake (WA)",  "Klickitat", "Columbia Gorge",        "Klickitat County, WA", 45.997, -121.528,   630),
+    # NOTE: shares its name with Jefferson's own Trout Lake (Rimrock County) —
+    # ordinary for towns in different states; setdefault means the prep-network
+    # row wins the place entry, so the WA town may file under the Jefferson one
+    # in the doc until the generator learns to key a town on (name, county).
+    ("Trout Lake",       "Klickitat", "Columbia Gorge",        "Klickitat County, WA", 45.997, -121.528,   630),
     # Jefferson's own addition, filed with its ladder county:
     ("Amelia City",      "Barlowe",   "Boise Frontier",        "Baker County, OR",     44.390, -117.623,  4500),
 ]
