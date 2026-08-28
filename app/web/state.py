@@ -4826,18 +4826,18 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     # The program's all-time top ten by career wins (owner request, 2026-08) —
     # the 4th honours tab. Singles and doubles COMBINED by the owner's explicit
     # rule ("no need to differentiate"); wins earned AT this school, so a
-    # transfer appears with the wins they won wearing this shirt. Served from
-    # the same cached fold the History boards read; pids are resolved here (the
-    # school is known, so it is one cached roster build per distinct last year).
+    # transfer appears with the wins they won wearing this shirt.
+    #
+    # ‼️ SCOPED TO THIS ONE PROGRAM (`jhsaa_program_wins`), not the whole-gender
+    # `jhsaa_career_wins` fold the History boards use. This page needs exactly
+    # one program's slice of that fold, so pulling the whole thing here meant
+    # every school-page view — on ANY school — paid the cost of tallying every
+    # archived line for the entire gender across every season. That scan grows
+    # with total schools and years, which is why it read as "the school page
+    # got slow after new schools were added" rather than a fixed one-time cost.
     career_wins = []
-    for r in (world.jhsaa_career_wins(w["id"], g).get("by_program") or {}).get(school, ()):
-        pid = r.get("pid", "")
-        if not pid:
-            for p in jh.build_roster(sc, r["last"], salt):
-                if p.name == r["name"]:
-                    pid = p.pid
-                    break
-        career_wins.append({**r, "pid": pid,
+    for r in world.jhsaa_program_wins(w["id"], g, school, salt):
+        career_wins.append({**r,
                             "span": (str(r["first"]) if r["first"] == r["last"]
                                      else f"{r['first']}–{str(r['last'])[2:]}")})
 
