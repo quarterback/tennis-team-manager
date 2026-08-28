@@ -1,5 +1,143 @@
 # AAR — Match Center (flashscore/sofascore-style dual detail pages)
 
+## Real calendar dates on meetings (owner correction, 2026-08)
+
+Every real-world example the owner pointed at (Winsipedia, Army-Navy,
+Penn State/Rutgers game logs) shows an actual calendar date per meeting,
+not a week number or a bare year — and every match counts toward the
+series record regardless of round (postseason included; the `postseason`
+flag is a supplementary breakdown, never an exclusion — see below).
+
+- **JHSAA** now uses `world.jhsaa_match_dates` — the SAME per-dual display
+  calendar the school schedule page already builds (`state._jh_dates`) —
+  for both the Matches-tab meeting list and the dual's own score-header
+  date. That function is already cached per `(world_id, year, gender)`
+  (`_JH_CAL_CACHE`), so calling it once per meeting costs nothing beyond
+  the first meeting of a given year. Falls back to the season year alone
+  when a date can't be found (pre-calendar-system archive, or an edge case
+  the calendar doesn't cover) — a missing date is a display gap, not a
+  reason to drop the meeting.
+- **GTT** had a real bug caught in the same pass: the label showed the RAW
+  internal `year` counter ("5 Wk 3"), not a real year, even though
+  `BASE_YEAR + year` (GTT runs concurrent with the college calendar — see
+  the comment above `gtt_seasonmode.BASE_YEAR`) is an established
+  conversion already used elsewhere in that module (`cal_year` in the
+  stats functions). Fixed to show the real year; the day-within-year is
+  still synthetic (no per-dual calendar exists for GTT), using the SAME
+  week-offset formula `season_schedule`'s college page already uses, just
+  anchored to the correct year instead of a fixed one.
+- **College genuinely has no year stored anywhere** — `seasons`/`duals`
+  carry no year column at all (confirmed by grep; unlike GTT there is no
+  missed `BASE_YEAR`-style conversion sitting there to find — it just isn't
+  tracked). College still shows "Wk N"/round as its meeting label. Do not
+  fabricate a year here; showing "Wk N" honestly is better than a fake date.
+
+‼️ **TODO (owner approved, DEFERRED 2026-08): give college real per-dual
+dates, the same way JHSAA has them.** The owner wants this done — explicitly
+not in this pass, next time this area gets touched. Scope, so the next agent
+doesn't have to re-derive it:
+  1. Add a nullable `year INTEGER` column to `seasons` (`app/seasonmode.py`'s
+     `CREATE TABLE seasons`, an additive `ALTER TABLE` like the ones already
+     scattered through `world.py`'s schema evolution — old rows read back
+     NULL, nothing migrates).
+  2. Populate it at creation: `world.py:864` is the ONE place a world-bound
+     college season is created — `sm.get_or_create(division, gender,
+     seed=year_seed(seed, world["year"]))` — thread `year=world["year"]`
+     through into `sm.get_or_create`'s signature and the INSERT. The
+     standalone (no-world) path — tests, the ad-hoc Dual Simulator — has no
+     year and keeps passing `year=None`; that's correct, not a gap to fill.
+  3. Once `duals` (via a join, or denormalized onto the row at insert —
+     match whichever `_dual_record`/scheduling already does for other
+     per-dual fields) can resolve a real `BASE_YEAR + year` calendar year,
+     `sm.prior_meetings` gets the SAME two-tier treatment this pass gave
+     GTT and JHSAA: real year, plus a date within it. College's schedule is
+     linear (one `week` counter, no JHSAA-style multi-phase/showcase
+     calendar to reconcile), so reuse `season_schedule`'s existing
+     week-offset formula (`base_date + timedelta(weeks=week-1)`,
+     `app/web/server.py`'s `season_schedule` route) anchored to the real
+     year — the same tier `gs.prior_meetings` now uses for GTT, not a full
+     JHSAA-style persisted calendar, which this schedule shape doesn't need.
+  4. `mc_scorehdr`'s status line on `season_dual.html` currently doesn't
+     show a date at all (only `d.round`-derived text) — once (3) exists, add
+     one there too, matching what `jhsaa_dual.html` does with `date_label`.
+  Do NOT start this unprompted — the owner said next run, not now.
+
+## Three more review findings on the head-to-head rewrite (2026-08)
+
+- **P1 — the college series wasn't scoped to gender.** `sm.prior_meetings`
+  matched purely on school NAME strings, but `duals` is ONE table shared
+  across every division×gender universe (`duals` has no gender column of
+  its own — only `seasons` does). Two same-named schools' men's and
+  women's programs would silently combine into one "series," and could
+  report the wrong leader/streak/count. Fixed with a join through
+  `seasons` — `sm.dual_detail` now also returns `gender`/`division`
+  (joined, not from ambient page state, which need not match the dual
+  actually being viewed), and `sm.prior_meetings` takes `gender` and
+  filters on it. GTT and JHSAA were never at risk of this: GTT matches on
+  numeric franchise ids scoped to `league_id` (no name ambiguity possible),
+  and JHSAA's `world_jhsaa_dual` already carries `gender` as a real column
+  that `jhsaa_prior_meetings` was already filtering on.
+- **P2 — the headline record wasn't oriented to the named leader.**
+  `record_str` was always `f"{team_a wins}-{team_b wins}"` regardless of
+  who actually led, so "`{{ leader }}` leads the series `{{ record_str }}`"
+  could read "Away leads the series 2-8" when Away had EIGHT wins — the
+  leader's own number printed second. `summarize_series` now orders
+  `record_str` leader-first (`wins[leader]-wins[trailer]`) whenever there
+  is a leader; a tie keeps the neutral team_a/team_b order since the two
+  numbers are equal anyway.
+- **JV duals get no Match Center at all, full stop** (owner rule 2026-08:
+  "those matches don't even need a match center" — not "scope it to JV
+  too," an outright refusal). `jhsaa_dual_view` now returns `None` for any
+  `level != "v"` row before doing anything else, so `/jhsaa/dual/<id>` 404s
+  for a JV dual regardless of how it's reached; the "Match Center" link was
+  removed from the JV table on the school schedule page (the varsity table
+  keeps it). The pre-existing inline line-score expand on JV rows is
+  UNCHANGED — the owner was explicit that stays ("what we have already is
+  fine"); only the NEW Match Center/series-tracking surface is varsity-only.
+
+## Head-to-head rewrite (owner correction, 2026-08)
+
+The Matches tab shipped as a 5-row "recent form" list, capped and silently
+truncated — copied from flashscore/sofascore's H2H widget without noticing
+*why* those sites cap it: their players mostly haven't met much. This sim
+can run a single save for 25+ years, and two programs in the same league
+play every year — a real rivalry has dozens of meetings, and capping at 5
+with no indicator just reads as broken data.
+
+**The fix reorders the whole tab around the real-world convention (rivalry
+pages, Winsipedia-style team-compare pages): the CAREER SERIES RECORD
+first, the complete game list second — never a recency snippet standing in
+for the record.** `matchcenter.summarize_series(meetings, team_a, team_b)`
+takes EVERY known meeting (the three `prior_meetings` functions no longer
+cap or `LIMIT` — they return the full history) and computes: who leads and
+by how much (W-L, or W-L-T since JV can tie), total meetings and the date
+range, current streak, last meeting, last-10 split, a postseason-only split
+(when there's been a postseason meeting), and largest margin of victory per
+side. `mc_h2h` renders that summary plus a win/tie/loss comparison bar,
+then lists every meeting underneath — no cap, no "show more," because
+nothing is hidden.
+
+‼️ **`summarize_series` needs the postseason flag threaded through, and
+"postseason" means something different per division** — college is
+`round in ('CT', 'NCAA')` (the Preseason NIT, `ITAK`/`ITAI`, is a
+PRE-season event and does NOT count), GTT is `round == 'PO'`, JHSAA is
+`phase in jhsaa.POSTSEASON`. Each `prior_meetings` computes its own division's
+flag; `summarize_series` itself is division-agnostic and just reads it off
+each meeting dict.
+
+‼️ **A meeting's `home`/`away` name is per-GAME (venue alternates); the
+series record is keyed on the two PROGRAMS.** `summarize_series` tallies a
+win against `team_a`/`team_b` (the two programs' current display names),
+never against "home"/"away," which is why every `mc_h2h(...)` call site
+passes the SAME two name strings it used server-side to build `series` —
+`series.wins[home]` in the template only resolves correctly because `home`
+is that exact string.
+
+Verified by hand-tracing `summarize_series` against several constructed
+series (a mixed win/loss/tie/postseason sequence, a single-meeting series,
+an all-tie series) and by running it through `tests/test_web_gtt.py`'s real
+box-score page end to end.
+
 Owner request 2026-08: model the college/GTT/JHSAA dual-detail pages on
 flashscore.com/sofascore.com's live-match UI (score header, grouped
 stat-comparison bars, tabs). Read the two sibling docs first if you're

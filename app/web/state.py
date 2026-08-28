@@ -3656,6 +3656,13 @@ def jhsaa_dual_view(dual_id: int) -> dict | None:
     if not row:
         return None
     level = row.get("level") or "v"
+    # ‼️ NO MATCH CENTER FOR JV (owner rule 2026-08): "those matches don't
+    # even need a match center" — JV isn't tracked as a series at all, so
+    # this refuses the whole page rather than rendering one scoped to JV.
+    # The existing inline line-score expand on the school's schedule page
+    # is untouched and stays the JV box-score view.
+    if level != "v":
+        return None
     if row["home"]:
         home, away = row["school"], row["opp"]
         home_pts, away_pts = int(row["pf"]), int(row["pa"])
@@ -3673,17 +3680,30 @@ def jhsaa_dual_view(dual_id: int) -> dict | None:
     winner = 0 if home_pts > away_pts else (1 if away_pts > home_pts else None)
     meetings = world.jhsaa_prior_meetings(row["world_id"], row["gender"], home, away,
                                           level=level, exclude_id=home_row_id)
+    import app.matchcenter as mc
+    series = mc.summarize_series(meetings, home, away)
     # `phase` is only a special string for postseason/showcase duals (see
     # `jhsaa_school_view`'s `_kind`); an ordinary league-season dual is phase
     # "regular" and is told apart from a non-league one by `district` alone.
     phase_label = (_JH_PHASE_LABEL.get(row["phase"])
                    or ("League Play" if row["district"] else "Invitational"))
+    season_year = world.BASE_YEAR + row["year"] + 1
+    # This DUAL'S OWN calendar date, off the same display calendar
+    # `jhsaa_prior_meetings` reads for the Matches tab (`jhsaa_match_dates`)
+    # — the raw archived names, not the aliased ones, since that's how the
+    # calendar's own keys are built.
+    raw_home, raw_away = ((row["school_raw"], row["opp_raw"]) if row["home"]
+                          else (row["opp_raw"], row["school_raw"]))
+    cal = world.jhsaa_match_dates(row["world_id"], row["year"], row["gender"], season_year)
+    day = cal.get((level, row["phase"] or "", int(bool(row["district"])), raw_home, raw_away))
+    date_label = f"{day:%b} {day.day}, {season_year}" if day else str(season_year)
     return {"id": dual_id, "home": home, "away": away,
             "home_points": home_pts, "away_points": away_pts, "winner": winner,
-            "phase_label": phase_label,
+            "phase_label": phase_label, "date_label": date_label,
             "level": level, "year": row["year"],
-            "season_year": world.BASE_YEAR + row["year"] + 1, "gender": row["gender"],
-            "lines": _jh_reported_lines(row), "stat_groups": None, "meetings": meetings}
+            "season_year": season_year, "gender": row["gender"],
+            "lines": _jh_reported_lines(row), "stat_groups": None,
+            "meetings": meetings, "series": series}
 
 
 def _jh_line_records(sched: list[dict], level: str = "v") -> dict:
