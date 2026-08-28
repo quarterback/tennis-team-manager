@@ -1,0 +1,114 @@
+{# Match Center — shared macros for a dual-detail page (college, GTT/pro, JHSAA).
+
+   Modeled on flashscore.com/sofascore.com's match pages: a score header, a
+   tab strip (Details / Statistics / Matches), and grouped stat-comparison
+   bars. Each page keeps its OWN per-court/line listing under the Details tab
+   (college's `line_row`, GTT's collapsible `statrow` panels, JHSAA's simple
+   line list) — their line shapes genuinely differ (pids vs names-only,
+   set tuples vs a scoreline string), so only the pieces that are truly
+   identical across all three are shared here. See docs/AAR-match-center.md.
+
+   "Live" is deliberately NOT a real-time concept anywhere in this file — the
+   engine simulates a whole week in one batch server call, so there is no
+   incremental match state to poll or stream. Nothing here auto-refreshes;
+   every page is a post-match replay/box-score view. #}
+
+{% macro mc_scorehdr(home_name, away_name, home_points, away_points, winner, status,
+                     home_html='', away_html='', home_sub='', away_sub='',
+                     home_link='', away_link='') %}
+<div class="bl-scorehdr">
+  <div class="team">{{ home_html|safe }}
+    <div><div class="tname">{% if home_link %}<a href="{{ home_link }}" style="color:inherit;text-decoration:none">{{ home_name }}</a>{% else %}{{ home_name }}{% endif %}</div>{% if home_sub %}<div class="tsub">{{ home_sub }}</div>{% endif %}</div>
+  </div>
+  <div class="status"><div class="bl-bigscore">
+    <span class="n{% if winner==0 %} win{% endif %}">{{ home_points }}</span>
+    <span class="dash">–</span>
+    <span class="n{% if winner==1 %} win{% endif %}">{{ away_points }}</span></div>
+    <div class="bl-th" style="justify-content:center;margin-top:6px">{{ status }}</div>
+  </div>
+  <div class="team away"><div style="text-align:right"><div class="tname">{% if away_link %}<a href="{{ away_link }}" style="color:inherit;text-decoration:none">{{ away_name }}</a>{% else %}{{ away_name }}{% endif %}</div>{% if away_sub %}<div class="tsub">{{ away_sub }}</div>{% endif %}</div>
+    {{ away_html|safe }}
+  </div>
+</div>
+{% endmacro %}
+
+{# `id` scopes the tab strip to its own panels — most dual pages have exactly
+   one Match Center per page, but this keeps two safe on one page if that
+   ever changes. The toggle script is emitted inline here (not a separate
+   `<script>` block in the including template) because Jinja's `{% from
+   import %}` only pulls in macros, never a template's top-level markup. #}
+{% macro mc_tabs(id='mc') %}
+<div class="bl-mctabs" data-mc="{{ id }}">
+  <button type="button" class="bl-mctab active" data-mc-tab="details">Details</button>
+  <button type="button" class="bl-mctab" data-mc-tab="stats">Statistics</button>
+  <button type="button" class="bl-mctab" data-mc-tab="h2h">Matches</button>
+</div>
+<script>
+(function(){
+  var id = {{ id|tojson }};
+  document.querySelectorAll('.bl-mctabs[data-mc="' + id + '"] .bl-mctab').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var which = btn.getAttribute('data-mc-tab');
+      document.querySelectorAll('.bl-mctabs[data-mc="' + id + '"] .bl-mctab').forEach(function(b){
+        b.classList.toggle('active', b === btn);
+      });
+      document.querySelectorAll('.bl-mcpanel[data-mc="' + id + '"]').forEach(function(p){
+        p.hidden = p.getAttribute('data-mc-panel') !== which;
+      });
+    });
+  });
+})();
+</script>
+{% endmacro %}
+
+{% macro mc_panel_open(id='mc', which='details') %}
+<div class="bl-mcpanel"{% if which != 'details' %} hidden{% endif %} data-mc-panel="{{ which }}" data-mc="{{ id }}">
+{% endmacro %}
+
+{% macro mc_panel_close() %}
+</div>
+{% endmacro %}
+
+{% macro mc_stat_bars(groups) %}
+{% if not groups %}
+<div class="bl-panel"><div class="bl-panel-body" style="color:var(--text-muted)">
+  No stats recorded for this dual.</div></div>
+{% else %}
+{% for grp in groups %}
+<div class="bl-panel" style="margin-bottom:14px">
+  <div class="bl-panel-head"><span class="bl-panel-title">{{ grp.title }}</span></div>
+  <div class="bl-panel-body">
+    {% for row in grp.rows %}
+    <div class="bl-statrow">
+      <div class="bl-statvals"><span class="h">{{ row.home_disp }}</span><span class="lbl">{{ row.label }}</span><span class="a">{{ row.away_disp }}</span></div>
+      <div class="bl-statbar"><span class="h" style="width:{{ row.home_share }}%"></span><span class="a" style="width:{{ row.away_share }}%"></span></div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+{% endmacro %}
+
+{# `m.url`, when present, is built by the route (each division generates its
+   own dual-detail URL) — the macro just links to it if given one. #}
+{% macro mc_h2h(meetings) %}
+{% if not meetings %}
+<div class="bl-panel"><div class="bl-panel-body" style="color:var(--text-muted)">
+  No prior meetings recorded.</div></div>
+{% else %}
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Head-to-head</span></div>
+  <div>
+  {% for m in meetings %}
+  <div class="bl-h2hrow">
+    <span class="lbl">{{ m.label }}</span>
+    <span class="side {{ 'win' if m.home_points > m.away_points }}">{{ m.home }}</span>
+    <span class="score">{% if m.url %}<a href="{{ m.url }}">{{ m.home_points }}–{{ m.away_points }}</a>{% else %}{{ m.home_points }}–{{ m.away_points }}{% endif %}</span>
+    <span class="side {{ 'win' if m.away_points > m.home_points }}">{{ m.away }}</span>
+  </div>
+  {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endmacro %}

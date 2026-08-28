@@ -143,6 +143,8 @@
                      else 'show' if d.kind == 'SHOWCASE'
                      else 'state' if d.kind == 'STATE' else 'road' if d.kind != 'INVITE' }}">{{ d.kind }}</span>
               {% if d.round %}<span class="jh-tag rd">{{ d.round }}</span>{% endif %}
+              {% if d.lines and d.id %}<a class="jh-chip ghost" style="text-decoration:none"
+                 href="{{ url_for('jhsaa_dual', dual_id=d.id, u=u, g=view.gender) }}">Match Center</a>{% endif %}
               {% if d.lines %}<span class="jh-caret" aria-hidden="true">›</span>{% endif %}</td>
           </tr>
           {% if d.lines %}
@@ -192,6 +194,8 @@
             {% set jvk = 'DIST' if d.district else 'WEEKEND' if d.phase.startswith('showcase') else 'INVITE' %}
             <td><span class="jh-tag {{ 'dist' if jvk == 'DIST' else 'show' if jvk == 'SHOWCASE' }}">{{ jvk }}</span>
               {% if d.shape %}<span class="jh-tag rd">{{ d.shape }}</span>{% endif %}
+              {% if d.lines and d.id %}<a class="jh-chip ghost" style="text-decoration:none"
+                 href="{{ url_for('jhsaa_dual', dual_id=d.id, u=u, g=view.gender) }}">Match Center</a>{% endif %}
               {% if d.lines %}<span class="jh-caret" aria-hidden="true">›</span>{% endif %}</td>
           </tr>
           {% if d.lines %}

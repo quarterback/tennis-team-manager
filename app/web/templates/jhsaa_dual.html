@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "_matchcenter.html" import mc_scorehdr, mc_tabs, mc_panel_open, mc_panel_close, mc_stat_bars, mc_h2h %}
+{% block title %}Play to Clinch — {{ d.home }} vs {{ d.away }}{% endblock %}
+{% block content %}
+
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <span style="font-size:14.5px;color:var(--text-muted)">High School › {{ d.phase_label }}</span>
+  <a class="bl-pill" style="text-decoration:none;margin-left:auto"
+     href="{{ url_for('jhsaa_school', school=d.home, u=u, g=d.gender, year=d.year) }}">← {{ d.home }}</a>
+</div></div>
+
+<div class="bl-board">
+  {{ mc_scorehdr(d.home, d.away, d.home_points, d.away_points, d.winner,
+                'Final · ' ~ d.season_year|string ~ ' · ' ~ d.phase_label) }}
+
+  {{ mc_tabs('mc') }}
+
+  {{ mc_panel_open('mc', 'details') }}
+  <div class="bl-panel">
+    <div>
+    {% for ln in d.lines %}
+    <div class="bl-matchrow">
+      <div class="bl-court">
+        <span class="kind">{{ 'Doubles' if ln.slot.startswith('D') else 'Singles' }}</span>
+        <span class="num">{{ ln.slot[1:] }}</span>
+      </div>
+      <div class="bl-match-sides">
+        <div class="bl-side {{ 'won' if ln.home_won }}">
+          <span class="nm">{% if ln.home_won %}<span class="chk">✓</span>{% endif %}{{ (ln.home or [])|join(' / ') }}</span>
+        </div>
+        <div class="bl-side {{ 'won' if not ln.home_won }}">
+          <span class="nm">{% if not ln.home_won %}<span class="chk">✓</span>{% endif %}{{ (ln.away or [])|join(' / ') }}</span>
+        </div>
+      </div>
+      <div class="bl-final">{{ ln.score or '—' }}</div>
+    </div>
+    {% else %}
+    <p class="jh-empty">No line scores recorded for this dual.</p>
+    {% endfor %}
+    </div>
+  </div>
+  {{ mc_panel_close() }}
+
+  {{ mc_panel_open('mc', 'stats') }}
+  {{ mc_stat_bars(d.stat_groups) }}
+  {{ mc_panel_close() }}
+
+  {{ mc_panel_open('mc', 'h2h') }}
+  {{ mc_h2h(d.meetings) }}
+  {{ mc_panel_close() }}
+</div>
+{% endblock %}
