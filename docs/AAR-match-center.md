@@ -27,14 +27,40 @@ flag is a supplementary breakdown, never an exclusion — see below).
   week-offset formula `season_schedule`'s college page already uses, just
   anchored to the correct year instead of a fixed one.
 - **College genuinely has no year stored anywhere** — `seasons`/`duals`
-  carry no year column at all (confirmed by grep, unlike GTT there is no
-  missed `BASE_YEAR`-style conversion to find). Fixing this needs a real
-  schema addition (a nullable `year` column, populated where `world.py`
-  calls `sm.get_or_create` from a world context) — a small but real change
-  to core season-creation code, deliberately NOT made without asking
-  first. College still shows "Wk N"/round as its label until that's
-  decided. Do not fabricate a year here; showing "Wk N" honestly is better
-  than a fake date.
+  carry no year column at all (confirmed by grep; unlike GTT there is no
+  missed `BASE_YEAR`-style conversion sitting there to find — it just isn't
+  tracked). College still shows "Wk N"/round as its meeting label. Do not
+  fabricate a year here; showing "Wk N" honestly is better than a fake date.
+
+‼️ **TODO (owner approved, DEFERRED 2026-08): give college real per-dual
+dates, the same way JHSAA has them.** The owner wants this done — explicitly
+not in this pass, next time this area gets touched. Scope, so the next agent
+doesn't have to re-derive it:
+  1. Add a nullable `year INTEGER` column to `seasons` (`app/seasonmode.py`'s
+     `CREATE TABLE seasons`, an additive `ALTER TABLE` like the ones already
+     scattered through `world.py`'s schema evolution — old rows read back
+     NULL, nothing migrates).
+  2. Populate it at creation: `world.py:864` is the ONE place a world-bound
+     college season is created — `sm.get_or_create(division, gender,
+     seed=year_seed(seed, world["year"]))` — thread `year=world["year"]`
+     through into `sm.get_or_create`'s signature and the INSERT. The
+     standalone (no-world) path — tests, the ad-hoc Dual Simulator — has no
+     year and keeps passing `year=None`; that's correct, not a gap to fill.
+  3. Once `duals` (via a join, or denormalized onto the row at insert —
+     match whichever `_dual_record`/scheduling already does for other
+     per-dual fields) can resolve a real `BASE_YEAR + year` calendar year,
+     `sm.prior_meetings` gets the SAME two-tier treatment this pass gave
+     GTT and JHSAA: real year, plus a date within it. College's schedule is
+     linear (one `week` counter, no JHSAA-style multi-phase/showcase
+     calendar to reconcile), so reuse `season_schedule`'s existing
+     week-offset formula (`base_date + timedelta(weeks=week-1)`,
+     `app/web/server.py`'s `season_schedule` route) anchored to the real
+     year — the same tier `gs.prior_meetings` now uses for GTT, not a full
+     JHSAA-style persisted calendar, which this schedule shape doesn't need.
+  4. `mc_scorehdr`'s status line on `season_dual.html` currently doesn't
+     show a date at all (only `d.round`-derived text) — once (3) exists, add
+     one there too, matching what `jhsaa_dual.html` does with `date_label`.
+  Do NOT start this unprompted — the owner said next run, not now.
 
 ## Head-to-head rewrite (owner correction, 2026-08)
 

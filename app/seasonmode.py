@@ -2234,10 +2234,21 @@ def prior_meetings(school_a: str, school_b: str, exclude_dual_id: int) -> list[d
     this pair (either order, any season), most recent first — the full
     series, not a capped "recent form" list (see `matchcenter.
     summarize_series`, which needs the complete history to be honest about
-    who leads). `week`/`round` are the label — `duals` carries no year
-    column (a season row doesn't either), so a meeting reads "Wk N" rather
-    than inventing a year. `postseason` is `round in ('CT', 'NCAA')` — the
-    Preseason NIT (`ITAK`/`ITAI`) is a PRE-season event and doesn't count."""
+    who leads). EVERY meeting counts toward the series record regardless of
+    round — regular season, conference tournament, NCAAs, the Preseason
+    NIT, all of it (owner rule 2026-08: "every match counts... doesn't
+    matter if it's NIT, pre-season, post-season, whatever"). `postseason`
+    (`round in ('CT', 'NCAA')`) is ONLY a supplementary breakdown stat, never
+    an exclusion — the Preseason NIT (`ITAK`/`ITAI`) doesn't set that FLAG
+    (it's a pre-season event, not a postseason one), but it still counts in
+    `wins`/`record_str` like everything else.
+
+    ‼️ TODO (owner approved, DEFERRED 2026-08): `week`/`round` are the label
+    — `duals` carries no year column (a season row doesn't either), so a
+    meeting reads "Wk N" rather than a real date. The owner wants this
+    fixed to real per-dual dates the way JHSAA has them, explicitly NOT in
+    this pass — see the scoped plan in docs/AAR-match-center.md before
+    starting it. Don't pick this up unprompted."""
     conn = _db()
     rows = conn.execute(
         "SELECT id, season_id, week, round, home, away, home_points, away_points"
