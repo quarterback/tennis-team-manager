@@ -143,8 +143,17 @@
                      else 'show' if d.kind == 'SHOWCASE'
                      else 'state' if d.kind == 'STATE' else 'road' if d.kind != 'INVITE' }}">{{ d.kind }}</span>
               {% if d.round %}<span class="jh-tag rd">{{ d.round }}</span>{% endif %}
-              {% if d.lines and d.id %}<a class="jh-chip ghost" style="text-decoration:none"
-                 href="{{ url_for('jhsaa_dual', dual_id=d.id, u=u, g=view.gender) }}">Match Center</a>{% endif %}
+              {# Match Center is an ICON, not a labelled pill (owner rule 2026-08):
+                 a text chip on every schedule row shouted over the results. #}
+              {% if d.lines and d.id %}<a class="jh-chip ghost ico" title="Match Center"
+                 aria-label="Match Center"
+                 href="{{ url_for('jhsaa_dual', dual_id=d.id, u=u, g=view.gender) }}"><svg
+                 viewBox="0 0 16 16" width="13" height="13" fill="none"
+                 stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                 aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="2"/><line
+                 x1="8" y1="2.5" x2="8" y2="13.5"/><line x1="3.8" y1="6" x2="6" y2="6"/><line
+                 x1="3.8" y1="8.5" x2="6" y2="8.5"/><line x1="10" y1="6" x2="12.2" y2="6"/><line
+                 x1="10" y1="8.5" x2="12.2" y2="8.5"/></svg></a>{% endif %}
               {% if d.lines %}<span class="jh-caret" aria-hidden="true">›</span>{% endif %}</td>
           </tr>
           {% if d.lines %}

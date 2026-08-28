@@ -4,6 +4,15 @@
 enough — far too many 7-6 7-6 matches." Correct, and the fix was calibrated
 against five seasons of REAL data rather than intuition.
 
+**‼️ WHEN THIS LANDED IN THE OWNER'S LIVE SAVE: the 2053 season.** Every JHSAA
+season from 2027 through 2052 was simulated on the OLD college-calibrated
+dials; 2053 is the first on `HS_PROFILE`. That boundary is deliberate
+benchmark material, not an inconsistency to migrate away: the archive is never
+re-simulated, so the in-game realism page (/jhsaa/realism, season switcher)
+shows the 2027-2052 seasons scoring tiebreak-heavy against the Oregon target
+and 2053+ scoring like real tennis — the before/after is readable directly
+from the owner's own history. Do not "fix" old seasons to match.
+
 ## The benchmark that decided everything
 
 The owner aggregated five seasons of actual Oregon high-school tennis (boys +
@@ -106,6 +115,22 @@ off `game_flow`), and favorite dual-win% binned at the **empirical
 percentiles** (p10/p25/p50/p75/p90/p95) of the sampled gap distribution
 (owner rule — never typed bin edges). Judge the whole report, not one row:
 several wrong mechanisms can reproduce any single marginal.
+
+## In-game view — `/jhsaa/realism` (the Juniors "Realism" tab)
+
+The owner wants the tracking visible without running Python (2026-08), so the
+benchmark has an in-game face beside Mismatches / Lineup Lab. ‼️ It is a FOLD
+over `world_jhsaa_dual`, never a simulation on the request thread (the
+section's read-only rule): it parses the archived score strings (the
+`jhsaa._games` precedent — the archive already holds the score), varsity only
+(`COALESCE(level,'v')='v'`), one side per dual (`home=1`), standard sets only
+(showcase-pod pro sets fall out, exactly the target's own filter), split by
+phase family because the formats differ by design. The Oregon target lives
+ONCE — `jhsaa.OREGON_SET_TARGET` / `OREGON_THREE_SET` — read by both the view
+and the script; hold% appears only in the script (the archive stores no game
+flow). Class-blind like the Title Board; the SEASON switcher is honoured,
+which is what makes the 2053 boundary above browsable. Pinned by
+`test_realism_fold_reads_the_archive_varsity_only`.
 
 ## Traps for the next agent
 

@@ -3962,6 +3962,17 @@ FLIGHT_WEIGHTS = {
 MAX_FLIGHT_WEIGHT = 3.70
 
 
+# The REAL-WORLD scoreline target the HS match profile was calibrated against
+# (engine.fast.HS_PROFILE): five seasons of actual Oregon high-school tennis,
+# boys + girls 2021-25, 41,932 varsity matches / 84,238 completed standard sets
+# (github.com/quarterback/or-tennis-data). ONE authority — the in-game realism
+# view (/jhsaa/realism) and scripts/jhsaa_scoreline_benchmark.py both read
+# these; see docs/AAR-jhsaa-scoreline-realism.md before "correcting" a number.
+OREGON_SET_TARGET = {"6-0": 26.4, "6-1": 21.5, "6-2": 17.4, "6-3": 13.4,
+                     "6-4": 12.3, "7-5": 5.1, "7-6": 3.9}
+OREGON_THREE_SET = 13.8   # % of best-of-3 matches reaching a third set
+
+
 def _games(score: str) -> tuple[int, int]:
     """Games won by each side, parsed out of a line's score string ("6-4, 3-6, 7-5").
 

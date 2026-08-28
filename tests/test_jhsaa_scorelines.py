@@ -107,3 +107,56 @@ def test_profile_reaches_the_shipped_jhsaa_path():
     def scores(res):
         return [tuple(line.result.set_scores) for line in res.lines]
     assert scores(with_p) != scores(without)
+
+
+def test_realism_fold_reads_the_archive_varsity_only():
+    """/jhsaa/realism is a FOLD over world_jhsaa_dual: one side of each dual,
+    varsity only (COALESCE(level,'v')='v' — pre-JV archives read back NULL),
+    standard sets only (a showcase pod's 8-x pro set never enters the
+    histogram), three-set rate over best-of-3 matches."""
+    import json as _json
+    import app.world as world
+    w = world.get_or_create(4242)
+    conn = world._db()
+    try:
+        rows = [
+            # varsity league dual, home side: one straight-set + one three-set line
+            (w["id"], 7, "girls", "A", "B", 1, "regular", 5, 2, 1, 1,
+             _json.dumps([{"score": "6-0, 6-1"}, {"score": "6-4, 3-6, 7-5"}]),
+             "v", 0, "", "[]"),
+            # the SAME dual from the away side — must not double-count
+            (w["id"], 7, "girls", "B", "A", 0, "regular", 2, 5, 0, 1,
+             _json.dumps([{"score": "6-0, 6-1"}, {"score": "6-4, 3-6, 7-5"}]),
+             "v", 0, "", "[]"),
+            # a JV dual — excluded
+            (w["id"], 7, "girls", "A", "C", 1, "regular", 2, 1, 1, 0,
+             _json.dumps([{"score": "6-0, 6-0"}]), "jv", 0, "1S/2D", "[]"),
+            # a pre-JV archive row (level NULL) — varsity, included
+            (w["id"], 7, "girls", "C", "D", 1, "state", 3, 2, 1, 0,
+             _json.dumps([{"score": "7-6, 6-2"}]), None, 0, "", "[]"),
+            # a showcase pod pro set — no standard set, nothing enters
+            (w["id"], 7, "girls", "A", "D", 1, "showcase_pod", 1, 0, 1, 0,
+             _json.dumps([{"score": "8-3"}]), "v", 0, "", "[]"),
+        ]
+        conn.executemany(
+            "INSERT INTO world_jhsaa_dual (world_id, year, gender, school, opp,"
+            " home, phase, pf, pa, won, district, lines, level, tied, shape,"
+            " played) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
+        conn.commit()
+    finally:
+        conn.close()
+
+    d = world.jhsaa_scoreline_realism(w["id"], 7, "girls")
+    o = d["overall"]
+    got = {r["key"]: round(r["sim"], 1) for r in o["rows"] if r["sim"]}
+    # 7 standard sets total: 6-0, 6-1, 6-4, 6-3(3-6), 7-5, 7-6, 6-2
+    assert o["sets"] == 7, o
+    assert got == {"6-0": round(100 / 7, 1), "6-1": round(100 / 7, 1),
+                   "6-2": round(100 / 7, 1), "6-3": round(100 / 7, 1),
+                   "6-4": round(100 / 7, 1), "7-5": round(100 / 7, 1),
+                   "7-6": round(100 / 7, 1)}, got
+    assert o["matches"] == 3 and round(o["three_set"], 1) == round(100 / 3, 1)
+    fams = {f["key"]: f for f in d["families"]}
+    assert fams["regular"]["sets"] == 5
+    assert fams["postseason"]["sets"] == 2       # the level-NULL state dual
+    assert fams["showcase"]["sets"] == 0         # the pro set fell out

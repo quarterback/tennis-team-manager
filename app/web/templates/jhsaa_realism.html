@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header %}
+{% block title %}JHSAA Scoreline Realism{% endblock %}
+{% block content %}
+
+{{ jh_header(view.scope, u, 'realism', 'Scoreline Realism',
+             'This season\'s archived set scores against five seasons of REAL Oregon high-school tennis (41,932 varsity matches) — the target the match engine is calibrated on. Real HS tennis is blowout-shaped: 6-0 is the most common set and 7-6 the rarest. Association-wide; the class rail is scope memory only.') }}
+
+<div class="jh-shell">
+{% if not view.ready or not view.data %}
+<div class="bl-panel"><div class="bl-panel-body" style="padding:16px">
+  No archived season yet — the comparison reads the season the world rung wrote at week 0.
+</div></div>
+{% else %}
+{% set d = view.data %}
+
+{% macro dist_table(t, three_real) %}
+  <table class="jh-roster" style="max-width:560px">
+    <tr><th style="width:52px">Set</th><th class="num" style="width:64px">Sim %</th>
+      <th class="num" style="width:64px">Real %</th><th>&nbsp;</th>
+      <th class="num" style="width:56px">Diff</th></tr>
+    {% for r in t.rows %}
+    <tr>
+      <td class="pl"><b>{{ r.key }}</b></td>
+      <td class="num">{{ '%.1f'|format(r.sim) }}</td>
+      <td class="num">{{ '%.1f'|format(r.real) }}</td>
+      <td>
+        {# paired bars, share one 0-35% scale: sim on top, real beneath #}
+        <div class="jh-rl-bars" aria-hidden="true">
+          <div class="jh-rl-bar sim" style="width:{{ [r.sim / 35 * 100, 100]|min }}%"></div>
+          <div class="jh-rl-bar real" style="width:{{ [r.real / 35 * 100, 100]|min }}%"></div>
+        </div>
+      </td>
+      <td class="num {{ 'pos' if r.diff|abs <= 2.5 else 'neg' }}">{{ '%+.1f'|format(r.diff) }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  <div class="bit" style="margin-top:8px">
+    {{ t.sets }} sets over {{ t.matches }} best-of-3 matches ·
+    three-set rate <b>{{ '%.1f'|format(t.three_set) }}%</b> (real {{ three_real }}) ·
+    distance from Oregon <b>{{ '%.1f'|format(t.tv) }}</b>
+    <span title="Total-variation distance: half the summed percentage-point gaps. Under ~5 is a close match.">ⓘ</span>
+  </div>
+{% endmacro %}
+
+<div class="bl-panel" style="margin-bottom:14px">
+  <div class="bl-panel-head"><span class="bl-panel-title">Whole association — sim vs real</span>
+    <span class="bit"><span class="jh-rl-key sim"></span> this season &nbsp;
+      <span class="jh-rl-key real"></span> real Oregon</span></div>
+  <div class="bl-panel-body" style="padding:12px">
+    {{ dist_table(d.overall, d.real_three_set) }}
+  </div>
+</div>
+
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">By phase</span>
+    <span class="bit">the formats differ by design — judge each against the same target</span></div>
+  <div class="bl-panel-body" style="padding:12px;display:flex;flex-wrap:wrap;gap:24px">
+    {% for f in d.families %}{% if f.sets %}
+    <div>
+      <div class="bl-panel-title" style="font-size:12.5px;margin-bottom:6px">{{ f.label }}</div>
+      {{ dist_table(f, d.real_three_set) }}
+    </div>
+    {% endif %}{% endfor %}
+  </div>
+</div>
+{% endif %}
+</div>
+{% endblock %}

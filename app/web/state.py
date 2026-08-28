@@ -5038,6 +5038,31 @@ def jhsaa_districts_view(seed: int, gender: str, group: str | None = None,
             "districts": rows}
 
 
+def jhsaa_realism_view(seed: int, gender: str, group: str | None = None,
+                       year: int | None = None) -> dict:
+    """SCORELINE REALISM — the archived season's set scores against the real
+    Oregon HS target the match profile was calibrated on (a Juniors tab, owner
+    request 2026-08: the benchmark must be viewable in the game, not only via
+    scripts/jhsaa_scoreline_benchmark.py). A pure fold over `world_jhsaa_dual`
+    (`world.jhsaa_scoreline_realism`) — nothing is simulated on the request.
+
+    Class-BLIND like the Title Board: the target is association-wide (the real
+    data is near-uniform across classes); `group` rides for the scope bar's
+    memory alone. The SEASON is honoured — this page answers "did the season I
+    just played score like real tennis", per year."""
+    import app.jhsaa as jh
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    years = world.jhsaa_years(w["id"], g)
+    yr = (years[0] if years else w["year"]) if year is None else year
+    grp = group if group in jh.GROUPS else jh.GROUPS[0]
+    data = world.jhsaa_scoreline_realism(w["id"], yr, g) if years else None
+    return {"ready": bool(years), "gender": g, "years": years, "year": yr,
+            "data": data,
+            "scope": _jh_scope(g, grp, list(jh.GROUPS), yr, years, None, None)}
+
+
 def jhsaa_titles_view(seed: int, gender: str, group: str | None = None,
                       year: int | None = None) -> dict:
     """THE TITLE BOARD: one row per program, one column per thing there is to win —

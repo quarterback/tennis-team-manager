@@ -46,10 +46,10 @@ from app import jhsaa
 from engine.dual import simulate_dual
 from engine.fast import HS_PROFILE
 
-# Real Oregon HS target — % of completed standard sets (see module docstring).
-REAL_SETS = {"6-0": 26.4, "6-1": 21.5, "6-2": 17.4, "6-3": 13.4,
-             "6-4": 12.3, "7-5": 5.1, "7-6": 3.9}
-REAL_THREE_SET = 13.8          # % of best-of-3 matches reaching a third set
+# Real Oregon HS target — ONE authority, shared with the in-game view
+# (/jhsaa/realism reads the archive against the same numbers).
+REAL_SETS = jhsaa.OREGON_SET_TARGET
+REAL_THREE_SET = jhsaa.OREGON_THREE_SET
 REAL_HOLD_BAND = (30.0, 45.0)  # % service games held, HS level (no OR serving data)
 
 # Gap bins are EMPIRICAL PERCENTILES of the sampled pairings' strength gaps
