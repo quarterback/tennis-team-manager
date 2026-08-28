@@ -1930,6 +1930,15 @@ PRIVATE_SCHOOLS = {
 # redraws the leagues of the classes they touch.
 NEVER_SPONSOR = frozenset()
 
+# ‼️ THE 2052 EASTERN OREGON / COLUMBIA GORGE EXPANSION LIVES OUTSIDE THIS FILE
+# (owner rule 2026-08, `scripts/jhsaa_2052_expansion.py`): 39 real OR/WA
+# affiliates, the net-new Jefferson town Amelia City, Baker's 3A->5A move, and
+# 40 owner-named sunsets (flags off, rows kept — the `former_school` path).
+# Affiliates have no prep-network rows, so a full re-import cannot produce them
+# and would also resurrect the sunsets as sponsors: AFTER any re-import, re-run
+# jhsaa_2052_expansion.py (idempotent; it holds every table). The same applies
+# to the earlier affiliate batches (Baker, the Bend cluster, the Great Basin).
+
 EXTRA_SPONSORS = frozenset({
     "Whistle Stop",       # 1A 152 — Whistle Stop, Antler. The town's only school, and
                           # the town had no tennis at all.
