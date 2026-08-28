@@ -63,7 +63,11 @@ def _bearing(lat: float, lon: float, mid_lat: float, mid_lon: float) -> str:
 # still fails the run). If prep-network ever grows these counties, delete this
 # table and the allowlist and let the join take over.
 NET_NEW_AREAS = frozenset({"Silver Basin", "Snake River Plain",
-                           "Bear River Country"})
+                           "Bear River Country",
+                           # 2052 eastern Oregon / Columbia Gorge affiliate
+                           # expansion (owner rule 2026-08) — see
+                           # scripts/jhsaa_2052_expansion.py.
+                           "Blue Mountain Country", "Columbia Gorge"})
 _EXPANSION_2046_PLACES = [
     # (name, county, area, real_county, lat, lon, population)
     ("Elko",          "Ruby",        "Silver Basin",       "Elko County, NV",      40.833, -115.763, 20500),
@@ -96,6 +100,62 @@ _EXPANSION_2046_PLACES = [
     ("Mountain View", "Bridger",     "Bear River Country", "Uinta County, WY",     41.269, -110.336,  1200),
 ]
 
+# --- 2052 eastern Oregon / Columbia Gorge affiliate expansion (owner rule
+# 2026-08, scripts/jhsaa_2052_expansion.py) — same idiom as 2046: affiliate
+# territory prep-network has no rows for, anchored on real town coordinates.
+# The affiliates keep their REAL counties (Umatilla, Wallowa, Klickitat…) even
+# where Jefferson's fictional ground overlaps (Stagewater County stands on
+# Malheur County, Fort Valois on Ontario's site) — two ontologies, the Baker
+# precedent. Amelia City is the one JEFFERSON town in the batch: a revived
+# ghost town on the real Amelia City, OR site, filed under Barlowe County.
+_EXPANSION_2052_PLACES = [
+    # (name, county, area, real_county, lat, lon, population)
+    ("Hermiston",        "Umatilla",  "Blue Mountain Country", "Umatilla County, OR",  45.840, -119.289, 20500),
+    ("Pendleton",        "Umatilla",  "Blue Mountain Country", "Umatilla County, OR",  45.672, -118.788, 17100),
+    ("Milton-Freewater", "Umatilla",  "Blue Mountain Country", "Umatilla County, OR",  45.932, -118.388,  7100),
+    ("Athena",           "Umatilla",  "Blue Mountain Country", "Umatilla County, OR",  45.812, -118.490,  1200),
+    ("Umatilla",         "Umatilla",  "Blue Mountain Country", "Umatilla County, OR",  45.917, -119.343,  7500),
+    ("Stanfield",        "Umatilla",  "Blue Mountain Country", "Umatilla County, OR",  45.780, -119.216,  2300),
+    ("Echo",             "Umatilla",  "Blue Mountain Country", "Umatilla County, OR",  45.741, -119.194,   700),
+    ("Pilot Rock",       "Umatilla",  "Blue Mountain Country", "Umatilla County, OR",  45.483, -118.830,  1500),
+    ("Boardman",         "Morrow",    "Blue Mountain Country", "Morrow County, OR",    45.840, -119.700,  4100),
+    ("Irrigon",          "Morrow",    "Blue Mountain Country", "Morrow County, OR",    45.896, -119.491,  2000),
+    ("Ione",             "Morrow",    "Blue Mountain Country", "Morrow County, OR",    45.502, -119.826,   330),
+    ("La Grande",        "Union",     "Blue Mountain Country", "Union County, OR",     45.325, -118.088, 13100),
+    ("Elgin",            "Union",     "Blue Mountain Country", "Union County, OR",     45.565, -117.917,  1700),
+    ("Imbler",           "Union",     "Blue Mountain Country", "Union County, OR",     45.460, -117.963,   300),
+    ("Union",            "Union",     "Blue Mountain Country", "Union County, OR",     45.209, -117.865,  2100),
+    ("Cove",             "Union",     "Blue Mountain Country", "Union County, OR",     45.296, -117.809,   630),
+    ("North Powder",     "Union",     "Blue Mountain Country", "Union County, OR",     45.028, -117.919,   500),
+    ("Enterprise",       "Wallowa",   "Blue Mountain Country", "Wallowa County, OR",   45.426, -117.279,  2100),
+    ("Wallowa",          "Wallowa",   "Blue Mountain Country", "Wallowa County, OR",   45.571, -117.527,   800),
+    ("Joseph",           "Wallowa",   "Blue Mountain Country", "Wallowa County, OR",   45.354, -117.230,  1100),
+    ("Baker City",       "Baker",     "Blue Mountain Country", "Baker County, OR",     44.775, -117.834, 10100),
+    ("Huntington",       "Baker",     "Blue Mountain Country", "Baker County, OR",     44.351, -117.267,   500),
+    ("Unity",            "Baker",     "Blue Mountain Country", "Baker County, OR",     44.437, -118.191,   100),
+    ("Halfway",          "Baker",     "Blue Mountain Country", "Baker County, OR",     44.878, -117.109,   350),
+    ("Ontario",          "Malheur",   "Blue Mountain Country", "Malheur County, OR",   44.027, -116.963, 11600),
+    ("Nyssa",            "Malheur",   "Blue Mountain Country", "Malheur County, OR",   43.877, -116.995,  3300),
+    ("Vale",             "Malheur",   "Blue Mountain Country", "Malheur County, OR",   43.982, -117.238,  1900),
+    ("Adrian",           "Malheur",   "Blue Mountain Country", "Malheur County, OR",   43.741, -117.072,   180),
+    ("The Dalles",       "Wasco",     "Columbia Gorge",        "Wasco County, OR",     45.594, -121.178, 16400),
+    ("Dufur",            "Wasco",     "Columbia Gorge",        "Wasco County, OR",     45.453, -121.128,   630),
+    ("Moro",             "Sherman",   "Columbia Gorge",        "Sherman County, OR",   45.484, -120.732,   340),
+    ("Arlington",        "Gilliam",   "Columbia Gorge",        "Gilliam County, OR",   45.716, -120.198,   600),
+    ("Condon",           "Gilliam",   "Columbia Gorge",        "Gilliam County, OR",   45.234, -120.185,   680),
+    ("Glenwood",         "Klickitat", "Columbia Gorge",        "Klickitat County, WA", 46.021, -121.288,   530),
+    ("Klickitat",        "Klickitat", "Columbia Gorge",        "Klickitat County, WA", 45.816, -121.155,   400),
+    ("Lyle",             "Klickitat", "Columbia Gorge",        "Klickitat County, WA", 45.696, -121.288,   530),
+    ("Wishram",          "Klickitat", "Columbia Gorge",        "Klickitat County, WA", 45.658, -120.965,   340),
+    # NOTE: shares its name with Jefferson's own Trout Lake (Rimrock County) —
+    # ordinary for towns in different states; setdefault means the prep-network
+    # row wins the place entry, so the WA town may file under the Jefferson one
+    # in the doc until the generator learns to key a town on (name, county).
+    ("Trout Lake",       "Klickitat", "Columbia Gorge",        "Klickitat County, WA", 45.997, -121.528,   630),
+    # Jefferson's own addition, filed with its ladder county:
+    ("Amelia City",      "Barlowe",   "Boise Frontier",        "Baker County, OR",     44.390, -117.623,  4500),
+]
+
 
 def build(m, rows: list[dict], cities: list[dict]) -> str:
     out = io.StringIO()
@@ -117,9 +177,11 @@ def build(m, rows: list[dict], cities: list[dict]) -> str:
             "name": name,
             "area": m.split_area(area, c.get("county", ""), name),
         }
-    # The 2046 Great Basin territory is net-new — prep-network has no rows for
-    # it, so its places are anchored locally (see _EXPANSION_2046_PLACES above).
-    for name, county, area, realc, lat, lon, pop in _EXPANSION_2046_PLACES:
+    # The 2046 Great Basin and 2052 eastern Oregon / Columbia Gorge territory is
+    # net-new — prep-network has no rows for it, so its places are anchored
+    # locally (see the _EXPANSION_*_PLACES tables above).
+    for name, county, area, realc, lat, lon, pop in (
+            _EXPANSION_2046_PLACES + _EXPANSION_2052_PLACES):
         place.setdefault(name, {"name": name, "county": county, "area": area,
                                 "real_county": realc, "lat": lat, "lon": lon,
                                 "population": pop})

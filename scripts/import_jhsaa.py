@@ -733,7 +733,6 @@ FORMER_NAMES = {
     "Mid-City":                                    "Hackensack",
     "Mikel Echevarria":                            "Fir Valley Grange",
     "Mikel Garmendia":                             "Homeland",
-    "Portola":                                     "Homeland",
     "Mikel Zubieta":                               "Cornerstone Christian",
     "Mikhail Sidorov":                             "Saint Marc",
     "Mila Chernov North":                          "Siberia",
@@ -841,6 +840,7 @@ FORMER_NAMES = {
     "Port Veles Science":                          "Seawall",
     "Port Veles South":                            "Severn",
     "Port Veles Union":                            "Port Veles Lutheran",
+    "Portola":                                     "Homeland",
     "Prairie Crossing":                            "Pacersburg",
     "Providence Academy North":                    "Wyalusing Providence",
     "Providence Academy Valley":                   "Valley Providence",
@@ -1065,6 +1065,14 @@ RENAMES = {
     # Owner picks, 2026-08 — both enter the association via EXTRA_SPONSORS:
     "Plainfield Science": "Plainfield",              # 6A Plainfield
     "Abraham Lincoln": "Lincoln",                    # 9A Belyakov — the state's Lincoln
+
+    # NB (2026-08): a "Trout Lake": "San Fernando" entry lived here for one
+    # commit during the 2052 expansion and was removed the same session — the
+    # owner resolved the collision with the real Trout Lake, WA by RELOCATING
+    # the invented program into the affiliate seat instead (one school, one
+    # archive — `scripts/jhsaa_2052_expansion.py`). No season was ever archived
+    # under "San Fernando". Do not re-add the entry: it would be a dead key
+    # aimed at a live school's own name.
 
     "Belyakov Academy of Music and Media": "Walter-Kenny School",
     "Belyakov Environmental Sciences Academy": "Friendship City",
@@ -1929,6 +1937,15 @@ PRIVATE_SCHOOLS = {
 # after it. Applied to the committed data by `scripts/jhsaa_sponsors.py`, which
 # redraws the leagues of the classes they touch.
 NEVER_SPONSOR = frozenset()
+
+# ‼️ THE 2052 EASTERN OREGON / COLUMBIA GORGE EXPANSION LIVES OUTSIDE THIS FILE
+# (owner rule 2026-08, `scripts/jhsaa_2052_expansion.py`): 39 real OR/WA
+# affiliates, the net-new Jefferson town Amelia City, Baker's 3A->5A move, and
+# 40 owner-named sunsets (flags off, rows kept — the `former_school` path).
+# Affiliates have no prep-network rows, so a full re-import cannot produce them
+# and would also resurrect the sunsets as sponsors: AFTER any re-import, re-run
+# jhsaa_2052_expansion.py (idempotent; it holds every table). The same applies
+# to the earlier affiliate batches (Baker, the Bend cluster, the Great Basin).
 
 EXTRA_SPONSORS = frozenset({
     "Whistle Stop",       # 1A 152 — Whistle Stop, Antler. The town's only school, and
@@ -2947,7 +2964,10 @@ MASCOTS = {
     "Meridian Regional": "Tinsmiths",           # Stovepipe
     "Pacersburg": "Kangaroo Rats",
     "Dry Lake": "Mirages",
-    "Trout Lake": "Silverlegs",             # the ask: named for its own fish
+    "Trout Lake": "Silverlegs",             # the ask: named for its own fish —
+                                            # which swims in Klickitat County
+                                            # too (the program relocated to WA
+                                            # in the 2052 expansion)
 
     # ── Millersylvania: the mines and the snow ──────────────────────────────────
     "Galena": "Silver Kings",                   # galena — the silver-lead ore
