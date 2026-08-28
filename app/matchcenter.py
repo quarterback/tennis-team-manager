@@ -229,12 +229,20 @@ def summarize_series(meetings: list[dict], team_a: str, team_b: str) -> dict | N
 
     a_w, b_w = wins[team_a], wins[team_b]
     if a_w > b_w:
-        leader = team_a
+        leader, trailer = team_a, team_b
     elif b_w > a_w:
-        leader = team_b
+        leader, trailer = team_b, team_a
     else:
-        leader = None
-    record_str = f"{a_w}-{b_w}" + (f"-{ties}" if ties else "")
+        leader = trailer = None
+    # ‼️ LEADER-FIRST, NOT team_a-FIRST. "record_str" is only ever printed
+    # right after the leader's own name ("{{ leader }} leads the series
+    # {{ record_str }}"), so it must read as THAT team's wins first — when
+    # team_b actually led, `f"{a_w}-{b_w}"` put team_a's (lower) count
+    # first, so "Away leads the series 2-8" read as the leader having two
+    # wins. A tie has no leader to orient around, so team_a/team_b order is
+    # fine there (the two numbers are equal anyway).
+    record_str = (f"{wins[leader]}-{wins[trailer]}" if leader else f"{a_w}-{b_w}") + (
+        f"-{ties}" if ties else "")
 
     last10 = meetings[:10]
     last10_wins = {team_a: 0, team_b: 0}

@@ -3656,6 +3656,13 @@ def jhsaa_dual_view(dual_id: int) -> dict | None:
     if not row:
         return None
     level = row.get("level") or "v"
+    # ‼️ NO MATCH CENTER FOR JV (owner rule 2026-08): "those matches don't
+    # even need a match center" — JV isn't tracked as a series at all, so
+    # this refuses the whole page rather than rendering one scoped to JV.
+    # The existing inline line-score expand on the school's schedule page
+    # is untouched and stays the JV box-score view.
+    if level != "v":
+        return None
     if row["home"]:
         home, away = row["school"], row["opp"]
         home_pts, away_pts = int(row["pf"]), int(row["pa"])

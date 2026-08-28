@@ -3760,7 +3760,7 @@ def create_app() -> Flask:
         # meetings between these two same schools). See app/matchcenter.py.
         import app.matchcenter as mc
         stat_groups = mc.stat_groups(mc.sum_college_lines(d["lines"]))
-        meetings = sm.prior_meetings(d["home"], d["away"], dual_id)
+        meetings = sm.prior_meetings(d["home"], d["away"], dual_id, d["gender"])
         for m in meetings:
             m["url"] = url_for("season_dual", dual_id=m["id"], u=u)
         series = mc.summarize_series(meetings, d["home"], d["away"])

@@ -192,10 +192,13 @@
             <td class="{{ 'T' if d.tied else 'W' if d.won else 'L' }}">{{ 'T' if d.tied else 'W' if d.won else 'L' }}</td>
             <td class="sc">{{ d.pf|int }}–{{ d.pa|int }}</td>
             {% set jvk = 'DIST' if d.district else 'WEEKEND' if d.phase.startswith('showcase') else 'INVITE' %}
+            {# No Match Center link for JV — owner rule 2026-08: JV duals
+               aren't tracked as a series ("those matches don't even need a
+               match center"). The inline line-score expand below is the
+               JV box score and stays; only the new Match Center link is
+               varsity-only. #}
             <td><span class="jh-tag {{ 'dist' if jvk == 'DIST' else 'show' if jvk == 'SHOWCASE' }}">{{ jvk }}</span>
               {% if d.shape %}<span class="jh-tag rd">{{ d.shape }}</span>{% endif %}
-              {% if d.lines and d.id %}<a class="jh-chip ghost" style="text-decoration:none"
-                 href="{{ url_for('jhsaa_dual', dual_id=d.id, u=u, g=view.gender) }}">Match Center</a>{% endif %}
               {% if d.lines %}<span class="jh-caret" aria-hidden="true">›</span>{% endif %}</td>
           </tr>
           {% if d.lines %}

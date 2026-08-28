@@ -62,6 +62,39 @@ doesn't have to re-derive it:
      one there too, matching what `jhsaa_dual.html` does with `date_label`.
   Do NOT start this unprompted — the owner said next run, not now.
 
+## Three more review findings on the head-to-head rewrite (2026-08)
+
+- **P1 — the college series wasn't scoped to gender.** `sm.prior_meetings`
+  matched purely on school NAME strings, but `duals` is ONE table shared
+  across every division×gender universe (`duals` has no gender column of
+  its own — only `seasons` does). Two same-named schools' men's and
+  women's programs would silently combine into one "series," and could
+  report the wrong leader/streak/count. Fixed with a join through
+  `seasons` — `sm.dual_detail` now also returns `gender`/`division`
+  (joined, not from ambient page state, which need not match the dual
+  actually being viewed), and `sm.prior_meetings` takes `gender` and
+  filters on it. GTT and JHSAA were never at risk of this: GTT matches on
+  numeric franchise ids scoped to `league_id` (no name ambiguity possible),
+  and JHSAA's `world_jhsaa_dual` already carries `gender` as a real column
+  that `jhsaa_prior_meetings` was already filtering on.
+- **P2 — the headline record wasn't oriented to the named leader.**
+  `record_str` was always `f"{team_a wins}-{team_b wins}"` regardless of
+  who actually led, so "`{{ leader }}` leads the series `{{ record_str }}`"
+  could read "Away leads the series 2-8" when Away had EIGHT wins — the
+  leader's own number printed second. `summarize_series` now orders
+  `record_str` leader-first (`wins[leader]-wins[trailer]`) whenever there
+  is a leader; a tie keeps the neutral team_a/team_b order since the two
+  numbers are equal anyway.
+- **JV duals get no Match Center at all, full stop** (owner rule 2026-08:
+  "those matches don't even need a match center" — not "scope it to JV
+  too," an outright refusal). `jhsaa_dual_view` now returns `None` for any
+  `level != "v"` row before doing anything else, so `/jhsaa/dual/<id>` 404s
+  for a JV dual regardless of how it's reached; the "Match Center" link was
+  removed from the JV table on the school schedule page (the varsity table
+  keeps it). The pre-existing inline line-score expand on JV rows is
+  UNCHANGED — the owner was explicit that stays ("what we have already is
+  fine"); only the NEW Match Center/series-tracking surface is varsity-only.
+
 ## Head-to-head rewrite (owner correction, 2026-08)
 
 The Matches tab shipped as a 5-row "recent form" list, capped and silently

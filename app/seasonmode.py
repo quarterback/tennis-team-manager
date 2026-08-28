@@ -2220,7 +2220,12 @@ def ita_view(season_id: int) -> dict | None:
 
 def dual_detail(dual_id: int) -> dict | None:
     conn = _db()
-    r = conn.execute("SELECT * FROM duals WHERE id=?", (dual_id,)).fetchone()
+    # `duals` carries no division/gender of its own — only `seasons` does —
+    # so this joins through it. `d.*` first means the joined columns can
+    # never silently shadow a same-named duals column.
+    r = conn.execute(
+        "SELECT d.*, s.division, s.gender FROM duals d"
+        " JOIN seasons s ON s.id = d.season_id WHERE d.id=?", (dual_id,)).fetchone()
     conn.close()
     if not r:
         return None
@@ -2229,7 +2234,7 @@ def dual_detail(dual_id: int) -> dict | None:
     return d
 
 
-def prior_meetings(school_a: str, school_b: str, exclude_dual_id: int) -> list[dict]:
+def prior_meetings(school_a: str, school_b: str, exclude_dual_id: int, gender: str) -> list[dict]:
     """The Match Center's head-to-head tab: EVERY past completed dual between
     this pair (either order, any season), most recent first — the full
     series, not a capped "recent form" list (see `matchcenter.
@@ -2243,6 +2248,15 @@ def prior_meetings(school_a: str, school_b: str, exclude_dual_id: int) -> list[d
     (it's a pre-season event, not a postseason one), but it still counts in
     `wins`/`record_str` like everything else.
 
+    ‼️ SCOPED TO ONE `gender`, via a JOIN through `seasons` — `duals` has no
+    gender of its own, and it's ONE shared table across every division AND
+    gender's universe, so two same-named schools' men's and women's
+    programs (or a same-named pair in a different division) would otherwise
+    silently combine into one "series." `gender` should come off the SAME
+    dual's own `seasons` row (`dual_detail`'s `d["gender"]`), never off
+    ambient page/request state, which is a display concern and need not
+    match the dual actually being viewed.
+
     ‼️ TODO (owner approved, DEFERRED 2026-08): `week`/`round` are the label
     — `duals` carries no year column (a season row doesn't either), so a
     meeting reads "Wk N" rather than a real date. The owner wants this
@@ -2251,11 +2265,13 @@ def prior_meetings(school_a: str, school_b: str, exclude_dual_id: int) -> list[d
     starting it. Don't pick this up unprompted."""
     conn = _db()
     rows = conn.execute(
-        "SELECT id, season_id, week, round, home, away, home_points, away_points"
-        " FROM duals WHERE status='final' AND id!=?"
-        " AND ((home=? AND away=?) OR (home=? AND away=?))"
-        " ORDER BY season_id DESC, week DESC, id DESC",
-        (exclude_dual_id, school_a, school_b, school_b, school_a)).fetchall()
+        "SELECT d.id, d.season_id, d.week, d.round, d.home, d.away,"
+        " d.home_points, d.away_points FROM duals d"
+        " JOIN seasons s ON s.id = d.season_id"
+        " WHERE d.status='final' AND d.id!=? AND s.gender=?"
+        " AND ((d.home=? AND d.away=?) OR (d.home=? AND d.away=?))"
+        " ORDER BY d.season_id DESC, d.week DESC, d.id DESC",
+        (exclude_dual_id, gender, school_a, school_b, school_b, school_a)).fetchall()
     conn.close()
     return [{"id": r["id"], "label": f"Wk {r['week']}" if r["round"] == "REG" else r["round"],
              "home": r["home"], "away": r["away"],
