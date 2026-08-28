@@ -1186,7 +1186,7 @@ def create_app() -> Flask:
             default_year = wd.jhsaa_season_year(world) if world else 2027
             return render_template("research_export.html", active="Tools",
                                    default_year=default_year)
-        from app.research_export import ExportError, export_zip
+        from app.research_export import ExportError, export_zip, export_zip_bulk
         family = request.form.get("scope", "jhsaa").strip().lower()
         try:
             year = int(request.form.get("year", ""))
@@ -1195,16 +1195,44 @@ def create_app() -> Flask:
         except ValueError:
             abort(400, "Year must be between 2020 and 2200.")
         gender = request.form.get("gender", "girls" if family == "jhsaa" else "men")
+        both_genders = request.form.get("both_genders") == "on"
+        year_to_raw = request.form.get("year_to", "").strip()
+        extra = ({"division": request.form.get("division", "D1")} if family == "college"
+                 else {"classification": request.form.get("classification", "all")})
+
+        if not both_genders and not year_to_raw:
+            # Single (year, gender) — unchanged, ordinary single-scope download.
+            try:
+                bundle = export_zip(family, year=year, gender=gender, **extra)
+            except ExportError as exc:
+                abort(400, str(exc))
+            filename = f"play-to-clinch-{family}-{year}-{gender}.zip"
+            return send_file(bundle, mimetype="application/zip", as_attachment=True,
+                             download_name=filename, max_age=0)
+
+        # Bulk: both genders and/or a year range, one zip, folders per scope.
+        year_to = year
+        if year_to_raw:
+            try:
+                year_to = int(year_to_raw)
+                if not year <= year_to <= 2200:
+                    raise ValueError
+            except ValueError:
+                abort(400, "End year must be a valid year on or after the start year.")
+        genders = (["girls", "boys"] if family == "jhsaa" else ["men", "women"]) \
+            if both_genders else [gender]
+        years = list(range(year, year_to + 1))
+        if len(years) * len(genders) > 120:
+            abort(400, "That range is too large for one export — narrow the years or genders.")
         try:
-            if family == "college":
-                bundle = export_zip(family, year=year, gender=gender,
-                                    division=request.form.get("division", "D1"))
-            else:
-                bundle = export_zip(family, year=year, gender=gender,
-                                    classification=request.form.get("classification", "all"))
+            bundle, summary = export_zip_bulk(family, years=years, genders=genders, **extra)
         except ExportError as exc:
             abort(400, str(exc))
-        filename = f"play-to-clinch-{family}-{year}-{gender}.zip"
+        if not summary["included"]:
+            abort(400, "Nothing archived matches that range — nothing to export.")
+        span = f"{year}" if year == year_to else f"{year}-{year_to}"
+        gtag = "both" if both_genders else gender
+        filename = f"play-to-clinch-{family}-{span}-{gtag}.zip"
         return send_file(bundle, mimetype="application/zip", as_attachment=True,
                          download_name=filename, max_age=0)
 
