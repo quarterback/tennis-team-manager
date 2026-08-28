@@ -9,3 +9,4 @@ venv/
 *.db-wal
 .DS_Store
 scripts/out/
+.write_probe

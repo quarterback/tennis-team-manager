@@ -4335,6 +4335,235 @@ def jhsaa_years(world_id: int, gender: str) -> list[int]:
     return [r["year"] for r in rows]
 
 
+_careerwins_cache: dict = {}
+
+
+def jhsaa_career_wins(world_id: int, gender: str, salt: str = "",
+                      limit: int = 100) -> dict:
+    """THE CAREER WINS BOARDS (owner request, 2026-08): the most match wins over a
+    high-school career (players) and all-time (programs), folded out of the archive.
+
+    Returns {"players": {"overall"|"singles"|"doubles": [row, ...]},   # top `limit`
+             "programs": [row, ...],                                   # every program
+             "years": [...]}.
+
+    ‼️ WHAT A "WIN" IS HERE: a court won on a VARSITY dual card — the DUAL record,
+    exactly what the player page's career ledger counts. JV is excluded (`level`
+    filter — the section's rule for every reader of `world_jhsaa_dual`), the
+    individual state tournaments and mixed doubles are excluded (their results are
+    deliberately kept OUT of the career W-L; they live in their own table anyway),
+    and the postseason is INCLUDED because a record is a record. A doubles win
+    credits both partners (each played it); a doubles court is ONE court on the
+    program's tally.
+
+    ‼️ A CAREER IS A RUN OF CONSECUTIVE SEASONS, keyed (school, name). The archive's
+    `lines` store NAMES, not pids — so identity here is the name within a school,
+    split wherever the years stop being consecutive (a four-year career is
+    consecutive by construction; a same-named player a generation later must not
+    inherit it). Transferred players are the exception: the transfer table is the
+    authority on where a pid was each season, so a mover's tallies are pulled out of
+    the name-run pool and merged into ONE career with stints, the same shape the
+    repeat rolls use. Two same-named players at one school in overlapping years
+    would merge — accepted, the pools make that astronomically rare.
+
+    ‼️ ONE PASS OVER THE DUAL TABLE, cached. This parses every archived varsity
+    line, which is the heaviest fold in the section — it runs once per (world,
+    gender, newest season, transfer version) and is served from the memo after,
+    the gthread rules observed (compute local, publish, return the local).
+    Schools are relabelled through `former_names` so a renamed program's career
+    rows and its current page agree; the top rows resolve their PIDs by
+    regenerating the roster they last played on, which is what the player links
+    need and costs a handful of cached `build_roster` calls."""
+    from collections import defaultdict
+    from . import jhsaa as _jh
+    from app import overrides as ov
+    years = jhsaa_years(world_id, gender)
+    if not years:
+        return {"players": {"overall": [], "singles": [], "doubles": []},
+                "programs": [], "years": []}
+    if not salt:
+        salt = active_salt(DEFAULT_SEED)
+    key = (world_id, gender, years[0], salt, ov.jhsaa_transfer_version(), limit)
+    got = _careerwins_cache.get(key)
+    if got is not None:
+        return got
+    alias = _jh.former_names()
+
+    # --- the duals: per (school, name, year) court tallies, plus program courts ---
+    tal: dict = defaultdict(lambda: [0, 0, 0, 0])       # [sw, sl, dw, dl]
+    prog_courts: dict = defaultdict(lambda: [0, 0, 0, 0])
+    conn = _db()
+    try:
+        for d in conn.execute(
+                "SELECT year, school, home, lines FROM world_jhsaa_dual"
+                " WHERE world_id=? AND gender=? AND COALESCE(level,'v')='v'",
+                (world_id, gender)):
+            side = "home" if d["home"] else "away"
+            school = alias.get(d["school"], d["school"])
+            for ln in json.loads(d["lines"] or "[]"):
+                slot = ln.get("slot") or ""
+                hw = ln.get("home_won")
+                if hw is None or not slot:
+                    continue
+                won = bool(hw) == bool(d["home"])
+                i = (0 if won else 1) if slot[0] == "S" else (2 if won else 3)
+                names = ln.get(side) or ()
+                for nm in names:
+                    tal[(school, nm, d["year"])][i] += 1
+                prog_courts[school][i] += 1
+    finally:
+        conn.close()
+
+    # --- the programs: dual W-L off the archived standings records (the numbers
+    # the record-coverage test pins to the duals), one pass per season ---
+    programs: dict = {}
+    for year in years:
+        arc = get_jhsaa(world_id, year, gender)
+        if not arc:
+            continue
+        for grp, dists in (arc.get("standings") or {}).items():
+            for _dname, teams in (dists or {}).items():
+                for t in teams or ():
+                    school = t.get("school", "")
+                    r = programs.get(school)
+                    if r is None:
+                        r = programs[school] = {
+                            "school": school, "group": grp, "seasons": 0,
+                            "w": 0, "l": 0, "first": None, "last": None}
+                    w, l = _wl(t.get("record"))
+                    r["w"] += w
+                    r["l"] += l
+                    r["seasons"] += 1
+                    r["group"] = grp        # the class LAST archived, like the board
+                    sy = BASE_YEAR + year + 1
+                    r["first"] = sy if r["first"] is None else min(r["first"], sy)
+                    r["last"] = sy if r["last"] is None else max(r["last"], sy)
+    for school, r in programs.items():
+        c = prog_courts.get(school, [0, 0, 0, 0])
+        r["s_w"], r["s_l"], r["d_w"], r["d_l"] = c
+        r["pct"] = r["w"] / (r["w"] + r["l"]) if (r["w"] + r["l"]) else 0.0
+    program_rows = sorted(programs.values(), key=lambda r: (-r["w"], r["school"]))
+
+    # --- the transfers: a mover's seasons are claimed OUT of the name-run pool
+    # and merged into one pid-keyed career, oldest stint first ---
+    careers: list[dict] = []
+    claimed: set = set()
+    movers = {r["pid"]: r for r in _jh.transfer_rows()}
+    for pid, rec in _jh.transfers().items():
+        if rec.get("gender") != gender:
+            continue
+        name = (movers.get(pid) or {}).get("name", "")
+        if not name:
+            continue
+        entry = rec.get("entry") or 0
+        stints: list[tuple] = []                       # (school, season_year)
+        sw = sl = dw = dl = 0
+        for year in sorted(years):
+            sy = BASE_YEAR + year + 1
+            if not (entry <= sy <= entry + 3):
+                continue
+            school = alias.get(_jh.transfer_school(rec, sy), "") or ""
+            school = alias.get(school, school)
+            k = (school, name, year)
+            if k in tal:
+                claimed.add(k)
+                t = tal[k]
+                sw += t[0]; sl += t[1]; dw += t[2]; dl += t[3]
+                stints.append((school, sy))
+        if not stints:
+            continue
+        careers.append(_career_row(name, stints, sw, sl, dw, dl, pid=pid))
+
+    # --- everyone else: consecutive-year runs per (school, name) ---
+    by_player: dict = defaultdict(list)
+    for (school, name, year), t in tal.items():
+        if (school, name, year) in claimed:
+            continue
+        by_player[(school, name)].append((year, t))
+    for (school, name), items in by_player.items():
+        items.sort()
+        run: list[tuple] = []
+        for year, t in items:
+            if run and year > run[-1][0] + 1:          # a gap ends the career
+                careers.append(_career_run(school, name, run))
+                run = []
+            run.append((year, t))
+        if run:
+            careers.append(_career_run(school, name, run))
+
+    # --- the three boards, top `limit` each; pids resolved for the union ---
+    boards = {
+        "overall": sorted(careers, key=lambda r: (-r["w"], r["l"], r["name"]))[:limit],
+        "singles": sorted(careers, key=lambda r: (-r["s_w"], r["s_l"], r["name"]))[:limit],
+        "doubles": sorted(careers, key=lambda r: (-r["d_w"], r["d_l"], r["name"]))[:limit],
+    }
+    shown = {id(r): r for rows in boards.values() for r in rows}
+    schools_by_name = {s.name: s for s in _jh.load_schools(gender)}
+    for r in shown.values():
+        if r.get("pid"):
+            continue
+        sc = schools_by_name.get(r["school"])
+        if sc is None:
+            continue
+        for p in _jh.build_roster(sc, r["last"], salt):
+            if p.name == r["name"]:
+                r["pid"] = p.pid
+                break
+
+    # --- per-program top 10 (the program page's "Most Program Wins" tab):
+    # wins earned AT that school, transfer or not — a mover appears on each
+    # program's roll with the wins they won wearing that shirt, so the split is
+    # per (school, name) runs over EVERY tally, claimed keys included.
+    by_school: dict = defaultdict(list)
+    for (school, name, year), t in tal.items():
+        by_school[(school, name)].append((year, t))
+    prog_rolls: dict = defaultdict(list)
+    for (school, name), items in by_school.items():
+        items.sort()
+        run = []
+        for year, t in items:
+            if run and year > run[-1][0] + 1:
+                prog_rolls[school].append(_career_run(school, name, run))
+                run = []
+            run.append((year, t))
+        if run:
+            prog_rolls[school].append(_career_run(school, name, run))
+    by_program = {school: sorted(rows, key=lambda r: (-r["w"], r["l"], r["name"]))[:10]
+                  for school, rows in prog_rolls.items()}
+
+    out = {"players": boards, "programs": program_rows, "years": years,
+           "by_program": by_program}
+    for k in [k for k in _careerwins_cache if k[:2] == key[:2]]:
+        _careerwins_cache.pop(k, None)
+    _careerwins_cache[key] = out
+    return out
+
+
+def _career_row(name: str, stints: list[tuple], sw: int, sl: int,
+                dw: int, dl: int, pid: str = "") -> dict:
+    """One career row. `stints` is [(school, season_year), ...] in year order;
+    consecutive same-school years collapse into one stint for display."""
+    runs: list[dict] = []
+    for school, sy in stints:
+        if runs and runs[-1]["school"] == school:
+            runs[-1]["last"] = sy
+        else:
+            runs.append({"school": school, "first": sy, "last": sy})
+    return {"name": name, "pid": pid,
+            "school": stints[-1][0], "stints": runs,
+            "first": stints[0][1], "last": stints[-1][1],
+            "s_w": sw, "s_l": sl, "d_w": dw, "d_l": dl,
+            "w": sw + dw, "l": sl + dl}
+
+
+def _career_run(school: str, name: str, run: list[tuple]) -> dict:
+    """A consecutive-year run at one school, folded into a career row."""
+    sw = sum(t[0] for _y, t in run); sl = sum(t[1] for _y, t in run)
+    dw = sum(t[2] for _y, t in run); dl = sum(t[3] for _y, t in run)
+    stints = [(school, BASE_YEAR + y + 1) for y, _t in run]
+    return _career_row(name, stints, sw, sl, dw, dl)
+
+
 def _schedule_rows(conn, world_id: int, year: int, gender: str, school: str) -> list[dict]:
     """One school's duals for a year, in the order they were played, on an OPEN
     connection — so a caller walking many seasons opens one, not one per year."""

@@ -45,7 +45,8 @@ from .state import (jhsaa_view, jhsaa_scope_view, jhsaa_school_view, jhsaa_past_
                     jhsaa_misapplied_players, jhsaa_lineup_lab, jhsaa_schools_view,
                     jhsaa_titles_view, jhsaa_individual_view,
                     jhsaa_individual_winners, jhsaa_retired_view,
-                    jhsaa_repeat_poy, jhsaa_repeat_individual_champions)
+                    jhsaa_repeat_poy, jhsaa_repeat_individual_champions,
+                    jhsaa_career_wins_view, jhsaa_program_wins_view)
 from .state import (preseason_portal_view, recruit_economy_view, portal_class_rankings,
                     wire_view)
 from .state import my_program_view, my_schedule_plan, my_season_report, job_offers
@@ -2271,6 +2272,28 @@ def create_app() -> Flask:
         gender, label, u, g, group, _year = _jh_scope_args()
         view = jhsaa_repeat_individual_champions(DEFAULT_SEED, g, group)
         return render_template("jhsaa_repeat_champions.html", active="High School",
+                               view=view, gender=gender, u=u, uni_label=label)
+
+    @app.route("/jhsaa/career-wins")
+    def jhsaa_career_wins():
+        """Most career wins — players (owner request, 2026-08): the association's
+        top of all time by match wins over a high-school career, a dropdown
+        switching Singles / Doubles / Overall. Class-blind like every career
+        surface; on the History sub-rail with the other career rolls."""
+        gender, label, u, g, group, _year = _jh_scope_args()
+        cat = request.args.get("cat")
+        view = jhsaa_career_wins_view(DEFAULT_SEED, g, cat, group)
+        return render_template("jhsaa_career_wins.html", active="High School",
+                               view=view, gender=gender, u=u, uni_label=label)
+
+    @app.route("/jhsaa/program-wins")
+    def jhsaa_program_wins():
+        """Most program wins — the all-time W-L board, one row per program, in the
+        Title Board's sortable-table format but a SEPARATE view (owner request,
+        2026-08): trophies and wins are different questions."""
+        gender, label, u, g, group, year = _jh_scope_args()
+        view = jhsaa_program_wins_view(DEFAULT_SEED, g, group, year)
+        return render_template("jhsaa_program_wins.html", active="High School",
                                view=view, gender=gender, u=u, uni_label=label)
 
     @app.route("/jhsaa/retired-programs")

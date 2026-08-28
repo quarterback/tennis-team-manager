@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header %}
+{% block title %}JHSAA Program Wins{% endblock %}
+{% block content %}
+
+{{ jh_header(view.scope, u, 'program_wins', 'Most Program Wins',
+             'Every program by all-time dual wins — the whole association in one sortable table, with singles and doubles courts won beside the dual record.',
+             [('Programs', view.total), ('Seasons', view.seasons)]) }}
+
+<div class="jh-shell">
+{% if not view.ready %}
+<div class="bl-panel"><div class="jh-empty">
+  Nothing archived yet — the board is a fold over played seasons, so it fills in as
+  the association plays them.
+</div></div>
+{% else %}
+
+<div class="jh-dirbar">
+  {# The class filter is the PAGE's — the Title Board's rule: a program's wins cross
+     reclassification and play-up, so the cut reads the class it LAST played in. #}
+  <label class="jh-ttfilter"><span class="k">Class</span>
+    <select class="bl-select" id="jh-ttclass">
+      <option value="">All classes</option>
+      {% for gp in view.groups %}<option value="{{ gp }}">{{ gp }}</option>{% endfor %}
+    </select>
+  </label>
+  <input class="jh-dirfind" id="jh-ttfind" type="search" autocomplete="off"
+         placeholder="Filter by school, town, county or league…"
+         aria-label="Filter programs">
+  <span class="jh-dircount" id="jh-ttcount">{{ view.total }} programs</span>
+</div>
+
+<div class="bl-panel">
+  <div class="bl-panel-head">
+    <span class="bl-panel-title">All-time — every archived season</span>
+    <span class="bl-panel-meta">W–L is the DUAL record, postseason inside the season
+      total as the association counts it. Courts are individual singles and doubles
+      matches won on those cards; JV is not part of a varsity record.</span>
+  </div>
+  <div class="tbl-scroll">
+    <table class="jh-tt" id="jh-tt">
+      <thead>
+        <tr>
+          <th class="nm" data-sort="s" data-dir="asc">School</th>
+          <th data-sort="n" data-k="seasons" title="Seasons archived">SEA</th>
+          <th data-sort="n" data-k="w" title="All-time dual wins">W</th>
+          <th data-sort="n" data-k="l" title="All-time dual losses">L</th>
+          <th data-sort="n" data-k="pct" title="All-time winning percentage">PCT</th>
+          <th data-sort="n" data-k="s_w" title="Singles courts won">S W</th>
+          <th data-sort="n" data-k="d_w" title="Doubles courts won">D W</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in view.rows %}
+        <tr data-q="{{ r.q }}" data-group="{{ r.group }}">
+          <td class="nm">
+            <span class="jh-schoolcell">{{ r.mark|safe }}
+              <a href="{{ url_for('jhsaa_school', school=r.school, u=u, g=view.gender) }}">{{ r.school }}</a></span>
+            <span class="sub">{% if r.group %}<span class="jh-chip c-{{ r.group|replace(' ','') }}">{{ r.group }}</span>{% endif %}
+              {{ r.city }}{% if r.district %} · {{ r.district }}{% endif %}
+              · {{ r.first }}–{{ r.last }}</span>
+          </td>
+          <td data-k="seasons" data-v="{{ r.seasons }}">{{ r.seasons }}</td>
+          <td class="tot" data-k="w" data-v="{{ r.w }}">{{ r.w }}</td>
+          <td data-k="l" data-v="{{ r.l }}">{{ r.l }}</td>
+          <td data-k="pct" data-v="{{ r.pct }}">{{ r.pct_s }}</td>
+          <td data-k="s_w" data-v="{{ r.s_w }}">{{ r.s_w }}</td>
+          <td data-k="d_w" data-v="{{ r.d_w }}">{{ r.d_w }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="jh-empty" id="jh-ttnone" hidden>No program matches that.</div>
+{% endif %}
+</div>
+
+<script>
+(function () {
+  var tbl = document.getElementById('jh-tt');
+  if (!tbl) return;
+  var body = tbl.tBodies[0];
+  var rows = Array.prototype.slice.call(body.rows);
+  var find = document.getElementById('jh-ttfind');
+  var cls = document.getElementById('jh-ttclass');
+  var count = document.getElementById('jh-ttcount');
+  var none = document.getElementById('jh-ttnone');
+
+  function apply() {
+    var terms = find.value.toLowerCase().split(/\s+/).filter(Boolean);
+    var g = cls.value, shown = 0;
+    rows.forEach(function (r) {
+      var hit = (!g || r.dataset.group === g) &&
+        terms.every(function (t) { return r.dataset.q.indexOf(t) >= 0; });
+      r.hidden = !hit;
+      if (hit) shown++;
+    });
+    count.textContent = shown + (shown === 1 ? ' program' : ' programs');
+    none.hidden = shown > 0;
+  }
+
+  // Sorting is on the VALUE, never the rendered cell (the Title Board's rule).
+  function sortBy(k, desc) {
+    var val = k === null
+      ? function (r) { return r.cells[0].innerText.trim().toLowerCase(); }
+      : function (r) { return +r.querySelector('[data-k="' + k + '"]').dataset.v; };
+    var sorted = rows.slice().sort(function (a, b) {
+      var x = val(a), y = val(b);
+      if (x < y) return desc ? 1 : -1;
+      if (x > y) return desc ? -1 : 1;
+      var an = a.cells[0].innerText.trim(), bn = b.cells[0].innerText.trim();
+      return an < bn ? -1 : an > bn ? 1 : 0;
+    });
+    sorted.forEach(function (r) { body.appendChild(r); });
+  }
+
+  tbl.querySelectorAll('th[data-sort]').forEach(function (th) {
+    th.addEventListener('click', function () {
+      var numeric = th.dataset.sort === 'n';
+      var desc = th.classList.contains('sorted-desc') ? false
+        : th.classList.contains('sorted-asc') ? true : numeric;
+      tbl.querySelectorAll('th').forEach(function (o) {
+        o.classList.remove('sorted-desc', 'sorted-asc');
+      });
+      th.classList.add(desc ? 'sorted-desc' : 'sorted-asc');
+      sortBy(numeric ? th.dataset.k : null, desc);
+    });
+  });
+
+  find.addEventListener('input', apply);
+  cls.addEventListener('change', apply);
+})();
+</script>
+{% endblock %}
