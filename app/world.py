@@ -4339,7 +4339,7 @@ _careerwins_cache: dict = {}
 
 
 def jhsaa_career_wins(world_id: int, gender: str, salt: str = "",
-                      limit: int = 100) -> dict:
+                      limit: int = 10) -> dict:
     """THE CAREER WINS BOARDS (owner request, 2026-08): the most match wins over a
     high-school career (players) and all-time (programs), folded out of the archive.
 
@@ -4491,11 +4491,23 @@ def jhsaa_career_wins(world_id: int, gender: str, salt: str = "",
         if run:
             careers.append(_career_run(school, name, run))
 
-    # --- the three boards, top `limit` each; pids resolved for the union ---
+    # --- the three boards, top `limit` PLACES each (ties included, not a strict
+    # slice — the tenth win count may belong to several careers, and cutting one
+    # of them off mid-tie would be a wrong answer, not a shorter one). Pids are
+    # only resolved for the union actually shown, which is the expensive part
+    # (one cached `build_roster` call per unresolved row) — keeping `limit`
+    # small is what keeps the page fast, not a display preference. ---
+    def _top(rows: list[dict], k) -> list[dict]:
+        rows = sorted(rows, key=k)
+        if len(rows) <= limit:
+            return rows
+        cutoff = k(rows[limit - 1])[0]           # the Nth place's WIN count
+        return [r for r in rows if k(r)[0] <= cutoff]
+
     boards = {
-        "overall": sorted(careers, key=lambda r: (-r["w"], r["l"], r["name"]))[:limit],
-        "singles": sorted(careers, key=lambda r: (-r["s_w"], r["s_l"], r["name"]))[:limit],
-        "doubles": sorted(careers, key=lambda r: (-r["d_w"], r["d_l"], r["name"]))[:limit],
+        "overall": _top(careers, lambda r: (-r["w"], r["l"], r["name"])),
+        "singles": _top(careers, lambda r: (-r["s_w"], r["s_l"], r["name"])),
+        "doubles": _top(careers, lambda r: (-r["d_w"], r["d_l"], r["name"])),
     }
     shown = {id(r): r for rows in boards.values() for r in rows}
     schools_by_name = {s.name: s for s in _jh.load_schools(gender)}

@@ -4,8 +4,8 @@
 {% block content %}
 
 {{ jh_header(view.scope, u, 'career_wins', 'Most Career Wins',
-             'The most match wins over a high-school career — every varsity court on a dual, singles and doubles, league season and postseason alike.',
-             [('Seasons folded', view.seasons)]) }}
+             'The most match wins over a high-school career.',
+             [('Seasons', view.seasons)]) }}
 
 <div class="jh-shell">
 {% if not view.ready %}
@@ -33,20 +33,19 @@
 <div class="bl-panel jh-cwboard" data-cat="{{ key }}" {{ 'hidden' if key != view.cat }}>
   <div class="bl-panel-head">
     <span class="bl-panel-title">{{ label }} — most career wins</span>
-    <span class="bl-panel-meta">A career is a run of consecutive seasons; a player who
-      transferred carries both stints. JV and the individual state tournaments are
-      not part of the dual record and do not count here.</span>
   </div>
   <div class="tbl-scroll">
     <table class="jh-tt">
-      <thead><tr>
+      <thead>
+        <tr class="grp"><th class="nm" colspan="{{ 6 if key != 'overall' else 7 }}"></th></tr>
+        <tr>
         <th class="rk">#</th>
         <th class="nm">Player</th>
-        <th title="Seasons on a varsity card">Years</th>
-        {% if key != 'doubles' %}<th title="Singles courts won–lost">Singles</th>{% endif %}
-        {% if key != 'singles' %}<th title="Doubles courts won–lost">Doubles</th>{% endif %}
-        <th class="tot" title="{{ label }} wins — the board's rank">W</th>
-        <th title="{{ label }} losses">L</th>
+        <th>Years</th>
+        {% if key != 'doubles' %}<th>Singles</th>{% endif %}
+        {% if key != 'singles' %}<th>Doubles</th>{% endif %}
+        <th class="tot">W</th>
+        <th>L</th>
       </tr></thead>
       <tbody>
         {% for r in view.boards[key] %}
