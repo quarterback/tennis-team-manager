@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_jhsaa.html" import jh_tabs, jh_tabs_script %}
+{% from "_jhsaa.html" import jh_tabs, jh_tabs_script, jh_bulk_check, jh_bulk_all, jh_bulk_form %}
 {% block title %}JHSAA Transfers{% endblock %}
 {% block content %}
 
@@ -93,15 +93,37 @@
           <input type="number" name="mm" value="{{ mm }}" min="0" max="11" style="width:70px"></label>
         <button type="submit" class="bl-pill" style="cursor:pointer">Find candidates</button>
       </form>
+      {% if candidates %}
+      {# The clearing-market generator: propose a destination for every candidate
+         above, lateral first, only stepping DOWN the competitive ladder when
+         nothing lateral has a varsity seat — projected against NEXT season's
+         rosters, incoming freshmen included. Lands on the Batch tab, prefilled
+         and previewed; nothing is applied until Apply is clicked there. #}
+      <form method="get" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px">
+        <input type="hidden" name="u" value="{{ u }}">
+        <input type="hidden" name="g" value="{{ g }}">
+        <input type="hidden" name="find" value="1">
+        <input type="hidden" name="mm" value="{{ mm }}">
+        <input type="hidden" name="gr" value="{{ gr }}">
+        <input type="hidden" name="propose" value="1">
+        <label>Max arrivals per school
+          <input type="number" name="maxper" value="{{ maxper }}" min="1" max="8" style="width:60px"></label>
+        <label>Max drop (competitive levels)
+          <input type="number" name="drop" value="{{ drop }}" min="0" max="6" style="width:60px"></label>
+        <button type="submit" class="bl-pill" style="cursor:pointer">Propose destinations for all {{ candidates|length }}</button>
+        <span class="where">lateral first; freshman-aware (next season's rosters)</span>
+      </form>
+      {% endif %}
       {% if candidates is not none %}
       {% if candidates | length > 400 %}<div style="margin:10px 0 4px">Top 400 of {{ candidates|length }}.</div>{% endif %}
       <div class="tbl-scroll">
         <table class="jh-ledger">
-          <tr><th>Player</th><th>School</th><th style="width:50px">Gr</th>
+          <tr>{{ jh_bulk_all() }}<th>Player</th><th>School</th><th style="width:50px">Gr</th>
             <th style="width:60px">Ladder</th><th style="width:60px">OVR</th>
             <th style="width:70px">Matches</th><th>Move to</th></tr>
           {% for r in candidates[:400] %}
           <tr>
+            <td>{{ jh_bulk_check(r.pid, r.name ~ ' — ' ~ r.group ~ ' ' ~ r.school ~ ' (' ~ r.grade ~ 'th, #' ~ r.ladder ~ ', OVR ' ~ r.ovr ~ ', ' ~ r.matches ~ ' matches)') }}</td>
             <td><a href="{{ url_for('jhsaa_player', school=r.school, pid=r.pid, u=u, g=g) }}">{{ r.name }}</a></td>
             <td><a href="{{ url_for('jhsaa_school', school=r.school, u=u, g=g) }}">{{ r.school }}</a></td>
             <td>{{ r.grade }}</td>
@@ -129,6 +151,7 @@
           {% endfor %}
         </table>
       </div>
+      {{ jh_bulk_form(u, g, 'jh-batch-schools') }}
       {% endif %}
     </div>
   </div>

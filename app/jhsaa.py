@@ -2071,6 +2071,133 @@ def transfer_batch(pairs: list[tuple[str, str]], year: int, salt: str = "",
     return out
 
 
+# --- opportunity-clearing proposals (owner tool, 2026-08) ---------------------
+# The generator half of the bulk-transfer workflow: given the underplayed board's
+# candidates, PROPOSE a destination for each, per the clearing-market brief
+# (docs/reports/BRIEF-jhsaa-opportunity-clearing-market.md) — search LATERALLY
+# first (own class, then the class sharing its competitive level), and only move
+# down a real competitive step when the current level has no home. It writes
+# NOTHING: the output is a slate the owner previews, edits and applies through
+# the same `transfer_batch` every other path uses.
+
+#: The brief's competitive ladder — NOT nine equal steps. 9A/8A are one level and
+#: so are 7A/6A; every boundary below is real. `GB_GROUPS` are deliberately absent
+#: (they are their own association rung, lateral-only — see GROUPS above).
+CLEARING_LEVELS = (("9A", "8A"), ("7A", "6A"), ("5A",), ("4A",), ("3A",),
+                   ("2A",), ("1A",))
+
+
+def _propose_destinations(cands: list[dict], ladders: dict, groups: dict, *,
+                          next_ovr: dict | None = None, max_per_school: int = 2,
+                          max_drop: int = 2, top_slot: int | None = None) -> list[dict]:
+    """The pure matcher behind `clearing_proposals` — separable so it can be
+    tested without a full-gender roster build.
+
+    `cands` are underplayed-board rows ({pid, name, school, group, grade, ovr});
+    `ladders` maps school -> DESC-sorted next-season varsity-pool OVRs (the
+    projection that makes the market FRESHMAN-AWARE: an incoming class that would
+    bury the arrival is already in the list); `groups` maps school -> group;
+    `next_ovr` maps pid -> the candidate's own projected next-season OVR (their
+    development roll — falls back to the board's current OVR).
+
+    Rules, straight from the brief: a candidate is placed at the HIGHEST level
+    with a genuinely useful role — a projected ladder slot inside the varsity
+    lineup (`top_slot`, default `lineup_need("regular")`). Own class outranks
+    the lateral class-mate, which outranks a drop; a DROP destination where the
+    arrival would be the outright new #1 is skipped (dominance is not the goal —
+    lateral #1s are fine, a weak same-level program is exactly who should get
+    them). Within a tier the pick is the slot nearest the middle of the lineup.
+    Arrivals stack: each placement counts against the destination's ladder and
+    its `max_per_school` allowance, so a wave cannot pile onto one program."""
+    from collections import defaultdict
+    top_slot = top_slot or lineup_need("regular")
+    next_ovr = next_ovr or {}
+    lvl = {}
+    for i, band in enumerate(CLEARING_LEVELS):
+        for grp in band:
+            lvl[grp] = i
+    by_level: dict[int, list] = defaultdict(list)
+    lateral_only: dict[str, list] = defaultdict(list)   # GB / unladdered groups
+    for s, grp in groups.items():
+        if grp in lvl:
+            by_level[lvl[grp]].append(s)
+        else:
+            lateral_only[grp].append(s)
+    arrivals: dict[str, list] = defaultdict(list)
+    out = []
+    # Best first, the order every market here clears in — the strongest surplus
+    # gets the scarce high-level seats before weaker candidates fill them.
+    for c in sorted(cands, key=lambda r: -r["ovr"]):
+        home = c["group"]
+        ovr = next_ovr.get(c["pid"], c["ovr"])
+        tiers: list[tuple[int, list]] = []                  # (drop steps, schools)
+        if home in lvl:
+            base = lvl[home]
+            tiers.append((0, [s for s in by_level[base] if groups[s] == home]))
+            tiers.append((0, [s for s in by_level[base] if groups[s] != home]))
+            for step in range(1, max_drop + 1):
+                if base + step < len(CLEARING_LEVELS):
+                    tiers.append((step, by_level[base + step]))
+        else:
+            tiers.append((0, lateral_only[home]))
+        best = None
+        for step, tier in tiers:
+            picks = []
+            for s in tier:
+                if s == c["school"] or len(arrivals[s]) >= max_per_school:
+                    continue
+                lad = ladders.get(s)
+                if lad is None:
+                    continue
+                above = (sum(1 for v in lad if v >= ovr)
+                         + sum(1 for v in arrivals[s] if v >= ovr))
+                slot = above + 1
+                if slot > top_slot:
+                    continue
+                # Becoming the outright #1 on a DROP is dominance, not
+                # opportunity — a last resort within the tier, never a bar
+                # (the market guarantees everyone a home).
+                dominant = 1 if (step > 0 and slot == 1) else 0
+                picks.append((dominant, abs(slot - 7), slot, s))
+            if picks:
+                _, _, slot, s = min(picks)
+                best = (s, slot, step)
+                break
+        row = {"pid": c["pid"], "name": c["name"], "from": c["school"],
+               "from_group": home, "grade": c["grade"], "ovr": c["ovr"],
+               "to": "", "to_group": "", "slot": None, "drop": 0}
+        if best:
+            s, slot, step = best
+            arrivals[s].append(ovr)
+            row.update(to=s, to_group=groups[s], slot=slot, drop=step)
+        out.append(row)
+    return out
+
+
+def clearing_proposals(gender: str, year: int, salt: str = "",
+                       candidates: list[dict] | None = None,
+                       max_per_school: int = 2, max_drop: int = 2,
+                       top_slot: int | None = None) -> list[dict]:
+    """Propose a destination for each underplayed candidate, effective season
+    `year` (the NEXT season — an offseason move). Projections run against every
+    program's `year` roster, which `build_roster` already develops and tops up
+    with that year's incoming freshman class, so 'would they actually play' is
+    answered against the roster the arrival will really meet, not the one that
+    just finished. A full-gender roster build (~seconds) — call it from an
+    explicit button, never on a default page load."""
+    ladders, groups, next_ovr = {}, {}, {}
+    for school in load_schools(gender):
+        roster = build_roster(school, year, salt)
+        ovrs = sorted((round(p.current_overall(), 1) for p in roster), reverse=True)
+        ladders[school.name] = ovrs
+        groups[school.name] = school.group
+        for p in roster:
+            next_ovr[p.pid] = round(p.current_overall(), 1)
+    return _propose_destinations(candidates or [], ladders, groups,
+                                 next_ovr=next_ovr, max_per_school=max_per_school,
+                                 max_drop=max_drop, top_slot=top_slot)
+
+
 #: The archetypes an owner can ASSIGN. `upstart` is deliberately absent: it is a
 #: temporary run the world rolls from the salt and expires by itself, and storing one
 #: would make it permanent — the one thing an upstart must never be.

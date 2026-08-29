@@ -2478,11 +2478,17 @@ def create_app() -> Flask:
                                        grade=grade)
         pg = paginate(res["rows"], request.args.get("page", 1))
         scope_view = jhsaa_scope_view(DEFAULT_SEED, g if g != "all" else _g, group, year)
+        import app.jhsaa as _jh
+        dest_schools = sorted({s.name
+                               for x in (("boys", "girls") if g == "all" else (g,))
+                               for s in _jh.load_schools(x)})
         return render_template("jhsaa_misapplied.html", active="High School",
                                view=scope_view, rows=pg.items, p=pg, total=res["total"],
                                gender=gender, gender_f=g, group=group, sort=sort,
                                grade=grade, grades=res["grades"],
-                               groups=res["groups"], u=u, uni_label=label)
+                               groups=res["groups"], u=u, uni_label=label,
+                               dest_schools=dest_schools,
+                               bulk_g=g if g != "all" else _g)
 
     @app.route("/jhsaa/lineup-lab")
     def jhsaa_lineup_lab_route():
@@ -2521,7 +2527,12 @@ def create_app() -> Flask:
                                min_ovr=min_ovr, max_ovr=max_ovr, min_pot=min_pot,
                                max_pot=max_pot, q=q, cand_rows=pg.items, p=pg,
                                total=lab["total"],
-                               groups=lab["groups"], u=u, uni_label=label)
+                               groups=lab["groups"], u=u, uni_label=label,
+                               dest_schools=sorted(
+                                   {s.name
+                                    for x in (("boys", "girls") if g == "all" else (g,))
+                                    for s in _jh.load_schools(x)}),
+                               bulk_g=g if g != "all" else _g)
 
     @app.route("/jhsaa/realism")
     def jhsaa_realism():
@@ -2542,9 +2553,44 @@ def create_app() -> Flask:
         has the school/pid/entry context); this page is where to find/undo one."""
         gender, label, u, g, group, year = _jh_scope_args()
         from app import jhsaa as _jh
+        import app.world as wd
+        extras = _jh_transfer_extras(g)
+        # "Propose destinations" — the clearing-market generator over the found
+        # candidates (BRIEF-jhsaa-opportunity-clearing-market.md): lateral first,
+        # down a competitive level only when nothing lateral has a varsity seat,
+        # projected against NEXT season's rosters so the incoming freshman class
+        # is already in the ladder the arrival must crack. It only PREFILLS the
+        # batch: the owner reviews, edits and applies like any pasted slate.
+        if (request.args.get("propose") and extras["candidates"] is not None
+                and extras["next_year"]):
+            props = _jh.clearing_proposals(
+                g, extras["next_year"], wd.active_salt(DEFAULT_SEED),
+                candidates=extras["candidates"],
+                max_per_school=max(1, extras["maxper"]),
+                max_drop=max(0, min(6, extras["drop"])))
+            lines, pairs = [], []
+            for r in props:
+                if r["to"]:
+                    lines.append(f"# {r['name']} — {r['from_group']} {r['from']} → "
+                                 f"{r['to_group']} {r['to']} (proj. #{r['slot']}, "
+                                 f"OVR {r['ovr']})")
+                    lines.append(f"{r['pid']}, {r['to']}")
+                    pairs.append((r["pid"], r["to"]))
+                else:
+                    lines.append(f"# NO home found: {r['name']} — {r['from_group']} "
+                                 f"{r['from']} (OVR {r['ovr']}) — place by hand")
+            report = (_jh.transfer_batch(pairs, extras["next_year"],
+                                         wd.active_salt(DEFAULT_SEED))
+                      if pairs else [])
+            placed = sum(1 for r in props if r["to"])
+            extras.update(report=report, batch_text="\n".join(lines),
+                          report_head=(f"Proposed homes for {placed} of "
+                                       f"{len(props)} candidates — review, edit, "
+                                       f"then Apply."),
+                          batch_year=extras["next_year"])
         return render_template("jhsaa_transfers.html", active="HS Transfers",
                                rows=_jh.transfer_rows(), gender=gender, u=u,
-                               uni_label=label, **_jh_transfer_extras(g))
+                               uni_label=label, **extras)
 
     def _jh_transfer_extras(g: str, report=None, batch_text: str = "") -> dict:
         """Everything the transfers page shows beyond the recorded-moves ledger:
@@ -2567,6 +2613,8 @@ def create_app() -> Flask:
         from app import jhsaa as _jh
         return {"g": g, "season_year": season_year, "next_year": next_year,
                 "candidates": candidates, "mm": mm, "gr": gr,
+                "maxper": request.values.get("maxper", default=2, type=int),
+                "drop": request.values.get("drop", default=2, type=int),
                 "dest_schools": sorted(s.name for s in _jh.load_schools(g)),
                 "report": report, "batch_text": batch_text}
 
@@ -2651,6 +2699,54 @@ def create_app() -> Flask:
                                uni_label=label,
                                **{**_jh_transfer_extras(g, report=report,
                                                         batch_text="" if do_apply else text),
+                                  "report_head": head, "batch_year": year})
+
+    @app.route("/editor/jhsaa-transfer-bulk", methods=["POST"])
+    def editor_jhsaa_transfer_bulk():
+        """The select-and-submit half of the bulk workflow: the Lineup Lab, the
+        Mismatch board and the Candidates tab post their CHECKED rows here (the
+        fall portal's external-form idiom), optionally with one shared
+        destination. It APPLIES nothing — it lands on the Batch tab prefilled
+        (previewed when a destination was chosen), and the owner applies there."""
+        from app import jhsaa as _jh
+        import app.world as wd
+        gender, label, u, g, _group, _ = _jh_scope_args()
+        # ‼️ A POST has no query string — read the gender off the form, never
+        # the scope (`editor_jhsaa_family`'s documented trap).
+        g = request.form.get("g") or g
+        if g not in ("boys", "girls"):
+            g = "boys"
+        dest = (request.form.get("bulk_dest") or "").strip()
+        lines, pairs = [], []
+        # Each checkbox value is "pid|display note" — the note becomes the batch
+        # comment line so the pasted slate stays readable when editing by hand.
+        for raw in request.form.getlist("pids"):
+            pid, _, note = raw.partition("|")
+            pid = pid.strip()
+            if not pid:
+                continue
+            if note.strip():
+                lines.append(f"# {note.strip()}")
+            lines.append(f"{pid}, {dest}")
+            pairs.append((pid, dest))
+        w = wd.load_world(DEFAULT_SEED)
+        season_year = wd.jhsaa_latest_season_year(w["id"], g) if w else None
+        year = (season_year + 1) if season_year else None
+        if pairs and dest and year:
+            report = _jh.transfer_batch(pairs, year, wd.active_salt(DEFAULT_SEED))
+            head = (f"Preview: {sum(r['ok'] for r in report)} of {len(report)} "
+                    f"valid — Apply from this tab when it reads right.")
+        elif pairs:
+            report = []
+            head = (f"{len(pairs)} player{'s' if len(pairs) != 1 else ''} queued — "
+                    f"fill in each destination, then Preview.")
+        else:
+            report, head = [], "Nothing was checked."
+        return render_template("jhsaa_transfers.html", active="HS Transfers",
+                               rows=_jh.transfer_rows(), gender=gender, u=u,
+                               uni_label=label,
+                               **{**_jh_transfer_extras(g, report=report,
+                                                        batch_text="\n".join(lines)),
                                   "report_head": head, "batch_year": year})
 
     def _jhsaa_lab_mode() -> bool:

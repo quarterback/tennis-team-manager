@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_jhsaa.html" import jh_header %}
+{% from "_jhsaa.html" import jh_header, jh_bulk_check, jh_bulk_all, jh_bulk_form %}
 {% from "_stars.html" import stars %}
 {% from "_pager.html" import pager %}
 {% block title %}JHSAA Lineup Lab{% endblock %}
@@ -80,11 +80,12 @@
   </div>
   <div class="tbl-scroll">
     <table class="jh-roster">
-      <tr><th>Player</th><th>School</th><th style="width:40px">Gr</th><th style="width:44px">Class</th>
+      <tr>{{ jh_bulk_all() }}<th>Player</th><th>School</th><th style="width:40px">Gr</th><th style="width:44px">Class</th>
         <th class="num jh-scout" style="width:42px">OVR</th><th class="num jh-scout" style="width:42px">Pot</th>
         <th class="jh-scout" style="width:78px">Rating</th></tr>
       {% for r in sq.players %}
       <tr>
+        <td>{{ jh_bulk_check(r.pid, r.name ~ ' — ' ~ r.group ~ ' ' ~ r.school ~ ' (' ~ r.grade ~ 'th, OVR ' ~ r.ovr ~ ', Pot ' ~ r.ceiling ~ ')') }}</td>
         <td class="pl">
           <a href="{{ url_for('jhsaa_player', school=r.school, pid=r.pid, u=u, g=r.gender) }}">{{ r.name }}</a>
         </td>
@@ -109,11 +110,12 @@
   {% if cand_rows %}
   <div class="tbl-scroll">
     <table class="jh-roster">
-      <tr><th>Player</th><th>School</th><th style="width:40px">Gr</th><th style="width:44px">Class</th>
+      <tr>{{ jh_bulk_all() }}<th>Player</th><th>School</th><th style="width:40px">Gr</th><th style="width:44px">Class</th>
         <th class="num jh-scout" style="width:42px">OVR</th><th class="num jh-scout" style="width:42px">Pot</th>
         <th class="jh-scout" style="width:78px">Rating</th></tr>
       {% for r in cand_rows %}
       <tr>
+        <td>{{ jh_bulk_check(r.pid, r.name ~ ' — ' ~ r.group ~ ' ' ~ r.school ~ ' (' ~ r.grade ~ 'th, OVR ' ~ r.ovr ~ ', Pot ' ~ r.ceiling ~ ')') }}</td>
         <td class="pl">
           <a href="{{ url_for('jhsaa_player', school=r.school, pid=r.pid, u=u, g=r.gender) }}">{{ r.name }}</a>
         </td>
@@ -133,6 +135,10 @@
     <p class="jh-empty">No players match the filters.</p>
   </div>
   {% endif %}
+  <datalist id="jh-bulk-schools">
+    {% for s in dest_schools %}<option value="{{ s }}">{% endfor %}
+  </datalist>
+  {{ jh_bulk_form(u, bulk_g, 'jh-bulk-schools') }}
 </div>
 </div>
 {% endblock %}

@@ -314,3 +314,31 @@
 })();
 </script>
 {% endmacro %}
+
+{# A row's transfer checkbox — bound to the page's OUT-OF-TABLE bulk form via
+   form= (the fall portal's idiom; the row may already sit inside another form).
+   The value carries "pid|display note": the note becomes the batch comment line,
+   so the prefilled slate stays readable when edited by hand. #}
+{% macro jh_bulk_check(pid, note, id='jhbulk') -%}
+<input type="checkbox" form="{{ id }}" name="pids" value="{{ pid }}|{{ note }}">
+{%- endmacro %}
+
+{# The header cell's check-all toggle for the bulk column. #}
+{% macro jh_bulk_all(id='jhbulk') -%}
+<th style="width:26px"><input type="checkbox" title="check all"
+  onclick="document.querySelectorAll('input[form={{ id }}][name=pids]').forEach(c=>c.checked=this.checked)"></th>
+{%- endmacro %}
+
+{# The bulk form itself: one optional shared destination + submit. Posts the
+   checked rows to the transfers page's Batch tab (prefilled + previewed) — it
+   never applies anything directly. Needs a datalist id for the school names. #}
+{% macro jh_bulk_form(u, g, listid, id='jhbulk') %}
+<form id="{{ id }}" method="post" action="{{ url_for('editor_jhsaa_transfer_bulk') }}"
+      style="margin:8px 12px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+  <input type="hidden" name="u" value="{{ u }}">
+  <input type="hidden" name="g" value="{{ g }}">
+  <input type="text" name="bulk_dest" list="{{ listid }}"
+         placeholder="one destination for all checked (optional)" style="width:270px">
+  <button type="submit" class="bl-pill" style="cursor:pointer">Send checked to transfer batch</button>
+</form>
+{% endmacro %}
