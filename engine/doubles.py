@@ -291,6 +291,7 @@ class _DState:
     games: list[int] = field(default_factory=lambda: [0, 0])
     sets: list[int] = field(default_factory=lambda: [0, 0])
     set_scores: list[tuple[int, int]] = field(default_factory=list)
+    profile: dict | None = None           # fast-model overlay (HS scorelines)
     # serve_order[side] = [p, q]: that side's two partners serve in this order.
     serve_order: list[list[int]] = field(default_factory=lambda: [[0, 1], [0, 1]])
     # recv_order[side] = [deuce_player, ad_player]: who returns each court.
@@ -609,19 +610,32 @@ def _result(state: _DState, teams, fidelity: str,
 
 # --- Fast (bulk) model -----------------------------------------------------
 
+def _fast_gap(state: _DState, s: int, r: int) -> float:
+    """The hinged rating gap side `s` plays on against side `r`. A profile
+    (engine.fast.HS_PROFILE's `d_*` keys) brings its own knee/accel; None
+    keeps the college hinge — byte-identical to the pre-profile model."""
+    pr = state.profile or {}
+    gap = state.teams[s].rating - state.teams[r].rating
+    return effective_gap(gap, pr.get("gap_knee"), pr.get("gap_accel"))
+
+
 def _fast_hold(state: _DState) -> float:
     # The pair-rating gap is hinged exactly like the singles fast model's
     # (engine.fast.effective_gap): near-equal pairs keep their volatility, a
     # real mismatch bites super-linearly. One shared transform, so the singles
     # and doubles curves of a dual steepen together.
     s, r = state.server, state.returner
-    gap = effective_gap(state.teams[s].rating - state.teams[r].rating)
-    return _logistic(TUNE["fast_hold_logit"] + TUNE["fast_skill_slope"] * gap)
+    pr = state.profile or {}
+    return _logistic(pr.get("d_hold_logit", TUNE["fast_hold_logit"])
+                     + pr.get("d_skill_slope", TUNE["fast_skill_slope"])
+                     * _fast_gap(state, s, r))
 
 
 def _fast_tb(state: _DState, s0: int = 0) -> int:
-    gap = effective_gap(state.teams[0].rating - state.teams[1].rating)
-    return 0 if state.rng.random() < _logistic(TUNE["fast_tb_slope"] * gap) else 1
+    pr = state.profile or {}
+    p = _logistic(pr.get("d_tb_slope", TUNE["fast_tb_slope"])
+                  * _fast_gap(state, 0, 1))
+    return 0 if state.rng.random() < p else 1
 
 
 def _fast_mtb(state: _DState, target: int) -> tuple[int, tuple[int, int]]:
@@ -630,8 +644,9 @@ def _fast_mtb(state: _DState, target: int) -> tuple[int, tuple[int, int]]:
     Mirrors `engine.fast._mtb_score` exactly — see its docstring for why the margin
     is read out of the draw already taken rather than drawn again (`boxstats`
     replays this flow on the promise that recording it costs no rng)."""
-    gap = effective_gap(state.teams[0].rating - state.teams[1].rating)
-    p = _logistic(TUNE["fast_tb_slope"] * gap)
+    pr = state.profile or {}
+    p = _logistic(pr.get("d_tb_slope", TUNE["fast_tb_slope"])
+                  * _fast_gap(state, 0, 1))
     r = state.rng.random()
     win = 0 if r < p else 1
     return win, _mtb_score(win, r, p, target)
@@ -699,6 +714,7 @@ def simulate_doubles(
     first_server: int = 0,
     fidelity: str = "full",
     context: Optional[MatchContext] = None,
+    profile: Optional[dict] = None,
 ) -> DoublesResult:
     """Simulate a doubles match between two pairs.
 
@@ -711,7 +727,7 @@ def simulate_doubles(
     t0 = team0 if isinstance(team0, DoublesTeam) else DoublesTeam(players=tuple(team0))
     t1 = team1 if isinstance(team1, DoublesTeam) else DoublesTeam(players=tuple(team1))
     state = _DState(teams=(t0, t1), rng=random.Random(seed), fmt=fmt,
-                    context=context, server=first_server)
+                    context=context, server=first_server, profile=profile)
     state.sets_needed = 1 if fmt.pro_set else fmt.best_of // 2 + 1
 
     if fidelity == "fast":

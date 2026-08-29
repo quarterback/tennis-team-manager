@@ -43,7 +43,7 @@ from .state import (jhsaa_view, jhsaa_scope_view, jhsaa_school_view, jhsaa_past_
                     jhsaa_honors_view,
                     jhsaa_rankings_view, jhsaa_player_view, jhsaa_players_search,
                     jhsaa_misapplied_players, jhsaa_lineup_lab, jhsaa_schools_view,
-                    jhsaa_titles_view, jhsaa_individual_view,
+                    jhsaa_titles_view, jhsaa_individual_view, jhsaa_realism_view,
                     jhsaa_individual_winners, jhsaa_retired_view,
                     jhsaa_repeat_poy, jhsaa_repeat_individual_champions,
                     jhsaa_career_wins_view, jhsaa_program_wins_view, jhsaa_dual_view)
@@ -2522,6 +2522,18 @@ def create_app() -> Flask:
                                max_pot=max_pot, q=q, cand_rows=pg.items, p=pg,
                                total=lab["total"],
                                groups=lab["groups"], u=u, uni_label=label)
+
+    @app.route("/jhsaa/realism")
+    def jhsaa_realism():
+        """Scoreline realism — the archived season's set scores against the real
+        Oregon HS target the match profile was calibrated on (a Juniors tab,
+        owner request 2026-08). A fold over the archive; nothing simulated on
+        the request thread — the sim-side counterpart is
+        scripts/jhsaa_scoreline_benchmark.py."""
+        gender, label, u, g, group, year = _jh_scope_args()
+        view = jhsaa_realism_view(DEFAULT_SEED, g, group, year)
+        return render_template("jhsaa_realism.html", active="High School",
+                               view=view, gender=gender, u=u, uni_label=label)
 
     @app.route("/jhsaa/transfers")
     def jhsaa_transfers():

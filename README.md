@@ -161,6 +161,14 @@ override prestige, academics, and scholarship limits.
 seniors feed the college recruit board. For offline analysis of many independent
 seasons without touching the college/pro world, see **JHSAA Lab** below.
 
+JHSAA match scorelines are calibrated against five seasons of REAL Oregon
+high-school results (`engine.fast.HS_PROFILE`; measured in-game at
+`/jhsaa/realism`, offline via `scripts/jhsaa_scoreline_benchmark.py`). **The
+profile went live in the owner's save at the 2053 season** — 2027-2052 were
+simulated on the old college-calibrated dials, so the realism page's season
+switcher doubles as the before/after benchmark across that boundary. See
+`docs/AAR-jhsaa-scoreline-realism.md`.
+
 ---
 
 ## JHSAA Lab — simulate standalone high-school seasons

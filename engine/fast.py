@@ -97,14 +97,70 @@ TUNE = {
 }
 
 
-def effective_gap(gap: float) -> float:
+# HIGH-SCHOOL SCORELINE PROFILE (owner rule 2026-08 — calibrated against five
+# seasons of REAL Oregon high-school results, boys + girls, 41,932 varsity
+# matches / 84,238 sets: github.com/quarterback/or-tennis-data). Real HS tennis
+# is blowout-shaped — 6-0 is the single most COMMON set (26.4%), frequency falls
+# monotonically toward 7-6 (3.9%), and only 13.8% of matches reach a third set —
+# where the college-calibrated defaults produced the near-INVERSE (7-6 at 14.9%,
+# 6-0 at 2.5%, 42.8% three-setters). And the shape is near-UNIFORM across the
+# association: boys/girls, flights D1-D3 and S2/S3 all sit within ~2 points of
+# each other in the real data (only No. 1 singles is more lopsided still, 33%
+# 6-0 — talent concentrates at the top flight), so ONE profile serves every
+# line. Two dials move, both deliberate:
+#   * hold_base_logit -0.4: at HS level a BREAK is the expected outcome of a
+#     game (real hold rates run 30-45%, vs ~80% ATP / ~65% WTA; the profile
+#     measures ~44%). Serve stays a full SKILL lane (`hold_serve` untouched —
+#     a big server still steals matches past his overall); what goes away is
+#     the structural free hold that made near-equal HS sets random-walk to
+#     6-6.
+#   * skill_slope 6 + gap_knee 0.02: HS talent disparities are massive and
+#     the college knee (0.06) sat exactly ON the median matched-line gap
+#     (0.059 measured across JHSAA district play), so HALF of all real
+#     mismatches were being played as "even matches" — the anti-blowout band
+#     was designed too wide for this level, which is ALSO the fix for the
+#     owner-reported unreal upset volume: this profile deliberately steepens
+#     the match-win curve (favorite at a 0.03 gap ~76%, saturating by 0.08 —
+#     vs the college curve's 52%/67%), superseding the flatter JHSAA table in
+#     docs/AAR-jhsaa-upset-variance-recalibration.md for HS play.
+# NO per-match "form"/hot-cold variable — considered and rejected (owner,
+# 2026-08): the ratings already abstract day-to-day HS chaos, and a latent
+# noise term that exists to reproduce a score distribution is the model
+# compensating for a mis-set deterministic core. Fix the core instead.
+# Measured with the profile on (vs real): see
+# docs/AAR-jhsaa-scoreline-realism.md; re-measure with
+# scripts/jhsaa_scoreline_benchmark.py before retuning anything here. The
+# `d_*` keys are the doubles fast model's equivalents, scaled by the same
+# ratios its college dials carry over the singles ones
+# (engine.doubles.TUNE fast_* / this TUNE).
+# `profile=None` (every college/cup/pro call) is BYTE-IDENTICAL to the
+# pre-profile model. Pinned by tests/test_jhsaa_scorelines.py.
+HS_PROFILE = {
+    "hold_base_logit": -0.4,
+    "skill_slope": 6.0,
+    "tb_slope": 4.5,
+    "gap_knee": 0.02,
+    "gap_accel": 1.8,
+    # doubles fast model (engine.doubles reads these; ratios mirror its
+    # college dials: hold 1.05/0.9, slope 2.4/1.5, tb 1.8/1.13)
+    "d_hold_logit": -0.47,
+    "d_skill_slope": 9.6,
+    "d_tb_slope": 7.2,
+}
+
+
+def effective_gap(gap: float, knee: float | None = None,
+                  accel: float | None = None) -> float:
     """The gap the fast models PLAY ON: real gap below the knee, accelerated
-    beyond it. Sign-symmetric and continuous; identity for |gap| <= knee."""
-    knee = TUNE["gap_knee"]
+    beyond it. Sign-symmetric and continuous; identity for |gap| <= knee.
+    `knee`/`accel` default to TUNE's (the college calibration); a profile
+    passes its own."""
+    knee = TUNE["gap_knee"] if knee is None else knee
+    accel = TUNE["gap_accel"] if accel is None else accel
     extra = abs(gap) - knee
     if extra <= 0:
         return gap
-    return gap + (extra if gap > 0 else -extra) * TUNE["gap_accel"]
+    return gap + (extra if gap > 0 else -extra) * accel
 
 
 def _logistic(x: float) -> float:
@@ -139,35 +195,39 @@ def _edges(p: Player) -> dict:
 
 
 def _hold_prob(server: Player, returner: Player, context: MatchContext,
-               es: dict, er: dict, decider: bool) -> float:
+               es: dict, er: dict, decider: bool, tune: dict = TUNE) -> float:
     """One service game, decided by the situational composite: the server's
     serve against the returner's return game, both players' rally games, and
     the always-on mental/stamina lanes (`es`/`er` are the two players' profile
     dicts, server's first). Two flat players reproduce the overall gap
     exactly. In the deciding set the stamina deviation joins in."""
-    gap = (TUNE["hold_serve"] * (es["serve"] - er["ret"])
-           + TUNE["hold_rally"] * (es["rally"] - er["rally"])
-           + TUNE["hold_mental"] * (es["mental"] - er["mental"])
-           + TUNE["hold_stamina"] * (es["stamina"] - er["stamina"]))
+    gap = (tune["hold_serve"] * (es["serve"] - er["ret"])
+           + tune["hold_rally"] * (es["rally"] - er["rally"])
+           + tune["hold_mental"] * (es["mental"] - er["mental"])
+           + tune["hold_stamina"] * (es["stamina"] - er["stamina"]))
     if decider:
-        gap += TUNE["edge_stamina"] * (es["s_dev"] - er["s_dev"])
+        gap += tune["edge_stamina"] * (es["s_dev"] - er["s_dev"])
     return _logistic(
-        TUNE["hold_base_logit"]
-        + TUNE["skill_slope"] * effective_gap(gap)
-        + TUNE["context_slope"] * _context_edge(server, returner, context))
+        tune["hold_base_logit"]
+        + tune["skill_slope"] * effective_gap(gap, tune["gap_knee"],
+                                              tune["gap_accel"])
+        + tune["context_slope"] * _context_edge(server, returner, context))
 
 
 def _tb_prob(p0: Player, p1: Player, context: MatchContext,
-             e0: dict, e1: dict, decider: bool) -> float:
+             e0: dict, e1: dict, decider: bool, tune: dict = TUNE) -> float:
     """A tiebreak is big points: the mental deviation counts beyond the talent
-    gap, and in a deciding set so does the stamina deviation."""
-    gap = (p0.overall - p1.overall
-           + TUNE["edge_clutch"] * (e0["m_dev"] - e1["m_dev"]))
+    gap, and in a deciding set so does the stamina deviation. Reads `overall`
+    off the edge dicts (identical to the players' own except under the HS
+    profile, where each carries its side's per-match form)."""
+    gap = (e0["overall"] - e1["overall"]
+           + tune["edge_clutch"] * (e0["m_dev"] - e1["m_dev"]))
     if decider:
-        gap += TUNE["edge_stamina"] * (e0["s_dev"] - e1["s_dev"])
+        gap += tune["edge_stamina"] * (e0["s_dev"] - e1["s_dev"])
     return _logistic(
-        TUNE["tb_slope"] * effective_gap(gap)
-        + TUNE["context_slope"] * _context_edge(p0, p1, context))
+        tune["tb_slope"] * effective_gap(gap, tune["gap_knee"],
+                                         tune["gap_accel"])
+        + tune["context_slope"] * _context_edge(p0, p1, context))
 
 
 def _mtb_score(win: int, r: float, p: float, target: int) -> tuple[int, int]:
@@ -197,7 +257,8 @@ def _mtb_score(win: int, r: float, p: float, target: int) -> tuple[int, int]:
 
 
 def _play_set(rng, players, server, fmt, final_tb: bool, target_games: int,
-              context: MatchContext, edges, decider: bool = False):
+              context: MatchContext, edges, decider: bool = False,
+              tune: dict = TUNE):
     """Returns (winner, (g0,g1), next_server, flow).
 
     `edges` is the pair of per-player shape dicts (`_edges`), computed once per
@@ -208,7 +269,8 @@ def _play_set(rng, players, server, fmt, final_tb: bool, target_games: int,
     scorelines are bit-identical to the pre-recording model. engine.boxstats
     replays this flow at point level to attach real stats to a fast match."""
     if final_tb:
-        p = _tb_prob(players[0], players[1], context, edges[0], edges[1], decider)
+        p = _tb_prob(players[0], players[1], context, edges[0], edges[1],
+                     decider, tune)
         r = rng.random()
         win = 0 if r < p else 1
         flow = {"games": [], "tb": [server, win], "mtb": True}
@@ -221,8 +283,8 @@ def _play_set(rng, players, server, fmt, final_tb: bool, target_games: int,
     while True:
         r = players[1 - server]
         s = players[server]
-        if rng.random() < _hold_prob(s, r, context,
-                                     edges[server], edges[1 - server], decider):
+        if rng.random() < _hold_prob(s, r, context, edges[server],
+                                     edges[1 - server], decider, tune):
             games[server] += 1
             flow_games.append([server, server])
         else:
@@ -232,7 +294,8 @@ def _play_set(rng, players, server, fmt, final_tb: bool, target_games: int,
 
         if fmt.set_tiebreak and games[0] == tg and games[1] == tg:
             win = 0 if rng.random() < _tb_prob(players[0], players[1], context,
-                                               edges[0], edges[1], decider) else 1
+                                               edges[0], edges[1], decider,
+                                               tune) else 1
             games[win] += 1
             flow = {"games": flow_games, "tb": [server, win], "mtb": False}
             return win, (games[0], games[1]), 1 - server, flow
@@ -250,7 +313,11 @@ def simulate_fast(
     fmt: MatchFormat = None,
     first_server: int = 0,
     context: MatchContext | None = None,
+    profile: dict | None = None,
 ) -> MatchResult:
+    """`profile` overlays TUNE for this match (e.g. `HS_PROFILE`). None — every
+    college/cup/pro call — is byte-identical to the pre-profile model: the same
+    dials, and no extra rng draw."""
     fmt = fmt or DEFAULT
     context = context or MatchContext()
     rng = random.Random(seed)
@@ -262,11 +329,13 @@ def simulate_fast(
 
     flows: list[dict] = []
 
+    tune = TUNE if profile is None else {**TUNE, **profile}
     edges = (_edges(p0), _edges(p1))
 
     if fmt.pro_set:
         win, score, server, flow = _play_set(rng, players, server, fmt, False,
-                                             fmt.pro_set_games, context, edges)
+                                             fmt.pro_set_games, context, edges,
+                                             tune=tune)
         sets[win] += 1
         set_scores.append(score)
         flows.append(flow)
@@ -285,7 +354,7 @@ def simulate_fast(
         win, score, server, flow = _play_set(
             rng, players, server, fmt,
             is_final and fmt.final_set_tiebreak, fmt.set_games, context,
-            edges, decider=is_final,
+            edges, decider=is_final, tune=tune,
         )
         sets[win] += 1
         set_scores.append(score)

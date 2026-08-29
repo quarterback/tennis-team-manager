@@ -423,6 +423,22 @@
 .jh-chip.unit { background: transparent; color: var(--stat-power);
   border: 1px solid color-mix(in oklch, var(--stat-power) 35%, transparent); font-weight: 700; }
 .jh-chip.ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border-default); }
+/* Icon-only chip (the schedule's Match Center link — an icon, never a labelled
+   pill, owner rule 2026-08). Square-ish, glyph centered, no text metrics. */
+.jh-chip.ico { padding: 0 4px; height: 20px; text-decoration: none; }
+.jh-chip.ico svg { display: block; }
+.jh-chip.ico:hover { color: var(--text-primary); border-color: var(--text-muted); }
+
+/* ---- Scoreline realism (/jhsaa/realism): paired sim-vs-real bars ---- */
+.jh-rl-bars { display: grid; gap: 2px; min-width: 120px; }
+.jh-rl-bar { height: 6px; border-radius: 3px; min-width: 2px; }
+.jh-rl-bar.sim { background: var(--brand); }
+.jh-rl-bar.real { background: var(--gray-400); }
+.jh-rl-key { display: inline-block; width: 10px; height: 6px; border-radius: 3px; vertical-align: middle; }
+.jh-rl-key.sim { background: var(--brand); }
+.jh-rl-key.real { background: var(--gray-400); }
+.jh-roster td.pos { color: var(--pos); }
+.jh-roster td.neg { color: var(--neg); }
 
 /* ---- Schedule ---- */
 .jh-sched { width: 100%; border-collapse: collapse; font-size: 13.5px; }

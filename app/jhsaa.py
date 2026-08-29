@@ -54,6 +54,7 @@ from dataclasses import dataclass, field
 log = logging.getLogger(__name__)
 
 from engine.dual import DualFormat, Team, simulate_dual
+from engine.fast import HS_PROFILE
 from engine.format import PRESETS
 from . import injuries as _injuries
 from .development import Prospect, generate_prospect, make_pid, overall_to_str
@@ -3367,7 +3368,7 @@ def play_jv_dual(a: JVTeam, b: JVTeam, *, seed: int, phase: str = "regular",
     mf = match_format(phase)
     res = simulate_dual(_squad(a.team, phase, la, fmt), _squad(b.team, phase, lb, fmt),
                         seed=seed, play_all=True, fidelity=FIDELITY, dual_fmt=fmt,
-                        singles_fmt=mf, doubles_fmt=mf)
+                        singles_fmt=mf, doubles_fmt=mf, profile=HS_PROFILE)
     out = jv_outcome(res)
     a.points_for += res.home_points
     a.points_against += res.away_points
@@ -3476,7 +3477,7 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     res = simulate_dual(_squad(a, phase, la), _squad(b, phase, lb), seed=seed,
                         play_all=True, fidelity=FIDELITY,
                         dual_fmt=dual_format(phase, a.school.group),
-                        singles_fmt=fmt, doubles_fmt=fmt)
+                        singles_fmt=fmt, doubles_fmt=fmt, profile=HS_PROFILE)
     lines = []
     for ln in res.lines:                       # individual records, for awards
         hw = getattr(ln, "home_won", None)
@@ -3959,6 +3960,17 @@ FLIGHT_WEIGHTS = {
 # without either being over- or under-counted. This constant is historical/
 # documentary only — the 5S/2D-era max — and nothing in the pipeline reads it.
 MAX_FLIGHT_WEIGHT = 3.70
+
+
+# The REAL-WORLD scoreline target the HS match profile was calibrated against
+# (engine.fast.HS_PROFILE): five seasons of actual Oregon high-school tennis,
+# boys + girls 2021-25, 41,932 varsity matches / 84,238 completed standard sets
+# (github.com/quarterback/or-tennis-data). ONE authority — the in-game realism
+# view (/jhsaa/realism) and scripts/jhsaa_scoreline_benchmark.py both read
+# these; see docs/AAR-jhsaa-scoreline-realism.md before "correcting" a number.
+OREGON_SET_TARGET = {"6-0": 26.4, "6-1": 21.5, "6-2": 17.4, "6-3": 13.4,
+                     "6-4": 12.3, "7-5": 5.1, "7-6": 3.9}
+OREGON_THREE_SET = 13.8   # % of best-of-3 matches reaching a third set
 
 
 def _games(score: str) -> tuple[int, int]:

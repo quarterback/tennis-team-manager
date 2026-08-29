@@ -4323,6 +4323,91 @@ def jhsaa_underplayed(world_id: int, gender: str, salt: str = "",
     return out
 
 
+def jhsaa_scoreline_realism(world_id: int, year: int, gender: str) -> dict:
+    """The archived season's set scores folded against the real-Oregon target
+    (`jhsaa.OREGON_SET_TARGET`) — the in-game face of
+    scripts/jhsaa_scoreline_benchmark.py, and deliberately a READ: it parses the
+    score strings the archive already holds (the `jhsaa._games` precedent) and
+    simulates nothing on the request thread.
+
+    Varsity only (`COALESCE(level,'v')='v'` — the table is shared with JV and a
+    pre-JV archive reads back NULL), one side of each dual (`home=1`). Only
+    completed standard sets (6-0..6-4, 7-5, 7-6) enter the histogram, exactly
+    the target's own filter — showcase-pod pro sets and anything malformed fall
+    out. The three-set rate is over best-of-3 matches (>= 2 standard sets
+    parsed). Split by phase family because the formats differ by design."""
+    from . import jhsaa as _jh
+    keys = list(_jh.OREGON_SET_TARGET)
+    fams = ("regular", "postseason", "showcase")
+
+    def fam(phase: str) -> str:
+        if phase in _jh.POSTSEASON:
+            return "postseason"
+        if str(phase).startswith("showcase"):
+            return "showcase"
+        return "regular"
+
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT phase, lines FROM world_jhsaa_dual"
+            " WHERE world_id=? AND year=? AND gender=? AND home=1"
+            " AND COALESCE(level,'v')='v'",
+            (world_id, year, gender)).fetchall()
+    finally:
+        conn.close()
+
+    counts = {f: {k: 0 for k in keys} for f in fams}
+    n_sets = {f: 0 for f in fams}
+    matches = {f: 0 for f in fams}
+    three = {f: 0 for f in fams}
+    for phase, lines_json in rows:
+        f = fam(phase)
+        try:
+            lines = json.loads(lines_json or "[]")
+        except ValueError:
+            continue
+        for ln in lines:
+            std = 0
+            for st in (ln.get("score") or "").split(","):
+                bits = st.strip().split("-")
+                if len(bits) != 2:
+                    continue
+                try:
+                    a, b = int(bits[0]), int(bits[1])
+                except ValueError:
+                    continue
+                key = f"{max(a, b)}-{min(a, b)}"
+                if key in counts[f]:
+                    counts[f][key] += 1
+                    n_sets[f] += 1
+                    std += 1
+            if std >= 2:
+                matches[f] += 1
+                three[f] += std == 3
+
+    def table(fs):
+        total = sum(n_sets[f] for f in fs)
+        m = sum(matches[f] for f in fs)
+        t3 = 100 * sum(three[f] for f in fs) / m if m else 0.0
+        out = []
+        tv = 0.0
+        for k in keys:
+            sim = (100 * sum(counts[f][k] for f in fs) / total) if total else 0.0
+            real = _jh.OREGON_SET_TARGET[k]
+            tv += abs(sim - real)
+            out.append({"key": k, "sim": sim, "real": real, "diff": sim - real})
+        return {"rows": out, "sets": total, "matches": m, "three_set": t3,
+                "tv": tv / 2}
+
+    return {"overall": table(fams),
+            "families": [{"key": f, "label": lbl, **table((f,))}
+                         for f, lbl in (("regular", "League season"),
+                                        ("postseason", "Postseason"),
+                                        ("showcase", "Showcases"))],
+            "real_three_set": _jh.OREGON_THREE_SET}
+
+
 def jhsaa_years(world_id: int, gender: str) -> list[int]:
     """Every world-year with an archived JHSAA season, newest first."""
     conn = _db()
