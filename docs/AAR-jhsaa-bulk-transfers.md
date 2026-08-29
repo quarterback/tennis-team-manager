@@ -186,3 +186,20 @@ cohort finder pure (the Rockridge shape is flagged with its `plays_like` and
 suggested hosts; host shapes classify), plus the routes' empty-state contract
 (bulk POST with nothing checked, propose with no archive, `/jhsaa/cohorts`
 cold).
+
+## Deferred heavy builds (owner rule 2026-08 — "keep on performance")
+
+Gating alone was not enough: the Search/Build/Find/Propose clicks still ran
+10-40s of full-gender roster building ON the one gthread, so on the real
+deployment they outlived the worker timeout and "only once loaded
+successfully". `server._jh_deferred` generalises the lab's background-job
+idea: the build runs in a daemon thread that publishes into the function's
+own memo cache; the request waits ~2.5s and either proceeds (cache hit) or
+answers a light page that refreshes the SAME url every 2.5s until the cache
+is warm. Applied to the census boards (Players / Mismatches / Lineup Lab),
+the cohort finder, the underplayed candidates search, and Propose (whose job
+KEEPS its result, keyed on the transfer fingerprint so an Apply invalidates
+it). The batch POSTs cannot show an interstitial, so the transfers page GET
+fire-and-forget warms `roster_pid_index` for both genders while the owner is
+still reading. Measured end-to-end: first click answers in 0.0s, results land
+on the ~8th refresh (~22s of background build), every later search ~0.5s.
