@@ -154,6 +154,8 @@
          href="{{ url_for('jhsaa_misapplied', u=u, g=scope.gender) }}">Mismatches</a>
       <a class="{{ 'on' if tab == 'lineup_lab' }}" title="Assemble hypothetical squads from mismatched talent"
          href="{{ url_for('jhsaa_lineup_lab_route', u=u, g=scope.gender) }}">Lineup Lab</a>
+      <a class="{{ 'on' if tab == 'cohorts' }}" title="Reserve cohorts — second varsity-caliber teams and the weak hosts they could play for"
+         href="{{ url_for('jhsaa_cohorts', u=u, g=scope.gender) }}">Cohorts</a>
       <a class="{{ 'on' if tab == 'realism' }}" title="This season's set scores against real Oregon HS tennis"
          href="{{ url_for('jhsaa_realism', u=u, g=scope.gender) }}">Realism</a>
     </div>
@@ -313,4 +315,34 @@
   });
 })();
 </script>
+{% endmacro %}
+
+{# A row's transfer checkbox — bound to the page's OUT-OF-TABLE bulk form via
+   form= (the fall portal's idiom; the row may already sit inside another form).
+   The value carries "pid|display note": the note becomes the batch comment line,
+   so the prefilled slate stays readable when edited by hand. #}
+{% macro jh_bulk_check(pid, note, id='jhbulk') -%}
+<input type="checkbox" form="{{ id }}" name="pids" value="{{ pid }}|{{ note }}">
+{%- endmacro %}
+
+{# The header cell's check-all toggle for the bulk column — scoped to the TABLE
+   it sits in, never the document: several tables share one page (squads + the
+   candidate pool), and a page-wide toggle queued rows the reader never saw. #}
+{% macro jh_bulk_all(id='jhbulk') -%}
+<th style="width:26px"><input type="checkbox" title="check all in this table"
+  onclick="this.closest('table').querySelectorAll('input[name=pids]').forEach(c=>c.checked=this.checked)"></th>
+{%- endmacro %}
+
+{# The bulk form itself: one optional shared destination + submit. Posts the
+   checked rows to the transfers page's Batch tab (prefilled + previewed) — it
+   never applies anything directly. Needs a datalist id for the school names. #}
+{% macro jh_bulk_form(u, g, listid, id='jhbulk') %}
+<form id="{{ id }}" method="post" action="{{ url_for('editor_jhsaa_transfer_bulk') }}"
+      style="margin:8px 12px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+  <input type="hidden" name="u" value="{{ u }}">
+  <input type="hidden" name="g" value="{{ g }}">
+  <input type="text" name="bulk_dest" list="{{ listid }}"
+         placeholder="one destination for all checked (optional)" style="width:270px">
+  <button type="submit" class="bl-pill" style="cursor:pointer">Send checked to transfer batch</button>
+</form>
 {% endmacro %}

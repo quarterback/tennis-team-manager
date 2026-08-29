@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header, jh_bulk_check, jh_bulk_form %}
+{% from "_pager.html" import pager %}
+{% block title %}JHSAA Reserve Cohorts{% endblock %}
+{% block content %}
+
+{{ jh_header(view.scope, u, 'cohorts', 'Reserve Cohorts',
+             'Programs carrying a second varsity-caliber team below their lineup, and the weak hosts a cohort like that could spend a varsity season at. Read-only — check players to send them into the transfer batch.') }}
+
+<div class="jh-shell">
+<div class="bl-panel" style="margin-bottom:14px">
+  <div class="bl-panel-body" style="padding:12px">
+    <form method="get" style="display:flex;flex-wrap:wrap;gap:10px;align-items:end">
+      <input type="hidden" name="u" value="{{ u }}">
+      <input type="hidden" name="g" value="{{ g }}">
+      <input type="hidden" name="find" value="1">
+      <label>Cohort size
+        <input type="number" name="cohort" min="4" max="12" value="{{ cohort }}" style="width:60px"></label>
+      <label>Source class
+        <select name="sgroup">
+          {% for gp in groups %}<option value="{{ gp }}" {{ 'selected' if sgroup == gp }}>{{ gp }}</option>{% endfor %}
+        </select></label>
+      <label>Min cohort OVR
+        <input type="number" name="minc" step="0.5" value="{{ minc if minc is not none }}" placeholder="any" style="width:70px"></label>
+      <button type="submit" class="bl-btn">Find cohorts</button>
+      {% if year %}<span class="where">projected on the {{ year }} rosters — graduation and incoming freshmen included</span>{% endif %}
+    </form>
+  </div>
+</div>
+
+{% if res is none %}
+<div class="bl-panel"><div class="bl-panel-body" style="padding:16px">
+  <p class="jh-empty">{% if year %}Nothing computed yet — "Find cohorts" builds every program's next-season roster (a few seconds).{% else %}No world yet.{% endif %}</p>
+</div></div>
+{% else %}
+
+<datalist id="jh-bulk-schools">
+  {% for s in dest_schools %}<option value="{{ s }}">{% endfor %}
+</datalist>
+
+<div class="bl-panel" style="margin-bottom:14px">
+  <div class="bl-panel-head">
+    <span class="bl-panel-title">Reserve cohorts</span>
+    <span class="bit jh-scout">{{ src_pg.total if src_pg else 0 }} program{{ 's' if not src_pg or src_pg.total != 1 }} whose next-{{ cohort }} reserves average a varsity-caliber unit — strongest cohort first</span>
+  </div>
+  {% if src_pg and src_pg.items %}
+  <div class="tbl-scroll">
+    <table class="jh-roster">
+      <tr><th>Program</th><th style="width:44px">Class</th>
+        <th class="num jh-scout" style="width:70px" title="best-nine mean">Varsity</th>
+        <th class="num jh-scout" style="width:70px" title="class median best-nine mean">Class med</th>
+        <th class="num jh-scout" style="width:70px" title="mean of the reserve cohort">Cohort</th>
+        <th style="width:78px" title="highest class whose median team strength the cohort clears">Plays like</th>
+        <th class="num" style="width:60px">Roster</th>
+        <th style="width:110px"></th></tr>
+      {% for src in src_pg.items %}
+      <tr>
+        <td class="pl"><a href="{{ url_for('jhsaa_school', school=src.school, u=u, g=g) }}">{{ src.school }}</a>
+          {% if not src.strong_varsity %}<span class="bit" title="its varsity is below its own class median — these reserves may just belong in the lineup at home">weak varsity</span>{% endif %}</td>
+        <td>{{ src.group }}</td>
+        <td class="num jh-scout">{{ src.varsity }}</td>
+        <td class="num jh-scout">{{ src.class_median }}</td>
+        <td class="num jh-scout"><b>{{ src.cohort_mean }}</b></td>
+        <td><b>{{ src.plays_like }}</b></td>
+        <td class="num">{{ src.roster }}</td>
+        <td><a href="#" onclick="var d=document.getElementById('coh-{{ loop.index }}');d.hidden=!d.hidden;return false">players &amp; hosts</a></td>
+      </tr>
+      <tr id="coh-{{ loop.index }}" hidden>
+        <td colspan="8" style="padding:8px 14px;background:var(--surface-2,transparent)">
+          <div style="display:flex;gap:24px;flex-wrap:wrap">
+            <div>
+              <div class="bit" style="margin-bottom:4px">The cohort (ranks below the league lineup) — check to queue a transfer</div>
+              <table class="jh-ledger">
+                {% for p in src.cohort %}
+                <tr>
+                  <td>{{ jh_bulk_check(p.pid, p.name ~ ' — ' ~ src.group ~ ' ' ~ src.school ~ ' cohort (' ~ p.grade ~ 'th, OVR ' ~ p.ovr ~ ')') }}</td>
+                  <td><a href="{{ url_for('jhsaa_player', school=src.school, pid=p.pid, u=u, g=g) }}">{{ p.name }}</a></td>
+                  <td>{{ p.grade }}th</td>
+                  <td class="num jh-scout">{{ p.ovr }}</td>
+                </tr>
+                {% endfor %}
+              </table>
+            </div>
+            <div>
+              <div class="bit" style="margin-bottom:4px">Suggested hosts — weakest programs in the fit class and one below, with the combined best-nine's projected rank</div>
+              <table class="jh-ledger">
+                <tr><th>Host</th><th style="width:44px">Class</th><th style="width:90px">Shape</th>
+                  <th class="num jh-scout" style="width:60px">Host</th>
+                  <th class="num jh-scout" style="width:70px">Combined</th>
+                  <th style="width:110px">Would rank</th></tr>
+                {% for h in src.hosts %}
+                <tr>
+                  <td><a href="{{ url_for('jhsaa_school', school=h.school, u=u, g=g) }}">{{ h.school }}</a></td>
+                  <td>{{ h.group }}</td>
+                  <td>{{ h.shape }}</td>
+                  <td class="num jh-scout">{{ h.mean }}</td>
+                  <td class="num jh-scout"><b>{{ h.combined }}</b></td>
+                  <td>~#{{ h.rank }} of {{ h.n }}</td>
+                </tr>
+                {% endfor %}
+              </table>
+            </div>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  {{ pager(src_pg, 'sources') }}
+  {{ jh_bulk_form(u, g, 'jh-bulk-schools') }}
+  {% else %}
+  <div class="bl-panel-body" style="padding:16px"><p class="jh-empty">No reserve group matches — loosen the class or min-OVR filters, or no cohort clears any class's median this offseason.</p></div>
+  {% endif %}
+</div>
+
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Host candidates</span>
+    <span class="bit jh-scout">each class's weakest programs by best-nine mean — "core + void" keeps 2-4 real varsity players, "rebuild" keeps at most one</span></div>
+  <div class="tbl-scroll">
+    <table class="jh-roster">
+      <tr><th style="width:44px">Class</th><th>Program</th><th style="width:100px">Shape</th>
+        <th class="num" style="width:52px" title="players at or above the class median">Core</th>
+        <th class="num jh-scout" style="width:70px">Varsity</th>
+        <th class="num jh-scout" style="width:80px" title="below the class median">Gap</th></tr>
+      {% for grp, rows in res.hosts.items() %}
+      {% for h in rows %}
+      <tr>
+        <td>{% if loop.first %}<b>{{ grp }}</b>{% endif %}</td>
+        <td><a href="{{ url_for('jhsaa_school', school=h.school, u=u, g=g) }}">{{ h.school }}</a></td>
+        <td>{{ h.shape }}</td>
+        <td class="num">{{ h.core }}</td>
+        <td class="num jh-scout">{{ h.mean }}</td>
+        <td class="num jh-scout">−{{ h.gap }}</td>
+      </tr>
+      {% endfor %}
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endif %}
+</div>
+{% endblock %}

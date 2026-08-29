@@ -219,6 +219,20 @@ body {
   --focus-ring:      var(--brand-strong);
   --signal-live:     var(--accent-live);
 
+  /* ---- the second accent (owner request 2026-08) --------------------------
+     Every scheme ships a loud "accent detail" colour (--ice) that had NO
+     consumer — which is why palettes read as one-or-two colours plus chips:
+     their brightest colour had nowhere to appear. These aliases give it
+     structural destinations. FILLS AND BORDERS ONLY, never type: most
+     schemes' --ice sits at 1.3-3.7:1 on the ground, and that is the point of
+     it (the masthead-rule lesson — a bright colour needs surfaces, not
+     paragraphs). A scheme may re-point --accent-2 if its --ice reads poorly
+     against light paper; components read only the aliases below. */
+  --accent-2:    var(--ice);
+  --panel-accent: var(--accent-2);   /* the tick beside every panel title */
+  --tab-accent:   var(--accent-2);   /* the active tab / sub-rail marker */
+  --nav-accent:   var(--mast-rule);  /* the active destination on the dark bar */
+
   /* ⚠️ SHORT ALIASES THAT WERE NEVER DEFINED. Several older rules read
      `var(--surface, #fff)`, `var(--border, #d8e0e8)`, `var(--pos, #1a8f4c)` and
      friends — tokens this file never declared, so the HARD-CODED FALLBACK won

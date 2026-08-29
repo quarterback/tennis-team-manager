@@ -25,7 +25,8 @@ from dataclasses import dataclass
 
 from generators import (make_name_picker, region_preset, roll_hometown,
                         roll_us_hometown, roll_high_school, country_abbrev)
-from .development import Prospect, generate_prospect, make_pid
+from .development import (Prospect, compress_talent, generate_prospect,
+                          make_pid, trim_prospect_ceiling)
 
 # US states + DC (name, abbr).
 US_STATES = [
@@ -239,8 +240,15 @@ def generate_class(rng: random.Random, n: int = 200, grad_year: int = 2026,
                 city = roll_hometown(ccode, rng) or rng.choice(_CITIES)
                 hometown = f"{city}, {country_abbrev(ccode)}" if ccode else city
         talent = max(24.0, min(80.0, rng.gauss(talent_mean, talent_sd)))
+        # Ceiling compression (owner rule 2026-08, development.compress_talent):
+        # the national pool is one of the three generation feeds and must not
+        # run hotter than the compressed JHSAA. Keyed on the same identity the
+        # pid uses, so the 1-in-500 elite exemption is stable per recruit.
+        elite_key = ("recruit-elite", grad_year, gender, i)
+        talent = compress_talent(talent, gender, key=elite_key)
         p = generate_prospect(rng, name, country, gender=gender, talent=talent,
                               pid=make_pid("recruit", grad_year, gender, i))
+        trim_prospect_ceiling(p, gender, key=elite_key)
         p.hometown = hometown
         p.region = region
         p.domestic = domestic

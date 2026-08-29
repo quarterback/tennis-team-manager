@@ -1206,7 +1206,8 @@ def _recruit_market(world: dict, gender: str) -> dict:
     # STRENGTH, not prestige: rosters are generated from p.strength (ncaa._talent_mean),
     # so strength is the level the lineup actually plays at — a strong low-brand
     # program holds to its real level, not its recruiting brand.
-    level_cal = {s: max(0.0, min(1.0, (_talent_from_strength(p.strength, p.division, gender) - 20.0) / 60.0))
+    from .ncaa import program_level_caliber
+    level_cal = {s: program_level_caliber(p.strength, p.division, gender)
                  for s, p in progs.items()}
     # D4's per-program admissions gate: the minimum recruit test score each D4 program
     # will admit (academic-first tier — see recruit_economy.d4_academic_min).
@@ -1603,7 +1604,13 @@ def _rel_of(player_str: dict, p: Prospect) -> float:
 
 
 def _prog_level(prog: Program) -> float:
-    return overall_to_str(_talent_from_strength(prog.prestige, prog.division, prog.gender))
+    # Through the ceiling compression (owner rule 2026-08): this bar is compared
+    # against player STRs, which are compressed — an uncompressed bar would sit
+    # above every eligible riser and quietly dry the portal up.
+    from .development import compress_talent
+    return overall_to_str(compress_talent(
+        _talent_from_strength(prog.prestige, prog.division, prog.gender),
+        prog.gender))
 
 
 def _scholarship_count(roster: list) -> int:

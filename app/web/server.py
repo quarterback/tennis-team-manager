@@ -2441,9 +2441,26 @@ def create_app() -> Flask:
         grade = request.args.get("grade", "All")
         sort = request.args.get("sort", "ceiling")
         q = request.args.get("q", "")
-        res = jhsaa_players_search(DEFAULT_SEED, g, group=group, district=district,
-                                   grade=grade, sort=sort, q=q)
-        pg = paginate(res["rows"], request.args.get("page", 1))
+        # ‼️ NOTHING LOADS UNTIL ASKED (owner rule 2026-08): the directory used
+        # to build the full-association census on every tab click — "preloading
+        # a bunch of kids I don't need". The page opens instantly with the
+        # controls; Search (hidden find=1) runs the query. The dropdowns are
+        # served from cheap statics (`load_schools` for districts), never the
+        # census.
+        if request.args.get("find"):
+            res = jhsaa_players_search(DEFAULT_SEED, g, group=group,
+                                       district=district, grade=grade,
+                                       sort=sort, q=q)
+            pg = paginate(res["rows"], request.args.get("page", 1))
+        else:
+            import app.jhsaa as _jh
+            gg = ("boys", "girls") if g == "all" else (g,)
+            res = {"total": 0, "groups": ["All"] + list(_jh.GROUPS),
+                   "districts": ["All"] + sorted(
+                       {s.district for x in gg for s in _jh.load_schools(x)
+                        if group in ("All", s.group)}),
+                   "grades": ["All", "9", "10", "11", "12"]}
+            pg = None
         # `group` is this page's own class FILTER and also the header's class rail —
         # one control, so the rail must show what the filter is set to ("All" is not
         # a class, and falls back to the first).
@@ -2457,7 +2474,9 @@ def create_app() -> Flask:
         # roster is the one that played that year.
         scope_view = jhsaa_scope_view(DEFAULT_SEED, g if g != "all" else _g, group, year)
         return render_template("jhsaa_players.html", active="High School",
-                               view=scope_view, rows=pg.items, p=pg, total=res["total"],
+                               view=scope_view,
+                               rows=pg.items if pg is not None else None,
+                               p=pg, total=res["total"],
                                gender=gender, gender_f=g, group=group, district=district,
                                grade=grade, sort=sort, q=q,
                                groups=res["groups"], districts=res["districts"],
@@ -2474,15 +2493,31 @@ def create_app() -> Flask:
         group = request.args.get("group", "All")
         sort = request.args.get("sort", "gap")
         grade = request.args.get("grade", "All")
-        res = jhsaa_misapplied_players(DEFAULT_SEED, g, group=group, sort=sort,
-                                       grade=grade)
-        pg = paginate(res["rows"], request.args.get("page", 1))
+        # Nothing loads until asked (the Players directory's rule) — the census
+        # behind this board is the same full-association build.
+        if request.args.get("find"):
+            res = jhsaa_misapplied_players(DEFAULT_SEED, g, group=group,
+                                           sort=sort, grade=grade)
+            pg = paginate(res["rows"], request.args.get("page", 1))
+        else:
+            import app.jhsaa as _jh0
+            res = {"total": 0, "groups": ["All"] + list(_jh0.GROUPS),
+                   "grades": ["All", 9, 10, 11, 12]}
+            pg = None
         scope_view = jhsaa_scope_view(DEFAULT_SEED, g if g != "all" else _g, group, year)
+        import app.jhsaa as _jh
+        dest_schools = sorted({s.name
+                               for x in (("boys", "girls") if g == "all" else (g,))
+                               for s in _jh.load_schools(x)})
         return render_template("jhsaa_misapplied.html", active="High School",
-                               view=scope_view, rows=pg.items, p=pg, total=res["total"],
+                               view=scope_view,
+                               rows=pg.items if pg is not None else None,
+                               p=pg, total=res["total"],
                                gender=gender, gender_f=g, group=group, sort=sort,
                                grade=grade, grades=res["grades"],
-                               groups=res["groups"], u=u, uni_label=label)
+                               groups=res["groups"], u=u, uni_label=label,
+                               dest_schools=dest_schools,
+                               bulk_g=g if g != "all" else _g)
 
     @app.route("/jhsaa/lineup-lab")
     def jhsaa_lineup_lab_route():
@@ -2507,21 +2542,74 @@ def create_app() -> Flask:
         min_pot = request.args.get("min_pot", type=int)
         max_pot = request.args.get("max_pot", type=int)
         q = request.args.get("q", "")
-        lab = jhsaa_lineup_lab(DEFAULT_SEED, g, target_group=target,
-                               pool=pool, n_squads=n_squads, grades=grades,
-                               from_group=from_group, min_ovr=min_ovr,
-                               max_ovr=max_ovr, min_pot=min_pot,
-                               max_pot=max_pot, q=q)
-        pg = paginate(lab["cands"], request.args.get("page", 1))
+        # Nothing loads until asked — Build (hidden find=1) runs the census.
+        from .state import JHSAA_LAB_GRADE_POOLS
+        if request.args.get("find"):
+            lab = jhsaa_lineup_lab(DEFAULT_SEED, g, target_group=target,
+                                   pool=pool, n_squads=n_squads, grades=grades,
+                                   from_group=from_group, min_ovr=min_ovr,
+                                   max_ovr=max_ovr, min_pot=min_pot,
+                                   max_pot=max_pot, q=q)
+            pg = paginate(lab["cands"], request.args.get("page", 1))
+        else:
+            lab, pg = None, None
         scope_view = jhsaa_scope_view(DEFAULT_SEED, g if g != "all" else _g)
         return render_template("jhsaa_lineup_lab.html", active="High School",
                                view=scope_view, lab=lab, gender=gender, gender_f=g,
                                target=target, pool=pool, n_squads=n_squads,
                                grades=grades, from_group=from_group,
                                min_ovr=min_ovr, max_ovr=max_ovr, min_pot=min_pot,
-                               max_pot=max_pot, q=q, cand_rows=pg.items, p=pg,
-                               total=lab["total"],
-                               groups=lab["groups"], u=u, uni_label=label)
+                               max_pot=max_pot, q=q,
+                               cand_rows=pg.items if pg is not None else None,
+                               p=pg, total=lab["total"] if lab else 0,
+                               grade_pools=[(k, lbl) for k, (lbl, _)
+                                            in JHSAA_LAB_GRADE_POOLS.items()],
+                               groups=list(_jh.GROUPS), u=u, uni_label=label,
+                               dest_schools=sorted(
+                                   {s.name
+                                    for x in (("boys", "girls") if g == "all" else (g,))
+                                    for s in _jh.load_schools(x)}),
+                               bulk_g=g if g != "all" else _g)
+
+    @app.route("/jhsaa/cohorts")
+    def jhsaa_cohorts():
+        """The reserve-cohort finder — programs whose RESERVE group is itself a
+        varsity-caliber team, and the weak hosts such a cohort could spend a
+        varsity season at (BRIEF-jhsaa-reserve-cohort-mobility.md). Read-only:
+        it computes nothing until asked (`find=1` — a full-gender roster build
+        behind it), decides nothing, and its only action is sending a cohort's
+        players into the ordinary transfer batch."""
+        gender, label, u, g, _group, _year = _jh_scope_args()
+        import app.world as wd
+        from app import jhsaa as _jh
+        csize = request.args.get("cohort", default=_jh.RESERVE_COHORT_SIZE,
+                                 type=int)
+        sgroup = request.args.get("sgroup", "All")
+        minc = request.args.get("minc", type=float)
+        res, year, src_pg = None, None, None
+        w = wd.load_world(DEFAULT_SEED)
+        if w:
+            latest = wd.jhsaa_latest_season_year(w["id"], g)
+            # NEXT season, the clearing rule: graduation and the incoming
+            # freshman class are already in every ladder the finder reads.
+            year = (latest + 1) if latest else wd.jhsaa_season_year(w)
+            if request.args.get("find"):
+                res = _jh.reserve_cohorts(g, year, wd.active_salt(DEFAULT_SEED),
+                                          cohort_size=csize)
+                # Filter first, then paginate — every reported source stays
+                # reachable (a hard slice hid everything past #40).
+                srcs = [s for s in res["sources"]
+                        if sgroup in ("All", s["group"])
+                        and (minc is None or s["cohort_mean"] >= minc)]
+                src_pg = paginate(srcs, request.args.get("page", 1))
+        scope_view = jhsaa_scope_view(DEFAULT_SEED, g)
+        return render_template("jhsaa_cohorts.html", active="High School",
+                               view=scope_view, res=res, year=year,
+                               cohort=csize, gender=gender, u=u, g=g,
+                               uni_label=label, sgroup=sgroup, minc=minc,
+                               src_pg=src_pg, groups=["All"] + list(_jh.GROUPS),
+                               dest_schools=sorted(s.name
+                                                   for s in _jh.load_schools(g)))
 
     @app.route("/jhsaa/realism")
     def jhsaa_realism():
@@ -2542,9 +2630,44 @@ def create_app() -> Flask:
         has the school/pid/entry context); this page is where to find/undo one."""
         gender, label, u, g, group, year = _jh_scope_args()
         from app import jhsaa as _jh
+        import app.world as wd
+        extras = _jh_transfer_extras(g)
+        # "Propose destinations" — the clearing-market generator over the found
+        # candidates (BRIEF-jhsaa-opportunity-clearing-market.md): lateral first,
+        # down a competitive level only when nothing lateral has a varsity seat,
+        # projected against NEXT season's rosters so the incoming freshman class
+        # is already in the ladder the arrival must crack. It only PREFILLS the
+        # batch: the owner reviews, edits and applies like any pasted slate.
+        if (request.args.get("propose") and extras["candidates"] is not None
+                and extras["next_year"]):
+            props = _jh.clearing_proposals(
+                g, extras["next_year"], wd.active_salt(DEFAULT_SEED),
+                candidates=extras["candidates"],
+                max_per_school=max(1, extras["maxper"]),
+                max_drop=max(0, min(6, extras["drop"])))
+            lines, pairs = [], []
+            for r in props:
+                if r["to"]:
+                    lines.append(f"# {r['name']} — {r['from_group']} {r['from']} → "
+                                 f"{r['to_group']} {r['to']} (proj. #{r['slot']}, "
+                                 f"OVR {r['ovr']})")
+                    lines.append(f"{r['pid']}, {r['to']}")
+                    pairs.append((r["pid"], r["to"]))
+                else:
+                    lines.append(f"# NO home found: {r['name']} — {r['from_group']} "
+                                 f"{r['from']} (OVR {r['ovr']}) — place by hand")
+            report = (_jh.transfer_batch(pairs, extras["next_year"],
+                                         wd.active_salt(DEFAULT_SEED))
+                      if pairs else [])
+            placed = sum(1 for r in props if r["to"])
+            extras.update(report=report, batch_text="\n".join(lines),
+                          report_head=(f"Proposed homes for {placed} of "
+                                       f"{len(props)} candidates — review, edit, "
+                                       f"then Apply."),
+                          batch_year=extras["next_year"])
         return render_template("jhsaa_transfers.html", active="HS Transfers",
                                rows=_jh.transfer_rows(), gender=gender, u=u,
-                               uni_label=label, **_jh_transfer_extras(g))
+                               uni_label=label, **extras)
 
     def _jh_transfer_extras(g: str, report=None, batch_text: str = "") -> dict:
         """Everything the transfers page shows beyond the recorded-moves ledger:
@@ -2567,6 +2690,8 @@ def create_app() -> Flask:
         from app import jhsaa as _jh
         return {"g": g, "season_year": season_year, "next_year": next_year,
                 "candidates": candidates, "mm": mm, "gr": gr,
+                "maxper": request.values.get("maxper", default=2, type=int),
+                "drop": request.values.get("drop", default=2, type=int),
                 "dest_schools": sorted(s.name for s in _jh.load_schools(g)),
                 "report": report, "batch_text": batch_text}
 
@@ -2651,6 +2776,54 @@ def create_app() -> Flask:
                                uni_label=label,
                                **{**_jh_transfer_extras(g, report=report,
                                                         batch_text="" if do_apply else text),
+                                  "report_head": head, "batch_year": year})
+
+    @app.route("/editor/jhsaa-transfer-bulk", methods=["POST"])
+    def editor_jhsaa_transfer_bulk():
+        """The select-and-submit half of the bulk workflow: the Lineup Lab, the
+        Mismatch board and the Candidates tab post their CHECKED rows here (the
+        fall portal's external-form idiom), optionally with one shared
+        destination. It APPLIES nothing — it lands on the Batch tab prefilled
+        (previewed when a destination was chosen), and the owner applies there."""
+        from app import jhsaa as _jh
+        import app.world as wd
+        gender, label, u, g, _group, _ = _jh_scope_args()
+        # ‼️ A POST has no query string — read the gender off the form, never
+        # the scope (`editor_jhsaa_family`'s documented trap).
+        g = request.form.get("g") or g
+        if g not in ("boys", "girls"):
+            g = "boys"
+        dest = (request.form.get("bulk_dest") or "").strip()
+        lines, pairs = [], []
+        # Each checkbox value is "pid|display note" — the note becomes the batch
+        # comment line so the pasted slate stays readable when editing by hand.
+        for raw in request.form.getlist("pids"):
+            pid, _, note = raw.partition("|")
+            pid = pid.strip()
+            if not pid:
+                continue
+            if note.strip():
+                lines.append(f"# {note.strip()}")
+            lines.append(f"{pid}, {dest}")
+            pairs.append((pid, dest))
+        w = wd.load_world(DEFAULT_SEED)
+        season_year = wd.jhsaa_latest_season_year(w["id"], g) if w else None
+        year = (season_year + 1) if season_year else None
+        if pairs and dest and year:
+            report = _jh.transfer_batch(pairs, year, wd.active_salt(DEFAULT_SEED))
+            head = (f"Preview: {sum(r['ok'] for r in report)} of {len(report)} "
+                    f"valid — Apply from this tab when it reads right.")
+        elif pairs:
+            report = []
+            head = (f"{len(pairs)} player{'s' if len(pairs) != 1 else ''} queued — "
+                    f"fill in each destination, then Preview.")
+        else:
+            report, head = [], "Nothing was checked."
+        return render_template("jhsaa_transfers.html", active="HS Transfers",
+                               rows=_jh.transfer_rows(), gender=gender, u=u,
+                               uni_label=label,
+                               **{**_jh_transfer_extras(g, report=report,
+                                                        batch_text="\n".join(lines)),
                                   "report_head": head, "batch_year": year})
 
     def _jhsaa_lab_mode() -> bool:

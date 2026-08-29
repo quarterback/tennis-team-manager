@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import math
 import random
 from dataclasses import dataclass, field
 
@@ -132,6 +133,92 @@ def overall_to_str(g: float) -> float:
     visible band or callers that consume ``str_value()``.
     """
     return round(STR_MIN + (g - GRADE_MIN) / (GRADE_MAX - GRADE_MIN) * (STR_MAX - STR_MIN), 2)
+
+
+# --- Talent compression (owner rule 2026-08) ----------------------------------
+# The universe was tuned when it held 100-200 schools; at ~850 JHSAA programs
+# plus a 2,500/gender national pool, the SAME distributions produce five times
+# the lottery tickets and the tail piles onto the 80 clamp — players "maxing
+# out my college scales, which was never supposed to happen". So generated
+# CEILINGS are squashed above a knee: ordinary talent tops out around UTR 12-13
+# (boys) / 10-11 (girls) as a ceiling, and a 1-in-500 ELITE roll is exempt —
+# those few still reach where today's elite sit. The squash is a transform on
+# the ALREADY-DRAWN value (tanh above the knee, identity below, monotonic so
+# every ordering survives) and the elite roll runs on blake2s off the player's
+# stable identity — NO extra rng draws, so a gated source's pre-era cohorts
+# stay byte-identical and new cohorts don't shift sibling draws.
+#
+# Anchors (grade 20-80 ⇄ STR 31-57 ⇄ UTR 1-16.5, ~3.87 grade pts per UTR):
+#   boys  knee 54.8 (UTR 10.0) → cap 66.5 (UTR 13.0)
+#   girls knee 49.0 (UTR  8.5) → cap 58.7 (UTR 11.0)
+# Sources: JHSAA generation (era-gated by entry year — `jhsaa.talent_era()`),
+# the national recruit pool, and college base-roster builds, so no feed runs
+# hotter than the others. See docs/AAR-talent-compression.md.
+TALENT_KNEE = {"male": 54.8, "female": 49.0}
+TALENT_CAP = {"male": 66.5, "female": 58.7}
+ELITE_TALENT_RATE = 1 / 500
+#: `ceiling_overall()` sits ABOVE the talent passed to `generate_prospect` —
+#: attribute potentials and playstyle shaping lift the displayed ceiling a
+#: measured median +6 / p90 +7 over the input. The squash therefore aims this
+#: far BELOW the displayed targets above, so what the owner sees (the census
+#: ceiling, the recruit board) lands on the UTR anchors rather than a lift
+#: above them. Measured by scripts/talent_compression_calibration.py.
+_ATTR_LIFT = 7.0
+
+
+def _talent_sex(gender) -> str:
+    return ("female" if str(gender).lower().startswith(("f", "w", "g"))
+            else "male")
+
+
+def elite_talent(key) -> bool:
+    """The 1-in-500 exemption, off a stable identity — never the main rng
+    (an extra draw would regenerate everyone) and never `hash()` (salted per
+    process). The same key answers the same way forever, so an elite kid is
+    elite all four years."""
+    raw = "|".join(str(p) for p in (key if isinstance(key, tuple) else (key,)))
+    h = int(hashlib.blake2s(raw.encode("utf-8"), digest_size=6).hexdigest(), 16)
+    return (h % 500) == 0
+
+
+def compress_talent(raw: float, gender, key=None) -> float:
+    """Squash a drawn talent CEILING above the gender's knee; identity below it,
+    monotonic throughout, asymptoting at the cap. A key that rolls elite keeps
+    the raw draw (clamped 80) — the old sky, for one player in five hundred."""
+    sex = _talent_sex(gender)
+    knee = TALENT_KNEE[sex] - _ATTR_LIFT
+    cap = TALENT_CAP[sex] - _ATTR_LIFT
+    if raw <= knee:
+        return raw
+    if key is not None and elite_talent(key):
+        return min(80.0, raw)
+    span = cap - knee
+    return round(knee + span * math.tanh((raw - knee) / span), 2)
+
+
+def trim_prospect_ceiling(p, gender, key=None):
+    """The guarantee half of the compression (the squash above is the SHAPE
+    half): attribute noise and playstyle shaping lift the displayed ceiling a
+    median +6 over the input talent with a tail to +16, so a squashed centre
+    alone still leaks hundreds of over-cap ceilings per gender. After
+    generation, a non-elite prospect whose `ceiling_overall()` exceeds the cap
+    has the overshoot subtracted uniformly from every attribute potential
+    (never below the attribute's current value). The landing point is spread
+    deterministically over [cap-2, cap] off the identity key, so the trimmed
+    tail does not pile onto one visible number — the wall of maxed players is
+    the thing this whole rule exists to remove. Elite keys are exempt."""
+    if key is not None and elite_talent(key):
+        return p
+    cap = TALENT_CAP[_talent_sex(gender)]
+    if key is not None:
+        raw = "|".join(str(x) for x in (key if isinstance(key, tuple) else (key,)))
+        h = int(hashlib.blake2s(raw.encode("utf-8"), digest_size=4).hexdigest(), 16)
+        cap -= (h % 101) / 50.0                     # 0.00-2.00 below the cap
+    over = p.ceiling_overall() - cap
+    if over > 0:
+        for a, v in p.potential.items():
+            p.potential[a] = max(p.current.get(a, GRADE_MIN), v - over)
+    return p
 
 
 def make_pid(*parts: object) -> str:

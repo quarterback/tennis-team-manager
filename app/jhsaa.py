@@ -1629,6 +1629,7 @@ def reset_schools() -> None:
     _playup_league_cache.clear()
     _name_era_cache.clear()
     _dev_era_cache.clear()
+    _talent_era_cache.clear()
     global _former_cache
     _former_cache = None
 
@@ -1751,6 +1752,47 @@ def dev_era() -> int:
             era = 0                      # no archive yet — a fresh save, all new
         worldconfig.set("jhsaa_dev_era", str(era))
     _dev_era_cache[key] = era
+    return era
+
+
+_talent_era_cache: dict = {}
+
+
+def talent_era() -> int:
+    """The first entry year whose talent CEILINGS are compressed
+    (`development.compress_talent` — owner rule 2026-08). The `dev_era()` idiom
+    exactly, and for the same reason: players regenerate deterministically, so
+    an un-gated change to the talent draw silently rewrites every archived
+    roster's attributes. Pre-era cohorts keep their numbers byte-for-byte;
+    the association converges over one four-year graduating cycle."""
+    from .dbpath import resolve_db_path
+    key = resolve_db_path()
+    got = _talent_era_cache.get(key)
+    if got is not None:
+        return got
+    from . import worldconfig
+    raw = worldconfig.get("jhsaa_talent_era")
+    if raw is not None and str(raw).strip():
+        era = int(raw)
+    else:
+        import sqlite3
+        era = 0
+        try:
+            conn = sqlite3.connect(key)
+            try:
+                r = conn.execute("SELECT MAX(year) FROM world_jhsaa").fetchone()
+            finally:
+                conn.close()
+            if r and r[0] is not None:
+                # world_jhsaa.year is the ZERO-BASED WORLD INDEX; entry years
+                # are calendar. Newest archive's season = BASE_YEAR + index + 1,
+                # its freshmen entered that year, so the first new cohort is +2.
+                from .world import BASE_YEAR
+                era = BASE_YEAR + int(r[0]) + 2
+        except sqlite3.Error:
+            era = 0                      # no archive yet — a fresh save, all new
+        worldconfig.set("jhsaa_talent_era", str(era))
+    _talent_era_cache[key] = era
     return era
 
 
@@ -2069,6 +2111,259 @@ def transfer_batch(pairs: list[tuple[str, str]], year: int, salt: str = "",
                 ov.set_jhsaa_transfer(pid, origin_name, gender, entry, seat,
                                       to_school, year)
     return out
+
+
+# --- opportunity-clearing proposals (owner tool, 2026-08) ---------------------
+# The generator half of the bulk-transfer workflow: given the underplayed board's
+# candidates, PROPOSE a destination for each, per the clearing-market brief
+# (docs/reports/BRIEF-jhsaa-opportunity-clearing-market.md) — search LATERALLY
+# first (own class, then the class sharing its competitive level), and only move
+# down a real competitive step when the current level has no home. It writes
+# NOTHING: the output is a slate the owner previews, edits and applies through
+# the same `transfer_batch` every other path uses.
+
+#: The brief's competitive ladder — NOT nine equal steps. 9A/8A are one level and
+#: so are 7A/6A; every boundary below is real. `GB_GROUPS` are deliberately absent
+#: (they are their own association rung, lateral-only — see GROUPS above).
+CLEARING_LEVELS = (("9A", "8A"), ("7A", "6A"), ("5A",), ("4A",), ("3A",),
+                   ("2A",), ("1A",))
+
+
+def _propose_destinations(cands: list[dict], ladders: dict, groups: dict, *,
+                          next_ovr: dict | None = None, max_per_school: int = 2,
+                          max_drop: int = 2, top_slot: int | None = None) -> list[dict]:
+    """The pure matcher behind `clearing_proposals` — separable so it can be
+    tested without a full-gender roster build.
+
+    `cands` are underplayed-board rows ({pid, name, school, group, grade, ovr});
+    `ladders` maps school -> DESC-sorted next-season varsity-pool OVRs (the
+    projection that makes the market FRESHMAN-AWARE: an incoming class that would
+    bury the arrival is already in the list); `groups` maps school -> group;
+    `next_ovr` maps pid -> the candidate's own projected next-season OVR (their
+    development roll — falls back to the board's current OVR).
+
+    Rules, straight from the brief: a candidate is placed at the HIGHEST level
+    with a genuinely useful role — a projected ladder slot inside the varsity
+    lineup (`top_slot`, default `lineup_need("regular")`). Own class outranks
+    the lateral class-mate, which outranks a drop; a DROP destination where the
+    arrival would be the outright new #1 is skipped (dominance is not the goal —
+    lateral #1s are fine, a weak same-level program is exactly who should get
+    them). Within a tier the pick is the slot nearest the middle of the lineup.
+    Arrivals stack: each placement counts against the destination's ladder and
+    its `max_per_school` allowance, so a wave cannot pile onto one program."""
+    from collections import defaultdict
+    top_slot = top_slot or lineup_need("regular")
+    next_ovr = next_ovr or {}
+    lvl = {}
+    for i, band in enumerate(CLEARING_LEVELS):
+        for grp in band:
+            lvl[grp] = i
+    by_level: dict[int, list] = defaultdict(list)
+    lateral_only: dict[str, list] = defaultdict(list)   # GB / unladdered groups
+    for s, grp in groups.items():
+        if grp in lvl:
+            by_level[lvl[grp]].append(s)
+        else:
+            lateral_only[grp].append(s)
+    arrivals: dict[str, list] = defaultdict(list)
+    out = []
+    # Best first, the order every market here clears in — the strongest surplus
+    # gets the scarce high-level seats before weaker candidates fill them.
+    for c in sorted(cands, key=lambda r: -r["ovr"]):
+        home = c["group"]
+        ovr = next_ovr.get(c["pid"], c["ovr"])
+        tiers: list[tuple[int, list]] = []                  # (drop steps, schools)
+        if home in lvl:
+            base = lvl[home]
+            tiers.append((0, [s for s in by_level[base] if groups[s] == home]))
+            tiers.append((0, [s for s in by_level[base] if groups[s] != home]))
+            for step in range(1, max_drop + 1):
+                if base + step < len(CLEARING_LEVELS):
+                    tiers.append((step, by_level[base + step]))
+        else:
+            tiers.append((0, lateral_only[home]))
+        best = None
+        for step, tier in tiers:
+            picks = []
+            for s in tier:
+                if s == c["school"] or len(arrivals[s]) >= max_per_school:
+                    continue
+                lad = ladders.get(s)
+                if lad is None:
+                    continue
+                above = (sum(1 for v in lad if v >= ovr)
+                         + sum(1 for v in arrivals[s] if v >= ovr))
+                slot = above + 1
+                if slot > top_slot:
+                    continue
+                # Becoming the outright #1 on a DROP is dominance, not
+                # opportunity — a last resort within the tier, never a bar
+                # (the market guarantees everyone a home).
+                dominant = 1 if (step > 0 and slot == 1) else 0
+                picks.append((dominant, abs(slot - 7), slot, s))
+            if picks:
+                _, _, slot, s = min(picks)
+                best = (s, slot, step)
+                break
+        row = {"pid": c["pid"], "name": c["name"], "from": c["school"],
+               "from_group": home, "grade": c["grade"], "ovr": c["ovr"],
+               "to": "", "to_group": "", "slot": None, "drop": 0}
+        if best:
+            s, slot, step = best
+            arrivals[s].append(ovr)
+            row.update(to=s, to_group=groups[s], slot=slot, drop=step)
+        out.append(row)
+    return out
+
+
+def clearing_proposals(gender: str, year: int, salt: str = "",
+                       candidates: list[dict] | None = None,
+                       max_per_school: int = 2, max_drop: int = 2,
+                       top_slot: int | None = None) -> list[dict]:
+    """Propose a destination for each underplayed candidate, effective season
+    `year` (the NEXT season — an offseason move). Projections run against every
+    program's `year` roster, which `build_roster` already develops and tops up
+    with that year's incoming freshman class, so 'would they actually play' is
+    answered against the roster the arrival will really meet, not the one that
+    just finished. A full-gender roster build (~seconds) — call it from an
+    explicit button, never on a default page load."""
+    ladders, groups, next_ovr = {}, {}, {}
+    for school in load_schools(gender):
+        roster = build_roster(school, year, salt)
+        ovrs = sorted((round(p.current_overall(), 1) for p in roster), reverse=True)
+        ladders[school.name] = ovrs
+        groups[school.name] = school.group
+        for p in roster:
+            next_ovr[p.pid] = round(p.current_overall(), 1)
+    return _propose_destinations(candidates or [], ladders, groups,
+                                 next_ovr=next_ovr, max_per_school=max_per_school,
+                                 max_drop=max_drop, top_slot=top_slot)
+
+
+# --- reserve-cohort finder (owner tool, 2026-08) ------------------------------
+# The read-only half of reserve-cohort mobility
+# (docs/reports/BRIEF-jhsaa-reserve-cohort-mobility.md): find the programs whose
+# RESERVE group — the players below the league lineup — is itself a
+# varsity-caliber team ("Rockridge B"), and the weak hosts a cohort like that
+# could spend a varsity season at. It writes nothing and decides nothing: the
+# owner reads it, and can send a cohort into the transfer batch by hand. The
+# loan LIFECYCLE (recall rights, one-season presumption) is deliberately NOT
+# built — a move made from here is an ordinary permanent transfer.
+
+#: How many reserves make a cohort by default — the brief's 7-10 band.
+RESERVE_COHORT_SIZE = 8
+#: A team's strength for comparisons is its best-nine mean (the `REST_GAP`
+#: basis), not the full 11 — S2/S3 seat ranks #10-#11 by construction.
+VARSITY_CORE = 9
+
+
+def _find_cohorts(rosters: dict, groups: dict, *, cohort_size: int = RESERVE_COHORT_SIZE,
+                  min_reserves: int = 6, hosts_per_class: int = 8) -> dict:
+    """The pure finder behind `reserve_cohorts` — separable so it is testable
+    without a full-gender roster build.
+
+    `rosters` maps school -> DESC-ability list of {pid, name, grade, ovr};
+    `groups` maps school -> group. Returns:
+
+    - `sources`: programs whose top `cohort_size` reserves (ranks below the
+      league lineup) average to a varsity-caliber unit — `plays_like` is the
+      HIGHEST class whose median team strength the cohort's mean clears, walked
+      down `LADDER_GROUPS` (a GB group compares within itself only). Each
+      carries its cohort players and up to three suggested hosts in the fit
+      class and the one below: the class's weakest programs, with the COMBINED
+      best-nine (cohort + the host's whole roster) ranked against that class's
+      real field.
+    - `hosts`: per class, the weakest programs by best-nine mean, each with a
+      `shape` per the brief — `rebuild` (≤1 player at class level), `core + void`
+      (2-4 real varsity players, then the cliff a cohort fills), else `middling`.
+    - `medians`: per class, the median team best-nine mean — the yardstick
+      every column above is read against.
+    """
+    from statistics import median
+    cut = lineup_need("regular")
+    def _mean(vals):
+        return round(sum(vals) / len(vals), 1) if vals else 0.0
+    team_mean = {s: _mean([p["ovr"] for p in r[:VARSITY_CORE]])
+                 for s, r in rosters.items()}
+    by_group: dict[str, list] = {}
+    for s, grp in groups.items():
+        by_group.setdefault(grp, []).append(s)
+    medians = {grp: round(median(team_mean[s] for s in ss), 1)
+               for grp, ss in by_group.items()}
+    ranked = {grp: sorted((team_mean[s] for s in ss), reverse=True)
+              for grp, ss in by_group.items()}
+
+    def _rank(grp: str, mean: float) -> int:
+        return 1 + sum(1 for v in ranked[grp] if v > mean)
+
+    hosts: dict[str, list] = {}
+    # Ladder order for the reader, GB groups after — never dict-arrival order.
+    grp_order = ([g for g in GROUPS if g in by_group]
+                 + sorted(g for g in by_group if g not in GROUPS))
+    for grp in grp_order:
+        ss = by_group[grp]
+        rows = []
+        for s in sorted(ss, key=lambda s: team_mean[s])[:hosts_per_class]:
+            core = sum(1 for p in rosters[s][:cut] if p["ovr"] >= medians[grp])
+            rows.append({"school": s, "group": grp, "mean": team_mean[s],
+                         "gap": round(medians[grp] - team_mean[s], 1),
+                         "core": core,
+                         "shape": ("rebuild" if core <= 1 else
+                                   "core + void" if core <= 4 else "middling")})
+        hosts[grp] = rows
+
+    sources = []
+    for s, roster in rosters.items():
+        reserves = roster[cut:]
+        if len(reserves) < min_reserves:
+            continue
+        cohort = reserves[:cohort_size]
+        c_mean = _mean([p["ovr"] for p in cohort])
+        grp = groups[s]
+        # The highest class the cohort would be an average-or-better varsity in.
+        walk = ([g for g in LADDER_GROUPS if g in medians]
+                if grp in LADDER_GROUPS else [grp])
+        plays_like = next((g for g in walk if medians[g] <= c_mean), None)
+        if plays_like is None:
+            continue
+        fit_classes = walk[walk.index(plays_like):walk.index(plays_like) + 2]
+        c_ovrs = [p["ovr"] for p in cohort]
+        suggested = []
+        for fg in fit_classes:
+            for h in hosts[fg][:3]:
+                if h["school"] == s:
+                    continue
+                combined = _mean(sorted(
+                    c_ovrs + [p["ovr"] for p in rosters[h["school"]]],
+                    reverse=True)[:VARSITY_CORE])
+                suggested.append({**h, "combined": combined,
+                                  "rank": _rank(fg, combined),
+                                  "n": len(by_group[fg])})
+        sources.append({"school": s, "group": grp, "varsity": team_mean[s],
+                        "class_median": medians[grp],
+                        "strong_varsity": team_mean[s] >= medians[grp],
+                        "cohort_mean": c_mean, "cohort": cohort,
+                        "reserves": len(reserves), "roster": len(roster),
+                        "plays_like": plays_like, "hosts": suggested})
+    sources.sort(key=lambda r: (-r["cohort_mean"], r["school"]))
+    return {"sources": sources, "hosts": hosts, "medians": medians}
+
+
+def reserve_cohorts(gender: str, year: int, salt: str = "",
+                    cohort_size: int = RESERVE_COHORT_SIZE) -> dict:
+    """The finder over season `year`'s real rosters — pass NEXT season for an
+    offseason read, so graduation and the incoming freshman class are already
+    in every ladder (the `clearing_proposals` rule). A full-gender roster build
+    (~seconds): call from an explicit button, never a default page load."""
+    rosters, groups = {}, {}
+    for school in load_schools(gender):
+        roster = build_roster(school, year, salt)
+        rows = [{"pid": p.pid, "name": p.name, "grade": p.grade,
+                 "ovr": round(p.current_overall(), 1)} for p in roster]
+        rows.sort(key=lambda r: -r["ovr"])
+        rosters[school.name] = rows
+        groups[school.name] = school.group
+    return _find_cohorts(rosters, groups, cohort_size=max(4, min(12, cohort_size)))
 
 
 #: The archetypes an owner can ASSIGN. `upstart` is deliberately absent: it is a
@@ -2558,15 +2853,29 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
     # shift, elite roll, academics, hometown path) and consumes the rng differently,
     # so passing the exchange student's country would shift every attribute roll.
     # The name era must move NAMES ONLY — the flag is stamped on afterwards.
+    talent = min(80.0, _ceiling(rng, school.talent_group, school.gender, mod)
+                 + mod.get("pot", 0.0))
+    compress = entry >= talent_era()
+    elite_key = ("jhsaa-elite", school.ident, school.gender, entry, seat)
+    if compress:
+        # Ceiling compression (owner rule 2026-08) — a TRANSFORM on the value
+        # already drawn, so the main rng consumes exactly the same draws either
+        # side of the era; the 1-in-500 elite exemption rolls on blake2s off the
+        # pid's own identity, so it shifts nobody else and holds all four years.
+        from .development import compress_talent
+        talent = compress_talent(talent, sex, key=elite_key)
     p = generate_prospect(rng, nm, "US", gender=sex,
-                          talent=min(80.0, _ceiling(rng, school.talent_group,
-                                                    school.gender, mod)
-                                     + mod.get("pot", 0.0)),
+                          talent=talent,
                           maturity_range=maturity,
                           # `ident`, never `name` — a pid has to survive a
                           # rename or every archived award points at nobody.
                           pid=make_pid("jhsaa", school.ident, school.gender,
                                        entry, seat))
+    if compress:
+        # The guarantee half: attribute noise lifts displayed ceilings past the
+        # squashed centre, so the visible number is trimmed after generation.
+        from .development import trim_prospect_ceiling
+        trim_prospect_ceiling(p, sex, key=elite_key)
     p.country = country                  # the flag only — see above
     p.class_year = str(grade)
     p.grade = grade
