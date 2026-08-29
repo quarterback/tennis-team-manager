@@ -5619,8 +5619,17 @@ def _jhsaa_census_for(seed: int, g: str) -> list[dict]:
     cached = _JH_CENSUS_CACHE.get(key)
     if cached is not None:
         return cached
-    built = _jhsaa_build_census(seed, g)
-    _JH_CENSUS_CACHE[key] = built
+    # Serialize the cold fill per key: the boot warmer, a deferred search job
+    # and a second tab can all observe the miss together, and each would run
+    # the full-gender build on the one GIL. Lock, RECHECK, then build.
+    from app.jhsaa import _build_lock, _build_lock_done
+    with _build_lock(("census",) + key):
+        cached = _JH_CENSUS_CACHE.get(key)
+        if cached is not None:
+            return cached
+        built = _jhsaa_build_census(seed, g)
+        _JH_CENSUS_CACHE[key] = built
+    _build_lock_done(("census",) + key)
     return built
 
 

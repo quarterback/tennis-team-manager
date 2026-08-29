@@ -2035,6 +2035,24 @@ def transfer_rows() -> list[dict]:
 
 _pid_idx_cache: dict = {}
 
+# Per-key build locks for the module's heavy memo fills (the pid index, the
+# cohort finder). Two threads observing the same cold key — a double-click, a
+# retry, the boot warmer racing a deferred job — would otherwise each run the
+# full-gender build on the one GIL. Acquire the key's lock, RECHECK the cache,
+# then build; waiters land on the published result.
+_build_locks: dict = {}
+_build_meta_lock = __import__("threading").Lock()
+
+
+def _build_lock(key):
+    with _build_meta_lock:
+        return _build_locks.setdefault(key, __import__("threading").Lock())
+
+
+def _build_lock_done(key):
+    with _build_meta_lock:
+        _build_locks.pop(key, None)
+
 
 def roster_pid_index(gender: str, year: int, salt: str = "") -> dict:
     """pid -> (school name, entry year, grade, player name) for everyone enrolled
@@ -2047,16 +2065,21 @@ def roster_pid_index(gender: str, year: int, salt: str = "") -> dict:
     got = _pid_idx_cache.get(key)
     if got is not None:
         return got
-    idx = {}
-    for school in load_schools(gender):
-        for p in build_roster(school, year, salt):
-            idx[p.pid] = (school.name, p.entry_year, p.grade, p.name)
-    # Prune THIS (db, gender)'s stale entries only — a global clear() would evict
-    # the sibling gender between the two builds one batch call makes, so every
-    # preview→apply round would pay all four builds again.
-    for k in [k for k in _pid_idx_cache if k[:2] == key[:2]]:
-        _pid_idx_cache.pop(k, None)
-    _pid_idx_cache[key] = idx
+    with _build_lock(key):
+        got = _pid_idx_cache.get(key)        # a waiter finds it published
+        if got is not None:
+            return got
+        idx = {}
+        for school in load_schools(gender):
+            for p in build_roster(school, year, salt):
+                idx[p.pid] = (school.name, p.entry_year, p.grade, p.name)
+        # Prune THIS (db, gender)'s stale entries only — a global clear() would
+        # evict the sibling gender between the two builds one batch call makes,
+        # so every preview→apply round would pay all four builds again.
+        for k in [k for k in _pid_idx_cache if k[:2] == key[:2]]:
+            _pid_idx_cache.pop(k, None)
+        _pid_idx_cache[key] = idx
+    _build_lock_done(key)
     return idx
 
 
@@ -2371,6 +2394,20 @@ def reserve_cohorts(gender: str, year: int, salt: str = "",
     got = _cohort_cache.get(key)
     if got is not None:
         return got
+    with _build_lock(key):
+        got = _cohort_cache.get(key)         # a waiter finds it published
+        if got is not None:
+            return got
+        out = _build_reserve_cohorts(gender, year, salt, cohort_size)
+        for k in [k for k in _cohort_cache if k[:2] == key[:2]]:
+            _cohort_cache.pop(k, None)
+        _cohort_cache[key] = out
+    _build_lock_done(key)
+    return out
+
+
+def _build_reserve_cohorts(gender: str, year: int, salt: str,
+                           cohort_size: int) -> dict:
     rosters, groups = {}, {}
     for school in load_schools(gender):
         roster = build_roster(school, year, salt)
@@ -2379,11 +2416,7 @@ def reserve_cohorts(gender: str, year: int, salt: str = "",
         rows.sort(key=lambda r: -r["ovr"])
         rosters[school.name] = rows
         groups[school.name] = school.group
-    out = _find_cohorts(rosters, groups, cohort_size=max(4, min(12, cohort_size)))
-    for k in [k for k in _cohort_cache if k[:2] == key[:2]]:
-        _cohort_cache.pop(k, None)
-    _cohort_cache[key] = out
-    return out
+    return _find_cohorts(rosters, groups, cohort_size=max(4, min(12, cohort_size)))
 
 
 #: The archetypes an owner can ASSIGN. `upstart` is deliberately absent: it is a
