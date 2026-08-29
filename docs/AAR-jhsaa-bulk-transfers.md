@@ -99,14 +99,62 @@ OVR is what the report displays; the projection never uses it.
   match ceiling, read off the archive. Widening the pool (juniors, JV-only
   players, "blocked talent") is a change to THAT board, not to the matcher.
 
+## 3. The reserve-cohort FINDER (`/jhsaa/cohorts`, "Cohorts" on the rail)
+
+The read-only half of reserve-cohort mobility
+(`BRIEF-jhsaa-reserve-cohort-mobility.md`): the tool that answers "who is
+carrying a Rockridge B, and where could it play?". `jhsaa.reserve_cohorts`
+builds the gender's NEXT-season rosters (same freshman-aware rule as the
+proposer) and the pure matcher `jhsaa._find_cohorts` reads three things off
+them:
+
+- **Sources**: programs whose top `RESERVE_COHORT_SIZE` (8, adjustable 4-12)
+  reserves — the players below the league lineup's 11 — average to a
+  varsity-caliber unit. `plays_like` is the HIGHEST class whose median team
+  strength the cohort's mean clears, walked down `LADDER_GROUPS` (a GB group
+  compares within itself only). A `weak varsity` flag marks a source whose own
+  lineup is below its class median — those reserves may just belong in the
+  lineup at home, per the brief's "who does not belong" list.
+- **Hosts**: each class's weakest programs by best-nine mean, shaped per the
+  brief — `rebuild` (≤1 player at class level), `core + void` (2-4 real varsity
+  players, then the cliff a cohort fills), else `middling`. "At class level"
+  means at/above the class's median team best-nine mean — one yardstick for
+  every column on the page.
+- **Suggested hosts per source**: the 3 weakest hosts in the fit class and one
+  below, each with the COMBINED best-nine (cohort + the host's whole roster)
+  ranked against that class's real field ("would rank ~#11 of 93") — the
+  lineup-lab question asked of a real merger. Suggestions, never picks: the
+  brief is explicit that different experiments want different drops.
+
+Team strength everywhere is the **best-NINE mean** (`VARSITY_CORE`), not the
+full 11 — the 3S/4D league lineup seats ranks #10-#11 at S2/S3, and the
+`REST_GAP` machinery already measures teams on the top-nine mean.
+
+Each source row expands to its cohort players, every one carrying the same
+`jh_bulk_check` checkbox as the other boards — so "send this cohort to a host"
+is: expand, check all eight, type the host into the bulk form, land on the
+batch, apply. ‼️ A move made this way is an ORDINARY PERMANENT transfer. The
+loan LIFECYCLE — one-season presumption, source recall rights at the next
+rollover, host-senior clearing before placement — is deliberately not built;
+it needs its own cohort record (`{source, host, year, members, per-player
+resolved state}`), not more `jhsaa_transfer` rows, and a recall step at the
+offseason ladder. If it is ever built, this finder is its front end and the
+batch is still its write path.
+
+Costs: one full-gender build behind an explicit `find=1` button (measured
+5.7s warm on the 2039 boys), computed into locals, no new cache, no writes.
+Sanity numbers from that run: 65 boys' sources, the top ones 9A/8A/6A programs
+with ~49-51-mean cohorts playing like 3A/4A — the Rockridge shape the brief
+predicted, visible without an export.
+
 ## Deliberately not built
 
 The briefs describe four separate markets (opportunity clearing · blocked
-talent · reserve-cohort/affiliate loans · top-end portal). Only opportunity
-clearing got a generator here. Reserve-cohort mobility moves 7-10 strong
-players as a UNIT with recall rights — a different transaction shape (source
-gets first call after graduation; host seniors get cleared first) that would
-need its own lifecycle state, not more rows in this batch. Do not bolt it onto
+talent · reserve-cohort/affiliate loans · top-end portal). Opportunity
+clearing got a generator and reserve cohorts got a FINDER; nothing here moves
+a cohort as a unit with recall rights — that transaction shape (source gets
+first call after graduation; host seniors get cleared first) needs its own
+lifecycle state, not more rows in this batch. Do not bolt it onto
 `clearing_proposals`; the briefs are explicit that mixing the markets is how
 the 2039 experiment went wrong.
 
@@ -117,7 +165,10 @@ visible ladder step (the offseason-ladder rule), never inside `_finalize_year`.
 
 ## Tests
 
-`tests/test_jhsaa_bulk_transfers.py` — the matcher pure (lateral-first,
-band-before-drop, one-level-at-a-time, arrival caps, dominance-as-last-resort,
-freshman-aware projection, GB lateral-only) plus the routes' empty-state
-contract (bulk POST with nothing checked, propose with no archive).
+`tests/test_jhsaa_bulk_transfers.py` — the clearing matcher pure
+(lateral-first, band-before-drop, one-level-at-a-time, arrival caps,
+dominance-as-last-resort, freshman-aware projection, GB lateral-only), the
+cohort finder pure (the Rockridge shape is flagged with its `plays_like` and
+suggested hosts; host shapes classify), plus the routes' empty-state contract
+(bulk POST with nothing checked, propose with no archive, `/jhsaa/cohorts`
+cold).

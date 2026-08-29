@@ -2198,6 +2198,132 @@ def clearing_proposals(gender: str, year: int, salt: str = "",
                                  max_drop=max_drop, top_slot=top_slot)
 
 
+# --- reserve-cohort finder (owner tool, 2026-08) ------------------------------
+# The read-only half of reserve-cohort mobility
+# (docs/reports/BRIEF-jhsaa-reserve-cohort-mobility.md): find the programs whose
+# RESERVE group — the players below the league lineup — is itself a
+# varsity-caliber team ("Rockridge B"), and the weak hosts a cohort like that
+# could spend a varsity season at. It writes nothing and decides nothing: the
+# owner reads it, and can send a cohort into the transfer batch by hand. The
+# loan LIFECYCLE (recall rights, one-season presumption) is deliberately NOT
+# built — a move made from here is an ordinary permanent transfer.
+
+#: How many reserves make a cohort by default — the brief's 7-10 band.
+RESERVE_COHORT_SIZE = 8
+#: A team's strength for comparisons is its best-nine mean (the `REST_GAP`
+#: basis), not the full 11 — S2/S3 seat ranks #10-#11 by construction.
+VARSITY_CORE = 9
+
+
+def _find_cohorts(rosters: dict, groups: dict, *, cohort_size: int = RESERVE_COHORT_SIZE,
+                  min_reserves: int = 6, hosts_per_class: int = 8) -> dict:
+    """The pure finder behind `reserve_cohorts` — separable so it is testable
+    without a full-gender roster build.
+
+    `rosters` maps school -> DESC-ability list of {pid, name, grade, ovr};
+    `groups` maps school -> group. Returns:
+
+    - `sources`: programs whose top `cohort_size` reserves (ranks below the
+      league lineup) average to a varsity-caliber unit — `plays_like` is the
+      HIGHEST class whose median team strength the cohort's mean clears, walked
+      down `LADDER_GROUPS` (a GB group compares within itself only). Each
+      carries its cohort players and up to three suggested hosts in the fit
+      class and the one below: the class's weakest programs, with the COMBINED
+      best-nine (cohort + the host's whole roster) ranked against that class's
+      real field.
+    - `hosts`: per class, the weakest programs by best-nine mean, each with a
+      `shape` per the brief — `rebuild` (≤1 player at class level), `core + void`
+      (2-4 real varsity players, then the cliff a cohort fills), else `middling`.
+    - `medians`: per class, the median team best-nine mean — the yardstick
+      every column above is read against.
+    """
+    from statistics import median
+    cut = lineup_need("regular")
+    def _mean(vals):
+        return round(sum(vals) / len(vals), 1) if vals else 0.0
+    team_mean = {s: _mean([p["ovr"] for p in r[:VARSITY_CORE]])
+                 for s, r in rosters.items()}
+    by_group: dict[str, list] = {}
+    for s, grp in groups.items():
+        by_group.setdefault(grp, []).append(s)
+    medians = {grp: round(median(team_mean[s] for s in ss), 1)
+               for grp, ss in by_group.items()}
+    ranked = {grp: sorted((team_mean[s] for s in ss), reverse=True)
+              for grp, ss in by_group.items()}
+
+    def _rank(grp: str, mean: float) -> int:
+        return 1 + sum(1 for v in ranked[grp] if v > mean)
+
+    hosts: dict[str, list] = {}
+    # Ladder order for the reader, GB groups after — never dict-arrival order.
+    grp_order = ([g for g in GROUPS if g in by_group]
+                 + sorted(g for g in by_group if g not in GROUPS))
+    for grp in grp_order:
+        ss = by_group[grp]
+        rows = []
+        for s in sorted(ss, key=lambda s: team_mean[s])[:hosts_per_class]:
+            core = sum(1 for p in rosters[s][:cut] if p["ovr"] >= medians[grp])
+            rows.append({"school": s, "group": grp, "mean": team_mean[s],
+                         "gap": round(medians[grp] - team_mean[s], 1),
+                         "core": core,
+                         "shape": ("rebuild" if core <= 1 else
+                                   "core + void" if core <= 4 else "middling")})
+        hosts[grp] = rows
+
+    sources = []
+    for s, roster in rosters.items():
+        reserves = roster[cut:]
+        if len(reserves) < min_reserves:
+            continue
+        cohort = reserves[:cohort_size]
+        c_mean = _mean([p["ovr"] for p in cohort])
+        grp = groups[s]
+        # The highest class the cohort would be an average-or-better varsity in.
+        walk = ([g for g in LADDER_GROUPS if g in medians]
+                if grp in LADDER_GROUPS else [grp])
+        plays_like = next((g for g in walk if medians[g] <= c_mean), None)
+        if plays_like is None:
+            continue
+        fit_classes = walk[walk.index(plays_like):walk.index(plays_like) + 2]
+        c_ovrs = [p["ovr"] for p in cohort]
+        suggested = []
+        for fg in fit_classes:
+            for h in hosts[fg][:3]:
+                if h["school"] == s:
+                    continue
+                combined = _mean(sorted(
+                    c_ovrs + [p["ovr"] for p in rosters[h["school"]]],
+                    reverse=True)[:VARSITY_CORE])
+                suggested.append({**h, "combined": combined,
+                                  "rank": _rank(fg, combined),
+                                  "n": len(by_group[fg])})
+        sources.append({"school": s, "group": grp, "varsity": team_mean[s],
+                        "class_median": medians[grp],
+                        "strong_varsity": team_mean[s] >= medians[grp],
+                        "cohort_mean": c_mean, "cohort": cohort,
+                        "reserves": len(reserves), "roster": len(roster),
+                        "plays_like": plays_like, "hosts": suggested})
+    sources.sort(key=lambda r: (-r["cohort_mean"], r["school"]))
+    return {"sources": sources, "hosts": hosts, "medians": medians}
+
+
+def reserve_cohorts(gender: str, year: int, salt: str = "",
+                    cohort_size: int = RESERVE_COHORT_SIZE) -> dict:
+    """The finder over season `year`'s real rosters — pass NEXT season for an
+    offseason read, so graduation and the incoming freshman class are already
+    in every ladder (the `clearing_proposals` rule). A full-gender roster build
+    (~seconds): call from an explicit button, never a default page load."""
+    rosters, groups = {}, {}
+    for school in load_schools(gender):
+        roster = build_roster(school, year, salt)
+        rows = [{"pid": p.pid, "name": p.name, "grade": p.grade,
+                 "ovr": round(p.current_overall(), 1)} for p in roster]
+        rows.sort(key=lambda r: -r["ovr"])
+        rosters[school.name] = rows
+        groups[school.name] = school.group
+    return _find_cohorts(rosters, groups, cohort_size=max(4, min(12, cohort_size)))
+
+
 #: The archetypes an owner can ASSIGN. `upstart` is deliberately absent: it is a
 #: temporary run the world rolls from the salt and expires by itself, and storing one
 #: would make it permanent — the one thing an upstart must never be.

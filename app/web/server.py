@@ -2534,6 +2534,37 @@ def create_app() -> Flask:
                                     for s in _jh.load_schools(x)}),
                                bulk_g=g if g != "all" else _g)
 
+    @app.route("/jhsaa/cohorts")
+    def jhsaa_cohorts():
+        """The reserve-cohort finder — programs whose RESERVE group is itself a
+        varsity-caliber team, and the weak hosts such a cohort could spend a
+        varsity season at (BRIEF-jhsaa-reserve-cohort-mobility.md). Read-only:
+        it computes nothing until asked (`find=1` — a full-gender roster build
+        behind it), decides nothing, and its only action is sending a cohort's
+        players into the ordinary transfer batch."""
+        gender, label, u, g, _group, _year = _jh_scope_args()
+        import app.world as wd
+        from app import jhsaa as _jh
+        csize = request.args.get("cohort", default=_jh.RESERVE_COHORT_SIZE,
+                                 type=int)
+        res, year = None, None
+        w = wd.load_world(DEFAULT_SEED)
+        if w:
+            latest = wd.jhsaa_latest_season_year(w["id"], g)
+            # NEXT season, the clearing rule: graduation and the incoming
+            # freshman class are already in every ladder the finder reads.
+            year = (latest + 1) if latest else wd.jhsaa_season_year(w)
+            if request.args.get("find"):
+                res = _jh.reserve_cohorts(g, year, wd.active_salt(DEFAULT_SEED),
+                                          cohort_size=csize)
+        scope_view = jhsaa_scope_view(DEFAULT_SEED, g)
+        return render_template("jhsaa_cohorts.html", active="High School",
+                               view=scope_view, res=res, year=year,
+                               cohort=csize, gender=gender, u=u, g=g,
+                               uni_label=label,
+                               dest_schools=sorted(s.name
+                                                   for s in _jh.load_schools(g)))
+
     @app.route("/jhsaa/realism")
     def jhsaa_realism():
         """Scoreline realism — the archived season's set scores against the real

@@ -130,3 +130,55 @@ def test_bulk_post_prefills_the_batch(client):
 def test_transfers_page_with_propose_and_no_archive_renders(client):
     r = client.get("/jhsaa/transfers?find=1&propose=1&g=boys")
     assert r.status_code == 200
+
+
+# --- the reserve-cohort finder (read-only) -----------------------------------
+
+def _school(n_varsity, v_ovr, n_reserve, r_ovr, start=0):
+    rows = ([{"pid": f"v{start+i}", "name": f"V{start+i}", "grade": 11, "ovr": v_ovr}
+             for i in range(n_varsity)]
+            + [{"pid": f"r{start+i}", "name": f"R{start+i}", "grade": 10, "ovr": r_ovr}
+               for i in range(n_reserve)])
+    return sorted(rows, key=lambda r: -r["ovr"])
+
+
+def test_finder_flags_the_rockridge_shape():
+    from app.jhsaa import _find_cohorts
+    rosters = {
+        "Deep 9A": _school(11, 65, 8, 55),          # the second-team program
+        "Ordinary 9A": _school(11, 50, 8, 30, 100),
+        "Weak 9A": _school(11, 40, 8, 25, 200),
+        "Weak 5A": _school(11, 35, 8, 20, 300),
+    }
+    groups = {"Deep 9A": "9A", "Ordinary 9A": "9A", "Weak 9A": "9A",
+              "Weak 5A": "5A"}
+    res = _find_cohorts(rosters, groups)
+    srcs = {s["school"]: s for s in res["sources"]}
+    assert "Deep 9A" in srcs
+    src = srcs["Deep 9A"]
+    # 55-OVR cohort clears 9A's median team strength (50) -> plays like 9A.
+    assert src["plays_like"] == "9A" and src["cohort_mean"] == 55.0
+    assert len(src["cohort"]) == 8 and src["strong_varsity"]
+    # Suggested hosts never include the source itself, and carry a combined rank.
+    assert src["hosts"] and all(h["school"] != "Deep 9A" for h in src["hosts"])
+    assert all(h["rank"] >= 1 and h["combined"] > 0 for h in src["hosts"])
+    # An ordinary reserve group (30 vs a 35 floor anywhere) is not a cohort.
+    assert "Ordinary 9A" not in srcs or srcs["Ordinary 9A"]["plays_like"] != "9A"
+
+
+def test_finder_host_shapes():
+    from app.jhsaa import _find_cohorts
+    core_void = _school(3, 60, 16, 20)              # 3 real players, then a cliff
+    rebuild = _school(11, 20, 8, 15, 100)           # weak throughout
+    strong = _school(11, 60, 8, 40, 200)
+    rosters = {"CoreVoid": core_void, "Rebuild": rebuild, "Strong": strong}
+    groups = {s: "5A" for s in rosters}
+    res = _find_cohorts(rosters, groups)
+    shapes = {h["school"]: h["shape"] for h in res["hosts"]["5A"]}
+    assert shapes["Rebuild"] == "rebuild"
+    assert shapes["CoreVoid"] == "core + void"
+
+
+def test_cohorts_route_empty_state(client):
+    r = client.get("/jhsaa/cohorts?g=boys")
+    assert r.status_code == 200
