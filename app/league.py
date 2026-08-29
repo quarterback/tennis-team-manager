@@ -104,8 +104,13 @@ def _scholarship_count(roster: list) -> int:
 
 
 def _program_level(prog: Program) -> float:
-    """The STR a program 'expects' to field — used as the transfer-up bar."""
-    return overall_to_str(_talent_from_strength(prog.strength, prog.division, prog.gender))
+    """The STR a program 'expects' to field — used as the transfer-up bar.
+    Through the ceiling compression (owner rule 2026-08): the bar is compared
+    against compressed player STRs and must live on the same scale."""
+    from .development import compress_talent
+    return overall_to_str(compress_talent(
+        _talent_from_strength(prog.strength, prog.division, prog.gender),
+        prog.gender))
 
 
 def _pstr(league: League, p) -> float:
@@ -213,8 +218,15 @@ def _refill(league: League, rng: random.Random) -> int:
         for k in range(need):
             name, country = name_fn()
             talent = max(24.0, min(80.0, prng.gauss(tmean, 5.0)))
+            # Ceiling compression (owner rule 2026-08) — the standalone league's
+            # freshman intake is a generation feed like the other three, and
+            # must not run hotter than the compressed rosters around it.
+            from .development import compress_talent, trim_prospect_ceiling
+            elite_key = (prog.key, "fr", league.year, k)
+            talent = compress_talent(talent, prog.gender, key=elite_key)
             fr = generate_prospect(prng, name, country, gender=_pick_gender(prog.gender),
                                    talent=talent, pid=make_pid(prog.key, "fr", league.year, k))
+            trim_prospect_ceiling(fr, prog.gender, key=elite_key)
             fr.class_year = "Fr"
             fr.walk_on = _scholarship_count(roster) >= SCHOLARSHIP_SLOTS   # scholarships fill first
             roster.append(fr)

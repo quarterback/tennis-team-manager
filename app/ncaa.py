@@ -900,6 +900,22 @@ def _talent_from_strength(strength: float, division: str = "D1", gender: str = "
     return _talent_mean(strength, division, gender)
 
 
+def program_level_caliber(strength: float, division: str, gender: str) -> float:
+    """A program's level on the 0..1 CALIBER scale, for the division radar
+    (`recruit_economy.program_level_floor`). ‼️ Passed through the same ceiling
+    compression as every generation feed (owner rule 2026-08,
+    `development.compress_talent`) — the radar's floor and the recruits it
+    gates live on ONE scale, so a compressed pool measured against an
+    uncompressed level would leave the bottom of every board unsigned (this
+    happened: the everyone-signs rate slipped 95→93% before this helper
+    existed). Compression here only; `_talent_mean` itself must stay raw —
+    rosters compress at the DRAW, and compressing the mean too would
+    double-compress them."""
+    from .development import compress_talent
+    t = compress_talent(_talent_mean(strength, division, gender), gender)
+    return max(0.0, min(1.0, (t - 20.0) / 60.0))
+
+
 def _pick_gender(g: str) -> str:
     return "male" if g == "men" else "female" if g == "women" else g
 
@@ -1026,12 +1042,21 @@ def _base_roster(p: Program):
                 gem = recruit_economy.tier_grade(star_plan[i], p.gender, rng)
                 talent = max(talent, gem)
         domestic = country in ("US", "USA", "United States", "")
+        # Ceiling compression (owner rule 2026-08, development.compress_talent) —
+        # applied at the ONE point both talent paths (the star-plan tier grade
+        # and the gauss around the program mean) flow through, so the year-0
+        # college build shares the same ceiling law as the recruit pool that
+        # replaces it season by season. Keyed on the pid's identity.
+        from .development import compress_talent, trim_prospect_ceiling
+        elite_key = ("college-elite", WORLD_SALT, p.key, i)
+        talent = compress_talent(talent, p.gender, key=elite_key)
         town_pool = (region_towns if domestic and region_towns and not local_kid
                      and town_rng.random() < LOCAL_REGION_TARGET else None)
         pr = generate_prospect(rng, name, country, gender=_pick_gender(p.gender),
                                talent=talent, pid=make_pid(WORLD_SALT, p.key, i),
                                maturity_range=_CLASS_MATURITY.get(cls, (0.86, 0.98)),
                                town_pool=town_pool)
+        trim_prospect_ceiling(pr, p.gender, key=elite_key)
         pr.class_year = cls
         # Test score tracks the program's academics (Ivies/top-D1/elite LACs pull up).
         acad_center = 79.0 + (p.academics - 0.5) * ACADEMIC_TILT

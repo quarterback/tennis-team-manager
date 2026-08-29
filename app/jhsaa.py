@@ -1629,6 +1629,7 @@ def reset_schools() -> None:
     _playup_league_cache.clear()
     _name_era_cache.clear()
     _dev_era_cache.clear()
+    _talent_era_cache.clear()
     global _former_cache
     _former_cache = None
 
@@ -1751,6 +1752,47 @@ def dev_era() -> int:
             era = 0                      # no archive yet — a fresh save, all new
         worldconfig.set("jhsaa_dev_era", str(era))
     _dev_era_cache[key] = era
+    return era
+
+
+_talent_era_cache: dict = {}
+
+
+def talent_era() -> int:
+    """The first entry year whose talent CEILINGS are compressed
+    (`development.compress_talent` — owner rule 2026-08). The `dev_era()` idiom
+    exactly, and for the same reason: players regenerate deterministically, so
+    an un-gated change to the talent draw silently rewrites every archived
+    roster's attributes. Pre-era cohorts keep their numbers byte-for-byte;
+    the association converges over one four-year graduating cycle."""
+    from .dbpath import resolve_db_path
+    key = resolve_db_path()
+    got = _talent_era_cache.get(key)
+    if got is not None:
+        return got
+    from . import worldconfig
+    raw = worldconfig.get("jhsaa_talent_era")
+    if raw is not None and str(raw).strip():
+        era = int(raw)
+    else:
+        import sqlite3
+        era = 0
+        try:
+            conn = sqlite3.connect(key)
+            try:
+                r = conn.execute("SELECT MAX(year) FROM world_jhsaa").fetchone()
+            finally:
+                conn.close()
+            if r and r[0] is not None:
+                # world_jhsaa.year is the ZERO-BASED WORLD INDEX; entry years
+                # are calendar. Newest archive's season = BASE_YEAR + index + 1,
+                # its freshmen entered that year, so the first new cohort is +2.
+                from .world import BASE_YEAR
+                era = BASE_YEAR + int(r[0]) + 2
+        except sqlite3.Error:
+            era = 0                      # no archive yet — a fresh save, all new
+        worldconfig.set("jhsaa_talent_era", str(era))
+    _talent_era_cache[key] = era
     return era
 
 
@@ -2811,15 +2853,29 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
     # shift, elite roll, academics, hometown path) and consumes the rng differently,
     # so passing the exchange student's country would shift every attribute roll.
     # The name era must move NAMES ONLY — the flag is stamped on afterwards.
+    talent = min(80.0, _ceiling(rng, school.talent_group, school.gender, mod)
+                 + mod.get("pot", 0.0))
+    compress = entry >= talent_era()
+    elite_key = ("jhsaa-elite", school.ident, school.gender, entry, seat)
+    if compress:
+        # Ceiling compression (owner rule 2026-08) — a TRANSFORM on the value
+        # already drawn, so the main rng consumes exactly the same draws either
+        # side of the era; the 1-in-500 elite exemption rolls on blake2s off the
+        # pid's own identity, so it shifts nobody else and holds all four years.
+        from .development import compress_talent
+        talent = compress_talent(talent, sex, key=elite_key)
     p = generate_prospect(rng, nm, "US", gender=sex,
-                          talent=min(80.0, _ceiling(rng, school.talent_group,
-                                                    school.gender, mod)
-                                     + mod.get("pot", 0.0)),
+                          talent=talent,
                           maturity_range=maturity,
                           # `ident`, never `name` — a pid has to survive a
                           # rename or every archived award points at nobody.
                           pid=make_pid("jhsaa", school.ident, school.gender,
                                        entry, seat))
+    if compress:
+        # The guarantee half: attribute noise lifts displayed ceilings past the
+        # squashed centre, so the visible number is trimmed after generation.
+        from .development import trim_prospect_ceiling
+        trim_prospect_ceiling(p, sex, key=elite_key)
     p.country = country                  # the flag only — see above
     p.class_year = str(grade)
     p.grade = grade

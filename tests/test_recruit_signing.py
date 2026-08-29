@@ -49,7 +49,7 @@ def test_program_level_floor_holds_then_keeps_residual():
 # ---- integration: a full signing cycle signs the elites --------------------
 
 def _market(gender="men", salt="recruit_test"):
-    from app.ncaa import _talent_from_strength, roster_cap, SCHOLARSHIP_SLOTS
+    from app.ncaa import program_level_caliber, roster_cap, SCHOLARSHIP_SLOTS
     progs = {}
     for divn in ("D1", "D2", "D3", "D4"):
         for p in load_division(divn, gender).programs:
@@ -57,7 +57,7 @@ def _market(gender="men", salt="recruit_test"):
     traits = {s: (p.prestige, p.academics, p.region, p.division, p.facilities)
               for s, p in progs.items()}
     budget = {s: re.program_budget(p, salt, 0) for s, p in progs.items()}
-    level_cal = {s: max(0.0, min(1.0, (_talent_from_strength(p.strength, p.division, gender) - 20.0) / 60.0))
+    level_cal = {s: program_level_caliber(p.strength, p.division, gender)
                  for s, p in progs.items()}
     cap = {}
     for s, p in progs.items():
