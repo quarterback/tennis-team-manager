@@ -430,9 +430,14 @@ def create_app() -> Flask:
                 # all read it) — ~10-20s a gender on the request thread if the
                 # first Search pays it. Warmed here like the college prime, so
                 # the boards' find=1 clicks land on a cache hit.
+                # ‼️ Only for a world that EXISTS: the census used to resolve
+                # via get_or_create, so on a fresh install this thread would
+                # CREATE a league mid-onboarding (the one-world rule — never a
+                # graceful fallback on world resolution).
                 from app.web import state as _state
-                for _g in ("boys", "girls"):
-                    _state._jhsaa_all_players(DEFAULT_SEED, _g)
+                if wd.exists(DEFAULT_SEED):
+                    for _g in ("boys", "girls"):
+                        _state._jhsaa_all_players(DEFAULT_SEED, _g)
             except Exception:
                 pass                          # the lazy request path still covers it
         import threading as _threading

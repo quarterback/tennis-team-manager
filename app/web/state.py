@@ -5571,7 +5571,12 @@ def _jhsaa_census_key(seed: int, g: str) -> tuple:
     archetype/play-up into `School`, and a JHSAA transfer moves a player)."""
     import app.overrides as ov
     import app.world as world
-    w = world.get_or_create(seed)
+    # ‼️ A cache key is a READ — never get_or_create, which on an empty
+    # database CREATED a whole league (from the boot warmer mid-onboarding,
+    # or from a no-world request). No world keys the empty census.
+    w = world.load_world(seed)
+    if not w:
+        return (seed, g, None)
     salt = world.active_salt(seed)
     return (seed, g, w["id"], w["year"], salt,
             ov.jhsaa_archetype_version(), ov.jhsaa_playup_version(),
@@ -5583,7 +5588,12 @@ def _jhsaa_build_census(seed: int, g: str) -> list[dict]:
     miss."""
     import app.jhsaa as jh
     import app.world as world
-    w = world.get_or_create(seed)
+    # ‼️ NEVER get_or_create here: a census is a READ, and on an empty database
+    # get_or_create silently CREATED a whole league — from the boot warmer
+    # mid-onboarding, or from a no-world request. No world → no players.
+    w = world.load_world(seed)
+    if not w:
+        return []
     salt = world.active_salt(seed)
     season_year = world.jhsaa_season_year(w)
     rows = []
