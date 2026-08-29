@@ -214,7 +214,15 @@ def trim_prospect_ceiling(p, gender, key=None):
         raw = "|".join(str(x) for x in (key if isinstance(key, tuple) else (key,)))
         h = int(hashlib.blake2s(raw.encode("utf-8"), digest_size=4).hexdigest(), 16)
         cap -= (h % 101) / 50.0                     # 0.00-2.00 below the cap
-    over = p.ceiling_overall() - cap
+    # ‼️ The weighted mean DIRECTLY, never `p.ceiling_overall()` — that
+    # constructs a full PlayerAttributes per call, and this runs once per
+    # generated player: measured, it took a JHSAA roster build 0.10s → 0.35s,
+    # which compounds into every census, career page and season build (the
+    # cost-class rule — CLAUDE.md's fingerprint-in-a-loop lesson, this
+    # feature's own instance).
+    from app.player_attributes import OVERALL_WEIGHTS, _WEIGHT_TOTAL
+    ceil = sum(OVERALL_WEIGHTS[a] * v for a, v in p.potential.items()) / _WEIGHT_TOTAL
+    over = ceil - cap
     if over > 0:
         for a, v in p.potential.items():
             p.potential[a] = max(p.current.get(a, GRADE_MIN), v - over)
