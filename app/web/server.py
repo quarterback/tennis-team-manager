@@ -425,6 +425,16 @@ def create_app() -> Flask:
                 _state.warm_championships()   # complete-season singles/doubles draws
             except Exception:
                 pass                          # per-key build lock + lazy path cover the rest
+            try:
+                # The JHSAA scouting census (Players / Mismatches / Lineup Lab
+                # all read it) — ~10-20s a gender on the request thread if the
+                # first Search pays it. Warmed here like the college prime, so
+                # the boards' find=1 clicks land on a cache hit.
+                from app.web import state as _state
+                for _g in ("boys", "girls"):
+                    _state._jhsaa_all_players(DEFAULT_SEED, _g)
+            except Exception:
+                pass                          # the lazy request path still covers it
         import threading as _threading
         _threading.Thread(target=_warm_caches_async, name="ptc-cache-warm",
                           daemon=True).start()
