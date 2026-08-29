@@ -2443,6 +2443,80 @@ def create_app() -> Flask:
                             samesite="Lax")
         return resp
 
+    # ---- deferred heavy builds (owner rule 2026-08) --------------------------
+    # The scouting tools (census searches, the cohort finder, propose, the
+    # underplayed board) each cost 10-40s of full-gender roster building. On
+    # the ONE gthread that outlives the worker timeout, so a click "just spins
+    # and never loads". The lab's background-job idea, generalised: the build
+    # runs in a daemon thread publishing into the function's own memo cache;
+    # the request waits a couple of seconds and either proceeds (done — cache
+    # hit) or answers a light self-refreshing page. The worker is never held,
+    # health stays green, and the refresh lands on the warm cache.
+    _jh_jobs: dict = {}
+    _jh_jobs_lock = __import__("threading").Lock()
+
+    def _jh_deferred(key: tuple, fn, wait: float = 2.5):
+        """Run `fn` once per `key` in the background. Returns the finished job
+        dict ({"result", "error"}) or None while still building. A finished
+        warm-style job is popped by the caller via `_jh_job_done`."""
+        import threading
+        with _jh_jobs_lock:
+            job = _jh_jobs.get(key)
+            if job is None:
+                job = {"result": None, "error": None,
+                       "ev": threading.Event()}
+                _jh_jobs[key] = job
+
+                def _run():
+                    try:
+                        job["result"] = fn()
+                    except Exception as e:      # surfaced on the page, not lost
+                        job["error"] = str(e)
+                    finally:
+                        job["ev"].set()
+                threading.Thread(target=_run, name=f"jh-job-{key[0]}",
+                                 daemon=True).start()
+        job["ev"].wait(wait)
+        return job if job["ev"].is_set() else None
+
+    def _jh_job_pop(key: tuple) -> None:
+        with _jh_jobs_lock:
+            _jh_jobs.pop(key, None)
+
+    def _jh_building(what: str = "this search"):
+        """The building interstitial — same shape as the cold-start loader, but
+        it refreshes the SAME url (query string included), so it lands on the
+        finished result without the reader doing anything."""
+        return Response(
+            "<!doctype html><meta charset='utf-8'>"
+            "<meta http-equiv='refresh' content='2.5'>"
+            "<title>Building…</title>"
+            "<body style='font-family:sans-serif;display:flex;flex-direction:column;"
+            "align-items:center;justify-content:center;height:90vh;gap:12px'>"
+            "<div style='width:34px;height:34px;border:4px solid #ccd;"
+            "border-top-color:#26b;border-radius:50%;"
+            "animation:s 1s linear infinite'></div>"
+            "<style>@keyframes s{to{transform:rotate(360deg)}}</style>"
+            f"<div style='font-weight:600'>Building {what}…</div>"
+            "<div style='color:#889;font-size:13px;max-width:340px;text-align:center'>"
+            "A deep save takes 15-40 seconds the first time. This page refreshes "
+            "itself and lands on the results; later searches are instant.</div>"
+            "</body>")
+
+    def _jh_census_gate(g: str, what: str):
+        """The shared deferred-census check for the three census-backed boards.
+        Returns a building page to send back, or None when the census is warm."""
+        from app.web import state as _state
+        genders = ("boys", "girls") if g == "all" else (g,)
+        for gg in genders:
+            key = ("census", gg)
+            job = _jh_deferred(key, (lambda x: (lambda: _state._jhsaa_all_players(
+                DEFAULT_SEED, x)))(gg))
+            if job is None:
+                return _jh_building(what)
+            _jh_job_pop(key)                 # done: the memo cache holds it now
+        return None
+
     @app.route("/jhsaa/players")
     def jhsaa_players():
         """Searchable directory of every JHSAA player — talent/potential visibility
@@ -2463,6 +2537,9 @@ def create_app() -> Flask:
         # served from cheap statics (`load_schools` for districts), never the
         # census.
         if request.args.get("find"):
+            building = _jh_census_gate(g, "the player directory")
+            if building:
+                return building
             res = jhsaa_players_search(DEFAULT_SEED, g, group=group,
                                        district=district, grade=grade,
                                        sort=sort, q=q)
@@ -2511,6 +2588,9 @@ def create_app() -> Flask:
         # Nothing loads until asked (the Players directory's rule) — the census
         # behind this board is the same full-association build.
         if request.args.get("find"):
+            building = _jh_census_gate(g, "the mismatch board")
+            if building:
+                return building
             res = jhsaa_misapplied_players(DEFAULT_SEED, g, group=group,
                                            sort=sort, grade=grade)
             pg = paginate(res["rows"], request.args.get("page", 1))
@@ -2560,6 +2640,9 @@ def create_app() -> Flask:
         # Nothing loads until asked — Build (hidden find=1) runs the census.
         from .state import JHSAA_LAB_GRADE_POOLS
         if request.args.get("find"):
+            building = _jh_census_gate(g, "the lineup lab")
+            if building:
+                return building
             lab = jhsaa_lineup_lab(DEFAULT_SEED, g, target_group=target,
                                    pool=pool, n_squads=n_squads, grades=grades,
                                    from_group=from_group, min_ovr=min_ovr,
@@ -2609,8 +2692,18 @@ def create_app() -> Flask:
             # freshman class are already in every ladder the finder reads.
             year = (latest + 1) if latest else wd.jhsaa_season_year(w)
             if request.args.get("find"):
-                res = _jh.reserve_cohorts(g, year, wd.active_salt(DEFAULT_SEED),
-                                          cohort_size=csize)
+                # Deferred off the request thread; the memoised finder is the
+                # publish side, so the refresh lands on a 2ms cache hit.
+                key = ("cohorts", g, year, csize)
+                salt = wd.active_salt(DEFAULT_SEED)
+                job = _jh_deferred(key, lambda: _jh.reserve_cohorts(
+                    g, year, salt, cohort_size=csize))
+                if job is None:
+                    return _jh_building("the cohort finder")
+                _jh_job_pop(key)
+                if job["error"]:
+                    raise RuntimeError(job["error"])
+                res = _jh.reserve_cohorts(g, year, salt, cohort_size=csize)
                 # Filter first, then paginate — every reported source stays
                 # reachable (a hard slice hid everything past #40).
                 srcs = [s for s in res["sources"]
@@ -2645,41 +2738,79 @@ def create_app() -> Flask:
         has the school/pid/entry context); this page is where to find/undo one."""
         gender, label, u, g, group, year = _jh_scope_args()
         from app import jhsaa as _jh
+        from app import overrides as ov
         import app.world as wd
+        # Candidates search is a full-gender build (`jhsaa_underplayed`) —
+        # deferred like every other heavy search; its module memo is the
+        # publish side, so the refresh after "Find candidates" is a cache hit.
+        w = wd.load_world(DEFAULT_SEED)
+        if w and request.values.get("find"):
+            ckey = ("underplayed", g)
+            salt = wd.active_salt(DEFAULT_SEED)
+            wid = w["id"]
+            job = _jh_deferred(ckey, lambda: wd.jhsaa_underplayed(wid, g, salt))
+            if job is None:
+                return _jh_building("the candidates board")
+            _jh_job_pop(ckey)
         extras = _jh_transfer_extras(g)
+        # Pre-warm the pid index the batch POSTs resolve against (both genders,
+        # next season) — fire-and-forget: a POST can't show a building page, so
+        # its cache is warmed while the owner is still reading this one.
+        if extras["next_year"] and w:
+            ny, salt = extras["next_year"], wd.active_salt(DEFAULT_SEED)
+            for gg in ("boys", "girls"):
+                k = ("pididx", gg, ny)
+                if _jh_deferred(k, (lambda x: (lambda: _jh.roster_pid_index(
+                        x, ny, salt)))(gg), wait=0.01):
+                    _jh_job_pop(k)
         # "Propose destinations" — the clearing-market generator over the found
         # candidates (BRIEF-jhsaa-opportunity-clearing-market.md): lateral first,
         # down a competitive level only when nothing lateral has a varsity seat,
         # projected against NEXT season's rosters so the incoming freshman class
         # is already in the ladder the arrival must crack. It only PREFILLS the
         # batch: the owner reviews, edits and applies like any pasted slate.
+        # Deferred WITH its result kept (unlike the warm-style jobs): the run is
+        # ~3 full-gender builds, and the key carries the transfer fingerprint so
+        # an Apply invalidates it naturally.
         if (request.args.get("propose") and extras["candidates"] is not None
                 and extras["next_year"]):
-            props = _jh.clearing_proposals(
-                g, extras["next_year"], wd.active_salt(DEFAULT_SEED),
-                candidates=extras["candidates"],
-                max_per_school=max(1, extras["maxper"]),
-                max_drop=max(0, min(6, extras["drop"])))
-            lines, pairs = [], []
-            for r in props:
-                if r["to"]:
-                    lines.append(f"# {r['name']} — {r['from_group']} {r['from']} → "
-                                 f"{r['to_group']} {r['to']} (proj. #{r['slot']}, "
-                                 f"OVR {r['ovr']})")
-                    lines.append(f"{r['pid']}, {r['to']}")
-                    pairs.append((r["pid"], r["to"]))
-                else:
-                    lines.append(f"# NO home found: {r['name']} — {r['from_group']} "
-                                 f"{r['from']} (OVR {r['ovr']}) — place by hand")
-            report = (_jh.transfer_batch(pairs, extras["next_year"],
-                                         wd.active_salt(DEFAULT_SEED))
-                      if pairs else [])
-            placed = sum(1 for r in props if r["to"])
-            extras.update(report=report, batch_text="\n".join(lines),
-                          report_head=(f"Proposed homes for {placed} of "
-                                       f"{len(props)} candidates — review, edit, "
-                                       f"then Apply."),
-                          batch_year=extras["next_year"])
+            pkey = ("propose", g, extras["next_year"], extras["mm"],
+                    extras["gr"], extras["maxper"], extras["drop"],
+                    ov.jhsaa_transfer_version())
+            cands, ny = extras["candidates"], extras["next_year"]
+            maxper, drop = max(1, extras["maxper"]), max(0, min(6, extras["drop"]))
+            salt = wd.active_salt(DEFAULT_SEED)
+
+            def _propose():
+                props = _jh.clearing_proposals(g, ny, salt, candidates=cands,
+                                               max_per_school=maxper,
+                                               max_drop=drop)
+                lines, pairs = [], []
+                for r in props:
+                    if r["to"]:
+                        lines.append(f"# {r['name']} — {r['from_group']} "
+                                     f"{r['from']} → {r['to_group']} {r['to']} "
+                                     f"(proj. #{r['slot']}, OVR {r['ovr']})")
+                        lines.append(f"{r['pid']}, {r['to']}")
+                        pairs.append((r["pid"], r["to"]))
+                    else:
+                        lines.append(f"# NO home found: {r['name']} — "
+                                     f"{r['from_group']} {r['from']} "
+                                     f"(OVR {r['ovr']}) — place by hand")
+                report = (_jh.transfer_batch(pairs, ny, salt) if pairs else [])
+                placed = sum(1 for r in props if r["to"])
+                return {"report": report, "batch_text": "\n".join(lines),
+                        "report_head": (f"Proposed homes for {placed} of "
+                                        f"{len(props)} candidates — review, "
+                                        f"edit, then Apply."),
+                        "batch_year": ny}
+            job = _jh_deferred(pkey, _propose)
+            if job is None:
+                return _jh_building("the destination proposals")
+            if job["error"]:
+                _jh_job_pop(pkey)
+                raise RuntimeError(job["error"])
+            extras.update(job["result"])
         return render_template("jhsaa_transfers.html", active="HS Transfers",
                                rows=_jh.transfer_rows(), gender=gender, u=u,
                                uni_label=label, **extras)
