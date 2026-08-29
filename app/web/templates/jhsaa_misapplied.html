@@ -13,6 +13,7 @@
   <div class="bl-panel-body" style="padding:12px">
     <form method="get" style="display:flex;flex-wrap:wrap;gap:8px;align-items:end">
       <input type="hidden" name="u" value="{{ u }}">
+      <input type="hidden" name="find" value="1">
       <label>Gender
         <select name="gender">
           {% for val, lbl in [('boys','Boys'), ('girls','Girls'), ('all','Both')] %}
@@ -44,6 +45,11 @@
   </div>
 </div>
 
+{% if rows is none %}
+<div class="bl-panel"><div class="bl-panel-body" style="padding:16px">
+  <p class="jh-empty">Set your filters and hit Filter — nothing is loaded until you ask, so the tab opens instantly.</p>
+</div></div>
+{% else %}
 <div class="bl-panel">
   <div class="bl-panel-head"><span class="bl-panel-title">Mismatched Talent</span>
     <span class="bit">{{ total }} flagged</span></div>
@@ -79,5 +85,6 @@
   </datalist>
   {{ jh_bulk_form(u, bulk_g, 'jh-bulk-schools') }}
 </div>
+{% endif %}
 </div>
 {% endblock %}

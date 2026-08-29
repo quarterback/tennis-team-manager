@@ -325,10 +325,12 @@
 <input type="checkbox" form="{{ id }}" name="pids" value="{{ pid }}|{{ note }}">
 {%- endmacro %}
 
-{# The header cell's check-all toggle for the bulk column. #}
+{# The header cell's check-all toggle for the bulk column — scoped to the TABLE
+   it sits in, never the document: several tables share one page (squads + the
+   candidate pool), and a page-wide toggle queued rows the reader never saw. #}
 {% macro jh_bulk_all(id='jhbulk') -%}
-<th style="width:26px"><input type="checkbox" title="check all"
-  onclick="document.querySelectorAll('input[form={{ id }}][name=pids]').forEach(c=>c.checked=this.checked)"></th>
+<th style="width:26px"><input type="checkbox" title="check all in this table"
+  onclick="this.closest('table').querySelectorAll('input[name=pids]').forEach(c=>c.checked=this.checked)"></th>
 {%- endmacro %}
 
 {# The bulk form itself: one optional shared destination + submit. Posts the

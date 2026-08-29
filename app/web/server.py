@@ -2441,9 +2441,26 @@ def create_app() -> Flask:
         grade = request.args.get("grade", "All")
         sort = request.args.get("sort", "ceiling")
         q = request.args.get("q", "")
-        res = jhsaa_players_search(DEFAULT_SEED, g, group=group, district=district,
-                                   grade=grade, sort=sort, q=q)
-        pg = paginate(res["rows"], request.args.get("page", 1))
+        # ‼️ NOTHING LOADS UNTIL ASKED (owner rule 2026-08): the directory used
+        # to build the full-association census on every tab click — "preloading
+        # a bunch of kids I don't need". The page opens instantly with the
+        # controls; Search (hidden find=1) runs the query. The dropdowns are
+        # served from cheap statics (`load_schools` for districts), never the
+        # census.
+        if request.args.get("find"):
+            res = jhsaa_players_search(DEFAULT_SEED, g, group=group,
+                                       district=district, grade=grade,
+                                       sort=sort, q=q)
+            pg = paginate(res["rows"], request.args.get("page", 1))
+        else:
+            import app.jhsaa as _jh
+            gg = ("boys", "girls") if g == "all" else (g,)
+            res = {"total": 0, "groups": ["All"] + list(_jh.GROUPS),
+                   "districts": ["All"] + sorted(
+                       {s.district for x in gg for s in _jh.load_schools(x)
+                        if group in ("All", s.group)}),
+                   "grades": ["All", "9", "10", "11", "12"]}
+            pg = None
         # `group` is this page's own class FILTER and also the header's class rail —
         # one control, so the rail must show what the filter is set to ("All" is not
         # a class, and falls back to the first).
@@ -2457,7 +2474,9 @@ def create_app() -> Flask:
         # roster is the one that played that year.
         scope_view = jhsaa_scope_view(DEFAULT_SEED, g if g != "all" else _g, group, year)
         return render_template("jhsaa_players.html", active="High School",
-                               view=scope_view, rows=pg.items, p=pg, total=res["total"],
+                               view=scope_view,
+                               rows=pg.items if pg is not None else None,
+                               p=pg, total=res["total"],
                                gender=gender, gender_f=g, group=group, district=district,
                                grade=grade, sort=sort, q=q,
                                groups=res["groups"], districts=res["districts"],
@@ -2474,16 +2493,26 @@ def create_app() -> Flask:
         group = request.args.get("group", "All")
         sort = request.args.get("sort", "gap")
         grade = request.args.get("grade", "All")
-        res = jhsaa_misapplied_players(DEFAULT_SEED, g, group=group, sort=sort,
-                                       grade=grade)
-        pg = paginate(res["rows"], request.args.get("page", 1))
+        # Nothing loads until asked (the Players directory's rule) — the census
+        # behind this board is the same full-association build.
+        if request.args.get("find"):
+            res = jhsaa_misapplied_players(DEFAULT_SEED, g, group=group,
+                                           sort=sort, grade=grade)
+            pg = paginate(res["rows"], request.args.get("page", 1))
+        else:
+            import app.jhsaa as _jh0
+            res = {"total": 0, "groups": ["All"] + list(_jh0.GROUPS),
+                   "grades": ["All", 9, 10, 11, 12]}
+            pg = None
         scope_view = jhsaa_scope_view(DEFAULT_SEED, g if g != "all" else _g, group, year)
         import app.jhsaa as _jh
         dest_schools = sorted({s.name
                                for x in (("boys", "girls") if g == "all" else (g,))
                                for s in _jh.load_schools(x)})
         return render_template("jhsaa_misapplied.html", active="High School",
-                               view=scope_view, rows=pg.items, p=pg, total=res["total"],
+                               view=scope_view,
+                               rows=pg.items if pg is not None else None,
+                               p=pg, total=res["total"],
                                gender=gender, gender_f=g, group=group, sort=sort,
                                grade=grade, grades=res["grades"],
                                groups=res["groups"], u=u, uni_label=label,
@@ -2513,21 +2542,29 @@ def create_app() -> Flask:
         min_pot = request.args.get("min_pot", type=int)
         max_pot = request.args.get("max_pot", type=int)
         q = request.args.get("q", "")
-        lab = jhsaa_lineup_lab(DEFAULT_SEED, g, target_group=target,
-                               pool=pool, n_squads=n_squads, grades=grades,
-                               from_group=from_group, min_ovr=min_ovr,
-                               max_ovr=max_ovr, min_pot=min_pot,
-                               max_pot=max_pot, q=q)
-        pg = paginate(lab["cands"], request.args.get("page", 1))
+        # Nothing loads until asked — Build (hidden find=1) runs the census.
+        from .state import JHSAA_LAB_GRADE_POOLS
+        if request.args.get("find"):
+            lab = jhsaa_lineup_lab(DEFAULT_SEED, g, target_group=target,
+                                   pool=pool, n_squads=n_squads, grades=grades,
+                                   from_group=from_group, min_ovr=min_ovr,
+                                   max_ovr=max_ovr, min_pot=min_pot,
+                                   max_pot=max_pot, q=q)
+            pg = paginate(lab["cands"], request.args.get("page", 1))
+        else:
+            lab, pg = None, None
         scope_view = jhsaa_scope_view(DEFAULT_SEED, g if g != "all" else _g)
         return render_template("jhsaa_lineup_lab.html", active="High School",
                                view=scope_view, lab=lab, gender=gender, gender_f=g,
                                target=target, pool=pool, n_squads=n_squads,
                                grades=grades, from_group=from_group,
                                min_ovr=min_ovr, max_ovr=max_ovr, min_pot=min_pot,
-                               max_pot=max_pot, q=q, cand_rows=pg.items, p=pg,
-                               total=lab["total"],
-                               groups=lab["groups"], u=u, uni_label=label,
+                               max_pot=max_pot, q=q,
+                               cand_rows=pg.items if pg is not None else None,
+                               p=pg, total=lab["total"] if lab else 0,
+                               grade_pools=[(k, lbl) for k, (lbl, _)
+                                            in JHSAA_LAB_GRADE_POOLS.items()],
+                               groups=list(_jh.GROUPS), u=u, uni_label=label,
                                dest_schools=sorted(
                                    {s.name
                                     for x in (("boys", "girls") if g == "all" else (g,))
@@ -2547,7 +2584,9 @@ def create_app() -> Flask:
         from app import jhsaa as _jh
         csize = request.args.get("cohort", default=_jh.RESERVE_COHORT_SIZE,
                                  type=int)
-        res, year = None, None
+        sgroup = request.args.get("sgroup", "All")
+        minc = request.args.get("minc", type=float)
+        res, year, src_pg = None, None, None
         w = wd.load_world(DEFAULT_SEED)
         if w:
             latest = wd.jhsaa_latest_season_year(w["id"], g)
@@ -2557,11 +2596,18 @@ def create_app() -> Flask:
             if request.args.get("find"):
                 res = _jh.reserve_cohorts(g, year, wd.active_salt(DEFAULT_SEED),
                                           cohort_size=csize)
+                # Filter first, then paginate — every reported source stays
+                # reachable (a hard slice hid everything past #40).
+                srcs = [s for s in res["sources"]
+                        if sgroup in ("All", s["group"])
+                        and (minc is None or s["cohort_mean"] >= minc)]
+                src_pg = paginate(srcs, request.args.get("page", 1))
         scope_view = jhsaa_scope_view(DEFAULT_SEED, g)
         return render_template("jhsaa_cohorts.html", active="High School",
                                view=scope_view, res=res, year=year,
                                cohort=csize, gender=gender, u=u, g=g,
-                               uni_label=label,
+                               uni_label=label, sgroup=sgroup, minc=minc,
+                               src_pg=src_pg, groups=["All"] + list(_jh.GROUPS),
                                dest_schools=sorted(s.name
                                                    for s in _jh.load_schools(g)))
 

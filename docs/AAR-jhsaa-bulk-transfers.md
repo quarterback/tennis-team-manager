@@ -147,6 +147,20 @@ Sanity numbers from that run: 65 boys' sources, the top ones 9A/8A/6A programs
 with ~49-51-mean cohorts playing like 3A/4A — the Rockridge shape the brief
 predicted, visible without an export.
 
+## Nothing loads until you ask (owner rule 2026-08)
+
+The scouting boards used to pay the full-association census on every tab
+click ("preloading a bunch of kids I don't need"). Players, Mismatches, the
+Lineup Lab and the Cohort finder now open instantly with their controls and
+compute ONLY on an explicit submit (a hidden `find=1` on each filter form);
+the dropdowns are served from cheap statics (`GROUPS`, `load_schools`
+districts), never the census. The cohort finder's sources are filterable
+(source class, min cohort OVR) and PAGINATED — the first version hard-sliced
+at 40 and silently hid the rest of its own reported count. The check-all
+toggle (`jh_bulk_all`) is scoped to `this.closest('table')`, never the
+document — squads and the candidate pool share a page, and a page-wide
+toggle queued rows the reader never saw.
+
 ## Deliberately not built
 
 The briefs describe four separate markets (opportunity clearing · blocked

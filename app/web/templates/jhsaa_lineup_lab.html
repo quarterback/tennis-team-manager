@@ -13,6 +13,7 @@
   <div class="bl-panel-body" style="padding:12px">
     <form method="get" style="display:flex;flex-wrap:wrap;gap:8px;align-items:end">
       <input type="hidden" name="u" value="{{ u }}">
+      <input type="hidden" name="find" value="1">
       <label>Gender
         <select name="gender">
           {% for val, lbl in [('boys','Boys'), ('girls','Girls'), ('all','Both')] %}
@@ -33,7 +34,7 @@
       </label>
       <label>Grades
         <select name="grades">
-          {% for val, lbl in lab.grade_pools %}
+          {% for val, lbl in grade_pools %}
           <option value="{{ val }}" {{ 'selected' if grades == val }}>{{ lbl }}</option>
           {% endfor %}
         </select>
@@ -65,6 +66,11 @@
   </div>
 </div>
 
+{% if lab is none %}
+<div class="bl-panel"><div class="bl-panel-body" style="padding:16px">
+  <p class="jh-empty">Set your filters and hit Build — nothing is loaded until you ask, so the tab opens instantly.</p>
+</div></div>
+{% else %}
 {% if not lab.squads %}
 <div class="bl-panel"><div class="bl-panel-body" style="padding:16px">
   <p class="jh-empty">Not enough qualifying players in the pool to fill a nine-player squad. Try "Every player" or a different gender.</p>
@@ -140,5 +146,6 @@
   </datalist>
   {{ jh_bulk_form(u, bulk_g, 'jh-bulk-schools') }}
 </div>
+{% endif %}
 </div>
 {% endblock %}
