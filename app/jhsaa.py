@@ -2349,12 +2349,28 @@ def _find_cohorts(rosters: dict, groups: dict, *, cohort_size: int = RESERVE_COH
     return {"sources": sources, "hosts": hosts, "medians": medians}
 
 
+_cohort_cache: dict = {}
+
+
 def reserve_cohorts(gender: str, year: int, salt: str = "",
                     cohort_size: int = RESERVE_COHORT_SIZE) -> dict:
     """The finder over season `year`'s real rosters — pass NEXT season for an
     offseason read, so graduation and the incoming freshman class are already
     in every ladder (the `clearing_proposals` rule). A full-gender roster build
-    (~seconds): call from an explicit button, never a default page load."""
+    (~13s on a deep save): call from an explicit button, never a default page
+    load — and MEMOISED, because the page's pagination and filter links all
+    carry `find=1`, so without a cache every page flip re-paid the whole
+    build. Module-global cache under the threaded worker: compute into a
+    local, publish, return the local; read with .get(); prune per
+    (db, gender), never a global clear."""
+    from app import overrides as ov
+    from .dbpath import resolve_db_path
+    key = (resolve_db_path(), gender, year, salt, cohort_size,
+           ov.jhsaa_transfer_version(), ov.jhsaa_archetype_version(),
+           ov.jhsaa_playup_version())
+    got = _cohort_cache.get(key)
+    if got is not None:
+        return got
     rosters, groups = {}, {}
     for school in load_schools(gender):
         roster = build_roster(school, year, salt)
@@ -2363,7 +2379,11 @@ def reserve_cohorts(gender: str, year: int, salt: str = "",
         rows.sort(key=lambda r: -r["ovr"])
         rosters[school.name] = rows
         groups[school.name] = school.group
-    return _find_cohorts(rosters, groups, cohort_size=max(4, min(12, cohort_size)))
+    out = _find_cohorts(rosters, groups, cohort_size=max(4, min(12, cohort_size)))
+    for k in [k for k in _cohort_cache if k[:2] == key[:2]]:
+        _cohort_cache.pop(k, None)
+    _cohort_cache[key] = out
+    return out
 
 
 #: The archetypes an owner can ASSIGN. `upstart` is deliberately absent: it is a
