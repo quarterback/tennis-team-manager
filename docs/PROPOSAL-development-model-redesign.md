@@ -2221,3 +2221,90 @@ artefacts. The career projection and shape census are now in the script
 §22.6's V1/V2/V3 numbers are restated from that committed code and moved by up
 to a point (V1 girls 31/24/17 → 32/23/17) because the harness keys its rng
 differently from the scratch version the draft was written against.
+
+---
+
+# 27. Implementation record (2026-08)
+
+## Shipped
+
+**§25 — the banded matchup curve** (`engine/fast.py`, `engine/doubles.py`).
+`skill_slope` 6.0 → 0.9, `tb_slope` 4.5 → 0.68, `d_skill_slope`/`d_tb_slope`
+scaled by the same factor, and a `gap_bands` flag routing `effective_gap`
+through a continuous piecewise map. College hinge untouched; `profile=None`
+still byte-identical. Measured through the real engine: 0 OVR 50.1%, 6 60.5%,
+14 73.2%, 21 85.5%, 28 95.2%, 40 99.9%.
+
+**§22-§24 — the career model** (`app/jhsaa.py`, `app/development.py`).
+`_career_plan` / `career_ability` / `_apply_career`, gated by `career_era()`.
+A player is a starting ability, a career peak, four yearly capacities and an
+exposure factor; grade only selects a point on their own path.
+
+* **`_apply_career` scales, it does not re-derive.** A career-era prospect is
+  generated AT its ceiling (`maturity_range=(1.0, 1.0)`) and every attribute is
+  then scaled by one factor. `overall` is a weighted mean, so scaling all
+  attributes scales it exactly and the play-style SHAPE survives. A degenerate
+  maturity band still consumes exactly one uniform draw, so the main rng stream
+  is identical either side of the era.
+* **The free scale** (§24): `_ceiling` takes a `cap`, and `generate_prospect`
+  takes `ceiling_max` (defaulting to `GRADE_MAX`, so every existing caller is
+  unchanged). Career-era JHSAA cohorts draw on `GRADE_CEIL`. `_compresses()`
+  bounds talent compression ABOVE by `career_era()`, so it applies only between
+  the two eras.
+* **Four era gates now share one resolver** (`_resolve_era`). `name_era`,
+  `dev_era`, `talent_era` and `career_era` were four copies of the same
+  self-configuring lookup; the fourth would have been a fourth copy.
+
+**Measured on a fresh world at year 6** (all four grades career-era, 180
+programs a gender), No. 1 singles share by grade:
+
+| | 9 | 10 | 11 | 12 |
+|---|---:|---:|---:|---:|
+| girls | 13.3% | 18.3% | 26.7% | **41.7%** |
+| boys | 15.0% | 19.4% | 31.7% | **33.9%** |
+| *baseline (maturity model)* | *1.5%* | *3.3%* | *9.4%* | ***85.7%*** |
+
+Lineup share runs 42/52/62/71 (girls) against the baseline's 32/49/66/81.
+
+‼️ **These are not Oregon-matching numbers and are not meant to be** (owner,
+2026-08). §21.3a's OSAA figures are a reference point to look at, never a target
+to hit — Jefferson's talent is its own. Do not "correct" the freshman share
+toward 5-6% or reintroduce a tuning loop against that table.
+
+## Not yet built
+
+* **The exposure odometer.** `career_ability` takes an `exposure` map keyed by
+  grade and defaults to full realisation, so the hook is in place and unused.
+  Wiring it needs archived participation per (school, year) — read ONCE per
+  roster build, never per seat, and filtered on `level` (§21.6).
+* **`hs_exit_ovr` / `hs_percentile` on the graduating prospect.** ‼️ The
+  TRANSLATOR ITSELF ALREADY EXISTS and needed nothing: `jhsaa.apply_to_class` is
+  an identity swap — the national recruit class is generated on the college
+  scale and JHSAA graduates are rank-matched into its Jefferson slots, with
+  ability deliberately NOT transferring (its comment records that copying grades
+  across was tried and reverted for re-calibrating the whole board). So freeing
+  the high-school scale cannot leak onto the college scale, and §24's
+  percentile-primary translation is what that function already does. What is
+  missing is only the RECORD — carrying the exit rating and percentile onto the
+  prospect for the player card.
+
+## Tests
+
+`tests/test_jhsaa_career_model.py` — 13 tests, all passing, run in under a
+second (the model is pure functions; no roster, world or database needed).
+They pin the structure rather than a calibration: start is grade-free, a
+freshman can outrank a senior, every career shape occurs, ability never falls,
+the senior year is incremental, **the taper would vanish if the peak clamp were
+removed** (asserted by setting `CAREER_OVERFLOW` to 1.0 — the mechanism, not a
+description of it), peak is a projection rather than a wall, exposure can only
+cost realisation and does not homogenise, the plan is deterministic and rolls on
+its own rng stream, compression stops at the career era, and the free scale
+reaches above 80.
+
+‼️ **Pre-existing failures, untouched by this work and left alone at the owner's
+instruction:** `test_jhsaa_lineup.py::test_maximize_never_scores_worse_than_traditional`
+(verified identical with these changes stashed), plus the era-dependent tests in
+`test_jhsaa_development.py`, `test_jhsaa_archetypes.py`, `test_jhsaa_talent_shape.py`
+and `test_jhsaa_playup.py`, which assume the maturity model and a fresh test DB
+where `career_era()` resolves to 0 (so every cohort is career-era and there is no
+legacy path left to observe). They need era pinning rather than new assertions.
