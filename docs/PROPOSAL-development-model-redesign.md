@@ -2069,3 +2069,108 @@ starting ability
 No universal maturity access. No requirement to approach potential. No hard
 career-peak clamp. No college-driven talent compression. No 80-point ceiling
 imposed because STR expects one. Graduation performs the normalisation.
+
+---
+
+# 25. The JHSAA matchup curve — seven-point competitive bands (owner spec, 2026-08)
+
+Owner spec. OVR differences are read as five competitive bands; volatility is
+preserved inside the peer band and favourite strength rises progressively across
+each band above it.
+
+| band | OVR gap | favourite should win |
+|---|---|---|
+| peers | 0-6 | ~50-62% |
+| modest advantage | 7-14 | ~62-75% |
+| clear advantage | 15-21 | ~75-87% |
+| strong mismatch | 22-28 | ~87-95% |
+| major mismatch | 29+ | ~95%+ |
+
+## 25.1 ‼️ THE HINGE WAS NEVER THE PROBLEM — `skill_slope` WAS
+
+§24.2 recommended rescaling `gap_knee`. **That was the wrong diagnosis**, and
+measuring the actual match outcomes rather than the gap arithmetic shows why.
+
+Favourite win rate under the shipped HS profile, base 45 OVR, real engine, real
+`jhsaa.MATCH_FORMAT`:
+
+| OVR gap | shipped (slope 6.0, knee 0.02) | slope 6.0 with the hinge REMOVED |
+|---:|---:|---:|
+| 3 | **94.7%** | **92.9%** |
+| 6 | **100.0%** | **92.9%** |
+| 10 | 100.0% | 99.3% |
+
+A three-point gap is already a 95% favourite, and removing the hinge entirely
+barely moves it. The gap is a per-*game* hold edge compounded over ~20 games and
+two or three sets, so `skill_slope` 6.0 saturates the match long before any knee
+matters. **The requested peer band is unreachable by touching the hinge; the
+whole curve has to come down.**
+
+## 25.2 The calibration
+
+Two changes, both in `engine.fast.HS_PROFILE`:
+
+1. **`skill_slope` 6.0 → 0.9**, **`tb_slope` 4.5 → 0.68** (same ratio).
+2. **Replace the single `gap_knee`/`gap_accel` hinge with a banded piecewise map**
+   on `|gap|`, continuous, with band edges at **6 / 14 / 21 / 28 OVR** (÷60 in
+   engine units) and per-band slopes **1.0 / 1.0 / 1.5 / 2.2 / 3.0**. The peer
+   band is identity, so volatility inside it is preserved exactly.
+
+`gap_knee` and `gap_accel` become unused under the HS profile; the college
+calibration keeps its own hinge untouched.
+
+Measured (n=2000 per point):
+
+| OVR gap | band | target | **calibrated** |
+|---:|---|---|---:|
+| 0 | peer | 50% | **50.1%** |
+| 3 | peer | | 55.2% |
+| 6 | peer | ~62% | **60.5%** |
+| 10 | modest | | 66.9% |
+| 14 | modest | ~75% | **73.2%** |
+| 18 | clear | | 80.7% |
+| 21 | clear | ~87% | **85.5%** |
+| 25 | strong | | 92.0% |
+| 28 | strong | ~95% | **95.2%** |
+| 34 | major | | 99.1% |
+| 40 | major | ~95%+ | 99.9% |
+
+Every band lands within about 1.5 points of its target, and the progression is
+monotonic across all five.
+
+Two alternatives were fitted and are slightly hotter through the middle
+(1.0/1.1/1.7/2.6/3.6 and 1.0/1.2/1.9/3.0/4.4); if the upper bands should bite
+harder, those are the next steps up. `scripts/dev_model_access_experiment.py`'s
+sibling harness in the scratchpad fitted these; fold it into
+`scripts/jhsaa_upset_calibration.py` when implementing.
+
+## 25.3 Recorded consequence: the scoreline profile
+
+`engine.fast.HS_PROFILE`'s comment and `docs/AAR-jhsaa-scoreline-realism.md`
+record that its dials were fitted to real Oregon SET-SCORE distributions (6-0 the
+most common set at 26.4%, 7-6 at 3.9%, 13.8% three-setters). Flattening the curve
+changes that distribution: at a 6-OVR gap, 6-0 sets fall from 27.6% to ~2%, 7-6
+rises from 0.6% to ~12%, and three-setters go from 0.9% to ~50%.
+
+**The owner has ruled that this is not a constraint (2026-08): the band spec is
+what is wanted.** Recorded here so a future reader does not treat the divergence
+from that AAR as a regression — it is a superseding decision, and the scoreline
+benchmark's targets should be restated or retired rather than defended.
+
+Note the two are not necessarily in permanent conflict. The steep curve produced
+blowout-shaped scorelines because, on the COMPRESSED talent distribution, real
+matched-line gaps are small (median 3.5 OVR). Once §24 frees the HS scale and
+gaps widen, a flat curve over wider gaps may reproduce a blowout-shaped
+distribution on its own. **Re-run `scripts/jhsaa_scoreline_benchmark.py` after
+the scale change, not before** — measuring it on today's compressed distribution
+answers a question that will no longer apply.
+
+## 25.4 Sequencing
+
+§24 (free the scale) and §25 (rebband the curve) are **one change**. The bands
+are denominated in OVR points, so what they mean depends on the talent
+distribution they run over: on today's compressed distribution the median
+matched-line gap is 3.5 OVR, so the 0-6 peer band swallows more than half of all
+matched lines and shipping §25 alone would reintroduce exactly the upset volume
+the 2026-08 profile was written to remove. On a freed scale the peer band is
+genuinely narrow. Ship together, then measure.
