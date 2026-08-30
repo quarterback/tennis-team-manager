@@ -7,15 +7,17 @@
 **Likely direction:** Option B — individualized randomized access schedule  
 **Related baseline:** `docs/REPORT-development-model-baseline.md`  
 **Related reproducibility scripts:** `scripts/dev_model_baseline.py`,
-`scripts/dev_model_access_experiment.py`
+`scripts/dev_model_access_experiment.py`, `scripts/oregon_lineup_shape.py`
 
 > ‼️ **§21 AMENDS THIS DOCUMENT AND WINS WHERE THEY DISAGREE.** Sections 1-20 are
 > the proposal as written before the access models were A/B'd against real
-> rosters. §21 records what the measurements showed, and it changes four things:
-> which constant does the work, which success metric is meaningful, a guardrail
-> the odometer needs, and an architectural decision that has to be made before any
-> code is written. Read §21 alongside §12 (measurement plan) and §17
-> (implementation questions).
+> rosters and against six seasons of real OSAA results. §21 records what those
+> measurements showed. It changes which constant does the work (§21.2), supplies
+> the real-world targets the redesign is graded against (§21.3a), replaces the
+> headline success metric (§21.4), and **withdraws two claims an earlier draft of
+> §21 made** — an odometer guardrail (§21.5) and a roster-persistence blocker
+> (§21.6), both corrected by the owner. Read §21 alongside §12 (measurement plan)
+> and §17 (implementation questions).
 
 ---
 
@@ -1477,24 +1479,82 @@ senior ability depend on something other than their ceiling, which is the one
 structural thing A can do that B was assumed not to. That removes most of A's
 advantage without adding a career-peak field.
 
-## 21.3 Know Option B's ceiling before committing
+## 21.3 Option B's reach, and the real-world target it has to reach
 
-`CHAOS` redraws access freely each year. It violates both the no-reroll rule
-(§4.5) and monotonicity (§17.2), so it is not a candidate — it exists only to
-bound what **any** fixed-ceiling access model can do:
+`CHAOS` in the table above redraws access freely each year. It violates both the
+no-reroll rule (§4.5) and monotonicity (§17.2), so it is not a candidate — it
+exists only to bound what **any** fixed-ceiling access model can do:
 
-* best legal Option B calibration: ~9% all-pair swaps, ~85% No. 1 retention,
+* best legal Option B calibration: ~9% all-pair swaps, ~75-85% No. 1 retention,
   **75-81% senior No. 1 share, 4-7% freshman**
-* unconstrained bound: 36% swaps, 24% retention, 51%/42.5% senior share
+* unconstrained bound: 36% swaps, 20-24% retention, 51%/42.5% senior share
 
-So Option B lands the senior No. 1 share in the **mid-to-high 70s**, not far
-below. If that is acceptable, B is clearly correct and cheap. If the target is
-nearer 55-65%, no calibration of B reaches it and Option A's start/peak
-decoupling becomes necessary.
+An earlier draft of this section left "what should the senior share be?" as an
+open owner question. It is not open — it is measurable, and §21.3a answers it.
 
-**This is an open owner question and should be answered before implementation:
-what SHOULD the senior share of No. 1 singles be?** 85.7% is plainly too high.
-75% may be right. The design cannot be judged without the target.
+## 21.3a MEASURED TARGETS — six seasons of real OSAA results
+
+Source: `quarterback/or-tennis-data`, 2021-2026, ~295k varsity regular-season
+appearances over 11,135 players. Reproduce with
+`scripts/oregon_lineup_shape.py <clone>`. The script computes both metrics the
+same way `dev_model_access_experiment.py` computes them for the sim, so the two
+sides are directly comparable.
+
+‼️ **The data has no grade field, and the one that looks like it is not one.**
+`grade` is current status (99% read "Graduated") and `graduatedDate` is largely a
+bulk data-entry stamp — deriving grade from it puts 30.8% of appearances outside
+grades 9-12. Grade is inferred from each player's appearance span instead, which
+has no unbiased single form, so the script brackets it. Read the EXACT pass
+(players with a full four-season career, where both bracketing assumptions agree
+and nothing is inferred) as the target:
+
+**Share of No. 1 singles, by grade**
+
+| | 9 | 10 | 11 | 12 |
+|---|---:|---:|---:|---:|
+| **Oregon boys** (exact cohort) | 5.3% | **19.7%** | 32.3% | **42.7%** |
+| **Oregon girls** (exact cohort) | 6.3% | **27.0%** | 30.1% | **36.6%** |
+| Oregon, upper bound on seniors | 1.6-2.5% | 10-13% | 27.8% | 56.8-60.5% |
+| **sim, 2059 boys** | 1.7% | **4.6%** | 12.2% | **81.5%** |
+| **sim, 2059 girls** | 1.5% | **3.3%** | 9.4% | **85.7%** |
+
+**Share of every varsity line, by grade**
+
+| | 9 | 10 | 11 | 12 |
+|---|---:|---:|---:|---:|
+| Oregon boys (exact cohort) | 15.8% | 24.8% | 29.1% | 30.3% |
+| Oregon girls (exact cohort) | 15.3% | 26.8% | 29.0% | 28.9% |
+
+**Ladder churn** — this measure needs no grade at all, so none of the inference
+caveats touch it. A school-season's No. 1 is the player with the most No. 1
+singles appearances; retention asks how often that player, when back on the
+roster the next season, is still No. 1:
+
+| | boys | girls |
+|---|---:|---:|
+| **Oregon: a returning No. 1 keeps the seat** | **63.6%** (n=294) | **63.4%** (n=328) |
+| sim (shipped model) | 85.0% | 90.7% |
+| best Option B calibration tested | 75.1% | 84.8% |
+| Oregon: No. 1s who were on last year's roster | 81.4% | 83.9% |
+
+### What this changes
+
+1. **The target is ~63% No. 1 retention.** More than a third of returning No. 1s
+   get passed in real life. The sim passes 10-15%. Every Option B calibration
+   tested lands 75-85%, so **B alone does not reach the target** — it closes
+   roughly half the gap on the boys' side and less on the girls'.
+2. **The biggest miss is SOPHOMORES, not freshmen.** Real sophomores hold 20-27%
+   of No. 1 singles; the sim gives them 3-5%. That is a 5-8x gap, against
+   freshmen's 3-4x. The redesign has been framed around freshman suppression;
+   the data says the second year is where the model is most wrong. A calibration
+   that opens up freshmen without opening up sophomores will miss the target
+   while appearing to succeed.
+3. **The real lineup is nearly flat by grade** — 15/25/29/30 across four grades,
+   against the sim's 32%/49%/66%/81% participation rates. Real varsity tennis is
+   not a seniority queue.
+4. **Seniors are still the largest single block** (37-43% of No. 1s, and the
+   upper bound says no more than ~60%). The goal is not parity — it is that
+   seniority stops being near-deterministic.
 
 ## 21.4 §12.1's headline success metric is malformed
 
@@ -1509,94 +1569,79 @@ pairs that could actually cross already reorder at a healthy rate:
 | swaps among top-11 pairs | 10.3% | 11.4% |
 | **returning No. 1s who keep the seat** | **90.7%** | **85.0%** |
 
-**Replace §12.1's 7.7% target with No. 1 retention, plus near-pair and top-11
-swaps.** No. 1 retention is the best single number available: directly
-interpretable, moves under every intervention tested, and it is the quantity that
-actually reads as wrong when playing.
+**Replace §12.1's 7.7% target with No. 1 retention**, which now has a real-world
+number to hit (63%) rather than a direction to move in. Keep near-pair and
+top-11 swaps beside it as diagnostics.
 
-## 21.5 The odometer works against the churn goal — affordably, with a guardrail
+## 21.5 The playing-time odometer — an earlier draft got this wrong
 
-§7 does not name the structural tension: **playing → develop → keep playing is
-positive feedback on ladder position.** Whoever is ahead plays varsity, develops
-more, and stays ahead. JV softens this (§2.5) but cannot remove it.
+A previous version of this section argued that the odometer is positive feedback
+on ladder position and proposed a guardrail that the bench-to-lineup promotion
+rate must not fall. **Both the argument and the test behind it were wrong, and
+the owner corrected them (2026-08).**
 
-Measured over M2, with exposure resolved forward — last season's rank sets this
-season's exposure, which sets how much of this season's scheduled gain lands
-(§6.4 Interpretation 1) — at bench 30% / JV 65% / varsity 100% realisation:
+The test modelled exposure as a single binary — top 11 = varsity, everyone else
+one undifferentiated "JV" bucket — which is not the proposed mechanic. What the
+design actually says:
 
-| | all-pair | near-5 | top-11 | No. 1 held | **bench→lineup** | Sr No.1 | mean OVR |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| girls, no odometer | 8.9% | 28.6% | 12.5% | 84.8% | **30.0%** | 81.1% | 34.5 |
-| girls, with odometer | 9.4% | 29.1% | 16.4% | 84.5% | **28.2%** | 81.0% | 34.0 |
-| boys, no odometer | 9.1% | 30.1% | 13.5% | 75.1% | **29.6%** | 75.4% | 38.1 |
-| boys, with odometer | 9.8% | 30.7% | 17.0% | 72.7% | **28.0%** | 75.5% | 37.5 |
+* **The JV ladder is itself a ladder.** Kids play each other all season for
+  position at every level. A JV player near the varsity line who takes some
+  varsity matches is ahead of a kid who spent the whole year at JV, and that
+  difference is real and earned.
+* **Split time is its own state**, not a rounding error between two buckets. The
+  exposure model needs at least: varsity regular / split / JV regular / did not
+  play — with the ordering inside the JV group meaning something.
+* **Promotion is not supposed to be guaranteed or pinned to a rate.** Owner:
+  "there are no guarantees that because you played a lot 9th grade year that
+  you'll play 10th and 11th or 12th. I've had to bump many seniors out of the
+  lineup when the team gets better and we get 9th graders who surpass them."
+  Churn is inevitable and a bench-to-lineup rate is an outcome of what makes
+  sense for the team, not a quantity to hold fixed.
 
-The odometer adds churn *inside* the lineup while reducing promotion *into* it.
-At this calibration that is an acceptable trade — the mechanic is affordable.
+So the guardrail is withdrawn. The odometer's correct check is §21.3a's
+retention target: exposure must not push No. 1 retention back **up** toward the
+shipped 85-90%. That is the failure mode worth watching, and it is measured
+against real data rather than against a made-up floor.
 
-**But §12.5 needs a guardrail it currently lacks: the bench→lineup promotion rate
-must not fall below its no-odometer value.** A heavier exposure gradient will
-re-lock the ladder the redesign exists to loosen, and every other metric in §12
-will still look fine while it happens. This is the first place the feedback loop
-shows up, and currently nothing would catch it.
+The odometer test in `scripts/dev_model_access_experiment.py` is retained but is
+**explicitly a two-bucket strawman** and its numbers should not be read as an
+evaluation of the proposed mechanic. A graded exposure model is still to be
+built and measured.
 
-## 21.6 The architectural decision that must be made first
+## 21.6 Roster persistence is NOT a blocker
 
-**JHSAA rosters are not persisted.** `jhsaa.build_roster(school, year)`
-regenerates every player from `(school, gender, entry year, seat)`, so
-development today is a **pure function of player identity**. That purity is what
-lets any archived season rebuild identically years later, and lets a fresh world
-build year 0 with no history behind it.
+An earlier draft of this section argued that because `jhsaa.build_roster`
+regenerates players from `(school, gender, entry year, seat)`, a playing-time
+term would break generation purity and change the function's cost class.
 
-Any playing-time term breaks it, in three ways at once:
+**The owner has settled this (2026-08): the save is 30 years deep, the archive
+works, and reading a prior season's participation is not a problem.** The
+concern is withdrawn as a design blocker.
 
-1. year N's roster comes to depend on year N-1's participation, **recursively**
-   back to the player's entry year;
-2. it lands on the hot path — ~1,600 roster builds per season — which is exactly
-   the shape of `docs/AAR-jhsaa-playup-fingerprint-query-storm.md`: a lookup added
-   to satisfy a rule, placed inside a loop, changing a function's cost class while
-   leaving its signature identical;
-3. an archived season must still rebuild identically, so exposure has to be
-   **persisted when the season is played** and never recomputed from a
-   re-simulation (`docs/AAR-jhsaa-research-export-resimulation-hang.md`).
+Two implementation notes survive, as ordinary care rather than as objections:
 
-§17.6 says only "use actual archived JV participation counts, not infer". That is
-right but understates it: this is a change to `build_roster`'s dependency graph
-and cost class, and it belongs in §18's decision record rather than §17's open
-questions.
-
-The workable shape:
-
-* write a per-`(school, year)` exposure record alongside `world_jhsaa` when the
-  season is played;
-* **resolve it ONCE per roster build and thread it down** — never per seat;
-* a missing record reads as "no exposure", so year 0, pre-era seasons and a fresh
-  world all still build;
-* the exposure count must filter on `level` — JV and varsity share
-  `world_jhsaa_dual`, and every reader of that table has to filter
-  (`docs/AAR-jv-duals-leaked-into-the-research-export.md`).
-
-The individual-State allowance (§8) has the same dependency and is strictly
-harder: the individual tournaments run in the **preseason** of the year they
-would affect, so the allowance cannot be read from a completed season the way
-match exposure can. Resolve that before promising the mechanic.
-
-This constraint is **option-independent** — Option A has it identically.
+* resolve the exposure record **once per roster build** and thread it down,
+  never once per seat — the `AAR-jhsaa-playup-fingerprint-query-storm` rule
+  applies here as it does to every other per-school lookup;
+* the exposure count must filter on `level`, since JV and varsity share
+  `world_jhsaa_dual` (`AAR-jv-duals-leaked-into-the-research-export`).
 
 ## 21.7 Amended recommendation
 
-Option B, with these five changes to §16-§18:
+Option B, with these changes to §16-§18:
 
 1. **The primary mechanism is the non-converging finish band**, not "individual
    access schedules" (which already exist). Widen `DEV_FINISH` toward `.60-.99`
-   and raise its centre to hold the association's level.
-2. **§6.6's unused-potential risk is reclassified as the intended behaviour.**
-3. **§12.1's success metric becomes No. 1 retention** (baseline 90.7% girls /
-   85.0% boys), with near-pair and top-11 swaps beside it.
-4. **§12.5 gains a guardrail**: bench→lineup promotion must not fall.
-5. **Exposure persistence (§21.6) is settled before code**, as a decision, not an
-   open question.
-
-And one owner question is genuinely open and blocks judging the result: **what
-should the senior share of No. 1 singles be?** Option B can deliver roughly 75%;
-it cannot deliver 60%.
+   and raise its centre to hold the association's level. §6.6's unused-potential
+   "risk" is the intended behaviour — the owner has confirmed this is exactly
+   the baseball model's design and exactly what is wanted.
+2. **§12.1's success metric becomes No. 1 retention, targeting ~63%** (§21.3a),
+   with near-pair and top-11 swaps as diagnostics.
+3. **Sophomores are the primary target population**, not freshmen (§21.3a).
+4. **Option B alone will not reach 63% retention.** It reaches 75-85%. Either
+   accept that as a first step and re-measure, or take Option A's start/peak
+   decoupling for the rest of the distance. This is now a real decision with a
+   real number behind it rather than a preference.
+5. **The exposure model needs a graded ladder** — varsity / split / JV / none,
+   with ordering inside JV — and the two-bucket test in the experiment script
+   does not evaluate it.
