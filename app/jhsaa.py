@@ -703,8 +703,16 @@ WARD_FIELD = 32
                # class). That is the documented under-floor behaviour, accepted
                # with the switch; the repair, if ever wanted, is more 9A
                # programs, never a smaller field.
+               # 2A joined the 32-field classes in the same 2026-08 batch
+               # (owner rule): the 2033 realignment took it to ~95 programs
+               # and 93/90 sponsors, its playoff was already meant to "mirror
+               # every other classification", and only the FIELD still said
+               # otherwise — `state_field_size(group) == 24` is what routes a
+               # class to the fixed `_recovery_24` wiring, so this is also
+               # what moves 2A onto the dynamic ladder every other class runs.
+               # 1A is now the only A-class left on the 24 (with Group 3).
 STATE_FIELD = {"9A": 40, "8A": 40, "7A": 32, "6A": 32, "5A": 32,
-               "4A": 32, "3A": 32, "2A": 24, "1A": 24,
+               "4A": 32, "3A": 32, "2A": 32, "1A": 24,
                # 2046 expansion (owner rule): the Great Basin groups are more
                # classifications, full stop -- "think of them more as 10A and
                # 11A than thinking of them as anything weird." Group 1/Group 2
@@ -764,14 +772,32 @@ def recovery_shape(group: str) -> dict:
 
     sr = _even(reg_losers)
     sr_w, sr_l = sr // 2, sr - sr // 2
-    need = -(-4 * berths // 3)
-    need += need % 2                                  # the Semi-State floor, EVEN
-    base = sr_w + zon_losers
-    target = min(max(need, base), 2 * berths, base + sr_l)
-    ss = _even(target)
+    # ‼️ THE RECOVERY BLOCKS ARE EQUAL, AND THE LADDER'S OWN GEOMETRY MAKES THEM
+    # SO (owner rule 2026-08, the rebalance the Specials were supposed to bring
+    # and never got). Semi-State is EXACTLY the Super Regional winners plus the
+    # Zonal losers — no readmission — so it is `sr_w + zon_losers` teams and
+    # delivers `champions` berths; the Divisionals then take its losers PLUS the
+    # Super Regional losers (the readmission moved here), so they are the same
+    # size and deliver the same block. Every rung halves: 16 -> 16 -> 16 -> 16.
+    #
+    # It used to run on a `ceil(4*berths/3)` Semi-State FLOOR, which made that one
+    # round the big one — 24 teams, 12 of a 32-field's 24 recovery berths, half
+    # the field through a single rung — against 6 from the Divisionals and 6 from
+    # the Conference. Owner: "having that many teams get through via semi-state
+    # doesn't make any sense." At a 32 field this is now exactly 8 Zonal + 8
+    # Semi-State + 8 Divisional + 8 Conference (whose winners play the Specials
+    # for those last 8 berths); a 40 field is 8 + 8 + 8 + 16, the Conference
+    # absorbing the remainder as it always has.
+    ss = _even(sr_w + zon_losers)
     ss_w, ss_l = ss // 2, ss - ss // 2
 
-    dv = _even(min(2 * max(0, berths - ss_w), ss_l))
+    # ‼️ THE DIVISIONALS TAKE AT MOST ONE BLOCK, and the Conference takes the
+    # rest — capping at `champions` is what makes the three field sizes come out
+    # as the owner specified them: a 24 splits its 8 remaining berths 4/4, a 32
+    # splits 16 as 8/8, and a 40's 24 go 8/16. Without the cap a 24 field would
+    # hand the Divisionals all 8 and never convene a Conference at all.
+    dv = _even(min(ss_l + sr_l,
+                   2 * min(champions, max(0, berths - ss_w) // 2)))
     dv_w, dv_l = dv // 2, dv - dv // 2
 
     cf_seats = 2 * max(0, berths - ss_w - dv_w)
@@ -796,15 +822,12 @@ def sponsor_floor(group: str) -> int:
     wants 44 bodies, so the floor is `32 + 44 = 76`; a 24-field class fills without
     a Conference, neither round convenes, and it has no floor of its own.
 
-    ‼️ THE FIXED 24-TEAM SHAPE (`_recovery_24` — 2A and 1A) IS A DIFFERENT FORMULA. Every
-    round size in that shape (Super Regional/Semi-State 16, Divisional/Semi-
-    Conference/Conference 8) is a fixed function of `PROTECTED`/`WARD_FIELD` alone
-    — never of total sponsor count — so there is no Semi-Conference body reservoir
-    to run dry the way the dynamic 40-team shape's can. The only real requirement
-    is enough sponsors to fill the entry gates at all: `PROTECTED` district champs
-    plus `WARD_FIELD` at Wards."""
-    if state_field_size(group) == 24:
-        return PROTECTED + WARD_FIELD
+    ‼️ ONE FORMULA FOR EVERY CLASS (2026-08). The 24-field classes used to
+    short-circuit to `PROTECTED + WARD_FIELD` because `_recovery_24`'s round
+    sizes were fixed and it never convened a Conference with a body reservoir
+    to run dry. They now run the same dynamic ladder as everyone else, so they
+    take the same two gates — and the answer is unchanged at 48, because a
+    24-field Semi-Conference wants only 8 bodies and the ward gate dominates."""
     shape = recovery_shape(group)
     # ‼️ THE WARD GATE IS A FLOOR OF ITS OWN (2026-08). The body-reservoir term
     # alone returned 44 for a 32-field class — but 44 sponsors minus PROTECTED
@@ -5130,17 +5153,28 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
 
     The shape, all of it byeless:
 
-        Super Regionals   P teams (even)          -> P/2 winners
-        Semi-State        S = P/2 + Z + readmits  -> S/2 winners  (berths)
-        Divisionals       2L best Semi-State losers      -> L winners  (berths)
-        Semi-Conference   2B bodies                      -> B winners  (no berths)
-        Conference        Divisional losers + those B    -> berths     (berths)
+        Super Regionals   P Regional losers (even)       -> P/2 winners
+        Semi-State        P/2 winners + Z Zonal losers   -> half  (berths)
+        Divisionals       HALF its losers, HALF the SR losers -> half (berths)
+        Semi-Conference   2B bodies                      -> B winners (no berths)
+        Conference        Divisional losers + those B    -> half  (berths)
 
-    with `L = berths - S/2`, which forces `4*berths/3 <= S <= 2*berths`. Bodies
-    are found in preference order — readmitted Super Regional LOSERS first
-    (the best-qualified pool left, and they already fought through Regionals),
-    then a walk back down the ladder through Ward, Sectional and Area losers,
-    best TOSS within each tier. A body is a chance to PLAY, never a berth.
+    ‼️ EQUAL BLOCKS (owner rule 2026-08). Every rung is the same size and every
+    berth-bearing rung delivers the same number of berths, because the geometry
+    does it for free: P/2 + Z is 16 at full size, its losers plus the P/2 Super
+    Regional losers are 16 again, and the Conference takes twice whatever is
+    still outstanding. A 32 field is therefore 8 Zonal + 8 Semi-State + 8
+    Divisional + 8 Conference (the last through the Specials); a 40 field is
+    8 + 8 + 8 + 16. Semi-State used to run on a `ceil(4*berths/3)` floor that
+    made it the big round — 12 of a 32's 24 recovery berths — and the Super
+    Regional losers were readmitted into IT rather than into the Divisionals.
+    ‼️ The Divisional field is RESERVED HALF AND HALF between its two tiers
+    (owner rule 2026-08): at a 24 field it holds only 8, so ranking them as one
+    list let the Semi-State losers take every slot and cut the Super Regional
+    losers out of the round completely.
+    Bodies still enter at the Semi-Conference only: a walk back down the ladder
+    through Ward, Sectional and Area losers, best TOSS within each tier. A body
+    is a chance to PLAY, never a berth.
     """
     # ‼️ THERE IS NO DISTRICT GUARANTEE — YOU WIN YOUR WAY INTO THE FIELD (owner
     # rule 2027-08, REVERSING the earlier guarantee). Winning a district buys a
@@ -5189,41 +5223,25 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     # last shot, as the true last-resort clubs they are, and berths stop being
     # earned off them in the earlier rounds. Recovery proper is the ladder's OWN
     # losers.
-    z = len(zon_losers)
-    need = -(-4 * berths // 3)                  # ceil(4*berths/3): the S floor
-    need += need % 2                            # ...and Semi-State is byeless, so EVEN
-    # ‼️ ROUND THE FLOOR TO EVEN BEFORE SIZING THE RESERVOIR, not after. Semi-State
-    # pairs its whole field, so an odd floor is really the next even number — but
-    # the pool below is grown only until `P + z` reaches the floor, and the window
-    # is then capped by exactly that (`len(ss_pool) + len(sr_losers)` IS `P + z`).
-    # Rounding afterwards therefore asked for one pair more than had been gathered,
-    # the cap refused it, and the odd-drop took a pair back off: measured at full
-    # size, 4A wanted a 39 window, got 38, and finished ONE berth short of a 40
-    # field with every other classification full. An odd floor is the only case,
-    # which is why it went unseen for so long.
-    # P must reach the floor even after readmitting every Super Regional loser
-    # (max S = P + z), and must be even so Super Regionals is byeless.
+    # ‼️ EQUAL RECOVERY BLOCKS (owner rule 2026-08) — see `recovery_shape`, which
+    # projects this same arithmetic. Semi-State takes the Super Regional winners
+    # and the Zonal losers and NOBODY ELSE; the Super Regional losers are
+    # readmitted one rung later, into the Divisionals, so both rounds are the
+    # same size and deliver the same block of berths. The old `ceil(4*berths/3)`
+    # Semi-State floor (and the readmission window it sized) is gone with it.
     sr_pool = sorted(reg_losers, key=_power_key(power))
     if len(sr_pool) % 2:                        # reservoir dry: the weakest sits out
         sr_pool = sr_pool[:-1]
     rng = random.Random(seed)
     sr_arc, sr_winners = _recovery_round(sr_pool, phase="super_regional", rng=rng)
 
-    # Semi-State: winners + Zonal losers + as many readmitted Super Regional
-    # losers as the window needs, sized EVEN.
+    # Semi-State: the Super Regional winners and the Zonal losers, and nobody
+    # else. Byeless, so an odd pool drops its weakest — which cannot happen at
+    # full size (both halves are even by construction).
     won = {id(t) for t in sr_winners}
     sr_losers = sorted((t for t in sr_pool if id(t) not in won), key=_power_key(power))
-    ss_pool = list(sr_winners) + zon_losers
-    target = max(need, len(ss_pool))
-    target = min(target, 2 * berths, len(ss_pool) + len(sr_losers))
-    if target % 2:
-        target += 1
-    while sr_losers and len(ss_pool) < target:
-        ss_pool.append(sr_losers.pop(0))
+    ss_pool = sorted(list(sr_winners) + zon_losers, key=_power_key(power))
     if len(ss_pool) % 2:
-        ss_pool = ss_pool[:-1] if len(ss_pool) > 2 * berths - len(ss_pool) else ss_pool
-    ss_pool = sorted(ss_pool, key=_power_key(power))
-    if len(ss_pool) % 2:                        # still odd: drop the weakest
         ss_pool = ss_pool[:-1]
     ss_arc, ss_winners = _recovery_round(ss_pool, phase="semi_state", rng=rng)
 
@@ -5232,10 +5250,39 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     ss_won = {id(t) for t in ss_winners}
     ss_losers = sorted((t for t in ss_pool if id(t) not in ss_won),
                        key=_power_key(power))
-    dv_n = max(0, berths - len(ss_winners))
-    dv_pool = ss_losers[:2 * dv_n]
+    # At most ONE block here; the Conference takes whatever is left (see
+    # `recovery_shape`). 24 -> 4, 32 -> 8, 40 -> 8.
+    dv_n = min(len(zonal_champs), max(0, berths - len(ss_winners)) // 2)
+    # ‼️ THE DIVISIONAL FIELD IS SPLIT IN HALF, ONE BUCKET PER TIER (owner rule
+    # 2026-08): the best `half` Semi-State losers and the best `half` Super
+    # Regional losers, ranked inside each bucket and nothing else. No
+    # weighting, no alternating.
+    #
+    # It was strict tier priority — all the Semi-State losers first — and that
+    # is correct at 32 and 40, where both tiers are 8 and all 16 fit anyway,
+    # but SILENTLY WRONG at 24: the field is 8 there, the 8 Semi-State losers
+    # consumed every slot, and NO Super Regional loser ever reached the round.
+    # That deleted a whole stage of the recovery ladder for them — a Regional
+    # loser got Super Regionals and then nothing berth-bearing until the
+    # Conference, while a Zonal loser got three. Reserved halves make the
+    # promise true at every field size: a Regional loser gets Super Regionals
+    # then the Divisionals, a Zonal loser Semi-State then the Divisionals.
+    dv_seats = 2 * dv_n
+    half = dv_seats // 2
+    dv_pool = ss_losers[:half] + sr_losers[:half]
+    if len(dv_pool) < dv_seats:
+        # Thin-world DEGRADATION, not policy: a bucket that cannot fill its
+        # half is topped up from the other so the round stays byeless. At
+        # association size both buckets are exactly `half` and this is dead.
+        spare = ss_losers[half:] + sr_losers[half:]
+        dv_pool += spare[:dv_seats - len(dv_pool)]
     if len(dv_pool) % 2:
         dv_pool = dv_pool[:-1]
+    # Orphans in tier order — whoever neither bucket took (`dv_pool` is no
+    # longer a prefix of the ranking, so this cannot be a slice).
+    _dv_taken = {id(t) for t in dv_pool}
+    dv_orphans = [t for t in list(ss_losers) + list(sr_losers)
+                  if id(t) not in _dv_taken]
     if dv_pool:
         dv_arc, dv_winners = _recovery_round(dv_pool, phase="divisional", rng=rng)
     else:
@@ -5286,9 +5333,10 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     #   1. DISTRICT CHAMPIONS still outside the field — what is left of the retired
     #      guarantee: a district title earns you ONE more dual, not a berth.
     #   2. SEMI-STATE LOSERS the Divisionals did not take, then
-    #   3. SUPER REGIONAL LOSERS Semi-State did not readmit. Both are usually empty
-    #      (the Divisionals take every Semi-State loser and Semi-State readmits
-    #      every Super Regional loser at full size) — but not always, and until now
+    #   3. SUPER REGIONAL LOSERS the Divisionals did not take either (they are
+    #      readmitted THERE now, not into Semi-State). Both are usually empty
+    #      (at full size the Divisionals take every one of both) — but not
+    #      always, and until now
     #      they were in NO tier: `bodies` starts at Wards and `taken` excludes every
     #      Regional and Zonal loser, so an orphan could never re-enter while a Ward
     #      loser walked past it. It is live in the 24-field classes already, where
@@ -5299,9 +5347,10 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     #   4-6. the top WARD, then Sectional, then Area losers — the true last-resort
     #      clubs, and the reason this round exists.
     sc_rank: list[TeamSeason] = []
+    # `dv_orphans` is already Semi-State losers then Super Regional losers, in
+    # tier order, so it IS tiers 2 and 3 in the right sequence.
     for tier in ([by_name[n] for n in district_champs if n in by_name],
-                 ss_losers[len(dv_pool):],
-                 list(sr_losers),
+                 dv_orphans,
                  bodies):
         _rank(tier, sc_rank)
 
@@ -5364,7 +5413,18 @@ def _recovery_24(group: str, by_name: dict, prestate: dict, zonal_champs: list,
                  district_champs: list[str], power: dict, *,
                  seed: int) -> tuple[dict, dict, dict, dict, dict,
                                      list, list[str], dict]:
-    """The FIXED 24-team recovery/qualification shape — every 24-field class:
+    """‼️ RETIRED AND UNWIRED (owner rule 2026-08) — kept only because archived
+    seasons were played under it and this docstring is what explains them.
+    `run_season` now sends EVERY class through `_recovery`: the owner's pathway
+    is the same rungs for every field size with only the counts changing, and
+    the berths in this shape came out of SUPER REGIONALS while Semi-State
+    awarded none, where the spec is 8 Zonal + 8 Semi-State + 4 Divisional + 4
+    Specials. The dynamic ladder produces exactly that at a 24 field once the
+    Divisionals are capped at one block. Do not re-wire this without the owner
+    saying so; if you do, the district-champion priority split below is the
+    thing it has that `_recovery` does not.
+
+    The FIXED 24-team recovery/qualification shape — every 24-field class:
     2A and 1A (owner rule 2026-08 — the talent degrades at that level, so both
     smallest classes crown from 24 whatever their headcount; 2A returns to the
     shape it left in the 2033 realignment). Zonal champions are an automatic State berth here exactly as in
@@ -5507,67 +5567,53 @@ def _select_challengers(by_name: dict, conference_winners: list,
 #: inherited the 4 when they went back up to 40 in the same batch. A 40-field
 #: Conference sends 14 to the Specials against the 32-shape's 6, so its
 #: formula-selected tail is both longer and softer — that is what the two
-#: extra contested seats answer. ‼️ A QUOTA, NOT JUST A CAP (owner rule
-#: 2026-08, "there should always be challenger specials"): the round convenes
-#: EVERY season in every class, and only a pool with fewer bodies than seats
-#: (a tiny test world) plays fewer.
+#: extra contested seats answer. ‼️ A QUOTA, NOT A CAP (owner rule 2026-08,
+#: "there should always be challenger specials"): the round convenes EVERY
+#: season in every class, and only a class with fewer teams than seats (a tiny
+#: test world) plays fewer.
 CHALLENGE_SLOTS: dict[str, int] = {"8A": 4, "9A": 4}
 CHALLENGE_SLOTS_DEFAULT = 2
-#: The eligibility FORMULA (owner spec 2026-08) — a PRIORITY, not a filter: a
-#: real statewide profile is class TOSS rank inside the cut, OR a .700+ TOSS,
-#: OR a district title, and never a losing regular-season record unless the
-#: .700 TOSS clears it. Formula teams get the contender seats first; when a
-#: class-year has fewer of them than seats (common — the 2053-56 audit found
-#: ~0.5 per class-year), the best remaining non-qualified teams fill in so the
-#: round still plays.
-CHALLENGE_RANK_CUT = 24
-CHALLENGE_TOSS_FLOOR = 0.700
 
 
 def _special_challengers_round(group: str, by_name: dict, challengers: list,
-                               district_champs: list,
+                               district_champs: list[str],
                                taken: set[str], power: dict, *,
                                seed: int) -> tuple[dict, list]:
     """‼️ THE SPECIAL CHALLENGERS — the bridge round in front of the State
     Specials, and IT ALWAYS CONVENES (owner rule 2026-08, "there should always
     be challenger specials"; `docs/AAR-jhsaa-special-challengers.md`).
 
-    The Specials' challenger side is picked by FORMULA (regular-season
-    record), which leaves a leak the 2053-56 data measured: a State-caliber
-    team — top-24 class rank, .700+ TOSS, or a district champion — loses once
-    in an early local round (almost always Wards) and the last-chance
-    mechanism never sees it. So every season, in every class, the WEAKEST
-    selected challenger seats are defended on court:
+    The Specials' challenger side is picked by FORMULA (`_select_challengers`:
+    the best `len(conference_winners)` regular-season teams in the class), and
+    its LAST few rows are the weakest claim in the whole event — weaker than
+    the teams sitting just outside the cut, who are separated from them by a
+    game or two of record and nothing else. So the round is exactly the
+    owner's spec, with no conditions of its own:
 
         seats      = CHALLENGE_SLOTS[group]  (2; 4 in the 40-field classes)
-        contenders = the best teams not qualified and not already on the
-                     Specials slate, in PRIORITY order:
-                       1. the eligibility formula — class TOSS rank <=
-                          CHALLENGE_RANK_CUT, OR TOSS >= CHALLENGE_TOSS_FLOOR,
-                          OR a district champion; never a losing regular-season
-                          record unless the TOSS floor clears it
-                       2. the rest with a NON-LOSING regular-season record
-                     — and NOBODY ELSE (owner rule 2026-08: "i don't want a
-                     bunch of losing teams playing more losing teams" — the
-                     whole point is teams that had good years and simply lost
-                     early; a losing record without the TOSS-floor excuse is
-                     excluded outright, and a class short of winning-record
-                     bodies plays fewer duals rather than dressing losers).
-                     Ordered WITHIN each tier by `_challenger_key`, the
-                     Specials' own challenger ranking (reg-season pct, then
-                     wins, then ATR): the seats being contested were selected
-                     on that currency, and the owner wants "teams that have
-                     good seasons, not just teams that load up on TOSS" —
-                     TOSS survives only inside the formula's own gates. The
-                     formula is a PRIORITY over tier 2, not a filter: a year
-                     with no formula team still plays the round with the best
-                     winning-record teams left (the owner reversed the
-                     quiet-year design — an empty arc now means a pool with
-                     no winning-record team in it).
-        pairing    = best contender vs the WEAKEST selected challenger,
-                     second-best vs second-weakest, … — the pairing IS the
-                     seeding, the Specials' own rule. The seat-holder hosts.
+        holders    = the `seats` WEAKEST selected challengers — the teams that
+                     would otherwise walk into the Specials on the formula's
+                     last rows
+        contenders = the `seats` BEST teams outside the pool: the next names
+                     down the SAME `_challenger_key` ranking that drew the
+                     challenger cut (reg-season pct, wins, ATR), taken from
+                     everyone not qualified and not already on the slate
+        pairing    = best contender vs weakest holder, second vs second, … —
+                     the pairing IS the seeding, the Specials' own rule. The
+                     seat-holder hosts.
         winner     = holds that challenger seat into the State Specials.
+
+    ‼️ NO ELIGIBILITY GATES (owner rule 2026-08, correcting two drafts of
+    mine). A TOSS floor, a class-rank cut, a district-title gate and a
+    sub-.500 exclusion were all tried and are all gone: "just leave it to
+    anyone who qualifies … it's not as conditional as you kept gating it to
+    be." The gates did real damage — the challenger cut already takes the best
+    non-qualified teams by record, so the pool BEHIND it is the weak tail of
+    the class by construction, and a sub-.500 exclusion therefore emptied the
+    contender pool in exactly the classes where the ladder had absorbed most
+    of the good teams. The round fired in some classifications and not others
+    with nothing in the data to explain it. Ranking alone is the screen: the
+    best teams outside the pool are, by definition, the ones worth the dual.
 
     It grants ZERO extra berths and changes no Conference winner's path — the
     Specials field is the same size with the same bids; only who holds the
@@ -5580,37 +5626,28 @@ def _special_challengers_round(group: str, by_name: dict, challengers: list,
         return empty, challengers
     ch_names = {t.school.name for t in challengers}
     out_of_reach = set(taken) | ch_names
-    rank = {t.school.name: i + 1
-            for i, t in enumerate(sorted(by_name.values(), key=_power_key(power)))}
+    slots = CHALLENGE_SLOTS.get(group, CHALLENGE_SLOTS_DEFAULT)
+    # ‼️ DISTRICT CHAMPIONS GET FIRST CLAIM (owner rule 2026-08): a champion
+    # that lost early is RECONSIDERED here ahead of the rest of the field.
+    # A PRIORITY, not a gate — the tier is ordered by the same challenger
+    # ranking as everyone else, and once the champions are exhausted the
+    # seats go straight on down the list. Being in this pool already means
+    # the champion did not qualify and holds no Specials seat, so "lost
+    # early" needs no test of its own; adding one would be a gate again.
     champs = set(district_champs or ())
-
-    def toss(nm: str) -> float:
-        r = power.get(nm)
-        return r.pi_raw if r is not None else 0.0
-
-    def tier(t) -> int | None:
-        nm = t.school.name
-        strong_toss = toss(nm) >= CHALLENGE_TOSS_FLOOR
-        w, l = _reg_season_record(t)
-        losing = w < l
-        if (rank.get(nm, 10 ** 6) <= CHALLENGE_RANK_CUT or strong_toss
-                or nm in champs) and (not losing or strong_toss):
-            return 0
-        return 1 if not losing else None   # a losing record is OUT, not last
-
     ck = _challenger_key(power)
-    eligible = sorted((t for nm, t in by_name.items()
-                       if nm not in out_of_reach and tier(t) is not None),
-                      key=lambda t: (tier(t),) + ck(t))
-    n = min(CHALLENGE_SLOTS.get(group, CHALLENGE_SLOTS_DEFAULT),
-            len(eligible), len(challengers))
+    # The next `slots` names down the ranking the challenger cut was drawn on
+    # — literally the teams that just missed the Specials slate.
+    eligible = sorted((t for nm, t in by_name.items() if nm not in out_of_reach),
+                      key=lambda t: (t.school.name not in champs,) + ck(t))[:slots]
+    n = min(slots, len(eligible), len(challengers))
     if n <= 0:
         return empty, challengers
     challengers = list(challengers)
     # ‼️ `field` IS THE SEED ORDER — `state._jh_seeds` labels a school by its
     # index here, so the entrants are stored strongest first: the defending
     # seat-holders in challenger-selection order, then the contenders in
-    # their tier-then-challenger-ranking order.
+    # theirs (both off `_challenger_key`, one continuous ranking).
     # Built from the PAIRING instead (first home = the weakest holder), the
     # schedule card labelled the weakest holder #1 and the best contender
     # #(n+1). Captured before the duals play, since a loser leaves the list.
@@ -6745,16 +6782,18 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     for group in GROUPS:
         by_name_g = {t.school.name: t
                      for ts in by_group[group].values() for t in ts}
-        if state_field_size(group) == 24:
-            sr, ss, dv, sc, cf, quals, dq, atr_used = _recovery_24(
-                group, by_name_g, prestates[group], zonal_champs[group],
-                district_champs[group], post_power,
-                seed=seed + hash(group) % 9973 + 16223)
-        else:
-            sr, ss, dv, sc, cf, quals, dq, atr_used = _recovery(
-                group, by_name_g, sectionals[group], wards[group], prestates[group],
-                zonal_champs[group], district_champs[group], post_power,
-                seed=seed + hash(group) % 9973 + 16223)
+        # ‼️ ONE LADDER FOR EVERY CLASS (owner rule 2026-08). The 24-field
+        # classes used to branch to `_recovery_24`, whose berths came out of
+        # SUPER REGIONALS while Semi-State awarded none. The owner's pathway
+        # is the same rungs everywhere with only the counts changing —
+        # 8 Zonal + 8 Semi-State + 4 Divisional + 4 Specials at 24, 8/8/8/8 at
+        # 32, 8/8/8/16 at 40 — and the dynamic ladder produces all three
+        # exactly once the Divisionals are capped at one block. See
+        # `_recovery_24`, kept unwired for the archive it explains.
+        sr, ss, dv, sc, cf, quals, dq, atr_used = _recovery(
+            group, by_name_g, sectionals[group], wards[group], prestates[group],
+            zonal_champs[group], district_champs[group], post_power,
+            seed=seed + hash(group) % 9973 + 16223)
         super_regionals[group], semi_states[group] = sr, ss
         divisionals[group], semi_conferences[group] = dv, sc
         conferences[group] = cf
@@ -6792,9 +6831,8 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
         ch_seed = seed + int.from_bytes(hashlib.blake2s(
             f"jh-challenge|{group}".encode(), digest_size=4).digest(), "big")
         ch_arc, challengers = _special_challengers_round(
-            group, by_name_g, challengers,
-            district_champs[group], qualified | cw_names, post_power,
-            seed=ch_seed)
+            group, by_name_g, challengers, district_champs[group],
+            qualified | cw_names, post_power, seed=ch_seed)
         special_challengers[group] = ch_arc
         sp_arc, sp_winners = _state_specials_round(
             group, cw, challengers,

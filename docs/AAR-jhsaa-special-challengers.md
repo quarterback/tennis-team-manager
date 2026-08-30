@@ -46,37 +46,37 @@ seats      = CHALLENGE_SLOTS[class] — 2 per class, 4 in the 40-field
              classes (see the cap section). ‼️ A QUOTA: the round convenes
              EVERY season ("there should always be challenger specials")
 
-contenders = every team not qualified and not on the Specials slate,
-             in PRIORITY order — the formula is a priority, NOT a filter:
-               1. the eligibility formula:
-                    class TOSS rank <= 24        (CHALLENGE_RANK_CUT)
-                    OR TOSS >= .700              (CHALLENGE_TOSS_FLOOR)
-                    OR district champion
-                  — and no losing regular-season record unless the
-                  TOSS floor clears it
-               2. the rest with a NON-LOSING regular-season record
-             — and nobody else: a losing record without the TOSS excuse is
-             excluded outright (owner: "i don't want a bunch of losing
-             teams playing more losing teams"). Within each tier, the
-             Specials' own challenger ranking (`_challenger_key`: reg-season
-             pct, wins, ATR tiebreak) — record over TOSS, the owner's call:
-             "teams that have good seasons, not just teams that load up on
-             TOSS". TOSS survives only inside the formula's gates.
+holders    = the `seats` WEAKEST selected challengers — the teams that
+             would otherwise take direct entry to the Specials on the
+             challenger formula's last rows
 
-pairing    = best contender vs the WEAKEST selected challenger,
-             second-best vs second-weakest, … the seat-holder hosts, no
-             rematch repair — the pairing IS the seeding (the Specials' rule)
+contenders = the `seats` BEST teams outside the pool: the next names down
+             the SAME `_challenger_key` ranking that drew the challenger
+             cut (reg-season pct, wins, ATR tiebreak — record over TOSS,
+             the owner's call: "teams that have good seasons, not just
+             teams that load up on TOSS"), from everyone not qualified and
+             not already on the slate — with DISTRICT CHAMPIONS taken
+             first, ordered among themselves by that same ranking
+
+pairing    = best contender vs weakest holder, second vs second, … the
+             seat-holder hosts, no rematch repair — the pairing IS the
+             seeding (the Specials' rule)
 
 winner     = holds that challenger seat INTO the State Specials
 ```
 
-The first draft shipped the formula as a HARD SCREEN, plus a
-postseason-entrants-only rule, and framed "a quiet year plays none" as the
-feature — and the round almost never fired (the formula finds ~0.5 teams per
-class-year). The owner reversed it in review: the round always plays, the
-formula decides who goes first. An empty archived arc now means a pool with
-no winning-record team left in it (a tiny test world), never a formula with
-no takers.
+**There are no eligibility gates, and that is load-bearing.** The round has no
+conditions of its own: two ranked lists, meeting in the middle.
+
+**The one priority: district champions.** A champion that lost early is
+reconsidered here ahead of the rest of the field (owner rule 2026-08) — and
+that, with the PROTECTED Regionals entry and their existing first tier in the
+Semi-Conference pool, is the whole of what a district title buys. Still never
+a berth: they take a contender seat, and they have to win the dual. It is a
+priority and not a gate, so once the champions are used the seats carry
+straight on down the ranking. Being in this pool already means the champion
+did not qualify and holds no Specials seat, so "lost early" needs no test of
+its own — adding one would put a gate back.
 
 **Zero extra berths.** The Specials field is the same size with the same bids;
 Conference winners are untouched; a bridge winner still has to win its Special.
@@ -126,10 +126,12 @@ that, alongside the untouched berth arithmetic and Conference winners.
 - **Conference winners' seats are never contested.** They earned their Specials
   entry on court through the whole ladder; the formula-selected side is the one
   a contender may contest.
-- **A losing record is excluded outright** unless the .700 TOSS clears it
-  into the formula tier: a class short of winning-record bodies plays fewer
-  duals rather than dressing losers — the round exists for teams that had
-  good years and simply lost early.
+- **A weak team never reaches a seat in practice, without a rule saying so.**
+  The contenders are the BEST teams outside the pool by construction, so in
+  any real class the seats land on good teams that lost early — which is what
+  "i don't want a bunch of losing teams playing more losing teams" asked for.
+  A sub-.500 exclusion was tried as the instrument and was the wrong one (see
+  the addendum); do not re-add it.
 - **The seat count never grows** — contenders compete for the existing
   weakest seats; the Specials field and bids are untouched at every setting.
 
@@ -190,19 +192,43 @@ design: **"there should always be challenger specials"** — the round convenes
 every season in every class, and the formula decides who gets the seats
 FIRST, not whether anyone gets them.
 
-What changed, all owner-directed in one review:
+What changed, owner-directed across two reviews:
 
-1. **Formula → priority.** Contenders are every non-qualified,
-   non-slated team, formula tier first, then the remaining winning-record
-   teams; the postseason-entrants-only rule is retired outright (it was
-   never in the owner's spec).
-2. **Record over TOSS.** Within each tier, contenders rank on
-   `_challenger_key` — the Specials' own challenger ranking (reg-season pct,
-   wins, ATR tiebreak) — "teams that have good seasons, not just teams that
-   load up on TOSS". TOSS survives only inside the formula's gates.
-3. **Losers stay out.** A losing record without the .700 TOSS excuse is
-   excluded, not merely sorted last — "i don't want a bunch of losing teams
-   playing more losing teams"; a short class plays fewer duals.
+1. **Formula → priority, then gone entirely.** The first correction made the
+   formula a priority tier over the remaining winning-record teams and
+   retired the postseason-entrants-only rule. That still was not the spec:
+   the round *again* fired in some classifications and not others, and the
+   owner cut the last gates — "just leave it to anyone who qualifies … it's
+   not as conditional as you kept gating it to be."
+2. **Record over TOSS.** Contenders rank on `_challenger_key` — the Specials'
+   own challenger ranking (reg-season pct, wins, ATR tiebreak) — "teams that
+   have good seasons, not just teams that load up on TOSS."
+3. **No sub-.500 exclusion either.** It was added to honour "i don't want a
+   bunch of losing teams playing more losing teams" and it was the wrong
+   instrument: see the measurement below. The ranking already answers that
+   concern, because the contenders are the *best* teams outside the pool by
+   construction.
+
+### The measurement that ended the gates (2058 export, both genders)
+
+| class | Conference | **Challenges** | Specials |
+|---|---:|---:|---:|
+| 1A, 2A, Group 3 | 4 | **2** (1 in 1A boys) | 4 |
+| 6A girls | 6 | **2** | 6 |
+| 3A, 4A, 5A, 7A, Group 1, Group 2 | 6 | **0** | 6 |
+| 8A, 9A | 14 | **0** | 14 |
+
+The pattern has nothing to do with class quality and everything to do with
+arithmetic: **`_select_challengers` already takes the best non-qualified
+teams by record, so the pool BEHIND the challenger cut is the weak tail of
+the class by construction.** In a 32-field class, 32 qualifiers + 6
+Conference winners + 6 challengers account for the top ~44 of ~70 programs;
+what is left is the bottom third, which in a round-robin league is sub-.500
+almost by definition. So the sub-.500 screen emptied the contender pool
+outright in the big classes, while the 24-field classes (fewer teams
+qualified away, only 4 challengers taken) still had winning-record teams
+spare. **A gate stacked on top of a ranking that already sorts for quality
+can only remove bodies — it cannot improve the selection.**
 
 The misread, named so the next design pass does not repeat it: the spec's
 tight eligibility screen and its "solving maybe a dozen meaningful cases"
