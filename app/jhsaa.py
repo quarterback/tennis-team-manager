@@ -772,14 +772,26 @@ def recovery_shape(group: str) -> dict:
 
     sr = _even(reg_losers)
     sr_w, sr_l = sr // 2, sr - sr // 2
-    need = -(-4 * berths // 3)
-    need += need % 2                                  # the Semi-State floor, EVEN
-    base = sr_w + zon_losers
-    target = min(max(need, base), 2 * berths, base + sr_l)
-    ss = _even(target)
+    # ‼️ THE RECOVERY BLOCKS ARE EQUAL, AND THE LADDER'S OWN GEOMETRY MAKES THEM
+    # SO (owner rule 2026-08, the rebalance the Specials were supposed to bring
+    # and never got). Semi-State is EXACTLY the Super Regional winners plus the
+    # Zonal losers — no readmission — so it is `sr_w + zon_losers` teams and
+    # delivers `champions` berths; the Divisionals then take its losers PLUS the
+    # Super Regional losers (the readmission moved here), so they are the same
+    # size and deliver the same block. Every rung halves: 16 -> 16 -> 16 -> 16.
+    #
+    # It used to run on a `ceil(4*berths/3)` Semi-State FLOOR, which made that one
+    # round the big one — 24 teams, 12 of a 32-field's 24 recovery berths, half
+    # the field through a single rung — against 6 from the Divisionals and 6 from
+    # the Conference. Owner: "having that many teams get through via semi-state
+    # doesn't make any sense." At a 32 field this is now exactly 8 Zonal + 8
+    # Semi-State + 8 Divisional + 8 Conference (whose winners play the Specials
+    # for those last 8 berths); a 40 field is 8 + 8 + 8 + 16, the Conference
+    # absorbing the remainder as it always has.
+    ss = _even(sr_w + zon_losers)
     ss_w, ss_l = ss // 2, ss - ss // 2
 
-    dv = _even(min(2 * max(0, berths - ss_w), ss_l))
+    dv = _even(min(ss_l + sr_l, 2 * max(0, berths - ss_w)))
     dv_w, dv_l = dv // 2, dv - dv // 2
 
     cf_seats = 2 * max(0, berths - ss_w - dv_w)
@@ -5138,17 +5150,24 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
 
     The shape, all of it byeless:
 
-        Super Regionals   P teams (even)          -> P/2 winners
-        Semi-State        S = P/2 + Z + readmits  -> S/2 winners  (berths)
-        Divisionals       2L best Semi-State losers      -> L winners  (berths)
-        Semi-Conference   2B bodies                      -> B winners  (no berths)
-        Conference        Divisional losers + those B    -> berths     (berths)
+        Super Regionals   P Regional losers (even)       -> P/2 winners
+        Semi-State        P/2 winners + Z Zonal losers   -> half  (berths)
+        Divisionals       its losers + the P/2 SR losers -> half  (berths)
+        Semi-Conference   2B bodies                      -> B winners (no berths)
+        Conference        Divisional losers + those B    -> half  (berths)
 
-    with `L = berths - S/2`, which forces `4*berths/3 <= S <= 2*berths`. Bodies
-    are found in preference order — readmitted Super Regional LOSERS first
-    (the best-qualified pool left, and they already fought through Regionals),
-    then a walk back down the ladder through Ward, Sectional and Area losers,
-    best TOSS within each tier. A body is a chance to PLAY, never a berth.
+    ‼️ EQUAL BLOCKS (owner rule 2026-08). Every rung is the same size and every
+    berth-bearing rung delivers the same number of berths, because the geometry
+    does it for free: P/2 + Z is 16 at full size, its losers plus the P/2 Super
+    Regional losers are 16 again, and the Conference takes twice whatever is
+    still outstanding. A 32 field is therefore 8 Zonal + 8 Semi-State + 8
+    Divisional + 8 Conference (the last through the Specials); a 40 field is
+    8 + 8 + 8 + 16. Semi-State used to run on a `ceil(4*berths/3)` floor that
+    made it the big round — 12 of a 32's 24 recovery berths — and the Super
+    Regional losers were readmitted into IT rather than into the Divisionals.
+    Bodies still enter at the Semi-Conference only: a walk back down the ladder
+    through Ward, Sectional and Area losers, best TOSS within each tier. A body
+    is a chance to PLAY, never a berth.
     """
     # ‼️ THERE IS NO DISTRICT GUARANTEE — YOU WIN YOUR WAY INTO THE FIELD (owner
     # rule 2027-08, REVERSING the earlier guarantee). Winning a district buys a
@@ -5197,41 +5216,25 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     # last shot, as the true last-resort clubs they are, and berths stop being
     # earned off them in the earlier rounds. Recovery proper is the ladder's OWN
     # losers.
-    z = len(zon_losers)
-    need = -(-4 * berths // 3)                  # ceil(4*berths/3): the S floor
-    need += need % 2                            # ...and Semi-State is byeless, so EVEN
-    # ‼️ ROUND THE FLOOR TO EVEN BEFORE SIZING THE RESERVOIR, not after. Semi-State
-    # pairs its whole field, so an odd floor is really the next even number — but
-    # the pool below is grown only until `P + z` reaches the floor, and the window
-    # is then capped by exactly that (`len(ss_pool) + len(sr_losers)` IS `P + z`).
-    # Rounding afterwards therefore asked for one pair more than had been gathered,
-    # the cap refused it, and the odd-drop took a pair back off: measured at full
-    # size, 4A wanted a 39 window, got 38, and finished ONE berth short of a 40
-    # field with every other classification full. An odd floor is the only case,
-    # which is why it went unseen for so long.
-    # P must reach the floor even after readmitting every Super Regional loser
-    # (max S = P + z), and must be even so Super Regionals is byeless.
+    # ‼️ EQUAL RECOVERY BLOCKS (owner rule 2026-08) — see `recovery_shape`, which
+    # projects this same arithmetic. Semi-State takes the Super Regional winners
+    # and the Zonal losers and NOBODY ELSE; the Super Regional losers are
+    # readmitted one rung later, into the Divisionals, so both rounds are the
+    # same size and deliver the same block of berths. The old `ceil(4*berths/3)`
+    # Semi-State floor (and the readmission window it sized) is gone with it.
     sr_pool = sorted(reg_losers, key=_power_key(power))
     if len(sr_pool) % 2:                        # reservoir dry: the weakest sits out
         sr_pool = sr_pool[:-1]
     rng = random.Random(seed)
     sr_arc, sr_winners = _recovery_round(sr_pool, phase="super_regional", rng=rng)
 
-    # Semi-State: winners + Zonal losers + as many readmitted Super Regional
-    # losers as the window needs, sized EVEN.
+    # Semi-State: the Super Regional winners and the Zonal losers, and nobody
+    # else. Byeless, so an odd pool drops its weakest — which cannot happen at
+    # full size (both halves are even by construction).
     won = {id(t) for t in sr_winners}
     sr_losers = sorted((t for t in sr_pool if id(t) not in won), key=_power_key(power))
-    ss_pool = list(sr_winners) + zon_losers
-    target = max(need, len(ss_pool))
-    target = min(target, 2 * berths, len(ss_pool) + len(sr_losers))
-    if target % 2:
-        target += 1
-    while sr_losers and len(ss_pool) < target:
-        ss_pool.append(sr_losers.pop(0))
+    ss_pool = sorted(list(sr_winners) + zon_losers, key=_power_key(power))
     if len(ss_pool) % 2:
-        ss_pool = ss_pool[:-1] if len(ss_pool) > 2 * berths - len(ss_pool) else ss_pool
-    ss_pool = sorted(ss_pool, key=_power_key(power))
-    if len(ss_pool) % 2:                        # still odd: drop the weakest
         ss_pool = ss_pool[:-1]
     ss_arc, ss_winners = _recovery_round(ss_pool, phase="semi_state", rng=rng)
 
@@ -5241,7 +5244,16 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     ss_losers = sorted((t for t in ss_pool if id(t) not in ss_won),
                        key=_power_key(power))
     dv_n = max(0, berths - len(ss_winners))
-    dv_pool = ss_losers[:2 * dv_n]
+    # ‼️ THE SUPER REGIONAL LOSERS ARE READMITTED HERE (owner rule 2026-08),
+    # not into Semi-State — which is what makes the two rounds the same size and
+    # the berth blocks equal. STRICT TIER PRIORITY, TOSS only within a tier: a
+    # Semi-State loser got a round further than a Super Regional loser and is
+    # never displaced by one. Everyone still gets exactly two live chances (a
+    # Regional loser: Super Regionals, then Divisionals; a Zonal loser:
+    # Semi-State, then Divisionals), which is the invariant the round was built
+    # for in the first place.
+    dv_rank = list(ss_losers) + list(sr_losers)
+    dv_pool = dv_rank[:2 * dv_n]
     if len(dv_pool) % 2:
         dv_pool = dv_pool[:-1]
     if dv_pool:
@@ -5294,9 +5306,10 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     #   1. DISTRICT CHAMPIONS still outside the field — what is left of the retired
     #      guarantee: a district title earns you ONE more dual, not a berth.
     #   2. SEMI-STATE LOSERS the Divisionals did not take, then
-    #   3. SUPER REGIONAL LOSERS Semi-State did not readmit. Both are usually empty
-    #      (the Divisionals take every Semi-State loser and Semi-State readmits
-    #      every Super Regional loser at full size) — but not always, and until now
+    #   3. SUPER REGIONAL LOSERS the Divisionals did not take either (they are
+    #      readmitted THERE now, not into Semi-State). Both are usually empty
+    #      (at full size the Divisionals take every one of both) — but not
+    #      always, and until now
     #      they were in NO tier: `bodies` starts at Wards and `taken` excludes every
     #      Regional and Zonal loser, so an orphan could never re-enter while a Ward
     #      loser walked past it. It is live in the 24-field classes already, where
@@ -5307,9 +5320,10 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     #   4-6. the top WARD, then Sectional, then Area losers — the true last-resort
     #      clubs, and the reason this round exists.
     sc_rank: list[TeamSeason] = []
+    # `dv_rank` is already Semi-State losers then Super Regional losers, in tier
+    # order, so its unused tail IS tiers 2 and 3 in the right sequence.
     for tier in ([by_name[n] for n in district_champs if n in by_name],
-                 ss_losers[len(dv_pool):],
-                 list(sr_losers),
+                 dv_rank[len(dv_pool):],
                  bodies):
         _rank(tier, sc_rank)
 
