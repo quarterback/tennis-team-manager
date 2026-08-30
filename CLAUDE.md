@@ -803,22 +803,27 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     (`CHALLENGE_SLOTS`; currently 8A/9A — the wider valve is a property of the
     big-field shape, a 40 Conference sends 14 to the Specials vs the 32-shape's
     6, and MOVES with it: 3A/4A carried it at 40, dropped to 2 at 32, 8A/9A
-    inherited it going back up). Contenders come in PRIORITY order — the
-    eligibility FORMULA first (top-24 class TOSS rank, .700+ TOSS, or a
-    district champion; never a losing reg-season record unless the TOSS clears
-    it — the leak it plugs measured ~a dozen State-caliber early exits over
-    2053-56), then the remaining WINNING-RECORD teams — both tiers ordered by
-    `_challenger_key` (reg-season record, ATR tiebreak; owner: "teams that
-    have good seasons, not just teams that load up on TOSS"), and a losing
-    record without the TOSS-floor excuse is EXCLUDED outright ("i don't want
-    a bunch of losing teams playing more losing teams" — a short class plays
-    fewer duals rather than dressing losers). ‼️ The formula is a PRIORITY
-    over tier 2, NOT A FILTER — a first draft shipped it as a hard screen
-    (plus a postseason-entrants-only rule, also retired) and the round almost
-    never fired; the owner reversed that explicitly, so an empty arc now
-    means a pool with no winning-record team in it. Pairing: best contender vs weakest seat,
+    inherited it going back up). **The rule is two lines and has NO conditions
+    of its own**: the `slots` WEAKEST selected challengers — the teams that
+    would otherwise take direct entry on the formula's last rows — defend
+    against the `slots` BEST teams outside the pool, which are simply the next
+    names down the SAME `_challenger_key` ranking (reg-season pct, wins, ATR)
+    the challenger cut was drawn on. Pairing: best contender vs weakest seat,
     holder hosts, no rematch repair; the winner holds the seat INTO the
-    Specials. **ZERO extra berths** — Conference winners' seats are never
+    Specials.
+    ‼️ **NO ELIGIBILITY GATES — three drafts added them, all retired** (owner
+    rule 2026-08: "just leave it to anyone who qualifies … it's not as
+    conditional as you kept gating it to be"). A postseason-entrants-only
+    rule, a top-24-rank / .700-TOSS / district-champion FORMULA screen, and a
+    sub-.500 exclusion each shipped and each broke the round — the last one
+    invisibly, because **the challenger cut already takes the best
+    non-qualified teams by record, so the pool BEHIND it is the weak tail of
+    the class by construction**. Measured on the real 2058 export: a sub-.500
+    screen left ZERO contenders in 3A-9A/Group 1/Group 2 while 1A/2A/Group 3
+    (smaller fields, so fewer teams qualified away) played theirs normally —
+    the round fired in some classifications and not others with nothing in the
+    data to explain it. Ranking alone is the screen; a gate on top of a
+    ranking that already sorted for quality only removes bodies. **ZERO extra berths** — Conference winners' seats are never
     contested and the Specials field never grows; do not "widen" it into a
     loser's bracket. Phase `"special_challenger"` (between `conference` and
     `state_special` in `POSTSEASON` — shape, freeze, TOSS exclusion, calendar
@@ -838,8 +843,14 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   Semi-Conference needs on its own), then crowned separately on this shape. **2A
   now plays the standard ladder** — the realignment took it to 95 programs, 95
   girls'/87 boys' sponsors against the 76 floor, and the owner's rule is that its
-  playoff "mirrors every other classification"; 1A is the only class left on the
-  24. `jhsaa._recovery_24` is a DIFFERENT, non-dynamic wiring, not
+  playoff "mirrors every other classification"; 1A is the only A-class left on
+  the 24 (with Group 3). ‼️ **The FIELD is what actually routes a class here**
+  — `state_field_size(group) == 24` selects `_recovery_24` — and 2A's stayed 24
+  for two years after this paragraph said it played the standard ladder, so it
+  did not: the owner moved it to **32 in 2026-08**, which is the change that
+  made the sentence true. When a class's ladder is meant to move, move its
+  `STATE_FIELD` entry; nothing else dispatches.
+  `jhsaa._recovery_24` is a DIFFERENT, non-dynamic wiring, not
   `_recovery` fed a smaller number — but **the Zonal-champion guarantee is
   UNCHANGED here, same as every other class**: an early design retired it for
   1A/2A only (Zonal win = advancement only, no automatic berth), shipped, was

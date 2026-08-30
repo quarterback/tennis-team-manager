@@ -703,8 +703,16 @@ WARD_FIELD = 32
                # class). That is the documented under-floor behaviour, accepted
                # with the switch; the repair, if ever wanted, is more 9A
                # programs, never a smaller field.
+               # 2A joined the 32-field classes in the same 2026-08 batch
+               # (owner rule): the 2033 realignment took it to ~95 programs
+               # and 93/90 sponsors, its playoff was already meant to "mirror
+               # every other classification", and only the FIELD still said
+               # otherwise — `state_field_size(group) == 24` is what routes a
+               # class to the fixed `_recovery_24` wiring, so this is also
+               # what moves 2A onto the dynamic ladder every other class runs.
+               # 1A is now the only A-class left on the 24 (with Group 3).
 STATE_FIELD = {"9A": 40, "8A": 40, "7A": 32, "6A": 32, "5A": 32,
-               "4A": 32, "3A": 32, "2A": 24, "1A": 24,
+               "4A": 32, "3A": 32, "2A": 32, "1A": 24,
                # 2046 expansion (owner rule): the Great Basin groups are more
                # classifications, full stop -- "think of them more as 10A and
                # 11A than thinking of them as anything weird." Group 1/Group 2
@@ -5507,67 +5515,52 @@ def _select_challengers(by_name: dict, conference_winners: list,
 #: inherited the 4 when they went back up to 40 in the same batch. A 40-field
 #: Conference sends 14 to the Specials against the 32-shape's 6, so its
 #: formula-selected tail is both longer and softer — that is what the two
-#: extra contested seats answer. ‼️ A QUOTA, NOT JUST A CAP (owner rule
-#: 2026-08, "there should always be challenger specials"): the round convenes
-#: EVERY season in every class, and only a pool with fewer bodies than seats
-#: (a tiny test world) plays fewer.
+#: extra contested seats answer. ‼️ A QUOTA, NOT A CAP (owner rule 2026-08,
+#: "there should always be challenger specials"): the round convenes EVERY
+#: season in every class, and only a class with fewer teams than seats (a tiny
+#: test world) plays fewer.
 CHALLENGE_SLOTS: dict[str, int] = {"8A": 4, "9A": 4}
 CHALLENGE_SLOTS_DEFAULT = 2
-#: The eligibility FORMULA (owner spec 2026-08) — a PRIORITY, not a filter: a
-#: real statewide profile is class TOSS rank inside the cut, OR a .700+ TOSS,
-#: OR a district title, and never a losing regular-season record unless the
-#: .700 TOSS clears it. Formula teams get the contender seats first; when a
-#: class-year has fewer of them than seats (common — the 2053-56 audit found
-#: ~0.5 per class-year), the best remaining non-qualified teams fill in so the
-#: round still plays.
-CHALLENGE_RANK_CUT = 24
-CHALLENGE_TOSS_FLOOR = 0.700
 
 
 def _special_challengers_round(group: str, by_name: dict, challengers: list,
-                               district_champs: list,
                                taken: set[str], power: dict, *,
                                seed: int) -> tuple[dict, list]:
     """‼️ THE SPECIAL CHALLENGERS — the bridge round in front of the State
     Specials, and IT ALWAYS CONVENES (owner rule 2026-08, "there should always
     be challenger specials"; `docs/AAR-jhsaa-special-challengers.md`).
 
-    The Specials' challenger side is picked by FORMULA (regular-season
-    record), which leaves a leak the 2053-56 data measured: a State-caliber
-    team — top-24 class rank, .700+ TOSS, or a district champion — loses once
-    in an early local round (almost always Wards) and the last-chance
-    mechanism never sees it. So every season, in every class, the WEAKEST
-    selected challenger seats are defended on court:
+    The Specials' challenger side is picked by FORMULA (`_select_challengers`:
+    the best `len(conference_winners)` regular-season teams in the class), and
+    its LAST few rows are the weakest claim in the whole event — weaker than
+    the teams sitting just outside the cut, who are separated from them by a
+    game or two of record and nothing else. So the round is exactly the
+    owner's spec, with no conditions of its own:
 
         seats      = CHALLENGE_SLOTS[group]  (2; 4 in the 40-field classes)
-        contenders = the best teams not qualified and not already on the
-                     Specials slate, in PRIORITY order:
-                       1. the eligibility formula — class TOSS rank <=
-                          CHALLENGE_RANK_CUT, OR TOSS >= CHALLENGE_TOSS_FLOOR,
-                          OR a district champion; never a losing regular-season
-                          record unless the TOSS floor clears it
-                       2. the rest with a NON-LOSING regular-season record
-                     — and NOBODY ELSE (owner rule 2026-08: "i don't want a
-                     bunch of losing teams playing more losing teams" — the
-                     whole point is teams that had good years and simply lost
-                     early; a losing record without the TOSS-floor excuse is
-                     excluded outright, and a class short of winning-record
-                     bodies plays fewer duals rather than dressing losers).
-                     Ordered WITHIN each tier by `_challenger_key`, the
-                     Specials' own challenger ranking (reg-season pct, then
-                     wins, then ATR): the seats being contested were selected
-                     on that currency, and the owner wants "teams that have
-                     good seasons, not just teams that load up on TOSS" —
-                     TOSS survives only inside the formula's own gates. The
-                     formula is a PRIORITY over tier 2, not a filter: a year
-                     with no formula team still plays the round with the best
-                     winning-record teams left (the owner reversed the
-                     quiet-year design — an empty arc now means a pool with
-                     no winning-record team in it).
-        pairing    = best contender vs the WEAKEST selected challenger,
-                     second-best vs second-weakest, … — the pairing IS the
-                     seeding, the Specials' own rule. The seat-holder hosts.
+        holders    = the `seats` WEAKEST selected challengers — the teams that
+                     would otherwise walk into the Specials on the formula's
+                     last rows
+        contenders = the `seats` BEST teams outside the pool: the next names
+                     down the SAME `_challenger_key` ranking that drew the
+                     challenger cut (reg-season pct, wins, ATR), taken from
+                     everyone not qualified and not already on the slate
+        pairing    = best contender vs weakest holder, second vs second, … —
+                     the pairing IS the seeding, the Specials' own rule. The
+                     seat-holder hosts.
         winner     = holds that challenger seat into the State Specials.
+
+    ‼️ NO ELIGIBILITY GATES (owner rule 2026-08, correcting two drafts of
+    mine). A TOSS floor, a class-rank cut, a district-title gate and a
+    sub-.500 exclusion were all tried and are all gone: "just leave it to
+    anyone who qualifies … it's not as conditional as you kept gating it to
+    be." The gates did real damage — the challenger cut already takes the best
+    non-qualified teams by record, so the pool BEHIND it is the weak tail of
+    the class by construction, and a sub-.500 exclusion therefore emptied the
+    contender pool in exactly the classes where the ladder had absorbed most
+    of the good teams. The round fired in some classifications and not others
+    with nothing in the data to explain it. Ranking alone is the screen: the
+    best teams outside the pool are, by definition, the ones worth the dual.
 
     It grants ZERO extra berths and changes no Conference winner's path — the
     Specials field is the same size with the same bids; only who holds the
@@ -5580,37 +5573,19 @@ def _special_challengers_round(group: str, by_name: dict, challengers: list,
         return empty, challengers
     ch_names = {t.school.name for t in challengers}
     out_of_reach = set(taken) | ch_names
-    rank = {t.school.name: i + 1
-            for i, t in enumerate(sorted(by_name.values(), key=_power_key(power)))}
-    champs = set(district_champs or ())
-
-    def toss(nm: str) -> float:
-        r = power.get(nm)
-        return r.pi_raw if r is not None else 0.0
-
-    def tier(t) -> int | None:
-        nm = t.school.name
-        strong_toss = toss(nm) >= CHALLENGE_TOSS_FLOOR
-        w, l = _reg_season_record(t)
-        losing = w < l
-        if (rank.get(nm, 10 ** 6) <= CHALLENGE_RANK_CUT or strong_toss
-                or nm in champs) and (not losing or strong_toss):
-            return 0
-        return 1 if not losing else None   # a losing record is OUT, not last
-
-    ck = _challenger_key(power)
-    eligible = sorted((t for nm, t in by_name.items()
-                       if nm not in out_of_reach and tier(t) is not None),
-                      key=lambda t: (tier(t),) + ck(t))
-    n = min(CHALLENGE_SLOTS.get(group, CHALLENGE_SLOTS_DEFAULT),
-            len(eligible), len(challengers))
+    slots = CHALLENGE_SLOTS.get(group, CHALLENGE_SLOTS_DEFAULT)
+    # The next `slots` names down the ranking the challenger cut was drawn on
+    # — literally the teams that just missed the Specials slate.
+    eligible = sorted((t for nm, t in by_name.items() if nm not in out_of_reach),
+                      key=_challenger_key(power))[:slots]
+    n = min(slots, len(eligible), len(challengers))
     if n <= 0:
         return empty, challengers
     challengers = list(challengers)
     # ‼️ `field` IS THE SEED ORDER — `state._jh_seeds` labels a school by its
     # index here, so the entrants are stored strongest first: the defending
     # seat-holders in challenger-selection order, then the contenders in
-    # their tier-then-challenger-ranking order.
+    # theirs (both off `_challenger_key`, one continuous ranking).
     # Built from the PAIRING instead (first home = the weakest holder), the
     # schedule card labelled the weakest holder #1 and the best contender
     # #(n+1). Captured before the duals play, since a loser leaves the list.
@@ -6792,8 +6767,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
         ch_seed = seed + int.from_bytes(hashlib.blake2s(
             f"jh-challenge|{group}".encode(), digest_size=4).digest(), "big")
         ch_arc, challengers = _special_challengers_round(
-            group, by_name_g, challengers,
-            district_champs[group], qualified | cw_names, post_power,
+            group, by_name_g, challengers, qualified | cw_names, post_power,
             seed=ch_seed)
         special_challengers[group] = ch_arc
         sp_arc, sp_winners = _state_specials_round(
