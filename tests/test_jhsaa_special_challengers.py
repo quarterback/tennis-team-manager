@@ -84,6 +84,9 @@ def test_winner_takes_the_weakest_seat_and_the_field_size_never_moves(away_wins)
     assert gm["winner"] == "Early"
     assert arc["round_names"] == [jh.SPECIAL_CHALLENGER_NAME]
     assert gm["unit"] == "Challenge 1"
+    # `field` is the SEED order (`_jh_seeds` labels by index): the defending
+    # holder ahead of the contender, never pairing-side order.
+    assert arc["field"] == ["Ch3", "Early"]
 
 
 def test_a_holder_who_wins_keeps_the_seat(home_wins):

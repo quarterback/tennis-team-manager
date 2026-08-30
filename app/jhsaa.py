@@ -5602,6 +5602,15 @@ def _special_challengers_round(group: str, by_name: dict, challengers: list,
     if n <= 0:
         return empty, challengers
     challengers = list(challengers)
+    # ‼️ `field` IS THE SEED ORDER — `state._jh_seeds` labels a school by its
+    # index here, so the entrants are stored strongest first: the defending
+    # seat-holders in challenger-selection order, then the contenders by TOSS.
+    # Built from the PAIRING instead (first home = the weakest holder), the
+    # schedule card labelled the weakest holder #1 and the best contender
+    # #(n+1). Captured before the duals play, since a loser leaves the list.
+    field = ([challengers[len(challengers) - n + i].school.name
+              for i in range(n)]
+             + [t.school.name for t in eligible[:n]])
     rng = random.Random(seed)
     games = []
     for i in range(n):
@@ -5616,7 +5625,6 @@ def _special_challengers_round(group: str, by_name: dict, challengers: list,
                       "winner": win.school.name,
                       "unit": f"{_RECOVERY_UNITS['special_challenger']} {i + 1}"})
         challengers[seat] = win
-    field = ([g["home"] for g in games] + [g["away"] for g in games])
     return ({"field": field, "rounds": [games],
              "survivors": [g["winner"] for g in games],
              "round_names": [SPECIAL_CHALLENGER_NAME], "head": []}, challengers)
