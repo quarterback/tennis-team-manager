@@ -25,11 +25,18 @@
         <span class="num">{{ ln.slot[1:] }}</span>
       </div>
       <div class="bl-match-sides">
+        {# ‼️ EVERY LINE NAMES ITS SCHOOL (owner, 2026-08). The box score listed
+           four names and no attribution, so a reader could not tell who played
+           for whom — the one thing every real box score states (the NCAA's
+           "Coutinho, Luca [Adrian College]"). The college dual pages already
+           did it with `.bl-court-team`; this page was the gap. `ln.home`/
+           `ln.away` are the archive's own sides, so the label is the dual's
+           own `d.home`/`d.away` — never re-derived per line. #}
         <div class="bl-side {{ 'won' if ln.home_won }}">
-          <span class="nm">{% if ln.home_won %}<span class="chk">✓</span>{% endif %}{{ (ln.home or [])|join(' / ') }}</span>
+          <span class="nm">{% if ln.home_won %}<span class="chk">✓</span>{% endif %}{{ (ln.home or [])|join(' / ') }} <span class="bl-court-team">{{ d.home }}</span></span>
         </div>
         <div class="bl-side {{ 'won' if not ln.home_won }}">
-          <span class="nm">{% if not ln.home_won %}<span class="chk">✓</span>{% endif %}{{ (ln.away or [])|join(' / ') }}</span>
+          <span class="nm">{% if not ln.home_won %}<span class="chk">✓</span>{% endif %}{{ (ln.away or [])|join(' / ') }} <span class="bl-court-team">{{ d.away }}</span></span>
         </div>
       </div>
       <div class="bl-final">{{ ln.score or '—' }}</div>
