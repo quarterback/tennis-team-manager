@@ -1761,23 +1761,65 @@ Three parameterisations, against the §6 spec's own growth-year targets:
 girls 28.7/33.5/37.4/45.9, boys 31.2/36.7/41.6/49.2)
 
 **V1 is the closest starting point** — 31/24/17 against the 30/27/28 target,
-with a 9% ready share and 3% stagnant. Two things still need owner decisions:
+with a 9% ready share and 3% stagnant.
 
-1. **The senior year is under-weighted in all three.** 11→12 comes out 17-20%
-   against the 28% target. Capacity draws are independent per year, but a senior
-   has already closed most of their start-to-peak gap, so late capacity is
-   clamped away more often. If a genuine senior-breakout population is wanted,
-   either widen the start-to-peak gap or let capacity grow slightly with grade —
-   which is a *variance* term, not the seniority ramp being removed.
-2. **This is a LEVEL change as well as a shape change.** V1 lifts freshmen ~3
-   points and drops seniors ~5. That flattening is the intent, but the
-   association's overall standard moves with it, and the peak multiplier is the
-   knob that sets where it lands. Choose the senior-year level deliberately
-   rather than accepting whatever the peak band produces.
+### ‼️ 22.6a THE SPEC'S OWN GROWTH-YEAR TARGET WAS WRONG (owner rule, 2026-08)
+
+§6's illustrative split (30% / 27% / **28%** / 15%) treats the senior year as
+carrying roughly the same share of breakouts as the two before it. **It does
+not.** Owner: *"breakouts are usually sophomore and junior breakouts, senior
+year tends to be incremental not a massive leap, so the leaps happen before
+then."*
+
+So V1's 17% senior share is **not** the model under-weighting the senior year —
+it is the model getting the shape right, and an earlier draft of this section
+wrongly filed it as a defect needing a fix. **Do not widen the start-to-peak gap
+or drift capacity upward with grade to "correct" it.** Both were proposed here
+and both are withdrawn.
+
+The corrected target, stated as magnitude rather than only as which year is
+biggest:
+
+> **Leaps happen in years 1 and 2. Year 3 is incremental — real, visible, but
+> small. No player should be waiting on a senior-year jump.**
+
+Measured per-year gain under V1 (girls; boys within 0.2 of every figure):
+
+| transition | mean | p50 | p90 | biggest-year share | players leaping +8 or more |
+|---|---:|---:|---:|---:|---:|
+| 9 → 10 | 3.9 | 2.4 | 10.8 | 31% | 19% |
+| 10 → 11 | 3.3 | 2.0 | 10.0 | 24% | 16% |
+| 11 → 12 | **2.5** | **1.2** | 8.5 | 17% | 11% |
+
+That is the intended profile: the senior year's median gain is about +1, half
+the sophomore year's, while its p90 stays high enough that a late bloomer
+remains possible without being the norm.
+
+**The front-loading is emergent, not authored.** Capacity is drawn independently
+per year with the same probability of a big year in all four; the taper falls
+out of the clamp, because by year 3 most players have already closed their
+start-to-peak gap and a late big draw has nowhere to land. Nothing in the model
+says "seniors grow less" — which is exactly the property wanted, since the ramp
+is not being re-introduced in the other direction either.
+
+If the taper should be sharper, an explicitly front-weighted big-year
+probability (V4: .34 / .34 / .26 / .12) moves the senior share 17% → 13% and its
+median gain 1.2 → 1.0. That is a knob if wanted, not a requirement — V1 already
+produces the described shape on its own.
+
+### Still open
+
+**This is a LEVEL change as well as a shape change.** V1 lifts freshmen ~3
+points and drops seniors ~5 (girls 31.5/35.4/38.7/41.2 against today's
+28.7/33.5/37.4/45.9). The flattening is the intent, but the association's
+overall standard moves with it, and the peak multiplier is the knob that sets
+where it lands. Choose the senior-year level deliberately rather than accepting
+whatever the peak band produces.
 
 Stagnation is real but rare at these settings (2-3%). If stagnant careers should
-be a visible population rather than a curiosity, lower `big_p` or widen the
-small-capacity band; the shape census in the harness measures it directly.
+be a visible population rather than a curiosity, lower the big-year probability
+or widen the small-capacity band; the shape census in the harness measures it
+directly.
 
 ## 22.7 What is NOT a target
 
