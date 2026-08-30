@@ -98,6 +98,61 @@ script's display-keyed table breaks its replay if a rename leaves it behind.
   (The same lesson as the prep-network `git log --all` episode: "not in any
   ref" — or "not in any revision" — is a statement about your clone.)
 
+## The third rename batch (owner list, 2026-08) — nine simplifications
+
+Arroyo Water District → **Arroyo**, Cañada Irrigation → **Canyon**, Bracken
+Works → **Bracken**, Sluice Crossing → **Crossing** (the TOWN keeps the name
+Sluice Crossing), Bogue Chitto → **Harmony** (its `LOCALITIES` value stays
+"Bogue Chitto" — the settlement keeps its name), Lost River Irrigation →
+**Lost River**, Sacred Heart Cathedral → **Sacred Heart**, Pioneer Electric →
+**Bolton**, Pacific Fruit Exchange → **Marshfield** (asked as "Lighthouse",
+which collided with the live 7A Lighthouse in Fort Meriwether; the owner
+picked Marshfield instead — one leading-word neighbour, Marshfield Prep,
+noted and accepted). Eight rewrote existing `RENAMES` targets in place; the
+display-keyed moves followed (`MASCOTS` ×3, `LOCALITIES`, `PRIVATE_SCHOOLS`,
+`RECLASSIFY_2039B`). `INSTITUTION_NAMES` (the naming BANK) deliberately kept
+the old strings — it is a record of the grammar, not a live-name list — but
+note the standing risk: a bank name renamed away is re-drawable by a future
+naming pass, the reissue trap one step removed.
+
+## The 2056 move-up slate (owner list, 2026-08 — `scripts/jhsaa_2056_promotions.py`)
+
+The counterweight to the closures: **25 programs promoted**, 22 into 9A
+(64/64 → **86/86**, matching 8A and clearing the 40-field's 76 floor), plus
+the owner's marked exceptions (Evans Larsen Day and Baptist → 7A, Minnesota
+City → 8A). A RECLASSIFICATION, not a play-up — classification, group and
+enrollment move together (the Lower Lake idiom; enrollments spaced into each
+target class's live 25th-90th percentile band, preserving the batch's own
+relative-stature order). Names resolved against the data: Wells = Ida B.
+Wells, Mondale = Walter Mondale, Banneker = Benjamin Banneker, "Telfair
+County Day" = Telfair Country Day, San Tomás. No rivalry pair split
+(checked); the pinning entries in `RECLASSIFY_2039`/`2039B` are superseded at
+the data level, and this script replays after them and after the closures.
+
+**Every affected class was then redrawn** (`jhsaa_redistrict.py --cap 10`,
+eleven classes in all — the owner's league band is 7-10, "a full ~16-match
+league slate", and league identity churn is accepted flavor). End state,
+verified: **every live league in every class holds 7-10 members in BOTH
+genders**. One hand repair: 2A Foundry League drew 9 girls / 6 boys (three
+girls-only members — a sponsorship asymmetry a size-based draw cannot see),
+fixed by moving Gold Hollow (Antler County, beside five Foundry members) in
+from Valle Vista League.
+
+Three redistricter faults found by this batch, each shipped-and-measured:
+- **`keep_rivals` displaced members into full leagues unconditionally** — a
+  chain of rivalry repairs built 11/12-team leagues under a --cap 10 draw.
+  A `spill` pass now re-enforces the cap after every repair.
+- **`district_count` under a tighter cap could under-provision seats**
+  (85 schools, round(8.5)=8 leagues, cap 10 → 80 seats) and the clusterer
+  SILENTLY DROPPED the overflow — dropped schools kept stale league labels
+  and read as phantom one-team leagues. `k` now respects the cap's own
+  arithmetic floor and an assertion refuses a draw that drops anyone.
+- **The multi-class runner writes once at the END**, so a `sys.exit` on the
+  second class discarded the first class's finished redraw silently — the
+  8A failure made the whole run a no-op while its output read as success.
+  (Behaviour noted, not restructured: with the two faults above fixed the
+  exit no longer fires; treat any future over-cap exit as "nothing landed".)
+
 ## The retunes the closures forced (owner rules, same session)
 
 - **3A/4A State fields 40 → 32** — the association's last 40-field holdouts

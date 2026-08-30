@@ -396,11 +396,12 @@ FORMER_NAMES = {
     "Antler County High":                          "Antler County",
     "Anton Sidorov":                               "Adams",
     "Anya Antonov":                                "Mar Vista",
-    "Anya Belov":                                  "Arroyo Water District",
+    "Anya Belov":                                  "Arroyo",
     "Anya Belov North":                            "Preston Hollow",
     "Anya Orlov":                                  "Riviere Salee",
     "Archbishop Doyle Prep North":                 "Doyle Ridge",
     "Arrieta Treasure Valley":                     "Canyonlands",
+    "Arroyo Water District":                       "Arroyo",
     "Ashbury":                                     "Ashbury Central",
     "Ashbury Arts":                                "Junction",
     "Ashbury Central North":                       "Kishwaukee",
@@ -468,9 +469,11 @@ FORMER_NAMES = {
     "Bill Clinton":                                "Clinton",
     "Blackbird Canyon":                            "Tallulah Canyon",
     "Blackpine North":                             "Ravenwood",
+    "Bogue Chitto":                                "Harmony",
     "Bookcliff":                                   "Hartford City",
     "Bowerstock Beach":                            "Borough Beach",
     "Boyerstown North":                            "Alder Crossing",
+    "Bracken Works":                               "Bracken",
     "Brackwood Union":                             "Brackwood Pass",
     "Breakwater North":                            "Lighthouse",
     "Bryan Place":                                 "Hagerstown",
@@ -501,6 +504,7 @@ FORMER_NAMES = {
     "Caswell University Prep":                     "Palisade Prep",
     "Caswell West":                                "Palisade Prep",
     "Cattle Ford":                                 "Harrisburgh",
+    "Cañada Irrigation":                           "Canyon",
     "Cedar Ridge":                                 "Cahaba",
     "Cedarport":                                   "North San Francisco",
     "Cinder Flats":                                "New Boston",
@@ -735,13 +739,14 @@ FORMER_NAMES = {
     "Lorna Booker":                                "Blue Grama",
     "Lorraine Calder":                             "Morne Rouge",
     "Los Remolinos Mission Bay":                   "Estuary Bay",
+    "Lost River Irrigation":                       "Lost River",
     "Lucía Quiñones":                              "Edgewater",
     "Lucía Villaseñor":                            "Glen Park",
     "Madrigal Maritime Academy":                   "Maritime",
     "Madrigal West Bench":                         "Benchlands",
     "Maksim Karev":                                "Excelsior",
     "Manuel Cordero":                              "Sonia Sotomayor",
-    "Manuel Robles":                               "Pacific Fruit Exchange",
+    "Manuel Robles":                               "Marshfield",
     "Manzanita Ridge":                             "Manzanita",
     "Maple Run":                                   "Cherry Hill North",
     "Marcus Langston":                             "Rutherford Hayes",
@@ -839,6 +844,7 @@ FORMER_NAMES = {
     "Oskar Bellini":                               "Notre Dame",
     "Oskar Weiss":                                 "Waldo",
     "Pacific Friends School":                      "Pacific Friends",
+    "Pacific Fruit Exchange":                      "Marshfield",
     "Paddock Institute":                           "Paddock Tech",
     "Pauli Booker":                                "Nightfall",
     "Pavel Kovalenko":                             "Coles Creek",
@@ -850,6 +856,7 @@ FORMER_NAMES = {
     "Petra Weiss North":                           "Las Colinas",
     "Pine Creek":                                  "Bois Rouge",
     "Pinecrest School":                            "Pinecrest",
+    "Pioneer Electric":                            "Bolton",
     "Plainfield Science":                          "Plainfield",
     "Playa Vista":                                 "Riviere Salee",
     "Pointe Coupee Central":                       "Pointe Coupee",
@@ -883,7 +890,7 @@ FORMER_NAMES = {
     "Puerto de los Reyes Commerce":                "Reyes Landing",
     "Puerto de los Reyes School of Commerce":      "Reyes Landing",
     "Puerto de los Reyes South":                   "Reyes Landing",
-    "Rafael Escobedo":                             "Pioneer Electric",
+    "Rafael Escobedo":                             "Bolton",
     "Railspur":                                    "West Burlington",
     "Ralph Booker":                                "Obama",
     "Ralph Booker North":                          "Christchurch Episcopal",
@@ -894,7 +901,7 @@ FORMER_NAMES = {
     "Redbank":                                     "Bridgewater",
     "Redbird":                                     "Belle Rive",
     "Redwood Coast":                               "Bienville",
-    "Renata Adler":                                "Bracken Works",
+    "Renata Adler":                                "Bracken",
     "Renata Dahl":                                 "Camas",
     "Rentie Grove":                                "Jamaica",
     "Rimrock Valley":                              "New Ballard",
@@ -912,6 +919,7 @@ FORMER_NAMES = {
     "Rutherford B. Hayes":                         "Rutherford Hayes",
     "Rye Academy of Arts and Letters":             "Barley Point",
     "Rye North":                                   "Barley Point",
+    "Sacred Heart Cathedral":                      "Sacred Heart",
     "Sadie Freeman":                               "High Desert Cooperative",
     "Sage Junction":                               "Montpelier",
     "Sage Lake":                                   "Sage Village",
@@ -940,7 +948,7 @@ FORMER_NAMES = {
     "San Cordero West":                            "Forks Harbor",
     "San Dámaso Harbor Gate":                      "Jesse Jackson",
     "San Marcos":                                  "Talladega",
-    "San Marcos Valley":                           "Bogue Chitto",
+    "San Marcos Valley":                           "Harmony",
     "San Telmo Agricultural":                      "Orchard Union",
     "San Telmo Agricultural Sciences Academy":     "Orchard Union",
     "Santa Laura North":                           "Janeaway",
@@ -1021,7 +1029,7 @@ FORMER_NAMES = {
     "Telfair":                                     "Pacersburg",
     "Telfair Central":                             "Pacersburg",
     "Telfair Country Day School":                  "Telfair Country Day",
-    "Teresa Escobedo":                             "Cañada Irrigation",
+    "Teresa Escobedo":                             "Canyon",
     "The Cassius":                                 "Cassius",
     "The Cassius School":                          "Cassius",
     "Thelma Avery":                                "Readbury",
@@ -1067,7 +1075,7 @@ FORMER_NAMES = {
     "Veles Wharf":                                 "Cheney",
     "Vernal Falls":                                "Tippah",
     "Vernon Moss":                                 "Pointe Coupee Catholic",
-    "Vernon Moss North":                           "Bogue Chitto",
+    "Vernon Moss North":                           "Harmony",
     "Vesper Polytechnic Institute":                "Funtsville",
     "Vesper Tech":                                 "Funtsville",
     "Vespertine Heights":                          "Nightfall",
@@ -1090,7 +1098,7 @@ FORMER_NAMES = {
     "Winifred Booker":                             "Albany Park",
     "Winifred Booker North":                       "Carden Pass",
     "Winifred Browne":                             "Rogers Park",
-    "Winifred Davenport":                          "Lost River Irrigation",
+    "Winifred Davenport":                          "Lost River",
     "Winifred Ellison":                            "Kingwood",
     "Winifred Stokes":                             "Mesa Cooperative",
     "Wolf Gap":                                    "Corey Canyon",
@@ -1102,7 +1110,7 @@ FORMER_NAMES = {
     "Yelena Belov":                                "Pennsauke",
     "Yelena Sokolov":                              "Bowerstock",
     "Yuri Chernov":                                "Sunset Hills",
-    "Zoya Orlov":                                  "Sacred Heart Cathedral",
+    "Zoya Orlov":                                  "Sacred Heart",
     "Zubieta Manufacturing and Technology Academy": "Sluice Gate",
     "Zubieta River Plain":                         "River Plain",
     "Zubieta Tech":                                "Sluice Gate",
@@ -1173,6 +1181,8 @@ RENAMES = {
     # FORMER_NAMES to the 9A alone (its identity; the alias generator prefers
     # an identity claim over another chain's transient target).
     "Abbey Vale Orchard Hill": "Booker T Washington",
+    # 2026-08 owner rename — the school's own never-renamed identity is the key:
+    "Sluice Crossing": "Crossing",
     "Orchard Hill": "Bishop Turner",
     "St. Basil School": "St. Ignatius",
     "Caswell Depot High": "Cherry Hill North",
@@ -1426,7 +1436,8 @@ RENAMES = {
     "Astrid Ricci": "Jesuit",                        # 9A Mercer City
     "Oskar Bellini": "Notre Dame",                   # 9A Boyerstown
     "Oksana Romanov": "Archbishop Gregory",          # 8A — owner's mandatory name
-    "Zoya Orlov": "Sacred Heart Cathedral",          # 8A Santa Michaela
+    "Zoya Orlov": "Sacred Heart",          # 8A Santa Michaela — 2026-08
+                                           # suffix-ish trim, "Cathedral" dropped
     "Edith Hart": "Bellarmine Prep",                 # 8A — Prep, never Preparatory
     "Nicolás Treviño": "Bishop Valera",              # 7A — Jefferson surname
     "Harlan Tillman": "Xavier College Prep",         # 7A Mercer City
@@ -1634,7 +1645,7 @@ RENAMES = {
     # survivor was kept per original surname family; these are the rest. See
     # INSTITUTION_NAMES below for the bank this was drawn from.
     "Amaia Echevarria": "Redwood Mutual",
-    "Anya Belov": "Arroyo Water District",
+    "Anya Belov": "Arroyo",                # 2026-08: was "Arroyo Water District"
     "Claudette Freeman": "Alder Cooperative",
     "Eleanor Tillman": "Anchor Glass",
     "Elias Mercier": "Cascade Mutual",
@@ -1648,7 +1659,7 @@ RENAMES = {
     "Katherine Davenport": "Blue Mountain Grange",
     "Lars Mercier": "Shasta Agricultural",
     "Lillian Price": "North Coast Packing",
-    "Manuel Robles": "Pacific Fruit Exchange",
+    "Manuel Robles": "Marshfield",         # 2026-08: was "Pacific Fruit Exchange"
     "Mikel Echevarria": "Fir Valley Grange",
     "Naomi Price": "Crown Paper",
     "Naomi Ward": "Golden State Packing",
@@ -1658,17 +1669,17 @@ RENAMES = {
     "Opal Stokes": "Dry Creek Cooperative",
     "Opal Tillman": "Granite Water & Power",
     "Petra Jansen": "Southern Pacific Tech",
-    "Rafael Escobedo": "Pioneer Electric",
-    "Renata Adler": "Bracken Works",
+    "Rafael Escobedo": "Bolton",           # 2026-08: was "Pioneer Electric"
+    "Renata Adler": "Bracken",             # 2026-08: was "Bracken Works"
     "Rosa Salcedo": "Quarry Workers",
     "Ruby Stokes": "Klamath Exchange",
     "Sadie Freeman": "High Desert Cooperative",
     "Sergei Belov": "Malcolm X Shabazz",
     "Svenja Adler": "East Range Agricultural",
-    "Teresa Escobedo": "Cañada Irrigation",
+    "Teresa Escobedo": "Canyon",           # 2026-08: was "Cañada Irrigation"
     "Thelma Stokes": "Iron Gate Works",
     "Thomas Jansen": "Lone Pine Mutual",
-    "Winifred Davenport": "Lost River Irrigation",
+    "Winifred Davenport": "Lost River",    # 2026-08: was "Lost River Irrigation"
     "Winifred Stokes": "Mesa Cooperative",
     "Xavier Robles": "Elk River Power",
     "Yelena Belov": "Pennsauke",
@@ -1941,7 +1952,8 @@ RENAMES = {
     "Thelma Moss North":         "Serenity Valley",        # 7A Valderra
     "Claudette Cole North":      "Pointe Coupee",    # 5A San Borondón
     "Tatiana Chernov North":     "Bahía Vista",             # 6A San Borondón
-    "Vernon Moss North":         "Bogue Chitto",       # 7A San Borondón
+    "Vernon Moss North":         "Harmony",       # 7A San Borondón — 2026-08,
+                                                  # was "Bogue Chitto"
     "Mila Chernov North":        "Siberia",        # 4A Belyakov
     "Viktor Antonov North":      "Bois Rouge",              # 4A Belyakov
     "Andrés Valera North":       "Pawnee",           # 6A Caswell
@@ -1987,7 +1999,7 @@ INSTITUTION_NAMES = [
 # name, like `MASCOTS` and `COLORS` — see the emit block in `build`.
 PRIVATE_SCHOOLS = {
     "Mater Dei", "Jesuit", "Notre Dame", "Archbishop Gregory",
-    "Sacred Heart Cathedral", "Bellarmine Prep", "Bishop Valera",
+    "Sacred Heart", "Bellarmine Prep", "Bishop Valera",
     "Xavier College Prep", "St. Francis Catholic", "Christian Brothers",
     "Cardinal Mercier", "Providence Catholic", "Pope Leo XIV",
     "Archbishop Valois", "St. Catherine Academy",
@@ -2193,7 +2205,7 @@ LOCALITIES = {
     "Bahía Vista":                           "Biloxi",
     "Bienville":                             "Bienville",
     "Biloxi Heights":                        "Biloxi",
-    "Bogue Chitto":                          "Bogue Chitto",
+    "Harmony":                               "Bogue Chitto",
     "Malcolm X Shabazz":                          "Cahaba",
     "Marigny":                               "Marigny",
     "Cliffside":                         "Natchez",
@@ -2349,7 +2361,7 @@ RECLASSIFY_2039B = {
     "Natchez Mercy": "3A", "Valley Providence": "3A", "Palisade Prep": "3A",
     "St. Sebastian Prep": "3A",
     "Archbishop Gregory": "8A",
-    "Sacred Heart Cathedral": "7A", "Bellarmine Prep": "7A",
+    "Sacred Heart": "7A", "Bellarmine Prep": "7A",
     "Port Veles Episcopal": "4A",
     "Covenant Christian": "2A",
     "Bishop Valera": "1A", "St. Jerome Academy": "1A",
@@ -2882,7 +2894,7 @@ MASCOTS = {
     "Mater Dei": "Monarchs",
     "Jesuit": "Crusaders",
     "Archbishop Gregory": "Griffins",
-    "Sacred Heart Cathedral": "Irish",
+    "Sacred Heart": "Irish",
     "Bellarmine Prep": "Lions",
     "Bishop Valera": "Bulldogs",
     "Xavier College Prep": "Cavaliers",
@@ -2927,12 +2939,12 @@ MASCOTS = {
     "Weller": "Storm Petrels",
     "Fort Weller": "Cheesemongers",             # the dairy coast
     "Ryken": "Kingfishers",                     # Newark River
-    "Bracken Works": "Seals",                    # Wales City
+    "Bracken": "Seals",                    # Wales City
 
     # ── South Coast: the southern shore and its canneries ────────────────────
     "Carolina Island": "Tule Elk",
     "Quarmont": "Stonecutters",
-    "Pacific Fruit Exchange": "Sardines",                # Bahía Leal, a cannery town
+    "Marshfield": "Sardines",                # Bahía Leal, a cannery town
     "Quarry Workers": "Lightkeepers",
     "Biloxi Heights": "Sea Otters",
     "Claudette Cole": "Godwits",

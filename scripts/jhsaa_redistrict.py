@@ -170,6 +170,33 @@ def keep_rivals(groups, items, pos, rivals, cap):
     return groups
 
 
+def spill(groups, items, cap):
+    """‼️ THE CAP IS RE-ENFORCED AFTER EVERY REPAIR PASS (2026-08). `keep_rivals`
+    swaps a league's most distant member OUT to make room for an incoming rival
+    — but the league that member lands in gains one UNCONDITIONALLY, so a chain
+    of rivalry repairs quietly built 11- and 12-team leagues under a --cap 10
+    draw (measured on the 9A promotion redraw). Any league over `cap` sheds its
+    most distant member to the nearest league with room until none is over."""
+    def centre(ci):
+        mem = groups[ci]
+        return (sum(items[i][1][0] for i in mem) / len(mem),
+                sum(items[i][1][1] for i in mem) / len(mem))
+    for _ in range(200):
+        over = [ci for ci in groups if len(groups[ci]) > cap]
+        if not over:
+            break
+        ci = max(over, key=lambda c: len(groups[c]))
+        c = centre(ci)
+        far = max(groups[ci], key=lambda i: _miles(items[i][1], c))
+        dest = min((cj for cj in groups if cj != ci and len(groups[cj]) < cap),
+                   key=lambda cj: _miles(items[far][1], centre(cj)), default=None)
+        if dest is None:
+            break                        # nowhere with room: cap is infeasible
+        groups[ci].remove(far)
+        groups[dest].append(far)
+    return groups
+
+
 def redistrict(rows, cls, pos, m, rng, cap=None):
     # ‼️ A REDRAW POOLS LIVE SPONSORS ONLY (owner rule 2026-08, with the 2056
     # closures). A sunset row keeps its last-known league for its former-school
@@ -187,7 +214,12 @@ def redistrict(rows, cls, pos, m, rng, cap=None):
     for r in live:
         if r["city"] in pos:
             continue
-        for scope in ("county", "area"):
+        for scope in ("county", "area", "group"):
+            # `group` is the LAST resort — the class's own centroid — because a
+            # school left un-pooled is worse than a school placed vaguely: it
+            # keeps a stale league label the redraw may retire, and it stacks
+            # onto whatever drawn league shares that label (the Port Valdez
+            # pair did exactly this on the 9A promotion redraw).
             mates = [pos[x["city"]] for x in rows
                      if x.get(scope) == r.get(scope) and x["city"] in pos]
             if mates:
@@ -215,7 +247,17 @@ def redistrict(rows, cls, pos, m, rng, cap=None):
     # passes 10 and the clusterer stops packing leagues to 11-12. MAX_DISTRICT
     # stays the invariant the final check enforces either way.
     cap = cap or m.MAX_DISTRICT
+    # ‼️ THE LEAGUE COUNT MUST RESPECT THE CAP'S OWN CAPACITY (2026-08).
+    # `district_count` was written against MAX_DISTRICT 12; under a tighter cap
+    # k×cap can come up short of the pool (85 schools, round(8.5)=8 leagues,
+    # cap 10 -> 80 seats), and the clusterer then had nowhere to put the
+    # overflow — it silently DROPPED those schools from the draw, which is how
+    # phantom one-team leagues of stale labels appeared. Take the max of the
+    # importer's answer and the cap's arithmetic floor.
+    k = max(k, -(-len(items) // cap))
     groups = cluster(items, k, cap, rng)
+    assert sum(len(v) for v in groups.values()) == len(items), \
+        "clusterer dropped a school — k×cap must cover the pool"
     # ‼️ THE FLOOR IS THE TARGET, not an even split of whatever the class happens to
     # hold. A league is a double round robin, so its size IS its season; pulling a
     # short league up to strength is worth a longer drive for the school that moves,
@@ -226,6 +268,7 @@ def redistrict(rows, cls, pos, m, rng, cap=None):
     rivals = [(a, b) for a, b in getattr(m, "RIVALRIES", ())]
     groups = keep_rivals(groups, items, {r["name"]: pos[r["city"]] for r in members},
                          rivals, cap)
+    groups = spill(groups, items, cap)
 
     # ‼️ A BLOCK INHERITS THE NAME IT MOST OVERLAPS, AND ONLY THEN REBRANDS.
     # Assigning names by centroid or alphabetically would shuffle a class's league
