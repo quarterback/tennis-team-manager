@@ -1,12 +1,16 @@
-"""The Special Challengers — the bridge round in FRONT of the State Specials
-(owner rule 2026-08; `docs/AAR-jhsaa-special-challengers.md`).
+"""The Special Challengers — the bridge round in FRONT of the State Specials,
+and it ALWAYS convenes (owner rule 2026-08, "there should always be challenger
+specials"; `docs/AAR-jhsaa-special-challengers.md`).
 
-Eligible early exits — eliminated before the Specials with a real statewide
-profile (class rank inside the cut, a .700+ TOSS, or a district title, and no
-losing regular-season record unless the TOSS clears it) — contest the WEAKEST
-formula-selected challenger seats, one dual per seat, and the winner holds the
-seat into the Specials. Zero extra berths: only who sits on the challenger
-side moves.
+Every season, in every class, the WEAKEST selected challenger seats are
+defended on court — 2 duals, 4 in the 40-field classes. Contenders come in
+PRIORITY order: the eligibility formula first (class rank inside the cut, a
+.700+ TOSS, or a district title; no losing regular-season record unless the
+TOSS clears it), then the rest of the WINNING-RECORD teams — both tiers in
+the Specials' own challenger ranking (reg-season record, ATR tiebreak), and
+a losing record without the TOSS excuse is excluded outright (owner: "i
+don't want a bunch of losing teams playing more losing teams"). Zero extra
+berths: only who sits on the challenger side moves.
 """
 import pytest
 
@@ -40,22 +44,10 @@ class _Res:
         self.winner, self.home_points, self.away_points = winner, 3, 2
 
 
-def stages_played(*names):
-    """One arc whose rounds mention every name — 'they entered the postseason
-    and were eliminated' is read off appearance in a pre-Specials stage."""
-    games = [{"home": names[i], "away": names[i + 1],
-              "winner": names[i]} for i in range(0, len(names) - 1, 2)]
-    if len(names) % 2:
-        games.append({"home": names[-1], "away": None, "winner": names[-1]})
-    return [{"rounds": [games]}]
-
-
-def bridge(by, challengers, played, champs=(), taken=(), power=None,
-           group="9A", monkey=None, home_wins=True):
+def bridge(by, challengers, champs=(), taken=(), power=None, group="9A"):
     power = power or {}
     return jh._special_challengers_round(
-        group, by, challengers, stages_played(*played), list(champs),
-        set(taken), power, seed=11)
+        group, by, challengers, list(champs), set(taken), power, seed=11)
 
 
 @pytest.fixture
@@ -75,7 +67,7 @@ def test_winner_takes_the_weakest_seat_and_the_field_size_never_moves(away_wins)
     by = {n: _Team(n) for n in ("Ch1", "Ch2", "Ch3", "Early")}
     power = {"Early": _PI(0.75)}
     challengers = [by["Ch1"], by["Ch2"], by["Ch3"]]      # best first
-    arc, out = bridge(by, challengers, ("Early",), power=power)
+    arc, out = bridge(by, challengers, power=power)
     assert len(out) == 3 == len(challengers)
     assert [t.school.name for t in out] == ["Ch1", "Ch2", "Early"]
     gm = arc["rounds"][0][0]
@@ -91,48 +83,58 @@ def test_winner_takes_the_weakest_seat_and_the_field_size_never_moves(away_wins)
 
 def test_a_holder_who_wins_keeps_the_seat(home_wins):
     by = {n: _Team(n) for n in ("Ch1", "Ch2", "Early")}
-    arc, out = bridge(by, [by["Ch1"], by["Ch2"]], ("Early",),
-                      power={"Early": _PI(0.75)})
+    arc, out = bridge(by, [by["Ch1"], by["Ch2"]], power={"Early": _PI(0.75)})
     assert [t.school.name for t in out] == ["Ch1", "Ch2"]
     assert arc["rounds"][0][0]["winner"] == "Ch2"
 
 
-def test_eligibility_is_gated(home_wins):
-    """No losing regular-season record unless TOSS >= .700; no gate passed at
-    all -> no dual. A big class makes the rank cut real: rank 25+ with a
-    middling TOSS and no district title stays home."""
-    by = {f"T{i:03}": _Team(f"T{i:03}", reg=(12, 4)) for i in range(30)}
-    power = {n: _PI(0.9 - i / 1000) for i, n in enumerate(sorted(by))}
-    # rank 26 (T025), sub-.700 impossible here so drop its TOSS below the floor
-    power["T025"] = _PI(0.10)
-    by["T025"] = _Team("T025", reg=(12, 4))
-    challengers = [by["T000"]]
-    # ranks off `power`: T025 now ranks LAST (rank 30) and holds no other gate
-    arc, out = bridge(by, challengers, ("T025",), power=power)
-    assert arc["rounds"] == [[]], "rank>24, TOSS<.700, no title: not eligible"
-    # a losing record blocks even a top-24 rank …
-    by["Losing"] = _Team("Losing", reg=(5, 11))
-    power["Losing"] = _PI(0.65)
-    arc, out = bridge(by, challengers, ("Losing",), power=power)
-    assert arc["rounds"] == [[]]
-    # … unless the TOSS clears the floor
-    power["Losing"] = _PI(0.72)
-    arc, out = bridge(by, challengers, ("Losing",), power=power)
-    assert len(arc["rounds"][0]) == 1
-    # a district title is a gate of its own
+def test_the_formula_is_a_priority_not_a_filter(home_wins):
+    """The formula decides WHO GOES FIRST, never whether the round plays
+    (owner rule 2026-08 — the quiet-year design was reversed): a formula
+    team outranks a higher-TOSS team that passes no gate, a losing record
+    sorts last unless the TOSS floor clears it into the formula tier, and a
+    district title is a gate of its own."""
+    # 30 losing-record, sub-floor-TOSS fillers: many hold top-24 ranks (the
+    # rank gate passes) but the losing record drops them to the LAST tier.
+    by = {f"T{i:03}": _Team(f"T{i:03}", reg=(5, 11)) for i in range(30)}
+    power = {n: _PI(0.5 - i / 1000) for i, n in enumerate(sorted(by))}
+    challengers = [by["T000"], by["T001"]]
+    # "Formula" passes the formula; "NoGate" has a winning record but the
+    # worst TOSS in the class (rank past the cut, no title) -> middle tier.
+    by["Formula"] = _Team("Formula", reg=(12, 4))
+    power["Formula"] = _PI(0.71)
+    by["NoGate"] = _Team("NoGate", reg=(12, 4))
+    power["NoGate"] = _PI(0.10)
+    arc, out = bridge(by, challengers, power=power)
+    aways = [gm["away"] for gm in arc["rounds"][0]]
+    assert aways == ["Formula", "NoGate"], \
+        "formula tier first, then the winning-record tier — the losing-record " \
+        "fillers are excluded outright whatever their rank"
+    # the TOSS floor lifts a losing record into the formula tier, and a
+    # district title is a gate of its own (winning record, sub-floor TOSS,
+    # rank past the cut) — checked at the 4-seat class so neither is crowded
+    # out of the round by the other formula teams.
+    by["Salvaged"] = _Team("Salvaged", reg=(5, 11))
+    power["Salvaged"] = _PI(0.72)
     by["Champ"] = _Team("Champ", reg=(9, 7))
     power["Champ"] = _PI(0.30)
-    arc, out = bridge(by, challengers, ("Champ",), champs=("Champ",),
-                      power=power)
-    assert len(arc["rounds"][0]) == 1
+    chs4 = [by["T000"], by["T001"], by["T002"], by["T003"], by["T004"]]
+    arc, _ = bridge(by, chs4, champs=("Champ",), power=power, group="9A")
+    aways = [gm["away"] for gm in arc["rounds"][0]]
+    assert aways == ["Formula", "Champ", "Salvaged", "NoGate"], \
+        "tier 0 in RECORD order (12-4, 9-7, then the TOSS-excused 5-11 — " \
+        "the owner wants good seasons, not TOSS loading), then tier 1"
 
 
-def test_only_postseason_entrants_are_eligible(home_wins):
-    """The formula pool already reaches a team that never entered the
-    postseason — the bridge exists for the one-early-loss case only."""
+def test_the_round_always_convenes(home_wins):
+    """No formula team at all — the best of the rest still plays: the round
+    convenes every season (owner: "there should always be challenger
+    specials"), and a team that never entered the postseason can be drafted
+    (the postseason-entrants-only screen was retired with the reversal)."""
     by = {n: _Team(n) for n in ("Ch1", "Stayed")}
-    arc, out = bridge(by, [by["Ch1"]], (), power={"Stayed": _PI(0.9)})
-    assert arc["rounds"] == [[]]
+    arc, out = bridge(by, [by["Ch1"]], power={"Stayed": _PI(0.9)})
+    assert len(arc["rounds"][0]) == 1
+    assert arc["rounds"][0][0]["away"] == "Stayed"
 
 
 def test_slots_are_capped_per_class(home_wins):
@@ -146,14 +148,12 @@ def test_slots_are_capped_per_class(home_wins):
     chs = [by[f"Ch{i}"] for i in range(1, 6)]
     # a 32-field class carries the default (the harness's own default group,
     # 9A, is a 40-field class now and carries the wider valve)
-    arc, _ = bridge(by, chs, ("E1", "E2", "E3", "E4", "E5"), power=power,
-                    group="7A")
+    arc, _ = bridge(by, chs, power=power, group="7A")
     assert len(arc["rounds"][0]) == jh.CHALLENGE_SLOTS_DEFAULT == 2
     # the wider valve rides the 40-field classes, exactly them
     assert {g for g, n in jh.CHALLENGE_SLOTS.items() if n == 4} \
         == {g for g in jh.GROUPS if jh.state_field_size(g) == 40}
-    arc, _ = bridge(by, chs, ("E1", "E2", "E3", "E4", "E5"), power=power,
-                    group="9A")
+    arc, _ = bridge(by, chs, power=power, group="9A")
     assert len(arc["rounds"][0]) == 4
     # best eligible (E1) takes the weakest seat (Ch5)
     gm = arc["rounds"][0][0]
@@ -161,8 +161,10 @@ def test_slots_are_capped_per_class(home_wins):
 
 
 def test_a_quiet_year_returns_the_present_and_empty_arc(home_wins):
+    """Empty now means an empty POOL (every team already qualified or on the
+    Specials slate — a tiny test world), never a formula with no takers."""
     by = {"Ch1": _Team("Ch1")}
-    arc, out = bridge(by, [by["Ch1"]], ())
+    arc, out = bridge(by, [by["Ch1"]])
     assert arc == {"field": [], "rounds": [[]], "survivors": [],
                    "round_names": [jh.SPECIAL_CHALLENGER_NAME], "head": []}
 

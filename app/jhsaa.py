@@ -5507,74 +5507,79 @@ def _select_challengers(by_name: dict, conference_winners: list,
 #: inherited the 4 when they went back up to 40 in the same batch. A 40-field
 #: Conference sends 14 to the Specials against the 32-shape's 6, so its
 #: formula-selected tail is both longer and softer — that is what the two
-#: extra contested seats answer. A cap, not a quota: a class with fewer
-#: eligible early exits plays fewer, and a year with none plays none (the
-#: usual case — eligibility is deliberately tight).
+#: extra contested seats answer. ‼️ A QUOTA, NOT JUST A CAP (owner rule
+#: 2026-08, "there should always be challenger specials"): the round convenes
+#: EVERY season in every class, and only a pool with fewer bodies than seats
+#: (a tiny test world) plays fewer.
 CHALLENGE_SLOTS: dict[str, int] = {"8A": 4, "9A": 4}
 CHALLENGE_SLOTS_DEFAULT = 2
-#: The eligibility screen (owner spec 2026-08): a team gets the bridge dual only
-#: with a real statewide profile — class TOSS rank inside the cut, OR a .700+
-#: TOSS, OR a district title — and never with a losing regular-season record
-#: unless the .700 TOSS clears it.
+#: The eligibility FORMULA (owner spec 2026-08) — a PRIORITY, not a filter: a
+#: real statewide profile is class TOSS rank inside the cut, OR a .700+ TOSS,
+#: OR a district title, and never a losing regular-season record unless the
+#: .700 TOSS clears it. Formula teams get the contender seats first; when a
+#: class-year has fewer of them than seats (common — the 2053-56 audit found
+#: ~0.5 per class-year), the best remaining non-qualified teams fill in so the
+#: round still plays.
 CHALLENGE_RANK_CUT = 24
 CHALLENGE_TOSS_FLOOR = 0.700
 
 
 def _special_challengers_round(group: str, by_name: dict, challengers: list,
-                               stages: list[dict], district_champs: list,
+                               district_champs: list,
                                taken: set[str], power: dict, *,
                                seed: int) -> tuple[dict, list]:
     """‼️ THE SPECIAL CHALLENGERS — the bridge round in front of the State
-    Specials (owner rule 2026-08; `docs/AAR-jhsaa-special-challengers.md`).
+    Specials, and IT ALWAYS CONVENES (owner rule 2026-08, "there should always
+    be challenger specials"; `docs/AAR-jhsaa-special-challengers.md`).
 
-    The Specials' challenger side is picked by FORMULA (regular-season record),
-    which leaves one narrow leak the 2053-56 data measured at roughly a dozen
-    real cases: a State-caliber team — top-24 class rank, .700+ TOSS, or a
-    district champion — loses once in an early local round (almost always
-    Wards), never reaches the Specials, and the last-chance mechanism the
-    association built never sees it. The fix is deliberately narrow: those
-    teams do not get a berth, a bye, or a bigger bracket — they get ONE dual,
-    against the WEAKEST formula-selected challenger, for that team's seat in
-    the Specials. The rule, exactly:
+    The Specials' challenger side is picked by FORMULA (regular-season
+    record), which leaves a leak the 2053-56 data measured: a State-caliber
+    team — top-24 class rank, .700+ TOSS, or a district champion — loses once
+    in an early local round (almost always Wards) and the last-chance
+    mechanism never sees it. So every season, in every class, the WEAKEST
+    selected challenger seats are defended on court:
 
-        eligible = eliminated before the Specials (they appear in an archived
-                   pre-Specials stage and hold no berth and no Specials seat)
-                   AND (class TOSS rank <= CHALLENGE_RANK_CUT
-                        OR TOSS >= CHALLENGE_TOSS_FLOOR
-                        OR district champion)
-                   AND (no losing regular-season record,
-                        unless TOSS >= CHALLENGE_TOSS_FLOOR)
-        n        = min(CHALLENGE_SLOTS[group], len(eligible), len(challengers))
-        pairing  = best eligible (by TOSS) vs the WEAKEST selected challenger,
-                   second-best vs second-weakest, … — the pairing IS the
-                   seeding, the Specials' own rule. The seat-holder hosts.
-        winner   = takes that challenger seat into the State Specials.
+        seats      = CHALLENGE_SLOTS[group]  (2; 4 in the 40-field classes)
+        contenders = the best teams not qualified and not already on the
+                     Specials slate, in PRIORITY order:
+                       1. the eligibility formula — class TOSS rank <=
+                          CHALLENGE_RANK_CUT, OR TOSS >= CHALLENGE_TOSS_FLOOR,
+                          OR a district champion; never a losing regular-season
+                          record unless the TOSS floor clears it
+                       2. the rest with a NON-LOSING regular-season record
+                     — and NOBODY ELSE (owner rule 2026-08: "i don't want a
+                     bunch of losing teams playing more losing teams" — the
+                     whole point is teams that had good years and simply lost
+                     early; a losing record without the TOSS-floor excuse is
+                     excluded outright, and a class short of winning-record
+                     bodies plays fewer duals rather than dressing losers).
+                     Ordered WITHIN each tier by `_challenger_key`, the
+                     Specials' own challenger ranking (reg-season pct, then
+                     wins, then ATR): the seats being contested were selected
+                     on that currency, and the owner wants "teams that have
+                     good seasons, not just teams that load up on TOSS" —
+                     TOSS survives only inside the formula's own gates. The
+                     formula is a PRIORITY over tier 2, not a filter: a year
+                     with no formula team still plays the round with the best
+                     winning-record teams left (the owner reversed the
+                     quiet-year design — an empty arc now means a pool with
+                     no winning-record team in it).
+        pairing    = best contender vs the WEAKEST selected challenger,
+                     second-best vs second-weakest, … — the pairing IS the
+                     seeding, the Specials' own rule. The seat-holder hosts.
+        winner     = holds that challenger seat into the State Specials.
 
     It grants ZERO extra berths and changes no Conference winner's path — the
     Specials field is the same size with the same bids; only who holds the
     contested challenger seats is decided on court instead of by the formula's
-    last few rows. That is what separates it from the retired playbacks and
-    from a loser's bracket: nobody churns through extra chances, and a team
-    that wins the bridge still has to win its Special.
-
-    Teams that never entered the postseason are deliberately NOT eligible (the
-    formula pool already reaches them): the round exists for the "one early
-    loss" case, and an eligibility screen that admits non-entrants is a second
-    at-large selection, not a recovery. A quiet year returns the empty arc —
-    present and empty, the Semi-Conference's convention."""
+    last few rows. Nobody churns through extra chances, and a team that wins
+    the bridge still has to win its Special."""
     empty = {"field": [], "rounds": [[]], "survivors": [],
              "round_names": [SPECIAL_CHALLENGER_NAME], "head": []}
     if not challengers:
         return empty, challengers
     ch_names = {t.school.name for t in challengers}
     out_of_reach = set(taken) | ch_names
-    played: set[str] = set()
-    for arc in stages:
-        for rd in (arc or {}).get("rounds") or ():
-            for gm in rd:
-                for nm in (gm.get("home"), gm.get("away")):
-                    if nm:
-                        played.add(nm)
     rank = {t.school.name: i + 1
             for i, t in enumerate(sorted(by_name.values(), key=_power_key(power)))}
     champs = set(district_champs or ())
@@ -5583,20 +5588,20 @@ def _special_challengers_round(group: str, by_name: dict, challengers: list,
         r = power.get(nm)
         return r.pi_raw if r is not None else 0.0
 
-    eligible = []
-    for nm in played:
-        t = by_name.get(nm)
-        if t is None or nm in out_of_reach:
-            continue
+    def tier(t) -> int | None:
+        nm = t.school.name
         strong_toss = toss(nm) >= CHALLENGE_TOSS_FLOOR
-        if not (rank.get(nm, 10 ** 6) <= CHALLENGE_RANK_CUT or strong_toss
-                or nm in champs):
-            continue
         w, l = _reg_season_record(t)
-        if w < l and not strong_toss:
-            continue
-        eligible.append(t)
-    eligible.sort(key=_power_key(power))
+        losing = w < l
+        if (rank.get(nm, 10 ** 6) <= CHALLENGE_RANK_CUT or strong_toss
+                or nm in champs) and (not losing or strong_toss):
+            return 0
+        return 1 if not losing else None   # a losing record is OUT, not last
+
+    ck = _challenger_key(power)
+    eligible = sorted((t for nm, t in by_name.items()
+                       if nm not in out_of_reach and tier(t) is not None),
+                      key=lambda t: (tier(t),) + ck(t))
     n = min(CHALLENGE_SLOTS.get(group, CHALLENGE_SLOTS_DEFAULT),
             len(eligible), len(challengers))
     if n <= 0:
@@ -5604,7 +5609,8 @@ def _special_challengers_round(group: str, by_name: dict, challengers: list,
     challengers = list(challengers)
     # ‼️ `field` IS THE SEED ORDER — `state._jh_seeds` labels a school by its
     # index here, so the entrants are stored strongest first: the defending
-    # seat-holders in challenger-selection order, then the contenders by TOSS.
+    # seat-holders in challenger-selection order, then the contenders in
+    # their tier-then-challenger-ranking order.
     # Built from the PAIRING instead (first home = the weakest holder), the
     # schedule card labelled the weakest holder #1 and the best contender
     # #(n+1). Captured before the duals play, since a loser leaves the list.
@@ -6787,9 +6793,6 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
             f"jh-challenge|{group}".encode(), digest_size=4).digest(), "big")
         ch_arc, challengers = _special_challengers_round(
             group, by_name_g, challengers,
-            [sectionals[group], wards[group], prestates[group],
-             super_regionals[group], semi_states[group], divisionals[group],
-             semi_conferences[group], conferences[group]],
             district_champs[group], qualified | cw_names, post_power,
             seed=ch_seed)
         special_challengers[group] = ch_arc
