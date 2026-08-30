@@ -818,6 +818,26 @@
       "boys_district": "Basalt League"
     },
     {
+      "name": "Asteroid City",
+      "city": "Bahía Leal",
+      "county": "San Marcos",
+      "area": "Sebastian Cape",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 2117,
+      "private": false,
+      "mascot": "Sardines",
+      "colors": [
+        "#0e7490",
+        "#fbbf24"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Gold Valley League",
+      "boys_district": "Gold Valley League",
+      "source": "Manuel Robles"
+    },
+    {
       "name": "Atlanta",
       "source": "Atlanta",
       "city": "Wells",
@@ -10646,26 +10666,6 @@
       "boys": true,
       "girls_district": "Desert Sky League",
       "boys_district": "Desert Sky League"
-    },
-    {
-      "name": "Marshfield",
-      "city": "Bahía Leal",
-      "county": "San Marcos",
-      "area": "Sebastian Cape",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 2117,
-      "private": false,
-      "mascot": "Sardines",
-      "colors": [
-        "#0e7490",
-        "#fbbf24"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Gold Valley League",
-      "boys_district": "Gold Valley League",
-      "source": "Manuel Robles"
     },
     {
       "name": "Marshfield Prep",

@@ -105,10 +105,11 @@ Works → **Bracken**, Sluice Crossing → **Crossing** (the TOWN keeps the name
 Sluice Crossing), Bogue Chitto → **Harmony** (its `LOCALITIES` value stays
 "Bogue Chitto" — the settlement keeps its name), Lost River Irrigation →
 **Lost River**, Sacred Heart Cathedral → **Sacred Heart**, Pioneer Electric →
-**Bolton**, Pacific Fruit Exchange → **Marshfield** (asked as "Lighthouse",
+**Bolton**, Pacific Fruit Exchange → **Asteroid City** (asked as "Lighthouse",
 which collided with the live 7A Lighthouse in Fort Meriwether; the owner
-picked Marshfield instead — one leading-word neighbour, Marshfield Prep,
-noted and accepted). Eight rewrote existing `RENAMES` targets in place; the
+picked Marshfield, then rewrote it to Asteroid City in place on seeing the
+Marshfield Prep near-duplicate — the name-list's leading-word report earning
+its keep). Eight rewrote existing `RENAMES` targets in place; the
 display-keyed moves followed (`MASCOTS` ×3, `LOCALITIES`, `PRIVATE_SCHOOLS`,
 `RECLASSIFY_2039B`). `INSTITUTION_NAMES` (the naming BANK) deliberately kept
 the old strings — it is a record of the grammar, not a live-name list — but

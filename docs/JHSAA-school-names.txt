@@ -109,7 +109,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     9A  2458  Veles Vo-Tech                          Port Veles             Port Veles Maritime Academy
 
 
--- SAME LEADING WORD, DIFFERENT CITIES (102 groups)
+-- SAME LEADING WORD, DIFFERENT CITIES (101 groups)
     7A  1444  Alder Crossing                         Boyerstown             Boyerstown North
     3A   438  Alder Cooperative                      Monte Blanco           Claudette Freeman
 
@@ -303,9 +303,6 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
 
     1A   131  Marlow County                          Clear Rim              Marlow County
     4A   655  Marlow                                 St. Varian             Gabriel Montoya
-
-    8A  2117  Marshfield                             Bahía Leal             Manuel Robles
-    8A  1892  Marshfield Prep                        San Borondón           St. Sophia Preparatory
 
     1A   187  Martin Luther                          Ditch Fork             Martin Luther
     9A  2148  Martin Van Buren                       Port Veles             Harbor Gate North
@@ -623,7 +620,7 @@ Bahía Azúl — 1 program (Weller County, Selquah)
 Bahía Leal — 7 programs (San Marcos County, Sebastian Cape)
     9A  2594 pub  Rogue Valley Packing                                      Del Rey Athletic Association       James Gaines
     9A  2474 pub  Housatonic                                                Del Rey Athletic Association       Housatonic HS
-    8A  2117 pub  Marshfield                                                Gold Valley League                 Manuel Robles
+    8A  2117 pub  Asteroid City                                             Gold Valley League                 Manuel Robles
     7A  1420 pub  El Sereno                                                 Pacific Coast League               Isabel Lucero
     7A  1384 pub  Bahía Leal                                                Pacific Coast League               Bahía Leal
     5A   930 pub  Verde Highlands                                           Valley Coast Interscholastic League Costa Verde North

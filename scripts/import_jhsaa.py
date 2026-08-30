@@ -746,7 +746,7 @@ FORMER_NAMES = {
     "Madrigal West Bench":                         "Benchlands",
     "Maksim Karev":                                "Excelsior",
     "Manuel Cordero":                              "Sonia Sotomayor",
-    "Manuel Robles":                               "Marshfield",
+    "Manuel Robles":                               "Asteroid City",
     "Manzanita Ridge":                             "Manzanita",
     "Maple Run":                                   "Cherry Hill North",
     "Marcus Langston":                             "Rutherford Hayes",
@@ -759,6 +759,7 @@ FORMER_NAMES = {
     "Marina Moroz North":                          "Benjamin Harrison",
     "Marsh Depot":                                 "Jersey City",
     "Marshdale":                                   "Fort Lassiter",
+    "Marshfield":                                  "Asteroid City",
     "Matteo Dahl":                                 "Bywater",
     "Mercer City North":                           "Twin Mills",
     "Mercer City Technical Arts Academy":          "Twin Mills",
@@ -844,7 +845,7 @@ FORMER_NAMES = {
     "Oskar Bellini":                               "Notre Dame",
     "Oskar Weiss":                                 "Waldo",
     "Pacific Friends School":                      "Pacific Friends",
-    "Pacific Fruit Exchange":                      "Marshfield",
+    "Pacific Fruit Exchange":                      "Asteroid City",
     "Paddock Institute":                           "Paddock Tech",
     "Pauli Booker":                                "Nightfall",
     "Pavel Kovalenko":                             "Coles Creek",
@@ -1660,7 +1661,9 @@ RENAMES = {
     "Katherine Davenport": "Blue Mountain Grange",
     "Lars Mercier": "Shasta Agricultural",
     "Lillian Price": "North Coast Packing",
-    "Manuel Robles": "Marshfield",         # 2026-08: was "Pacific Fruit Exchange"
+    "Manuel Robles": "Asteroid City",      # 2026-08: was "Pacific Fruit Exchange",
+                                           # then briefly "Marshfield" (rewritten in
+                                           # place — too close to Marshfield Prep)
     "Mikel Echevarria": "Fir Valley Grange",
     "Naomi Price": "Crown Paper",
     "Naomi Ward": "Golden State Packing",
@@ -2945,7 +2948,7 @@ MASCOTS = {
     # ── South Coast: the southern shore and its canneries ────────────────────
     "Carolina Island": "Tule Elk",
     "Quarmont": "Stonecutters",
-    "Marshfield": "Sardines",                # Bahía Leal, a cannery town
+    "Asteroid City": "Sardines",             # Bahía Leal, a cannery town
     "Quarry Workers": "Lightkeepers",
     "Biloxi Heights": "Sea Otters",
     "Claudette Cole": "Godwits",
