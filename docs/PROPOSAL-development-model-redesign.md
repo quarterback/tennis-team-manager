@@ -1,0 +1,1602 @@
+# Proposal — Player Development Model Redesign
+
+**Status:** Design proposal / decision record  
+**Scope:** JHSAA high school and NCAA college player development  
+**Date:** 2026-08  
+**Purpose:** Preserve the full reasoning behind two viable redesign directions before implementation, so the design can be revisited later without reconstructing the conversation or intent from code comments.  
+**Likely direction:** Option B — individualized randomized access schedule  
+**Related baseline:** `docs/REPORT-development-model-baseline.md`  
+**Related reproducibility scripts:** `scripts/dev_model_baseline.py`,
+`scripts/dev_model_access_experiment.py`
+
+> ‼️ **§21 AMENDS THIS DOCUMENT AND WINS WHERE THEY DISAGREE.** Sections 1-20 are
+> the proposal as written before the access models were A/B'd against real
+> rosters. §21 records what the measurements showed, and it changes four things:
+> which constant does the work, which success metric is meaningful, a guardrail
+> the odometer needs, and an architectural decision that has to be made before any
+> code is written. Read §21 alongside §12 (measurement plan) and §17
+> (implementation questions).
+
+---
+
+# 1. Why this proposal exists
+
+The current tennis development systems do not produce enough variation in *career shape*.
+
+This is not primarily a problem of insufficient growth. The high-school model already generates meaningful year-over-year rating gains. The problem is that most players improve on broadly similar age-linked schedules, so they rise together rather than overtaking one another. The ladder therefore remains much more stable than the underlying amount of development would suggest.
+
+The college system has a different surface symptom but a related structural problem: players begin with a large share of their fixed ceiling already available, while the ordinary development rate closes so little of the remaining gap that many four-year college careers barely change.
+
+The result in both systems is a narrower range of possible player stories than desired.
+
+The redesign should create players who can plausibly be:
+
+- elite immediately as freshmen;
+- nearly finished products when they arrive;
+- steady developers;
+- early bloomers;
+- late bloomers;
+- one-year spike developers;
+- stagnant players;
+- high-upside players who never realize most of that upside;
+- ordinary players who become useful because they develop earlier than peers;
+- highly rated players whose development plateaus;
+- players who meaningfully reorder their school ladder over time.
+
+The core philosophical change is this:
+
+> **For this game, the relevant “peak” is the best version of the player that appears while the player is in high school or college. The model does not need to preserve unused talent for a hypothetical later professional career.**
+
+The small pro sidecar is not important enough to justify designing high-school and college development around a future reveal. The high-school and college games should get to use the player’s interesting development while that player is actually present in those games.
+
+---
+
+# 2. Baseline findings
+
+The redesign should be judged against measured behavior, not only against constants.
+
+The baseline report found the following.
+
+## 2.1 High-school development quantity is not the main problem
+
+Across observed cohorts, freshmen gained roughly:
+
+- **Girls:** +8.5 OVR over two years
+- **Boys:** +9.7 OVR over two years
+
+The distribution was not completely flat: approximately p10 +2 to p90 +16.
+
+That is enough raw movement to create meaningful careers.
+
+The problem is that returning teammates swap ladder order only **7.7%** of the time.
+
+In other words:
+
+> Players improve, but they mostly improve in parallel.
+
+This makes a player’s first-season rank unusually predictive of their later rank.
+
+## 2.2 Grade-access bands remain strongly ordered
+
+The newer JHSAA development trajectory improved overlap relative to the old lockstep model, but not enough.
+
+Measured maturity distribution under the new model:
+
+| Grade | Mean | p10 | p50 | p90 |
+|---|---:|---:|---:|---:|
+| 9 | 0.572 | 0.432 | 0.559 | 0.748 |
+| 10 | 0.679 | 0.553 | 0.675 | 0.817 |
+| 11 | 0.766 | 0.670 | 0.763 | 0.869 |
+| 12 | 0.865 | 0.785 | 0.869 | 0.935 |
+
+Only:
+
+- **1.3% of freshmen exceed the senior median**
+- **13.4% of freshmen exceed the junior median**
+
+This is better than the original lockstep model, where freshman-over-senior-median was effectively zero, but seniority remains built into the arithmetic.
+
+## 2.3 Seniority dominates No. 1 singles
+
+Measured No. 1-seat shares:
+
+- **Girls seniors:** 85.7%
+- **Boys seniors:** 81.5%
+- **Freshmen:** approximately 1.5%
+
+That is too age-deterministic for a sport where unusually advanced younger players should occasionally be among the best players in a school, league, or state.
+
+## 2.4 A large amount of ceiling is hidden behind maturity
+
+When rosters are ranked by ceiling rather than current ability, freshman lineup presence rises from roughly **31.9% to 54.8%**.
+
+That is approximately **1.7× as many freshmen**.
+
+This does not mean all of those freshmen should play varsity. It demonstrates that the system has substantial underlying talent that cannot become competitively relevant because the grade-based access structure suppresses it.
+
+## 2.5 A meaningful population still does not play
+
+Approximately **25.4% of players never reach a varsity lineup during the observed three-season window**.
+
+This mattered when JHSAA did not have a JV system. Tying development to playing time would have trapped buried players:
+
+`no varsity opportunity → no development → no varsity opportunity`
+
+That constraint has changed.
+
+JV now gives most rostered players a competitive environment, making it possible for participation to influence development without condemning every non-varsity freshman to stagnation.
+
+## 2.6 Ceiling is effectively immobile
+
+Across observed high-school players, ceiling changes for only about **1.0%** of players and the mean change is approximately **+0.02**.
+
+In practical terms, ceiling is fixed.
+
+Therefore almost all surprise must currently come from maturity/access.
+
+But maturity/access is strongly grade-ordered.
+
+That leaves very little room for unexpected player development.
+
+## 2.7 The talent-compression transition must be controlled for
+
+There is a live cohort boundary from the talent-compression change.
+
+Older cohorts were generated under the hotter talent distribution, while new cohorts are generated under compressed ceilings. This means apparent grade differences in POT/ceiling during the transition are partly generation-history differences rather than development differences.
+
+Any before/after development analysis through the transition must control for **entry year**.
+
+The compression transition should be fully cleared after the final pre-compression cohort graduates.
+
+---
+
+# 3. Current model architecture
+
+There are presently two different development systems in the same repository.
+
+---
+
+## 3.1 College / core prospect model
+
+The core `app/development.py` model uses concepts inherited from the baseball design:
+
+- fixed per-attribute potential;
+- maturity/access applied to potential to create current ability;
+- interest-rate tiers;
+- scouting fog;
+- deterministic development;
+- no regression;
+- no annual talent-change rerolls.
+
+Current development closes a fraction of the remaining current-to-potential gap:
+
+```python
+frac = interest_rate * GROWTH_K * tier_mult * scale
+current[a] += frac * (potential[a] - current[a])
+```
+
+The important difference from the baseball design is that:
+
+- **potential is fixed**
+- **access/current moves**
+- there is no later reveal where a static access lens drops away.
+
+The ordinary interest-rate calibration is also very weak.
+
+Approximate share of remaining gap closed per year:
+
+| Tier | Population | Approx. gap closed/year |
+|---|---:|---:|
+| Ordinary | 75% | 0.6%–6.0% |
+| Late bloomer | 20% | 7.8%–18.7% |
+| Super-bloomer | 5% | 23.0%–42.2% |
+
+A median ordinary player can therefore spend four college seasons changing very little.
+
+College freshmen also enter with a high maturity band, roughly 0.83–0.90, so college does not have the same severe freshman suppression as high school. Its problem is more often **development that is too weak to create meaningful career transformation**.
+
+---
+
+## 3.2 High-school model
+
+JHSAA does not call `Prospect.develop()`.
+
+Players are regenerated deterministically from player identity, school, gender, entry year, and roster seat. Development is represented by reading the same underlying ceiling through a grade-dependent maturity trajectory.
+
+The current new-era HS model rolls a full trajectory at entry:
+
+- arrival band;
+- finish band;
+- minimum rise;
+- minimum annual step;
+- curve-shape exponent;
+- ready-player path;
+- rare prodigy floor.
+
+The broad curve categories are:
+
+- steady
+- early
+- late
+- spike
+
+This is already closer to the desired philosophy than the legacy lockstep system because the career path is determined at entry rather than rerolled each season.
+
+However, it still assumes:
+
+- almost everyone meaningfully rises;
+- later grades generally access more;
+- finish bands remain tightly grade-ordered;
+- stagnation is not a first-class outcome;
+- a genuinely elite freshman still tends to be interpreted as an unfinished version of a future senior.
+
+That is the core behavior this proposal addresses.
+
+---
+
+# 4. Shared design principles
+
+Both redesign options below should follow the same principles.
+
+## 4.1 Development is not a reward for winning
+
+Team quality must not determine development.
+
+A player on a 2–20 team should not develop more slowly simply because the team loses.
+
+A player going 4–20 in varsity should still gain more developmental value from playing than a comparable player sitting all season.
+
+The model should measure **competitive exposure**, not success.
+
+No development component should directly use:
+
+- wins;
+- win percentage;
+- team record;
+- league finish;
+- TOSS;
+- State team qualification.
+
+---
+
+## 4.2 Playing time should matter
+
+Participation should work like an odometer.
+
+The conceptual ordering is:
+
+```text
+sitting < JV participation < varsity participation
+```
+
+JV should be worth less than varsity, but materially more than sitting.
+
+The simplest form is fixed appearance value:
+
+```text
+JV appearance      = small exposure unit
+Varsity appearance = larger exposure unit
+```
+
+The system should use a saturating or capped season total so that 35 matches is not wildly more valuable than 25 matches.
+
+Illustrative only:
+
+```text
+JV appearance      = 0.5 exposure
+Varsity appearance = 1.0 exposure
+Normal exposure cap = 20–25 varsity-equivalent units
+```
+
+The exact constants require simulation rather than design-by-example.
+
+---
+
+## 4.3 Playing time accelerates realization; it does not manufacture ceiling
+
+Participation should help a player access growth already available to that player.
+
+It should not convert an ordinary ceiling into an elite one.
+
+Conceptually:
+
+```text
+development character
+    determines available growth
+
+playing exposure
+    determines how much of that growth is realized
+
+current ability
+    receives the realized growth
+```
+
+This distinction allows:
+
+- a stagnant player to play constantly and still improve little;
+- an explosive developer to realize more of a major growth window if they are playing;
+- a buried JV player to progress toward varsity rather than remain frozen;
+- an already-developed prodigy to gain little because there is little relevant growth remaining.
+
+---
+
+## 4.4 Stagnation must be a real career outcome
+
+The current model effectively guarantees meaningful growth.
+
+The redesign should allow players whose competitive-career ability barely changes.
+
+Examples:
+
+```text
+42 → 42 → 43 → 43
+```
+
+or:
+
+```text
+51 → 51 → 52 → 52
+```
+
+This is different from regression.
+
+The player does not get worse. The player simply fails to add much.
+
+---
+
+## 4.5 Development character should be assigned at generation
+
+The baseball design’s strongest principle should remain:
+
+> Surprise should come from discovering what kind of developer the player always was, not from the universe rerolling the player every offseason.
+
+Therefore the redesign should avoid OOTP-style annual talent-change randomness.
+
+Randomness can exist at generation in:
+
+- growth amount;
+- timing;
+- plateau length;
+- access schedule;
+- career peak;
+- stagnation probability;
+- spike timing;
+- response to competitive exposure.
+
+Once generated, the path should be deterministic except for explicitly designed exceptional-event mechanics.
+
+---
+
+## 4.6 High school and college should use the talent while they have it
+
+The game does not need to hold back development because a player might theoretically be better after graduation.
+
+For design purposes:
+
+- HS potential/peak should describe the meaningful high-school window.
+- College potential/peak should describe the meaningful college window.
+
+A freshman who is already elite can simply be elite.
+
+A sophomore can peak.
+
+A junior can plateau.
+
+A senior can bloom late.
+
+There is no requirement that the player’s chronological final season be their best season.
+
+---
+
+## 4.7 State individual advancement may provide a small exceptional-development allowance
+
+Regular match success should not influence development.
+
+Individual State competition is a separate case because it represents concentrated, high-level competitive exposure.
+
+The proposed mechanic is **not a raw rating award for winning**.
+
+Instead, a sufficiently deep individual-State run may raise the normal annual realization cap by a small amount.
+
+Conceptually:
+
+```text
+normal seasonal development cap = X
+individual-State breakthrough allowance = X + small extra capacity
+```
+
+If the player has no latent growth available, the allowance does nothing.
+
+The tournament therefore cannot create talent ex nihilo.
+
+The allowance can scale by flight:
+
+- strongest for S1;
+- smaller for S2/S3;
+- smaller or differently calibrated for doubles flights;
+- mixed doubles can be assigned an appropriate tier.
+
+This should remain modest.
+
+---
+
+# 5. Option A — Explicit competitive-career trajectory model
+
+## 5.1 Core idea
+
+At generation, explicitly create the player’s entire relevant high-school or college development story.
+
+Each player receives:
+
+1. **starting ability**
+2. **competitive-career peak**
+3. **peak timing**
+4. **development character / curve**
+5. **playing-time responsiveness**
+
+The model does not need an adult/pro ceiling to drive development.
+
+Potential, if retained for UI or recruiting, can represent either the career-window peak or a broader upside estimate that is not guaranteed to be realized.
+
+---
+
+## 5.2 Development characters
+
+A small explicit taxonomy can define typical curve shapes.
+
+Suggested conceptual types:
+
+| Type | Character |
+|---|---|
+| Ready | Arrives near peak; little subsequent growth |
+| Early | Large early jump, then plateau |
+| Steady | Moderate improvement throughout career |
+| Late | Little early movement, large late growth |
+| Spike | One concentrated development jump |
+| Stagnant | Minimal improvement |
+| Failed promise | Has apparent upside but realizes little of it |
+| Exceptional | Rare large multi-year growth path |
+
+These types do not need to be displayed to the user.
+
+They are internal player identity.
+
+---
+
+## 5.3 Example trajectories
+
+All examples are illustrative.
+
+### Ready / prodigy
+
+```text
+61 → 63 → 64 → 64
+career peak = 64
+```
+
+This player is already one of the best players in the state as a freshman.
+
+The engine does not force the player to become a 70+ senior.
+
+---
+
+### Early developer
+
+```text
+44 → 57 → 59 → 60
+career peak = 60
+```
+
+This creates a sophomore breakthrough.
+
+---
+
+### Steady developer
+
+```text
+36 → 43 → 49 → 55
+career peak = 55
+```
+
+This resembles the conventional career arc.
+
+---
+
+### Late developer
+
+```text
+31 → 33 → 41 → 58
+career peak = 58
+```
+
+This produces the senior who suddenly becomes important.
+
+---
+
+### Spike developer
+
+```text
+33 → 35 → 53 → 55
+career peak = 55
+```
+
+This allows one dramatic offseason to reshape a roster.
+
+---
+
+### Stagnant player
+
+```text
+43 → 43 → 44 → 44
+career peak = 44
+```
+
+Playing can help the player realize the small amount available but cannot create a major leap.
+
+---
+
+### Failed promise
+
+```text
+34 → 36 → 38 → 40
+scouting/upside signal may suggest much more
+competitive-career peak = 40
+```
+
+This is useful if the system retains a distinction between theoretical upside and realized-career peak.
+
+---
+
+## 5.4 How playing time interacts with Option A
+
+The trajectory defines the **available intrinsic gain** for the season.
+
+Playing exposure determines what share of that gain is actually realized.
+
+Example:
+
+```text
+trajectory says sophomore target gain = +10
+
+no play     → realizes +6
+full JV     → realizes +8
+full varsity→ realizes +10
+```
+
+Exact values would be calibrated.
+
+The player is not punished by team losses.
+
+---
+
+## 5.5 Advantages of Option A
+
+### Career stories are explicit
+
+It naturally creates the exact archetypes the game wants.
+
+The model can deliberately guarantee that all desired trajectory types exist in sensible proportions.
+
+### Seniority can be broken cleanly
+
+Nothing requires later grade to mean greater ability.
+
+A ready freshman can be better than a stagnant senior without needing extreme ceiling differences.
+
+### “Peak with me” is represented directly
+
+The model explicitly asks:
+
+> What is this player’s best high-school/college version?
+
+That matches the design philosophy exactly.
+
+### Easy to reason about in historical analysis
+
+A player’s career can later be classified as early, late, stagnant, etc.
+
+This may make long-term analysis and storytelling especially legible.
+
+---
+
+## 5.6 Risks / costs of Option A
+
+### Adds a new concept: competitive-career peak
+
+This is conceptually clean but adds another quantity that must coexist with existing `potential`.
+
+The code and UI would need a clear answer to whether `potential`:
+
+- becomes career peak;
+- remains theoretical ceiling;
+- becomes hidden;
+- or is replaced.
+
+### Can become over-authored
+
+Explicit categories can make career shapes feel designed if distributions are too obvious.
+
+The generator must still produce enough continuous variation inside each category.
+
+### Requires more migration work
+
+The current college and high-school systems are built around fixed potential and access/current.
+
+Option A is the stronger conceptual break.
+
+---
+
+# 6. Option B — Individualized randomized access schedule
+
+## 6.1 Core idea
+
+Keep the existing fixed-potential concept, but stop tying access tightly to grade.
+
+Each player receives a hidden, deterministic **year-by-year access schedule** at generation.
+
+Example:
+
+```text
+9th  0.78
+10th 0.81
+11th 0.92
+12th 0.93
+```
+
+Another player:
+
+```text
+9th  0.46
+10th 0.48
+11th 0.50
+12th 0.51
+```
+
+Another:
+
+```text
+9th  0.52
+10th 0.74
+11th 0.76
+12th 0.89
+```
+
+Current ability is derived from the player’s fixed talent ceiling through the individual access schedule rather than a statewide grade band.
+
+Conceptually:
+
+```text
+current ability
+    = potential × player-specific access
+      modified by realized development / playing exposure
+```
+
+The important change is that **grade no longer determines the access band**.
+
+Grade only tells the engine which point in this particular player’s generated schedule applies.
+
+---
+
+## 6.2 What Option B preserves
+
+This is much closer to the current architecture.
+
+It preserves:
+
+- fixed potential;
+- access/maturity as a concept;
+- deterministic player identity;
+- no regression;
+- no annual rerolls;
+- existing potential-based recruiting/scouting compatibility.
+
+The redesign occurs mainly in how access is generated and updated.
+
+---
+
+## 6.3 Career shapes emerge from access schedules
+
+The same career archetypes can appear without explicit labels.
+
+### Ready player
+
+```text
+access:
+0.90 → 0.92 → 0.93 → 0.94
+```
+
+A high-ceiling player can be elite immediately.
+
+---
+
+### Early bloomer
+
+```text
+0.52 → 0.78 → 0.81 → 0.83
+```
+
+---
+
+### Steady
+
+```text
+0.52 → 0.62 → 0.72 → 0.82
+```
+
+---
+
+### Late
+
+```text
+0.48 → 0.51 → 0.58 → 0.84
+```
+
+---
+
+### Spike
+
+```text
+0.49 → 0.51 → 0.79 → 0.82
+```
+
+---
+
+### Stagnant
+
+```text
+0.66 → 0.67 → 0.67 → 0.68
+```
+
+---
+
+### High theoretical ceiling, low realized access
+
+```text
+potential = 70
+access:
+0.43 → 0.45 → 0.48 → 0.51
+
+current:
+30 → 32 → 34 → 36
+```
+
+This player never meaningfully realizes the nominal ceiling during high school.
+
+That is acceptable under the new philosophy.
+
+---
+
+## 6.4 How playing time interacts with Option B
+
+There are two plausible internal implementations, but the design intent is the same:
+
+### Interpretation 1 — playing advances access toward the scheduled target
+
+Each season has a generated target access.
+
+Baseline development moves the player part of the way toward it.
+
+JV and varsity participation allow the player to get closer.
+
+Example:
+
+```text
+scheduled sophomore access = 0.72
+
+sitting        → reaches 0.64
+full JV        → reaches 0.68
+full varsity   → reaches 0.72
+```
+
+### Interpretation 2 — playing provides a small additive access realization value
+
+The player has a generated baseline access for the year, then accumulated exposure adds a bounded amount.
+
+Example:
+
+```text
+base access = 0.68
+JV exposure = +0.02
+varsity exposure = +0.04
+annual cap = generated schedule / realization ceiling
+```
+
+The first interpretation is conceptually cleaner because playing cannot push a player arbitrarily above the generated career shape except through explicit exceptional-event allowances.
+
+---
+
+## 6.5 Advantages of Option B
+
+### Smaller conceptual break
+
+It keeps the current fixed potential + access architecture.
+
+### Closest to the baseball access philosophy
+
+A player may possess significant potential while accessing very different amounts of it during the relevant competitive career.
+
+### Naturally supports stagnation
+
+A player can simply draw a nearly flat access schedule.
+
+### Naturally supports prodigies
+
+A freshman can draw 0.90 access without implying they must be much better as a senior.
+
+### Keeps POT useful
+
+Existing recruiting, scouting, and talent systems can continue to use potential with fewer downstream changes.
+
+### Reduces age determinism directly
+
+The current problem is that grade bands impose order.
+
+Option B removes the strong grade band while retaining the surrounding system.
+
+---
+
+## 6.6 Risks / costs of Option B
+
+### Potential can retain misleading semantics
+
+If a player has POT 75 but their generated access schedule never exceeds 0.55 during high school, users may interpret the player as a failed development case rather than a player whose theoretical ceiling simply was not relevant to the HS window.
+
+That may be acceptable if POT is understood as upside rather than guaranteed destination.
+
+### Schedule generation must be carefully distributed
+
+If access schedules are too unconstrained, the model can become random-looking.
+
+The distributions should produce recognizable tendencies without reinstating grade lockstep.
+
+### Needs explicit handling of “peak with me”
+
+Because fixed potential survives, the code must not implicitly feel obligated to force players toward it by graduation.
+
+The generated access schedule must be authoritative even when large unused potential remains.
+
+---
+
+# 7. Playing-time odometer design
+
+This mechanic applies to either Option A or Option B.
+
+## 7.1 Principle
+
+Playing contributes to development because competitive participation creates developmental exposure.
+
+The system does not care whether the player wins.
+
+The system cares that the player played.
+
+---
+
+## 7.2 Sources of exposure
+
+### Varsity
+
+Highest ordinary appearance value.
+
+A varsity match means the player competed at the school’s top level.
+
+### JV
+
+Lower appearance value.
+
+JV should be developmentally useful because it prevents buried players from being structurally frozen.
+
+### Sitting
+
+No appearance-based bonus.
+
+The player still receives whatever intrinsic/base development their generated trajectory supplies.
+
+---
+
+## 7.3 Fixed values vs opponent-adjusted values
+
+The preferred philosophy is fixed participation value.
+
+Do **not** use:
+
+- opponent rating;
+- match result;
+- line result;
+- team result;
+- game score;
+- strength of schedule.
+
+Those would turn development into a performance or opportunity-quality feedback loop.
+
+The odometer should be intentionally simple.
+
+---
+
+## 7.4 Saturation
+
+Appearance value should saturate.
+
+The purpose is to distinguish:
+
+- no season;
+- partial season;
+- meaningful season;
+- full season.
+
+It is not to make the difference between 31 and 34 appearances developmentally enormous.
+
+A capped or diminishing-return function is preferable.
+
+---
+
+# 8. Individual State development allowance
+
+This is separate from the participation odometer.
+
+## 8.1 Why State is different
+
+Individual State is not being treated as a reward for winning.
+
+It is a rare high-level developmental event.
+
+A player advancing through several State rounds experiences unusually concentrated competition at their own flight.
+
+That can justify a small amount of extra growth realization.
+
+---
+
+## 8.2 Mechanic
+
+The State run can modestly raise the player’s normal seasonal realization cap.
+
+It should not directly add OVR.
+
+Example concept:
+
+```text
+normal available realized growth = 5
+S1 deep-run allowance = +1 additional realizable point
+```
+
+If the player has no available latent growth, no additional point appears.
+
+---
+
+## 8.3 Flight weighting
+
+The allowance can decline by flight.
+
+Illustrative hierarchy:
+
+```text
+S1 > S2 > S3
+D1 > D2 > D3
+mixed assigned separately
+```
+
+This does not need to be linear.
+
+A State title itself does not need a giant effect.
+
+The mechanism should remain mild.
+
+---
+
+# 9. High school vs college
+
+The same philosophy can govern both levels while allowing different constants.
+
+## High school
+
+The redesign should primarily solve:
+
+- age-lock;
+- senior dominance;
+- insufficient ladder reorder;
+- talented freshmen suppressed by maturity;
+- buried players developing identically whether they play or not.
+
+The four-year HS window should contain a wide range of peak timing.
+
+## College
+
+The redesign should primarily solve:
+
+- ordinary players changing too little;
+- weak interest-rate calibration;
+- insufficient career transformation;
+- development being mostly invisible over four seasons.
+
+College players may arrive more developed on average than HS freshmen, but the same career-shape diversity should exist.
+
+A college freshman can be:
+
+- already near peak;
+- a major future developer;
+- stagnant;
+- an early star who plateaus;
+- a late senior breakout.
+
+---
+
+# 10. What should not be introduced
+
+This proposal does **not** call for:
+
+- win-based development;
+- regression;
+- annual random talent rerolls;
+- team-quality development bonuses;
+- coach decisions determining whether a player has any development path at all;
+- mandatory senior-year peaks;
+- mandatory realization of full potential;
+- development tied to State team qualification;
+- arbitrary OVR bonuses for championships.
+
+---
+
+# 11. Era gating and migration
+
+Any implementation must be era-gated.
+
+Existing archived players and seasons should not be silently rewritten.
+
+The current repository already uses `dev_era()`-style gating.
+
+A new development model should therefore apply only to cohorts entering at or after a defined development era.
+
+Expected transition:
+
+```text
+Year 1: freshmen only
+Year 2: freshmen + sophomores
+Year 3: freshmen + sophomores + juniors
+Year 4: full HS population
+```
+
+College convergence will lag depending on how graduating HS players feed into NCAA generation and persistence.
+
+The existing talent-compression era must be treated separately from the development-model era.
+
+They are independent changes:
+
+- **talent compression** changes how many high-end players are generated;
+- **development redesign** changes when and how those players realize ability.
+
+Analysis during the overlap must control for both cohort boundaries.
+
+---
+
+# 12. Measurement plan
+
+The redesign should be evaluated using the baseline script and several new measures.
+
+## 12.1 Ladder reordering
+
+Baseline:
+
+**7.7% of returning teammates swap ladder order.**
+
+The new model should materially increase this.
+
+This is one of the strongest measures of whether development creates different careers rather than parallel growth.
+
+---
+
+## 12.2 No. 1-seat age distribution
+
+Baseline:
+
+- girls seniors: 85.7%
+- boys seniors: 81.5%
+- freshmen: ~1.5%
+
+The redesign should reduce senior lock-in.
+
+The goal is not equal distribution by grade.
+
+Seniors should still be better on average.
+
+The goal is meaningful overlap.
+
+---
+
+## 12.3 Freshman access overlap
+
+Baseline:
+
+- 1.3% above senior median maturity
+- 13.4% above junior median
+
+The redesign should allow more advanced freshmen without reheating the talent generator.
+
+---
+
+## 12.4 Development spread
+
+Continue measuring OVR gain distributions.
+
+The target is not necessarily greater mean growth.
+
+The target is greater heterogeneity:
+
+- more near-zero careers;
+- more early jumps;
+- more late jumps;
+- more meaningful reorder.
+
+---
+
+## 12.5 Playing-time effect
+
+Compare otherwise similar players by accumulated exposure:
+
+- no appearances;
+- JV-heavy;
+- mixed JV/varsity;
+- varsity-heavy.
+
+Expected direction:
+
+```text
+sitting < JV < varsity
+```
+
+Do not measure development against win percentage.
+
+---
+
+## 12.6 Stagnation rate
+
+Measure the share of players whose current ability changes only minimally over multi-year windows.
+
+This should become a visible population rather than an accidental rarity.
+
+---
+
+## 12.7 Underclass elite population
+
+Continue tracking:
+
+- OVR 50+
+- OVR 55+
+- OVR 60+
+- OVR 65+
+- OVR 70+
+
+by grade and gender.
+
+The development redesign must not undo talent compression by creating too many elite underclass players.
+
+It should change **when** rare talent becomes visible, not dramatically increase **how much rare talent exists**.
+
+---
+
+## 12.8 Career peak timing
+
+For Option A, this is explicit.
+
+For Option B, infer the year of maximum current OVR.
+
+Track the share peaking:
+
+- freshman year;
+- sophomore year;
+- junior year;
+- senior year.
+
+Senior should remain common, but no longer nearly universal.
+
+---
+
+# 13. Comparison
+
+| Question | Option A — explicit career trajectory | Option B — randomized access schedule |
+|---|---|---|
+| Keeps fixed POT architecture | Partially / optional | Yes |
+| Directly models “peak with me” | Yes | Indirectly |
+| Supports freshman phenoms | Yes | Yes |
+| Supports stagnation | Yes | Yes |
+| Supports early/late/spike growth | Yes | Yes |
+| Breaks grade lockstep | Yes | Yes |
+| Easy migration from current code | Less | More |
+| Preserves recruiting/scouting POT semantics | Requires decision | Mostly |
+| Career archetypes explicit | Yes | Emergent |
+| Risk of over-authored trajectories | Higher | Lower |
+| Risk of confusing unused POT | Lower if POT redefined | Higher |
+| Closest to current HS architecture | No | Yes |
+| Closest to baseball access vocabulary | Moderate | High |
+| Likely implementation complexity | Higher | Lower |
+
+---
+
+# 14. Option A in one sentence
+
+> Generate the player’s entire relevant competitive career at entry: starting ability, career-window peak, timing, and development shape; playing time determines how much of that generated growth is realized.
+
+---
+
+# 15. Option B in one sentence
+
+> Keep fixed potential, but replace grade-based maturity with a player-specific year-by-year access schedule; playing time determines how fully the player realizes each year’s access opportunity.
+
+---
+
+# 16. Current decision posture
+
+The current preference is **Option B**.
+
+The reasons are:
+
+1. It preserves more of the existing tennis architecture.
+2. It directly attacks the measured problem: grade-based access ordering.
+3. It preserves POT for recruiting/scouting systems.
+4. It can produce ready players, stagnation, early/late bloomers, and spikes without adding a separate career-peak field.
+5. It is conceptually close to the original potential/access philosophy.
+6. It allows a player to graduate with substantial unused theoretical potential without treating that as an error.
+7. It can incorporate JV/varsity exposure naturally as access realization.
+
+Option A should remain documented because it is the cleaner conceptual model if the fixed-POT semantics later become cumbersome.
+
+---
+
+# 17. Likely Option B implementation questions
+
+These are implementation questions to resolve after the design choice, not reasons to reopen the design.
+
+## 17.1 How is the access schedule generated?
+
+The schedule should be highly individualized but not arbitrary.
+
+It needs distributions that create:
+
+- ready;
+- steady;
+- early;
+- late;
+- spike;
+- stagnant;
+
+without requiring those labels to be stored explicitly.
+
+## 17.2 Must access always rise?
+
+Probably not necessarily by meaningful amounts, but regression is outside the current philosophy.
+
+Flat or nearly flat schedules are sufficient for stagnation.
+
+If strict non-decrease is retained:
+
+```text
+0.61 → 0.61 → 0.62 → 0.62
+```
+
+already produces stagnation.
+
+## 17.3 How much can one year jump?
+
+This requires calibration against desired roster churn.
+
+A spike must be large enough to reorder ladders.
+
+## 17.4 How does exposure modify access?
+
+Preferred interpretation:
+
+> The generated schedule defines available access; participation determines how close the player gets to that scheduled opportunity.
+
+This is safer than adding uncapped access points for every appearance.
+
+## 17.5 Can exposure pull development forward?
+
+This is potentially useful.
+
+A heavy varsity season could allow a player to realize some access earlier than a comparable player who sits, without changing the eventual four-year access ceiling.
+
+This would make playing materially consequential while preserving generated player identity.
+
+## 17.6 How is JV persisted?
+
+The development engine must use actual archived/known JV participation counts, not infer that a player “must have played” simply because they were below the varsity line.
+
+## 17.7 How should college differ?
+
+College can use the same architecture with:
+
+- higher arrival access on average;
+- different access-schedule distributions;
+- different exposure values;
+- different cap behavior.
+
+The architecture can be shared even if constants differ.
+
+---
+
+# 18. Decision record
+
+## Decision
+
+**Pending. Current preference: Option B.**
+
+## If Option B is selected
+
+Record:
+
+- development-era start year;
+- HS schedule-generation distributions;
+- NCAA schedule-generation distributions;
+- JV exposure value;
+- varsity exposure value;
+- exposure saturation/cap;
+- State individual allowance table;
+- whether access may be pulled forward by heavy exposure;
+- how POT is described in UI/documentation;
+- baseline comparison after first full cohort.
+
+## If Option A is selected later
+
+Do not reconstruct it from chat history. This document is the retained alternative.
+
+The central Option A principle is:
+
+> The relevant peak is explicitly generated for the four-year competitive career, and the engine is not obligated to preserve or model post-graduation upside.
+
+---
+
+# 19. Design principles to preserve in future revisions
+
+1. **Development is player character, not annual reroll noise.**
+2. **Winning does not cause development.**
+3. **Playing matters.**
+4. **JV is developmentally useful.**
+5. **Varsity exposure is more valuable than JV exposure.**
+6. **Participation value saturates.**
+7. **Stagnation is legitimate.**
+8. **Freshman excellence is legitimate.**
+9. **Senior-year peak is not mandatory.**
+10. **Unused theoretical potential at graduation is acceptable.**
+11. **Individual State can modestly expand realization capacity, not manufacture ratings.**
+12. **Talent compression and development timing are separate systems.**
+13. **Archives must remain stable through era gating.**
+14. **Measure roster-order churn, not just average OVR gain.**
+15. **The game should use interesting talent while the player is actually in the game.**
+
+---
+
+# 20. Summary
+
+The existing tennis development models produce too much age ordering and too little career-shape variation.
+
+High school has enough raw growth, but players rise together. College has the same fixed-ceiling architecture with development rates too weak to produce many meaningful transformations.
+
+Two viable redesigns are preserved here:
+
+### Option A — explicit career trajectory
+
+Generate a competitive-career peak and a full development shape directly.
+
+### Option B — individualized randomized access schedule
+
+Keep fixed potential, but generate a player-specific four-year access path that can be ready, early, steady, late, spiky, or stagnant.
+
+Both models add competitive-exposure realization:
+
+```text
+sitting < JV < varsity
+```
+
+with no win-based development.
+
+Both allow a modest individual-State cap-break allowance.
+
+The current preference is Option B because it preserves the existing architecture while directly removing the grade-band mechanism that currently locks roster order.
+
+The success criterion is not “players gain more OVR.”
+
+The success criterion is:
+
+> **Players with similar talent should be capable of having materially different high-school and college careers, and actual participation should help determine how much of those careers they realize.**
+
+---
+
+# 21. Measured amendment — what the A/B testing showed
+
+Added after §1-20 were written. Every number here comes from
+`scripts/dev_model_access_experiment.py` run over the 2057-2059 research exports:
+**the same programs, the same people, the same fixed ceilings and the same grades,
+with only the access model swapped.** Nothing else varies, so a metric that moves
+is attributable to the access model alone — not to the talent generator, not to
+cohort drift, not to roster composition.
+
+`M0` re-implements the shipped `jhsaa._dev_maturity` and reproduces the measured
+baseline to within a few tenths (7.3% vs 7.7% swaps, senior No. 1 share 87.4% vs
+85.7%). That agreement is what licenses reading the other rows as real
+differences rather than harness artefacts.
+
+## 21.1 Option B's mechanism has already shipped
+
+§6.1 describes Option B as "each player receives a hidden, deterministic
+year-by-year access schedule at generation." That is precisely what
+`jhsaa._dev_maturity` has done since the 2026-08 trajectory pass: an arrival
+roll, a finish roll and a curve-shape exponent, rolled once per player off their
+own identity and walked per grade. Grade already only selects a point on *that
+player's* schedule; it does not set a band.
+
+**So the measured baseline in `docs/REPORT-development-model-baseline.md` — 7.7%
+teammate swaps, 1.3% of freshmen above the senior median, 85.7% senior No. 1
+share — IS Option B, at its current constants.**
+
+This is good news for cost and risk: B needs no new architecture. But it means
+the decision record must specify **which constants move and by how much**, or the
+change ships as a no-op. "Adopt Option B" is not an implementable instruction.
+
+## 21.2 One constant carries nearly all the weight: the finish band
+
+`DEV_FINISH` is `(0.76, 0.94)` — narrow — while arrival spans `0.40-0.82`. The
+schedules therefore **converge**: almost everyone lands near 0.87 of their
+ceiling as a senior. That has a consequence the proposal does not draw out:
+
+> Under a fixed ceiling and a converging access schedule, the senior-year ladder
+> is ceiling-ordered — and the ceiling is fixed at generation. **The senior ladder
+> is therefore determined at birth**, and every shape in `DEV_SHAPES` only varies
+> the route to a predetermined finish.
+
+Widening the finish so schedules stop converging is the single
+highest-leverage change available:
+
+| access model | all-pair | near-5 | top-11 | **No. 1 held** | bench→lineup | Fr No.1 | Sr No.1 | mean OVR |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| **girls** | | | | | | | | |
+| M0 shipped | 7.3% | 25.0% | 10.3% | **90.7%** | 35.4% | 1.3% | 87.4% | 35.4 |
+| M1 wide finish `.60-.99` | 8.5% | 27.0% | 12.1% | 82.5% | 32.1% | 2.1% | 83.4% | 33.9 |
+| M2 wide finish + arrival | 8.9% | 28.6% | 12.5% | 84.8% | 30.0% | 3.8% | 81.1% | 34.5 |
+| M3 M2 + peak timing | 10.8% | 30.4% | 12.6% | 82.3% | 31.6% | 3.0% | 78.4% | 35.3 |
+| OPT-A (one parameterisation) | 10.9% | 28.5% | 13.8% | 79.7% | 32.5% | 0.8% | 81.2% | 37.7 |
+| *CHAOS — upper bound, illegal* | *36.3%* | *47.1%* | *40.6%* | *24.2%* | *41.7%* | *17.2%* | *51.0%* | *32.3* |
+| **boys** | | | | | | | | |
+| M0 shipped | 7.6% | 27.4% | 11.4% | **85.0%** | 34.3% | 1.8% | 83.0% | 39.0 |
+| M1 wide finish | 8.7% | 28.7% | 13.5% | 82.0% | 31.0% | 2.2% | 79.1% | 37.4 |
+| M2 wide finish + arrival | 9.1% | 30.1% | 13.5% | 75.1% | 29.6% | 6.9% | 75.4% | 38.1 |
+| M3 M2 + peak timing | 11.1% | 31.4% | 13.8% | 80.8% | 30.6% | 3.8% | 69.8% | 38.8 |
+| OPT-A (one parameterisation) | 12.2% | 31.4% | 16.0% | 79.5% | 34.4% | 0.7% | 77.0% | 40.7 |
+| *CHAOS — upper bound, illegal* | *36.9%* | *47.3%* | *41.7%* | *20.5%* | *41.4%* | *22.6%* | *42.5%* | *35.8* |
+
+**§6.6 lists the consequence of this as a RISK — "POT 75 but access never exceeds
+0.55, users may read them as a failed development case". Reclassify it as the
+primary mechanism.** §4.6 ("unused theoretical potential at graduation is
+acceptable") already licenses it; §6.6 then treats the same fact as a hazard. It
+is the feature, and it is where the behaviour change comes from.
+
+Note the cost: widening the finish downward drops mean OVR about a point. The
+band's **centre must be raised to compensate** — this is a spread change, not a
+level change, and the level must be held.
+
+Framed against §13's comparison table: **widening the finish IS Option A's
+decoupling, implemented inside Option B's architecture.** It makes a player's
+senior ability depend on something other than their ceiling, which is the one
+structural thing A can do that B was assumed not to. That removes most of A's
+advantage without adding a career-peak field.
+
+## 21.3 Know Option B's ceiling before committing
+
+`CHAOS` redraws access freely each year. It violates both the no-reroll rule
+(§4.5) and monotonicity (§17.2), so it is not a candidate — it exists only to
+bound what **any** fixed-ceiling access model can do:
+
+* best legal Option B calibration: ~9% all-pair swaps, ~85% No. 1 retention,
+  **75-81% senior No. 1 share, 4-7% freshman**
+* unconstrained bound: 36% swaps, 24% retention, 51%/42.5% senior share
+
+So Option B lands the senior No. 1 share in the **mid-to-high 70s**, not far
+below. If that is acceptable, B is clearly correct and cheap. If the target is
+nearer 55-65%, no calibration of B reaches it and Option A's start/peak
+decoupling becomes necessary.
+
+**This is an open owner question and should be answered before implementation:
+what SHOULD the senior share of No. 1 singles be?** 85.7% is plainly too high.
+75% may be right. The design cannot be judged without the target.
+
+## 21.4 §12.1's headline success metric is malformed
+
+The all-pair teammate swap rate is dominated by pairs 15+ OVR apart who will
+never cross, so it largely measures roster size. Under the **shipped** model,
+pairs that could actually cross already reorder at a healthy rate:
+
+| metric | girls | boys |
+|---|---:|---:|
+| all-pair swaps (the §12.1 metric) | 7.3% | 7.6% |
+| swaps among pairs within 5 OVR | **25.0%** | **27.4%** |
+| swaps among top-11 pairs | 10.3% | 11.4% |
+| **returning No. 1s who keep the seat** | **90.7%** | **85.0%** |
+
+**Replace §12.1's 7.7% target with No. 1 retention, plus near-pair and top-11
+swaps.** No. 1 retention is the best single number available: directly
+interpretable, moves under every intervention tested, and it is the quantity that
+actually reads as wrong when playing.
+
+## 21.5 The odometer works against the churn goal — affordably, with a guardrail
+
+§7 does not name the structural tension: **playing → develop → keep playing is
+positive feedback on ladder position.** Whoever is ahead plays varsity, develops
+more, and stays ahead. JV softens this (§2.5) but cannot remove it.
+
+Measured over M2, with exposure resolved forward — last season's rank sets this
+season's exposure, which sets how much of this season's scheduled gain lands
+(§6.4 Interpretation 1) — at bench 30% / JV 65% / varsity 100% realisation:
+
+| | all-pair | near-5 | top-11 | No. 1 held | **bench→lineup** | Sr No.1 | mean OVR |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| girls, no odometer | 8.9% | 28.6% | 12.5% | 84.8% | **30.0%** | 81.1% | 34.5 |
+| girls, with odometer | 9.4% | 29.1% | 16.4% | 84.5% | **28.2%** | 81.0% | 34.0 |
+| boys, no odometer | 9.1% | 30.1% | 13.5% | 75.1% | **29.6%** | 75.4% | 38.1 |
+| boys, with odometer | 9.8% | 30.7% | 17.0% | 72.7% | **28.0%** | 75.5% | 37.5 |
+
+The odometer adds churn *inside* the lineup while reducing promotion *into* it.
+At this calibration that is an acceptable trade — the mechanic is affordable.
+
+**But §12.5 needs a guardrail it currently lacks: the bench→lineup promotion rate
+must not fall below its no-odometer value.** A heavier exposure gradient will
+re-lock the ladder the redesign exists to loosen, and every other metric in §12
+will still look fine while it happens. This is the first place the feedback loop
+shows up, and currently nothing would catch it.
+
+## 21.6 The architectural decision that must be made first
+
+**JHSAA rosters are not persisted.** `jhsaa.build_roster(school, year)`
+regenerates every player from `(school, gender, entry year, seat)`, so
+development today is a **pure function of player identity**. That purity is what
+lets any archived season rebuild identically years later, and lets a fresh world
+build year 0 with no history behind it.
+
+Any playing-time term breaks it, in three ways at once:
+
+1. year N's roster comes to depend on year N-1's participation, **recursively**
+   back to the player's entry year;
+2. it lands on the hot path — ~1,600 roster builds per season — which is exactly
+   the shape of `docs/AAR-jhsaa-playup-fingerprint-query-storm.md`: a lookup added
+   to satisfy a rule, placed inside a loop, changing a function's cost class while
+   leaving its signature identical;
+3. an archived season must still rebuild identically, so exposure has to be
+   **persisted when the season is played** and never recomputed from a
+   re-simulation (`docs/AAR-jhsaa-research-export-resimulation-hang.md`).
+
+§17.6 says only "use actual archived JV participation counts, not infer". That is
+right but understates it: this is a change to `build_roster`'s dependency graph
+and cost class, and it belongs in §18's decision record rather than §17's open
+questions.
+
+The workable shape:
+
+* write a per-`(school, year)` exposure record alongside `world_jhsaa` when the
+  season is played;
+* **resolve it ONCE per roster build and thread it down** — never per seat;
+* a missing record reads as "no exposure", so year 0, pre-era seasons and a fresh
+  world all still build;
+* the exposure count must filter on `level` — JV and varsity share
+  `world_jhsaa_dual`, and every reader of that table has to filter
+  (`docs/AAR-jv-duals-leaked-into-the-research-export.md`).
+
+The individual-State allowance (§8) has the same dependency and is strictly
+harder: the individual tournaments run in the **preseason** of the year they
+would affect, so the allowance cannot be read from a completed season the way
+match exposure can. Resolve that before promising the mechanic.
+
+This constraint is **option-independent** — Option A has it identically.
+
+## 21.7 Amended recommendation
+
+Option B, with these five changes to §16-§18:
+
+1. **The primary mechanism is the non-converging finish band**, not "individual
+   access schedules" (which already exist). Widen `DEV_FINISH` toward `.60-.99`
+   and raise its centre to hold the association's level.
+2. **§6.6's unused-potential risk is reclassified as the intended behaviour.**
+3. **§12.1's success metric becomes No. 1 retention** (baseline 90.7% girls /
+   85.0% boys), with near-pair and top-11 swaps beside it.
+4. **§12.5 gains a guardrail**: bench→lineup promotion must not fall.
+5. **Exposure persistence (§21.6) is settled before code**, as a decision, not an
+   open question.
+
+And one owner question is genuinely open and blocks judging the result: **what
+should the senior share of No. 1 singles be?** Option B can deliver roughly 75%;
+it cannot deliver 60%.
