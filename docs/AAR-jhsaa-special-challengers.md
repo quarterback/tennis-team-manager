@@ -42,22 +42,41 @@ For each classification and gender, after the Conference and before the
 Specials (`jhsaa._special_challengers_round`):
 
 ```
-eligible = eliminated before the Specials (appears in an archived
-           pre-Specials stage; holds no berth and no Specials seat)
-           AND (class TOSS rank <= 24            (CHALLENGE_RANK_CUT)
-                OR TOSS >= .700                  (CHALLENGE_TOSS_FLOOR)
-                OR district champion)
-           AND (no losing regular-season record, unless TOSS >= .700)
+seats      = CHALLENGE_SLOTS[class] — 2 per class, 4 in the 40-field
+             classes (see the cap section). ‼️ A QUOTA: the round convenes
+             EVERY season ("there should always be challenger specials")
 
-n       = min(CHALLENGE_SLOTS[class], #eligible, #challengers)
-          — 2 per class, 4 in the 40-field classes (see the cap section)
+contenders = every team not qualified and not on the Specials slate,
+             in PRIORITY order — the formula is a priority, NOT a filter:
+               1. the eligibility formula:
+                    class TOSS rank <= 24        (CHALLENGE_RANK_CUT)
+                    OR TOSS >= .700              (CHALLENGE_TOSS_FLOOR)
+                    OR district champion
+                  — and no losing regular-season record unless the
+                  TOSS floor clears it
+               2. the rest with a NON-LOSING regular-season record
+             — and nobody else: a losing record without the TOSS excuse is
+             excluded outright (owner: "i don't want a bunch of losing
+             teams playing more losing teams"). Within each tier, the
+             Specials' own challenger ranking (`_challenger_key`: reg-season
+             pct, wins, ATR tiebreak) — record over TOSS, the owner's call:
+             "teams that have good seasons, not just teams that load up on
+             TOSS". TOSS survives only inside the formula's gates.
 
-pairing = best eligible (by TOSS) vs the WEAKEST selected challenger,
-          second-best vs second-weakest, … the seat-holder hosts, no
-          rematch repair — the pairing IS the seeding (the Specials' rule)
+pairing    = best contender vs the WEAKEST selected challenger,
+             second-best vs second-weakest, … the seat-holder hosts, no
+             rematch repair — the pairing IS the seeding (the Specials' rule)
 
-winner  = holds that challenger seat INTO the State Specials
+winner     = holds that challenger seat INTO the State Specials
 ```
+
+The first draft shipped the formula as a HARD SCREEN, plus a
+postseason-entrants-only rule, and framed "a quiet year plays none" as the
+feature — and the round almost never fired (the formula finds ~0.5 teams per
+class-year). The owner reversed it in review: the round always plays, the
+formula decides who goes first. An empty archived arc now means a pool with
+no winning-record team left in it (a tiny test world), never a formula with
+no takers.
 
 **Zero extra berths.** The Specials field is the same size with the same bids;
 Conference winners are untouched; a bridge winner still has to win its Special.
@@ -104,17 +123,15 @@ that, alongside the untouched berth arithmetic and Conference winners.
 
 ## Deliberate boundaries
 
-- **Only postseason entrants are eligible.** The formula pool already reaches a
-  team that never entered the road; the bridge exists for the one-early-loss
-  case. Admitting non-entrants would make it a second at-large selection.
 - **Conference winners' seats are never contested.** They earned their Specials
   entry on court through the whole ladder; the formula-selected side is the one
-  a formula-eligible team may contest.
-- **The cap is a cap, not a quota.** A class with no eligible early exits plays
-  no bridge duals — the usual case, by design — and the arc is archived present
-  and empty (the Semi-Conference's convention).
-- **A losing record stays home** unless the .700 TOSS clears it: the round must
-  not let bad teams churn through extra matches.
+  a contender may contest.
+- **A losing record is excluded outright** unless the .700 TOSS clears it
+  into the formula tier: a class short of winning-record bodies plays fewer
+  duals rather than dressing losers — the round exists for teams that had
+  good years and simply lost early.
+- **The seat count never grows** — contenders compete for the existing
+  weakest seats; the Specials field and bids are untouched at every setting.
 
 ## Wiring (a phase is the archive's identity for an event)
 
