@@ -170,9 +170,34 @@ def keep_rivals(groups, items, pos, rivals, cap):
     return groups
 
 
-def redistrict(rows, cls, pos, m, rng):
-    members = [r for r in rows if r["group"] == cls and r["city"] in pos]
-    missing = [r for r in rows if r["group"] == cls and r["city"] not in pos]
+def redistrict(rows, cls, pos, m, rng, cap=None):
+    # ‼️ A REDRAW POOLS LIVE SPONSORS ONLY (owner rule 2026-08, with the 2056
+    # closures). A sunset row keeps its last-known league for its former-school
+    # page, but it plays no league season — counted here it occupies a seat in
+    # a schedule it will never enter, so a class with many sunsets (1A carried
+    # 20) draws too many leagues and the LIVE ones run under strength. League
+    # size is the schedule (the owner wants 7-10, a full ~16-match slate), and
+    # only playing schools are the schedule.
+    live = [r for r in rows if r["group"] == cls
+            and (r.get("girls") or r.get("boys"))]
+    # A live school whose town prep-network does not carry (a Jefferson-invented
+    # city) is APPROXIMATED at its county's centroid over known cities (area as
+    # the fallback) rather than left put — "left put" strands it in a league the
+    # redraw may retire. Only a town with no county- or area-mate at all stays.
+    for r in live:
+        if r["city"] in pos:
+            continue
+        for scope in ("county", "area"):
+            mates = [pos[x["city"]] for x in rows
+                     if x.get(scope) == r.get(scope) and x["city"] in pos]
+            if mates:
+                pos[r["city"]] = (sum(p[0] for p in mates) / len(mates),
+                                  sum(p[1] for p in mates) / len(mates))
+                print(f"  ~ {cls}: {r['name']} ({r['city']}) placed at its "
+                      f"{scope} centroid")
+                break
+    members = [r for r in live if r["city"] in pos]
+    missing = [r for r in live if r["city"] not in pos]
     if missing:
         print(f"  ! {cls}: {len(missing)} schools have no coordinates and are left put: "
               f"{[r['name'] for r in missing][:5]}")
@@ -185,17 +210,22 @@ def redistrict(rows, cls, pos, m, rng):
     names = collections.Counter(r["girls_district"] for r in members)
     k = m.district_count(len(members))
     items = [(r["name"], pos[r["city"]]) for r in members]
-    groups = cluster(items, k, m.MAX_DISTRICT, rng)
+    # `cap` narrows the hard MAX_DISTRICT for a draw: the owner's preferred
+    # league runs 7-10 (a ~16-match slate), so a redraw asked to respect that
+    # passes 10 and the clusterer stops packing leagues to 11-12. MAX_DISTRICT
+    # stays the invariant the final check enforces either way.
+    cap = cap or m.MAX_DISTRICT
+    groups = cluster(items, k, cap, rng)
     # ‼️ THE FLOOR IS THE TARGET, not an even split of whatever the class happens to
     # hold. A league is a double round robin, so its size IS its season; pulling a
     # short league up to strength is worth a longer drive for the school that moves,
     # which is the trade real associations make. One under the target, because the
     # last league of an odd division has to be allowed to be the small one.
     floor = max(1, min(m.DISTRICT_TARGET - 1, len(items) // k))
-    groups = balance(groups, items, m.MAX_DISTRICT, floor)
+    groups = balance(groups, items, cap, floor)
     rivals = [(a, b) for a, b in getattr(m, "RIVALRIES", ())]
     groups = keep_rivals(groups, items, {r["name"]: pos[r["city"]] for r in members},
-                         rivals, m.MAX_DISTRICT)
+                         rivals, cap)
 
     # ‼️ A BLOCK INHERITS THE NAME IT MOST OVERLAPS, AND ONLY THEN REBRANDS.
     # Assigning names by centroid or alphabetically would shuffle a class's league
@@ -251,6 +281,9 @@ def main() -> None:
     ap.add_argument("--prep-network",
                     default=os.path.join(os.path.dirname(_REPO), "prep-network"))
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--cap", type=int, default=None,
+                    help="pack leagues to this size instead of MAX_DISTRICT "
+                         "(e.g. 10 for the owner's preferred 7-10 leagues)")
     args = ap.parse_args()
 
     m = _import_jhsaa()
@@ -266,13 +299,18 @@ def main() -> None:
     rng = random.Random(_SEED)
     moved_total = 0
     for cls in args.classes:
-        members = [r for r in rows if r["group"] == cls]
+        # Live sponsors only, matching the redraw pool: a sunset row keeps its
+        # last-known league label but plays no league season, so counting it
+        # here inflates league sizes and can fail the MAX_DISTRICT check on
+        # schools that will never take the court.
+        members = [r for r in rows if r["group"] == cls
+                   and (r.get("girls") or r.get("boys"))]
         if not members:
             sys.exit(f"no programs in {cls}")
         before = collections.defaultdict(list)
         for r in members:
             before[r["girls_district"]].append(r)
-        assign, placed, notes = redistrict(rows, cls, pos, m, rng)
+        assign, placed, notes = redistrict(rows, cls, pos, m, rng, cap=args.cap)
 
         after = collections.defaultdict(list)
         for r in members:

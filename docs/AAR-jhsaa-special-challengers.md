@@ -50,7 +50,7 @@ eligible = eliminated before the Specials (appears in an archived
            AND (no losing regular-season record, unless TOSS >= .700)
 
 n       = min(CHALLENGE_SLOTS[class], #eligible, #challengers)
-          — 2 per class, 4 in 3A/4A (see "Why 2, and why 4 in 3A/4A" below)
+          — 2 per class, uniform (see the cap section below)
 
 pairing = best eligible (by TOSS) vs the WEAKEST selected challenger,
           second-best vs second-weakest, … the seat-holder hosts, no
@@ -66,15 +66,19 @@ The design distinction from the parent AAR holds one level down:
 - **Specials = the final State bubble.**
 - **Special Challengers = access to a seat on that bubble.**
 
-## Why 2, and why 4 in 3A/4A (owner rationale, 2026-08)
+## Why 2 (owner rationale, 2026-08 — and the brief 3A/4A 4)
 
-The default cap is two contested seats per class because the early-exit
-recovery problem is rare in most classes. 3A and 4A receive four contested
-seats because prior Specials audits showed those classes produced the largest
-and noisiest bubble pools — the highest concentration of low-ranked Special
-entrants and credible early-exit misses. The higher cap is therefore a
-targeted correction for classes with more boundary volatility, not a general
-expansion of the postseason.
+The cap is two contested seats per class because the early-exit recovery
+problem is rare in most classes. As shipped, 3A and 4A carried four: prior
+Specials audits showed those two classes — then the state's last 40-field
+holdouts — produced the largest and noisiest bubble pools, the highest
+concentration of low-ranked Special entrants and credible early-exit misses.
+That was a targeted correction for boundary volatility, not a general
+expansion — and it retired in the same batch that took the 3A/4A State fields
+40 → 32: at the standard field shape they match the rest of the state, so
+every class runs 2 ("3A/4A can match the rest of the state with only the 2
+worst qualifiers for Specials into Challengers"). `CHALLENGE_SLOTS` survives
+as an empty override table should a class ever earn a wider valve again.
 
 The design goal is **proportional correction, not symmetry**:
 

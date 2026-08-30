@@ -222,8 +222,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "East Cascades League",
-      "boys_district": "East Cascades League"
+      "girls_district": "Hacienda League",
+      "boys_district": "Hacienda League"
     },
     {
       "name": "Alfalfa City",
@@ -1011,8 +1011,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Vermilion Valley League",
-      "boys_district": "Vermilion Valley League",
+      "girls_district": "Marble Valley League",
+      "boys_district": "Marble Valley League",
       "source": "Calvary Chapel Olivet"
     },
     {
@@ -1110,8 +1110,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Vermilion Valley League",
-      "boys_district": "Vermilion Valley League"
+      "girls_district": "Marble Valley League",
+      "boys_district": "Marble Valley League"
     },
     {
       "name": "Barley Point",
@@ -1742,8 +1742,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Vermilion Valley League",
-      "boys_district": "Vermilion Valley League"
+      "girls_district": "Placer League",
+      "boys_district": "Placer League"
     },
     {
       "name": "Biden",
@@ -1882,8 +1882,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Desert Sky League",
-      "boys_district": "Desert Sky League",
+      "girls_district": "Hacienda League",
+      "boys_district": "Hacienda League",
       "source": "Nicolás Treviño"
     },
     {
@@ -2305,8 +2305,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "East Cascades League",
-      "boys_district": "East Cascades League",
+      "girls_district": "Desert Sky League",
+      "boys_district": "Desert Sky League",
       "source": "Brackwood Union"
     },
     {
@@ -2828,8 +2828,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Vermilion Valley League",
-      "boys_district": "Vermilion Valley League"
+      "girls_district": "Tailings League",
+      "boys_district": "Tailings League"
     },
     {
       "name": "Canaan Bend",
@@ -3764,8 +3764,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Vermilion Valley League",
-      "boys_district": "Vermilion Valley League"
+      "girls_district": "Placer League",
+      "boys_district": "Placer League"
     },
     {
       "name": "Christchurch Episcopal",
@@ -5986,8 +5986,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Tailings League",
-      "boys_district": "Tailings League",
+      "girls_district": "Marble Valley League",
+      "boys_district": "Marble Valley League",
       "source": "Featherstone Institute"
     },
     {
@@ -6564,8 +6564,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Vermilion Valley League",
-      "boys_district": "Vermilion Valley League"
+      "girls_district": "Tailings League",
+      "boys_district": "Tailings League"
     },
     {
       "name": "Friendship City",
@@ -7159,8 +7159,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Vermilion Valley League",
-      "boys_district": "Vermilion Valley League",
+      "girls_district": "Placer League",
+      "boys_district": "Placer League",
       "source": "Calvary Chapel Kilbride Switch"
     },
     {
@@ -7179,8 +7179,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League"
+      "girls_district": "Tailings League",
+      "boys_district": "Tailings League"
     },
     {
       "name": "Grace Lee Boggs",
@@ -7555,8 +7555,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "East Cascades League",
-      "boys_district": "East Cascades League"
+      "girls_district": "Desert Sky League",
+      "boys_district": "Desert Sky League"
     },
     {
       "name": "Halfway House",
@@ -7906,8 +7906,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League"
+      "girls_district": "Tailings League",
+      "boys_district": "Tailings League"
     },
     {
       "name": "Hermiston",
@@ -8580,8 +8580,8 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "Vermilion Valley League",
-      "boys_district": "Vermilion Valley League",
+      "girls_district": "Marble Valley League",
+      "boys_district": "Marble Valley League",
       "source": "Rentie Grove"
     },
     {
@@ -9215,8 +9215,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League"
+      "girls_district": "Tailings League",
+      "boys_district": "Tailings League"
     },
     {
       "name": "Ketanji Brown Jackson",
@@ -9852,8 +9852,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League"
+      "girls_district": "Tailings League",
+      "boys_district": "Tailings League"
     },
     {
       "name": "Liberty Hill",
@@ -9951,8 +9951,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "East Cascades League",
-      "boys_district": "East Cascades League",
+      "girls_district": "Hacienda League",
+      "boys_district": "Hacienda League",
       "source": "Alderfield"
     },
     {
@@ -10724,8 +10724,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Placer League",
-      "boys_district": "Placer League"
+      "girls_district": "South Coast League",
+      "boys_district": "South Coast League"
     },
     {
       "name": "McLoughlin",
@@ -11414,8 +11414,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Hacienda League",
-      "boys_district": "Hacienda League",
+      "girls_district": "Placer League",
+      "boys_district": "Placer League",
       "source": "Huckle Lake"
     },
     {
@@ -11896,8 +11896,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "South Coast League",
-      "boys_district": "South Coast League",
+      "girls_district": "Orchard League",
+      "boys_district": "Orchard League",
       "source": "Granite Bar"
     },
     {
@@ -13103,8 +13103,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Tailings League",
-      "boys_district": "Tailings League"
+      "girls_district": "South Coast League",
+      "boys_district": "South Coast League"
     },
     {
       "name": "Pellmont",
@@ -13430,8 +13430,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Hacienda League",
-      "boys_district": "Hacienda League"
+      "girls_district": "Orchard League",
+      "boys_district": "Orchard League"
     },
     {
       "name": "Pinebluffs",
@@ -13693,8 +13693,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Placer League",
-      "boys_district": "Placer League"
+      "girls_district": "Desert Sky League",
+      "boys_district": "Desert Sky League"
     },
     {
       "name": "Port Meridian North",
@@ -13829,8 +13829,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Tailings League",
-      "boys_district": "Tailings League",
+      "girls_district": "Marble Valley League",
+      "boys_district": "Marble Valley League",
       "source": "Serra Caverly"
     },
     {
@@ -14321,8 +14321,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "East Cascades League",
-      "boys_district": "East Cascades League",
+      "girls_district": "Desert Sky League",
+      "boys_district": "Desert Sky League",
       "source": "Ransom City Union"
     },
     {
@@ -14341,8 +14341,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Hacienda League",
-      "boys_district": "Hacienda League"
+      "girls_district": "Orchard League",
+      "boys_district": "Orchard League"
     },
     {
       "name": "Ravenwood",
@@ -15335,8 +15335,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Tailings League",
-      "boys_district": "Tailings League",
+      "girls_district": "Orchard League",
+      "boys_district": "Orchard League",
       "source": "Wickbrook"
     },
     {
@@ -15394,8 +15394,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "South Coast League",
-      "boys_district": "South Coast League"
+      "girls_district": "Placer League",
+      "boys_district": "Placer League"
     },
     {
       "name": "San Benicio Regional",
@@ -16941,8 +16941,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Tailings League",
-      "boys_district": "Tailings League"
+      "girls_district": "Marble Valley League",
+      "boys_district": "Marble Valley League"
     },
     {
       "name": "St. Dominic Academy",
@@ -18643,8 +18643,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League",
+      "girls_district": "Tailings League",
+      "boys_district": "Tailings League",
       "source": "Tule Flat Lutheran"
     },
     {
@@ -19223,8 +19223,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Desert Sky League",
-      "boys_district": "Desert Sky League",
+      "girls_district": "Hacienda League",
+      "boys_district": "Hacienda League",
       "source": "Salvador Figueroa"
     },
     {
@@ -19836,8 +19836,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "East Cascades League",
-      "boys_district": "East Cascades League"
+      "girls_district": "Placer League",
+      "boys_district": "Placer League"
     },
     {
       "name": "Wheeler Academy",

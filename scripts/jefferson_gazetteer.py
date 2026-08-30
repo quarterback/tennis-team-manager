@@ -67,7 +67,14 @@ NET_NEW_AREAS = frozenset({"Silver Basin", "Snake River Plain",
                            # 2052 eastern Oregon / Columbia Gorge affiliate
                            # expansion (owner rule 2026-08) — see
                            # scripts/jhsaa_2052_expansion.py.
-                           "Blue Mountain Country", "Columbia Gorge"})
+                           "Blue Mountain Country", "Columbia Gorge",
+                           # Heritage Valley migration (owner rule 2026-08,
+                           # scripts/jhsaa_heritage_valley.py): Port Valdez is
+                           # an association-side satellite area with no
+                           # prep-network counterpart. Caught by this very
+                           # assertion the first time the gazetteer ran after
+                           # that migration (the 2052 deferral).
+                           "Port Valdez"})
 _EXPANSION_2046_PLACES = [
     # (name, county, area, real_county, lat, lon, population)
     ("Elko",          "Ruby",        "Silver Basin",       "Elko County, NV",      40.833, -115.763, 20500),

@@ -25,10 +25,11 @@ same bytes. `--dry-run` prints the plan and touches nothing.
 
 SPONSOR FLOORS: reported per touched (class, gender) at run time against
 `jhsaa.sponsor_floor`. Measured at apply: every class stays ABOVE its floor —
-the two 76-floor classes (3A, 4A) land at 80-82 sponsors, the rest carry the
-48 floor with room to spare. Were a future batch to break one, the ladder
-degrades LOUDLY (`sc_head`) and the repair is more programs (the `FIELD_BOYS`
-idiom), never a smaller field.
+at the time, 3A/4A were the two 76-floor (40-field) classes and landed at
+80-82 sponsors; later the same batch took both fields 40 -> 32 (floor 48), so
+every class now carries a 48 floor with room to spare. Were a future batch to
+break one, the ladder degrades LOUDLY (`sc_head`) and the repair is more
+programs (the `FIELD_BOYS` idiom), never a smaller field.
 """
 import argparse
 import json

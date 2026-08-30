@@ -98,6 +98,44 @@ script's display-keyed table breaks its replay if a rename leaves it behind.
   (The same lesson as the prep-network `git log --all` episode: "not in any
   ref" — or "not in any revision" — is a statement about your clone.)
 
-Deferred, per the 2052 precedent (no prep-network checkout in this session):
-`jefferson_gazetteer.py` and `prep_network_name_map.py` regeneration.
-`docs/JHSAA-school-names.txt` and `data/jhsaa/former_names.json` regenerated.
+## The retunes the closures forced (owner rules, same session)
+
+- **3A/4A State fields 40 → 32** — the association's last 40-field holdouts
+  and its only 76-floor classes, at 81/80 sponsors after the batch. The Group
+  1/2 precedent exactly (the `STATE_FIELD` table's own comment): down a field
+  size, never a reported-and-ignored floor breach. Both clear the 32-shape's
+  48 floor with 30+ of headroom, and the dynamic ladder needed no code — the
+  shape falls out of the table. **Their brief `CHALLENGE_SLOTS` 4 retired
+  with it** (owner: "3A/4A can match the rest of the state with only the 2
+  worst qualifiers"): the wider valve was a 40-field correction, and at the
+  standard shape every class runs the uniform 2. The table stays as an empty
+  override point.
+- **1A leagues redrawn to the owner's 7-10 band** ("it ensures a full
+  16-match league slate"). The 20 sunsets had left three live leagues at 5-6.
+  `jhsaa_redistrict.py 1A --cap 10`: nine leagues became seven (Placer and
+  Tailings revived, East Cascades and Vermilion Valley retired — league
+  identity churn is "part of the deal and good flavor", owner), 33 schools
+  moved, worst span 350 → 270 mi, and every league runs 8-10 LIVE members in
+  both genders. Three script fixes rode along, each a real fault:
+  - **A redraw pools LIVE sponsors only.** It pooled every row in the class,
+    so 1A's 20 sunset rows occupied seats in a season they never play — the
+    draw made 9 leagues where the live 69 want 7, and the cap check failed on
+    schools that never take the court. Sunset rows keep their last-known
+    league label and stay out of the arithmetic.
+  - **`--cap`**: the clusterer packed to `MAX_DISTRICT` 12; the owner's
+    preferred league is 7-10, so a draw can now be asked to stop at 10.
+    MAX_DISTRICT stays the invariant the final check enforces.
+  - **A live school with no prep-network town is placed at its county (then
+    area) centroid**, never "left put" — left put strands it in a league the
+    redraw may retire (Redwood Glen and Wheatley, both Jefferson-invented
+    towns).
+
+With prep-network on disk this session, the regeneration the 2052 batch
+deferred also ran: `jefferson_gazetteer.py` (both gazetteer files current with
+every rename and closure; its two-repo area assertion immediately caught
+**Port Valdez**, the Heritage Valley migration's association-side satellite
+area, never allowlisted because the gazetteer had not run since — added to
+`NET_NEW_AREAS`) and `prep_network_name_map.py` (written into the read-only
+clone; that repo cannot be pushed from this session, so re-run it beside a
+writable checkout to land it there). `docs/JHSAA-school-names.txt` and
+`data/jhsaa/former_names.json` regenerated.
