@@ -141,7 +141,10 @@ def test_slots_are_capped_per_class(home_wins):
           ("Ch1", "Ch2", "Ch3", "Ch4", "Ch5", "E1", "E2", "E3", "E4", "E5")}
     power = {f"E{i}": _PI(0.9 - i / 100) for i in range(1, 6)}
     chs = [by[f"Ch{i}"] for i in range(1, 6)]
-    arc, _ = bridge(by, chs, ("E1", "E2", "E3", "E4", "E5"), power=power)
+    # a 32-field class carries the default (the harness's own default group,
+    # 9A, is a 40-field class now and carries the wider valve)
+    arc, _ = bridge(by, chs, ("E1", "E2", "E3", "E4", "E5"), power=power,
+                    group="7A")
     assert len(arc["rounds"][0]) == jh.CHALLENGE_SLOTS_DEFAULT == 2
     # the wider valve rides the 40-field classes, exactly them
     assert {g for g, n in jh.CHALLENGE_SLOTS.items() if n == 4} \
