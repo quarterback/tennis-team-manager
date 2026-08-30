@@ -970,6 +970,7 @@ FORMER_NAMES = {
     "Silvale":                                     "Fort Wren",
     "Silver Creek Irrigation":                     "Sparrowhawk",
     "Singleton HS":                                "Singleton",
+    "Sluice Crossing":                             "Crossing",
     "Sofia Romanov":                               "Chesapeake",
     "Sofia Romanov North":                         "Cheney",
     "Sofía Aranda":                                "Montclair",
