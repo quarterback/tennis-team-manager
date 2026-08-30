@@ -837,7 +837,34 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     a PARAMETER — the bridge reorders that list, so it cannot live downstream
     of the selection. `tests/test_jhsaa_special_challengers.py`;
     `docs/AAR-jhsaa-special-challengers.md`.
-- **‼️ 1A CROWNS ON A FIXED 24-team shape — not the dynamic format above (owner
+- **‼️ ONE LADDER, THREE BERTH SHAPES (owner spec 2026-08 — supersedes the
+  fixed-24 section below, which is kept for the seasons archived under it).**
+  Every class runs the SAME rungs — Areas → Sectionals → Wards → Regionals →
+  Zonals → Super Regionals → Semi-State → Divisionals → (Semi-Conference) →
+  Conference → **State Specials** → State — and only the counts change:
+
+  | field | Zonal | Semi-State | Divisional | Specials |
+  |---|---:|---:|---:|---:|
+  | 24 (1A, Group 3) | 8 | 8 | 4 | 4 |
+  | 32 (2A-7A, Gp 1, Gp 2) | 8 | 8 | 8 | 8 |
+  | 40 (8A, 9A) | 8 | 8 | 8 | 16 |
+
+  Super Regionals award NO berths (they qualify for Semi-State), and the
+  **Conference is always the round that FEEDS the Specials** — its winners
+  play for those last berths, they never enter State directly. Three rules
+  produce every row: Semi-State is exactly the Super Regional winners plus the
+  Zonal losers (no readmission — the Super Regional losers are readmitted a
+  rung later, into the Divisionals, which is what makes both rounds the same
+  size); the Divisionals take AT MOST one Zonal-champion-sized block; the
+  Conference absorbs the remainder. Semi-State used to run on a
+  `ceil(4·berths/3)` floor that pushed 12 of a 32's 24 recovery berths through
+  one rung — owner: "having that many teams get through via semi-state doesn't
+  make any sense." Pinned by
+  `test_bids_derive_from_conference_winners_at_every_shape`.
+- **‼️ 1A CROWNS ON A FIXED 24-team shape — RETIRED 2026-08, kept for the
+  archive** (`_recovery_24` is no longer wired; the row above is what 1A and
+  Group 3 now play, and its berths come from Semi-State rather than Super
+  Regionals). What follows describes seasons archived before that. (owner
   rule 2027-08; 2A left it in the 2033 realignment).** 1A and 2A used to share one
   combined "2A-1A" group (neither cleared the 76-sponsor floor the dynamic
   Semi-Conference needs on its own), then crowned separately on this shape. **2A

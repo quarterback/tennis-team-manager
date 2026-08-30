@@ -791,7 +791,13 @@ def recovery_shape(group: str) -> dict:
     ss = _even(sr_w + zon_losers)
     ss_w, ss_l = ss // 2, ss - ss // 2
 
-    dv = _even(min(ss_l + sr_l, 2 * max(0, berths - ss_w)))
+    # ‼️ THE DIVISIONALS TAKE AT MOST ONE BLOCK, and the Conference takes the
+    # rest — capping at `champions` is what makes the three field sizes come out
+    # as the owner specified them: a 24 splits its 8 remaining berths 4/4, a 32
+    # splits 16 as 8/8, and a 40's 24 go 8/16. Without the cap a 24 field would
+    # hand the Divisionals all 8 and never convene a Conference at all.
+    dv = _even(min(ss_l + sr_l,
+                   2 * min(champions, max(0, berths - ss_w) // 2)))
     dv_w, dv_l = dv // 2, dv - dv // 2
 
     cf_seats = 2 * max(0, berths - ss_w - dv_w)
@@ -816,15 +822,12 @@ def sponsor_floor(group: str) -> int:
     wants 44 bodies, so the floor is `32 + 44 = 76`; a 24-field class fills without
     a Conference, neither round convenes, and it has no floor of its own.
 
-    ‼️ THE FIXED 24-TEAM SHAPE (`_recovery_24` — 2A and 1A) IS A DIFFERENT FORMULA. Every
-    round size in that shape (Super Regional/Semi-State 16, Divisional/Semi-
-    Conference/Conference 8) is a fixed function of `PROTECTED`/`WARD_FIELD` alone
-    — never of total sponsor count — so there is no Semi-Conference body reservoir
-    to run dry the way the dynamic 40-team shape's can. The only real requirement
-    is enough sponsors to fill the entry gates at all: `PROTECTED` district champs
-    plus `WARD_FIELD` at Wards."""
-    if state_field_size(group) == 24:
-        return PROTECTED + WARD_FIELD
+    ‼️ ONE FORMULA FOR EVERY CLASS (2026-08). The 24-field classes used to
+    short-circuit to `PROTECTED + WARD_FIELD` because `_recovery_24`'s round
+    sizes were fixed and it never convened a Conference with a body reservoir
+    to run dry. They now run the same dynamic ladder as everyone else, so they
+    take the same two gates — and the answer is unchanged at 48, because a
+    24-field Semi-Conference wants only 8 bodies and the ward gate dominates."""
     shape = recovery_shape(group)
     # ‼️ THE WARD GATE IS A FLOOR OF ITS OWN (2026-08). The body-reservoir term
     # alone returned 44 for a 32-field class — but 44 sponsors minus PROTECTED
@@ -5243,7 +5246,9 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     ss_won = {id(t) for t in ss_winners}
     ss_losers = sorted((t for t in ss_pool if id(t) not in ss_won),
                        key=_power_key(power))
-    dv_n = max(0, berths - len(ss_winners))
+    # At most ONE block here; the Conference takes whatever is left (see
+    # `recovery_shape`). 24 -> 4, 32 -> 8, 40 -> 8.
+    dv_n = min(len(zonal_champs), max(0, berths - len(ss_winners)) // 2)
     # ‼️ THE SUPER REGIONAL LOSERS ARE READMITTED HERE (owner rule 2026-08),
     # not into Semi-State — which is what makes the two rounds the same size and
     # the berth blocks equal. STRICT TIER PRIORITY, TOSS only within a tier: a
@@ -5386,7 +5391,18 @@ def _recovery_24(group: str, by_name: dict, prestate: dict, zonal_champs: list,
                  district_champs: list[str], power: dict, *,
                  seed: int) -> tuple[dict, dict, dict, dict, dict,
                                      list, list[str], dict]:
-    """The FIXED 24-team recovery/qualification shape — every 24-field class:
+    """‼️ RETIRED AND UNWIRED (owner rule 2026-08) — kept only because archived
+    seasons were played under it and this docstring is what explains them.
+    `run_season` now sends EVERY class through `_recovery`: the owner's pathway
+    is the same rungs for every field size with only the counts changing, and
+    the berths in this shape came out of SUPER REGIONALS while Semi-State
+    awarded none, where the spec is 8 Zonal + 8 Semi-State + 4 Divisional + 4
+    Specials. The dynamic ladder produces exactly that at a 24 field once the
+    Divisionals are capped at one block. Do not re-wire this without the owner
+    saying so; if you do, the district-champion priority split below is the
+    thing it has that `_recovery` does not.
+
+    The FIXED 24-team recovery/qualification shape — every 24-field class:
     2A and 1A (owner rule 2026-08 — the talent degrades at that level, so both
     smallest classes crown from 24 whatever their headcount; 2A returns to the
     shape it left in the 2033 realignment). Zonal champions are an automatic State berth here exactly as in
@@ -6734,16 +6750,18 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     for group in GROUPS:
         by_name_g = {t.school.name: t
                      for ts in by_group[group].values() for t in ts}
-        if state_field_size(group) == 24:
-            sr, ss, dv, sc, cf, quals, dq, atr_used = _recovery_24(
-                group, by_name_g, prestates[group], zonal_champs[group],
-                district_champs[group], post_power,
-                seed=seed + hash(group) % 9973 + 16223)
-        else:
-            sr, ss, dv, sc, cf, quals, dq, atr_used = _recovery(
-                group, by_name_g, sectionals[group], wards[group], prestates[group],
-                zonal_champs[group], district_champs[group], post_power,
-                seed=seed + hash(group) % 9973 + 16223)
+        # ‼️ ONE LADDER FOR EVERY CLASS (owner rule 2026-08). The 24-field
+        # classes used to branch to `_recovery_24`, whose berths came out of
+        # SUPER REGIONALS while Semi-State awarded none. The owner's pathway
+        # is the same rungs everywhere with only the counts changing —
+        # 8 Zonal + 8 Semi-State + 4 Divisional + 4 Specials at 24, 8/8/8/8 at
+        # 32, 8/8/8/16 at 40 — and the dynamic ladder produces all three
+        # exactly once the Divisionals are capped at one block. See
+        # `_recovery_24`, kept unwired for the archive it explains.
+        sr, ss, dv, sc, cf, quals, dq, atr_used = _recovery(
+            group, by_name_g, sectionals[group], wards[group], prestates[group],
+            zonal_champs[group], district_champs[group], post_power,
+            seed=seed + hash(group) % 9973 + 16223)
         super_regionals[group], semi_states[group] = sr, ss
         divisionals[group], semi_conferences[group] = dv, sc
         conferences[group] = cf

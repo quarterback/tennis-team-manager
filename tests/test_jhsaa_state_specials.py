@@ -76,12 +76,16 @@ def test_bids_derive_from_conference_winners_at_every_shape():
     fixed 24 (8 Zonal + 8 Super Regional + 4 Divisional + 4 Specials)."""
     for g in jh.GROUPS:
         field = jh.state_field_size(g)
-        if field == 24:
-            assert 8 + 8 + 4 + 4 == field, g
-            continue
         shape = jh.recovery_shape(g)
-        assert (8 + shape["semi_state"] // 2 + shape["divisional"] // 2
+        assert (shape["champions"] + shape["semi_state"] // 2
+                + shape["divisional"] // 2
                 + shape["conference"] // 2) == field, (g, shape)
+        # The owner's three shapes, 2026-08: every class runs ONE ladder and
+        # only the counts move — 8 Zonal + 8 Semi-State, then the rest split
+        # between the Divisionals (one block at most) and the Specials.
+        assert (shape["champions"], shape["semi_state"] // 2) == (8, 8), g
+        assert (shape["divisional"] // 2, shape["conference"] // 2) == {
+            24: (4, 4), 32: (8, 8), 40: (8, 16)}[field], (g, shape)
 
 
 def test_conference_winners_play_one_dual_per_bid(monkeypatch):

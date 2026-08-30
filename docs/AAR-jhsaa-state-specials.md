@@ -202,3 +202,70 @@ State Specials extends that principle to the teams left outside the field.
 A team that survives Conference has earned the right to play for State. A team with one of the best remaining regular-season records has earned one final chance to challenge for that berth.
 
 The final place is decided on court.
+
+---
+
+## Addendum (2026-08): the recovery rebalance the Specials were supposed to bring
+
+When Conference winners stopped qualifying directly and became the Specials
+field, the berth arithmetic underneath was left as it was — and it was
+front-loaded. A 32-team field ran **8 Zonal + 12 Semi-State + 6 Divisional +
+6 Conference**: half of all recovery berths came out of one rung, because
+Semi-State was sized by a `ceil(4·berths/3)` FLOOR and absorbed the readmitted
+Super Regional losers on top of its own field. Owner: *"having that many teams
+get through via semi-state doesn't make any sense … it should be adjusted at
+every level per the AAR for creating specials."*
+
+The corrected pathway — one ladder for every class, only the counts moving:
+
+```
+Areas → Sectionals → Wards → Regionals → Zonals
+      → Super Regionals → Semi-State → Divisionals
+      → (Semi-Conference) → Conference → State Specials → State
+```
+
+| field | Zonal | Semi-State | Divisional | Specials | classes |
+|---|---:|---:|---:|---:|---|
+| 24 | 8 | 8 | 4 | 4 | 1A, Group 3 |
+| 32 | 8 | 8 | 8 | 8 | 2A-7A, Group 1, Group 2 |
+| 40 | 8 | 8 | 8 | 16 | 8A, 9A |
+
+Super Regionals award no berths (they qualify for Semi-State), and the
+Conference is always the round that FEEDS the Specials — never State directly.
+
+Three rules produce every row, and the ladder's own geometry does most of the
+work:
+
+1. **Semi-State is exactly the Super Regional winners plus the Zonal losers.**
+   No readmission window, no floor — it is 16 teams at full size and delivers
+   8. The Super Regional losers are readmitted one rung LATER, into the
+   Divisionals, which is what makes both rounds the same size.
+2. **The Divisionals take at most one Zonal-champion-sized block** (8), capped
+   by the berths actually outstanding — 4 at a 24 field, 8 at 32 and 40.
+3. **The Conference absorbs the remainder**, as it always has: 4, 8, 16.
+
+Everyone still gets exactly two live chances (a Regional loser: Super
+Regionals, then the Divisionals; a Zonal loser: Semi-State, then the
+Divisionals), which was the inequity the Divisional round was created to fix.
+
+### `_recovery_24` is retired
+
+The 24-field classes had their own hand-wired ladder whose berths came out of
+**Super Regionals** while Semi-State awarded none. The dynamic ladder produces
+the owner's 8/8/4/4 exactly once the Divisionals are capped, so every class now
+runs `_recovery`. The function is kept, unwired, because seasons are archived
+under it and its docstring is what explains them; the district-champion
+priority split (first claim on Super Regional slots) is the one thing it had
+that the shared ladder does not.
+
+### Consequences to watch
+
+- The **Semi-Conference field grows** with the Conference it qualifies for: 8
+  at a 24 class, 16 at a 32, 48 at a 40. The 40-field sponsor floor therefore
+  moves 76 → **80**; 8A and 9A sit at 86/86 and 85/85 and clear it. Every other
+  class is at the 48 ward gate with room. `sponsor_floor` lost its 24-field
+  special case in the same pass — one formula for every class now, and the
+  24 answer is unchanged at 48 because the ward gate dominates there.
+- **A 40 field is deliberately not even.** 8/8/8/16 is the shape the owner
+  specified: the two automatic recovery rungs deliver one block each and the
+  Specials take everything left, which is 16 duals in 8A/9A.
