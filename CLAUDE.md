@@ -808,7 +808,14 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     would otherwise take direct entry on the formula's last rows — defend
     against the `slots` BEST teams outside the pool, which are simply the next
     names down the SAME `_challenger_key` ranking (reg-season pct, wins, ATR)
-    the challenger cut was drawn on. Pairing: best contender vs weakest seat,
+    the challenger cut was drawn on — with ONE priority on top: **district
+    champions who lost early are reconsidered ahead of the rest of the field**
+    (owner rule 2026-08), ordered among themselves by that same ranking. A
+    PRIORITY, not a gate: once the champions are used the seats carry on down
+    the list, and a champion still has to win the dual. That, plus the
+    PROTECTED Regionals entry and their existing first tier in the
+    Semi-Conference pool, is the WHOLE of what a district title buys — never a
+    berth. Pairing: best contender vs weakest seat,
     holder hosts, no rematch repair; the winner holds the seat INTO the
     Specials.
     ‼️ **NO ELIGIBILITY GATES — three drafts added them, all retired** (owner

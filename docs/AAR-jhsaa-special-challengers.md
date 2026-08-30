@@ -126,10 +126,12 @@ that, alongside the untouched berth arithmetic and Conference winners.
 - **Conference winners' seats are never contested.** They earned their Specials
   entry on court through the whole ladder; the formula-selected side is the one
   a contender may contest.
-- **A losing record is excluded outright** unless the .700 TOSS clears it
-  into the formula tier: a class short of winning-record bodies plays fewer
-  duals rather than dressing losers — the round exists for teams that had
-  good years and simply lost early.
+- **A weak team never reaches a seat in practice, without a rule saying so.**
+  The contenders are the BEST teams outside the pool by construction, so in
+  any real class the seats land on good teams that lost early — which is what
+  "i don't want a bunch of losing teams playing more losing teams" asked for.
+  A sub-.500 exclusion was tried as the instrument and was the wrong one (see
+  the addendum); do not re-add it.
 - **The seat count never grows** — contenders compete for the existing
   weakest seats; the Specials field and bids are untouched at every setting.
 
