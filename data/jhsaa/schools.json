@@ -2129,6 +2129,26 @@
       "boys_district": "Olympic League"
     },
     {
+      "name": "Booker T Washington",
+      "city": "Abbey Vale",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "2A",
+      "group": "2A",
+      "enrollment": 348,
+      "private": false,
+      "mascot": "Goldbacks",
+      "colors": [
+        "#3f2a56",
+        "#3ba55d"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Valle Vista League",
+      "boys_district": "Valle Vista League",
+      "source": "Abbey Vale Orchard Hill"
+    },
+    {
       "name": "Borondón Mesa",
       "city": "San Borondón",
       "county": "San Marcos",
@@ -7963,8 +7983,8 @@
         "#14532d",
         "#e8c46b"
       ],
-      "girls": true,
-      "boys": true,
+      "girls": false,
+      "boys": false,
       "girls_district": "Valle Vista League",
       "boys_district": "Valle Vista League"
     },
@@ -7982,8 +8002,8 @@
         "#6d1a36",
         "#9fb4c7"
       ],
-      "girls": true,
-      "boys": true,
+      "girls": false,
+      "boys": false,
       "girls_district": "Rim Country League",
       "boys_district": "Rim Country League"
     },
@@ -8021,8 +8041,8 @@
         "#0e7490",
         "#fbbf24"
       ],
-      "girls": true,
-      "boys": true,
+      "girls": false,
+      "boys": false,
       "girls_district": "Black Canyon League",
       "boys_district": "Black Canyon League"
     },
@@ -12592,26 +12612,6 @@
       "boys": true,
       "girls_district": "Eastern Oregon League",
       "boys_district": "Eastern Oregon League"
-    },
-    {
-      "name": "Orchard Hill",
-      "city": "Abbey Vale",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "2A",
-      "group": "2A",
-      "enrollment": 348,
-      "private": false,
-      "mascot": "Goldbacks",
-      "colors": [
-        "#3f2a56",
-        "#3ba55d"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Valle Vista League",
-      "boys_district": "Valle Vista League",
-      "source": "Abbey Vale Orchard Hill"
     },
     {
       "name": "Orchard Union",

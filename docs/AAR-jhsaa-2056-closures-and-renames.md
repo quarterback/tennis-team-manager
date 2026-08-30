@@ -4,7 +4,7 @@
 **Status:** Owner lists, 2026-08
 **Mechanisms:** the 2052 batch's (`docs/AAR-jhsaa-2052-eastern-oregon-expansion.md`)
 
-## Closures — 40 programs sunset (`scripts/jhsaa_2056_closures.py`)
+## Closures — 43 programs sunset (`scripts/jhsaa_2056_closures.py`)
 
 Flags off, rows kept, no redraw — `former_school` serves every page and archive
 link forever; leagues stand as last-known. `NEVER_SPONSOR` deliberately unused
@@ -15,7 +15,11 @@ link forever; leagues stand as last-known. `NEVER_SPONSOR` deliberately unused
 - **Manzanita Ridge was on both the close and rename lists; the rename won**
   (the owner's confirmation list omitted it) — it lives on as **Manzanita**.
 - Pascagoula, Pendleton Heights, Pinyon Ridge and Abbey Prep were follow-up
-  additions in the same session.
+  additions in the same session — and the owner then thinned the High-x names
+  ("there are too many of them") by CLOSING High Bar, High Prairie and High
+  Desert Christian rather than renaming them (High Timber, named in the same
+  message, was already sunset by the 2052 batch and is not repeated; High
+  Desert Cooperative was not named and stays).
 - Sponsor floors measured at apply: **every class stays above its floor**
   (3A/4A, the two 76-floor classes, land at 80-82; the rest carry 48).
 
@@ -33,14 +37,33 @@ link forever; leagues stand as last-known. `NEVER_SPONSOR` deliberately unused
    Singleton, Clara Brown HS → Clara Brown, Barlowe County High → Barlowe
    County, Lodestone County High → Lodestone County, Antler County High →
    Antler County (already sunset — a page rename). **Leading-word "High …"
-   names are identity, not suffix, and stayed**: High Bar (its town's name),
-   High Desert Christian/Cooperative, High Prairie, High Timber.
-4. **Abbey Vale Orchard Hill → Orchard Hill** collided with the live 9A
-   Orchard Hill (Valderra) — a display name is the archive identity, so the
-   owner resolved it: **the 9A becomes Bishop Turner**, freeing the name.
-   `MASCOTS` key moved with the 9A (Orchardists); the source-keyed continuity
-   table still matches its unchanged identity; `RECLASSIFY_TO_2A`'s
-   display-keyed entry moved with the 2A.
+   names were treated as identity, not suffix, and left alone** — and the
+   owner then thinned most of them by closure instead (see above).
+4. **The Orchard Hill swap — nobody keeps the name.** "Abbey Vale Orchard
+   Hill → just Orchard Hill" collided with the live 9A Orchard Hill
+   (Valderra), and reissuing the name would have merged the 9A's archived
+   seasons onto the 2A's page (a display name is the archive identity; live
+   name wins). The owner's final resolution kills the conflation outright:
+   the 2A becomes **Booker T Washington** (owner's punctuation — no period
+   after the T) and the 9A becomes **Bishop Turner**, so "Orchard Hill" is
+   nobody's live name and the alias table sends the archived name to the 9A
+   alone. Transient in-session targets ("just Orchard Hill" on the 2A,
+   "Bishop Turner"/"Booker T Washington" briefly on the 9A) never reached an
+   archive; targets were rewritten in place, never chained. `MASCOTS` key
+   (Orchardists) followed the 9A; `RECLASSIFY_TO_2A`'s display-keyed entry
+   followed the 2A; the source-keyed continuity table still matches the 9A's
+   unchanged identity ("Orchard Hill", stamped into `source`).
+   ‼️ This forced a THIRD generator rule: **an identity claim outranks a
+   transient target.** Both chains claim the former name "Orchard Hill" —
+   the 9A as its identity, the 2A as a target it passed through — and a dict
+   would let iteration order decide whose page ~decades of archive land on.
+   `jhsaa_former_names.collect` now lets the school whose IDENTITY the name
+   is win the alias; the other chain's claim is dropped.
+   ⚠️ Getting here took three tries in one session (Bishop Turner on the 9A →
+   Booker T Washington on the 9A → the final swap): **when an owner names a
+   school in a collision resolution, confirm WHICH school carries WHICH name
+   before applying** — the assignment, not the name, is where the readings
+   diverge.
 
 The heritage-valley targets ("Singleton HS"/"Clara Brown HS") were rewritten
 in place in `scripts/jhsaa_heritage_valley_renames.py`, and the 2052 script's

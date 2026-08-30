@@ -109,7 +109,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     9A  2458  Veles Vo-Tech                          Port Veles             Port Veles Maritime Academy
 
 
--- SAME LEADING WORD, DIFFERENT CITIES (103 groups)
+-- SAME LEADING WORD, DIFFERENT CITIES (102 groups)
     7A  1444  Alder Crossing                         Boyerstown             Boyerstown North
     3A   438  Alder Cooperative                      Monte Blanco           Claudette Freeman
 
@@ -349,9 +349,6 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     2A   356  Oak Meyer                              Los Maderos            Hazel Hart
    Group 2   569  Oak Forest                             Simmons                Oksana Petrov
 
-    2A   348  Orchard Hill                           Abbey Vale             Abbey Vale Orchard Hill
-    7A  1474  Orchard Union                          San Telmo              San Telmo Agricultural Sciences Academy
-
     8A  2117  Pacific Fruit Exchange                 Bahía Leal             Manuel Robles
    Group 2   814  Pacific Friends                        Okmulgee               Pacific Friends School
     8A  2043  Pacific Gate                           San Dámaso             Pacific Gate
@@ -498,7 +495,7 @@ EVERY SCHOOL, BY CITY
 class | enrollment | pub/priv | display name | locality | district | SOURCE KEY
 
 Abbey Vale — 1 program (Ferris County, Gold Valley)
-    2A   348 pub  Orchard Hill                                              Valle Vista League                 Abbey Vale Orchard Hill
+    2A   348 pub  Booker T Washington                                       Valle Vista League                 Abbey Vale Orchard Hill
 
 Adrian — 1 program (Malheur County, Blue Mountain Country)
     2A   140 pub  Adrian                                                    Snake River District               Adrian High

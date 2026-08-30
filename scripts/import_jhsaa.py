@@ -346,7 +346,7 @@ OWNER_EDICTS = frozenset({
 # name is excluded here, and `jhsaa.resolve_school` checks live names first in any
 # case: an alias must never outrank a school that exists.
 FORMER_NAMES = {
-    "Abbey Vale Orchard Hill":                     "Orchard Hill",
+    "Abbey Vale Orchard Hill":                     "Booker T Washington",
     "Abraham Lincoln":                             "Lincoln",
     "Academy of Arts and Communication":           "Junction",
     "Adams Point":                                 "Cedar Point",
@@ -827,6 +827,7 @@ FORMER_NAMES = {
     "Opal Tillman":                                "Granite Water & Power",
     "Orchard Gate":                                "Bellefontaine",
     "Orchard Gate North":                          "Bois Neuf",
+    "Orchard Hill":                                "Bishop Turner",
     "Orellana":                                    "Orellana Central",
     "Orellana Canal View":                         "Canal View",
     "Orellana Commerce":                           "Malpais",
@@ -1159,14 +1160,20 @@ RENAMES = {
     "Barlowe County High": "Barlowe County",
     "Lodestone County High": "Lodestone County",
     "Antler County High": "Antler County",        # sunset 2052; page/archive rename
-    # 2026-08 owner renames, one collision resolved by the owner: the 2A
-    # "Abbey Vale Orchard Hill" drops its town prefix, and the 9A that held
-    # "Orchard Hill" (Valderra) becomes "Bishop Turner" to free the name — a
-    # display name is the archive identity, so both entries must move together.
-    # The 9A's roster identity stays "Orchard Hill" (stamped into `source`), so
-    # the source-keyed continuity table above still matches it.
+    # 2026-08 owner rename, resolved twice in-session: "Abbey Vale Orchard
+    # Hill" was first asked for as "just Orchard Hill", which collided with the
+    # live 9A Orchard Hill (Valderra) — a display name is the archive identity.
+    # The owner's final call: the 2A becomes "Booker T Washington" (owner's
+    # punctuation — no period after the T) and the 9A KEEPS its original name,
+    # so nothing is reissued and no history merges. Transient targets "Bishop
+    # Turner" and a brief 9A "Booker T Washington" lived only inside this
+    # session; no season was ever archived under either. The 9A renames to
+    # "Bishop Turner" (the owner's earlier pick, confirmed) in the same batch,
+    # so NO school carries "Orchard Hill" — the archived name resolves through
+    # FORMER_NAMES to the 9A alone (its identity; the alias generator prefers
+    # an identity claim over another chain's transient target).
+    "Abbey Vale Orchard Hill": "Booker T Washington",
     "Orchard Hill": "Bishop Turner",
-    "Abbey Vale Orchard Hill": "Orchard Hill",
     "St. Basil School": "St. Ignatius",
     "Caswell Depot High": "Cherry Hill North",
     "Caswell I-50 Technical": "Cherry Hill South",
@@ -2270,7 +2277,7 @@ PROMOTE_2A_ABOVE = 300          # 2A schools at or above this enrollment become 
 # redrawn through `scripts/jhsaa_redistrict.py` — leagues realign and rebrand, and
 # a class that gains a third of its membership is exactly when they do.
 RECLASSIFY_TO_2A = (
-    "Orchard Hill", "Alben Barkley", "Benton Cross", "Canal Lock",
+    "Booker T Washington", "Alben Barkley", "Benton Cross", "Canal Lock",
     "Cape Angeles", "Chaff Head", "Diamante", "Eagleton", "Fort Lassiter",
     "Gilhooly", "Halfway House", "Hawk Bar", "Iisalmi Union", "Latgaway",
     "Lieksa", "Los Maderos", "Madison", "Mt Jacqueline", "Netherwood",

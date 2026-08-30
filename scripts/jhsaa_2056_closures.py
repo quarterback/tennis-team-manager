@@ -82,6 +82,15 @@ SUNSET = [
     "Pendleton Heights",                # 7A  Valle Vista League
     "Pinyon Ridge",                     # Group 1  Far West League
     "Abbey Prep",                       # 5A  Narpes Interscholastic League
+    # "Too many of them" — the owner thinned the High-x names rather than
+    # renaming them (the suffix sweep left leading-word "High" alone as
+    # identity; these three close instead). "High Timber" was named in the same
+    # message and is ALREADY sunset — the 2052 batch's list carries it, so it is
+    # deliberately not repeated here. High Desert Cooperative was not named and
+    # stays.
+    "High Bar",                         # 2A  (its town's name)
+    "High Prairie",                     # Group 3
+    "High Desert Christian",            # 3A  Doyle Pass
 ]
 
 

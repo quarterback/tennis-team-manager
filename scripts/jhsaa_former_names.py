@@ -91,6 +91,14 @@ def collect(m, live: set[str]) -> dict[str, str]:
                     chain[k].append(v)
 
     former, reissued = {}, {}
+    # ‼️ AN IDENTITY CLAIM OUTRANKS A TRANSIENT TARGET (2026-08). Two chains can
+    # claim one former name: the school whose IDENTITY it is (every archived
+    # season keyed on it), and a school that merely held it as a rename TARGET
+    # for a while. The Orchard Hill swap is the live case — the 9A's identity is
+    # "Orchard Hill" (now Bishop Turner) while the 2A passed through the name
+    # in-session on its way to Booker T Washington. A dict would let iteration
+    # order decide whose page the archive lands on; the identity wins instead.
+    claimed_by_identity: set[str] = set()
     for source, targets in chain.items():
         now = m.RENAMES.get(source)
         if now is None:                       # entry retired; nothing live to point at
@@ -111,7 +119,11 @@ def collect(m, live: set[str]) -> dict[str, str]:
             # emitted; an alias no archive ever used is a harmless map entry.
             for old in dict.fromkeys((raw, m._display_name(raw))):
                 if old != now and old not in live:
+                    if old in claimed_by_identity and raw != source:
+                        continue        # another school's own name — see above
                     former[old] = now
+                    if raw == source:
+                        claimed_by_identity.add(old)
                 elif old != now:
                     # A REISSUE, not a no-op: `old` is a name this school gave up
                     # that another program now carries. Recorded so the cost is
