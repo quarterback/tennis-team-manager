@@ -346,6 +346,7 @@ OWNER_EDICTS = frozenset({
 # name is excluded here, and `jhsaa.resolve_school` checks live names first in any
 # case: an alias must never outrank a school that exists.
 FORMER_NAMES = {
+    "Abbey Vale Orchard Hill":                     "Orchard Hill",
     "Abraham Lincoln":                             "Lincoln",
     "Academy of Arts and Communication":           "Junction",
     "Adams Point":                                 "Cedar Point",
@@ -392,6 +393,7 @@ FORMER_NAMES = {
     "Annie Springs Crater View":                   "Crater View",
     "Ansotegui Siding Commonwealth":               "Pinebluffs",
     "Ansotegui Siding North":                      "Pinebluffs",
+    "Antler County High":                          "Antler County",
     "Anton Sidorov":                               "Adams",
     "Anya Antonov":                                "Mar Vista",
     "Anya Belov":                                  "Arroyo Water District",
@@ -415,6 +417,7 @@ FORMER_NAMES = {
     "Baptist HS":                                  "Baptist",
     "Barack Obama":                                "Obama",
     "Barclay Golden Gate":                         "Gate City",
+    "Barlowe County High":                         "Barlowe County",
     "Basalt Fork":                                 "Río Salado",
     "Beatrice Davenport":                          "Fort Halloran",
     "Beatriz Salcedo":                             "Spring Branch",
@@ -726,6 +729,7 @@ FORMER_NAMES = {
     "Llerena School of Science and Industry":      "Crow Basin",
     "Llerena Science":                             "Crow Basin",
     "Llerena South":                               "Crow Basin",
+    "Lodestone County High":                       "Lodestone County",
     "Loomis City North":                           "Charlotte",
     "Loomis Junction":                             "Charlotte",
     "Lorna Booker":                                "Blue Grama",
@@ -738,6 +742,7 @@ FORMER_NAMES = {
     "Maksim Karev":                                "Excelsior",
     "Manuel Cordero":                              "Sonia Sotomayor",
     "Manuel Robles":                               "Pacific Fruit Exchange",
+    "Manzanita Ridge":                             "Manzanita",
     "Maple Run":                                   "Cherry Hill North",
     "Marcus Langston":                             "Rutherford Hayes",
     "Marcus Langston North":                       "Garfield",
