@@ -154,6 +154,17 @@ Three redistricter faults found by this batch, each shipped-and-measured:
   (Behaviour noted, not restructured: with the two faults above fixed the
   exit no longer fires; treat any future over-cap exit as "nothing landed".)
 
+## The 8A/9A dual-gender mandate (owner rule, 2026-08)
+
+No girls-only programs in the association's two deepest classes: a girls
+sponsorship at 8A/9A implies a boys team. The closures had already removed
+the last such programs, so the committed data changed by zero rows — the work
+was ENFORCEMENT: `import_jhsaa.sponsors()` applies the mandate after every
+draw and override (outranking `ALWAYS_GIRLS_ONLY` there), the promotions
+script re-asserts it at the data level after class moves (a rule, not a name
+list, so it covers whatever a later batch moves in), and
+`test_no_girls_only_programs_at_8a_9a` pins the data.
+
 ## The retunes the closures forced (owner rules, same session)
 
 - **3A/4A State fields 40 → 32** — the association's last 40-field holdouts

@@ -82,6 +82,15 @@ def apply(rows: list[dict]) -> list[str]:
                        f"(enroll {r['enrollment']} -> {enr})")
             r["classification"] = r["group"] = target
             r["enrollment"] = enr
+    # ‼️ NO GIRLS-ONLY PROGRAMS AT THE 8A/9A LEVEL (owner rule 2026-08): the
+    # JHSAA mandates both teams in its two deepest classes. A RULE, not a
+    # name list, so it holds over whatever this script (or a later batch)
+    # moves in; `import_jhsaa.sponsors()` enforces the same mandate at import
+    # and `test_no_girls_only_programs_at_8a_9a` pins the committed data.
+    for r in rows:
+        if r["group"] in ("8A", "9A") and r.get("girls") and not r.get("boys"):
+            r["boys"] = True
+            log.append(f"boys team (8A/9A mandate): {r['name']} ({r['group']})")
     return log
 
 

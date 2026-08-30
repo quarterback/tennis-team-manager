@@ -3538,6 +3538,17 @@ def sponsors(schools: list[dict]) -> tuple[set[str], set[str]]:
             side.add(name)
         for name in NEVER_SPONSOR:
             side.discard(name)
+    # ‼️ NO GIRLS-ONLY PROGRAMS AT THE 8A/9A LEVEL (owner rule 2026-08, "the
+    # JHSAA mandated that all 8A/9A schools have to offer both"): in the
+    # association's two deepest classes a girls sponsorship implies a boys
+    # team, whatever the dice or ALWAYS_GIRLS_ONLY said — the mandate outranks
+    # the exception table there. Applied AFTER every draw and override for the
+    # same positional-dice reason those are, and re-asserted at the data level
+    # by `scripts/jhsaa_2056_promotions.py` (transform scripts move schools
+    # between classes after import) and pinned by
+    # `test_no_girls_only_programs_at_8a_9a`.
+    top = {s["name"] for s in schools if s["classification"] in ("8A", "9A")}
+    boys |= girls & top
     return girls, boys
 
 
