@@ -1831,3 +1831,94 @@ it is simply "more predictive and less common" than it should be, and this
 model's job is to make it less predictive by giving two similar players
 genuinely different capacity draws. The Oregon figures stay in §21.3a as
 context for how flat a real lineup is, not as a metric to tune against.
+
+---
+
+# 23. Career peak is a soft target, not a wall (owner rule, 2026-08)
+
+Owner: *"letting it roll OVER 100% … I'm not concerned about what happens to
+these people after high school … every level we're simming, high school or
+college, is the highest level to me, so worry less about gate capping."*
+
+Right in principle: nothing should be held back at one level to reserve headroom
+for a level the owner does not care about. But **"cap" means three different
+things here and only one of them should be removed.**
+
+## 23.1 The three caps
+
+| # | cap | what it does | verdict |
+|---|---|---|---|
+| 1 | **the career-peak clamp** (§22) | stops a player exceeding their own generated peak | **soften, do not remove** — see §23.2 |
+| 2 | **talent compression** (`development.compress_talent`, `TALENT_CAP` 66.5 boys / 58.7 girls) | squashes generated CEILINGS above a knee | **this is the one the rule is really about** — §23.3 |
+| 3 | **the 20-80 scale** (`GRADE_MAX`, `clamp_grade`, `overall_to_str`) | the grade scale itself | a technical wall, not a design choice — §23.4 |
+
+## 23.2 ‼️ REMOVING THE PEAK CLAMP DESTROYS THE SENIOR TAPER
+
+This is the important finding, and it is a direct collision with §22.6a.
+
+The sophomore/junior-leaps-then-incremental-senior profile that §22.6a
+establishes as correct **is produced by the clamp.** Capacity is drawn
+identically in all four years; late years grow less only because most players
+have already reached their peak and a big late draw has nowhere to land. Remove
+the clamp and there is nothing left making a senior year different from a
+freshman year.
+
+Measured over the real 2059 freshmen, sweeping how much of a gain still lands
+once a player is past peak (0.00 = today's hard clamp, 1.00 = no cap at all):
+
+| overflow | 9→10 | 10→11 | 11→12 | **Y3 ÷ Y1** | players finishing over peak | Sr mean | Sr p99 | Sr max |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| **0.00** (clamp) | 3.9 | 3.3 | 2.5 | **0.62** | 0% | 41.2 | 62 | 81 |
+| **0.15** | 4.0 | 3.5 | 2.8 | **0.69** | 34% | 41.8 | 63 | 83 |
+| **0.30** | 4.1 | 3.7 | 3.1 | **0.75** | 39% | 42.4 | 65 | 84 |
+| 0.50 | 4.2 | 4.0 | 3.5 | 0.82 | 41% | 43.1 | 68 | 85 |
+| **1.00** (no cap) | 4.5 | 4.6 | **4.5** | **1.00** | 43% | 45.1 | 76 | 94 |
+
+(girls; boys within 0.2 on every gain column and 0.01-0.07 on the ratio)
+
+At full overflow the senior year gains **exactly as much as the freshman year** —
+the seniority-leap pattern §22.6a rules out, reintroduced by the back door.
+
+**Recommendation: overflow 0.15-0.30.** A third of players finish above their
+career peak — so peak reads as a projection rather than a wall, which is what
+the rule asks for — while the taper survives at 0.69-0.75. Only the players with
+genuine late capacity punch through, which is the right population to let
+through.
+
+## 23.3 The cap the rule is actually about
+
+If the intent is "a high-school player should be as good as high-school tennis
+needs, not held down because a college sim exists", the lever is **talent
+compression**, not the peak clamp. `compress_talent` squashes generated ceilings
+above a per-gender knee toward `TALENT_CAP` (66.5 boys / 58.7 girls) with a
+1-in-500 elite exemption; `trim_prospect_ceiling` enforces it after generation.
+
+‼️ **It was added for a real reason** (`docs/AAR-talent-compression.md`, owner
+rule 2026-08): at ~850 JHSAA programs plus a 2,500/gender national pool, the
+same distributions produced five times the lottery tickets and the tail piled
+onto the 80 clamp — *"players maxing out my college scales, which was never
+supposed to happen."* Relaxing it means accepting that graduates arrive in the
+college sim above the scale it was tuned for, or rescaling on the hand-off.
+That is a legitimate choice under this rule, but it is a **different decision
+from §23.2** and should be made deliberately rather than as a side effect.
+
+## 23.4 The 20-80 scale is a hard wall regardless
+
+`clamp_grade` bounds attributes at `GRADE_MAX` (80), `GRADE_CEIL` reaches 90 for
+pros only, and `overall_to_str` maps 20-80 onto the STR band 31-57. At full
+overflow the sweep above produces a top senior of **94 (girls) / 98 (boys)** —
+outside the scale entirely, where it would be silently clipped and where STR
+stops meaning anything. Any uncapping past this point is a code change across
+display, STR and the engine's grade normalisation, not a constant.
+
+Note that even the hard-clamp row already tops out at 81 for girls, so this
+boundary is live today.
+
+## 23.5 Level, and the knob that should set it
+
+Overflow also raises the association's level: senior mean 41.2 → 45.1 (girls) at
+full overflow, which lands close to today's 45.9. That makes overflow look like
+a fix for the level drop flagged in §22.6 — **it is the wrong knob for it.** The
+peak multiplier sets the level without touching the taper; overflow sets the
+level by flattening the taper. Use the multiplier for level and overflow for
+whether peak is a wall.
