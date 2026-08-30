@@ -1737,8 +1737,13 @@ manufacture ability, and it is weighted by flight (S1 > S2 > S3, D1 > D2 > D3).
 ## 22.6 Calibration evidence
 
 Measured over the real 2059 rosters, projecting every freshman's full four-year
-career (`scripts/dev_model_access_experiment.py` was extended for this; the
-figures below are from the same harness and the same real ceilings).
+career. Reproduce with `scripts/dev_model_access_experiment.py <export-root>` —
+the OPTION C career census it prints after each gender's table is exactly this
+experiment. (An earlier draft of this section claimed the script "was extended
+for this" when it had not been: it carried only the access models M0-M3, OPT-A,
+CHAOS and the two-bucket odometer, so none of the figures justifying the chosen
+direction could actually be reproduced from the committed artefacts. The
+experiment is now in the script.)
 
 ‼️ **A clamping artefact to avoid.** A first parameterisation drew starting
 ability as a blend of a peak-anchored term and an independent population draw,
@@ -1753,14 +1758,15 @@ Three parameterisations, against the §6 spec's own growth-year targets:
 | config | 9→10 | 10→11 | 11→12 | none | ready | stagnant | one big leap | mean ability 9/10/11/12 |
 |---|---:|---:|---:|---:|---:|---:|---:|---|
 | **owner spec §6 target** | **30%** | **27%** | **28%** | **15%** | | | | |
-| V1 peak ×.85-1.10, start .40-.95 | 31% | 24% | 17% | 28% | 9% | 3% | 41% | girls 31.5/35.4/38.7/41.2 |
-| V2 peak ×.90-1.15, start .35-.92 | 38% | 29% | 19% | 14% | 3% | 2% | 56% | girls 31.1/36.1/40.2/43.2 |
-| V3 peak ×.95-1.20, start .32-.90 | 44% | 32% | 20% | 4% | 0% | 0% | 63% | girls 31.4/37.6/42.6/46.2 |
+| V1 peak ×.85-1.10, start .40-.95 | 32% | 23% | 17% | 28% | 9% | 4% | 41% | girls 31.5/35.5/38.6/41.1 |
+| V2 peak ×.90-1.15, start .35-.92 | 38% | 26% | 20% | 15% | 3% | 2% | 55% | girls 31.1/36.2/40.1/43.1 |
+| V3 peak ×.95-1.20, start .32-.90 | 44% | 30% | 21% | 4% | 0% | 0% | 62% | girls 31.4/37.6/42.5/46.1 |
 
-(boys land within a point or two of the same shape; today's actual means are
-girls 28.7/33.5/37.4/45.9, boys 31.2/36.7/41.6/49.2)
+(boys land within a point or two of the same shape — V1 there is
+31/23/19/27, means 34.6/38.6/41.8/44.6; today's actual means are girls
+28.7/33.5/37.4/45.9, boys 31.2/36.7/41.6/49.2)
 
-**V1 is the closest starting point** — 31/24/17 against the 30/27/28 target,
+**V1 is the closest starting point** — 32/23/17 against the 30/27/28 target,
 with a 9% ready share and 3% stagnant.
 
 ### ‼️ 22.6a THE SPEC'S OWN GROWTH-YEAR TARGET WAS WRONG (owner rule, 2026-08)
@@ -1787,8 +1793,8 @@ Measured per-year gain under V1 (girls; boys within 0.2 of every figure):
 
 | transition | mean | p50 | p90 | biggest-year share | players leaping +8 or more |
 |---|---:|---:|---:|---:|---:|
-| 9 → 10 | 3.9 | 2.4 | 10.8 | 31% | 19% |
-| 10 → 11 | 3.3 | 2.0 | 10.0 | 24% | 16% |
+| 9 → 10 | 3.9 | 2.4 | 10.8 | 32% | 19% |
+| 10 → 11 | 3.3 | 2.0 | 10.0 | 23% | 16% |
 | 11 → 12 | **2.5** | **1.2** | 8.5 | 17% | 11% |
 
 That is the intended profile: the senior year's median gain is about +1, half
@@ -2174,3 +2180,44 @@ matched-line gap is 3.5 OVR, so the 0-6 peer band swallows more than half of all
 matched lines and shipping §25 alone would reintroduce exactly the upset volume
 the 2026-08 profile was written to remove. On a freed scale the peer band is
 genuinely narrow. Ship together, then measure.
+
+---
+
+# 26. Metric corrections (review, 2026-08)
+
+Three defects were found in the committed measurement artefacts. All three are
+fixed; two changed no published number and one was a false claim about
+reproducibility. Recorded because "the figure did not move" is only worth
+anything if the reason is stated.
+
+**1. Retention must be scoped to the SAME PROGRAM.**
+`scripts/dev_model_access_experiment.py` tested whether a prior No. 1's id
+appeared anywhere in the following season, so a player who TRANSFERRED counted
+as a returning No. 1 and their old school's new No. 1 was scored as a retention
+failure — cases the metric is not defined over, depressing it. Now matched on
+`program_id`. **No published figure moved** (M0 girls 90.7%, boys 85.0%, and
+every model row unchanged): JHSAA transfers are rare owner-authored overrides,
+so the population it wrongly included is nearly empty in this save. It would
+bite on a world with an active transfer model.
+`scripts/oregon_lineup_shape.py` was already program-scoped and never had this.
+
+**2. The Oregon retention denominator must include non-varsity returners.**
+That script collected roster membership INSIDE the varsity filter, so a No. 1
+demoted all the way to JV vanished from the sample instead of counting as
+losing the seat — excluding precisely the clearest lost-seat case and biasing
+retention upward. Roster membership is now collected at any level; the No. 1
+counters stay varsity-only. **No figure moved, and the reason matters: every
+one of the 120,582 matches in the 2021-26 dataset carries
+`isNotVarsity: false`.** OSAA's feed simply has no JV rows, so this is
+correctness for a dataset that gains them, not a restatement. **The ~63%
+target stands.**
+
+**3. The Option C experiment was not in the harness.** §22.6 claimed
+`scripts/dev_model_access_experiment.py` "was extended for this". It had not
+been — the script carried only the access models, and none of the calibration
+figures justifying the chosen direction could be reproduced from the committed
+artefacts. The career projection and shape census are now in the script
+(`career`, `career_census`, `CAREER_CFGS`) and run after each gender's table.
+§22.6's V1/V2/V3 numbers are restated from that committed code and moved by up
+to a point (V1 girls 31/24/17 → 32/23/17) because the harness keys its rng
+differently from the scratch version the draft was written against.

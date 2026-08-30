@@ -45,7 +45,15 @@ retention asks how often that player, when they are on the roster again the
 next season, is still the No. 1.
 
 Regular season only (`postSeason` meets dropped, as the sim's ladder metrics
-drop the postseason) and varsity only (`isNotVarsity`).
+drop the postseason). Varsity only for the grade composition and the No. 1
+counters; ROSTER MEMBERSHIP is collected at any level, so a No. 1 demoted to JV
+counts as losing the seat rather than dropping out of the sample. (In the 2021-26
+dataset every one of the 120,582 matches carries `isNotVarsity: false`, so that
+split currently changes no number — it is correctness for a dataset that gains
+JV rows, not a restatement of the figures.)
+
+Retention is scoped to the SAME PROGRAM: a No. 1 who transfers is not a
+returning No. 1, and must not count their old school's new No. 1 as a failure.
 """
 from __future__ import annotations
 
@@ -84,21 +92,33 @@ def read(root: str):
                 if not isinstance(lst, list):
                     continue
                 for mm in lst:
-                    if mm.get("isNotVarsity"):
-                        continue
+                    # ‼️ ROSTER MEMBERSHIP IS COLLECTED BEFORE THE VARSITY
+                    # FILTER, the No. 1 counters after it. Retention asks "the
+                    # No. 1 came back — did they keep the seat?", and a player
+                    # demoted all the way to JV is the STRONGEST case of losing
+                    # it. Skipping their non-varsity appearances before building
+                    # `roster` dropped them from the denominator entirely, so
+                    # exactly the clearest lost-seat cases were excluded and the
+                    # reported retention was biased UPWARD.
+                    varsity = not mm.get("isNotVarsity")
                     mt, fl = mm.get("matchType"), str(mm.get("flight"))
-                    top = mt == "Singles" and fl == "1"
+                    top = varsity and mt == "Singles" and fl == "1"
                     for team in mm.get("matchTeams") or []:
                         for p in team.get("players") or []:
                             pid, sid, g = p.get("id"), p.get("schoolId"), p.get("genderId")
                             if pid is None:
                                 continue
+                            if sid is not None:
+                                roster[(sid, yr, g)].add(pid)   # ANY level
+                            if not varsity:
+                                continue
+                            # everything below is the varsity-only view: the
+                            # grade composition is about varsity LINES, and the
+                            # grade inference reads varsity career spans.
                             seasons[pid].add(yr)
                             rows.append((yr, pid, g, mt, fl))
-                            if sid is not None:
-                                roster[(sid, yr, g)].add(pid)
-                                if top:
-                                    s1[(sid, yr, g)][pid] += 1
+                            if sid is not None and top:
+                                s1[(sid, yr, g)][pid] += 1
     return rows, seasons, s1, roster
 
 
@@ -160,6 +180,12 @@ def main() -> None:
         for (sid, yr, g), pid in no1.items():
             if g != gid:
                 continue
+            # ‼️ SAME PROGRAM, ANY LEVEL. `roster` is keyed on (school, year,
+            # gender), so this asks whether the player is back at THIS school —
+            # a transfer is not a returning No. 1 and must not count the new
+            # No. 1 as a retention failure. And `roster` now includes JV
+            # appearances, so a No. 1 demoted off varsity counts as losing the
+            # seat rather than dropping out of the sample.
             nxt = (sid, yr + 1, g)
             if nxt in no1 and pid in roster.get(nxt, ()):
                 n += 1

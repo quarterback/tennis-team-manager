@@ -156,20 +156,23 @@ def load(root: str, year: int, gender: str) -> list[dict]:
         return list(csv.DictReader(f))
 
 
-def _rank(rows: list[dict], cur: dict, year: int) -> tuple[dict, dict]:
+def _rank(rows: list[dict], cur: dict, year: int) -> tuple[dict, dict, dict]:
+    """(rank by player, No. 1 by program, roster membership by program)."""
     by = collections.defaultdict(list)
     for r in rows:
         by[r["program_id"]].append(r)
-    rank, top1 = {}, {}
+    rank, top1, roster = {}, {}, {}
     for prog, rs in by.items():
         rs.sort(key=lambda r: -cur[(year, r["player_id"])])
         top1[prog] = rs[0]["player_id"]
+        roster[prog] = {r["player_id"] for r in rs}
         for i, r in enumerate(rs):
             rank[r["player_id"]] = i
-    return rank, top1
+    return rank, top1, roster
 
 
-def metrics(D: dict, years: list[int], cur: dict, rank: dict, top1: dict) -> dict:
+def metrics(D: dict, years: list[int], cur: dict, rank: dict, top1: dict,
+            roster: dict) -> dict:
     sw = tot = swn = totn = swt = tott = promo = cand = 0
     for y0, y1 in zip(years, years[1:]):
         alive = {r["player_id"] for r in D[y1]}
@@ -189,8 +192,12 @@ def metrics(D: dict, years: list[int], cur: dict, rank: dict, top1: dict) -> dic
                 if rank[y0][a] < LINEUP and rank[y0][b] < LINEUP:
                     tott += 1; swt += flip
     y0, y1 = years[-2], years[-1]
-    alive = {r["player_id"] for r in D[y1]}
-    pairs = [(p, top1[y1].get(prog)) for prog, p in top1[y0].items() if p in alive]
+    # ‼️ SAME PROGRAM. A global "is this pid anywhere next season" test counts a
+    # player who TRANSFERRED as a returning No. 1, and then scores their old
+    # school's new No. 1 as a retention failure — which depresses the headline
+    # metric with cases the metric is not defined over.
+    pairs = [(p, top1[y1].get(prog)) for prog, p in top1[y0].items()
+             if p in roster[y1].get(prog, ())]
     held = sum(1 for p, q in pairs if p == q)
     no1 = collections.Counter()
     for r in D[y1]:
@@ -222,13 +229,13 @@ def run(root: str, years: list[int], gender: str) -> None:
 
     print(f"\n===== {gender}   seasons {years[0]}-{years[-1]}\n{HDR}")
     for name, fn in MODELS.items():
-        cur, rank, top1 = {}, {}, {}
+        cur, rank, top1, roster = {}, {}, {}, {}
         for y in years:
             for r in D[y]:
                 pid = r["player_id"]
                 cur[(y, pid)] = fn(pid, int(r["grade"]), ceil[pid])
-            rank[y], top1[y] = _rank(D[y], cur, y)
-        print(row(name, metrics(D, years, cur, rank, top1)))
+            rank[y], top1[y], roster[y] = _rank(D[y], cur, y)
+        print(row(name, metrics(D, years, cur, rank, top1, roster)))
 
     # --- the odometer, on top of M2 -------------------------------------
     # Exposure is resolved FORWARD: last season's rank decides this season's
@@ -238,7 +245,7 @@ def run(root: str, years: list[int], gender: str) -> None:
           f"JV {1-SHORTFALL['jv']:.0%}, varsity {1-SHORTFALL['varsity']:.0%}):")
     print(f"  {HDR}")
     for label, on in (("M2 no odometer", False), ("M2 + odometer", True)):
-        cur, rank, top1, prev = {}, {}, {}, {}
+        cur, rank, top1, roster, prev = {}, {}, {}, {}, {}
         for y in years:
             for r in D[y]:
                 pid, g = r["player_id"], int(r["grade"])
@@ -247,9 +254,99 @@ def run(root: str, years: list[int], gender: str) -> None:
                 base = M2(pid, max(9, g - 1), C)
                 short = SHORTFALL[prev.get(pid, "none")] if on else 0.0
                 cur[(y, pid)] = target - (target - base) * short
-            rank[y], top1[y] = _rank(D[y], cur, y)
+            rank[y], top1[y], roster[y] = _rank(D[y], cur, y)
             prev = {p: ("varsity" if i < LINEUP else "jv") for p, i in rank[y].items()}
-        print("  " + row(label, metrics(D, years, cur, rank, top1)))
+        print("  " + row(label, metrics(D, years, cur, rank, top1, roster)))
+
+
+# --- Option C (the CHOSEN model, proposal §22) -----------------------------
+# Starting ability and career PEAK drawn separately, four yearly development
+# capacities with no privileged senior year, clamped at peak (§23 allows a soft
+# overflow past it). This is a PROJECTION over four years from each freshman in
+# the newest season, not an access model, so it is reported as its own census
+# rather than as a row in the table above.
+#
+# ‼️ START IS A FRACTION OF PEAK, DRAWN GRADE-FREE — never a blend of a
+# peak-anchored term and an independent population draw clamped at peak. That
+# clamp fires constantly for low-peak players, silently sets start = peak, and
+# manufactured a 26% "already finished" share and 53% of players with no growth
+# year in a first parameterisation. Nothing is clamped at generation here.
+
+#: (name, peak multiplier band, start-fraction band, big-year probability,
+#: big-year band, ordinary-year band). V1 is the closest fit to the owner's
+#: growth-year spec; V2/V3 are progressively hotter.
+CAREER_CFGS = {
+    "V1": ((.85, 1.10), (.40, .95), .30, (7, 15), (0, 3.5)),
+    "V2": ((.90, 1.15), (.35, .92), .34, (8, 17), (0, 4.0)),
+    "V3": ((.95, 1.20), (.32, .90), .38, (8, 18), (1, 5.0)),
+}
+
+
+def career(pid: str, C: float, cfg, overflow: float = 0.0):
+    """(start, peak, [ability at grades 9-12]) for one player.
+
+    `overflow` is the share of a gain that still lands once past career peak
+    (proposal §23): 0.0 is a hard clamp, 1.0 no cap at all. The senior TAPER is
+    produced by this clamp — capacity is drawn identically in all four years and
+    late years grow less only because most players have already reached peak —
+    so raising it toward 1.0 flattens the taper and reintroduces senior leaps.
+    """
+    k, frac, big_p, big, small = cfg
+    r = random.Random(f"optc|{pid}")
+    peak = C * r.uniform(*k)
+    v = peak * r.uniform(*frac)
+    caps = [r.uniform(*big) if r.random() < big_p else r.uniform(*small)
+            for _ in range(4)]
+    path = [v]
+    for i in range(3):
+        gain = caps[i]
+        if v >= peak:
+            gain *= overflow
+        elif v + gain > peak:
+            gain = (peak - v) + (v + gain - peak) * overflow
+        v += gain
+        path.append(v)
+    return path[0], peak, path
+
+
+def career_census(rows: list[dict], ceil: dict, overflow: float = 0.0) -> None:
+    """Project every freshman's four-year career and report the SHAPE of the
+    resulting careers — which is what this model controls. Ladder churn is
+    deliberately not reported here (proposal §22.7: roster order is handled
+    dynamically elsewhere and is not a target for the development model)."""
+    fresh = [r["player_id"] for r in rows if r["grade"] == "9"]
+    if not fresh:
+        return
+    print(f"\n  OPTION C career census — {len(fresh)} freshmen projected "
+          f"(overflow past peak {overflow:.2f})")
+    print(f"    {'cfg':4s}{'9>10':>7}{'10>11':>7}{'11>12':>7}{'none':>7}"
+          f"{'ready':>7}{'stag':>7}{'leap':>7}   mean ability 9/10/11/12")
+    for name, cfg in CAREER_CFGS.items():
+        big = collections.Counter()
+        shape = collections.Counter()
+        lvl = collections.defaultdict(list)
+        for pid in fresh:
+            start, peak, path = career(pid, ceil[pid], cfg, overflow)
+            gains = [path[i + 1] - path[i] for i in range(3)]
+            big[gains.index(max(gains)) + 1 if max(gains) >= 3 else 0] += 1
+            for i, v in enumerate(path):
+                lvl[9 + i].append(v)
+            total = path[-1] - path[0]
+            if start >= .90 * peak:
+                shape["ready"] += 1
+            elif total < 3:
+                shape["stagnant"] += 1
+            elif max(gains) >= 8:
+                shape["leap"] += 1
+        n = len(fresh)
+        means = "/".join(f"{st.mean(lvl[g]):.1f}" for g in (9, 10, 11, 12))
+        print(f"    {name:4s}{big[1]/n:7.0%}{big[2]/n:7.0%}{big[3]/n:7.0%}"
+              f"{big[0]/n:7.0%}{shape['ready']/n:7.0%}{shape['stagnant']/n:7.0%}"
+              f"{shape['leap']/n:7.0%}   {means}")
+    print("    owner spec §6 growth-year target: 30% / 27% / 28% / 15% none")
+    print("    ‼️ §22.6a CORRECTS that target — breakouts are sophomore and")
+    print("       junior; the senior year is incremental, so a LOW 11>12 share")
+    print("       is the model behaving correctly, not under-weighting.")
 
 
 def main() -> None:
@@ -262,6 +359,9 @@ def main() -> None:
     years = args.years or sorted(int(d) for d in os.listdir(args.root) if d.isdigit())
     for gender in args.genders:
         run(args.root, years, gender)
+        rows = load(args.root, years[-1], gender)
+        ceil = {r["player_id"]: float(r["potential_grade"]) for r in rows}
+        career_census(rows, ceil)
 
 
 if __name__ == "__main__":
