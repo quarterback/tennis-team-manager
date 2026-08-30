@@ -50,8 +50,7 @@ eligible = eliminated before the Specials (appears in an archived
            AND (no losing regular-season record, unless TOSS >= .700)
 
 n       = min(CHALLENGE_SLOTS[class], #eligible, #challengers)
-          — 2 per class, 4 in 3A/4A (the classes whose Specials bubble
-          fields measured largest)
+          — 2 per class, 4 in 3A/4A (see "Why 2, and why 4 in 3A/4A" below)
 
 pairing = best eligible (by TOSS) vs the WEAKEST selected challenger,
           second-best vs second-weakest, … the seat-holder hosts, no
@@ -66,6 +65,33 @@ The design distinction from the parent AAR holds one level down:
 
 - **Specials = the final State bubble.**
 - **Special Challengers = access to a seat on that bubble.**
+
+## Why 2, and why 4 in 3A/4A (owner rationale, 2026-08)
+
+The default cap is two contested seats per class because the early-exit
+recovery problem is rare in most classes. 3A and 4A receive four contested
+seats because prior Specials audits showed those classes produced the largest
+and noisiest bubble pools — the highest concentration of low-ranked Special
+entrants and credible early-exit misses. The higher cap is therefore a
+targeted correction for classes with more boundary volatility, not a general
+expansion of the postseason.
+
+The design goal is **proportional correction, not symmetry**:
+
+```
+2 = normal recovery valve
+4 = expanded recovery valve for the classes with the dirtiest bubble
+```
+
+If every class got 4, the bridge would contest too much of the Specials field
+in classes where the data showed one or two meaningful stranded teams across
+seasons — heavier than the problem, and in a 24-shape class (4 bids) it would
+put the ENTIRE formula-selected side up for grabs, tilting the Specials'
+regular-season currency back toward TOSS. If every class got 2, 3A/4A would
+keep their edge-field problem: more low-end qualifier noise, more room for a
+good-but-stranded team to fall through. The round is supposed to test the
+softest part of the qualification model, never rewrite it — the caps protect
+that, alongside the untouched berth arithmetic and Conference winners.
 
 ## Deliberate boundaries
 
