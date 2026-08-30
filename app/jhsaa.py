@@ -5554,6 +5554,7 @@ CHALLENGE_SLOTS_DEFAULT = 2
 
 
 def _special_challengers_round(group: str, by_name: dict, challengers: list,
+                               district_champs: list[str],
                                taken: set[str], power: dict, *,
                                seed: int) -> tuple[dict, list]:
     """‼️ THE SPECIAL CHALLENGERS — the bridge round in front of the State
@@ -5604,10 +5605,19 @@ def _special_challengers_round(group: str, by_name: dict, challengers: list,
     ch_names = {t.school.name for t in challengers}
     out_of_reach = set(taken) | ch_names
     slots = CHALLENGE_SLOTS.get(group, CHALLENGE_SLOTS_DEFAULT)
+    # ‼️ DISTRICT CHAMPIONS GET FIRST CLAIM (owner rule 2026-08): a champion
+    # that lost early is RECONSIDERED here ahead of the rest of the field.
+    # A PRIORITY, not a gate — the tier is ordered by the same challenger
+    # ranking as everyone else, and once the champions are exhausted the
+    # seats go straight on down the list. Being in this pool already means
+    # the champion did not qualify and holds no Specials seat, so "lost
+    # early" needs no test of its own; adding one would be a gate again.
+    champs = set(district_champs or ())
+    ck = _challenger_key(power)
     # The next `slots` names down the ranking the challenger cut was drawn on
     # — literally the teams that just missed the Specials slate.
     eligible = sorted((t for nm, t in by_name.items() if nm not in out_of_reach),
-                      key=_challenger_key(power))[:slots]
+                      key=lambda t: (t.school.name not in champs,) + ck(t))[:slots]
     n = min(slots, len(eligible), len(challengers))
     if n <= 0:
         return empty, challengers
@@ -6799,8 +6809,8 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
         ch_seed = seed + int.from_bytes(hashlib.blake2s(
             f"jh-challenge|{group}".encode(), digest_size=4).digest(), "big")
         ch_arc, challengers = _special_challengers_round(
-            group, by_name_g, challengers, qualified | cw_names, post_power,
-            seed=ch_seed)
+            group, by_name_g, challengers, district_champs[group],
+            qualified | cw_names, post_power, seed=ch_seed)
         special_challengers[group] = ch_arc
         sp_arc, sp_winners = _state_specials_round(
             group, cw, challengers,

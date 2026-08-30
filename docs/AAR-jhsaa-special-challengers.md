@@ -55,7 +55,8 @@ contenders = the `seats` BEST teams outside the pool: the next names down
              cut (reg-season pct, wins, ATR tiebreak — record over TOSS,
              the owner's call: "teams that have good seasons, not just
              teams that load up on TOSS"), from everyone not qualified and
-             not already on the slate
+             not already on the slate — with DISTRICT CHAMPIONS taken
+             first, ordered among themselves by that same ranking
 
 pairing    = best contender vs weakest holder, second vs second, … the
              seat-holder hosts, no rematch repair — the pairing IS the
@@ -66,6 +67,16 @@ winner     = holds that challenger seat INTO the State Specials
 
 **There are no eligibility gates, and that is load-bearing.** The round has no
 conditions of its own: two ranked lists, meeting in the middle.
+
+**The one priority: district champions.** A champion that lost early is
+reconsidered here ahead of the rest of the field (owner rule 2026-08) — and
+that, with the PROTECTED Regionals entry and their existing first tier in the
+Semi-Conference pool, is the whole of what a district title buys. Still never
+a berth: they take a contender seat, and they have to win the dual. It is a
+priority and not a gate, so once the champions are used the seats carry
+straight on down the ranking. Being in this pool already means the champion
+did not qualify and holds no Specials seat, so "lost early" needs no test of
+its own — adding one would put a gate back.
 
 **Zero extra berths.** The Specials field is the same size with the same bids;
 Conference winners are untouched; a bridge winner still has to win its Special.

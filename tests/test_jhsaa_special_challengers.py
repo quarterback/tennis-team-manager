@@ -7,11 +7,14 @@ challengers (2, or 4 in the 40-field classes) defend their Specials seats
 against the `CHALLENGE_SLOTS` BEST teams outside the pool — the next names
 down the SAME `_challenger_key` ranking the challenger cut was drawn on.
 
-‼️ NO ELIGIBILITY GATES. A TOSS floor, a class-rank cut, a district-title gate
-and a sub-.500 exclusion were each tried and each removed: the challenger cut
-already takes the best non-qualified teams by record, so the pool behind it is
-the weak tail of the class by construction, and gating on it emptied the
-contender pool in whole classifications at random. Ranking alone is the screen.
+‼️ NO ELIGIBILITY GATES. A TOSS floor, a class-rank cut, a district-title
+SCREEN and a sub-.500 exclusion were each tried and each removed: the
+challenger cut already takes the best non-qualified teams by record, so the
+pool behind it is the weak tail of the class by construction, and gating on it
+emptied the contender pool in whole classifications at random. Ranking alone
+is the screen — with ONE priority on top of it, district champions, who are
+reconsidered ahead of the rest of the field but gate nobody out.
+
 Zero extra berths: only who sits on the challenger side moves.
 """
 import pytest
@@ -45,10 +48,10 @@ def teams(*pairs):
     return {n: _Team(n, reg=r) for n, r in pairs}
 
 
-def bridge(by, challengers, taken=(), power=None, group="7A"):
+def bridge(by, challengers, champs=(), taken=(), power=None, group="7A"):
     """`group` defaults to a 32-field class, i.e. the default two seats."""
     return jh._special_challengers_round(
-        group, by, challengers, set(taken), power or {}, seed=11)
+        group, by, challengers, list(champs), set(taken), power or {}, seed=11)
 
 
 @pytest.fixture
@@ -73,6 +76,22 @@ def test_the_weakest_seats_face_the_best_teams_outside_the_pool(home_wins):
         == [("Ch3", "A"), ("Ch2", "B")]
     assert "C" not in {gm["away"] for gm in arc["rounds"][0]}, \
         "the seats go to the BEST outside the pool, not to a body count"
+
+
+def test_district_champions_get_first_claim(home_wins):
+    """‼️ A district champion that lost early is RECONSIDERED ahead of the
+    rest of the field (owner rule 2026-08) — and that is ALL it buys here, on
+    top of the PROTECTED Regionals entry it already had. A PRIORITY, not a
+    gate: once the champions are used up the seats carry straight on down the
+    ranking, and a champion still has to win the dual."""
+    by = teams(("Ch1", (16, 0)), ("Ch2", (15, 1)), ("A", (14, 2)),
+               ("Champ", (9, 7)))
+    # 9-7 outranks a 14-2 team for the FIRST seat, and only the first
+    arc, _ = bridge(by, [by["Ch1"], by["Ch2"]], champs=("Champ",))
+    assert [gm["away"] for gm in arc["rounds"][0]] == ["Champ", "A"]
+    # name no champion and the seats go in plain ranking order
+    arc, _ = bridge(by, [by["Ch1"], by["Ch2"]])
+    assert [gm["away"] for gm in arc["rounds"][0]] == ["A", "Champ"]
 
 
 def test_there_are_no_eligibility_gates(home_wins):
