@@ -1922,3 +1922,150 @@ a fix for the level drop flagged in §22.6 — **it is the wrong knob for it.** 
 peak multiplier sets the level without touching the taper; overflow sets the
 level by flattening the taper. Use the multiplier for level and overflow for
 whether peak is a wall.
+
+---
+
+# 24. Free the high-school scale; translate at graduation (owner rule, 2026-08)
+
+Owner: the Jefferson rating scale was doing two jobs — representing how good
+someone is *within high-school tennis*, and guaranteeing that graduates fit onto
+the college scale. Those are separated. **JHSAA becomes internally unconstrained;
+a translation layer converts players only when they enter the college pool.**
+
+```
+JHSAA PLAYER  current HS ability · development · achieved HS level
+     ↓ graduation
+TALENT TRANSLATION   percentile-primary, non-linear, + a small absolute term
+     ↓
+COLLEGE PROSPECT  college-scale current · college-scale potential
+```
+
+Consequences, all intended: `compress_talent` and `trim_prospect_ceiling` stop
+applying to JHSAA generation; the career peak becomes a projection a player may
+exceed (§23); a Jefferson player may legitimately be an 84 or a 96, and that
+number means something only inside the JHSAA. `hs_exit_ovr`, `hs_percentile` and
+`college_entry_ovr` are all carried, so the player stays a 96-rated Jefferson
+monster historically while college receives a properly scaled 61.
+
+**College potential is generated fresh at import, not translated from HS peak.**
+Dominating high school and being nearly finished is a legitimate outcome; so is
+leaving slightly worse with far more college growth. HS potential governs
+nothing about college potential.
+
+## 24.1 ‼️ The scale headroom already exists — correcting §23.4
+
+§23.4 said uncapping past 80 is "a code change across display, STR and the
+engine's grade normalisation". **That was wrong**, and the code is already most
+of the way to this design:
+
+* `player_attributes.GRADE_CEIL` is **100**, not 80. `GRADE_MAX` (80) is only the
+  NORMALISATION REFERENCE.
+* `grade_to_unit` has **no upper clamp** by deliberate design: grade 80 → 1.0 and
+  anything above normalises above 1.0.
+* The pro tier already generates into the 80-100 headroom and reads above 80 on
+  court, because the engine clamps the resulting PROBABILITY, not the input.
+
+So a 96-rated high schooler needs no new plumbing; the path the pros use already
+exists. Two real limits remain:
+
+1. **100 is a hard clamp.** `clamp_grade` bounds at `GRADE_CEIL`, so the "103
+   generational player" would silently clip. Either keep the HS scale under 100
+   or raise `GRADE_CEIL` deliberately.
+2. **`overall_to_str` is linear and unclamped** (20-80 → STR 31-57), so a 96
+   displays as STR ~64, above the band STR was defined for. Fine if JHSAA never
+   shows STR; a decision if it does.
+
+## 24.2 ‼️ THE REAL COUPLING IS THE MATCH ENGINE, NOT THE DISPLAY
+
+`engine.fast` plays on a HINGED gap (`effective_gap`): the real gap below a knee,
+accelerated `gap_accel`× beyond it. The gap is a difference of unit-normalised
+drivers — i.e. **grade difference ÷ 60** — so it is denominated in the same
+20-80 reference the HS scale is about to stop respecting. The high-school
+profile's knee is **0.02** with accel **1.8** (against the college calibration's
+0.06), so HS matches accelerate very early and very hard.
+
+Widen the ability distribution and every gap grows in unit terms, pushing more
+matches past that knee. The 2027-08 upset recalibration
+(`docs/AAR-jhsaa-upset-variance-recalibration.md`) was tuned against the
+COMPRESSED distribution.
+
+This is measurable today, because the export contains both regimes either side
+of the `talent_era` boundary at entry 2057. Comparing **ceilings**, which are
+fixed at generation and so carry no grade confound (an earlier pass compared
+current ability and was dominated by the fact that uncompressed cohorts are
+mostly seniors — a real trap in this dataset):
+
+| | mean | sd | p90 | p99 |
+|---|---:|---:|---:|---:|
+| girls uncompressed (entry ≤2056) | 53.0 | **15.88** | **75** | 78 |
+| girls compressed (entry ≥2057) | 47.8 | **10.95** | **57** | 58 |
+| boys uncompressed | 56.9 | 16.06 | 77 | 78 |
+| boys compressed | 52.9 | 12.93 | 65 | 66 |
+
+And what that does to the matchups that matter most — best player of one program
+against best player of another, in engine unit terms:
+
+| | median gap | **p90 gap** | **share inside the HS knee (0.02)** |
+|---|---:|---:|---:|
+| girls uncompressed | 0.033 | **0.183** | **39.7%** |
+| girls compressed | 0.017 | **0.033** | **87.0%** |
+| boys uncompressed | 0.017 | 0.133 | 63.5% |
+| boys compressed | 0.017 | 0.033 | 88.4% |
+
+**Uncompressing multiplies the p90 best-vs-best gap by about 5.5× (girls) and
+4× (boys), and drops the share of marquee matchups that keep their volatility
+from 87% to 40%.** State finals and No. 1 singles — the matches most worth
+watching — get markedly more lopsided. Nothing errors; the scoreboard just
+stops producing close matches at the top.
+
+### The fix is small, and it belongs in the same change
+
+`gap_knee` is a quantity in unit terms pinned to a 20-80 reference. If the HS
+scale is freed, **the HS profile's knee (and possibly its accel) must be
+rescaled with it**, or the upset calibration silently changes as a side effect of
+a talent-generation decision. Freeing the scale and re-tuning the hinge are one
+change, not two, and `scripts/jhsaa_upset_calibration.py` already exists to
+verify it.
+
+The same reasoning applies to anything else denominated against the 20-80
+reference and tuned on the compressed distribution: `jhsaa.REST_GAP` (10 OVR),
+`jhsaa.LADDER_SWING` (±7 OVR), `jhsaa.PAIR_SUM_TOL`, and the
+`development.FOG_*` bands. Grep for OVR-denominated constants before shipping.
+
+## 24.3 The translator
+
+Percentile-primary is right, and for the reason given: it survives future changes
+to Jefferson talent generation. If the best player in a generation is later an 87
+instead of a 103, "top 0.2% of graduating Jefferson players" still means the same
+thing and college needs no redesign. A small absolute-quality term on top lets a
+genuinely great graduating class send stronger players without letting JHSAA
+rating inflation reach the college scale.
+
+Three implementation requirements:
+
+1. **‼️ THE TRANSLATION MUST BE ARCHIVED, NOT RECOMPUTED.** A percentile is a
+   function of the whole graduating population, so re-deriving it later would
+   only match by chance — the same rule that makes `jhsaa` archive its TOSS
+   index per school per season rather than recomputing it, for the same reason.
+   Store `hs_exit_ovr`, `hs_percentile` and `college_entry_ovr` on the prospect
+   at graduation and read them back forever.
+2. **Version the mapping.** Once translated players are in college rosters, a
+   changed curve must not retroactively re-rate them. Stamp the translator
+   version alongside the stored values; this is the `dev_era()` idiom again.
+3. **Define the reference population explicitly** — graduating JHSAA seniors of
+   that gender and year, and state whether JV-only players are in it. A thin or
+   unusual class needs a stated fallback rather than a percentile over forty
+   people.
+
+## 24.4 What the HS model reduces to
+
+```
+starting ability
++ randomised yearly development capacity
+× competitive exposure
+= changing HS ability
+```
+
+No universal maturity access. No requirement to approach potential. No hard
+career-peak clamp. No college-driven talent compression. No 80-point ceiling
+imposed because STR expects one. Graduation performs the normalisation.
