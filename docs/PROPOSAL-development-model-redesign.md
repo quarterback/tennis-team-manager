@@ -4,7 +4,9 @@
 **Scope:** JHSAA high school and NCAA college player development  
 **Date:** 2026-08  
 **Purpose:** Preserve the full reasoning behind two viable redesign directions before implementation, so the design can be revisited later without reconstructing the conversation or intent from code comments.  
-**Likely direction:** Option B — individualized randomized access schedule  
+**Direction:** **Option C (§22)** — starting ability / career peak / yearly
+capacity / exposure. Options A (§5) and B (§6) are retained as the record of what
+was considered and rejected.  
 **Related baseline:** `docs/REPORT-development-model-baseline.md`  
 **Related reproducibility scripts:** `scripts/dev_model_baseline.py`,
 `scripts/dev_model_access_experiment.py`, `scripts/oregon_lineup_shape.py`
@@ -18,6 +20,10 @@
 > §21 made** — an odometer guardrail (§21.5) and a roster-persistence blocker
 > (§21.6), both corrected by the owner. Read §21 alongside §12 (measurement plan)
 > and §17 (implementation questions).
+>
+> ‼️ **§22 IS THE CHOSEN MODEL** and supersedes §16's Option B preference. §21's
+> measurements still stand as the description of the problem; §21.3a's Oregon
+> figures are context, NOT tuning targets (see §22.7).
 
 ---
 
@@ -1645,3 +1651,141 @@ Option B, with these changes to §16-§18:
 5. **The exposure model needs a graded ladder** — varsity / split / JV / none,
    with ordering inside JV — and the two-bucket test in the experiment script
    does not evaluate it.
+
+---
+
+# 22. Option C — starting ability / career peak / yearly capacity / exposure
+
+**Owner direction, 2026-08. This supersedes §16's Option B preference and §5's
+Option A. Options A and B stay above as the retained record of what was
+considered.**
+
+## 22.1 The model
+
+Four parts, each drawn once at generation:
+
+```
+PLAYER
+├── STARTING ABILITY        where they are on day one
+├── CAREER PEAK             the best they could be during THIS career window
+├── YEARLY CAPACITY  Y1..Y4 how much improvement they can realise each year
+└── EXPOSURE                what they actually played, scaling realisation
+                              ↓
+                    realised gain = capacity × exposure
+                              ↓
+                        clamped at career peak
+```
+
+The break from every earlier model is that **starting ability and career peak
+are drawn separately.** They correlate; neither is derived from the other. So
+the model stops assuming a freshman is unfinished *because* they are a freshman:
+
+```
+61 / 63    already a finished player
+51 / 70    elite upside
+38 / 64    a project
+44 / 47    basically done at fourteen
+31 / 55    ordinary, with room
+```
+
+Career peak is **not a debt the engine owes the player by senior year.** A
+34/67 player whose capacities come up mediocre finishes 34 → 37 → 43 → 49 and
+simply never becomes what they might have been. No regression is needed for
+that; it is just unrealised capacity.
+
+**There is no privileged senior development year.** The largest growth year may
+fall in any grade. Career shapes — ready, early, steady, late, spike, stagnant —
+are emergent from the capacity draws and are never labelled or stored.
+
+## 22.2 Exposure is a cumulative odometer, not a category
+
+Do not classify a player once as "JV" or "varsity". Accumulate appearance value
+across the season (a varsity appearance worth more than a JV one), then convert
+the total into a realisation factor. Split-time players land between the two
+without needing a category of their own, and the JV ladder matters because a JV
+No. 1 who plays every dual banks more than a JV player who barely appears.
+
+Illustrative factors: did not play 0.55 · limited JV 0.70 · full JV 0.80 ·
+split 0.90 · full varsity 1.00. Multiplying the player's **own** capacity means
+exposure never homogenises anyone: a stagnant player with +1 capacity gets about
++1 whatever they play, while an explosive sophomore with +12 gets ~12 on varsity,
+~10 on JV and ~6-7 sitting. Adolescence happens either way, which is why the
+floor is 0.55 rather than zero.
+
+## 22.3 What this replaces
+
+Remove, as different spellings of "older player = more access":
+
+* grade maturity bands (`_MATURITY`, `_dev_maturity`'s grade walk)
+* `DEV_MIN_RISE`, `DEV_MIN_STEP`, `DEV_FINISH`
+* the interest-rate gap-closing model (`GROWTH_K`, `TIERS`, `tier_mult`)
+
+## 22.4 One engine, two sets of constants
+
+High school and college stop being philosophically different systems. Same four
+parts; college simply draws starting ability closer to career peak on average
+(HS ~40-95% of peak, college ~65-90%). College still produces finished freshman
+stars, stagnant players, sophomore jumps and senior breakouts.
+
+## 22.5 Individual State overflow
+
+Retained from §8. A deep individual-State run raises that season's realisation
+cap slightly above the generated capacity — `+7` capacity, `+1.5` allowance,
+`+8.5` maximum — and only if there is room below career peak. It cannot
+manufacture ability, and it is weighted by flight (S1 > S2 > S3, D1 > D2 > D3).
+
+## 22.6 Calibration evidence
+
+Measured over the real 2059 rosters, projecting every freshman's full four-year
+career (`scripts/dev_model_access_experiment.py` was extended for this; the
+figures below are from the same harness and the same real ceilings).
+
+‼️ **A clamping artefact to avoid.** A first parameterisation drew starting
+ability as a blend of a peak-anchored term and an independent population draw,
+then clamped it at peak. For low-peak players the independent draw routinely
+exceeded peak, so the clamp set start = peak and manufactured a **26% "ready"
+share and 53% of players with no real growth year** — an artefact of the clamp,
+not a design choice. Draw the start FRACTION grade-free and multiply
+(`start = peak × frac`) instead; nothing is ever clamped at generation.
+
+Three parameterisations, against the §6 spec's own growth-year targets:
+
+| config | 9→10 | 10→11 | 11→12 | none | ready | stagnant | one big leap | mean ability 9/10/11/12 |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| **owner spec §6 target** | **30%** | **27%** | **28%** | **15%** | | | | |
+| V1 peak ×.85-1.10, start .40-.95 | 31% | 24% | 17% | 28% | 9% | 3% | 41% | girls 31.5/35.4/38.7/41.2 |
+| V2 peak ×.90-1.15, start .35-.92 | 38% | 29% | 19% | 14% | 3% | 2% | 56% | girls 31.1/36.1/40.2/43.2 |
+| V3 peak ×.95-1.20, start .32-.90 | 44% | 32% | 20% | 4% | 0% | 0% | 63% | girls 31.4/37.6/42.6/46.2 |
+
+(boys land within a point or two of the same shape; today's actual means are
+girls 28.7/33.5/37.4/45.9, boys 31.2/36.7/41.6/49.2)
+
+**V1 is the closest starting point** — 31/24/17 against the 30/27/28 target,
+with a 9% ready share and 3% stagnant. Two things still need owner decisions:
+
+1. **The senior year is under-weighted in all three.** 11→12 comes out 17-20%
+   against the 28% target. Capacity draws are independent per year, but a senior
+   has already closed most of their start-to-peak gap, so late capacity is
+   clamped away more often. If a genuine senior-breakout population is wanted,
+   either widen the start-to-peak gap or let capacity grow slightly with grade —
+   which is a *variance* term, not the seniority ramp being removed.
+2. **This is a LEVEL change as well as a shape change.** V1 lifts freshmen ~3
+   points and drops seniors ~5. That flattening is the intent, but the
+   association's overall standard moves with it, and the peak multiplier is the
+   knob that sets where it lands. Choose the senior-year level deliberately
+   rather than accepting whatever the peak band produces.
+
+Stagnation is real but rare at these settings (2-3%). If stagnant careers should
+be a visible population rather than a curiosity, lower `big_p` or widen the
+small-capacity band; the shape census in the harness measures it directly.
+
+## 22.7 What is NOT a target
+
+Ladder churn and No. 1 retention (§21.3a, §21.4) are **not** optimisation
+targets for this model (owner, 2026-08). Roster order is handled dynamically
+elsewhere — the ladder re-forms through the season, and the transfer model adds
+its own mobility. Players surpassing players above them already happens today;
+it is simply "more predictive and less common" than it should be, and this
+model's job is to make it less predictive by giving two similar players
+genuinely different capacity draws. The Oregon figures stay in §21.3a as
+context for how flat a real lineup is, not as a metric to tune against.
