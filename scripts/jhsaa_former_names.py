@@ -58,8 +58,8 @@ def _import_jhsaa():
     return mod
 
 
-def _renames_at(rev: str) -> dict[str, str]:
-    src = subprocess.run(["git", "show", f"{rev}:scripts/import_jhsaa.py"],
+def _renames_at(rev: str, path: str = "scripts/import_jhsaa.py") -> dict[str, str]:
+    src = subprocess.run(["git", "show", f"{rev}:{path}"],
                          capture_output=True, text=True, cwd=_REPO).stdout
     i = src.find("\nRENAMES = {")
     if i < 0:
@@ -70,14 +70,25 @@ def _renames_at(rev: str) -> dict[str, str]:
 
 
 def collect(m, live: set[str]) -> dict[str, str]:
-    revs = subprocess.run(
-        ["git", "log", "--reverse", "--format=%H", "--", "scripts/import_jhsaa.py"],
-        capture_output=True, text=True, cwd=_REPO).stdout.split()
     chain = collections.defaultdict(list)
-    for rev in revs:
-        for k, v in _renames_at(rev).items():
-            if not chain[k] or chain[k][-1] != v:
-                chain[k].append(v)
+    # ‼️ TWO FILES HOLD RENAME HISTORY, and the heritage batch is the reason
+    # (2026-08). `jhsaa_heritage_valley_renames.py` renamed schools through its
+    # OWN `RENAMES` table, never `import_jhsaa`'s — so the display names it
+    # coined and later gave up ("Singleton HS", "Clara Brown HS", dropped in the
+    # suffix sweep) exist in NO revision of `import_jhsaa.py`, and a season
+    # archived under one would have been unreachable. Its table is the same
+    # `RENAMES = {…}` literal, keyed on the same identities, and that batch
+    # predates every later `import_jhsaa` entry for those keys — so its chains
+    # are walked FIRST and the importer's appended after.
+    for path in ("scripts/jhsaa_heritage_valley_renames.py",
+                 "scripts/import_jhsaa.py"):
+        revs = subprocess.run(
+            ["git", "log", "--reverse", "--format=%H", "--", path],
+            capture_output=True, text=True, cwd=_REPO).stdout.split()
+        for rev in revs:
+            for k, v in _renames_at(rev, path).items():
+                if not chain[k] or chain[k][-1] != v:
+                    chain[k].append(v)
 
     former, reissued = {}, {}
     for source, targets in chain.items():
@@ -91,14 +102,21 @@ def collect(m, live: set[str]) -> dict[str, str]:
         # previous revision, so the LAST target in the chain is the name being
         # renamed AWAY right now — dropping it omits exactly the alias the commit
         # needs. `old != now` already excludes the current name when it is present.
-        for old in [source, *targets]:
-            old = m._display_name(old)
-            if old != now and old not in live:
-                former[old] = now
-            elif old != now:
-                # A REISSUE, not a no-op: `old` is a name this school gave up that
-                # another program now carries. Recorded so the cost is visible.
-                reissued[old] = now
+        for raw in [source, *targets]:
+            # ‼️ THE RAW STRING IS AN ALIAS TOO (2026-08). A historical target is
+            # the literal display name seasons were archived under, and running it
+            # through `_display_name` first can normalise it INTO the current name
+            # — "Singleton HS" collapses to "Singleton", reads as a no-op, and the
+            # archived "Singleton HS" seasons stay orphaned. So both spellings are
+            # emitted; an alias no archive ever used is a harmless map entry.
+            for old in dict.fromkeys((raw, m._display_name(raw))):
+                if old != now and old not in live:
+                    former[old] = now
+                elif old != now:
+                    # A REISSUE, not a no-op: `old` is a name this school gave up
+                    # that another program now carries. Recorded so the cost is
+                    # visible.
+                    reissued[old] = now
     return former, reissued
 
 

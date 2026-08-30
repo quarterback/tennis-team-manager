@@ -47,6 +47,14 @@ def stub_dual(monkeypatch):
                         lambda a, b, *, seed, phase: _Res(0))
 
 
+def specials(group, by, cw, qualified, power, seed=7):
+    """The two-step call `run_season` now makes: select the challenger side,
+    then play the Specials — the Special Challengers bridge round (its own
+    tests: `test_jhsaa_special_challengers.py`) slots between the two."""
+    ch = jh._select_challengers(by, cw, qualified, power)
+    return jh._state_specials_round(group, cw, ch, power, seed=seed)
+
+
 def teams(*names, reg=None):
     """win_pct DESCENDS through the argument order unless `reg` says otherwise,
     so rankings inside a tier are the name order and assertions can say exactly
@@ -83,8 +91,7 @@ def test_conference_winners_play_one_dual_per_bid(monkeypatch):
     by = teams(*[f"T{i:02}" for i in range(40)])
     qualified = {f"T{i:02}" for i in range(26)}          # 8 zonal + 18 automatic
     cw = [by[f"T{i:02}"] for i in range(26, 32)]         # the 6 Conference winners
-    arc, winners = jh._state_specials_round(
-        "9A", by, cw, qualified, {}, seed=7)
+    arc, winners = specials("9A", by, cw, qualified, {})
     assert len(arc["rounds"][0]) == len(cw) == 6
     assert len(winners) == 6
     assert len(arc["field"]) == 12
@@ -98,8 +105,7 @@ def test_conference_winners_play_one_dual_per_bid(monkeypatch):
 def test_no_conference_winners_plays_no_specials(monkeypatch):
     monkeypatch.setitem(jh.STATE_FIELD, "9A", 24)
     by = teams(*[f"T{i:02}" for i in range(30)])
-    arc, winners = jh._state_specials_round(
-        "9A", by, [], {f"T{i:02}" for i in range(24)}, {}, seed=7)
+    arc, winners = specials("9A", by, [], {f"T{i:02}" for i in range(24)}, {})
     assert winners == [] and arc["rounds"] == [[]]
 
 
@@ -117,8 +123,7 @@ def test_challengers_come_from_the_whole_classification(monkeypatch):
         "DeepRun": _Team("DeepRun", reg=(9, 7), post=(4, 1)),
         "Qualified": _Team("Qualified", reg=(16, 0)),
     }
-    arc, winners = jh._state_specials_round(
-        "9A", by, [by["Winner"]], {"Qualified"}, {}, seed=7)
+    arc, winners = specials("9A", by, [by["Winner"]], {"Qualified"}, {})
     assert arc["rounds"][0][0]["away"] == "NoPost", \
         "the best regular-season non-qualified team challenges — postseason " \
         "depth buys nothing and a qualified team is never drafted"
@@ -141,8 +146,7 @@ def test_pairing_is_best_challenger_vs_weakest_winner(monkeypatch):
     monkeypatch.setitem(jh.STATE_FIELD, "9A", 32)
     by = teams("StrongCW", "WeakCW", "BestCh", "NextCh",
                reg=[(14, 2), (5, 11), (13, 3), (10, 6)])
-    arc, _ = jh._state_specials_round(
-        "9A", by, [by["StrongCW"], by["WeakCW"]], set(), {}, seed=7)
+    arc, _ = specials("9A", by, [by["StrongCW"], by["WeakCW"]], set(), {})
     games = arc["rounds"][0]
     assert (games[0]["home"], games[0]["away"]) == ("WeakCW", "BestCh")
     assert (games[1]["home"], games[1]["away"]) == ("StrongCW", "NextCh")
@@ -156,8 +160,8 @@ def test_a_dry_challenger_pool_admits_winners_unopposed(monkeypatch, caplog):
     monkeypatch.setitem(jh.STATE_FIELD, "9A", 32)
     by = teams("CW1", "CW2", "CW3", "OnlyCh")
     with caplog.at_level("WARNING"):
-        arc, winners = jh._state_specials_round(
-            "9A", by, [by["CW1"], by["CW2"], by["CW3"]], set(), {}, seed=7)
+        arc, winners = specials("9A", by, [by["CW1"], by["CW2"], by["CW3"]],
+                                set(), {})
     assert len(winners) == 3, "every bid is still filled"
     assert len(arc["rounds"][0]) == 1 and len(arc["head"]) == 2
     assert "short of challengers" in caplog.text
@@ -210,4 +214,6 @@ def test_a_specials_loser_finishes_at_specials():
 def test_the_road_ladder_ranks_it_deepest():
     ladder = wd.jh_road_ladder()
     assert ladder[-1] == jh.STATE_SPECIAL_FINISH
-    assert ladder[-2] == jh.CONFERENCE_NAME
+    # The Special Challengers bridge round sits between the two (owner 2026-08).
+    assert ladder[-2] == jh.SPECIAL_CHALLENGER_FINISH
+    assert ladder[-3] == jh.CONFERENCE_NAME
