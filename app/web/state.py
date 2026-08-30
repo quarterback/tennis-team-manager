@@ -3628,7 +3628,9 @@ def _jh_reported_lines(d: dict) -> list[dict]:
 
 _JH_PHASE_LABEL = {"showcase_pod": "Showcase (Pod)", "showcase_tiered": "Showcase (Tiered)",
                    "toc": "Tournament of Champions", "state": "State Tournament",
-                   "state_special": "State Specials", "conference": "Conference",
+                   "state_special": "State Specials",
+                   "special_challenger": "Special Challengers",
+                   "conference": "Conference",
                    "semi_conference": "Semi-Conference", "divisional": "Divisionals",
                    "semi_state": "Semi-State", "super_regional": "Super Regional",
                    "zonal": "Zonal", "regional": "Regional", "ward": "Ward",
@@ -4602,7 +4604,10 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
     # and the STATE SPECIALS are the road's required final round (owner rule
     # 2026-08: every Conference winner plays a challenger for the berth), so
     # their fold tops the list. Its "byes" are the dry-pool direct admits.
-    for key in ("state_special", "conference", "semi_conference", "divisional",
+    # (The Special Challengers bridge round is PLAYED before the Specials, so in
+    # this reverse-chronological fold it sits just under them.)
+    for key in ("state_special", "special_challenger", "conference",
+                "semi_conference", "divisional",
                 "semi_state", "super_regional"):
         d = (arc.get(key) or {}).get(grp) or {}
         if d.get("rounds") and d["rounds"][0]:
@@ -4735,6 +4740,7 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     sc_seeds = _jh_seeds((arc or {}).get("semi_conference", {}).get(sc.group) or {})
     cf_seeds = _jh_seeds((arc or {}).get("conference", {}).get(sc.group) or {})
     sp_seeds = _jh_seeds((arc or {}).get("state_special", {}).get(sc.group) or {})
+    ch_seeds = _jh_seeds((arc or {}).get("special_challenger", {}).get(sc.group) or {})
     # A non-district dual is an INVITATIONAL (owner rule 2027-08) — that is what the
     # association calls the duals a program arranges outside its league, and the card
     # should say what they are rather than what they are not. "Non-district" is still
@@ -4742,7 +4748,11 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     # guardrail); it was only ever wrong as a label on a match.
     _KIND = {"showcase_pod": "SHOWCASE", "showcase_tiered": "SHOWCASE",
              "toc": "TOC", "state": "STATE",
-             "state_special": "STATE SPECIAL", "conference": "CONFERENCE",
+             "state_special": "STATE SPECIAL",
+             # The bridge round's chip (owner, 2026-08): CHALLENGE on the
+             # season-ending doc; "Special Challengers" is the formal heading.
+             "special_challenger": "CHALLENGE",
+             "conference": "CONFERENCE",
              "semi_conference": "SEMI-CONFERENCE",
              "divisional": "DIVISIONAL", "semi_state": "SEMI-STATE",
              "super_regional": "SUPER REGIONAL", "zonal": "ZONAL",
@@ -4790,7 +4800,8 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     toc_round = _round_of((arc or {}).get("toc") or {})
 
     _SEEDS = {"TOC": toc_seeds, "STATE": seeds,
-              "STATE SPECIAL": sp_seeds, "CONFERENCE": cf_seeds,
+              "STATE SPECIAL": sp_seeds, "CHALLENGE": ch_seeds,
+              "CONFERENCE": cf_seeds,
               "SEMI-CONFERENCE": sc_seeds,
               "DIVISIONAL": dv_seeds,
               "SEMI-STATE": ss_seeds,

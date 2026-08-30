@@ -130,6 +130,18 @@ def apply(rows: list[dict], m) -> list[tuple[str, str]]:
     for r in rows:
         # The identity, not the current display name — see the module docstring.
         src = r.get("source") or r["name"]
+        # ‼️ ONLY A RECORDED RENAME MOVES A ROW (2026-08). Rows whose identity has
+        # no RENAMES key used to have their display name RECOMPUTED from the source
+        # anyway — harmless while every row came out of `import_jhsaa.build`, and
+        # wrong the day the expansion scripts started committing rows whose names
+        # are hand-assigned rather than `_display_name(source)`: the 2052/2046
+        # affiliates ("Stanfield", source "Stanfield High") and the affiliate-names
+        # batches would all have been silently renamed back toward their sources
+        # (63 rows, measured, against the 2 actually keyed). A full import never
+        # creates those rows, so recomputing them is outside this script's
+        # jurisdiction; a name with no RENAMES entry stands as committed.
+        if src not in m.RENAMES:
+            continue
         display = m._display_name(m.RENAMES.get(src, src))
         if display != r["name"]:
             moved.append((r["name"], display))

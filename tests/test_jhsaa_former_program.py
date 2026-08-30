@@ -86,3 +86,20 @@ def test_every_raw_row_reader_works_from_a_cold_cache():
         jh.reset_schools()
         got = call()
         assert got, call
+
+
+def test_no_girls_only_programs_at_8a_9a():
+    """‼️ THE 8A/9A DUAL-GENDER MANDATE (owner rule 2026-08): in the
+    association's two deepest classes a school that offers girls' tennis
+    fields a boys' team too — no girls-only programs at that level.
+    `import_jhsaa.sponsors()` enforces it at import (over ALWAYS_GIRLS_ONLY),
+    `jhsaa_2056_promotions.py` re-asserts it after class moves; this pins the
+    committed data so no later batch reintroduces one."""
+    import json
+    import os
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    rows = json.load(open(os.path.join(root, "data", "jhsaa",
+                                       "schools.json")))["schools"]
+    bad = [r["name"] for r in rows if r["group"] in ("8A", "9A")
+           and r.get("girls") and not r.get("boys")]
+    assert not bad, bad

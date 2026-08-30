@@ -12,7 +12,9 @@ carries the identity (owner: "too redundant"). Most simplify to the bare city
 name -- the ordinary convention for a single-school town, matching how
 "Nicodemus"/"Muskogee"/"Kearney"/"Emporia" (city-named from the start) already
 read. Two (Langston Central, Petersburg High) get a genuinely distinct
-person-named identity instead (Singleton HS, Clara Brown HS) and are marked
+person-named identity instead (Singleton, Clara Brown -- first shipped with an
+"HS" suffix, dropped in the 2026-08 owner suffix sweep; targets rewritten in
+place, never chained) and are marked
 PUBLIC -- an owner style choice for variety in that layer, matching the
 person-named-school convention already used elsewhere in the JHSAA (Bayard
 Rustin, Octavia Butler, ...). `source` is left untouched on every rename --
@@ -41,12 +43,12 @@ _DATA = os.path.join(_REPO, "data", "jhsaa", "schools.json")
 # unchanged entry can't silently no-op through `rows[old]["name"] = old`.
 RENAMES = {
     "Boley Union": "Boley",
-    "Langston Central": "Singleton HS",
+    "Langston Central": "Singleton",
     "Hampton Technical": "Hampton",
     "Quincy Union": "Quincy",
     "Eatonville Central": "Eatonville",
     "Topeka West": "Topeka",
-    "Petersburg High": "Clara Brown HS",
+    "Petersburg High": "Clara Brown",
     "Richmond Technical": "Richmond",
     "Norfolk Central": "Norfolk",
     "Guthrie Catholic": "Guthrie",
@@ -65,8 +67,8 @@ MASCOTS = {
 }
 
 # Renamed schools that become PUBLIC (owner rule -- these two carry a
-# person's name and an "HS" suffix like a real public school, not the
-# private-institution register).
+# person's name like a real public school, not the private-institution
+# register; their original "HS" suffix was dropped in the 2026-08 sweep).
 MAKE_PUBLIC = {"Langston Central", "Petersburg High"}
 
 

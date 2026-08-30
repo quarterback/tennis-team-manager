@@ -795,6 +795,36 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     `tests/test_jhsaa_state_draw_shapes.py` (every field size 17-40 rendered
     through the real bracket pipeline: no team ever byes twice running, every
     column halves).
+  - **‼️ THE SPECIAL CHALLENGERS — a bridge round in FRONT of the Specials
+    (owner rule 2026-08, `jhsaa._special_challengers_round`).** The Specials'
+    challenger side is picked by regular-season FORMULA, which left one narrow
+    leak (measured ~a dozen real cases over 2053-56): a State-caliber team —
+    top-24 class TOSS rank, .700+ TOSS, or a district champion, and never a
+    losing reg-season record unless the TOSS clears it — loses once early
+    (almost always Wards) and the last-chance mechanism never sees it. Eligible
+    early exits (POSTSEASON ENTRANTS ONLY — the formula pool already reaches a
+    team that never entered) contest the WEAKEST formula-selected challenger
+    seats, one dual per seat (best eligible vs weakest seat, holder hosts, no
+    rematch repair), capped `CHALLENGE_SLOTS_DEFAULT` 2/class — FOUR in the
+    40-field classes (`CHALLENGE_SLOTS`; currently 8A/9A): the wider valve is
+    a property of the big-field shape (a 40 Conference sends 14 to the
+    Specials vs the 32-shape's 6) and MOVES with it — 3A/4A carried it at 40,
+    dropped to 2 at 32, 8A/9A inherited it going back up; the winner
+    holds the seat INTO the Specials. **ZERO extra berths** — Conference
+    winners' seats are never contested and the Specials field never grows; do
+    not "widen" it into a loser's bracket. Phase `"special_challenger"`
+    (between `conference` and `state_special` in `POSTSEASON` — shape, freeze,
+    TOSS exclusion, calendar lane all fall out of membership); finish
+    **"Challengers"** (`SPECIAL_CHALLENGER_FINISH`) for both losers; chip
+    **CHALLENGE**; title-board column CHAL; units "Challenge N" statewide
+    (`renumber_special_challenges`). Archived per group under
+    `special_challenger`, present-and-empty in a quiet year (the usual case —
+    the tight gate is the feature), `.get` for older seasons. Seeded on
+    blake2s, never `hash()`. `_select_challengers` now feeds
+    `_state_specials_round` its challenger list as a PARAMETER — the bridge
+    reorders that list, so it cannot live downstream of the selection.
+    `tests/test_jhsaa_special_challengers.py`;
+    `docs/AAR-jhsaa-special-challengers.md`.
 - **‼️ 1A CROWNS ON A FIXED 24-team shape — not the dynamic format above (owner
   rule 2027-08; 2A left it in the 2033 realignment).** 1A and 2A used to share one
   combined "2A-1A" group (neither cleared the 76-sponsor floor the dynamic

@@ -149,7 +149,9 @@ SUNSET = [
     "Reverend City", "Harmon Siding", "South Fork", "Kendrickville",
     "Willow Gate", "Promise Land", "Ashstead", "Whistle Stop", "Pine Rim",
     "Aspen Spur Union", "Zion Hill", "Farleymere", "Sierra Works",
-    "Sablewood Union", "Salmonberry Glen", "Trinity Fork", "Antler County High",
+    # "Antler County High" was renamed "Antler County" in the 2026-08 suffix
+    # sweep — this table keys on the display name, so the entry moved with it.
+    "Sablewood Union", "Salmonberry Glen", "Trinity Fork", "Antler County",
     "Velasco", "High Timber", "Pasquale", "Fort Wren", "Wardlow Depot",
     "St. Norbert Abbey",
     # The owner's named 9A/Group removals ("i fucking hate those named schools"):
