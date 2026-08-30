@@ -241,12 +241,33 @@ work:
    8. The Super Regional losers are readmitted one rung LATER, into the
    Divisionals, which is what makes both rounds the same size.
 2. **The Divisionals take at most one Zonal-champion-sized block** (8), capped
-   by the berths actually outstanding — 4 at a 24 field, 8 at 32 and 40.
+   by the berths actually outstanding — 4 at a 24 field, 8 at 32 and 40 — and
+   their field is **RESERVED HALF AND HALF** between the two tiers: the best
+   half of the Semi-State losers and the best half of the Super Regional
+   losers, ranked inside each bucket and nothing else.
 3. **The Conference absorbs the remainder**, as it always has: 4, 8, 16.
 
 Everyone still gets exactly two live chances (a Regional loser: Super
 Regionals, then the Divisionals; a Zonal loser: Semi-State, then the
 Divisionals), which was the inequity the Divisional round was created to fix.
+
+‼️ **Rule 2's reserved halves are what keep that true, and the first cut of
+this change did not have them.** The Divisional pool was ranked as ONE list,
+Semi-State losers ahead of Super Regional losers on strict tier priority. That
+is invisible at 32 and 40, where both tiers hold 8 and all 16 fit the field
+anyway — and silently wrong at 24, where the field is 8: the Semi-State losers
+took every slot and **no Super Regional loser reached the round at all**. A
+Regional loser then had Super Regionals and nothing berth-bearing until the
+Conference, against three berth-bearing rounds for a Zonal loser — a whole
+stage of the recovery ladder deleted for one tier, and a regression from the
+retired `_recovery_24`, which had routed them through Semi-State. Owner:
+"4 + 4. No weighting. No alternating. No new formulas."
+
+The lesson is the one this file keeps relearning in a new costume: **a rule
+that is exercised identically at every size you looked at is not yet tested.**
+Strict tier priority and reserved halves agree at 32 and 40 and disagree only
+at 24 — the shape that had just been migrated onto this ladder in the same
+change.
 
 ### `_recovery_24` is retired
 

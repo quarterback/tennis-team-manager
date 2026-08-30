@@ -862,8 +862,13 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   produce every row: Semi-State is exactly the Super Regional winners plus the
   Zonal losers (no readmission — the Super Regional losers are readmitted a
   rung later, into the Divisionals, which is what makes both rounds the same
-  size); the Divisionals take AT MOST one Zonal-champion-sized block; the
-  Conference absorbs the remainder. Semi-State used to run on a
+  size); the Divisionals take AT MOST one Zonal-champion-sized block, their
+  field **RESERVED HALF AND HALF** between the two tiers (best half of the
+  Semi-State losers + best half of the Super Regional losers — ‼️ ranked as one
+  list instead, strict tier priority filled all 8 slots at a 24 field with
+  Semi-State losers and cut the Super Regional losers out of the round
+  entirely, which is invisible at 32/40 where both tiers are 8 and all 16
+  fit); the Conference absorbs the remainder. Semi-State used to run on a
   `ceil(4·berths/3)` floor that pushed 12 of a 32's 24 recovery berths through
   one rung — owner: "having that many teams get through via semi-state doesn't
   make any sense." Pinned by

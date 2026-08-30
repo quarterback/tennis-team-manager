@@ -126,15 +126,15 @@ def test_the_ladder_shape_is_fixed_and_proportional(archived):
 
 
 def _berth_survivors(g, sr, ss, dv):
-    """The survivors of the AUTOMATIC berth-bearing recovery rounds — which
-    rounds those are depends on the shape (the `_recovery_24` distinction): the
-    dynamic ladder's automatics come from Semi-State/Divisionals, the fixed 24's
-    from SUPER REGIONALS/Divisionals (its 8 SR winners are automatic — its
-    Semi-State winners merely advance to the Divisionals). ‼️ THE CONFERENCE IS
+    """The survivors of the AUTOMATIC berth-bearing recovery rounds:
+    Semi-State and the Divisionals, for EVERY class (owner rule 2026-08 — one
+    ladder, only the counts change; `_recovery_24`, whose 24-field berths came
+    out of SUPER REGIONALS instead, is retired and unwired). Super Regionals
+    award no berths anywhere: they qualify for Semi-State. ‼️ THE CONFERENCE IS
     NOT HERE (owner rule 2026-08): its winners advance to the STATE SPECIALS
     and must beat a challenger for the berth, so the Specials' survivors —
     fetched via `_specials` — are the road's final door, not the Conference."""
-    rounds = (sr, dv) if jh.state_field_size(g) == 24 else (ss, dv)
+    rounds = (ss, dv)
     out = set()
     for a in rounds:
         out |= set(a["survivors"])
@@ -262,34 +262,36 @@ def test_recovery_berths_are_earned_on_court(archived):
         # ever lands on a team that did not earn it.
         sec_losers = {(gm["away"] if gm["winner"] == gm["home"] else gm["home"])
                       for games in sec["rounds"] for gm in games}
-        # Super Regionals is the ladder's own losers now — Ward and Sectional
+        # Super Regionals is the ladder's own losers — Ward and Sectional
         # losers get their one shot at the CONFERENCE instead (owner rule
-        # 2027-08: no Ward playbacks). The pool is SHAPE-DEPENDENT: on the fixed
-        # 24 (2A/1A/Group 3) SR = 8 Zonal losers + 8 preferred Regional losers,
-        # while the dynamic ladder's Zonal losers wait for Semi-State — so the
-        # allowed set widens for the 24 rather than loosening the dynamic check.
-        allowed = reg_losers | ward_losers | sec_losers
-        if jh.state_field_size(g) == 24:
-            allowed |= zon_losers
-        assert set(sr["field"]) <= allowed
+        # 2027-08: no Ward playbacks). ONE pool for every class now: the Zonal
+        # losers always wait for Semi-State (the fixed 24 used to put them in
+        # here, and it is retired).
+        assert set(sr["field"]) <= reg_losers | ward_losers | sec_losers
         # the Conference draws on the recovery losers, the district champions
         # still outside the field, and the last-resort Ward/Sectional pools
         assert set(lc["field"]).isdisjoint(set(pre["survivors"]))
-        # The two shapes plumb Semi-State OPPOSITE ways (`_recovery_24`):
-        if jh.state_field_size(g) == 24:
-            # Fixed 24: SR winners qualified DIRECTLY, so Semi-State is the 8
-            # held-back Regional losers + the 8 SR losers — and its WINNERS go on
-            # to the Divisionals.
-            assert set(ss["field"]) <= reg_losers | (set(sr["field"])
-                                                     - set(sr["survivors"]))
-            assert set(ss["field"]).isdisjoint(set(sr["survivors"]))
-            assert set(dv["field"]) <= set(ss["survivors"])
-        else:
-            # Dynamic: Semi-State = SR winners + Zonal losers + readmitted SR
-            # losers; its winners take berths and the Divisionals draw its losers.
-            assert set(ss["field"]) <= set(sr["field"]) | (zon_losers - set(dq))
-            assert set(sr["survivors"]) <= set(ss["field"])
-            assert set(dv["field"]) <= set(ss["field"]) - set(ss["survivors"])
+        # ONE ladder for every class (owner rule 2026-08). Semi-State is
+        # EXACTLY the Super Regional winners plus the Zonal losers — no
+        # readmission window — and the Divisionals take its losers PLUS the
+        # Super Regional losers, which is what makes the two rounds the same
+        # size and the berth blocks equal.
+        assert set(ss["field"]) <= set(sr["survivors"]) | (zon_losers - set(dq))
+        assert set(sr["survivors"]) <= set(ss["field"])
+        ss_losers = set(ss["field"]) - set(ss["survivors"])
+        sr_losers = set(sr["field"]) - set(sr["survivors"])
+        assert set(dv["field"]) <= ss_losers | sr_losers
+        # ‼️ RESERVED HALVES (owner rule 2026-08): half the Divisional field is
+        # Semi-State losers and half Super Regional losers. Ranked as ONE list
+        # the Semi-State losers filled all 8 slots at a 24 field and no Super
+        # Regional loser ever reached the round — a whole stage of their
+        # recovery path, gone. At 32/40 both tiers are 8 and all 16 fit, so
+        # this only ever bit the 24 classes.
+        if dv["field"]:
+            from_ss = len(set(dv["field"]) & ss_losers)
+            from_sr = len(set(dv["field"]) & sr_losers)
+            assert from_ss == from_sr == len(dv["field"]) // 2, \
+                (g, "divisional halves", from_ss, from_sr)
 
 
 def test_boys_and_girls_play_the_same_format(archived):
@@ -715,8 +717,8 @@ def test_no_recovery_round_has_a_bye(archived):
         # dry-pool degradation (warned loudly), sc_head's standing.
         sp = _specials(archived, g)
         earned = set(state["field"]) - set(pre["survivors"]) - set(dq)
-        # `sr` included for the fixed 24-shape, whose 8 SR winners qualify
-        # DIRECTLY; a superset is safe for the dynamic shape (this is a <=).
+        # `sr` is a harmless superset — Super Regionals award no berths on the
+        # one ladder, but this is a `<=` so including it costs nothing.
         won = {gm["winner"] for arc in (sr, ss, dv, lc, sp)
                for games in arc["rounds"] for gm in games} | set(sp.get("head") or ())
         assert earned <= won, (g, sorted(earned - won))
@@ -783,8 +785,12 @@ def test_recovery_orphans_are_never_skipped_for_a_ward_loser(archived):
         *_, sr, ss, dv, sc, lc = _stages(archived, g)
         if not sc["field"]:
             continue
+        # ‼️ THE SUPER REGIONAL LOSERS ARE READMITTED INTO THE DIVISIONALS now
+        # (owner rule 2026-08), not into Semi-State — so one is an orphan only
+        # when NEITHER later round took it.
         orphans = (((set(ss["field"]) - set(ss["survivors"])) - set(dv["field"]))
-                   | ((set(sr["field"]) - set(sr["survivors"])) - set(ss["field"])))
+                   | ((set(sr["field"]) - set(sr["survivors"]))
+                      - set(ss["field"]) - set(dv["field"])))
         skipped = orphans - set(sc["field"]) - set(lc["field"])
         assert not skipped, (g, "recovery orphans passed over", sorted(skipped))
 

@@ -5155,7 +5155,7 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
 
         Super Regionals   P Regional losers (even)       -> P/2 winners
         Semi-State        P/2 winners + Z Zonal losers   -> half  (berths)
-        Divisionals       its losers + the P/2 SR losers -> half  (berths)
+        Divisionals       HALF its losers, HALF the SR losers -> half (berths)
         Semi-Conference   2B bodies                      -> B winners (no berths)
         Conference        Divisional losers + those B    -> half  (berths)
 
@@ -5168,6 +5168,10 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     8 + 8 + 8 + 16. Semi-State used to run on a `ceil(4*berths/3)` floor that
     made it the big round — 12 of a 32's 24 recovery berths — and the Super
     Regional losers were readmitted into IT rather than into the Divisionals.
+    ‼️ The Divisional field is RESERVED HALF AND HALF between its two tiers
+    (owner rule 2026-08): at a 24 field it holds only 8, so ranking them as one
+    list let the Semi-State losers take every slot and cut the Super Regional
+    losers out of the round completely.
     Bodies still enter at the Semi-Conference only: a walk back down the ladder
     through Ward, Sectional and Area losers, best TOSS within each tier. A body
     is a chance to PLAY, never a berth.
@@ -5249,18 +5253,36 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     # At most ONE block here; the Conference takes whatever is left (see
     # `recovery_shape`). 24 -> 4, 32 -> 8, 40 -> 8.
     dv_n = min(len(zonal_champs), max(0, berths - len(ss_winners)) // 2)
-    # ‼️ THE SUPER REGIONAL LOSERS ARE READMITTED HERE (owner rule 2026-08),
-    # not into Semi-State — which is what makes the two rounds the same size and
-    # the berth blocks equal. STRICT TIER PRIORITY, TOSS only within a tier: a
-    # Semi-State loser got a round further than a Super Regional loser and is
-    # never displaced by one. Everyone still gets exactly two live chances (a
-    # Regional loser: Super Regionals, then Divisionals; a Zonal loser:
-    # Semi-State, then Divisionals), which is the invariant the round was built
-    # for in the first place.
-    dv_rank = list(ss_losers) + list(sr_losers)
-    dv_pool = dv_rank[:2 * dv_n]
+    # ‼️ THE DIVISIONAL FIELD IS SPLIT IN HALF, ONE BUCKET PER TIER (owner rule
+    # 2026-08): the best `half` Semi-State losers and the best `half` Super
+    # Regional losers, ranked inside each bucket and nothing else. No
+    # weighting, no alternating.
+    #
+    # It was strict tier priority — all the Semi-State losers first — and that
+    # is correct at 32 and 40, where both tiers are 8 and all 16 fit anyway,
+    # but SILENTLY WRONG at 24: the field is 8 there, the 8 Semi-State losers
+    # consumed every slot, and NO Super Regional loser ever reached the round.
+    # That deleted a whole stage of the recovery ladder for them — a Regional
+    # loser got Super Regionals and then nothing berth-bearing until the
+    # Conference, while a Zonal loser got three. Reserved halves make the
+    # promise true at every field size: a Regional loser gets Super Regionals
+    # then the Divisionals, a Zonal loser Semi-State then the Divisionals.
+    dv_seats = 2 * dv_n
+    half = dv_seats // 2
+    dv_pool = ss_losers[:half] + sr_losers[:half]
+    if len(dv_pool) < dv_seats:
+        # Thin-world DEGRADATION, not policy: a bucket that cannot fill its
+        # half is topped up from the other so the round stays byeless. At
+        # association size both buckets are exactly `half` and this is dead.
+        spare = ss_losers[half:] + sr_losers[half:]
+        dv_pool += spare[:dv_seats - len(dv_pool)]
     if len(dv_pool) % 2:
         dv_pool = dv_pool[:-1]
+    # Orphans in tier order — whoever neither bucket took (`dv_pool` is no
+    # longer a prefix of the ranking, so this cannot be a slice).
+    _dv_taken = {id(t) for t in dv_pool}
+    dv_orphans = [t for t in list(ss_losers) + list(sr_losers)
+                  if id(t) not in _dv_taken]
     if dv_pool:
         dv_arc, dv_winners = _recovery_round(dv_pool, phase="divisional", rng=rng)
     else:
@@ -5325,10 +5347,10 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     #   4-6. the top WARD, then Sectional, then Area losers — the true last-resort
     #      clubs, and the reason this round exists.
     sc_rank: list[TeamSeason] = []
-    # `dv_rank` is already Semi-State losers then Super Regional losers, in tier
-    # order, so its unused tail IS tiers 2 and 3 in the right sequence.
+    # `dv_orphans` is already Semi-State losers then Super Regional losers, in
+    # tier order, so it IS tiers 2 and 3 in the right sequence.
     for tier in ([by_name[n] for n in district_champs if n in by_name],
-                 dv_rank[len(dv_pool):],
+                 dv_orphans,
                  bodies):
         _rank(tier, sc_rank)
 
