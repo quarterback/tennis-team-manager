@@ -2271,27 +2271,45 @@ Lineup share runs 42/52/62/71 (girls) against the baseline's 32/49/66/81.
 to hit — Jefferson's talent is its own. Do not "correct" the freshman share
 toward 5-6% or reintroduce a tuning loop against that table.
 
-## Not yet built
+**§7/§22.2 — the exposure odometer** (`jhsaa.season_exposure` /
+`_expo_factor`, wired through `_gen_seat` into `career_ability`).
+Appearances accumulate as varsity-equivalent units (a JV dual = `EXPO_JV_UNIT`
+0.5), saturate at `EXPO_CAP` 14, and map onto a realisation factor from
+`EXPO_FLOOR` 0.55 (rostered, never dressed) to 1.0 (a full varsity season) —
+one continuous rule, so split-time players land between the levels and the JV
+ladder matters. A full ~16-dual JV season lands ≈0.81 and an 8-JV/6-varsity
+split ≈0.87, reproducing the proposal's illustrative table without buckets.
 
-* **The exposure odometer.** `career_ability` takes an `exposure` map keyed by
-  grade and defaults to full realisation, so the hook is in place and unused.
-  Wiring it needs archived participation per (school, year) — read ONCE per
-  roster build, never per seat, and filtered on `level` (§21.6).
-* **`hs_exit_ovr` / `hs_percentile` on the graduating prospect.** ‼️ The
-  TRANSLATOR ITSELF ALREADY EXISTS and needed nothing: `jhsaa.apply_to_class` is
-  an identity swap — the national recruit class is generated on the college
-  scale and JHSAA graduates are rank-matched into its Jefferson slots, with
-  ability deliberately NOT transferring (its comment records that copying grades
-  across was tried and reverted for re-calibrating the whole board). So freeing
-  the high-school scale cannot leak onto the college scale, and §24's
-  percentile-primary translation is what that function already does. What is
-  missing is only the RECORD — carrying the exit rating and percentile onto the
-  prospect for the player card.
+* Read off `world_jhsaa_dual`: varsity units from `lines` (one per DUAL a
+  player dressed in, however many courts), JV units from the JV rows' `played`
+  list — keyed by (school, name), the archive's own identity. Level-filtered by
+  construction, per §21.6.
+* **One query per (save, gender, season), memoised** — `build_roster` resolves
+  the three prior seasons once per build and threads them down; never per seat.
+* **A season with NO archive reads as FULL realisation, not the floor** — a
+  fresh world, pre-odometer seasons and the calibration scripts are untouched.
+* **Transfer paths deliberately get no exposure map**: a mover's prior seasons
+  are archived under the school they played at, so a (this-school, name) lookup
+  would misread their played years as sitting. Rare owner-authored overrides;
+  they realise in full.
+
+**§24.3 — the graduation record** (`jhsaa._stamp_graduation`, called from
+`graduating_class`; `apply_to_class` adds `college_entry_ovr`). `hs_exit_ovr`
+and `hs_percentile` are stamped over the WHOLE graduating class before any
+`limit` — a percentile is a function of the population, so re-deriving it later
+would only match by chance (the archived-TOSS rule) — and ride the prospect's
+`jhsaa` field through signing. ‼️ The TRANSLATOR ITSELF ALREADY EXISTED and
+needed nothing: `apply_to_class` is an identity swap — the national recruit
+class is generated on the college scale and JHSAA graduates are rank-matched
+into its Jefferson slots, with ability deliberately NOT transferring (its
+comment records that copying grades across was tried and reverted). The
+rank-match IS §24's percentile-primary translation, so there is no second
+mapping to version; freeing the high-school scale cannot leak onto the college
+scale by construction.
 
 ## Tests
 
-`tests/test_jhsaa_career_model.py` — 13 tests, all passing, run in under a
-second (the model is pure functions; no roster, world or database needed).
+`tests/test_jhsaa_career_model.py` — 16 tests, all passing.
 They pin the structure rather than a calibration: start is grade-free, a
 freshman can outrank a senior, every career shape occurs, ability never falls,
 the senior year is incremental, **the taper would vanish if the peak clamp were

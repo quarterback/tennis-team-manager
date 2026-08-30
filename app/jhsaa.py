@@ -1672,6 +1672,7 @@ def reset_schools() -> None:
     _dev_era_cache.clear()
     _talent_era_cache.clear()
     _career_era_cache.clear()
+    _expo_cache.clear()
     global _former_cache
     _former_cache = None
 
@@ -1898,6 +1899,99 @@ def career_ability(school_key: str, entry: int, seat: int, grade: int,
             gain = (peak - v) + (v + gain - peak) * CAREER_OVERFLOW
         v += gain
     return v
+
+
+# --- THE EXPOSURE ODOMETER (proposal §7 / §22.2) ------------------------------
+#
+# Playing contributes to development because participation is developmental
+# exposure — the system never cares whether the player WON (no wins, no records,
+# no TOSS, no opponent quality; §4.1). Appearances accumulate as varsity-
+# equivalent units (a JV dual is worth `EXPO_JV_UNIT` of a varsity one), the
+# total SATURATES at `EXPO_CAP`, and the season's realisation factor runs from
+# `EXPO_FLOOR` (never dressed — adolescence happens anyway) to 1.0 (a full
+# varsity season). Split-time players land between the levels with no category
+# of their own, and a JV No. 1 who plays every dual banks more than a JV player
+# who barely appears — the JV ladder matters (owner, 2026-08).
+#
+# On these constants a full ~16-dual JV season lands ≈0.81 and an 8-JV/6-varsity
+# split ≈0.87 — the proposal's illustrative 0.80 / 0.90 table, produced by one
+# continuous rule instead of five buckets.
+#
+# ‼️ A season with NO archive reads as FULL realisation, not as the floor. That
+# is what a fresh world's year 0, every pre-odometer season, and the calibration
+# scripts must see — the factor only ever applies where participation was
+# actually recorded. (`career_ability` treats a missing grade the same way.)
+EXPO_FLOOR = 0.55                 # realisation for a rostered kid who never dressed
+EXPO_JV_UNIT = 0.5                # a JV appearance, in varsity-equivalent units
+EXPO_CAP = 14.0                   # units at which a season counts as fully played
+
+_expo_cache: dict = {}
+_EXPO_MISS = object()
+
+
+def season_exposure(gender: str, season_year: int):
+    """{(school, name): appearance units} for one ARCHIVED season, or None when
+    that season has no archive (fresh world, pre-JHSAA years, tests).
+
+    One query per (save, gender, season) — memoised, because `build_roster`
+    resolves three of these per build and a season builds ~1,600 rosters (the
+    fingerprint-in-a-loop rule). Keyed by NAME because that is what the dual
+    archive carries (`_jh_line_records`' contract); varsity units come off the
+    `lines` a player actually dressed in, JV units off the JV rows' `played`
+    list. Archived rows are immutable once written, so the cache never needs
+    per-season invalidation — `reset_schools()` clears it out of habit."""
+    from .dbpath import resolve_db_path
+    key = (resolve_db_path(), gender, season_year)
+    got = _expo_cache.get(key, _EXPO_MISS)
+    if got is not _EXPO_MISS:
+        return got
+    from .world import BASE_YEAR
+    idx = season_year - BASE_YEAR - 1          # calendar year -> archive index
+    units = None
+    if idx >= 0:
+        import sqlite3
+        rows = []
+        try:
+            conn = sqlite3.connect(key[0])
+            try:
+                rows = conn.execute(
+                    "SELECT school, home, lines, level, played"
+                    " FROM world_jhsaa_dual WHERE year=? AND gender=?",
+                    (idx, gender)).fetchall()
+            except sqlite3.Error:
+                rows = []                      # table not created yet — no archive
+            finally:
+                conn.close()
+        except sqlite3.Error:
+            rows = []
+        if rows:
+            units = {}
+            for school, home, lines, level, played in rows:
+                if (level or "v") == "v":
+                    side = "home" if home else "away"
+                    dressed: set = set()
+                    for ln in json.loads(lines or "[]"):
+                        dressed.update(ln.get(side) or ())
+                    for nm in dressed:         # one unit per DUAL, not per line
+                        k = (school, nm)
+                        units[k] = units.get(k, 0.0) + 1.0
+                else:
+                    for nm in json.loads(played or "[]"):
+                        k = (school, nm)
+                        units[k] = units.get(k, 0.0) + EXPO_JV_UNIT
+    if len(_expo_cache) > 12:                  # a handful of seasons at a time
+        _expo_cache.pop(next(iter(_expo_cache)))
+    _expo_cache[key] = units
+    return units
+
+
+def _expo_factor(units_map, school_name: str, name: str) -> float | None:
+    """One season's realisation factor for one player, or None for full
+    realisation (the season was never archived)."""
+    if units_map is None:
+        return None
+    u = units_map.get((school_name, name), 0.0)
+    return EXPO_FLOOR + (1.0 - EXPO_FLOOR) * min(1.0, u / EXPO_CAP)
 
 
 #: Playing up is a SMALL-SCHOOL mechanism (owner correction 2027-08): eligible at this
@@ -2993,7 +3087,7 @@ def _apply_career(p: Prospect, school_key: str, entry: int, seat: int,
 
 
 def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
-              salt: str) -> Prospect:
+              salt: str, expo_years: dict | None = None) -> Prospect:
     """One seat's Prospect — pulled out of `build_roster` so a TRANSFER (see
     below) can regenerate the exact same person under the school they actually
     play for now, from the ORIGIN school's identity/program modifiers. `pid`
@@ -3083,7 +3177,20 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
                                        entry, seat),
                           ceiling_max=cap)
     if free:
-        _apply_career(p, school.key, entry, seat, grade, salt)
+        # The odometer: each PRIOR grade's realisation factor, looked up in that
+        # season's archive by (school, name) — the name exists only now, which
+        # is why this cannot live in `build_roster`. A grade whose season has no
+        # archive is simply absent, and `career_ability` reads absent as full.
+        exposure = None
+        if expo_years:
+            exposure = {}
+            for pg in range(9, grade):
+                f = _expo_factor(expo_years.get(entry + (pg - 9)),
+                                 school.name, p.name)
+                if f is not None:
+                    exposure[pg] = f
+        _apply_career(p, school.key, entry, seat, grade, salt,
+                      exposure or None)
     elif compress:
         # The guarantee half: attribute noise lifts displayed ceilings past the
         # squashed centre, so the visible number is trimmed after generation.
@@ -3147,6 +3254,14 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     # -query-storm.md`). A season builds 1,600+ rosters; per-seat would multiply that
     # by every seat on every one of them.
     tmap = transfers()
+    # The three seasons a four-grade roster can have already played, resolved
+    # ONCE per build and threaded down (never per seat — the query-storm rule).
+    # ‼️ Deliberately NOT passed to the transfer paths below: a mover's prior
+    # seasons are archived under the school they actually played at, so a
+    # (this-school, name) lookup would misread their played years as sitting.
+    # Transfers are rare owner-authored overrides; they realise in full.
+    expo_years = {y: season_exposure(school.gender, y)
+                  for y in (year - 1, year - 2, year - 3)}
     out = []
     fresh9_seats = 0
     for grade in GRADES:
@@ -3155,7 +3270,7 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
         if grade == 9:
             fresh9_seats = n_seats
         for seat in range(n_seats):
-            p = _gen_seat(school, mod, entry, seat, grade, salt)
+            p = _gen_seat(school, mod, entry, seat, grade, salt, expo_years)
             rec = tmap.get(p.pid)
             # Somewhere else THIS season — `transfer_school` walks every recorded
             # move and returns where they actually are, so a player who moved away
@@ -3169,7 +3284,7 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     # collides with the seats `_freshman_class_size` already rolled for it.
     if len(out) < ROSTER_FLOOR:
         for seat in range(fresh9_seats, fresh9_seats + (ROSTER_FLOOR - len(out))):
-            out.append(_gen_seat(school, mod, year, seat, 9, salt))
+            out.append(_gen_seat(school, mod, year, seat, 9, salt, expo_years))
     # Incoming: every transfer whose DESTINATION is this school AND this gender,
     # effective by now. School names are shared across a boys' and a girls' program
     # (the display identity is per-team, not per-school), so the name match alone
@@ -7148,7 +7263,23 @@ def graduating_class(gender: str, year: int, *, seed: int = 0, salt: str = "",
     # best first: team strength then ladder position — a #1 at a strong 7A program
     # outranks a #1 at a thin 3A one, which is the whole point of classifications.
     grads.sort(key=lambda p: -p.current_overall())
+    _stamp_graduation(grads)
     return grads[:limit] if limit else grads
+
+
+def _stamp_graduation(grads: list[Prospect]) -> None:
+    """‼️ THE GRADUATION RECORD (proposal §24.3). The high-school scale is free
+    and the college hand-off translates by RANK (`apply_to_class`), so the exit
+    rating and the percentile it earned are stamped here — over the WHOLE
+    graduating class, before any `limit`, because a percentile is a function of
+    the population and re-deriving it later would only match by chance (the
+    archived-TOSS rule). The player stays a 96-rated Jefferson monster on the
+    record while college receives a properly scaled recruit. `grads` must
+    already be sorted best-first."""
+    n = len(grads)
+    for i, p in enumerate(grads):
+        p.jhsaa["hs_exit_ovr"] = p.current_overall()
+        p.jhsaa["hs_percentile"] = round(100.0 * (n - i) / n, 1)
 
 
 def apply_to_class(klass, gender: str, grad_year: int, salt: str) -> int:
@@ -7182,7 +7313,13 @@ def apply_to_class(klass, gender: str, grad_year: int, salt: str) -> int:
         slot.name = grad.name
         slot.hometown = grad.hometown
         slot.high_school = grad.high_school
-        slot.jhsaa = grad.jhsaa          # a real Prospect field, so it survives signing
+        # A real Prospect field, so it survives signing — carrying the §24.3
+        # translation record whole: `hs_exit_ovr`/`hs_percentile` were stamped
+        # on the FREE scale at graduation, and `college_entry_ovr` is what the
+        # rank-match hands the college game. The rank-match IS the translator
+        # (percentile-primary by construction — the best Jefferson senior takes
+        # the best Jefferson slot), so no second mapping exists to version.
+        slot.jhsaa = {**grad.jhsaa, "college_entry_ovr": slot.current_overall()}
     return min(len(slots), len(grads))
 
 

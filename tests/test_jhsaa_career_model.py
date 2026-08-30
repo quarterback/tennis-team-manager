@@ -206,3 +206,85 @@ def test_the_free_scale_reaches_above_the_college_reference():
     rng = random.Random(11)
     capped = max(jh._ceiling(rng, "9A", "boys", None) for _ in range(4000))
     assert capped <= 80.0, capped
+
+
+# --- the exposure odometer ----------------------------------------------------
+
+def test_exposure_factor_orders_the_levels():
+    """sitting < partial JV < full JV < split < full varsity, from ONE
+    continuous rule — no buckets. A missing archive is None: full realisation,
+    NOT the floor (a fresh world must not read as an association that sat)."""
+    m = {}
+    def units(u):
+        return jh._expo_factor({("S", "kid"): u}, "S", "kid")
+    assert jh._expo_factor(None, "S", "kid") is None
+    sat = jh._expo_factor(m, "S", "kid")            # archived, never dressed
+    assert sat == jh.EXPO_FLOOR
+    part_jv = units(4 * jh.EXPO_JV_UNIT)
+    full_jv = units(16 * jh.EXPO_JV_UNIT)
+    split = units(8 * jh.EXPO_JV_UNIT + 6.0)
+    varsity = units(16.0)
+    assert sat < part_jv < full_jv < split < varsity == 1.0
+    # saturation: 30 duals is not wildly better than 16
+    assert units(30.0) == 1.0
+
+
+def test_season_exposure_reads_the_archive_by_level():
+    """Varsity units come off `lines` (one per DUAL, however many courts), JV
+    units off `played` at EXPO_JV_UNIT, both keyed (school, name) — and a
+    season with no rows at all returns None."""
+    import json as _json
+    import app.world as world
+    jh._expo_cache.clear()
+    w = world.get_or_create(777)
+    conn = world._db()
+    try:
+        lines = _json.dumps([
+            {"slot": "S1", "home": ["Ada"], "away": ["Opp One"], "home_won": True},
+            {"slot": "D1", "home": ["Ada", "Bea"], "away": ["Opp Two", "Opp Three"],
+             "home_won": True},
+        ])
+        conn.executemany(
+            "INSERT INTO world_jhsaa_dual (world_id, year, gender, school, opp,"
+            " home, phase, pf, pa, won, district, lines, level, tied, shape,"
+            " played) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            [(w["id"], 3, "girls", "Alpha", "Beta", 1, "regular", 5, 2, 1, 1,
+              lines, "v", 0, "", "[]"),
+             (w["id"], 3, "girls", "Alpha", "Gamma", 1, "regular", 2, 1, 1, 0,
+              "[]", "jv", 0, "1S/2D", _json.dumps(["Cal", "Bea"]))])
+        conn.commit()
+    finally:
+        conn.close()
+    from app.world import BASE_YEAR
+    season_year = BASE_YEAR + 3 + 1
+    units = jh.season_exposure("girls", season_year)
+    assert units is not None
+    assert units[("Alpha", "Ada")] == 1.0          # two lines, ONE dual
+    assert units[("Alpha", "Bea")] == 1.0 + jh.EXPO_JV_UNIT
+    assert units[("Alpha", "Cal")] == jh.EXPO_JV_UNIT
+    assert ("Alpha", "Opp One") not in units       # opponents credit their own row
+    assert jh.season_exposure("girls", season_year + 20) is None
+    jh._expo_cache.clear()
+
+
+# --- the graduation record (§24.3) --------------------------------------------
+
+def test_graduation_stamps_exit_rating_and_percentile():
+    """The record is stamped over the WHOLE class before any limit — a
+    percentile is a function of the population — and the rank-match hands the
+    college game its own-scale number beside it."""
+    from app.development import Prospect
+    grads = []
+    for i, ovr in enumerate((90, 60, 40)):
+        p = Prospect(name=f"G{i}", gender="female",
+                     current={}, potential={})
+        for a in p.current:
+            p.current[a] = float(ovr)
+        p.jhsaa = {"school": "X"}
+        grads.append(p)
+    grads.sort(key=lambda p: -p.current_overall())
+    jh._stamp_graduation(grads)                 # the SHIPPED function, not a copy
+    n = len(grads)
+    assert grads[0].jhsaa["hs_percentile"] == 100.0
+    assert grads[-1].jhsaa["hs_percentile"] == round(100.0 / n, 1)
+    assert grads[0].jhsaa["hs_exit_ovr"] >= grads[-1].jhsaa["hs_exit_ovr"]
