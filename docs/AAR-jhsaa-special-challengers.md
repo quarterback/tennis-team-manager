@@ -166,10 +166,57 @@ that, alongside the untouched berth arithmetic and Conference winners.
   parent AAR's `bids = len(conference_winners)` arithmetic and the "a team
   that survives Conference has earned the right to play for State" principle.
   The formula-selected side is the challengeable one.
-- **The measured caseload (≈a dozen meaningful rescues over four seasons)
-  is the argument for the tight gate**, not against the feature: track the
-  same follow-up metrics the parent AAR lists, plus how often a bridge
-  winner then wins its Special.
+- **The measured caseload (≈a dozen meaningful rescues over four seasons) is
+  what the FORMULA answers, not what the ROUND is sized to** — see the
+  addendum below, where reading it the first way shipped a round that almost
+  never played. Track the parent AAR's follow-up metrics, plus how often a
+  bridge winner then wins its Special and how often the seats go to tier-2
+  (non-formula) contenders.
 
 Pinned by `tests/test_jhsaa_special_challengers.py`;
 `tests/test_jhsaa_state_specials.py` carries the refactored call shape.
+
+## Addendum (2026-08): the always-convene reversal, and the misread behind it
+
+The round shipped, rendered nowhere, and the owner asked why the Road to
+State showed no Challenges. The answer was not a wiring gap — every surface
+carried the round — but the design as first built: the eligibility formula
+was implemented as a **hard screen**, with an invented
+**postseason-entrants-only** rule on top, and the AAR proudly filed "a quiet
+year plays none (the usual case)" as the feature. By the audit's own numbers
+the screen finds ~0.5 teams per class-year, so nearly every archived arc was
+empty and the fold correctly hid an unplayed stage. The owner's actual
+design: **"there should always be challenger specials"** — the round convenes
+every season in every class, and the formula decides who gets the seats
+FIRST, not whether anyone gets them.
+
+What changed, all owner-directed in one review:
+
+1. **Formula → priority.** Contenders are every non-qualified,
+   non-slated team, formula tier first, then the remaining winning-record
+   teams; the postseason-entrants-only rule is retired outright (it was
+   never in the owner's spec).
+2. **Record over TOSS.** Within each tier, contenders rank on
+   `_challenger_key` — the Specials' own challenger ranking (reg-season pct,
+   wins, ATR tiebreak) — "teams that have good seasons, not just teams that
+   load up on TOSS". TOSS survives only inside the formula's gates.
+3. **Losers stay out.** A losing record without the .700 TOSS excuse is
+   excluded, not merely sorted last — "i don't want a bunch of losing teams
+   playing more losing teams"; a short class plays fewer duals.
+
+The misread, named so the next design pass does not repeat it: the spec's
+tight eligibility screen and its "solving maybe a dozen meaningful cases"
+framing were read as **sizing the round** (fire rarely, only for the
+measured victims), when they actually **sized the privilege** (who gets
+first claim on seats that are contested every year). A cap was turned into
+a trigger. The tell was available from the start — the owner's own summary
+said the Specials "get the intended final shot" language about a round that
+runs every season — and the cheap check was to ask one question: *"should a
+class-year with no formula-eligible team play this round at all?"* When a
+new round's convening condition is inferred rather than stated, ask it
+before shipping; a stage that silently never plays looks identical to a
+stage that was never wired, and costs a debugging pass to tell apart.
+
+Seasons archived before the reversal keep their empty arcs — an archive is
+the record of what was played, and the fold hiding an empty stage is
+correct for them.
