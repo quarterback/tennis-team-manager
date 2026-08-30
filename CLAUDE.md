@@ -805,10 +805,11 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     early exits (POSTSEASON ENTRANTS ONLY — the formula pool already reaches a
     team that never entered) contest the WEAKEST formula-selected challenger
     seats, one dual per seat (best eligible vs weakest seat, holder hosts, no
-    rematch repair), capped `CHALLENGE_SLOTS_DEFAULT` 2/class (uniform — 3A/4A
-    briefly carried 4 for their 40-field bubble noise and returned to 2 when
-    their State fields came down to 32; `CHALLENGE_SLOTS` is the empty
-    override table); the winner
+    rematch repair), capped `CHALLENGE_SLOTS_DEFAULT` 2/class — FOUR in the
+    40-field classes (`CHALLENGE_SLOTS`; currently 8A/9A): the wider valve is
+    a property of the big-field shape (a 40 Conference sends 14 to the
+    Specials vs the 32-shape's 6) and MOVES with it — 3A/4A carried it at 40,
+    dropped to 2 at 32, 8A/9A inherited it going back up; the winner
     holds the seat INTO the Specials. **ZERO extra berths** — Conference
     winners' seats are never contested and the Specials field never grows; do
     not "widen" it into a loser's bracket. Phase `"special_challenger"`

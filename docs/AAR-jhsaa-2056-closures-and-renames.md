@@ -108,8 +108,17 @@ script's display-keyed table breaks its replay if a rename leaves it behind.
   shape falls out of the table. **Their brief `CHALLENGE_SLOTS` 4 retired
   with it** (owner: "3A/4A can match the rest of the state with only the 2
   worst qualifiers"): the wider valve was a 40-field correction, and at the
-  standard shape every class runs the uniform 2. The table stays as an empty
-  override point.
+  standard shape every class runs the standard 2.
+- **8A/9A went back UP to 40 ("the last switch")** — the deepest classes
+  crown from the big field again — **and inherited the 4 Challenge seats**:
+  the wider valve rides the 40-field shape, wherever it lives. 8A clears the
+  40-field's 76 floor at 86/86. ‼️ **9A does not: 64/64 after the closures,
+  12 short per gender** — its Semi-Conference will degrade LOUDLY every
+  season (`sc_head`: the best bodies enter the Conference directly and a
+  warning names the class), which is the documented under-floor behaviour,
+  accepted with the switch. The repair, if ever wanted, is more 9A programs
+  (the `FIELD_BOYS` idiom), never a smaller field. Note also the raw math a
+  40 field over 64 sponsors implies: ~63% of the class reaches State.
 - **1A leagues redrawn to the owner's 7-10 band** ("it ensures a full
   16-match league slate"). The 20 sunsets had left three live leagues at 5-6.
   `jhsaa_redistrict.py 1A --cap 10`: nine leagues became seven (Placer and

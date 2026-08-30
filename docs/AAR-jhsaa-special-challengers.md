@@ -50,7 +50,7 @@ eligible = eliminated before the Specials (appears in an archived
            AND (no losing regular-season record, unless TOSS >= .700)
 
 n       = min(CHALLENGE_SLOTS[class], #eligible, #challengers)
-          — 2 per class, uniform (see the cap section below)
+          — 2 per class, 4 in the 40-field classes (see the cap section)
 
 pairing = best eligible (by TOSS) vs the WEAKEST selected challenger,
           second-best vs second-weakest, … the seat-holder hosts, no
@@ -66,19 +66,24 @@ The design distinction from the parent AAR holds one level down:
 - **Specials = the final State bubble.**
 - **Special Challengers = access to a seat on that bubble.**
 
-## Why 2 (owner rationale, 2026-08 — and the brief 3A/4A 4)
+## Why 2, and why 4 in the 40-field classes (owner rationale, 2026-08)
 
-The cap is two contested seats per class because the early-exit recovery
-problem is rare in most classes. As shipped, 3A and 4A carried four: prior
-Specials audits showed those two classes — then the state's last 40-field
-holdouts — produced the largest and noisiest bubble pools, the highest
-concentration of low-ranked Special entrants and credible early-exit misses.
-That was a targeted correction for boundary volatility, not a general
-expansion — and it retired in the same batch that took the 3A/4A State fields
-40 → 32: at the standard field shape they match the rest of the state, so
-every class runs 2 ("3A/4A can match the rest of the state with only the 2
-worst qualifiers for Specials into Challengers"). `CHALLENGE_SLOTS` survives
-as an empty override table should a class ever earn a wider valve again.
+The default cap is two contested seats per class because the early-exit
+recovery problem is rare in most classes. The 40-field classes carry four,
+because the wider valve is a property of the BIG-FIELD SHAPE, not of any
+named class: a 40 Conference sends 14 teams to the Specials against the
+32-shape's 6, so its formula-selected tail is both longer and softer — the
+largest and noisiest bubble pools in every Specials audit, the highest
+concentration of low-ranked entrants and credible early-exit misses. The
+higher cap is a targeted correction for that boundary volatility, not a
+general expansion of the postseason.
+
+The session's own field retunes proved the rule by moving it twice: 3A/4A
+carried the 4 while they were the 40-field holdouts, dropped to the standard
+2 the moment their fields came down to 32 ("3A/4A can match the rest of the
+state with only the 2 worst qualifiers"), and 8A/9A inherited the 4 when they
+went back up to 40 ("they can inherit the 4 state challengers spots that
+3A/4A had"). If a field size moves again, move the cap with it.
 
 The design goal is **proportional correction, not symmetry**:
 

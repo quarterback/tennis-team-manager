@@ -687,15 +687,23 @@ WARD_FIELD = 32
 # `_recovery_24` keys on the FIELD SIZE, so the table move is the whole change —
 # the "a class could be moved back without touching anything else" promise above.
                # 3A/4A came down 40 -> 32 with the 2056 closures (owner rule
-               # 2026-08): the two classes were the association's last 40-field
-               # holdouts and its ONLY 76-floor classes, sitting at 81/80
-               # sponsors after the batch — and their Specials audits showed
-               # the largest, noisiest bubble pools in the state (their brief
-               # wider CHALLENGE_SLOTS cap retired with this retune: at the
-               # standard shape they run the standard 2). Same retune as
-               # Group 1/2 below: down a field size (the 32 floor is 44,
-               # cleared with room), never a smaller version of the 40 ladder.
-STATE_FIELD = {"9A": 32, "8A": 32, "7A": 32, "6A": 32, "5A": 32,
+               # 2026-08): at 81/80 sponsors they were under strain as 76-floor
+               # classes, and their Specials audits showed the largest,
+               # noisiest bubble pools in the state (their brief wider
+               # CHALLENGE_SLOTS cap retired with this retune: at the standard
+               # shape they run the standard 2). Same retune as Group 1/2
+               # below: down a field size, never a smaller version of the 40
+               # ladder. In the SAME batch, 9A and 8A went back UP to 40 (owner
+               # rule 2026-08, "the last switch") — the association's deepest
+               # classes crown from the big field again. 8A clears the
+               # 40-field's 76 floor (86/86); ‼️ 9A does NOT (64/64 after the
+               # closures, 12 short per gender), so its Semi-Conference
+               # degrades LOUDLY every season by design (`sc_head` — the best
+               # bodies enter the Conference directly and a warning names the
+               # class). That is the documented under-floor behaviour, accepted
+               # with the switch; the repair, if ever wanted, is more 9A
+               # programs, never a smaller field.
+STATE_FIELD = {"9A": 40, "8A": 40, "7A": 32, "6A": 32, "5A": 32,
                "4A": 32, "3A": 32, "2A": 24, "1A": 24,
                # 2046 expansion (owner rule): the Great Basin groups are more
                # classifications, full stop -- "think of them more as 10A and
@@ -5490,17 +5498,19 @@ def _select_challengers(by_name: dict, conference_winners: list,
     return sorted(pool, key=_challenger_key(power))[:len(conference_winners)]
 
 
-#: Special Challenger seats contested per class (owner rule 2026-08): two,
-#: everywhere. 3A/4A briefly carried 4 — a targeted correction for the two
-#: 40-field classes whose Specials bubble pools measured largest and noisiest —
-#: and returned to 2 in the same batch that took their State fields 40 -> 32:
-#: at the standard field shape they match the rest of the state (owner:
-#: "3A/4A can match the rest of the state with only the 2 worst qualifiers").
-#: The table stays as the override point should a class ever earn a wider
-#: valve again. A cap, not a quota: a class with fewer eligible early exits
-#: plays fewer, and a year with none plays none (the usual case — eligibility
-#: is deliberately tight).
-CHALLENGE_SLOTS: dict[str, int] = {}
+#: Special Challenger seats contested per class (owner rule 2026-08): two by
+#: default, FOUR in the 40-field classes — the wider valve is a property of
+#: the big-field shape, not of any named class, and it has moved with the
+#: shape once already: 3A/4A carried the 4 while they were the 40-field
+#: holdouts (the largest, noisiest Specials bubble pools in the state),
+#: dropped to the standard 2 when their fields came down to 32, and 8A/9A
+#: inherited the 4 when they went back up to 40 in the same batch. A 40-field
+#: Conference sends 14 to the Specials against the 32-shape's 6, so its
+#: formula-selected tail is both longer and softer — that is what the two
+#: extra contested seats answer. A cap, not a quota: a class with fewer
+#: eligible early exits plays fewer, and a year with none plays none (the
+#: usual case — eligibility is deliberately tight).
+CHALLENGE_SLOTS: dict[str, int] = {"8A": 4, "9A": 4}
 CHALLENGE_SLOTS_DEFAULT = 2
 #: The eligibility screen (owner spec 2026-08): a team gets the bridge dual only
 #: with a real statewide profile — class TOSS rank inside the cut, OR a .700+

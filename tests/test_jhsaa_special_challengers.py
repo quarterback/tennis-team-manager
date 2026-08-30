@@ -132,20 +132,22 @@ def test_only_postseason_entrants_are_eligible(home_wins):
     assert arc["rounds"] == [[]]
 
 
-def test_slots_are_capped_per_class(monkeypatch, home_wins):
-    """Two seats everywhere (owner rule 2026-08 — 3A/4A's brief 4 retired with
-    their 40 -> 32 field retune); `CHALLENGE_SLOTS` stays the override point,
-    so the per-class path is pinned through a patched entry."""
+def test_slots_are_capped_per_class(home_wins):
+    """Two seats by default, four in the 40-field classes (owner rule 2026-08)
+    — the wider valve is a property of the big-field shape and has moved with
+    it once already (3A/4A carried it at 40, dropped it at 32; 8A/9A inherited
+    it going back up)."""
     by = {n: _Team(n) for n in
           ("Ch1", "Ch2", "Ch3", "Ch4", "Ch5", "E1", "E2", "E3", "E4", "E5")}
     power = {f"E{i}": _PI(0.9 - i / 100) for i in range(1, 6)}
     chs = [by[f"Ch{i}"] for i in range(1, 6)]
     arc, _ = bridge(by, chs, ("E1", "E2", "E3", "E4", "E5"), power=power)
     assert len(arc["rounds"][0]) == jh.CHALLENGE_SLOTS_DEFAULT == 2
-    assert jh.CHALLENGE_SLOTS == {}, "uniform: no class carries a wider valve"
-    monkeypatch.setitem(jh.CHALLENGE_SLOTS, "3A", 4)
+    # the wider valve rides the 40-field classes, exactly them
+    assert {g for g, n in jh.CHALLENGE_SLOTS.items() if n == 4} \
+        == {g for g in jh.GROUPS if jh.state_field_size(g) == 40}
     arc, _ = bridge(by, chs, ("E1", "E2", "E3", "E4", "E5"), power=power,
-                    group="3A")
+                    group="9A")
     assert len(arc["rounds"][0]) == 4
     # best eligible (E1) takes the weakest seat (Ch5)
     gm = arc["rounds"][0][0]
