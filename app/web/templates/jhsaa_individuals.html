@@ -1,17 +1,19 @@
 {% extends "base.html" %}
 {% from "_jhsaa.html" import jh_header %}
 {% from "_bracket.html" import brk_canvas, brk_script %}
-{% block title %}JHSAA {{ view.group_label or 'Statewide' }} {{ view.flight_name }} — Individual State{% endblock %}
+{% block title %}JHSAA {{ view.event_name }} — Individual State{% endblock %}
 {% block content %}
 
 {# ‼️ NO EXPLANATORY SUBTITLE (owner, 2026-08). The bracket, the flight rail and the
    counts state what this is; a paragraph explaining the event to its own reader is
    microcopy nobody asked for. #}
-{# ‼️ `group_label` is empty on the JV brackets — they are CLASSLESS, the one
-   JHSAA championship that is, so the class must not appear in the event's name.
-   The class rail stays live for the varsity flights you'd switch back to. #}
-{{ jh_header(view.scope, u, 'individuals',
-             ((view.group_label ~ ' ') if view.group_label else '') ~ (view.flight_name ~ ' State Tournament' if view.jv else 'Individual State Tournament'), '',
+{# The heading is `view.heading` — "9A Individual State Tournament" for the
+   varsity flights, and simply "JV Singles" / "JV Doubles" for the JV brackets:
+   they are CLASSLESS so no class may appear, the gender comes off the scope
+   bar's own switch, and "State" is implied here exactly as it is for every
+   other flight on this page. The class rail stays live for the varsity flights
+   you would switch back to. #}
+{{ jh_header(view.scope, u, 'individuals', view.heading, '',
              [('Season', view.season_year), ('Draw', view.field_n), ('Seeds', view.n_seeds)] if view.ready else []) }}
 
 <div class="jh-shell">
@@ -31,9 +33,11 @@
   <span class="sep" aria-hidden="true"></span>
   <a class="{{ 'on' if view.flight == view.mixed_flight }}" title="A separate event — one entry per school, drawn from below No. 9, played in the summer"
      href="{{ url_for('jhsaa_individuals', u=u, g=view.gender, group=view.group, year=view.scope.pin, flight=view.mixed_flight) }}">{{ view.mixed_name }}</a>
-  {# The JV brackets — set apart like mixed, because they are a different EVENT:
-     classless, one statewide draw, entered by winning your district. #}
-  <span class="sep" aria-hidden="true"></span>
+  {# ‼️ THE JV BRACKETS SIT IN THE SAME ROW AS MIXED, past the ONE separator
+     (owner, 2026-08). They shipped behind a second separator of their own,
+     which read as a third tier of thing; the rail has exactly two registers —
+     the six flights of the flighted event, then the other state tournaments —
+     and JV Singles and JV Doubles belong beside Mixed Doubles in the second. #}
   {% for f, name in view.jv_flights %}
   <a class="{{ 'on' if view.flight == f }}" title="Classless statewide draw — one champion per gender, qualified by winning your district"
      href="{{ url_for('jhsaa_individuals', u=u, g=view.gender, group=view.group, year=view.scope.pin, flight=f) }}">{{ name }}</a>
@@ -50,9 +54,7 @@
 <div class="jh-champ" style="margin-bottom:12px">
   <span class="mark">{{ view.champion_deco.mark|safe }}</span>
   <div style="min-width:0">
-    {# "JV Singles STATE Champion" — the JV title's own grammar; the varsity line
-       is untouched ("9A No. 1 Singles Champion"). #}
-    <span class="lbl">{{ view.season_year }} JHSAA {% if view.group_label %}{{ view.group_label }} {% endif %}{{ view.flight_name }} {{ 'State ' if view.jv }}Champion{{ 's' if view.champion.players|length > 1 }}</span>
+    <span class="lbl">{{ view.season_year }} JHSAA {{ view.event_name }} Champion{{ 's' if view.champion.players|length > 1 }}</span>
     {# By PID, never by name — a pid keys on (school, gender, entry year, seat), so
        it is stable across all four years and matches the award rows. A PAIR links
        through its first member; a partnership has no page of its own. #}
@@ -111,7 +113,7 @@
 <div class="brk-stage" id="brkstage">
   <section class="brk-region" data-view="all">
     <div class="brk-region-head">
-      <h2>{{ view.season_year }} {{ view.group_label or 'Statewide' }} {{ view.flight_name }} · {{ view.field_n }} entries</h2>
+      <h2>{{ view.season_year }} {{ view.event_name }} · {{ view.field_n }} entries</h2>
       <span class="brk-region-champ">
         {% if view.champion %}{{ view.champion.label }}{% if view.runner_up %} def. {{ view.runner_up.label }}{% endif %}{% else %}in progress{% endif %}</span>
     </div>

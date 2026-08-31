@@ -1,15 +1,16 @@
 {% extends "base.html" %}
 {% from "_jhsaa.html" import jh_header %}
-{% block title %}JHSAA {{ view.group_label or 'Statewide' }} {{ view.flight_name }} Champions{% endblock %}
+{% block title %}JHSAA {{ view.event_name }} Champions{% endblock %}
 {% block content %}
 
 {# ‼️ NO EXPLANATORY SUBTITLE (owner, 2026-08). A results page states results; a
    sentence telling the reader what a dropdown is for is noise on a page whose
    controls are visible. #}
-{# ‼️ `group_label` is empty on the JV brackets — classless, so no class in the
-   heading, and the class rail does not scope their roll. #}
-{{ jh_header(view.scope, u, 'indiv_history',
-             ((view.group_label ~ ' ') if view.group_label else 'Statewide ') ~ ('JV Individual Champions' if view.jv else 'Individual Champions'), '',
+{# The heading is "9A Individual Champions" for a varsity flight and simply
+   "JV Singles" / "JV Doubles" for the JV brackets: classless, so no class may
+   appear, and the gender comes off the scope bar's own switch. The class rail
+   does not scope a JV roll at all. #}
+{{ jh_header(view.scope, u, 'indiv_history', view.heading, '',
              [('Seasons', view.rows|length)]) }}
 
 <div class="jh-shell">

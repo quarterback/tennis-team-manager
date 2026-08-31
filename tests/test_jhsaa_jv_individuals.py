@@ -474,13 +474,18 @@ def archived():
         conn.execute("DELETE FROM world_jhsaa WHERE world_id=?", (w["id"],))
         conn.execute("DELETE FROM world_jhsaa_individual WHERE world_id=?",
                      (w["id"],))
-        conn.execute(
+        # ‼️ A SEASON SUMMARY ROW PER GENDER. The champions roll walks
+        # `world.jhsaa_years`, which reads THIS table — so a gender with draws
+        # but no season row has an empty roll, and the JV rows below would look
+        # like a boys/girls bug that is really a missing fixture.
+        conn.executemany(
             "INSERT INTO world_jhsaa (world_id, year, gender, data)"
             " VALUES (?,?,?,?)",
-            (w["id"], 0, "girls", json.dumps(
+            [(w["id"], 0, g, json.dumps(
                 {"season_year": 2040, "champions": {}, "awards": {},
                  "standings": {"5A": {"Basalt League": [
-                     {"school": "Sixes", "record": "9-3", "place": 1}]}}})))
+                     {"school": "Sixes", "record": "9-3", "place": 1}]}}}))
+             for g in ("girls", "boys")])
         def draw(flight, players):
             full = " / ".join(p["name"] for p in players)
             return json.dumps({
@@ -511,6 +516,17 @@ def archived():
               draw(jvi.DOUBLES, [{"pid": "c" * 16, "name": "Cy Odom",
                                   "grade": 11},
                                  {"pid": "d" * 16, "name": "Dee Fox",
+                                  "grade": 12}])),
+             # The BOYS draws of the same season. Four rows, because the event
+             # crowns four champions a year: two brackets × two genders, each
+             # its own draw under the one classless key.
+             (w["id"], 0, "boys", jvi.GROUP_KEY, jvi.SINGLES,
+              draw(jvi.SINGLES, [{"pid": "m" * 16, "name": "Milo Vance",
+                                  "grade": 12}])),
+             (w["id"], 0, "boys", jvi.GROUP_KEY, jvi.DOUBLES,
+              draw(jvi.DOUBLES, [{"pid": "n" * 16, "name": "Nate Ferro",
+                                  "grade": 11},
+                                 {"pid": "o" * 16, "name": "Otto Lind",
                                   "grade": 12}]))])
         conn.commit()
     finally:
@@ -599,9 +615,12 @@ def test_the_championship_page_renders_the_jv_draw(archived, monkeypatch):
     r = client.get("/jhsaa/individuals?flight=JVS&g=girls&year=0")
     assert r.status_code == 200
     html = r.data.decode()
-    assert "JV Singles" in html and "Bo Reyes" in html
-    # classless: the event heading carries no class, and the hero says State
-    assert "JV Singles State Champion" in html
+    assert "Bo Reyes" in html
+    # ‼️ THE HEADING IS JUST THE EVENT (owner, 2026-08): "JV Singles". No class
+    # — it is classless — no gender, since the scope bar's switch is what picks
+    # one, and no "State", which is implied here as it is for every flight.
+    assert "JV Singles Champion" in html
+    assert "Statewide" not in html and "JV Singles State" not in html
     r2 = client.get("/jhsaa/individuals?flight=JVD&g=girls&year=0")
     assert r2.status_code == 200 and "Cy Odom" in r2.data.decode()
     # the class rail does not scope the draw — any class shows the same champion
@@ -619,6 +638,29 @@ def test_the_championship_page_renders_the_jv_draw(archived, monkeypatch):
     h = client.get("/jhsaa/individual-champions?flight=S1&group=5A&g=girls"
                    ).data.decode()
     assert "Bo Reyes" not in h
+
+
+def test_each_gender_renders_its_own_jv_draw(archived, monkeypatch):
+    """Four champions a season — two brackets × two genders — and the boys/girls
+    switch on the scope bar is what picks one. A gender must never see the
+    other's champion: the brackets share ONE classless archive key, so the
+    gender column is the only thing separating them."""
+    import os
+    from app import world as wd
+    os.environ.setdefault("PTC_NO_BOOT_WARM", "1")
+    monkeypatch.setattr(wd, "is_primed", lambda *a, **k: True)
+    monkeypatch.setattr(wd, "prime", lambda *a, **k: None)
+    from app.web.server import create_app
+    client = create_app().test_client()
+    want = {("girls", jvi.SINGLES): ("Bo Reyes", "Milo Vance"),
+            ("boys", jvi.SINGLES): ("Milo Vance", "Bo Reyes"),
+            ("girls", jvi.DOUBLES): ("Cy Odom", "Nate Ferro"),
+            ("boys", jvi.DOUBLES): ("Nate Ferro", "Cy Odom")}
+    for (g, fl), (mine, theirs) in want.items():
+        for path in ("/jhsaa/individuals?year=0&", "/jhsaa/individual-champions?"):
+            h = client.get(f"{path}flight={fl}&g={g}").data.decode()
+            assert mine in h, (g, fl, path)
+            assert theirs not in h, (g, fl, path)
 
 
 def test_the_view_splits_a_play_in_off_the_bracket_tree(by_group, monkeypatch):

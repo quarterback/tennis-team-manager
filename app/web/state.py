@@ -4487,6 +4487,16 @@ def jhsaa_individual_view(seed: int, gender: str, group: str | None = None,
             # flights of this one.
             "jv_flights": [(f, jvi.BRACKET_NAMES[f]) for f in jvi.BRACKETS],
             "jv": is_jv, "group_label": "" if is_jv else grp,
+            # ‼️ THE EVENT'S OWN NAME, BUILT ONCE. A JV bracket is just "JV
+            # Singles" — no class (it is classless), no gender (the scope bar's
+            # boys/girls switch selects which one you are looking at), and no
+            # "State" (owner, 2026-08: it is implied here exactly as it is for
+            # every other flight on this page). A varsity flight keeps the class
+            # it was contested in.
+            "event_name": (jvi.BRACKET_NAMES[fl] if is_jv
+                           else f"{grp} {ji.FLIGHT_NAMES[fl]}"),
+            "heading": (jvi.BRACKET_NAMES[fl] if is_jv
+                        else f"{grp} Individual State Tournament"),
             "season_year": (arc or {}).get("season_year",
                                            world.jhsaa_season_year(w)),
             "scope": scope}
@@ -5942,6 +5952,12 @@ def jhsaa_individual_winners(seed: int, gender: str, group: str | None = None,
             "flight": fl,
             "flight_name": jvi.BRACKET_NAMES[fl] if is_jv else ji.FLIGHT_NAMES[fl],
             "jv": is_jv, "group_label": "" if is_jv else grp,
+            # "JV Singles" — see the bracket view's own note. No class, no
+            # gender, no "State": the page and the scope bar carry all three.
+            "event_name": (jvi.BRACKET_NAMES[fl] if is_jv
+                           else f"{grp} {ji.FLIGHT_NAMES[fl]}"),
+            "heading": (jvi.BRACKET_NAMES[fl] if is_jv
+                        else f"{grp} Individual Champions"),
             "flights": [(f, ji.FLIGHT_NAMES[f]) for f in ji.FLIGHTS],
             "jv_flights": [(f, jvi.BRACKET_NAMES[f]) for f in jvi.BRACKETS],
             "mixed_flight": "XD", "mixed_name": ji.FLIGHT_NAMES["XD"],
