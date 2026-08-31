@@ -1673,6 +1673,7 @@ def reset_schools() -> None:
     _talent_era_cache.clear()
     _career_era_cache.clear()
     _expo_cache.clear()
+    _expo_world.clear()
     global _former_cache
     _former_cache = None
 
@@ -1926,71 +1927,122 @@ EXPO_JV_UNIT = 0.5                # a JV appearance, in varsity-equivalent units
 EXPO_CAP = 14.0                   # units at which a season counts as fully played
 
 _expo_cache: dict = {}
+_expo_world: dict = {}
 _EXPO_MISS = object()
+#: Per (school, season) entries are ~20 names each, so this bounds memory without
+#: thrashing: a full-association pass touches ~860 schools x 3 seasons a gender.
+_EXPO_CACHE_MAX = 8192
 
 
-def season_exposure(gender: str, season_year: int):
-    """{(school, name): appearance units} for one ARCHIVED season, or None when
-    that season has no archive (fresh world, pre-JHSAA years, tests).
+def _expo_world_id(db_path: str):
+    """THE world's row id, for scoping the archive read.
 
-    One query per (save, gender, season) — memoised, because `build_roster`
-    resolves three of these per build and a season builds ~1,600 rosters (the
-    fingerprint-in-a-loop rule). Keyed by NAME because that is what the dual
-    archive carries (`_jh_line_records`' contract); varsity units come off the
-    `lines` a player actually dressed in, JV units off the JV rows' `played`
-    list. Archived rows are immutable once written, so the cache never needs
-    per-season invalidation — `reset_schools()` clears it out of habit."""
+    One real world per save (`world.start_new` resets before creating), so this
+    binds to the OLDEST row — `gtt_seasonmode._active_world_seed`'s rule, for the
+    same reason: any later row is a stray artifact and must never be read as the
+    player's game. Resolved once per save."""
+    got = _expo_world.get(db_path, _EXPO_MISS)
+    if got is not _EXPO_MISS:
+        return got
+    import sqlite3
+    wid = None
+    try:
+        conn = sqlite3.connect(db_path)
+        try:
+            r = conn.execute("SELECT id FROM world ORDER BY id ASC LIMIT 1").fetchone()
+            wid = r[0] if r else None
+        except sqlite3.Error:
+            wid = None
+        finally:
+            conn.close()
+    except sqlite3.Error:
+        wid = None
+    _expo_world[db_path] = wid
+    return wid
+
+
+def school_exposure(gender: str, school_name: str, season_years) -> dict:
+    """{season_year: {player name: appearance units}} for ONE school's archived
+    seasons — or the year mapped to None where that season has no archive.
+
+    ‼️ SCOPED TO (world_id, year, gender, school) — every column of
+    `ix_jhsaa_dual`, in order. An earlier version selected a whole gender-season
+    with no `world_id` at all: the index leads on `world_id`, so nothing could
+    use it and each call FULL-SCANNED the largest table in the save (~13k duals
+    a gender-season, every one carrying a `lines` blob to parse) three times per
+    roster build. It was also plainly wrong — unscoped, it read every world's
+    archive at once. A roster build needs the ~26 rows belonging to one school.
+    All three seasons come back in ONE query.
+
+    Keyed by NAME because that is what the dual archive carries
+    (`state._jh_line_records`' contract). Varsity units come off the `lines` a
+    player actually dressed in — one unit per DUAL, however many courts — and JV
+    units off the JV rows' `played` list at `EXPO_JV_UNIT`.
+
+    A season with NO rows for this school reads as None (full realisation), not
+    as the floor: that covers a fresh world, pre-odometer seasons and a program
+    that did not yet exist, and it is the only safe default. Once a season HAS
+    rows, a player absent from all of them was rostered and never dressed, which
+    is the floor — that distinction is the point of returning None rather than
+    an empty dict."""
     from .dbpath import resolve_db_path
-    key = (resolve_db_path(), gender, season_year)
+    db = resolve_db_path()
+    years = tuple(season_years)
+    key = (db, gender, school_name, years)
     got = _expo_cache.get(key, _EXPO_MISS)
     if got is not _EXPO_MISS:
         return got
     from .world import BASE_YEAR
-    idx = season_year - BASE_YEAR - 1          # calendar year -> archive index
-    units = None
-    if idx >= 0:
+    wid = _expo_world_id(db)
+    out = {y: None for y in years}
+    idx_of = {y - BASE_YEAR - 1: y for y in years if y - BASE_YEAR - 1 >= 0}
+    if wid is not None and idx_of:
         import sqlite3
         rows = []
         try:
-            conn = sqlite3.connect(key[0])
+            conn = sqlite3.connect(db)
             try:
-                rows = conn.execute(
-                    "SELECT school, home, lines, level, played"
-                    " FROM world_jhsaa_dual WHERE year=? AND gender=?",
-                    (idx, gender)).fetchall()
+                q = ("SELECT year, home, lines, level, played"
+                     " FROM world_jhsaa_dual"
+                     " WHERE world_id=? AND gender=? AND school=?"
+                     " AND year IN (%s)" % ",".join("?" * len(idx_of)))
+                rows = conn.execute(q, (wid, gender, school_name,
+                                        *idx_of.keys())).fetchall()
             except sqlite3.Error:
-                rows = []                      # table not created yet — no archive
+                rows = []                      # table not created yet
             finally:
                 conn.close()
         except sqlite3.Error:
             rows = []
-        if rows:
-            units = {}
-            for school, home, lines, level, played in rows:
-                if (level or "v") == "v":
-                    side = "home" if home else "away"
-                    dressed: set = set()
-                    for ln in json.loads(lines or "[]"):
-                        dressed.update(ln.get(side) or ())
-                    for nm in dressed:         # one unit per DUAL, not per line
-                        k = (school, nm)
-                        units[k] = units.get(k, 0.0) + 1.0
-                else:
-                    for nm in json.loads(played or "[]"):
-                        k = (school, nm)
-                        units[k] = units.get(k, 0.0) + EXPO_JV_UNIT
-    if len(_expo_cache) > 12:                  # a handful of seasons at a time
+        for year_idx, home, lines, level, played in rows:
+            season = idx_of.get(year_idx)
+            if season is None:
+                continue
+            units = out.get(season)
+            if units is None:
+                units = out[season] = {}
+            if (level or "v") == "v":
+                side = "home" if home else "away"
+                dressed = set()
+                for ln in json.loads(lines or "[]"):
+                    dressed.update(ln.get(side) or ())
+                for nm in dressed:             # one unit per DUAL, not per line
+                    units[nm] = units.get(nm, 0.0) + 1.0
+            else:
+                for nm in json.loads(played or "[]"):
+                    units[nm] = units.get(nm, 0.0) + EXPO_JV_UNIT
+    if len(_expo_cache) >= _EXPO_CACHE_MAX:
         _expo_cache.pop(next(iter(_expo_cache)))
-    _expo_cache[key] = units
-    return units
+    _expo_cache[key] = out
+    return out
 
 
-def _expo_factor(units_map, school_name: str, name: str) -> float | None:
+def _expo_factor(units_map, name: str) -> float | None:
     """One season's realisation factor for one player, or None for full
-    realisation (the season was never archived)."""
+    realisation (that season was never archived for this school)."""
     if units_map is None:
         return None
-    u = units_map.get((school_name, name), 0.0)
+    u = units_map.get(name, 0.0)
     return EXPO_FLOOR + (1.0 - EXPO_FLOOR) * min(1.0, u / EXPO_CAP)
 
 
@@ -3185,8 +3237,7 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
         if expo_years:
             exposure = {}
             for pg in range(9, grade):
-                f = _expo_factor(expo_years.get(entry + (pg - 9)),
-                                 school.name, p.name)
+                f = _expo_factor(expo_years.get(entry + (pg - 9)), p.name)
                 if f is not None:
                     exposure[pg] = f
         _apply_career(p, school.key, entry, seat, grade, salt,
@@ -3260,8 +3311,8 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     # seasons are archived under the school they actually played at, so a
     # (this-school, name) lookup would misread their played years as sitting.
     # Transfers are rare owner-authored overrides; they realise in full.
-    expo_years = {y: season_exposure(school.gender, y)
-                  for y in (year - 1, year - 2, year - 3)}
+    expo_years = school_exposure(school.gender, school.name,
+                                 (year - 1, year - 2, year - 3))
     out = []
     fresh9_seats = 0
     for grade in GRADES:
