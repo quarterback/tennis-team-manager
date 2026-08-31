@@ -528,13 +528,24 @@ class Prospect:
 def generate_prospect(rng: random.Random, name: str, country: str = "",
                       gender: str = "male", talent: float | None = None,
                       pid: str = "", maturity_range: tuple | None = None,
-                      town_pool: list | None = None) -> Prospect:
+                      town_pool: list | None = None,
+                      ceiling_max: float | None = None) -> Prospect:
     """Create an incoming prospect with reproducible rich attributes.
 
     Ceilings cluster around ``talent``; maturity determines how much is visible
     today; the interest tier determines how fast the remaining gap closes.
     `pid` lets callers (roster/juniors builders) assign a stable id; if omitted
     a deterministic one is derived.
+
+    `ceiling_max` is the top of the scale ceilings are drawn on. It defaults to
+    `GRADE_MAX` (80), the college NORMALISATION reference, so every existing
+    caller is unchanged. A caller on a scale of its own passes its own top — the
+    JHSAA does, from `career_era()` on, because high school stopped being held
+    down to fit a scale it does not play on and translates at graduation instead
+    (docs/PROPOSAL-development-model-redesign.md §24). `grade_to_unit` has no
+    upper clamp and the engine clamps the resulting PROBABILITY rather than the
+    input, so a grade above 80 reads as genuinely better on court — the path the
+    pro tier already uses.
     """
     from generators import (nation_talent, roll_hometown, roll_birthday,
                             roll_secondary_country, roll_high_school,
@@ -547,9 +558,10 @@ def generate_prospect(rng: random.Random, name: str, country: str = "",
     # weakest, nudges) the average ceiling of every player it produces. Nations
     # absent from the table are neutral (shift 0), so non-major markets are
     # never penalised — they generate at tour-average with full variance.
-    talent = _clamp(talent + nation_talent.talent_shift(country), 24.0, float(GRADE_MAX))
+    top = float(GRADE_MAX if ceiling_max is None else ceiling_max)
+    talent = _clamp(talent + nation_talent.talent_shift(country), 24.0, top)
     traits = _draw_traits(rng)
-    potential = {a: _clamp(rng.gauss(talent, 6), GRADE_MIN, GRADE_MAX) for a in RICH_ATTRS}
+    potential = {a: _clamp(rng.gauss(talent, 6), GRADE_MIN, top) for a in RICH_ATTRS}
     # Give the player a real SHAPE (net specialist / baseliner / server) instead of
     # a flat draw around one mean — weight-normalized so overall/STR is unchanged.
     _apply_style_profile(potential, traits["play_style"], rng)
@@ -562,7 +574,7 @@ def generate_prospect(rng: random.Random, name: str, country: str = "",
         marquee = rng.sample(RICH_ATTRS, k=max(1, len(RICH_ATTRS) // 4))
         for a in RICH_ATTRS:
             band = nation_talent.ELITE_HEADLINE if a in marquee else nation_talent.ELITE_SUPPORT
-            potential[a] = _clamp(max(potential[a], rng.uniform(*band)), GRADE_MIN, GRADE_MAX)
+            potential[a] = _clamp(max(potential[a], rng.uniform(*band)), GRADE_MIN, top)
 
     lo, hi = maturity_range or (MATURITY_MIN, MATURITY_MAX)
     maturity = rng.uniform(lo, hi)

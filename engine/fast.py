@@ -114,22 +114,33 @@ TUNE = {
 #     a big server still steals matches past his overall); what goes away is
 #     the structural free hold that made near-equal HS sets random-walk to
 #     6-6.
-#   * skill_slope 6 + gap_knee 0.02: HS talent disparities are massive and
-#     the college knee (0.06) sat exactly ON the median matched-line gap
-#     (0.059 measured across JHSAA district play), so HALF of all real
-#     mismatches were being played as "even matches" — the anti-blowout band
-#     was designed too wide for this level, which is ALSO the fix for the
-#     owner-reported unreal upset volume: this profile deliberately steepens
-#     the match-win curve (favorite at a 0.03 gap ~76%, saturating by 0.08 —
-#     vs the college curve's 52%/67%), superseding the flatter JHSAA table in
-#     docs/AAR-jhsaa-upset-variance-recalibration.md for HS play.
+#   * the MATCHUP CURVE — see `gap_bands` / `BAND_EDGES_OVR` below. ‼️ THIS
+#     DIAL WAS REPLACED (owner spec 2026-08). It was `skill_slope` 6 +
+#     `gap_knee` 0.02, chosen because the college knee (0.06) sat on the median
+#     matched-line gap (0.059 across JHSAA district play) so half of all real
+#     mismatches played as "even matches". That fixed the upset volume and
+#     overshot: a THREE-point OVR gap won 94.7% of matches and a six-point gap
+#     100%, which is not a competitive model, it is a lookup table. The curve
+#     now runs on seven-point competitive BANDS instead (peers / modest / clear
+#     / strong / major), flat inside the peer band and progressively steeper
+#     above it. Both this and the older
+#     docs/AAR-jhsaa-upset-variance-recalibration.md table are superseded for
+#     HS play; docs/PROPOSAL-development-model-redesign.md §25 is current.
 # NO per-match "form"/hot-cold variable — considered and rejected (owner,
 # 2026-08): the ratings already abstract day-to-day HS chaos, and a latent
 # noise term that exists to reproduce a score distribution is the model
 # compensating for a mis-set deterministic core. Fix the core instead.
-# Measured with the profile on (vs real): see
-# docs/AAR-jhsaa-scoreline-realism.md; re-measure with
-# scripts/jhsaa_scoreline_benchmark.py before retuning anything here. The
+# ‼️ THE SET-SCORE TARGETS ABOVE ARE SUPERSEDED (owner ruling 2026-08). The
+# banded curve is flatter, so it does NOT reproduce that blowout-shaped
+# distribution: at a 6-OVR gap 6-0 sets fall ~27.6% -> ~2% and three-setters
+# rise ~1% -> ~50%. The owner ruled the band spec is what is wanted and the
+# Oregon scoreline fit is not a constraint on it. The two may reconcile once
+# the HS talent scale is freed (§24 of the proposal): the steep curve produced
+# blowouts because matched-line gaps on the COMPRESSED distribution are small
+# (median 3.5 OVR), and wider gaps under a flat curve may land in the same
+# place. Re-run scripts/jhsaa_scoreline_benchmark.py AFTER that change — run
+# on today's distribution it answers a question that no longer applies.
+# Historical fit: see docs/AAR-jhsaa-scoreline-realism.md. The
 # `d_*` keys are the doubles fast model's equivalents, scaled by the same
 # ratios its college dials carry over the singles ones
 # (engine.doubles.TUNE fast_* / this TUNE).
@@ -137,24 +148,89 @@ TUNE = {
 # pre-profile model. Pinned by tests/test_jhsaa_scorelines.py.
 HS_PROFILE = {
     "hold_base_logit": -0.4,
-    "skill_slope": 6.0,
-    "tb_slope": 4.5,
+    # ‼️ COMPETITIVE BANDS, owner spec 2026-08 (see `BAND_EDGES_OVR` and
+    # docs/PROPOSAL-development-model-redesign.md §25). `skill_slope` was 6.0
+    # and `gap_knee` 0.02 — and the knee was never what made this curve steep.
+    # A gap is a per-GAME hold edge compounded over ~20 games and two or three
+    # sets, so at slope 6.0 a THREE-point OVR gap already won 94.7% of matches
+    # and removing the hinge entirely left it at 92.9%: the requested peer band
+    # is unreachable by retuning a knee, and the whole curve had to come down.
+    # `gap_bands` replaces the knee/accel hinge for this profile; `gap_knee`
+    # and `gap_accel` are kept so a caller reading them still gets a number,
+    # but they are UNUSED here.
+    "skill_slope": 0.9,
+    "tb_slope": 0.68,
+    "gap_bands": True,
     "gap_knee": 0.02,
     "gap_accel": 1.8,
     # doubles fast model (engine.doubles reads these; ratios mirror its
     # college dials: hold 1.05/0.9, slope 2.4/1.5, tb 1.8/1.13)
     "d_hold_logit": -0.47,
-    "d_skill_slope": 9.6,
-    "d_tb_slope": 7.2,
+    # Scaled by the same factor the singles dials moved (0.9/6.0), so the
+    # doubles fast model reads an OVR gap through the same bands rather than
+    # keeping a curve 6.7x steeper than the singles one beside it.
+    "d_skill_slope": 1.44,
+    "d_tb_slope": 1.08,
 }
 
 
+#: A `gap` here is a difference of unit-normalised drivers, i.e. an OVR-point
+#: difference divided by the 20-80 scale's span. Band edges are authored in OVR
+#: points (the units the owner reasons in) and converted once, at import.
+GRADE_SPAN = 60.0
+
+#: COMPETITIVE BANDS (owner spec 2026-08) — the high-school matchup curve. An
+#: OVR difference is read as five bands: 0-6 peers, 7-14 modest advantage,
+#: 15-21 clear advantage, 22-28 strong mismatch, 29+ major mismatch. The peer
+#: band is IDENTITY, so near-equal matches keep their full volatility, and each
+#: band above it is progressively steeper. Continuous by construction (each
+#: band starts where the last one ended), sign-symmetric, monotonic.
+#: Measured favourite win rates at the band edges: 6 -> 60.5%, 14 -> 73.2%,
+#: 21 -> 85.5%, 28 -> 95.2% (owner targets 62/75/87/95).
+#: See docs/PROPOSAL-development-model-redesign.md §25.
+BAND_EDGES_OVR = (6.0, 14.0, 21.0, 28.0)
+BAND_SLOPES = (1.0, 1.0, 1.5, 2.2, 3.0)
+def _build_bands() -> tuple[tuple[float, float, float], ...]:
+    """(unit edge, slope, output at that edge) per band, precomputed at import so
+    the per-point hot path is a short scan that never re-derives the table."""
+    out, prev, total = [], 0.0, 0.0
+    for edge_ovr, slope in zip(BAND_EDGES_OVR, BAND_SLOPES):
+        edge = edge_ovr / GRADE_SPAN
+        total += (edge - prev) * slope
+        out.append((edge, slope, total))
+        prev = edge
+    return tuple(out)
+
+
+_BANDS = _build_bands()
+
+
+def band_gap(gap: float) -> float:
+    """The banded matchup curve — piecewise-linear on |gap|, one slope per
+    competitive band (see `BAND_EDGES_OVR`). Identity inside the peer band."""
+    x = abs(gap)
+    prev_edge = 0.0
+    out = 0.0
+    for edge, slope, acc in _BANDS:
+        if x <= edge:
+            out += (x - prev_edge) * slope
+            return out if gap >= 0 else -out
+        out, prev_edge = acc, edge
+    out += (x - prev_edge) * BAND_SLOPES[-1]
+    return out if gap >= 0 else -out
+
+
 def effective_gap(gap: float, knee: float | None = None,
-                  accel: float | None = None) -> float:
-    """The gap the fast models PLAY ON: real gap below the knee, accelerated
-    beyond it. Sign-symmetric and continuous; identity for |gap| <= knee.
-    `knee`/`accel` default to TUNE's (the college calibration); a profile
-    passes its own."""
+                  accel: float | None = None, bands: bool = False) -> float:
+    """The gap the fast models PLAY ON.
+
+    With `bands` (the HS profile), the banded curve above. Otherwise the
+    original single hinge: real gap below the knee, accelerated beyond it,
+    sign-symmetric and continuous, identity for |gap| <= knee. `knee`/`accel`
+    default to TUNE's (the college calibration); a profile passes its own.
+    """
+    if bands:
+        return band_gap(gap)
     knee = TUNE["gap_knee"] if knee is None else knee
     accel = TUNE["gap_accel"] if accel is None else accel
     extra = abs(gap) - knee
@@ -210,7 +286,8 @@ def _hold_prob(server: Player, returner: Player, context: MatchContext,
     return _logistic(
         tune["hold_base_logit"]
         + tune["skill_slope"] * effective_gap(gap, tune["gap_knee"],
-                                              tune["gap_accel"])
+                                              tune["gap_accel"],
+                                              tune.get("gap_bands", False))
         + tune["context_slope"] * _context_edge(server, returner, context))
 
 
@@ -226,7 +303,8 @@ def _tb_prob(p0: Player, p1: Player, context: MatchContext,
         gap += tune["edge_stamina"] * (e0["s_dev"] - e1["s_dev"])
     return _logistic(
         tune["tb_slope"] * effective_gap(gap, tune["gap_knee"],
-                                         tune["gap_accel"])
+                                         tune["gap_accel"],
+                                         tune.get("gap_bands", False))
         + tune["context_slope"] * _context_edge(p0, p1, context))
 
 

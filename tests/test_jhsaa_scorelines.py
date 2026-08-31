@@ -53,19 +53,91 @@ def _set_shares(teams, trials=2, seed=20260828):
             100 * three / matches)
 
 
-def test_hs_sets_are_blowout_shaped_not_tiebreak_shaped():
-    """The owner's report: 'far too many 7-6 7-6 matches'. Real HS: 6-0 26.4%,
-    7-6 3.9%. The old model: 6-0 2.5%, 7-6 14.9%. Pin the corrected ordering
-    with room for sampling noise on one district."""
-    shares, three_set = _set_shares(_teams())
-    assert shares.get("6-0", 0) > 15, f"6-0 share collapsed: {shares}"
-    assert shares.get("7-6", 0) < 9, f"7-6 glut is back: {shares}"
-    # monotone-ish decay: the lopsided half must outweigh the tight half
-    lop = shares.get("6-0", 0) + shares.get("6-1", 0)
-    tight = shares.get("7-5", 0) + shares.get("7-6", 0)
-    assert lop > 2 * tight, (lop, tight, shares)
-    # real three-set rate is 13.8%; the old model ran 42.8%
-    assert three_set < 25, three_set
+# ‼️ `test_hs_sets_are_blowout_shaped_not_tiebreak_shaped` USED TO LIVE HERE and
+# was RETIRED, not fixed (owner ruling 2026-08). It pinned the Oregon set-score
+# fit — 6-0 above 15% of sets, 7-6 under 9%, three-setters under 25% — which the
+# banded matchup curve deliberately no longer produces (at a 6-OVR gap, 6-0 goes
+# ~27.6% -> ~3% and three-setters ~1% -> ~50%). The owner ruled the band spec is
+# what is wanted and the scoreline fit is not a constraint on it, so the test was
+# asserting a superseded decision.
+#
+# It should COME BACK, re-measured, once the HS talent scale is freed
+# (docs/PROPOSAL-development-model-redesign.md §24): the steep curve produced
+# blowouts because matched-line gaps on the COMPRESSED distribution are small
+# (median 3.5 OVR), and wider gaps under a flat curve may land in the same place.
+# Re-derive its numbers with scripts/jhsaa_scoreline_benchmark.py AFTER that
+# change — restoring the old thresholds before it would re-pin the old curve.
+# `_set_shares` is kept for that, and for the benchmark script.
+
+
+def test_matchup_curve_follows_the_competitive_bands():
+    """‼️ THE OWNER'S BAND SPEC (2026-08), pinned end to end through the real
+    engine: an OVR difference is read as five competitive bands and the
+    favourite's win rate rises progressively across them.
+
+        0-6 peers · 7-14 modest · 15-21 clear · 22-28 strong · 29+ major
+
+    Measured at each band's TOP edge, where the curve is most likely to drift.
+    Ranges are the spec's, widened for sampling noise at this n (se ~1.8pt).
+    This supersedes the scoreline test above: it pins the decision that replaced
+    it, and it is the closer guard on the thing that actually went wrong — at
+    the old dials a three-point gap already won 94.7% of matches.
+    """
+    from engine.fast import simulate_fast
+    from app.development import Prospect
+    from app.player_attributes import RICH_ATTRS
+
+    def flat(ovr, name):
+        # A FLAT player (every attribute equal) so the measured gap is exactly
+        # the OVR gap — engine.fast's lane weights are chosen to reproduce the
+        # overall gap exactly for flat players, which is what makes this a
+        # reading of the curve rather than of a play style.
+        grades = {a: float(ovr) for a in RICH_ATTRS}
+        return Prospect(name=name, current=grades,
+                        potential=dict(grades)).engine_player()
+
+    def favourite_rate(gap, n=800):
+        fav, dog = flat(45 + gap, "fav"), flat(45, "dog")
+        wins = sum(simulate_fast(fav, dog, seed=4_000_000 + i,
+                                 fmt=jhsaa.MATCH_FORMAT, first_server=i % 2,
+                                 profile=HS_PROFILE).winner == 0
+                   for i in range(n))
+        return 100 * wins / n
+
+    # (gap, low, high) — the band's own range, with noise headroom.
+    for gap, lo, hi in ((0, 46, 56),      # dead level: a coin flip
+                        (6, 55, 68),      # peers, top edge
+                        (14, 66, 80),     # modest, top edge
+                        (21, 79, 91),     # clear, top edge
+                        (28, 89, 98)):    # strong, top edge
+        rate = favourite_rate(gap)
+        assert lo <= rate <= hi, f"{gap} OVR gap -> {rate:.1f}% (want {lo}-{hi}%)"
+
+    # major mismatches are decisive but never certain
+    assert 93 <= favourite_rate(40) <= 100
+
+
+def test_peer_band_is_identity_and_the_curve_is_monotone():
+    """The peer band must not touch the gap at all — that is what preserves
+    volatility between near-equals — and the curve must rise without a step at
+    any band edge (a discontinuity would make one OVR point worth a jump)."""
+    from engine.fast import band_gap, BAND_EDGES_OVR, GRADE_SPAN
+
+    for ovr in (0.0, 1.0, 3.0, 5.5, 6.0):
+        assert band_gap(ovr / GRADE_SPAN) == ovr / GRADE_SPAN
+
+    assert band_gap(-0.35) == -band_gap(0.35)          # sign-symmetric
+
+    prev = -1.0
+    for step in range(0, 601):                          # 0-60 OVR in 0.1 steps
+        v = band_gap(step / 10.0 / GRADE_SPAN)
+        assert v > prev or step == 0, step
+        prev = v
+    # continuous at every edge: approaching from below lands on the edge value
+    for edge in BAND_EDGES_OVR:
+        below = band_gap((edge - 1e-6) / GRADE_SPAN)
+        at = band_gap(edge / GRADE_SPAN)
+        assert abs(at - below) < 1e-6, edge
 
 
 def test_null_profile_is_byte_identical_for_college():

@@ -58,6 +58,7 @@ from engine.fast import HS_PROFILE
 from engine.format import PRESETS
 from . import injuries as _injuries
 from .development import Prospect, generate_prospect, make_pid, overall_to_str
+from .player_attributes import GRADE_CEIL, clamp_grade
 
 _DATA = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                      "data", "jhsaa", "schools.json")
@@ -1670,6 +1671,8 @@ def reset_schools() -> None:
     _name_era_cache.clear()
     _dev_era_cache.clear()
     _talent_era_cache.clear()
+    _career_era_cache.clear()
+    _expo_cache.clear()
     global _former_cache
     _former_cache = None
 
@@ -1713,15 +1716,32 @@ def _intl_weights() -> dict:
     return w
 
 
-def name_era() -> int:
-    """The first entry year that draws new-era names for this save (see above)."""
+def _resolve_era(setting: str, cache: dict) -> int:
+    """Shared resolver for the four era gates (`name_era`, `dev_era`,
+    `talent_era`, `career_era`). They all answer the same question — what is the
+    first entry year built the NEW way — and self-configure identically: an
+    explicit `worldconfig` value wins; otherwise a save with an archive sets the
+    era to the first cohort not yet in the building, and a fresh save gets 0, so
+    everything is new.
+
+    ‼️ `world_jhsaa.year` is the ZERO-BASED WORLD INDEX (the DB key) while an
+    entry year is a CALENDAR year — the conversion `world.jhsaa_season_year`
+    makes. Stored raw, an era would be e.g. 5 and EVERY existing cohort would
+    satisfy `entry >= era`, which is the archive-wide rewrite these gates exist
+    to prevent. The newest archive's season is BASE_YEAR + index + 1 and its
+    freshmen entered that year, so the first unseen cohort is +2.
+
+    ‼️ Memoised on the DB path and cleared by `reset_schools()`. Never resolve it
+    per seat: it opens a SQLite connection on a miss and a roster build would
+    touch it once per player (the fingerprint-in-a-loop trap,
+    docs/AAR-jhsaa-playup-fingerprint-query-storm.md)."""
     from .dbpath import resolve_db_path
     key = resolve_db_path()
-    got = _name_era_cache.get(key)
+    got = cache.get(key)
     if got is not None:
         return got
     from . import worldconfig
-    raw = worldconfig.get("jhsaa_name_era")
+    raw = worldconfig.get(setting)
     if raw is not None and str(raw).strip():
         era = int(raw)
     else:
@@ -1734,20 +1754,18 @@ def name_era() -> int:
             finally:
                 conn.close()
             if r and r[0] is not None:
-                # ‼️ `world_jhsaa.year` is the ZERO-BASED WORLD INDEX (the DB
-                # key), while `entry` in `_gen_seat` is a CALENDAR year — the
-                # same conversion `world.jhsaa_season_year` makes. Stored raw,
-                # the era would be e.g. 5 and every existing cohort would
-                # satisfy `entry >= era` — the archive-wide rename this gate
-                # exists to prevent. Season year of the newest archive is
-                # BASE_YEAR + index + 1; the first NEW cohort is one later.
                 from .world import BASE_YEAR
                 era = BASE_YEAR + int(r[0]) + 2
         except sqlite3.Error:
             era = 0                      # no archive yet — a fresh save, all new
-        worldconfig.set("jhsaa_name_era", str(era))
-    _name_era_cache[key] = era
+        worldconfig.set(setting, str(era))
+    cache[key] = era
     return era
+
+
+def name_era() -> int:
+    """The first entry year that draws new-era names for this save (see above)."""
+    return _resolve_era("jhsaa_name_era", _name_era_cache)
 
 
 # --- development era (owner rule 2026-08) — the name_era idiom, for the growth model
@@ -1762,37 +1780,9 @@ _dev_era_cache: dict = {}
 
 
 def dev_era() -> int:
-    """The first entry year that develops on the per-player curve model."""
-    from .dbpath import resolve_db_path
-    key = resolve_db_path()
-    got = _dev_era_cache.get(key)
-    if got is not None:
-        return got
-    from . import worldconfig
-    raw = worldconfig.get("jhsaa_dev_era")
-    if raw is not None and str(raw).strip():
-        era = int(raw)
-    else:
-        import sqlite3
-        era = 0
-        try:
-            conn = sqlite3.connect(key)
-            try:
-                r = conn.execute("SELECT MAX(year) FROM world_jhsaa").fetchone()
-            finally:
-                conn.close()
-            if r and r[0] is not None:
-                # Same conversion as name_era(): world_jhsaa.year is the
-                # ZERO-BASED WORLD INDEX; entry years are calendar years. The
-                # newest archive's season year is BASE_YEAR + index + 1, its
-                # freshmen entered THAT year, so the first new cohort is +2.
-                from .world import BASE_YEAR
-                era = BASE_YEAR + int(r[0]) + 2
-        except sqlite3.Error:
-            era = 0                      # no archive yet — a fresh save, all new
-        worldconfig.set("jhsaa_dev_era", str(era))
-    _dev_era_cache[key] = era
-    return era
+    """The first entry year that develops on the per-player curve model
+    (`_dev_maturity`). Superseded from `career_era()` on — see §22."""
+    return _resolve_era("jhsaa_dev_era", _dev_era_cache)
 
 
 _talent_era_cache: dict = {}
@@ -1800,40 +1790,208 @@ _talent_era_cache: dict = {}
 
 def talent_era() -> int:
     """The first entry year whose talent CEILINGS are compressed
-    (`development.compress_talent` — owner rule 2026-08). The `dev_era()` idiom
-    exactly, and for the same reason: players regenerate deterministically, so
-    an un-gated change to the talent draw silently rewrites every archived
-    roster's attributes. Pre-era cohorts keep their numbers byte-for-byte;
-    the association converges over one four-year graduating cycle."""
+    (`development.compress_talent` — owner rule 2026-08).
+
+    ‼️ BOUNDED ABOVE BY `career_era()`: the career model frees the high-school
+    scale (§24), so compression applies only to cohorts in the window BETWEEN
+    the two eras. `_gen_seat` owns that test — see `_compresses()`."""
+    return _resolve_era("jhsaa_talent_era", _talent_era_cache)
+
+
+def _compresses(entry: int) -> bool:
+    """Whether this cohort's ceilings are squashed. Compression existed to stop
+    high-school ceilings overrunning the COLLEGE scale; the career model separates
+    the two scales instead and translates at graduation, so it stops here."""
+    return talent_era() <= entry < career_era()
+
+
+_career_era_cache: dict = {}
+
+
+def career_era() -> int:
+    """The first entry year built on the CAREER model (starting ability / career
+    peak / yearly capacity — proposal §22), on a FREE high-school scale (§24).
+
+    The `dev_era()` / `talent_era()` idiom exactly, and for the same reason:
+    players are regenerated from seed, so an ungated change re-rates every
+    archived roster's ladder, player cards and awards. Pre-era cohorts keep the
+    maturity-curve model and the compressed ceilings byte-for-byte; the
+    association converges over one four-year graduating cycle."""
+    return _resolve_era("jhsaa_career_era", _career_era_cache)
+
+
+# --- THE CAREER MODEL (owner rule 2026-08, proposal §22-§24) ------------------
+#
+# Replaces "age reveals a fixed ceiling" outright. A player is four things drawn
+# once at entry, and grade only says which point of their own path to read:
+#
+#   STARTING ABILITY   where they are on day one
+#   CAREER PEAK        the best they could be DURING HIGH SCHOOL — not a debt the
+#                      engine owes them by senior year, and not an adult ceiling
+#   YEARLY CAPACITY    four independent draws: how much they can realise a year
+#   EXPOSURE           what they actually played, scaling realisation (not wired
+#                      yet — `exposure` defaults to full; proposal §7)
+#
+# ‼️ START IS A FRACTION OF PEAK, DRAWN GRADE-FREE. That is the whole break from
+# `_dev_maturity`: nothing here reads the grade to decide how much of a player is
+# visible, so a freshman may legitimately arrive at 61 with a peak of 63 while a
+# team-mate arrives at 38 with a peak of 64. Career shapes — ready, early,
+# steady, late, spike, stagnant, high-peak-never-realised — are EMERGENT from the
+# capacity draws and are never labelled or stored.
+#
+# ‼️ NEVER blend a peak-anchored start with an independent population draw and
+# clamp the result at peak. That clamp fires constantly for low-peak players,
+# silently sets start = peak, and manufactured a 26% "already finished" share and
+# 53% of players with no growth year in a first parameterisation — an artefact of
+# the clamp presented as a design outcome. Multiply a fraction instead; nothing
+# is clamped at generation.
+#
+# ‼️ THE SENIOR TAPER IS PRODUCED BY THE PEAK CLAMP, NOT BY ANY AGE RULE.
+# Capacity is drawn identically in all four years. Late years grow less only
+# because most players have already reached their peak and a big late draw has
+# nowhere to land — which is what the owner asked for ("breakouts are usually
+# sophomore and junior; senior year tends to be incremental"). `CAREER_OVERFLOW`
+# is therefore load-bearing in BOTH directions: at 0.0 peak is a hard wall, and
+# at 1.0 the taper disappears entirely and a senior year gains exactly as much as
+# a freshman year. Swept 0.00/0.15/0.30/0.50/1.00, the year-3-over-year-1 gain
+# ratio runs 0.62 / 0.69 / 0.75 / 0.82 / 1.00.
+CAREER_PEAK_BAND = (0.85, 1.10)     # career peak as a multiple of the drawn ceiling
+CAREER_START_BAND = (0.40, 0.95)    # starting ability as a share of career peak
+CAREER_BIG_RATE = 0.30              # chance a given year is a BIG development year
+CAREER_BIG_BAND = (7.0, 15.0)       # a big year, in OVR points
+CAREER_STEP_BAND = (0.0, 3.5)       # an ordinary year
+CAREER_OVERFLOW = 0.20              # share of a gain that lands PAST career peak
+
+
+def _career_plan(school_key: str, entry: int, seat: int, salt: str,
+                 ceiling: float) -> tuple[float, float, list[float]]:
+    """(starting ability, career peak, four yearly capacities) for one player.
+
+    Deterministic from the same identity the pid is built from, so the whole
+    four-year path is fixed at entry and each season just reads it off. Rolled on
+    its OWN rng stream (`jhsaa-career`), like the prodigy and dev rolls — never
+    off the main roster rng, which would shift every subsequent draw and
+    regenerate everyone."""
+    r = random.Random(f"{salt}|jhsaa-career|{school_key}|{entry}|{seat}")
+    peak = ceiling * r.uniform(*CAREER_PEAK_BAND)
+    start = peak * r.uniform(*CAREER_START_BAND)
+    caps = [r.uniform(*CAREER_BIG_BAND) if r.random() < CAREER_BIG_RATE
+            else r.uniform(*CAREER_STEP_BAND) for _ in range(4)]
+    return start, peak, caps
+
+
+def career_ability(school_key: str, entry: int, seat: int, grade: int,
+                   salt: str, ceiling: float,
+                   exposure: dict | None = None) -> float:
+    """This player's ability at `grade` under the career model.
+
+    `exposure` maps a GRADE to how much of that year's capacity the player
+    actually realised (1.0 = a full varsity season). Absent, every year realises
+    in full — the pre-odometer behaviour, and what a world with no archived
+    participation must read."""
+    start, peak, caps = _career_plan(school_key, entry, seat, salt, ceiling)
+    v = start
+    for i, g in enumerate(range(10, grade + 1)):
+        gain = caps[i] * ((exposure or {}).get(g - 1, 1.0))
+        if v >= peak:
+            gain *= CAREER_OVERFLOW
+        elif v + gain > peak:
+            gain = (peak - v) + (v + gain - peak) * CAREER_OVERFLOW
+        v += gain
+    return v
+
+
+# --- THE EXPOSURE ODOMETER (proposal §7 / §22.2) ------------------------------
+#
+# Playing contributes to development because participation is developmental
+# exposure — the system never cares whether the player WON (no wins, no records,
+# no TOSS, no opponent quality; §4.1). Appearances accumulate as varsity-
+# equivalent units (a JV dual is worth `EXPO_JV_UNIT` of a varsity one), the
+# total SATURATES at `EXPO_CAP`, and the season's realisation factor runs from
+# `EXPO_FLOOR` (never dressed — adolescence happens anyway) to 1.0 (a full
+# varsity season). Split-time players land between the levels with no category
+# of their own, and a JV No. 1 who plays every dual banks more than a JV player
+# who barely appears — the JV ladder matters (owner, 2026-08).
+#
+# On these constants a full ~16-dual JV season lands ≈0.81 and an 8-JV/6-varsity
+# split ≈0.87 — the proposal's illustrative 0.80 / 0.90 table, produced by one
+# continuous rule instead of five buckets.
+#
+# ‼️ A season with NO archive reads as FULL realisation, not as the floor. That
+# is what a fresh world's year 0, every pre-odometer season, and the calibration
+# scripts must see — the factor only ever applies where participation was
+# actually recorded. (`career_ability` treats a missing grade the same way.)
+EXPO_FLOOR = 0.55                 # realisation for a rostered kid who never dressed
+EXPO_JV_UNIT = 0.5                # a JV appearance, in varsity-equivalent units
+EXPO_CAP = 14.0                   # units at which a season counts as fully played
+
+_expo_cache: dict = {}
+_EXPO_MISS = object()
+
+
+def season_exposure(gender: str, season_year: int):
+    """{(school, name): appearance units} for one ARCHIVED season, or None when
+    that season has no archive (fresh world, pre-JHSAA years, tests).
+
+    One query per (save, gender, season) — memoised, because `build_roster`
+    resolves three of these per build and a season builds ~1,600 rosters (the
+    fingerprint-in-a-loop rule). Keyed by NAME because that is what the dual
+    archive carries (`_jh_line_records`' contract); varsity units come off the
+    `lines` a player actually dressed in, JV units off the JV rows' `played`
+    list. Archived rows are immutable once written, so the cache never needs
+    per-season invalidation — `reset_schools()` clears it out of habit."""
     from .dbpath import resolve_db_path
-    key = resolve_db_path()
-    got = _talent_era_cache.get(key)
-    if got is not None:
+    key = (resolve_db_path(), gender, season_year)
+    got = _expo_cache.get(key, _EXPO_MISS)
+    if got is not _EXPO_MISS:
         return got
-    from . import worldconfig
-    raw = worldconfig.get("jhsaa_talent_era")
-    if raw is not None and str(raw).strip():
-        era = int(raw)
-    else:
+    from .world import BASE_YEAR
+    idx = season_year - BASE_YEAR - 1          # calendar year -> archive index
+    units = None
+    if idx >= 0:
         import sqlite3
-        era = 0
+        rows = []
         try:
-            conn = sqlite3.connect(key)
+            conn = sqlite3.connect(key[0])
             try:
-                r = conn.execute("SELECT MAX(year) FROM world_jhsaa").fetchone()
+                rows = conn.execute(
+                    "SELECT school, home, lines, level, played"
+                    " FROM world_jhsaa_dual WHERE year=? AND gender=?",
+                    (idx, gender)).fetchall()
+            except sqlite3.Error:
+                rows = []                      # table not created yet — no archive
             finally:
                 conn.close()
-            if r and r[0] is not None:
-                # world_jhsaa.year is the ZERO-BASED WORLD INDEX; entry years
-                # are calendar. Newest archive's season = BASE_YEAR + index + 1,
-                # its freshmen entered that year, so the first new cohort is +2.
-                from .world import BASE_YEAR
-                era = BASE_YEAR + int(r[0]) + 2
         except sqlite3.Error:
-            era = 0                      # no archive yet — a fresh save, all new
-        worldconfig.set("jhsaa_talent_era", str(era))
-    _talent_era_cache[key] = era
-    return era
+            rows = []
+        if rows:
+            units = {}
+            for school, home, lines, level, played in rows:
+                if (level or "v") == "v":
+                    side = "home" if home else "away"
+                    dressed: set = set()
+                    for ln in json.loads(lines or "[]"):
+                        dressed.update(ln.get(side) or ())
+                    for nm in dressed:         # one unit per DUAL, not per line
+                        k = (school, nm)
+                        units[k] = units.get(k, 0.0) + 1.0
+                else:
+                    for nm in json.loads(played or "[]"):
+                        k = (school, nm)
+                        units[k] = units.get(k, 0.0) + EXPO_JV_UNIT
+    if len(_expo_cache) > 12:                  # a handful of seasons at a time
+        _expo_cache.pop(next(iter(_expo_cache)))
+    _expo_cache[key] = units
+    return units
+
+
+def _expo_factor(units_map, school_name: str, name: str) -> float | None:
+    """One season's realisation factor for one player, or None for full
+    realisation (the season was never archived)."""
+    if units_map is None:
+        return None
+    u = units_map.get((school_name, name), 0.0)
+    return EXPO_FLOOR + (1.0 - EXPO_FLOOR) * min(1.0, u / EXPO_CAP)
 
 
 #: Playing up is a SMALL-SCHOOL mechanism (owner correction 2027-08): eligible at this
@@ -2867,14 +3025,19 @@ def districts(gender: str, group: str) -> dict[str, list[School]]:
 # --- rosters -----------------------------------------------------------------
 
 def _ceiling(rng: random.Random, group: str, gender: str,
-             mod: dict | None = None) -> float:
+             mod: dict | None = None, cap: float = 80.0) -> float:
     """A player's CEILING, drawn independently per player. The ladder is not assigned —
     it emerges from who is actually best, so a great freshman can play number one over a
     senior, which is how high school works.
 
     `mod` is the program-level modifier (`_program_mod`) applied ON TOP of the
     classification band — it shifts and scales that band, it never replaces it, so a
-    blue-blood 3A-1A remains a strong SMALL-SCHOOL program."""
+    blue-blood 3A-1A remains a strong SMALL-SCHOOL program.
+
+    `cap` is the top of the scale this cohort is drawn on. It is 80 (the college
+    reference) for pre-`career_era` cohorts and `GRADE_CEIL` for the free
+    high-school scale — see §24: high school stops being held down to fit a
+    scale it does not play on, and graduation translates instead."""
     mean, spread = _TALENT[(group, gender)]
     if mod:
         mean += mod.get("mean", 0.0)
@@ -2885,11 +3048,46 @@ def _ceiling(rng: random.Random, group: str, gender: str,
         # lifts the top of a roster far more than the bottom, which is what a programme
         # with the courts and the feeder network actually produces.
         draw = max(draw, rng.gauss(mean, spread))
-    return max(GRADE_FLOOR, min(80.0, draw))
+    return max(GRADE_FLOOR, min(cap, draw))
+
+
+def _apply_career(p: Prospect, school_key: str, entry: int, seat: int,
+                  grade: int, salt: str, exposure: dict | None = None) -> Prospect:
+    """Set a career-era player's CURRENT ability from their career plan.
+
+    The prospect arrives generated AT its ceiling (maturity 1.0), so this scales
+    every attribute by one factor — `overall` is a weighted mean, so scaling all
+    attributes scales it exactly, and the play-style SHAPE survives untouched.
+
+    ‼️ The ceiling is summed from `p.potential` DIRECTLY, never via
+    `p.ceiling_overall()`, which constructs a whole `PlayerAttributes` per call.
+    This runs once per generated player and a season builds ~1,600 rosters — the
+    same cost-class trap `trim_prospect_ceiling` documents.
+    """
+    from .player_attributes import OVERALL_WEIGHTS, _WEIGHT_TOTAL
+    ceiling = sum(OVERALL_WEIGHTS[a] * v
+                  for a, v in p.potential.items()) / _WEIGHT_TOTAL
+    if ceiling <= 0:
+        return p
+    target = career_ability(school_key, entry, seat, grade, salt, ceiling,
+                            exposure)
+    factor = target / ceiling
+    for a, ceil_v in p.potential.items():
+        p.current[a] = clamp_grade(ceil_v * factor)
+    # A career peak may sit ABOVE the drawn ceiling (`CAREER_PEAK_BAND` tops out
+    # at 1.10) and overflow may carry a player past it, so `factor` can exceed 1.
+    # Keep the displayed ceiling at or above the displayed ability — a player
+    # card reading POT below OVR is a presentation bug, not a design statement.
+    if factor > 1.0:
+        for a, cur_v in p.current.items():
+            if p.potential[a] < cur_v:
+                p.potential[a] = cur_v
+    p.recruit_stars = p.star_rating()
+    return p
 
 
 def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
-              salt: str) -> Prospect:
+              salt: str, expo_years: dict | None = None) -> Prospect:
     """One seat's Prospect — pulled out of `build_roster` so a TRANSFER (see
     below) can regenerate the exact same person under the school they actually
     play for now, from the ORIGIN school's identity/program modifiers. `pid`
@@ -2946,9 +3144,17 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
     # shift, elite roll, academics, hometown path) and consumes the rng differently,
     # so passing the exchange student's country would shift every attribute roll.
     # The name era must move NAMES ONLY — the flag is stamped on afterwards.
-    talent = min(80.0, _ceiling(rng, school.talent_group, school.gender, mod)
-                 + mod.get("pot", 0.0))
-    compress = entry >= talent_era()
+    # ‼️ THE FREE HIGH-SCHOOL SCALE (§24). From `career_era()` on, ceilings are
+    # drawn on the JHSAA's own scale (`GRADE_CEIL`) rather than being held under
+    # the college NORMALISATION reference of 80. High school is the top level
+    # this association plays at; `jhsaa.apply_to_class` translates at graduation
+    # by RANK, and never carries a high-school grade into the college game, so
+    # nothing downstream reads these numbers on the college scale.
+    free = entry >= career_era()
+    cap = float(GRADE_CEIL) if free else 80.0
+    talent = min(cap, _ceiling(rng, school.talent_group, school.gender, mod,
+                               cap=cap) + mod.get("pot", 0.0))
+    compress = _compresses(entry)
     elite_key = ("jhsaa-elite", school.ident, school.gender, entry, seat)
     if compress:
         # Ceiling compression (owner rule 2026-08) — a TRANSFORM on the value
@@ -2959,12 +3165,33 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
         talent = compress_talent(talent, sex, key=elite_key)
     p = generate_prospect(rng, nm, "US", gender=sex,
                           talent=talent,
-                          maturity_range=maturity,
+                          # ‼️ The career model derives current ability itself,
+                          # so it generates AT the ceiling and scales down after
+                          # (`_apply_career`). A degenerate band still consumes
+                          # exactly ONE uniform draw, so the main rng stream is
+                          # identical either side of the era.
+                          maturity_range=(1.0, 1.0) if free else maturity,
                           # `ident`, never `name` — a pid has to survive a
                           # rename or every archived award points at nobody.
                           pid=make_pid("jhsaa", school.ident, school.gender,
-                                       entry, seat))
-    if compress:
+                                       entry, seat),
+                          ceiling_max=cap)
+    if free:
+        # The odometer: each PRIOR grade's realisation factor, looked up in that
+        # season's archive by (school, name) — the name exists only now, which
+        # is why this cannot live in `build_roster`. A grade whose season has no
+        # archive is simply absent, and `career_ability` reads absent as full.
+        exposure = None
+        if expo_years:
+            exposure = {}
+            for pg in range(9, grade):
+                f = _expo_factor(expo_years.get(entry + (pg - 9)),
+                                 school.name, p.name)
+                if f is not None:
+                    exposure[pg] = f
+        _apply_career(p, school.key, entry, seat, grade, salt,
+                      exposure or None)
+    elif compress:
         # The guarantee half: attribute noise lifts displayed ceilings past the
         # squashed centre, so the visible number is trimmed after generation.
         from .development import trim_prospect_ceiling
@@ -3027,6 +3254,14 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     # -query-storm.md`). A season builds 1,600+ rosters; per-seat would multiply that
     # by every seat on every one of them.
     tmap = transfers()
+    # The three seasons a four-grade roster can have already played, resolved
+    # ONCE per build and threaded down (never per seat — the query-storm rule).
+    # ‼️ Deliberately NOT passed to the transfer paths below: a mover's prior
+    # seasons are archived under the school they actually played at, so a
+    # (this-school, name) lookup would misread their played years as sitting.
+    # Transfers are rare owner-authored overrides; they realise in full.
+    expo_years = {y: season_exposure(school.gender, y)
+                  for y in (year - 1, year - 2, year - 3)}
     out = []
     fresh9_seats = 0
     for grade in GRADES:
@@ -3035,7 +3270,7 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
         if grade == 9:
             fresh9_seats = n_seats
         for seat in range(n_seats):
-            p = _gen_seat(school, mod, entry, seat, grade, salt)
+            p = _gen_seat(school, mod, entry, seat, grade, salt, expo_years)
             rec = tmap.get(p.pid)
             # Somewhere else THIS season — `transfer_school` walks every recorded
             # move and returns where they actually are, so a player who moved away
@@ -3049,7 +3284,7 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     # collides with the seats `_freshman_class_size` already rolled for it.
     if len(out) < ROSTER_FLOOR:
         for seat in range(fresh9_seats, fresh9_seats + (ROSTER_FLOOR - len(out))):
-            out.append(_gen_seat(school, mod, year, seat, 9, salt))
+            out.append(_gen_seat(school, mod, year, seat, 9, salt, expo_years))
     # Incoming: every transfer whose DESTINATION is this school AND this gender,
     # effective by now. School names are shared across a boys' and a girls' program
     # (the display identity is per-team, not per-school), so the name match alone
@@ -7028,7 +7263,23 @@ def graduating_class(gender: str, year: int, *, seed: int = 0, salt: str = "",
     # best first: team strength then ladder position — a #1 at a strong 7A program
     # outranks a #1 at a thin 3A one, which is the whole point of classifications.
     grads.sort(key=lambda p: -p.current_overall())
+    _stamp_graduation(grads)
     return grads[:limit] if limit else grads
+
+
+def _stamp_graduation(grads: list[Prospect]) -> None:
+    """‼️ THE GRADUATION RECORD (proposal §24.3). The high-school scale is free
+    and the college hand-off translates by RANK (`apply_to_class`), so the exit
+    rating and the percentile it earned are stamped here — over the WHOLE
+    graduating class, before any `limit`, because a percentile is a function of
+    the population and re-deriving it later would only match by chance (the
+    archived-TOSS rule). The player stays a 96-rated Jefferson monster on the
+    record while college receives a properly scaled recruit. `grads` must
+    already be sorted best-first."""
+    n = len(grads)
+    for i, p in enumerate(grads):
+        p.jhsaa["hs_exit_ovr"] = p.current_overall()
+        p.jhsaa["hs_percentile"] = round(100.0 * (n - i) / n, 1)
 
 
 def apply_to_class(klass, gender: str, grad_year: int, salt: str) -> int:
@@ -7062,7 +7313,13 @@ def apply_to_class(klass, gender: str, grad_year: int, salt: str) -> int:
         slot.name = grad.name
         slot.hometown = grad.hometown
         slot.high_school = grad.high_school
-        slot.jhsaa = grad.jhsaa          # a real Prospect field, so it survives signing
+        # A real Prospect field, so it survives signing — carrying the §24.3
+        # translation record whole: `hs_exit_ovr`/`hs_percentile` were stamped
+        # on the FREE scale at graduation, and `college_entry_ovr` is what the
+        # rank-match hands the college game. The rank-match IS the translator
+        # (percentile-primary by construction — the best Jefferson senior takes
+        # the best Jefferson slot), so no second mapping exists to version.
+        slot.jhsaa = {**grad.jhsaa, "college_entry_ovr": slot.current_overall()}
     return min(len(slots), len(grads))
 
 

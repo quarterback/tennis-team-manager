@@ -611,12 +611,15 @@ def _result(state: _DState, teams, fidelity: str,
 # --- Fast (bulk) model -----------------------------------------------------
 
 def _fast_gap(state: _DState, s: int, r: int) -> float:
-    """The hinged rating gap side `s` plays on against side `r`. A profile
-    (engine.fast.HS_PROFILE's `d_*` keys) brings its own knee/accel; None
-    keeps the college hinge — byte-identical to the pre-profile model."""
+    """The rating gap side `s` plays on against side `r`. A profile
+    (engine.fast.HS_PROFILE's `d_*` keys) brings its own curve — the HS profile
+    the banded one (`gap_bands`), so singles and doubles read an OVR gap the
+    same way; None keeps the college hinge, byte-identical to the pre-profile
+    model."""
     pr = state.profile or {}
     gap = state.teams[s].rating - state.teams[r].rating
-    return effective_gap(gap, pr.get("gap_knee"), pr.get("gap_accel"))
+    return effective_gap(gap, pr.get("gap_knee"), pr.get("gap_accel"),
+                         pr.get("gap_bands", False))
 
 
 def _fast_hold(state: _DState) -> float:
