@@ -924,15 +924,29 @@ _TALENT = {
 # demote programs as Jefferson's history develops.
 #
 #   blue_blood   generates better, and CLUSTERS — several strong players in one roster
-#   development  generates normal CURRENT ability but high POTENTIAL, and develops it
-#                faster, so the effect shows over a four-year career rather than on
-#                arrival
-#   doubles      generates normally; the edge is in DOUBLES ONLY, as a per-match boost
-#   neglect      generates normal CEILING but develops it SLOWER — a governor on the
-#                same mechanism `development` accelerates, run in reverse; see
-#                `neglect_severity()`
+#   coaching     generates NOTHING extra: same ceiling, same arrival, same spread. The
+#                only edge is that its players are likelier to REACH the ceiling they
+#                already had — the exact mirror of `neglect`; see `coaching_quality()`
+#   neglect      generates normal CEILING but develops it SLOWER — the same governor,
+#                run in reverse; see `neglect_severity()`
 #   upstart      a TEMPORARY multi-year run, rolled per world — see `upstarts()`
 #   (untagged)   normal
+#
+# ‼️ RETIRED, AND KEPT ONLY SO EXISTING TAGS STILL RESOLVE (owner, 2026-08): both
+# `development` and `doubles` DISTORTED THE FIELD and the owner stopped using them.
+# They are out of `EDITABLE_ARCHETYPES`, so nothing can be newly tagged with either,
+# and the seed file ships with no program carrying one — but the rows stay, because
+# `_program_mod` reads this table by name and a save that still holds one of these as
+# a per-save override must keep generating the roster it has been generating rather
+# than silently reverting to untagged.
+#
+#   development  RETIRED — it raised POTENTIAL (`pot` +6.0) and widened the spread on
+#                top of accelerating maturity, so it did expand what a player could
+#                become. `coaching` is its replacement and deliberately does neither:
+#                "it doesn't expand a player's skillset, just makes them potentially
+#                more likely to reach [their ceiling]" (owner).
+#   doubles      RETIRED — a per-match lift on the doubles lineup alone, which moved
+#                too much of a dual for a program trait nothing else could see.
 #
 # `mean` shifts the classification band's centre; `spread` scales its width; `pot` is a
 # ceiling-only bonus (potential without present ability); `mature` accelerates how much
@@ -952,9 +966,29 @@ ARCHETYPES = {
     # compounds by grade, so this program's ninth-graders look ordinary and its seniors
     # are the best in the association. Arrive good vs leave great.
     "development": {"mean":  0.0, "spread": 1.05, "pot": +6.0, "mature": 0.038,
-                    "label": "Development program"},
+                    "label": "Development program (retired)"},
     "doubles":     {"mean":  0.0, "spread": 1.00, "pot": 0.0, "mature": 0.00,
-                    "label": "Doubles school"},
+                    "label": "Doubles school (retired)"},
+    # ⚠️ COACHING (owner rule 2026-08) — good coaching, and NOTHING ELSE. It is the
+    # replacement for the retired `development`, and the whole point of the rewrite is
+    # what it does NOT do: "it doesn't expand a player's skillset, just makes them
+    # potentially more likely to reach" their ceiling. So `mean`, `spread` and `pot`
+    # are all untouched — a well-coached program draws exactly the same players, with
+    # exactly the same ceilings and the same variance, as an untagged one. Only the
+    # RATE at which a player closes on the ceiling they already had moves, which is
+    # the same `mature` governor `neglect` runs negative.
+    #
+    # ‼️ AND IT CANNOT OVERSHOOT, which is what makes "more likely to REACH" literally
+    # true rather than a description of something stronger. `_gen_seat` clamps the
+    # result to `DEV_CAP` (0.98), so the lift saturates against the ceiling: a player
+    # already finishing near it gains almost nothing, and the ones it actually moves
+    # are those who would otherwise have left high school well short of what they had.
+    # A coaching program cannot make anybody better than they could have been.
+    #
+    # Like `neglect`, the real per-school number is drawn by `coaching_quality()` and
+    # this row's `mature` is a 0.0 placeholder.
+    "coaching":    {"mean":  0.0, "spread": 1.00, "pot": 0.0, "mature": 0.00,
+                    "label": "Well-coached program"},
     # ⚠️ NEGLECT (owner rule 2026-08) — bad coaching, bad facilities, a program that
     # wastes what its players walk in with. "Doesn't mean players won't get what they
     # get normally, it just dampens it" (owner) is the exact spec: CEILING is left
@@ -1011,6 +1045,35 @@ DOUBLES_BOOST = (5.0, 11.0)
 # the tagged population, which is also what makes it usable as an A/B surface: compare
 # development outcomes against the DRAWN severity, not just against a tag.
 NEGLECT_MATURE = (-0.030, -0.012)
+
+
+# COACHING — the positive half of the same per-grade maturity governor, and
+# deliberately the MIRROR of `NEGLECT_MATURE` rather than a bigger number in the other
+# direction. Symmetry is the point: the association's good programs and its bad ones
+# pull on one lever by the same amount, so the field's overall level does not drift
+# just because more schools carry one tag than the other.
+#
+# ‼️ IT IS A RANGE FOR THE REASON NEGLECT'S IS: "I want to be able to constrain some
+# programs partially" applies just as much to praising them. One constant would make
+# good coaching a binary switch, and every tagged program's seniors would close on
+# their ceilings at exactly the same rate — which is not what a coaching staff is.
+#
+# ‼️ IT MUST STAY WELL UNDER `DEV_MIN_STEP` (0.045) for the mirror of neglect's reason:
+# the step is added once per grade elapsed, so at the top of this band a senior carries
+# +0.09 maturity. Against `DEV_CAP` (0.98) that is a real but bounded push toward the
+# ceiling — the cap is what stops it becoming a talent bonus by another route, and the
+# constant must never grow to where the cap is doing all the work.
+COACHING_MATURE = (0.012, 0.030)
+
+
+def coaching_quality(school_name: str, salt: str = "") -> float:
+    """This program's stable per-grade maturity BONUS — positive, drawn once from
+    `COACHING_MATURE` and durable for as long as the school is tagged `coaching`.
+
+    Seeded on the school alone, never the year or the player: a coaching staff and a
+    development culture are durable program traits, so this must not reshuffle on
+    read or drift season to season. The exact `neglect_severity` idiom, one sign over."""
+    return random.Random(f"{salt}|jhsaa-coaching|{school_name}").uniform(*COACHING_MATURE)
 
 
 def neglect_severity(school_name: str, salt: str = "") -> float:
@@ -1162,6 +1225,10 @@ def _program_mod(school: School, year: int, salt: str) -> dict:
         # number lives here, same reason `upstart`'s lift is layered on below rather
         # than read off the table.
         mod["mature"] += neglect_severity(school.name, salt)
+    elif kind == "coaching":
+        # The same governor, the other sign. Nothing else about the program's draw
+        # moves — that is the whole distinction from the retired `development`.
+        mod["mature"] += coaching_quality(school.name, salt)
     lift = upstarts(year, salt).get(school.name)
     if lift:
         # A percentage of the program's OWN baseline, so an upstart 1A is a strong 1A.
@@ -2672,7 +2739,13 @@ def _build_reserve_cohorts(gender: str, year: int, salt: str,
 #: The archetypes an owner can ASSIGN. `upstart` is deliberately absent: it is a
 #: temporary run the world rolls from the salt and expires by itself, and storing one
 #: would make it permanent — the one thing an upstart must never be.
-EDITABLE_ARCHETYPES = ("blue_blood", "development", "doubles", "neglect")
+#: What the editor may ASSIGN. ‼️ `development` and `doubles` are deliberately absent
+#: (owner, 2026-08): both distorted the field and are retired, `coaching` replaces the
+#: first, and nothing replaces the second. Their rows stay in `ARCHETYPES` so a save
+#: still holding one as an override keeps generating the roster it has — this list is
+#: what can be newly applied, not what can be read. `upstart` is excluded for its own
+#: older reason: it is a rolled, expiring run, and storing one would make it permanent.
+EDITABLE_ARCHETYPES = ("blue_blood", "coaching", "neglect")
 
 
 def archetype_board() -> dict:
@@ -3372,14 +3445,19 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
 
 
 def _squad(ts: TeamSeason, phase: str, lineup: list | None = None,
-           fmt: DualFormat | None = None) -> Team:
+           fmt: DualFormat | None = None, lift: float = 0.0) -> Team:
     """Dress `lineup` (or the current best nine) for `phase`. Singles take the top;
     doubles is its OWN roster below them (`Team.doubles_players`), so the state
     format's four doubles pairs are eight different players rather than the singles
     re-permuted.
 
     `fmt` overrides the phase's shape — the JV season plays one of `JV_FORMATS`, which
-    is sized per dual rather than per phase, so it cannot be looked up from `phase`."""
+    is sized per dual rather than per phase, so it cannot be looked up from `phase`.
+
+    `lift` is a per-dual grade bonus applied to EVERY player dressed — home court, and
+    nothing else uses it. It is a parameter rather than something read in here because
+    only the caller knows which side is at home: `_squad` is handed one team and has no
+    opponent to be at home against."""
     f = fmt or dual_format(phase, ts.school.group)
     r = lineup if lineup is not None else _order(ts)[:lineup_need(phase, ts.school.group)]
     if not r:
@@ -3387,17 +3465,78 @@ def _squad(ts: TeamSeason, phase: str, lineup: list | None = None,
     def at(i):
         return r[i % len(r)]                       # degrade, never crash, on a short side
     # Prospect -> engine Player, the same conversion ncaa.squad_and_ladder uses.
-    singles = [at(i).engine_player() for i in range(f.n_singles)]
-    dbl = [at(f.n_singles + i).engine_player() for i in range(2 * f.n_doubles)]
+    singles = [_lifted(at(i), lift) for i in range(f.n_singles)]
+    dbl = [_lifted(at(f.n_singles + i), lift) for i in range(2 * f.n_doubles)]
     if archetype(ts.school.name) == "doubles":
-        dbl = [_doubles_lift(at(f.n_singles + i), ts.school.name, i)
+        # RETIRED and unassignable; still honoured for a save that holds the tag.
+        dbl = [_doubles_lift(at(f.n_singles + i), ts.school.name, i, lift)
                for i in range(2 * f.n_doubles)]
     return Team(name=ts.school.name, singles=singles,
                 doubles=[(2 * i, 2 * i + 1) for i in range(f.n_doubles)],
                 doubles_players=dbl)
 
 
-def _doubles_lift(prospect, school: str, seat: int):
+# --- HOME COURT (owner rule 2026-08) -----------------------------------------
+#
+# A small one-time lift for the host, rolled per DUAL rather than per player: "a
+# one-time boost to the home team, not exceeding n but it can roll anywhere from 1 to
+# n". So every player the home side dresses gets the SAME number that day — a home
+# court is a property of the afternoon, not of an individual — and the number varies
+# dual to dual, which is what keeps it from reading as a flat handicap the standings
+# could be corrected for.
+#
+# On the 20-80 grade scale, the same scale the retired `DOUBLES_BOOST` used. Small
+# against that: the classification bands are ~4-8 points apart at the top, so the
+# strongest roll here is worth less than one classification step and the weakest is
+# nearly nothing.
+HOME_COURT = (1.0, 4.0)
+
+#: ‼️ NOT EVERY DUAL HAS A HOST. A neutral-site event has no home team, and handing
+#: one side a lift because the archive happens to store it first would invent an
+#: advantage nobody has — worst of all in the two rounds that decide the association's
+#: championships. The showcases are multi-team weekends at one venue; State and the
+#: TOC are central-site championships. Everything else — the league season, the
+#: invitationals, and the whole road to State — IS hosted (the association's own rules
+#: say so: the Specials' winner hosts, the Challengers' holder hosts), so those keep
+#: the advantage a real host has.
+NEUTRAL_PHASES = frozenset(SHOWCASE) | {"state", "toc"}
+
+
+def home_court(seed: int, phase: str = "regular") -> float:
+    """The host's lift for ONE dual, in 20-80 grade points — 0.0 where nobody is home.
+
+    Rolled off the DUAL'S OWN SEED, so it is part of the same deterministic stream as
+    the result it shades: replaying a season reproduces the same afternoon, and a
+    stored dual can be re-derived. Its own `random.Random` rather than a draw off the
+    caller's, for the reason every other side-roll in this module has one — consuming
+    from the shared stream would shift every match seed after it and re-simulate the
+    whole association."""
+    if phase in NEUTRAL_PHASES:
+        return 0.0
+    return random.Random(f"{seed}|jhsaa-home").uniform(*HOME_COURT)
+
+
+def _lifted(prospect, lift: float):
+    """`prospect` as an engine player, with `lift` added to every current grade.
+
+    ‼️ THE LIFT LANDS ON A COPY, NEVER THE PROSPECT. `build_roster` caches Prospects
+    globally and shares them across saves, so mutating one would make an afternoon's
+    home advantage permanent and leak it into every other league reading the same
+    object. The retired `_doubles_lift` learned this first; it is the rule for any
+    per-match modifier here.
+
+    A zero lift returns the player untouched — not a copy of them — so the away side
+    and every neutral-site dual take exactly the code path they took before home
+    court existed."""
+    if not lift:
+        return prospect.engine_player()
+    import copy
+    clone = copy.copy(prospect)
+    clone.current = {a: min(80.0, v + lift) for a, v in prospect.current.items()}
+    return clone.engine_player()
+
+
+def _doubles_lift(prospect, school: str, seat: int, extra: float = 0.0):
     """A doubles-school player, lifted on the 20-80 GRADE scale for this match only.
 
     A doubles program generates normally — the roster is not better, the doubles is. So
@@ -3415,7 +3554,10 @@ def _doubles_lift(prospect, school: str, seat: int):
     import copy
     lo, hi = DOUBLES_BOOST
     rng = random.Random(f"{school}|dbl|{prospect.pid}|{seat}")
-    lift = rng.uniform(lo, hi)
+    # `extra` is the home-court lift, which applies to everyone the host dresses —
+    # it is added here rather than in a second copy so a doubles player at home is
+    # lifted once, by the sum, instead of being cloned twice.
+    lift = rng.uniform(lo, hi) + extra
     clone = copy.copy(prospect)
     clone.current = {a: min(80.0, v + lift) for a, v in prospect.current.items()}
     return clone.engine_player()
@@ -4054,7 +4196,11 @@ def play_jv_dual(a: JVTeam, b: JVTeam, *, seed: int, phase: str = "regular",
     need = jv_lineup_need(fmt)
     la, lb = jv_pool(a.team)[:need], jv_pool(b.team)[:need]
     mf = match_format(phase)
-    res = simulate_dual(_squad(a.team, phase, la, fmt), _squad(b.team, phase, lb, fmt),
+    # The JV season is hosted like the varsity one — its own league round robin and
+    # invitationals have a home side — so it takes the same lift. Its one showcase is
+    # a `showcase_pod`, which `home_court` already reads as neutral.
+    res = simulate_dual(_squad(a.team, phase, la, fmt, lift=home_court(seed, phase)),
+                        _squad(b.team, phase, lb, fmt),
                         seed=seed, play_all=True, fidelity=FIDELITY, dual_fmt=fmt,
                         singles_fmt=mf, doubles_fmt=mf, profile=HS_PROFILE)
     out = jv_outcome(res)
@@ -4162,7 +4308,10 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     # `a`/`b` share a classification in every postseason pairing (a bracket never
     # crosses groups), so either side's group is the right one to resolve the
     # shape from — see `dual_format`'s 1A-pilot branch.
-    res = simulate_dual(_squad(a, phase, la), _squad(b, phase, lb), seed=seed,
+    # `a` is the home side by construction (it is `a` whose schedule row says so a few
+    # lines down), so the host's lift goes on `a` and nothing goes on `b`.
+    res = simulate_dual(_squad(a, phase, la, lift=home_court(seed, phase)),
+                        _squad(b, phase, lb), seed=seed,
                         play_all=True, fidelity=FIDELITY,
                         dual_fmt=dual_format(phase, a.school.group),
                         singles_fmt=fmt, doubles_fmt=fmt, profile=HS_PROFILE)

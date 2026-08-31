@@ -1920,6 +1920,25 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   the #1→#9 drop RISES as schools shrink. Real high-school tennis routinely puts the
   smallest classification in a state top ten (Oregon 2026 boys: Oregon Episcopal No. 9,
   four of the top eight 5A). Pinned by `tests/test_jhsaa_talent_shape.py`.
+- **‼️ HOME COURT — a small one-time lift for the host (owner rule 2026-08,
+  `jhsaa.home_court`).** `HOME_COURT` (1.0-4.0 on the 20-80 grade scale) is rolled
+  ONCE PER DUAL off that dual's own seed and applied to every player the home side
+  dresses — "a one-time boost to the home team, not exceeding n but it can roll
+  anywhere from 1 to n". Per DUAL, not per player: a home court is a property of the
+  afternoon. Measured on real rosters: home win rate **49.8% → 56.8%** overall,
+  **57.6%** between evenly-matched teams, ~10% of duals flipped. `HOME_COURT` is the
+  only knob; re-measure with a sweep before moving it.
+  - **‼️ NOT EVERY DUAL HAS A HOST.** `NEUTRAL_PHASES` (the two showcases, `state`,
+    `toc`) roll 0.0 — a multi-team weekend at one venue and a central-site
+    championship have no home team, and handing one side a lift because the archive
+    stores it first would invent an advantage nobody has, worst of all in the rounds
+    that decide the association's titles. Everything else IS hosted, the road to
+    State included (the association's own rules say the Specials' winner hosts and
+    the Challengers' holder hosts).
+  - **The lift lands on a COPY** (`_lifted`), never the Prospect — `build_roster`
+    caches Prospects globally and shares them across saves. A zero lift returns the
+    player untouched, so the away side and every neutral dual take exactly the path
+    they took before this existed.
 - **‼️ PROGRAM ARCHETYPES are a SCHOOL-level modifier on top of that (owner rule 2027-08,
   `jhsaa.ARCHETYPES`).** Durable program conditions — facilities, feeder networks,
   community participation, coaching tradition, reputation — NOT current strength, and
@@ -1932,17 +1951,28 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     shift). It shows on day one — ninth-graders in the low 30s where an ordinary
     program's are mid-20s — and it beats a development program ON BALANCE. That is what
     makes it a blue blood.
-  - **development** has ORDINARY freshmen and the best seniors in the association:
-    `mean` is 0, the gain is potential plus a maturity bonus that starts at ZERO for
-    ninth-graders (`(grade - 9)`) and compounds. It CAN beat a blue blood outright — that
-    is the point, it levels a field facilities tilt — but it earns it over four years.
-    Arrive good vs leave great.
-  - **doubles** generates completely normally; the edge is an EPHEMERAL per-match lift
-    (+5..+11 on the 20-80 grade scale) applied to a COPY on the way into the engine —
-    `build_roster` caches Prospects globally and shares them across saves. It lands only
-    on `Team.doubles_players`, the separate doubles lineup `_squad` already builds, so it
-    is structurally incapable of reaching a singles court. (Nothing existed to reuse:
-    `coaches.development_multiplier` is a growth RATE at the rollover, a different thing.)
+  - **‼️ `development` and `doubles` are RETIRED (owner, 2026-08): they DISTORTED THE
+    FIELD and the owner stopped using them.** Both are out of `EDITABLE_ARCHETYPES`, so
+    nothing can be newly tagged with either, and the seed file ships with no program
+    carrying one — but **their rows stay in `ARCHETYPES`**, because `_program_mod` reads
+    that table by name and a save still holding one as a per-save override must keep
+    generating the roster it has rather than silently reverting to untagged. Do not
+    delete the rows and do not re-offer them in the editor.
+  - **coaching** is `development`'s REPLACEMENT and is defined by what it does NOT do
+    (owner: "it doesn't expand a player's skillset, just makes them potentially more
+    likely to reach" their ceiling). `mean`, `spread` and `pot` are ALL untouched — a
+    well-coached program draws the same players, the same ceilings and the same variance
+    as an untagged one; only the RATE a player closes on the ceiling they already had
+    moves. It is the exact MIRROR of `neglect` — the same `mature` governor, one sign
+    over, and deliberately the same magnitude (`COACHING_MATURE` +0.012..+0.030 against
+    `NEGLECT_MATURE` -0.030..-0.012) so the association's level does not drift with the
+    ratio of good tags to bad. A RANGE, not a constant, for neglect's own reason, drawn
+    per school by `coaching_quality()`. ‼️ **It cannot overshoot**: `_gen_seat` clamps to
+    `DEV_CAP` (0.98), so the lift saturates against the ceiling — a player already
+    finishing near it gains almost nothing, and coaching can never make anybody better
+    than they could have been. Measured: freshmen **identical** (the step is
+    `mature × (grade - 9)`, zero at 9), seniors **+3.2 OVR**, ceilings byte-identical at
+    every grade.
   - **upstart** is a TEMPORARY multi-year run (~10 live statewide, 15–30% over the
     program's OWN baseline, so an upstart 1A is a strong 1A), rolled per world from the
     salt and expiring by itself — deliberately NOT storable, since a stored tag would make
