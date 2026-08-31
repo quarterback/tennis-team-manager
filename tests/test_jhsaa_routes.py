@@ -43,6 +43,10 @@ ROUTES = [
     "/jhsaa/individuals?flight=JVS",
     "/jhsaa/individuals?flight=JVD&g=boys",
     "/jhsaa/individual-champions",
+    # A district's JV qualifying bracket — the only way into one, and it must
+    # render its empty state rather than raise with nothing archived.
+    "/jhsaa/district-jv/9A/Halbrook%20Basin%20District",
+    "/jhsaa/district-jv/9A/Halbrook%20Basin%20District?flight=JVD",
     "/jhsaa/individual-champions?flight=JVS",
     "/jhsaa/individual-champions?flight=JVD&g=boys",
 ]

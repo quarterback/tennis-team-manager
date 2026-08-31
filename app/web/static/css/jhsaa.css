@@ -631,6 +631,19 @@
 }
 .jh-jump select:hover { border-color: var(--brand); }
 
+/* A link that reads as one of the jump row's controls — same height, border and
+   radius as the selects beside it, because it does the same job (leave this page
+   for a related one) and a bare inline link next to two chrome-heavy selects
+   reads as body text somebody forgot to style. Used for the district page's JV
+   qualifying brackets, the only entry point those have. */
+.jh-jump .jh-qlink {
+  display: inline-flex; align-items: center; height: 30px; padding: 0 10px;
+  font-size: 13.5px; font-weight: 600; text-decoration: none;
+  border: 1px solid var(--border-default); border-radius: 6px;
+  background: var(--surface-card); color: var(--text-primary);
+}
+.jh-jump .jh-qlink:hover { border-color: var(--brand); color: var(--brand); }
+
 /* ---- Head-to-head grid: a district's whole double round-robin at a glance ---- */
 .jh-grid { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
 .jh-grid th {

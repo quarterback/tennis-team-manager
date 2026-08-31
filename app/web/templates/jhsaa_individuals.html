@@ -86,16 +86,17 @@
    the wrong one renders empty rows rather than raising. Until that exists the
    canvas stays visible at every width and scrolls inside `.brk-scroll`, which it
    already does. #}
-{% if view.playins %}
-{# The pigtail pre-round — surplus qualifiers past the 96 main draw playing in,
-   each match grafted onto a top seed's line. NOT a bracket column: the tree links
-   columns positionally on the main draw's halving, and a real association prints
-   its play-ins as their own list above the draw anyway. #}
+{% for layer in view.playins %}
+{# The preliminary layers — surplus qualifiers past the 96 main draw playing in.
+   NOT bracket columns: the tree links columns positionally on the main draw's
+   halving, and a real association prints its play-ins as a list above the draw
+   anyway. Each LAYER is its own round and its own panel: a field over 192 needs
+   more than one, and a player is in at most one match per layer. #}
 <div class="bl-panel" style="margin-bottom:12px">
-  <div class="bl-panel-head"><h2>Play-in</h2>
-    <span class="sub">{{ view.playins|length }} match{{ 'es' if view.playins|length != 1 }} · winners join the main draw</span></div>
+  <div class="bl-panel-head"><h2>Play-in{% if view.playins|length > 1 %} {{ loop.index }}{% endif %}</h2>
+    <span class="sub">{{ layer|length }} match{{ 'es' if layer|length != 1 }} · winners {{ 'advance a layer' if not loop.last else 'join the main draw' }}</span></div>
   <div class="jh-seedtiers">
-    {% for m in view.playins %}
+    {% for m in layer %}
     <div class="tier">
       <div class="lbl">{% if m.seed_line %}Line {{ m.seed_line }}{% endif %}</div>
       <div class="rows">
@@ -108,7 +109,7 @@
     {% endfor %}
   </div>
 </div>
-{% endif %}
+{% endfor %}
 
 <div class="brk-stage" id="brkstage">
   <section class="brk-region" data-view="all">

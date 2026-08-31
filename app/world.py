@@ -3870,12 +3870,31 @@ def run_jhsaa(seed: int, world: dict) -> dict:
             # from ever serving a JV draw under a varsity heading. The one
             # reader that scans EVERY flight is `jhsaa_individual_title_repeats`
             # and it filters these out explicitly — see its own note.
+            jv_arc = season.get("jv_individuals") or {}
             conn.executemany(
                 "INSERT INTO world_jhsaa_individual"
                 " (world_id, year, gender, grp, flight, data) VALUES (?,?,?,?,?,?)",
                 [(world["id"], year, gender, jv_indiv.GROUP_KEY, flight,
                   json.dumps(draw))
-                 for flight, draw in (season.get("jv_individuals") or {}).items()])
+                 for flight, draw in (jv_arc.get("state") or {}).items()])
+            # THE QUALIFYING ROUND — one row per district per bracket, ~190 a
+            # gender. Same table and same draw shape (a qualifier is a real
+            # bracket with a real final, and the district page is asked for it);
+            # ~2.8 KB a draw, ~1 MB a season across both genders, measured,
+            # against the 1.7 MB a gender the varsity draws already cost.
+            #
+            # ‼️ THEIR OWN FLIGHT KEY (`DISTRICT_BRACKETS`), which is what keeps
+            # a district championship from being counted as a state one. `grp`
+            # is the district's FULL identity — `(classification, name)` — since
+            # the association reuses district names at every level, and it is
+            # what the district page looks a draw up by.
+            conn.executemany(
+                "INSERT INTO world_jhsaa_individual"
+                " (world_id, year, gender, grp, flight, data) VALUES (?,?,?,?,?,?)",
+                [(world["id"], year, gender, ident,
+                  jv_indiv.DISTRICT_OF[bracket], json.dumps(draw))
+                 for bracket, draws in (jv_arc.get("districts") or {}).items()
+                 for ident, draw in draws.items()])
             # INJURIES — VARSITY only, one row per injury actually rolled
             # (`t.injury_log`, see `jhsaa.TeamSeason`). JV never carries one.
             conn.executemany(
@@ -3998,6 +4017,34 @@ def jhsaa_individual_draw(world_id: int, year: int, gender: str, group: str,
     # Relabelled into today's names, exactly like the season summary: a draw names
     # schools, and a rename must not orphan a title somebody won.
     return _relabel(json.loads(r["data"])) if r else None
+
+
+def jhsaa_jv_district_draws(world_id: int, year: int, gender: str,
+                            group: str, district: str) -> dict:
+    """`{bracket: draw}` — a district's own JV qualifying brackets for a season.
+
+    Keyed on the district's FULL identity, `(classification, name)`, because the
+    association reuses its district names at every level: keyed on the name
+    alone this would serve the 3A league's qualifier under a 7A heading, with
+    every name right and every result wrong.
+
+    Returns the STATE bracket keys (`JVS`/`JVD`), not the archive's district
+    ones, so a caller reads "the JV Singles qualifier" rather than having to
+    know the storage key."""
+    from . import jhsaa_jv_individuals as jvi
+    ident = jvi.district_label(group, district)
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT flight, data FROM world_jhsaa_individual WHERE world_id=?"
+            " AND year=? AND gender=? AND grp=? AND flight IN (?, ?)",
+            (world_id, year, gender, ident, *jvi.DISTRICT_BRACKETS)).fetchall()
+    finally:
+        conn.close()
+    # Relabelled into today's school names like every other archived draw — a
+    # rename must not orphan a title somebody won.
+    return {jvi.STATE_OF[r["flight"]]: _relabel(json.loads(r["data"]))
+            for r in rows}
 
 
 def jhsaa_individual_champions(world_id: int, year: int, gender: str,
@@ -4193,6 +4240,15 @@ def jhsaa_individual_title_repeats(world_id: int, gender: str,
     INDEX into `entries`, so json1 can return just that entrant. `_relabel` then
     runs on the small dict rather than the whole draw."""
     from . import jhsaa_individuals as ji
+    # ‼️ THE FLIGHT ALLOWLIST GOES IN THE SQL, not only in the loop below. The
+    # qualifying rounds of the JV brackets live in this table too — ~380 rows a
+    # season across both genders — and a Python-side skip would still have made
+    # SQLite parse every one of their blobs twice (the `json_extract` pair is
+    # evaluated per row) on a page that folds EVERY archived season. Filtering
+    # here means a district draw never leaves the database. The loop keeps its
+    # own check: an unknown flight is a missing decision, not a row to rank
+    # quietly.
+    flights = _jh_indiv_flight_order()
     conn = _db()
     try:
         rows = conn.execute(
@@ -4200,8 +4256,9 @@ def jhsaa_individual_title_repeats(world_id: int, gender: str,
             " json_extract(data, '$.entries[' ||"
             "   json_extract(data, '$.champion') || ']') AS champ"
             " FROM world_jhsaa_individual WHERE world_id=? AND gender IN (?, 'mixed')"
+            f" AND flight IN ({','.join('?' * len(flights))})"
             " AND json_extract(data, '$.champion') IS NOT NULL",
-            (world_id, gender)).fetchall()
+            (world_id, gender, *flights)).fetchall()
     finally:
         conn.close()
     order = {f: i for i, f in enumerate(_jh_indiv_flight_order())}

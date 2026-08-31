@@ -64,10 +64,32 @@ SINGLES = "JVS"
 DOUBLES = "JVD"
 BRACKETS = (SINGLES, DOUBLES)
 
-#: How a bracket is written out. "JV Singles State Champion" is the title, so the
-#: heading is the event: the association names positions No. 1 through No. 3 and
-#: this event has only one of each, so no number appears.
+#: How a bracket is written out. The association names positions No. 1 through
+#: No. 3 and this event has only one of each, so no number appears.
 BRACKET_NAMES = {SINGLES: "JV Singles", DOUBLES: "JV Doubles"}
+
+#: ‼️ THE DISTRICT QUALIFIERS ARE THEIR OWN EVENT KEY, and that is what keeps
+#: them out of every reader that counts a STATE title. They are archived in the
+#: same table and the same draw shape as the state draws — the qualifying round
+#: of a tournament is a real bracket with real results, and it is what a district
+#: page is asked for — but a district championship is not a state championship,
+#: and `world_jhsaa_individual` is keyed on `flight`. Given the SAME key as the
+#: state draw, ninety-five district champions a bracket would have counted as
+#: state champions on the career repeat roll, which reads every flight it knows.
+#:
+#: So the flight IS the distinction, exactly as a PHASE is the archive's identity
+#: for an event everywhere else in this association: a reader that does not know
+#: `DJVS`/`DJVD` drops them by construction rather than by remembering to filter.
+DISTRICT_SINGLES = "DJVS"
+DISTRICT_DOUBLES = "DJVD"
+DISTRICT_BRACKETS = (DISTRICT_SINGLES, DISTRICT_DOUBLES)
+
+#: state bracket -> its district qualifier's key, and back.
+DISTRICT_OF = {SINGLES: DISTRICT_SINGLES, DOUBLES: DISTRICT_DOUBLES}
+STATE_OF = {v: k for k, v in DISTRICT_OF.items()}
+
+DISTRICT_NAMES = {DISTRICT_SINGLES: "District JV Singles",
+                  DISTRICT_DOUBLES: "District JV Doubles"}
 
 #: Its own phase, because a phase is the archive's identity for an EVENT — the
 #: rule the JV season itself had to learn when its showcase was indistinguishable
@@ -260,14 +282,22 @@ def run_district(teams: list, bracket: str, *, gender: str, group: str,
                      result, played)
 
 
-def district_champions(by_group: dict, bracket: str, *, gender: str,
-                       year: int, seed: int, sheet: dict | None = None) -> list:
-    """The state field: one champion per district that produced one.
+def district_qualifiers(by_group: dict, bracket: str, *, gender: str,
+                        year: int, seed: int,
+                        sheet: dict | None = None) -> list:
+    """Every district's qualifier for `bracket`, in order — the whole qualifying
+    round, as played.
+
+    ‼️ IT RETURNS THE DRAWS, NOT JUST THE CHAMPIONS. The first version plucked
+    `d.champion` off each and dropped the draw on the floor, which threw away the
+    only record of how ninety-five brackets were actually won — a district
+    championship is a real title with a real final, and a district page is asked
+    for exactly that. Keeping them is ~2.8 KB a draw, ~1 MB a season across both
+    brackets and both genders, measured, against the 1.7 MB a gender the varsity
+    draws already cost. Nothing justified discarding them.
 
     `by_group` is `run_season`'s own `{group: {district: [TeamSeason]}}`, walked
-    in sorted order so the field is assembled identically on every run. It is
-    then FLATTENED — the state draw is classless, so a 1A champion and a 9A
-    champion enter the same bracket on the same terms.
+    in sorted order so the field is assembled identically on every run.
     """
     out = []
     for group, dists in sorted(by_group.items()):
@@ -276,9 +306,17 @@ def district_champions(by_group: dict, bracket: str, *, gender: str,
                              district=district, sheet=sheet,
                              seed=_draw_seed(seed, "jv", str(year), gender,
                                              bracket, group, district))
-            if d is not None and d.champion is not None:
-                out.append(d.champion)
+            if d is not None:
+                out.append(d)
     return out
+
+
+def champions_of(draws: list) -> list:
+    """The state field: the champion of every district draw that crowned one.
+
+    FLATTENED across classifications — the state draw is classless, so a 1A
+    champion and a 9A champion enter it on the same terms."""
+    return [d.champion for d in draws if d.champion is not None]
 
 
 # --- the pigtail pre-round --------------------------------------------------
@@ -289,120 +327,68 @@ def district_champions(by_group: dict, bracket: str, *, gender: str,
 PIGTAIL_ROUND = "Play-in"
 
 
-def _lines(n_field: int) -> tuple[int, list[int]]:
-    """`(pigtail count, matches per seed line)` for a field of `n_field`.
+def _prelim_layers(n_field: int) -> list[int]:
+    """The field size each preliminary round reduces to, in order.
 
-    Each pigtail match removes exactly one entrant, so a field of N needs
-    `N - MAIN_DRAW` of them however large N is — which is what makes the
-    arithmetic close at any size and is why the count, not the participant
-    count, is what gets assigned to seeds.
+    ‼️ LAYERS, NOT CHAINS, AND THAT IS A CORRECTNESS RULE RATHER THAN A STYLE
+    ONE. The first version hung extra play-in matches off a seed LINE once the
+    field passed 192 — a chain of three entrants on one line, both its matches
+    stored in the same round. `jhsaa_individuals.finish_for_index` reads a
+    finish by scanning each round for the entrant and STOPPING at the first
+    match it finds them in, which is sound only if nobody appears twice in one
+    round; a chained entrant who won and then lost was read as still alive, and
+    could be reported champion on their own player page. Storing each layer as
+    its own round makes "at most once per round" true by construction instead of
+    asking every reader to allow for it.
 
-    ‼️ ONE PIGTAIL PER SEED BEFORE ANY SEED GETS A SECOND (owner spec). They are
-    assigned to seeds 1, 2, 3, … in that order and WRAP — a field of 200 gives
-    every seed one and then starts again at seed 1 — so the returned list is
-    indexed by line (0 = seed 1) and holds how many matches that line carries. A
-    line with c matches is a play-in chain of c+1 entrants ending in one
-    survivor, which is the only shape that keeps "wrapping" meaning anything.
+    The rule (owner, 2026-08): keep building pre-rounds until the field is
+    `MAIN_DRAW`, and a round may not more than halve the field — so each layer
+    lands on the smallest 96·2^k that one round can reach.
+
+        97-192   -> one layer      193-384  -> two
+        385-768  -> three          769-1536 -> four
+
+    Worked, at the owner's own examples. **200**: round 1 eliminates 8 (the
+    bottom 16 seeds pair off; the other 184 bye through the layer) leaving 192,
+    round 2 plays 96 to leave 96. **250**: 58 matches, then 96. **384**: 192
+    matches, then 96.
     """
-    p = max(0, n_field - MAIN_DRAW)
-    if not p:
-        return 0, []
-    lines = min(p, MAIN_DRAW)
-    return p, [p // lines + (1 if k < p % lines else 0) for k in range(lines)]
+    out: list[int] = []
+    cur = n_field
+    while cur > MAIN_DRAW:
+        nxt = MAIN_DRAW
+        # A single elimination round cannot more than halve a field.
+        while nxt < (cur + 1) // 2:
+            nxt *= 2
+        out.append(nxt)
+        cur = nxt
+    return out
 
 
-def _pigtails(field: list) -> tuple[list, list]:
-    """Split a seed-ordered `field` into `(main draw entrants, pigtail groups)`.
+def _prelim_pairs(field: list, target: int) -> tuple[list, list]:
+    """ONE preliminary layer over a seed-ordered `field`, as
+    `(entrants who bye through it, [(line, entrant, entrant), …])`.
 
-    `pigtail groups` is `[(seed line, [entrants strongest-first]), …]`, one per
-    line, in seed order — so `groups[0]` is the play-in grafted onto the 1 seed's
-    line.
+    Only the bottom of the field plays: reducing to `target` needs
+    `len(field) - target` matches, so exactly twice that many entrants — the
+    lowest seeds — pair off and everyone above them byes through untouched. The
+    pairing mirrors that pool, strongest against weakest, which makes every line
+    the same combined seed so no top seed draws a systematically softer one.
 
-    THE RULE, in the order the spec states it:
+    Lines are numbered from 1 in order, which is the "assigned to seeds 1, 2,
+    3 …" rule; a layer never needs more lines than the layer it feeds, so
+    nothing wraps.
 
-      * **The lowest-seeded qualifiers beyond the cap are the pigtail
-        entrants.** The top `MAIN_DRAW - lines` go straight in; the pool is
-        everyone below them.
-      * **The pool is dealt SERPENTINE across the lines** — line 0, 1, … L-1,
-        then back L-1, … 0 — which pairs the strongest of the pool against the
-        weakest, the second-strongest against the second-weakest, and so on.
-        That is "the surplus paired against the field from the bottom up", and
-        it makes every line's combined seed equal, so no top seed draws a
-        systematically softer play-in than another.
-      * **The weakest surplus entrant lands on the 1 seed's line**, the next on
-        the 2 seed's, and so on, which is the spec's "the strongest seeds face
-        the weakest play-in survivors".
-
-    Worked, at the sizes the spec names. Field 97: one pigtail, on seed 1,
-    between the 96 and 97 seeds. Field 100: four, on seeds 1-4 — (93, 100),
-    (94, 99), (95, 98), (96, 97). Field 105: nine, on seeds 1-9. Field 200: 104,
-    so all 96 seeds carry one and seeds 1-8 carry a second.
-
-    ‼️ IT IS A PRE-ROUND, NOT A REWRITE OF THE DRAW. The survivor enters the main
-    draw and is re-seeded with everyone else by `run_tournament`; the line number
-    is recorded on the match (`DrawMatch.seed_line`) and archived, which is what
-    makes a play-in traceable to the seed it fed. Grafting the survivor into that
-    seed's first-round slot instead would mean overriding bye placement inside
-    `engine.tournament.seeded_draw` — the ONE draw helper every varsity bracket
-    in the association runs through, including the state team draw and both
-    college championships. This event is not worth that risk, and the protection
-    the spec is after (a top seed does not meet a play-in survivor early) is
-    already what a seeded draw with byes gives.
+    At 100 entrants that is the four pairings the spec names — (93, 100),
+    (94, 99), (95, 98), (96, 97) — and at 97, the single (96, 97).
     """
-    p, sizes = _lines(len(field))
-    if not p:
+    m = len(field) - target
+    if m <= 0:
         return list(field), []
-    direct = list(field[:MAIN_DRAW - len(sizes)])
-    pool = list(field[MAIN_DRAW - len(sizes):])
-    groups: list[list] = [[] for _ in sizes]
-    # A line of c matches holds c+1 entrants. Dealt lap by lap, forward then
-    # back — the serpentine — so line 0 takes the strongest of the pool and then
-    # the weakest. A line that is already full drops out of later laps, which is
-    # what keeps the SECOND pigtail on the low seed lines where the wrap put it.
-    need = [s + 1 for s in sizes]
-    nxt = iter(pool)
-    lap = 0
-    while any(need):
-        order = [k for k in range(len(sizes)) if need[k]]
-        if lap % 2:
-            order.reverse()
-        for k in order:
-            groups[k].append(next(nxt))
-            need[k] -= 1
-        lap += 1
-    return direct, [(k + 1, g) for k, g in enumerate(groups)]
-
-
-def _play_pigtails(groups: list, played: dict, rng: random.Random,
-                   ) -> tuple[list, list]:
-    """Play every line's play-in. Returns `(survivors, DrawMatch list)`.
-
-    A line is played as a CHAIN, weakest pair first: the two lowest entrants meet
-    and the winner takes on the next one up. A line with two entrants — every
-    line, at any field the association will actually produce — is a single match,
-    and the chain only shows itself at the sizes where a seed carries more than
-    one pigtail. Every match is labelled `PIGTAIL_ROUND` and carries its seed
-    line, so the whole pre-round archives as one distinct round.
-    """
-    play = _play(played)
-    survivors, matches = [], []
-    for line, group in groups:
-        # Sorted strongest-first, so popping from the end plays the weakest pair
-        # and the line's best entrant comes in last.
-        rest = sorted(group, key=lambda e: (-e.rating, e.school))
-        cur = rest.pop()
-        while rest:
-            nxt = rest.pop()
-            hi, lo = (nxt, cur) if nxt.rating >= cur.rating else (cur, nxt)
-            win = play(hi, lo, seed=rng.randint(1, 10 ** 9))
-            matches.append(DrawMatch(
-                rnd=PIGTAIL_ROUND, hi=hi, lo=lo, hi_seed=None, lo_seed=None,
-                winner=win, winner_is_hi=(win is hi),
-                scoreline=played[frozenset((hi.key, lo.key))].scoreline,
-                upset=(win is lo), seed_line=line))
-            cur = win
-        survivors.append(cur)
-    return survivors, matches
+    cut = len(field) - 2 * m
+    direct, pool = list(field[:cut]), list(field[cut:])
+    pairs = [(i + 1, pool[i], pool[len(pool) - 1 - i]) for i in range(m)]
+    return direct, pairs
 
 
 # --- the state draw ---------------------------------------------------------
@@ -424,15 +410,36 @@ def run_state(champions: list, bracket: str, *, gender: str,
     """
     if len(champions) < 2:
         return None
-    field = sorted(champions, key=lambda e: (-e.rating, e.school))
-    main, groups = _pigtails(field)
+    by_rating = lambda e: (-e.rating, e.school)          # noqa: E731
+    cur = sorted(champions, key=by_rating)
     rng = random.Random(seed)
     played: dict = {}
-    survivors, pre = _play_pigtails(groups, played, rng)
-    result = run_tournament(main + survivors, seed=rng.randint(1, 10 ** 9),
-                            play=_play(played), key=lambda e: e.rating)
+    play = _play(played)
+    pre_rounds: list = []
+    eliminated: list = []
+    # ‼️ ONE STORED ROUND PER LAYER — see `_prelim_layers`. Each layer eliminates
+    # every one of its players exactly once, so nobody can appear twice in a
+    # round and `finish_for_index`'s scan (which stops at the first match it
+    # finds an entrant in) reads the right finish for all of them.
+    for target in _prelim_layers(len(cur)):
+        direct, pairs = _prelim_pairs(cur, target)
+        matches, survivors = [], []
+        for line, a, b in pairs:
+            hi, lo = (a, b) if by_rating(a) <= by_rating(b) else (b, a)
+            win = play(hi, lo, seed=rng.randint(1, 10 ** 9))
+            matches.append(DrawMatch(
+                rnd=PIGTAIL_ROUND, hi=hi, lo=lo, hi_seed=None, lo_seed=None,
+                winner=win, winner_is_hi=(win is hi),
+                scoreline=played[frozenset((hi.key, lo.key))].scoreline,
+                upset=(win is lo), seed_line=line))
+            survivors.append(win)
+            eliminated.append(lo if win is hi else hi)
+        pre_rounds.append(matches)
+        cur = sorted(direct + survivors, key=by_rating)
+    result = run_tournament(cur, seed=rng.randint(1, 10 ** 9),
+                            play=play, key=lambda e: e.rating)
     d = _assemble(gender, GROUP_KEY, bracket, result, played)
-    if pre:
+    if pre_rounds:
         # ‼️ THE ELIMINATED PLAY-IN LOSERS ARE APPENDED, NOT MERGED IN RATING
         # ORDER. `_assemble` set `entries` to the main draw's seed order and
         # every archived match indexes into it, so inserting anybody would move
@@ -441,16 +448,22 @@ def run_state(champions: list, bracket: str, *, gender: str,
         # `n_seeds` (so `seed_of` correctly reports them unseeded), and makes
         # `len(entries)` the true field — which is what `finishes()` counts down
         # from, so a play-in loser bands as the round they actually went out in.
-        d.entries = list(d.entries) + [m.lo if m.winner_is_hi else m.hi
-                                       for m in pre]
-        d.rounds.insert(0, pre)
+        d.entries = list(d.entries) + eliminated
+        for rnd in reversed(pre_rounds):
+            d.rounds.insert(0, rnd)
     return d
 
 
 def run_jv_state(by_group: dict, gender: str, year: int, *,
                  seed: int = 0) -> dict:
-    """Both of a gender's JV state tournaments, archive-flattened as
-    `{bracket: dict}`.
+    """Both of a gender's JV state tournaments AND their qualifying rounds,
+    archive-flattened as `{"state": {bracket: dict}, "districts": {bracket:
+    {district identity: dict}}}`.
+
+    The district draws are keyed by their FULL identity (`district_label` —
+    `(classification, name)`, never the bare name, since the JHSAA reuses its
+    district names at every level), which is also the key they are archived
+    under.
 
     ‼️ IT READS THE SEASON AND WRITES NOTHING TO IT. `jv_pool` reads `_order`, so
     this must run after the varsity regular season for the ladder to mean
@@ -461,13 +474,15 @@ def run_jv_state(by_group: dict, gender: str, year: int, *,
     teams = [t for dists in by_group.values() for ts in dists.values()
              for t in ts]
     sheet = entry_sheet(teams)
-    out: dict = {}
+    state: dict = {}
+    districts: dict = {}
     for bracket in BRACKETS:
-        champs = district_champions(by_group, bracket, gender=gender, year=year,
+        quals = district_qualifiers(by_group, bracket, gender=gender, year=year,
                                     seed=seed, sheet=sheet)
-        d = run_state(champs, bracket, gender=gender,
+        districts[bracket] = {d.group: draw_to_dict(d) for d in quals}
+        d = run_state(champions_of(quals), bracket, gender=gender,
                       seed=_draw_seed(seed, "jv-state", str(year), gender,
                                       bracket))
         if d is not None:
-            out[bracket] = draw_to_dict(d)
-    return out
+            state[bracket] = draw_to_dict(d)
+    return {"state": state, "districts": districts}
