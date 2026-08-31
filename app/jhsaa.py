@@ -2024,23 +2024,103 @@ def _career_plan(school_key: str, entry: int, seat: int, salt: str,
     return start, peak, caps
 
 
+#: How a program's per-grade `mature` bonus/drag (`coaching_quality`,
+#: `neglect_severity`) becomes a career-model number.
+#:
+#: ‼️ THE PROGRAM LEVER HAS TO BE TRANSLATED, NOT REUSED. `mature` is a share of a
+#: FIXED CEILING that has surfaced by a given grade — the legacy model's only
+#: currency, and a concept the career model does not have: here a player is a start,
+#: a peak and four yearly capacities, and `_apply_career` overwrites current ability
+#: outright. A `mature` bonus therefore reaches a career-era player through NOTHING,
+#: which is exactly what happened: `coaching` and `neglect` were both silently inert
+#: for every cohort in a fresh save, because `_gen_seat` passes `maturity_range=(1.0,
+#: 1.0)` on that path and never hands `mod` to `career_ability` at all.
+#:
+#: The career-model equivalent of "reaches more of what they had" is realising more of
+#: each YEAR'S CAPACITY — the same quantity `exposure` scales, and for the same reason
+#: (a season's development is what you got out of it). So it multiplies `gain`.
+#:
+#: ‼️ AND THE PEAK IS STILL THE PEAK. `career_ability` clamps gains at `peak` with
+#: `CAREER_OVERFLOW` past it, so a coaching program moves a player UP THEIR OWN CURVE
+#: faster and cannot lift them past the career they were drawn — the career model's
+#: own expression of "doesn't expand a player's skillset". `DEV_CAP` does that job on
+#: the legacy path; this is the same guarantee, enforced by machinery that was already
+#: there.
+#:
+#: CALIBRATED, not chosen: swept 5-30 against the two things that matter, the senior
+#: OVR gain and the ceiling drift. The career model damps this lever much harder than
+#: the legacy one did (the peak clamp is doing most of the work), so matching the
+#: legacy path's measured +1.5/+3.8/+7.0 takes a much larger multiplier here than the
+#: naive 1:1 reading of `mature` would suggest — which is the whole reason this is a
+#: translation constant rather than the raw number. At 20 a career-era senior gains
+#: ~+3.2 OVR across the band against the legacy path's ~+3.8, and displayed ceilings
+#: drift +0.35 on a ~66 mean (0.5%) — the residual from reaching peak a year sooner
+#: and therefore spending longer in the overflow regime, which no constant removes.
+#: One constant, one per-school draw, both models — never a second band to keep in
+#: step by hand.
+CAREER_COACH_K = 20.0
+
+#: ‼️ THE DRAG GETS ITS OWN, GENTLER CONSTANT. The two bands were authored against
+#: the LEGACY model's floor rule, not against each other: `NEGLECT_MATURE` is narrow
+#: because a per-grade drag past `DEV_MIN_STEP` would REVERSE development, while
+#: `COACHING_MATURE` is wide because the owner wants tagged programs to differ. Run
+#: through one multiplier those become lopsided in the career model — measured, the
+#: harshest neglect took a senior -8.3 OVR against the strongest coaching's +6.5, so
+#: the same code would have made an untouched archetype markedly harsher than the one
+#: being added. At 15 the drag means **-2.3 OVR** and bottoms at -4.5, against
+#: coaching's +2.4 mean; coaching keeps the longer tail, which is the difference the
+#: owner asked for and not one this constant should invent.
+#:
+#: ‼️ NEGLECT WAS EQUALLY BROKEN BEFORE THIS, and that is why it is being calibrated
+#: at all: it rides the same `mature` lever, so it too did nothing for any career-era
+#: cohort. Fixing only the new archetype would have left its own mirror inert.
+CAREER_NEGLECT_K = 15.0
+
+
+def coach_factor(mature: float) -> float:
+    """A program's `mature` bonus/drag as a multiplier on yearly capacity.
+
+    1.0 for an untagged program, so the whole association is unchanged by this
+    existing. Floored well above zero: a drag must never stop development outright,
+    which is `neglect`'s own founding rule ("doesn't mean players won't get what they
+    get normally, it just dampens it")."""
+    k = CAREER_COACH_K if mature >= 0 else CAREER_NEGLECT_K
+    return max(0.25, 1.0 + mature * k)
+
+
 def career_ability(school_key: str, entry: int, seat: int, grade: int,
                    salt: str, ceiling: float,
-                   exposure: dict | None = None) -> float:
+                   exposure: dict | None = None, coach: float = 1.0) -> float:
     """This player's ability at `grade` under the career model.
 
     `exposure` maps a GRADE to how much of that year's capacity the player
     actually realised (1.0 = a full varsity season). Absent, every year realises
     in full — the pre-odometer behaviour, and what a world with no archived
-    participation must read."""
+    participation must read.
+
+    `coach` is the program's development multiplier (`coach_factor`) — 1.0 for an
+    untagged program. It scales the same yearly capacity `exposure` does, because
+    they are the same kind of thing: how much of a year's available development a
+    player actually banked."""
     start, peak, caps = _career_plan(school_key, entry, seat, salt, ceiling)
     v = start
     for i, g in enumerate(range(10, grade + 1)):
-        gain = caps[i] * ((exposure or {}).get(g - 1, 1.0))
+        base = caps[i] * ((exposure or {}).get(g - 1, 1.0))
+        # ‼️ COACHING ACCELERATES TOWARD THE PEAK AND NEVER PAST IT. The multiplier
+        # is applied to the run UP to `peak`; the overflow a year earns beyond it is
+        # the UNCOACHED amount. Applied to the whole gain instead, a coaching program
+        # would push players further past their own drawn career — and because
+        # `_apply_career` lifts displayed potential to meet ability whenever a player
+        # overflows (the POT-never-below-OVR display rule), that surfaced as tagged
+        # programs' CEILINGS drifting up: measured +0.23 OVR with 80 of 300 seniors'
+        # ceilings raised, and worse the harder the tag was pushed. "Doesn't expand a
+        # player's skillset, just makes them potentially more likely to REACH" is a
+        # rule about exactly this line, and reach is not exceed.
+        gain = base * coach
         if v >= peak:
-            gain *= CAREER_OVERFLOW
+            gain = base * CAREER_OVERFLOW
         elif v + gain > peak:
-            gain = (peak - v) + (v + gain - peak) * CAREER_OVERFLOW
+            gain = (peak - v) + max(0.0, v + base - peak) * CAREER_OVERFLOW
         v += gain
     return v
 
@@ -3253,7 +3333,8 @@ def _ceiling(rng: random.Random, group: str, gender: str,
 
 
 def _apply_career(p: Prospect, school_key: str, entry: int, seat: int,
-                  grade: int, salt: str, exposure: dict | None = None) -> Prospect:
+                  grade: int, salt: str, exposure: dict | None = None,
+                  coach: float = 1.0) -> Prospect:
     """Set a career-era player's CURRENT ability from their career plan.
 
     The prospect arrives generated AT its ceiling (maturity 1.0), so this scales
@@ -3271,7 +3352,7 @@ def _apply_career(p: Prospect, school_key: str, entry: int, seat: int,
     if ceiling <= 0:
         return p
     target = career_ability(school_key, entry, seat, grade, salt, ceiling,
-                            exposure)
+                            exposure, coach)
     factor = target / ceiling
     for a, ceil_v in p.potential.items():
         p.current[a] = clamp_grade(ceil_v * factor)
@@ -3389,8 +3470,15 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
                 f = _expo_factor(expo_years.get(entry + (pg - 9)), p.name)
                 if f is not None:
                     exposure[pg] = f
+        # ‼️ `mod` REACHES THE CAREER MODEL HERE AND NOWHERE ELSE. On this path
+        # `maturity_range` is the degenerate (1.0, 1.0) and `_apply_career`
+        # overwrites current ability outright, so the `step` computed from
+        # `mod["mature"]` above is consumed by the LEGACY branch only. Without
+        # this argument a program archetype that develops players — `coaching`
+        # and `neglect` alike — is silently inert for every cohort in a fresh
+        # save, which is exactly the state this was found in.
         _apply_career(p, school.key, entry, seat, grade, salt,
-                      exposure or None)
+                      exposure or None, coach_factor(mod.get("mature", 0.0)))
     elif compress:
         # The guarantee half: attribute noise lifts displayed ceilings past the
         # squashed centre, so the visible number is trimmed after generation.
@@ -3604,12 +3692,21 @@ def _lifted(prospect, lift: float):
 
     A zero lift returns the player untouched — not a copy of them — so the away side
     and every neutral-site dual take exactly the code path they took before home
-    court existed."""
+    court existed.
+
+    ‼️ CLAMPED WITH `clamp_grade` (`GRADE_CEIL`, 100), NEVER TO 80. From
+    `career_era()` on, JHSAA ceilings are drawn on the association's OWN free scale
+    rather than being held under the college normalisation reference of 80 — so a
+    `min(80.0, …)` here does not cap a lift, it DELETES ability: an elite career-era
+    player sitting at 88 came out at 80, and playing at home made them nine points
+    worse. A lift that can reverse the advantage it exists to give is worse than no
+    lift, and it would have shown up as nothing more than the occasional strange
+    home loss."""
     if not lift:
         return prospect.engine_player()
     import copy
     clone = copy.copy(prospect)
-    clone.current = {a: min(80.0, v + lift) for a, v in prospect.current.items()}
+    clone.current = {a: clamp_grade(v + lift) for a, v in prospect.current.items()}
     return clone.engine_player()
 
 
@@ -3636,7 +3733,9 @@ def _doubles_lift(prospect, school: str, seat: int, extra: float = 0.0):
     # lifted once, by the sum, instead of being cloned twice.
     lift = rng.uniform(lo, hi) + extra
     clone = copy.copy(prospect)
-    clone.current = {a: min(80.0, v + lift) for a, v in prospect.current.items()}
+    # Same free-scale reason as `_lifted` — this is the other per-match lift, and
+    # `min(80.0, …)` would demote a career-era player rather than boost them.
+    clone.current = {a: clamp_grade(v + lift) for a, v in prospect.current.items()}
     return clone.engine_player()
 
 

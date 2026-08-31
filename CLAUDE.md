@@ -1939,6 +1939,13 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     caches Prospects globally and shares them across saves. A zero lift returns the
     player untouched, so the away side and every neutral dual take exactly the path
     they took before this existed.
+  - **‼️ CLAMP WITH `clamp_grade` (`GRADE_CEIL` 100), NEVER `min(80.0, …)`.** From
+    `career_era()` on, JHSAA ceilings are drawn on the association's OWN free scale
+    rather than under the college normalisation reference of 80, so a hard 80 does
+    not cap the lift — it DELETES ability: a career-era player at 88 came out at 80,
+    and playing at home made them eight points worse. A lift that can reverse the
+    advantage it exists to give shows up only as the occasional strange home loss.
+    Applies to any per-match lift here, `_doubles_lift` included.
 - **‼️ PROGRAM ARCHETYPES are a SCHOOL-level modifier on top of that (owner rule 2027-08,
   `jhsaa.ARCHETYPES`).** Durable program conditions — facilities, feeder networks,
   community participation, coaching tradition, reputation — NOT current strength, and
@@ -1973,13 +1980,32 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     of dev gains to very large and obviously lots of in-between"), which needs the
     SPREAD, not the mean. Neglect keeps its narrow band because dampening has a hard
     floor accelerating does not (past `DEV_MIN_STEP` it would REVERSE development).
-    ‼️ **What keeps the top end honest is `DEV_CAP` (0.98), not a small constant**:
-    `_gen_seat` clamps, so the lift saturates against the ceiling — a kid on track for
-    0.90 of theirs gains a little, one on track for 0.70 gains a lot, nobody exceeds
-    what they could have been. Measured over 60 programs: freshmen **identical** (the
-    step is `mature × (grade - 9)`, zero at 9), ceilings **byte-identical**, seniors
-    **+1.5 / +3.8 / +7.0 OVR** at the weak / middle / strong end of the band and a full
-    spread of **+0.0 to +11.5**.
+    ‼️ **‼️ IT MUST BE WIRED INTO BOTH DEVELOPMENT MODELS, AND THE CAREER ONE IS THE
+    LIVE ONE.** `mature` is a share of a FIXED ceiling surfaced by a grade — a concept
+    the CAREER model (`career_era()`, which every cohort in a fresh save is built on)
+    does not have: there `_gen_seat` passes `maturity_range=(1.0, 1.0)` and
+    `_apply_career` overwrites current ability from `career_ability`, which read no
+    `mod` at all. So `coaching` AND `neglect` were both **completely inert for every
+    player in a real save** while measuring perfectly on the legacy path — the trap is
+    that a naive measurement takes seniors at `entry = year - 3` and freshmen at
+    `entry = year`, which can straddle the era gate and read the OLD model for the
+    grade the effect is largest in. `coach_factor()` translates the per-school draw
+    into a multiplier on YEARLY CAPACITY (what `exposure` already scales), passed down
+    `_apply_career` → `career_ability`.
+    ‼️ **And it multiplies the run UP TO the peak only** — the overflow a year earns
+    past it is the UNCOACHED amount. Applied to the whole gain, coaching pushed players
+    further beyond their own drawn career, and because `_apply_career` lifts displayed
+    potential to meet ability on overflow, tagged programs' CEILINGS drifted up (+1.12
+    OVR with 113 of 300 seniors raised at the same strength; +0.35 once fixed). Reach
+    is not exceed. `DEV_CAP` enforces the same rule on the legacy path.
+    ‼️ **The two eras need DIFFERENT translation constants and the drag needs its own**
+    (`CAREER_COACH_K` 20, `CAREER_NEGLECT_K` 15): the career model damps this lever
+    far harder than the legacy one, and the two authored bands were written against
+    the legacy floor rule rather than against each other — run through one multiplier
+    the harshest neglect took a senior -8.3 OVR against the strongest coaching's +6.5.
+    Measured, career era, 50 programs: coaching seniors **+2.6 mean (+0.0..+9.7)**,
+    neglect **-2.1 (-5.7..0.0)**, freshmen **identical to two decimals** in all three
+    (career starts are grade-free), ceilings +0.3 on a ~69 mean.
   - **turnout** is the third distinct thing an archetype can move — `blue_blood`
     changes the DRAW, `coaching`/`neglect` the RATE, this the COUNT. Same players,
     just MORE of them: `mean`/`spread`/`pot`/`mature` all untouched, and
