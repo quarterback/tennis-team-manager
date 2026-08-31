@@ -1920,6 +1920,32 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   the #1→#9 drop RISES as schools shrink. Real high-school tennis routinely puts the
   smallest classification in a state top ten (Oregon 2026 boys: Oregon Episcopal No. 9,
   four of the top eight 5A). Pinned by `tests/test_jhsaa_talent_shape.py`.
+- **‼️ HOME COURT — a small one-time lift for the host (owner rule 2026-08,
+  `jhsaa.home_court`).** `HOME_COURT` (1.0-4.0 on the 20-80 grade scale) is rolled
+  ONCE PER DUAL off that dual's own seed and applied to every player the home side
+  dresses — "a one-time boost to the home team, not exceeding n but it can roll
+  anywhere from 1 to n". Per DUAL, not per player: a home court is a property of the
+  afternoon. Measured on real rosters: home win rate **49.8% → 56.8%** overall,
+  **57.6%** between evenly-matched teams, ~10% of duals flipped. `HOME_COURT` is the
+  only knob; re-measure with a sweep before moving it.
+  - **‼️ NOT EVERY DUAL HAS A HOST.** `NEUTRAL_PHASES` (the two showcases, `state`,
+    `toc`) roll 0.0 — a multi-team weekend at one venue and a central-site
+    championship have no home team, and handing one side a lift because the archive
+    stores it first would invent an advantage nobody has, worst of all in the rounds
+    that decide the association's titles. Everything else IS hosted, the road to
+    State included (the association's own rules say the Specials' winner hosts and
+    the Challengers' holder hosts).
+  - **The lift lands on a COPY** (`_lifted`), never the Prospect — `build_roster`
+    caches Prospects globally and shares them across saves. A zero lift returns the
+    player untouched, so the away side and every neutral dual take exactly the path
+    they took before this existed.
+  - **‼️ CLAMP WITH `clamp_grade` (`GRADE_CEIL` 100), NEVER `min(80.0, …)`.** From
+    `career_era()` on, JHSAA ceilings are drawn on the association's OWN free scale
+    rather than under the college normalisation reference of 80, so a hard 80 does
+    not cap the lift — it DELETES ability: a career-era player at 88 came out at 80,
+    and playing at home made them eight points worse. A lift that can reverse the
+    advantage it exists to give shows up only as the occasional strange home loss.
+    Applies to any per-match lift here, `_doubles_lift` included.
 - **‼️ PROGRAM ARCHETYPES are a SCHOOL-level modifier on top of that (owner rule 2027-08,
   `jhsaa.ARCHETYPES`).** Durable program conditions — facilities, feeder networks,
   community participation, coaching tradition, reputation — NOT current strength, and
@@ -1932,17 +1958,70 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     shift). It shows on day one — ninth-graders in the low 30s where an ordinary
     program's are mid-20s — and it beats a development program ON BALANCE. That is what
     makes it a blue blood.
-  - **development** has ORDINARY freshmen and the best seniors in the association:
-    `mean` is 0, the gain is potential plus a maturity bonus that starts at ZERO for
-    ninth-graders (`(grade - 9)`) and compounds. It CAN beat a blue blood outright — that
-    is the point, it levels a field facilities tilt — but it earns it over four years.
-    Arrive good vs leave great.
-  - **doubles** generates completely normally; the edge is an EPHEMERAL per-match lift
-    (+5..+11 on the 20-80 grade scale) applied to a COPY on the way into the engine —
-    `build_roster` caches Prospects globally and shares them across saves. It lands only
-    on `Team.doubles_players`, the separate doubles lineup `_squad` already builds, so it
-    is structurally incapable of reaching a singles court. (Nothing existed to reuse:
-    `coaches.development_multiplier` is a growth RATE at the rollover, a different thing.)
+  - **‼️ `development` and `doubles` are RETIRED (owner, 2026-08): they DISTORTED THE
+    FIELD and the owner stopped using them.** Both are out of `EDITABLE_ARCHETYPES`, so
+    nothing can be newly tagged with either, and the seed file ships with no program
+    carrying one — but **their rows stay in `ARCHETYPES`**, because `_program_mod` reads
+    that table by name and a save still holding one as a per-save override must keep
+    generating the roster it has rather than silently reverting to untagged. Do not
+    delete the rows and do not re-offer them in the editor.
+  - **coaching** is `development`'s REPLACEMENT and is defined by what it does NOT do
+    (owner: "it doesn't expand a player's skillset, just makes them potentially more
+    likely to reach" their ceiling). `mean`, `spread` and `pot` are ALL untouched — a
+    well-coached program draws the same players, the same ceilings and the same variance
+    as an untagged one; only the RATE a player closes on the ceiling they already had
+    moves. It is the exact MIRROR of `neglect` — the same `mature` governor, one sign
+    over. ‼️ **The band is WIDE and deliberately NOT neglect's mirror** (owner rule
+    2026-08): `COACHING_MATURE` +0.004..+0.060, drawn per school by
+    `coaching_quality()`. A first version mirrored `NEGLECT_MATURE` exactly on a
+    symmetry argument and that was the wrong shape — a narrow band makes every tagged
+    program develop at nearly the same rate, so tagging twenty produces twenty copies
+    of one trajectory. The tag is meant to be worth applying BROADLY ("a very small set
+    of dev gains to very large and obviously lots of in-between"), which needs the
+    SPREAD, not the mean. Neglect keeps its narrow band because dampening has a hard
+    floor accelerating does not (past `DEV_MIN_STEP` it would REVERSE development).
+    ‼️ **‼️ IT MUST BE WIRED INTO BOTH DEVELOPMENT MODELS, AND THE CAREER ONE IS THE
+    LIVE ONE.** `mature` is a share of a FIXED ceiling surfaced by a grade — a concept
+    the CAREER model (`career_era()`, which every cohort in a fresh save is built on)
+    does not have: there `_gen_seat` passes `maturity_range=(1.0, 1.0)` and
+    `_apply_career` overwrites current ability from `career_ability`, which read no
+    `mod` at all. So `coaching` AND `neglect` were both **completely inert for every
+    player in a real save** while measuring perfectly on the legacy path — the trap is
+    that a naive measurement takes seniors at `entry = year - 3` and freshmen at
+    `entry = year`, which can straddle the era gate and read the OLD model for the
+    grade the effect is largest in. `coach_factor()` translates the per-school draw
+    into a multiplier on YEARLY CAPACITY (what `exposure` already scales), passed down
+    `_apply_career` → `career_ability`.
+    It multiplies the run UP TO the peak only — the overflow a year earns past it is
+    the UNCOACHED amount — which keeps the bulk of the effect on the curve rather than
+    past the end of it (tagged programs' displayed CEILINGS drifted +1.12 OVR, 113 of
+    300 seniors raised, before that; +0.35 after). ‼️ **But a little ceiling drift is
+    EXPLICITLY FINE (owner, 2026-08: "I'm fine with it improving them a bit, that's
+    not a problem, it's trivial") — do NOT spend design effort defending zero drift.**
+    The rule that matters is the one the owner stated about the DRAW: coaching does not
+    touch `mean`, `spread` or `pot`, so it never changes the player who walks in. A
+    residual from reaching peak sooner and spending longer in the overflow regime is a
+    consequence of the existing career model, not a second talent lever.
+    ‼️ **The two eras need DIFFERENT translation constants and the drag needs its own**
+    (`CAREER_COACH_K` 20, `CAREER_NEGLECT_K` 15): the career model damps this lever
+    far harder than the legacy one, and the two authored bands were written against
+    the legacy floor rule rather than against each other — run through one multiplier
+    the harshest neglect took a senior -8.3 OVR against the strongest coaching's +6.5.
+    Measured, career era, 50 programs: coaching seniors **+2.6 mean (+0.0..+9.7)**,
+    neglect **-2.1 (-5.7..0.0)**, freshmen **identical to two decimals** in all three
+    (career starts are grade-free), ceilings +0.3 on a ~69 mean.
+  - **turnout** is the third distinct thing an archetype can move — `blue_blood`
+    changes the DRAW, `coaching`/`neglect` the RATE, this the COUNT. Same players,
+    just MORE of them: `mean`/`spread`/`pot`/`mature` all untouched, and
+    `turnout_extra()` (**+4..+12**, drawn per school) is added to the classification's
+    roster target BEFORE `_freshman_class_size` rolls, so it widens the cohort draw as
+    well as shifting it. It exists for the small classifications — "some schools even
+    at the small school level have big school sized squads (not necessarily all
+    talented but depth helps)" — a tagged 1A bands at 14-16 + up to 12 and can carry a
+    9A-sized squad while still generating 1A players. Measured: mean player OVR
+    **unchanged** (38.6 → 38.4), squads roughly **+45% deeper**; the only strength
+    effect is order statistics (more draws from one distribution → a slightly better
+    best player and a much deeper bench), which is what depth IS.
   - **upstart** is a TEMPORARY multi-year run (~10 live statewide, 15–30% over the
     program's OWN baseline, so an upstart 1A is a strong 1A), rolled per world from the
     salt and expiring by itself — deliberately NOT storable, since a stored tag would make

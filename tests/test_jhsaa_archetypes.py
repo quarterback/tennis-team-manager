@@ -239,8 +239,15 @@ def test_upstart_is_not_a_storable_tag():
     copy of it."""
     assert "upstart" in jhsaa.ARCHETYPES               # it is a real archetype...
     assert "upstart" not in jhsaa.EDITABLE_ARCHETYPES  # ...but not an editable one
-    for kind in ("blue_blood", "development", "doubles", "neglect"):
+    for kind in ("blue_blood", "coaching", "neglect"):
         assert kind in jhsaa.EDITABLE_ARCHETYPES, kind
+    # ‼️ RETIRED, FOR A DIFFERENT REASON THAN UPSTART'S (owner, 2026-08): both
+    # distorted the field, so neither may be newly assigned — but unlike `upstart`
+    # they stay in `ARCHETYPES`, because a save still holding one as an override has
+    # to keep generating the roster it has rather than silently reverting.
+    for kind in ("development", "doubles"):
+        assert kind in jhsaa.ARCHETYPES, kind
+        assert kind not in jhsaa.EDITABLE_ARCHETYPES, kind
     from app.web import server                         # the route reads the constant,
     import inspect                                      # not a second, driftable copy
     src = inspect.getsource(server)
