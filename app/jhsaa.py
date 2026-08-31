@@ -460,7 +460,7 @@ ROSTER_FLOOR = 16
 
 
 def _freshman_class_size(school_key: str, entry_year: int, classification: str,
-                         salt: str = "") -> int:
+                         salt: str = "", extra: int = 0) -> int:
     """How many freshmen entered `school` in `entry_year`.
 
     ‼️ ROLLED ONCE PER (school, entry_year), NEVER PER VIEWING YEAR (owner rule
@@ -477,8 +477,19 @@ def _freshman_class_size(school_key: str, entry_year: int, classification: str,
     No non-freshman newcomers are procedurally generated at all — a real
     sophomore/junior arrival is a TRANSFER (a separate mechanic, scaled from
     the college game's transfer portal; not modelled here), never a generation
-    roll pretending to be one."""
-    target = roster_size(classification, school_key, salt) / len(GRADES)
+    roll pretending to be one.
+
+    `extra` is a high-turnout program's additional roster spots (`turnout_extra`),
+    spread across the four grades like the rest of the target rather than dropped on
+    one cohort — a program that gets a lot of kids out gets them out every year.
+
+    ‼️ IT WIDENS THE DRAW AS WELL AS SHIFTING IT, because the spread is a FRACTION of
+    the target (0.35): a deeper program has more year-to-year variation in cohort size
+    in absolute terms, which is right — a big turnout is a bigger number to vary. It
+    is applied to the target BEFORE the roll for that reason, never added to the
+    result afterwards, which would have shifted the mean and left the variance where
+    a small program's was."""
+    target = (roster_size(classification, school_key, salt) + extra) / len(GRADES)
     rng = random.Random(f"{salt}|jhsaa-class|{school_key}|{entry_year}")
     return max(1, round(rng.gauss(target, target * 0.35)))
 
@@ -926,7 +937,10 @@ _TALENT = {
 #   blue_blood   generates better, and CLUSTERS — several strong players in one roster
 #   coaching     generates NOTHING extra: same ceiling, same arrival, same spread. The
 #                only edge is that its players are likelier to REACH the ceiling they
-#                already had — the exact mirror of `neglect`; see `coaching_quality()`
+#                already had — the same governor `neglect` runs negative, over a WIDE
+#                per-program band so tagged programs differ; see `coaching_quality()`
+#   turnout      generates the same players, just MORE of them — a deep squad, most
+#                useful in the small classifications; see `turnout_extra()`
 #   neglect      generates normal CEILING but develops it SLOWER — the same governor,
 #                run in reverse; see `neglect_severity()`
 #   upstart      a TEMPORARY multi-year run, rolled per world — see `upstarts()`
@@ -989,6 +1003,30 @@ ARCHETYPES = {
     # this row's `mature` is a 0.0 placeholder.
     "coaching":    {"mean":  0.0, "spread": 1.00, "pot": 0.0, "mature": 0.00,
                     "label": "Well-coached program"},
+    # ⚠️ TURNOUT (owner rule 2026-08) — a program that simply gets a lot of kids out
+    # for the team. It changes NOTHING about who those kids are: `mean`, `spread`,
+    # `pot` and `mature` are all untouched, so the extra players are drawn from the
+    # same distribution as everyone else's. "Not necessarily all talented, but depth
+    # helps" (owner) is the exact spec, and it is the third distinct thing an
+    # archetype can move — `blue_blood` changes the DRAW, `coaching`/`neglect` change
+    # the RATE, this changes the COUNT.
+    #
+    # It matters most in the small classifications, which is why it exists: "some
+    # schools even at the small school level have big school sized squads". A 1A
+    # program bands at 14-16 and a 9A at 20-24, so a tagged 1A can carry a squad the
+    # size of a big school's while still generating 1A players.
+    #
+    # ‼️ IT IS NOT A FREE STRENGTH BONUS, BUT IT IS NOT NOTHING EITHER, and the
+    # difference is order statistics rather than a thumb on the scale: more draws from
+    # the same distribution means a slightly better best player and a much deeper
+    # bench. That is what depth is, and it is why the tag is worth having — a bigger
+    # squad fills the JV season, survives the rest/rotation rules, and cannot be
+    # thinned below a playable lineup by a bad `_freshman_class_size` roll.
+    #
+    # The real per-school number is drawn by `turnout_extra()`; this row's placeholder
+    # is 0.0 like `neglect`'s and `coaching`'s, for the same reason.
+    "turnout":     {"mean":  0.0, "spread": 1.00, "pot": 0.0, "mature": 0.00,
+                    "label": "High turnout"},
     # ⚠️ NEGLECT (owner rule 2026-08) — bad coaching, bad facilities, a program that
     # wastes what its players walk in with. "Doesn't mean players won't get what they
     # get normally, it just dampens it" (owner) is the exact spec: CEILING is left
@@ -1047,23 +1085,56 @@ DOUBLES_BOOST = (5.0, 11.0)
 NEGLECT_MATURE = (-0.030, -0.012)
 
 
-# COACHING — the positive half of the same per-grade maturity governor, and
-# deliberately the MIRROR of `NEGLECT_MATURE` rather than a bigger number in the other
-# direction. Symmetry is the point: the association's good programs and its bad ones
-# pull on one lever by the same amount, so the field's overall level does not drift
-# just because more schools carry one tag than the other.
+# COACHING — the positive half of the same per-grade maturity governor `neglect` runs
+# negative.
 #
-# ‼️ IT IS A RANGE FOR THE REASON NEGLECT'S IS: "I want to be able to constrain some
-# programs partially" applies just as much to praising them. One constant would make
-# good coaching a binary switch, and every tagged program's seniors would close on
-# their ceilings at exactly the same rate — which is not what a coaching staff is.
+# ‼️ A WIDE BAND, DELIBERATELY WIDER THAN NEGLECT'S (owner rule 2026-08). The first
+# version mirrored `NEGLECT_MATURE` exactly, on a symmetry argument — good programs and
+# bad ones pulling on one lever by the same amount so the association's level does not
+# drift. That was tidy and it was the wrong shape for what this tag is FOR: a narrow
+# band makes every well-coached program develop at nearly the same rate, so tagging
+# twenty of them produces twenty copies of one trajectory. The owner's point is that
+# the tag should be worth applying broadly — "a very small set of dev gains to very
+# large and obviously lots of in-between" — which needs the SPREAD, not the mean.
 #
-# ‼️ IT MUST STAY WELL UNDER `DEV_MIN_STEP` (0.045) for the mirror of neglect's reason:
-# the step is added once per grade elapsed, so at the top of this band a senior carries
-# +0.09 maturity. Against `DEV_CAP` (0.98) that is a real but bounded push toward the
-# ceiling — the cap is what stops it becoming a talent bonus by another route, and the
-# constant must never grow to where the cap is doing all the work.
-COACHING_MATURE = (0.012, 0.030)
+# So the low end is deliberately near-nothing (a program that is a bit better organised
+# than average, worth under an OVR point on a senior) and the high end is genuinely
+# program-defining. Uniform across it, so the in-between is where most tagged programs
+# land. `neglect` keeps its own narrower band: dampening has a hard floor that
+# accelerating does not (see `NEGLECT_MATURE` — past `DEV_MIN_STEP` it would reverse
+# development rather than slow it), so the two are not symmetric in what they CAN do.
+#
+# ‼️ WHAT KEEPS THE TOP END HONEST IS `DEV_CAP` (0.98), NOT THE CONSTANT. The step is
+# added once per grade elapsed, so at the top of this band a senior carries +0.18
+# maturity — and `_gen_seat` clamps the result, so the lift saturates against the
+# ceiling the player already had. A kid on track to finish at 0.90 of their ceiling
+# gains a little; one on track for 0.70 gains a lot; nobody exceeds what they could
+# have been. That is the whole rule ("doesn't expand a player's skillset, just makes
+# them potentially more likely to reach"), and it is enforced by the clamp rather than
+# by keeping the number small.
+COACHING_MATURE = (0.004, 0.060)
+
+
+# TURNOUT — how many EXTRA players a high-turnout program carries on top of whatever
+# its classification band gave it. A range for the same reason coaching's is: a program
+# with a big turnout is not one fixed size, and the tag should be worth applying to
+# many schools without producing many identical squads.
+#
+# Sized against the ladder rather than picked for feel: the classification bands run
+# 14-16 at 1A up to 20-24 at 9A, a spread of about ten. So the bottom of this band is a
+# noticeably deeper squad and the top lifts a 1A clear past a typical 9A — which is the
+# case the owner named. Real rosters already run 12-36 without it (`ROSTER_FLOOR` has
+# no ceiling above it, deliberately), so even the top of this band stays inside the
+# range the association already produces.
+TURNOUT_EXTRA = (4, 12)
+
+
+def turnout_extra(school_name: str, salt: str = "") -> int:
+    """Extra roster spots for a high-turnout program — drawn once and durable, the
+    `neglect_severity` / `coaching_quality` idiom. Seeded on the school alone, never
+    the year: a program's turnout is a durable community fact, not something that
+    reshuffles season to season."""
+    return random.Random(f"{salt}|jhsaa-turnout|{school_name}").randint(*TURNOUT_EXTRA)
 
 
 def coaching_quality(school_name: str, salt: str = "") -> float:
@@ -1219,7 +1290,9 @@ def _program_mod(school: School, year: int, salt: str) -> dict:
     a = ARCHETYPES.get(kind, {})
     mod = {"mean": a.get("mean", 0.0), "spread": a.get("spread", 1.0),
            "pot": a.get("pot", 0.0), "mature": a.get("mature", 0.0),
-           "kind": kind}
+           # Extra roster SPOTS, not a change to who fills them — the one lever here
+           # that moves a count rather than a player. See `turnout_extra`.
+           "roster": 0, "kind": kind}
     if kind == "neglect":
         # The table row is a 0.0 placeholder (see ARCHETYPES) — the real, per-school
         # number lives here, same reason `upstart`'s lift is layered on below rather
@@ -1229,6 +1302,9 @@ def _program_mod(school: School, year: int, salt: str) -> dict:
         # The same governor, the other sign. Nothing else about the program's draw
         # moves — that is the whole distinction from the retired `development`.
         mod["mature"] += coaching_quality(school.name, salt)
+    elif kind == "turnout":
+        # More seats, same players. Nothing that shapes a DRAW is touched here.
+        mod["roster"] += turnout_extra(school.name, salt)
     lift = upstarts(year, salt).get(school.name)
     if lift:
         # A percentage of the program's OWN baseline, so an upstart 1A is a strong 1A.
@@ -2745,7 +2821,7 @@ def _build_reserve_cohorts(gender: str, year: int, salt: str,
 #: still holding one as an override keeps generating the roster it has — this list is
 #: what can be newly applied, not what can be read. `upstart` is excluded for its own
 #: older reason: it is a rolled, expiring run, and storing one would make it permanent.
-EDITABLE_ARCHETYPES = ("blue_blood", "coaching", "neglect")
+EDITABLE_ARCHETYPES = ("blue_blood", "coaching", "turnout", "neglect")
 
 
 def archetype_board() -> dict:
@@ -3390,7 +3466,8 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     fresh9_seats = 0
     for grade in GRADES:
         entry = year - (grade - 9)
-        n_seats = _freshman_class_size(school.key, entry, school.classification, salt)
+        n_seats = _freshman_class_size(school.key, entry, school.classification,
+                                       salt, mod.get("roster", 0))
         if grade == 9:
             fresh9_seats = n_seats
         for seat in range(n_seats):

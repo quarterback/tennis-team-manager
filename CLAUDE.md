@@ -1964,15 +1964,34 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     well-coached program draws the same players, the same ceilings and the same variance
     as an untagged one; only the RATE a player closes on the ceiling they already had
     moves. It is the exact MIRROR of `neglect` — the same `mature` governor, one sign
-    over, and deliberately the same magnitude (`COACHING_MATURE` +0.012..+0.030 against
-    `NEGLECT_MATURE` -0.030..-0.012) so the association's level does not drift with the
-    ratio of good tags to bad. A RANGE, not a constant, for neglect's own reason, drawn
-    per school by `coaching_quality()`. ‼️ **It cannot overshoot**: `_gen_seat` clamps to
-    `DEV_CAP` (0.98), so the lift saturates against the ceiling — a player already
-    finishing near it gains almost nothing, and coaching can never make anybody better
-    than they could have been. Measured: freshmen **identical** (the step is
-    `mature × (grade - 9)`, zero at 9), seniors **+3.2 OVR**, ceilings byte-identical at
-    every grade.
+    over. ‼️ **The band is WIDE and deliberately NOT neglect's mirror** (owner rule
+    2026-08): `COACHING_MATURE` +0.004..+0.060, drawn per school by
+    `coaching_quality()`. A first version mirrored `NEGLECT_MATURE` exactly on a
+    symmetry argument and that was the wrong shape — a narrow band makes every tagged
+    program develop at nearly the same rate, so tagging twenty produces twenty copies
+    of one trajectory. The tag is meant to be worth applying BROADLY ("a very small set
+    of dev gains to very large and obviously lots of in-between"), which needs the
+    SPREAD, not the mean. Neglect keeps its narrow band because dampening has a hard
+    floor accelerating does not (past `DEV_MIN_STEP` it would REVERSE development).
+    ‼️ **What keeps the top end honest is `DEV_CAP` (0.98), not a small constant**:
+    `_gen_seat` clamps, so the lift saturates against the ceiling — a kid on track for
+    0.90 of theirs gains a little, one on track for 0.70 gains a lot, nobody exceeds
+    what they could have been. Measured over 60 programs: freshmen **identical** (the
+    step is `mature × (grade - 9)`, zero at 9), ceilings **byte-identical**, seniors
+    **+1.5 / +3.8 / +7.0 OVR** at the weak / middle / strong end of the band and a full
+    spread of **+0.0 to +11.5**.
+  - **turnout** is the third distinct thing an archetype can move — `blue_blood`
+    changes the DRAW, `coaching`/`neglect` the RATE, this the COUNT. Same players,
+    just MORE of them: `mean`/`spread`/`pot`/`mature` all untouched, and
+    `turnout_extra()` (**+4..+12**, drawn per school) is added to the classification's
+    roster target BEFORE `_freshman_class_size` rolls, so it widens the cohort draw as
+    well as shifting it. It exists for the small classifications — "some schools even
+    at the small school level have big school sized squads (not necessarily all
+    talented but depth helps)" — a tagged 1A bands at 14-16 + up to 12 and can carry a
+    9A-sized squad while still generating 1A players. Measured: mean player OVR
+    **unchanged** (38.6 → 38.4), squads roughly **+45% deeper**; the only strength
+    effect is order statistics (more draws from one distribution → a slightly better
+    best player and a much deeper bench), which is what depth IS.
   - **upstart** is a TEMPORARY multi-year run (~10 live statewide, 15–30% over the
     program's OWN baseline, so an upstart 1A is a strong 1A), rolled per world from the
     salt and expiring by itself — deliberately NOT storable, since a stored tag would make
