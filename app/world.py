@@ -4146,6 +4146,11 @@ def _jh_indiv_flight_order() -> tuple:
     return _jh_flight_rank() + jvi.BRACKETS
 
 
+def _jv_brackets() -> tuple:
+    from . import jhsaa_jv_individuals as jvi
+    return jvi.BRACKETS
+
+
 def _jh_flight_name(flight: str) -> str:
     """How a flight is written out, across BOTH individual events. One lookup, so
     a surface showing a varsity flight and a JV bracket side by side cannot name
@@ -4199,17 +4204,19 @@ def jhsaa_individual_title_repeats(world_id: int, gender: str,
             (world_id, gender)).fetchall()
     finally:
         conn.close()
-    order = {f: i for i, f in enumerate(_jh_flight_rank())}
+    order = {f: i for i, f in enumerate(_jh_indiv_flight_order())}
     out: dict[str, dict] = {}
     for r in rows:
-        # ‼️ THE FLIGHT CHECK IS WHAT KEEPS THE JV STATE TITLES OFF A VARSITY
-        # CAREER ROLL, and it is load-bearing rather than defensive. The JV
-        # individual tournaments archive into this same table in the same draw
-        # shape (deliberately — see `run_jhsaa`), and `_jh_flight_rank` is built
-        # from the VARSITY flights plus XD, so `JVS`/`JVD` are not in `order`
-        # and drop out here. JV counts for nothing on a varsity surface, which
-        # is the association's standing rule; a "tidy" rewrite that ranked an
-        # unknown flight last instead of dropping it would quietly merge the two.
+        # ‼️ THE JV STATE TITLES COUNT HERE (owner rule 2026-08 — the mixed
+        # correction's own logic: this roll is a record of state titles a
+        # PERSON has won, and a JV state title is one of them). `order` comes
+        # from `_jh_indiv_flight_order`, which appends `JVS`/`JVD` after the
+        # varsity flights and XD, so they are admitted and rank last in the
+        # tie-break — they carry no `FLIGHT_WEIGHTS` entry and never will. The
+        # "JV reaches no varsity counter" rule is about records, résumés, TOSS
+        # and the ladder, none of which is this page. A flight the order does
+        # not know is still dropped: an unknown key is a missing decision, not
+        # a row to rank somewhere quietly.
         if r["flight"] not in order or not r["champ"]:
             continue
         champ = _relabel(json.loads(r["champ"]))
@@ -4223,8 +4230,13 @@ def jhsaa_individual_title_repeats(world_id: int, gender: str,
             rec = out.setdefault(pid, {"pid": pid, "name": p.get("name", ""),
                                        "titles": []})
             rec["titles"].append({
-                "year": r["year"], "group": r["grp"], "flight": r["flight"],
-                "flight_name": ji.FLIGHT_NAMES.get(r["flight"], r["flight"]),
+                # A JV title's group is EMPTY on the row — it was won statewide,
+                # its flight name already says JV, and printing the archive's
+                # bare 'ALL' key would claim a class it was never contested in.
+                "year": r["year"],
+                "group": "" if r["flight"] in _jv_brackets() else r["grp"],
+                "flight": r["flight"],
+                "flight_name": _jh_flight_name(r["flight"]),
                 "school": champ.get("school", ""),
                 "grade": p.get("grade"),
                 # Context, not a co-holder: the count on this row is the person's.

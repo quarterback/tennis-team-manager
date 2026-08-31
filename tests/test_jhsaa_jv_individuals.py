@@ -561,14 +561,23 @@ def test_the_program_page_counts_it_as_an_individual_state_title(archived):
     assert all(r["flight_name"] == jvi.BRACKET_NAMES[r["flight"]] for r in got)
 
 
-def test_it_stays_off_the_varsity_career_title_roll(archived):
-    """The other half of the rule, and it is not a contradiction: a JV title is a
-    result on a player's page, and it is not a varsity counter. The repeat roll
-    ranks by dual FLIGHT WEIGHT, which prices courts the association plays — JV
-    brackets have no such weight and must not be given an invented one."""
+def test_a_jv_title_counts_on_the_career_title_roll(archived):
+    """The mixed correction's own logic, applied consistently: the repeat roll is
+    a record of state titles a PERSON has won, and a JV state title is one of
+    them. It ranks LAST in the flight tie-break — a JV bracket has no
+    `FLIGHT_WEIGHTS` entry and is never given an invented one — and its rows
+    carry an EMPTY group, because the title was won statewide and the flight
+    name already says JV."""
     from app import world as wd
-    assert wd.jhsaa_individual_title_repeats(archived["id"], "girls",
-                                             minimum=1) == []
+    rows = wd.jhsaa_individual_title_repeats(archived["id"], "girls", minimum=1)
+    by_pid = {r["pid"]: r for r in rows}
+    bo = by_pid["b" * 16]
+    assert [t["flight"] for t in bo["titles"]] == [jvi.SINGLES]
+    assert bo["titles"][0]["flight_name"] == jvi.BRACKET_NAMES[jvi.SINGLES]
+    assert bo["titles"][0]["group"] == ""
+    # both members of the pair are credited, partner carried as context
+    assert by_pid["c" * 16]["titles"][0]["partner"] == "Dee Fox"
+    assert by_pid["d" * 16]["titles"][0]["partner"] == "Cy Odom"
 
 
 def test_the_championship_page_renders_the_jv_draw(archived, monkeypatch):

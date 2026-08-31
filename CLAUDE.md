@@ -1229,10 +1229,11 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     does NOT follow that JV belongs on every varsity surface — the counters JV must
     never reach are the W-L record, the award résumé, TOSS and the ladder, and this
     event **credits nothing and mutates no `TeamSeason`**, the posture `run_mixed` takes.
-    The one all-flights reader, `jhsaa_individual_title_repeats`, drops it because
-    `_jh_flight_rank` is built from the VARSITY flights: that skip is load-bearing, and
-    "tidying" it to rank an unknown flight last would merge the two. `FLIGHT_WEIGHTS`
-    prices dual courts and has no entry for a JV bracket — never invent one.
+    A JV title DOES count on the career repeat-champions roll (the mixed correction's
+    own logic: that roll is a record of state titles a person has won), ranked last in
+    the flight tie-break via `_jh_indiv_flight_order` with an EMPTY group on the row —
+    `FLIGHT_WEIGHTS` prices dual courts and has no entry for a JV bracket; never
+    invent one to rank it higher.
   - **THE 96 CAP AND THE PIGTAILS** (`_pigtails`). Under 96 it is an ordinary seeded
     draw with byes. Over it, the surplus plays in: assigned to seeds 1, 2, 3 … in order,
     **one per seed before any seed gets a second**, wrapping past 96 only once every
