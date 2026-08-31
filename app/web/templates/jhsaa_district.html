@@ -51,6 +51,19 @@
 </div>
 {% endif %}
 
+{# ‼️ THE ONLY WAY INTO A DISTRICT'S JV QUALIFYING BRACKETS (owner, 2026-08),
+   and it lives here for two reasons: the association has 95 districts, so an
+   index of them would be a dropdown nobody can scroll, and hanging them off the
+   statewide draw would clutter a page that is not about them. You are already
+   looking at the district when you want its qualifier. Singles opens by default
+   and the bracket switcher on that page is the only other control. #}
+<div class="jh-jump jv-qual">
+  <span class="k">JV individual qualifiers</span>
+  {% for f, name in view.jv_brackets %}
+  <a class="jh-qlink" href="{{ url_for('jhsaa_district_jv', group=view.group, district=view.district, u=u, g=view.gender, year=view.scope.pin, flight=f) }}">{{ name }}</a>
+  {% endfor %}
+</div>
+
 <div class="jh-layout wide">
   <div class="jh-stack">
     {# ONE panel, three views of the same twelve schools. Stacking them was three

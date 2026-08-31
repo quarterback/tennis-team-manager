@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header %}
+{% from "_bracket.html" import brk_canvas, brk_script %}
+{% block title %}{{ view.ident }} {{ view.flight_name }} — JV qualifier{% endblock %}
+{% block content %}
+
+{# The heading names the DISTRICT, because that is what this page is one of —
+   the qualifier belongs to the league, not to the statewide event. The full
+   identity carries the class: the association reuses its district names at
+   every level, so "Halbrook Basin District" alone is five different leagues. #}
+{{ jh_header(view.scope, u, 'districts',
+             view.ident ~ ' ' ~ view.flight_name, '',
+             [('Season', view.season_year), ('Draw', view.field_n)] if view.ready
+             else [('Season', view.season_year)]) }}
+
+<div class="jh-shell">
+
+{# Back to the league this qualifier belongs to — the page you came from, and
+   the only way in. #}
+<div class="jh-crumb">
+  <a href="{{ url_for('jhsaa_district', group=view.group, district=view.district, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.district }}</a>
+</div>
+
+{# ‼️ THE ONLY SWITCHER HERE IS THE TWO BRACKETS (owner, 2026-08). Singles opens
+   by default and doubles is one click; there is deliberately NO district picker,
+   because 95 districts is not a dropdown anybody can scroll — you reach this
+   page from the district you are already reading. #}
+<div class="jh-flightpick">
+  <label for="jvpick">Bracket</label>
+  <select id="jvpick" onchange="location.href=this.value">
+    {% for f, name in view.brackets %}
+    <option value="{{ url_for('jhsaa_district_jv', group=view.group, district=view.district, u=u, g=view.gender, year=view.scope.pin, flight=f) }}"
+            {{ 'selected' if view.flight == f }}>{{ name }}</option>
+    {% endfor %}
+  </select>
+</div>
+
+{% if not view.ready %}
+<div class="bl-panel"><div class="jh-empty">
+  No {{ view.flight_name|lower }} qualifier archived for this district
+  {%- if view.have %} — its
+  {% for f, name in view.brackets if f in view.have %}<a href="{{ url_for('jhsaa_district_jv', group=view.group, district=view.district, u=u, g=view.gender, year=view.scope.pin, flight=f) }}">{{ name|lower }}</a>{% endfor %}
+  bracket was played{% endif %}.
+  {# A district fields nobody in a bracket when no member school has enough
+     eligible JV players — by design, not a gap in the archive. #}
+</div></div>
+{% else %}
+
+{% if view.champion %}
+<div class="jh-champ" style="margin-bottom:12px">
+  <span class="mark">{{ view.champion_deco.mark|safe }}</span>
+  <div style="min-width:0">
+    {# A district title here is an INDIVIDUAL honour for the player and their
+       school — never a road unit, which is a TEAM thing the title board counts. #}
+    <span class="lbl">{{ view.season_year }} {{ view.ident }} {{ view.flight_name }} Champion{{ 's' if view.champion.players|length > 1 }}</span>
+    <a class="nm" href="{{ url_for('jhsaa_player', school=view.champion.school, pid=view.champion.players[0].pid, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.champion.full_label or view.champion.label }}</a>
+    <div class="sub">
+      {{ view.champion.school }}{% if view.champion_grade_note %} {{ view.champion_grade_note }}{% endif %}
+      · qualifies for the statewide
+      <a href="{{ url_for('jhsaa_individuals', u=u, g=view.gender, group=view.group, year=view.scope.pin, flight=view.flight) }}">{{ view.flight_name }}</a> draw
+    </div>
+  </div>
+  {% if view.runner_up %}
+  <div class="sc"><div class="n">{{ view.final_score }}</div>
+    <div class="o">final · def. {{ view.runner_up.full_label or view.runner_up.label }}, {{ view.runner_up.school }}{% if view.runner_up_grade_note %} {{ view.runner_up_grade_note }}{% endif %}</div></div>
+  {% endif %}
+</div>
+{% endif %}
+
+{# The SAME server-positioned tree every other bracket in the app uses. A
+   qualifier is a small draw — a handful of schools — so it needs no mobile
+   fallback the statewide draw does not already go without. #}
+<div class="brk-stage" id="brkstage">
+  <section class="brk-region" data-view="all">
+    <div class="brk-region-head">
+      <h2>{{ view.season_year }} {{ view.flight_name }} qualifier · {{ view.field_n }} {{ 'entry' if view.field_n == 1 else 'entries' }}</h2>
+      <span class="brk-region-champ">
+        {% if view.champion %}{{ view.champion.label }}{% if view.runner_up %} def. {{ view.runner_up.label }}{% endif %}{% else %}in progress{% endif %}</span>
+    </div>
+    {% if view.canvas.columns %}
+    {{ brk_canvas(view.canvas, u, false, 'jhsaa_player', {'g': view.gender, 'year': view.scope.pin}) }}
+    {% else %}
+    {# One eligible school in the district qualifies it UNOPPOSED — a real
+       outcome (`run_tournament` returns a lone entrant as champion), and a draw
+       with no matches has no tree to draw. #}
+    <div class="jh-empty" style="padding:12px">Qualified unopposed — no other school in the district entered.</div>
+    {% endif %}
+  </section>
+</div>
+
+{% endif %}
+</div>
+
+{{ brk_script() }}
+{% endblock %}

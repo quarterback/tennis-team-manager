@@ -270,6 +270,13 @@ class Entry:
     engine: object                  # engine Player, or DoublesTeam for a pair
     rating: float
     flight: str
+    #: Where the entry QUALIFIED, for an event that has a qualifying path. Empty
+    #: for the varsity flights, which have none — every school simply enters
+    #: (`select_field`'s "no cut and no district quota"). The JV state
+    #: tournaments do qualify through the districts, and this carries the full
+    #: district identity — `(classification, name)` written out, never the bare
+    #: name, since the JHSAA reuses its district names at every level.
+    district: str = ""
 
     @property
     def label(self) -> str:
@@ -313,6 +320,10 @@ class DrawMatch:
     winner_is_hi: bool
     scoreline: str
     upset: bool
+    #: For a PRE-ROUND match only: the main-draw seed line this match feeds. None
+    #: in every main-draw round, and in every varsity draw, none of which has a
+    #: pre-round at all. See `jhsaa_jv_individuals._pigtails`.
+    seed_line: int | None = None
 
 
 @dataclass
@@ -708,10 +719,26 @@ def draw_to_dict(d: FlightDraw) -> dict:
         # rebuilding a roster for a year that may be a decade old, to recover
         # something the draw already knew. Archives written before this read back
         # with no grade and simply omit it.
-        return {"school": e.school, "label": e.label,
-                "full_label": e.full_label, "seed": d.seed_of(e),
-                "players": [{"pid": p.pid, "name": p.name, "grade": p.grade}
-                            for p in e.players]}
+        # ‼️ `district` is emitted ONLY when the event has a qualifying path, and
+        # that is deliberate rather than tidy: the varsity flights have none, so
+        # writing an empty key onto all fifty-four of a gender's draws would
+        # rewrite every archived byte for a field that is always "". Same rule
+        # for a pre-round match's `seed_line` below.
+        row = {"school": e.school, "label": e.label,
+               "full_label": e.full_label, "seed": d.seed_of(e),
+               "players": [{"pid": p.pid, "name": p.name, "grade": p.grade}
+                           for p in e.players]}
+        if e.district:
+            row["district"] = e.district
+        return row
+
+    def md(m: DrawMatch) -> dict:
+        row = {"rnd": m.rnd, "hi": ix[m.hi.key], "lo": ix[m.lo.key],
+               "winner_is_hi": m.winner_is_hi, "scoreline": m.scoreline,
+               "upset": m.upset}
+        if m.seed_line is not None:
+            row["seed_line"] = m.seed_line
+        return row
     ix = {e.key: i for i, e in enumerate(d.entries)}
     fin = d.finishes()
     return {
@@ -721,8 +748,5 @@ def draw_to_dict(d: FlightDraw) -> dict:
         "champion": ix.get(d.champion.key) if d.champion else None,
         "runner_up": ix.get(d.runner_up.key) if d.runner_up else None,
         "finishes": {k: {"label": v[0], "tag": v[1]} for k, v in fin.items()},
-        "rounds": [[{"rnd": m.rnd, "hi": ix[m.hi.key], "lo": ix[m.lo.key],
-                     "winner_is_hi": m.winner_is_hi, "scoreline": m.scoreline,
-                     "upset": m.upset}
-                    for m in rnd] for rnd in d.rounds],
+        "rounds": [[md(m) for m in rnd] for rnd in d.rounds],
     }

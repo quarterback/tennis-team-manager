@@ -3698,6 +3698,7 @@ def run_jhsaa(seed: int, world: dict) -> dict:
     is rebuilt on demand rather than persisted (`jhsaa.career`)."""
     from . import jhsaa
     from . import jhsaa_individuals
+    from . import jhsaa_jv_individuals as jv_indiv
     salt = active_salt(seed)          # the per-save salt recruit_class also uses
     year = world["year"]              # DB key ONLY — never a season parameter
     # THE season parameters, exactly as the recruit hand-off uses them:
@@ -3856,6 +3857,44 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                 [(world["id"], year, gender, grp, flight, json.dumps(draw))
                  for grp, flights in (season.get("individuals") or {}).items()
                  for flight, draw in flights.items()])
+            # THE JV INDIVIDUAL STATE TOURNAMENTS — the same table and the same
+            # draw shape, which is the point: the champion-history and export
+            # tooling reads a draw, not a varsity draw. Two rows per gender.
+            #
+            # ‼️ THE GROUP IS `GROUP_KEY`, NOT A CLASSIFICATION. This event is
+            # CLASSLESS — one statewide champion per bracket per gender — so
+            # there is no class to store, and 'ALL' collides with no
+            # `jhsaa.GROUPS` entry. That is what keeps every group-scoped reader
+            # (`jhsaa_individual_champions`, `jhsaa_individual_results`,
+            # `jhsaa_school_individual_champions`, which all query a real class)
+            # from ever serving a JV draw under a varsity heading. The one
+            # reader that scans EVERY flight is `jhsaa_individual_title_repeats`
+            # and it filters these out explicitly — see its own note.
+            jv_arc = season.get("jv_individuals") or {}
+            conn.executemany(
+                "INSERT INTO world_jhsaa_individual"
+                " (world_id, year, gender, grp, flight, data) VALUES (?,?,?,?,?,?)",
+                [(world["id"], year, gender, jv_indiv.GROUP_KEY, flight,
+                  json.dumps(draw))
+                 for flight, draw in (jv_arc.get("state") or {}).items()])
+            # THE QUALIFYING ROUND — one row per district per bracket, ~190 a
+            # gender. Same table and same draw shape (a qualifier is a real
+            # bracket with a real final, and the district page is asked for it);
+            # ~2.8 KB a draw, ~1 MB a season across both genders, measured,
+            # against the 1.7 MB a gender the varsity draws already cost.
+            #
+            # ‼️ THEIR OWN FLIGHT KEY (`DISTRICT_BRACKETS`), which is what keeps
+            # a district championship from being counted as a state one. `grp`
+            # is the district's FULL identity — `(classification, name)` — since
+            # the association reuses district names at every level, and it is
+            # what the district page looks a draw up by.
+            conn.executemany(
+                "INSERT INTO world_jhsaa_individual"
+                " (world_id, year, gender, grp, flight, data) VALUES (?,?,?,?,?,?)",
+                [(world["id"], year, gender, ident,
+                  jv_indiv.DISTRICT_OF[bracket], json.dumps(draw))
+                 for bracket, draws in (jv_arc.get("districts") or {}).items()
+                 for ident, draw in draws.items()])
             # INJURIES — VARSITY only, one row per injury actually rolled
             # (`t.injury_log`, see `jhsaa.TeamSeason`). JV never carries one.
             conn.executemany(
@@ -3978,6 +4017,34 @@ def jhsaa_individual_draw(world_id: int, year: int, gender: str, group: str,
     # Relabelled into today's names, exactly like the season summary: a draw names
     # schools, and a rename must not orphan a title somebody won.
     return _relabel(json.loads(r["data"])) if r else None
+
+
+def jhsaa_jv_district_draws(world_id: int, year: int, gender: str,
+                            group: str, district: str) -> dict:
+    """`{bracket: draw}` — a district's own JV qualifying brackets for a season.
+
+    Keyed on the district's FULL identity, `(classification, name)`, because the
+    association reuses its district names at every level: keyed on the name
+    alone this would serve the 3A league's qualifier under a 7A heading, with
+    every name right and every result wrong.
+
+    Returns the STATE bracket keys (`JVS`/`JVD`), not the archive's district
+    ones, so a caller reads "the JV Singles qualifier" rather than having to
+    know the storage key."""
+    from . import jhsaa_jv_individuals as jvi
+    ident = jvi.district_label(group, district)
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT flight, data FROM world_jhsaa_individual WHERE world_id=?"
+            " AND year=? AND gender=? AND grp=? AND flight IN (?, ?)",
+            (world_id, year, gender, ident, *jvi.DISTRICT_BRACKETS)).fetchall()
+    finally:
+        conn.close()
+    # Relabelled into today's school names like every other archived draw — a
+    # rename must not orphan a title somebody won.
+    return {jvi.STATE_OF[r["flight"]]: _relabel(json.loads(r["data"]))
+            for r in rows}
 
 
 def jhsaa_individual_champions(world_id: int, year: int, gender: str,
@@ -4112,6 +4179,34 @@ def _jh_flight_rank() -> tuple[str, ...]:
                         key=lambda f: (-_jh.FLIGHT_WEIGHTS[f], f[0] != "S", f))) + ("XD",)
 
 
+def _jh_indiv_flight_order() -> tuple:
+    """Every individual-tournament flight there is, in the order a page lists
+    them: the six varsity flights by `_jh_flight_rank`, then mixed doubles, then
+    the two JV state brackets.
+
+    The JV brackets sit LAST because they are a different event, not a weaker
+    flight — `FLIGHT_WEIGHTS` prices dual courts and has no entry for them, so
+    ranking them inside that table would be inventing a weight for a court the
+    association does not play. Singles before doubles, the same tie-break the
+    varsity table breaks on."""
+    from . import jhsaa_jv_individuals as jvi
+    return _jh_flight_rank() + jvi.BRACKETS
+
+
+def _jv_brackets() -> tuple:
+    from . import jhsaa_jv_individuals as jvi
+    return jvi.BRACKETS
+
+
+def _jh_flight_name(flight: str) -> str:
+    """How a flight is written out, across BOTH individual events. One lookup, so
+    a surface showing a varsity flight and a JV bracket side by side cannot name
+    one and print the other's bare key."""
+    from . import jhsaa_individuals as ji
+    from . import jhsaa_jv_individuals as jvi
+    return ji.FLIGHT_NAMES.get(flight) or jvi.BRACKET_NAMES.get(flight, flight)
+
+
 def jhsaa_individual_title_repeats(world_id: int, gender: str,
                                    minimum: int = 2) -> list[dict]:
     """Players with more than one INDIVIDUAL STATE title, across every archived
@@ -4145,6 +4240,15 @@ def jhsaa_individual_title_repeats(world_id: int, gender: str,
     INDEX into `entries`, so json1 can return just that entrant. `_relabel` then
     runs on the small dict rather than the whole draw."""
     from . import jhsaa_individuals as ji
+    # ‼️ THE FLIGHT ALLOWLIST GOES IN THE SQL, not only in the loop below. The
+    # qualifying rounds of the JV brackets live in this table too — ~380 rows a
+    # season across both genders — and a Python-side skip would still have made
+    # SQLite parse every one of their blobs twice (the `json_extract` pair is
+    # evaluated per row) on a page that folds EVERY archived season. Filtering
+    # here means a district draw never leaves the database. The loop keeps its
+    # own check: an unknown flight is a missing decision, not a row to rank
+    # quietly.
+    flights = _jh_indiv_flight_order()
     conn = _db()
     try:
         rows = conn.execute(
@@ -4152,13 +4256,24 @@ def jhsaa_individual_title_repeats(world_id: int, gender: str,
             " json_extract(data, '$.entries[' ||"
             "   json_extract(data, '$.champion') || ']') AS champ"
             " FROM world_jhsaa_individual WHERE world_id=? AND gender IN (?, 'mixed')"
+            f" AND flight IN ({','.join('?' * len(flights))})"
             " AND json_extract(data, '$.champion') IS NOT NULL",
-            (world_id, gender)).fetchall()
+            (world_id, gender, *flights)).fetchall()
     finally:
         conn.close()
-    order = {f: i for i, f in enumerate(_jh_flight_rank())}
+    order = {f: i for i, f in enumerate(_jh_indiv_flight_order())}
     out: dict[str, dict] = {}
     for r in rows:
+        # ‼️ THE JV STATE TITLES COUNT HERE (owner rule 2026-08 — the mixed
+        # correction's own logic: this roll is a record of state titles a
+        # PERSON has won, and a JV state title is one of them). `order` comes
+        # from `_jh_indiv_flight_order`, which appends `JVS`/`JVD` after the
+        # varsity flights and XD, so they are admitted and rank last in the
+        # tie-break — they carry no `FLIGHT_WEIGHTS` entry and never will. The
+        # "JV reaches no varsity counter" rule is about records, résumés, TOSS
+        # and the ladder, none of which is this page. A flight the order does
+        # not know is still dropped: an unknown key is a missing decision, not
+        # a row to rank somewhere quietly.
         if r["flight"] not in order or not r["champ"]:
             continue
         champ = _relabel(json.loads(r["champ"]))
@@ -4172,8 +4287,13 @@ def jhsaa_individual_title_repeats(world_id: int, gender: str,
             rec = out.setdefault(pid, {"pid": pid, "name": p.get("name", ""),
                                        "titles": []})
             rec["titles"].append({
-                "year": r["year"], "group": r["grp"], "flight": r["flight"],
-                "flight_name": ji.FLIGHT_NAMES.get(r["flight"], r["flight"]),
+                # A JV title's group is EMPTY on the row — it was won statewide,
+                # its flight name already says JV, and printing the archive's
+                # bare 'ALL' key would claim a class it was never contested in.
+                "year": r["year"],
+                "group": "" if r["flight"] in _jv_brackets() else r["grp"],
+                "flight": r["flight"],
+                "flight_name": _jh_flight_name(r["flight"]),
                 "school": champ.get("school", ""),
                 "grade": p.get("grade"),
                 # Context, not a co-holder: the count on this row is the person's.
@@ -4208,14 +4328,30 @@ def jhsaa_individual_results(world_id: int, year: int, gender: str, group: str,
     entry is then located properly, by walking `entries`.
 
     Mixed doubles is included (gender 'mixed'). It is a state title the player won
-    and belongs on their page; it credits no AWARD, which is a different thing."""
+    and belongs on their page; it credits no AWARD, which is a different thing.
+
+    ‼️ SO ARE THE JV STATE TOURNAMENTS (owner rule 2026-08): "it's still a state
+    honour, so this tournament shows up on a player page no different than the
+    other individual singles/doubles state tournament flights." They are archived
+    CLASSLESS, under `jhsaa_jv_individuals.GROUP_KEY` rather than a
+    classification, so the group filter has to admit that key as well as the
+    player's own class — a page scoped to one class would otherwise silently drop
+    a title the player actually won. That is the same mistake the mixed draw's
+    exclusion was: answering a scoping question by losing a result.
+
+    ‼️ IT DOES NOT FOLLOW THAT JV BELONGS ON EVERY VARSITY SURFACE. This section
+    is a record of what a player did; the counters JV must never reach are the
+    W-L record, the résumé the awards read, TOSS and the ladder — none of which
+    is here, and all of which `jhsaa.JVTeam` keeps unreachable by construction."""
+    from . import jhsaa_jv_individuals as jvi
     conn = _db()
     try:
         rows = conn.execute(
-            "SELECT gender, flight, data FROM world_jhsaa_individual"
-            " WHERE world_id=? AND year=? AND grp=? AND gender IN (?, 'mixed')"
-            " AND data LIKE ?",
-            (world_id, year, group, gender, f"%{pid}%")).fetchall()
+            "SELECT gender, flight, grp, data FROM world_jhsaa_individual"
+            " WHERE world_id=? AND year=? AND grp IN (?, ?)"
+            " AND gender IN (?, 'mixed') AND data LIKE ?",
+            (world_id, year, group, jvi.GROUP_KEY, gender,
+             f"%{pid}%")).fetchall()
     finally:
         conn.close()
     from . import jhsaa_individuals as ji
@@ -4230,15 +4366,21 @@ def jhsaa_individual_results(world_id: int, year: int, gender: str, group: str,
         tier, icon, honour = ji.finish_tier(tag)
         partner = next((p["name"] for p in e["players"] if p["pid"] != pid), "")
         out.append({"flight": r["flight"], "gender": r["gender"],
-                    "flight_name": ji.FLIGHT_NAMES.get(r["flight"], r["flight"]),
+                    "flight_name": _jh_flight_name(r["flight"]),
                     "finish": label, "tag": tag, "seed": e.get("seed") or 0,
                     "partner": partner, "entries": len(d["entries"]),
                     # How loudly the page says it — see `jhsaa_individuals
                     # .FINISH_TIERS`. `honour` is empty below the top 8, which is
                     # what makes those rows read as history rather than accolade.
                     "tier": tier, "icon": icon, "honour": honour,
-                    "group": group, "champion": tag == "CHAMP"})
-    order = {f: i for i, f in enumerate(ji.FLIGHTS + ("XD",))}
+                    # ‼️ THE DRAW'S OWN GROUP, NOT THE PAGE'S. A JV draw is
+                    # classless and carries `GROUP_KEY`; stamping the player's
+                    # class on it would file a statewide title under a class it
+                    # was never contested in. `jv` is the display's cue to say
+                    # "Statewide" rather than print the bare key.
+                    "group": r["grp"], "jv": r["flight"] in jvi.BRACKETS,
+                    "champion": tag == "CHAMP"})
+    order = {f: i for i, f in enumerate(_jh_indiv_flight_order())}
     out.sort(key=lambda r: order.get(r["flight"], 99))
     return out
 
@@ -6375,7 +6517,7 @@ def jhsaa_school_individual_champions(world_id: int, gender: str, school: str,
     That is the program-level counterpart of the rule one level down: on the career
     rolls a mixed title credits only the winner's own gender, since a career belongs
     to a person and a person has one. A PROGRAM has both teams."""
-    from . import jhsaa_individuals as ji
+    from . import jhsaa_jv_individuals as jvi
     out = []
     for s in seasons:
         grp = s.get("group")
@@ -6384,22 +6526,33 @@ def jhsaa_school_individual_champions(world_id: int, gender: str, school: str,
         # The mixed draw is archived under gender 'mixed' and its group comes off the
         # school's row, which both its teams share — so this year's class is the
         # right key for it too.
+        # ‼️ AND THE CLASSLESS JV STATE BRACKETS, under `GROUP_KEY`. They are a
+        # state title the program won and belong here for the same reason mixed
+        # doubles does — the counterpart of the player page's own section, which
+        # shows them (owner rule 2026-08). The key cannot collide with a class,
+        # so this reads one extra pair of rows per season and nothing else moves.
         champs = {**jhsaa_individual_champions(world_id, s["year"], gender, grp),
-                  **jhsaa_individual_champions(world_id, s["year"], "mixed", grp)}
+                  **jhsaa_individual_champions(world_id, s["year"], "mixed", grp),
+                  **jhsaa_individual_champions(world_id, s["year"], gender,
+                                               jvi.GROUP_KEY)}
         for flight, c in champs.items():
             champion = c.get("champion") or {}
             if champion.get("school") != school:
                 continue
             out.append({
                 "year": s["year"], "season_year": s.get("season_year") or s["year"],
-                "group": grp, "flight": flight,
-                "flight_name": ji.FLIGHT_NAMES.get(flight, flight),
+                # A JV title was contested statewide, so it is not this
+                # program's classification that year — the draw's own key is.
+                "group": jvi.GROUP_KEY if flight in jvi.BRACKETS else grp,
+                "flight": flight,
+                "flight_name": _jh_flight_name(flight),
                 "mixed": flight == "XD",
+                "jv": flight in jvi.BRACKETS,
                 "players": [{"pid": p.get("pid"), "name": p.get("name"),
                             "grade": p.get("grade")}
                            for p in champion.get("players") or ()],
             })
-    order = {f: i for i, f in enumerate(_jh_flight_rank())}
+    order = {f: i for i, f in enumerate(_jh_indiv_flight_order())}
     out.sort(key=lambda r: (-r["year"], order.get(r["flight"], 99)))
     return out
 

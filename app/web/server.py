@@ -44,6 +44,7 @@ from .state import (jhsaa_view, jhsaa_scope_view, jhsaa_school_view, jhsaa_past_
                     jhsaa_rankings_view, jhsaa_player_view, jhsaa_players_search,
                     jhsaa_misapplied_players, jhsaa_lineup_lab, jhsaa_schools_view,
                     jhsaa_titles_view, jhsaa_individual_view, jhsaa_realism_view,
+                    jhsaa_district_jv_view,
                     jhsaa_individual_winners, jhsaa_retired_view,
                     jhsaa_repeat_poy, jhsaa_repeat_individual_champions,
                     jhsaa_career_wins_view, jhsaa_program_wins_view, jhsaa_dual_view)
@@ -2214,13 +2215,24 @@ def create_app() -> Flask:
                           # in another class is a DIFFERENT league, so a class switch
                           # goes to that class's league index, never to a same-named
                           # league that may not exist.
-                          "jhsaa_district": "jhsaa_districts"}
+                          "jhsaa_district": "jhsaa_districts",
+                          # Same rule for a district's JV qualifier: it is keyed
+                          # (classification, name) too, so the same league name in
+                          # another class is a different league — and may not exist.
+                          "jhsaa_district_jv": "jhsaa_districts"}
     # A pid is a seat on ONE gender's roster, so it cannot follow a gender switch;
     # the same school's other program can.
     _JH_GENDER_FALLBACK = {"jhsaa_player": "jhsaa_school"}
     #: Path arguments that identify WHICH page this is — carried through a scope
     #: change, dropped when the change falls back to another endpoint.
     _JH_PATH_ARGS = {"jhsaa_district": ("group", "district"),
+                     # ‼️ WITHOUT THIS THE SCOPE BAR CANNOT REBUILD THE PAGE'S OWN
+                     # URL. `jh_scope_url` re-emits `request.endpoint`, so an
+                     # endpoint whose path carries an identifier must name it here
+                     # or `url_for` raises BuildError on every scope control — a
+                     # 500 on the whole page, from the header, for a route that is
+                     # otherwise correct.
+                     "jhsaa_district_jv": ("group", "district"),
                      "jhsaa_school": ("school", "year"),
                      "jhsaa_player": ("school", "pid")}
 
@@ -3128,6 +3140,25 @@ def create_app() -> Flask:
             abort(404)
         return render_template("jhsaa_district.html", active="High School", view=view,
                                gender=gender, u=u, uni_label=label)
+
+    @app.route("/jhsaa/district-jv/<group>/<district>")
+    def jhsaa_district_jv(group, district):
+        """One district's JV individual qualifying bracket — singles by default,
+        doubles from the switcher on the page.
+
+        Reached from that district's own standings page and nowhere else (owner,
+        2026-08): the association has 95 districts, so an index of them would be
+        a dropdown nobody can scroll, and hanging them off the statewide draw
+        would clutter it with brackets that page is not about. You are already
+        looking at the district when you want its qualifier.
+
+        Keyed (CLASSIFICATION, name) like every other district route — the same
+        district name exists in five classes."""
+        gender, label, u, g, _grp, year = _jh_scope_args()
+        view = jhsaa_district_jv_view(DEFAULT_SEED, g, group, district,
+                                      request.args.get("flight"), year)
+        return render_template("jhsaa_district_jv.html", active="High School",
+                               view=view, gender=gender, u=u, uni_label=label)
 
     @app.route("/jhsaa/school/<school>")
     @app.route("/jhsaa/school/<school>/<int:year>")

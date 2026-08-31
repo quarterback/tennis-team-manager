@@ -7018,6 +7018,21 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     # It writes nothing any line below this can see: no `records`, no `matches`, no
     # `power`, no standings row. That is `JVTeam`'s doing, not this call's.
     out["jv"] = play_jv_season(by_group, year, gender, salt)
+    # THE JV INDIVIDUAL STATE TOURNAMENTS — two classless statewide draws (JV
+    # Singles, JV Doubles) for 12th-graders below the varsity eleven, qualified
+    # by winning their district. Played HERE because `jv_pool` reads `_order`:
+    # a JV senior's eligibility and their school's JV No. 1 are both properties
+    # of the finished ladder, so this reads the same cut the JV season was
+    # staffed from.
+    #
+    # ‼️ IT CREDITS NOTHING AND MUTATES NOTHING. JV counts for nothing anywhere
+    # (no records, no matches, no TOSS, no awards, no seeding), so this event
+    # holds to the same guarantee the JV season does — it is read-only over the
+    # TeamSeasons above and takes its randomness from its own Random, which is
+    # what keeps every varsity outcome below this line bit-identical.
+    from .jhsaa_jv_individuals import run_jv_state as _run_jv_individuals
+    out["jv_individuals"] = _run_jv_individuals(by_group, gender, year,
+                                                seed=seed)
     # TOSS was computed over the whole gender inside `play_regular_season` — once, on the
     # finished regular season, before any state tournament, since it is both the seeding
     # input and rung 4 of the district tiebreak. Across all classifications together

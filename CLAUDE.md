@@ -1182,12 +1182,90 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     varsity's geography-first `_nondistrict_pairs` (median gap 0.0 OVR vs 4.2-5.2):
     travel is not a real cost in a simulation and a JV player facing their own level is
     the entire point. Classification is deliberately NOT a gate.
-  - **NO PLAYOFFS** (asked directly, 2026-08): a bracket needs a ranking to seed it and
+  - **NO *TEAM* PLAYOFFS** (asked directly, 2026-08): a bracket needs a ranking to seed it and
     JV has none by design; a JV team is a ladder slice rather than a standing squad, so
     the squad that qualified need not be the squad that plays; and the elastic format means a semifinal and a final could be
     different shapes. More showcase weekends are the shape that works.
   - Cost: the week-0 rung goes **~5 → ~7 minutes** for both genders (+40%).
     `tests/test_jhsaa_jv.py`.
+- **‼️ THE JV INDIVIDUAL STATE TOURNAMENTS — two CLASSLESS draws a gender (owner rule
+  2026-08, `app/jhsaa_jv_individuals.py`).** JV Singles and JV Doubles, four state
+  draws in all, and a VARIANT of `jhsaa_individuals` rather than a second engine —
+  selection, `run_tournament`, `INDIV_FORMAT` (imported down the chain from the
+  COLLEGE championships, so all three events are scored alike), `_assemble`,
+  `draw_to_dict`, `finish_band` and the `world_jhsaa_individual` table are all reused.
+  This is what the "NO PLAYOFFS" bullet above does NOT cover: that rule is about a JV
+  TEAM bracket (a ladder slice is not a standing squad, and the elastic format means
+  two rounds could be different shapes). An individual draw has neither problem.
+  - **‼️ CLASSLESS, WHICH IS UNIQUE HERE.** Every other JHSAA championship is crowned
+    per classification; this one crowns ONE champion per bracket per gender over the
+    whole association. So the archive's group key is `GROUP_KEY` (**'ALL'**, a value no
+    `GROUPS` entry can collide with) and **every group-scoped reader must admit it** —
+    `jhsaa_individual_results` and `jhsaa_school_individual_champions` do, because a
+    page scoped to a class would otherwise silently drop a title the player won. Never
+    store a real class on one of these rows: it was not contested in one.
+  - **Eligibility is per bracket** (`ELIGIBLE_GRADES`): singles is **seniors**, doubles
+    is **juniors AND seniors**. That is arithmetic, not sentiment — a pair is three
+    eligible players deep once the singles entrant is held out, and measured across
+    three classes only **~14% of programs have three JV seniors** (~72% have one), so a
+    seniors-only doubles bracket left most districts with no champion to send. "JV" is
+    `jhsaa.jv_pool` and NOTHING else — the one ladder cut below `lineup_need("regular")`
+    — so no second roster split exists to drift. Entries are the top of each pool by
+    `ladder_score` (established position, not a coach's pick — the varsity event's own
+    anti-sandbagging property), and the singles entrant is **held out of the pair**, so
+    a school fields three different people.
+  - **WIN YOUR DISTRICT.** One champion per district per bracket, no at-large, no wild
+    card, no recovery ladder; the state field IS the set of district champions. A
+    district of ONE eligible school qualifies it unopposed (`run_tournament` already
+    returns a lone entrant as champion — the guard is `not entries`, never `< 2`), and
+    a district with none emits nothing, so the field moves year to year by design.
+    Measured on the real association: **95 districts, both brackets field 95.**
+  - **‼️ A DISTRICT TITLE HERE IS AN INDIVIDUAL HONOUR, NOT A ROAD UNIT** (owner,
+    2026-08). The road units are TEAM units the title board counts; this rides on the
+    ENTRY (`Entry.district`, the full `(classification, name)` identity — the JHSAA
+    reuses district names at every level). Nothing was added to `jhsaa_title_stages`.
+  - **‼️ IT IS A STATE HONOUR AND SHOWS ON A PLAYER PAGE** (owner rule 2026-08): "no
+    different than the other individual singles/doubles state tournament flights". It
+    does NOT follow that JV belongs on every varsity surface — the counters JV must
+    never reach are the W-L record, the award résumé, TOSS and the ladder, and this
+    event **credits nothing and mutates no `TeamSeason`**, the posture `run_mixed` takes.
+    A JV title DOES count on the career repeat-champions roll (the mixed correction's
+    own logic: that roll is a record of state titles a person has won), ranked last in
+    the flight tie-break via `_jh_indiv_flight_order` with an EMPTY group on the row —
+    `FLIGHT_WEIGHTS` prices dual courts and has no entry for a JV bracket; never
+    invent one to rank it higher.
+  - **THE 96 CAP AND THE PIGTAILS** (`_pigtails`). Under 96 it is an ordinary seeded
+    draw with byes. Over it, the surplus plays in: assigned to seeds 1, 2, 3 … in order,
+    **one per seed before any seed gets a second**, wrapping past 96 only once every
+    seed has one. Each play-in match removes exactly one entrant, which is what closes
+    the arithmetic at ANY size (a seed carrying two is a chain of three entrants). The
+    pool is dealt SERPENTINE, so every line carries the same combined seed. It is a
+    PRE-ROUND (`PIGTAIL_ROUND`, archived as its own first round, each match naming its
+    `seed_line`) and deliberately does NOT graft the survivor into the seed's slot:
+    that would mean overriding bye placement inside `engine.tournament.seeded_draw`,
+    the ONE draw helper every varsity bracket and both college championships run
+    through. **At 95 districts the path never fires in the live association** — the tests
+    drive it synthetically, and that is the only thing that covers it.
+  - **How many are SEEDED is the USTA convention and is not set here**: a quarter of the
+    padded draw (128→32, 64→16, 32→8), i.e. `engine.tournament.seed_count`, applied by
+    `run_tournament` because nothing is passed to `seeds=`. The default IS the rule.
+  - **UI: two more entries on the flight switcher** of `/jhsaa/individuals`, in the
+    SAME ROW as Mixed Doubles past the one separator — the rail has two registers
+    (the six flights, then the other state tournaments) and JV belongs in the
+    second; a separator of its own read as a third tier of thing. The heading is
+    just the event, `view.event_name` / `view.heading`: **"JV Singles" / "JV
+    Doubles"** — no class (classless), no gender (the scope bar's switch picks
+    one, and each gender renders its own draw off the `gender` column), and no
+    "State", which is implied there as it is for every other flight. A class
+    switch on the rail stays on the same statewide draw (the TOC's posture). The
+    **play-in renders as its own panel, never a canvas column**: `_bracket_canvas`
+    links columns positionally on the main draw's halving, and a pigtail pre-round
+    is a handful of matches grafted onto seed lines — a shape the tree cannot draw
+    and that a real association prints as a list above the draw anyway. The player
+    page's results section and the program page's Individual State Champions tab
+    show JV rows with "Statewide" in place of a class; the History → Individual
+    Champions roll carries them too, closing its flight dropdown beside mixed.
+  - Cost **~5s a gender** on a ~7-minute rung. `tests/test_jhsaa_jv_individuals.py`.
 - **Team honours exist beyond titles (same rule):** every unit won is an honour in
   ROMAN numerals ("Region IX", "Ward IV"; Zonals keep letters), all on ONE line —
   led by the DISTRICT TITLE when the program won its district (owner rule 2027-08:
