@@ -29,10 +29,19 @@ DOUBLES_FIELD = 64               # 64 pairs (128 players), the NCAA doubles draw
 SINGLES_PER_PROGRAM = 2          # a program can qualify up to its top 2 singles
 FIELD_MIN, FIELD_MAX = 8, 128
 
-# NCAA individual scoring (singles and doubles): best-of-3, no-ad, set tiebreaks,
-# with a 10-point match tiebreak as the deciding set.
+# Individual-championship scoring (singles and doubles): best-of-3, no-ad, set
+# tiebreaks, and a FULL third set — a normal set to 6 with a tiebreak at 6-6,
+# not a 10-point match tiebreak (owner rule 2026-08).
+#
+# ‼️ SHARED WITH THE JHSAA INDIVIDUAL STATE TOURNAMENTS, which import this rather
+# than re-declaring it (`jhsaa_individuals.INDIV_FORMAT`) so the two events
+# cannot drift. A change here changes both — which is what the owner asked for:
+# an individual championship is decided over a third set at either level.
+# `final_set_tiebreak_target` is left at its default because it is unread while
+# `final_set_tiebreak` is False; setting it would imply a decider that no longer
+# exists.
 INDIV_FMT = MatchFormat(best_of=3, no_ad=True, set_tiebreak=True,
-                        final_set_tiebreak=True, final_set_tiebreak_target=10)
+                        final_set_tiebreak=False)
 
 
 def _last(name: str) -> str:

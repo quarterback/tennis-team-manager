@@ -6092,6 +6092,15 @@ def _jh_career_stints(items: list[dict], schools: dict) -> list[dict]:
                         # where a plausible key name silently means something else.
                         "won": []})
         out[-1]["won"].append(it)
+    # The CLASS a stint's titles were won in, hoisted when it is the same for all
+    # of them — which it usually is, since a stint is one school and a program
+    # rarely reclassifies mid-career. Repeating "3A" on every title turned the row
+    # into a run-on with nothing to scan; hoisted, it reads once as context and the
+    # titles carry only what distinguishes them. None when a stint genuinely spans
+    # classes (reclassification, play-up), where the class belongs per title.
+    for st in out:
+        groups = {w.get("group") for w in st["won"]}
+        st["group"] = groups.pop() if len(groups) == 1 else None
     return out
 
 

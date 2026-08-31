@@ -249,6 +249,42 @@
   font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 
+/* ---- Repeat champions / POY rolls (/jhsaa/repeat-champions) ----
+   A career is a NAME and a LIST OF TITLES, and they are different kinds of thing,
+   so they get different lines. Run together in parentheses the titles were a grey
+   comma string with the classification repeated on every one — the eye had nothing
+   to land on and the row got longer the better the player was, which is backwards. */
+.jh-roll .row.rc { flex-direction: column; align-items: stretch; gap: 5px; }
+.jh-roll .rc .hd { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.jh-roll .rc .hd .nm {
+  font-size: 14.5px; font-weight: 800; color: var(--text-primary);
+  text-decoration: none; min-width: 0;
+}
+.jh-roll .rc .hd .nm:hover { color: var(--brand-strong); text-decoration: underline; }
+/* The count is the reason the row is on this page, so it is stated rather than
+   left to be inferred from the number of chips. */
+.jh-roll .rc .ct {
+  margin-left: auto; flex: 0 0 auto; font-size: 11.5px; font-weight: 800;
+  letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+.jh-roll .rc .tl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.jh-roll .rc .stint { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.jh-roll .rc .stint .mk { flex: 0 0 auto; display: inline-flex; }
+.jh-roll .rc .stint .sch { font-size: 13px; font-weight: 700; color: var(--text-secondary); }
+/* The class, said ONCE per stint when every title shares it. */
+.jh-roll .rc .stint .cls {
+  font-size: 10.5px; font-weight: 800; letter-spacing: var(--ls-eyebrow);
+  color: var(--text-faint); padding: 1px 5px; border-radius: 4px;
+  border: 1px solid var(--border-subtle);
+}
+.jh-roll .rc .ti {
+  font-size: 12.5px; color: var(--text-secondary); white-space: nowrap;
+  padding: 2px 8px; border-radius: 999px; background: var(--surface-subtle);
+  border: 1px solid var(--border-subtle);
+}
+.jh-roll .rc .ti b { font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
 /* ---- Program directory (/jhsaa/schools) ---- */
 .jh-dirbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 14px; }
 .jh-dirfind {
@@ -293,7 +329,14 @@
   letter-spacing: var(--ls-eyebrow); text-transform: uppercase;
   border-bottom: 1px solid var(--border-default);
 }
-.jh-tt thead tr:last-child th { top: 27px; }
+/* ‼️ THE SECOND HEADER ROW ONLY CLEARS A GROUP ROW THAT EXISTS. Written as
+   `thead tr:last-child`, this offset applied to EVERY jh-tt table — including the
+   two whose `tr.grp` is an empty colspan placeholder with no grouped columns to
+   label. An empty group row is not 27px tall, so the real header sat 27px down
+   with a strip of the first data row showing through above it and the labels no
+   longer over their columns. The sibling combinator ties the offset to the thing
+   it is clearing: add a group row and it applies, remove one and it does not. */
+.jh-tt thead tr.grp ~ tr th { top: 27px; }
 .jh-tt thead th:hover { color: var(--brand-strong); }
 .jh-tt th.sorted-desc::after { content: " ↓"; color: var(--brand); }
 .jh-tt th.sorted-asc::after { content: " ↑"; color: var(--brand); }

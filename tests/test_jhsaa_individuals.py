@@ -167,14 +167,26 @@ def test_the_round_of_16_is_called_the_octofinals():
 # --- scoring -----------------------------------------------------------------
 
 def test_it_plays_the_college_individual_championships_format():
-    """‼️ IMPORTED, not re-declared, so the two events cannot drift. Best-of-3 with a
-    10-point match tiebreak deciding set — which is also why no `best_of_3_ad` preset
-    exists: the constant was there all along."""
+    """‼️ IMPORTED, not re-declared, so the two events cannot drift — which is also
+    why no `best_of_3_ad` preset exists: the constant was there all along.
+
+    Best-of-3, no-ad, and a FULL third set (owner rule 2026-08 — it was a 10-point
+    match tiebreak, changed at BOTH levels, which is why the import survived the
+    change untouched)."""
     from app.individuals import INDIV_FMT
     assert ji.INDIV_FORMAT is INDIV_FMT
     assert ji.INDIV_FORMAT.best_of == 3
-    assert ji.INDIV_FORMAT.final_set_tiebreak is True
-    assert ji.INDIV_FORMAT.final_set_tiebreak_target == 10
+    assert ji.INDIV_FORMAT.no_ad is True
+    assert ji.INDIV_FORMAT.final_set_tiebreak is False
+    assert ji.INDIV_FORMAT.set_tiebreak is True          # ...but 6-6 is a tiebreak
+
+
+def test_every_jhsaa_match_is_now_scored_the_same_way():
+    """The individual event used to be the ONE place JHSAA scoring differed from
+    the league season. It no longer is: a full third set makes them agree field
+    for field. Pinned because it is a property worth losing loudly."""
+    from app.jhsaa import MATCH_FORMAT
+    assert ji.INDIV_FORMAT.to_dict() == MATCH_FORMAT.to_dict()
 
 
 def test_no_ad_preset_was_not_added_to_the_engine():

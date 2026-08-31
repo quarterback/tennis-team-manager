@@ -30,18 +30,31 @@
     {# An empty band is still rendered — see the POY roll. #}
     {% if not band.rows %}<div class="row none">Nobody yet.</div>{% endif %}
     {% for r in band.rows %}
-    <div class="row">
-      <a class="nm" href="{{ url_for('jhsaa_player', school=r.link, pid=r.pid, u=u, g=view.gender) }}">{{ r.name }}</a>
-      {# ‼️ RENDERED SOLO, EVEN FOR DOUBLES (owner, 2026-08): "doubles players are
-         individuals who can win with other people, so they're rendered as solo for
-         this list even if they won two together." The partner is context and rides
-         in the title attribute; putting it on the line turns a person's career back
-         into a pairing's, which is exactly what this list is not. #}
-      {% for st in r.stints %}<span class="stint">{% if st.deco.mark %}<span class="mk">{{ st.deco.mark|safe }}</span>{% endif %}<span class="sch">{{ st.school }}</span>
-        <span class="yrs">({% for t in st.won %}<span
-          title="{{ t.flight_name }}{% if t.partner %} · with {{ t.partner }}{% endif %}"
-          >{{ t.season_year }} {{ t.group }} {{ t.flight_name }}</span>{{ ', ' if not loop.last }}{% endfor %})</span>
-      </span>{% endfor %}
+    {# ‼️ TWO LINES INSIDE ONE ROW, not two rows: `.jh-roll .row` carries the
+       divider, so a sibling block would draw a rule through the middle of every
+       player. #}
+    <div class="row rc">
+      <div class="hd">
+        <a class="nm" href="{{ url_for('jhsaa_player', school=r.link, pid=r.pid, u=u, g=view.gender) }}">{{ r.name }}</a>
+        {# ‼️ RENDERED SOLO, EVEN FOR DOUBLES (owner, 2026-08): "doubles players are
+           individuals who can win with other people, so they're rendered as solo for
+           this list even if they won two together." The partner is context and rides
+           in the title attribute; putting it on the line turns a person's career back
+           into a pairing's, which is exactly what this list is not. #}
+        <span class="ct">{{ r.count }} titles</span>
+      </div>
+      {# ‼️ THE TITLES GET THEIR OWN LINE, AS CHIPS. Inline in parentheses they were
+         a grey comma run-on — "(2057 3A No. 2 Doubles, 2058 3A No. 1 Doubles, 2059
+         3A No. 2 Singles)" — with the class repeated on every one and nothing for
+         the eye to land on. The class is hoisted to the stint when every title
+         shares it (`_jh_career_stints`), so a chip carries the year and the flight,
+         which is what actually differs. #}
+      <div class="tl">
+        {% for st in r.stints %}<span class="stint">{% if st.deco.mark %}<span class="mk">{{ st.deco.mark|safe }}</span>{% endif %}<span
+          class="sch">{{ st.school }}</span>{% if st.group %}<span class="cls">{{ st.group }}</span>{% endif %}{% for t in st.won %}<span
+          class="ti" title="{{ t.season_year }} {{ t.group }} {{ t.flight_name }}{% if t.partner %} · with {{ t.partner }}{% endif %}"
+          ><b>{{ t.season_year }}</b> {% if not st.group %}{{ t.group }} {% endif %}{{ t.flight_name }}</span>{% endfor %}</span>{% endfor %}
+      </div>
     </div>
     {% endfor %}
   </div>
