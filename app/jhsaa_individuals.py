@@ -26,10 +26,13 @@ WHAT IS DIFFERENT FROM THE COLLEGE EVENT, and why:
   * **MIXED DOUBLES is a CONSOLATION event**, one flight and one bracket, one
     entry per school drawn from BELOW #9 — the players the six-flight slate has no
     seat for. See `run_mixed`.
-  * **SCORED THE WAY THE COLLEGE INDIVIDUAL CHAMPIONSHIPS ARE.** Not the league
-    season's `jhsaa.MATCH_FORMAT` (a full third set) — `individuals.INDIV_FMT`,
-    best-of-3 with a **10-point match tiebreak** deciding set, imported rather
-    than re-declared so the two events cannot drift. See `INDIV_FORMAT`.
+  * **SCORED THE WAY THE COLLEGE INDIVIDUAL CHAMPIONSHIPS ARE** —
+    `individuals.INDIV_FMT`, imported rather than re-declared so the two events
+    cannot drift. Best-of-3, no-ad, and a **FULL third set** (owner rule
+    2026-08, replacing a 10-point match tiebreak at both levels), which is also
+    what `jhsaa.MATCH_FORMAT` plays: JHSAA scoring is now uniform, and this is
+    no longer the one place the individual event differs from the league season.
+    See `INDIV_FORMAT`.
 
 ‼️ THE EVENT IS 3 SINGLES + 3 DOUBLES FOR EVERY CLASSIFICATION, INCLUDING 1A.
 It is an individual tournament and has NOTHING to do with any dual format — the
@@ -60,12 +63,18 @@ from engine import run_tournament, simulate_match, simulate_doubles, DoublesTeam
 from engine.doubles import doubles_rating
 from .individuals import INDIV_FMT
 
-#: The college individual championships' own scoring, IMPORTED — best-of-3, no-ad,
-#: set tiebreaks, 10-point match tiebreak for the deciding set. An individual
-#: championship is an individual championship; there was no reason to write a
-#: second constant, and a copied literal is how two events drift apart. This is
-#: the one place JHSAA play differs from `jhsaa.MATCH_FORMAT`, whose third set is
-#: a full set.
+#: The college individual championships' own scoring, IMPORTED — best-of-3,
+#: no-ad, set tiebreaks, and a FULL third set (owner rule 2026-08; it was a
+#: 10-point match tiebreak, changed at BOTH levels). An individual championship
+#: is an individual championship; there was no reason to write a second
+#: constant, and a copied literal is how two events drift apart.
+#:
+#: ‼️ This USED to be the one place JHSAA play differed from
+#: `jhsaa.MATCH_FORMAT`. It no longer is — the two now agree field for field, so
+#: every JHSAA match at every level is scored the same way. That makes the
+#: import look redundant and it is NOT: the constant belongs to the individual
+#: CHAMPIONSHIP, shared with college, and re-pointing this at `MATCH_FORMAT`
+#: would silently unbind the two championships the next time either moves.
 INDIV_FORMAT = INDIV_FMT
 
 #: Seeds follow the USTA/ITF convention — a quarter of the draw (128 -> 32, 64 -> 16,
