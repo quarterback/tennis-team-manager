@@ -5900,11 +5900,17 @@ def jhsaa_individual_winners(seed: int, gender: str, group: str | None = None,
     a title is where the title lives (the section's own fold-not-store rule)."""
     import app.jhsaa as jh
     import app.jhsaa_individuals as ji
+    import app.jhsaa_jv_individuals as jvi
     import app.world as world
     w = world.get_or_create(seed)
     g = _jh_g(gender)
     grp = group if group in jh.GROUPS else jh.GROUPS[0]
-    fl = flight if flight in ji.FLIGHTS or flight == "XD" else ji.FLIGHTS[0]
+    fl = (flight if flight in ji.FLIGHTS or flight == "XD"
+          or flight in jvi.BRACKETS else ji.FLIGHTS[0])
+    # The JV brackets are CLASSLESS (`GROUP_KEY`), so their roll ignores the
+    # class on the scope bar exactly as the bracket page does — the same titles
+    # whatever class the rail shows, and no class in the heading.
+    is_jv = fl in jvi.BRACKETS
     years = world.jhsaa_years(w["id"], g)
     schools = _jh_schools(g)
     rows = []
@@ -5912,7 +5918,8 @@ def jhsaa_individual_winners(seed: int, gender: str, group: str | None = None,
         arc = world.get_jhsaa(w["id"], year, g)
         # Mixed is archived under its own gender — it belongs to neither field.
         got = world.jhsaa_individual_champions(
-            w["id"], year, "mixed" if fl == "XD" else g, grp)
+            w["id"], year, "mixed" if fl == "XD" else g,
+            jvi.GROUP_KEY if is_jv else grp)
         rec = got.get(fl)
         if not rec:
             continue                      # a season played before the event existed
@@ -5932,8 +5939,11 @@ def jhsaa_individual_winners(seed: int, gender: str, group: str | None = None,
     # page for it — counting individual titles by school turns a list of PEOPLE into
     # a school leaderboard, and the programme cabinet is the Title Board's job.
     return {"gender": g, "group": grp, "groups": list(jh.GROUPS), "rows": rows,
-            "flight": fl, "flight_name": ji.FLIGHT_NAMES[fl],
+            "flight": fl,
+            "flight_name": jvi.BRACKET_NAMES[fl] if is_jv else ji.FLIGHT_NAMES[fl],
+            "jv": is_jv, "group_label": "" if is_jv else grp,
             "flights": [(f, ji.FLIGHT_NAMES[f]) for f in ji.FLIGHTS],
+            "jv_flights": [(f, jvi.BRACKET_NAMES[f]) for f in jvi.BRACKETS],
             "mixed_flight": "XD", "mixed_name": ji.FLIGHT_NAMES["XD"],
             "section_icon": ji.SECTION_ICON,
             "gold_icon": ji.FINISH_TIERS["CHAMP"][1],

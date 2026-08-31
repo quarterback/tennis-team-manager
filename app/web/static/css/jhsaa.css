@@ -75,6 +75,12 @@
    the small one, so they reuse the brand/bronze slots the mid-ladder carries. */
 .jh-class a.on.c-Group1 { background: var(--brand); }
 .jh-class a.on.c-Group2 { background: var(--rank-bronze); }
+/* Group 3 is the smallest of the trio (it crowns on the 24 shape beside 1A), so
+   it takes a small-class gray slot. It shipped with NO rule at all — a selected
+   Group 3 tab rendered white on white, the exact invisible-tab trap the comment
+   above warns about, and the guard test missed it because it compared the raw
+   spaced name ("c-Group 3") that no template ever emits. */
+.jh-class a.on.c-Group3 { background: var(--gray-600); }
 
 .jh-tabs { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
 .jh-tabs a {
@@ -462,6 +468,7 @@
 .jh-chip.c-1A { background: var(--gray-700); }
 .jh-chip.c-Group1 { background: var(--brand); }
 .jh-chip.c-Group2 { background: var(--rank-bronze); }
+.jh-chip.c-Group3 { background: var(--gray-600); }
 .jh-chip.gold { background: var(--rank-gold); }
 /* Honours tiers (owner rule 2027-08): gold = the title, silver = finalist,
    bronze = semifinalist, BLUE = every other State finish — reaching State is an

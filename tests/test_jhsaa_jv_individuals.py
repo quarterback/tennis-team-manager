@@ -598,6 +598,18 @@ def test_the_championship_page_renders_the_jv_draw(archived, monkeypatch):
     # the class rail does not scope the draw — any class shows the same champion
     r3 = client.get("/jhsaa/individuals?flight=JVS&g=girls&year=0&group=1A")
     assert "Bo Reyes" in r3.data.decode()
+    # ... and the History → Individual Champions roll tracks the JV titles the
+    # same way, one flight from the dropdown, whatever class the rail shows
+    for grp in ("9A", "1A"):
+        h = client.get(f"/jhsaa/individual-champions?flight=JVS&group={grp}"
+                       "&g=girls").data.decode()
+        assert "Bo Reyes" in h and "def." in h, grp
+    h = client.get("/jhsaa/individual-champions?flight=JVD&g=girls").data.decode()
+    assert "Cy Odom" in h and "Dee Fox" in h
+    # the varsity roll did not pick the JV titles up
+    h = client.get("/jhsaa/individual-champions?flight=S1&group=5A&g=girls"
+                   ).data.decode()
+    assert "Bo Reyes" not in h
 
 
 def test_the_view_splits_a_play_in_off_the_bracket_tree(by_group, monkeypatch):

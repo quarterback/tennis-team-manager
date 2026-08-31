@@ -42,6 +42,9 @@ ROUTES = [
     "/jhsaa/individuals?flight=XD",
     "/jhsaa/individuals?flight=JVS",
     "/jhsaa/individuals?flight=JVD&g=boys",
+    "/jhsaa/individual-champions",
+    "/jhsaa/individual-champions?flight=JVS",
+    "/jhsaa/individual-champions?flight=JVD&g=boys",
 ]
 
 
@@ -110,8 +113,15 @@ def test_every_classification_has_its_own_class_colour():
                encoding="utf-8").read()
     from app import jhsaa as jh
     for g in jh.GROUPS:
-        assert f".jh-class a.on.c-{g} " in css, g
-        assert f".jh-chip.c-{g} " in css, g
+        # ‼️ SPACES STRIPPED, the way every template emits the class
+        # (`c-{{ group|replace(' ','') }}`) — a two-word group would otherwise
+        # put a space inside a class attribute. Comparing the raw name here made
+        # this test fail on every "Group N" even when the rule existed, and let
+        # the one that genuinely didn't (Group 3, an invisible selected tab)
+        # hide inside the noise.
+        key = g.replace(" ", "")
+        assert f".jh-class a.on.c-{key} " in css, g
+        assert f".jh-chip.c-{key} " in css, g
 
 
 # --- the program directory ---------------------------------------------------------

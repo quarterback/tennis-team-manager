@@ -1,13 +1,15 @@
 {% extends "base.html" %}
 {% from "_jhsaa.html" import jh_header %}
-{% block title %}JHSAA {{ view.group }} {{ view.flight_name }} Champions{% endblock %}
+{% block title %}JHSAA {{ view.group_label or 'Statewide' }} {{ view.flight_name }} Champions{% endblock %}
 {% block content %}
 
 {# ‼️ NO EXPLANATORY SUBTITLE (owner, 2026-08). A results page states results; a
    sentence telling the reader what a dropdown is for is noise on a page whose
    controls are visible. #}
+{# ‼️ `group_label` is empty on the JV brackets — classless, so no class in the
+   heading, and the class rail does not scope their roll. #}
 {{ jh_header(view.scope, u, 'indiv_history',
-             view.group ~ ' Individual Champions', '',
+             ((view.group_label ~ ' ') if view.group_label else 'Statewide ') ~ ('JV Individual Champions' if view.jv else 'Individual Champions'), '',
              [('Seasons', view.rows|length)]) }}
 
 <div class="jh-shell">
@@ -23,12 +25,18 @@
     {% endfor %}
     <option value="{{ url_for('jhsaa_individual_champions', u=u, g=view.gender, group=view.group, flight=view.mixed_flight) }}"
             {{ 'selected' if view.flight == view.mixed_flight }}>{{ view.mixed_name }}</option>
+    {# The JV state brackets — a different event (classless, statewide, entered by
+       winning your district), so they close the list the way mixed does. #}
+    {% for f, name in view.jv_flights %}
+    <option value="{{ url_for('jhsaa_individual_champions', u=u, g=view.gender, group=view.group, flight=f) }}"
+            {{ 'selected' if view.flight == f }}>{{ name }}</option>
+    {% endfor %}
   </select>
 </div>
 
 {% if not view.rows %}
 <div class="bl-panel"><div class="jh-empty">
-  No {{ view.flight_name|lower }} champion archived for {{ view.group }} yet.
+  No {{ view.flight_name|lower }} champion archived {% if view.group_label %}for {{ view.group_label }} {% endif %}yet.
 </div></div>
 {% else %}
 
