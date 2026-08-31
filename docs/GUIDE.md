@@ -559,8 +559,10 @@ seed-deterministic, locked-at-selection contract as the team event:
   ability. **Doubles** takes each program's #1 pair plus the best 64 pairs
   overall by doubles rating, played through the real four-player doubles
   engine (not an averaged-pair shortcut).
-- **Format:** best-of-3, no-ad scoring, set tiebreaks, with a 10-point match
-  tiebreak deciding the third set.
+- **Format:** best-of-3, no-ad scoring, set tiebreaks, and a **full third set** —
+  a normal set to 6 with a tiebreak at 6-6, not a 10-point match tiebreak. The
+  JHSAA's individual state tournaments are scored from the same constant
+  (`individuals.INDIV_FMT`), so the two championships cannot drift apart.
 - **Seeding:** only the top quarter of the draw is seeded (32 of 128 in
   singles, 16 of 64 in doubles) — seeds 1 and 2 anchor opposite ends of the
   bracket, deeper seed tiers shuffle among mirrored anchor points, byes go to

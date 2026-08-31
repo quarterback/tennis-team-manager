@@ -33,8 +33,22 @@
 {% macro jh_award_names(r, u, gender) -%}
 {%- set names = r.names or [r.name] -%}
 {%- set pids = r.pids or [r.pid] -%}
+{#- ‼️ GRADES ARE PARALLEL TO `names`, LIKE `pids`. A doubles honour is one row
+    naming TWO athletes and they need not be the same year, so `r.grade` — which
+    is only the FIRST partner's — would label both with one player's grade. Fall
+    back to the scalar only for a single-name row, and to nothing at all for a
+    season archived before grades were carried: an award list that silently
+    invents a year is worse than one that omits it. -#}
+{%- set grades = r.grades or ([r.grade] if r.grade else []) -%}
 {%- for nm in names -%}
 {{ jh_player(nm, r.school, pids[loop.index0], u, gender) }}
+{%- if grades|length > loop.index0 and grades[loop.index0] -%}
+{#- The app's own convention for writing a player's year, the one the individual
+    state results use: `Olivia Miles (9), Foxboro def. …`. Seniors are the common
+    case and stay muted; everyone else is inked, because the thing being scanned
+    for is which winners were NOT seniors. -#}
+<span class="jh-gr{{ ' u' if grades[loop.index0]|int != 12 }}">({{ grades[loop.index0] }})</span>
+{%- endif -%}
 {%- if not loop.last %} <span class="jh-amp">/</span> {% endif -%}
 {%- endfor -%}
 {%- endmacro %}

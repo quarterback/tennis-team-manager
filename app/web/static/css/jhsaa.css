@@ -249,6 +249,12 @@
   font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 
+/* The grade a player won in, beside their name on every award surface. Seniors
+   are the default case and stay quiet; an underclassman is the thing worth
+   spotting, so it keeps full ink. */
+.jh-gr { margin-left: 3px; font-size: 11.5px; font-weight: 700; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+.jh-gr.u { color: var(--brand-strong); font-weight: 800; }
+
 /* ---- Repeat champions / POY rolls (/jhsaa/repeat-champions) ----
    A career is a NAME and a LIST OF TITLES, and they are different kinds of thing,
    so they get different lines. Run together in parentheses the titles were a grey
