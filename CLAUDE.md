@@ -1248,6 +1248,17 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   - **How many are SEEDED is the USTA convention and is not set here**: a quarter of the
     padded draw (128→32, 64→16, 32→8), i.e. `engine.tournament.seed_count`, applied by
     `run_tournament` because nothing is passed to `seeds=`. The default IS the rule.
+  - **UI: two more entries on the flight switcher** of `/jhsaa/individuals`, set
+    apart like mixed (a different EVENT, not a seventh flight). `group_label` is
+    empty for them — a classless event carries no class in its heading, and a class
+    switch on the rail stays on the same statewide draw (the TOC's posture). The
+    **play-in renders as its own panel, never a canvas column**: `_bracket_canvas`
+    links columns positionally on the main draw's halving, and a pigtail pre-round
+    is a handful of matches grafted onto seed lines — a shape the tree cannot draw
+    and that a real association prints as a list above the draw anyway. The player
+    page's results section and the program page's Individual State Champions tab
+    show JV rows with "Statewide" in place of a class; the History → Individual
+    Champions page stays varsity-only for now.
   - Cost **~5s a gender** on a ~7-minute rung. `tests/test_jhsaa_jv_individuals.py`.
 - **Team honours exist beyond titles (same rule):** every unit won is an honour in
   ROMAN numerals ("Region IX", "Ward IV"; Zonals keep letters), all on ONE line —

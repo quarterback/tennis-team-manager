@@ -4457,33 +4457,67 @@ def jhsaa_individual_view(seed: int, gender: str, group: str | None = None,
     shape `_bracket_canvas` links positionally. Feed it the rounds as archived."""
     import app.jhsaa as jh
     import app.jhsaa_individuals as ji
+    import app.jhsaa_jv_individuals as jvi
     import app.world as world
     w = world.get_or_create(seed)
     g = _jh_g(gender)
     years = world.jhsaa_years(w["id"], g)
     yr = (years[0] if years else w["year"]) if year is None else year
     grp = group if group in jh.GROUPS else jh.GROUPS[0]
-    fl = flight if flight in ji.FLIGHTS or flight == "XD" else ji.FLIGHTS[0]
+    fl = (flight if flight in ji.FLIGHTS or flight == "XD"
+          or flight in jvi.BRACKETS else ji.FLIGHTS[0])
+    # ‼️ THE JV BRACKETS ARE CLASSLESS — the one JHSAA championship that is. The
+    # draw lives under `GROUP_KEY` whatever class the rail shows, so a class
+    # switch keeps you on the same statewide draw (the TOC's own posture: a
+    # class-blind page takes `group` for the rail alone and stays put). The
+    # header therefore drops the class from the event's name via `group_label`;
+    # everything varsity keeps it, unchanged.
+    is_jv = fl in jvi.BRACKETS
     arc = world.get_jhsaa(w["id"], yr, g)
     scope = _jh_scope(g, grp, list(jh.GROUPS), yr, years,
                       (arc or {}).get("season_year"), arc)
     base = {"gender": g, "year": yr, "years": years, "group": grp,
             "groups": list(jh.GROUPS), "flight": fl,
             "flights": [(f, ji.FLIGHT_NAMES[f]) for f in ji.FLIGHTS],
-            "flight_name": ji.FLIGHT_NAMES[fl],
+            "flight_name": (jvi.BRACKET_NAMES[fl] if is_jv
+                            else ji.FLIGHT_NAMES[fl]),
             "mixed_flight": "XD", "mixed_name": ji.FLIGHT_NAMES["XD"],
+            # The JV brackets sit on the rail set apart, like mixed: a different
+            # EVENT (qualified through the districts, statewide), not two more
+            # flights of this one.
+            "jv_flights": [(f, jvi.BRACKET_NAMES[f]) for f in jvi.BRACKETS],
+            "jv": is_jv, "group_label": "" if is_jv else grp,
             "season_year": (arc or {}).get("season_year",
                                            world.jhsaa_season_year(w)),
             "scope": scope}
     # Mixed doubles is archived under its own gender: it belongs to neither field.
     draw = world.jhsaa_individual_draw(w["id"], yr,
-                                       "mixed" if fl == "XD" else g, grp, fl)
+                                       "mixed" if fl == "XD" else g,
+                                       jvi.GROUP_KEY if is_jv else grp, fl)
     if not draw:
         return {**base, "ready": False}
     schools = _jh_schools(g if fl != "XD" else "girls")
     entries = draw["entries"]
+    rounds = draw["rounds"]
+    # ‼️ THE PLAY-IN IS NOT A CANVAS COLUMN. `_bracket_canvas` links columns
+    # positionally on the halving the main draw's rounds already have (see the
+    # docstring above); a pigtail pre-round is a handful of matches grafted onto
+    # seed LINES, a shape the tree cannot draw and should not — a real
+    # association prints play-ins as their own list above the draw. So it is
+    # split off and rendered as its own panel, each match naming the seed line
+    # its winner fed. At the live association's 95 districts this never fires;
+    # it is here so an oversized season renders instead of drawing a wrong tree.
+    playins = []
+    if rounds and rounds[0] and rounds[0][0].get("rnd") == jvi.PIGTAIL_ROUND:
+        for m in rounds[0]:
+            hi, lo = entries[m["hi"]], entries[m["lo"]]
+            win, lose = (hi, lo) if m["winner_is_hi"] else (lo, hi)
+            playins.append({"seed_line": m.get("seed_line"),
+                            "winner": win, "loser": lose,
+                            "scoreline": m["scoreline"]})
+        rounds = rounds[1:]
     cols = []
-    for rnd in draw["rounds"]:
+    for rnd in rounds:
         ms = []
         for m in rnd:
             hi, lo = entries[m["hi"]], entries[m["lo"]]
@@ -4509,7 +4543,7 @@ def jhsaa_individual_view(seed: int, gender: str, group: str | None = None,
     champ_sc = schools.get(champ["school"]) if champ else None
     runner_sc = schools.get(runner["school"]) if runner else None
     return {
-        **base, "ready": True,
+        **base, "ready": True, "playins": playins,
         "n_seeds": draw["n_seeds"], "field_n": len(entries),
         "champion": champ, "runner_up": runner,
         # Grade/hometown sit UNDER the name on the hero announcement, never

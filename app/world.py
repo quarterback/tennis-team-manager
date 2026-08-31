@@ -4307,8 +4307,10 @@ def jhsaa_individual_results(world_id: int, year: int, gender: str, group: str,
                     # ‼️ THE DRAW'S OWN GROUP, NOT THE PAGE'S. A JV draw is
                     # classless and carries `GROUP_KEY`; stamping the player's
                     # class on it would file a statewide title under a class it
-                    # was never contested in.
-                    "group": r["grp"], "champion": tag == "CHAMP"})
+                    # was never contested in. `jv` is the display's cue to say
+                    # "Statewide" rather than print the bare key.
+                    "group": r["grp"], "jv": r["flight"] in jvi.BRACKETS,
+                    "champion": tag == "CHAMP"})
     order = {f: i for i, f in enumerate(_jh_indiv_flight_order())}
     out.sort(key=lambda r: order.get(r["flight"], 99))
     return out

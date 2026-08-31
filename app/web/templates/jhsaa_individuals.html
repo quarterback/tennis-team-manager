@@ -1,14 +1,17 @@
 {% extends "base.html" %}
 {% from "_jhsaa.html" import jh_header %}
 {% from "_bracket.html" import brk_canvas, brk_script %}
-{% block title %}JHSAA {{ view.group }} {{ view.flight_name }} — Individual State{% endblock %}
+{% block title %}JHSAA {{ view.group_label or 'Statewide' }} {{ view.flight_name }} — Individual State{% endblock %}
 {% block content %}
 
 {# ‼️ NO EXPLANATORY SUBTITLE (owner, 2026-08). The bracket, the flight rail and the
    counts state what this is; a paragraph explaining the event to its own reader is
    microcopy nobody asked for. #}
+{# ‼️ `group_label` is empty on the JV brackets — they are CLASSLESS, the one
+   JHSAA championship that is, so the class must not appear in the event's name.
+   The class rail stays live for the varsity flights you'd switch back to. #}
 {{ jh_header(view.scope, u, 'individuals',
-             view.group ~ ' Individual State Tournament', '',
+             ((view.group_label ~ ' ') if view.group_label else '') ~ (view.flight_name ~ ' State Tournament' if view.jv else 'Individual State Tournament'), '',
              [('Season', view.season_year), ('Draw', view.field_n), ('Seeds', view.n_seeds)] if view.ready else []) }}
 
 <div class="jh-shell">
@@ -28,6 +31,13 @@
   <span class="sep" aria-hidden="true"></span>
   <a class="{{ 'on' if view.flight == view.mixed_flight }}" title="A separate event — one entry per school, drawn from below No. 9, played in the summer"
      href="{{ url_for('jhsaa_individuals', u=u, g=view.gender, group=view.group, year=view.scope.pin, flight=view.mixed_flight) }}">{{ view.mixed_name }}</a>
+  {# The JV brackets — set apart like mixed, because they are a different EVENT:
+     classless, one statewide draw, entered by winning your district. #}
+  <span class="sep" aria-hidden="true"></span>
+  {% for f, name in view.jv_flights %}
+  <a class="{{ 'on' if view.flight == f }}" title="Classless statewide draw — one champion per gender, qualified by winning your district"
+     href="{{ url_for('jhsaa_individuals', u=u, g=view.gender, group=view.group, year=view.scope.pin, flight=f) }}">{{ name }}</a>
+  {% endfor %}
 </div>
 
 {% if not view.ready %}
@@ -40,7 +50,9 @@
 <div class="jh-champ" style="margin-bottom:12px">
   <span class="mark">{{ view.champion_deco.mark|safe }}</span>
   <div style="min-width:0">
-    <span class="lbl">{{ view.season_year }} JHSAA {{ view.group }} {{ view.flight_name }} Champion{{ 's' if view.champion.players|length > 1 }}</span>
+    {# "JV Singles STATE Champion" — the JV title's own grammar; the varsity line
+       is untouched ("9A No. 1 Singles Champion"). #}
+    <span class="lbl">{{ view.season_year }} JHSAA {% if view.group_label %}{{ view.group_label }} {% endif %}{{ view.flight_name }} {{ 'State ' if view.jv }}Champion{{ 's' if view.champion.players|length > 1 }}</span>
     {# By PID, never by name — a pid keys on (school, gender, entry year, seat), so
        it is stable across all four years and matches the award rows. A PAIR links
        through its first member; a partnership has no page of its own. #}
@@ -72,10 +84,34 @@
    the wrong one renders empty rows rather than raising. Until that exists the
    canvas stays visible at every width and scrolls inside `.brk-scroll`, which it
    already does. #}
+{% if view.playins %}
+{# The pigtail pre-round — surplus qualifiers past the 96 main draw playing in,
+   each match grafted onto a top seed's line. NOT a bracket column: the tree links
+   columns positionally on the main draw's halving, and a real association prints
+   its play-ins as their own list above the draw anyway. #}
+<div class="bl-panel" style="margin-bottom:12px">
+  <div class="bl-panel-head"><h2>Play-in</h2>
+    <span class="sub">{{ view.playins|length }} match{{ 'es' if view.playins|length != 1 }} · winners join the main draw</span></div>
+  <div class="jh-seedtiers">
+    {% for m in view.playins %}
+    <div class="tier">
+      <div class="lbl">{% if m.seed_line %}Line {{ m.seed_line }}{% endif %}</div>
+      <div class="rows">
+        <div class="row">
+          <a href="{{ url_for('jhsaa_player', school=m.winner.school, pid=m.winner.players[0].pid, u=u, g=view.gender, year=view.scope.pin) }}">{{ m.winner.label }}</a>
+          <span class="sch">{{ m.winner.school }} · def. {{ m.loser.label }}, {{ m.loser.school }} {{ m.scoreline }}</span>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 <div class="brk-stage" id="brkstage">
   <section class="brk-region" data-view="all">
     <div class="brk-region-head">
-      <h2>{{ view.season_year }} {{ view.group }} {{ view.flight_name }} · {{ view.field_n }} entries</h2>
+      <h2>{{ view.season_year }} {{ view.group_label or 'Statewide' }} {{ view.flight_name }} · {{ view.field_n }} entries</h2>
       <span class="brk-region-champ">
         {% if view.champion %}{{ view.champion.label }}{% if view.runner_up %} def. {{ view.runner_up.label }}{% endif %}{% else %}in progress{% endif %}</span>
     </div>

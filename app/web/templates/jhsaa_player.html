@@ -155,7 +155,9 @@
             <img class="ic" src="{{ url_for('jhsaa_medal', name=r.icon) }}"
                  alt="" width="44" height="44" loading="lazy">
             <div class="meat">
-              <div class="when">{{ r.season.season_year }} · {{ r.group }}
+              {# A JV bracket is classless — "Statewide", never the archive's
+                 bare group key; `flight_name` already carries the JV. #}
+              <div class="when">{{ r.season.season_year }} · {{ 'Statewide' if r.jv else r.group }}
                 <span class="yr">{{ r.season.class_year }}</span></div>
               <div class="what">
                 <span class="fl">{{ r.flight_name }}</span>

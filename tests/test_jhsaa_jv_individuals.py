@@ -482,6 +482,7 @@ def archived():
                  "standings": {"5A": {"Basalt League": [
                      {"school": "Sixes", "record": "9-3", "place": 1}]}}})))
         def draw(flight, players):
+            full = " / ".join(p["name"] for p in players)
             return json.dumps({
                 "gender": "girls", "group": jvi.GROUP_KEY, "flight": flight,
                 "n_seeds": 2,
@@ -490,8 +491,8 @@ def archived():
                              "district": "9A Quarry League",
                              "players": [{"pid": "z" * 16, "name": "Nobody",
                                           "grade": 12}]},
-                            {"school": "Sixes", "label": "Bo Reyes",
-                             "full_label": "Bo Reyes", "seed": 2,
+                            {"school": "Sixes", "label": full,
+                             "full_label": full, "seed": 2,
                              "district": "5A Basalt League",
                              "players": players}],
                 "champion": 1, "runner_up": 0,
@@ -568,6 +569,70 @@ def test_it_stays_off_the_varsity_career_title_roll(archived):
     from app import world as wd
     assert wd.jhsaa_individual_title_repeats(archived["id"], "girls",
                                              minimum=1) == []
+
+
+def test_the_championship_page_renders_the_jv_draw(archived, monkeypatch):
+    """Through the ROUTE, not the view function — the route-wiring lesson this
+    section keeps written at the top of `test_jhsaa_routes.py` — and against the
+    archived draw, because an empty-state render cannot see a bracket at all.
+
+    `is_primed`/`prime` are stubbed the way `test_jhsaa_toc.py` does it: once a
+    world row exists, `_prime_world` answers every cold request with the loading
+    page while it warms the college roster cache — minutes of work nothing on a
+    JHSAA page reads."""
+    import os
+    from app import world as wd
+    os.environ.setdefault("PTC_NO_BOOT_WARM", "1")
+    monkeypatch.setattr(wd, "is_primed", lambda *a, **k: True)
+    monkeypatch.setattr(wd, "prime", lambda *a, **k: None)
+    from app.web.server import create_app
+    client = create_app().test_client()
+    r = client.get("/jhsaa/individuals?flight=JVS&g=girls&year=0")
+    assert r.status_code == 200
+    html = r.data.decode()
+    assert "JV Singles" in html and "Bo Reyes" in html
+    # classless: the event heading carries no class, and the hero says State
+    assert "JV Singles State Champion" in html
+    r2 = client.get("/jhsaa/individuals?flight=JVD&g=girls&year=0")
+    assert r2.status_code == 200 and "Cy Odom" in r2.data.decode()
+    # the class rail does not scope the draw — any class shows the same champion
+    r3 = client.get("/jhsaa/individuals?flight=JVS&g=girls&year=0&group=1A")
+    assert "Bo Reyes" in r3.data.decode()
+
+
+def test_the_view_splits_a_play_in_off_the_bracket_tree(by_group, monkeypatch):
+    """`_bracket_canvas` links columns positionally on the main draw's halving, so
+    a pigtail pre-round must reach the page as its own panel, never as a column —
+    checked on the assembled archive dict the view consumes."""
+    import json
+    from app import world as wd
+    from app.web import state as st
+    champs = jvi.district_champions(by_group, jvi.SINGLES, gender="girls",
+                                    year=0, seed=0)
+    monkeypatch.setattr(jvi, "MAIN_DRAW", max(2, len(champs) - 2))
+    d = ji.draw_to_dict(jvi.run_state(champs, jvi.SINGLES, gender="girls",
+                                      seed=5))
+    w = wd.get_or_create(wd.DEFAULT_SEED)
+    conn = wd._db()
+    try:
+        conn.execute("DELETE FROM world_jhsaa_individual WHERE world_id=?"
+                     " AND flight=?", (w["id"], jvi.SINGLES))
+        conn.execute(
+            "INSERT INTO world_jhsaa_individual (world_id, year, gender, grp,"
+            " flight, data) VALUES (?,?,?,?,?,?)",
+            (w["id"], 0, "girls", jvi.GROUP_KEY, jvi.SINGLES, json.dumps(d)))
+        conn.commit()
+    finally:
+        conn.close()
+    view = st.jhsaa_individual_view(wd.DEFAULT_SEED, "girls", "9A",
+                                    jvi.SINGLES, 0)
+    assert view["ready"] and view["jv"] and view["group_label"] == ""
+    assert len(view["playins"]) == 2
+    assert [p["seed_line"] for p in view["playins"]] == [1, 2]
+    # the canvas columns are the MAIN rounds only, halving as the tree needs
+    assert len(view["rounds"]) == len(d["rounds"]) - 1
+    assert all(m["rnd"] != jvi.PIGTAIL_ROUND
+               for c in view["rounds"] for m in c["games"] if "rnd" in m)
 
 
 # --- the varsity event is untouched ------------------------------------------

@@ -36,6 +36,12 @@ ROUTES = [
     "/jhsaa/repeat-poy?g=boys",
     "/jhsaa/repeat-champions",
     "/jhsaa/repeat-champions?g=boys",
+    # The individual state tournaments — a varsity flight, mixed, and the two
+    # classless JV brackets, all through the one switcher route.
+    "/jhsaa/individuals",
+    "/jhsaa/individuals?flight=XD",
+    "/jhsaa/individuals?flight=JVS",
+    "/jhsaa/individuals?flight=JVD&g=boys",
 ]
 
 
