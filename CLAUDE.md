@@ -1992,12 +1992,16 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     grade the effect is largest in. `coach_factor()` translates the per-school draw
     into a multiplier on YEARLY CAPACITY (what `exposure` already scales), passed down
     `_apply_career` → `career_ability`.
-    ‼️ **And it multiplies the run UP TO the peak only** — the overflow a year earns
-    past it is the UNCOACHED amount. Applied to the whole gain, coaching pushed players
-    further beyond their own drawn career, and because `_apply_career` lifts displayed
-    potential to meet ability on overflow, tagged programs' CEILINGS drifted up (+1.12
-    OVR with 113 of 300 seniors raised at the same strength; +0.35 once fixed). Reach
-    is not exceed. `DEV_CAP` enforces the same rule on the legacy path.
+    It multiplies the run UP TO the peak only — the overflow a year earns past it is
+    the UNCOACHED amount — which keeps the bulk of the effect on the curve rather than
+    past the end of it (tagged programs' displayed CEILINGS drifted +1.12 OVR, 113 of
+    300 seniors raised, before that; +0.35 after). ‼️ **But a little ceiling drift is
+    EXPLICITLY FINE (owner, 2026-08: "I'm fine with it improving them a bit, that's
+    not a problem, it's trivial") — do NOT spend design effort defending zero drift.**
+    The rule that matters is the one the owner stated about the DRAW: coaching does not
+    touch `mean`, `spread` or `pot`, so it never changes the player who walks in. A
+    residual from reaching peak sooner and spending longer in the overflow regime is a
+    consequence of the existing career model, not a second talent lever.
     ‼️ **The two eras need DIFFERENT translation constants and the drag needs its own**
     (`CAREER_COACH_K` 20, `CAREER_NEGLECT_K` 15): the career model damps this lever
     far harder than the legacy one, and the two authored bands were written against
