@@ -214,11 +214,10 @@ def test_exposure_factor_orders_the_levels():
     """sitting < partial JV < full JV < split < full varsity, from ONE
     continuous rule — no buckets. A missing archive is None: full realisation,
     NOT the floor (a fresh world must not read as an association that sat)."""
-    m = {}
     def units(u):
-        return jh._expo_factor({("S", "kid"): u}, "S", "kid")
-    assert jh._expo_factor(None, "S", "kid") is None
-    sat = jh._expo_factor(m, "S", "kid")            # archived, never dressed
+        return jh._expo_factor({"kid": u}, "kid")
+    assert jh._expo_factor(None, "kid") is None     # season not archived
+    sat = jh._expo_factor({}, "kid")                # archived, never dressed
     assert sat == jh.EXPO_FLOOR
     part_jv = units(4 * jh.EXPO_JV_UNIT)
     full_jv = units(16 * jh.EXPO_JV_UNIT)
@@ -229,13 +228,13 @@ def test_exposure_factor_orders_the_levels():
     assert units(30.0) == 1.0
 
 
-def test_season_exposure_reads_the_archive_by_level():
+def test_school_exposure_reads_the_archive_by_level():
     """Varsity units come off `lines` (one per DUAL, however many courts), JV
-    units off `played` at EXPO_JV_UNIT, both keyed (school, name) — and a
-    season with no rows at all returns None."""
+    units off `played` at EXPO_JV_UNIT — and a season with no rows for this
+    school reads as None (full realisation), never as the floor."""
     import json as _json
     import app.world as world
-    jh._expo_cache.clear()
+    jh._expo_cache.clear(); jh._expo_world.clear()
     w = world.get_or_create(777)
     conn = world._db()
     try:
@@ -256,15 +255,39 @@ def test_season_exposure_reads_the_archive_by_level():
     finally:
         conn.close()
     from app.world import BASE_YEAR
-    season_year = BASE_YEAR + 3 + 1
-    units = jh.season_exposure("girls", season_year)
+    played, empty = BASE_YEAR + 3 + 1, BASE_YEAR + 3 + 2
+    got = jh.school_exposure("girls", "Alpha", (played, empty))
+    units = got[played]
     assert units is not None
-    assert units[("Alpha", "Ada")] == 1.0          # two lines, ONE dual
-    assert units[("Alpha", "Bea")] == 1.0 + jh.EXPO_JV_UNIT
-    assert units[("Alpha", "Cal")] == jh.EXPO_JV_UNIT
-    assert ("Alpha", "Opp One") not in units       # opponents credit their own row
-    assert jh.season_exposure("girls", season_year + 20) is None
-    jh._expo_cache.clear()
+    assert units["Ada"] == 1.0                     # two lines, ONE dual
+    assert units["Bea"] == 1.0 + jh.EXPO_JV_UNIT
+    assert units["Cal"] == jh.EXPO_JV_UNIT
+    assert "Opp One" not in units                  # opponents credit their own row
+    assert got[empty] is None                      # unarchived -> full realisation
+    # another school's rows never leak in
+    assert jh.school_exposure("girls", "Beta", (played,))[played] is None
+    jh._expo_cache.clear(); jh._expo_world.clear()
+
+
+def test_school_exposure_is_scoped_to_the_world_and_uses_the_index():
+    """‼️ REGRESSION GUARD. The read must constrain every column of
+    `ix_jhsaa_dual` (world_id, year, gender, school) in order. A first version
+    selected a whole gender-season with no `world_id`, which could use no index
+    at all and full-scanned the largest table in the save three times per roster
+    build — 1.19s a build on a 20-season archive, and wrong besides, since it
+    read every world's rows at once."""
+    import app.world as world
+    conn = world._db()
+    try:
+        plan = conn.execute(
+            "EXPLAIN QUERY PLAN SELECT year, home, lines, level, played"
+            " FROM world_jhsaa_dual WHERE world_id=? AND gender=? AND school=?"
+            " AND year IN (?)", (1, "girls", "Alpha", 3)).fetchall()
+    finally:
+        conn.close()
+    detail = " ".join(str(r[-1]) for r in plan)
+    assert "ix_jhsaa_dual" in detail, detail
+    assert "SCAN" not in detail.upper() or "SEARCH" in detail.upper(), detail
 
 
 # --- the graduation record (§24.3) --------------------------------------------

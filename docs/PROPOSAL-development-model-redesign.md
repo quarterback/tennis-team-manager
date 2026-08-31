@@ -2282,10 +2282,22 @@ split ≈0.87, reproducing the proposal's illustrative table without buckets.
 
 * Read off `world_jhsaa_dual`: varsity units from `lines` (one per DUAL a
   player dressed in, however many courts), JV units from the JV rows' `played`
-  list — keyed by (school, name), the archive's own identity. Level-filtered by
+  list — keyed by name, the archive's own identity. Level-filtered by
   construction, per §21.6.
-* **One query per (save, gender, season), memoised** — `build_roster` resolves
-  the three prior seasons once per build and threads them down; never per seat.
+* **‼️ SCOPED TO (world_id, year, gender, school) — every column of
+  `ix_jhsaa_dual`, in order — and all three seasons in ONE query**, memoised
+  per school. The first version selected a whole gender-season and constrained
+  no `world_id`; since the index LEADS on `world_id`, nothing could use it and
+  every roster build full-scanned the largest table in the save three times.
+  Measured on a 20-season archive (894,400 duals, 790MB): **1.19s per roster
+  build**, which is a visible hang on any page that opens a school. Scoped, the
+  same read is **0.0023s — 520x faster** — because a roster build needs the ~26
+  rows belonging to one school, not ~13,000 belonging to a gender-season. It was
+  also simply WRONG unscoped: it read every world's archive at once.
+  `tests/test_jhsaa_career_model.py` pins the query plan against the index.
+  This is the `AAR-jhsaa-playup-fingerprint-query-storm` shape a third time —
+  the rule is not only "resolve it once", it is **match the query to the size of
+  the thing you need**.
 * **A season with NO archive reads as FULL realisation, not the floor** — a
   fresh world, pre-odometer seasons and the calibration scripts are untouched.
 * **Transfer paths deliberately get no exposure map**: a mover's prior seasons
