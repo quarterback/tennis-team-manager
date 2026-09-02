@@ -463,6 +463,43 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   them, and pairings re-form yearly), gated to the **same classification or one apart** —
   so non-district pairing runs over the WHOLE gender at once, and awards/state selection
   come after.
+- **‼️ CROSS-TOWN RIVALRIES ARE ANNUAL FIXTURES, NOT PREFERENCES (owner rule 2026-09,
+  `jhsaa.rival_map` / `_rivalry_pairs`).** The matcher above is a weighted lottery over a
+  `SHORTLIST` of six, which is right for the average card and wrong for a rivalry:
+  measured over a full girls' season, **36 of 263 codified fixtures were played (14%)**.
+  Port Meridian's NINE programs sit in six leagues from 9A to 3A, so the league season
+  can never pair them and the draw rarely did ("none of the cherry hill schools or port
+  meridian schools play each other much/enough"). Now **263 of 263**, and programs
+  finishing outside the non-district allowance HALVED (44 → 22 of 912) — a guaranteed
+  pairing is one the matcher cannot fail to make.
+  - **The town is the CITY** (a metro's core-city and locality programs are one pool;
+    sharing a locality is a priority, not a gate — split by locality, most of Port
+    Meridian goes unpaired since none of them carries one). Priority: a shared campus
+    stem (Cherry Hill East/North/South), then locality, then nearest class, then names.
+  - **`RIVALS_PER_PROGRAM` (2)** accepted greedily, which is what stops Port Veles's 41
+    programs becoming an 820-dual round robin — and happens to give a three-campus town
+    its exact round robin. **`RIVAL_MAX_GAP` (3)** relaxes the ±1 gate without removing
+    it: ‼️ **the cap alone left a big town's STRAGGLERS to each other** (Valderra's 9A
+    drew the 1A across an 18-school city — the two nobody closer had room for, which is
+    a remainder, not a rivalry). A program with nothing in range has no town rival.
+  - **They are a FIXTURE, not an allowance**: played in their own block at the head of
+    the mid-season window (ahead of that window's draw, so it cannot rematch them),
+    ordinary `phase="regular"` non-district duals counting to the record, TOSS and the
+    `spent` fold — so a rivalry does **not** lengthen anybody's card. Venue alternates
+    on the year (`play_dual`'s first argument is the host and `home_court` is a real
+    lift). `RIVALRIES_ENABLED` is the kill switch and first diagnostic.
+  - **NOT ARCHIVED, and must not be.** `are_rivals` is a projection of the school list,
+    so a card reads the same for seasons played before and after. The RIVALRY chip is
+    the one exception to "only a bracket round earns the second chip": it is the one
+    thing on that row a reader cannot infer from the row.
+  - **‼️ TWO TABLES, ONE FACT.** `import_jhsaa.RIVALRIES` (classification integrity at
+    import) and `jhsaa.RIVAL_OVERRIDES` (the season fixture) state the same thing for
+    different mechanisms and the app cannot read `scripts/`, so the agreement is
+    ASSERTED (`test_the_two_rivalry_tables_agree`). Without the override entry the
+    derivation quietly breaks the named pair — Alameda is Ashbury 7A too and sorts
+    first, so it takes Condotti's seat and the rivalry the whole doctrine exists to
+    protect stops being played. See
+    `docs/AAR-jhsaa-crosstown-rivalries-and-sibling-pairing.md`.
 - **‼️ A DOUBLE ROUND ROBIN IS TWO SEPARATED PASSES, NOT A HOME-AND-HOME SERIES.** The
   order of play is the schedule — there is no clock inside a JHSAA season, so a dual's
   POSITION in `schedule` is all the calendar there is (`state._jh_dates` just lays that
@@ -2175,8 +2212,26 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     therefore `{pid: {sibling pids}}`, not `{pid: family_id}`, still resolved once per
     team from one `families()` read. Low stakes by construction (owner: "you only get
     the bump if you're a doubles pairing anyway") — but it is a stated fact or nothing.
+  - **‼️ SIBLINGS ON ONE ROSTER PARTNER AUTOMATICALLY (owner rule 2026-09,
+    `_sibling_units`).** `FAMILY_CHEMISTRY` alone is a TIEBREAK, so two brothers
+    partnered when the ratings were already close and not otherwise — and the owner
+    could only find out which by opening every dual of every program ("i can't track
+    them all the time and it's easier to see it that way"). The bonus stays and still
+    decides which COURT the pair takes; **whether they are a pair is no longer a rating
+    question.** The SEARCHING arrangers take it as a constraint (`_legal_partitions`
+    drops the partitions that split a pair, so the best LEGAL arrangement is played and
+    the anti-stacking rank-sum boundary still binds after); `_arrange_regular` pairs by
+    direct decision (owner rule 2027-08 — do not put the 105-partition search back), so
+    it takes a partner SWAP after the fact (`_force_pairs`), in all three strategies.
+    Two siblings in the 1S/4D top three ARE D1 and the third plays S1 — S1+D1 consume
+    ranks #1-#3, so nothing is left to choose. Three siblings cannot all partner: the
+    ladder decides and the third plays on. ‼️ **A pair straddling a boundary the format
+    FIXES is not honoured** (S1 vs the doubles pool in 3S/4D; the top-three pool vs
+    #4-#9 in 1S/4D) — the anti-stacking rule outranks this and **a lineup is never
+    rearranged to put two siblings together**. It decides pairing INSIDE a pool, never
+    who is in which pool.
   Doubles:
-  `FAMILY_CHEMISTRY` (0.025, ~¼ sd of pair-rating spread) is a TIEBREAK in both
+  `FAMILY_CHEMISTRY` (0.025, ~¼ sd of pair-rating spread) is the COURT tiebreak in both
   arrangers, applied under the anti-stacking boundary; `TeamSeason.sibling_ids` is
   resolved once in `district_teams`, never per dual. ‼️ `_resolve_member` NEVER
   defaults the salt — the name draw is salted but `make_pid` is not, so the wrong salt

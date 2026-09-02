@@ -378,3 +378,112 @@ def test_a_1a_program_reads_one_frozen_order_at_two_slice_lengths():
     assert ts.order_of_ability == frozen, "the TOC must not re-freeze the order"
     assert len(road) == 8 and len(toc) == 9
     assert {p.pid for p in toc} == set(frozen[:9])
+
+
+# --- SIBLINGS PARTNER AUTOMATICALLY (owner rule 2026-09) ----------------------
+#
+# `FAMILY_CHEMISTRY` alone made two siblings partner when the ratings were already
+# close and not otherwise, so whether a coach's brothers were together varied dual to
+# dual and could only be discovered by opening every dual of every program. Owner:
+# "the sibling thing on the same team should be paired automatically because i can't
+# track them all the time and it's easier to see it that way." The bonus still decides
+# which COURT the pair takes; that they ARE a pair is no longer a rating question.
+
+
+def _sibs(order, i, j):
+    """A sibling map (`TeamSeason.sibling_ids`'s shape) tying two ladder positions."""
+    a, b = order[i].pid, order[j].pid
+    return {a: {b}, b: {a}}
+
+
+def _partners(lineup, first):
+    """The doubles pairs of a slot-ordered lineup, `first` being D1a's index."""
+    return [frozenset((lineup[k].pid, lineup[k + 1].pid))
+            for k in range(first, len(lineup), 2)]
+
+
+def test_siblings_partner_in_every_regular_season_strategy():
+    """All three, including `traditional` — the swap is applied after the strategy has
+    paired the pool, so each keeps its own one decision and none of them can split a
+    pair. #2 and #9 are the two ends of the doubles pool: no strategy pairs them by
+    accident, so this cannot pass for the wrong reason."""
+    ts = _real_ts(5)
+    order = jh._order(ts)[:11]
+    assert len(order) == 11
+    for strategy in jh._STRATEGIES:
+        lu = jh._arrange_regular(order, strategy, _sibs(order, 1, 8))
+        assert len(lu) == 11 and len({p.pid for p in lu}) == 11, strategy
+        assert frozenset((order[1].pid, order[8].pid)) in _partners(lu, 3), strategy
+        # ...and the fixed allocation is untouched: S1 is still the top seed and the
+        # S2/S3 seats are still #10-#11.
+        assert lu[0].pid == order[0].pid
+        assert {lu[1].pid, lu[2].pid} == {order[9].pid, order[10].pid}
+
+
+def test_siblings_are_never_forced_across_a_boundary_the_format_fixes():
+    """A pair straddling S1 and the doubles pool cannot be honoured — the 3S/4D
+    allocation is fixed and the anti-stacking rule outranks this. The lineup must come
+    back legal and unremarkable, not rearranged to put them together."""
+    ts = _real_ts(9)
+    order = jh._order(ts)[:11]
+    lu = jh._arrange_regular(order, "maximize", _sibs(order, 0, 4))
+    assert lu[0].pid == order[0].pid                       # #1 still plays S1
+    assert len({p.pid for p in lu}) == 11
+
+
+def test_siblings_partner_in_the_postseason_lineup_and_it_stays_legal():
+    """The 1S/4D card. A pair inside #4-#9 is a CONSTRAINT on the partition search,
+    not a bonus inside it — and the anti-stacking rank-sum boundary still binds after,
+    because the search only ever chose among LEGAL partitions."""
+    for i, (a, b) in ((2, (3, 8)), (11, (4, 7)), (30, (5, 6))):
+        ts = _real_ts(i)
+        nine = jh._order(ts)[:9]
+        if len(nine) < 9:
+            continue
+        rank = {p.pid: k + 1 for k, p in enumerate(nine)}
+        lu = jh._arrange_state(nine, _sibs(nine, a, b))
+        assert frozenset((nine[a].pid, nine[b].pid)) in _partners(lu, 3), (i, a, b)
+        assert {rank[p.pid] for p in lu[:3]} == {1, 2, 3}       # S1 + D1 = #1-#3
+        sums = [rank[lu[k].pid] + rank[lu[k + 1].pid] for k in (3, 5, 7)]
+        for hi, lo in zip(sums, sums[1:]):
+            assert hi <= lo + jh.PAIR_SUM_TOL, (i, sums)
+
+
+def test_two_siblings_in_the_top_three_are_d1_and_the_third_plays_s1():
+    """There is nothing left to choose: S1 + D1 consume ranks #1-#3, so if two of them
+    are siblings the third takes the singles seat whatever the coach's search wanted."""
+    ts = _real_ts(14)
+    nine = jh._order(ts)[:9]
+    if len(nine) >= 9:
+        lu = jh._arrange_state(nine, _sibs(nine, 0, 1))
+        assert lu[0].pid == nine[2].pid
+        assert {lu[1].pid, lu[2].pid} == {nine[0].pid, nine[1].pid}
+
+
+def test_siblings_partner_in_the_1a_pilot_lineup():
+    """2S/3D. A pair inside the top four is either D1 or both at singles — never split
+    across the two, which would be the one arrangement that has them on court in
+    different roles for no reason."""
+    ts = _real_ts(21)
+    eight = jh._order(ts)[:8]
+    if len(eight) < 8:
+        return
+    lu = jh._arrange_1a_postseason(eight, _sibs(eight, 4, 7))
+    assert frozenset((eight[4].pid, eight[7].pid)) in _partners(lu, 2)
+    lu = jh._arrange_1a_postseason(eight, _sibs(eight, 0, 2))
+    top = frozenset((eight[0].pid, eight[2].pid))
+    assert top == frozenset((lu[0].pid, lu[1].pid)) or top in _partners(lu, 2)
+
+
+def test_three_siblings_on_one_roster_pair_the_higher_two():
+    """Three cannot all partner, so the ladder decides and the third plays on — the
+    lineup must still be a legal one with nine distinct people in it."""
+    ts = _real_ts(17)
+    nine = jh._order(ts)[:9]
+    if len(nine) < 9:
+        return
+    a, b, c = (nine[3].pid, nine[5].pid, nine[7].pid)
+    sibs = {a: {b, c}, b: {a, c}, c: {a, b}}
+    lu = jh._arrange_state(nine, sibs)
+    assert len({p.pid for p in lu}) == 9
+    assert frozenset((a, b)) in _partners(lu, 3), [sorted(p) for p in _partners(lu, 3)]
