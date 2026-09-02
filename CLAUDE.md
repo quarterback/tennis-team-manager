@@ -1279,18 +1279,43 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     the flight tie-break via `_jh_indiv_flight_order` with an EMPTY group on the row —
     `FLIGHT_WEIGHTS` prices dual courts and has no entry for a JV bracket; never
     invent one to rank it higher.
-  - **THE 96 CAP AND THE PIGTAILS** (`_pigtails`). Under 96 it is an ordinary seeded
-    draw with byes. Over it, the surplus plays in: assigned to seeds 1, 2, 3 … in order,
-    **one per seed before any seed gets a second**, wrapping past 96 only once every
-    seed has one. Each play-in match removes exactly one entrant, which is what closes
-    the arithmetic at ANY size (a seed carrying two is a chain of three entrants). The
-    pool is dealt SERPENTINE, so every line carries the same combined seed. It is a
-    PRE-ROUND (`PIGTAIL_ROUND`, archived as its own first round, each match naming its
-    `seed_line`) and deliberately does NOT graft the survivor into the seed's slot:
-    that would mean overriding bye placement inside `engine.tournament.seeded_draw`,
-    the ONE draw helper every varsity bracket and both college championships run
-    through. **At 95 districts the path never fires in the live association** — the tests
-    drive it synthetically, and that is the only thing that covers it.
+  - **‼️ A FULL 128 DRAW, BUILT FROM THREE SOURCES (owner spec 2026-09).**
+    `STATE_FIELD` 128 = district champions + ONE defending-champion autobid +
+    Regional Qualifying winners. Every district RUNNER-UP enters qualifying, which
+    plays down to exactly the seats the first two sources leave open
+    (`qualifying_spots`); on 95 districts that is 96 direct + 32 qualified. The count
+    is taken PER EVENT PER SEASON, never assumed — a district that fielded nobody
+    crowns no champion, and one that crowned unopposed sends no runner-up.
+    **Qualifying is the SLAM shape, not a halving** (`qualifying_rounds`): the final
+    round is exactly `2S` entries playing `S` matches so every match produces one
+    qualifier; the opening round plays `Q − 2S` and byes the top of the ranking.
+    Owner's examples reproduce verbatim: 95/32 → [31, 32] · 94/33 → [28, 33] · 96/31
+    → [34, 31]. Each qualifying draw archives under its OWN flight (`QJVS`/`QJVD`) —
+    neither a state title nor a district one — and **renders as rounds, never the
+    tree**: 31 then 32 does not halve, and `_bracket_canvas` links positionally.
+    **The autobid is a DISTRICT OF ONE named "TOC"** that its entrant wins outright
+    (owner: "won a district event by themselves rather than being granted auto
+    access") — it enters as an ordinary champion, needs no special case, and
+    archives beside the other districts. It belongs to the PROGRAM (singles is
+    seniors-only, so a bid held by a person always lapses) and is the school's best
+    REMAINING entry: `school_entry(exclude=…)` skips whoever already holds a seat,
+    which is what makes two players from one school possible. Measured: 37% of
+    programs can use a singles bid, 24% a doubles one; when the school cannot, the
+    seat simply falls to qualifying and the field is still 128. The holder is read
+    off the ARCHIVE (`defending_program`, newest archived draw for the bracket — no
+    season-year arithmetic against the world-year key).
+    **Same-school entries are SEPARATED at State** (`engine.tournament.separate_draw`,
+    opt-in via `run_tournament(separate=)` — varsity draws pass nothing and are
+    byte-identical): two to opposite halves, 3-4 to distinct quarters, by swapping
+    SAME-TIER entrants after seeded placement, so the seeding contract is untouched.
+    Degrades (skips) rather than fails when no legal partner exists. Measured over 40
+    draws: 98% halves, 100% quarters, seeds 1-2 still at the ends.
+    ‼️ **`Entry.key` is `(school, pids)` now, not the school** — "unique by
+    construction" stopped being true the moment a school could hold two seats; two
+    entries collapsed to one index and the archived rounds pointed at the wrong
+    entrant. `finishes` is keyed by entry INDEX (nothing reads it; every consumer
+    goes through `finish_for_index`). The pigtail pre-round is GONE — qualifying
+    fills the field exactly, so nothing is ever surplus.
   - **How many are SEEDED is the USTA convention and is not set here**: a quarter of the
     padded draw (128→32, 64→16, 32→8), i.e. `engine.tournament.seed_count`, applied by
     `run_tournament` because nothing is passed to `seeds=`. The default IS the rule.
