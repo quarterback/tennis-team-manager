@@ -462,7 +462,8 @@ def _assemble(gender, group, flight, result, played) -> FlightDraw:
 
 
 def run_flight(teams: list, gender: str, group: str, flight: str, *,
-               seed: int, sheet: dict | None = None) -> FlightDraw | None:
+               seed: int, sheet: dict | None = None,
+               extra: list | None = None) -> FlightDraw | None:
     """Select, seed and play one flight's draw. Deterministic: the same
     (teams, gender, group, flight, seed) reproduces the whole bracket.
 
@@ -470,8 +471,18 @@ def run_flight(teams: list, gender: str, group: str, flight: str, *,
     off these teams — see `entry_sheet` for why leaving it out is a correctness bug
     rather than a slower path."""
     entries = select_field(teams, flight, sheet)
+    # ‼️ WILD CARDS ARE ADDED, NOT SELECTED — the field rule above is untouched and
+    # `extra` is empty for every flight but No. 3 (see `jhsaa.run_season`). They are
+    # entrants this flight's own selection would never have produced (the reigning JV
+    # champion is by definition NOT in the program's top nine), so they are appended
+    # and the whole field re-sorted by rating, which is what seeds them. A school can
+    # therefore hold two entries in one flight — its holder and its JV champion — and
+    # `run_tournament` is asked to keep them apart, exactly as the JV state draw does
+    # for its own autobid.
+    entries = entries + [e for e in (extra or []) if e.flight == flight]
     if len(entries) < 2:
         return None
+    entries.sort(key=lambda e: (-e.rating, e.school))
     rng = random.Random(seed)
     played: dict = {}
 
@@ -484,7 +495,8 @@ def run_flight(teams: list, gender: str, group: str, flight: str, *,
         return ea if res.winner == 0 else eb
 
     result = run_tournament(entries, seed=rng.randint(1, 10 ** 9), play=play,
-                            key=lambda e: e.rating)
+                            key=lambda e: e.rating,
+                            separate=(lambda e: e.school) if extra else None)
     return _assemble(gender, group, flight, result, played)
 
 
@@ -502,7 +514,7 @@ def _draw_seed(base: int, *parts: str) -> int:
 
 
 def run_preseason(by_group: dict, gender: str, year: int, *,
-                  seed: int = 0) -> dict:
+                  seed: int = 0, wildcards: dict | None = None) -> dict:
     """Every classification's six flight draws, played and CREDITED, returned
     archive-flattened as `{group: {flight: dict}}`.
 
@@ -528,6 +540,7 @@ def run_preseason(by_group: dict, gender: str, year: int, *,
         drawn = {}
         for flight in FLIGHTS:
             d = run_flight(teams, gender, group, flight, sheet=sheet,
+                           extra=(wildcards or {}).get(group, {}).get(flight),
                            seed=_draw_seed(seed, gender, str(year), group, flight))
             if d is None:                   # fewer than two entries — no event
                 continue

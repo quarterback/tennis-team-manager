@@ -7647,6 +7647,41 @@ from .jhsaa_awards import (season_awards, region_awards, build_pool,   # noqa: E
 _season_cache: dict = {}
 
 
+def _jv_wildcards(jv_arc: dict, by_group: dict) -> dict:
+    """The JV champions, as varsity No. 3 wild cards (owner rule 2026-09).
+
+    ‼️ THE JV WINNER GETS A SHOT AT THE VARSITY EVENT, IN THE SAME YEAR. The JV
+    Singles champion enters that program's classification No. 3 SINGLES draw and the
+    JV Doubles champions their No. 3 DOUBLES draw — the flights with the room for it
+    (a No. 3 field is 82-107 in a 128 bracket, so 21-46 seats stand open) and the
+    right level for a player who was outside their own school's top nine.
+
+    ‼️ IT IS A SECOND ENTRY FROM THAT SCHOOL IN THAT FLIGHT, which the varsity event
+    has never had — its whole selection rule is one holder per school per flight. The
+    wild card is APPENDED to the selected field rather than selected into it (see
+    `run_flight`), so the rule itself is untouched, and the draw is asked to keep the
+    two apart. `Entry.key` carries the pids, so they cannot collapse to one index.
+
+    The event is CLASSLESS but the varsity flights are not, so each champion enters
+    the draw of their OWN school's classification — which is why this needs the
+    school-to-group map rather than just the archive.
+    """
+    from . import jhsaa_jv_individuals as jvi
+    from .jhsaa_individuals import Entry
+    group_of = {t.school.name: g
+                for g, dists in by_group.items()
+                for ts in dists.values() for t in ts}
+    out: dict = {}
+    for bracket, flight in ((jvi.SINGLES, "S3"), (jvi.DOUBLES, "D3")):
+        e = (jv_arc.get("champions") or {}).get(bracket)
+        if e is None or group_of.get(e.school) is None:
+            continue
+        out.setdefault(group_of[e.school], {}).setdefault(flight, []).append(
+            Entry(school=e.school, players=e.players, engine=e.engine,
+                  rating=e.rating, flight=flight, district=e.district))
+    return out
+
+
 def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict:
     """One full JHSAA season for `gender`: every district's regular season, the
     crossover schedule, the awards, and each classification's postseason ladder
@@ -7710,8 +7745,25 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     # both seasons exist — it runs at the world rung (`jhsaa_individuals.
     # run_mixed_season`), which is also where it belongs on the calendar, in the
     # summer. It credits nothing to anybody.
+    # ‼️ THE JV INDIVIDUAL TOURNAMENTS RUN FIRST, AND PRESEASON (owner rule
+    # 2026-09). They used to sit after the JV season, because `jv_pool` reads
+    # `_order` and that ladder wants results in it — but the owner wants the JV
+    # champion wild-carded into the varsity No. 3 draw IN THE SAME YEAR, and the
+    # varsity flights are preseason by design (selecting on ability is only honest
+    # before any berth could have been earned on court). A champion crowned after
+    # the No. 3 draw was already played and archived can never enter it.
+    #
+    # So the JV event moves to where its output can be used. Preseason `_order`
+    # has no results to read and IS ability order — which is the same basis the
+    # varsity flights select on, so this is the honest cut rather than a weaker
+    # one. The JV SEASON stays where it is, after the regular season.
+    from .jhsaa_jv_individuals import run_jv_state as _run_jv_individuals
+    out["jv_individuals"] = _run_jv_individuals(by_group, gender, year,
+                                                seed=seed)
     from .jhsaa_individuals import run_preseason as _run_individuals
-    out["individuals"] = _run_individuals(by_group, gender, year, seed=seed)
+    out["individuals"] = _run_individuals(
+        by_group, gender, year, seed=seed,
+        wildcards=_jv_wildcards(out["jv_individuals"], by_group))
     every_team, power = play_regular_season(by_group, year, gender, salt)
     # THE JV SEASON, played here and nowhere else. It runs BEFORE the postseason
     # because that is where it sits on the calendar (April-May against the varsity
@@ -7733,21 +7785,6 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     # It writes nothing any line below this can see: no `records`, no `matches`, no
     # `power`, no standings row. That is `JVTeam`'s doing, not this call's.
     out["jv"] = play_jv_season(by_group, year, gender, salt)
-    # THE JV INDIVIDUAL STATE TOURNAMENTS — two classless statewide draws (JV
-    # Singles, JV Doubles) for 12th-graders below the varsity eleven, qualified
-    # by winning their district. Played HERE because `jv_pool` reads `_order`:
-    # a JV senior's eligibility and their school's JV No. 1 are both properties
-    # of the finished ladder, so this reads the same cut the JV season was
-    # staffed from.
-    #
-    # ‼️ IT CREDITS NOTHING AND MUTATES NOTHING. JV counts for nothing anywhere
-    # (no records, no matches, no TOSS, no awards, no seeding), so this event
-    # holds to the same guarantee the JV season does — it is read-only over the
-    # TeamSeasons above and takes its randomness from its own Random, which is
-    # what keeps every varsity outcome below this line bit-identical.
-    from .jhsaa_jv_individuals import run_jv_state as _run_jv_individuals
-    out["jv_individuals"] = _run_jv_individuals(by_group, gender, year,
-                                                seed=seed)
     # TOSS was computed over the whole gender inside `play_regular_season` — once, on the
     # finished regular season, before any state tournament, since it is both the seeding
     # input and rung 4 of the district tiebreak. Across all classifications together

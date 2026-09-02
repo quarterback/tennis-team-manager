@@ -1249,6 +1249,29 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     `jhsaa_individual_results` and `jhsaa_school_individual_champions` do, because a
     page scoped to a class would otherwise silently drop a title the player won. Never
     store a real class on one of these rows: it was not contested in one.
+  - **‼️ IT RUNS PRESEASON, FIRST, AND ITS CHAMPIONS WILD-CARD INTO VARSITY No. 3**
+    (owner rule 2026-09). It used to sit after the JV season; the JV champion is now
+    entered in that program's classification **No. 3 singles / No. 3 doubles** draw in
+    the SAME year, and the varsity flights are preseason by design — a champion
+    crowned after that draw was archived can never enter it. Preseason `_order` has no
+    results and IS ability order, the same basis the varsity flights select on, so the
+    cut is honest rather than weaker. The JV SEASON stays after the regular season.
+    The wild card is APPENDED to the selected field (`run_flight(extra=)`), never
+    selected into it, so the varsity one-holder-per-school rule is untouched — and the
+    draw separates the two (a No. 3 field is 82-107 in a 128 bracket, so there is
+    room). `_jv_wildcards` maps each champion to their OWN school's class, since the
+    JV event is classless and the varsity flights are not.
+  - **‼️ TWO CUTS, AND THE DUAL POOL MUST NOT MOVE** (owner rule 2026-09: "I do not
+    want to kill JV duals … for JV duals 12 and below counts"). JV DUALS staff from
+    `jhsaa.jv_pool`, rank 12 down, unchanged. The TOURNAMENT starts at
+    `jvi.EVENT_FROM` (**14**), because measured varsity appearances show ranks 12-13
+    are swing players, not JV (median 14 / 7 / 4 / 2 at ranks 11-14; "played 5+
+    varsity" 97% / 73% / 36% / 17% — the knee is 13→14). ‼️ Raising `jv_pool` itself
+    was tried and MEASURED first: it puts **43 of 114 programs (38%) below
+    `JV_MIN_SPARE`**, i.e. no JV duals at all for a third of the association, and
+    `ROSTER_FLOOR` is derived from that cut so every roster would have had to grow to
+    fix an eligibility rule. The event filters its own field instead — a filter on the
+    pool, never a second pool.
   - **Eligibility is per bracket** (`ELIGIBLE_GRADES`): singles is **seniors**, doubles
     is **juniors AND seniors**. That is arithmetic, not sentiment — a pair is three
     eligible players deep once the singles entrant is held out, and measured across

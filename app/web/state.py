@@ -4576,16 +4576,14 @@ def _jh_indiv_drawn(draw: dict, schools: dict, as_rounds: bool = False) -> dict:
                               "loser": lose, "scoreline": m["scoreline"],
                               "rnd": m.get("rnd", "")})
             playins.append(layer)
-    while rounds and rounds[0] and rounds[0][0].get("rnd") == jvi.PIGTAIL_ROUND:
-        layer = []
-        for m in rounds[0]:
-            hi, lo = entries[m["hi"]], entries[m["lo"]]
-            win, lose = (hi, lo) if m["winner_is_hi"] else (lo, hi)
-            layer.append({"seed_line": m.get("seed_line"),
-                          "winner": win, "loser": lose,
-                          "scoreline": m["scoreline"]})
-        playins.append(layer)
-        rounds = rounds[1:]
+    # ‼️ NO PLAY-IN BRANCH ANY MORE. The JV event used to graft surplus entrants
+    # onto top seeds' lines when the field overran a 96 cap; Regional Qualifying
+    # fills a 128 field exactly, so no draw carries a pre-round and nothing is
+    # ever surplus. The branch that stripped one survived the mechanism's removal
+    # by a few lines and referenced a constant that no longer exists — an
+    # AttributeError on the FIRST non-empty round of any archived draw, varsity
+    # included, which is a 500 on the whole championship route. Deleting a
+    # mechanism means grepping its sentinel, not just its implementation.
     cols = []
     for rnd in rounds:
         ms = []

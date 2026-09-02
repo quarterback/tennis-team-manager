@@ -152,6 +152,35 @@ ENTRY_SIZE = {SINGLES: 1, DOUBLES: 2}
 
 # --- eligibility ------------------------------------------------------------
 
+#: ‼️ WHERE THE TOURNAMENT'S ELIGIBILITY STARTS — 1-based ladder rank (owner rule
+#: 2026-09, measured). The JV SEASON staffs its duals from rank 12 down
+#: (`jhsaa.jv_pool`, the plain cut below the varsity eleven) and that is unchanged.
+#: The EVENT is stricter, because the owner measured what those ranks actually do
+#: across a season and ranks 12-13 are not JV players, they are varsity swing
+#: players:
+#:
+#:     rank | median varsity appearances | played 5+ | played 10+
+#:       11 |                         14 |     97.5% |      82.5%
+#:       12 |                          7 |     73.2% |      28.7%
+#:       13 |                          4 |     36.3% |       6.6%
+#:       14 |                          2 |     17.2% |       1.7%
+#:       15 |                          2 |     10.3% |       0.2%
+#:
+#: The knee is between 13 and 14 — the median halves twice over 11→13 then flattens,
+#: and "played five varsity matches" falls off a cliff (36% → 17%). Move it to 15 by
+#: changing this one number.
+#:
+#: ‼️ TWO CUTS, DELIBERATELY, AND THE DUAL POOL IS THE ONE THAT MUST NOT MOVE (owner,
+#: 2026-09: "I do not want to kill JV duals ... for JV duals 12 and below counts").
+#: Raising `jhsaa.jv_pool` itself to 14 was tried and measured first: it puts **43 of
+#: 114 programs (38%) below `JV_MIN_SPARE`**, so a third of the association fields no
+#: JV duals at all — not a smaller JV pool, no JV season. `ROSTER_FLOOR` is derived
+#: from the dual cut and would have had to move with it, changing every roster in the
+#: association to fix an eligibility rule. So the event narrows its OWN field and
+#: leaves the season's alone: this is a filter on the pool, never a second pool.
+EVENT_FROM = 14
+
+
 def jv_ladder(ts) -> list:
     """A program's JV players, in ladder order.
 
@@ -171,11 +200,19 @@ def jv_ladder(ts) -> list:
 
 
 def jv_eligible(ts, bracket: str, ladder: list | None = None) -> list:
-    """The JV players a school may enter in `bracket`, in ladder order — seniors
-    for singles, juniors and seniors for doubles (`ELIGIBLE_GRADES`)."""
+    """The JV players a school may enter in `bracket`, in ladder order — of an
+    eligible grade (`ELIGIBLE_GRADES`) and at or below `EVENT_FROM` on the ladder.
+
+    ‼️ THE RANK CUT IS THE EVENT'S, NOT THE SEASON'S. `jv_ladder` is the whole JV
+    pool, which staffs JV duals from rank 12 down; the tournament drops ranks 12-13
+    on top of that because they are varsity swing players (see `EVENT_FROM`). The
+    filter lives here so both brackets and every caller get it from one place."""
     grades = ELIGIBLE_GRADES[bracket]
     pool = jv_ladder(ts) if ladder is None else ladder
-    return [p for p in pool if p.grade in grades]
+    from .jhsaa import lineup_need
+    skip = max(0, EVENT_FROM - 1 - lineup_need("regular"))
+    return [p for p in pool[skip:] if p.grade in grades]
+
 
 
 def jv_seniors(ts, ladder: list | None = None) -> list:
@@ -656,6 +693,7 @@ def run_jv_state(by_group: dict, gender: str, year: int, *, seed: int = 0,
     state: dict = {}
     districts: dict = {}
     qualifying: dict = {}
+    champions: dict = {}
     for bracket in BRACKETS:
         quals = district_qualifiers(by_group, bracket, gender=gender, year=year,
                                     seed=seed, sheet=sheet)
@@ -696,4 +734,12 @@ def run_jv_state(by_group: dict, gender: str, year: int, *, seed: int = 0,
                                       bracket))
         if d is not None:
             state[bracket] = draw_to_dict(d)
-    return {"state": state, "districts": districts, "qualifying": qualifying}
+            # ‼️ THE LIVE CHAMPION ENTRY, beside the flattened archive. The
+            # varsity No. 3 wild card needs the ENTRY — its engine player and
+            # its Prospects — and the archive holds only names and pids. A
+            # caller that had to rebuild one from the dict would be regenerating
+            # a player the season is already holding.
+            if d.champion is not None:
+                champions[bracket] = d.champion
+    return {"state": state, "districts": districts, "qualifying": qualifying,
+            "champions": champions}
