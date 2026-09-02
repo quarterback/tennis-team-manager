@@ -3895,6 +3895,16 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                   jv_indiv.DISTRICT_OF[bracket], json.dumps(draw))
                  for bracket, draws in (jv_arc.get("districts") or {}).items()
                  for ident, draw in draws.items()])
+            # REGIONAL QUALIFYING — one row per bracket, under the classless key
+            # and its OWN flight, for the same reason the district draws have
+            # theirs: a qualifying tournament is neither a state title nor a
+            # district one, and `flight` is what every reader keys on.
+            conn.executemany(
+                "INSERT INTO world_jhsaa_individual"
+                " (world_id, year, gender, grp, flight, data) VALUES (?,?,?,?,?,?)",
+                [(world["id"], year, gender, jv_indiv.GROUP_KEY,
+                  jv_indiv.QUAL_OF[bracket], json.dumps(draw))
+                 for bracket, draw in (jv_arc.get("qualifying") or {}).items()])
             # INJURIES — VARSITY only, one row per injury actually rolled
             # (`t.injury_log`, see `jhsaa.TeamSeason`). JV never carries one.
             conn.executemany(

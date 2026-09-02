@@ -296,9 +296,20 @@ class Entry:
 
     @property
     def key(self):
-        # The SCHOOL is the identity: one entry per school per flight, and a pair
-        # has no single pid. Unique within a draw by construction.
-        return self.school
+        # ‼️ THE ENTRY'S IDENTITY WITHIN ONE DRAW, and it is what `draw_to_dict`
+        # indexes rounds by, what `played` keys results on and what `finishes`
+        # maps. It MUST be unique per entrant.
+        #
+        # The school alone was that identity, and the comment here said so —
+        # "one entry per school per flight, unique by construction". That
+        # construction stopped holding the moment a school could hold two seats
+        # (the JV defending champion's autobid beside its district entry, owner
+        # rule 2026-09): two entries would collapse to one index and the archived
+        # rounds would point at the wrong entrant, silently. So the PIDS are part
+        # of it — a pair has no single pid, but the tuple of its members is
+        # unique, and for the varsity flights, where a school really does enter
+        # once, the school half alone still separates every entrant.
+        return (self.school, tuple(p.pid for p in self.players))
 
     @property
     def pids(self) -> list:
@@ -451,7 +462,8 @@ def _assemble(gender, group, flight, result, played) -> FlightDraw:
 
 
 def run_flight(teams: list, gender: str, group: str, flight: str, *,
-               seed: int, sheet: dict | None = None) -> FlightDraw | None:
+               seed: int, sheet: dict | None = None,
+               extra: list | None = None) -> FlightDraw | None:
     """Select, seed and play one flight's draw. Deterministic: the same
     (teams, gender, group, flight, seed) reproduces the whole bracket.
 
@@ -459,8 +471,18 @@ def run_flight(teams: list, gender: str, group: str, flight: str, *,
     off these teams — see `entry_sheet` for why leaving it out is a correctness bug
     rather than a slower path."""
     entries = select_field(teams, flight, sheet)
+    # ‼️ WILD CARDS ARE ADDED, NOT SELECTED — the field rule above is untouched and
+    # `extra` is empty for every flight but No. 3 (see `jhsaa.run_season`). They are
+    # entrants this flight's own selection would never have produced (the reigning JV
+    # champion is by definition NOT in the program's top nine), so they are appended
+    # and the whole field re-sorted by rating, which is what seeds them. A school can
+    # therefore hold two entries in one flight — its holder and its JV champion — and
+    # `run_tournament` is asked to keep them apart, exactly as the JV state draw does
+    # for its own autobid.
+    entries = entries + [e for e in (extra or []) if e.flight == flight]
     if len(entries) < 2:
         return None
+    entries.sort(key=lambda e: (-e.rating, e.school))
     rng = random.Random(seed)
     played: dict = {}
 
@@ -473,7 +495,8 @@ def run_flight(teams: list, gender: str, group: str, flight: str, *,
         return ea if res.winner == 0 else eb
 
     result = run_tournament(entries, seed=rng.randint(1, 10 ** 9), play=play,
-                            key=lambda e: e.rating)
+                            key=lambda e: e.rating,
+                            separate=(lambda e: e.school) if extra else None)
     return _assemble(gender, group, flight, result, played)
 
 
@@ -491,7 +514,7 @@ def _draw_seed(base: int, *parts: str) -> int:
 
 
 def run_preseason(by_group: dict, gender: str, year: int, *,
-                  seed: int = 0) -> dict:
+                  seed: int = 0, wildcards: dict | None = None) -> dict:
     """Every classification's six flight draws, played and CREDITED, returned
     archive-flattened as `{group: {flight: dict}}`.
 
@@ -517,6 +540,7 @@ def run_preseason(by_group: dict, gender: str, year: int, *,
         drawn = {}
         for flight in FLIGHTS:
             d = run_flight(teams, gender, group, flight, sheet=sheet,
+                           extra=(wildcards or {}).get(group, {}).get(flight),
                            seed=_draw_seed(seed, gender, str(year), group, flight))
             if d is None:                   # fewer than two entries — no event
                 continue
@@ -747,6 +771,14 @@ def draw_to_dict(d: FlightDraw) -> dict:
         "entries": [ed(e) for e in d.entries],
         "champion": ix.get(d.champion.key) if d.champion else None,
         "runner_up": ix.get(d.runner_up.key) if d.runner_up else None,
-        "finishes": {k: {"label": v[0], "tag": v[1]} for k, v in fin.items()},
+        # ‼️ KEYED ON THE ENTRY INDEX, not the entry key. The key is now a
+        # (school, pids) tuple — not a JSON object key at all — and school alone
+        # stopped being unique the moment a school could hold two seats. The
+        # index is both. Nothing reads this map (every consumer goes through
+        # `finish_for_index`, which walks the rounds by index precisely because a
+        # relabelled school name cannot be looked up); it is kept as the draw's
+        # own summary of itself.
+        "finishes": {str(ix[k]): {"label": v[0], "tag": v[1]}
+                     for k, v in fin.items() if k in ix},
         "rounds": [[md(m) for m in rnd] for rnd in d.rounds],
     }

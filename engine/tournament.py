@@ -126,6 +126,99 @@ def seeded_draw(n_real: int, n: int, n_seeds: int, rng: random.Random) -> list[i
     return slots
 
 
+def _seed_tier(num: int) -> int:
+    """Which PLACEMENT TIER a 1-based seed number belongs to — [1], [2], [3-4],
+    [5-8], [9-16], … — the same tiers `seeded_draw` shuffles among mirror anchors.
+
+    Two entrants in one tier are interchangeable BY CONSTRUCTION: the draw already
+    picks their anchors at random from the tier's own set, so swapping them is a
+    re-draw the seeding contract permits, not a violation of it. That is what makes
+    `separate_draw` able to move a seed at all."""
+    if num <= 2:
+        return num
+    tier, lo = 3, 3
+    while True:
+        hi = 2 * lo - 2
+        if num <= hi:
+            return tier
+        lo, tier = hi + 1, tier + 1
+
+
+def separate_draw(slots: list, key, n_seeds: int, rng: random.Random) -> None:
+    """Spread same-`key` entrants across the draw, in place.
+
+    Two entrants sharing a key are put in opposite HALVES; three or four in
+    separate QUARTERS; and so on — the block size halves each time the group
+    doubles, so a group of k is spread as far as a bracket of this size allows and
+    they can only meet as late as possible.
+
+    Entries are moved by SWAPPING WITH AN ENTRANT OF THE SAME PLACEMENT TIER
+    (`_seed_tier`; every unseeded entrant is one tier). That is the whole reason
+    this can run after `seeded_draw` rather than inside it: a tier's anchors are
+    already assigned at random within the tier, so exchanging two of its members is
+    a draw this function could have produced itself. A swap that would create a new
+    collision, or for which no same-tier partner exists in the target block, is
+    skipped — the draw degrades to the un-separated placement for that one entrant
+    rather than failing, which is the only safe behaviour when a single school
+    holds more entries than the bracket has blocks.
+
+    `key(rank) -> hashable | None` reads an entrant's group; None never separates.
+    Deterministic given `rng`.
+    """
+    where = {rank: i for i, rank in enumerate(slots) if rank is not None}
+    groups: dict = {}
+    for rank in where:
+        k = key(rank)
+        if k is not None:
+            groups.setdefault(k, []).append(rank)
+    n = len(slots)
+    for k, members in sorted(groups.items(), key=lambda kv: (-len(kv[1]), str(kv[0]))):
+        if len(members) < 2:
+            continue
+        # Blocks: 2 members -> halves, 3-4 -> quarters, 5-8 -> eighths, …
+        blocks = 2
+        while blocks < len(members):
+            blocks *= 2
+        blocks = min(blocks, n)
+        size = n // blocks
+        members = sorted(members)                      # best seed keeps its slot
+        taken: set = set()
+        for rank in members:
+            b = where[rank] // size
+            if b not in taken:
+                taken.add(b)
+                continue
+            # Collision: find a same-tier partner in a block nobody in this group
+            # holds, whose own group is not already represented there either.
+            tier = _seed_tier(rank + 1) if rank < n_seeds else -1
+            cands = []
+            for other, pos in where.items():
+                if other == rank:
+                    continue
+                ob = pos // size
+                if ob in taken:
+                    continue
+                otier = _seed_tier(other + 1) if other < n_seeds else -1
+                if otier != tier:
+                    continue
+                ok = key(other)
+                # Moving `other` into this block must not collide there either.
+                if ok is not None and ok != k and any(
+                        where[m] // size == where[rank] // size
+                        for m in groups.get(ok, ()) if m != other):
+                    continue
+                cands.append((ob, other))
+            if not cands:
+                taken.add(b)                           # degrade, never crash
+                continue
+            cands.sort()
+            ob, other = cands[rng.randrange(len(cands))]
+            i, j = where[rank], where[other]
+            slots[i], slots[j] = slots[j], slots[i]
+            where[rank], where[other] = j, i
+            taken.add(ob)
+
+
 @dataclass
 class TourMatch:
     rnd: str            # round label, e.g. "Quarterfinals"
@@ -178,7 +271,8 @@ def _default_play(a, b, *, seed: int):
 def run_tournament(entrants: list, *, seed: int,
                    play: Callable | None = None,
                    key: Callable | None = None,
-                   seeds: int | None = None) -> TournamentResult:
+                   seeds: int | None = None,
+                   separate: Callable | None = None) -> TournamentResult:
     """Run a single-elimination draw over `entrants` with tennis-style seeding.
 
     `key(entrant) -> float` is the seeding rating (higher first); ties break on entry
@@ -209,6 +303,13 @@ def run_tournament(entrants: list, *, seed: int,
     # The draw (seed placement + random unseeded fill) consumes the rng first, so
     # it is part of the same deterministic stream as the match seeds below.
     slots: list[int | None] = seeded_draw(n_real, n, n_seeds, rng)
+    # ‼️ OPT-IN, AND UNSET IT CHANGES NOTHING. `separate(entrant) -> group` spreads
+    # same-group entrants across the draw (see `separate_draw`); every caller that
+    # does not pass it — every varsity flight, both college championships, the
+    # junior circuit — consumes the rng in exactly the same order and draws exactly
+    # the bracket it drew before this existed.
+    if separate is not None:
+        separate_draw(slots, lambda r: separate(seeded[r]), n_seeds, rng)
     size = n
     while size > 1:
         nxt: list[int | None] = []
