@@ -262,3 +262,83 @@ def test_the_season_cache_falls_when_a_play_up_changes(clean):
     plain = next(s for s in jh.load_schools("girls") if not s.plays_up)
     ov.set_jhsaa_playup(plain.name, jh.play_up_group(plain.classification))
     assert ov.jhsaa_playup_version() != before
+
+
+# --- a league is only a league if somebody plays in it ------------------------
+
+def _dead_leagues(rows):
+    """(group, league) pairs whose every member has stopped sponsoring tennis."""
+    lg = {}
+    for r in rows:
+        d = jh._row_league(r)
+        if d:
+            lg.setdefault((r["group"], d), []).append(r)
+    return {k for k, v in lg.items() if not any(jh._sponsors_any(x) for x in v)}
+
+
+def test_the_association_really_does_hold_empty_leagues():
+    """The premise of the two tests below, asserted against the shipped data rather
+    than assumed. Since `former_school` (2026-08) a program that stops sponsoring keeps
+    its data row while dropping out of `load_schools`, so a league can be fully
+    populated in `_rows()` and completely empty on the field. If this ever stops being
+    true the tests below stop testing anything, and that should be visible."""
+    dead = _dead_leagues(jh._rows())
+    assert dead, "no empty leagues left — the guard below is no longer exercised"
+
+
+def test_no_eligible_school_can_be_played_up_into_an_empty_league(clean):
+    """‼️ The 3A bug, swept over every school that COULD be played up.
+
+    `_compute_playup_league` reads raw rows, so it counted programs that no longer
+    sponsor tennis as settled members of their league. Copperview (3A, sponsors
+    neither gender) is the lone member of Coastal Range League and sits in Puerto
+    Alma's own county, so it beat every real 3A league on the county term: played up,
+    Puerto Alma joined a league with nobody in it, played no league duals at all
+    (0-0 in district, 2-12 overall) and was crowned champion of a league of one.
+
+    The existing coverage checked only the ~13 SEEDED play-ups, none of which happens
+    to sit near a dead league — which is exactly why this shipped. The property belongs
+    to the PLACEMENT, so it is swept over every eligible school."""
+    rows = jh._rows()
+    dead = _dead_leagues(rows)
+    live_in = {}
+    for r in rows:
+        d = jh._row_league(r)
+        if d and jh._sponsors_any(r):
+            live_in[(r["group"], d)] = live_in.get((r["group"], d), 0) + 1
+    checked = 0
+    for r in rows:
+        target = jh.play_up_group(r["classification"]) if \
+            jh.can_play_up(r["classification"]) else None
+        if not target:
+            continue
+        placed = jh._compute_playup_league(rows, {r["name"]: target}).get(r["name"])
+        assert placed, (r["name"], target, "no league at all")
+        assert (target, placed) not in dead, (r["name"], target, placed)
+        assert live_in.get((target, placed), 0) >= 4, (r["name"], target, placed)
+        checked += 1
+    assert checked > 100, checked
+
+
+def test_a_ghost_league_never_beats_a_real_one_on_geography(clean):
+    """The mechanism in isolation: a same-county league is the strongest signal the
+    placement has, so a league of ghosts in the mover's own county outranked a real
+    league everywhere else. Sponsorship is checked FIRST — geography only orders the
+    leagues that are actually being played."""
+    rows = [
+        {"name": "Mover", "classification": "3A", "group": "3A",
+         "county": "Home", "area": "West", "girls": True, "boys": True,
+         "girls_district": "Old League", "boys_district": "Old League"},
+        # Same county as the mover, and nobody left in it.
+        {"name": "Ghost", "classification": "4A", "group": "4A",
+         "county": "Home", "area": "West", "girls": False, "boys": False,
+         "girls_district": "Ghost League", "boys_district": "Ghost League"},
+    ] + [
+        # A real 4A league, one area away and four programs strong.
+        {"name": f"Real {i}", "classification": "4A", "group": "4A",
+         "county": "Away", "area": "West", "girls": True, "boys": True,
+         "girls_district": "Real League", "boys_district": "Real League"}
+        for i in range(4)
+    ]
+    placed = jh._compute_playup_league(rows, {"Mover": "4A"})
+    assert placed["Mover"] == "Real League", placed

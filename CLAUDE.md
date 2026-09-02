@@ -2614,6 +2614,23 @@ was a school marker, shipped "Baptist HS High School".
     independently, two 8A blue-bloods both picked the same 9A league and took it from 11
     to 13, because neither could see the other. The running count must include the
     play-ups already placed.
+  - **‼️ A LEAGUE IS ONLY A LEAGUE IF SOMEBODY PLAYS IN IT.** `_compute_playup_league`
+    reads `_rows()`, and since `former_school` (2026-08) a program that stops
+    sponsoring KEEPS ITS DATA ROW while dropping out of `load_schools` — so a league
+    can be fully populated in the rows and completely empty on the field. **Ten are,
+    across six classifications.** Counting those ghosts as settled members, the
+    placement could put a played-up program into a league with nobody in it, arriving
+    at the exact one-team league the bullet above exists to prevent: Copperview (3A,
+    sponsors neither gender) is the lone member of Coastal Range League and sits in
+    Puerto Alma's own county, so it beat every real 3A league on the county term —
+    Puerto Alma played **0-0 in district, 2-12 overall** and was crowned champion of a
+    league of one. `_sponsors_any` is the filter, gender-agnostic because the
+    placement is (a girls-only sponsor is a real league member). **`load_schools`'s
+    sponsorship filter is what makes a program real: anything reading `_rows()` to ask
+    who PLAYS — rather than about a school's page — has to apply it too.** ‼️ The
+    existing coverage checked only the ~13 SEEDED play-ups, none of which happens to
+    sit near a dead league, which is why it shipped; the property belongs to the
+    PLACEMENT, so it is now swept over every eligible school.
   - **`jhsaa_playup_version()` keys the season cache beside the archetype one**, and
     `jhsaa.reset_schools()` exists because `load_schools` bakes group and league into the
     School objects — `reset_all()` alone does not clear them.

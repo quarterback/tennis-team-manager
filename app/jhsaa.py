@@ -3212,6 +3212,16 @@ def _row_league(row: dict) -> str | None:
     return row.get("girls_district") or row.get("boys_district")
 
 
+def _sponsors_any(row: dict) -> bool:
+    """Does this school field a tennis team AT ALL? A program that has stopped
+    sponsoring keeps its data row (`former_school`, owner rule 2026-08) but is no
+    longer part of any league that gets played, so anything reading `_rows()` to
+    reason about the season — rather than about the school's page — must ask this.
+    Either gender counts: sponsorship is per sport per gender and a girls-only
+    program is a real member of its league."""
+    return bool(row.get("girls") or row.get("boys"))
+
+
 def _playup_league(version: str, rows: list[dict],
                    pmap: dict | None = None) -> dict[str, str]:
     """{school: league} for every played-up program's SHARED league — memoised on the
@@ -3261,8 +3271,25 @@ def _compute_playup_league(rows: list[dict],
     robin is a season with no games, and it used to fail exactly that quietly).
 
     Settled membership excludes every played-up school, so a school that has moved
-    out of a class is not counted as still being in it."""
-    settled = [x for x in rows if _row_league(x) and not _plays_up_row(x, pmap)]
+    out of a class is not counted as still being in it.
+
+    ‼️ AND IT EXCLUDES A SCHOOL THAT NO LONGER SPONSORS TENNIS. A candidate league
+    is only a league if somebody actually PLAYS in it, and since the `former_school`
+    rule (2026-08) a program that stops sponsoring keeps its data row while dropping
+    out of `load_schools` — so a league can be fully populated in `rows` and
+    completely empty on the field. Ten of them are, across six classifications.
+    Reading raw rows, this function counted those ghosts as settled members and
+    could place a played-up program into a league with nobody in it, arriving at the
+    exact one-team league the guard above exists to prevent: Copperview (3A, sponsors
+    neither gender) is the lone member of Coastal Range League and sits in Puerto
+    Alma's own county, so it beat every real 3A league on the county term and Puerto
+    Alma played a 2-12 season with no league games and a district title in a league
+    of one. `load_schools`'s sponsorship filter is what makes a program real; any
+    function reading `_rows()` to answer a question about who PLAYS has to apply it
+    too. Gender-agnostic (`_sponsors_any`), because the placement is — a girls-only
+    sponsor is a live league member."""
+    settled = [x for x in rows if _row_league(x) and _sponsors_any(x)
+               and not _plays_up_row(x, pmap)]
     movers = sorted((x for x in rows if _plays_up_row(x, pmap)),
                     key=lambda x: x["name"])          # deterministic order
 
