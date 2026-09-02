@@ -74,16 +74,35 @@ program with nothing in range now simply has no town rival, which is a real answ
 
 ### It is a fixture, not an allowance
 
-The pairs are played in their own block at the head of the mid-season window — ahead of
-that window's draw, so the matcher cannot rematch a pair that has just played, and after
-league pass 1 because that is where the calendar has the dates. They are ordinary 3S/4D
-non-district duals in every other respect: they count to the record, to TOSS, and to the
-`spent` fold at the late tune-up, so **a rivalry does not lengthen anybody's card**.
+They are ordinary 3S/4D non-district duals in every respect but their certainty: they
+count to the record, to TOSS, and to the `spent` fold at the late tune-up, so **a
+rivalry does not lengthen anybody's card**.
 
 An unexpected second result: programs finishing OUTSIDE the non-district allowance
-(`NONDISTRICT_MIN` 4) went from **44 to 22** of 912. A guaranteed pairing is one the
+(`NONDISTRICT_MIN` 4) went from **44 to 15** of 912. A guaranteed pairing is one the
 matcher cannot fail to make, and the ones it was failing on were exactly the programs
 whose eligible pool was thinnest.
+
+### ‼️ RESERVED BEFORE THE FIRST DRAW, PLAYED AFTER LEAGUE PASS 1
+
+Reserving and playing are two steps, and the first cut collapsed them into one — it
+derived the pairs in the mid-season window and skipped any that had already met, on the
+reasoning that a rivalry played is a rivalry played.
+
+It is not, and a reviewer caught it. The early matcher is *allowed* to pair two town
+rivals — one inside its ±1 class gate is an ordinary candidate to it — so on the seasons
+where it did, that random draw silently became the annual fixture and lost both of the
+things the fixture exists to guarantee:
+
+* it was played at the **early window's 5S/2D shape** rather than the league's 3S/4D one;
+* its **host was whichever side the matcher happened to put first**, defeating the
+  year-parity alternation, so the venue could stay with one school two seasons running.
+
+`_rivalry_pairs` now runs at the TOP of `play_regular_season`, where marking `played`
+takes each pair off the ordinary matcher's board, and hands the pairs back to be played
+after league pass 1. **A fixture the draw can pre-empt is a fixture only when the draw
+does not.** Reserving them also turned out to help the matcher: the allowance shortfall
+above went 22 → 15 on the same measurement.
 
 ### The rivalry is not archived, and must not be
 
@@ -136,6 +155,21 @@ So the bonus stays, and it still decides which COURT the pair takes. What change
   in the lineup moves. All three strategies, `traditional` included.
 * Two siblings inside the 1S/4D top three ARE D1 and the third plays S1 — there is
   nothing left to choose, since S1 + D1 consume ranks #1-#3 by the anti-stacking rule.
+
+### ‼️ THE WINDOW WITH NO ARRANGER IS THE ONE THAT GETS MISSED
+
+The first cut wired the rule into the three arrangers and stopped, which looked complete
+because every varsity lineup goes through an arranger — except the early 5S/2D window,
+which never had one. Its allocation is fixed by the shape (top five at singles, #6-#9 the
+doubles pool), so `_lineup` handed back the plain ladder and the pool paired adjacently.
+Siblings at #6 and #8 therefore drew different partners in **every early dual** while
+partnering everywhere else in varsity play — the exact "sometimes" the rule was written
+to remove, reintroduced in the one block nobody looked at.
+
+`_arrange_early` exists only for this. With no sibling pair to force it returns the
+ladder unchanged, so the pre-rule lineup is preserved byte for byte. And the coverage
+goes through `_lineup`, not just the helper: a fix that only adds the function changes
+nothing.
 
 ### ‼️ A PAIR STRADDLING A FIXED BOUNDARY IS NOT HONOURED
 

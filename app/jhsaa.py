@@ -4264,6 +4264,37 @@ def _arrange_regular(eleven: list, strategy: str,
     return out
 
 
+def _arrange_early(nine: list, sibling_ids: dict | None = None) -> list:
+    """The early window's 5S/2D card in SLOT ORDER [S1-S5, D1a, D1b, D2a, D2b].
+
+    That order IS the plain ladder — the allocation is fixed by the shape (the top five
+    play singles, #6-#9 are the doubles pool) and there is no strategy here, which is
+    why this window never had an arranger at all. The ONE thing that moves a player is
+    the sibling swap: without it, siblings sitting at #6 and #8 draw different partners
+    in every early dual while partnering everywhere else in varsity play, which is
+    exactly the "sometimes" the rule was written to remove.
+
+    A pair straddling the singles seats and the doubles pool is not honoured, for the
+    same reason it is not in `_arrange_regular`: the allocation is the format's, and a
+    lineup is never rearranged to put two siblings together."""
+    need = lineup_need(EARLY_FORMAT_PHASE)
+    if len(nine) < need:
+        return nine
+    n_s = dual_format(EARLY_FORMAT_PHASE).n_singles
+    singles, pool = nine[:n_s], nine[n_s:need]
+    forced = _sibling_units(pool, sibling_ids or {})
+    if not forced:
+        return nine                          # byte-identical to the pre-rule lineup
+    # Swapped in place, so D1 is still the higher pair of the pool and nothing but the
+    # two displaced players moves.
+    pairs = _force_pairs([(pool[i], pool[i + 1]) for i in range(0, len(pool), 2)],
+                         forced)
+    out = list(singles)
+    for a, b in pairs:
+        out += [a, b]
+    return out + list(nine[need:])
+
+
 def _postseason_nine(ts: TeamSeason, phase: str = "state") -> list:
     """The frozen Order of Ability's top N for `phase` (nine, or 1A's pilot
     eight — see `dual_format`), freezing the ORDER on first use — the
@@ -4339,6 +4370,8 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None) -> list:
         if flip:
             strategy = _flip_strategy(strategy)
         return _arrange_regular(nine, strategy, ts.sibling_ids)
+    if phase == EARLY_FORMAT_PHASE:
+        return _arrange_early(nine, ts.sibling_ids)
     return nine
 
 
@@ -6898,9 +6931,12 @@ def are_rivals(a: str, b: str, rivals: dict[str, frozenset[str]]) -> bool:
 
 def _rivalry_pairs(teams: list[TeamSeason], year: int,
                    played: dict[int, set[str]]) -> list[tuple]:
-    """This season's rivalry duals, in a stable order. Skips a pair that has already
-    met (the early window's draw can land on one) and a pair sharing a league (the
-    double round robin plays it twice). Never touches `owed`: the fixture is annual and
+    """RESERVE this season's rivalry duals, in a stable order — it does not play them.
+    Marking `played` here is what takes each pair off the ordinary matcher's board, so
+    this must run BEFORE the first draw of the season even though the duals themselves
+    are played in the mid-season window (see `play_regular_season`). Skips a pair
+    sharing a league (the double round robin plays it twice) and one that has somehow
+    already met. Never touches `owed`: the fixture is annual and
     is not drawn from the allowance — it is COUNTED against it afterwards, by the
     `spent` fold in `play_regular_season`, so a program's total card is unchanged.
 
@@ -7011,6 +7047,16 @@ def play_regular_season(by_group: dict, year: int, gender: str,
     played: dict[int, set[str]] = {id(t): set() for t in every_team}
     reserved = MID_NONDISTRICT + (1 if CHALLENGE_ENABLED else 0)
     owed = {k: max(1, round((v - reserved) * EARLY_SHARE)) for k, v in quota.items()}
+
+    # ‼️ THE RIVALRIES ARE RESERVED BEFORE THE FIRST DRAW, AND PLAYED LATER. Deriving
+    # them here marks them in `played`, so the early matcher cannot take one — it is
+    # allowed to (a town rival inside the ±1 gate is an ordinary candidate to it), and
+    # when it did, that random draw BECAME the annual fixture and quietly lost both
+    # things the fixture is for: it was played at the early window's 5S/2D shape rather
+    # than the league's, and the host was whichever side the matcher happened to put
+    # first, so the venue could stay with one school two seasons running. A fixture
+    # that the draw can pre-empt is a fixture only when the draw does not.
+    rival_pairs = _rivalry_pairs(every_team, year, played)
     # The early window plays 5S/2D (owner rule 2027-08, `EARLY_FORMAT_PHASE`) — the
     # ONLY block of the season that does. Everything from district pass 1 on, including
     # the mid-season non-district window and the late tune-up below, is back to the
@@ -7031,12 +7077,13 @@ def play_regular_season(by_group: dict, year: int, gender: str,
         play_rounds(rr[:half[key]], year, salt, key[1])
 
     # --- the CROSS-TOWN RIVALRIES: the annual fixtures, played first in the window ---
-    # Ahead of the window's draw so the matcher cannot rematch a pair that has just
-    # played, and after pass 1 because that is where the calendar has the dates. They
-    # are ordinary 3S/4D non-district duals — the fixture is codified, the match is not
-    # special — and they are not drawn from `owed`; the `spent` fold at the tune-up
-    # counts them, so a rivalry does not lengthen anybody's card.
-    _play_pairs(_rivalry_pairs(every_team, year, played), xrng)
+    # Reserved above, before any draw; played HERE, after pass 1, because that is where
+    # the calendar has the dates and because the fixture must be an ordinary 3S/4D
+    # league-shape dual — the fixture is codified, the match is not special. Ahead of
+    # the window's own draw so the matcher cannot rematch a pair that has just played.
+    # Not drawn from `owed`: the `spent` fold at the tune-up counts them, so a rivalry
+    # does not lengthen anybody's card.
+    _play_pairs(rival_pairs, xrng)
 
     # --- the mid-season window: a non-district date, then the challenge ---
     owed = {id(t): MID_NONDISTRICT for t in every_team}

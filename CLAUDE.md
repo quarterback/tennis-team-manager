@@ -470,8 +470,8 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   Port Meridian's NINE programs sit in six leagues from 9A to 3A, so the league season
   can never pair them and the draw rarely did ("none of the cherry hill schools or port
   meridian schools play each other much/enough"). Now **263 of 263**, and programs
-  finishing outside the non-district allowance HALVED (44 → 22 of 912) — a guaranteed
-  pairing is one the matcher cannot fail to make.
+  finishing outside the non-district allowance fell from **44 to 15 of 912** — a
+  guaranteed pairing is one the matcher cannot fail to make.
   - **The town is the CITY** (a metro's core-city and locality programs are one pool;
     sharing a locality is a priority, not a gate — split by locality, most of Port
     Meridian goes unpaired since none of them carries one). Priority: a shared campus
@@ -482,12 +482,20 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     it: ‼️ **the cap alone left a big town's STRAGGLERS to each other** (Valderra's 9A
     drew the 1A across an 18-school city — the two nobody closer had room for, which is
     a remainder, not a rivalry). A program with nothing in range has no town rival.
-  - **They are a FIXTURE, not an allowance**: played in their own block at the head of
-    the mid-season window (ahead of that window's draw, so it cannot rematch them),
-    ordinary `phase="regular"` non-district duals counting to the record, TOSS and the
-    `spent` fold — so a rivalry does **not** lengthen anybody's card. Venue alternates
-    on the year (`play_dual`'s first argument is the host and `home_court` is a real
-    lift). `RIVALRIES_ENABLED` is the kill switch and first diagnostic.
+  - **They are a FIXTURE, not an allowance**: ordinary `phase="regular"` non-district
+    duals counting to the record, TOSS and the `spent` fold — so a rivalry does **not**
+    lengthen anybody's card. Venue alternates on the year (`play_dual`'s first argument
+    is the host and `home_court` is a real lift). `RIVALRIES_ENABLED` is the kill
+    switch and first diagnostic.
+  - **‼️ RESERVED BEFORE THE FIRST DRAW, PLAYED IN THE MID-SEASON WINDOW.** The two
+    steps are split because the early matcher is ALLOWED to pair two town rivals (one
+    inside its ±1 gate is an ordinary candidate), and when it did, that random draw
+    BECAME the fixture — played at the early window's 5S/2D shape instead of the
+    league's, hosted by whichever side the matcher put first, so the venue could stay
+    with one school two seasons running. `_rivalry_pairs` therefore marks `played` at
+    the top of `play_regular_season` and hands the pairs back; they are played after
+    league pass 1, ahead of that window's own draw. **A fixture the draw can pre-empt
+    is a fixture only when the draw does not.**
   - **NOT ARCHIVED, and must not be.** `are_rivals` is a projection of the school list,
     so a card reads the same for seasons played before and after. The RIVALRY chip is
     the one exception to "only a bracket round earns the second chip": it is the one

@@ -232,3 +232,36 @@ def test_the_kill_switch_removes_every_fixture():
         assert not any(played.values())
     finally:
         jh.RIVALRIES_ENABLED = True
+
+
+def test_the_fixture_is_reserved_before_the_early_draw():
+    """‼️ The early matcher is ALLOWED to pair two town rivals — a rival inside its ±1
+    class gate is an ordinary candidate to it — and when it did, that random draw
+    became the annual fixture. The dual was then played at the early window's 5S/2D
+    shape rather than the league's, and its host was whichever side the matcher put
+    first, so the venue could stay with one school two seasons running. Reserving the
+    pairs before the first draw is what makes the fixture a fixture.
+
+    So: no rivalry dual may be played in the early window, and every one must carry the
+    league shape."""
+    by_group = {}
+    for group in ("8A", "7A"):
+        d = jh.districts("girls", group)
+        by_group[group] = {n: jh.district_teams(d[n], 2030) for n in sorted(d)[:4]}
+    teams, _p = jh.play_regular_season(by_group, 2030, "girls")
+    by = {t.school.name: t for t in teams}
+    rm = jh.rival_map([t.school for t in teams])
+    checked = 0
+    for a, mates in rm.items():
+        for b in mates:
+            if a > b or b not in by:
+                continue
+            A, B = by[a].school, by[b].school
+            if (A.group, A.district) == (B.group, B.district):
+                continue
+            rows = [x for x in by[a].schedule if x["opp"] == b]
+            assert len(rows) == 1, (a, b, "played more than once")
+            assert rows[0]["phase"] != jh.EARLY_FORMAT_PHASE, (a, b, rows[0]["phase"])
+            assert rows[0]["phase"] == "regular", (a, b, rows[0]["phase"])
+            checked += 1
+    assert checked, "the fixture held no cross-league rivalry"

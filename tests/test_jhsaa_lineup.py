@@ -487,3 +487,43 @@ def test_three_siblings_on_one_roster_pair_the_higher_two():
     lu = jh._arrange_state(nine, sibs)
     assert len({p.pid for p in lu}) == 9
     assert frozenset((a, b)) in _partners(lu, 3), [sorted(p) for p in _partners(lu, 3)]
+
+
+def test_siblings_partner_in_the_early_window_too():
+    """‼️ The early 5S/2D window had NO arranger at all — its allocation is fixed by
+    the shape, so `_lineup` handed back the plain ladder and the doubles pool paired
+    adjacently. Siblings at #6 and #8 therefore drew different partners in every early
+    dual while partnering everywhere else in varsity play, which is the "sometimes"
+    the rule exists to remove."""
+    ts = _real_ts(8)
+    need = jh.lineup_need(jh.EARLY_FORMAT_PHASE)
+    order = jh._order(ts)[:need]
+    if len(order) < need:
+        return
+    n_s = jh.dual_format(jh.EARLY_FORMAT_PHASE).n_singles
+    lu = jh._arrange_early(order, _sibs(order, n_s, n_s + 2))   # the two pools' ends
+    assert frozenset((order[n_s].pid, order[n_s + 2].pid)) in _partners(lu, n_s)
+    assert [p.pid for p in lu[:n_s]] == [p.pid for p in order[:n_s]]   # singles fixed
+    assert len({p.pid for p in lu}) == need
+    # No siblings, and no pair to force: the lineup is the ladder, byte for byte.
+    assert jh._arrange_early(order, {}) == order
+
+
+def test_the_early_window_lineup_goes_through_the_arranger():
+    """The wiring, not just the helper — `_lineup` returned `nine` unarranged for this
+    phase and a fix that only adds the function changes nothing."""
+    ts = _real_ts(8)
+    need = jh.lineup_need(jh.EARLY_FORMAT_PHASE)
+    order = jh._order(ts)[:need]
+    if len(order) < need:
+        return
+    n_s = jh.dual_format(jh.EARLY_FORMAT_PHASE).n_singles
+    ts.sibling_ids = _sibs(order, n_s, n_s + 2)
+    seen = set()
+    for seed in range(25):
+        lu = jh._lineup(ts, jh.EARLY_FORMAT_PHASE, _random.Random(seed))
+        pool = {p.pid for p in lu[n_s:need]}
+        if {order[n_s].pid, order[n_s + 2].pid} <= pool:
+            seen.add(frozenset((order[n_s].pid, order[n_s + 2].pid))
+                     in _partners(lu, n_s))
+    assert seen == {True}, "an early dual dressed the siblings apart"
