@@ -2278,6 +2278,22 @@ def _expo_factor(units_map, name: str) -> float | None:
 #: 9A's exclusion falls out of the same rule (it has nothing above it).
 PLAY_UP_MAX_GROUP = "4A"
 
+#: ‼️ THE SMALLEST LEAGUE A PLAY-UP MAY JOIN — a FLOOR, and there is deliberately no
+#: matching ceiling (owner rule 2026-09: "no league can get below 6", and separately
+#: "the 10 is not a hard cap, it's just a guide, if it needs to go bigger it always
+#: can"). A play-up JOINS a league; it must never bring one into existence, and the
+#: only way to guarantee that is to refuse a league too small to be one. Measured
+#: across the shipped association, every live league runs 8-10, so 6 leaves room for a
+#: league that has lost a sponsor or two without ever admitting the one-, two- or
+#: four-team "conference" the owner is ruling out.
+#:
+#: ‼️ DO NOT READ THIS AS A CAPACITY RULE and do not add its mirror. `MAX_DISTRICT`
+#: was deliberately removed from this path (a test asserts the constant is not even
+#: importable here): a league one program larger just plays a longer, perfectly valid
+#: double round robin, and the import script's `DISTRICT_TARGET` 10 is a drawing guide
+#: for a fresh map, not a limit anything enforces at runtime.
+PLAY_UP_LEAGUE_MIN = 6
+
 
 def can_play_up(classification: str) -> bool:
     """Whether a program of this size is allowed to play up at all.
@@ -3290,26 +3306,51 @@ def _compute_playup_league(rows: list[dict],
     sponsor is a live league member."""
     settled = [x for x in rows if _row_league(x) and _sponsors_any(x)
                and not _plays_up_row(x, pmap)]
-    movers = sorted((x for x in rows if _plays_up_row(x, pmap)),
-                    key=lambda x: x["name"])          # deterministic order
+    # The target is resolved ONCE per school and carried, never re-resolved inside the
+    # placement loop — `_plays_up_row` is the expensive call on this path.
+    movers = sorted(({**x, "_target": _plays_up_row(x, pmap)} for x in rows
+                     if _plays_up_row(x, pmap)), key=lambda x: x["name"])
+    by_name = {x["name"]: x for x in movers}
 
     out = {}
     for row in movers:
-        group = _plays_up_row(row, pmap)              # the RESOLVED target, not
+        group = row["_target"]                       # the RESOLVED target, not
                                                         # always one step up
         near: dict[str, list[int]] = {}
         for x in settled:
             if x["group"] != group:
                 continue
-            slot = near.setdefault(_row_league(x), [0, 0])
+            slot = near.setdefault(_row_league(x), [0, 0, 0])
             slot[0] += x["county"] == row["county"]
             slot[1] += x["area"] == row["area"]
+            slot[2] += 1                             # live members, the size gate
+        # Movers already placed count toward the size of the league they joined, so a
+        # run of play-ups cannot each look at the same league as though the others had
+        # not gone there (the one-pass rule, one bullet up).
+        for other, league in out.items():
+            if league in near and by_name[other]["_target"] == group:
+                near[league][2] += 1
         if not near:
             raise ValueError(
                 f"{row['name']!r} plays up to {group!r}, but {group} has no "
                 "settled league to join at all — a real classification always "
                 "has one; check the play-up target and the schools data.")
-        best = min(near, key=lambda d: (-near[d][0], -near[d][1], d))
+        # ‼️ SIZE GATES, GEOGRAPHY ONLY ORDERS. A play-up JOINS a league; it must
+        # never bring one into existence. Anything under `PLAY_UP_LEAGUE_MIN` is not
+        # a league to join, it is a league this placement would be inventing, so it
+        # is not a candidate at all and the program travels instead — owner rule
+        # 2026-09: "future play-ups should just put a team in a bigger league if
+        # needed, it should never invent a one-team or two-team or 4-team or whatever
+        # conference … none of this is real so they can be wherever." Distance is
+        # cosmetic here and is never a reason to pick a league that is not real.
+        real = [d for d in near if near[d][2] >= PLAY_UP_LEAGUE_MIN]
+        if not real:
+            # Nothing clears the floor (a class the owner has moved most of the way
+            # out). Take the BIGGEST — literally "a bigger league if needed" — never
+            # the nearest, and never a new one. Ties fall to geography below.
+            top = max(near[d][2] for d in near)
+            real = [d for d in near if near[d][2] == top]
+        best = min(real, key=lambda d: (-near[d][0], -near[d][1], d))
         out[row["name"]] = best
     return out
 

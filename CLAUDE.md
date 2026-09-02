@@ -2614,6 +2614,18 @@ was a school marker, shipped "Baptist HS High School".
     independently, two 8A blue-bloods both picked the same 9A league and took it from 11
     to 13, because neither could see the other. The running count must include the
     play-ups already placed.
+  - **‼️ A PLAY-UP JOINS A LEAGUE; IT NEVER CREATES ONE (owner rule 2026-09,
+    `PLAY_UP_LEAGUE_MIN` = 6).** SIZE GATES, GEOGRAPHY ONLY ORDERS: a league under the
+    floor is not a candidate at all and the program travels instead — "it should never
+    invent a one-team or two-team or 4-team or whatever conference … **none of this is
+    real so they can be wherever**". If nothing in the class clears the floor the
+    BIGGEST league takes it ("just put a team in a bigger league if needed"), never the
+    nearest and never a new one. Every live league measures 8-10, so 6 absorbs a lost
+    sponsor or two. ‼️ **It is a FLOOR and must never grow a mirror**: `MAX_DISTRICT`
+    is deliberately not importable on this path, a league one program larger just plays
+    a longer valid double round robin, and `DISTRICT_TARGET` 10 is a drawing guide for
+    a fresh map — owner: "the 10 is not a hard cap, it's just a guide, if it needs to
+    go bigger it always can."
   - **‼️ A LEAGUE IS ONLY A LEAGUE IF SOMEBODY PLAYS IN IT.** `_compute_playup_league`
     reads `_rows()`, and since `former_school` (2026-08) a program that stops
     sponsoring KEEPS ITS DATA ROW while dropping out of `load_schools` — so a league
