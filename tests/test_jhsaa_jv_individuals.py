@@ -3,10 +3,9 @@
 Two families of failure, and they hide in different places. The QUALIFYING path
 is silent when it breaks — a district that quietly emits no champion, a school
 entering an ineligible player, a doubles pair that is one person twice — because
-every one of those still produces a draw that renders. The PIGTAIL arithmetic is
-silent in the other direction: a field of 97 that loses an entrant, or one of 200
-that assigns two play-ins to a seed before every seed has one, still crowns a
-champion and still archives.
+every one of those still produces a draw that renders. The QUALIFYING arithmetic
+is silent in the other direction: a draw that lands one short of the open seats
+still crowns a champion and still archives.
 """
 import pytest
 
@@ -266,100 +265,56 @@ def test_the_district_title_is_carried_on_the_entry(by_group):
 
 # --- the 96 cap and the pigtails ---------------------------------------------
 
-@pytest.mark.parametrize("n", [2, 17, 64, 95, 96])
-def test_a_field_at_or_under_the_cap_needs_no_preliminary_layer(n):
-    assert jvi._prelim_layers(n) == []
+# --- the qualifying arithmetic (owner spec 2026-09) --------------------------
 
-
-@pytest.mark.parametrize("n,want", [
-    # One layer up to 192, then a layer for every further doubling of 96 —
-    # a round may not more than halve the field.
-    (97, [96]), (100, [96]), (105, [96]), (192, [96]),
-    (193, [192, 96]), (200, [192, 96]), (250, [192, 96]), (384, [192, 96]),
-    (385, [384, 192, 96]), (768, [384, 192, 96]),
-    (769, [768, 384, 192, 96]), (1536, [768, 384, 192, 96]),
+@pytest.mark.parametrize("q,s,want", [
+    # The owner's three worked examples, verbatim.
+    (95, 32, [31, 32]),
+    (94, 33, [28, 33]),
+    (96, 31, [34, 31]),
 ])
-def test_the_layers_follow_the_doublings_of_the_cap(n, want):
-    assert jvi._prelim_layers(n) == want
+def test_qualifying_reproduces_the_worked_examples(q, s, want):
+    assert jvi.qualifying_rounds(q, s) == want
 
 
-def test_ninety_seven_is_one_play_in_on_the_first_line():
-    """The spec's own worked example: the 1 line is the winner of the 97 vs the
-    lowest main-field seat."""
-    field = _field(97)
-    assert jvi._prelim_layers(97) == [jvi.MAIN_DRAW]
-    direct, pairs = jvi._prelim_pairs(field, jvi.MAIN_DRAW)
-    assert _seeds(direct) == list(range(1, 96))
-    assert len(pairs) == 1
-    line, a, b = pairs[0]
-    assert line == 1 and sorted(_seeds([a, b])) == [96, 97]
+@pytest.mark.parametrize("q,s", [(95, 32), (94, 33), (96, 31), (90, 30),
+                                 (128, 20), (40, 32), (200, 32), (60, 34)])
+def test_qualifying_lands_on_exactly_the_open_spots(q, s):
+    """A qualifying draw exists to produce a fixed number of qualifiers, so the
+    one thing it must never do is produce a different number."""
+    rounds = jvi.qualifying_rounds(q, s)
+    cur = q
+    for m in rounds:
+        assert 0 < m <= cur // 2, (q, s, m)   # a round cannot pair more than half
+        cur -= m
+    assert cur == s, (q, s, rounds)
 
 
-def test_one_hundred_is_four_play_ins_on_lines_one_to_four():
-    """Four surplus entrants, four matches, lines 1-4 in order — the bottom of
-    the field mirrored, so every line carries the same combined seed and no top
-    seed draws a systematically softer one."""
-    direct, pairs = jvi._prelim_pairs(_field(100), jvi.MAIN_DRAW)
-    assert _seeds(direct) == list(range(1, 93))
-    assert [line for line, _, _ in pairs] == [1, 2, 3, 4]
-    assert [sorted(_seeds([a, b])) for _, a, b in pairs] == \
-        [[93, 100], [94, 99], [95, 98], [96, 97]]
+def test_the_final_qualifying_round_is_complete():
+    """The shape's whole point: the LAST round is 2S entries playing S matches,
+    so every match in it produces one qualifier. Byes live in the opening round."""
+    for q, s in ((95, 32), (94, 33), (96, 31), (120, 30)):
+        rounds = jvi.qualifying_rounds(q, s)
+        before_final = q - sum(rounds[:-1])
+        assert before_final == 2 * s, (q, s)
+        assert rounds[-1] == s, (q, s)
 
 
-def test_one_hundred_and_five_is_nine_play_ins():
-    _, pairs = jvi._prelim_pairs(_field(105), jvi.MAIN_DRAW)
-    assert [line for line, _, _ in pairs] == list(range(1, 10))
-
-
-def test_two_hundred_plays_the_owners_worked_example():
-    """200 -> round 1 eliminates 8 (the bottom SIXTEEN seeds, 185-200, pair off
-    while the other 184 bye through the layer) -> 192 -> round 2 plays 96 -> 96."""
-    assert jvi._prelim_layers(200) == [192, 96]
-    direct, pairs = jvi._prelim_pairs(_field(200), 192)
-    assert len(pairs) == 8
-    assert len(direct) == 184
-    assert sorted(s for _, a, b in pairs for s in _seeds([a, b])) == \
-        list(range(185, 201))
-    # and the second layer plays 96 of the 192 that remain
-    _, pairs2 = jvi._prelim_pairs(_field(192), 96)
-    assert len(pairs2) == 96
-
-
-@pytest.mark.parametrize("n,first", [(250, 58), (384, 192)])
-def test_the_first_layer_eliminates_the_overflow(n, first):
-    """The owner's other two examples: 250 plays 58 then 96; 384 plays 192
-    then 96."""
-    assert jvi._prelim_layers(n)[0] == 192
-    _, pairs = jvi._prelim_pairs(_field(n), 192)
-    assert len(pairs) == first
-
-
-@pytest.mark.parametrize("n", [96, 97, 100, 105, 128, 191, 192, 193, 200, 250,
-                               384, 385, 768, 769, 1000, 1536])
-def test_the_layers_land_exactly_on_the_cap(n):
-    """The arithmetic that makes the cap hold at any size: a match takes two in
-    and sends one on, and no layer more than halves the field."""
-    cur, played = n, 0
-    field = _field(n)
-    for target in jvi._prelim_layers(n):
-        assert target >= (cur + 1) // 2, (n, cur, target)
-        direct, pairs = jvi._prelim_pairs(field[:cur], target)
-        assert len(direct) + 2 * len(pairs) == cur
-        assert cur - len(pairs) == target
-        # nobody is dealt twice and nobody is dropped
-        seen = _seeds(direct) + [s for _, a, b in pairs for s in _seeds([a, b])]
-        assert sorted(seen) == sorted(_seeds(field[:cur]))
-        played += len(pairs)
-        cur = target
-    assert cur == min(n, jvi.MAIN_DRAW)
-    assert n - played == min(n, jvi.MAIN_DRAW)
-
-
-def test_only_the_lowest_seeds_play_in():
-    """The surplus plays in; the strength of the field does not."""
-    direct, pairs = jvi._prelim_pairs(_field(120), jvi.MAIN_DRAW)
+def test_the_opening_round_byes_the_top_of_the_field():
+    """Q=95, S=32: 31 matches, 62 play, 33 bye — and the 62 are the LOWEST seeds,
+    which is what seeding the draw and assigning byes on the ranking means."""
+    field = _field(95)
+    direct, pairs = jvi._round_pairs(field, 95 - 31)
+    assert len(pairs) == 31 and len(direct) == 33
     playing = {s for _, a, b in pairs for s in _seeds([a, b])}
     assert min(playing) > max(_seeds(direct))
+
+
+def test_spots_close_the_field_at_128():
+    assert jvi.STATE_FIELD == 128
+    assert jvi.qualifying_spots(95, 1) == 32          # 95 champs + autobid
+    assert jvi.qualifying_spots(95) == 33
+    assert jvi.qualifying_spots(200) == 0             # never negative
 
 
 # --- the state draw ----------------------------------------------------------
@@ -367,21 +322,6 @@ def test_only_the_lowest_seeds_play_in():
 @pytest.fixture(scope="module")
 def state(by_group):
     return jvi.run_jv_state(by_group, "girls", 0, seed=0)["state"]
-
-
-def test_the_state_field_is_exactly_the_district_champions(by_group, state):
-    """Classless: one draw per bracket over every district's champion, whatever
-    class they came out of. No at-large, no wild card, nobody else."""
-    for bracket in jvi.BRACKETS:
-        champs = jvi.champions_of(jvi.district_qualifiers(
-            by_group, bracket, gender="girls", year=0, seed=0))
-        assert champs, bracket
-        d = state[bracket]
-        assert len(d["entries"]) == len(champs)
-        assert {e["school"] for e in d["entries"]} == {c.school for c in champs}
-        # every entrant carries a district title, and no two came from one district
-        districts = [e["district"] for e in d["entries"]]
-        assert all(districts) and len(set(districts)) == len(districts)
 
 
 def test_it_crowns_one_champion_per_bracket_per_gender(state):
@@ -443,97 +383,6 @@ def test_the_event_credits_nothing_to_the_varsity_season(by_group):
 
 
 # --- the archived play-in round ----------------------------------------------
-
-def test_the_play_in_archives_as_its_own_pre_round(by_group, monkeypatch):
-    """Forced by shrinking the cap rather than by inventing a 97-school
-    association: the pre-round has to be a DISTINCT first round in the archive,
-    each match naming the seed line it feeds, or the bracket cannot render it and
-    a result is untraceable."""
-    champs = jvi.champions_of(jvi.district_qualifiers(
-        by_group, jvi.SINGLES, gender="girls", year=0, seed=0))
-    cap = max(2, len(champs) - 2)
-    monkeypatch.setattr(jvi, "MAIN_DRAW", cap)
-    d = jvi.run_state(champs, jvi.SINGLES, gender="girls", seed=5)
-    arc = ji.draw_to_dict(d)
-    pre = arc["rounds"][0]
-    assert all(m["rnd"] == jvi.PIGTAIL_ROUND for m in pre)
-    assert [m["seed_line"] for m in pre] == list(range(1, len(pre) + 1))
-    # the main draw never claims one
-    assert all("seed_line" not in m
-               for rnd in arc["rounds"][1:] for m in rnd)
-    # the field is intact: everyone who qualified is in `entries`, play-in
-    # losers included, so a finish can be read for every one of them
-    assert len(arc["entries"]) == len(champs)
-    assert len(arc["finishes"]) == len(champs)
-    assert arc["champion"] is not None
-
-
-def test_a_played_pigtail_survivor_reaches_the_main_draw(by_group, monkeypatch):
-    champs = jvi.champions_of(jvi.district_qualifiers(
-        by_group, jvi.DOUBLES, gender="girls", year=0, seed=0))
-    monkeypatch.setattr(jvi, "MAIN_DRAW", max(2, len(champs) - 1))
-    d = jvi.run_state(champs, jvi.DOUBLES, gender="girls", seed=5)
-    pre = d.rounds[0]
-    assert len(pre) == 1
-    survivor = pre[0].winner
-    later = {e.key for rnd in d.rounds[1:] for m in rnd for e in (m.hi, m.lo)}
-    assert survivor.key in later
-    loser = pre[0].lo if pre[0].winner_is_hi else pre[0].hi
-    assert loser.key not in later
-
-
-def test_no_entrant_appears_twice_in_one_round(by_group, monkeypatch):
-    """‼️ THE INVARIANT THE LAYERS EXIST FOR. `jhsaa_individuals.finish_for_index`
-    reads a finish by scanning each round for the entrant and STOPPING at the
-    first match it finds them in — sound only if nobody plays twice in a round.
-    The first version chained extra play-in matches onto a seed LINE once the
-    field passed 192 and stored the whole chain as one round, so an entrant who
-    won and then lost was read as still alive and could be reported CHAMPION on
-    their own player page. Layers make this true by construction."""
-    champs = jvi.champions_of(jvi.district_qualifiers(
-        by_group, jvi.SINGLES, gender="girls", year=0, seed=0))
-    # Force two layers over a real field: cap at a quarter of it, so the first
-    # layer cannot reach the cap in one round and a second is required.
-    monkeypatch.setattr(jvi, "MAIN_DRAW", max(2, len(champs) // 4))
-    assert len(jvi._prelim_layers(len(champs))) >= 2, "fixture forces one layer"
-    d = jvi.run_state(champs, jvi.SINGLES, gender="girls", seed=5)
-    arc = ji.draw_to_dict(d)
-    for rnd in arc["rounds"]:
-        seen = [ix for m in rnd for ix in (m["hi"], m["lo"])]
-        assert len(seen) == len(set(seen)), rnd
-    # every entrant's finish is READ correctly, and exactly one is champion
-    champs_read = [i for i in range(len(arc["entries"]))
-                   if ji.finish_for_index(arc, i)[1] == "CHAMP"]
-    assert champs_read == [arc["champion"]]
-
-
-def test_a_player_eliminated_in_a_later_layer_is_not_read_as_alive(by_group,
-                                                                   monkeypatch):
-    """The same bug from the reader's side: somebody who wins a play-in and
-    loses the next one must band as the round they actually went out in."""
-    champs = jvi.champions_of(jvi.district_qualifiers(
-        by_group, jvi.SINGLES, gender="girls", year=0, seed=0))
-    monkeypatch.setattr(jvi, "MAIN_DRAW", max(2, len(champs) // 4))
-    d = jvi.run_state(champs, jvi.SINGLES, gender="girls", seed=5)
-    arc = ji.draw_to_dict(d)
-    n_layers = len(jvi._prelim_layers(len(champs)))
-    won_then_lost = 0
-    for i in range(len(arc["entries"])):
-        appearances = [(r, m) for r, rnd in enumerate(arc["rounds"][:n_layers])
-                       for m in rnd if i in (m["hi"], m["lo"])]
-        if len(appearances) < 2:
-            continue
-        # won the first, lost a later one
-        (r0, m0), (r1, m1) = appearances[0], appearances[1]
-        if (i == m0["hi"]) != bool(m0["winner_is_hi"]):
-            continue
-        if (i == m1["hi"]) == bool(m1["winner_is_hi"]):
-            continue
-        won_then_lost += 1
-        assert ji.finish_for_index(arc, i)[1] != "CHAMP", i
-        assert i != arc["champion"]
-    assert won_then_lost, "fixture produced nobody who won then lost a play-in"
-
 
 # --- it reads back as a state honour -----------------------------------------
 #
@@ -740,43 +589,6 @@ def test_each_gender_renders_its_own_jv_draw(archived, monkeypatch):
             h = client.get(f"{path}flight={fl}&g={g}").data.decode()
             assert mine in h, (g, fl, path)
             assert theirs not in h, (g, fl, path)
-
-
-def test_the_view_splits_a_play_in_off_the_bracket_tree(by_group, monkeypatch):
-    """`_bracket_canvas` links columns positionally on the main draw's halving, so
-    a pigtail pre-round must reach the page as its own panel, never as a column —
-    checked on the assembled archive dict the view consumes."""
-    import json
-    from app import world as wd
-    from app.web import state as st
-    champs = jvi.champions_of(jvi.district_qualifiers(
-        by_group, jvi.SINGLES, gender="girls", year=0, seed=0))
-    monkeypatch.setattr(jvi, "MAIN_DRAW", max(2, len(champs) - 2))
-    d = ji.draw_to_dict(jvi.run_state(champs, jvi.SINGLES, gender="girls",
-                                      seed=5))
-    w = wd.get_or_create(wd.DEFAULT_SEED)
-    conn = wd._db()
-    try:
-        conn.execute("DELETE FROM world_jhsaa_individual WHERE world_id=?"
-                     " AND flight=?", (w["id"], jvi.SINGLES))
-        conn.execute(
-            "INSERT INTO world_jhsaa_individual (world_id, year, gender, grp,"
-            " flight, data) VALUES (?,?,?,?,?,?)",
-            (w["id"], 0, "girls", jvi.GROUP_KEY, jvi.SINGLES, json.dumps(d)))
-        conn.commit()
-    finally:
-        conn.close()
-    view = st.jhsaa_individual_view(wd.DEFAULT_SEED, "girls", "9A",
-                                    jvi.SINGLES, 0)
-    assert view["ready"] and view["jv"] and view["group_label"] == ""
-    # ONE layer, of two matches — `playins` is a list of LAYERS, since a field
-    # over 192 needs more than one and each is its own round and its own panel.
-    assert len(view["playins"]) == 1
-    assert [p["seed_line"] for p in view["playins"][0]] == [1, 2]
-    # the canvas columns are the MAIN rounds only, halving as the tree needs
-    assert len(view["rounds"]) == len(d["rounds"]) - 1
-    assert all(m["rnd"] != jvi.PIGTAIL_ROUND
-               for c in view["rounds"] for m in c["games"] if "rnd" in m)
 
 
 # --- the varsity event is untouched ------------------------------------------

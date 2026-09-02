@@ -296,9 +296,20 @@ class Entry:
 
     @property
     def key(self):
-        # The SCHOOL is the identity: one entry per school per flight, and a pair
-        # has no single pid. Unique within a draw by construction.
-        return self.school
+        # ‼️ THE ENTRY'S IDENTITY WITHIN ONE DRAW, and it is what `draw_to_dict`
+        # indexes rounds by, what `played` keys results on and what `finishes`
+        # maps. It MUST be unique per entrant.
+        #
+        # The school alone was that identity, and the comment here said so —
+        # "one entry per school per flight, unique by construction". That
+        # construction stopped holding the moment a school could hold two seats
+        # (the JV defending champion's autobid beside its district entry, owner
+        # rule 2026-09): two entries would collapse to one index and the archived
+        # rounds would point at the wrong entrant, silently. So the PIDS are part
+        # of it — a pair has no single pid, but the tuple of its members is
+        # unique, and for the varsity flights, where a school really does enter
+        # once, the school half alone still separates every entrant.
+        return (self.school, tuple(p.pid for p in self.players))
 
     @property
     def pids(self) -> list:
@@ -747,6 +758,14 @@ def draw_to_dict(d: FlightDraw) -> dict:
         "entries": [ed(e) for e in d.entries],
         "champion": ix.get(d.champion.key) if d.champion else None,
         "runner_up": ix.get(d.runner_up.key) if d.runner_up else None,
-        "finishes": {k: {"label": v[0], "tag": v[1]} for k, v in fin.items()},
+        # ‼️ KEYED ON THE ENTRY INDEX, not the entry key. The key is now a
+        # (school, pids) tuple — not a JSON object key at all — and school alone
+        # stopped being unique the moment a school could hold two seats. The
+        # index is both. Nothing reads this map (every consumer goes through
+        # `finish_for_index`, which walks the rounds by index precisely because a
+        # relabelled school name cannot be looked up); it is kept as the draw's
+        # own summary of itself.
+        "finishes": {str(ix[k]): {"label": v[0], "tag": v[1]}
+                     for k, v in fin.items() if k in ix},
         "rounds": [[md(m) for m in rnd] for rnd in d.rounds],
     }
