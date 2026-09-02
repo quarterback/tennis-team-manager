@@ -262,3 +262,161 @@ def test_the_season_cache_falls_when_a_play_up_changes(clean):
     plain = next(s for s in jh.load_schools("girls") if not s.plays_up)
     ov.set_jhsaa_playup(plain.name, jh.play_up_group(plain.classification))
     assert ov.jhsaa_playup_version() != before
+
+
+# --- a league is only a league if somebody plays in it ------------------------
+
+def _dead_leagues(rows):
+    """(group, league) pairs whose every member has stopped sponsoring tennis."""
+    lg = {}
+    for r in rows:
+        d = jh._row_league(r)
+        if d:
+            lg.setdefault((r["group"], d), []).append(r)
+    return {k for k, v in lg.items() if not any(jh._sponsors_any(x) for x in v)}
+
+
+def test_the_association_really_does_hold_empty_leagues():
+    """The premise of the two tests below, asserted against the shipped data rather
+    than assumed. Since `former_school` (2026-08) a program that stops sponsoring keeps
+    its data row while dropping out of `load_schools`, so a league can be fully
+    populated in `_rows()` and completely empty on the field. If this ever stops being
+    true the tests below stop testing anything, and that should be visible."""
+    dead = _dead_leagues(jh._rows())
+    assert dead, "no empty leagues left — the guard below is no longer exercised"
+
+
+def test_no_eligible_school_can_be_played_up_into_an_empty_league(clean):
+    """‼️ The 3A bug, swept over every school that COULD be played up.
+
+    `_compute_playup_league` reads raw rows, so it counted programs that no longer
+    sponsor tennis as settled members of their league. Copperview (3A, sponsors
+    neither gender) is the lone member of Coastal Range League and sits in Puerto
+    Alma's own county, so it beat every real 3A league on the county term: played up,
+    Puerto Alma joined a league with nobody in it, played no league duals at all
+    (0-0 in district, 2-12 overall) and was crowned champion of a league of one.
+
+    The existing coverage checked only the ~13 SEEDED play-ups, none of which happens
+    to sit near a dead league — which is exactly why this shipped. The property belongs
+    to the PLACEMENT, so it is swept over every eligible school."""
+    rows = jh._rows()
+    dead = _dead_leagues(rows)
+    live_in = {}
+    for r in rows:
+        d = jh._row_league(r)
+        if d and jh._sponsors_any(r):
+            live_in[(r["group"], d)] = live_in.get((r["group"], d), 0) + 1
+    checked = 0
+    for r in rows:
+        target = jh.play_up_group(r["classification"]) if \
+            jh.can_play_up(r["classification"]) else None
+        if not target:
+            continue
+        placed = jh._compute_playup_league(rows, {r["name"]: target}).get(r["name"])
+        assert placed, (r["name"], target, "no league at all")
+        assert (target, placed) not in dead, (r["name"], target, placed)
+        # ‼️ The FLOOR, not merely "not empty" (owner rule 2026-09): a play-up joins
+        # a league, it never brings one into existence, so a league too small to be
+        # one is not a candidate and the program travels instead.
+        assert live_in.get((target, placed), 0) >= jh.PLAY_UP_LEAGUE_MIN, \
+            (r["name"], target, placed, live_in.get((target, placed), 0))
+        checked += 1
+    assert checked > 100, checked
+
+
+def test_a_ghost_league_never_beats_a_real_one_on_geography(clean):
+    """The mechanism in isolation: a same-county league is the strongest signal the
+    placement has, so a league of ghosts in the mover's own county outranked a real
+    league everywhere else. Sponsorship is checked FIRST — geography only orders the
+    leagues that are actually being played."""
+    rows = [
+        {"name": "Mover", "classification": "3A", "group": "3A",
+         "county": "Home", "area": "West", "girls": True, "boys": True,
+         "girls_district": "Old League", "boys_district": "Old League"},
+        # Same county as the mover, and nobody left in it.
+        {"name": "Ghost", "classification": "4A", "group": "4A",
+         "county": "Home", "area": "West", "girls": False, "boys": False,
+         "girls_district": "Ghost League", "boys_district": "Ghost League"},
+    ] + [
+        # A real 4A league, one area away and four programs strong.
+        {"name": f"Real {i}", "classification": "4A", "group": "4A",
+         "county": "Away", "area": "West", "girls": True, "boys": True,
+         "girls_district": "Real League", "boys_district": "Real League"}
+        for i in range(4)
+    ]
+    placed = jh._compute_playup_league(rows, {"Mover": "4A"})
+    assert placed["Mover"] == "Real League", placed
+
+
+def test_a_play_up_travels_rather_than_join_a_league_too_small_to_be_one():
+    """Owner rule 2026-09: "it should never invent a one-team or two-team or 4-team or
+    whatever conference … none of this is real so they can be wherever." Geography is
+    cosmetic, so it orders the leagues that are real and is never the reason a program
+    lands in one that is not. Here the mover's OWN county holds a five-team league —
+    under the floor — and a full league sits an area away; it must travel."""
+    rows = [{"name": "Mover", "classification": "3A", "group": "3A",
+             "county": "Home", "area": "West", "girls": True, "boys": True,
+             "girls_district": "Old", "boys_district": "Old"}]
+    rows += [{"name": f"Small {i}", "classification": "4A", "group": "4A",
+              "county": "Home", "area": "West", "girls": True, "boys": True,
+              "girls_district": "Small League", "boys_district": "Small League"}
+             for i in range(jh.PLAY_UP_LEAGUE_MIN - 1)]
+    rows += [{"name": f"Big {i}", "classification": "4A", "group": "4A",
+              "county": "Away", "area": "East", "girls": True, "boys": True,
+              "girls_district": "Big League", "boys_district": "Big League"}
+             for i in range(jh.PLAY_UP_LEAGUE_MIN)]
+    assert jh._compute_playup_league(rows, {"Mover": "4A"})["Mover"] == "Big League"
+
+
+def test_one_more_member_is_always_allowed_there_is_no_ceiling():
+    """The floor is not a capacity rule and must not grow a mirror. 10 is a drawing
+    guide for a fresh map, never a limit (owner, 2026-09: "the 10 is not a hard cap …
+    if it needs to go bigger it always can"), so a same-county league already well over
+    it still wins against a smaller one further away."""
+    rows = [{"name": "Mover", "classification": "3A", "group": "3A",
+             "county": "Home", "area": "West", "girls": True, "boys": True,
+             "girls_district": "Old", "boys_district": "Old"}]
+    rows += [{"name": f"Full {i}", "classification": "4A", "group": "4A",
+              "county": "Home", "area": "West", "girls": True, "boys": True,
+              "girls_district": "Full League", "boys_district": "Full League"}
+             for i in range(14)]
+    rows += [{"name": f"Room {i}", "classification": "4A", "group": "4A",
+              "county": "Away", "area": "East", "girls": True, "boys": True,
+              "girls_district": "Roomy League", "boys_district": "Roomy League"}
+             for i in range(jh.PLAY_UP_LEAGUE_MIN)]
+    assert jh._compute_playup_league(rows, {"Mover": "4A"})["Mover"] == "Full League"
+
+
+def test_when_no_league_clears_the_floor_it_takes_the_biggest_not_the_nearest():
+    """A class the owner has moved most of the way out of still has to place a mover,
+    and "a bigger league if needed" is the rule — never the nearest small one, and never
+    a new one. This cannot happen on the shipped data (every live league is 8+); it
+    exists so the placement degrades in the owner's stated direction if it ever does."""
+    rows = [{"name": "Mover", "classification": "3A", "group": "3A",
+             "county": "Home", "area": "West", "girls": True, "boys": True,
+             "girls_district": "Old", "boys_district": "Old"}]
+    rows += [{"name": f"Near {i}", "classification": "4A", "group": "4A",
+              "county": "Home", "area": "West", "girls": True, "boys": True,
+              "girls_district": "Near League", "boys_district": "Near League"}
+             for i in range(2)]
+    rows += [{"name": f"Far {i}", "classification": "4A", "group": "4A",
+              "county": "Away", "area": "East", "girls": True, "boys": True,
+              "girls_district": "Far League", "boys_district": "Far League"}
+             for i in range(4)]
+    assert jh._compute_playup_league(rows, {"Mover": "4A"})["Mover"] == "Far League"
+
+
+def test_two_play_ups_cannot_both_fill_the_same_last_seat():
+    """The one-pass rule, now that size decides something: a mover already placed counts
+    toward the league it joined, so a run of play-ups cannot each read a league as
+    though the others had not gone there."""
+    rows = [{"name": n, "classification": "3A", "group": "3A",
+             "county": "Home", "area": "West", "girls": True, "boys": True,
+             "girls_district": "Old", "boys_district": "Old"}
+            for n in ("Mover A", "Mover B")]
+    rows += [{"name": f"Big {i}", "classification": "4A", "group": "4A",
+              "county": "Home", "area": "West", "girls": True, "boys": True,
+              "girls_district": "Big League", "boys_district": "Big League"}
+             for i in range(jh.PLAY_UP_LEAGUE_MIN)]
+    out = jh._compute_playup_league(rows, {"Mover A": "4A", "Mover B": "4A"})
+    assert out == {"Mover A": "Big League", "Mover B": "Big League"}, out

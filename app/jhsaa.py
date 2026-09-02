@@ -2278,6 +2278,22 @@ def _expo_factor(units_map, name: str) -> float | None:
 #: 9A's exclusion falls out of the same rule (it has nothing above it).
 PLAY_UP_MAX_GROUP = "4A"
 
+#: ‼️ THE SMALLEST LEAGUE A PLAY-UP MAY JOIN — a FLOOR, and there is deliberately no
+#: matching ceiling (owner rule 2026-09: "no league can get below 6", and separately
+#: "the 10 is not a hard cap, it's just a guide, if it needs to go bigger it always
+#: can"). A play-up JOINS a league; it must never bring one into existence, and the
+#: only way to guarantee that is to refuse a league too small to be one. Measured
+#: across the shipped association, every live league runs 8-10, so 6 leaves room for a
+#: league that has lost a sponsor or two without ever admitting the one-, two- or
+#: four-team "conference" the owner is ruling out.
+#:
+#: ‼️ DO NOT READ THIS AS A CAPACITY RULE and do not add its mirror. `MAX_DISTRICT`
+#: was deliberately removed from this path (a test asserts the constant is not even
+#: importable here): a league one program larger just plays a longer, perfectly valid
+#: double round robin, and the import script's `DISTRICT_TARGET` 10 is a drawing guide
+#: for a fresh map, not a limit anything enforces at runtime.
+PLAY_UP_LEAGUE_MIN = 6
+
 
 def can_play_up(classification: str) -> bool:
     """Whether a program of this size is allowed to play up at all.
@@ -3212,6 +3228,16 @@ def _row_league(row: dict) -> str | None:
     return row.get("girls_district") or row.get("boys_district")
 
 
+def _sponsors_any(row: dict) -> bool:
+    """Does this school field a tennis team AT ALL? A program that has stopped
+    sponsoring keeps its data row (`former_school`, owner rule 2026-08) but is no
+    longer part of any league that gets played, so anything reading `_rows()` to
+    reason about the season — rather than about the school's page — must ask this.
+    Either gender counts: sponsorship is per sport per gender and a girls-only
+    program is a real member of its league."""
+    return bool(row.get("girls") or row.get("boys"))
+
+
 def _playup_league(version: str, rows: list[dict],
                    pmap: dict | None = None) -> dict[str, str]:
     """{school: league} for every played-up program's SHARED league — memoised on the
@@ -3261,28 +3287,70 @@ def _compute_playup_league(rows: list[dict],
     robin is a season with no games, and it used to fail exactly that quietly).
 
     Settled membership excludes every played-up school, so a school that has moved
-    out of a class is not counted as still being in it."""
-    settled = [x for x in rows if _row_league(x) and not _plays_up_row(x, pmap)]
-    movers = sorted((x for x in rows if _plays_up_row(x, pmap)),
-                    key=lambda x: x["name"])          # deterministic order
+    out of a class is not counted as still being in it.
+
+    ‼️ AND IT EXCLUDES A SCHOOL THAT NO LONGER SPONSORS TENNIS. A candidate league
+    is only a league if somebody actually PLAYS in it, and since the `former_school`
+    rule (2026-08) a program that stops sponsoring keeps its data row while dropping
+    out of `load_schools` — so a league can be fully populated in `rows` and
+    completely empty on the field. Ten of them are, across six classifications.
+    Reading raw rows, this function counted those ghosts as settled members and
+    could place a played-up program into a league with nobody in it, arriving at the
+    exact one-team league the guard above exists to prevent: Copperview (3A, sponsors
+    neither gender) is the lone member of Coastal Range League and sits in Puerto
+    Alma's own county, so it beat every real 3A league on the county term and Puerto
+    Alma played a 2-12 season with no league games and a district title in a league
+    of one. `load_schools`'s sponsorship filter is what makes a program real; any
+    function reading `_rows()` to answer a question about who PLAYS has to apply it
+    too. Gender-agnostic (`_sponsors_any`), because the placement is — a girls-only
+    sponsor is a live league member."""
+    settled = [x for x in rows if _row_league(x) and _sponsors_any(x)
+               and not _plays_up_row(x, pmap)]
+    # The target is resolved ONCE per school and carried, never re-resolved inside the
+    # placement loop — `_plays_up_row` is the expensive call on this path.
+    movers = sorted(({**x, "_target": _plays_up_row(x, pmap)} for x in rows
+                     if _plays_up_row(x, pmap)), key=lambda x: x["name"])
+    by_name = {x["name"]: x for x in movers}
 
     out = {}
     for row in movers:
-        group = _plays_up_row(row, pmap)              # the RESOLVED target, not
+        group = row["_target"]                       # the RESOLVED target, not
                                                         # always one step up
         near: dict[str, list[int]] = {}
         for x in settled:
             if x["group"] != group:
                 continue
-            slot = near.setdefault(_row_league(x), [0, 0])
+            slot = near.setdefault(_row_league(x), [0, 0, 0])
             slot[0] += x["county"] == row["county"]
             slot[1] += x["area"] == row["area"]
+            slot[2] += 1                             # live members, the size gate
+        # Movers already placed count toward the size of the league they joined, so a
+        # run of play-ups cannot each look at the same league as though the others had
+        # not gone there (the one-pass rule, one bullet up).
+        for other, league in out.items():
+            if league in near and by_name[other]["_target"] == group:
+                near[league][2] += 1
         if not near:
             raise ValueError(
                 f"{row['name']!r} plays up to {group!r}, but {group} has no "
                 "settled league to join at all — a real classification always "
                 "has one; check the play-up target and the schools data.")
-        best = min(near, key=lambda d: (-near[d][0], -near[d][1], d))
+        # ‼️ SIZE GATES, GEOGRAPHY ONLY ORDERS. A play-up JOINS a league; it must
+        # never bring one into existence. Anything under `PLAY_UP_LEAGUE_MIN` is not
+        # a league to join, it is a league this placement would be inventing, so it
+        # is not a candidate at all and the program travels instead — owner rule
+        # 2026-09: "future play-ups should just put a team in a bigger league if
+        # needed, it should never invent a one-team or two-team or 4-team or whatever
+        # conference … none of this is real so they can be wherever." Distance is
+        # cosmetic here and is never a reason to pick a league that is not real.
+        real = [d for d in near if near[d][2] >= PLAY_UP_LEAGUE_MIN]
+        if not real:
+            # Nothing clears the floor (a class the owner has moved most of the way
+            # out). Take the BIGGEST — literally "a bigger league if needed" — never
+            # the nearest, and never a new one. Ties fall to geography below.
+            top = max(near[d][2] for d in near)
+            real = [d for d in near if near[d][2] == top]
+        best = min(real, key=lambda d: (-near[d][0], -near[d][1], d))
         out[row["name"]] = best
     return out
 
@@ -3928,20 +3996,31 @@ def _arrange_state(nine: list, sibling_ids: dict | None = None) -> list:
     # S1 + D1 consume ranks #1-#3: the coach picks which of the three plays
     # singles by what it does for the two points those players cover.
     top3, rest = nine[:3], nine[3:]
+    forced = _sibling_units(nine, sibs)
     def cfg_score(i):
         s = top3[i]
         d = [p for j, p in enumerate(top3) if j != i]
         return eng[s.pid].overall + pair_rating(d[0], d[1])
-    s_i = max(range(3), key=lambda i: (cfg_score(i), -i))      # tie: higher rank plays S1
+    # Two siblings inside the top three ARE D1 — the third plays S1, and there is
+    # nothing left to choose. Anything else and the coach's search decides.
+    tp = {p.pid for p in top3}
+    sib_top = [f for f in forced if {f[0].pid, f[1].pid} <= tp]
+    if sib_top:
+        s_i = next(i for i, p in enumerate(top3) if p.pid not in
+                   {sib_top[0][0].pid, sib_top[0][1].pid})
+    else:
+        s_i = max(range(3), key=lambda i: (cfg_score(i), -i))  # tie: higher rank plays S1
     s1 = top3[s_i]
     d1 = [p for j, p in enumerate(top3) if j != s_i]
 
     # D2-D4: every partition of #4-#9 into three pairs (15 of them), best total
-    # doubles ability wins; ties break toward ladder-natural pairing.
+    # doubles ability wins; ties break toward ladder-natural pairing. A sibling pair
+    # inside #4-#9 is a CONSTRAINT on the search, not a bonus inside it: the
+    # partitions that split it are dropped and the best of what remains is played.
     def part_key(part):
         return (-sum(pair_rating(a, b) for a, b in part),
                 [rank[a.pid] + rank[b.pid] for a, b in part])
-    pairs = min(_pair_partitions(rest), key=part_key)
+    pairs = min(_legal_partitions(rest, forced), key=part_key)
 
     pairs = _order_pairs(pairs,
                          {_pk(pr): rank[pr[0].pid] + rank[pr[1].pid] for pr in pairs},
@@ -3989,6 +4068,18 @@ def _arrange_1a_postseason(eight: list, sibling_ids: dict | None = None) -> list
     # `_arrange_state`'s "pick ONE of three for S1" search.
     top4, rest = eight[:4], eight[4:8]
     combos = list(itertools.combinations(range(4), 2))
+    forced = _sibling_units(eight, sibs)
+    # A sibling pair inside the top four must not be SPLIT across the singles seats
+    # and D1 — the two of them either start together at S1/S2 or they are D1. Two
+    # sibling pairs in one top four leave exactly one combo, which is the right answer
+    # rather than a coincidence; if nothing survives (it cannot today), the search runs
+    # unconstrained rather than failing a lineup.
+    tp = {p.pid: i for i, p in enumerate(top4)}
+    units = [tuple(tp[p.pid] for p in f) for f in forced
+             if f[0].pid in tp and f[1].pid in tp]
+    legal = [c for c in combos
+             if all(len({i, j} & set(c)) != 1 for i, j in units)]
+    combos = legal or combos
 
     def cfg_score(combo):
         s = [top4[i] for i in combo]
@@ -4004,7 +4095,7 @@ def _arrange_1a_postseason(eight: list, sibling_ids: dict | None = None) -> list
     def part_key(part):
         return (-sum(pair_rating(a, b) for a, b in part),
                 [rank[a.pid] + rank[b.pid] for a, b in part])
-    pairs = min(_pair_partitions(rest), key=part_key)
+    pairs = min(_legal_partitions(rest, forced), key=part_key)
 
     pairs = _order_pairs(pairs,
                          {_pk(pr): rank[pr[0].pid] + rank[pr[1].pid] for pr in pairs},
@@ -4041,6 +4132,71 @@ def _order_pairs(pairs: list, rank_sum: dict, rating: dict) -> list:
                 pairs[i], pairs[i + 1] = pairs[i + 1], pairs[i]
                 changed = True
     return pairs
+
+
+def _legal_partitions(pool: list, forced: list):
+    """`_pair_partitions(pool)`, keeping only the partitions that pair every sibling
+    unit sitting wholly inside `pool`. Never empty: any set of disjoint pairs extends
+    to a perfect matching of an even pool, so the constraint always leaves the search
+    something to choose from."""
+    have = {p.pid for p in pool}
+    want = {frozenset((a.pid, b.pid)) for a, b in forced
+            if a.pid in have and b.pid in have}
+    if not want:
+        return _pair_partitions(pool)
+    return (part for part in _pair_partitions(pool)
+            if want <= {frozenset((a.pid, b.pid)) for a, b in part})
+
+
+def _sibling_units(players: list, sibs: dict) -> list[tuple]:
+    """The DISJOINT sibling pairs inside `players`, in ladder order.
+
+    ‼️ SIBLINGS ON ONE TEAM PARTNER, FULL STOP (owner rule 2026-09). This used to be
+    `FAMILY_CHEMISTRY` alone — ~1/4 sd of the pair-rating spread, so two brothers
+    partnered when the ratings were already close and not otherwise, which meant a
+    coach who wanted to see them together had to check every dual of every program to
+    find out whether they had been. Owner: "the sibling thing on the same team should
+    be paired automatically because i can't track them all the time and it's easier to
+    see it that way." The bonus stays and still decides which COURT the pair takes;
+    what changed is that whether they are a pair is no longer a rating question.
+
+    `sibs` is `TeamSeason.sibling_ids` — SIBLINGS, never the household (`_family_pairs`).
+    Three siblings on one roster cannot all partner, so the ladder decides: the higher
+    pair up and the third plays on. A pair straddling a boundary the format fixes (the
+    top-three pool and the D2-D4 pool of the 1S/4D lineup, or S1 and the doubles pool of
+    the 3S/4D one) is simply not honoured — the anti-stacking rule outranks this, and a
+    lineup is never rewritten to put two siblings together."""
+    used: set[str] = set()
+    out = []
+    for i, a in enumerate(players):
+        if a.pid in used:
+            continue
+        kin = sibs.get(a.pid) or ()
+        for b in players[i + 1:]:
+            if b.pid in kin and b.pid not in used:
+                out.append((a, b))
+                used |= {a.pid, b.pid}
+                break
+    return out
+
+
+def _force_pairs(pairs: list, forced: list) -> list:
+    """Rewrite a perfect matching so every pair in `forced` sits together, by SWAPPING
+    partners — the two players displaced take each other's seats and nothing else in
+    the lineup moves. Used where the pairing is constructed directly rather than
+    searched (`_arrange_regular`, by owner rule); the searching arrangers filter their
+    partitions instead, which keeps the best LEGAL arrangement rather than repairing an
+    illegal one."""
+    out = [list(p) for p in pairs]
+    at = {p.pid: (i, j) for i, pr in enumerate(out) for j, p in enumerate(pr)}
+    for a, b in forced:
+        (ia, ja), (ib, jb) = at[a.pid], at[b.pid]
+        if ia == ib:
+            continue
+        odd = out[ia][1 - ja]               # a's current partner, displaced to b's seat
+        out[ia][1 - ja], out[ib][jb] = b, odd
+        at[b.pid], at[odd.pid] = (ia, 1 - ja), (ib, jb)
+    return [tuple(p) for p in out]
 
 
 def _pk(pair) -> tuple:
@@ -4131,9 +4287,16 @@ def _arrange_regular(eleven: list, strategy: str,
     if len(eleven) < 11:
         return eleven
     s1, pool, s23 = eleven[0], eleven[1:9], eleven[9:11]
+    # Siblings inside the doubles pool partner whatever the strategy would have done
+    # (owner rule 2026-09) — applied as a partner SWAP after the strategy has paired
+    # the pool, so `traditional` stays a ladder pairing and `balanced`/`maximize` keep
+    # their one direct decision. A sibling at S1 or in the S2/S3 seats is out of reach:
+    # the 3S/4D allocation is fixed and is never rearranged for this.
+    forced = _sibling_units(pool, sibling_ids or {})
     if strategy == "traditional":
         pairs = [(pool[0], pool[1]), (pool[2], pool[3]),
                  (pool[4], pool[5]), (pool[6], pool[7])]
+        pairs = _force_pairs(pairs, forced)
     else:
         from engine.doubles import doubles_rating, serve_rating, return_rating
         eng = {p.pid: p.engine_player() for p in eleven}
@@ -4160,13 +4323,44 @@ def _arrange_regular(eleven: list, strategy: str,
             ranked = sorted(pool, key=lambda p: (serve_rating(eng[p.pid])
                                                  - return_rating(eng[p.pid])),
                             reverse=True)
-        pairs = [(ranked[0], ranked[7]), (ranked[1], ranked[6]),
-                 (ranked[2], ranked[5]), (ranked[3], ranked[4])]
+        pairs = _force_pairs([(ranked[0], ranked[7]), (ranked[1], ranked[6]),
+                              (ranked[2], ranked[5]), (ranked[3], ranked[4])], forced)
         pairs = sorted(pairs, key=lambda pr: -dr(*pr))  # strongest pair plays D1
     out = [s1] + s23
     for a, b in pairs:
         out += [a, b]
     return out
+
+
+def _arrange_early(nine: list, sibling_ids: dict | None = None) -> list:
+    """The early window's 5S/2D card in SLOT ORDER [S1-S5, D1a, D1b, D2a, D2b].
+
+    That order IS the plain ladder — the allocation is fixed by the shape (the top five
+    play singles, #6-#9 are the doubles pool) and there is no strategy here, which is
+    why this window never had an arranger at all. The ONE thing that moves a player is
+    the sibling swap: without it, siblings sitting at #6 and #8 draw different partners
+    in every early dual while partnering everywhere else in varsity play, which is
+    exactly the "sometimes" the rule was written to remove.
+
+    A pair straddling the singles seats and the doubles pool is not honoured, for the
+    same reason it is not in `_arrange_regular`: the allocation is the format's, and a
+    lineup is never rearranged to put two siblings together."""
+    need = lineup_need(EARLY_FORMAT_PHASE)
+    if len(nine) < need:
+        return nine
+    n_s = dual_format(EARLY_FORMAT_PHASE).n_singles
+    singles, pool = nine[:n_s], nine[n_s:need]
+    forced = _sibling_units(pool, sibling_ids or {})
+    if not forced:
+        return nine                          # byte-identical to the pre-rule lineup
+    # Swapped in place, so D1 is still the higher pair of the pool and nothing but the
+    # two displaced players moves.
+    pairs = _force_pairs([(pool[i], pool[i + 1]) for i in range(0, len(pool), 2)],
+                         forced)
+    out = list(singles)
+    for a, b in pairs:
+        out += [a, b]
+    return out + list(nine[need:])
 
 
 def _postseason_nine(ts: TeamSeason, phase: str = "state") -> list:
@@ -4244,6 +4438,8 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None) -> list:
         if flip:
             strategy = _flip_strategy(strategy)
         return _arrange_regular(nine, strategy, ts.sibling_ids)
+    if phase == EARLY_FORMAT_PHASE:
+        return _arrange_early(nine, ts.sibling_ids)
     return nine
 
 
@@ -6661,6 +6857,181 @@ def _geo_gap(a: School, b: School) -> int:
     return 0 if a.county == b.county else (1 if a.area == b.area else 2)
 
 
+# --- CROSS-TOWN RIVALRIES (owner rule 2026-09) -------------------------------
+#
+# ‼️ A CROSS-TOWN RIVALRY IS AN ANNUAL FIXTURE, NOT A PREFERENCE. The non-district
+# matcher above draws on geography and talent, which gets the AVERAGE card right and
+# the rivalries wrong: it is a weighted draw over a shortlist, so the three Cherry
+# Hill schools met in some seasons and not others, and Port Meridian's nine programs
+# — one town, nine tennis teams, six different leagues — mostly never played each
+# other at all. Every real association has the opposite property: whatever else moves,
+# the crosstown game is on the schedule every year. Owner: "none of the cherry hill
+# schools or port meridian schools play each other much/enough and that's not
+# realistic."
+#
+# So the pairs are CODIFIED — derived once from the school list, then scheduled
+# unconditionally ahead of the ordinary draw — and a rivalry dual is an ordinary
+# non-district dual in every other respect (`phase="regular"`, counts to the record,
+# to TOSS and to the allowance; see `play_regular_season`).
+#
+# ‼️ IT OUTRANKS THE CLASSIFICATION GATE, deliberately. `_nondistrict_pairs` refuses a
+# pairing more than one class apart, which is right for a draw over the whole state and
+# wrong here: Port Meridian's town rivals span 9A to 3A, and a rivalry is a fact about
+# two programs rather than about their enrollments — the same doctrine that already
+# makes `import_jhsaa.RIVALRIES` outrank reclassification, league assignment and
+# playing up. The CAP is what keeps that from producing absurdities: each program takes
+# the `RIVALS_PER_PROGRAM` nearest town programs by class, so a 9A meets the 3A across
+# town only in a town that holds nothing closer.
+RIVALS_PER_PROGRAM = 2
+
+# The kill switch and the FIRST diagnostic (`SHOWCASE_ENABLED`'s idiom): checked at the
+# top of `_rivalry_pairs`, so off it returns before touching a team and the season runs
+# exactly the pre-feature code. The fixtures add ~260 duals to a gender's ~5,100 (~5%)
+# and take none of them out of the allowance, so if a rung is slow with this off, these
+# were never the cause.
+RIVALRIES_ENABLED = True
+
+# ‼️ THE GATE IS RELAXED, NOT REMOVED. `_nondistrict_pairs` refuses a pairing more than
+# ONE class apart; a rivalry reaches three, which is what a town actually looks like
+# (Port Meridian's two 3A privates take the 5A private across town, two classes off)
+# and still refuses the pairing nobody would schedule twice. Measured before it
+# existed: the cap alone left the STRAGGLERS of a big town to each other, so
+# Valderra's 9A drew the 1A across an 18-school city — the two programs nothing closer
+# had room for, which is the opposite of a rivalry. A program with nothing in range
+# simply has no town rival; that is a real answer, not a gap to fill.
+# `RIVAL_OVERRIDES` is exempt — an owner-declared rivalry answers to no gate.
+RIVAL_MAX_GAP = 3
+
+# Hand-authored pairs, always rivals whatever the derivation would have said — the
+# owner's override, the `OWNER_EDICTS` idiom. They are placed FIRST and take a seat
+# like any other rivalry: a named pair is the town's primary rivalry, not a third one
+# bolted onto two derived ones. Both names must be sponsoring programs this season or
+# the entry is simply inert (a school can stop fielding a team).
+#
+# ‼️ EVERY `import_jhsaa.RIVALRIES` PAIR MUST APPEAR HERE. The two tables state the
+# same fact for two different mechanisms — that one keeps a pair in the same
+# CLASSIFICATION at import, this one puts them on the schedule every season — and the
+# app cannot read `scripts/`, so they are separate lists and the agreement is asserted
+# instead (`tests/test_jhsaa_rivalries.py`). Without the entry the derivation quietly
+# breaks the named pair whenever a third program in town has a better claim: Alameda
+# and Condotti Vanguard Academy are both Ashbury 7A, so on class alone Alameda takes
+# the seat and the association's oldest rivalry stops being played.
+RIVAL_OVERRIDES: list[tuple[str, str]] = [
+    ("Condotti Vanguard Academy", "Romero-Finniski"),
+]
+
+#: Directional and ordinal words a town hangs on ONE stem to name its several high
+#: schools — "Cherry Hill East" / "Cherry Hill North" / "Cherry Hill South". Sharing a
+#: stem is the strongest crosstown signal there is (it is the same school district
+#: naming its campuses), so stem-mates take each other before anything else in town.
+_STEM_WORDS = {"north", "south", "east", "west", "central", "northeast", "northwest",
+               "southeast", "southwest", "heights", "valley", "park", "hills"}
+
+
+def _name_stem(name: str) -> str:
+    """The shared stem of a compass-named campus, or "" for a name that has none.
+    "Cherry Hill East" -> "cherry hill"; "Bell" -> "" (a bare name is nobody's stem,
+    and treating it as one would make every one-word school in town a stem-mate)."""
+    parts = name.split()
+    if len(parts) < 2 or parts[-1].lower() not in _STEM_WORDS:
+        return ""
+    return " ".join(parts[:-1]).lower()
+
+
+def _rival_priority(a: School, b: School) -> tuple:
+    """How strong a claim these two have on each other's rivalry seats, best first:
+    a shared campus stem, then the same locality (the settlement inside the metro —
+    two programs in one CDP are neighbours in a way two ends of Port Veles are not),
+    then the nearest classification, then the names so the draw is stable."""
+    stem = _name_stem(a.name)
+    return (0 if stem and stem == _name_stem(b.name) else 1,
+            0 if a.locality and a.locality == b.locality else 1,
+            abs(_GROUP_IX[a.group] - _GROUP_IX[b.group]),
+            *sorted((a.name, b.name)))
+
+
+def rival_map(schools: list[School]) -> dict[str, frozenset[str]]:
+    """{school name: the programs it plays every year}, derived from the town.
+
+    Candidates are the other SPONSORING programs in the same city — the town is the
+    city and not the locality, so a metro's core-city schools and its CDP schools are
+    one pool with locality-mates merely preferred (`_rival_priority`). Pairs are then
+    accepted best-claim-first while both sides are under `RIVALS_PER_PROGRAM`, which is
+    what stops Port Veles's 41 programs from becoming an 820-dual round robin.
+
+    ‼️ LEAGUE-MATES COUNT AGAINST THE CAP BUT ARE NOT SCHEDULED HERE. A town rival
+    already in your league is your rivalry — you play it home and away — so it takes a
+    seat like any other; `play_regular_season` skips it because a double round robin
+    has already scheduled it, not because it is not a rivalry. Dropping league-mates
+    from the derivation instead would hand a program a THIRD-nearest town rival to make
+    up the number, which is a rivalry nobody in that town would recognise."""
+    by_city: dict[str, list[School]] = {}
+    for s in schools:
+        by_city.setdefault(s.city, []).append(s)
+    out: dict[str, set[str]] = {s.name: set() for s in schools}
+    live = set(out)
+    for a, b in RIVAL_OVERRIDES:            # inert for a program not fielding a team
+        if a in live and b in live:
+            out[a].add(b)
+            out[b].add(a)
+    cands = []
+    for town in by_city.values():
+        town = sorted(town, key=lambda s: s.name)
+        for i, a in enumerate(town):
+            for b in town[i + 1:]:
+                if abs(_GROUP_IX[a.group] - _GROUP_IX[b.group]) > RIVAL_MAX_GAP:
+                    continue
+                cands.append((_rival_priority(a, b), a.name, b.name))
+    for _p, a, b in sorted(cands):
+        if len(out[a]) < RIVALS_PER_PROGRAM and len(out[b]) < RIVALS_PER_PROGRAM:
+            out[a].add(b)
+            out[b].add(a)
+    return {k: frozenset(v) for k, v in out.items()}
+
+
+def are_rivals(a: str, b: str, rivals: dict[str, frozenset[str]]) -> bool:
+    """Is this dual a codified rivalry? A pure question about the school list, which
+    is why no rivalry column was added to `world_jhsaa_dual`: the answer is a
+    PROJECTION of a layer the archive already has, so a card reads the same for a
+    season played before this existed and for one played after."""
+    return b in rivals.get(a, ())
+
+
+def _rivalry_pairs(teams: list[TeamSeason], year: int,
+                   played: dict[int, set[str]]) -> list[tuple]:
+    """RESERVE this season's rivalry duals, in a stable order — it does not play them.
+    Marking `played` here is what takes each pair off the ordinary matcher's board, so
+    this must run BEFORE the first draw of the season even though the duals themselves
+    are played in the mid-season window (see `play_regular_season`). Skips a pair
+    sharing a league (the double round robin plays it twice) and one that has somehow
+    already met. Never touches `owed`: the fixture is annual and
+    is not drawn from the allowance — it is COUNTED against it afterwards, by the
+    `spent` fold in `play_regular_season`, so a program's total card is unchanged.
+
+    ‼️ THE VENUE ALTERNATES ON THE YEAR. `play_dual` makes its first argument the home
+    side and `home_court` gives the host a real lift, so a fixed order would hand one
+    school of every rivalry the home advantage for as long as the save runs — the one
+    thing a genuine annual series never does."""
+    if not RIVALRIES_ENABLED:
+        return []
+    rivals = rival_map([t.school for t in teams])
+    by_name = {t.school.name: t for t in teams}
+    pairs = []
+    for t in sorted(teams, key=lambda t: t.school.name):
+        for other in sorted(rivals.get(t.school.name, ())):
+            o = by_name.get(other)
+            if o is None or o.school.name < t.school.name:
+                continue                    # each pair once, from the earlier name
+            if (t.school.group, t.school.district) == (o.school.group, o.school.district):
+                continue                    # league-mates: already home and away
+            if o.school.name in played[id(t)]:
+                continue                    # the early window got there first
+            pairs.append((o, t) if year % 2 else (t, o))
+            for x, y in ((t, o), (o, t)):
+                played[id(x)].add(y.school.name)
+    return pairs
+
+
 def _nondistrict_pairs(teams: list[TeamSeason], rng: random.Random,
                        owed: dict[int, int], played: dict[int, set[str]]) -> list[tuple]:
     """PAIR the non-district card — it does not play it.
@@ -6744,6 +7115,16 @@ def play_regular_season(by_group: dict, year: int, gender: str,
     played: dict[int, set[str]] = {id(t): set() for t in every_team}
     reserved = MID_NONDISTRICT + (1 if CHALLENGE_ENABLED else 0)
     owed = {k: max(1, round((v - reserved) * EARLY_SHARE)) for k, v in quota.items()}
+
+    # ‼️ THE RIVALRIES ARE RESERVED BEFORE THE FIRST DRAW, AND PLAYED LATER. Deriving
+    # them here marks them in `played`, so the early matcher cannot take one — it is
+    # allowed to (a town rival inside the ±1 gate is an ordinary candidate to it), and
+    # when it did, that random draw BECAME the annual fixture and quietly lost both
+    # things the fixture is for: it was played at the early window's 5S/2D shape rather
+    # than the league's, and the host was whichever side the matcher happened to put
+    # first, so the venue could stay with one school two seasons running. A fixture
+    # that the draw can pre-empt is a fixture only when the draw does not.
+    rival_pairs = _rivalry_pairs(every_team, year, played)
     # The early window plays 5S/2D (owner rule 2027-08, `EARLY_FORMAT_PHASE`) — the
     # ONLY block of the season that does. Everything from district pass 1 on, including
     # the mid-season non-district window and the late tune-up below, is back to the
@@ -6762,6 +7143,15 @@ def play_regular_season(by_group: dict, year: int, gender: str,
             half[(g, d)] = district_pass1_rounds(len(teams))
     for key, rr in rounds.items():
         play_rounds(rr[:half[key]], year, salt, key[1])
+
+    # --- the CROSS-TOWN RIVALRIES: the annual fixtures, played first in the window ---
+    # Reserved above, before any draw; played HERE, after pass 1, because that is where
+    # the calendar has the dates and because the fixture must be an ordinary 3S/4D
+    # league-shape dual — the fixture is codified, the match is not special. Ahead of
+    # the window's own draw so the matcher cannot rematch a pair that has just played.
+    # Not drawn from `owed`: the `spent` fold at the tune-up counts them, so a rivalry
+    # does not lengthen anybody's card.
+    _play_pairs(rival_pairs, xrng)
 
     # --- the mid-season window: a non-district date, then the challenge ---
     owed = {id(t): MID_NONDISTRICT for t in every_team}

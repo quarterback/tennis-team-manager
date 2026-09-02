@@ -143,6 +143,11 @@
                      else 'show' if d.kind == 'SHOWCASE'
                      else 'state' if d.kind == 'STATE' else 'road' if d.kind != 'INVITE' }}">{{ d.kind }}</span>
               {% if d.round %}<span class="jh-tag rd">{{ d.round }}</span>{% endif %}
+              {# The crosstown fixture (owner rule 2026-09) — the association's
+                 codified rivalries are on the schedule every season, and which
+                 invitational is the rivalry game is the one thing on this row a
+                 reader cannot work out from the row. #}
+              {% if d.rival %}<span class="jh-tag rival">RIVALRY</span>{% endif %}
               {# Match Center is an ICON, not a labelled pill (owner rule 2026-08):
                  a text chip on every schedule row shouted over the results. #}
               {% if d.lines and d.id %}<a class="jh-chip ghost ico" title="Match Center"

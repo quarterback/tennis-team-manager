@@ -4937,6 +4937,13 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     # inside the per-player comprehension below (`AAR-jhsaa-playup-fingerprint-
     # query-storm.md`: a memo is only as cheap as its key).
     fam_map = jh.families()
+    # This program's codified cross-town rivals — resolved ONCE per page, beside the
+    # family fingerprint and for the same reason. Deliberately UNCACHED: it is a pure
+    # fold over the school list (measured 5 ms for the whole 912-program association,
+    # against the roster builds this page already pays for), and a memo keyed on a
+    # version fingerprint is how `AAR-jhsaa-playup-fingerprint-query-storm.md` happened.
+    # The greedy cap is global, so there is no cheaper per-school answer to compute.
+    rivals = jh.rival_map(list(schools.values()))
     honor_pids = {}
     # ‼️ A DOUBLES AWARD ROW HONOURS TWO ATHLETES (owner, 2027-08) — doubles
     # honours go to PAIRINGS. `jaw.row_pids` is the one place that knows how many
@@ -5017,7 +5024,15 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                       # R32 / QF / SF stay, because which round a State dual was cannot
                       # be read off the row.
                       "round": (state_round if k == "STATE" else
-                                toc_round if k == "TOC" else {}).get(d["opp"], "")}
+                                toc_round if k == "TOC" else {}).get(d["opp"], ""),
+                      # ‼️ A RIVALRY IS DERIVED, NOT ARCHIVED (owner rule 2026-09).
+                      # `jh.are_rivals` is a question about the school list, so no
+                      # column was added to `world_jhsaa_dual` — a card reads the same
+                      # for a season played before the fixtures existed and one played
+                      # after. It earns the second chip the bracket-round rule reserves
+                      # because, unlike a showcase kind or the early window's shape, it
+                      # is the one thing on the row a reader cannot infer from the row.
+                      "rival": jh.are_rivals(school, d["opp"], rivals)}
                      for i, (d, k) in enumerate(zip(sched, kinds))],
         # The JV season — schedule and record only, no ranking or finish. `shape` is
         # on the row because the JV format is chosen per dual from what both sides

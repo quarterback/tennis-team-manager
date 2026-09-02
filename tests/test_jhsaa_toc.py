@@ -928,3 +928,38 @@ def test_a_player_without_a_title_keeps_a_plain_name(archived):
     html = archived["client"].get(
         f"/jhsaa/player/{school}/{hit.pid}?g={g}").get_data(as_text=True)
     assert 'class="champ"' not in html
+
+
+def test_a_rivalry_dual_is_played_and_the_card_marks_it(archived):
+    """Crosstown rivalries (owner rule 2026-09), through the whole stack: the fixture
+    is on the schedule and the card says which invitational it was.
+
+    ‼️ RENDERED, not just computed. `d.rival` is a new attribute the template
+    dereferences, and Jinja resolves a missing one to Undefined and prints nothing — a
+    template is the one place here where a wrong type ships a page instead of raising
+    (`brk_canvas`, `AAR-jhsaa-individual-state-tournaments.md`). The only way to know
+    the chip is there is to look at the HTML."""
+    import app.world as wd
+    w = archived["world"]
+    schools = jh.load_schools("girls")
+    rivals = jh.rival_map(schools)
+    by = {s.name: s for s in schools}
+    marked = 0
+    for name, mates in sorted(rivals.items()):
+        cross = [b for b in mates if b in by and
+                 (by[b].group, by[b].district) != (by[name].group, by[name].district)]
+        if not cross:
+            continue
+        sched = wd.jhsaa_school_history(w["id"], "girls", name)["seasons"]
+        if not sched:
+            continue
+        html = archived["client"].get(
+            f"/jhsaa/school/{name}?g=girls").get_data(as_text=True)
+        if "RIVALRY" not in html:
+            continue
+        for opp in cross:                       # the chip sits on the rival's row
+            assert opp in html, (name, opp)
+        marked += 1
+        if marked >= 3:
+            break
+    assert marked >= 3, "no rendered card carried a rivalry chip"
