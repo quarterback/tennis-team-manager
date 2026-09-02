@@ -2640,9 +2640,10 @@ was a school marker, shipped "Baptist HS High School".
     placement is (a girls-only sponsor is a real league member). **`load_schools`'s
     sponsorship filter is what makes a program real: anything reading `_rows()` to ask
     who PLAYS — rather than about a school's page — has to apply it too.** ‼️ The
-    existing coverage checked only the ~13 SEEDED play-ups, none of which happens to
-    sit near a dead league, which is why it shipped; the property belongs to the
-    PLACEMENT, so it is now swept over every eligible school.
+    existing coverage checked only the SEEDED play-ups (six placed on this data), none
+    of which happens to sit near a dead league, which is why it shipped; the property
+    belongs to the PLACEMENT, so it is now swept over every one of the 373 eligible
+    schools. See `docs/AAR-jhsaa-playup-league-placement.md`.
   - **`jhsaa_playup_version()` keys the season cache beside the archetype one**, and
     `jhsaa.reset_schools()` exists because `load_schools` bakes group and league into the
     School objects — `reset_all()` alone does not clear them.
