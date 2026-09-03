@@ -224,7 +224,14 @@
                JV box score and stays; only the new Match Center link is
                varsity-only. #}
             <td><span class="jh-tag {{ 'dist' if jvk == 'JV DISTRICT' else 'state' if jvk == 'JV STATE' else 'road' if jvk == 'JV REGIONALS' else 'show' if jvk == 'WEEKEND' }}">{{ jvk }}</span>
-              {% if d.shape %}<span class="jh-tag rd">{{ d.shape }}</span>{% endif %}
+              {# The bracket ROUND, on the varsity card's own second chip — a State
+                 row otherwise tags five different rounds identically. Only State
+                 duals carry one; a regional or league dual's round is what its own
+                 tag already says. The elastic JV format is worth showing where the
+                 shape really does vary (the league), and never in the championship,
+                 whose shape is fixed at 3S/2D by the event. #}
+              {% if d.round %}<span class="jh-tag rd">{{ d.round }}</span>
+              {% elif d.shape %}<span class="jh-tag rd">{{ d.shape }}</span>{% endif %}
               {% if d.lines %}<span class="jh-caret" aria-hidden="true">›</span>{% endif %}</td>
           </tr>
           {% if d.lines %}

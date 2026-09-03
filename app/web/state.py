@@ -5168,6 +5168,29 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         return out
     state_round = _round_of(br)
     toc_round = _round_of((arc or {}).get("toc") or {})
+    # ‼️ THE JV STATE ROUND, ON THE SAME IDEA AND WITH ITS OWN SHORT FORM. A JV card
+    # that tagged five different rounds "JV STATE" tells the reader nothing about
+    # which one, exactly as the varsity card would if it dropped its R32/QF/SF chip.
+    # The labels are the ones the owner wrote (R20 · R16 · QF · SF · F); everything
+    # else — reading the ROUND off the archived bracket rather than inferring it from
+    # a schedule position — is `_round_of`'s, unchanged. One small row per page.
+    _JV_SHORT = {"Championship": "F", "Semifinals": "SF", "Quarterfinals": "QF",
+                 "Octofinals": "R16"}
+    jv_ev = world.jhsaa_jv_state(w["id"], yr, g) or {}
+    jv_round = {}
+    for _key, _br in (("state", jv_ev.get("state")),
+                      # An archive from the play-in build keeps its qualifying duals
+                      # in a bracket of their own — read it too, or those rows lose
+                      # their round while every other JV State row keeps one.
+                      ("play_in", jv_ev.get("play_in"))):
+        for rd in world.jhsaa_state_rounds(_br or {}):
+            nm = _JV_SHORT.get(rd["name"]) or (f"R{rd['alive']}"
+                                               if rd["name"].startswith("Round of")
+                                               else rd["name"])
+            for gm in rd["games"]:
+                if school in (gm.get("home"), gm.get("away")):
+                    other = gm["away"] if gm["home"] == school else gm["home"]
+                    jv_round[other] = nm
 
     _SEEDS = {"TOC": toc_seeds, "STATE": seeds,
               "STATE SPECIAL": sp_seeds, "CHALLENGE": ch_seeds,
@@ -5289,7 +5312,12 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         # score rendered raw reads backwards on every dual the away team won — the
         # exact fault `AAR-jhsaa-bracket-score-sides.md` records, one surface over.
         "jv_schedule": [{**d, "date": jv_dates[i], "lines": _jh_reported_lines(d),
-                         "opp_deco": _jh_deco(schools, d["opp"], 22)}
+                         "opp_deco": _jh_deco(schools, d["opp"], 22),
+                         # Only a State dual earns the round chip — the same rule the
+                         # varsity card follows: a regional or a league dual's round
+                         # is already what its own tag says.
+                         "round": (jv_round.get(d["opp"], "")
+                                   if d.get("phase") == "jv_state" else "")}
                         for i, d in enumerate(jv_sched)],
         "jv_record": (f"{jv_w}-{jv_l}-{jv_t}" if jv_t else f"{jv_w}-{jv_l}") if
                      (jv_w + jv_l + jv_t) else "",
