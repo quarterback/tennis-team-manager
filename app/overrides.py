@@ -498,11 +498,22 @@ def jhsaa_transfer_version() -> str:
     if row and row[0]:
         return row[0]
     stamp = _jhsaa_transfer_hash()
+    # ‼️ NEVER REPLACE. Two threads can both see the missing stamp while a
+    # transfer write lands between them: the trigger stamps the edit, and a
+    # REPLACE here would put the pre-edit hash back over it — a hash that may
+    # already key `_transfer_cache`, so roster builds would keep reading the
+    # old ledger until the next write. Seed only if still absent, then read
+    # back whichever stamp won.
     try:
         conn = _db()
-        conn.execute("INSERT OR REPLACE INTO roster_overrides (kind, key, value)"
+        conn.execute("INSERT OR IGNORE INTO roster_overrides (kind, key, value)"
                      " VALUES ('jhsaa_transfer_stamp', 'stamp', ?)", (stamp,))
-        conn.commit(); conn.close()
+        conn.commit()
+        row = conn.execute("SELECT value FROM roster_overrides WHERE kind='jhsaa_transfer_stamp'"
+                           " AND key='stamp'").fetchone()
+        conn.close()
+        if row and row[0]:
+            return row[0]
     except Exception:
         pass
     return stamp

@@ -34,7 +34,8 @@
 {% set cand_tab = ('cand', 'Candidates', candidates|length if candidates is not none else 0) %}
 {% set pend_tab = ('pending', 'Pending', pending|length) %}
 {% set hist_tab = ('history', 'History', past_total if past_total is defined else past|length) %}
-{% if report is not none %}{% set panes = [batch_tab, cand_tab, pend_tab, hist_tab] %}
+{% if hy_requested is defined and hy_requested %}{% set panes = [hist_tab, batch_tab, cand_tab, pend_tab] %}
+{% elif report is not none %}{% set panes = [batch_tab, cand_tab, pend_tab, hist_tab] %}
 {% elif candidates is not none %}{% set panes = [cand_tab, batch_tab, pend_tab, hist_tab] %}
 {% else %}{% set panes = [batch_tab, cand_tab, pend_tab, hist_tab] %}{% endif %}
 

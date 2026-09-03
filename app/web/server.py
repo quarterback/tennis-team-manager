@@ -2902,8 +2902,11 @@ def create_app() -> Flask:
             shown = [r for r in past if r["year"] == pick] if pick else []
             hy = str(pick) if pick else ""
         rows = _jh.resolve_transfer_names(pending + shown, salt)
+        # A season change is a GET carrying `hy`; the page must land on the
+        # History tab it was changed from, not the default Batch tab.
         return {"rows": rows, "hist_years": hist_years, "hy": hy,
-                "past_total": len(past)}
+                "past_total": len(past),
+                "hy_requested": bool(request.values.get("hy"))}
 
     @app.route("/editor/jhsaa-family", methods=["POST"])
     def editor_jhsaa_family():

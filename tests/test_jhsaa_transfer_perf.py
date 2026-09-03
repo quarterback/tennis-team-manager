@@ -68,6 +68,44 @@ def test_version_is_a_stamp_that_every_write_path_bumps(mover):
     assert "stamp" not in ov.get_jhsaa_transfers()
 
 
+def test_seeding_the_stamp_never_overwrites_a_concurrent_bump(mover, monkeypatch):
+    """Pre-trigger save, first read: while this thread hashes the old ledger, a
+    transfer write lands and the trigger stamps it. The seed must NOT put the
+    old hash back over that stamp (roster builds would keep the pre-edit map)."""
+    conn = sqlite3.connect(resolve_db_path())
+    conn.execute("DELETE FROM roster_overrides WHERE kind='jhsaa_transfer_stamp'")
+    conn.commit(); conn.close()
+    real_hash = ov._jhsaa_transfer_hash
+
+    def racing_hash():
+        h = real_hash()
+        _move(mover, mover["b"], 2028)           # the concurrent write, trigger-stamped
+        return h
+    monkeypatch.setattr(ov, "_jhsaa_transfer_hash", racing_hash)
+    won = ov.jhsaa_transfer_version()
+    assert won != real_hash()
+    conn = sqlite3.connect(resolve_db_path())
+    stored = conn.execute("SELECT value FROM roster_overrides WHERE kind='jhsaa_transfer_stamp'"
+                          " AND key='stamp'").fetchone()[0]
+    conn.close()
+    assert stored == won
+
+
+def test_a_season_change_lands_on_the_history_tab(mover):
+    """The Season dropdown is a GET carrying `hy`; the page it returns must
+    open on History, not hide the picked season behind the Batch tab."""
+    from app.web.server import create_app
+    _move(mover, mover["b"], 2028)
+    client = create_app().test_client()
+    html = client.get("/jhsaa/transfers?g=girls&hy=all").get_data(as_text=True)
+    assert 'data-pane="history" hidden' not in html
+    assert 'data-pane="batch" hidden' in html
+    assert mover["p"].name in html
+    # and without `hy` the tools still come first
+    html = client.get("/jhsaa/transfers?g=girls").get_data(as_text=True)
+    assert 'data-pane="batch" hidden' not in html
+
+
 def test_enrolled_slice_drops_graduated_movers(mover):
     """A 2027 freshman is enrolled 2027-2030 and nowhere after."""
     _move(mover, mover["b"], 2028)
