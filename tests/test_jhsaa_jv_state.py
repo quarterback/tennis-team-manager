@@ -354,10 +354,19 @@ def test_an_archive_from_the_play_in_build_still_reads(jv, monkeypatch, tmp_path
     # have, so it is rendered as the round it was: twenty alive, Round of 20.
     assert v["rounds"][0]["name"] == f"Round of {len(names)}" == "Round of 20"
     assert len(v["rounds"][0]["games"]) == 4
+    # Desktop renders the canvas rather than the round tabs. Its first column must
+    # therefore contain the four played games plus all twelve opening-round byes,
+    # and feed the archived Round of 16 as one complete tree.
+    assert [c["name"] for c in v["canvas"]["columns"]] == ["Round of 20", "Octofinals"]
+    assert [c["n"] for c in v["canvas"]["columns"]] == [16, 8]
+    first_col = [c for c in v["canvas"]["cards"] if c["col"] == 0]
+    assert sum(c["played"] for c in first_col) == 4
     # The regional table shows how far each champion went, not how they entered.
     finish = {r["champion"]: r["finish"] for r in v["regions"]}
     assert finish[r16[0]["winner"]] == "Champion"
     assert all(f for n, f in finish.items() if n in set(draw))
+    losers = {g["away"] for g in quals}
+    assert {finish[n] for n in losers} == {"Round of 20"}
 
 
 def test_a_regional_dual_is_archived_under_its_own_phase(jv):

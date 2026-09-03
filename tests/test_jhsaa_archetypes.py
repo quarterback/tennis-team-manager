@@ -255,6 +255,20 @@ def test_upstart_is_not_a_storable_tag():
     assert "EDITABLE_ARCHETYPES" in body, body
 
 
+def test_editor_reset_invalidates_historical_gap_bands(monkeypatch):
+    """Archetype edits regenerate historical OVRs, so their derived gap bands
+    cannot survive the ``reset_all`` used by both archetype editor routes."""
+    from app.web import state
+
+    state._gapband_cache[("boys", 2029)] = {"even": {"won": 4}}
+    monkeypatch.setattr("app.ncaa.reset_caches", lambda: None)
+    monkeypatch.setattr("app.web.awards.reset_cache", lambda: None)
+
+    state.reset_all()
+
+    assert state._gapband_cache == {}
+
+
 # --- the two layers -----------------------------------------------------------
 
 def test_the_seed_list_reaches_generation():
