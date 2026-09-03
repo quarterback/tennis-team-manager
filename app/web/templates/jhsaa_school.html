@@ -494,16 +494,14 @@
   <div class="jh-pane" data-pane="players"{{ '' if active == 'players' else ' hidden' }}>
     {% if ns.players %}
     {% for s in honor_years %}
-    {% for h in s.honors %}
-    {# `h` is always built as "AWARD LABEL — Player Name" (`world._season_row`'s
-       `row["honors"].append(f"... — {r['name']}")` — every call site uses the
-       same " — " separator). Bold just the name so it stands out from the
-       label the way the roster/box-score names already do elsewhere; falls
-       back to the whole string unbolded if a future honour type ever drops
-       the separator, rather than mis-splitting it. #}
-    {% set parts = h.rsplit(' — ', 1) %}
+    {# ONE LINE PER HONOUR PER SEASON (owner, 2026-09): the label once, then
+       every selection from this program that year — "All-District (…) —
+       Isaac Evans · Cameron Johnson / Logan Rivera". Folded in
+       `world.jh_honor_lines`, never string-split here; a doubles pairing is
+       one name with a slash, so the names are joined on a middle dot. #}
+    {% for line in s.honor_lines %}
     <div class="jh-honor"><span class="y">{{ s.season_year }}</span>
-      <span>{% if parts|length == 2 %}{{ parts[0] }} — <strong>{{ parts[1] }}</strong>{% else %}{{ h }}{% endif %}</span></div>
+      <span>{% if line.label %}{{ line.label }} — {% endif %}{% for n in line.names %}<strong>{{ n }}</strong>{% if not loop.last %} · {% endif %}{% endfor %}</span></div>
     {% endfor %}
     {% endfor %}
     {% else %}
