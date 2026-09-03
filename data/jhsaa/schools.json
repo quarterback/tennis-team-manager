@@ -15332,7 +15332,7 @@
       "source": "Saint Francis"
     },
     {
-      "name": "Saint Marc",
+      "name": "Cap Rouge",
       "city": "Belyakov",
       "county": "Vance",
       "area": "Boise Frontier",
@@ -16865,7 +16865,7 @@
       "source": "St. Agnes Preparatory"
     },
     {
-      "name": "St. Brigid",
+      "name": "Kuopio",
       "source": "St. Brigid School",
       "city": "Harrow",
       "county": "Emigrant",
@@ -16873,7 +16873,7 @@
       "classification": "Group 2",
       "group": "Group 2",
       "enrollment": 412,
-      "private": true,
+      "private": false,
       "mascot": "Cougars",
       "colors": [
         "#1e5631",
@@ -16925,14 +16925,14 @@
       "source": "Nathaniel Gaines"
     },
     {
-      "name": "St. Catherine College Prep",
+      "name": "Lizarra",
       "city": "Aldecoa",
       "county": "Vance",
       "area": "Silver Basin",
       "classification": "Group 2",
       "group": "Group 2",
       "enrollment": 1035,
-      "private": true,
+      "private": false,
       "mascot": "Coyotes",
       "colors": [
         "#204e39",
@@ -16941,17 +16941,18 @@
       "girls": true,
       "boys": true,
       "girls_district": "Confluence Athletic Association",
-      "boys_district": "Confluence Athletic Association"
+      "boys_district": "Confluence Athletic Association",
+      "source": "St. Catherine College Prep"
     },
     {
-      "name": "St. Cecilia Academy",
+      "name": "Quartzburg",
       "city": "Tunnel Diggings",
       "county": "Goldbank",
       "area": "Southern Jefferson",
       "classification": "1A",
       "group": "1A",
       "enrollment": 127,
-      "private": true,
+      "private": false,
       "mascot": "Wolves",
       "colors": [
         "#1d4e9e",
@@ -16960,7 +16961,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League"
+      "boys_district": "Marble Valley League",
+      "source": "St. Cecilia Academy"
     },
     {
       "name": "Wildrye",
@@ -16983,7 +16985,7 @@
       "source": "St. Dominic Academy"
     },
     {
-      "name": "St. Elian",
+      "name": "Elian",
       "city": "St. Elian",
       "county": "Ferris",
       "area": "Gold Valley",
@@ -16999,7 +17001,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League"
+      "boys_district": "Marble Valley League",
+      "source": "St. Elian"
     },
     {
       "name": "Port Ainsley",
@@ -17022,14 +17025,14 @@
       "source": "St. Elias Academy"
     },
     {
-      "name": "St. Elias College Prep",
+      "name": "Aranaz",
       "city": "Echevarria",
       "county": "Vance",
       "area": "Silver Basin",
       "classification": "Group 2",
       "group": "Group 2",
       "enrollment": 730,
-      "private": true,
+      "private": false,
       "mascot": "Rattlers",
       "colors": [
         "#6d1a36",
@@ -17038,7 +17041,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Dual County League",
-      "boys_district": "Dual County League"
+      "boys_district": "Dual County League",
+      "source": "St. Elias College Prep"
     },
     {
       "name": "Robledo",
@@ -17201,14 +17205,14 @@
       "source": "St. Isidore"
     },
     {
-      "name": "St. Jerome Academy",
+      "name": "Isla Verde",
       "city": "San Borondón",
       "county": "San Marcos",
       "area": "Sebastian Cape",
       "classification": "1A",
       "group": "1A",
       "enrollment": 306,
-      "private": true,
+      "private": false,
       "mascot": "Albatross",
       "colors": [
         "#0f6a70",
@@ -17217,7 +17221,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "South Coast League",
-      "boys_district": "South Coast League"
+      "boys_district": "South Coast League",
+      "source": "St. Jerome Academy"
     },
     {
       "name": "St. Josephine Bakhita",
@@ -17419,14 +17424,14 @@
       "locality": "Webster Groves"
     },
     {
-      "name": "St. Sergius",
+      "name": "Alderpoint",
       "city": "Novak",
       "county": "Tamarack",
       "area": "Cascade Divide",
       "classification": "3A",
       "group": "3A",
       "enrollment": 446,
-      "private": true,
+      "private": false,
       "mascot": "Northern Lights",
       "colors": [
         "#7f1d1d",
@@ -17499,14 +17504,14 @@
       "source": "St. Varian"
     },
     {
-      "name": "St. Veronica",
+      "name": "Yarrowfield",
       "city": "Garrow",
       "county": "Kernwood",
       "area": "Yarrowmere",
       "classification": "3A",
       "group": "3A",
       "enrollment": 464,
-      "private": true,
+      "private": false,
       "mascot": "Bucks",
       "colors": [
         "#3a5a78",
@@ -17515,7 +17520,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Quarry League",
-      "boys_district": "Quarry League"
+      "boys_district": "Quarry League",
+      "source": "St. Veronica"
     },
     {
       "name": "St. Vincent",
