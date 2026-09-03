@@ -4640,18 +4640,12 @@ def _jh_indiv_drawn(draw: dict, schools: dict, as_rounds: bool = False) -> dict:
     # comment drew the wrong conclusion from it and said a qualifying draw "is not a
     # tree". Rendering the sub-brackets is open whenever it is wanted; `as_rounds`
     # is the list presentation, which is also how an association publishes qualifying.
-    playins = []
-    if as_rounds:
-        rounds, tail = [], rounds
-        for rnd in tail:
-            layer = []
-            for m in rnd:
-                hi, lo = entries[m["hi"]], entries[m["lo"]]
-                win, lose = (hi, lo) if m["winner_is_hi"] else (lo, hi)
-                layer.append({"seed_line": m.get("seed_line"), "winner": win,
-                              "loser": lose, "scoreline": m["scoreline"],
-                              "rnd": m.get("rnd", "")})
-            playins.append(layer)
+    # ‼️ NO PARALLEL ROUND LIST (owner, 2026-09). Qualifying was rendered as round
+    # lists AND then as the tree, on the reasoning that a bracket shows structure and
+    # a list carries scores. It does not: these cards carry both names, both schools
+    # and the scoreline, so the list restated every field the bracket already shows —
+    # "we don't need both if the information is redundant, just the bracket". The
+    # rounds are emptied so the flat column loop below cannot also run.
     # ‼️ NO PLAY-IN BRANCH ANY MORE. The JV event used to graft surplus entrants
     # onto top seeds' lines when the field overran a 96 cap; Regional Qualifying
     # fills a 128 field exactly, so no draw carries a pre-round and nothing is
@@ -4666,7 +4660,9 @@ def _jh_indiv_drawn(draw: dict, schools: dict, as_rounds: bool = False) -> dict:
     # `_jh_qual_cols` materialises the byes and hands the canvas a shape that halves.
     # The round LISTS stay too: a bracket shows the structure, the list carries the
     # scores, and that is how a slam publishes qualifying.
-    cols = _jh_qual_cols(draw, schools) if as_rounds else []
+    cols = []
+    if as_rounds:
+        cols, rounds = _jh_qual_cols(draw, schools), []
     for rnd in rounds:
         ms = []
         for m in rnd:
@@ -4693,11 +4689,12 @@ def _jh_indiv_drawn(draw: dict, schools: dict, as_rounds: bool = False) -> dict:
     champ_sc = schools.get(champ["school"]) if champ else None
     runner_sc = schools.get(runner["school"]) if runner else None
     return {
-        "ready": True, "playins": playins,
+        "ready": True,
         # What the reader of a qualifying sheet actually wants to know, and what
-        # neither DRAW nor SEEDS in the header answers: how many of this field
-        # come out of it. The last round is one match per qualifying place.
-        "qual_advance": len(playins[-1]) if playins else 0,
+        # neither DRAW nor SEEDS in the header answers: how many of this field come
+        # out of it. Read off the DRAW, not off a render list — the last round is one
+        # match per qualifying place, which is true whatever the page chooses to show.
+        "qual_advance": len(draw["rounds"][-1]) if draw["rounds"] else 0,
         "n_seeds": draw["n_seeds"], "field_n": len(entries),
         "champion": champ, "runner_up": runner,
         # Grade/hometown sit UNDER the name on the hero announcement, never
