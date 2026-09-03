@@ -968,6 +968,7 @@ FORMER_NAMES = {
     "Winifred Davenport":                          "Lost River",
     "Winifred Ellison":                            "Kingwood",
     "Winifred Stokes":                             "Mesa Cooperative",
+    "Winter Valley School":                        "Winter Valley",
     "Wolf Gap":                                    "Corey Canyon",
     "Wolf Gap International School":               "Wolf Gap International",
     "Woodrow Wilson":                              "Sojourner Truth",

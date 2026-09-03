@@ -120,7 +120,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     9A  2458  Veles Vo-Tech                          Port Veles             Port Veles Maritime Academy
 
 
--- SAME LEADING WORD, DIFFERENT CITIES (92 groups)
+-- SAME LEADING WORD, DIFFERENT CITIES (91 groups)
     7A  1444  Alder Crossing                         Boyerstown             Boyerstown North
     3A   438  Alder Cooperative                      Monte Blanco           Claudette Freeman
 
@@ -291,9 +291,6 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
 
     1A   131  Marlow County                          Clear Rim              Marlow County
     4A   655  Marlow                                 St. Varian             Gabriel Montoya
-
-    1A   187  Martin Luther                          Ditch Fork             Martin Luther
-    9A  2148  Martin Van Buren                       Port Veles             Harbor Gate North
 
     3A   379  Meridian Valley                        Port Meridian          Providence Academy Valley
     1A   175  Meridian Regional                      Stovepipe              Meridian Regional
@@ -863,7 +860,7 @@ Caswell — 14 programs (Halbrook County, Belmonte Metro)
     3A   511 priv Palisade Prep                                             Timber Valley League               Caswell University Prep
 
 Caverly — 1 program (Featherstone County, Southern Jefferson)
-    1A    72 priv Portola-Caverly                                           Marble Valley League               Serra Caverly
+    1A    72 pub  Portola-Caverly                                           Marble Valley League               Serra Caverly
 
 Caverlyville — 1 program (Featherstone County, Southern Jefferson)
     1A    95 pub  Sierra Works                                              Tailings League                    Sierra Works
@@ -970,7 +967,7 @@ Diamante — 1 program (Emigrant County, Kangas)
 
 Ditch Fork — 3 programs (Goldbank County, Southern Jefferson)
     8A  1462 pub  Ditch Fork                                                Mariners League                    Ditch Fork
-    1A   187 priv Martin Luther                                             Tailings League                    Martin Luther
+    1A   187 pub  Coretta Scott King                                        Tailings League                    Martin Luther
     1A    70 priv Cassius                                                   Tailings League                    Calvary Chapel Ditch Fork
 
 Dovetail — 2 programs (Stagewater County, Kangas)
@@ -2168,7 +2165,7 @@ Stovepipe — 1 program (Rimrock County, Juniper Highlands)
 
 Summervale — 5 programs (Juniper County, Juniper Highlands)
     9A  2380 priv Trinity Catholic                                          Rim Country League                 Trinity Catholic
-    3A   515 pub  Winter Valley School                                      Juniper League                     Central Christian
+    3A   515 pub  Winter Valley                                             Juniper League                     Central Christian
     3A   419 priv Star Hollow                                               Juniper League                     Summervale Northwest
     3A   387 pub  Summervale                                                Juniper League                     Summervale
     1A   105 pub  Aspen Hollow                                              Desert Sky League                  Summervale Heights
