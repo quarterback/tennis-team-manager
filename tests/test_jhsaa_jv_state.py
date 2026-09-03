@@ -58,7 +58,8 @@ def test_the_qualifying_round_is_the_first_round_of_the_state_draw(big):
     import app.world as world
     assert "play_in" not in big, "the separate play-in bracket is gone"
     rounds = world.jhsaa_state_rounds(big["state"])
-    assert rounds[0]["name"] == jvs.QUALIFYING_NAME
+    # ‼️ NAMED BY ITS FIELD, like varsity's R32/R24/R40 — never as a separate event.
+    assert rounds[0]["name"] == f"Round of {len(big['ranked'])}"
     assert set(big["state"]["field"]) == set(big["ranked"])
     # Everyone in the opening round is a region champion, and it is a real round of
     # the same draw rather than a feeder into a fresh one.
@@ -77,7 +78,7 @@ def test_the_state_draw_never_skips_a_round(big):
     for i, r in enumerate(rounds[1:], 1):
         assert r["alive"] == alive[i - 1] - len(rounds[i - 1]["games"])
     assert rounds[-1]["alive"] == 2 and len(rounds[-1]["games"]) == 1
-    # After the qualifying round the draw is a clean power of two — 16, then 8, 4, 2.
+    # After the opening round the draw is a clean power of two — 16, then 8, 4, 2.
     after = [r["alive"] for r in rounds[1:]]
     assert after == [2 ** i for i in range(len(after), 0, -1)], after
 
@@ -107,6 +108,7 @@ def test_the_dual_is_recorded_on_both_schedules_with_its_box_score(jv):
     row = a.jv.schedule[-1]
     assert len(a.jv.schedule) == n + 1 and b.jv.schedule[-1]["opp"] == a.name
     assert row["phase"] == jvs.PHASE and row["level"] == jh.LEVEL_JV
+    assert jvs.PHASE_LABELS[row["phase"]] == "JV STATE"
     assert row["shape"] == "3S/2D" and not row["tied"]
     # Five courts, and the players named are the seven who dressed.
     assert len(row["lines"]) == 5
@@ -289,3 +291,85 @@ def test_twenty_champions_pair_13v20_14v19_15v18_16v17():
     through = sorted({s for p in pairs for s in p
                       if s <= jvs.REGIONS and not (p[0] <= jvs.REGIONS and p[1] <= jvs.REGIONS)})
     assert through == list(range(1, 13))
+
+
+def test_an_archive_from_the_play_in_build_still_reads(jv, monkeypatch, tmp_path):
+    """‼️ DERIVED ON READ, NEVER MIGRATED — the archive is the record of what was
+    played, and the next shape change would need another migration nobody runs.
+
+    The first build stored the qualifying duals in their own bracket under `play_in`
+    and started `state` at the Round of 16. Read as if the current shape, that row's
+    R16 becomes "the qualifying round": eight duals reported as four, their winners
+    and losers labelled Qualified/Lost qualifier, and the play-in that was actually
+    played vanishes off the page.
+    """
+    import json
+    import app.world as world
+    from app.web.state import DEFAULT_SEED, jhsaa_jv_state_view
+    monkeypatch.setenv("TENNIS_DB_PATH", str(tmp_path / "legacy.db"))
+    monkeypatch.setattr(world, "WORLD_DB", str(tmp_path / "legacy.db"), raising=False)
+    names = [e.name for e in jvs.entries(jv)][:20]
+    assert len(names) == 20
+    direct, playin = names[:12], names[12:]
+    quals = [{"home": playin[i], "away": playin[len(playin) - 1 - i],
+              "home_points": 3.0, "away_points": 2.0, "winner": playin[i]}
+             for i in range(len(playin) // 2)]
+    winners = [g["winner"] for g in quals]
+    draw = direct + winners
+    r16 = [{"home": draw[i], "away": draw[i + 1], "home_points": 3.0,
+            "away_points": 1.0, "winner": draw[i]} for i in range(0, 16, 2)]
+    legacy = {
+        "field": names, "qualifiers": names, "ranked": names,
+        "regions": {f"Region {i}": {"champion": n, "field": [n], "rounds": [],
+                                    "round_names": []}
+                    for i, n in enumerate(names)},
+        "region_champions": {f"Region {i}": n for i, n in enumerate(names)},
+        "play_in": {"champion": None, "field": playin, "rounds": [quals],
+                    "round_names": [jvs.QUALIFYING_NAME]},
+        "state": {"champion": r16[0]["winner"], "field": draw, "rounds": [r16],
+                  "round_names": []},
+        "champion": r16[0]["winner"],
+    }
+    w = world.get_or_create(DEFAULT_SEED)
+    conn = world._db()
+    conn.execute("INSERT INTO world_jhsaa (world_id, year, gender, data)"
+                 " VALUES (?,?,?,?)",
+                 (w["id"], w["year"], "boys", json.dumps({"season_year": 2068})))
+    conn.execute("INSERT INTO world_jhsaa_jv_state (world_id, year, gender, data)"
+                 " VALUES (?,?,?,?)", (w["id"], w["year"], "boys", json.dumps(legacy)))
+    conn.commit(); conn.close()
+
+    v = jhsaa_jv_state_view(DEFAULT_SEED, "boys", None, w["year"])
+    assert v["ready"]
+    # Four qualifying duals, not the eight of the Round of 16.
+    assert v["opening_n"] == len(quals) == 4
+    assert v["qual_lo"] == 13 and v["qual_hi"] == 20
+    # The archived play-in is on the page, ahead of the draw's own rounds.
+    assert v["rounds"][0]["name"] == jvs.QUALIFYING_NAME
+    assert len(v["rounds"][0]["games"]) == 4
+    # And nobody who only played the Round of 16 is labelled as a qualifier.
+    entry = {r["champion"]: r["entry"] for r in v["regions"]}
+    assert entry[direct[0]] == "Direct"
+    assert entry[winners[0]] == "Qualified"
+
+
+def test_a_regional_dual_is_archived_under_its_own_phase(jv):
+    """‼️ TWO PHASES, because a phase is the archive's identity for an event and a
+    regional championship is a different round from the State draw — which is the only
+    thing that lets a program's card say JV REGIONALS where varsity says Regionals.
+    The rounds and the words for them are the association's existing ones (owner,
+    2026-09: "since the labels already exist it's not different but labeling can be");
+    only the wording says JV."""
+    field = jvs.entries(jv)
+    a, b = field[4], field[5]
+    jvs.play_dual(a, b, seed=7, phase=jvs.PHASE_REGION)
+    row = a.jv.schedule[-1]
+    assert row["phase"] == jvs.PHASE_REGION and row["level"] == jh.LEVEL_JV
+    assert jvs.PHASE_LABELS[row["phase"]] == "JV REGIONALS"
+    assert jvs.PHASE_REGION != jvs.PHASE
+
+
+def test_the_region_draws_are_played_under_the_regional_phase(arc, jv):
+    """The event's own regional duals, not just a hand-called one."""
+    phases = {d["phase"] for t in jv.values() for d in t.schedule}
+    assert jvs.PHASE_REGION in phases and jvs.PHASE in phases

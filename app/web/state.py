@@ -4650,7 +4650,19 @@ def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
     # duals, so a team that appears in the first round played its way in and everyone
     # else was seeded straight through — the archive already says which, and a second
     # record of it could only disagree.
-    opening = (st.get("rounds") or [[]])[0]
+    # ‼️ AN ARCHIVE WRITTEN BY THE PLAY-IN BUILD STILL READS. That version stored the
+    # qualifying duals in their own bracket under `play_in` and started `state` at the
+    # Round of 16; this one makes qualifying the first round of the State draw. Read
+    # the difference — DERIVED ON READ, never migrated, the same answer a rename gets
+    # (`world._relabel`) and for the same reason: the archive is the record of what was
+    # played, and the next shape change would need another migration nobody will run.
+    #
+    # Without this the legacy row is read as if its Round of 16 were qualifying, so
+    # eight R16 duals are reported as four qualifying ones, their winners and losers
+    # are labelled "Qualified"/"Lost qualifier", and the play-in that was actually
+    # played disappears off the page entirely.
+    legacy_qual = ((ev.get("play_in") or {}).get("rounds") or [[]])[0]
+    opening = legacy_qual or (st.get("rounds") or [[]])[0]
     played_in, survived = set(), set()
     for gm in opening:
         played_in.update((gm.get("home"), gm.get("away")))
@@ -4688,9 +4700,16 @@ def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
         "state_field_n": len(st.get("field") or ()),
         "regions": regions, "region_n": len(regions),
         "opening_n": len(opening),
+        # The round names itself off its own field ("Round of 20"), the way varsity
+        # says R32/R24/R40 — so the note cannot drift from the round list beside it.
+        "opening_name": (_rounds(ev["play_in"]) if legacy_qual
+                         else _rounds(st))[0]["name"],
         "qual_lo": qual_lo, "qual_hi": qual_hi,
         "direct_n": len(in_draw) - len(played_in),
-        "rounds": _rounds(st),
+        # A legacy archive's qualifying round is a bracket of its own, so it is
+        # prepended to the round list rather than being one of the draw's columns —
+        # which is exactly what it was when it was played.
+        "rounds": (_rounds(ev["play_in"]) if legacy_qual else []) + _rounds(st),
         "canvas": _bracket_canvas(
             _jh_bracket_cols({**st, "seed_map": seeds}, schools),
             card_w=232, card_h=60, gutter=56, leaf_gap=18),

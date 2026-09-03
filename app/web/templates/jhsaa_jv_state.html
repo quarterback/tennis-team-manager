@@ -77,7 +77,7 @@
     {# The seed range comes from the DRAW (see the view), so it says 13–20 when
        twenty regions crown champions and something else when fewer do — it can never
        contradict the bracket above it. #}
-    <span class="bl-panel-note">{% if view.opening_n %}Seeds {{ view.qual_lo }}–{{ view.qual_hi }} play the qualifying round, {{ view.direct_n }} seeded through · {% endif %}16 → 8 → 4 → 2</span></div>
+    <span class="bl-panel-note">{% if view.opening_n %}Seeds {{ view.qual_lo }}–{{ view.qual_hi }} play the {{ view.opening_name }}, {{ view.direct_n }} seeded through · {% endif %}16 → 8 → 4 → 2</span></div>
   <div class="bl-panel-body" style="padding:12px">
     <div class="jh-cols2">
       {% for rd in view.rounds %}
