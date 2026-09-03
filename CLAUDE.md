@@ -1265,6 +1265,25 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
       qualification logic, not unique presentation."* The qualifying round is the
       draw's first column, so it is in the tree, the round tabs and the results list
       for free.
+    - **‼️ NOTHING INSIDE THE EVENT IS "QUALIFYING" — WINNING YOUR REGION IS.** All
+      twenty champions are already at State (owner, 2026-09: *"the qualifiers who get
+      in, all 20, are already at State; there is no qualifying once into the field of
+      20"*), so the opening round is named by its field like every other round —
+      **Round of 20**, the way varsity says R32/R24/R40 and the TOC says Round of 12,
+      *"no different than what we do for the TOC first round"*. `world._round_label`
+      bands it off the alive count with nothing to configure; passing the round a NAME
+      is what made it read as a gate in front of the tournament. An archive from the
+      play-in build stored "State Qualifying" and is RELABELLED ON READ (by how many
+      were alive in the EVENT, not in that stub bracket) — never migrated.
+    - **‼️ NO RESULTS-BY-ROUND PANEL: THE TREE IS THE RESULTS.** It restated the
+      bracket card for card, and the bracket already carries all twenty —
+      `_jh_bracket_cols` materialises every bye as a pass-through card, so a
+      seeded-through champion has a route drawn rather than appearing from nowhere at
+      the Round of 16. Owner: *"this is redundant if the bracket is already here and
+      should be replaced with all 20 inside the bracket not a separate area."* The
+      mobile `jh_round_tabs` stays — the same tree at a width the canvas cannot
+      serve. The regional table's last column is the champion's STATE FINISH, not how
+      they entered: every champion is in the draw, so there is no such distinction.
     - **‼️ IT DRAWS ON THE TOC'S STRICT SEED LINES, NOT `seeded_draw`'S TIERED ONES.**
       Both orders are the association's and they are for different events:
       `run_state` shuffles within seed tiers because a classification's TOSS seeding

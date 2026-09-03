@@ -28,7 +28,7 @@ def arc(jv):
 
 @pytest.fixture(scope="module")
 def big():
-    """‼️ A SEASON BIG ENOUGH TO PLAY THE QUALIFYING ROUND.
+    """‼️ A SEASON BIG ENOUGH TO PLAY AN OPENING ROUND.
 
     A field that fills its bracket exactly plays no opening round at all, so a small
     fixture never reaches that code — and the real association crowns twenty regions
@@ -44,13 +44,16 @@ def big():
     return jvs.run_jv_state(jv, gender=gender, year=2068, seed=11)
 
 
-def test_the_qualifying_round_is_the_first_round_of_the_state_draw(big):
-    """‼️ NOT A SEPARATE BRACKET. Twenty champions in a 32-slot draw is twelve byes
-    and four opening duals — the shape `jhsaa.run_state` already plays whenever a
-    field does not fill its bracket — and the survivors meet the byes at the Round of
-    16. The event used to cut the field by hand and play a play-in in a bracket of
-    its own; owner, 2026-09: "you didn't have to invent a bespoke JV format when we
-    already have lots of bracket formats that work beyond 16."
+def test_every_region_champion_is_in_the_state_draw(big):
+    """‼️ WINNING YOUR REGION IS QUALIFYING — nothing sits in front of State to be
+    survived. All twenty champions ARE the field (owner, 2026-09: "the qualifiers who
+    get in, all 20, are already at State; there is no qualifying once into the field
+    of 20"): twelve are seeded through and eight open in the Round of 20, which is
+    the TOC's own shape — twelve champions in a 16 draw open in a Round of 12 and
+    nobody calls that qualifying either. The event used to cut the field by hand and
+    play a play-in in a bracket of its own; owner: "you didn't have to invent a
+    bespoke JV format when we already have lots of bracket formats that work beyond
+    16."
 
     ‼️ ON `big`, NOT `arc`. A fixture crowning few enough regions to fill no opening
     round never runs this at all, and the association crowns twenty every year.
@@ -58,13 +61,17 @@ def test_the_qualifying_round_is_the_first_round_of_the_state_draw(big):
     import app.world as world
     assert "play_in" not in big, "the separate play-in bracket is gone"
     rounds = world.jhsaa_state_rounds(big["state"])
-    # ‼️ NAMED BY ITS FIELD, like varsity's R32/R24/R40 — never as a separate event.
+    # ‼️ NAMED BY ITS FIELD, like varsity's R32/R24/R40 and the TOC's Round of 12 —
+    # never "qualifying", which would describe a gate this event does not have.
     assert rounds[0]["name"] == f"Round of {len(big['ranked'])}"
     assert set(big["state"]["field"]) == set(big["ranked"])
     # Everyone in the opening round is a region champion, and it is a real round of
     # the same draw rather than a feeder into a fresh one.
     playing = {t for gm in rounds[0]["games"] for t in (gm["home"], gm["away"])}
     assert playing <= set(big["ranked"]) and playing
+    # And nothing anywhere in the event is called qualifying.
+    assert not any("Qualif" in (r["name"] or "")
+                   for r in rounds), [r["name"] for r in rounds]
 
 
 def test_the_state_draw_never_skips_a_round(big):
@@ -325,7 +332,7 @@ def test_an_archive_from_the_play_in_build_still_reads(jv, monkeypatch, tmp_path
                     for i, n in enumerate(names)},
         "region_champions": {f"Region {i}": n for i, n in enumerate(names)},
         "play_in": {"champion": None, "field": playin, "rounds": [quals],
-                    "round_names": [jvs.QUALIFYING_NAME]},
+                    "round_names": [jvs.LEGACY_QUALIFYING_NAME]},
         "state": {"champion": r16[0]["winner"], "field": draw, "rounds": [r16],
                   "round_names": []},
         "champion": r16[0]["winner"],
@@ -341,16 +348,16 @@ def test_an_archive_from_the_play_in_build_still_reads(jv, monkeypatch, tmp_path
 
     v = jhsaa_jv_state_view(DEFAULT_SEED, "boys", None, w["year"])
     assert v["ready"]
-    # Four qualifying duals, not the eight of the Round of 16.
-    assert v["opening_n"] == len(quals) == 4
-    assert v["qual_lo"] == 13 and v["qual_hi"] == 20
-    # The archived play-in is on the page, ahead of the draw's own rounds.
-    assert v["rounds"][0]["name"] == jvs.QUALIFYING_NAME
+    # The archived opening round is on the page, ahead of the draw's own rounds —
+    # four duals, not the eight of the Round of 16.
+    # ‼️ RELABELLED ON READ. The stored name describes a gate this event does not
+    # have, so it is rendered as the round it was: twenty alive, Round of 20.
+    assert v["rounds"][0]["name"] == f"Round of {len(names)}" == "Round of 20"
     assert len(v["rounds"][0]["games"]) == 4
-    # And nobody who only played the Round of 16 is labelled as a qualifier.
-    entry = {r["champion"]: r["entry"] for r in v["regions"]}
-    assert entry[direct[0]] == "Direct"
-    assert entry[winners[0]] == "Qualified"
+    # The regional table shows how far each champion went, not how they entered.
+    finish = {r["champion"]: r["finish"] for r in v["regions"]}
+    assert finish[r16[0]["winner"]] == "Champion"
+    assert all(f for n, f in finish.items() if n in set(draw))
 
 
 def test_a_regional_dual_is_archived_under_its_own_phase(jv):

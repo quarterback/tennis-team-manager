@@ -24,13 +24,15 @@ this association has no tie-break anywhere, by design — so a five-court 3S/2D 
 is not a stylistic pick, it is the shape that lets the event exist at the depth
 most programs have.
 
-The road, per the spec: district qualification -> regional championship -> a State
-draw that opens with a qualifying round and plays 16 -> 8 -> 4 -> 2 from there.
+The road, per the spec: district qualification -> regional championship -> State.
 
-‼️ THE DRAW IS THE ASSOCIATION'S ORDINARY ONE. Twenty champions in a 32-slot
-bracket is twelve byes and four opening duals — exactly what `jhsaa.run_state`
-plays whenever a field does not fill its bracket — so this event needs no bracket
-shape of its own, and the page needs no presentation of its own either.
+‼️ WINNING YOUR REGION IS QUALIFYING. All twenty champions ARE the State field —
+there is no qualifying round in front of it and nothing to survive to "reach"
+State (owner, 2026-09: "the qualifiers who get in, all 20, are already at State;
+there is no qualifying once into the field of 20"). Twenty in a 32-slot bracket
+simply means twelve are seeded through and eight open in the Round of 20 — the
+TOC's own shape, where twelve classification champions in a 16 draw open in a
+Round of 12 and nobody calls that qualifying either.
 """
 
 from __future__ import annotations
@@ -80,21 +82,22 @@ DISTRICT_BERTHS_MAX = 4
 #: every season (owner, 2026-09), so this is the field the State draw is cut from.
 REGIONS = 20
 
-#: ‼️ THE OPENING ROUND IS NAMED BY ITS FIELD, LIKE EVERY OTHER ROUND — "Round of
-#: 20", exactly as varsity says R32/R24/R40 (owner, 2026-09). It is a round of the
-#: State bracket and not a separate event: twenty champions in a 32-slot draw is
-#: twelve seeded through and four opening duals, and the survivors join them at the
-#: Round of 16, which is then played in full ("don't skip the R16"). `world.
-#: _round_label` already bands a round by how many are alive, so nothing needs to
-#: name this one — passing a name is what made it look like its own event.
+#: ‼️ NOTHING IS CALLED QUALIFYING INSIDE THIS EVENT. Winning your region IS how you
+#: qualify; every one of the twenty champions is already at State. The opening round
+#: is named by its field like every other round — "Round of 20", the way varsity says
+#: R32/R24/R40 and the TOC says Round of 12 — and `world._round_label` bands it off
+#: the alive count with nothing to configure. Passing it a NAME is what made it read
+#: as a gate in front of the tournament rather than the first round of it.
 #:
 #: ‼️ THIS REPLACED A BESPOKE PLAY-IN. The event used to cut the field to a 12-seed
-#: draw by hand, play four qualifying duals in a separate bracket, and render them in
-#: a panel of their own beside the tree — a second mechanism for something the
-#: association's own draw already does. Owner: "you didn't have to invent a bespoke
-#: JV format when we already have lots of bracket formats that work beyond 16."
-#: The name is KEPT only to read archives written by that build, which stored it.
-QUALIFYING_NAME = "State Qualifying"
+#: draw by hand, play four duals in a separate bracket, and render them in a panel of
+#: their own beside the tree — a second mechanism for something the association's own
+#: draw already does. Owner: "you didn't have to invent a bespoke JV format when we
+#: already have lots of bracket formats that work beyond 16."
+#:
+#: The string survives ONLY to read archives written by that build, which stored it
+#: as a round name. Nothing writes it.
+LEGACY_QUALIFYING_NAME = "State Qualifying"
 
 
 def district_berths(n_teams: int) -> int:
@@ -349,9 +352,9 @@ def district_qualifiers(field: list[JVEntry]) -> list[JVEntry]:
 def run_regionals(quals: list[JVEntry], *, seed: int) -> tuple:
     """Each region crowns one champion. Returns `(champions, brackets by region)`.
 
-    The draw sizes itself to however many qualifiers a region drew — `seeded_draw`
-    pads to the next power of two and byes the top seeds — so nothing here needs to
-    know the number in advance.
+    The draw sizes itself to however many district qualifiers a region drew — it pads
+    to the next power of two and byes the top seeds — so nothing here needs to know
+    the number in advance.
     """
     by_region: dict[str, list[JVEntry]] = {}
     for e in quals:
@@ -379,10 +382,9 @@ def run_jv_state(jv: dict, *, gender: str, year: int, seed: int = 0) -> dict:
     champs, regions = run_regionals(quals, seed=seed + 7919 * (gender == "boys"))
     ranked = sorted(champs.values(), key=lambda e: (-seed_key(e), e.name))
 
-    # ‼️ ONE DRAW OVER EVERY REGION CHAMPION. `seeded_draw` pads twenty to a 32-slot
-    # bracket, byes the top tier and pairs the rest, so the qualifying round IS the
-    # opening round of the State bracket and the survivors meet the byes at the Round
-    # of 16. Nothing is cut from the field beforehand and no second bracket exists.
+    # ‼️ ONE DRAW OVER EVERY REGION CHAMPION — all twenty ARE the field. Twenty in a
+    # 32-slot bracket seeds twelve through and opens eight in the Round of 20; nothing
+    # is cut beforehand, nothing is qualified into, and no second bracket exists.
     champ, state = _run_bracket(ranked, seed=seed + 5701)
     return {
         "field": [e.name for e in field],
