@@ -101,9 +101,19 @@ def collect(m, live: set[str]) -> dict[str, str]:
     claimed_by_identity: set[str] = set()
     for source, targets in chain.items():
         now = m.RENAMES.get(source)
-        if now is None:                       # entry retired; nothing live to point at
-            continue
-        now = m._display_name(now)
+        if now is None:
+            # ‼️ A RETIRED ENTRY CAN BE A REVERSAL, NOT A DELETION (2026-09). When a
+            # school goes BACK to its source name the RENAMES row is removed, and
+            # skipping here orphaned every season archived under the name it wore in
+            # between — the live row's `source` and `name` are then the same string,
+            # so nothing at runtime can reconstruct it either. If the source name is
+            # live, it IS the current name and the historical targets are its aliases.
+            back = m._display_name(source)
+            if back not in live:
+                continue                      # genuinely retired; nothing to point at
+            now = back
+        else:
+            now = m._display_name(now)
         # The SOURCE name is itself a former display name whenever the school was
         # emitted under it before the rename landed. ‼️ ALL targets, not
         # `targets[:-1]`: run pre-commit (as documented), git history ends at the
