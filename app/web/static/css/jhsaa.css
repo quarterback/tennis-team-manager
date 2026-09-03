@@ -501,6 +501,8 @@
 .jh-rl-key.prev { background: var(--gray-400); }
 .jh-rl-key.tick { width: 2px; height: 10px; border-radius: 0; background: var(--text-muted); }
 .jh-rl-base { color: var(--text-muted); }
+.jh-rl-bands th.num, .jh-rl-bands td.num { padding-left: 8px; }
+.jh-rl-bands th { white-space: nowrap; }
 .jh-roster td.pos { color: var(--pos); }
 .jh-roster td.neg { color: var(--neg); }
 

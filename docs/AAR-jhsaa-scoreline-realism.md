@@ -176,6 +176,38 @@ nothing earlier and shows dashes, never zeros.
   jump between two consecutive seasons, with the real-world figures beside it
   for orientation.
 
+### By OVR gap band — the check a curve change actually shows up in
+
+Owner (2026-09): "The next useful check is not the statewide set distribution.
+It is 2068 versus 2067 by OVR-gap band. That is where the new curve should show
+itself clearly: 0–9 should look almost unchanged, while 15–24 should show more
+favorite wins and more decisive scorelines." The statewide histogram averages
+over every matchup, so a curve that only steepens above the peer band is
+diluted into a point or two; by band it is the whole signal.
+
+`world.jhsaa_gap_bands` buckets every varsity best-of-3 match of a season by
+the OVR gap between the two sides on the owner's five competitive bands
+(`world.OVR_GAP_BANDS`: 0-6 peers · 7-14 modest · 15-21 clear · 22-28 strong ·
+29+ major) and reports, per band and per discipline (all / singles / doubles):
+matches, favourite win %, three-set %, and the share of sets at 6-0/6-1.
+`world.gap_bands_compare` sets this season beside last with the shift per cell.
+
+- **The archive holds NAMES, not ratings**, so the fold rebuilds each program's
+  roster for that season (`jhsaa.build_roster(school, season_year, salt)`, the
+  Underplaced board's own idiom) and resolves names against it; `former_names`
+  maps a renamed program. A name the rebuilt roster does not carry is counted
+  in `unresolved` and skipped, never guessed.
+- **Home court is not in the gap.** The 1-4 point host lift is rolled off the
+  dual's seed, which the archive does not store. Symmetric across a season and
+  identical between the two seasons compared, so it cannot manufacture a shift.
+- **‼️ ~20 s cold, so it is ON DEMAND.** Two full-gender rebuilds (~12 ms a
+  school, ~900 schools) cannot run on the one gthread's request; the route runs
+  it through `_jh_deferred` (the Transfers page's pattern) behind a "Compare by
+  gap band" button, `world._gapband_cache` is the publish side (keyed on the
+  transfer stamp too, since a recorded move changes who a roster names), and
+  the set histograms above it never wait on it. The view takes `bands=True`
+  only after the route has done that.
+
 ## Traps for the next agent
 
 - **Oregon is a BASELINE on the realism page, not a target** (owner, 2026-09).

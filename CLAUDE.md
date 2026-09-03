@@ -2440,6 +2440,20 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   strength (corr ~0.76), so diagnose "upsets" on eff gaps via
   `scripts/jhsaa_upset_calibration.py` first. See
   `docs/AAR-jhsaa-upset-variance-recalibration.md`.
+- **‼️ THE HS GAP-RESPONSE CURVE IS A PER-POINT SLOPE ARRAY, CUMULATIVE (owner spec
+  2026-09, `engine.fast.PER_POINT_SLOPES` / `get_effective_delta`).** It replaced the
+  3-wide banded table (`BAND_EDGES_OVR`/`BAND_SLOPES`, gone). Index 0 is gap 1; the
+  effect at gap g is the SUM of the marginal slopes 1..g (checkpoints 1→1.05, 3→3.39,
+  5→6.34, 10→15.74, 15→27.54, 30→69.36); fractional gaps interpolate linearly (a
+  doubles pair averages two ratings); past 35 the RATE holds at 2.85 a point and the
+  total is never clamped. **The peer band is deliberately soft** (1.05 / 1.10 at gaps
+  1-2 — close matches stay close by intent). `band_gap` keeps its name as the entry
+  point `effective_gap(bands=True)` routes to; `_hold_prob`/`_tb_prob`/`doubles.
+  _fast_gap`, the gap computation, the formats and the scoreline generator are all
+  untouched. **The win rate is a MEASUREMENT of the array through `skill_slope` 0.9
+  and ~20 games of compounding, not a setting** — describe it with
+  `scripts/jhsaa_band_calibration.py` (describe-only now; nothing is fitted). See
+  `docs/AAR-jhsaa-per-point-gap-slopes.md`.
 - **‼️ THE REALISM TAB (`/jhsaa/realism`) COMPARES THIS SEASON TO LAST; OREGON IS A
   BASELINE, NOT A TARGET (owner rule 2026-09, `world.scoreline_compare`).** The
   page opened as a fit against the real-Oregon set-score distribution; the banded
@@ -2451,7 +2465,13 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   the talent scale, so only the COUNTS move until the engine does. The fold is
   per-season (pinned) and memoised on `(world_id, year, gender)` (`_scoreline_cache`,
   an archived season is immutable; cleared by `reset()`). Do not put the pass/fail
-  colouring or the target framing back. See `docs/AAR-jhsaa-scoreline-realism.md`.
+  colouring or the target framing back. **The check a curve change shows up in is
+  BY OVR GAP BAND** (`world.jhsaa_gap_bands` / `OVR_GAP_BANDS`, the owner's five
+  competitive bands): favourite win % and set decisiveness per band, this season vs
+  last — peers should barely move while clear/strong turn more favourite wins. It
+  rebuilds both seasons' rosters to resolve the archive's NAMES to OVRs (~20 s
+  cold), so it is ON DEMAND behind the route's deferred job (`_jh_deferred`), never
+  on the plain page load. See `docs/AAR-jhsaa-scoreline-realism.md`.
 - **`Prospect.jhsaa` is a real dataclass field** — `prospect_to_dict` is `asdict()`, so an
   ad-hoc attribute would erase a recruit's entire high-school past the moment they sign.
 

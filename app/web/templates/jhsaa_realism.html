@@ -74,6 +74,58 @@
   </div>
 </div>
 
+{# BY OVR GAP BAND — the check a matchup-curve change actually shows up in: the
+   peer band should barely move while the clear/strong bands turn more favourite
+   wins and more lopsided sets. Rebuilding both seasons' rosters to resolve the
+   archive's names costs ~20 s cold, so it is computed on demand (the route
+   defers it) and the rest of the page never waits on it. #}
+<div class="bl-panel" style="margin-bottom:14px">
+  <div class="bl-panel-head"><span class="bl-panel-title">By OVR gap band — favourite wins and decisiveness</span>
+    <span class="bit">{{ view.season_label }}{% if has_prev %} vs {{ view.prev_label }}{% endif %} · the owner's five competitive bands</span></div>
+  <div class="bl-panel-body" style="padding:12px">
+  {% if not view.bands %}
+    <div class="bit" style="margin-bottom:10px">Buckets every varsity best-of-3 match by the OVR gap between the two sides and reports how often the favourite won and how lopsided the sets were, this season against last. It rebuilds both seasons' rosters to read the gaps, so it is computed on request.</div>
+    <a class="bl-pill" href="{{ url_for('jhsaa_realism', u=u, g=view.gender, group=view.scope.group, year=view.scope.pin, bands=1) }}">Compare by gap band</a>
+  {% elif view.band_data %}
+    {% set bd = view.band_data %}
+    <div class="bit" style="margin-bottom:10px">
+      {{ '{:,}'.format(bd.lines) }} best-of-3 matches this season{% if bd.prev_lines is not none %}, {{ '{:,}'.format(bd.prev_lines) }} last season{% endif %}.
+      {% if bd.unresolved or bd.prev_unresolved %}Skipped where a line named a player the rebuilt roster does not carry: {{ bd.unresolved }}{% if bd.prev_unresolved is not none %} / {{ bd.prev_unresolved }}{% endif %}.{% endif %}
+      Gap is the un-lifted OVR difference (home court's 1-4 point lift is not in it); a doubles pair averages its two.
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:24px">
+    {% for grp in bd.groups %}
+    <div>
+      <div class="bl-panel-title" style="font-size:12.5px;margin-bottom:6px">{{ grp.label }}</div>
+      <table class="jh-roster jh-rl-bands">
+        <tr><th rowspan="2" style="width:58px">Gap</th><th rowspan="2" class="num" style="width:62px" title="matches this season / last season">n</th>
+          <th colspan="3" class="num">Favourite won %</th>
+          <th colspan="3" class="num">Three sets %</th>
+          <th colspan="3" class="num" title="share of sets that were 6-0 or 6-1">6-0 / 6-1 sets %</th></tr>
+        <tr>
+          {% for _ in range(3) %}<th class="num">{{ view.season_label }}</th><th class="num jh-rl-base">{{ view.prev_label if has_prev else 'Prev.' }}</th><th class="num">Shift</th>{% endfor %}
+        </tr>
+        {% for r in grp.rows %}
+        <tr>
+          <td class="pl"><b>{{ r.band }}</b> <span class="jh-rl-base">{{ r.label }}</span></td>
+          <td class="num">{{ '{:,}'.format(r.n) }}{% if r.prev_n is not none %} <span class="jh-rl-base">/ {{ '{:,}'.format(r.prev_n) }}</span>{% endif %}</td>
+          {% for m in ('fav_win', 'three_set', 'lopsided') %}
+          <td class="num"><b>{% if r[m] is not none %}{{ '%.1f'|format(r[m]) }}{% else %}—{% endif %}</b></td>
+          <td class="num jh-rl-base">{% if r['prev_' ~ m] is not none %}{{ '%.1f'|format(r['prev_' ~ m]) }}{% else %}—{% endif %}</td>
+          <td class="num">{% if r['d_' ~ m] is not none %}{{ '%+.1f'|format(r['d_' ~ m]) }}{% else %}—{% endif %}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+    {% endfor %}
+    </div>
+  {% else %}
+    <div class="bit">Nothing to bucket for this season.</div>
+  {% endif %}
+  </div>
+</div>
+
 <div class="bl-panel">
   <div class="bl-panel-head"><span class="bl-panel-title">By phase</span>
     <span class="bit">the formats differ by design — compare each phase with itself, season on season</span></div>

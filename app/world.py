@@ -590,6 +590,7 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     # reuses world_id=1 after this reset, so the next save's year 0 would read the
     # prior save's histogram. The archive rows it folds were deleted above.
     _scoreline_cache.clear()
+    _gapband_cache.clear()
     _dev_cache.clear()
     _primed.clear()
     _class_cache.clear()
@@ -4568,7 +4569,7 @@ def jhsaa_scoreline_realism(world_id: int, year: int, gender: str) -> dict:
     simulates nothing on the request thread.
 
     ‼️ THE OREGON NUMBERS ARE A BASELINE, NOT A TARGET (owner rule 2026-09).
-    The banded matchup curve (`engine.fast.BAND_EDGES_OVR`) superseded the
+    The matchup curve (`engine.fast.PER_POINT_SLOPES`) superseded the
     Oregon scoreline fit, so the sim's shape sits ~35 points from Oregon BY
     DECISION, and a page framed as "distance from target" reads as broken
     while reporting exactly what the archive holds. The comparison that
@@ -4722,6 +4723,206 @@ def scoreline_compare(cur: dict, prev: dict | None) -> dict:
             "families": [merge(f, prev_fams.get(f["key"]))
                          for f in cur["families"]],
             "real_three_set": cur["real_three_set"]}
+
+
+#: The owner's five COMPETITIVE BANDS, in OVR points — the units the band spec is
+#: reasoned in (docs/PROPOSAL-development-model-redesign.md §25; the curve itself
+#: runs on the per-point `engine.fast.PER_POINT_SLOPES` array): a gap under 7 is peers,
+#: 7-14 modest, 15-21 clear, 22-28 strong, 29+ major. The upper bound is EXCLUSIVE
+#: so a fractional gap (a doubles pair's mean OVR) lands in exactly one band.
+OVR_GAP_BANDS = (("0-6", "Peers", 0.0, 7.0),
+                 ("7-14", "Modest", 7.0, 15.0),
+                 ("15-21", "Clear", 15.0, 22.0),
+                 ("22-28", "Strong", 22.0, 29.0),
+                 ("29+", "Major", 29.0, float("inf")))
+
+#: `jhsaa_gap_bands` memo, keyed (world_id, year, gender, salt, transfer stamp).
+#: Two full-gender roster rebuilds (~12 ms a school, ~900 schools) is ~20 s of
+#: work, so the page computes this ON DEMAND through the deferred-job pattern
+#: (`server._jh_deferred`) and this memo is the publish side of that job. The
+#: transfer stamp is in the key because a move recorded for an archived season
+#: changes who `build_roster` names — the Underplaced board's own reason.
+#: Cleared by `reset()`; pruned per (world, year, gender) before publishing.
+_gapband_cache: dict = {}
+
+
+def _gap_band(gap: float) -> str:
+    for key, _label, lo, hi in OVR_GAP_BANDS:
+        if lo <= gap < hi:
+            return key
+    return OVR_GAP_BANDS[-1][0]
+
+
+def jhsaa_gap_bands(world_id: int, year: int, gender: str, salt: str = "") -> dict:
+    """ONE archived season's varsity lines bucketed by the OVR GAP between the two
+    sides, with the favourite's win rate and how decisive the scorelines were in
+    each band — the check the statewide set distribution cannot make (owner,
+    2026-09): a matchup-curve change shows itself BY BAND, peers nearly unchanged
+    while the clear/strong bands turn more favourite wins and more lopsided sets.
+
+    A READ over `world_jhsaa_dual`, resolving each line's named players to their
+    season OVR the way the Underplaced board does — `jhsaa.build_roster(school,
+    season_year, salt)` is deterministic, so the roster a season was played on is
+    rebuilt, never persisted, and looked up by NAME (which is what the archive
+    holds; `former_names` maps a renamed program back). The gap is the difference
+    of the two sides' mean OVR (a doubles pair averages its two), and the
+    FAVOURITE is the higher side (a dead-level gap counts the home side, inside
+    the peer band where the rate is ~50% either way).
+
+    ‼️ HOME COURT IS NOT IN THE GAP. `jhsaa.home_court` lifts the host's players
+    1-4 OVR per dual off the dual's own seed, which the archive does not store;
+    the gap here is the un-lifted ability difference, so a home favourite is a
+    little stronger than its band says and a home underdog a little closer.
+    Symmetric across a season and identical for both seasons compared, so it
+    cannot manufacture a season-over-season shift.
+
+    Best-of-3 matches only (>= 2 standard sets parsed — showcase pods' pro sets
+    fall out, as in the set histogram). Varsity only, one side per dual. A line
+    naming a player the rebuilt roster does not carry (a program that stopped
+    sponsoring, a name the archive spelled differently) is counted in
+    `unresolved` and skipped, never guessed.
+
+    Per band and per discipline (all courts / singles / doubles): `n` matches,
+    `fav_win` % won by the favourite, `three_set` % that went three sets, and
+    `lopsided` % of sets that were 6-0 or 6-1."""
+    from . import jhsaa as _jh
+    from . import overrides as ov
+    ck = (world_id, year, gender, salt, ov.jhsaa_transfer_version())
+    got = _gapband_cache.get(ck)
+    if got is not None:
+        return got
+    season_year = BASE_YEAR + year + 1
+    alias = _jh.former_names()
+    schools = {s.name: s for s in _jh.load_schools(gender)}
+    std = set(_jh.OREGON_SET_TARGET)
+    lopsided_keys = {"6-0", "6-1"}
+    discs = (("all", "All courts"), ("singles", "Singles"), ("doubles", "Doubles"))
+    counts = {d: {b[0]: {"n": 0, "fav": 0, "three": 0, "sets": 0, "lop": 0}
+                  for b in OVR_GAP_BANDS} for d, _ in discs}
+    rosters: dict[str, dict | None] = {}
+
+    def ovr_map(name: str) -> dict | None:
+        name = alias.get(name, name)
+        if name in rosters:
+            return rosters[name]
+        s = schools.get(name)
+        m = ({p.name: p.current_overall()
+              for p in _jh.build_roster(s, season_year, salt)}
+             if s is not None else None)
+        rosters[name] = m
+        return m
+
+    def side_ovr(m: dict, names) -> float | None:
+        vals = [m.get(n) for n in (names or ())]
+        if not vals or any(v is None for v in vals):
+            return None
+        return sum(vals) / len(vals)
+
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT school, opp, lines FROM world_jhsaa_dual"
+            " WHERE world_id=? AND year=? AND gender=? AND home=1"
+            " AND COALESCE(level,'v')='v'",
+            (world_id, year, gender)).fetchall()
+    finally:
+        conn.close()
+
+    total = unresolved = 0
+    for school, opp, lines_json in rows:
+        try:
+            lines = json.loads(lines_json or "[]")
+        except ValueError:
+            continue
+        hm = am = None
+        for ln in lines:
+            sets = []
+            for st in (ln.get("score") or "").split(","):
+                bits = st.strip().split("-")
+                if len(bits) != 2:
+                    continue
+                try:
+                    a, b = int(bits[0]), int(bits[1])
+                except ValueError:
+                    continue
+                if f"{max(a, b)}-{min(a, b)}" in std:
+                    sets.append((a, b))
+            if len(sets) < 2:
+                continue                       # not a best-of-3 match
+            total += 1
+            if hm is None:
+                hm, am = ovr_map(school), ovr_map(opp)
+            h = side_ovr(hm, ln.get("home")) if hm else None
+            a_ = side_ovr(am, ln.get("away")) if am else None
+            if h is None or a_ is None:
+                unresolved += 1
+                continue
+            gap = abs(h - a_)
+            fav_home = h >= a_
+            fav_won = bool(ln.get("home_won")) == fav_home
+            disc = ("singles" if str(ln.get("slot", "")).upper().startswith("S")
+                    else "doubles")
+            band = _gap_band(gap)
+            lop = sum(1 for x, y in sets
+                      if f"{max(x, y)}-{min(x, y)}" in lopsided_keys)
+            for d in ("all", disc):
+                c = counts[d][band]
+                c["n"] += 1
+                c["fav"] += fav_won
+                c["three"] += len(sets) == 3
+                c["sets"] += len(sets)
+                c["lop"] += lop
+
+    def pct(num, den):
+        return (100.0 * num / den) if den else None
+
+    groups = []
+    for d, label in discs:
+        rows_out = []
+        for key, blabel, _lo, _hi in OVR_GAP_BANDS:
+            c = counts[d][key]
+            rows_out.append({"band": key, "label": blabel, "n": c["n"],
+                             "fav_win": pct(c["fav"], c["n"]),
+                             "three_set": pct(c["three"], c["n"]),
+                             "lopsided": pct(c["lop"], c["sets"])})
+        groups.append({"key": d, "label": label, "rows": rows_out})
+    out = {"year": year, "season_year": season_year, "lines": total,
+           "unresolved": unresolved, "groups": groups}
+    for k in [k for k in _gapband_cache if k[:3] == ck[:3]]:
+        _gapband_cache.pop(k, None)
+    _gapband_cache[ck] = out
+    return out
+
+
+def gap_bands_compare(cur: dict, prev: dict | None) -> dict:
+    """THIS season's gap-band table against LAST season's — pure, like
+    `scoreline_compare`. Per band: this season's `n`/`fav_win`/`three_set`/
+    `lopsided`, the previous season's as `prev_*`, and `d_*` shifts in points.
+    A shift is None wherever either season has no matches in the band (a metric
+    over zero matches is not a number) or there is no previous season at all."""
+    metrics = ("fav_win", "three_set", "lopsided")
+    prev_groups = {g["key"]: g for g in (prev or {}).get("groups", ())}
+    groups = []
+    for g in cur["groups"]:
+        pg = prev_groups.get(g["key"])
+        prev_rows = {r["band"]: r for r in (pg or {}).get("rows", ())}
+        rows = []
+        for r in g["rows"]:
+            p = prev_rows.get(r["band"])
+            row = dict(r)
+            row["prev_n"] = p["n"] if p else None
+            for m in metrics:
+                pv = p[m] if p else None
+                row["prev_" + m] = pv
+                row["d_" + m] = ((r[m] - pv) if (r[m] is not None and pv is not None)
+                                 else None)
+            rows.append(row)
+        groups.append({"key": g["key"], "label": g["label"], "rows": rows})
+    return {"year": cur["year"], "prev_year": prev["year"] if prev else None,
+            "lines": cur["lines"], "unresolved": cur["unresolved"],
+            "prev_lines": prev["lines"] if prev else None,
+            "prev_unresolved": prev["unresolved"] if prev else None,
+            "groups": groups}
 
 
 def jhsaa_years(world_id: int, gender: str) -> list[int]:

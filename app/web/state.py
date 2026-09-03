@@ -5466,7 +5466,7 @@ def jhsaa_districts_view(seed: int, gender: str, group: str | None = None,
 
 
 def jhsaa_realism_view(seed: int, gender: str, group: str | None = None,
-                       year: int | None = None) -> dict:
+                       year: int | None = None, bands: bool = False) -> dict:
     """SCORELINE REALISM — the season on screen's set scores against the SEASON
     BEFORE IT, with the real Oregon HS figures beside them as a baseline (owner
     rule 2026-09; the page opened in 2026-08 as a fit against Oregon as a
@@ -5479,6 +5479,13 @@ def jhsaa_realism_view(seed: int, gender: str, group: str | None = None,
     so the season switcher walks the comparison back through the save; on the
     oldest season there is nothing to compare against and the view says so.
 
+    `bands` adds the BY-OVR-GAP-BAND comparison (`world.jhsaa_gap_bands` ×2,
+    `world.gap_bands_compare`) — the check a matchup-curve change actually shows
+    up in. It rebuilds every roster of both seasons to resolve the archive's
+    names to OVRs (~20 s cold), so the ROUTE runs it through a deferred job
+    first and this view only reads the memo back; never pass `bands=True` from
+    a request thread that has not done that.
+
     Class-BLIND like the Title Board: the shape is association-wide (the real
     data is near-uniform across classes); `group` rides for the scope bar's
     memory alone."""
@@ -5490,6 +5497,7 @@ def jhsaa_realism_view(seed: int, gender: str, group: str | None = None,
     yr = (years[0] if years else w["year"]) if year is None else year
     grp = group if group in jh.GROUPS else jh.GROUPS[0]
     data = None
+    band_data = None
     prev_yr = None
     if years and yr in years:
         i = years.index(yr)
@@ -5498,7 +5506,14 @@ def jhsaa_realism_view(seed: int, gender: str, group: str | None = None,
         prev = (world.jhsaa_scoreline_realism(w["id"], prev_yr, g)
                 if prev_yr is not None else None)
         data = world.scoreline_compare(cur, prev)
+        if bands:
+            salt = world.active_salt(seed)
+            bc = world.jhsaa_gap_bands(w["id"], yr, g, salt)
+            bp = (world.jhsaa_gap_bands(w["id"], prev_yr, g, salt)
+                  if prev_yr is not None else None)
+            band_data = world.gap_bands_compare(bc, bp)
     return {"ready": bool(years), "gender": g, "years": years, "year": yr,
+            "bands": bands, "band_data": band_data,
             "prev_year": prev_yr,
             "season_label": world.BASE_YEAR + yr + 1,
             "prev_label": (world.BASE_YEAR + prev_yr + 1

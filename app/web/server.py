@@ -2768,7 +2768,33 @@ def create_app() -> Flask:
         the request thread — the sim-side counterpart is
         scripts/jhsaa_scoreline_benchmark.py."""
         gender, label, u, g, group, year = _jh_scope_args()
-        view = jhsaa_realism_view(DEFAULT_SEED, g, group, year)
+        import app.world as wd
+        # The BY-OVR-GAP-BAND comparison rebuilds every roster of two seasons to
+        # resolve the archive's names to OVRs (~20 s cold) — deferred like every
+        # other full-gender build, with `world._gapband_cache` as the publish
+        # side, so the refresh after "Compare by gap band" is a memo hit and the
+        # view only reads. The set histograms above it stay instant.
+        bands = bool(request.args.get("bands"))
+        w = wd.load_world(DEFAULT_SEED) if bands else None
+        if bands and w:
+            years = wd.jhsaa_years(w["id"], g)
+            yr = year if year is not None else (years[0] if years else None)
+            if yr in years:
+                i = years.index(yr)
+                py = years[i + 1] if i + 1 < len(years) else None
+                wid, salt = w["id"], wd.active_salt(DEFAULT_SEED)
+                ckey = ("gapbands", g, yr)
+
+                def _build():
+                    wd.jhsaa_gap_bands(wid, yr, g, salt)
+                    if py is not None:
+                        wd.jhsaa_gap_bands(wid, py, g, salt)
+                    return True
+                job = _jh_deferred(ckey, _build)
+                if job is None:
+                    return _jh_building("the gap-band comparison")
+                _jh_job_pop(ckey)
+        view = jhsaa_realism_view(DEFAULT_SEED, g, group, year, bands=bands)
         return render_template("jhsaa_realism.html", active="High School",
                                view=view, gender=gender, u=u, uni_label=label)
 
