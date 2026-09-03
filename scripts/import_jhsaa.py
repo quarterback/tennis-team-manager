@@ -698,7 +698,7 @@ FORMER_NAMES = {
     "Mikel Echevarria":                            "Fir Valley Grange",
     "Mikel Garmendia":                             "Homeland",
     "Mikel Zubieta":                               "South Rim",
-    "Mikhail Sidorov":                             "Saint Marc",
+    "Mikhail Sidorov":                             "Cap Rouge",
     "Mila Chernov North":                          "Siberia",
     "Mila Melnick":                                "Sea Cliff",
     "Milldale Union":                              "Sotkamo Union",
@@ -856,7 +856,7 @@ FORMER_NAMES = {
     "Sofia Romanov North":                         "Cheney",
     "Sofía Aranda":                                "Montclair",
     "Sofía Cordero":                               "John Quincy Adams",
-    "Soren Ekström":                               "St. Sergius",
+    "Soren Ekström":                               "Alderpoint",
     "Southern Jefferson Christian":                "Uplands",
     "St. Agnes Academy":                           "Jacmel",
     "St. Agnes Preparatory":                       "Montelago West",
@@ -864,7 +864,7 @@ FORMER_NAMES = {
     "St. Basil Academy":                           "Cahokia Mounds",
     "St. Basil School":                            "St. Ignatius",
     "St. Brigid Preparatory":                      "Kingston",
-    "St. Brigid School":                           "St. Brigid",
+    "St. Brigid School":                           "Kuopio",
     "St. Casimir":                                 "Harriman Lyceum",
     "St. Casimir High School":                     "Harriman Lyceum",
     "St. Casimir High School North":               "Casimir Creek",
@@ -991,6 +991,15 @@ FORMER_NAMES = {
 }
 
 RENAMES = {
+    # 2026-09 — more saint names retired at the owner's request. Their display
+    # name WAS their roster identity, so without a row here `jhsaa_former_names`
+    # has no chain to walk and the old name resolves to nothing.
+    "St. Catherine College Prep": "Lizarra",
+    "St. Elias College Prep": "Aranaz",
+    "St. Jerome Academy": "Isla Verde",
+    "St. Elian": "Elian",
+    "St. Veronica": "Yarrowfield",
+    "St. Cecilia Academy": "Quartzburg",
     # 2026-09 — the owner lifted the state-title protection on these two;
     # their display name WAS their roster identity, so without a row here the
     # alias generator has no chain to walk and every season they won is
@@ -1274,7 +1283,7 @@ RENAMES = {
     "San Borondón Country Day School": "Hazel Country Day",
     "Sofia Romanov": "Chesapeake",
     "Sofia Romanov North": "Cheney",
-    "St. Brigid School": "St. Brigid",
+    "St. Brigid School": "Kuopio",
     "St. Casimir High School": "Harriman Lyceum",
     "St. Elias School": "Tidewater",
     "St. Helena School": "Saltmarsh",
@@ -1548,7 +1557,7 @@ RENAMES = {
     # an American town or school would not carry one. These three keep their
     # ALWAYS_EXTRA source spelling (it has to match prep-network) and rename
     # only at emit.
-    "Soren Ekström": "St. Sergius",
+    "Soren Ekström": "Alderpoint",
     "Svenja Ekström": "Memorial",
     "Thomas Ekström": "Lago Vista",
     "Keldale": "Espoo",
@@ -1783,7 +1792,7 @@ RENAMES = {
     "Javier Alvarado":           "Okefenokee",            # 8A Belmonte
     "Rosa Castañeda":            "Tippecanoe",             # 9A Belmonte
     "Yelena Sokolov":            "Bowerstock",              # 8A Belmonte
-    "Mikhail Sidorov":           "Saint Marc",             # 6A Belyakov
+    "Mikhail Sidorov":           "Cap Rouge",             # 6A Belyakov
     "Nicolás Quiñones":          "Stonehaven",              # 7A Calder
     "Katherine Whitaker":        "Brookside",               # 6A Carroway
     "Oskar Weiss":               "Waldo",                   # 8A Cortland
@@ -2086,7 +2095,7 @@ LOCALITIES = {
     "Pennsauke":                             "Pennsauke",
     "Petoskey Rock":                         "Petoskey",
     "Riviere Salee":                         "Riviere Salee",
-    "Saint Marc":                            "Saint Marc",
+    "Cap Rouge":                            "Cap Rouge",
     "Savane Brulee":                         "Savane Brulee",
     "Trois Ilets":                           "Trois Ilets",
     "Sally Ride":                            "Roanoke",
@@ -2282,7 +2291,7 @@ RECLASSIFY_2039B = {
     "Sacred Heart": "7A", "Bellarmine Prep": "7A",
     "Port Veles Episcopal": "4A",
     "Covenant Christian": "2A",
-    "Valera": "1A", "St. Jerome Academy": "1A",
+    "Valera": "1A", "Isla Verde": "1A",
     # Up — backfilling the seats the moves above emptied.
     "Thurgood Marshall": "8A", "Cherry Hill South": "8A", "Roosevelt": "8A",
     "Charlotte": "9A", "Sandra Day O'Connor": "9A", "Ruth Bader Ginsburg": "9A",
@@ -2933,7 +2942,7 @@ MASCOTS = {
     "Talladega": "Moon Jellies",
     "Mission Bay": "Sea Lions",
     "San Borondón North": "Rockfish",
-    "St. Jerome Academy": "Albatross",
+    "Isla Verde": "Albatross",
     "Tatiana Chernov": "Sea Urchins",
 
     # ── Gold Valley: orchards, vineyards and the old diggings ────────────────
@@ -2951,7 +2960,7 @@ MASCOTS = {
     "Lago Vista": "Hop Pickers",
     "Moriarty": "Jackrabbits",
     "Silver Glen": "Silversmiths",
-    "St. Elian": "Abbots",
+    "Elian": "Abbots",
     "Shasta Agricultural": "Cellarmen",                # Valderra
     "West Valderra": "Orchardists",
     "Orchardgate": "Archangels",
@@ -3025,7 +3034,7 @@ MASCOTS = {
     "Celia Browne": "Powderhorns",              # Fort Carden
     "Timber Crest": "Highclimbers",
     "New Leiden": "Pilgrims",
-    "St. Sergius": "Northern Lights",
+    "Alderpoint": "Northern Lights",
     "Orlova": "Firebirds",
     "Ransom Pass": "Cinder Cones",
     "Gwendolyn Brooks": "Poets",
