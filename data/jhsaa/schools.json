@@ -10697,14 +10697,14 @@
       "source": "St. Sophia Preparatory"
     },
     {
-      "name": "Martin Luther",
+      "name": "Coretta Scott King",
       "city": "Ditch Fork",
       "county": "Goldbank",
       "area": "Southern Jefferson",
       "classification": "1A",
       "group": "1A",
       "enrollment": 187,
-      "private": true,
+      "private": false,
       "mascot": "Sidewinders",
       "colors": [
         "#1d4e9e",
@@ -10713,7 +10713,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Tailings League",
-      "boys_district": "Tailings League"
+      "boys_district": "Tailings League",
+      "source": "Martin Luther"
     },
     {
       "name": "Martin Van Buren",

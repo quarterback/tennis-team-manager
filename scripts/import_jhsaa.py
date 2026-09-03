@@ -764,7 +764,7 @@ FORMER_NAMES = {
     "Port Veles Civic Leadership Academy":         "Severn",
     "Port Veles East":                             "Clinton",
     "Port Veles Foundry High":                     "Seawall",
-    "Port Veles International Academy":            "Seminary",
+    "Port Veles International Academy":            "Veles Park",
     "Port Veles Lutheran":                         "Veles Union",
     "Port Veles Maritime Academy":                 "Veles Vo-Tech",
     "Portola":                                     "Homeland",
@@ -820,7 +820,8 @@ FORMER_NAMES = {
     "Santa Michaela Harbor Gate":                  "Tidegate",
     "Seafarer High":                               "Seafarer",
     "Selbyville Manufacturing and Technology Academy": "Selby Tech",
-    "Seminary High School":                        "Seminary",
+    "Seminary":                                    "Veles Park",
+    "Seminary High School":                        "Veles Park",
     "Sergei Belov":                                "Malcolm X Shabazz",
     "Sergei Petrenko":                             "Willowbrook",
     "Serrano Applied Sciences Institute":          "Arroyo Seco",
@@ -948,6 +949,47 @@ FORMER_NAMES = {
 }
 
 RENAMES = {
+    # ‼️ THE 2065 SECULARISATION CHAINS (2026-09). These programs were
+    # renamed while their display name WAS their roster identity, so they had
+    # no row here — and `jhsaa_former_names.py` generates the alias table from
+    # THIS table's git history, so without a row the old name resolves to
+    # nothing and every season archived under it is unreachable. A rename is
+    # not done when the display name moves; it is done when this row exists.
+    "Archbishop Doyle Prep": "Doyle",
+    "Archbishop Quinlan": "Quaking Aspen",
+    "Beargrass Christian": "Beargrass",
+    "Bishop Ferraro": "Ferraro",
+    "Central Christian": "Winter Valley School",
+    "Coolidge": "Seagrove",
+    "Cub River Catholic": "Coldwater",
+    "Eastmont Christian": "Eastmont",
+    "Eden County Christian": "Eden",
+    "Eisenhower": "Flume River",
+    "Heritage Christian": "Longmeadow",
+    "Madison": "Governor Woods",
+    "Malad County Christian": "Sixmile",
+    "Martin Luther": "Coretta Scott King",
+    "North Valley Christian": "Trailsend",
+    "Presentation Academy": "Garrow North",
+    "Ruby County Catholic": "Carlin",
+    "Saint Francis": "Kingsley",
+    "Sisters of Mercy": "Websterfield",
+    "Southern Jefferson Christian": "Uplands",
+    "St. Agnes Preparatory": "Montelago West",
+    "St. Dominic Academy": "Wildrye",
+    "St. Elias Academy": "Port Ainsley",
+    "St. Gabriel Preparatory": "Orchardgate",
+    "St. Genevieve": "Whitegrass",
+    "St. Isidore": "Averill Grange",
+    "St. Lucy": "Tallgrass",
+    "St. Martin Preparatory": "Greaves West",
+    "St. Michael Academy": "Harriman East",
+    "St. Olga College Prep": "Mercer Latin",
+    "St. Perpetua": "Farview",
+    "St. Raphael College Prep": "Elk Bluff West",
+    "Trinity Christian": "Stillwater",
+    "Wellsville County Catholic": "Hyrum",
+    "Western Slope Christian": "Western Slope",
     # ‼️ A DEAD KEY IS NOT HARMLESS — it is the fuel for the next mis-fire. Sixteen
     # entries were removed here (2026-08): each keyed a prep-network name that repo
     # has since renamed away, so the entry could never fire — until some OTHER school
@@ -1440,7 +1482,7 @@ RENAMES = {
     "Coyote Draw": "Savane Brulee",                              # 6A Belyakov
     "José Martí": "Trois Ilets",                                 # 7A Belyakov
     "Port Veles Maritime Academy": "Veles Vo-Tech",    # 9A Port Veles
-    "Port Veles International Academy": "Seminary High School",  # 3A Port Veles
+    "Port Veles International Academy": "Veles Park",  # 3A Port Veles
     "Redwood Coast": "Bienville",                                # 9A San Borondon
     "St. Nicholas College Prep": "Natchez Prep",                 # 6A San Borondon
     "Las Palmas North": "Natchitoches",                          # 8A San Borondon
