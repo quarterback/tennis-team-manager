@@ -52,7 +52,7 @@ SUNSET = [
     "Bridger County Christian",         # Group 2  Olympic League
     "Tippah",                           # 4A  Far West League
     "Sparrowhawk",                      # 9A  Capital Athletic Association
-    "I-50 Tech",                        # 9A  Capital Athletic Association
+    "Belmonte Tech",                    # 9A  Capital Athletic Association
     "Rock on the Hill Christian Academy",   # 5A  Capital Athletic Association
     "Veles Vo-Tech",                    # 9A  Mariners League
     "Christchurch Episcopal",           # 6A  Mariners League

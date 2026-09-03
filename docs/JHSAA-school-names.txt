@@ -35,6 +35,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     6A  1225  Belmonte                               Belmonte               Belmonte
     1A   256  Belmonte Catholic                      Belmonte               Amaia Aramburu North
     6A  1257  Belmonte Collegiate                    Belmonte               Belmonte International School
+    9A  2550  Belmonte Tech                          Belmonte               I-50 Technical
 
     6A  1181  Bois Neuf                              Belyakov               Orchard Gate North
     4A   639  Bois Rouge                             Belyakov               Viktor Antonov North
@@ -660,7 +661,7 @@ Bellacosta — 2 programs (Ferris County, Gold Valley)
 
 Belmonte — 34 programs (Halbrook County, Belmonte Metro)
     9A  2592 pub  Sandra Day O'Connor                    Choctaw            Capital Athletic Association       Iker Aramburu
-    9A  2550 pub  I-50 Tech                                                 Capital Athletic Association       I-50 Technical
+    9A  2550 pub  Belmonte Tech                                             Capital Athletic Association       I-50 Technical
     9A  2509 pub  Kinnickinny                            Kinnickinny        Capital Athletic Association       River Plain
     9A  2503 pub  Benjamin Banneker                      Banneker           Capital Athletic Association       Benjamin Banneker
     9A  2491 pub  Potrero Hill                                              Capital Athletic Association       Leire Garmendia
@@ -1696,7 +1697,7 @@ North Simmons — 1 program (Stagewater County, Kangas)
 
 Northrup — 2 programs (Vance County, Silver Basin)
    Group 1  1249 pub  Western Sky                                               Marble Valley League               Ander Aramburu
-   Group 3   203 pub  Northrup I-50 Tech                                        Black Canyon League                Northrup I-50 Technical
+   Group 3   203 pub  Northrup Tech                                             Black Canyon League                Northrup I-50 Technical
 
 Norview — 3 programs (Marlow County, Ashbury Metro)
     7A  1544 pub  Mission Terrace                                           Premier Athletic Association       Mission Terrace
