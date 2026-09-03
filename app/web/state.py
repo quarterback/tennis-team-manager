@@ -4668,8 +4668,17 @@ def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
                    for i, n in enumerate(ev.get("ranked") or ())],
         "play_in": _rounds(ev.get("play_in") or {}),
         "rounds": _rounds(st),
-        "canvas": _bracket_canvas(_jh_bracket_cols(st, schools),
-                                  card_w=232, card_h=60, gutter=56, leaf_gap=18),
+        # ‼️ THE STATEWIDE SEEDS ARE PASSED IN, NOT DERIVED FROM FIELD POSITION.
+        # `_jh_bracket_cols` falls back to `_jh_seeds`, which numbers a field 1..n by
+        # its order — right for a draw whose field IS its ranking, and wrong here the
+        # moment a lower-ranked team wins the play-in: the No. 20 champion takes the
+        # sixteenth slot, so the tree would label them #16 while the ranking, the
+        # qualifying panel and the round lists all call them #20. Same team, two
+        # numbers, on one page. `seed_map` is the bracket's supported field for
+        # exactly this (the split State render already uses it).
+        "canvas": _bracket_canvas(
+            _jh_bracket_cols({**st, "seed_map": seeds}, schools),
+            card_w=232, card_h=60, gutter=56, leaf_gap=18),
         **_jh_final_four(st, schools),
         "champion_region": region_of.get(st.get("champion"), ""),
     }

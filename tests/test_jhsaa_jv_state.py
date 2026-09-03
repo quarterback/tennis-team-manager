@@ -224,3 +224,41 @@ def test_the_pilot_does_not_reach_earlier_seasons():
     """A year gate, not a flag: a world that already archived 2067 must keep reading
     it as a season with no JV team tournament in it."""
     assert jh.JV_STATE_FROM == 2068
+
+
+def test_the_tree_labels_seeds_from_the_statewide_ranking(jv):
+    """‼️ CONSTRUCTED, because the fixture need not contain the case.
+
+    `_jh_bracket_cols` falls back to numbering a field 1..n by its ORDER, which is
+    right for a draw whose field is its ranking and wrong the moment a lower-ranked
+    champion wins the play-in: they take a slot above their rank, so the tree calls
+    them #13 while the ranking, the qualifying panel and the round lists all call
+    them #20 — the same team with two numbers on one page. The view passes the
+    statewide map through the bracket's `seed_map`, and this pins that it is honoured.
+    """
+    from app.web.state import _jh_bracket_cols, _jh_schools
+    schools = _jh_schools("boys")
+    names = [e.name for e in jvs.entries(jv)][:4]
+    assert len(names) == 4
+    # A field whose order is NOT the ranking: the last-ranked team came through the
+    # play-in and sits in the second slot.
+    ranked = names[:1] + names[2:] + names[1:2]      # names[1] ranks last
+    field = names
+    seeds = {n: i + 1 for i, n in enumerate(ranked)}
+    bracket = {"field": field, "seed_map": seeds, "champion": field[0],
+               "rounds": [[{"home": field[0], "away": field[1], "home_points": 3.0,
+                            "away_points": 2.0, "winner": field[0]},
+                           {"home": field[2], "away": field[3], "home_points": 1.0,
+                            "away_points": 3.0, "winner": field[3]}],
+                          [{"home": field[0], "away": field[3], "home_points": 3.0,
+                            "away_points": 0.0, "winner": field[0]}]]}
+    seen = {}
+    for col in _jh_bracket_cols(bracket, schools):
+        for m in col["matchups"]:
+            for side in ("home", "away"):
+                t = m.get(side)
+                if t and t.get("school"):
+                    seen.setdefault(t["school"], t.get("seed"))
+    assert seen[names[1]] == seeds[names[1]] == 4, "tree labelled a seed by slot"
+    for n, sd in seeds.items():
+        assert seen[n] == sd, n
