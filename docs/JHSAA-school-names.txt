@@ -31,7 +31,7 @@ RENAMING IS SAFE AND IS THE DESIGNED PATH — but key it on the right thing:
 NEAR-DUPLICATES — pairs sharing a leading word, same city first
 ==============================================================================
 
--- SAME CITY — LOOK HERE FIRST (11 groups)
+-- SAME CITY — LOOK HERE FIRST (12 groups)
     6A  1225  Belmonte                               Belmonte               Belmonte
     1A   256  Belmonte Catholic                      Belmonte               Amaia Aramburu North
     6A  1257  Belmonte Collegiate                    Belmonte               Belmonte International School
@@ -43,6 +43,10 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     7A  1398  Cherry Hill East                       Caswell                Cherry Hill East
     8A  2139  Cherry Hill North                      Caswell                Caswell Depot High
     8A  1706  Cherry Hill South                      Caswell                Caswell I-50 Technical
+
+    6A  1140  George Washington Carver               Plainfield             George Washington Carver
+    5A   852  George H. W. Bush                      Port Veles             Opal Avery North
+    8A  1947  George Washington                      Port Veles             Anneliese Halvorsen
 
     5A   961  Morne Caribou Polytechnic              Belyakov               Belyakov Polytechnic Institute
     7A  1370  Morne Rouge                            Belyakov               Lorraine Calder
@@ -110,7 +114,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     9A  2458  Veles Vo-Tech                          Port Veles             Port Veles Maritime Academy
 
 
--- SAME LEADING WORD, DIFFERENT CITIES (101 groups)
+-- SAME LEADING WORD, DIFFERENT CITIES (100 groups)
     7A  1444  Alder Crossing                         Boyerstown             Boyerstown North
     3A   438  Alder Cooperative                      Monte Blanco           Claudette Freeman
 
@@ -185,9 +189,6 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     1A   188  Copper Prairie                         Copper Prairie         Copper Prairie
    Group 2  1019  Copper Belt                            Echevarria             Harold Tillman
 
-    8A  1501  Covenant                               Calder                 Nicolás Quiñones
-   Group 3   297  Covenant Christian                     Tuskegee               Covenant Christian
-
    Group 1  2197  Coyote Springs                         Aldecoa                Aldecoa Academy of Arts and Letters
     9A  2436  Coyote Bend                            Valderra               Valderra Aviation and Engineering Academy
 
@@ -214,6 +215,9 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     6A  1185  Empire Milling                         Carroway               Frances Gaines
    Group 2   845  Empire                                 Drayfield              Drayfield Foundry High
 
+    1A   194  Flume                                  Flume                  Flume
+    4A   792  Flume River                            Sluice Crossing        Eisenhower
+
     4A   696  Forge                                  Ashbury                Steelbridge
     3A   416  Forge Hollow                           Valderra               Valley Forge North
 
@@ -226,9 +230,6 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
    Group 1  2469  Fort Valois                            Fort Valois            Fort Valois
     4A   729  Fort Weller                            Fort Weller            Fort Salish
     1A   118  Fort Wren                              Fort Wren              Silvale
-
-    6A  1140  George Washington Carver               Plainfield             George Washington Carver
-    5A   852  George H. W. Bush                      Port Veles             Opal Avery North
 
     3A   451  Goldbank County                        Hydraulic Gap          Goldbank County
     3A   330  Goldbank Hall                          Tunnel Diggings        Goldbank Hall
@@ -445,8 +446,8 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     4A   598  Tallulah Canyon                        San Borondón           Blackbird Canyon
    Group 1  1577  Tallulah Central                       Tallulah               Ashbury Central
 
-    6A  1164  Tidewater Catholic                     Port Veles             St. Elias School
-    9A  2355  Tidewater                              Tamarack Harbor        Tamarack Harbor
+    9A  2475  Tamarack                               San Cordero            Svenja Bianchi
+    9A  2355  Tamarack Harbor                        Tamarack Harbor        Tamarack Harbor
 
     1A   133  Trinity Fork                           Ansoteguiville         Trinity Fork
     1A    91  Trinity Christian                      Olive Reach            Trinity Christian
@@ -805,7 +806,7 @@ Cahaba — 1 program (Vance County, Silver Basin)
    Group 1  1304 pub  Cahaba                                 Cahaba             High Desert League                 Elena Mendoza North
 
 Calder — 2 programs (Rimrock County, Juniper Highlands)
-    8A  1501 pub  Covenant                                                  Rim Country League                 Nicolás Quiñones
+    8A  1501 pub  Stonehaven                                                Rim Country League                 Nicolás Quiñones
     6A  1163 pub  Calder                                                    Three Rivers League                Calder
 
 California Beach — 1 program (Ostrander County, Sebastian Cape)
@@ -922,7 +923,7 @@ Condon — 1 program (Gilliam County, Columbia Gorge)
 
 Cook City — 3 programs (Featherstone County, Southern Jefferson)
     8A  1568 pub  Cook City                                                 Mariners League                    Ewart City
-    2A   360 pub  Madison                                                   Sluice League                      Madison
+    2A   360 pub  Governor Woods                                            Sluice League                      Madison
     1A   117 priv Featherstone Tech                                         Marble Valley League               Featherstone Institute
 
 Copper Bar — 1 program (Lodestone County, Millersylvania)
@@ -1235,7 +1236,7 @@ Halbrook — 12 programs (Halbrook County, Halbrook Basin)
     9A  2360 pub  Basin Gate                                                Forks League                       Halbrook Technical
     8A  1917 pub  Northgate                                                 Four Rivers Interscholastic League Northgate
     7A  1471 priv Delbarton                                                 Three Rivers League                Delbarton
-    7A  1418 pub  Prairie Union                                             Three Rivers League                Halbrook Union
+    7A  1418 pub  Deaconsburg                                               Three Rivers League                Halbrook Union
     7A  1332 priv Wheeler Academy                                           Three Rivers League                Wheeler Academy
     6A  1214 priv Archbishop Doyle Prep                                     Cascade Divide League              Archbishop Doyle Prep
     6A  1185 pub  Doyle Ridge                                               Placer League                      Archbishop Doyle Prep North
@@ -1728,7 +1729,7 @@ Olive Head — 1 program (Kernwood County, Yarrowmere)
     8A  1423 pub  Olive Head                                                Mariners League                    Olive Head
 
 Olive Reach — 6 programs (Kernwood County, Yarrowmere)
-    9A  2392 pub  Coolidge                                                  Gold Valley League                 Coolidge
+    9A  2392 pub  Seagrove                                                  Gold Valley League                 Coolidge
     5A   998 pub  Olive Reach                                               Mariners League                    Olive Reach
     4A   754 pub  Buckeye Ridge                                             Vermilion Valley League            Olive Reach North
     3A   320 priv Olive Reach Baptist                                       Quarry League                      Olive Reach Baptist
@@ -1834,7 +1835,7 @@ Port Veles — 43 programs (Bidwell County, Selquah)
     9A  2178 pub  Readbury                                                  Mariners League                    Thelma Avery
     9A  2148 pub  Martin Van Buren                       Piscataway         Mariners League                    Harbor Gate North
     8A  2010 pub  Roosevelt                              Potomac            Narpes Interscholastic League      Nadia Chernov North
-    8A  1947 pub  Washington                             Taunton            Narpes Interscholastic League      Anneliese Halvorsen
+    8A  1947 pub  George Washington                      Taunton            Narpes Interscholastic League      Anneliese Halvorsen
     8A  1719 pub  Seawall                                                   Narpes Interscholastic League      Port Veles Foundry High
     8A  1685 pub  Zachary Taylor                         Pamunkey           Narpes Interscholastic League      Igor Chernov
     8A  1638 pub  Chesapeake                             Chesapeake         Narpes Interscholastic League      Sofia Romanov
@@ -1850,7 +1851,7 @@ Port Veles — 43 programs (Bidwell County, Selquah)
     6A  1257 priv St. Vincent                                               Mariners League                    St. Vincent School
     6A  1187 pub  Calvin Coolidge                        Shenandoah         Mariners League                    Nadia Chernov
     6A  1164 priv Tidewater Catholic                     Tidewater          Mariners League                    St. Elias School
-    6A  1151 pub  Adams                                  Roanoke            Mariners League                    Nadia Sidorov
+    6A  1151 pub  Sally Ride                             Roanoke            Mariners League                    Nadia Sidorov
     6A  1130 pub  Severn                                 Severn             Mariners League                    Port Veles Civic Leadership Academy
     6A  1124 pub  Rutherford Hayes                       Wethersfield       Mariners League                    Marcus Langston
     6A  1117 priv Christchurch Episcopal                 Christchurch       Mariners League                    Ralph Booker North
@@ -2136,7 +2137,7 @@ Sixes — 1 program (Stagewater County, Kangas)
 
 Sluice Crossing — 2 programs (Goldbank County, Southern Jefferson)
     7A  1519 pub  Crossing                                                  Valle Vista League                 Sluice Crossing
-    4A   792 pub  Eisenhower                                                Vermilion Valley League            Eisenhower
+    4A   792 pub  Flume River                                               Vermilion Valley League            Eisenhower
 
 Sluice Landing — 1 program (Highgrade County, Southern Jefferson)
     2A   264 pub  Sluice Landing                                            Sluice League                      Sluice Landing
@@ -2214,7 +2215,7 @@ Tamarack Flat — 1 program (Antler County, Alderwold)
     3A   531 pub  Mill Creek                                                Sky-Em League                      Mill Creek
 
 Tamarack Harbor — 1 program (Weller County, Selquah)
-    9A  2355 pub  Tidewater                                                 Gateway League                     Tamarack Harbor
+    9A  2355 pub  Tamarack Harbor                                           Gateway League                     Tamarack Harbor
 
 Tamarack Springs — 1 program (Tamarack County, Cascade Divide)
     2A   246 pub  Mineral Springs                                           Valle Vista League                 Tamarack Springs

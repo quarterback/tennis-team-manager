@@ -27,7 +27,7 @@
       "boys_district": "Narpes Interscholastic League"
     },
     {
-      "name": "Adams",
+      "name": "Sally Ride",
       "source": "Nadia Sidorov",
       "city": "Port Veles",
       "county": "Bidwell",
@@ -4170,7 +4170,7 @@
       "source": "Ewart City"
     },
     {
-      "name": "Coolidge",
+      "name": "Seagrove",
       "city": "Olive Reach",
       "county": "Kernwood",
       "area": "Yarrowmere",
@@ -4186,7 +4186,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Gold Valley League",
-      "boys_district": "Gold Valley League"
+      "boys_district": "Gold Valley League",
+      "source": "Coolidge"
     },
     {
       "name": "Copper Bar",
@@ -4504,7 +4505,7 @@
       "boys_district": "Desert Sky League"
     },
     {
-      "name": "Covenant",
+      "name": "Stonehaven",
       "city": "Calder",
       "county": "Rimrock",
       "area": "Juniper Highlands",
@@ -5474,7 +5475,7 @@
       "source": "Lucía Quiñones"
     },
     {
-      "name": "Eisenhower",
+      "name": "Flume River",
       "city": "Sluice Crossing",
       "county": "Goldbank",
       "area": "Southern Jefferson",
@@ -5490,7 +5491,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Vermilion Valley League",
-      "boys_district": "Vermilion Valley League"
+      "boys_district": "Vermilion Valley League",
+      "source": "Eisenhower"
     },
     {
       "name": "El Sereno",
@@ -10371,7 +10373,7 @@
       "boys_district": "Inland Empire League"
     },
     {
-      "name": "Madison",
+      "name": "Governor Woods",
       "city": "Cook City",
       "county": "Featherstone",
       "area": "Southern Jefferson",
@@ -10387,7 +10389,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Sluice League",
-      "boys_district": "Sluice League"
+      "boys_district": "Sluice League",
+      "source": "Madison"
     },
     {
       "name": "Madrigal",
@@ -13895,7 +13898,7 @@
       "boys_district": "Snake River District"
     },
     {
-      "name": "Prairie Union",
+      "name": "Deaconsburg",
       "city": "Halbrook",
       "county": "Halbrook",
       "area": "Halbrook Basin",
@@ -18228,7 +18231,7 @@
       "boys_district": "Rim Country League"
     },
     {
-      "name": "Tidewater",
+      "name": "Tamarack Harbor",
       "city": "Tamarack Harbor",
       "county": "Weller",
       "area": "Selquah",
@@ -19505,7 +19508,7 @@
       "boys_district": "Marble Valley League"
     },
     {
-      "name": "Washington",
+      "name": "George Washington",
       "city": "Port Veles",
       "county": "Bidwell",
       "area": "Selquah",

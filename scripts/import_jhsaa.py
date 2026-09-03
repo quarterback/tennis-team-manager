@@ -388,13 +388,13 @@ FORMER_NAMES = {
     "Andrés Ibarra North":                         "Saddleback Central",
     "Andrés Valera":                               "Basalt Electric",
     "Andrés Valera North":                         "Pawnee",
-    "Anneliese Halvorsen":                         "Washington",
+    "Anneliese Halvorsen":                         "George Washington",
     "Anneliese Ricci":                             "Carondelet",
     "Annie Springs Crater View":                   "Crater View",
     "Ansotegui Siding Commonwealth":               "Pinebluffs",
     "Ansotegui Siding North":                      "Pinebluffs",
     "Antler County High":                          "Antler County",
-    "Anton Sidorov":                               "Adams",
+    "Anton Sidorov":                               "Sally Ride",
     "Anya Antonov":                                "Mar Vista",
     "Anya Belov":                                  "Arroyo",
     "Anya Belov North":                            "Preston Hollow",
@@ -605,7 +605,6 @@ FORMER_NAMES = {
     "Garden District":                             "Pointe des Brumes",
     "Garfield Park":                               "Reservoir Park",
     "Garrity":                                     "Texas Beach",
-    "George Washington":                           "Washington",
     "Geraldine Cross":                             "Port Veles Episcopal",
     "Gold Junction":                               "Seamus Town",
     "Gold Pass":                                   "Seamus Town",
@@ -626,7 +625,7 @@ FORMER_NAMES = {
     "Hagerstown Forge":                            "Forge",
     "Halbrook East":                               "Basin Gate",
     "Halbrook Technical":                          "Basin Gate",
-    "Halbrook Union":                              "Prairie Union",
+    "Halbrook Union":                              "Deaconsburg",
     "Harbor Gate North":                           "Martin Van Buren",
     "Harlan Cole":                                 "Harlan",
     "Harlan Tillman":                              "Xavier College Prep",
@@ -691,7 +690,7 @@ FORMER_NAMES = {
     "Jefferson School of Science and Technology North": "Evans Larsen Day",
     "Jefferson Science North":                     "Evans Larsen Day",
     "Joe Biden":                                   "Biden",
-    "John Adams":                                  "Adams",
+    "John Adams":                                  "Sally Ride",
     "John F. Kennedy North":                       "Box Canyon",
     "Jon Etxeberria North":                        "Chickasaw",
     "Jon Garmendia":                               "Pope Leo XIV",
@@ -793,7 +792,7 @@ FORMER_NAMES = {
     "Mother Lode":                                 "Siskiyou Valley",
     "Nadia Chernov":                               "Calvin Coolidge",
     "Nadia Chernov North":                         "Roosevelt",
-    "Nadia Sidorov":                               "Adams",
+    "Nadia Sidorov":                               "Sally Ride",
     "Naomi Ellison":                               "Providence Catholic",
     "Naomi Langston North":                        "Pointe des Brumes",
     "Naomi Moss":                                  "Meyerland",
@@ -811,7 +810,7 @@ FORMER_NAMES = {
     "Newark River North":                          "River North",
     "Nicolás Cordero":                             "Ruth Bader Ginsburg",
     "Nicolás Ordoñez":                             "Rockridge",
-    "Nicolás Quiñones":                            "Covenant",
+    "Nicolás Quiñones":                            "Stonehaven",
     "Nicolás Salcedo":                             "Siskiyou Electric",
     "Nicolás Treviño":                             "Bishop Valera",
     "Nicolás Villalba":                            "Temescal",
@@ -1026,7 +1025,6 @@ FORMER_NAMES = {
     "Svenja Ekström":                              "Memorial",
     "Sycamore Flat":                               "La Savane",
     "Tailing Crossing-Ewart Bar Union":            "Fountain Park",
-    "Tamarack Harbor":                             "Tidewater",
     "Tamarack Springs":                            "Mineral Springs",
     "Tatiana Chernov North":                       "Bahía Vista",
     "Tatiana Moroz North":                         "Ironwood Flats",
@@ -1202,7 +1200,7 @@ RENAMES = {
     "Orellana School of Commerce": "Malpais",
     "Port Veles Agricultural Sciences Academy": "Biden",
     "Port Veles Civic Leadership Academy": "Severn",
-    "Nadia Sidorov": "Adams",
+    "Nadia Sidorov": "Sally Ride",
     "Port Meridian Polytechnic": "Port Meridian North",
     "San Borondón Environmental Sciences Academy": "Sotavento",
     "Puerto de los Reyes School of Commerce": "Reyes Landing",
@@ -1324,7 +1322,7 @@ RENAMES = {
     # unrelated invented people that broke immersion, and "<person> North"
     # is never a school name.
     "Amelia Freeman North": "Casco",
-    "Anneliese Halvorsen": "Washington",
+    "Anneliese Halvorsen": "George Washington",
     "Baptist HS": "Baptist",
     "Belmonte International School": "Belmonte Collegiate",
     "Calderwood School": "Calderwood",
@@ -1523,7 +1521,7 @@ RENAMES = {
     "Fort Meriwether Breakwater": "Breakwater",                # 8A Fort Meriwether
     "Garfield Park": "Reservoir Park",                         # 5A Drayfield
     "Greaves Junction": "Juniper Crossing",                    # 2A Greaves Junction
-    "Halbrook Union": "Prairie Union",                         # 7A Halbrook
+    "Halbrook Union": "Deaconsburg",                           # 7A Halbrook
     "Harriman South": "Hidden Draw",                           # 8A Harriman
     "Hawk Lake Eastgate": "Oakhaven",                          # 6A Hawk Lake
     "Hawk Lake Southeast": "Pine Barrens",                     # 5A Hawk Lake
@@ -1561,7 +1559,6 @@ RENAMES = {
     "Starlake Canal View": "Canal Lock",                       # 3A Starlake
     "Summervale Heights": "Aspen Hollow",                      # 6A Summervale
     "Summervale Northwest": "Star Hollow",                     # 3A Summervale
-    "Tamarack Harbor": "Tidewater",                            # 3A Tamarack Harbor
     "Tamarack Springs": "Mineral Springs",                     # 2A Tamarack Springs
     "Telfair": "Pacersburg",                              # 4A Telfair
     "Timber Crest North": "Crestline",                         # 4A Fort Carden
@@ -1868,7 +1865,7 @@ RENAMES = {
     "Rosa Castañeda":            "Tippecanoe",             # 9A Belmonte
     "Yelena Sokolov":            "Bowerstock",              # 8A Belmonte
     "Mikhail Sidorov":           "Saint Marc",             # 6A Belyakov
-    "Nicolás Quiñones":          "Covenant",                # 7A Calder
+    "Nicolás Quiñones":          "Stonehaven",              # 7A Calder
     "Katherine Whitaker":        "Brookside",               # 6A Carroway
     "Oskar Weiss":               "Waldo",                   # 8A Cortland
     "Marian Browne":             "River Market",            # 3A Dovetail
@@ -2177,7 +2174,7 @@ LOCALITIES = {
     "Saint Marc":                            "Saint Marc",
     "Savane Brulee":                         "Savane Brulee",
     "Trois Ilets":                           "Trois Ilets",
-    "Adams":                                 "Roanoke",
+    "Sally Ride":                            "Roanoke",
     "Benjamin Harrison":                     "Schuylkill",
     "Biden":                                 "Choptank",
     "Calvin Coolidge":                       "Shenandoah",
@@ -2298,7 +2295,7 @@ RECLASSIFY_TO_2A = (
     "Booker T Washington", "Alben Barkley", "Benton Cross", "Canal Lock",
     "Cape Angeles", "Chaff Head", "Diamante", "Eagleton", "Fort Lassiter",
     "Gilhooly", "Halfway House", "Hawk Bar", "Iisalmi Union", "Latgaway",
-    "Lieksa", "Los Maderos", "Madison", "Mt Jacqueline", "Netherwood",
+    "Lieksa", "Los Maderos", "Governor Woods", "Mt Jacqueline", "Netherwood",
     "New Ballard", "Newark River", "Oak Meyer", "Pointe des Brumes",
     "Porterfield", "Río Seco", "River Market", "South Simmons", "Springdale",
     "Starlake", "Trout Lake", "Willowbrook", "Yazoo",
