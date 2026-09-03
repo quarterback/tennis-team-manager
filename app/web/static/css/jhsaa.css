@@ -136,6 +136,68 @@
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
+/* ---- Qualifying results list (owner, 2026-09) -----------------------------
+   One row per match: number, winner, winner's school, "def.", loser, loser's
+   school, score. A qualifying round is a RESULTS SHEET, not a set of cards —
+   this used to borrow `.jh-seedtiers`, whose 220px auto-fill columns and
+   `white-space: nowrap` ellipsis cut off the opponent and the score, i.e. the
+   whole point of the row.
+
+   The grid is content-sized so the two names get the room they need and the
+   score is pinned right, where a reader scans for it. `min-width: 0` on the
+   name cells is load-bearing: a grid item's default `min-width: auto` refuses
+   to shrink below its content, which would push the score off the panel on a
+   long name instead of ellipsising it. */
+.jh-qual { list-style: none; margin: 0; padding: 4px 0; }
+.jh-qual li {
+  display: grid; align-items: baseline; gap: 0 10px;
+  grid-template-columns: 2.5em minmax(0, 1fr) minmax(0, 1fr) auto;
+  grid-template-areas: "n w ws sc" "n l ls sc";
+  padding: 7px 16px; border-top: 1px solid var(--border-subtle);
+}
+.jh-qual li:first-child { border-top: 0; }
+/* Zebra on the MATCH, not the row — two lines belong to one result, so the tint
+   has to alternate in pairs or it reads as six separate entries. */
+.jh-qual li:nth-child(even) { background: var(--surface-subtle); }
+.jh-qual .n {
+  grid-area: n; align-self: center;
+  font-size: 11px; font-weight: 800; color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.jh-qual .w, .jh-qual .l { min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; text-decoration: none; font-size: 13.5px; }
+.jh-qual .w { grid-area: w; font-weight: 700; color: var(--text-primary); }
+.jh-qual .l { grid-area: l; font-weight: 500; color: var(--text-secondary); }
+.jh-qual .w:hover, .jh-qual .l:hover { color: var(--brand-strong); }
+.jh-qual .ws, .jh-qual .ls {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 12px; color: var(--text-muted);
+}
+.jh-qual .ws { grid-area: ws; }
+.jh-qual .ls { grid-area: ls; }
+/* The result reads down, not across: the winner is the bold top line and the
+   loser's own line carries the marker, so no "def." column has to be threaded
+   between two names of unpredictable width. */
+.jh-qual .l::before {
+  content: "def. by "; font-weight: 600; color: var(--text-muted); font-size: 11px;
+}
+.jh-qual .sc {
+  grid-area: sc; align-self: center; justify-self: end;
+  font-size: 13px; font-weight: 650; color: var(--text-primary);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+/* Narrow: the schools drop under their players and the score takes its own line,
+   because four content columns cannot survive a phone and truncating a score is
+   worse than wrapping it. */
+@media (max-width: 700px) {
+  .jh-qual li {
+    grid-template-columns: 2.5em minmax(0, 1fr);
+    grid-template-areas: "n w" "n ws" "n l" "n ls" "n sc";
+    gap: 0 10px;
+  }
+  .jh-qual .sc { justify-self: start; padding-top: 3px; }
+}
+
 /* ---- Collapsible panel (owner, 2026-08) ----------------------------------
    `<details>`/`<summary>`, not a JS toggle: the open/closed state, the keyboard
    behaviour and the accessibility semantics are all native, and a panel that fails

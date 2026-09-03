@@ -4557,13 +4557,21 @@ def _jh_indiv_drawn(draw: dict, schools: dict, as_rounds: bool = False) -> dict:
     # round; splitting only `rounds[0]` would hand the tree a second one whose
     # size does not halve from the round before it, which is exactly the input
     # `_bracket_canvas` cannot draw.
-    # ‼️ A QUALIFYING DRAW IS NOT A TREE AND MUST NOT BE FED TO ONE.
-    # `_bracket_canvas` links columns positionally on the main draw's halving;
-    # Regional Qualifying is two INDEPENDENT rounds whose sizes do not halve (31
-    # matches then 32, because the opening round byes a third of the field into
-    # the final one). Rendered on the canvas it would draw links between matches
-    # that have nothing to do with each other. `as_rounds` sends every round to
-    # the panel list instead, which is how a slam prints its qualifying anyway.
+    # ‼️ QUALIFYING IS RENDERED AS ROUND LISTS, NOT AS ONE TREE — and the reason
+    # is NOT that it cannot be a tree. It can: a qualifying draw is N INDEPENDENT
+    # sub-brackets, one per qualifying place, exactly as a slam prints them (four
+    # players -> two -> a qualifier, stacked N times, with no overall champion).
+    # This draw's 93 entries and [27, 33] rounds are 33 sub-brackets — 27 of three
+    # players (a first-round match, then the winner meets the third) and 6 of two.
+    # Each of those halves perfectly.
+    #
+    # What CANNOT be drawn is the whole thing as ONE tree: `_bracket_canvas` links
+    # columns positionally, and 27 matches feeding 33 is not a halving, so it would
+    # elbow together matches with no relationship. That is a fact about feeding the
+    # canvas one column list, not about qualifying — an earlier version of this
+    # comment drew the wrong conclusion from it and said a qualifying draw "is not a
+    # tree". Rendering the sub-brackets is open whenever it is wanted; `as_rounds`
+    # is the list presentation, which is also how an association publishes qualifying.
     playins = []
     if as_rounds:
         rounds, tail = [], rounds
@@ -4612,6 +4620,10 @@ def _jh_indiv_drawn(draw: dict, schools: dict, as_rounds: bool = False) -> dict:
     runner_sc = schools.get(runner["school"]) if runner else None
     return {
         "ready": True, "playins": playins,
+        # What the reader of a qualifying sheet actually wants to know, and what
+        # neither DRAW nor SEEDS in the header answers: how many of this field
+        # come out of it. The last round is one match per qualifying place.
+        "qual_advance": len(playins[-1]) if playins else 0,
         "n_seeds": draw["n_seeds"], "field_n": len(entries),
         "champion": champ, "runner_up": runner,
         # Grade/hometown sit UNDER the name on the hero announcement, never
