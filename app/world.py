@@ -4736,12 +4736,19 @@ OVR_GAP_BANDS = (("0-6", "Peers", 0.0, 7.0),
                  ("22-28", "Strong", 22.0, 29.0),
                  ("29+", "Major", 29.0, float("inf")))
 
-#: `jhsaa_gap_bands` memo, keyed (world_id, year, gender, salt, transfer stamp).
-#: Two full-gender roster rebuilds (~12 ms a school, ~900 schools) is ~20 s of
-#: work, so the page computes this ON DEMAND through the deferred-job pattern
-#: (`server._jh_deferred`) and this memo is the publish side of that job. The
-#: transfer stamp is in the key because a move recorded for an archived season
-#: changes who `build_roster` names — the Underplaced board's own reason.
+#: `jhsaa_gap_bands` memo, keyed (world_id, year, gender, salt, transfer stamp,
+#: archetype fingerprint). Two full-gender roster rebuilds (~12 ms a school,
+#: ~900 schools) is ~20 s of work, so the page computes this ON DEMAND through
+#: the deferred-job pattern (`server._jh_deferred`) and this memo is the publish
+#: side of that job. ‼️ EVERY INPUT `build_roster` GENERATES FROM IS IN THE KEY,
+#: the season cache's own rule (`jhsaa._season_cache`): the transfer stamp
+#: because a move recorded for an archived season changes who a roster NAMES,
+#: and the archetype fingerprint because `_program_mod` changes the OVRs those
+#: names carry — an archetype edit calls `reset_all()`, which clears nothing
+#: here, so keyed on transfers alone a revisit kept serving the old bands.
+#: Play-up is deliberately NOT in the key: it moves `group`, never
+#: `classification`, and `_TALENT` generates from the latter (pinned in
+#: `tests/test_jhsaa_playup.py`), so it changes no OVR this fold reads.
 #: Cleared by `reset()`; pruned per (world, year, gender) before publishing.
 _gapband_cache: dict = {}
 
@@ -4787,7 +4794,9 @@ def jhsaa_gap_bands(world_id: int, year: int, gender: str, salt: str = "") -> di
     `lopsided` % of sets that were 6-0 or 6-1."""
     from . import jhsaa as _jh
     from . import overrides as ov
-    ck = (world_id, year, gender, salt, ov.jhsaa_transfer_version())
+    # Both fingerprints resolved ONCE per fold, never per school or per row.
+    ck = (world_id, year, gender, salt, ov.jhsaa_transfer_version(),
+          ov.jhsaa_archetype_version())
     got = _gapband_cache.get(ck)
     if got is not None:
         return got

@@ -203,10 +203,17 @@ matches, favourite win %, three-set %, and the share of sets at 6-0/6-1.
 - **‼️ ~20 s cold, so it is ON DEMAND.** Two full-gender rebuilds (~12 ms a
   school, ~900 schools) cannot run on the one gthread's request; the route runs
   it through `_jh_deferred` (the Transfers page's pattern) behind a "Compare by
-  gap band" button, `world._gapband_cache` is the publish side (keyed on the
-  transfer stamp too, since a recorded move changes who a roster names), and
-  the set histograms above it never wait on it. The view takes `bands=True`
-  only after the route has done that.
+  gap band" button, `world._gapband_cache` is the publish side, and the set
+  histograms above it never wait on it. The view takes `bands=True` only after
+  the route has done that.
+- **‼️ THE MEMO KEY CARRIES EVERY INPUT `build_roster` GENERATES FROM**: the
+  transfer stamp (a recorded move changes who a roster NAMES) AND the archetype
+  fingerprint (`_program_mod` changes the OVRs those names carry). A review
+  caught the first version keyed on transfers alone: an archetype edit calls
+  `reset_all()`, which clears nothing here, so a revisit kept serving the old
+  bands until a world reset. Fingerprint the key, never chase every edit path
+  with a clear-call. Play-up is deliberately not in it — it moves `group`, not
+  `classification`, and `_TALENT` generates from the latter.
 
 ## Traps for the next agent
 
