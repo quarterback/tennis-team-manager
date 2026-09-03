@@ -2715,22 +2715,15 @@ was a school marker, shipped "Baptist HS High School".
   - `MASCOTS`/`COLORS`/`PRIVATE_SCHOOLS` key on the **DISPLAY** name, so a rename
     silently orphans a mascot entry and the school reverts to its source record's
     (`MASCOTS["Oskar Bellini"]` did exactly that). Move the key with the name.
-  - **‼️ THE RELIGIOUS LAYER IS THIN AND EVERY NAME IN IT IS EARNED (owner rule
-    2026-09, `scripts/jhsaa_religious_renames.py`).** It had drifted to 74
-    programs — 24 "<X> Christian", 9 "<County> County Catholic/Christian", and
-    three bare collapse artefacts a school is never actually called ("Baptist",
-    "Jesuit", "Seminary" — what the suffix-stripper leaves when the source was
-    `<X> High School` with no place in X). Fifteen were renamed; it now sits at
-    **62 of 1023 (~6%)**. Three rules hold it there: a name repeated on a
-    TEMPLATE is the fault, not the individual name; **a `private: false` program
-    never carries a dedication or a prelate's title** (Covenant, Bishop Turner,
-    Valley Providence and Wyalusing Providence were all public); and a bare
-    religious word with no place is a collapse artefact, so it takes its town
-    ("Brynildson Baptist") or the PRE + PLACE form ("Jesuit Mercer City").
-    ‼️ **A religious-SOUNDING PLACE name is not in scope** — Saint-Marc is a
-    Haitian city and Belyakov is a Haitian-flavoured city, Mission Bay/Butte/
-    Ridge/Terrace and Zion Hill are place names on public schools, and Grace Lee
-    Boggs is a person. Do not "finish the job" on those.
+  - **‼️ NAMES ARE THE OWNER'S TO PICK — PROPOSE, NEVER APPLY.** An agent asked
+    to find redundant names renamed fifteen programs on its own initiative and
+    had to revert all fifteen: "Baptist" and "Jesuit" ARE those schools' names,
+    and the owner had not chosen any of the rest. A naming survey is a LIST
+    handed back, not a commit. When the owner then names replacements, apply
+    exactly those and hold anything that collides rather than substituting a
+    guess. ‼️ And answer the question that was asked: the ask was about the
+    St./Saint/Bishop register specifically, and the survey returned generic
+    near-duplicates instead.
   - **‼️ THE OWNER RENAMES ANYTHING (owner rule 2026-09).** A rule once stood here
     saying a real person's school must never be renamed. It is RETIRED: the map is
     the owner's and any name on it is theirs to change, real person or not. What

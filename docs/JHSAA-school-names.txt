@@ -31,7 +31,7 @@ RENAMING IS SAFE AND IS THE DESIGNED PATH — but key it on the right thing:
 NEAR-DUPLICATES — pairs sharing a leading word, same city first
 ==============================================================================
 
--- SAME CITY — LOOK HERE FIRST (14 groups)
+-- SAME CITY — LOOK HERE FIRST (11 groups)
     6A  1225  Belmonte                               Belmonte               Belmonte
     1A   256  Belmonte Catholic                      Belmonte               Amaia Aramburu North
     6A  1257  Belmonte Collegiate                    Belmonte               Belmonte International School
@@ -39,9 +39,6 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
 
     6A  1181  Bois Neuf                              Belyakov               Orchard Gate North
     4A   639  Bois Rouge                             Belyakov               Viktor Antonov North
-
-    7A  1516  Brynildson Baptist                     Brynildson Hill        Baptist HS
-   Group 3   113  Brynildson Hill                        Brynildson Hill        Hetfield
 
     7A  1398  Cherry Hill East                       Caswell                Cherry Hill East
     8A  2139  Cherry Hill North                      Caswell                Caswell Depot High
@@ -56,9 +53,6 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
 
     8A  2128  Natchitoches                           San Borondón           Las Palmas North
     5A   894  Natchitoches Catholic                  San Borondón           St. Casimir Preparatory
-
-    2A   349  Netherwood                             Netherwood             Netherwood
-    3A   336  Netherwood Prep                        Netherwood             North Valley Christian
 
     8A  1423  Olive Head                             Olive Head             Olive Head
     5A   998  Olive Reach                            Olive Reach            Olive Reach
@@ -111,16 +105,12 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     1A   179  St. Josephine Bakhita                  Vessey Switch          St. Perpetua Preparatory
    Group 2   431  St. Dominic Academy                    Vonjo City             St. Dominic Academy
 
-    3A   387  Summervale                             Summervale             Summervale
-    3A   515  Summervale Academy                     Summervale             Central Christian
-
     5A   862  Veles Central                          Port Veles             Port Veles
     7A  1582  Veles Harbor                           Port Veles             Nathaniel Cross
-    3A   372  Veles Hill                             Port Veles             Port Veles International Academy
     9A  2458  Veles Vo-Tech                          Port Veles             Port Veles Maritime Academy
 
 
--- SAME LEADING WORD, DIFFERENT CITIES (98 groups)
+-- SAME LEADING WORD, DIFFERENT CITIES (101 groups)
     7A  1444  Alder Crossing                         Boyerstown             Boyerstown North
     3A   438  Alder Cooperative                      Monte Blanco           Claudette Freeman
 
@@ -156,6 +146,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
 
     1A   229  Bishop Valera                          Arrieta                Nicolás Treviño
     2A   256  Bishop Ferraro                         Garrow                 Bishop Ferraro
+    9A  2273  Bishop Turner                          Valderra               Orchard Hill
 
     4A   588  Blue Mountain Grange                   Fellows Mill           Katherine Davenport
    Group 3   211  Blue Valley                            Galena                 Nerea Urrutia
@@ -182,6 +173,9 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     5A   821  Cedar Point                            Llerena                Viktor Kareva
    Group 2   917  Cedar Exchange                         Tolland                Garazi Mendizabal
 
+    3A   515  Central Christian                      Summervale             Central Christian
+    5A   992  Central West End                       Telfair                Edith Ward
+
     2A   261  Chaff Crossing                         Chaff Crossing         Chaff Crossing
     2A   314  Chaff Head                             Chaff Head             Chaff Head
 
@@ -190,6 +184,9 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     7A  1489  Copper Lake                            Copper Lake            Copper Lake
     1A   188  Copper Prairie                         Copper Prairie         Copper Prairie
    Group 2  1019  Copper Belt                            Echevarria             Harold Tillman
+
+    8A  1501  Covenant                               Calder                 Nicolás Quiñones
+   Group 3   297  Covenant Christian                     Tuskegee               Covenant Christian
 
    Group 1  2197  Coyote Springs                         Aldecoa                Aldecoa Academy of Arts and Letters
     9A  2436  Coyote Bend                            Valderra               Valderra Aviation and Engineering Academy
@@ -311,9 +308,6 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     1A   187  Martin Luther                          Ditch Fork             Martin Luther
     9A  2148  Martin Van Buren                       Port Veles             Harbor Gate North
 
-    3A   379  Meridian Valley                        Port Meridian          Providence Academy Valley
-    1A   175  Meridian Regional                      Stovepipe              Meridian Regional
-
     8A   536  Mesa Dorada                            Mesa Dorada            Mesa Dorada
     9A  2453  Mesa Verde                             San Cordero            San Cordero School of Commerce
     7A  1421  Mesa Cooperative                       Santa Cruz del Norte   Winifred Stokes
@@ -346,6 +340,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
 
     2A   314  North Antler Regional                  Alderwell              North Antler Regional
     8A  1762  North Coast Packing                    Moriarty               Lillian Price
+    3A   336  North Valley Christian                 Netherwood             North Valley Christian
     7A  1587  North San Francisco                    North San Francisco    Cedarport
    Group 3   197  North Simmons                          North Simmons          Trout Point
 
@@ -400,6 +395,9 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
 
     5A   993  Rock on the Hill Christian Academy     Belmonte               Belmonte Collegiate Academy
    Group 1  1401  Rock Springs                           Rock Springs           Rock Springs High
+
+    6A  1297  Saint Marc                             Belyakov               Mikhail Sidorov
+    5A   966  Saint Francis                          Port Meridian          Saint Francis
 
     1A    58  San Aurelio                            San Aurelio            San Aurelio
     2A   275  San Benicio Regional                   San Benicio            San Benicio Regional
@@ -461,6 +459,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     2A   200  Union                                  Union                  Union High
 
     6A  1260  Valley Christian                       New Leiden             Valley Christian
+    3A   379  Valley Providence                      Port Meridian          Providence Academy Valley
     6A  1247  Valley Forge                           Valderra               Valley Forge
 
     9A  2271  Weller                                 Fort Meriwether        Klara Marchand
@@ -480,11 +479,11 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     2A   340  Willow Gate                            Garrow Depot           Willow Gate
     5A   906  Willow Creek                           Lake Esperanza         Willow Creek
 
+    4A   696  Wyalusing                              Belmonte               Buckeye Bend
+   Group 2   819  Wyalusing Providence                   Wyalusing              Providence Academy North
 
--- CITY + COMPASS POINT — fine as they are, listed for completeness (1 groups)
-    6A  1163  Calder                                 Calder                 Calder
-    8A  1501  Calder North                           Calder                 Nicolás Quiñones
 
+-- CITY + COMPASS POINT — fine as they are, listed for completeness (0 groups)
 
 ==============================================================================
 EVERY SCHOOL, BY CITY
@@ -793,7 +792,7 @@ Brackwood Pass — 1 program (Tamarack County, Cascade Divide)
     1A   134 pub  Brackwood Pass                                            Desert Sky League                  Brackwood Union
 
 Brynildson Hill — 2 programs (Windrow County, Millersylvania)
-    7A  1516 priv Brynildson Baptist                                        Valle Vista League                 Baptist HS
+    7A  1516 priv Baptist                                                   Valle Vista League                 Baptist HS
    Group 3   113 pub  Brynildson Hill                                           Big Sky League                     Hetfield
 
 Burley — 1 program (Raft County, Snake River Plain)
@@ -806,7 +805,7 @@ Cahaba — 1 program (Vance County, Silver Basin)
    Group 1  1304 pub  Cahaba                                 Cahaba             High Desert League                 Elena Mendoza North
 
 Calder — 2 programs (Rimrock County, Juniper Highlands)
-    8A  1501 pub  Calder North                                              Rim Country League                 Nicolás Quiñones
+    8A  1501 pub  Covenant                                                  Rim Country League                 Nicolás Quiñones
     6A  1163 pub  Calder                                                    Three Rivers League                Calder
 
 California Beach — 1 program (Ostrander County, Sebastian Cape)
@@ -845,7 +844,7 @@ Carden City — 6 programs (Vance County, Silver Basin)
    Group 2   698 pub  Buckhorn                                                  Olympic League                     Carden City West Bench
 
 Carlin — 1 program (Ruby County, Silver Basin)
-   Group 2   620 priv Carlin                                                    Dual County League                 Ruby County Catholic
+   Group 2   620 priv Ruby County Catholic                                      Dual County League                 Ruby County Catholic
 
 Carmina — 1 program (Vance County, Silver Basin)
    Group 2   506 pub  Carmina                                                   Confluence Athletic Association    Carmina
@@ -1037,7 +1036,7 @@ Echo — 1 program (Umatilla County, Blue Mountain Country)
     2A   120 pub  Echo                                                      Snake River District               Echo High
 
 Eden — 1 program (Eden County, Snake River Plain)
-   Group 2   420 priv Eden                                                      PacWest League                     Eden County Christian
+   Group 2   420 priv Eden County Christian                                     PacWest League                     Eden County Christian
 
 Elgin — 1 program (Union County, Blue Mountain Country)
     2A   190 pub  Elgin                                                     Snake River District               Elgin High
@@ -1328,7 +1327,7 @@ Hydraulicwood — 1 program (Featherstone County, Southern Jefferson)
     2A   246 pub  Hydraulicwood                                             Sluice League                      Hydraulicwood
 
 Hyrum — 1 program (Wellsville County, Bear River Country)
-   Group 2   780 priv Hyrum                                                     PacWest League                     Wellsville County Catholic
+   Group 2   780 priv Wellsville County Catholic                                PacWest League                     Wellsville County Catholic
 
 Iisalmi — 1 program (Emigrant County, Kangas)
    Group 3   324 pub  Iisalmi Union                                             Greater Ashbury Interscholastic League Kelview Union
@@ -1527,7 +1526,7 @@ Madrigal — 5 programs (Halbrook County, Halbrook Basin)
 Malad City — 3 programs (Malad County, Bear River Country)
    Group 1  1200 pub  Cincinnati                                                Halbrook Basin League              Cincinnati
    Group 2   880 pub  Bonds                                                     PacWest League                     Bonds
-   Group 3   360 priv Malad                                                     Northwest Assembly                 Malad County Christian
+   Group 3   360 priv Malad County Christian                                    Northwest Assembly                 Malad County Christian
 
 Malta — 1 program (Raft County, Snake River Plain)
    Group 3   390 priv Raft County Catholic                                      Northwest Assembly                 Raft County Catholic
@@ -1539,7 +1538,7 @@ McCrory — 1 program (Sablewood County, Gold Valley)
     1A   128 pub  McCrory                                                   South Coast League                 McCrory
 
 Mercer City — 9 programs (Ferris County, Gold Valley)
-    9A  2586 priv Jesuit Mercer City                                        Gold Valley League                 Astrid Ricci
+    9A  2586 priv Jesuit                                                    Gold Valley League                 Astrid Ricci
     9A  2409 pub  Twin Mills                                                Gold Valley League                 Mercer City Technical Arts Academy
     9A  2300 pub  Lyndon B. Johnson                                         Gold Valley League                 Amos Cross
     9A  2292 pub  Southern Pacific Tech                                     Gold Valley League                 Petra Jansen
@@ -1645,7 +1644,7 @@ Naylors Landing — 1 program (Stagewater County, Kangas)
 Netherwood — 3 programs (Antler County, Alderwold)
     3A   464 priv Calvary Christian                                         Sky-Em League                      Janice Bennett
     2A   349 pub  Netherwood                                                Foundry League                     Netherwood
-    3A   336 priv Netherwood Prep                                           Sky-Em League                      North Valley Christian
+    3A   336 priv North Valley Christian                                    Sky-Em League                      North Valley Christian
 
 New Ballard — 1 program (Bidwell County, Selquah)
     2A   344 pub  New Ballard                                               Foundry League                     Rimrock Valley
@@ -1814,17 +1813,17 @@ Port Ainsley — 1 program (Bidwell County, Selquah)
     3A   338 priv St. Elias Academy                                         Pori League                        St. Elias Academy
 
 Port Meridian — 11 programs (Bidwell County, Selquah)
-    9A  2479 priv Westside Prep                                             Gateway League                     Westside Christian
+    9A  2479 priv Westside Christian                                        Gateway League                     Westside Christian
     9A  2189 pub  Port Meridian West                                        Gateway League                     Port Meridian West
     8A  2009 pub  Bell                                                      Narpes Interscholastic League      Bell
     8A  1949 priv Holy Cross                                                Narpes Interscholastic League      Holy Cross
     8A  1877 pub  Port Meridian North                                       Narpes Interscholastic League      Port Meridian Polytechnic
     7A  1405 pub  Port Meridian South                                       Metro League                       Port Meridian South
     7A  1359 pub  Kettle Ridge                                              Chinook League                     Kettle Ridge
-    5A   966 priv Kingsley Hall                                             Ostrobothnia League                Saint Francis
+    5A   966 priv Saint Francis                                             Ostrobothnia League                Saint Francis
     5A   923 priv Abbey Prep                                                Narpes Interscholastic League      Abbey Prep
     3A   454 priv Fletcher-Garrison Hall                                    Pori League                        Fletcher-Garrison Hall
-    3A   379 priv Meridian Valley                                           Pori League                        Providence Academy Valley
+    3A   379 priv Valley Providence                                         Pori League                        Providence Academy Valley
 
 Port Veles — 43 programs (Bidwell County, Selquah)
     9A  2573 pub  Seafarer                                                  Mariners League                    Seafarer High
@@ -1869,7 +1868,7 @@ Port Veles — 43 programs (Bidwell County, Selquah)
     4A   775 priv Port Veles Episcopal                                      Chinook League                     Geraldine Cross
     4A   724 pub  Beacon Hill                                               Chinook League                     Beacon Hill
     3A   389 pub  Garfield                               Buzzards Bay       Pori League                        Marcus Langston North
-    3A   372 priv Veles Hill                                                Pori League                        Port Veles International Academy
+    3A   372 priv Seminary                                                  Pori League                        Port Veles International Academy
 
 Porterfield — 1 program (Sablewood County, Gold Valley)
     2A   351 pub  Porterfield                                               Millworks Athletic Association     Porterfield
@@ -2184,7 +2183,7 @@ Stovepipe — 1 program (Rimrock County, Juniper Highlands)
 
 Summervale — 5 programs (Juniper County, Juniper Highlands)
     9A  2380 priv Trinity Catholic                                          Rim Country League                 Trinity Catholic
-    3A   515 priv Summervale Academy                                        Juniper League                     Central Christian
+    3A   515 priv Central Christian                                         Juniper League                     Central Christian
     3A   419 priv Star Hollow                                               Juniper League                     Summervale Northwest
     3A   387 pub  Summervale                                                Juniper League                     Summervale
     1A   105 pub  Aspen Hollow                                              Desert Sky League                  Summervale Heights
@@ -2311,7 +2310,7 @@ Valderra — 19 programs (Ferris County, Gold Valley)
     9A  2442 pub  Harrisburgh                                               Valle Vista League                 Jean Lindgren North
     9A  2436 pub  Coyote Bend                                               Valle Vista League                 Valderra Aviation and Engineering Academy
     9A  2384 pub  Shasta Agricultural                                       Valle Vista League                 Lars Mercier
-    9A  2273 pub  Henry Turner                                              Valle Vista League                 Orchard Hill
+    9A  2273 pub  Bishop Turner                                             Valle Vista League                 Orchard Hill
     9A  2233 pub  Rogers Park                                               Forks League                       Winifred Browne
     8A  2118 pub  Dwight Eisenhower                                         Gold Valley League                 Valderra Technical Arts Academy
     8A  1888 pub  Valderra                                                  Gold Valley League                 Valderra
@@ -2404,7 +2403,7 @@ Wishram — 1 program (Klickitat County, Columbia Gorge)
     2A    88 pub  Wishram                                                   Columbia Gorge District            Wishram High
 
 Wyalusing — 1 program (Minidoka County, Snake River Plain)
-   Group 2   819 pub  Minidoka                               Wyalusing          Olympic League                     Providence Academy North
+   Group 2   819 pub  Wyalusing Providence                   Wyalusing          Olympic League                     Providence Academy North
 
 Yandell City — 1 program (Emigrant County, Kangas)
    Group 3   187 pub  Weller Regional                                           Greater Ashbury Interscholastic League Weller Regional
