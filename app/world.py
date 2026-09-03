@@ -3805,6 +3805,12 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                 "sectionals": {g: season["groups"][g]["sectional"] for g in jhsaa.GROUPS},
                 "wards": {g: season["groups"][g]["ward"] for g in jhsaa.GROUPS},
                 "prestate": {g: season["groups"][g]["prestate"] for g in jhsaa.GROUPS},
+                # THE EPIREGIONAL — the Zonal champions' play-in for the State
+                # draw's first four bye lines (owner rule 2026-09). Its own key,
+                # rendered as its own panel, never a column of the tree. `.get`
+                # for seasons archived before it existed.
+                "epiregional": {g: season["groups"][g].get("epiregional")
+                                for g in jhsaa.GROUPS},
                 "super_regional": {g: season["groups"][g]["super_regional"]
                                    for g in jhsaa.GROUPS},
                 "divisional": {g: season["groups"][g].get("divisional")
@@ -6124,6 +6130,8 @@ def jhsaa_title_stages() -> list[tuple[str, str, str]]:
             (jh._STAGE_NAMES["ward"], "WARD", "Ward titles"),
             (jh._STAGE_NAMES["regional"], "REG", "Regional titles"),
             (jh._STAGE_NAMES["zonal"], "ZONE", "Zonal titles — an automatic State berth"),
+            (jh.EPIREGIONAL_NAME, "EPI",
+             "Epiregional wins — the Zonal champions' play-in for a State bye line"),
             (jh._RECOVERY_NAMES["super_regional"], "S-REG", "Super Regional titles"),
             (jh._RECOVERY_NAMES["semi_state"], "S-ST", "Semi-State titles — a State berth"),
             (jh._RECOVERY_NAMES["divisional"], "DIV", "Divisional titles — a State berth"),
@@ -6139,8 +6147,8 @@ def jhsaa_title_stages() -> list[tuple[str, str, str]]:
 
 
 #: The archive keys every unit-bearing stage is written under, in ladder order.
-_JH_STAGE_KEYS = ("sectionals", "wards", "prestate", "super_regional", "semi_state",
-                  "divisional", "semi_conference", "conference",
+_JH_STAGE_KEYS = ("sectionals", "wards", "prestate", "epiregional", "super_regional",
+                  "semi_state", "divisional", "semi_conference", "conference",
                   "special_challenger", "state_special")
 
 #: A State finish, as a title-board column: `(key, full label)`. Keyed on the
@@ -6361,9 +6369,7 @@ def _unit_wins(arc: dict, group: str, school: str) -> list[str]:
     """The tournament units `school` won that season, in ladder order. Archives
     from before units existed carry no `unit` keys and yield nothing."""
     out = []
-    for key in ("sectionals", "wards", "prestate", "super_regional",
-                "semi_state", "divisional", "semi_conference", "conference",
-                "special_challenger", "state_special"):
+    for key in _JH_STAGE_KEYS:
         d = (arc.get(key) or {}).get(group) or {}
         for games in d.get("rounds") or ():
             for gm in games:

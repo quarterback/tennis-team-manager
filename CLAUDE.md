@@ -790,6 +790,28 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     ("Division XI"). Pinned by `test_no_recovery_round_has_a_bye`; explainer in
     `docs/JHSAA-road-to-state.md`.
   See `docs/AAR-jhsaa-state-expansion-recovery-rounds.md`.
+- **‼️ THE EPIREGIONAL — STATE SEED PLACEMENT IS MERIT, THE ZONAL TITLE IS ONLY
+  THE BERTH (owner rule 2026-09, `jhsaa.run_epiregional` / `state_seed_order`,
+  `docs/AAR-jhsaa-epiregional-seeding.md`).** A Zonal title used to buy seeds 1-8
+  outright; measured on 2068, seed 8 was the worst-placed team in 20 of 24 fields
+  (class rank 19-37) and girls' 8A's rank-1 team was seeded 12th. Now the eight
+  Zonal champions play ONE round among themselves (phase `"epiregional"`, right
+  after `"zonal"` in `POSTSEASON`, before recovery; paired 1v8 on `seed_atr`
+  among the eight, higher seed hosts, each dual a named unit off the NCAA
+  `regions.LEAGUE_NAMES` pool — "Cascade Epiregional"). All eight stay in State.
+  Bye lines 1-8 = the four winners + the best four of EVERYONE ELSE on the seeding
+  ATR (a losing champion included), ordered 1-8 on ATR among themselves — a win
+  guarantees a top-EIGHT line, never top-four; 9+ on ATR whatever the door in.
+  ‼️ `seed_atr` (`SEED_ATR_TOSS_WEIGHT` 0.6 / `SEED_ATR_WIN_WEIGHT` 0.4, a z-score
+  blend WITHIN the class-gender field) is a SECOND formula beside `atr` (0.5, the
+  Conference pools) on purpose — retuning that one moves the recovery ladder.
+  ‼️ THE DRAW'S SHAPE IS UNTOUCHED: `run_state(champions=STATE_BYES)` keeps 8
+  single byes in a 24, 8 double byes in a 40, none in a 32 (placement only). All
+  eight bye lines carry the SAME bye — "four single byes" for the merit four in a
+  40 would break the halving. Archived under its own key `epiregional` and rendered
+  as its OWN PANEL on the bracket page, never a tree column (four duals → four
+  placements is not a halving). `play_dual` CREDITS the round to the record, so a
+  test pre-computing an order must do so BEFORE playing.
 - **‼️ THE STATE SPECIALS ARE THE ROAD'S REQUIRED FINAL ROUND (owner rule
   2026-08, superseding the reconciliation-only design —
   `jhsaa._state_specials_round`).** The data showed losing-record teams reaching

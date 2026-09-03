@@ -95,7 +95,7 @@ def classification_sort_key(cls: str):
 
 _JH_ROAD_LABELS = {
     "area": "Areas", "sectional": "Sectionals", "ward": "Wards",
-    "regional": "Regionals", "zonal": "Zonals",
+    "regional": "Regionals", "zonal": "Zonals", "epiregional": "Epiregionals",
     "super_regional": "Super Regionals", "semi_state": "Semi-State",
     "divisional": "Divisionals", "semi_conference": "Semi-Conference",
     "conference": "Conference",

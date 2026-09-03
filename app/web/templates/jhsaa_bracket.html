@@ -63,6 +63,44 @@
 <div style="margin-top:6px">{{ jh_round_tabs(view.rounds, u, view.gender, 'jhbrkrd', view.scope.pin) }}</div>
 
 <div class="jh-layout" style="margin-top:14px">
+  {% if view.epiregional %}
+  {# THE EPIREGIONAL — the Zonal champions' play-in for the first four bye lines
+     (owner rule 2026-09). Its OWN panel: four duals deciding four placements is
+     not a halving, so it can never be a column of the tree above. Each dual is a
+     named unit off the NCAA region-name pool. The second block is the eight bye
+     lines the draw was built on — four Epiregional winners, four on ATR. #}
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">{{ view.group }} Epiregionals</span>
+      <span class="bl-panel-meta">Zonal champions' play-in · winners hold bye lines</span></div>
+    <div class="bl-panel-body">
+      <div class="jh-cols2">
+        {% for col in view.epiregional.games|batch(2, none) %}
+        <div>
+          {% for gm in col if gm %}
+          <div class="jh-mgame">
+            {% if gm.unit %}<div class="cap">{{ gm.unit }}</div>{% endif %}
+            <div class="jh-mside {{ 'win' if gm.winner == gm.home else 'out' }}">
+              <span class="sd">{{ gm.home_seed or '' }}</span>
+              <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.home, u=u, g=view.gender, year=view.scope.pin) }}">{{ gm.home }}</a></span>
+              <span class="pt">{{ gm.home_points|int }}</span>
+            </div>
+            <div class="jh-mside {{ 'win' if gm.winner == gm.away else 'out' }}">
+              <span class="sd">{{ gm.away_seed or '' }}</span>
+              <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.away, u=u, g=view.gender, year=view.scope.pin) }}">{{ gm.away }}</a></span>
+              <span class="pt">{{ gm.away_points|int }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      {% if view.epiregional.bye_lines %}
+      <p class="jh-byes">{{ 'Double byes' if view.epiregional.bye_kind == 'double' else 'Byes' }}:
+        {% for b in view.epiregional.bye_lines %}<a href="{{ url_for('jhsaa_school', school=b.name, u=u, g=view.gender, year=view.scope.pin) }}">{{ b.seed }} {{ b.name }}</a> ({{ b.how }}){{ ", " if not loop.last }}{% endfor %}</p>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
   {% if view.stages %}
   {# Road to State — one collapsed fold per pre-state stage, newest first: the
      RECOVERY rounds (Conference, Semi-Conference, Divisionals, Semi-State, Super

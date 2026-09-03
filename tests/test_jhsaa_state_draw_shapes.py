@@ -83,7 +83,9 @@ def test_a_power_of_two_field_plays_straight_through_with_no_byes():
     """‼️ 32 → 16 → 8 → 4 → 2, nobody sitting out (owner, 2026-08). The champions'
     privilege is a SEEDING guarantee; a 24-field's eight byes are a consequence of
     that field's shape, not the rule — see
-    `test_zonal_champions_are_the_top_seeds_byes_or_not`, which pins both shapes."""
+    `test_the_epiregional_plays_all_eight_champions_for_four_bye_lines`, which pins
+    both shapes (the bye lines are the Epiregional winners plus the ATR four now,
+    owner rule 2026-09)."""
     br = draw(32)
     assert not br.get("round_names"), "a 32 needs no qualifying round"
     assert [len(r) for r in br["rounds"]] == [16, 8, 4, 2, 1]
