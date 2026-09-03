@@ -121,13 +121,16 @@
     <div class="brk-region-head">
       <h2>{{ view.season_year }} {{ view.event_name }} · {{ view.field_n }} entries</h2>
       <span class="brk-region-champ">
-        {% if view.champion %}{{ view.champion.label }}{% if view.runner_up %} def. {{ view.runner_up.label }}{% endif %}{% else %}in progress{% endif %}</span>
+        {% if view.qualifying %}{{ view.qual_advance }} qualify{% elif view.champion %}{{ view.champion.label }}{% if view.runner_up %} def. {{ view.runner_up.label }}{% endif %}{% else %}in progress{% endif %}</span>
     </div>
     {% if view.canvas.columns %}
+    {# ‼️ A QUALIFYING DRAW IS N SUB-BRACKETS, one per qualifying place, each ending
+       in a qualifier rather than in a champion — the same tree a slam prints for its
+       qualifying. `_jh_qual_cols` materialises the byes so the columns halve and the
+       shared canvas can draw it; this used to render "Played as rounds, above" on
+       the belief that qualifying has no tree at all. #}
     {{ brk_canvas(view.canvas, u, false, 'jhsaa_player', {'g': view.gender, 'year': view.scope.pin}) }}
     {% else %}
-    {# A qualifying draw has no tree — its rounds are above, as an association
-       prints them. #}
     <div class="jh-empty" style="padding:12px">Played as rounds, above.</div>
     {% endif %}
   </section>
