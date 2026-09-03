@@ -96,7 +96,7 @@ BOYS_OF_GIRLS = 0.88
 # being the superset (see the sponsorship note above) means there's no equivalent
 # ALWAYS_BOYS_ONLY case to mirror.
 ALWAYS_GIRLS_ONLY = {
-    
+    "Montelago West",
 }
 
 # Schools the owner wants in the association without giving them an archetype. The
@@ -113,7 +113,7 @@ ALWAYS_EXTRA = [
     "Breakwater",
     "Calderwood School",
     "Caswell Depot High",
-    
+    "Central Christian",
     "Chaminade",
     "Commonwealth",
     "Condotti Vanguard Academy",
@@ -121,7 +121,7 @@ ALWAYS_EXTRA = [
     "Crown Hill",
     "Dolores Huerta",
     "Dry Lake",
-    
+    "Eastmont Christian",
     "Echevarria Foundry High",
     "Elk Bluff",
     "Elk Crossing",
@@ -154,7 +154,7 @@ ALWAYS_EXTRA = [
     "Netherwood",
     "New Leiden",
     "Newark River North",
-    
+    "North Valley Christian",
     "Owl Canyon",
     "Pacific Friends School",
     "Paul Robeson",
@@ -167,7 +167,7 @@ ALWAYS_EXTRA = [
     "Redwood Coast",
     "Romero-Finniski",
     "Sage Point",
-    
+    "Saint Francis",
     "San Borondón",
     "San Cordero",
     "San Tomás",
@@ -177,14 +177,14 @@ ALWAYS_EXTRA = [
     "Seafarer High",
     "Selbyville",
     "Silver Glen",
-    
+    "Sisters of Mercy",
     "Snowline",
     "St. Agnes Academy",
     "St. Basil Academy",
-    
-    
+    "St. Gabriel Preparatory",
+    "St. Isidore",
     "St. Norbert Abbey",
-    
+    "St. Perpetua",
     "St. Sebastian Prep",
     "St. Vincent School",
     "Steelbridge",
@@ -236,7 +236,7 @@ ALWAYS_EXTRA = [
     "Soren Ekström",
     "Southridge Christian",
     "St. Elian",
-    
+    "St. Elias Academy",
     "Starlake",
     "Thomas Ekström",
     "Trout Lake",
@@ -368,7 +368,7 @@ FORMER_NAMES = {
     "Alonso Villalba":                             "Los Feliz",
     "Altamonte Civic Leadership Academy":          "Senator Gray",
     "Amaia Aramburu":                              "Ketanji Brown Jackson",
-    "Amaia Aramburu North":                        
+    "Amaia Aramburu North":                        "Belmonte South",
     "Amaia Echevarria":                            "Redwood Mutual",
     "Amaia Etxeberria":                            "Boyle Heights",
     "Amalia Escobedo":                             "Petoskey Rock",
@@ -414,6 +414,7 @@ FORMER_NAMES = {
     "Belden Springs Academy of Music and Media":   "Springdale",
     "Belmonte Agricultural Sciences Academy":      "Pelican Town",
     "Belmonte Applied Sciences Institute":         "Yazoo",
+    "Belmonte Catholic":                           "Belmonte South",
     "Belmonte Civic Leadership Academy":           "Keeler",
     "Belmonte Classical Academy":                  "James Madison",
     "Belmonte Collegiate Academy":                 "Rock on the Hill Christian Academy",
@@ -438,6 +439,7 @@ FORMER_NAMES = {
     "Benjamin Banneker North":                     "Pascagoula",
     "Bidwell City":                                "Alfalfa City",
     "Bidwell County":                              "County Line",
+    "Bishop Valera":                               "Valera",
     "Blackbird Canyon":                            "Tallulah Canyon",
     "Blackpine North":                             "Ravenwood",
     "Bogue Chitto":                                "Harmony",
@@ -448,6 +450,7 @@ FORMER_NAMES = {
     "Brynildson Baptist":                          "Baptist",
     "Buckeye Bend":                                "Wyalusing",
     "Cabo Esperanza Technical Arts Academy":       "Cabo Esperanza Tech",
+    "Cahokia Mounds Catholic":                     "Cahokia Mounds",
     "Calder North":                                "Stonehaven",
     "Calderwood School":                           "Calderwood",
     "Calvary Chapel Ditch Fork":                   "Cassius",
@@ -459,6 +462,7 @@ FORMER_NAMES = {
     "Carmen Valera":                               "Ferris",
     "Carroway Public Service":                     "Liberty Hill",
     "Carroway School of Public Service":           "Liberty Hill",
+    "Cascade Christian":                           "Evenfall",
     "Caswell Depot High":                          "Cherry Hill North",
     "Caswell I-50 Technical":                      "Cherry Hill South",
     "Caswell School of Science and Industry":      "Chester A. Arthur",
@@ -473,6 +477,7 @@ FORMER_NAMES = {
     "Copper Crossing":                             "Copper Gap",
     "Copper Lake East":                            "Bridgewater",
     "Copper Lake West":                            "Azurite",
+    "Cornerstone Christian":                       "South Rim",
     "Costa Verde North":                           "Verde Highlands",
     "Covenant":                                    "Stonehaven",
     "Coyote Draw":                                 "Savane Brulee",
@@ -508,6 +513,7 @@ FORMER_NAMES = {
     "Evelyn Booker":                               "William Howard Taft",
     "Ewart City":                                  "Cook City",
     "Ewartville":                                  "Fort Tabor",
+    "Faith Academy":                               "Michaela East",
     "Featherstone Institute":                      "Featherstone Tech",
     "Fellows Mill Civic Leadership Academy":       "Millworks",
     "Fellows Mill International":                  "Mill Bar",
@@ -532,7 +538,7 @@ FORMER_NAMES = {
     "Gagarin Public Service":                      "Star City",
     "Gagarin School of Public Service":            "Star City",
     "Galina Markov":                               "James Monroe",
-    "Galina Moroz":                                
+    "Galina Moroz":                                "Windward",
     "Galina Romanov":                              "Stagewater",
     "Garazi Aramburu":                             "Ocean Park",
     "Garazi Mendizabal":                           "Cedar Exchange",
@@ -584,7 +590,7 @@ FORMER_NAMES = {
     "Iker Aramburu":                               "Sandra Day O'Connor",
     "Iker Aramburu North":                         "Highland Park",
     "Imani Cross":                                 "Apalachicola",
-    "Irina Kovalenko":                             
+    "Irina Kovalenko":                             "Michaela East",
     "Irina Kovalenko North":                       "Arroyo Verde",
     "Isabel Lucero":                               "El Sereno",
     "Isabel Montalvo":                             "Magnolia Park",
@@ -659,7 +665,7 @@ FORMER_NAMES = {
     "Manzanita Ridge":                             "Manzanita",
     "Marcus Langston":                             "Rutherford Hayes",
     "Marcus Langston North":                       "Garfield",
-    "Marcus Mercer":                               
+    "Marcus Mercer":                               "Evenfall",
     "Marcus Price North":                          "Driftwood",
     "Marian Browne":                               "River Market",
     "Marian Cross":                                "Quail Hollow",
@@ -671,11 +677,10 @@ FORMER_NAMES = {
     "Matteo Dahl":                                 "Bywater",
     "Mercer City Technical Arts Academy":          "Twin Mills",
     "Mercy Academy":                               "Natchez Mercy",
-    "Meridian Valley":                             
     "Metropolitan Country Day School":             "Metropolitan Country Day",
     "Mikel Echevarria":                            "Fir Valley Grange",
     "Mikel Garmendia":                             "Homeland",
-    "Mikel Zubieta":                               
+    "Mikel Zubieta":                               "South Rim",
     "Mikhail Sidorov":                             "Saint Marc",
     "Mila Chernov North":                          "Siberia",
     "Mila Melnick":                                "Sea Cliff",
@@ -691,13 +696,14 @@ FORMER_NAMES = {
     "Nadia Chernov":                               "Calvin Coolidge",
     "Nadia Chernov North":                         "Roosevelt",
     "Nadia Sidorov":                               "Sally Ride",
-    "Naomi Ellison":                               
+    "Naomi Ellison":                               "Starfield",
     "Naomi Langston North":                        "Pointe des Brumes",
     "Naomi Moss":                                  "Meyerland",
     "Naomi Price":                                 "Crown Paper",
     "Naomi Ward":                                  "Golden State Packing",
+    "Natchitoches Catholic":                       "Brightwater",
     "Nathaniel Cross":                             "Veles Harbor",
-    "Nathaniel Cross North":                       
+    "Nathaniel Cross North":                       "Veles Union",
     "Nathaniel Gaines":                            "St. Catherine Academy",
     "Nathaniel Ward":                              "Juniper Agricultural",
     "Nerea Mendizabal":                            "Sparrowhawk",
@@ -708,7 +714,7 @@ FORMER_NAMES = {
     "Nicolás Ordoñez":                             "Rockridge",
     "Nicolás Quiñones":                            "Stonehaven",
     "Nicolás Salcedo":                             "Siskiyou Electric",
-    "Nicolás Treviño":                             
+    "Nicolás Treviño":                             "Valera",
     "Nicolás Villalba":                            "Temescal",
     "Nikolai Markov":                              "Christian Brothers",
     "Nikolai Markov North":                        "Marigny",
@@ -735,6 +741,7 @@ FORMER_NAMES = {
     "Orellana Treasure Valley":                    "Treasure Valley",
     "Oskar Bellini":                               "Notre Dame",
     "Oskar Weiss":                                 "Waldo",
+    "Our Lady of the Coast":                       "Windward",
     "Pacific Friends School":                      "Pacific Friends",
     "Pacific Fruit Exchange":                      "Asteroid City",
     "Paddock Institute":                           "Paddock Tech",
@@ -748,6 +755,8 @@ FORMER_NAMES = {
     "Pinecrest School":                            "Pinecrest",
     "Pioneer Electric":                            "Bolton",
     "Plainfield Science":                          "Plainfield",
+    "Pope Francis":                                "Elkhorn",
+    "Pope Victor I":                               "Bravewoman",
     "Port Meridian Polytechnic":                   "Port Meridian North",
     "Port Veles":                                  "Veles Central",
     "Port Veles Agricultural Sciences Academy":    "Biden",
@@ -755,12 +764,14 @@ FORMER_NAMES = {
     "Port Veles Civic Leadership Academy":         "Severn",
     "Port Veles East":                             "Clinton",
     "Port Veles Foundry High":                     "Seawall",
-    "Port Veles International Academy":            
+    "Port Veles International Academy":            "Seminary",
+    "Port Veles Lutheran":                         "Veles Union",
     "Port Veles Maritime Academy":                 "Veles Vo-Tech",
     "Portola":                                     "Homeland",
     "Prairie Union":                               "Deaconsburg",
     "Providence Academy North":                    "Wyalusing Providence",
-    "Providence Academy Valley":                   
+    "Providence Academy Valley":                   "Meridian Valley",
+    "Providence Catholic":                         "Starfield",
     "Puerto Gallego School of Science and Industry": "Gallego Bay",
     "Puerto Gallego Science":                      "Gallego Bay",
     "Puerto de los Reyes Commerce":                "Reyes Landing",
@@ -809,7 +820,7 @@ FORMER_NAMES = {
     "Santa Michaela Harbor Gate":                  "Tidegate",
     "Seafarer High":                               "Seafarer",
     "Selbyville Manufacturing and Technology Academy": "Selby Tech",
-    "Seminary High School":                        
+    "Seminary High School":                        "Seminary",
     "Sergei Belov":                                "Malcolm X Shabazz",
     "Sergei Petrenko":                             "Willowbrook",
     "Serrano Applied Sciences Institute":          "Arroyo Seco",
@@ -824,27 +835,32 @@ FORMER_NAMES = {
     "Sofía Cordero":                               "John Quincy Adams",
     "Soren Ekström":                               "St. Sergius",
     "St. Basil":                                   "St. Ignatius",
-    "St. Basil Academy":                           
+    "St. Basil Academy":                           "Cahokia Mounds",
     "St. Basil School":                            "St. Ignatius",
     "St. Brigid Preparatory":                      "Kingston",
     "St. Brigid School":                           "St. Brigid",
-    "St. Casimir High School":                     
+    "St. Casimir":                                 "Harriman Lyceum",
+    "St. Casimir High School":                     "Harriman Lyceum",
     "St. Casimir High School North":               "Casimir Creek",
-    "St. Casimir Preparatory":                     
+    "St. Casimir Preparatory":                     "Brightwater",
     "St. Elias":                                   "Tidewater Catholic",
     "St. Elias School":                            "Tidewater Catholic",
-    "St. Francis Xavier College Prep":             
+    "St. Francis Xavier":                          "Pomar Union",
+    "St. Francis Xavier College Prep":             "Pomar Union",
     "St. Francis Xavier Preparatory":              "Clarendon",
-    "St. Genevieve High School":                   
+    "St. Genevieve":                               "Bravewoman",
+    "St. Genevieve High School":                   "Bravewoman",
+    "St. Helena":                                  "Saltmarsh",
     "St. Helena Academy":                          "Helena Academy",
     "St. Helena College Prep":                     "Swiss Hills Prep",
-    "St. Helena School":                           
+    "St. Helena School":                           "Saltmarsh",
     "St. Michael Academy North":                   "Green Valley",
     "St. Nicholas College Prep":                   "Natchez Prep",
     "St. Perpetua Preparatory":                    "St. Josephine Bakhita",
     "St. Sebastian Prep North":                    "Sherwood Bench",
+    "St. Sophia":                                  "North Wind",
     "St. Sophia Preparatory":                      "Marshfield Prep",
-    "St. Sophia School":                           
+    "St. Sophia School":                           "North Wind",
     "St. Teresa High School":                      "St. Teresa",
     "St. Vincent School":                          "St. Vincent",
     "Standale":                                    "Lieksa",
@@ -875,7 +891,7 @@ FORMER_NAMES = {
     "Thomas Halvorsen":                            "Hollywood",
     "Thomas Jansen":                               "Lone Pine Mutual",
     "Thomas Jansen North":                         "Esperanza Basin",
-    "Thomas Moreau":                               
+    "Thomas Moreau":                               "Elkhorn",
     "Thornford":                                   "Thorn Summit",
     "Thurgood Marshall North":                     "Carrollton",
     "Tidewater":                                   "Tamarack Harbor",
@@ -886,10 +902,12 @@ FORMER_NAMES = {
     "Treasure Valley North":                       "Petoskey",
     "Trout Point":                                 "North Simmons",
     "Tule":                                        "New Bergen",
-    "Tule Flat Lutheran":                          
+    "Tule Flat Lutheran":                          "Reed Lake",
+    "Tumbleweed Lutheran":                         "Reed Lake",
     "Valderra Aviation and Engineering Academy":   "Coyote Bend",
     "Valderra Technical Arts Academy":             "Dwight Eisenhower",
     "Valley Forge North":                          "Forge Hollow",
+    "Valley Providence":                           "Meridian Valley",
     "Vasquez":                                     "Fruitvale",
     "Vasquez North":                               "Fontainebleau",
     "Vernal Falls":                                "Tippah",
@@ -1034,7 +1052,7 @@ RENAMES = {
     # Two St. Genevieves — a 1A in Benchton natively bare, a 6A whose suffix
     # strip collides with it. The bigger school takes the city, PRE + PLACE
     # ("Jesuit Sacramento"); the 1A keeps the name it always had.
-    "St. Genevieve High School": 
+    "St. Genevieve High School": "Bravewoman",
     # The split campus of the Ashbury science magnet (owner rename 2027-08):
     # a town would not carry two science high schools, so the North campus is
     # a new identity outright — The Evans Larsen Day School, which the
@@ -1088,7 +1106,7 @@ RENAMES = {
     # their own town. Naming a school for its town is the ordinary case
     # everywhere and adds no new invented person.
     "Amaia Aramburu": "Ketanji Brown Jackson",
-    "Amaia Aramburu North": 
+    "Amaia Aramburu North": "Belmonte South",
     # each of these is the school named for its town, moving with it
     "Ander Aramburu": "Western Sky",
     "Andrew Jackson North": "Chaparral",
@@ -1112,7 +1130,7 @@ RENAMES = {
     "Manuel Cordero": "Sonia Sotomayor",
     "Marian Cross": "Quail Hollow",
     "Nathaniel Cross": "Veles Harbor",
-    "Nathaniel Cross North": 
+    "Nathaniel Cross North": "Veles Union",
     "Nicolás Cordero": "Ruth Bader Ginsburg",
     "Pauli Booker": "Nightfall",
     "Ralph Booker": "Obama",
@@ -1167,10 +1185,10 @@ RENAMES = {
     "Sofia Romanov": "Chesapeake",
     "Sofia Romanov North": "Cheney",
     "St. Brigid School": "St. Brigid",
-    "St. Casimir High School": 
+    "St. Casimir High School": "Harriman Lyceum",
     "St. Elias School": "Tidewater Catholic",
-    "St. Helena School": 
-    "St. Sophia School": 
+    "St. Helena School": "Saltmarsh",
+    "St. Sophia School": "North Wind",
     "St. Teresa High School": "St. Teresa",
     "St. Vincent School": "St. Vincent",
     "Starlight School of Science and Industry": "Observatory",
@@ -1252,19 +1270,19 @@ RENAMES = {
     "Zoya Orlov": "Sacred Heart",          # 8A Santa Michaela — 2026-08
                                            # suffix-ish trim, "Cathedral" dropped
     "Edith Hart": "Bellarmine Prep",                 # 8A — Prep, never Preparatory
-    "Nicolás Treviño":              # 7A — Jefferson surname
+    "Nicolás Treviño": "Valera",              # 7A — Jefferson surname
     "Harlan Tillman": "Xavier College Prep",         # 7A Mercer City
     "Amos Moss": "St. Francis Catholic",             # 7A Ashbury
     "Nikolai Markov": "Christian Brothers",          # 7A Sebastian Cape
     "Vernon Moss": "Pointe Coupee Catholic",               # 6A — Jefferson surname
-    "Naomi Ellison":          # 6A Gold Valley
+    "Naomi Ellison": "Starfield",          # 6A Gold Valley
     "Jon Garmendia": "Pope Leo XIV",                 # 6A Halbrook Basin
     "Viktor Antonov": "Archbishop Valois",           # 5A — Jefferson surname
-    "Marcus Mercer":            # 5A Vespertine
+    "Marcus Mercer": "Evenfall",            # 5A Vespertine
     "Nathaniel Gaines": "St. Catherine Academy",     # 5A Ashbury
     "Andrés Valera": "Basalt Electric",               # 4A — Jefferson surname
     "César Mendoza": "De La Salle",                  # 4A Bellacosta
-    "Irina Kovalenko": # 4A Selquah
+    "Irina Kovalenko": "Michaela East", # 4A Selquah
     # ‼️ SINKFORD (owner). A Unitarian Universalist coed boarding/day school founded
     # by UU donors in 1974 and named for William G. Sinkford — UUA president
     # 2001-09, the first Black leader of a predominantly white American
@@ -1353,7 +1371,7 @@ RENAMES = {
     "Orellana Canal View": "Canal View",                       # 9A Orellana
     "Orellana Treasure Valley": "Treasure Valley",             # 9A Orellana
     "Port Veles": "Veles Central",                             # 5A Port Veles
-    "Providence Academy Valley":          # 9A Port Meridian
+    "Providence Academy Valley": "Meridian Valley",          # 9A Port Meridian
     "San Borondón East": "Borondón Mesa",                      # 4A San Borondón
     "San Cordero": "San Cordero Central",                      # 4A San Cordero
     "San Cordero East": "Cordero Junction",                    # 6A San Cordero
@@ -1361,7 +1379,7 @@ RENAMES = {
     "Santa Laura North": "Janeaway",                           # 4A Santa Laura
     "Santa Michaela Harbor Gate": "Tidegate",                  # 8A Santa Michaela
     "St. Brigid Preparatory": "Kingston",                      # 6A Llerena
-    "St. Francis Xavier College Prep":   # 2A Pomar
+    "St. Francis Xavier College Prep": "Pomar Union",   # 2A Pomar
     "St. Francis Xavier Preparatory": "Clarendon",             # 4A Rostova Junction
     "St. Helena Academy": "Helena Academy",                    # 4A Montelago
     "St. Helena College Prep": "Swiss Hills Prep",             # 7A Port Veles
@@ -1374,7 +1392,7 @@ RENAMES = {
     "Telfair": "Pacersburg",                              # 4A Telfair
     "Timber Crest North": "Crestline",                         # 4A Fort Carden
     "Tindall Heights": "Montpelier",                        # 5A Tindall
-    "Tule Flat Lutheran":               # 1A Tule Flat
+    "Tule Flat Lutheran": "Reed Lake",               # 1A Tule Flat
     "Valley Forge North": "Forge Hollow",                      # 3A Valderra
     "Vessey Junction-Tailingford Union": "Tailingford Union",  # 1A Tailingford
     "Zubieta River Plain": "River Plain",                      # 6A Zubieta
@@ -1404,7 +1422,7 @@ RENAMES = {
     "St. Sebastian Prep North": "Sherwood Bench",                # 8A Ashbury
     "Ashbury Central": "Tallulah Central",                       # 7A Ashbury
     "Providence Academy North": "Wyalusing Providence",          # 5A Ashbury
-    "St. Basil Academy":              # 4A Belmonte
+    "St. Basil Academy": "Cahokia Mounds",              # 4A Belmonte
     "Treasure Valley": "Caney",                        # 6A Belmonte
     "Belmonte River Plain": "Chillicothe",              # 8A Belmonte
     "River Plain": "Kinnickinny",                       # 9A Belmonte
@@ -1426,16 +1444,16 @@ RENAMES = {
     "Redwood Coast": "Bienville",                                # 9A San Borondon
     "St. Nicholas College Prep": "Natchez Prep",                 # 6A San Borondon
     "Las Palmas North": "Natchitoches",                          # 8A San Borondon
-    "St. Casimir Preparatory":          # 5A San Borondon
+    "St. Casimir Preparatory": "Brightwater",          # 5A San Borondon
     "St. Sophia Preparatory": "Marshfield Prep",                 # 8A San Borondon
     "Blackbird Canyon": "Tallulah Canyon",                       # 4A San Borondon
     "Las Palmas": "Tuscaloosa",                                  # 8A San Borondon
     "Welsh Plains Northwest": "Grayston",                   # 3A Paddock
     "Calvary Chapel Kilbride Switch": "Gottschalk-Herman",  # 1A Olivet
     "Calvary Chapel Olivet": "Banfield Day",                # 1A Olivet
-    "Galina Moroz":         # 2A-1A — Sebastian Cape, coastal
-    "Mikel Zubieta":        # 2A-1A Clear Springs
-    "Thomas Moreau":                 # 2A-1A Gold Valley
+    "Galina Moroz": "Windward",         # 2A-1A — Sebastian Cape, coastal
+    "Mikel Zubieta": "South Rim",        # 2A-1A Clear Springs
+    "Thomas Moreau": "Elkhorn",                 # 2A-1A Gold Valley
     # ‼️ NO ACCENTS (owner rule 2027-08, same as the Nordic town sweep):
     # an American town or school would not carry one. These three keep their
     # ALWAYS_EXTRA source spelling (it has to match prep-network) and rename
@@ -1813,15 +1831,11 @@ INSTITUTION_NAMES = [
 # name, like `MASCOTS` and `COLORS` — see the emit block in `build`.
 PRIVATE_SCHOOLS = {
     "Mater Dei", "Jesuit", "Notre Dame", "Archbishop Gregory",
-    "Sacred Heart", "Bellarmine Prep", 
-    "Xavier College Prep", "St. Francis Catholic", "Christian Brothers",
+    "Sacred Heart", "Bellarmine Prep", "Xavier College Prep", "St. Francis Catholic", "Christian Brothers",
     "Cardinal Mercier", "Pope Leo XIV",
     "Archbishop Valois", "St. Catherine Academy",
-    "Cardinal Echevarria", "De La Salle", 
-    "Sinkford",
-    "Cardinal Newman", "Calvary Christian", 
-    
-    # Converted from public by owner decision, 2026-08.
+    "Cardinal Echevarria", "De La Salle", "Sinkford",
+    "Cardinal Newman", "Calvary Christian", # Converted from public by owner decision, 2026-08.
     "Westfield Friends", "Star Hollow",
     # Converted with the locality redistribution (owner spec, 2026-08).
     "Belmonte Collegiate",
@@ -2677,6 +2691,70 @@ MASCOT_FIXES = {
     # A berry and a butte, not a team: the one PNW-local word here that still reads
     # as a place rather than as a nickname.
     "Olallie": ("Huckleberries", "Brambles"),
+
+    # ── generated MODIFIER artefacts (owner rule 2026-09) ────────────────────
+    # ‼️ A COLOUR PREFIX IS REAL; A SIZE OR VOLUME PREFIX IS THE GENERATOR TALKING.
+    # American high schools genuinely field Blue Devils, Red Raiders, Crimson
+    # Hurricanes, Scarlet Vikings, Purple Cougars, Maroon Eagles, Golden Eagles,
+    # Orange Bulldogs and a Green Wave — those all stay. What no school fields is a
+    # Big Lynx, a Little Panther, a Grey Ram, a Mighty Titan, a Roaring Bulldog, a
+    # Wild Rocket or a Flying Cougar: Big/Little/Grey/White/Mighty/Roaring/Wild/
+    # Flying/Iron are adjectives a generator reached for, and stripping the modifier
+    # leaves the real nickname underneath. "Fighting" is the one that cuts both
+    # ways — Fighting Irish is real and stays; Fighting Panthers is not.
+    "Big Gophers": ("Gophers",),
+    "Big Hawks": ("Hawks",),
+    "Big Lynx": ("Lynx",),
+    "Big Mustangs": ("Mustangs",),
+    "Big Raiders": ("Raiders",),
+    "Little Crusaders": ("Crusaders",),
+    "Little Eagles": ("Eagles",),
+    "Little Panthers": ("Panthers",),
+    "Grey Bulldogs": ("Bulldogs",),
+    "Grey Chargers": ("Chargers",),
+    "Grey Highlanders": ("Highlanders",),
+    "Grey Rams": ("Rams",),
+    "Grey Tigers": ("Tigers",),
+    "White Bulldogs": ("Bulldogs",),
+    "White Pioneers": ("Pioneers",),
+    "Mighty Bluejays": ("Bluejays",),
+    "Mighty Crusaders": ("Crusaders",),
+    "Mighty Falcons": ("Falcons",),
+    "Mighty Titans": ("Titans",),
+    "Fighting Mustangs": ("Mustangs",),
+    "Fighting Panthers": ("Panthers",),
+    "Fighting Spartans": ("Spartans",),
+    "Fighting Tornadoes": ("Tornadoes",),
+    "Roaring Bobcats": ("Bobcats",),
+    "Roaring Bulldogs": ("Bulldogs",),
+    "Roaring Panthers": ("Panthers",),
+    "Roaring Rebels": ("Rebels",),
+    "Roaring Saints": ("Saints",),
+    "Wild Lions": ("Lions",),
+    "Wild Mustangs": ("Mustangs",),
+    "Wild Rams": ("Rams",),
+    "Wild Rockets": ("Rockets",),
+    "Flying Cougars": ("Cougars",),
+    "Flying Raiders": ("Raiders",),
+    "Iron Pioneers": ("Pioneers",),
+    "Iron Warriors": ("Warriors",),
+    "Silver Warriors": ("Warriors",),
+    # A colour that FIGHTS its own animal is the same artefact wearing a real
+    # prefix — an oriole is orange and black, and a maroon cannot be green.
+    "Green Maroons": ("Maroons",),
+    "Green Orioles": ("Orioles",),
+    "Green Gators": ("Gators",),
+    "Green Jaguars": ("Jaguars",),
+    "Green Saints": ("Saints",),
+
+    # ── foreign fauna the 2026-08 sweep missed ───────────────────────────────
+    # Same bar as that pass: would a US high school put this on a jersey. The
+    # genuinely strange AMERICAN names stay untouched — Beetdiggers, Cornjerkers,
+    # Cheesemongers, Onion Toppers and the rest all have real counterparts.
+    "Emus": ("Chukars", "Sage Grouse"),
+    "Wedgetails": ("Redtails", "Ospreys"),
+    "Piranhas": ("Cutthroats", "Steelhead"),
+    "Kangaroo Rats": ("Jackrabbits", "Marmots"),
 }
 
 

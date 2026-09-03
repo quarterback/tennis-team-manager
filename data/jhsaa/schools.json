@@ -730,7 +730,7 @@
       "group": "9A",
       "enrollment": 2221,
       "private": false,
-      "mascot": "Fighting Panthers",
+      "mascot": "Panthers",
       "colors": [
         "#167339",
         "#e8e6df"
@@ -1638,7 +1638,7 @@
       "group": "7A",
       "enrollment": 1348,
       "private": false,
-      "mascot": "Mighty Bluejays",
+      "mascot": "Bluejays",
       "colors": [
         "#92400e",
         "#1d1d1f"
@@ -2479,7 +2479,7 @@
       "group": "Group 3",
       "enrollment": 113,
       "private": false,
-      "mascot": "Iron Pioneers",
+      "mascot": "Pioneers",
       "colors": [
         "#5b2a86",
         "#e5e7eb"
@@ -2499,7 +2499,7 @@
       "group": "4A",
       "enrollment": 754,
       "private": false,
-      "mascot": "Wild Rams",
+      "mascot": "Rams",
       "colors": [
         "#4b2e83",
         "#b7a57a"
@@ -2963,7 +2963,7 @@
       "group": "7A",
       "enrollment": 1361,
       "private": false,
-      "mascot": "Roaring Rebels",
+      "mascot": "Rebels",
       "colors": [
         "#14532d",
         "#e8c46b"
@@ -3577,7 +3577,7 @@
       "group": "5A",
       "enrollment": 899,
       "private": false,
-      "mascot": "Iron Warriors",
+      "mascot": "Warriors",
       "colors": [
         "#92400e",
         "#1d1d1f"
@@ -3657,7 +3657,7 @@
       "group": "8A",
       "enrollment": 1638,
       "private": false,
-      "mascot": "Iron Warriors",
+      "mascot": "Warriors",
       "colors": [
         "#92400e",
         "#1d1d1f"
@@ -3940,7 +3940,7 @@
       "group": "6A",
       "enrollment": 1058,
       "private": false,
-      "mascot": "Mighty Bluejays",
+      "mascot": "Bluejays",
       "colors": [
         "#92400e",
         "#1d1d1f"
@@ -4419,7 +4419,7 @@
       "group": "9A",
       "enrollment": 2420,
       "private": false,
-      "mascot": "Big Hawks",
+      "mascot": "Hawks",
       "colors": [
         "#3f2a56",
         "#3ba55d"
@@ -4873,7 +4873,7 @@
       "group": "7A",
       "enrollment": 1471,
       "private": true,
-      "mascot": "Silver Warriors",
+      "mascot": "Warriors",
       "colors": [
         "#14532d",
         "#e8c46b"
@@ -5189,7 +5189,7 @@
       "group": "6A",
       "enrollment": 1106,
       "private": false,
-      "mascot": "Roaring Saints",
+      "mascot": "Saints",
       "colors": [
         "#7f1d1d",
         "#d4d4d8"
@@ -5587,7 +5587,7 @@
       "group": "5A",
       "enrollment": 879,
       "private": false,
-      "mascot": "Grey Tigers",
+      "mascot": "Tigers",
       "colors": [
         "#167339",
         "#e8e6df"
@@ -6501,7 +6501,7 @@
       "group": "9A",
       "enrollment": 2352,
       "private": false,
-      "mascot": "Green Gators",
+      "mascot": "Gators",
       "colors": [
         "#6d1a36",
         "#9fb4c7"
@@ -6703,7 +6703,7 @@
       "group": "Group 1",
       "enrollment": 2422,
       "private": false,
-      "mascot": "Fighting Tornadoes",
+      "mascot": "Tornadoes",
       "colors": [
         "#7b1e2b",
         "#e8c46b"
@@ -6862,7 +6862,7 @@
       "group": "5A",
       "enrollment": 956,
       "private": false,
-      "mascot": "Green Maroons",
+      "mascot": "Maroons",
       "colors": [
         "#7f1d1d",
         "#d4d4d8"
@@ -6881,7 +6881,7 @@
       "group": "5A",
       "enrollment": 960,
       "private": false,
-      "mascot": "Mighty Falcons",
+      "mascot": "Falcons",
       "colors": [
         "#7b1e2b",
         "#e8c46b"
@@ -7041,7 +7041,7 @@
       "group": "6A",
       "enrollment": 1275,
       "private": false,
-      "mascot": "Big Gophers",
+      "mascot": "Gophers",
       "colors": [
         "#0f6a70",
         "#f4f1ea"
@@ -7692,7 +7692,7 @@
       "group": "7A",
       "enrollment": 1332,
       "private": false,
-      "mascot": "Grey Rams",
+      "mascot": "Rams",
       "colors": [
         "#14294e",
         "#c8ccd4"
@@ -7907,7 +7907,7 @@
       "group": "4A",
       "enrollment": 583,
       "private": true,
-      "mascot": "White Pioneers",
+      "mascot": "Pioneers",
       "colors": [
         "#5b2a86",
         "#e5e7eb"
@@ -8164,7 +8164,7 @@
       "group": "8A",
       "enrollment": 1980,
       "private": false,
-      "mascot": "Roaring Panthers",
+      "mascot": "Panthers",
       "colors": [
         "#7b1e2b",
         "#e8c46b"
@@ -8863,7 +8863,7 @@
       "group": "2A",
       "enrollment": 238,
       "private": false,
-      "mascot": "Roaring Bobcats",
+      "mascot": "Bobcats",
       "colors": [
         "#3f2a56",
         "#3ba55d"
@@ -9913,7 +9913,7 @@
       "group": "1A",
       "enrollment": 134,
       "private": false,
-      "mascot": "Big Mustangs",
+      "mascot": "Mustangs",
       "colors": [
         "#167339",
         "#e8e6df"
@@ -10129,7 +10129,7 @@
       "group": "8A",
       "enrollment": 1862,
       "private": false,
-      "mascot": "Big Lynx",
+      "mascot": "Lynx",
       "colors": [
         "#1e5631",
         "#f2f2ee"
@@ -10445,7 +10445,7 @@
       "group": "4A",
       "enrollment": 778,
       "private": false,
-      "mascot": "Grey Highlanders",
+      "mascot": "Highlanders",
       "colors": [
         "#3f2a56",
         "#3ba55d"
@@ -10866,7 +10866,7 @@
       "group": "7A",
       "enrollment": 1625,
       "private": false,
-      "mascot": "Fighting Mustangs",
+      "mascot": "Mustangs",
       "colors": [
         "#0f6a70",
         "#f4f1ea"
@@ -11041,7 +11041,7 @@
       "group": "9A",
       "enrollment": 2383,
       "private": false,
-      "mascot": "Big Raiders",
+      "mascot": "Raiders",
       "colors": [
         "#5b2a86",
         "#e5e7eb"
@@ -11496,7 +11496,7 @@
       "group": "4A",
       "enrollment": 593,
       "private": false,
-      "mascot": "Flying Raiders",
+      "mascot": "Raiders",
       "colors": [
         "#5b2a86",
         "#e5e7eb"
@@ -11901,7 +11901,7 @@
       "group": "Group 2",
       "enrollment": 913,
       "private": false,
-      "mascot": "Grey Chargers",
+      "mascot": "Chargers",
       "colors": [
         "#8c1d40",
         "#f0b323"
@@ -12373,7 +12373,7 @@
       "group": "Group 3",
       "enrollment": 242,
       "private": false,
-      "mascot": "White Bulldogs",
+      "mascot": "Bulldogs",
       "colors": [
         "#1e2a4a",
         "#c05621"
@@ -12927,7 +12927,7 @@
       "group": "2A",
       "enrollment": 292,
       "private": true,
-      "mascot": "Wedgetails",
+      "mascot": "Ospreys",
       "colors": [
         "#1e5631",
         "#f2f2ee"
@@ -13166,7 +13166,7 @@
       "group": "1A",
       "enrollment": 205,
       "private": false,
-      "mascot": "Badgers",
+      "mascot": "Newts",
       "colors": [
         "#3c1518",
         "#a9927d"
@@ -13473,7 +13473,7 @@
       "group": "1A",
       "enrollment": 190,
       "private": false,
-      "mascot": "Green Jaguars",
+      "mascot": "Jaguars",
       "colors": [
         "#204e39",
         "#c8a24a"
@@ -14168,7 +14168,7 @@
       "group": "Group 1",
       "enrollment": 2306,
       "private": false,
-      "mascot": "Grey Bulldogs",
+      "mascot": "Bulldogs",
       "colors": [
         "#92400e",
         "#1d1d1f"
@@ -14699,7 +14699,7 @@
       "group": "3A",
       "enrollment": 386,
       "private": false,
-      "mascot": "Flying Cougars",
+      "mascot": "Cougars",
       "colors": [
         "#7f1d1d",
         "#d4d4d8"
@@ -15122,7 +15122,7 @@
       "group": "5A",
       "enrollment": 900,
       "private": false,
-      "mascot": "Wild Rockets",
+      "mascot": "Rockets",
       "colors": [
         "#7b1e2b",
         "#e8c46b"
@@ -15634,7 +15634,7 @@
       "group": "7A",
       "enrollment": 1581,
       "private": false,
-      "mascot": "Mighty Crusaders",
+      "mascot": "Crusaders",
       "colors": [
         "#14294e",
         "#c8ccd4"
@@ -16491,7 +16491,7 @@
       "group": "9A",
       "enrollment": 2316,
       "private": false,
-      "mascot": "Little Panthers",
+      "mascot": "Panthers",
       "colors": [
         "#6d1a36",
         "#9fb4c7"
@@ -17067,7 +17067,7 @@
       "group": "2A",
       "enrollment": 251,
       "private": false,
-      "mascot": "Wild Lions",
+      "mascot": "Lions",
       "colors": [
         "#14294e",
         "#c8ccd4"
@@ -17861,7 +17861,7 @@
       "group": "3A",
       "enrollment": 458,
       "private": false,
-      "mascot": "Fighting Spartans",
+      "mascot": "Spartans",
       "colors": [
         "#92400e",
         "#1d1d1f"
@@ -17901,7 +17901,7 @@
       "group": "1A",
       "enrollment": 120,
       "private": false,
-      "mascot": "Mighty Titans",
+      "mascot": "Titans",
       "colors": [
         "#7b1e2b",
         "#e8c46b"
@@ -17942,7 +17942,7 @@
       "group": "2A",
       "enrollment": 215,
       "private": false,
-      "mascot": "Piranhas",
+      "mascot": "Cutthroats",
       "colors": [
         "#204e39",
         "#c8a24a"
@@ -18164,7 +18164,7 @@
       "group": "4A",
       "enrollment": 729,
       "private": false,
-      "mascot": "Little Eagles",
+      "mascot": "Eagles",
       "colors": [
         "#333d29",
         "#d97706"
@@ -18424,7 +18424,7 @@
       "group": "7A",
       "enrollment": 1342,
       "private": false,
-      "mascot": "Wild Mustangs",
+      "mascot": "Mustangs",
       "colors": [
         "#1e2a4a",
         "#c05621"
@@ -18664,7 +18664,7 @@
       "group": "1A",
       "enrollment": 123,
       "private": false,
-      "mascot": "Emus",
+      "mascot": "Chukars",
       "colors": [
         "#3f2a56",
         "#3ba55d"
@@ -19343,7 +19343,7 @@
       "group": "3A",
       "enrollment": 442,
       "private": false,
-      "mascot": "Green Orioles",
+      "mascot": "Orioles",
       "colors": [
         "#22333b",
         "#c6ac8f"
@@ -19382,7 +19382,7 @@
       "group": "9A",
       "enrollment": 2227,
       "private": false,
-      "mascot": "Little Crusaders",
+      "mascot": "Crusaders",
       "colors": [
         "#333d29",
         "#d97706"
@@ -19838,7 +19838,7 @@
       "group": "9A",
       "enrollment": 2479,
       "private": true,
-      "mascot": "Roaring Bulldogs",
+      "mascot": "Bulldogs",
       "colors": [
         "#7f1d1d",
         "#d4d4d8"
@@ -19936,7 +19936,7 @@
       "group": "9A",
       "enrollment": 2553,
       "private": false,
-      "mascot": "Green Saints",
+      "mascot": "Saints",
       "colors": [
         "#6d1a36",
         "#9fb4c7"
@@ -20136,7 +20136,7 @@
       "group": "4A",
       "enrollment": 696,
       "private": false,
-      "mascot": "Roaring Saints",
+      "mascot": "Saints",
       "colors": [
         "#7f1d1d",
         "#d4d4d8"
