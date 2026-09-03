@@ -272,6 +272,125 @@ def _drop_seasons(world, w, gender):
     finally:
         conn.close()
     world._scoreline_cache.clear()
+    world._gapband_cache.clear()
+
+
+def _archive_lines(world, w, year, gender, school, opp, lines, phase="regular"):
+    """Archive one home-side varsity dual with fully-specified `lines`
+    (slot / home names / away names / score / home_won)."""
+    import json as _json
+    conn = world._db()
+    try:
+        if not conn.execute("SELECT 1 FROM world_jhsaa WHERE world_id=? AND year=?"
+                            " AND gender=?", (w["id"], year, gender)).fetchone():
+            conn.execute("INSERT INTO world_jhsaa (world_id, year, gender, data)"
+                         " VALUES (?,?,?,?)", (w["id"], year, gender, "{}"))
+        conn.execute(
+            "INSERT INTO world_jhsaa_dual (world_id, year, gender, school, opp,"
+            " home, phase, pf, pa, won, district, lines, level, tied, shape,"
+            " played) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (w["id"], year, gender, school, opp, 1, phase, 1, 0, 1, 1,
+             _json.dumps(lines), "v", 0, "", "[]"))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _two_schools(gender, season_year):
+    """Two real programs and their rebuilt rosters for `season_year`, sorted by
+    OVR (best first) — the fold resolves archived NAMES against exactly this."""
+    schools = jhsaa.load_schools(gender)[:2]
+    rosters = [sorted(jhsaa.build_roster(s, season_year, ""),
+                      key=lambda p: -p.current_overall()) for s in schools]
+    return schools, rosters
+
+
+def test_gap_band_fold_buckets_lines_by_resolved_ovr_gap():
+    """‼️ THE CHECK THAT SEES A MATCHUP-CURVE CHANGE (owner, 2026-09): lines
+    bucketed by the OVR gap between the two sides, favourite win rate and set
+    decisiveness per band. The archive holds NAMES, so the fold rebuilds the
+    season's rosters and resolves them — pinned here against real programs'
+    rebuilt rosters: a line's band is the band its two players' OVR gap falls
+    in, a doubles pair averages its two, an unresolvable name is counted and
+    skipped, and a pro-set line (no best-of-3) never enters."""
+    import app.world as world
+    w = world.get_or_create(4444)
+    _drop_seasons(world, w, "boys")
+    year = 2
+    season_year = world.BASE_YEAR + year + 1
+    (sa, sb), (ra, rb) = _two_schools("boys", season_year)
+    best_a, worst_b = ra[0], rb[-1]
+    gap_s = abs(best_a.current_overall() - worst_b.current_overall())
+    pair_a, pair_b = ra[:2], rb[-2:]
+    gap_d = abs(sum(p.current_overall() for p in pair_a) / 2
+                - sum(p.current_overall() for p in pair_b) / 2)
+    try:
+        _archive_lines(world, w, year, "boys", sa.name, sb.name, [
+            # singles: the favourite (home, best of A) wins in lopsided straight sets
+            {"slot": "S1", "home": [best_a.name], "away": [worst_b.name],
+             "score": "6-0, 6-1", "home_won": True},
+            # doubles: the favourite (home pair) LOSES in three sets
+            {"slot": "D1", "home": [p.name for p in pair_a],
+             "away": [p.name for p in pair_b],
+             "score": "6-4, 3-6, 4-6", "home_won": False},
+            # a name the rebuilt roster does not carry: counted, skipped
+            {"slot": "S2", "home": ["Nobody Atall"], "away": [worst_b.name],
+             "score": "6-2, 6-2", "home_won": True},
+            # a showcase pro set: not a best-of-3, never enters
+            {"slot": "S3", "home": [best_a.name], "away": [worst_b.name],
+             "score": "8-3", "home_won": True},
+        ])
+        d = world.jhsaa_gap_bands(w["id"], year, "boys", "")
+        assert d["year"] == year and d["season_year"] == season_year
+        assert d["lines"] == 3 and d["unresolved"] == 1
+        groups = {g["key"]: {r["band"]: r for r in g["rows"]} for g in d["groups"]}
+        bs, bd = world._gap_band(gap_s), world._gap_band(gap_d)
+        s = groups["singles"][bs]
+        assert s["n"] == 1 and s["fav_win"] == 100.0
+        assert s["three_set"] == 0.0 and s["lopsided"] == 100.0
+        dd = groups["doubles"][bd]
+        assert dd["n"] == 1 and dd["fav_win"] == 0.0
+        assert dd["three_set"] == 100.0 and dd["lopsided"] == 0.0
+        # every other band in each discipline is empty and reports no rate
+        for key, rows in (("singles", groups["singles"]), ("doubles", groups["doubles"])):
+            for band, r in rows.items():
+                if band != (bs if key == "singles" else bd):
+                    assert r["n"] == 0 and r["fav_win"] is None, (key, band, r)
+        assert sum(r["n"] for r in groups["all"].values()) == 2
+        # memoised per season (and never another's)
+        assert world.jhsaa_gap_bands(w["id"], year, "boys", "") is d
+    finally:
+        _drop_seasons(world, w, "boys")
+
+
+def test_gap_bands_compare_is_a_pure_fold():
+    import app.world as world
+
+    def season(year, n, fav, three, lop, lines=10, unresolved=0):
+        rows = [{"band": b[0], "label": b[1], "n": n, "fav_win": fav,
+                 "three_set": three, "lopsided": lop} for b in world.OVR_GAP_BANDS]
+        return {"year": year, "season_year": 2000 + year, "lines": lines,
+                "unresolved": unresolved,
+                "groups": [{"key": k, "label": k, "rows": [dict(r) for r in rows]}
+                           for k in ("all", "singles", "doubles")]}
+
+    cur = season(9, 10, 80.0, 20.0, 40.0)
+    prev = season(8, 12, 70.0, 30.0, 30.0)
+    both = world.gap_bands_compare(cur, prev)
+    r = both["groups"][0]["rows"][0]
+    assert both["year"] == 9 and both["prev_year"] == 8
+    assert r["n"] == 10 and r["prev_n"] == 12
+    assert r["d_fav_win"] == 10.0 and r["d_three_set"] == -10.0
+    assert r["d_lopsided"] == 10.0
+    # oldest season: no previous, every prev_/d_ figure None
+    solo = world.gap_bands_compare(cur, None)
+    r0 = solo["groups"][0]["rows"][0]
+    assert solo["prev_year"] is None and r0["prev_n"] is None
+    assert r0["prev_fav_win"] is None and r0["d_fav_win"] is None
+    # an empty band on either side has no shift (a rate over zero is not a number)
+    empty = season(8, 0, None, None, None)
+    d = world.gap_bands_compare(cur, empty)["groups"][0]["rows"][0]
+    assert d["prev_n"] == 0 and d["d_fav_win"] is None
 
 
 def test_realism_fold_is_per_season():
@@ -406,6 +525,63 @@ def test_realism_page_renders_this_season_against_last():
         text5 = [re.sub(r"<[^>]+>", "", c).strip()
                  for c in re.findall(r"<td[^>]*>(.*?)</td>", row5, re.S)]
         assert text5[1] == "75.0" and text5[2] == "—" and text5[3] == "—"
+        # the gap-band panel is ON DEMAND: the plain page offers the button and
+        # does not rebuild a roster
+        assert "Compare by gap band" in html and "Favourite won %" not in html
     finally:
+        world.is_primed, world.prime = real_primed, real_prime
+        _drop_seasons(world, w, "girls")
+
+
+def test_realism_page_renders_the_gap_band_comparison(monkeypatch):
+    """`?bands=1` runs the two-season roster rebuild through the deferred job and
+    renders the by-band table: both seasons' rates and the shift, per band. The
+    association is patched down to the two programs the archived lines name (the
+    `test_jhsaa_toc` idiom), so the rebuild is two rosters rather than ~900 and
+    the deferred job finishes inside its first wait."""
+    import re
+    import app.world as world
+    import app.jhsaa as jh
+    from app.web.server import create_app
+    from app.web.state import DEFAULT_SEED
+    import os
+    os.environ.setdefault("PTC_NO_BOOT_WARM", "1")
+    w = world.get_or_create(DEFAULT_SEED)
+    _drop_seasons(world, w, "girls")
+    real_primed, real_prime = world.is_primed, world.prime
+    world.is_primed = lambda *a, **k: True
+    world.prime = lambda *a, **k: None
+    salt = world.active_salt(DEFAULT_SEED)
+    schools = jh.load_schools("girls")[:2]
+    real_load = jh.load_schools
+    monkeypatch.setattr(jh, "load_schools", lambda g: schools)
+    try:
+        for year, fav_wins in ((5, True), (6, False)):
+            sy = world.BASE_YEAR + year + 1
+            ra, rb = (sorted(jh.build_roster(s, sy, salt),
+                             key=lambda p: -p.current_overall()) for s in schools)
+            _archive_lines(world, w, year, "girls", schools[0].name, schools[1].name, [
+                {"slot": "S1", "home": [ra[0].name], "away": [rb[-1].name],
+                 "score": "6-0, 6-0" if fav_wins else "4-6, 6-7",
+                 "home_won": fav_wins}])
+        client = create_app().test_client()
+        html = None
+        for _ in range(20):                      # the deferred job's interstitial
+            html = client.get("/jhsaa/realism?g=girls&bands=1").get_data(as_text=True)
+            if "Building" not in html:
+                break
+        assert "Favourite won %" in html
+        # the singles line's band: favourite lost this season (0.0), won last (100.0)
+        rows = re.findall(r"<tr>\s*<td class=\"pl\"><b>(\d+-\d+|29\+)</b>.*?</tr>", html, re.S)
+        assert rows, html[:2000]
+        # find the first band row carrying a match count of 1 in the All courts table
+        m = re.search(r"<td class=\"pl\"><b>[^<]+</b>[^<]*<span[^>]*>[^<]*</span></td>\s*"
+                      r"<td class=\"num\">1 <span class=\"jh-rl-base\">/ 1</span></td>\s*"
+                      r"<td class=\"num\"><b>0\.0</b></td>\s*"
+                      r"<td class=\"num jh-rl-base\">100\.0</td>\s*"
+                      r"<td class=\"num\">-100\.0</td>", html, re.S)
+        assert m, "expected a band row reading fav 0.0 / 100.0 / -100.0"
+    finally:
+        monkeypatch.setattr(jh, "load_schools", real_load)
         world.is_primed, world.prime = real_primed, real_prime
         _drop_seasons(world, w, "girls")

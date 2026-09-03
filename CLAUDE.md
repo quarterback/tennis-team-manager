@@ -2436,7 +2436,13 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   the talent scale, so only the COUNTS move until the engine does. The fold is
   per-season (pinned) and memoised on `(world_id, year, gender)` (`_scoreline_cache`,
   an archived season is immutable; cleared by `reset()`). Do not put the pass/fail
-  colouring or the target framing back. See `docs/AAR-jhsaa-scoreline-realism.md`.
+  colouring or the target framing back. **The check a curve change shows up in is
+  BY OVR GAP BAND** (`world.jhsaa_gap_bands` / `OVR_GAP_BANDS`, the owner's five
+  competitive bands): favourite win % and set decisiveness per band, this season vs
+  last — peers should barely move while clear/strong turn more favourite wins. It
+  rebuilds both seasons' rosters to resolve the archive's NAMES to OVRs (~20 s
+  cold), so it is ON DEMAND behind the route's deferred job (`_jh_deferred`), never
+  on the plain page load. See `docs/AAR-jhsaa-scoreline-realism.md`.
 - **`Prospect.jhsaa` is a real dataclass field** — `prospect_to_dict` is `asdict()`, so an
   ad-hoc attribute would erase a recruit's entire high-school past the moment they sign.
 
