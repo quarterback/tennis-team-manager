@@ -1267,10 +1267,47 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
       is invented) AND actual JV participation this season**, read off the `played` list
       `play_jv_dual` already records. Split-time players fall out for free: eligible if
       the frozen ladder has them at #12 or lower.
-    - **A YEAR GATE, NOT A FLAG** (`JV_STATE_FROM` 2068), the reason the 1A 2S/3D pilot
-      is gated on its class: archived seasons must keep reading as the years they were.
-      Seeded on blake2s. `tests/test_jhsaa_jv_state.py` runs a real JV season — an
-      empty-state check cannot see any rule in this event.
+    - **A YEAR GATE, NOT A FLAG** (`JV_STATE_FROM` 2068) — the owner added the event
+      after the **2067 season of a longstanding save**, so every year already archived
+      there must keep reading as the year it was played. Same device the 1A 2S/3D
+      pilot is gated on. Seeded on blake2s.
+    - **‼️ THE DRAW AND THE DUALS ARE ARCHIVED SEPARATELY, and both are load-bearing.**
+      The DUALS are ordinary `world_jhsaa_dual` rows at `level='jv'`, `phase='jv_state'`
+      — that is what puts them on a program's schedule and folds them into the JV
+      column of the career ledger, and `level` is what keeps them out of every varsity
+      record. The DRAW is one row per gender per year in `world_jhsaa_jv_state`.
+      ‼️ **NOT `world_jhsaa_individual`** (per-PLAYER draws, and two of its readers scan
+      every flight — a team bracket there would be served under an individual heading
+      with no error), and NOT on the `world_jhsaa` summary blob every page reads whole.
+      ‼️ `_relabel` had to be told that `regions`/`region_champions` are keyed by PLACE:
+      ten retired school names are live Jefferson town names, so walked unguarded a
+      region files itself under a school's current name and its bracket disappears.
+    - **‼️ IT ARCHIVES THE VARSITY STATE DRAW'S SHAPE ON PURPOSE** (`{champion, field,
+      rounds, round_names}`), so `state._jh_bracket_cols` → `_bracket_canvas` →
+      `templates/_bracket.html` render it unchanged — never a fourth bracket. The page
+      is `/jhsaa/jv-state`, a fifth entry on the **Championship sub-rail**, class-blind
+      like the TOC and carrying `group` for the same reason (the rail is the section's
+      scope memory, not a filter). The **qualifying round is its own panel above the
+      tree**: eight teams into four seats is not a halving and the canvas links
+      columns positionally — and it is **not the Round of 16**, which the draw plays in
+      full (owner: "20 champions → 16 → 8, 4, 2, don't skip the R16").
+    - **‼️ THE TWENTY REGIONS ALWAYS FILL** (owner, 2026-09) — ~875 boys'/~912 girls'
+      programs on full rosters, so this is the only shape the event is ever played at
+      and a short field needs NO machinery. A test fixture crowning twelve is a
+      fixture, and it is also the reason a `set()` of `JVEntry` (a dataclass, so
+      unhashable) sat unexecuted on the play-in path through a full green suite: the
+      path a real save takes every season is the one a small world never reaches.
+      `tests/test_jhsaa_jv_state.py` therefore runs TWO real JV seasons, the larger one
+      sized to actually play the qualifying round.
+    - **‼️ THE POSTSEASON NEVER MOVES THE RECORD IT IS SEEDED FROM.** `play_dual` writes
+      the schedule row and the box score but never touches `wins`/`points_for`: a
+      region final that moved them would re-rank the statewide field the play-in and
+      the State draw are cut from — the mid-event drift the eligibility freeze exists
+      to stop, arriving through the record instead of the roster.
+    - `jhsaa_jv_individuals.run_jv_state` was renamed **`run_jv_individuals`**: two
+      different events shared a function name and only avoided collision because
+      `jhsaa.py` aliased one at the import. See
+      `docs/AAR-jhsaa-jv-team-state-tournament.md`.
   - Cost: the week-0 rung goes **~5 → ~7 minutes** for both genders (+40%).
     `tests/test_jhsaa_jv.py`.
 - **‼️ THE JV INDIVIDUAL STATE TOURNAMENTS — two CLASSLESS draws a gender (owner rule

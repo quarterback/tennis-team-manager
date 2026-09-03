@@ -345,7 +345,7 @@ def test_spots_close_the_field_at_128():
 
 @pytest.fixture(scope="module")
 def state(by_group):
-    return jvi.run_jv_state(by_group, "girls", 0, seed=0)["state"]
+    return jvi.run_jv_individuals(by_group, "girls", 0, seed=0)["state"]
 
 
 def test_it_crowns_one_champion_per_bracket_per_gender(state):
@@ -385,10 +385,10 @@ def test_matches_run_the_full_best_of_three(state):
 def test_a_rerun_reproduces_the_whole_thing(by_group):
     """Seeded determinism, end to end: the qualifiers, the field, the draw and
     every scoreline."""
-    a = jvi.run_jv_state(by_group, "girls", 0, seed=0)
-    b = jvi.run_jv_state(by_group, "girls", 0, seed=0)
+    a = jvi.run_jv_individuals(by_group, "girls", 0, seed=0)
+    b = jvi.run_jv_individuals(by_group, "girls", 0, seed=0)
     assert a == b
-    assert a != jvi.run_jv_state(by_group, "girls", 0, seed=7)
+    assert a != jvi.run_jv_individuals(by_group, "girls", 0, seed=7)
 
 
 def test_the_event_credits_nothing_to_the_varsity_season(by_group):
@@ -399,7 +399,7 @@ def test_the_event_credits_nothing_to_the_varsity_season(by_group):
     before = [({k: list(v) for k, v in t.records.items()},
                {k: list(v) for k, v in t.matches.items()},
                [p.pid for p in jh._order(t)]) for t in teams]
-    jvi.run_jv_state(by_group, "girls", 0, seed=3)
+    jvi.run_jv_individuals(by_group, "girls", 0, seed=3)
     after = [({k: list(v) for k, v in t.records.items()},
               {k: list(v) for k, v in t.matches.items()},
               [p.pid for p in jh._order(t)]) for t in teams]

@@ -205,13 +205,21 @@
             {# Three outcomes: a JV dual can be drawn. #}
             <td class="{{ 'T' if d.tied else 'W' if d.won else 'L' }}">{{ 'T' if d.tied else 'W' if d.won else 'L' }}</td>
             <td class="sc">{{ d.pf|int }}–{{ d.pa|int }}</td>
-            {% set jvk = 'DIST' if d.district else 'WEEKEND' if d.phase.startswith('showcase') else 'INVITE' %}
+            {# ‼️ THE CHAMPIONSHIP HAS TO BE NAMED. Every JV Team State dual — regional,
+               qualifying and the State draw alike — is archived non-district under
+               `phase='jv_state'`, so the INVITE fallback labelled the association's
+               JV championship an invitational on every program's card, which is
+               precisely the context the phase was given its own name to keep. One
+               tag for the whole event, as the varsity card does for STATE; the
+               round detail lives on the bracket page. #}
+            {% set jvk = 'DIST' if d.district else 'WEEKEND' if d.phase.startswith('showcase')
+                         else 'STATE' if d.phase == 'jv_state' else 'INVITE' %}
             {# No Match Center link for JV — owner rule 2026-08: JV duals
                aren't tracked as a series ("those matches don't even need a
                match center"). The inline line-score expand below is the
                JV box score and stays; only the new Match Center link is
                varsity-only. #}
-            <td><span class="jh-tag {{ 'dist' if jvk == 'DIST' else 'show' if jvk == 'SHOWCASE' }}">{{ jvk }}</span>
+            <td><span class="jh-tag {{ 'dist' if jvk == 'DIST' else 'state' if jvk == 'STATE' else 'show' if jvk == 'WEEKEND' }}">{{ jvk }}</span>
               {% if d.shape %}<span class="jh-tag rd">{{ d.shape }}</span>{% endif %}
               {% if d.lines %}<span class="jh-caret" aria-hidden="true">›</span>{% endif %}</td>
           </tr>

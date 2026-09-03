@@ -26,6 +26,12 @@ ROUTES = [
     "/jhsaa?g=boys",
     "/jhsaa/toc",
     "/jhsaa/toc?g=boys",
+    # The JV TEAM state tournament (pilot from 2068). An empty-state render cannot see
+    # a single rule of the event — that is `tests/test_jhsaa_jv_state.py`'s job — but
+    # it does catch a template that will not parse, which is the one failure mode a
+    # page with no archive still has.
+    "/jhsaa/jv-state",
+    "/jhsaa/jv-state?g=boys",
     "/jhsaa/bracket",
     "/jhsaa/districts",
     "/jhsaa/champions",
