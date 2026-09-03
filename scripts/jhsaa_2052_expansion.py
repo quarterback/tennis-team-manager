@@ -176,7 +176,7 @@ SUNSET = [
 # the school and these rows already carried `boys_district`.
 FIELD_BOYS = (
     "Benedetti", "Funtsville", "Garfield", "Glassell Park", "Goldbank Hall",
-    "Tidewater", "Valley Providence",
+    "Tamarack Harbor", "Meridian Valley",
 )
 
 

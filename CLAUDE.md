@@ -2715,11 +2715,23 @@ was a school marker, shipped "Baptist HS High School".
   - `MASCOTS`/`COLORS`/`PRIVATE_SCHOOLS` key on the **DISPLAY** name, so a rename
     silently orphans a mascot entry and the school reverts to its source record's
     (`MASCOTS["Oskar Bellini"]` did exactly that). Move the key with the name.
-  - **‼️ NEVER RENAME A REAL PERSON'S SCHOOL.** The person-named pool mixes invented
-    names with genuine ones — Theodore Roosevelt, Bayard Rustin, Octavia Butler, James
-    Baldwin, Gwendolyn Brooks, Thurgood Marshall, Mae Jemison, Barack Obama, John
-    Lewis and every president. The presidents and justices are in `OWNER_EDICTS`; the
-    rest are NOT, so "looks like a person" is not the test.
+  - **‼️ NAMES ARE THE OWNER'S TO PICK — PROPOSE, NEVER APPLY.** An agent asked
+    to find redundant names renamed fifteen programs on its own initiative and
+    had to revert all fifteen: "Baptist" and "Jesuit" ARE those schools' names,
+    and the owner had not chosen any of the rest. A naming survey is a LIST
+    handed back, not a commit. When the owner then names replacements, apply
+    exactly those and hold anything that collides rather than substituting a
+    guess. ‼️ And answer the question that was asked: the ask was about the
+    St./Saint/Bishop register specifically, and the survey returned generic
+    near-duplicates instead.
+  - **‼️ THE OWNER RENAMES ANYTHING (owner rule 2026-09).** A rule once stood here
+    saying a real person's school must never be renamed. It is RETIRED: the map is
+    the owner's and any name on it is theirs to change, real person or not. What
+    survives is the MECHANICS — a rename must move `MASCOTS`/`COLORS`/
+    `PRIVATE_SCHOOLS`/`archetypes.json` keys with it, stamp `source` so the roster
+    identity does not move, and record the old name in `former_names.json` — plus
+    `OWNER_EDICTS`, which protects names the owner DICTATED, not names that merely
+    look like people. An agent still does not rename on its own initiative.
 - **‼️ A PROGRAM THAT STOPS SPONSORING KEEPS ITS PAGE (owner rule 2026-08,
   `jhsaa.former_school` / `sponsors_sport`).** `load_schools` filters on the
   `girls`/`boys` flag — correct for every CURRENT-season surface (the directory, the

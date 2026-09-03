@@ -138,7 +138,7 @@ LOUISVILLE = {
     "Chaminade":                  "Kirkwood",
     "Providence Academy":         "St. Matthews",
     "Metropolitan Country Day":   "Ladue",
-    "Sisters of Mercy":           "Carondelet",
+    "Websterfield":           "Carondelet",
     "St. Sebastian Prep":         "Webster Groves",
     "St. Norbert Abbey":          "Shively",
 }

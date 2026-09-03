@@ -38,10 +38,10 @@ _DATA = os.path.join(_REPO, "data", "jhsaa", "schools.json")
 MOVES = {
     # -> 9A (22)
     "De La Salle": "9A", "Ida B. Wells": "9A", "Arrieta": "9A",
-    "Coolidge": "9A", "Cliffside": "9A", "Trinity Catholic": "9A",
+    "Seagrove": "9A", "Cliffside": "9A", "Trinity Catholic": "9A",
     "Santa Laura": "9A", "Black Springs": "9A", "Arroyo Verde": "9A",
     "Westside Christian": "9A", "Harrisburgh": "9A",
-    "Telfair Country Day": "9A", "Jimmy Carter": "9A", "Tidewater": "9A",
+    "Telfair Country Day": "9A", "Jimmy Carter": "9A", "Tamarack Harbor": "9A",
     "Walter Mondale": "9A", "San Tomás": "9A", "Jersey City": "9A",
     "Mater Dei": "9A", "Benjamin Banneker": "9A", "Commonwealth": "9A",
     "William Henry Harrison": "9A", "Thurgood Marshall": "9A",

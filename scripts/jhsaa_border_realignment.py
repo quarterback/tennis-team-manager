@@ -118,7 +118,7 @@ EXPECT = {
         "Cincinnati", "Irvington", "Utah", "West Oberlin"},
     ("Group 2", "Olympic League"): {
         "Bonds", "Chicago Island", "Star Valley Catholic", "Star Valley Regional",
-        "Timberline", "Wellsville County Catholic", "Bridger County Christian",
+        "Timberline", "Hyrum", "Bridger County Christian",
         "Bridger Regional"},
     ("Group 1", "Sage Plains League"): {
         "Gravel Narrows", "Green Valley", "Harriman", "Kingsway",
