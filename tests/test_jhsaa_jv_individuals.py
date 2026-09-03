@@ -106,7 +106,7 @@ def _seeds(entries) -> list:
 def test_every_entrant_is_a_jv_player_of_an_eligible_grade(by_group):
     """Both halves of the rule, checked against the roster rather than against a
     second copy of the rule: outside the varsity eleven, and of a grade the
-    bracket admits — seniors in singles, juniors and seniors in doubles."""
+    bracket admits — sophomores, juniors and seniors in both since 2026-09."""
     teams = [t for d in by_group.values() for ts in d.values() for t in ts]
     seen = {b: 0 for b in jvi.BRACKETS}
     for t in teams:
@@ -123,30 +123,54 @@ def test_every_entrant_is_a_jv_player_of_an_eligible_grade(by_group):
     assert all(seen.values()), seen
 
 
-def test_the_singles_bracket_is_seniors_only(by_group):
+def test_ninth_grade_is_the_line_and_both_brackets_take_the_same_grades(by_group):
+    """The one grade rule left. Sophomores through seniors both brackets since
+    2026-09, and NINTH GRADE STILL OUT — the depth argument that opened the event
+    downward does not reach a ninth-grader below the varsity eleven, who is a
+    beginner rather than an underplaced player."""
+    assert jvi.ELIGIBLE_GRADES[jvi.SINGLES] == jvi.ELIGIBLE_GRADES[jvi.DOUBLES]
+    assert set(jvi.ELIGIBLE_GRADES[jvi.SINGLES]) == {10, 11, 12}
     teams = [t for d in by_group.values() for ts in d.values() for t in ts]
-    assert jvi.ELIGIBLE_GRADES[jvi.SINGLES] == (12,)
     for t in teams:
-        e = jvi.school_entry(t, jvi.SINGLES)
-        if e is not None:
-            assert e.players[0].grade == 12
+        for bracket in jvi.BRACKETS:
+            e = jvi.school_entry(t, bracket)
+            if e is not None:
+                assert all(p.grade >= 10 for p in e.players), \
+                    (bracket, t.school.name, [p.grade for p in e.players])
 
 
-def test_the_doubles_bracket_reaches_down_to_juniors(by_group):
-    """It has to, and the reason is arithmetic: a pair is three eligible players
-    deep once the singles entrant is held out, and most programs have nowhere
-    near three JV seniors. A juniors-and-seniors pool is what makes the bracket
-    fieldable — so this asserts that juniors are actually being USED, not merely
-    that the constant says they may be."""
+def test_the_underclass_grades_are_actually_used(by_group):
+    """Not merely permitted. The grades were opened because a pair is three
+    eligible players deep once the singles entrant is held out, and a JV pool is
+    only the roster below the varsity eleven — so this asserts sophomores and
+    juniors are really entering, which is the thing that makes the bracket
+    fieldable across the association."""
     teams = [t for d in by_group.values() for ts in d.values() for t in ts]
-    juniors = sum(1 for t in teams
-                  for p in (jvi.school_entry(t, jvi.DOUBLES) or
-                            type("E", (), {"players": ()})).players
-                  if p.grade == 11)
-    assert juniors, "no junior entered the doubles bracket"
-    seniors_only = sum(1 for t in teams if len(jvi.jv_seniors(t)) >= 3)
-    assert sum(1 for t in teams
-               if jvi.school_entry(t, jvi.DOUBLES) is not None) > seniors_only
+    grades = {10: 0, 11: 0, 12: 0}
+    for t in teams:
+        for bracket in jvi.BRACKETS:
+            e = jvi.school_entry(t, bracket)
+            for p in (e.players if e else ()):
+                grades[p.grade] = grades.get(p.grade, 0) + 1
+    assert grades[10], "no sophomore entered either bracket"
+    assert grades[11], "no junior entered either bracket"
+
+
+def test_a_school_still_fields_three_different_people(by_group):
+    """‼️ The pools are now IDENTICAL, so the singles hold-out is the only thing
+    keeping a school's JV No. 1 out of its own pair. While the grade rules
+    differed this fell out of the pools; it must not be allowed to again."""
+    teams = [t for d in by_group.values() for ts in d.values() for t in ts]
+    checked = 0
+    for t in teams:
+        s_e = jvi.school_entry(t, jvi.SINGLES)
+        d_e = jvi.school_entry(t, jvi.DOUBLES)
+        if s_e is None or d_e is None:
+            continue
+        checked += 1
+        pids = {p.pid for p in s_e.players} | {p.pid for p in d_e.players}
+        assert len(pids) == 3, (t.school.name, pids)
+    assert checked, "no school fielded both brackets"
 
 
 def test_the_singles_entrant_is_held_out_of_the_pair(by_group):

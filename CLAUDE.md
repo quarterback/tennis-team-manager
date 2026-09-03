@@ -1272,11 +1272,28 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     `ROSTER_FLOOR` is derived from that cut so every roster would have had to grow to
     fix an eligibility rule. The event filters its own field instead — a filter on the
     pool, never a second pool.
-  - **Eligibility is per bracket** (`ELIGIBLE_GRADES`): singles is **seniors**, doubles
-    is **juniors AND seniors**. That is arithmetic, not sentiment — a pair is three
-    eligible players deep once the singles entrant is held out, and measured across
-    three classes only **~14% of programs have three JV seniors** (~72% have one), so a
-    seniors-only doubles bracket left most districts with no champion to send. "JV" is
+  - **‼️ ELIGIBILITY IS SOPHOMORES, JUNIORS AND SENIORS — BOTH BRACKETS (JHSAA rule
+    2026-09, `ELIGIBLE_GRADES`).** The event opened seniors-only in singles and
+    juniors-and-up in doubles; both were widened because **the event is a competitive
+    opportunity, not a capstone**, and because at **2A/1A a program often had too few
+    seniors or juniors to stage rounds at all**. Measured, 40 programs a class,
+    share able to ENTER before → after: singles 1A **30% → 78%**, 2A 40% → 88%,
+    Group 3 38% → 88%, 5A 70% → 100%, 9A 85% → 100%. ‼️ **Doubles at 1A barely moves
+    (18% → 20%) and grade is NOT why** — `EVENT_FROM` 14 plus the singles hold-out
+    leaves a 16-player 1A roster about three eligible bodies deep, so the rank cut is
+    the binding constraint down there, not the grade rule. Do not "fix" 1A doubles by
+    reaching into ninth grade: a ninth-grader below the varsity eleven is a beginner,
+    not an underplaced player, which is the one line the depth argument does not reach.
+    ‼️ **The two pools are now IDENTICAL, so the singles hold-out is the ONLY thing
+    keeping a school's JV No. 1 out of its own pair** — while the grade rules differed
+    that fell out of the pools, and it must never be allowed to again. The mapping stays
+    keyed per bracket rather than collapsed to one tuple: which grades enter which event
+    has already moved twice. `jv_seniors` was renamed `jv_singles_pool` for the same
+    reason — a helper named for the current rule goes quietly wrong when the rule moves.
+    The historical arithmetic that set the original split: a pair is three eligible
+    players deep once the singles entrant is held out, and only **~14% of programs had
+    three JV seniors** (~72% had one), so a seniors-only doubles bracket left most
+    districts with no champion to send. "JV" is
     `jhsaa.jv_pool` and NOTHING else — the one ladder cut below `lineup_need("regular")`
     — so no second roster split exists to drift. Entries are the top of each pool by
     `ladder_score` (established position, not a coach's pick — the varsity event's own
