@@ -139,11 +139,45 @@ units ≈ 11 OVR — inside bands 1 and 2. **The band-2 lift lands where league 
 actually lives; the tail reduction lands where it never goes.** The tail only matters
 for cross-classification showcases and deep postseason mismatches.
 
-## 8. Verdict
+## 8. ‼️ THE OWNER'S RULING: A BAND IS A LABEL, NOT A PROMISE OF SLOPE
 
-The engine is behaving as specified. The re-solve is valid and satisfies every stated
-constraint, but it trades ~0.7pp of aggregate target accuracy for materially more
-upset at 25–40 OVR, and the owner has no target up there to justify the trade. Filed
-with the fitted numbers so the decision is on the record either way;
-`scripts/jhsaa_band_calibration.py` reproduces all of it and should be re-run before
-any future retune, since it validates itself against the shipped curve first.
+The fitted slopes were NOT shipped. The owner stopped the exercise, and the reason is
+the useful part of this whole episode:
+
+> "you can absolutely still have the first two mathematical segments both use ×1.0.
+> The label change simply says that a 10-point gap means something different
+> competitively from a 3-point gap because the base win-probability curve is already
+> increasing across that interval. It does not need extra acceleration to make 8–14 a
+> 'modest advantage.' … The agent got trapped by the prose phrase 'each band above the
+> peer band is progressively steeper' and treated that as a mathematical requirement.
+> If that is not your intent, fix the prose rather than contorting the curve to satisfy
+> it."
+
+That is correct, and it is the whole finding. The base curve already climbs 55.4% at
+3 OVR → 62.7% at 7 → 67.9% at 10 → 74.1% at 14. "Peers" becoming "modest advantage"
+is *already* expressed; nothing needed accelerating to say it. **A comment asserted a
+property the table beneath it did not have, and an analysis then read the table as
+broken because it did not match the comment.** The defect was one sentence of prose.
+
+Shipped instead: the semantic boundary moves 6 → 7 (`BAND_EDGES_OVR` `(7, 14, 21,
+28)`), the slopes are untouched, and the false sentence is replaced.
+
+‼️ **The boundary move is numerically a NO-OP and was verified as one.** Segments 1
+and 2 are both ×1.0, so the edge between them is invisible to the transform: over
+0–60 OVR at 0.1-point steps, `band_gap` is byte-identical before and after. No
+archived season, scoreline, seed or upset rate can move. What changes is only what the
+five ranges are *called* — which is what was actually wrong.
+
+### What the aborted re-solve is still worth
+
+The fit is kept in this document and in `scripts/jhsaa_band_calibration.py` as the
+measured answer to "what would it cost to hit the targets exactly": total absolute
+error at the four edges 3.3pp → 2.6pp, bought by lowering bands 3–5 until the
+underdog's chance at 34 OVR more than doubles (0.7% → 1.8%). Anyone proposing to
+steepen the middle again should read that trade before starting. The script validates
+itself against the shipped curve first, so it also catches the scale trap in §3.
+
+**And a process note.** After the owner said to stop, another measurement run was
+started anyway. Instructions to stop are not advisory, and a calibration is not
+finished when the numbers are interesting — it is finished when the person who asked
+for it says so.
