@@ -441,6 +441,22 @@ def create_app() -> Flask:
                         _state._jhsaa_all_players(DEFAULT_SEED, _g)
             except Exception:
                 pass                          # the lazy request path still covers it
+            try:
+                # The transfer batch's pid index for next season, both genders
+                # (~12s a gender cold, incremental across transfer edits after
+                # that). Warmed at boot so the first visit to /jhsaa/transfers
+                # is not the one that starts two full-gender builds under the
+                # page it is trying to render.
+                from app import jhsaa as _jh
+                if wd.exists(DEFAULT_SEED):
+                    _w = wd.load_world(DEFAULT_SEED)
+                    _salt = wd.active_salt(DEFAULT_SEED)
+                    for _g in ("boys", "girls"):
+                        _sy = wd.jhsaa_latest_season_year(_w["id"], _g)
+                        if _sy:
+                            _jh.roster_pid_index(_g, _sy + 1, _salt)
+            except Exception:
+                pass                          # the request path's deferred warm covers it
         import threading as _threading
         _threading.Thread(target=_warm_caches_async, name="ptc-cache-warm",
                           daemon=True).start()
@@ -2824,8 +2840,7 @@ def create_app() -> Flask:
                 raise RuntimeError(job["error"])
             extras.update(job["result"])
         return render_template("jhsaa_transfers.html", active="HS Transfers",
-                               rows=_jh.transfer_rows(), gender=gender, u=u,
-                               uni_label=label, **extras)
+                               gender=gender, u=u, uni_label=label, **extras)
 
     def _jh_transfer_extras(g: str, report=None, batch_text: str = "") -> dict:
         """Everything the transfers page shows beyond the recorded-moves ledger:
@@ -2851,7 +2866,44 @@ def create_app() -> Flask:
                 "maxper": request.values.get("maxper", default=2, type=int),
                 "drop": request.values.get("drop", default=2, type=int),
                 "dest_schools": sorted(s.name for s in _jh.load_schools(g)),
-                "report": report, "batch_text": batch_text}
+                "report": report, "batch_text": batch_text,
+                **_jh_transfer_ledger(next_year)}
+
+    def _jh_transfer_ledger(next_year) -> dict:
+        """The ledger the transfers page renders: every PENDING move (this
+        offseason — cancelable, so all of them) plus ONE season of history.
+
+        ‼️ A 40-SEASON SAVE HOLDS 11,000+ MOVES, and a move stops mattering when
+        the player graduates (owner, 2026-09). The page used to regenerate every
+        mover ever recorded to print their name (~20s) and then render all of
+        them into the History tab (thousands of rows, three url_for each) on
+        every visit — for a tab the owner is not looking at. Names are now
+        resolved only for the rows on screen, off the name draw alone, and
+        History shows the season picked by `hy` (default: the most recent past
+        season; `all` is still there for whoever wants the lot)."""
+        from app import jhsaa as _jh
+        import app.world as wd
+        ledger = _jh.transfer_ledger()
+        salt = wd.active_salt(DEFAULT_SEED)
+        if next_year:
+            pending = [r for r in ledger if (r["year"] or 0) >= next_year]
+            past = [r for r in ledger if (r["year"] or 0) < next_year]
+        else:
+            pending, past = [], ledger
+        hist_years = sorted({r["year"] for r in past if r["year"]}, reverse=True)
+        hy = request.values.get("hy", "")
+        if hy == "all":
+            shown = past
+        else:
+            try:
+                pick = int(hy)
+            except ValueError:
+                pick = hist_years[0] if hist_years else None
+            shown = [r for r in past if r["year"] == pick] if pick else []
+            hy = str(pick) if pick else ""
+        rows = _jh.resolve_transfer_names(pending + shown, salt)
+        return {"rows": rows, "hist_years": hist_years, "hy": hy,
+                "past_total": len(past)}
 
     @app.route("/editor/jhsaa-family", methods=["POST"])
     def editor_jhsaa_family():
@@ -2930,8 +2982,7 @@ def create_app() -> Flask:
         else:
             report, head = [], "Nothing to do — need an effective year and at least one line."
         return render_template("jhsaa_transfers.html", active="HS Transfers",
-                               rows=_jh.transfer_rows(), gender=gender, u=u,
-                               uni_label=label,
+                               gender=gender, u=u, uni_label=label,
                                **{**_jh_transfer_extras(g, report=report,
                                                         batch_text="" if do_apply else text),
                                   "report_head": head, "batch_year": year})
@@ -2978,8 +3029,7 @@ def create_app() -> Flask:
         else:
             report, head = [], "Nothing was checked."
         return render_template("jhsaa_transfers.html", active="HS Transfers",
-                               rows=_jh.transfer_rows(), gender=gender, u=u,
-                               uni_label=label,
+                               gender=gender, u=u, uni_label=label,
                                **{**_jh_transfer_extras(g, report=report,
                                                         batch_text="\n".join(lines)),
                                   "report_head": head, "batch_year": year})
