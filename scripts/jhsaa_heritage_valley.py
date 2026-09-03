@@ -82,7 +82,7 @@ MOVES = {
     "Kingston":             {"city": "Kingston", "county": _SRP_COUNTY, "area": "Snake River Plain"},
     "Paul Robeson":         {"city": "Boley", "county": _SRP_COUNTY, "area": "Snake River Plain"},
     "Tallulah Central":     {"city": "Tallulah", "county": _SRP_COUNTY, "area": "Snake River Plain"},
-    "Wyalusing Providence": {"city": "Wyalusing", "county": _SRP_COUNTY, "area": "Snake River Plain"},
+    "Minidoka": {"city": "Wyalusing", "county": _SRP_COUNTY, "area": "Snake River Plain"},
     "Pacific Friends":      {"city": "Okmulgee", "county": _SRP_COUNTY, "area": "Snake River Plain"},
     "Kishwaukee":           {"city": "Kishwaukee", "county": _SRP_COUNTY, "area": "Snake River Plain"},
     "Natchez Mercy":        {"city": "Natchez", "county": _SRP_COUNTY, "area": "Snake River Plain"},

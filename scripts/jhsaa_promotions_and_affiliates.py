@@ -45,7 +45,7 @@ _DATA = os.path.join(_REPO, "data", "jhsaa", "schools.json")
 # PART A -- 11 promotions to 8A.
 # ============================================================================
 PROMOTIONS = [
-    "Vespertine", "Covenant", "Cook City", "Ditch Fork", "Olive Head",
+    "Vespertine", "Calder North", "Cook City", "Ditch Fork", "Olive Head",
     "Olivet County", "Plainfield", "Paddock County", "Bardsley County",
     "Mesa Dorada", "Crater View",
 ]

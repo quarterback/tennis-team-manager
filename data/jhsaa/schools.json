@@ -1057,7 +1057,7 @@
       "locality": "Bannock"
     },
     {
-      "name": "Baptist",
+      "name": "Brynildson Baptist",
       "source": "Baptist HS",
       "city": "Brynildson Hill",
       "county": "Windrow",
@@ -1867,7 +1867,7 @@
       "boys_district": "Marble Valley League"
     },
     {
-      "name": "Bishop Turner",
+      "name": "Henry Turner",
       "city": "Valderra",
       "county": "Ferris",
       "area": "Gold Valley",
@@ -3388,7 +3388,7 @@
       "source": "Viktor Kareva"
     },
     {
-      "name": "Central Christian",
+      "name": "Summervale Academy",
       "city": "Summervale",
       "county": "Juniper",
       "area": "Juniper Highlands",
@@ -3404,7 +3404,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Juniper League",
-      "boys_district": "Juniper League"
+      "boys_district": "Juniper League",
+      "source": "Central Christian"
     },
     {
       "name": "Central West End",
@@ -4504,7 +4505,7 @@
       "boys_district": "Desert Sky League"
     },
     {
-      "name": "Covenant",
+      "name": "Calder North",
       "city": "Calder",
       "county": "Rimrock",
       "area": "Juniper Highlands",
@@ -5434,7 +5435,7 @@
       "boys_district": "Snake River District"
     },
     {
-      "name": "Eden County Christian",
+      "name": "Eden",
       "source": "Eden County Christian",
       "city": "Eden",
       "county": "Eden",
@@ -8866,7 +8867,7 @@
       "boys_district": "Marble Valley League"
     },
     {
-      "name": "Jesuit",
+      "name": "Jesuit Mercer City",
       "city": "Mercer City",
       "county": "Ferris",
       "area": "Gold Valley",
@@ -10448,7 +10449,7 @@
       "source": "Isabel Montalvo"
     },
     {
-      "name": "Malad County Christian",
+      "name": "Malad",
       "source": "Malad County Christian",
       "city": "Malad City",
       "county": "Malad",
@@ -12219,7 +12220,7 @@
       "source": "Trout Point"
     },
     {
-      "name": "North Valley Christian",
+      "name": "Netherwood Prep",
       "city": "Netherwood",
       "county": "Antler",
       "area": "Alderwold",
@@ -12235,7 +12236,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Sky-Em League",
-      "boys_district": "Sky-Em League"
+      "boys_district": "Sky-Em League",
+      "source": "North Valley Christian"
     },
     {
       "name": "Northgate",
@@ -15022,7 +15024,7 @@
       "source": "Jeannette Freeman"
     },
     {
-      "name": "Ruby County Catholic",
+      "name": "Carlin",
       "source": "Ruby County Catholic",
       "city": "Carlin",
       "county": "Ruby",
@@ -15300,7 +15302,7 @@
       "boys_district": "Far West League"
     },
     {
-      "name": "Saint Francis",
+      "name": "Kingsley Hall",
       "city": "Port Meridian",
       "county": "Bidwell",
       "area": "Selquah",
@@ -15316,7 +15318,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Ostrobothnia League",
-      "boys_district": "Ostrobothnia League"
+      "boys_district": "Ostrobothnia League",
+      "source": "Saint Francis"
     },
     {
       "name": "Saint Marc",
@@ -15850,7 +15853,7 @@
       "boys_district": "Metro League"
     },
     {
-      "name": "Seminary",
+      "name": "Veles Hill",
       "city": "Port Veles",
       "county": "Bidwell",
       "area": "Selquah",
@@ -19029,7 +19032,7 @@
       "boys_district": "Mission League"
     },
     {
-      "name": "Valley Providence",
+      "name": "Meridian Valley",
       "city": "Port Meridian",
       "county": "Bidwell",
       "area": "Selquah",
@@ -19604,7 +19607,7 @@
       "boys_district": "Greater Ashbury Interscholastic League"
     },
     {
-      "name": "Wellsville County Catholic",
+      "name": "Hyrum",
       "source": "Wellsville County Catholic",
       "city": "Hyrum",
       "county": "Wellsville",
@@ -19802,7 +19805,7 @@
       "boys_district": "Summit League"
     },
     {
-      "name": "Westside Christian",
+      "name": "Westside Prep",
       "city": "Port Meridian",
       "county": "Bidwell",
       "area": "Selquah",
@@ -19819,7 +19822,8 @@
       "boys": true,
       "girls_district": "Gateway League",
       "boys_district": "Gateway League",
-      "play_up": true
+      "play_up": true,
+      "source": "Westside Christian"
     },
     {
       "name": "Wheatley",
@@ -20121,7 +20125,7 @@
       "locality": "Wyalusing"
     },
     {
-      "name": "Wyalusing Providence",
+      "name": "Minidoka",
       "city": "Wyalusing",
       "county": "Minidoka",
       "area": "Snake River Plain",

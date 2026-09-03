@@ -412,10 +412,10 @@ FORMER_NAMES = {
     "Ashfield":                                    "California Beach",
     "Ashwood":                                     "Gruesome Ridge",
     "Aspen Harbor":                                "East Simmons",
-    "Astrid Ricci":                                "Jesuit",
+    "Astrid Ricci":                                "Jesuit Mercer City",
     "Aurelia Classical Academy":                   "Goodman",
     "Banfield Day School":                         "Banfield Day",
-    "Baptist HS":                                  "Baptist",
+    "Baptist HS":                                  "Brynildson Baptist",
     "Barack Obama":                                "Obama",
     "Barclay Golden Gate":                         "Gate City",
     "Barlowe County High":                         "Barlowe County",
@@ -811,7 +811,7 @@ FORMER_NAMES = {
     "Newark River North":                          "River North",
     "Nicolás Cordero":                             "Ruth Bader Ginsburg",
     "Nicolás Ordoñez":                             "Rockridge",
-    "Nicolás Quiñones":                            "Covenant",
+    "Nicolás Quiñones":                            "Calder North",
     "Nicolás Salcedo":                             "Siskiyou Electric",
     "Nicolás Treviño":                             "Bishop Valera",
     "Nicolás Villalba":                            "Temescal",
@@ -835,7 +835,7 @@ FORMER_NAMES = {
     "Opal Tillman":                                "Granite Water & Power",
     "Orchard Gate":                                "Bellefontaine",
     "Orchard Gate North":                          "Bois Neuf",
-    "Orchard Hill":                                "Bishop Turner",
+    "Orchard Hill":                                "Henry Turner",
     "Orellana":                                    "Orellana Central",
     "Orellana Canal View":                         "Canal View",
     "Orellana Commerce":                           "Malpais",
@@ -876,7 +876,7 @@ FORMER_NAMES = {
     "Port Veles Foundry":                          "Seawall",
     "Port Veles Foundry High":                     "Seawall",
     "Port Veles Heights":                          "Obama",
-    "Port Veles International Academy":            "Seminary",
+    "Port Veles International Academy":            "Veles Hill",
     "Port Veles Maritime Academy":                 "Veles Vo-Tech",
     "Port Veles North":                            "Biden",
     "Port Veles Park":                             "Port Veles Episcopal",
@@ -886,8 +886,8 @@ FORMER_NAMES = {
     "Port Veles Union":                            "Port Veles Lutheran",
     "Portola":                                     "Homeland",
     "Prairie Crossing":                            "Pacersburg",
-    "Providence Academy North":                    "Wyalusing Providence",
-    "Providence Academy Valley":                   "Valley Providence",
+    "Providence Academy North":                    "Minidoka",
+    "Providence Academy Valley":                   "Meridian Valley",
     "Puerto Gallego School of Science and Industry": "Gallego Bay",
     "Puerto Gallego Science":                      "Gallego Bay",
     "Puerto de los Reyes Commerce":                "Reyes Landing",
@@ -961,7 +961,7 @@ FORMER_NAMES = {
     "Seaside Heights":                             "Biloxi Heights",
     "Selbyville Manufacturing and Technology Academy": "Selby Tech",
     "Selbyville Tech":                             "Selby Tech",
-    "Seminary High School":                        "Seminary",
+    "Seminary High School":                        "Veles Hill",
     "Sergei Belov":                                "Malcolm X Shabazz",
     "Sergei Petrenko":                             "Willowbrook",
     "Serrano Applied Sciences Institute":          "Arroyo Seco",
@@ -1180,14 +1180,15 @@ RENAMES = {
     # so nothing is reissued and no history merges. Transient targets "Bishop
     # Turner" and a brief 9A "Booker T Washington" lived only inside this
     # session; no season was ever archived under either. The 9A renames to
-    # "Bishop Turner" (the owner's earlier pick, confirmed) in the same batch,
+    # "Henry Turner" (2026-09; it was "Bishop Turner" until the religious-name
+    # pass took the prelate's title off a public program) in the same batch,
     # so NO school carries "Orchard Hill" — the archived name resolves through
     # FORMER_NAMES to the 9A alone (its identity; the alias generator prefers
     # an identity claim over another chain's transient target).
     "Abbey Vale Orchard Hill": "Booker T Washington",
     # 2026-08 owner rename — the school's own never-renamed identity is the key:
     "Sluice Crossing": "Crossing",
-    "Orchard Hill": "Bishop Turner",
+    "Orchard Hill": "Henry Turner",
     "St. Basil School": "St. Ignatius",
     "Caswell Depot High": "Cherry Hill North",
     "Caswell I-50 Technical": "Cherry Hill South",
@@ -1325,7 +1326,7 @@ RENAMES = {
     # is never a school name.
     "Amelia Freeman North": "Casco",
     "Anneliese Halvorsen": "Washington",
-    "Baptist HS": "Baptist",
+    "Baptist HS": "Brynildson Baptist",
     "Belmonte International School": "Belmonte Collegiate",
     "Calderwood School": "Calderwood",
     "Carroway School of Public Service": "Liberty Hill",
@@ -1430,14 +1431,15 @@ RENAMES = {
     # what makes "Cardinal Echevarria" sound like a real Catholic high school
     # instead of an import. Never coin a fresh surname for one.
     #
-    # ‼️ NEVER RENAME A REAL PERSON'S SCHOOL. The person-named pool mixes invented
-    # names with genuine ones — Theodore Roosevelt, Bayard Rustin, Octavia Butler,
-    # James Baldwin, Gwendolyn Brooks, Thurgood Marshall, Mae Jemison, Barack Obama,
-    # John Lewis, and every president in there. The presidents and justices are in
-    # OWNER_EDICTS; the rest are not, so "looks like a person" is not the test.
-    # Verify fictional before adding a target here.
+    # The person-named pool mixes invented names with genuine ones — Theodore
+    # Roosevelt, Bayard Rustin, Octavia Butler, James Baldwin, Gwendolyn Brooks,
+    # Thurgood Marshall, Mae Jemison, Barack Obama, John Lewis, and every
+    # president in there. The owner renames any of them at will (the old "never
+    # rename a real person's school" rule was retired 2026-09); an AGENT still
+    # does not do it on its own initiative, and OWNER_EDICTS is the set the owner
+    # dictated by name.
     "Nikolai Orlov": "Mater Dei",                    # 9A Cañada Grande
-    "Astrid Ricci": "Jesuit",                        # 9A Mercer City
+    "Astrid Ricci": "Jesuit Mercer City",            # 9A Mercer City
     "Oskar Bellini": "Notre Dame",                   # 9A Boyerstown
     "Oksana Romanov": "Archbishop Gregory",          # 8A — owner's mandatory name
     "Zoya Orlov": "Sacred Heart",          # 8A Santa Michaela — 2026-08
@@ -1544,7 +1546,7 @@ RENAMES = {
     "Orellana Canal View": "Canal View",                       # 9A Orellana
     "Orellana Treasure Valley": "Treasure Valley",             # 9A Orellana
     "Port Veles": "Veles Central",                             # 5A Port Veles
-    "Providence Academy Valley": "Valley Providence",          # 9A Port Meridian
+    "Providence Academy Valley": "Meridian Valley",             # 9A Port Meridian
     "San Borondón East": "Borondón Mesa",                      # 4A San Borondón
     "San Cordero": "San Cordero Central",                      # 4A San Cordero
     "San Cordero East": "Cordero Junction",                    # 6A San Cordero
@@ -1595,7 +1597,7 @@ RENAMES = {
     "Mercy Academy": "Natchez Mercy",                            # 9A Ashbury
     "St. Sebastian Prep North": "Sherwood Bench",                # 8A Ashbury
     "Ashbury Central": "Tallulah Central",                       # 7A Ashbury
-    "Providence Academy North": "Wyalusing Providence",          # 5A Ashbury
+    "Providence Academy North": "Minidoka",                      # 5A Ashbury
     "St. Basil Academy": "Cahokia Mounds Catholic",              # 4A Belmonte
     "Treasure Valley": "Caney",                        # 6A Belmonte
     "Belmonte River Plain": "Chillicothe",              # 8A Belmonte
@@ -1868,7 +1870,7 @@ RENAMES = {
     "Rosa Castañeda":            "Tippecanoe",             # 9A Belmonte
     "Yelena Sokolov":            "Bowerstock",              # 8A Belmonte
     "Mikhail Sidorov":           "Saint Marc",             # 6A Belyakov
-    "Nicolás Quiñones":          "Covenant",                # 7A Calder
+    "Nicolás Quiñones":          "Calder North",            # 7A Calder
     "Katherine Whitaker":        "Brookside",               # 6A Carroway
     "Oskar Weiss":               "Waldo",                   # 8A Cortland
     "Marian Browne":             "River Market",            # 3A Dovetail
@@ -2004,7 +2006,7 @@ INSTITUTION_NAMES = [
 # therefore read as private, whatever the source record said. Keyed on the display
 # name, like `MASCOTS` and `COLORS` — see the emit block in `build`.
 PRIVATE_SCHOOLS = {
-    "Mater Dei", "Jesuit", "Notre Dame", "Archbishop Gregory",
+    "Mater Dei", "Jesuit Mercer City", "Notre Dame", "Archbishop Gregory",
     "Sacred Heart", "Bellarmine Prep", "Bishop Valera",
     "Xavier College Prep", "St. Francis Catholic", "Christian Brothers",
     "Cardinal Mercier", "Providence Catholic", "Pope Leo XIV",
@@ -2125,7 +2127,7 @@ LOCALITIES = {
     "St. Norbert Abbey":                     "Natchitoches",
     "Tallulah Central":                      "Tallulah",
     "Vista Terrace":                         "Biloxi",
-    "Wyalusing Providence":                  "Wyalusing",
+    "Minidoka":                              "Wyalusing",
     "Highland Park":                     "Allegheny",
     "Benjamin Banneker":                     "Banneker",
     "Bowerstock":                            "Bowerstock",
@@ -2350,7 +2352,7 @@ RECLASSIFY_2039 = {
     "Northrup Tech": "1A", "St. Lucia Academy": "1A",
     "St. Norbert Abbey": "1A",
     "Casa Linda": "6A", "Belmonte": "6A", "Archbishop Doyle Prep": "6A",
-    "Baptist": "6A", "Blackpine": "5A",
+    "Brynildson Baptist": "6A", "Blackpine": "5A",
 }
 
 # ⚠️ THE 2039 REALIGNMENT, CORRECTION BATCH (owner rule 2026-08) — same table shape
@@ -2364,7 +2366,7 @@ RECLASSIFY_2039 = {
 # of the two drops. Revisit if that guess was wrong.
 RECLASSIFY_2039B = {
     # Down — mostly private schools that had drifted to the top of the ladder.
-    "Natchez Mercy": "3A", "Valley Providence": "3A", "Palisade Prep": "3A",
+    "Natchez Mercy": "3A", "Meridian Valley": "3A", "Palisade Prep": "3A",
     "St. Sebastian Prep": "3A",
     "Archbishop Gregory": "8A",
     "Sacred Heart": "7A", "Bellarmine Prep": "7A",
@@ -2898,7 +2900,7 @@ MASCOTS = {
     # half of what makes the name land. ⚠️ NO AQUATIC ANIMALS (the rule at the head
     # of this table) — so Xavier Prep's real Gators are not reproduced here.
     "Mater Dei": "Monarchs",
-    "Jesuit": "Crusaders",
+    "Jesuit Mercer City": "Crusaders",
     "Archbishop Gregory": "Griffins",
     "Sacred Heart": "Irish",
     "Bellarmine Prep": "Lions",
@@ -2977,7 +2979,7 @@ MASCOTS = {
     "Silver Glen": "Silversmiths",
     "St. Elian": "Abbots",
     "Shasta Agricultural": "Cellarmen",                # Valderra
-    "Bishop Turner": "Orchardists",
+    "Henry Turner": "Orchardists",
     "St. Gabriel Preparatory": "Archangels",
     "Blue Mountain Grange": "Millwrights",       # Fellows Mill
     "Star City": "Cosmonauts",
