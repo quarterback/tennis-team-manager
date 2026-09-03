@@ -3,23 +3,19 @@
 One statewide bracket per gender, no classifications, ending in a single JV Team
 State Champion for the boys and one for the girls.
 
-‼️ THIS REVERSES A STANDING "NO JV TEAM PLAYOFFS" RULE, and it is worth recording
-what the three objections were and how the spec answers each, because they were
-real and none of them was hand-waved:
+Three mechanics carry the event, each doing real work:
 
-  * *"a bracket needs a ranking to seed it and JV has none by design."* JV has no
-    TOSS, no awards and no ladder credit — but `JVTeam` has always carried its own
-    `wins`/`losses`/`ties` and `points_for`/`against`. A JV RECORD exists; what
-    does not exist is an opponent-strength rating. Every seeding here runs on the
-    record, which is earned on court, and never on ability.
-  * *"a JV team is a ladder slice, so the squad that qualified need not be the
-    squad that plays."* Answered by FREEZING eligibility at the start of the JV
-    postseason, the same device `TeamSeason.order_of_ability` uses for the varsity
-    postseason. See `freeze_eligibility`.
-  * *"the elastic format means a semifinal and a final could be different shapes."*
-    Answered by fixing ONE shape for the whole event (`FORMAT`) instead of sizing
-    it per dual off the thinner side. That is also what makes the event's results
-    comparable across rounds, which a bracket needs and a league card does not.
+  * **Seeding runs on the JV RECORD.** JV has no TOSS, no awards and no ladder
+    credit — but `JVTeam` has always carried its own `wins`/`losses`/`ties` and
+    `points_for`/`against`. What it has no business reading is ability, and it
+    never does: see `seed_key`.
+  * **Eligibility FREEZES** at the start of the JV postseason, the same device
+    `TeamSeason.order_of_ability` uses for the varsity postseason, so the squad
+    that qualified is the squad that plays. See `freeze_eligibility`.
+  * **ONE shape for the whole event** (`FORMAT`), rather than the league's elastic
+    per-dual sizing off the thinner side, so a semifinal and a final are the same
+    dual and their results are comparable — which a bracket needs and a league
+    schedule does not.
 
 ‼️ AND THE FIXED SHAPE HAD TO BE ODD. Three of the eight `JV_FORMATS` have an even
 court count and `jv_outcome` really does return draws (~0.24% of JV duals; 2S/2D
@@ -46,11 +42,14 @@ from . import jhsaa as jh
 #: (see the module docstring): a drawn dual cannot advance anybody.
 FORMAT = DualFormat(n_singles=3, n_doubles=2, doubles_team_point=False)
 
-#: Players the card needs (7) and players NAMED for each dual (8). The extra name is
-#: the spec's: "lineups may change between rounds using only eligible
-#: championship-roster players", so a program carries one more than it plays.
+#: Players the card needs (7) and the championship roster CAP (16).
+#: ‼️ 16 IS A CEILING, NOT A SQUAD SIZE: a program carries UP TO sixteen frozen-
+#: eligible players and dresses seven of them, so "lineups may change between rounds
+#: using only eligible championship-roster players" has somewhere to change TO. A
+#: program with fewer eligible players carries fewer — it needs `LINEUP` to enter and
+#: nothing more.
 LINEUP = jh.jv_lineup_need(FORMAT)
-ROSTER = 8
+ROSTER = 16
 
 #: The phase these duals are archived under. ‼️ ITS OWN PHASE, not "regular" and not
 #: the varsity postseason's — a phase is the archive's identity for an EVENT (the
@@ -84,8 +83,9 @@ def district_berths(n_teams: int) -> int:
 
 @dataclass
 class JVEntry:
-    """A program in the JV postseason: its JV season team plus the roster frozen for
-    the event. `players` is fixed at the freeze and every round dresses from it."""
+    """A program in the JV postseason: its JV season team plus the championship
+    roster frozen for the event (up to `ROSTER`). `players` is fixed at the freeze
+    and every round dresses its seven from it."""
     jv: object                       # jhsaa.JVTeam
     players: list = field(default_factory=list)
 
@@ -153,7 +153,7 @@ def entries(jv: dict) -> list[JVEntry]:
     for jvt in jv.values():
         if not jvt.schedule:
             continue
-        roster = freeze_eligibility(jvt)
+        roster = freeze_eligibility(jvt)[:ROSTER]
         if len(roster) >= LINEUP:
             out.append(JVEntry(jv=jvt, players=roster))
     return out
@@ -170,15 +170,14 @@ def seed_key(e: JVEntry) -> float:
 
 
 def _dress(e: JVEntry, rng_seed: int) -> list:
-    """The eight named for a dual, and the seven who take the court.
+    """The championship roster named for a dual, and the seven who take the court.
 
     Lineups may change between rounds, but only from the frozen roster, so the choice
     is made HERE and only ever over `e.players`. Named in frozen-ladder order: the
     event's own anti-sandbagging property, the same one the individual draws get from
     selecting on `ladder_score` rather than on a coach's pick.
     """
-    named = e.players[:ROSTER]
-    return named[:LINEUP]
+    return e.players[:LINEUP]
 
 
 def play_dual(a: JVEntry, b: JVEntry, *, seed: int) -> int:
@@ -250,9 +249,12 @@ def run_regionals(quals: list[JVEntry], *, seed: int) -> dict:
 def qualifying_pairs(ranked: list[JVEntry]) -> list[tuple[JVEntry, JVEntry]]:
     """The play-in: 13v20, 14v19, 15v18, 16v17 (spec).
 
-    Written as a fold of the ranking rather than four typed pairs, so a future change
-    to `DIRECT_SEEDS` or the number of regions reshapes it instead of silently
-    pairing the wrong seeds.
+    ‼️ A REAL SAVE FILLS ALL TWENTY REGIONS — the association is ~875 boys'/~912
+    girls' programs on full rosters, so this is exactly four pairs and the State
+    field is exactly sixteen. It is folded off the ranking rather than typed as four
+    seeds so that a thin test season (or a change to `DIRECT_SEEDS`) still produces a
+    legal draw instead of pairing the wrong seeds — that graceful case is a property
+    of the fold, never a design target.
     """
     rest = ranked[DIRECT_SEEDS:]
     return [(rest[i], rest[len(rest) - 1 - i]) for i in range(len(rest) // 2)]

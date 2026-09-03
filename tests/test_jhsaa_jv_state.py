@@ -34,7 +34,7 @@ def test_the_card_is_five_odd_courts_and_seven_players():
     courts = jvs.FORMAT.n_singles + jvs.FORMAT.n_doubles
     assert courts == 5 and courts % 2 == 1
     assert (jvs.FORMAT.n_singles, jvs.FORMAT.n_doubles) == (3, 2)
-    assert jvs.LINEUP == 7 and jvs.ROSTER == 8
+    assert jvs.LINEUP == 7 and jvs.ROSTER == 16
 
 
 def test_district_berths_match_the_association_table():
@@ -56,7 +56,9 @@ def test_every_entrant_is_eligible_and_actually_played_jv(jv):
         for p in e.players:
             assert p.pid in pool, (e.name, p.name)
             assert p.name in played, (e.name, p.name)
-        assert len(e.players) >= jvs.LINEUP
+        # ‼️ 16 IS A CEILING, NOT A SQUAD SIZE — a program carries up to sixteen and
+        # dresses seven, so the roster may be anywhere in between.
+        assert jvs.LINEUP <= len(e.players) <= jvs.ROSTER
 
 
 def test_a_program_that_never_played_jv_cannot_enter(jv):

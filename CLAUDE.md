@@ -1227,24 +1227,26 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     varsity's geography-first `_nondistrict_pairs` (median gap 0.0 OVR vs 4.2-5.2):
     travel is not a real cost in a simulation and a JV player facing their own level is
     the entire point. Classification is deliberately NOT a gate.
-  - **‼️ THE JV TEAM STATE TOURNAMENT — a PILOT from 2068 (JHSAA rule 2026-09,
-    `app/jhsaa_jv_state.py`, `jhsaa.JV_STATE_FROM`).** This REVERSES the "no JV team
-    playoffs" answer given in 2026-08, and each of that answer's three objections was
-    real and is answered rather than waved off. *"A bracket needs a ranking and JV has
-    none"* — JV has no TOSS, awards or ladder credit, but `JVTeam` has always carried
-    `wins`/`losses`/`ties` and `points_for`/`against`: a RECORD exists, and every
-    seeding here runs on it and never on ability (pinned). *"A JV team is a ladder
-    slice, so the squad that qualified need not be the squad that plays"* — eligibility
-    FREEZES at the start of the JV postseason, the varsity anti-stacking device
-    arriving by another door. *"The elastic format means two rounds could be different
-    shapes"* — ONE shape for the whole event.
+  - **‼️ THE JV TEAM STATE TOURNAMENT — a PILOT from 2068 (owner rule 2026-09,
+    `app/jhsaa_jv_state.py`, `jhsaa.JV_STATE_FROM`).** Three mechanics, each doing
+    real work: **seeding runs on the JV RECORD** — `JVTeam` has always carried
+    `wins`/`losses`/`ties` and `points_for`/`against` — and never on ability (pinned);
+    **eligibility FREEZES** at the start of the JV postseason, the varsity
+    anti-stacking device arriving by another door, so the squad that qualified is the
+    squad that plays; and **ONE shape for the whole event** rather than the league's
+    elastic per-dual sizing, so two rounds are comparable.
     - **‼️ AND THAT SHAPE HAD TO BE ODD.** Three of the eight `JV_FORMATS` have an even
       court count and `jv_outcome` really does return draws (~0.24% of JV duals; 2S/2D
       is a fifth of the league slate). A bracket cannot advance a tie and this
       association has no tie-break anywhere by design, so **5 courts — S1/S2/S3 +
-      D1/D2, first to 3, seven players on court and eight named** is not a stylistic
-      pick. Measured: 3S/2D needs 7 spare, which ~63% of boys' and ~60% of girls'
-      programs have; a 7-court card would have cut that to ~27%.
+      D1/D2, first to 3, seven players on court** is not a stylistic pick. Measured:
+      3S/2D needs 7 spare, which ~63% of boys' and ~60% of girls' programs have; a
+      7-court format would have cut that to ~27%.
+    - **‼️ THE CHAMPIONSHIP ROSTER IS UP TO 16 — A CEILING, NOT A SQUAD SIZE.** A
+      program carries up to sixteen frozen-eligible players and dresses seven, which
+      is what gives "lineups may change between rounds using only eligible
+      championship-roster players" somewhere to change TO. Entry needs `LINEUP` (7)
+      and nothing more, so a thin program carries fewer and is not excluded.
     - **Statewide and CLASSLESS**, one bracket a gender: district qualification →
       regional championship → a state qualifying round → a 16-team State Championship.
       District berths by how many JV teams the league fielded (2-5 → 1, 6-9 → 2,
@@ -1254,8 +1256,13 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
       per-class unit would mean nothing here. There are exactly 20 areas, which is what
       the spec's "existing 20 JHSAA regions" names.
     - **The 20 regional champions rank statewide**; seeds 1-12 go straight to State and
-      13v20 / 14v19 / 15v18 / 16v17 play in for the last four. Folded from the ranking,
-      never four typed pairs, so it stays correct at any region count.
+      13v20 / 14v19 / 15v18 / 16v17 play in for the last four. ‼️ **A REAL SAVE FILLS
+      ALL TWENTY** — the association is ~875 boys'/~912 girls' programs on full
+      rosters, so every area crowns a champion and the play-in is exactly the spec's
+      four pairs. A run that crowns fewer is a small FIXTURE, never the design: the
+      pairing is folded off the ranking rather than typed as four seeds so a thin
+      test season still produces a legal draw, and that graceful case must not be
+      read back as a licence to ship a short State field.
     - **Eligibility is ladder rank #12+ (`jv_pool`, the one cut — no second roster split
       is invented) AND actual JV participation this season**, read off the `played` list
       `play_jv_dual` already records. Split-time players fall out for free: eligible if
