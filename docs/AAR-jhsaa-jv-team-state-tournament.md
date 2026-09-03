@@ -108,11 +108,23 @@ Both were caught by the owner looking at the page, not by a test.
 **The bracket.** The event cut its field to twelve seeds by hand, played a four-dual
 play-in in a SECOND bracket, and rendered it in a panel beside the tree — with its own
 constants (`DIRECT_SEEDS`, `STATE_FIELD`), its own pairing fold, its own archive key
-and its own round name. `jhsaa.run_state` has always played exactly this shape: a
-field that does not fill its bracket gets byes to the top seeds and an opening round,
-off the shared `engine.tournament.seeded_draw`. **Twenty champions in a 32-slot draw
-is twelve byes and four opening duals** — the spec's own arithmetic, for free, as one
-tree. Owner: *"you didn't have to invent a bespoke JV format when we already have lots
+and its own round name. The association already plays this shape: a field that does
+not fill its bracket is seeded through at the top and plays an opening round.
+**Twenty champions in a 32-slot draw is twelve seeded through and four opening
+duals** — the spec's own arithmetic, for free, as one tree.
+
+‼️ **But WHICH existing draw mattered.** The first pass reached for
+`engine.tournament.seeded_draw` (what `run_state` uses), which shuffles within seed
+tiers — and that does NOT produce the spec's pairings. Measured over four seeds it
+gave (12,20)(13,17)(15,18)(16,19), then (12,18)(13,20)(14,17)(15,19), then
+(9,17)(10,19)(11,20)(15,18): a different opening round every season, with seed 9
+playing in while seed 15 was seeded through. That is correct for a State draw — a
+classification's TOSS seeding is an estimated ordering, so the tiers are the claim the
+evidence supports — and wrong for a championship of champions ranked on a season's
+record, which is the TOC's situation, and the TOC is deliberately strict rank-for-rank.
+Using its order fold gives **13v20, 14v19, 15v18, 16v17** every time. *"Reuse what
+exists" is not one decision — the app has several draws and they encode different
+claims about how much the ranking can bear.* Owner: *"you didn't have to invent a bespoke JV format when we already have lots
 of bracket formats that work beyond 16."* Deleting the parallel mechanism removed the
 constants, the fold, the second archive entry and the panel, and put the qualifying
 round into the tree, the round tabs and the results list at no cost.

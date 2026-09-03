@@ -4656,6 +4656,12 @@ def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
         played_in.update((gm.get("home"), gm.get("away")))
         survived.add(gm.get("winner"))
     in_draw = set(st.get("field") or ())
+    # ‼️ THE SEED RANGE IS READ OFF THE DRAW, never typed and never computed from the
+    # field size. Written as `field − games` once, it printed "seeded 12-20" while the
+    # seed 12 card sat in the tree above, unplayed — the copy contradicting the
+    # bracket beside it. The draw already knows exactly who played in.
+    qual_seeds = sorted(seeds.get(n, 0) for n in played_in)
+    qual_lo, qual_hi = (qual_seeds[0], qual_seeds[-1]) if qual_seeds else (0, 0)
 
     def _entry(name):
         if name not in played_in:
@@ -4682,6 +4688,8 @@ def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
         "state_field_n": len(st.get("field") or ()),
         "regions": regions, "region_n": len(regions),
         "opening_n": len(opening),
+        "qual_lo": qual_lo, "qual_hi": qual_hi,
+        "direct_n": len(in_draw) - len(played_in),
         "rounds": _rounds(st),
         "canvas": _bracket_canvas(
             _jh_bracket_cols({**st, "seed_map": seeds}, schools),

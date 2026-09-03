@@ -261,3 +261,31 @@ def test_the_tree_labels_seeds_from_the_statewide_ranking(jv):
     assert seen[names[1]] == seeds[names[1]] == 4, "tree labelled a seed by slot"
     for n, sd in seeds.items():
         assert seen[n] == sd, n
+
+
+def test_twenty_champions_pair_13v20_14v19_15v18_16v17():
+    """‼️ STRICT SEED LINES, AND THE SPEC'S PAIRINGS ARE A RULE, NOT A SIDE EFFECT.
+
+    The event first used `engine.tournament.seeded_draw`, which SHUFFLES within seed
+    tiers — right for a classification's State draw (a TOSS seeding is an estimated
+    ordering, so the tiers are the claim the evidence supports) and wrong for a
+    championship of champions ranked on a season's record. Measured over four seeds it
+    gave (12,20)(13,17)(15,18)(16,19), then (12,18)(13,20)(14,17)(15,19), then
+    (9,17)(10,19)(11,20)(15,18) — a different opening round every year, with seed 9
+    playing in while seed 15 was seeded through. The TOC's order fold is strict and is
+    what makes the association's own pairings true.
+
+    Pure arithmetic on the draw order — no season needed, so this cannot rot behind a
+    fixture that crowns fewer than twenty regions.
+    """
+    order = [1]
+    while len(order) < jvs.REGIONS:
+        m = 2 * len(order)
+        order = [s for a in order for s in (a, m + 1 - a)]
+    pairs = [(order[i], order[i + 1]) for i in range(0, len(order), 2)]
+    games = sorted(tuple(sorted(p)) for p in pairs
+                   if p[0] <= jvs.REGIONS and p[1] <= jvs.REGIONS)
+    assert games == [(13, 20), (14, 19), (15, 18), (16, 17)]
+    through = sorted({s for p in pairs for s in p
+                      if s <= jvs.REGIONS and not (p[0] <= jvs.REGIONS and p[1] <= jvs.REGIONS)})
+    assert through == list(range(1, 13))

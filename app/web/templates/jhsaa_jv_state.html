@@ -48,10 +48,10 @@
 {% endif %}
 
 {# ONE tree, and the qualifying round is its first column — twenty champions in a
-   32-slot draw is twelve byes and four opening duals, which is the shape
-   `jhsaa.run_state` plays whenever a field does not fill its bracket. There is no
-   second bracket and no qualifying tab: the survivors meet the byes at the Round of
-   16, so a single tree draws every real link. #}
+   32-slot draw is twelve seeded through and four opening duals (13v20, 14v19, 15v18,
+   16v17, on the TOC's strict seed lines). There is no second bracket and no
+   qualifying tab: the survivors meet the byes at the Round of 16, so a single tree
+   draws every real link. #}
 <div class="jh-brk-desktop">
   {{ brk_toolbar([('all', 'JV Team State')]) }}
   <div class="brk-stage" id="brkstage">
@@ -74,7 +74,10 @@
    breakpoint rather than a new one. #}
 <div class="bl-panel" style="margin-top:14px">
   <div class="bl-panel-head"><span class="bl-panel-title">Results by round</span>
-    <span class="bl-panel-note">{{ view.opening_n }} qualifying duals, then 16 → 8 → 4 → 2</span></div>
+    {# The seed range comes from the DRAW (see the view), so it says 13–20 when
+       twenty regions crown champions and something else when fewer do — it can never
+       contradict the bracket above it. #}
+    <span class="bl-panel-note">{% if view.opening_n %}Seeds {{ view.qual_lo }}–{{ view.qual_hi }} play the qualifying round, {{ view.direct_n }} seeded through · {% endif %}16 → 8 → 4 → 2</span></div>
   <div class="bl-panel-body" style="padding:12px">
     <div class="jh-cols2">
       {% for rd in view.rounds %}

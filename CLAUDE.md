@@ -1255,17 +1255,26 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
       Regionals — those are numbered per CLASSIFICATION and this event has none, so a
       per-class unit would mean nothing here. There are exactly 20 areas, which is what
       the spec's "existing 20 JHSAA regions" names.
-    - **‼️ THE 20 REGIONAL CHAMPIONS ARE THE STATE FIELD, IN ONE ORDINARY DRAW.**
-      Twenty into a 32-slot bracket is twelve byes and four opening duals, then
-      **16 → 8 → 4 → 2** played in full (owner: "don't skip the R16") — the shape
-      `run_state` already plays whenever a field does not fill its bracket, off the
-      same `engine.tournament.seeded_draw`. The event briefly cut the field to twelve
-      by hand, played a four-dual play-in in a SECOND bracket and rendered it in a
-      panel beside the tree; owner, 2026-09: **"you didn't have to invent a bespoke
-      JV format when we already have lots of bracket formats that work beyond 16"**
-      and *"the JV event needs unique qualification logic, not unique
-      presentation."* The qualifying round is the draw's first column, so it is in
-      the tree, in the round tabs and in the results list for free.
+    - **‼️ THE 20 REGIONAL CHAMPIONS ARE THE STATE FIELD, IN ONE DRAW.** Twenty into
+      a 32-slot bracket seeds twelve through and plays four opening duals — **13v20,
+      14v19, 15v18, 16v17** — then **16 → 8 → 4 → 2** in full (owner: "don't skip the
+      R16"). The event briefly cut the field to twelve by hand, played a four-dual
+      play-in in a SECOND bracket and rendered it in a panel beside the tree; owner,
+      2026-09: **"you didn't have to invent a bespoke JV format when we already have
+      lots of bracket formats that work beyond 16"** and *"the JV event needs unique
+      qualification logic, not unique presentation."* The qualifying round is the
+      draw's first column, so it is in the tree, the round tabs and the results list
+      for free.
+    - **‼️ IT DRAWS ON THE TOC'S STRICT SEED LINES, NOT `seeded_draw`'S TIERED ONES.**
+      Both orders are the association's and they are for different events:
+      `run_state` shuffles within seed tiers because a classification's TOSS seeding
+      is an ESTIMATED ordering, while the TOC is strict rank-for-rank because it
+      orders proven champions — which is this event's situation exactly, twenty
+      region champions ranked on a season's JV record. It is also what makes the
+      pairings above TRUE: under the tiered draw they came out differently every
+      season (measured: seed 9 playing in while seed 15 was seeded through), which is
+      right for a State draw and wrong here. Pinned as arithmetic on the order fold,
+      so it needs no season and cannot rot behind a small fixture.
     - **Eligibility is ladder rank #12+ (`jv_pool`, the one cut — no second roster split
       is invented) AND actual JV participation this season**, read off the `played` list
       `play_jv_dual` already records. Split-time players fall out for free: eligible if

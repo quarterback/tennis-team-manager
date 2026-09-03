@@ -35,6 +35,7 @@ shape of its own, and the page needs no presentation of its own either.
 
 from __future__ import annotations
 
+import random
 from dataclasses import dataclass, field
 
 from engine.dual import DualFormat, simulate_dual
@@ -273,18 +274,27 @@ def _run_bracket(field: list[JVEntry], *, seed: int,
     cards by their real feeders. Emitting anything else would mean a fourth bracket
     implementation for an event that draws exactly like the other three.
 
-    Seeded through `engine.tournament.seeded_draw`, so entrants land on the standard
-    anchors, the top seeds take any byes, and the draw is then FIXED — no reseeding
-    between rounds, the association's rule for every draw it runs.
+    ‼️ STRICT SEED LINES, THE TOC'S ORDER — NOT `seeded_draw`'S TIERED ONE. Both are
+    the association's; they are for different events. `jhsaa.run_state` shuffles
+    within seed tiers because a classification's TOSS seeding is an ESTIMATED
+    ordering, so "#5 deserves an easier path than #8" is precision the ranking cannot
+    back. This event is a championship of CHAMPIONS ranked on a season's JV record,
+    which is the TOC's situation exactly, and the TOC is deliberately strict
+    rank-for-rank. It is also what makes the spec's own pairings true: twenty into a
+    32-slot draw gives **13v20, 14v19, 15v18, 16v17** with seeds 1-12 seeded through,
+    every time. Under the tiered draw those pairings came out differently every
+    season (seed 9 playing in while seed 15 byed), which is defensible for a State
+    draw and simply wrong here.
+
+    The order fold is `run_toc`'s, unchanged: seed s meets seed (m+1-s), nesting so
+    1 and 2 can only meet in the final.
     """
-    import random
-    from engine.tournament import seeded_draw
     rng = random.Random(seed)
-    size = 1
-    while size < len(field):
-        size *= 2
-    slots: list = [None if r is None else field[r]
-                   for r in seeded_draw(len(field), size, len(field), rng)]
+    order = [1]
+    while len(order) < len(field):
+        m = 2 * len(order)
+        order = [s for a in order for s in (a, m + 1 - a)]
+    slots: list = [field[s - 1] if s <= len(field) else None for s in order]
     rounds: list = []
     while len(slots) > 1:
         nxt, games = [], []
