@@ -221,9 +221,12 @@ GRADE_SPAN = 60.0
 #: point): 3 -> 55.4%, 6 -> 61.3%, 9 -> 67.3%, 12 -> 72.8%, 15 -> 78.2%,
 #: 18 -> 84.0%, 21 -> 88.9%, 24 -> 92.9%, 27 -> 95.6%, 30 -> 97.5%, 34 -> 98.9%,
 #: 40 -> 99.8%. Peers are untouched by every reshape (0 OVR 49.8%, 3 OVR 55.4%).
-#: ‼️ The harness validates itself against these before fitting; one that reads
-#: driver attributes on a 0-100 scale instead of the 20-80 GRADE SPAN understates
-#: every gap by a third and looks entirely plausible.
+#: ‼️ Run it with NO arguments to describe this table (every band edge, derived
+#: from `BAND_EDGES_OVR`); `--fit` re-solves the slopes and solves only the edges
+#: that carry an owner target. A harness that reads driver attributes on a 0-100
+#: scale instead of the 20-80 GRADE SPAN understates every gap by a third and
+#: looks entirely plausible — check it reproduces the rates above before trusting
+#: a number out of it.
 #:
 #: ‼️ A BAND IS A SEMANTIC LABEL, NOT A PROMISE OF EXTRA SLOPE (owner ruling
 #: 2026-09). Adjacent segments may share a slope — 31-34 and 35+ both do — and the

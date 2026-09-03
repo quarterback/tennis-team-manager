@@ -24,7 +24,22 @@ win probability through `engine.fast.simulate_fast` at `jhsaa.MATCH_FORMAT` —
 never against a set-score distribution. The close-set / high three-set profile is
 an accepted consequence of the band spec, not an error to correct.
 
-    python3 scripts/jhsaa_band_calibration.py --trials 40000
+‼️ TWO MODES, AND MEASURING IS THE DEFAULT. The fit was written for a four-edge
+table whose every edge carried a target; the shipped curve is now authored by hand
+over eleven edges, so the useful command is the one that DESCRIBES it — every band
+edge the table actually has, with slope, effective gap, favourite and underdog win
+rates, and the per-band lift that shows where the curve spends its resolution.
+
+    python3 scripts/jhsaa_band_calibration.py                  # describe the curve
+    python3 scripts/jhsaa_band_calibration.py --against 1,1,1.5,2.2,3   # vs another
+    python3 scripts/jhsaa_band_calibration.py --fit            # re-solve the slopes
+
+The sweep is DERIVED from `BAND_EDGES_OVR`; a typed gap list silently stops
+covering the curve the moment the table changes shape, and prints a clean-looking
+report with bands missing from it. `--fit` solves only the edges that carry a
+target and says so — it used to index TARGETS by every edge, which raised
+`KeyError: 9.0` on the 12-band table AFTER the multi-minute identity measurement.
+Neither mode leaves a candidate table installed.
 """
 
 from __future__ import annotations
@@ -107,47 +122,136 @@ def invert(curve, target: float) -> float:
     return curve[-1][0]
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--trials", type=int, default=20000)
-    ap.add_argument("--verify-trials", type=int, default=40000)
-    args = ap.parse_args()
+def report_gaps() -> list[int]:
+    """‼️ DERIVED FROM THE TABLE, never a typed list. The edges have gone from four
+    to eleven; a hardcoded sweep silently stops covering the curve it is meant to
+    describe, and reports a clean-looking table with bands missing from it."""
+    edges = [int(e) for e in fast.BAND_EDGES_OVR]
+    top = edges[-1]
+    return [0] + edges + [top + 3, top + 6, top + 11]
 
+
+def measure(slopes, gaps, trials):
+    fast.BAND_SLOPES = tuple(slopes)
+    fast._BANDS = fast._build_bands()
+    return ({g: win_rate(g, trials) for g in gaps},
+            {g: fast.band_gap(g / fast.GRADE_SPAN) for g in gaps})
+
+
+def slope_at(gap: float) -> float:
+    for edge, slope in zip(fast.BAND_EDGES_OVR, fast.BAND_SLOPES):
+        if gap <= edge:
+            return slope
+    return fast.BAND_SLOPES[-1]
+
+
+def do_report(args) -> int:
+    """What the shipped curve actually does, at every band edge it actually has."""
+    live = tuple(fast.BAND_SLOPES)
+    other = tuple(float(x) for x in args.against.split(",")) if args.against else None
+    if other and len(other) != len(live):
+        print(f"--against needs {len(live)} slopes for {len(fast.BAND_EDGES_OVR)} "
+              f"edges, got {len(other)}")
+        return 1
+    gaps = report_gaps()
+    print(f"edges  {tuple(fast.BAND_EDGES_OVR)}")
+    print(f"slopes {live}")
+    if other:
+        print(f"against {other}")
+    print(f"\n{args.verify_trials} matches a point\n")
+    nw, ne = measure(live, gaps, args.verify_trials)
+    ow = measure(other, gaps, args.verify_trials)[0] if other else None
+    measure(live, gaps, 1)      # restore the live table before printing
+
+    head = f"{'OVR':>4}{'slope':>7}{'eff gap':>9}{'fav win':>9}{'underdog':>10}"
+    print(head + (f"{'other fav':>11}{'other dog':>11}" if other else "")
+          + f"{'target':>9}")
+    for g in gaps:
+        row = (f"{g:>4}{slope_at(g):>7.2f}{ne[g]:>9.4f}"
+               f"{nw[g] * 100:>8.1f}%{100 - nw[g] * 100:>9.2f}%")
+        if other:
+            row += f"{ow[g] * 100:>10.1f}%{100 - ow[g] * 100:>10.2f}%"
+        t = TARGETS.get(float(g))
+        print(row + (f"{t * 100:>8.1f}%" if t else "         "))
+
+    print("\nper-band lift in favourite win% — where the curve spends its resolution")
+    for lo, hi in zip(gaps, gaps[1:]):
+        extra = f"   (other {(ow[hi] - ow[lo]) * 100:>5.1f})" if other else ""
+        print(f"  {lo:>2}-{hi:<3} {(nw[hi] - nw[lo]) * 100:>6.1f} pts{extra}")
+    return 0
+
+
+def do_fit(args) -> int:
+    """Solve the post-peer slopes for the owner's targets.
+
+    ‼️ ONLY THE EDGES THAT HAVE A TARGET. The table's edges are an authored shape
+    and have gone from four to eleven; this loop used to index TARGETS by every
+    edge, so the 12-band table raised `KeyError: 9.0` — AFTER the multi-minute
+    identity measurement, which is the worst place to fail. Bands whose upper edge
+    carries no target keep their authored slope and are folded into the running
+    accumulator, so a fit over a fine table still solves the four edges the owner
+    actually stated.
+    """
     before = tuple(fast.BAND_SLOPES)
-    print(f"current BAND_SLOPES {before}  edges {fast.BAND_EDGES_OVR}\n")
+    edges = tuple(fast.BAND_EDGES_OVR)
+    have = [e for e in edges if e in TARGETS]
+    if not have:
+        print(f"no band edge carries a target — edges {edges}, "
+              f"targets {sorted(TARGETS)}. Nothing to fit; use the default report.")
+        return 1
+    missing = sorted(set(TARGETS) - set(edges))
+    if missing:
+        print(f"note: targets at {missing} sit inside a band, not on an edge — "
+              f"they cannot be solved and are skipped.\n")
+
+    print(f"current BAND_SLOPES {before}  edges {edges}\n")
     print("measuring the identity curve (transform off) …")
     curve = measure_identity(args.trials)
 
-    edges = (0.0,) + tuple(fast.BAND_EDGES_OVR)
+    bounds = (0.0,) + edges
     slopes = [1.0]                      # peer band stays identity, by instruction
-    acc = edges[1] / fast.GRADE_SPAN    # effective gap at the peer edge
-    for lo, hi in zip(edges[1:], edges[2:]):
-        want = invert(curve, TARGETS[hi])
-        slope = (want - acc) / ((hi - lo) / fast.GRADE_SPAN)
-        slope = max(slope, slopes[-1])  # monotone nondecreasing
+    acc = bounds[1] / fast.GRADE_SPAN   # effective gap at the peer edge
+    for i, (lo, hi) in enumerate(zip(bounds[1:], bounds[2:]), start=1):
+        if hi in TARGETS:
+            want = invert(curve, TARGETS[hi])
+            slope = max((want - acc) / ((hi - lo) / fast.GRADE_SPAN), slopes[-1])
+        else:
+            slope = max(before[i], slopes[-1])   # authored, and kept monotone
         slopes.append(slope)
         acc += (hi - lo) / fast.GRADE_SPAN * slope
-    # The tail band has no target above it; keep the step the authored curve used
-    # so a 40-OVR mismatch stays ordered against a 28-point one.
-    slopes.append(slopes[-1] * (before[-1] / before[-2]))
+    # The tail band has no edge above it; keep the step the authored curve used so
+    # a mismatch past the last edge stays ordered against one at it.
+    slopes.append(slopes[-1] * (before[-1] / before[-2]) if before[-2] else slopes[-1])
     fitted = tuple(round(s, 3) for s in slopes)
 
     print(f"\nfitted BAND_SLOPES {fitted}\n")
-    print("verifying through the match engine "
-          f"({args.verify_trials} matches per gap)\n")
+    print(f"verifying through the match engine ({args.verify_trials} a gap)\n")
+    gaps = report_gaps()
+    cur = measure(before, gaps, args.verify_trials)[0]
+    new = measure(fitted, gaps, args.verify_trials)[0]
+    measure(before, gaps, 1)            # never leave a fitted table installed
     print(f"{'OVR':>4} {'current':>9} {'fitted':>9} {'target':>8}")
-    rows = []
-    for g in REPORT_GAPS:
-        set_slopes(before)
-        cur = win_rate(g, args.verify_trials)
-        set_slopes(fitted)
-        new = win_rate(g, args.verify_trials)
-        tgt = TARGETS.get(float(g))
-        rows.append((g, cur, new, tgt))
-        t = f"{tgt*100:7.1f}%" if tgt else "        "
-        print(f"{g:>4} {cur*100:8.1f}% {new*100:8.1f}% {t}")
-    set_slopes(before)
+    for g in gaps:
+        t = TARGETS.get(float(g))
+        print(f"{g:>4} {cur[g] * 100:8.1f}% {new[g] * 100:8.1f}%"
+              + (f"{t * 100:7.1f}%" if t else "        "))
     return 0
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(
+        description="Measure (default) or re-fit the JHSAA competitive bands.")
+    ap.add_argument("--fit", action="store_true",
+                    help="solve the post-peer slopes for the owner's targets "
+                         "instead of reporting the shipped curve")
+    ap.add_argument("--against", default="",
+                    help="comma-separated slopes to report the live table against")
+    ap.add_argument("--trials", type=int, default=20000,
+                    help="matches per point when measuring the identity curve")
+    ap.add_argument("--verify-trials", type=int, default=60000,
+                    help="matches per point in the reported table")
+    args = ap.parse_args()
+    return do_fit(args) if args.fit else do_report(args)
 
 
 if __name__ == "__main__":
