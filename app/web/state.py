@@ -4608,6 +4608,7 @@ def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
     qualified FOR that draw rather than through its first round.
     """
     import app.jhsaa as jh
+    import app.jhsaa_jv_state as jvs
     import app.world as world
     w = world.get_or_create(seed)
     g = _jh_g(gender)
@@ -4633,64 +4634,52 @@ def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
     for region, champ in (ev.get("region_champions") or {}).items():
         region_of[champ] = region
 
-    def _rounds(bracket):
-        return [{**rd, "games": [
-            {**gm, "home_deco": _jh_deco(schools, gm["home"], 20),
-             "away_deco": _jh_deco(schools, gm["away"], 20),
-             "home_seed": seeds.get(gm["home"], 0),
-             "away_seed": seeds.get(gm["away"], 0),
-             "home_region": region_of.get(gm["home"], ""),
-             "away_region": region_of.get(gm["away"], ""),
-             "win_points": max(gm["home_points"], gm["away_points"]),
-             "lose_points": min(gm["home_points"], gm["away_points"])}
-            for gm in rd["games"]]} for rd in world.jhsaa_state_rounds(bracket)]
-
-    # ‼️ HOW EACH CHAMPION ENTERED, DERIVED FROM THE DRAW rather than stored beside
-    # it. Twenty champions in a 32-slot bracket is twelve byes and four opening
-    # duals, so a team that appears in the first round played its way in and everyone
-    # else was seeded straight through — the archive already says which, and a second
-    # record of it could only disagree.
     # ‼️ AN ARCHIVE WRITTEN BY THE PLAY-IN BUILD STILL READS. That version stored the
-    # qualifying duals in their own bracket under `play_in` and started `state` at the
-    # Round of 16; this one makes qualifying the first round of the State draw. Read
-    # the difference — DERIVED ON READ, never migrated, the same answer a rename gets
-    # (`world._relabel`) and for the same reason: the archive is the record of what was
-    # played, and the next shape change would need another migration nobody will run.
-    #
-    # Without this the legacy row is read as if its Round of 16 were qualifying, so
-    # eight R16 duals are reported as four qualifying ones, their winners and losers
-    # are labelled "Qualified"/"Lost qualifier", and the play-in that was actually
-    # played disappears off the page entirely.
+    # opening duals in a bracket of their own under `play_in` and started `state` at
+    # the Round of 16. DERIVED ON READ, never migrated — the same answer a rename gets
+    # (`world._relabel`), and for the same reason: the archive is the record of what
+    # was played, and the next shape change would need another migration nobody runs.
     legacy_qual = ((ev.get("play_in") or {}).get("rounds") or [[]])[0]
-    opening = legacy_qual or (st.get("rounds") or [[]])[0]
-    played_in, survived = set(), set()
-    for gm in opening:
-        played_in.update((gm.get("home"), gm.get("away")))
-        survived.add(gm.get("winner"))
-    in_draw = set(st.get("field") or ())
-    # ‼️ THE SEED RANGE IS READ OFF THE DRAW, never typed and never computed from the
-    # field size. Written as `field − games` once, it printed "seeded 12-20" while the
-    # seed 12 card sat in the tree above, unplayed — the copy contradicting the
-    # bracket beside it. The draw already knows exactly who played in.
-    qual_seeds = sorted(seeds.get(n, 0) for n in played_in)
-    qual_lo, qual_hi = (qual_seeds[0], qual_seeds[-1]) if qual_seeds else (0, 0)
 
-    def _entry(name):
-        if name not in played_in:
-            return "Direct"
-        return "Qualified" if name in survived else "Lost qualifier"
+    # ‼️ AND ITS ROUND IS RELABELLED. That build stored the name "State Qualifying",
+    # which describes something this event does not have: winning your region IS
+    # qualifying, and all twenty champions are the State field (owner, 2026-09). The
+    # round is named by its field like every other one — `world.jhsaa_state_rounds`
+    # already bands it off the alive count, so the stored name is simply dropped.
+    def _rounds(bracket):
+        out = []
+        for rd in world.jhsaa_state_rounds(bracket or {}):
+            # ‼️ NAMED BY WHO WAS ALIVE IN THE EVENT, not by that stub bracket's own
+            # field. The legacy play-in bracket holds only the eight who played, so
+            # its own alive count is 8 — but twenty champions were in the tournament
+            # at that point, and "Round of 20" is what the round was.
+            name = (f"Round of {len(ev.get('ranked') or ()) or rd['alive']}"
+                    if rd["name"] == jvs.LEGACY_QUALIFYING_NAME else rd["name"])
+            out.append({**rd, "name": name, "games": [
+                {**gm, "home_deco": _jh_deco(schools, gm["home"], 20),
+                 "away_deco": _jh_deco(schools, gm["away"], 20),
+                 "home_seed": seeds.get(gm["home"], 0),
+                 "away_seed": seeds.get(gm["away"], 0),
+                 "home_region": region_of.get(gm["home"], ""),
+                 "away_region": region_of.get(gm["away"], ""),
+                 "win_points": max(gm["home_points"], gm["away_points"]),
+                 "lose_points": min(gm["home_points"], gm["away_points"])}
+                for gm in rd["games"]]})
+        return out
 
     # The regional championships as a full-width table below the draw, one row per
-    # region: who won it, where they seeded statewide, and how they entered. NOT a
-    # sidebar (owner, 2026-09) and NOT twenty trees — a reader who wants one
-    # program's route through its region has that program's schedule.
+    # region: who won it, where they seeded statewide, and HOW FAR THEY WENT. Not how
+    # they entered — every champion is in the draw, so there is no distinction to
+    # draw there. NOT twenty trees: a reader who wants one program's route through
+    # its region has that program's schedule.
     regions = []
     for region in sorted(ev.get("regions") or {}):
         br = ev["regions"][region]
         champ = br.get("champion") or ""
+        res = world.jhsaa_state_result(st, champ) if champ else {}
         regions.append({"region": region, "field_n": len(br.get("field") or ()),
                         "champion": champ, "seed": seeds.get(champ, 0),
-                        "entry": _entry(champ) if champ in in_draw else "",
+                        "finish": res.get("finish", ""),
                         "deco": _jh_deco(schools, champ, 22) if champ else None})
     regions.sort(key=lambda r: (r["seed"] or 999, r["region"]))
     return {
@@ -4699,16 +4688,10 @@ def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
         "qualifier_n": len(ev.get("qualifiers") or ()),
         "state_field_n": len(st.get("field") or ()),
         "regions": regions, "region_n": len(regions),
-        "opening_n": len(opening),
-        # The round names itself off its own field ("Round of 20"), the way varsity
-        # says R32/R24/R40 — so the note cannot drift from the round list beside it.
-        "opening_name": (_rounds(ev["play_in"]) if legacy_qual
-                         else _rounds(st))[0]["name"],
-        "qual_lo": qual_lo, "qual_hi": qual_hi,
-        "direct_n": len(in_draw) - len(played_in),
-        # A legacy archive's qualifying round is a bracket of its own, so it is
-        # prepended to the round list rather than being one of the draw's columns —
-        # which is exactly what it was when it was played.
+        # A legacy archive's opening round is a bracket of its own, so it is prepended
+        # to the round list rather than being one of the draw's columns — which is
+        # exactly what it was when it was played. The list feeds the MOBILE round
+        # tabs; there is no results panel any more (the tree is the results).
         "rounds": (_rounds(ev["play_in"]) if legacy_qual else []) + _rounds(st),
         "canvas": _bracket_canvas(
             _jh_bracket_cols({**st, "seed_map": seeds}, schools),

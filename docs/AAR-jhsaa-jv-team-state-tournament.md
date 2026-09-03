@@ -10,8 +10,9 @@ gate is the same device the 1A 2S/3D pilot is gated on, for the same reason.
 
 One statewide bracket per gender, no classifications. District berths are earned over
 the JV season (2-5 teams → 1, 6-9 → 2, 10-15 → 3, 16+ → 4), the **twenty geographic
-areas** each crown a champion, and those twenty are the State field: a 32-slot seeded
-draw, so twelve take a bye and four opening duals cut the field to sixteen, which then
+areas** each crown a champion, and those twenty ARE the State field — winning your
+region is how you qualify, and nothing sits in front of the tournament. Twenty in a
+32-slot draw seeds twelve through and opens eight in the **Round of 20**, which then
 plays **16 → 8 → 4 → 2** in full.
 
 Five courts — **S1/S2/S3 + D1/D2, first to 3** — seven on court, and a championship
@@ -143,6 +144,33 @@ content: **the overflow belongs to the table, never to the page.**
 > a JV record, twenty regions, a frozen eligibility cut. Everything downstream of "who
 > is in the draw" was already built. Before writing a bracket or a layout, find the one
 > the app already renders and ask what about this event it genuinely cannot express.
+
+### 7. "Qualifying" was a word for something the event does not have
+
+The opening round was called State Qualifying, its panel said "seeds 13–20 play for
+the last four seats", and the regional table's last column read Direct / Qualified /
+Lost qualifier. All of it described a gate in front of State. There isn't one: the
+twenty region champions ARE the field, and twelve of them simply have a bye. Owner:
+*"the qualifiers who get in, all 20, are already at State; there is no qualifying once
+into the field of 20 … no different than what we do for the TOC first round."*
+
+The TOC is the exact precedent and was sitting there the whole time — twelve
+classification champions in a 16 draw, whose first round `world._round_label` names
+**Round of 12** off the alive count, with nobody calling it a qualifier. Naming the JV
+round at all is what made it read as an event in front of the event.
+
+A second thing fell out of the same look: the **Results by round** panel restated the
+tree card for card. The tree already carries all twenty, because `_jh_bracket_cols`
+materialises each bye as a pass-through card. Owner: *"this is redundant if the
+bracket is already here and should be replaced with all 20 inside the bracket not a
+separate area."* The regional table's last column became the champion's STATE FINISH —
+the one thing that row can say which the tree cannot say at a glance for twenty
+programs.
+
+> Twice now the fix was to delete something and let an existing mechanism speak: the
+> bespoke draw (§6), then the vocabulary and the panel wrapped around it. **A feature
+> that needs its own words for the rounds everyone else already has words for is
+> usually a feature that has been built beside the thing rather than out of it.**
 
 ---
 

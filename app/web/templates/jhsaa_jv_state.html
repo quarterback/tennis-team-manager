@@ -17,8 +17,8 @@
    two draws is on screen. "State" is implied here as on every championship page. #}
 {{ jh_header(view.scope, u, 'jv_state', 'JV Team State Tournament',
              'The JV team championship — statewide, no classifications. Districts earn
-              berths on their JV record, twenty regions crown champions, and the draw
-              opens with a qualifying round into the Round of 16.',
+              berths on their JV record, twenty regions crown champions, and all
+              twenty are the State field.',
              [('Season', view.season_year), ('Entered', view.field_n),
               ('Regions', view.region_n), ('Draw', view.state_field_n)]
              if view.ready else []) }}
@@ -47,11 +47,11 @@
 </div>
 {% endif %}
 
-{# ONE tree, and the qualifying round is its first column — twenty champions in a
-   32-slot draw is twelve seeded through and four opening duals (13v20, 14v19, 15v18,
-   16v17, on the TOC's strict seed lines). There is no second bracket and no
-   qualifying tab: the survivors meet the byes at the Round of 16, so a single tree
-   draws every real link. #}
+{# ‼️ ONE TREE, AND WINNING YOUR REGION IS QUALIFYING. All twenty champions are in
+   this draw: twelve are seeded through and eight open in the Round of 20 (13v20,
+   14v19, 15v18, 16v17, on the TOC's strict seed lines). Nothing in front of it is a
+   qualifier — the TOC's own shape, where twelve champions in a 16 draw open in a
+   Round of 12 and nobody calls that qualifying either. #}
 <div class="jh-brk-desktop">
   {{ brk_toolbar([('all', 'JV Team State')]) }}
   <div class="brk-stage" id="brkstage">
@@ -68,40 +68,13 @@
 
 <div style="margin-top:6px">{{ jh_round_tabs(view.rounds, u, view.gender, 'jhjvsrd', view.scope.pin) }}</div>
 
-{# Results by round, on the existing `jh-mgame` match card — full width, since the
-   sidebar this page used to carry is now the table below. `jh-cols2` is the same
-   auto-fit grid the Road to State folds use, so it reflows at the section's own
-   breakpoint rather than a new one. #}
-<div class="bl-panel" style="margin-top:14px">
-  <div class="bl-panel-head"><span class="bl-panel-title">Results by round</span>
-    {# The seed range comes from the DRAW (see the view), so it says 13–20 when
-       twenty regions crown champions and something else when fewer do — it can never
-       contradict the bracket above it. #}
-    <span class="bl-panel-note">{% if view.opening_n %}Seeds {{ view.qual_lo }}–{{ view.qual_hi }} play the {{ view.opening_name }}, {{ view.direct_n }} seeded through · {% endif %}16 → 8 → 4 → 2</span></div>
-  <div class="bl-panel-body" style="padding:12px">
-    <div class="jh-cols2">
-      {% for rd in view.rounds %}
-      <div>
-        <div class="jh-modsplit" style="padding-left:0">{{ rd.name }}</div>
-        {% for gm in rd.games %}
-        <div class="jh-mgame">
-          <div class="jh-mside {{ 'win' if gm.winner == gm.home else 'out' }}">
-            <span class="sd">{{ gm.home_seed or '' }}</span>
-            <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.home, u=u, g=view.gender, year=view.scope.pin) }}">{{ gm.home }}</a></span>
-            <span class="pt">{{ gm.home_points|int }}</span>
-          </div>
-          <div class="jh-mside {{ 'win' if gm.winner == gm.away else 'out' }}">
-            <span class="sd">{{ gm.away_seed or '' }}</span>
-            <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.away, u=u, g=view.gender, year=view.scope.pin) }}">{{ gm.away }}</a></span>
-            <span class="pt">{{ gm.away_points|int }}</span>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-</div>
+{# ‼️ NO "RESULTS BY ROUND" PANEL. It restated the tree card for card — and the
+   tree already carries all twenty, since `_jh_bracket_cols` materialises each bye as
+   a pass-through card, so a seeded-through champion has a route drawn through the
+   draw rather than appearing from nowhere at the Round of 16. Owner, 2026-09: "this
+   is redundant if the bracket is already here and should be replaced with all 20
+   inside the bracket not a separate area." The mobile `jh_round_tabs` above stays —
+   that is the same tree at a width the canvas cannot serve, not a second copy of it. #}
 
 {# ‼️ FULL WIDTH, AND SCROLLING INSIDE ITS OWN WRAPPER. `.bl-table` carries a 920px
    min-width, so in the 322px rail this panel used to sit in it parked its champion
@@ -119,7 +92,7 @@
         <span class="bl-th"></span>
         <span class="bl-th">REGION</span>
         <span class="bl-th num">REG. DRAW</span>
-        <span class="bl-th">ENTERED</span>
+        <span class="bl-th">STATE</span>
       </div>
       {% for r in view.regions %}
       <div class="bl-row">
@@ -128,9 +101,11 @@
         <span>{{ r.deco.mark|safe if r.deco }}</span>
         <span>{{ r.region }}</span>
         <span class="bl-cell-num">{{ r.field_n }}</span>
-        {# Direct / Qualified / Lost qualifier — derived from the draw itself, since
-           a bye in the opening round IS entering directly. #}
-        <span class="jh-tag {{ 'jvstate' if r.entry == 'Direct' else 'jvroad' if r.entry == 'Qualified' }}">{{ r.entry or '—' }}</span>
+        {# ‼️ HOW FAR THEY WENT, NOT HOW THEY GOT IN. Every region champion is in the
+           draw, so "entered directly / qualified" described a distinction that does
+           not exist; the finish is the thing this row can say that the bracket
+           cannot say at a glance for twenty programs. #}
+        <span class="jh-tag {{ 'jvstate' if r.finish == 'Champion' else 'jvroad' if r.finish in ('Runner-up', 'Semifinalist') }}">{{ r.finish or '—' }}</span>
       </div>
       {% endfor %}
     </div>
