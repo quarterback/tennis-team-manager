@@ -36,6 +36,10 @@ _doubles_champ_cache: dict = {}
 _singles_champ_cache: dict = {}
 _world_cup_cache: dict = {}
 _portal_cache: dict = {}
+# Historical JHSAA OVR-gap bands are derived from regenerated season rosters.
+# Unlike the archived results, those rosters change when a program archetype is
+# edited, so this memo must participate in the editor's broad invalidation.
+_gapband_cache: dict = {}
 
 # Per-key build locks for the championship draws. Playing a 128-draw singles
 # (127 engine matches) or 64-draw doubles is heavy; the memo below collapses
@@ -264,6 +268,7 @@ def reset_all() -> None:
     _singles_champ_cache.clear()
     _world_cup_cache.clear()
     _portal_cache.clear()
+    _gapband_cache.clear()
     _staff_cache.clear()
     _uni_staff_cache.clear()
     awards.reset_cache()
