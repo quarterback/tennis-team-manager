@@ -586,7 +586,7 @@ FORMER_NAMES = {
     "Hazel Bennett":                               "Benton Park",
     "Hazel Hart":                                  "Oak Meyer",
     "Henrik Keller":                               "William Henry Harrison",
-    "Henry Turner":                                "Bishop Turner",
+    "Henry Turner":                                "West Valderra",
     "Heritage Christian":                          "Longmeadow",
     "Hetfield":                                    "Brynildson Hill",
     "Homecroft Manufacturing and Technology Academy": "West Burlington",
@@ -701,7 +701,7 @@ FORMER_NAMES = {
     "Milldale Union":                              "Sotkamo Union",
     "Millport":                                    "Vonjo City",
     "Millview":                                    "Kuusamo",
-    "Minidoka":                                    "Wyalusing Providence",
+    "Minidoka":                                    "Minidoka",
     "Miren Elorriaga":                             "Pennsauken",
     "Miren Garmendia":                             "Cardinal Newman",
     "Mission Terrace North":                       "Ortega Terrace",
@@ -747,7 +747,7 @@ FORMER_NAMES = {
     "Opal Tillman":                                "Granite Water & Power",
     "Orchard Gate":                                "Bellefontaine",
     "Orchard Gate North":                          "Bois Neuf",
-    "Orchard Hill":                                "Bishop Turner",
+    "Orchard Hill":                                "West Valderra",
     "Orellana":                                    "Orellana Central",
     "Orellana Canal View":                         "Canal View",
     "Orellana Commerce":                           "Malpais",
@@ -785,7 +785,7 @@ FORMER_NAMES = {
     "Portola":                                     "Homeland",
     "Prairie Union":                               "Deaconsburg",
     "Presentation Academy":                        "Garrow North",
-    "Providence Academy North":                    "Wyalusing Providence",
+    "Providence Academy North":                    "Minidoka",
     "Providence Academy Valley":                   "Meridian Valley",
     "Providence Catholic":                         "Starfield",
     "Puerto Gallego School of Science and Industry": "Gallego Bay",
@@ -1084,14 +1084,14 @@ RENAMES = {
     # so nothing is reissued and no history merges. Transient targets "Bishop
     # Turner" and a brief 9A "Booker T Washington" lived only inside this
     # session; no season was ever archived under either. The 9A renames to
-    # "Bishop Turner" (the owner's earlier pick, confirmed) in the same batch,
+    # "West Valderra" (the owner's earlier pick, confirmed) in the same batch,
     # so NO school carries "Orchard Hill" — the archived name resolves through
     # FORMER_NAMES to the 9A alone (its identity; the alias generator prefers
     # an identity claim over another chain's transient target).
     "Abbey Vale Orchard Hill": "Booker T Washington",
     # 2026-08 owner rename — the school's own never-renamed identity is the key:
     "Sluice Crossing": "Crossing",
-    "Orchard Hill": "Bishop Turner",
+    "Orchard Hill": "West Valderra",
     "St. Basil School": "St. Ignatius",
     "Caswell Depot High": "Cherry Hill North",
     "Caswell I-50 Technical": "Cherry Hill South",
@@ -1498,7 +1498,7 @@ RENAMES = {
     "Mercy Academy": "Natchez Mercy",                            # 9A Ashbury
     "St. Sebastian Prep North": "Sherwood Bench",                # 8A Ashbury
     "Ashbury Central": "Tallulah Central",                       # 7A Ashbury
-    "Providence Academy North": "Wyalusing Providence",          # 5A Ashbury
+    "Providence Academy North": "Minidoka",          # 5A Ashbury
     "St. Basil Academy": "Cahokia Mounds",              # 4A Belmonte
     "Treasure Valley": "Caney",                        # 6A Belmonte
     "Belmonte River Plain": "Chillicothe",              # 8A Belmonte
@@ -2024,7 +2024,7 @@ LOCALITIES = {
     "St. Norbert Abbey":                     "Natchitoches",
     "Tallulah Central":                      "Tallulah",
     "Vista Terrace":                         "Biloxi",
-    "Wyalusing Providence":                  "Wyalusing",
+    "Minidoka":                  "Wyalusing",
     "Highland Park":                     "Allegheny",
     "Benjamin Banneker":                     "Banneker",
     "Bowerstock":                            "Bowerstock",
@@ -2940,7 +2940,7 @@ MASCOTS = {
     "Silver Glen": "Silversmiths",
     "St. Elian": "Abbots",
     "Shasta Agricultural": "Cellarmen",                # Valderra
-    "Bishop Turner": "Orchardists",
+    "West Valderra": "Orchardists",
     "Orchardgate": "Archangels",
     "Blue Mountain Grange": "Millwrights",       # Fellows Mill
     "Star City": "Cosmonauts",
