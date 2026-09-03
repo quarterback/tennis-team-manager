@@ -24,12 +24,18 @@ this association has no tie-break anywhere, by design — so a five-court 3S/2D 
 is not a stylistic pick, it is the shape that lets the event exist at the depth
 most programs have.
 
-The road, per the spec: district qualification -> regional championship -> a state
-qualifying round -> a sixteen-team State Championship.
+The road, per the spec: district qualification -> regional championship -> a State
+draw that opens with a qualifying round and plays 16 -> 8 -> 4 -> 2 from there.
+
+‼️ THE DRAW IS THE ASSOCIATION'S ORDINARY ONE. Twenty champions in a 32-slot
+bracket is twelve byes and four opening duals — exactly what `jhsaa.run_state`
+plays whenever a field does not fill its bracket — so this event needs no bracket
+shape of its own, and the page needs no presentation of its own either.
 """
 
 from __future__ import annotations
 
+import random
 from dataclasses import dataclass, field
 
 from engine.dual import DualFormat, simulate_dual
@@ -50,35 +56,44 @@ FORMAT = DualFormat(n_singles=3, n_doubles=2, doubles_team_point=False)
 LINEUP = jh.jv_lineup_need(FORMAT)
 ROSTER = 16
 
-#: The phase these duals are archived under. ‼️ ITS OWN PHASE, not "regular" and not
-#: the varsity postseason's — a phase is the archive's identity for an EVENT (the
-#: rule the JV showcase weekend was given its own phase for). Written on JV rows, so
-#: `level` still keeps every one of them out of a varsity record.
+#: The phases these duals are archived under. ‼️ TWO, NOT ONE, AND FOR THE SECTION'S
+#: OWN REASON: a phase is the archive's identity for an EVENT, and a regional
+#: championship and the State draw are two rounds of the road, exactly as the varsity
+#: card tells its Regionals from its State duals. Written on JV rows, so `level` still
+#: keeps every one of them out of a varsity record.
+#:
+#: The STRUCTURE is not new — these are the association's existing rounds, and the
+#: labels are the varsity ones (owner, 2026-09: "since the labels already exist it's
+#: not different but labeling can be"). Only the wording says JV.
+PHASE_REGION = "jv_region"
 PHASE = "jv_state"
+
+#: What each phase is called on a schedule card — the varsity vocabulary, said of JV.
+PHASE_LABELS = {PHASE_REGION: "JV REGIONALS", PHASE: "JV STATE"}
 
 #: District berths by how many JV teams the district actually fielded (spec).
 #: Read as "up to and including": 2-5 -> 1, 6-9 -> 2, 10-15 -> 3, 16+ -> 4.
 DISTRICT_BERTHS = ((5, 1), (9, 2), (15, 3))
 DISTRICT_BERTHS_MAX = 4
 
-#: The association's twenty geographic areas, and the State field they play down to.
+#: The association's twenty geographic areas — every one of which crowns a champion
+#: every season (owner, 2026-09), so this is the field the State draw is cut from.
 REGIONS = 20
-STATE_FIELD = 16
 
-#: How many region champions go straight to State: 12, so the other eight play in for
-#: four seats (13v20, 14v19, 15v18, 16v17) and the draw is exactly sixteen.
-#: ‼️ THE TWENTY REGIONS ALWAYS FILL (owner, 2026-09) — the association is ~875 boys'/
-#: ~912 girls' programs on full rosters, so every area crowns a champion every season
-#: and this is the only shape the event is ever played at. A smaller world (a test
-#: fixture) simply crowns fewer and the fold below runs short; that case needs no
-#: machinery and must not grow any.
-DIRECT_SEEDS = 12
-
-#: What the play-in round is called on a card and in the archive. ‼️ ITS OWN NAME,
-#: because it is its own ROUND: twenty champions play down to sixteen, and the State
-#: draw then runs 16 → 8 → 4 → 2 in full. The qualifying round never stands in for
-#: the Round of 16 — a play-in winner has qualified FOR the draw, not through its
-#: first round.
+#: ‼️ THE OPENING ROUND IS NAMED BY ITS FIELD, LIKE EVERY OTHER ROUND — "Round of
+#: 20", exactly as varsity says R32/R24/R40 (owner, 2026-09). It is a round of the
+#: State bracket and not a separate event: twenty champions in a 32-slot draw is
+#: twelve seeded through and four opening duals, and the survivors join them at the
+#: Round of 16, which is then played in full ("don't skip the R16"). `world.
+#: _round_label` already bands a round by how many are alive, so nothing needs to
+#: name this one — passing a name is what made it look like its own event.
+#:
+#: ‼️ THIS REPLACED A BESPOKE PLAY-IN. The event used to cut the field to a 12-seed
+#: draw by hand, play four qualifying duals in a separate bracket, and render them in
+#: a panel of their own beside the tree — a second mechanism for something the
+#: association's own draw already does. Owner: "you didn't have to invent a bespoke
+#: JV format when we already have lots of bracket formats that work beyond 16."
+#: The name is KEPT only to read archives written by that build, which stored it.
 QUALIFYING_NAME = "State Qualifying"
 
 
@@ -194,7 +209,7 @@ def _dress(e: JVEntry, rng_seed: int) -> list:
     return e.players[:LINEUP]
 
 
-def play_dual(a: JVEntry, b: JVEntry, *, seed: int) -> tuple:
+def play_dual(a: JVEntry, b: JVEntry, *, seed: int, phase: str = PHASE) -> tuple:
     """One JV state dual. Returns `(winner, loser_points_row)` — the winning entry
     and the archived game.
 
@@ -215,12 +230,12 @@ def play_dual(a: JVEntry, b: JVEntry, *, seed: int) -> tuple:
     season is what seeds this; the postseason is what it decides.
     """
     la, lb = _dress(a, seed), _dress(b, seed)
-    mf = jh.match_format(PHASE)
+    mf = jh.match_format(phase)
     # ‼️ NEUTRAL SITE. A championship is not hosted by one of its entrants — the same
     # call `NEUTRAL_PHASES` makes for the varsity state event and the showcases. Pass
     # no lift rather than rolling one and discarding it.
-    res = simulate_dual(jh._squad(a.jv.team, PHASE, la, FORMAT),
-                        jh._squad(b.jv.team, PHASE, lb, FORMAT),
+    res = simulate_dual(jh._squad(a.jv.team, phase, la, FORMAT),
+                        jh._squad(b.jv.team, phase, lb, FORMAT),
                         seed=seed, play_all=False, fidelity=jh.FIDELITY,
                         dual_fmt=FORMAT, singles_fmt=mf, doubles_fmt=mf,
                         profile=jh.HS_PROFILE)
@@ -235,19 +250,19 @@ def play_dual(a: JVEntry, b: JVEntry, *, seed: int) -> tuple:
             continue
         slot = getattr(ln, "slot", "")
         lines.append({"slot": slot,
-                      "home": [x.name for x in jh._slot_players(la, PHASE, slot, FORMAT)],
-                      "away": [x.name for x in jh._slot_players(lb, PHASE, slot, FORMAT)],
+                      "home": [x.name for x in jh._slot_players(la, phase, slot, FORMAT)],
+                      "away": [x.name for x in jh._slot_players(lb, phase, slot, FORMAT)],
                       "score": jh._score_str(ln), "home_won": bool(hw)})
     shape = f"{FORMAT.n_singles}S/{FORMAT.n_doubles}D"
     # `home` is ORIENTATION ONLY — the site is neutral, and no lift was rolled. It is
     # what `_score_str` and the archived `lines` are written from, so both rows have
     # to agree on which side is which.
-    a.jv.schedule.append({"opp": b.name, "home": True, "phase": PHASE,
+    a.jv.schedule.append({"opp": b.name, "home": True, "phase": phase,
                           "pf": res.home_points, "pa": res.away_points,
                           "won": home_won, "tied": False, "district": False,
                           "level": jh.LEVEL_JV, "shape": shape, "lines": lines,
                           "played": [p.name for p in la]})
-    b.jv.schedule.append({"opp": a.name, "home": False, "phase": PHASE,
+    b.jv.schedule.append({"opp": a.name, "home": False, "phase": phase,
                           "pf": res.away_points, "pa": res.home_points,
                           "won": not home_won, "tied": False, "district": False,
                           "level": jh.LEVEL_JV, "shape": shape, "lines": lines,
@@ -258,7 +273,7 @@ def play_dual(a: JVEntry, b: JVEntry, *, seed: int) -> tuple:
                  "winner": win.name}
 
 
-def _run_bracket(field: list[JVEntry], *, seed: int,
+def _run_bracket(field: list[JVEntry], *, seed: int, phase: str = PHASE,
                  round_names: list[str] | None = None) -> tuple:
     """A seeded single-elimination draw over `field`, returning `(champion, bracket)`.
 
@@ -269,18 +284,27 @@ def _run_bracket(field: list[JVEntry], *, seed: int,
     cards by their real feeders. Emitting anything else would mean a fourth bracket
     implementation for an event that draws exactly like the other three.
 
-    Seeded through `engine.tournament.seeded_draw`, so entrants land on the standard
-    anchors, the top seeds take any byes, and the draw is then FIXED — no reseeding
-    between rounds, the association's rule for every draw it runs.
+    ‼️ STRICT SEED LINES, THE TOC'S ORDER — NOT `seeded_draw`'S TIERED ONE. Both are
+    the association's; they are for different events. `jhsaa.run_state` shuffles
+    within seed tiers because a classification's TOSS seeding is an ESTIMATED
+    ordering, so "#5 deserves an easier path than #8" is precision the ranking cannot
+    back. This event is a championship of CHAMPIONS ranked on a season's JV record,
+    which is the TOC's situation exactly, and the TOC is deliberately strict
+    rank-for-rank. It is also what makes the spec's own pairings true: twenty into a
+    32-slot draw gives **13v20, 14v19, 15v18, 16v17** with seeds 1-12 seeded through,
+    every time. Under the tiered draw those pairings came out differently every
+    season (seed 9 playing in while seed 15 byed), which is defensible for a State
+    draw and simply wrong here.
+
+    The order fold is `run_toc`'s, unchanged: seed s meets seed (m+1-s), nesting so
+    1 and 2 can only meet in the final.
     """
-    import random
-    from engine.tournament import seeded_draw
     rng = random.Random(seed)
-    size = 1
-    while size < len(field):
-        size *= 2
-    slots: list = [None if r is None else field[r]
-                   for r in seeded_draw(len(field), size, len(field), rng)]
+    order = [1]
+    while len(order) < len(field):
+        m = 2 * len(order)
+        order = [s for a in order for s in (a, m + 1 - a)]
+    slots: list = [field[s - 1] if s <= len(field) else None for s in order]
     rounds: list = []
     while len(slots) > 1:
         nxt, games = [], []
@@ -289,7 +313,7 @@ def _run_bracket(field: list[JVEntry], *, seed: int,
             if a is None or b is None:                 # a bye, drawn by the renderer
                 nxt.append(a or b)
                 continue
-            win, game = play_dual(a, b, seed=rng.randrange(1 << 30))
+            win, game = play_dual(a, b, seed=rng.randrange(1 << 30), phase=phase)
             games.append(game)
             nxt.append(win)
         if games:
@@ -335,23 +359,9 @@ def run_regionals(quals: list[JVEntry], *, seed: int) -> tuple:
     champs, out = {}, {}
     for i, region in enumerate(sorted(by_region)):
         teams = sorted(by_region[region], key=lambda e: (-seed_key(e), e.name))
-        champ, br = _run_bracket(teams, seed=seed + 101 * i)
+        champ, br = _run_bracket(teams, seed=seed + 101 * i, phase=PHASE_REGION)
         champs[region], out[region] = champ, br
     return champs, out
-
-
-def qualifying_pairs(ranked: list[JVEntry]) -> list[tuple[JVEntry, JVEntry]]:
-    """The play-in: 13v20, 14v19, 15v18, 16v17 (spec).
-
-    ‼️ A REAL SAVE FILLS ALL TWENTY REGIONS — the association is ~875 boys'/~912
-    girls' programs on full rosters, so this is exactly four pairs and the State field
-    is exactly sixteen. It is folded off the ranking rather than typed as four seeds
-    so that a thin test season (or a change to `DIRECT_SEEDS`) still produces a legal
-    draw instead of pairing the wrong seeds — that graceful case is a property of the
-    fold, never a design target.
-    """
-    rest = ranked[DIRECT_SEEDS:]
-    return [(rest[i], rest[len(rest) - 1 - i]) for i in range(len(rest) // 2)]
 
 
 def run_jv_state(jv: dict, *, gender: str, year: int, seed: int = 0) -> dict:
@@ -369,39 +379,17 @@ def run_jv_state(jv: dict, *, gender: str, year: int, seed: int = 0) -> dict:
     champs, regions = run_regionals(quals, seed=seed + 7919 * (gender == "boys"))
     ranked = sorted(champs.values(), key=lambda e: (-seed_key(e), e.name))
 
-    # THE STATE QUALIFYING ROUND — one round, archived as a bracket of its own so it
-    # renders beside the others rather than as a hand-built list. It is NOT a column
-    # of the State tree: eight teams playing into four seats do not halve into a
-    # sixteen-team draw, and `_bracket_canvas` links columns positionally.
-    playin_field = [e for pair in qualifying_pairs(ranked) for e in pair]
-    playin, winners = {}, []
-    if playin_field:
-        games = []
-        for i, (hi, lo) in enumerate(qualifying_pairs(ranked)):
-            win, game = play_dual(hi, lo, seed=seed + 3301 + i)
-            games.append(game)
-            winners.append(win)
-        playin = {"champion": None, "field": [e.name for e in playin_field],
-                  "rounds": [games], "round_names": [QUALIFYING_NAME]}
-
-    # Seed order is preserved: a play-in winner enters at its own statewide rank, not
-    # at the bottom of the field it just came through.
-    # ‼️ BY IDENTITY. `JVEntry` is an ordinary dataclass, so `__eq__` is field-wise and
-    # `__hash__` is None — a set of entries raises TypeError. It raised only once a
-    # season crowned MORE than `DIRECT_SEEDS` regions, i.e. only when a play-in was
-    # actually played, which a small fixture never reaches and the real association
-    # reaches every year.
-    qualified = {id(e) for e in winners}
-    draw_field = (list(ranked[:DIRECT_SEEDS])
-                  + [e for e in ranked[DIRECT_SEEDS:] if id(e) in qualified])[:STATE_FIELD]
-    champ, state = _run_bracket(draw_field, seed=seed + 5701)
+    # ‼️ ONE DRAW OVER EVERY REGION CHAMPION. `seeded_draw` pads twenty to a 32-slot
+    # bracket, byes the top tier and pairs the rest, so the qualifying round IS the
+    # opening round of the State bracket and the survivors meet the byes at the Round
+    # of 16. Nothing is cut from the field beforehand and no second bracket exists.
+    champ, state = _run_bracket(ranked, seed=seed + 5701)
     return {
         "field": [e.name for e in field],
         "qualifiers": [e.name for e in quals],
         "regions": regions,
         "region_champions": {k: v.name for k, v in champs.items()},
         "ranked": [e.name for e in ranked],
-        "play_in": playin,
         "state": state,
         "champion": champ.name if champ else "",
     }

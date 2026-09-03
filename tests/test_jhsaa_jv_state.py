@@ -30,13 +30,11 @@ def arc(jv):
 def big():
     """‼️ A SEASON BIG ENOUGH TO PLAY THE QUALIFYING ROUND.
 
-    The play-in only happens when MORE than `DIRECT_SEEDS` regions crown a champion.
-    The `jv` fixture crowns twelve, so it never reaches that code at all — and the
-    real association crowns twenty and reaches it every single year. A `set()` of
-    entries (a dataclass, so unhashable) sat on that path through a full green suite
-    for exactly this reason. Owner: "my save has a lot more teams and full rosters
-    on them so I'm far more likely to fill out all 20 regions than you are in your
-    smaller tests."
+    A field that fills its bracket exactly plays no opening round at all, so a small
+    fixture never reaches that code — and the real association crowns twenty regions
+    into a 32-slot draw and reaches it every single year. Owner: "my save has a lot
+    more teams and full rosters on them so I'm far more likely to fill out all 20
+    regions than you are in your smaller tests."
     """
     gender, salt = "boys", ""
     by_group = {g: {n: jh.district_teams(ss, 0, salt)
@@ -46,32 +44,33 @@ def big():
     return jvs.run_jv_state(jv, gender=gender, year=2068, seed=11)
 
 
-def test_a_full_sized_field_plays_the_qualifying_round(big):
-    """The path the real association takes every season: more region champions than
-    direct seats, so the surplus plays in for the last seats in the draw.
+def test_the_qualifying_round_is_the_first_round_of_the_state_draw(big):
+    """‼️ NOT A SEPARATE BRACKET. Twenty champions in a 32-slot draw is twelve byes
+    and four opening duals — the shape `jhsaa.run_state` already plays whenever a
+    field does not fill its bracket — and the survivors meet the byes at the Round of
+    16. The event used to cut the field by hand and play a play-in in a bracket of
+    its own; owner, 2026-09: "you didn't have to invent a bespoke JV format when we
+    already have lots of bracket formats that work beyond 16."
 
-    ‼️ ON `big`, NOT `arc`. A fixture that crowns twelve or fewer regions never runs
-    this code at all — and the association crowns twenty and runs it every year. A
-    `set()` of entries (a dataclass, so unhashable) sat on this exact path through a
-    full green suite. Owner: "my save has a lot more teams and full rosters on them so
-    I'm far more likely to fill out all 20 regions than you are in your smaller
-    tests."
+    ‼️ ON `big`, NOT `arc`. A fixture crowning few enough regions to fill no opening
+    round never runs this at all, and the association crowns twenty every year.
     """
-    ranked = big["ranked"]
-    assert len(ranked) > jvs.DIRECT_SEEDS, "fixture too small to test the play-in"
-    rest = ranked[jvs.DIRECT_SEEDS:]
-    games = big["play_in"]["rounds"][0]
-    assert len(games) == len(rest) // 2
-    winners = {gm["winner"] for gm in games}
-    assert winners <= set(rest)
-    assert set(ranked[:jvs.DIRECT_SEEDS]) | winners == set(big["state"]["field"])
+    import app.world as world
+    assert "play_in" not in big, "the separate play-in bracket is gone"
+    rounds = world.jhsaa_state_rounds(big["state"])
+    # ‼️ NAMED BY ITS FIELD, like varsity's R32/R24/R40 — never as a separate event.
+    assert rounds[0]["name"] == f"Round of {len(big['ranked'])}"
+    assert set(big["state"]["field"]) == set(big["ranked"])
+    # Everyone in the opening round is a region champion, and it is a real round of
+    # the same draw rather than a feeder into a fresh one.
+    playing = {t for gm in rounds[0]["games"] for t in (gm["home"], gm["away"])}
+    assert playing <= set(big["ranked"]) and playing
 
 
 def test_the_state_draw_never_skips_a_round(big):
-    """‼️ 20 -> 16 -> 8 -> 4 -> 2 (owner, 2026-09: "don't skip the R16"). The
-    qualifying round is a round of its OWN, in front of the draw — a play-in winner
-    has qualified FOR the bracket, not through its first round — so every column of
-    the State draw is exactly half the one before it."""
+    """‼️ 20 -> 16 -> 8 -> 4 -> 2 (owner, 2026-09: "don't skip the R16"). The opening
+    round takes the field to sixteen and the draw plays every column after it in
+    full — never a jump from qualifying straight to the quarterfinals."""
     import app.world as world
     rounds = world.jhsaa_state_rounds(big["state"])
     alive = [r["alive"] for r in rounds]
@@ -79,8 +78,9 @@ def test_the_state_draw_never_skips_a_round(big):
     for i, r in enumerate(rounds[1:], 1):
         assert r["alive"] == alive[i - 1] - len(rounds[i - 1]["games"])
     assert rounds[-1]["alive"] == 2 and len(rounds[-1]["games"]) == 1
-    # The qualifying round is NOT one of them.
-    assert big["play_in"]["round_names"] == [jvs.QUALIFYING_NAME]
+    # After the opening round the draw is a clean power of two — 16, then 8, 4, 2.
+    after = [r["alive"] for r in rounds[1:]]
+    assert after == [2 ** i for i in range(len(after), 0, -1)], after
 
 
 def test_the_postseason_never_moves_the_record_it_is_seeded_from(jv):
@@ -108,6 +108,7 @@ def test_the_dual_is_recorded_on_both_schedules_with_its_box_score(jv):
     row = a.jv.schedule[-1]
     assert len(a.jv.schedule) == n + 1 and b.jv.schedule[-1]["opp"] == a.name
     assert row["phase"] == jvs.PHASE and row["level"] == jh.LEVEL_JV
+    assert jvs.PHASE_LABELS[row["phase"]] == "JV STATE"
     assert row["shape"] == "3S/2D" and not row["tied"]
     # Five courts, and the players named are the seven who dressed.
     assert len(row["lines"]) == 5
@@ -195,7 +196,7 @@ def test_the_state_draw_is_cut_from_the_region_champions(arc):
     """Every team in the draw is a region champion, and nobody is in it twice."""
     field = arc["state"]["field"]
     assert field and set(field) <= set(arc["ranked"])
-    assert len(field) == len(set(field)) <= jvs.STATE_FIELD
+    assert len(field) == len(set(field))
 
 
 def test_one_champion_per_region_and_a_single_state_champion(arc):
@@ -262,3 +263,113 @@ def test_the_tree_labels_seeds_from_the_statewide_ranking(jv):
     assert seen[names[1]] == seeds[names[1]] == 4, "tree labelled a seed by slot"
     for n, sd in seeds.items():
         assert seen[n] == sd, n
+
+
+def test_twenty_champions_pair_13v20_14v19_15v18_16v17():
+    """‼️ STRICT SEED LINES, AND THE SPEC'S PAIRINGS ARE A RULE, NOT A SIDE EFFECT.
+
+    The event first used `engine.tournament.seeded_draw`, which SHUFFLES within seed
+    tiers — right for a classification's State draw (a TOSS seeding is an estimated
+    ordering, so the tiers are the claim the evidence supports) and wrong for a
+    championship of champions ranked on a season's record. Measured over four seeds it
+    gave (12,20)(13,17)(15,18)(16,19), then (12,18)(13,20)(14,17)(15,19), then
+    (9,17)(10,19)(11,20)(15,18) — a different opening round every year, with seed 9
+    playing in while seed 15 was seeded through. The TOC's order fold is strict and is
+    what makes the association's own pairings true.
+
+    Pure arithmetic on the draw order — no season needed, so this cannot rot behind a
+    fixture that crowns fewer than twenty regions.
+    """
+    order = [1]
+    while len(order) < jvs.REGIONS:
+        m = 2 * len(order)
+        order = [s for a in order for s in (a, m + 1 - a)]
+    pairs = [(order[i], order[i + 1]) for i in range(0, len(order), 2)]
+    games = sorted(tuple(sorted(p)) for p in pairs
+                   if p[0] <= jvs.REGIONS and p[1] <= jvs.REGIONS)
+    assert games == [(13, 20), (14, 19), (15, 18), (16, 17)]
+    through = sorted({s for p in pairs for s in p
+                      if s <= jvs.REGIONS and not (p[0] <= jvs.REGIONS and p[1] <= jvs.REGIONS)})
+    assert through == list(range(1, 13))
+
+
+def test_an_archive_from_the_play_in_build_still_reads(jv, monkeypatch, tmp_path):
+    """‼️ DERIVED ON READ, NEVER MIGRATED — the archive is the record of what was
+    played, and the next shape change would need another migration nobody runs.
+
+    The first build stored the qualifying duals in their own bracket under `play_in`
+    and started `state` at the Round of 16. Read as if the current shape, that row's
+    R16 becomes "the qualifying round": eight duals reported as four, their winners
+    and losers labelled Qualified/Lost qualifier, and the play-in that was actually
+    played vanishes off the page.
+    """
+    import json
+    import app.world as world
+    from app.web.state import DEFAULT_SEED, jhsaa_jv_state_view
+    monkeypatch.setenv("TENNIS_DB_PATH", str(tmp_path / "legacy.db"))
+    monkeypatch.setattr(world, "WORLD_DB", str(tmp_path / "legacy.db"), raising=False)
+    names = [e.name for e in jvs.entries(jv)][:20]
+    assert len(names) == 20
+    direct, playin = names[:12], names[12:]
+    quals = [{"home": playin[i], "away": playin[len(playin) - 1 - i],
+              "home_points": 3.0, "away_points": 2.0, "winner": playin[i]}
+             for i in range(len(playin) // 2)]
+    winners = [g["winner"] for g in quals]
+    draw = direct + winners
+    r16 = [{"home": draw[i], "away": draw[i + 1], "home_points": 3.0,
+            "away_points": 1.0, "winner": draw[i]} for i in range(0, 16, 2)]
+    legacy = {
+        "field": names, "qualifiers": names, "ranked": names,
+        "regions": {f"Region {i}": {"champion": n, "field": [n], "rounds": [],
+                                    "round_names": []}
+                    for i, n in enumerate(names)},
+        "region_champions": {f"Region {i}": n for i, n in enumerate(names)},
+        "play_in": {"champion": None, "field": playin, "rounds": [quals],
+                    "round_names": [jvs.QUALIFYING_NAME]},
+        "state": {"champion": r16[0]["winner"], "field": draw, "rounds": [r16],
+                  "round_names": []},
+        "champion": r16[0]["winner"],
+    }
+    w = world.get_or_create(DEFAULT_SEED)
+    conn = world._db()
+    conn.execute("INSERT INTO world_jhsaa (world_id, year, gender, data)"
+                 " VALUES (?,?,?,?)",
+                 (w["id"], w["year"], "boys", json.dumps({"season_year": 2068})))
+    conn.execute("INSERT INTO world_jhsaa_jv_state (world_id, year, gender, data)"
+                 " VALUES (?,?,?,?)", (w["id"], w["year"], "boys", json.dumps(legacy)))
+    conn.commit(); conn.close()
+
+    v = jhsaa_jv_state_view(DEFAULT_SEED, "boys", None, w["year"])
+    assert v["ready"]
+    # Four qualifying duals, not the eight of the Round of 16.
+    assert v["opening_n"] == len(quals) == 4
+    assert v["qual_lo"] == 13 and v["qual_hi"] == 20
+    # The archived play-in is on the page, ahead of the draw's own rounds.
+    assert v["rounds"][0]["name"] == jvs.QUALIFYING_NAME
+    assert len(v["rounds"][0]["games"]) == 4
+    # And nobody who only played the Round of 16 is labelled as a qualifier.
+    entry = {r["champion"]: r["entry"] for r in v["regions"]}
+    assert entry[direct[0]] == "Direct"
+    assert entry[winners[0]] == "Qualified"
+
+
+def test_a_regional_dual_is_archived_under_its_own_phase(jv):
+    """‼️ TWO PHASES, because a phase is the archive's identity for an event and a
+    regional championship is a different round from the State draw — which is the only
+    thing that lets a program's card say JV REGIONALS where varsity says Regionals.
+    The rounds and the words for them are the association's existing ones (owner,
+    2026-09: "since the labels already exist it's not different but labeling can be");
+    only the wording says JV."""
+    field = jvs.entries(jv)
+    a, b = field[4], field[5]
+    jvs.play_dual(a, b, seed=7, phase=jvs.PHASE_REGION)
+    row = a.jv.schedule[-1]
+    assert row["phase"] == jvs.PHASE_REGION and row["level"] == jh.LEVEL_JV
+    assert jvs.PHASE_LABELS[row["phase"]] == "JV REGIONALS"
+    assert jvs.PHASE_REGION != jvs.PHASE
+
+
+def test_the_region_draws_are_played_under_the_regional_phase(arc, jv):
+    """The event's own regional duals, not just a hand-called one."""
+    phases = {d["phase"] for t in jv.values() for d in t.schedule}
+    assert jvs.PHASE_REGION in phases and jvs.PHASE in phases

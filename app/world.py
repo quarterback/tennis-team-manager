@@ -5315,13 +5315,23 @@ def _jh_school_groups(world_id: int, year: int, gender: str) -> dict[str, str]:
 #: different varsity lineup. Opening in month 2 steps past the whole window.
 _JH_JV_OPEN = {"boys": (9, 1), "girls": (4, 1)}
 
-#: ‼️ AND JV MAY PLAY ON A SUNDAY. Varsity's `_JH_PATTERNS` exclude weekday 6 by
-#: construction; JV is explicitly allowed it (owner rule 2026-08: "played whenever and
-#: wherever… if that means the next day so be it or utilizing sundays since we don't use
-#: them for varsity it doesn't matter at all"). Duals bunching is fine — the ONE
-#: requirement is that a varsity dual never waits on a JV one, which is guaranteed
-#: upstream by JV never entering the varsity allocator at all.
-_JH_JV_DAYS = (0, 1, 2, 3, 4, 5, 6)
+#: ‼️ JV MAY PLAY ON A SATURDAY OR A SUNDAY, AND LEANS ON THEM. Varsity's
+#: `_JH_PATTERNS` exclude weekday 6 by construction; JV is explicitly allowed both
+#: (owner rule 2026-08: "played whenever and wherever… utilizing sundays since we
+#: don't use them for varsity it doesn't matter at all", and 2026-09: "jv can play on
+#: sundays and saturdays more since varsity doesn't").
+#:
+#: ‼️ BUT ALL SEVEN DAYS IS NOT A CALENDAR, IT IS A QUEUE. Every weekday available
+#: means consecutive rounds land on consecutive dates, so a program's card read Sep 3,
+#: 4, 5, 6, 7… — a dual a day for the whole league season and straight through the
+#: championship. Owner, 2026-09, on WHEN they play: "it's not a real constraint as
+#: long as the schedule feels uncompressed." Tue/Thu plus both weekend days is four
+#: dates a week — weekend-heavy, as the owner asked, and it spreads a ~20-round JV
+#: season across five weeks instead of packing it into three.
+#:
+#: The ONE hard requirement is unchanged: a varsity dual must never wait on a JV one,
+#: which is guaranteed upstream by JV never entering the varsity allocator at all.
+_JH_JV_DAYS = (1, 3, 5, 6)
 
 
 def _jh_jv_dates(out: dict, by_school: dict[str, list[tuple]],
@@ -5331,8 +5341,8 @@ def _jh_jv_dates(out: dict, by_school: dict[str, list[tuple]],
 
     Deliberately much simpler than the varsity pass: JV has no postseason, so there are
     no stages to separate and no lanes to keep apart — it is one queue of duals packed
-    into rounds (a round being duals with no team in common) and laid on a seven-day
-    week from the JV opener. No season-close fitting either: JV cannot overrun a window
+    into rounds (a round being duals with no team in common) and laid on `_JH_JV_DAYS`
+    from the JV opener. No season-close fitting either: JV cannot overrun a window
     it does not have to finish inside, and a JV dual slipping past the varsity final is
     not a fault."""
     if not by_school:

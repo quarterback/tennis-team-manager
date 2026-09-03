@@ -193,6 +193,15 @@ body {
      "on the road" rather than as a muted version of an ordinary league dual. */
   --tint-road-bg: color-mix(in oklab, oklch(0.52 0.130 265) 14%, var(--paper));
   --tint-road-fg: oklch(0.45 0.120 265);
+  /* THE JV POSTSEASON — its own two colours, not borrowed (owner, 2026-09: "I want
+     a unique color for the playoff tags and same for state"). A JV regional and a
+     JV state dual sit on the SAME schedule as the varsity road and the varsity
+     state event, so sharing `--tint-road-*` and `--brand` made a JV card read as a
+     muted copy of the varsity one. Measured against the ground they render on:
+     the playoff fg is 8.4:1 on paper, the state fill 6.5:1 against white. */
+  --tint-jvroad-bg: color-mix(in oklab, oklch(0.55 0.150 320) 15%, var(--paper));
+  --tint-jvroad-fg: oklch(0.43 0.150 320);
+  --jv-state: oklch(0.46 0.110 200);
 
   /* Ranks + classification badges ride the scheme's own chip ramp. */
   --rank-silver: var(--gray-400);

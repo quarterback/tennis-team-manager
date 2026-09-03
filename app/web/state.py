@@ -4645,37 +4645,71 @@ def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
              "lose_points": min(gm["home_points"], gm["away_points"])}
             for gm in rd["games"]]} for rd in world.jhsaa_state_rounds(bracket)]
 
-    # The regional championships, one row each: who won it and how big its draw was.
-    # NOT twenty trees — the region is where the field was decided, and a reader who
-    # wants one program's route has its schedule card.
+    # ‼️ HOW EACH CHAMPION ENTERED, DERIVED FROM THE DRAW rather than stored beside
+    # it. Twenty champions in a 32-slot bracket is twelve byes and four opening
+    # duals, so a team that appears in the first round played its way in and everyone
+    # else was seeded straight through — the archive already says which, and a second
+    # record of it could only disagree.
+    # ‼️ AN ARCHIVE WRITTEN BY THE PLAY-IN BUILD STILL READS. That version stored the
+    # qualifying duals in their own bracket under `play_in` and started `state` at the
+    # Round of 16; this one makes qualifying the first round of the State draw. Read
+    # the difference — DERIVED ON READ, never migrated, the same answer a rename gets
+    # (`world._relabel`) and for the same reason: the archive is the record of what was
+    # played, and the next shape change would need another migration nobody will run.
+    #
+    # Without this the legacy row is read as if its Round of 16 were qualifying, so
+    # eight R16 duals are reported as four qualifying ones, their winners and losers
+    # are labelled "Qualified"/"Lost qualifier", and the play-in that was actually
+    # played disappears off the page entirely.
+    legacy_qual = ((ev.get("play_in") or {}).get("rounds") or [[]])[0]
+    opening = legacy_qual or (st.get("rounds") or [[]])[0]
+    played_in, survived = set(), set()
+    for gm in opening:
+        played_in.update((gm.get("home"), gm.get("away")))
+        survived.add(gm.get("winner"))
+    in_draw = set(st.get("field") or ())
+    # ‼️ THE SEED RANGE IS READ OFF THE DRAW, never typed and never computed from the
+    # field size. Written as `field − games` once, it printed "seeded 12-20" while the
+    # seed 12 card sat in the tree above, unplayed — the copy contradicting the
+    # bracket beside it. The draw already knows exactly who played in.
+    qual_seeds = sorted(seeds.get(n, 0) for n in played_in)
+    qual_lo, qual_hi = (qual_seeds[0], qual_seeds[-1]) if qual_seeds else (0, 0)
+
+    def _entry(name):
+        if name not in played_in:
+            return "Direct"
+        return "Qualified" if name in survived else "Lost qualifier"
+
+    # The regional championships as a full-width table below the draw, one row per
+    # region: who won it, where they seeded statewide, and how they entered. NOT a
+    # sidebar (owner, 2026-09) and NOT twenty trees — a reader who wants one
+    # program's route through its region has that program's schedule.
     regions = []
     for region in sorted(ev.get("regions") or {}):
         br = ev["regions"][region]
         champ = br.get("champion") or ""
         regions.append({"region": region, "field_n": len(br.get("field") or ()),
-                        "qualifiers": list(br.get("field") or ()),
                         "champion": champ, "seed": seeds.get(champ, 0),
+                        "entry": _entry(champ) if champ in in_draw else "",
                         "deco": _jh_deco(schools, champ, 22) if champ else None})
+    regions.sort(key=lambda r: (r["seed"] or 999, r["region"]))
     return {
         **base, "ready": True,
         "field_n": len(ev.get("field") or ()),
         "qualifier_n": len(ev.get("qualifiers") or ()),
         "state_field_n": len(st.get("field") or ()),
         "regions": regions, "region_n": len(regions),
-        "ranked": [{**_jh_deco(schools, n, 22), "seed": i + 1,
-                    "region": region_of.get(n, ""),
-                    "direct": i < len(st.get("field") or ()) and n in set(st.get("field") or ())}
-                   for i, n in enumerate(ev.get("ranked") or ())],
-        "play_in": _rounds(ev.get("play_in") or {}),
-        "rounds": _rounds(st),
-        # ‼️ THE STATEWIDE SEEDS ARE PASSED IN, NOT DERIVED FROM FIELD POSITION.
-        # `_jh_bracket_cols` falls back to `_jh_seeds`, which numbers a field 1..n by
-        # its order — right for a draw whose field IS its ranking, and wrong here the
-        # moment a lower-ranked team wins the play-in: the No. 20 champion takes the
-        # sixteenth slot, so the tree would label them #16 while the ranking, the
-        # qualifying panel and the round lists all call them #20. Same team, two
-        # numbers, on one page. `seed_map` is the bracket's supported field for
-        # exactly this (the split State render already uses it).
+        "opening_n": len(opening),
+        # The round names itself off its own field ("Round of 20"), the way varsity
+        # says R32/R24/R40 — so the note cannot drift from the round list beside it.
+        "opening_name": (_rounds(ev["play_in"]) if legacy_qual
+                         else _rounds(st))[0]["name"],
+        "qual_lo": qual_lo, "qual_hi": qual_hi,
+        "direct_n": len(in_draw) - len(played_in),
+        # A legacy archive's qualifying round is a bracket of its own, so it is
+        # prepended to the round list rather than being one of the draw's columns —
+        # which is exactly what it was when it was played.
+        "rounds": (_rounds(ev["play_in"]) if legacy_qual else []) + _rounds(st),
         "canvas": _bracket_canvas(
             _jh_bracket_cols({**st, "seed_map": seeds}, schools),
             card_w=232, card_h=60, gutter=56, leaf_gap=18),
@@ -5134,6 +5168,29 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         return out
     state_round = _round_of(br)
     toc_round = _round_of((arc or {}).get("toc") or {})
+    # ‼️ THE JV STATE ROUND, ON THE SAME IDEA AND WITH ITS OWN SHORT FORM. A JV card
+    # that tagged five different rounds "JV STATE" tells the reader nothing about
+    # which one, exactly as the varsity card would if it dropped its R32/QF/SF chip.
+    # The labels are the ones the owner wrote (R20 · R16 · QF · SF · F); everything
+    # else — reading the ROUND off the archived bracket rather than inferring it from
+    # a schedule position — is `_round_of`'s, unchanged. One small row per page.
+    _JV_SHORT = {"Championship": "F", "Semifinals": "SF", "Quarterfinals": "QF",
+                 "Octofinals": "R16"}
+    jv_ev = world.jhsaa_jv_state(w["id"], yr, g) or {}
+    jv_round = {}
+    for _key, _br in (("state", jv_ev.get("state")),
+                      # An archive from the play-in build keeps its qualifying duals
+                      # in a bracket of their own — read it too, or those rows lose
+                      # their round while every other JV State row keeps one.
+                      ("play_in", jv_ev.get("play_in"))):
+        for rd in world.jhsaa_state_rounds(_br or {}):
+            nm = _JV_SHORT.get(rd["name"]) or (f"R{rd['alive']}"
+                                               if rd["name"].startswith("Round of")
+                                               else rd["name"])
+            for gm in rd["games"]:
+                if school in (gm.get("home"), gm.get("away")):
+                    other = gm["away"] if gm["home"] == school else gm["home"]
+                    jv_round[other] = nm
 
     _SEEDS = {"TOC": toc_seeds, "STATE": seeds,
               "STATE SPECIAL": sp_seeds, "CHALLENGE": ch_seeds,
@@ -5255,7 +5312,12 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         # score rendered raw reads backwards on every dual the away team won — the
         # exact fault `AAR-jhsaa-bracket-score-sides.md` records, one surface over.
         "jv_schedule": [{**d, "date": jv_dates[i], "lines": _jh_reported_lines(d),
-                         "opp_deco": _jh_deco(schools, d["opp"], 22)}
+                         "opp_deco": _jh_deco(schools, d["opp"], 22),
+                         # Only a State dual earns the round chip — the same rule the
+                         # varsity card follows: a regional or a league dual's round
+                         # is already what its own tag says.
+                         "round": (jv_round.get(d["opp"], "")
+                                   if d.get("phase") == "jv_state" else "")}
                         for i, d in enumerate(jv_sched)],
         "jv_record": (f"{jv_w}-{jv_l}-{jv_t}" if jv_t else f"{jv_w}-{jv_l}") if
                      (jv_w + jv_l + jv_t) else "",
