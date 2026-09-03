@@ -114,16 +114,16 @@ TUNE = {
 #     a big server still steals matches past his overall); what goes away is
 #     the structural free hold that made near-equal HS sets random-walk to
 #     6-6.
-#   * the MATCHUP CURVE — see `gap_bands` / `BAND_EDGES_OVR` below. ‼️ THIS
+#   * the MATCHUP CURVE — see `gap_bands` / `PER_POINT_SLOPES` below. ‼️ THIS
 #     DIAL WAS REPLACED (owner spec 2026-08). It was `skill_slope` 6 +
 #     `gap_knee` 0.02, chosen because the college knee (0.06) sat on the median
 #     matched-line gap (0.059 across JHSAA district play) so half of all real
 #     mismatches played as "even matches". That fixed the upset volume and
 #     overshot: a THREE-point OVR gap won 94.7% of matches and a six-point gap
 #     100%, which is not a competitive model, it is a lookup table. The curve
-#     now runs on seven-point competitive BANDS instead (peers / modest / clear
-#     / strong / major), flat inside the peer band and progressively steeper
-#     above it. Both this and the older
+#     ran on competitive BANDS next (peers / modest / clear / strong / major,
+#     then a fine 3-wide table) and since 2026-09 on a PER-POINT slope array
+#     (`PER_POINT_SLOPES`, cumulative by integer OVR gap). Both this and the older
 #     docs/AAR-jhsaa-upset-variance-recalibration.md table are superseded for
 #     HS play; docs/PROPOSAL-development-model-redesign.md §25 is current.
 # NO per-match "form"/hot-cold variable — considered and rejected (owner,
@@ -148,16 +148,17 @@ TUNE = {
 # pre-profile model. Pinned by tests/test_jhsaa_scorelines.py.
 HS_PROFILE = {
     "hold_base_logit": -0.4,
-    # ‼️ COMPETITIVE BANDS, owner spec 2026-08 (see `BAND_EDGES_OVR` and
+    # ‼️ THE GAP-RESPONSE CURVE, owner spec 2026-09 (see `PER_POINT_SLOPES` and
     # docs/PROPOSAL-development-model-redesign.md §25). `skill_slope` was 6.0
     # and `gap_knee` 0.02 — and the knee was never what made this curve steep.
     # A gap is a per-GAME hold edge compounded over ~20 games and two or three
     # sets, so at slope 6.0 a THREE-point OVR gap already won 94.7% of matches
     # and removing the hinge entirely left it at 92.9%: the requested peer band
     # is unreachable by retuning a knee, and the whole curve had to come down.
-    # `gap_bands` replaces the knee/accel hinge for this profile; `gap_knee`
-    # and `gap_accel` are kept so a caller reading them still gets a number,
-    # but they are UNUSED here.
+    # `gap_bands` routes `effective_gap` to the per-point curve for this
+    # profile (the flag keeps its historical name); `gap_knee` and `gap_accel`
+    # are kept so a caller reading them still gets a number, but they are
+    # UNUSED here.
     "skill_slope": 0.9,
     "tb_slope": 0.68,
     "gap_bands": True,
@@ -175,98 +176,88 @@ HS_PROFILE = {
 
 
 #: A `gap` here is a difference of unit-normalised drivers, i.e. an OVR-point
-#: difference divided by the 20-80 scale's span. Band edges are authored in OVR
-#: points (the units the owner reasons in) and converted once, at import.
+#: difference divided by the 20-80 scale's span. The response table below is
+#: authored in OVR points (the units the owner reasons in) and converted at the
+#: point of use.
 GRADE_SPAN = 60.0
 
-#: COMPETITIVE BANDS — the high-school matchup curve (owner spec 2026-08;
-#: re-shaped 2026-09 into a fine 12-band ramp with a deliberate mid-curve step).
-#: An OVR difference is read through a piecewise-linear transform: identity inside
-#: the peer band, steeper above it, continuous by construction (each band starts
-#: where the last one ended), sign-symmetric and monotonic.
+#: THE GAP-RESPONSE CURVE — a PER-POINT slope array, indexed by integer OVR gap
+#: (owner spec 2026-09, replacing the banded table: `BAND_EDGES_OVR` /
+#: `BAND_SLOPES`, whose 3-wide bands accumulated width x slope per band). Index 0
+#: is gap 1 -> `PER_POINT_SLOPES[gap - 1]`. It is a table of DERIVATIVES: the
+#: effect at gap g is the SUM of the slopes for every point from 1 through g
+#: (`cumulative(g) = sum(PER_POINT_SLOPES[:g])`), so a point of separation is
+#: worth what its own row says and every row below it. Gap 0 contributes nothing.
 #:
-#: ‼️ THE SHAPE IS "UPSETS AMONG PEERS, NOT CONSTANT FLUKES FROM FAR BELOW"
-#: (owner, 2026-09) — two goals at opposite ends of one curve, tuned as two
-#: different things, which is what every earlier single-dial pass got wrong. The
-#: bottom stays SMOOTH in 3-point steps so near-equal players keep their
-#: volatility; the middle steps up hard; the top thins out without becoming a
-#: wall.
+#: ‼️ THE PEER BAND IS DELIBERATELY SOFT. Gaps 1-2 sit at 1.05 / 1.10 and stay
+#: there: close matches remaining close is the intent, not an artifact. What the
+#: curve buys above it is a ramp through 10, a mid-tier cliff at 11-15, a heavy
+#: advantage at 16-22 (the three-set collapse) and a PLATEAU from 23 — the
+#: per-point RATE stops rising at 2.85, the cumulative total never stops.
 #:
-#: ‼️ THE STEP AT 16-18 (1.30 -> 1.60) IS THE POINT OF THIS TABLE. A logistic
-#: naturally flattens as the favourite approaches certainty, so a smooth ramp
-#: buys LESS win-probability per OVR point the further out you go. The jump at
-#: 16-18 reverses that locally: measured, that band buys 5.8 points of favourite
-#: win rate where 12-15 bought 5.4 and the previous smooth table bought 5.3. That
-#: is a real kink in the curve, and it is where the owner wants a mismatch to
-#: start telling. Do not "tidy" it into a gentle ramp.
+#: ‼️ GAPS ABOVE 35 CONTINUE AT THE FINAL RATE (2.85 a point). Only the per-point
+#: slope plateaus; the cumulative effect is never clamped. Fractional gaps (a
+#: doubles pair averages two ratings a side) interpolate LINEARLY between points:
+#: a gap of 4.5 is four full points plus half of the gap-5 slope — never rounded.
 #:
-#: ‼️ AND THE TAIL IS DELIBERATELY NOT A WALL (owner ruling 2026-09: "the tail is
-#: right, you want them to be able to win, it's high school tennis"). The last two
-#: bands are BOTH 2.20, so the curve goes linear from 31 OVR up rather than
-#: continuing to accelerate: underdog 1.05% at 34 OVR and 0.23% at 40, against the
-#: old 5-band curve's 0.70% and 0.11%. A big mismatch in high school is
-#: improbable, not impossible. An earlier pass raised the top slopes to restore
-#: the old suppression and was reverted; do not redo it. Flattening the last two
-#: bands costs almost nothing anyway — past ~30 OVR the CEILING is doing the work,
-#: not the slope.
-#:
-#: ‼️ SLOPES MULTIPLY BAND WIDTHS — EVALUATE `band_gap(x)`, NEVER EYEBALL THE
-#: TUPLE. Narrow bands accumulate less, so a fine table whose every number looks
-#: bigger can integrate to LESS gap than a coarse one: this top slope is 2.20
-#: against the old 5-band curve's 3.0 and still lands the middle harder, because
-#: twelve bands of ramp accumulate faster where it matters. The tuple is a table
-#: of derivatives; what decides matches is its integral.
-#:
-#: Measured favourite win rates (scripts/jhsaa_band_calibration.py, 60k matches a
-#: point): 3 -> 55.4%, 6 -> 61.3%, 9 -> 67.3%, 12 -> 72.8%, 15 -> 78.2%,
-#: 18 -> 84.0%, 21 -> 88.9%, 24 -> 92.9%, 27 -> 95.6%, 30 -> 97.5%, 34 -> 98.9%,
-#: 40 -> 99.8%. Peers are untouched by every reshape (0 OVR 49.8%, 3 OVR 55.4%).
-#: ‼️ Run it with NO arguments to describe this table (every band edge, derived
-#: from `BAND_EDGES_OVR`); `--fit` re-solves the slopes and solves only the edges
-#: that carry an owner target. A harness that reads driver attributes on a 0-100
-#: scale instead of the 20-80 GRADE SPAN understates every gap by a third and
-#: looks entirely plausible — check it reproduces the rates above before trusting
-#: a number out of it.
-#:
-#: ‼️ A BAND IS A SEMANTIC LABEL, NOT A PROMISE OF EXTRA SLOPE (owner ruling
-#: 2026-09). Adjacent segments may share a slope — 31-34 and 35+ both do — and the
-#: base win-probability curve is already rising across them. An earlier version of
-#: this comment claimed "each band above the peer band is progressively steeper",
-#: which was false of the table beneath it and cost a review cycle: an analysis
-#: read an identity segment as a defect and proposed steepening it. Fix the prose,
-#: not the curve.
-#: See docs/AAR-jhsaa-band-recalibration.md and
-#: docs/PROPOSAL-development-model-redesign.md §25.
-BAND_EDGES_OVR = (3.0, 6.0, 9.0, 12.0, 15.0, 18.0, 21.0, 24.0, 27.0, 30.0, 34.0)
-BAND_SLOPES = (1.00, 1.10, 1.16, 1.20, 1.30, 1.60, 1.71, 1.96, 2.04,
-               2.13, 2.20, 2.20)
-def _build_bands() -> tuple[tuple[float, float, float], ...]:
-    """(unit edge, slope, output at that edge) per band, precomputed at import so
-    the per-point hot path is a short scan that never re-derives the table."""
-    out, prev, total = [], 0.0, 0.0
-    for edge_ovr, slope in zip(BAND_EDGES_OVR, BAND_SLOPES):
-        edge = edge_ovr / GRADE_SPAN
-        total += (edge - prev) * slope
-        out.append((edge, slope, total))
-        prev = edge
+#: ‼️ SLOPES ACCUMULATE — EVALUATE `band_gap(x)`, NEVER EYEBALL THE ARRAY. What
+#: decides a match is the integral of this table, read through `skill_slope` and
+#: ~20 games of logistic compounding; a row that looks small still moves every
+#: gap above it. Describe the shipped curve with
+#: `python3 scripts/jhsaa_band_calibration.py` (cumulative, effective gap and the
+#: measured favourite win rate at every integer gap). Neither `skill_slope` (0.9)
+#: nor `tb_slope` (0.68) moved with this table.
+PER_POINT_SLOPES = (
+    # Gaps 1-10: locked peer band + early acceleration
+    1.05, 1.10, 1.24, 1.38, 1.57, 1.66, 1.76, 1.87, 1.99, 2.12,
+    # Gaps 11-15: mid-tier cliff ramping
+    2.20, 2.28, 2.36, 2.44, 2.52,
+    # Gaps 16-22: heavy advantage, three-set collapse
+    2.57, 2.62, 2.67, 2.72, 2.77, 2.82, 2.85,
+    # Gaps 23-35+: top-end plateau / lockout ceiling
+    2.85, 2.85, 2.85, 2.85, 2.85, 2.85, 2.85, 2.85, 2.85, 2.85, 2.85, 2.85, 2.85,
+)
+#: The rate every point past the end of the array is worth.
+PLATEAU_SLOPE = PER_POINT_SLOPES[-1]
+
+
+def _cumulative() -> tuple[float, ...]:
+    """`_CUM[g]` = sum(PER_POINT_SLOPES[:g]) for g = 0..len — the effect at each
+    integer gap, in OVR points, precomputed once so the per-game hot path is an
+    index and one multiply."""
+    out, total = [0.0], 0.0
+    for s in PER_POINT_SLOPES:
+        total += s
+        out.append(total)
     return tuple(out)
 
 
-_BANDS = _build_bands()
+_CUM = _cumulative()
+
+
+def get_effective_delta(gap_ovr: float) -> float:
+    """The cumulative effective delta in OVR points: the summed per-point
+    slopes through `gap_ovr` (Paradigm A, incremental summation of marginal
+    slopes), linearly interpolated inside a point and continuing at
+    `PLATEAU_SLOPE` past the array — never an IndexError, never a clamp on the
+    total. Checkpoints (owner): 1 -> 1.05, 3 -> 3.39, 5 -> 6.34, 10 -> 15.74,
+    15 -> 27.54, 30 -> 69.36. Zero or negative contributes nothing."""
+    if gap_ovr <= 0:
+        return 0.0
+    n = len(PER_POINT_SLOPES)
+    if gap_ovr >= n:
+        return _CUM[n] + (gap_ovr - n) * PLATEAU_SLOPE
+    whole = int(gap_ovr)
+    return _CUM[whole] + (gap_ovr - whole) * PER_POINT_SLOPES[whole]
 
 
 def band_gap(gap: float) -> float:
-    """The banded matchup curve — piecewise-linear on |gap|, one slope per
-    competitive band (see `BAND_EDGES_OVR`). Identity inside the peer band."""
-    x = abs(gap)
-    prev_edge = 0.0
-    out = 0.0
-    for edge, slope, acc in _BANDS:
-        if x <= edge:
-            out += (x - prev_edge) * slope
-            return out if gap >= 0 else -out
-        out, prev_edge = acc, edge
-    out += (x - prev_edge) * BAND_SLOPES[-1]
+    """The gap-response curve on a UNIT gap (OVR / GRADE_SPAN): the per-point
+    array above, cumulative, sign-symmetric, zero at zero. Keeps its historical
+    name because it is the one entry point `effective_gap` routes to under the
+    HS profile; the banded table it was named for is gone."""
+    x = abs(gap) * GRADE_SPAN
+    out = get_effective_delta(x) / GRADE_SPAN
     return out if gap >= 0 else -out
 
 

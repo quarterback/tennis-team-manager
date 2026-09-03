@@ -1,5 +1,10 @@
 # AAR — re-solving the JHSAA competitive bands (2026-09)
 
+> **SUPERSEDED (2026-09).** The banded table this AAR re-solved (`BAND_EDGES_OVR` /
+> `BAND_SLOPES`) was replaced by a per-point slope array indexed by integer OVR gap
+> (`engine.fast.PER_POINT_SLOPES`, cumulative) — see
+> `docs/AAR-jhsaa-per-point-gap-slopes.md`. Kept for its lessons.
+
 A review agent exported 168,209 varsity lines from the 2066 season and reported that
 the match engine's response to talent is "fairly shallow until the mismatch becomes
 very large" — three-set rate 49% at a 0–2 OVR gap, still 43% at 10–14, only bending

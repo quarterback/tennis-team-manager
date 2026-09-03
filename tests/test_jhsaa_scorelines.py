@@ -8,6 +8,8 @@ the corrected shape loosely — the benchmark script is the precision
 instrument — and pin exactly the null-profile guarantee the college game
 depends on."""
 import random
+
+import pytest
 from collections import Counter
 from itertools import combinations
 
@@ -70,79 +72,100 @@ def _set_shares(teams, trials=2, seed=20260828):
 # `_set_shares` is kept for that, and for the benchmark script.
 
 
-def test_matchup_curve_follows_the_competitive_bands():
-    """‼️ THE OWNER'S BAND SPEC (2026-08), pinned end to end through the real
-    engine: an OVR difference is read as five competitive bands and the
-    favourite's win rate rises progressively across them.
-
-        0-6 peers · 7-14 modest · 15-21 clear · 22-28 strong · 29+ major
-
-    Measured at each band's TOP edge, where the curve is most likely to drift.
-    Ranges are the spec's, widened for sampling noise at this n (se ~1.8pt).
-    This supersedes the scoreline test above: it pins the decision that replaced
-    it, and it is the closer guard on the thing that actually went wrong — at
-    the old dials a three-point gap already won 94.7% of matches.
-    """
-    from engine.fast import simulate_fast
+def _flat(ovr, name):
+    # A FLAT player (every attribute equal) so the measured gap is exactly the
+    # OVR gap — engine.fast's lane weights are chosen to reproduce the overall
+    # gap exactly for flat players, which is what makes this a reading of the
+    # curve rather than of a play style.
     from app.development import Prospect
     from app.player_attributes import RICH_ATTRS
-
-    def flat(ovr, name):
-        # A FLAT player (every attribute equal) so the measured gap is exactly
-        # the OVR gap — engine.fast's lane weights are chosen to reproduce the
-        # overall gap exactly for flat players, which is what makes this a
-        # reading of the curve rather than of a play style.
-        grades = {a: float(ovr) for a in RICH_ATTRS}
-        return Prospect(name=name, current=grades,
-                        potential=dict(grades)).engine_player()
-
-    def favourite_rate(gap, n=800):
-        fav, dog = flat(45 + gap, "fav"), flat(45, "dog")
-        wins = sum(simulate_fast(fav, dog, seed=4_000_000 + i,
-                                 fmt=jhsaa.MATCH_FORMAT, first_server=i % 2,
-                                 profile=HS_PROFILE).winner == 0
-                   for i in range(n))
-        return 100 * wins / n
-
-    # (gap, low, high) — the band's own range, with noise headroom.
-    for gap, lo, hi in ((0, 46, 56),      # dead level: a coin flip
-                        (6, 55, 68),      # peers, top edge
-                        (14, 66, 80),     # modest, top edge
-                        (21, 79, 91),     # clear, top edge
-                        (28, 89, 98)):    # strong, top edge
-        rate = favourite_rate(gap)
-        assert lo <= rate <= hi, f"{gap} OVR gap -> {rate:.1f}% (want {lo}-{hi}%)"
-
-    # major mismatches are decisive but never certain
-    assert 93 <= favourite_rate(40) <= 100
+    grades = {a: float(ovr) for a in RICH_ATTRS}
+    return Prospect(name=name, current=grades, potential=dict(grades)).engine_player()
 
 
-def test_peer_band_is_identity_and_the_curve_is_monotone():
-    """The peer band must not touch the gap at all — that is what preserves
-    volatility between near-equals — and the curve must rise without a step at
-    any band edge (a discontinuity would make one OVR point worth a jump)."""
-    from engine.fast import band_gap, BAND_EDGES_OVR, GRADE_SPAN
+def _favourite_rate(gap, n=3000, base=50):
+    """(favourite match-win %, three-set %) at an OVR gap through the shipped
+    fast model at the association's format, first serve alternating."""
+    from engine.fast import simulate_fast
+    fav, dog = _flat(base + gap / 2, "fav"), _flat(base - gap / 2, "dog")
+    wins = three = 0
+    for i in range(n):
+        r = simulate_fast(fav, dog, seed=4_000_000 + i, fmt=jhsaa.MATCH_FORMAT,
+                          first_server=i % 2, profile=HS_PROFILE)
+        wins += r.winner == 0
+        three += len(r.set_scores) == 3
+    return 100 * wins / n, 100 * three / n
 
-    # ‼️ DERIVED FROM THE TABLE, never a typed 6.0 — the peer band's WIDTH is a
-    # tuning decision that has moved twice (6 -> 7 -> 3), and a literal here
-    # fails the day it moves again while saying nothing about the property.
-    peer = BAND_EDGES_OVR[0]
-    for frac in (0.0, 0.2, 0.5, 0.9, 1.0):
-        ovr = peer * frac
-        assert band_gap(ovr / GRADE_SPAN) == ovr / GRADE_SPAN
 
-    assert band_gap(-0.35) == -band_gap(0.35)          # sign-symmetric
-
+def test_effective_delta_is_the_cumulative_per_point_array():
+    """‼️ THE GAP-RESPONSE CURVE IS A PER-POINT SLOPE ARRAY, CUMULATIVE (owner spec
+    2026-09, replacing the 3-wide banded table). The effect at gap g is the SUM of
+    the marginal slopes for points 1..g — the owner's checkpoints, verbatim from the
+    array (the sheet's 69.38 at 30 is 69.36 by the array: 46.56 at 22 + 8 x 2.85).
+    Gap 0 contributes nothing; fractional gaps interpolate linearly (4.5 = four
+    points + half the gap-5 slope, never rounded); past the array the RATE holds
+    at 2.85 a point while the total keeps growing — and nothing raises."""
+    from engine import fast
+    S = fast.PER_POINT_SLOPES
+    assert len(S) == 35 and S[0] == 1.05 and S[1] == 1.10      # the soft peer band
+    assert fast.PLATEAU_SLOPE == 2.85
+    f = fast.get_effective_delta
+    for gap, want in ((1, 1.05), (3, 3.39), (5, 6.34), (10, 15.74),
+                      (15, 27.54), (22, 46.56), (30, 69.36)):
+        assert abs(f(gap) - want) < 1e-9, (gap, f(gap), want)
+        assert abs(f(gap) - sum(S[:gap])) < 1e-9
+    assert f(0) == 0.0 and f(-3) == 0.0
+    assert abs(f(4.5) - (sum(S[:4]) + 0.5 * S[4])) < 1e-9
+    # past the array: 2.85 a point, total unclamped, no IndexError
+    assert abs(f(35) - sum(S)) < 1e-9
+    assert abs(f(40) - (sum(S) + 5 * 2.85)) < 1e-9
+    assert abs(f(100) - (sum(S) + 65 * 2.85)) < 1e-9
+    assert f(36.5) - f(36) == pytest.approx(0.5 * 2.85)
+    # `band_gap` is the unit-gap entry point `effective_gap` routes to: the same
+    # curve on OVR/60, sign-symmetric, monotone, continuous at every point
+    for g in (0.0, 1.0, 4.5, 17.0, 35.0, 50.0):
+        assert fast.band_gap(g / fast.GRADE_SPAN) * fast.GRADE_SPAN == pytest.approx(f(g))
+    assert fast.band_gap(-0.35) == -fast.band_gap(0.35)
     prev = -1.0
     for step in range(0, 601):                          # 0-60 OVR in 0.1 steps
-        v = band_gap(step / 10.0 / GRADE_SPAN)
+        v = fast.band_gap(step / 10.0 / fast.GRADE_SPAN)
         assert v > prev or step == 0, step
         prev = v
-    # continuous at every edge: approaching from below lands on the edge value
-    for edge in BAND_EDGES_OVR:
-        below = band_gap((edge - 1e-6) / GRADE_SPAN)
-        at = band_gap(edge / GRADE_SPAN)
-        assert abs(at - below) < 1e-6, edge
+    for k in range(1, 40):
+        below = fast.band_gap((k - 1e-7) / fast.GRADE_SPAN)
+        assert abs(fast.band_gap(k / fast.GRADE_SPAN) - below) < 1e-5, k
+    # the routing: the HS profile takes the curve, the college hinge does not
+    assert HS_PROFILE["gap_bands"] is True
+    assert fast.effective_gap(0.25, bands=True) == fast.band_gap(0.25)
+    assert fast.effective_gap(0.02, bands=False) == 0.02
+
+
+def test_simulation_plays_on_the_per_point_curve():
+    """The match simulation reads the cumulative delta, not the total gap times
+    one band's slope — pinned end to end through the real engine. Measured at
+    the time of the change (6000 matches a point, se ~0.6):
+        gap 1 51.8% · 2 54.0 · 3 56.2 · 5 60.7 · 10 74.5 · 15 88.0 · 22 97.3 · 30 99.8
+        three-set: 49.8% level, 44.0 at 10, 17.3 at 22, 6.0 at 30
+    Ranges carry sampling headroom at this n (se ~0.9). The owner's target column
+    (5 -> 64.5, 10 -> 80.0) sits ABOVE the measured middle: the array does not set
+    the win rate, `skill_slope` (0.9) and the compounding do — moving it is a
+    separate decision, not a test failure. THE PEER BAND STAYS SOFT: gaps 1-2 are
+    a near coin flip by design."""
+    rates = {g: _favourite_rate(g) for g in (0, 1, 2, 5, 10, 15, 22, 30)}
+    fav = {g: r[0] for g, r in rates.items()}
+    three = {g: r[1] for g, r in rates.items()}
+    assert 47 <= fav[0] <= 53
+    assert fav[1] <= 55 and fav[2] <= 57.5                # soft peer band
+    assert 57 <= fav[5] <= 64
+    assert 71 <= fav[10] <= 78
+    assert 85 <= fav[15] <= 91
+    assert 95 <= fav[22] <= 99.3
+    assert fav[30] >= 98.5
+    # monotone in the gap
+    assert fav[1] < fav[5] < fav[10] < fav[15] < fav[22]
+    # the three-set collapse: close at the bottom, straight sets at the top
+    assert three[0] >= 44 and three[10] >= 39
+    assert three[22] <= 23 and three[30] <= 10
 
 
 def test_null_profile_is_byte_identical_for_college():

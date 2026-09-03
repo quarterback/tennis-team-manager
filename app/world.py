@@ -4569,7 +4569,7 @@ def jhsaa_scoreline_realism(world_id: int, year: int, gender: str) -> dict:
     simulates nothing on the request thread.
 
     ‼️ THE OREGON NUMBERS ARE A BASELINE, NOT A TARGET (owner rule 2026-09).
-    The banded matchup curve (`engine.fast.BAND_EDGES_OVR`) superseded the
+    The matchup curve (`engine.fast.PER_POINT_SLOPES`) superseded the
     Oregon scoreline fit, so the sim's shape sits ~35 points from Oregon BY
     DECISION, and a page framed as "distance from target" reads as broken
     while reporting exactly what the archive holds. The comparison that
@@ -4727,7 +4727,7 @@ def scoreline_compare(cur: dict, prev: dict | None) -> dict:
 
 #: The owner's five COMPETITIVE BANDS, in OVR points — the units the band spec is
 #: reasoned in (docs/PROPOSAL-development-model-redesign.md §25; the curve itself
-#: runs on the finer `engine.fast.BAND_EDGES_OVR` table): a gap under 7 is peers,
+#: runs on the per-point `engine.fast.PER_POINT_SLOPES` array): a gap under 7 is peers,
 #: 7-14 modest, 15-21 clear, 22-28 strong, 29+ major. The upper bound is EXCLUSIVE
 #: so a fractional gap (a doubles pair's mean OVR) lands in exactly one band.
 OVR_GAP_BANDS = (("0-6", "Peers", 0.0, 7.0),
