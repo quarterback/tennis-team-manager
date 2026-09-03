@@ -91,22 +91,14 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     9A  2189  Port Meridian West                     Port Meridian          Port Meridian West
     4A   775  Port Veles Episcopal                   Port Veles             Geraldine Cross
 
-   Group 2  1035  St. Catherine College Prep             Aldecoa                St. Catherine College Prep
     6A  1151  St. Ignatius                           Belmonte               St. Basil School
     1A   105  St. Lucia Academy                      Belmonte               St. Lucia Academy
    Group 2   597  St. Gabriel Academy                    Cañada Grande          St. Gabriel Academy
-   Group 2   730  St. Elias College Prep                 Echevarria             St. Elias College Prep
-    3A   464  St. Veronica                           Garrow                 St. Veronica
    Group 1  2150  St. Teresa                             Harriman               St. Teresa High School
-   Group 2   412  St. Brigid                             Harrow                 St. Brigid School
     1A    93  St. Norbert Abbey                      Louisville             St. Norbert Abbey
     3A   459  St. Sebastian Prep                     Louisville             St. Sebastian Prep
-    3A   446  St. Sergius                            Novak                  Soren Ekström
     6A  1257  St. Vincent                            Port Veles             St. Vincent School
-    1A   306  St. Jerome Academy                     San Borondón           St. Jerome Academy
-    2A   224  St. Elian                              St. Elian              St. Elian
     5A  1006  St. Catherine Academy                  St. Varian             Nathaniel Gaines
-    1A   127  St. Cecilia Academy                    Tunnel Diggings        St. Cecilia Academy
     1A   179  St. Josephine Bakhita                  Vessey Switch          St. Perpetua Preparatory
 
     5A   862  Veles Central                          Port Veles             Port Veles
@@ -487,7 +479,7 @@ Aldecoa — 9 programs (Vance County, Silver Basin)
    Group 1  1477 pub  Coles Creek                                               High Desert League                 Pavel Kovalenko
    Group 1  1314 priv Pope Leo XIV                                              High Desert League                 Jon Garmendia
    Group 1  1066 pub  Sawtelle                                                  High Desert League                 Esteban Téllez
-   Group 2  1035 priv St. Catherine College Prep                                Confluence Athletic Association    St. Catherine College Prep
+   Group 2  1035 pub  Lizarra                                                   Confluence Athletic Association    St. Catherine College Prep
 
 Alder Flat — 1 program (San Marcos County, Sebastian Cape)
     1A   144 pub  Coast Prairie                                             South Coast League                 Coast Prairie
@@ -685,7 +677,7 @@ Belyakov — 29 programs (Vance County, Boise Frontier)
     7A  1527 pub  Jacmel                                                    Timber Valley League               St. Agnes Academy
     7A  1376 pub  Bellefontaine                          Bellefontaine      Timber Valley League               Orchard Gate
     7A  1370 pub  Morne Rouge                            Morne Rouge        Timber Valley League               Lorraine Calder
-    6A  1297 pub  Saint Marc                             Saint Marc         Cascade Divide League              Mikhail Sidorov
+    6A  1297 pub  Cap Rouge                              Saint Marc         Cascade Divide League              Mikhail Sidorov
     6A  1184 pub  Savane Brulee                          Savane Brulee      Black Canyon League                Coyote Draw
     6A  1181 pub  Bois Neuf                              Bois Neuf          Cascade Divide League              Orchard Gate North
     6A  1087 priv Lycee Valmont                          Valmont            Cascade Divide League              Belyakov River Plain North
@@ -1003,7 +995,7 @@ Echevarria — 8 programs (Vance County, Silver Basin)
    Group 1  1729 pub  Red Bluff                                                 Metro League                       Echevarria I-50 Technical
    Group 2  1019 pub  Copper Belt                                               Dual County League                 Harold Tillman
    Group 2   906 pub  Echevarria                                                Dual County League                 Harold Tillman North
-   Group 2   730 priv St. Elias College Prep                                    Dual County League                 St. Elias College Prep
+   Group 2   730 pub  Aranaz                                                    Dual County League                 St. Elias College Prep
 
 Echo — 1 program (Umatilla County, Blue Mountain Country)
     2A   120 pub  Echo                                                      Snake River District               Echo High
@@ -1153,7 +1145,7 @@ Garrow — 7 programs (Kernwood County, Yarrowmere)
     9A  2343 pub  Jimmy Carter                                              Gold Valley League                 Jimmy Carter
     5A   956 pub  Garrow                                                    Mariners League                    Garrow
     4A   776 pub  Cottonrock Point                                          Vermilion Valley League            Cottonrock Point
-    3A   464 priv St. Veronica                                              Quarry League                      St. Veronica
+    3A   464 pub  Yarrowfield                                               Quarry League                      St. Veronica
     3A   455 pub  Garrow North                                              Quarry League                      Presentation Academy
     3A   447 priv All Saints Episcopal                                      Assay Athletic Association         All Saints Episcopal
     2A   256 pub  Ferraro                                                   Marble Valley League               Bishop Ferraro
@@ -1256,7 +1248,7 @@ Harriman — 16 programs (Emigrant County, Kangas)
 Harrow — 3 programs (Emigrant County, Kangas)
    Group 2   913 pub  New Boston                                                High Lakes League                  Harrow School of Design and Engineering
    Group 2   553 pub  Harrow                                                    Vesterheim Athletic Association    Harrow
-   Group 2   412 priv St. Brigid                                                High Lakes League                  St. Brigid School
+   Group 2   412 pub  Kuopio                                                    High Lakes League                  St. Brigid School
 
 Haverly — 2 programs (Camas County, Ashbury Metro)
     3A   512 pub  Katherine Johnson                                         Timber Valley League               Katherine Johnson
@@ -1678,7 +1670,7 @@ Norview — 3 programs (Marlow County, Ashbury Metro)
     5A   858 pub  Grace Lee Boggs                                           Ambassador League                  Grace Lee Boggs
 
 Novak — 3 programs (Tamarack County, Cascade Divide)
-    3A   446 priv St. Sergius                                               Juniper League                     Soren Ekström
+    3A   446 pub  Alderpoint                                                Juniper League                     Soren Ekström
     3A   394 pub  Novak                                                     Rim Country League                 Novak
     2A   208 pub  John Lewis                                                Valle Vista League                 John Lewis
 
@@ -2004,7 +1996,7 @@ San Borondón — 29 programs (San Marcos County, Sebastian Cape)
     4A   605 pub  Biloxi Heights                         Biloxi             Mission League                     Adela Robles
     4A   598 pub  Tallulah Canyon                        Tallulah           Mission League                     Blackbird Canyon
     2A   359 pub  Pointe des Brumes                      Pointe des Brumes  Del Rey Athletic Association       Naomi Langston North
-    1A   306 priv St. Jerome Academy                                        South Coast League                 St. Jerome Academy
+    1A   306 pub  Isla Verde                                                South Coast League                 St. Jerome Academy
     1A   100 pub  Playa Honda                            Pointe Coupee      South Coast League                 Vernon Moss
 
 San Cordero — 14 programs (Tamarack County, Cascade Divide)
@@ -2127,7 +2119,7 @@ Spring Harvest — 1 program (Box Elder County, Bear River Country)
    Group 2   698 pub  Spring Harvest                                            Forks League                       Spring Harvest
 
 St. Elian — 1 program (Ferris County, Gold Valley)
-    2A   224 pub  St. Elian                                                 Marble Valley League               St. Elian
+    2A   224 pub  Elian                                                     Marble Valley League               St. Elian
 
 St. Varian — 5 programs (Marlow County, Ashbury Metro)
     9A  2516 pub  Commonwealth                                              Ironwood League                    Commonwealth
@@ -2249,7 +2241,7 @@ Tunnel Diggings — 7 programs (Goldbank County, Southern Jefferson)
     2A   354 pub  Alben Barkley                                             Sluice League                      Alben Barkley
     3A   330 priv Goldbank Hall                                             Assay Athletic Association         Goldbank Hall
     2A   244 priv Bethel Christian                                          Sluice League                      Bethel Christian
-    1A   127 priv St. Cecilia Academy                                       Marble Valley League               St. Cecilia Academy
+    1A   127 pub  Quartzburg                                                Marble Valley League               St. Cecilia Academy
 
 Tunnelton — 1 program (Goldbank County, Southern Jefferson)
     3A   437 pub  Tunnelton                                                 Assay Athletic Association         Tunnelton
