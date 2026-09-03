@@ -375,7 +375,7 @@ FORMER_NAMES = {
     "Amelia Freeman":                              "Nanticoke",
     "Amelia Freeman North":                        "Casco",
     "Amos Cross":                                  "Lyndon B. Johnson",
-    "Amos Moss":                                   "St. Francis Catholic",
+    "Amos Moss":                                   "Robledo",
     "Ander Aramburu":                              "Western Sky",
     "Ander Arrieta":                               "Bolinas",
     "Andrew Jackson North":                        "Chaparral",
@@ -703,7 +703,7 @@ FORMER_NAMES = {
     "Millport":                                    "Vonjo City",
     "Millview":                                    "Kuusamo",
     "Miren Elorriaga":                             "Pennsauken",
-    "Miren Garmendia":                             "Cardinal Newman",
+    "Miren Garmendia":                             "Ibarra",
     "Mission Terrace North":                       "Ortega Terrace",
     "Moriarty Foundry High":                       "Windmill Ridge",
     "Mother Lode":                                 "Siskiyou Valley",
@@ -866,9 +866,9 @@ FORMER_NAMES = {
     "St. Casimir High School North":               "Casimir Creek",
     "St. Casimir Preparatory":                     "Brightwater",
     "St. Dominic Academy":                         "Wildrye",
-    "St. Elias":                                   "Tidewater Catholic",
+    "St. Elias":                                   "Tidewater",
     "St. Elias Academy":                           "Port Ainsley",
-    "St. Elias School":                            "Tidewater Catholic",
+    "St. Elias School":                            "Tidewater",
     "St. Francis Xavier":                          "Pomar Union",
     "St. Francis Xavier College Prep":             "Pomar Union",
     "St. Francis Xavier Preparatory":              "Clarendon",
@@ -944,11 +944,11 @@ FORMER_NAMES = {
     "Vasquez":                                     "Fruitvale",
     "Vasquez North":                               "Fontainebleau",
     "Vernal Falls":                                "Tippah",
-    "Vernon Moss":                                 "Pointe Coupee Catholic",
+    "Vernon Moss":                                 "Playa Honda",
     "Vernon Moss North":                           "Harmony",
     "Vesper Polytechnic Institute":                "Funtsville",
     "Vessey Junction-Tailingford Union":           "Tailingford Union",
-    "Viktor Antonov":                              "Archbishop Valois",
+    "Viktor Antonov":                              "Verrettes",
     "Viktor Antonov North":                        "Bois Rouge",
     "Viktor Gromov":                               "Armour Fields",
     "Viktor Kareva":                               "Cedar Point",
@@ -985,6 +985,12 @@ FORMER_NAMES = {
 }
 
 RENAMES = {
+    # 2026-09 — the owner lifted the state-title protection on these two;
+    # their display name WAS their roster identity, so without a row here the
+    # alias generator has no chain to walk and every season they won is
+    # unreachable. See the AAR on missing rename chains.
+    "St. Varian": "Varian",
+    "St. Agnes Academy": "Jacmel",
     # ‼️ THE 2065 SECULARISATION CHAINS (2026-09). These programs were
     # renamed while their display name WAS their roster identity, so they had
     # no row here — and `jhsaa_former_names.py` generates the alias table from
@@ -1264,7 +1270,7 @@ RENAMES = {
     "Sofia Romanov North": "Cheney",
     "St. Brigid School": "St. Brigid",
     "St. Casimir High School": "Harriman Lyceum",
-    "St. Elias School": "Tidewater Catholic",
+    "St. Elias School": "Tidewater",
     "St. Helena School": "Saltmarsh",
     "St. Sophia School": "North Wind",
     "St. Teresa High School": "St. Teresa",
@@ -1350,12 +1356,12 @@ RENAMES = {
     "Edith Hart": "Bellarmine Prep",                 # 8A — Prep, never Preparatory
     "Nicolás Treviño": "Valera",              # 7A — Jefferson surname
     "Harlan Tillman": "Xavier College Prep",         # 7A Mercer City
-    "Amos Moss": "St. Francis Catholic",             # 7A Ashbury
+    "Amos Moss": "Robledo",             # 7A Ashbury
     "Nikolai Markov": "Christian Brothers",          # 7A Sebastian Cape
-    "Vernon Moss": "Pointe Coupee Catholic",               # 6A — Jefferson surname
+    "Vernon Moss": "Playa Honda",               # 6A — Jefferson surname
     "Naomi Ellison": "Starfield",          # 6A Gold Valley
     "Jon Garmendia": "Pope Leo XIV",                 # 6A Halbrook Basin
-    "Viktor Antonov": "Archbishop Valois",           # 5A — Jefferson surname
+    "Viktor Antonov": "Verrettes",           # 5A — Jefferson surname
     "Marcus Mercer": "Evenfall",            # 5A Vespertine
     "Nathaniel Gaines": "St. Catherine Academy",     # 5A Ashbury
     "Andrés Valera": "Basalt Electric",               # 4A — Jefferson surname
@@ -1372,7 +1378,7 @@ RENAMES = {
     # archetypes.json). It exists to stop the private layer being Catholic prep and
     # evangelical academy and nothing else.
     "Xabier Arregui": "Sinkford",                    # 3A Navrang, Juniper Highlands
-    "Miren Garmendia": "Cardinal Newman",            # 3A Homecroft
+    "Miren Garmendia": "Ibarra",            # 3A Homecroft
     "Janice Bennett": "Calvary Christian",           # 3A Alderwold
     # ‼️ THREE CALVARY CHAPELS IN THREE TOWNS (owner, 2026-08): "that's confusing
     # for a private school". A public school named for its town repeats happily —
@@ -1909,11 +1915,11 @@ INSTITUTION_NAMES = [
 # name, like `MASCOTS` and `COLORS` — see the emit block in `build`.
 PRIVATE_SCHOOLS = {
     "Mater Dei", "Jesuit", "Notre Dame", "Archbishop Gregory",
-    "Sacred Heart", "Bellarmine Prep", "Xavier College Prep", "St. Francis Catholic", "Christian Brothers",
+    "Sacred Heart", "Bellarmine Prep", "Xavier College Prep", "Robledo", "Christian Brothers",
     "Cardinal Mercier", "Pope Leo XIV",
-    "Archbishop Valois", "St. Catherine Academy",
+    "Verrettes", "St. Catherine Academy",
     "Cardinal Echevarria", "De La Salle", "Sinkford",
-    "Cardinal Newman", "Calvary Christian", # Converted from public by owner decision, 2026-08.
+    "Ibarra", "Calvary Christian", # Converted from public by owner decision, 2026-08.
     "Westfield Friends", "Star Hollow",
     # Converted with the locality redistribution (owner spec, 2026-08).
     "Belmonte Collegiate",
@@ -2102,7 +2108,7 @@ LOCALITIES = {
     "Rutherford Hayes":                      "Wethersfield",
     "Severn":                                "Severn",
     "Swiss Hills Prep":               "Brandywine",
-    "Tidewater Catholic":                    "Tidewater",
+    "Tidewater":                    "Tidewater",
     "George Washington":                     "Taunton",
     "Wicomico":                              "Wicomico",
     "William Henry Harrison":                "Rappahannock",
@@ -2118,7 +2124,7 @@ LOCALITIES = {
     "Natchez Prep":                          "Natchez",
     "Natchitoches":                          "Natchitoches",
     "Brightwater":                 "Natchitoches",
-    "Pointe Coupee Catholic":                "Pointe Coupee",
+    "Playa Honda":                "Pointe Coupee",
     "Pointe Coupee":                 "Pointe Coupee",
     "Pointe des Brumes":                     "Pointe des Brumes",
     "Talladega":                             "Talladega",
@@ -2245,7 +2251,7 @@ RECLASSIFY_2039 = {
     "Fletcher-Garrison Hall": "3A", "Valley Christian": "6A",
     "Vesper": "1A",
     "Bravewoman": "1A", "Orchardgate": "1A",
-    "Ansotegui Siding": "1A", "Pointe Coupee Catholic": "1A",
+    "Ansotegui Siding": "1A", "Playa Honda": "1A",
     "Riviere Salee": "1A", "Aspen Hollow": "1A", "Belmonte South": "1A",
     "Northrup Tech": "1A", "St. Lucia Academy": "1A",
     "St. Norbert Abbey": "1A",
@@ -2868,19 +2874,19 @@ MASCOTS = {
     "Bellarmine Prep": "Lions",
     "Valera": "Bulldogs",
     "Xavier College Prep": "Cavaliers",
-    "St. Francis Catholic": "Lancers",
+    "Robledo": "Lancers",
     "Christian Brothers": "Falcons",
-    "Pointe Coupee Catholic": "Mustangs",
+    "Playa Honda": "Mustangs",
     "Starfield": "Celtics",
     "Pope Leo XIV": "Pilgrims",
-    "Archbishop Valois": "Knights",
+    "Verrettes": "Knights",
     "Evenfall": "Warriors",
     "St. Catherine Academy": "Wildcats",
     "Basalt Electric": "Matadors",
     "De La Salle": "Spartans",
     "Michaela East": "Eagles",
     "Sinkford": "Chanticleers",                 # the odd one, deliberately
-    "Cardinal Newman": "Cardinals",
+    "Ibarra": "Cardinals",
     "Calvary Christian": "Chargers",
     "Windward": "Stars",           # Stella Maris, star of the sea
     "South Rim": "Cougars",
