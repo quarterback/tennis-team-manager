@@ -1227,10 +1227,43 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     varsity's geography-first `_nondistrict_pairs` (median gap 0.0 OVR vs 4.2-5.2):
     travel is not a real cost in a simulation and a JV player facing their own level is
     the entire point. Classification is deliberately NOT a gate.
-  - **NO *TEAM* PLAYOFFS** (asked directly, 2026-08): a bracket needs a ranking to seed it and
-    JV has none by design; a JV team is a ladder slice rather than a standing squad, so
-    the squad that qualified need not be the squad that plays; and the elastic format means a semifinal and a final could be
-    different shapes. More showcase weekends are the shape that works.
+  - **‼️ THE JV TEAM STATE TOURNAMENT — a PILOT from 2068 (JHSAA rule 2026-09,
+    `app/jhsaa_jv_state.py`, `jhsaa.JV_STATE_FROM`).** This REVERSES the "no JV team
+    playoffs" answer given in 2026-08, and each of that answer's three objections was
+    real and is answered rather than waved off. *"A bracket needs a ranking and JV has
+    none"* — JV has no TOSS, awards or ladder credit, but `JVTeam` has always carried
+    `wins`/`losses`/`ties` and `points_for`/`against`: a RECORD exists, and every
+    seeding here runs on it and never on ability (pinned). *"A JV team is a ladder
+    slice, so the squad that qualified need not be the squad that plays"* — eligibility
+    FREEZES at the start of the JV postseason, the varsity anti-stacking device
+    arriving by another door. *"The elastic format means two rounds could be different
+    shapes"* — ONE shape for the whole event.
+    - **‼️ AND THAT SHAPE HAD TO BE ODD.** Three of the eight `JV_FORMATS` have an even
+      court count and `jv_outcome` really does return draws (~0.24% of JV duals; 2S/2D
+      is a fifth of the league slate). A bracket cannot advance a tie and this
+      association has no tie-break anywhere by design, so **5 courts — S1/S2/S3 +
+      D1/D2, first to 3, seven players on court and eight named** is not a stylistic
+      pick. Measured: 3S/2D needs 7 spare, which ~63% of boys' and ~60% of girls'
+      programs have; a 7-court card would have cut that to ~27%.
+    - **Statewide and CLASSLESS**, one bracket a gender: district qualification →
+      regional championship → a state qualifying round → a 16-team State Championship.
+      District berths by how many JV teams the league fielded (2-5 → 1, 6-9 → 2,
+      10-15 → 3, 16+ → 4), earned over the season rather than in a district bracket.
+    - **‼️ THE TWENTY REGIONS ARE THE GEOGRAPHIC AREAS**, not the varsity road's
+      Regionals — those are numbered per CLASSIFICATION and this event has none, so a
+      per-class unit would mean nothing here. There are exactly 20 areas, which is what
+      the spec's "existing 20 JHSAA regions" names.
+    - **The 20 regional champions rank statewide**; seeds 1-12 go straight to State and
+      13v20 / 14v19 / 15v18 / 16v17 play in for the last four. Folded from the ranking,
+      never four typed pairs, so it stays correct at any region count.
+    - **Eligibility is ladder rank #12+ (`jv_pool`, the one cut — no second roster split
+      is invented) AND actual JV participation this season**, read off the `played` list
+      `play_jv_dual` already records. Split-time players fall out for free: eligible if
+      the frozen ladder has them at #12 or lower.
+    - **A YEAR GATE, NOT A FLAG** (`JV_STATE_FROM` 2068), the reason the 1A 2S/3D pilot
+      is gated on its class: archived seasons must keep reading as the years they were.
+      Seeded on blake2s. `tests/test_jhsaa_jv_state.py` runs a real JV season — an
+      empty-state check cannot see any rule in this event.
   - Cost: the week-0 rung goes **~5 → ~7 minutes** for both genders (+40%).
     `tests/test_jhsaa_jv.py`.
 - **‼️ THE JV INDIVIDUAL STATE TOURNAMENTS — two CLASSLESS draws a gender (owner rule
