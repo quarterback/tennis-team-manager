@@ -43,6 +43,30 @@ CREATE TABLE IF NOT EXISTS pro_signing (
   dest_school TEXT, dest_div TEXT,
   PRIMARY KEY (year, cycle, pid)
 );
+-- ‼️ THE TRANSFER STAMP (2026-09). `jhsaa_transfer_version()` used to SELECT and
+-- md5 every transfer row on every call, and it is called once per roster built —
+-- at 11,000 recorded moves that was ~20ms x 900 programs per full-gender build.
+-- These triggers maintain a one-row fingerprint instead, so the version is a
+-- single-row read. They live in the SCHEMA, not in the write helpers, so a direct
+-- INSERT (a script, a test, a repair) bumps it too — a stamp only a disciplined
+-- caller updates is a stale cache waiting to happen. `randomblob` makes every
+-- bump unique; the stamp row's own kind differs, so the WHEN clause never
+-- re-fires on it.
+CREATE TRIGGER IF NOT EXISTS jhsaa_transfer_stamp_ins AFTER INSERT ON roster_overrides
+  WHEN NEW.kind = 'jhsaa_transfer' BEGIN
+    INSERT OR REPLACE INTO roster_overrides (kind, key, value)
+      VALUES ('jhsaa_transfer_stamp', 'stamp', hex(randomblob(12)));
+  END;
+CREATE TRIGGER IF NOT EXISTS jhsaa_transfer_stamp_upd AFTER UPDATE ON roster_overrides
+  WHEN NEW.kind = 'jhsaa_transfer' OR OLD.kind = 'jhsaa_transfer' BEGIN
+    INSERT OR REPLACE INTO roster_overrides (kind, key, value)
+      VALUES ('jhsaa_transfer_stamp', 'stamp', hex(randomblob(12)));
+  END;
+CREATE TRIGGER IF NOT EXISTS jhsaa_transfer_stamp_del AFTER DELETE ON roster_overrides
+  WHEN OLD.kind = 'jhsaa_transfer' BEGIN
+    INSERT OR REPLACE INTO roster_overrides (kind, key, value)
+      VALUES ('jhsaa_transfer_stamp', 'stamp', hex(randomblob(12)));
+  END;
 """
 
 _schema_ready_for = None        # the DB_PATH the schema was last created for
@@ -379,8 +403,10 @@ def set_jhsaa_transfer(pid: str, from_school: str, gender: str, entry: int, seat
 
     Re-recording a move for a year that already has one REPLACES that entry — that is
     an edit of one decision, not a second move."""
-    rows = get_jhsaa_transfers()
-    rec = rows.get(pid) or {}
+    # ONE row, never the whole table: this is called once per line of a batch
+    # apply, and reading (and JSON-parsing) all 11k records per line made a
+    # 300-row Apply quadratic.
+    rec = get_jhsaa_transfer(pid) or {}
     moves = rec.get("moves")
     if moves is None:                       # legacy single-move record, or brand new
         moves = ([{"to": rec.get("to"), "year": rec.get("year")}]
@@ -403,7 +429,7 @@ def clear_jhsaa_transfer(pid: str, year: int | None = None) -> None:
     record left with no moves is deleted outright rather than kept as a row that says
     a player transferred nowhere. Without it, drop the whole history."""
     if year is not None:
-        rec = get_jhsaa_transfers().get(pid)
+        rec = get_jhsaa_transfer(pid)
         if rec is not None:
             moves = rec.get("moves")
             if moves is None:
@@ -425,9 +451,24 @@ def clear_jhsaa_transfer(pid: str, year: int | None = None) -> None:
     conn.commit(); conn.close()
 
 
-def jhsaa_transfer_version() -> str:
-    """Fingerprint of the transfer table — rosters are generated from it, so the
-    JHSAA season cache has to fall when it changes, same as archetype/play-up."""
+def get_jhsaa_transfer(pid: str) -> dict | None:
+    """One player's transfer record, or None — a single-row read for the write
+    helpers, which must never pay for the whole ledger per call."""
+    conn = _db()
+    row = conn.execute("SELECT value FROM roster_overrides WHERE kind='jhsaa_transfer'"
+                       " AND key=?", (pid,)).fetchone()
+    conn.close()
+    if not row or not row[0]:
+        return None
+    try:
+        return json.loads(row[0])
+    except (TypeError, ValueError):
+        return None
+
+
+def _jhsaa_transfer_hash() -> str:
+    """The pre-stamp fingerprint: every row, hashed. Kept ONLY to seed the stamp on
+    a save written before the triggers existed — never call it per read."""
     import hashlib
     conn = _db()
     rows = conn.execute("SELECT key, value FROM roster_overrides WHERE kind='jhsaa_transfer'"
@@ -437,6 +478,45 @@ def jhsaa_transfer_version() -> str:
     for r in rows:
         h.update(repr(tuple(r)).encode())
     return h.hexdigest()
+
+
+def jhsaa_transfer_version() -> str:
+    """Fingerprint of the transfer table — rosters are generated from it, so the
+    JHSAA season cache has to fall when it changes, same as archetype/play-up.
+
+    ‼️ A ONE-ROW READ. It is resolved once per roster built (and the transfer
+    page, the pid index and the season cache all key on it), so it has to cost
+    what a memo key can afford. The schema's triggers rewrite the stamp row on
+    every insert/update/delete of a transfer row, whatever wrote it. A save from
+    before the triggers has no stamp: seed it from the full hash ONCE (a write
+    from a read path, so it tolerates a locked database — the next call simply
+    hashes again until it can be written)."""
+    conn = _db()
+    row = conn.execute("SELECT value FROM roster_overrides WHERE kind='jhsaa_transfer_stamp'"
+                       " AND key='stamp'").fetchone()
+    conn.close()
+    if row and row[0]:
+        return row[0]
+    stamp = _jhsaa_transfer_hash()
+    # ‼️ NEVER REPLACE. Two threads can both see the missing stamp while a
+    # transfer write lands between them: the trigger stamps the edit, and a
+    # REPLACE here would put the pre-edit hash back over it — a hash that may
+    # already key `_transfer_cache`, so roster builds would keep reading the
+    # old ledger until the next write. Seed only if still absent, then read
+    # back whichever stamp won.
+    try:
+        conn = _db()
+        conn.execute("INSERT OR IGNORE INTO roster_overrides (kind, key, value)"
+                     " VALUES ('jhsaa_transfer_stamp', 'stamp', ?)", (stamp,))
+        conn.commit()
+        row = conn.execute("SELECT value FROM roster_overrides WHERE kind='jhsaa_transfer_stamp'"
+                           " AND key='stamp'").fetchone()
+        conn.close()
+        if row and row[0]:
+            return row[0]
+    except Exception:
+        pass
+    return stamp
 
 
 # --- Dynamic prestige momentum (YoY drift from on-court overperformance) ------

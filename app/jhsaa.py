@@ -1707,6 +1707,13 @@ def jv_strength(ts: TeamSeason) -> float:
 _schools_cache: dict | None = None
 _playup_cache: dict = {}
 _transfer_cache: dict = {}
+# (version, year) -> the ENROLLED slice of the ledger + its inbound index; see
+# `enrolled_transfers`. Dropped whenever `_transfer_map` re-reads the table.
+_transfer_year_cache: dict = {}
+# (salt, pid) -> the mover's name. A pid names one person for the life of a save,
+# so this is never invalidated by a transfer edit — only by `reset_schools()`,
+# because the name draw is era-gated.
+_transfer_name_cache: dict = {}
 _family_cache: dict = {}
 # The BUILT School objects, keyed (gender, play-up version). `_schools_cache` above is
 # only the raw JSON; rebuilding the objects is what used to be free and is not any
@@ -1817,6 +1824,7 @@ def reset_schools() -> None:
     _career_era_cache.clear()
     _expo_cache.clear()
     _expo_world.clear()
+    _transfer_name_cache.clear()
     global _former_cache
     _former_cache = None
 
@@ -2401,6 +2409,7 @@ def _transfer_map(version: str) -> dict:
     from app import overrides as ov
     fresh = ov.get_jhsaa_transfers()
     _transfer_cache.clear()
+    _transfer_year_cache.clear()          # derived from the map: falls with it
     _transfer_cache[version] = fresh
     return fresh
 
@@ -2477,41 +2486,129 @@ def transfer_school(rec: dict | None, season_year: int) -> str:
     return where
 
 
-def transfer_rows() -> list[dict]:
-    """Every recorded transfer, with the mover's NAME resolved for display — the
-    list the `/jhsaa/transfers` board reads. Player identity is regenerated (same
-    rng draws as `build_roster`) rather than stored, same as everywhere else in
-    JHSAA; the record itself carries no name."""
+def is_enrolled(rec: dict, season_year: int) -> bool:
+    """Whether the record's player is in high school in `season_year` — grades
+    9-12 are the four seasons from their entry year."""
+    entry = rec.get("entry")
+    return isinstance(entry, int) and entry <= season_year <= entry + len(GRADES) - 1
+
+
+def enrolled_transfers(season_year: int) -> tuple[dict, dict]:
+    """The slice of the ledger that can touch a roster in `season_year`, memoised
+    per (table version, year):
+
+      * `active`  — {pid: rec} for every mover still ENROLLED that season
+      * `inbound` — {(gender, school): [(pid, rec), …]} for the movers who are
+        away from their origin that season, keyed by where they are
+
+    ‼️ A TRANSFER STOPS MATTERING WHEN THE PLAYER GRADUATES (owner, 2026-09).
+    `build_roster` used to walk the WHOLE ledger once per program — every move
+    ever recorded, 40 seasons of them — asking each record whether it lands on
+    this roster this year. On an 11,000-move save that was 11,000 dict walks per
+    roster, ~900 rosters per gender build, and the answer for the ~95% of records
+    whose player left years ago was always no. Only the four enrolled cohorts can
+    be on any roster, and only records whose player is somewhere other than
+    their origin can be INBOUND anywhere, so both lookups are cut once per season
+    here and every roster build reads its own school's list. Everything a build
+    reads for an ARCHIVED season (a player card, a history page) is the slice for
+    THAT year, so old seasons still regenerate exactly as they were played."""
+    from app import overrides as ov
+    key = (ov.jhsaa_transfer_version(), season_year)
+    got = _transfer_year_cache.get(key)
+    if got is not None:
+        return got
+    full = _transfer_map(key[0])
+    active: dict = {}
+    inbound: dict = {}
+    for pid, rec in full.items():
+        if not is_enrolled(rec, season_year):
+            continue
+        active[pid] = rec
+        where = transfer_school(rec, season_year)
+        if where and where != rec.get("from"):
+            inbound.setdefault((rec.get("gender", ""), where), []).append((pid, rec))
+    out = (active, inbound)
+    # Bounded: a page walks a few seasons, a rung one. Never a global clear
+    # (a career page loops a player's four years — the quadratic-recompute rule).
+    if len(_transfer_year_cache) > 16:
+        for k in [k for k in _transfer_year_cache if k[0] != key[0]]:
+            _transfer_year_cache.pop(k, None)
+    _transfer_year_cache[key] = out
+    return out
+
+
+def _seat_name(school: School, entry: int, seat: int, salt: str) -> str:
+    """The name `_gen_seat` would give this seat — the same rng, the same single
+    draw, and NOTHING else: no attributes, no career model, no prospect. The
+    ledger only needs to print who moved, and regenerating a whole Prospect per
+    row (~2 ms) was most of what made the transfers page cost seconds."""
+    rng = random.Random(f"{salt}|jhsaa|{school.key}|{entry}|{seat}")
+    return _draw_name(rng, school, entry)[0]
+
+
+def transfer_ledger() -> list[dict]:
+    """Every recorded move as a row — ONE ROW PER MOVE, not per player: the
+    ledger is the record of what happened, and a career with three schools
+    happened three times. Each row's `from` is where they were BEFORE that move
+    (the previous destination, or the origin for the first), which is the only
+    reading that makes a multi-move career legible — and the only one where a
+    move back to the old school does not read as a move from itself.
+
+    Names are NOT resolved here (`name` is ""): that is the one per-row cost
+    worth paying only for the rows a page actually shows —
+    `resolve_transfer_names`. Cheap enough to call on every page load at any
+    ledger size (a dict walk, no generation, no per-row database read)."""
     rows = []
     for pid, rec in transfers().items():
-        gender = rec.get("gender", "")
-        origin = next((s for s in load_schools(gender) if s.name == rec.get("from")), None)
-        name = ""
-        if origin is not None:
-            entry = rec.get("entry")
-            # `grade` only steers maturity/talent in `_gen_seat`, not identity or pid
-            # (both keyed on entry+seat alone) — 9 is an arbitrary valid choice here,
-            # this call exists only to read the name back off the regenerated Prospect.
-            mod = _program_mod(origin, 0, "")
-            p = _gen_seat(origin, mod, entry, rec.get("seat"), 9, "")
-            if p.pid == pid:
-                name = p.name
-        # ‼️ ONE ROW PER MOVE, not per player: the ledger is the record of what
-        # happened, and a career with three schools happened three times. Each row's
-        # `from` is where they were BEFORE that move (the previous destination, or
-        # the origin for the first), which is the only reading that makes a
-        # multi-move career legible — and the only one where a move back to the old
-        # school does not read as a move from itself.
         moves = transfer_moves(rec)
         where = rec.get("from")
         for i, m in enumerate(moves):
-            rows.append({"pid": pid, "name": name or "(unresolved)", "gender": gender,
+            rows.append({"pid": pid, "name": "", "gender": rec.get("gender", ""),
                          "from": where, "to": m.get("to"), "year": m.get("year"),
                          "entry": rec.get("entry"), "origin": rec.get("from"),
+                         "seat": rec.get("seat"),
                          "step": i + 1, "steps": len(moves)})
             where = m.get("to")
+    rows.sort(key=lambda r: (-(r["year"] or 0), r["pid"]))
+    return rows
+
+
+def resolve_transfer_names(rows: list[dict], salt: str) -> list[dict]:
+    """Fill `name` on ledger rows (in place; returned for chaining) and re-sort
+    them by season then name. Player identity is regenerated rather than stored,
+    same as everywhere else in JHSAA — but only the NAME draw (`_seat_name`), and
+    memoised per (salt, pid) because a pid names one person for the life of a
+    save. `salt` MUST be the world's real salt: the name draw is salted while the
+    pid is not, so the wrong salt resolves the same pid to a different person and
+    prints a stranger's name (`_resolve_member`'s documented trap — the old
+    ledger did exactly this with a hard-coded "")."""
+    by_name: dict = {}
+    for r in rows:
+        if r.get("name"):
+            continue
+        ck = (salt, r["pid"])
+        name = _transfer_name_cache.get(ck)
+        if name is None:
+            g = r["gender"]
+            if g not in by_name:
+                by_name[g] = {s.name: s for s in load_schools(g)} if g else {}
+            origin = by_name[g].get(r["origin"])
+            name = ""
+            entry, seat = r.get("entry"), r.get("seat")
+            if (origin is not None and isinstance(entry, int) and isinstance(seat, int)
+                    and make_pid("jhsaa", origin.ident, origin.gender, entry, seat) == r["pid"]):
+                name = _seat_name(origin, entry, seat, salt)
+            _transfer_name_cache[ck] = name
+        r["name"] = name or "(unresolved)"
     rows.sort(key=lambda r: (-(r["year"] or 0), r["name"]))
     return rows
+
+
+def transfer_rows(salt: str = "") -> list[dict]:
+    """Every recorded transfer with the mover's name — the whole ledger. Fine for
+    a test or a script; a PAGE should take `transfer_ledger()` and resolve names
+    only for the rows it renders."""
+    return resolve_transfer_names(transfer_ledger(), salt)
 
 
 # --- batch transfers (owner tool, 2026-08) ------------------------------------
@@ -2550,24 +2647,50 @@ def roster_pid_index(gender: str, year: int, salt: str = "") -> dict:
     the transfer fingerprint is resolved ONCE here, never per row."""
     from app import overrides as ov
     from .dbpath import resolve_db_path
-    key = (resolve_db_path(), gender, year, salt, ov.jhsaa_transfer_version())
+    version = ov.jhsaa_transfer_version()
+    key = (resolve_db_path(), gender, year, salt)
     got = _pid_idx_cache.get(key)
-    if got is not None:
-        return got
+    if got is not None and got["version"] == version:
+        return got["idx"]
     with _build_lock(key):
         got = _pid_idx_cache.get(key)        # a waiter finds it published
-        if got is not None:
-            return got
-        idx = {}
-        for school in load_schools(gender):
+        if got is not None and got["version"] == version:
+            return got["idx"]
+        # ‼️ INCREMENTAL ACROSS TRANSFER EDITS (2026-09). The key used to carry
+        # the transfer fingerprint, so every Move, Cancel and Apply threw the
+        # whole index away and the next page load re-generated every roster in
+        # the association (~12s a gender) — in the owner's workflow that is
+        # every batch, all offseason. A transfer only changes the rosters of the
+        # schools it NAMES (origin, every destination — `build_roster` reads no
+        # other record for a school), so an index built at one version is
+        # patched to the next by rebuilding just those programs. Records of
+        # players not enrolled in `year` cannot touch it and are skipped.
+        recs = {pid: rec for pid, rec in transfers().items()
+                if rec.get("gender") == gender and is_enrolled(rec, year)}
+        schools = load_schools(gender)
+        if got is None:
+            idx: dict = {}
+            todo = schools
+        else:
+            old = got["recs"]
+            touched: set = set()
+            for pid in set(old) | set(recs):
+                if old.get(pid) != recs.get(pid):
+                    for rec in (old.get(pid), recs.get(pid)):
+                        if rec:
+                            touched.add(rec.get("from"))
+                            touched.update(m.get("to") for m in transfer_moves(rec))
+            idx = {pid: v for pid, v in got["idx"].items() if v[0] not in touched}
+            todo = [s for s in schools if s.name in touched]
+        for school in todo:
             for p in build_roster(school, year, salt):
                 idx[p.pid] = (school.name, p.entry_year, p.grade, p.name)
         # Prune THIS (db, gender)'s stale entries only — a global clear() would
         # evict the sibling gender between the two builds one batch call makes,
         # so every preview→apply round would pay all four builds again.
-        for k in [k for k in _pid_idx_cache if k[:2] == key[:2]]:
+        for k in [k for k in _pid_idx_cache if k[:2] == key[:2] and k != key]:
             _pid_idx_cache.pop(k, None)
-        _pid_idx_cache[key] = idx
+        _pid_idx_cache[key] = {"version": version, "recs": recs, "idx": idx}
     _build_lock_done(key)
     return idx
 
@@ -3436,6 +3559,35 @@ def _apply_career(p: Prospect, school_key: str, entry: int, seat: int,
     return p
 
 
+def _draw_name(rng: random.Random, school: School, entry: int) -> tuple[str, str]:
+    """The seat's (name, country) — ‼️ EXACTLY ONE draw off the main rng, in BOTH
+    eras: the name stream is a separate rng seeded off it, so widening the name
+    draw cannot shift a single talent/attribute roll for anyone, either side of
+    the cutover. Shared by `_gen_seat` (the roster) and `_seat_name` (the
+    transfer ledger, which needs the name and nothing else), so the two can never
+    disagree about who a seat is."""
+    from generators import make_name_picker
+    sex = "male" if school.gender == "boys" else "female"
+    nrng = random.Random(rng.randrange(1 << 30))
+    if entry >= name_era():
+        # New-era draw (owner rule 2026-08): frequency-weighted US head over the
+        # untouched curated pools, plus the exchange-student slices. ~90/5/5.
+        from generators import draw_us_weighted
+        roll = nrng.random()
+        if roll < NAME_V2_US:
+            nm, country = draw_us_weighted(nrng, sex)
+        elif roll < NAME_V2_US + NAME_V2_CANADA:
+            nm, country = make_name_picker(nrng, gender=sex,
+                                           region_weights={"canada": 1.0})()
+        else:
+            nm, country = make_name_picker(nrng, gender=sex,
+                                           region_weights=_intl_weights())()
+        return nm, (country or "US")
+    # Legacy draw, byte-identical — existing cohorts keep their exact names.
+    nm, _ = make_name_picker(nrng, gender=sex, region_weights={"us": 1.0})()
+    return nm, "US"
+
+
 def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
               salt: str, expo_years: dict | None = None) -> Prospect:
     """One seat's Prospect — pulled out of `build_roster` so a TRANSFER (see
@@ -3468,28 +3620,7 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
     if prng.random() < PRODIGY_RATE:
         lo2, hi2 = PRODIGY_MATURITY
         maturity = (max(maturity[0], lo2), max(maturity[1], hi2))
-    # ‼️ EXACTLY ONE draw off the main rng, in BOTH eras — the name stream is a
-    # separate rng seeded off it, so widening the name draw cannot shift a single
-    # talent/attribute roll for anyone, either side of the cutover.
-    nrng = random.Random(rng.randrange(1 << 30))
-    if entry >= name_era():
-        # New-era draw (owner rule 2026-08): frequency-weighted US head over the
-        # untouched curated pools, plus the exchange-student slices. ~90/5/5.
-        from generators import draw_us_weighted
-        roll = nrng.random()
-        if roll < NAME_V2_US:
-            nm, country = draw_us_weighted(nrng, sex)
-        elif roll < NAME_V2_US + NAME_V2_CANADA:
-            nm, country = make_name_picker(nrng, gender=sex,
-                                           region_weights={"canada": 1.0})()
-        else:
-            nm, country = make_name_picker(nrng, gender=sex,
-                                           region_weights=_intl_weights())()
-        country = country or "US"
-    else:
-        # Legacy draw, byte-identical — existing cohorts keep their exact names.
-        nm, _ = make_name_picker(nrng, gender=sex, region_weights={"us": 1.0})()
-        country = "US"
+    nm, country = _draw_name(rng, school, entry)
     # ‼️ Always generated AS "US": `generate_prospect` branches on country (talent
     # shift, elite roll, academics, hometown path) and consumes the rng differently,
     # so passing the exchange student's country would shift every attribute roll.
@@ -3604,12 +3735,15 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     eligibility/search logic — the table just says who plays where and when.
     """
     mod = _program_mod(school, year, salt)
-    # Resolved ONCE per roster build, not per seat — `transfers()` re-resolves the
-    # override table's fingerprint on every call, which is a SQLite connect+query
-    # even on a cache hit (the playup-fingerprint trap, `AAR-jhsaa-playup-fingerprint
-    # -query-storm.md`). A season builds 1,600+ rosters; per-seat would multiply that
-    # by every seat on every one of them.
-    tmap = transfers()
+    # Resolved ONCE per roster build, not per seat — the override table's
+    # fingerprint is a SQLite connect+query even on a cache hit (the
+    # playup-fingerprint trap, `AAR-jhsaa-playup-fingerprint-query-storm.md`). A
+    # season builds 1,600+ rosters; per-seat would multiply that by every seat.
+    # ‼️ And only the ENROLLED slice of the ledger (`enrolled_transfers`): every
+    # pid this build generates has an entry year inside this season's four
+    # grades, so the slice answers the outbound question exactly, and the inbound
+    # list is this school's own — never a walk over every move ever recorded.
+    tmap, inbound = enrolled_transfers(year)
     # The three seasons a four-grade roster can have already played, resolved
     # ONCE per build and threaded down (never per seat — the query-storm rule).
     # ‼️ Deliberately NOT passed to the transfer paths below: a mover's prior
@@ -3648,17 +3782,14 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     # would append a boys' mover to the girls' roster of the same name and vice
     # versa — `_gen_seat` would then place an origin-gender Prospect straight onto
     # the opposite-gender team.
-    for pid, rec in tmap.items():
-        if rec.get("gender") != school.gender:
-            continue
-        # ‼️ AND NEVER PULL SOMEBODY THIS SCHOOL ALREADY GENERATED. A player whose
-        # moves bring them back to their ORIGIN is produced by the seat loop above
-        # (which no longer skips them), so adding them here too would put the same
-        # person on the roster twice — the one new failure a multi-move history can
-        # cause, and it would read as a phantom team-mate rather than as a bug.
-        if (transfer_school(rec, year) != school.name
-                or rec.get("from") == school.name):
-            continue
+    # `inbound` is keyed by (gender, school) on where `transfer_school` puts the
+    # player THIS season, and holds only records whose player is away from their
+    # origin — so the gender match, the "is it here" test and the "never pull
+    # somebody this school already generated" guard (a player whose moves bring
+    # them back to their ORIGIN is produced by the seat loop above, which no
+    # longer skips them; adding them here too would roster the same person
+    # twice) are all properties of the list, not checks per record.
+    for pid, rec in inbound.get((school.gender, school.name), ()):
         entry = rec.get("entry")
         grade = year - entry + 9
         if grade not in GRADES:

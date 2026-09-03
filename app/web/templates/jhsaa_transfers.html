@@ -24,13 +24,18 @@
    every season since). The ACTIVE tab is the one the request is about: a batch
    POST lands on Batch, a candidates search on Candidates, otherwise the tools
    come first — never a wall of history. #}
+{# `rows` is every PENDING move plus the ONE season of history picked by `hy`
+   (server-side — `_jh_transfer_ledger`): a deep save's all-time ledger is
+   thousands of moves nobody is reading, and rendering them was most of the
+   page. `past_total` is the whole history's size; `hist_years` its seasons. #}
 {% set pending = rows | selectattr('year', 'ge', next_year or 0) | list if next_year else [] %}
 {% set past = rows | rejectattr('year', 'ge', next_year or 0) | list if next_year else rows %}
 {% set batch_tab = ('batch', 'Batch import', 0) %}
 {% set cand_tab = ('cand', 'Candidates', candidates|length if candidates is not none else 0) %}
 {% set pend_tab = ('pending', 'Pending', pending|length) %}
-{% set hist_tab = ('history', 'History', past|length) %}
-{% if report is not none %}{% set panes = [batch_tab, cand_tab, pend_tab, hist_tab] %}
+{% set hist_tab = ('history', 'History', past_total if past_total is defined else past|length) %}
+{% if hy_requested is defined and hy_requested %}{% set panes = [hist_tab, batch_tab, cand_tab, pend_tab] %}
+{% elif report is not none %}{% set panes = [batch_tab, cand_tab, pend_tab, hist_tab] %}
 {% elif candidates is not none %}{% set panes = [cand_tab, batch_tab, pend_tab, hist_tab] %}
 {% else %}{% set panes = [batch_tab, cand_tab, pend_tab, hist_tab] %}{% endif %}
 
@@ -228,14 +233,26 @@
   {# History is read-only: these moves are already baked into played, archived
      seasons, and clearing one would silently re-generate every roster since. #}
   <div class="jh-pane" data-pane="history"{{ ' hidden' if panes[0][0] != 'history' }}>
+    {% if hist_years is defined and hist_years %}
+    {# ‼️ ONE SEASON AT A TIME, SERVER-SIDE. History is every move ever recorded
+       and stops mattering the moment the player graduates, so the page renders
+       the season you pick and nothing else — the all-time list is thousands of
+       rows on a deep save and cost seconds to render for a tab nobody was on.
+       "All seasons" is still here for whoever wants the lot. #}
+    <form method="get" style="padding:9px 12px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <input type="hidden" name="u" value="{{ u }}">
+      <input type="hidden" name="g" value="{{ g }}">
+      <label>Season
+        <select name="hy" onchange="this.form.submit()">
+          {% for y in hist_years %}<option value="{{ y }}" {{ "selected" if hy == y|string }}>{{ y }}</option>{% endfor %}
+          <option value="all" {{ "selected" if hy == "all" }}>All seasons ({{ past_total }})</option>
+        </select></label>
+      <noscript><button type="submit" class="bl-pill">Show</button></noscript>
+    </form>
+    {% endif %}
     {% if past %}{% set pane = 'history' %}{% set src = past %}
-    {# ‼️ FILTERS AND SORT, NOT A SCROLL. One offseason is hundreds of moves,
-       alphabetical and all effective the same year, so a tab alone does not make
-       this readable. The dropdowns are built from the rows actually present, so
-       they never offer a school with nothing to show. All of it is client-side on
-       rows already rendered: the list is a few hundred, and a round trip per
-       keystroke — which would re-resolve every mover's NAME through `_gen_seat` —
-       costs far more than hiding rows. Deliberately NO result count (owner). #}
+    {# Search / from / to stay client-side on the rows already rendered — a
+       season is a few hundred moves. Deliberately NO result count (owner). #}
     <div style="padding:9px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <input type="search" class="jh-f-q" data-for="{{ pane }}"
              placeholder="Search player or school…" autocomplete="off"
@@ -248,10 +265,12 @@
         <option value="">To: any school</option>
         {% for n in src|map(attribute='to')|unique|sort %}<option value="{{ n }}">{{ n }}</option>{% endfor %}
       </select>
+      {% if hy == "all" %}
       <select class="jh-f-yr" data-for="{{ pane }}">
         <option value="">Any season</option>
         {% for y in src|map(attribute='year')|unique|sort %}<option value="{{ y }}">{{ y }}</option>{% endfor %}
       </select>
+      {% endif %}
     </div>
     {% endif %}
     <div class="tbl-scroll">

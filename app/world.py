@@ -4794,7 +4794,8 @@ def jhsaa_career_wins(world_id: int, gender: str, salt: str = "",
     # and merged into one pid-keyed career, oldest stint first ---
     careers: list[dict] = []
     claimed: set = set()
-    movers = {r["pid"]: r for r in _jh.transfer_rows()}
+    # Names off the ledger — the real salt, and only the name draw per mover.
+    movers = {r["pid"]: r for r in _jh.transfer_rows(salt)}
     for pid, rec in _jh.transfers().items():
         if rec.get("gender") != gender:
             continue
