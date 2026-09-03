@@ -13851,7 +13851,7 @@
       "classification": "1A",
       "group": "1A",
       "enrollment": 72,
-      "private": true,
+      "private": false,
       "mascot": "Panthers",
       "colors": [
         "#1d4e9e",
