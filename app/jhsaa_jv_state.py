@@ -24,8 +24,13 @@ this association has no tie-break anywhere, by design — so a five-court 3S/2D 
 is not a stylistic pick, it is the shape that lets the event exist at the depth
 most programs have.
 
-The road, per the spec: district qualification -> regional championship -> a state
-qualifying round -> a sixteen-team State Championship.
+The road, per the spec: district qualification -> regional championship -> a State
+draw that opens with a qualifying round and plays 16 -> 8 -> 4 -> 2 from there.
+
+‼️ THE DRAW IS THE ASSOCIATION'S ORDINARY ONE. Twenty champions in a 32-slot
+bracket is twelve byes and four opening duals — exactly what `jhsaa.run_state`
+plays whenever a field does not fill its bracket — so this event needs no bracket
+shape of its own, and the page needs no presentation of its own either.
 """
 
 from __future__ import annotations
@@ -61,24 +66,23 @@ PHASE = "jv_state"
 DISTRICT_BERTHS = ((5, 1), (9, 2), (15, 3))
 DISTRICT_BERTHS_MAX = 4
 
-#: The association's twenty geographic areas, and the State field they play down to.
+#: The association's twenty geographic areas — every one of which crowns a champion
+#: every season (owner, 2026-09), so this is the field the State draw is cut from.
 REGIONS = 20
-STATE_FIELD = 16
 
-#: How many region champions go straight to State: 12, so the other eight play in for
-#: four seats (13v20, 14v19, 15v18, 16v17) and the draw is exactly sixteen.
-#: ‼️ THE TWENTY REGIONS ALWAYS FILL (owner, 2026-09) — the association is ~875 boys'/
-#: ~912 girls' programs on full rosters, so every area crowns a champion every season
-#: and this is the only shape the event is ever played at. A smaller world (a test
-#: fixture) simply crowns fewer and the fold below runs short; that case needs no
-#: machinery and must not grow any.
-DIRECT_SEEDS = 12
-
-#: What the play-in round is called on a card and in the archive. ‼️ ITS OWN NAME,
-#: because it is its own ROUND: twenty champions play down to sixteen, and the State
-#: draw then runs 16 → 8 → 4 → 2 in full. The qualifying round never stands in for
-#: the Round of 16 — a play-in winner has qualified FOR the draw, not through its
-#: first round.
+#: What the draw's opening round is called. ‼️ IT IS A ROUND OF THE STATE BRACKET,
+#: NOT A SEPARATE EVENT. Twenty champions in a 32-slot draw is twelve byes and four
+#: opening duals — the association's ordinary shape, the same one `jhsaa.run_state`
+#: plays whenever a field does not fill its bracket — and the survivors join the byes
+#: at the Round of 16, which is then played in full (owner: "20 champions → 16 → 8,
+#: 4, 2, don't skip the R16").
+#:
+#: ‼️ THIS REPLACED A BESPOKE PLAY-IN. The event used to cut the field to a 12-seed
+#: draw by hand, play four qualifying duals in a separate bracket, and render them in
+#: a panel of their own beside the tree — a second mechanism for something the shared
+#: seeded draw already does, and one whose numbers then sat outside the bracket
+#: instead of in it. Owner: "you didn't have to invent a bespoke JV format when we
+#: already have lots of bracket formats that work beyond 16."
 QUALIFYING_NAME = "State Qualifying"
 
 
@@ -340,20 +344,6 @@ def run_regionals(quals: list[JVEntry], *, seed: int) -> tuple:
     return champs, out
 
 
-def qualifying_pairs(ranked: list[JVEntry]) -> list[tuple[JVEntry, JVEntry]]:
-    """The play-in: 13v20, 14v19, 15v18, 16v17 (spec).
-
-    ‼️ A REAL SAVE FILLS ALL TWENTY REGIONS — the association is ~875 boys'/~912
-    girls' programs on full rosters, so this is exactly four pairs and the State field
-    is exactly sixteen. It is folded off the ranking rather than typed as four seeds
-    so that a thin test season (or a change to `DIRECT_SEEDS`) still produces a legal
-    draw instead of pairing the wrong seeds — that graceful case is a property of the
-    fold, never a design target.
-    """
-    rest = ranked[DIRECT_SEEDS:]
-    return [(rest[i], rest[len(rest) - 1 - i]) for i in range(len(rest) // 2)]
-
-
 def run_jv_state(jv: dict, *, gender: str, year: int, seed: int = 0) -> dict:
     """The whole JV team postseason for one gender.
 
@@ -369,39 +359,18 @@ def run_jv_state(jv: dict, *, gender: str, year: int, seed: int = 0) -> dict:
     champs, regions = run_regionals(quals, seed=seed + 7919 * (gender == "boys"))
     ranked = sorted(champs.values(), key=lambda e: (-seed_key(e), e.name))
 
-    # THE STATE QUALIFYING ROUND — one round, archived as a bracket of its own so it
-    # renders beside the others rather than as a hand-built list. It is NOT a column
-    # of the State tree: eight teams playing into four seats do not halve into a
-    # sixteen-team draw, and `_bracket_canvas` links columns positionally.
-    playin_field = [e for pair in qualifying_pairs(ranked) for e in pair]
-    playin, winners = {}, []
-    if playin_field:
-        games = []
-        for i, (hi, lo) in enumerate(qualifying_pairs(ranked)):
-            win, game = play_dual(hi, lo, seed=seed + 3301 + i)
-            games.append(game)
-            winners.append(win)
-        playin = {"champion": None, "field": [e.name for e in playin_field],
-                  "rounds": [games], "round_names": [QUALIFYING_NAME]}
-
-    # Seed order is preserved: a play-in winner enters at its own statewide rank, not
-    # at the bottom of the field it just came through.
-    # ‼️ BY IDENTITY. `JVEntry` is an ordinary dataclass, so `__eq__` is field-wise and
-    # `__hash__` is None — a set of entries raises TypeError. It raised only once a
-    # season crowned MORE than `DIRECT_SEEDS` regions, i.e. only when a play-in was
-    # actually played, which a small fixture never reaches and the real association
-    # reaches every year.
-    qualified = {id(e) for e in winners}
-    draw_field = (list(ranked[:DIRECT_SEEDS])
-                  + [e for e in ranked[DIRECT_SEEDS:] if id(e) in qualified])[:STATE_FIELD]
-    champ, state = _run_bracket(draw_field, seed=seed + 5701)
+    # ‼️ ONE DRAW OVER EVERY REGION CHAMPION. `seeded_draw` pads twenty to a 32-slot
+    # bracket, byes the top tier and pairs the rest, so the qualifying round IS the
+    # opening round of the State bracket and the survivors meet the byes at the Round
+    # of 16. Nothing is cut from the field beforehand and no second bracket exists.
+    champ, state = _run_bracket(ranked, seed=seed + 5701,
+                                round_names=[QUALIFYING_NAME])
     return {
         "field": [e.name for e in field],
         "qualifiers": [e.name for e in quals],
         "regions": regions,
         "region_champions": {k: v.name for k, v in champs.items()},
         "ranked": [e.name for e in ranked],
-        "play_in": playin,
         "state": state,
         "champion": champ.name if champ else "",
     }

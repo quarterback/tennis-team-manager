@@ -4645,37 +4645,44 @@ def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
              "lose_points": min(gm["home_points"], gm["away_points"])}
             for gm in rd["games"]]} for rd in world.jhsaa_state_rounds(bracket)]
 
-    # The regional championships, one row each: who won it and how big its draw was.
-    # NOT twenty trees — the region is where the field was decided, and a reader who
-    # wants one program's route has its schedule card.
+    # ‼️ HOW EACH CHAMPION ENTERED, DERIVED FROM THE DRAW rather than stored beside
+    # it. Twenty champions in a 32-slot bracket is twelve byes and four opening
+    # duals, so a team that appears in the first round played its way in and everyone
+    # else was seeded straight through — the archive already says which, and a second
+    # record of it could only disagree.
+    opening = (st.get("rounds") or [[]])[0]
+    played_in, survived = set(), set()
+    for gm in opening:
+        played_in.update((gm.get("home"), gm.get("away")))
+        survived.add(gm.get("winner"))
+    in_draw = set(st.get("field") or ())
+
+    def _entry(name):
+        if name not in played_in:
+            return "Direct"
+        return "Qualified" if name in survived else "Lost qualifier"
+
+    # The regional championships as a full-width table below the draw, one row per
+    # region: who won it, where they seeded statewide, and how they entered. NOT a
+    # sidebar (owner, 2026-09) and NOT twenty trees — a reader who wants one
+    # program's route through its region has that program's schedule.
     regions = []
     for region in sorted(ev.get("regions") or {}):
         br = ev["regions"][region]
         champ = br.get("champion") or ""
         regions.append({"region": region, "field_n": len(br.get("field") or ()),
-                        "qualifiers": list(br.get("field") or ()),
                         "champion": champ, "seed": seeds.get(champ, 0),
+                        "entry": _entry(champ) if champ in in_draw else "",
                         "deco": _jh_deco(schools, champ, 22) if champ else None})
+    regions.sort(key=lambda r: (r["seed"] or 999, r["region"]))
     return {
         **base, "ready": True,
         "field_n": len(ev.get("field") or ()),
         "qualifier_n": len(ev.get("qualifiers") or ()),
         "state_field_n": len(st.get("field") or ()),
         "regions": regions, "region_n": len(regions),
-        "ranked": [{**_jh_deco(schools, n, 22), "seed": i + 1,
-                    "region": region_of.get(n, ""),
-                    "direct": i < len(st.get("field") or ()) and n in set(st.get("field") or ())}
-                   for i, n in enumerate(ev.get("ranked") or ())],
-        "play_in": _rounds(ev.get("play_in") or {}),
+        "opening_n": len(opening),
         "rounds": _rounds(st),
-        # ‼️ THE STATEWIDE SEEDS ARE PASSED IN, NOT DERIVED FROM FIELD POSITION.
-        # `_jh_bracket_cols` falls back to `_jh_seeds`, which numbers a field 1..n by
-        # its order — right for a draw whose field IS its ranking, and wrong here the
-        # moment a lower-ranked team wins the play-in: the No. 20 champion takes the
-        # sixteenth slot, so the tree would label them #16 while the ranking, the
-        # qualifying panel and the round lists all call them #20. Same team, two
-        # numbers, on one page. `seed_map` is the bracket's supported field for
-        # exactly this (the split State render already uses it).
         "canvas": _bracket_canvas(
             _jh_bracket_cols({**st, "seed_map": seeds}, schools),
             card_w=232, card_h=60, gutter=56, leaf_gap=18),

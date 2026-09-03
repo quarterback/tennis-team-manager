@@ -30,13 +30,11 @@ def arc(jv):
 def big():
     """‼️ A SEASON BIG ENOUGH TO PLAY THE QUALIFYING ROUND.
 
-    The play-in only happens when MORE than `DIRECT_SEEDS` regions crown a champion.
-    The `jv` fixture crowns twelve, so it never reaches that code at all — and the
-    real association crowns twenty and reaches it every single year. A `set()` of
-    entries (a dataclass, so unhashable) sat on that path through a full green suite
-    for exactly this reason. Owner: "my save has a lot more teams and full rosters
-    on them so I'm far more likely to fill out all 20 regions than you are in your
-    smaller tests."
+    A field that fills its bracket exactly plays no opening round at all, so a small
+    fixture never reaches that code — and the real association crowns twenty regions
+    into a 32-slot draw and reaches it every single year. Owner: "my save has a lot
+    more teams and full rosters on them so I'm far more likely to fill out all 20
+    regions than you are in your smaller tests."
     """
     gender, salt = "boys", ""
     by_group = {g: {n: jh.district_teams(ss, 0, salt)
@@ -46,32 +44,32 @@ def big():
     return jvs.run_jv_state(jv, gender=gender, year=2068, seed=11)
 
 
-def test_a_full_sized_field_plays_the_qualifying_round(big):
-    """The path the real association takes every season: more region champions than
-    direct seats, so the surplus plays in for the last seats in the draw.
+def test_the_qualifying_round_is_the_first_round_of_the_state_draw(big):
+    """‼️ NOT A SEPARATE BRACKET. Twenty champions in a 32-slot draw is twelve byes
+    and four opening duals — the shape `jhsaa.run_state` already plays whenever a
+    field does not fill its bracket — and the survivors meet the byes at the Round of
+    16. The event used to cut the field by hand and play a play-in in a bracket of
+    its own; owner, 2026-09: "you didn't have to invent a bespoke JV format when we
+    already have lots of bracket formats that work beyond 16."
 
-    ‼️ ON `big`, NOT `arc`. A fixture that crowns twelve or fewer regions never runs
-    this code at all — and the association crowns twenty and runs it every year. A
-    `set()` of entries (a dataclass, so unhashable) sat on this exact path through a
-    full green suite. Owner: "my save has a lot more teams and full rosters on them so
-    I'm far more likely to fill out all 20 regions than you are in your smaller
-    tests."
+    ‼️ ON `big`, NOT `arc`. A fixture crowning few enough regions to fill no opening
+    round never runs this at all, and the association crowns twenty every year.
     """
-    ranked = big["ranked"]
-    assert len(ranked) > jvs.DIRECT_SEEDS, "fixture too small to test the play-in"
-    rest = ranked[jvs.DIRECT_SEEDS:]
-    games = big["play_in"]["rounds"][0]
-    assert len(games) == len(rest) // 2
-    winners = {gm["winner"] for gm in games}
-    assert winners <= set(rest)
-    assert set(ranked[:jvs.DIRECT_SEEDS]) | winners == set(big["state"]["field"])
+    import app.world as world
+    assert "play_in" not in big, "the separate play-in bracket is gone"
+    rounds = world.jhsaa_state_rounds(big["state"])
+    assert rounds[0]["name"] == jvs.QUALIFYING_NAME
+    assert set(big["state"]["field"]) == set(big["ranked"])
+    # Everyone in the opening round is a region champion, and it is a real round of
+    # the same draw rather than a feeder into a fresh one.
+    playing = {t for gm in rounds[0]["games"] for t in (gm["home"], gm["away"])}
+    assert playing <= set(big["ranked"]) and playing
 
 
 def test_the_state_draw_never_skips_a_round(big):
-    """‼️ 20 -> 16 -> 8 -> 4 -> 2 (owner, 2026-09: "don't skip the R16"). The
-    qualifying round is a round of its OWN, in front of the draw — a play-in winner
-    has qualified FOR the bracket, not through its first round — so every column of
-    the State draw is exactly half the one before it."""
+    """‼️ 20 -> 16 -> 8 -> 4 -> 2 (owner, 2026-09: "don't skip the R16"). The opening
+    round takes the field to sixteen and the draw plays every column after it in
+    full — never a jump from qualifying straight to the quarterfinals."""
     import app.world as world
     rounds = world.jhsaa_state_rounds(big["state"])
     alive = [r["alive"] for r in rounds]
@@ -79,8 +77,9 @@ def test_the_state_draw_never_skips_a_round(big):
     for i, r in enumerate(rounds[1:], 1):
         assert r["alive"] == alive[i - 1] - len(rounds[i - 1]["games"])
     assert rounds[-1]["alive"] == 2 and len(rounds[-1]["games"]) == 1
-    # The qualifying round is NOT one of them.
-    assert big["play_in"]["round_names"] == [jvs.QUALIFYING_NAME]
+    # After the qualifying round the draw is a clean power of two — 16, then 8, 4, 2.
+    after = [r["alive"] for r in rounds[1:]]
+    assert after == [2 ** i for i in range(len(after), 0, -1)], after
 
 
 def test_the_postseason_never_moves_the_record_it_is_seeded_from(jv):
@@ -195,7 +194,7 @@ def test_the_state_draw_is_cut_from_the_region_champions(arc):
     """Every team in the draw is a region champion, and nobody is in it twice."""
     field = arc["state"]["field"]
     assert field and set(field) <= set(arc["ranked"])
-    assert len(field) == len(set(field)) <= jvs.STATE_FIELD
+    assert len(field) == len(set(field))
 
 
 def test_one_champion_per_region_and_a_single_state_champion(arc):

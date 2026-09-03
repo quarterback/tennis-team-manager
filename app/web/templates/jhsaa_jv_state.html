@@ -4,14 +4,21 @@
 {% block title %}JHSAA JV Team State Tournament{% endblock %}
 {% block content %}
 
-{# No class in the heading and no gender: the event is CLASSLESS — one champion for
-   the whole association — and the scope bar's boys/girls switch is what selects
-   which of the two draws is on screen. "State" is implied here the way it is on
-   every other championship surface. #}
+{# ‼️ THIS PAGE IS `jhsaa_bracket.html`'S STRUCTURE, NOT A LAYOUT OF ITS OWN (owner,
+   2026-09: "the JV event needs unique qualification logic, not unique
+   presentation"). The hero, the `brk_toolbar`/`brk-stage`/`brk_canvas` tree, the
+   `jh_round_tabs` mobile fallback, the `jh-mgame` result cards and the `.bl-table`
+   grid inside a `.bl-tablescroll` are all the components the varsity State bracket
+   and the college postseason pages already use. Nothing here is new markup, and no
+   panel gets a bespoke width.
+
+   No class in the heading and no gender: the event is CLASSLESS — one champion for
+   the whole association — and the scope bar's boys/girls switch selects which of the
+   two draws is on screen. "State" is implied here as on every championship page. #}
 {{ jh_header(view.scope, u, 'jv_state', 'JV Team State Tournament',
-             'The JV team championship — statewide, no classifications. Districts
-              earn berths on their JV record, twenty regions crown champions, and the
-              bottom eight play in for the last four seats in a sixteen-team draw.',
+             'The JV team championship — statewide, no classifications. Districts earn
+              berths on their JV record, twenty regions crown champions, and the draw
+              opens with a qualifying round into the Round of 16.',
              [('Season', view.season_year), ('Entered', view.field_n),
               ('Regions', view.region_n), ('Draw', view.state_field_n)]
              if view.ready else []) }}
@@ -31,7 +38,7 @@
     <span class="lbl">{{ view.season_year }} JHSAA JV Team State Champion</span>
     <a class="nm" href="{{ url_for('jhsaa_school', school=view.champion.name, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.champion.name }}</a>
     <div class="sub">{{ view.champion.mascot }} · {{ view.champion.city }}, {{ view.champion.state if view.champion.state else 'Jefferson' }}
-      {%- if view.champion_region %} · {{ view.champion_region }} region{% endif %}</div>
+      {%- if view.champion_region %} · {{ view.champion_region }}{% endif %}</div>
   </div>
   {% if view.final %}
   <div class="sc"><div class="n">{{ view.final.win_points }}–{{ view.final.lose_points }}</div>
@@ -40,16 +47,17 @@
 </div>
 {% endif %}
 
-{# The SAME server-positioned tree the state draw, the TOC, the NCAA bracket and the
-   Preseason NIT draw on. `brk_canvas` takes a `_bracket_canvas` RESULT, never a
-   column list — handed the raw columns it resolves cv.width/cards/links to Undefined
-   and silently renders an empty box. #}
+{# ONE tree, and the qualifying round is its first column — twenty champions in a
+   32-slot draw is twelve byes and four opening duals, which is the shape
+   `jhsaa.run_state` plays whenever a field does not fill its bracket. There is no
+   second bracket and no qualifying tab: the survivors meet the byes at the Round of
+   16, so a single tree draws every real link. #}
 <div class="jh-brk-desktop">
-  {{ brk_toolbar([('all', 'JV Team State Championship')]) }}
+  {{ brk_toolbar([('all', 'JV Team State')]) }}
   <div class="brk-stage" id="brkstage">
     <section class="brk-region" data-view="all">
       <div class="brk-region-head">
-        <h2>{{ view.season_year }} JV Team State · {{ view.state_field_n }}-team draw</h2>
+        <h2>{{ view.season_year }} JV Team State · {{ view.state_field_n }}-team field</h2>
         <span class="brk-region-champ">
           {% if view.champion %}{{ view.champion.name }} def. {{ view.runner_up.name }}{% else %}in progress{% endif %}</span>
       </div>
@@ -60,84 +68,68 @@
 
 <div style="margin-top:6px">{{ jh_round_tabs(view.rounds, u, view.gender, 'jhjvsrd', view.scope.pin) }}</div>
 
-{# ‼️ THE QUALIFYING ROUND IS ITS OWN PANEL, ABOVE THE RESULTS AND NOT A COLUMN OF
-   THE TREE. Eight teams playing into four seats is not a halving, and the canvas
-   links columns positionally; it is also NOT the Round of 16, which the draw above
-   plays in full. This is how an association prints a play-in. #}
-{% if view.play_in %}
+{# Results by round, on the existing `jh-mgame` match card — full width, since the
+   sidebar this page used to carry is now the table below. `jh-cols2` is the same
+   auto-fit grid the Road to State folds use, so it reflows at the section's own
+   breakpoint rather than a new one. #}
 <div class="bl-panel" style="margin-top:14px">
-  <div class="bl-panel-head"><span class="bl-panel-title">State Qualifying</span>
-    <span class="bl-panel-note">Region champions seeded {{ view.state_field_n - view.play_in[0].games|length }}–{{ view.ranked|length }} play for the last {{ view.play_in[0].games|length }} seats</span></div>
+  <div class="bl-panel-head"><span class="bl-panel-title">Results by round</span>
+    <span class="bl-panel-note">{{ view.opening_n }} qualifying duals, then 16 → 8 → 4 → 2</span></div>
   <div class="bl-panel-body" style="padding:12px">
     <div class="jh-cols2">
-      {% for gm in view.play_in[0].games %}
-      <div class="jh-mgame">
-        <div class="jh-mside {{ 'win' if gm.winner == gm.home else 'out' }}">
-          <span class="sd">{{ gm.home_seed or '' }}</span>
-          <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.home, u=u, g=view.gender, year=view.scope.pin) }}">{{ gm.home }}</a></span>
-          <span class="pt">{{ gm.home_points|int }}</span>
+      {% for rd in view.rounds %}
+      <div>
+        <div class="jh-modsplit" style="padding-left:0">{{ rd.name }}</div>
+        {% for gm in rd.games %}
+        <div class="jh-mgame">
+          <div class="jh-mside {{ 'win' if gm.winner == gm.home else 'out' }}">
+            <span class="sd">{{ gm.home_seed or '' }}</span>
+            <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.home, u=u, g=view.gender, year=view.scope.pin) }}">{{ gm.home }}</a></span>
+            <span class="pt">{{ gm.home_points|int }}</span>
+          </div>
+          <div class="jh-mside {{ 'win' if gm.winner == gm.away else 'out' }}">
+            <span class="sd">{{ gm.away_seed or '' }}</span>
+            <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.away, u=u, g=view.gender, year=view.scope.pin) }}">{{ gm.away }}</a></span>
+            <span class="pt">{{ gm.away_points|int }}</span>
+          </div>
         </div>
-        <div class="jh-mside {{ 'win' if gm.winner == gm.away else 'out' }}">
-          <span class="sd">{{ gm.away_seed or '' }}</span>
-          <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.away, u=u, g=view.gender, year=view.scope.pin) }}">{{ gm.away }}</a></span>
-          <span class="pt">{{ gm.away_points|int }}</span>
-        </div>
+        {% endfor %}
       </div>
       {% endfor %}
     </div>
   </div>
 </div>
-{% endif %}
 
-<div class="jh-layout" style="margin-top:14px">
-  <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Results by round</span></div>
-    <div class="bl-panel-body" style="padding:12px">
-      <div class="jh-cols2">
-        {% for rd in view.rounds %}
-        <div>
-          <div class="jh-modsplit" style="padding-left:0">{{ rd.name }}</div>
-          {% for gm in rd.games %}
-          <div class="jh-mgame">
-            <div class="jh-mside {{ 'win' if gm.winner == gm.home else 'out' }}">
-              <span class="sd">{{ gm.home_seed or '' }}</span>
-              <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.home, u=u, g=view.gender, year=view.scope.pin) }}">{{ gm.home }}</a></span>
-              <span class="pt">{{ gm.home_points|int }}</span>
-            </div>
-            <div class="jh-mside {{ 'win' if gm.winner == gm.away else 'out' }}">
-              <span class="sd">{{ gm.away_seed or '' }}</span>
-              <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.away, u=u, g=view.gender, year=view.scope.pin) }}">{{ gm.away }}</a></span>
-              <span class="pt">{{ gm.away_points|int }}</span>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-        {% endfor %}
+{# ‼️ FULL WIDTH, AND SCROLLING INSIDE ITS OWN WRAPPER. `.bl-table` carries a 920px
+   min-width, so in the 322px rail this panel used to sit in it parked its champion
+   column off-screen — the exact fault the app's row components were written to
+   replace. `.bl-tablescroll` is the app's standing answer for a wide table: the
+   overflow belongs to the table, never to the page. #}
+<div class="bl-panel" style="margin-top:14px">
+  <div class="bl-panel-head"><span class="bl-panel-title">Regional champions</span>
+    <span class="bl-panel-note">{{ view.qualifier_n }} district qualifiers · {{ view.region_n }} regions</span></div>
+  <div class="bl-tablescroll">
+    <div class="bl-table" style="--bl-grid-cols: 44px 1fr auto 1.1fr 96px 110px">
+      <div class="bl-thead">
+        <span class="bl-th num">SEED</span>
+        <span class="bl-th">CHAMPION</span>
+        <span class="bl-th"></span>
+        <span class="bl-th">REGION</span>
+        <span class="bl-th num">REG. DRAW</span>
+        <span class="bl-th">ENTERED</span>
       </div>
-    </div>
-  </div>
-
-  {# The regional championships as ROWS, not twenty trees: the region is where the
-     field was decided, and a reader who wants one program's route through it has
-     that program's schedule. The statewide seed beside each champion is the whole
-     point of the ranking — it is what sent them straight in or into qualifying. #}
-  <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Regional champions</span>
-      <span class="bl-panel-note">{{ view.qualifier_n }} district qualifiers · {{ view.region_n }} regions</span></div>
-    <div class="bl-panel-body" style="padding:0">
-      <table class="bl-table">
-        <thead><tr><th>Region</th><th>Champion</th><th class="num">Draw</th><th class="num">Seed</th></tr></thead>
-        <tbody>
-          {% for r in view.regions %}
-          <tr>
-            <td>{{ r.region }}</td>
-            <td>{% if r.champion %}<a href="{{ url_for('jhsaa_school', school=r.champion, u=u, g=view.gender, year=view.scope.pin) }}">{{ r.champion }}</a>{% endif %}</td>
-            <td class="num">{{ r.field_n }}</td>
-            <td class="num">{{ r.seed or '—' }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      {% for r in view.regions %}
+      <div class="bl-row">
+        <span class="bl-rank">{{ r.seed or '—' }}</span>
+        <a class="bl-school" href="{{ url_for('jhsaa_school', school=r.champion, u=u, g=view.gender, year=view.scope.pin) }}">{{ r.champion }}</a>
+        <span>{{ r.deco.mark|safe if r.deco }}</span>
+        <span>{{ r.region }}</span>
+        <span class="bl-cell-num">{{ r.field_n }}</span>
+        {# Direct / Qualified / Lost qualifier — derived from the draw itself, since
+           a bye in the opening round IS entering directly. #}
+        <span class="jh-tag {{ 'state' if r.entry == 'Direct' else 'dist' if r.entry == 'Qualified' }}">{{ r.entry or '—' }}</span>
+      </div>
+      {% endfor %}
     </div>
   </div>
 </div>

@@ -1255,14 +1255,17 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
       Regionals — those are numbered per CLASSIFICATION and this event has none, so a
       per-class unit would mean nothing here. There are exactly 20 areas, which is what
       the spec's "existing 20 JHSAA regions" names.
-    - **The 20 regional champions rank statewide**; seeds 1-12 go straight to State and
-      13v20 / 14v19 / 15v18 / 16v17 play in for the last four. ‼️ **A REAL SAVE FILLS
-      ALL TWENTY** — the association is ~875 boys'/~912 girls' programs on full
-      rosters, so every area crowns a champion and the play-in is exactly the spec's
-      four pairs. A run that crowns fewer is a small FIXTURE, never the design: the
-      pairing is folded off the ranking rather than typed as four seeds so a thin
-      test season still produces a legal draw, and that graceful case must not be
-      read back as a licence to ship a short State field.
+    - **‼️ THE 20 REGIONAL CHAMPIONS ARE THE STATE FIELD, IN ONE ORDINARY DRAW.**
+      Twenty into a 32-slot bracket is twelve byes and four opening duals, then
+      **16 → 8 → 4 → 2** played in full (owner: "don't skip the R16") — the shape
+      `run_state` already plays whenever a field does not fill its bracket, off the
+      same `engine.tournament.seeded_draw`. The event briefly cut the field to twelve
+      by hand, played a four-dual play-in in a SECOND bracket and rendered it in a
+      panel beside the tree; owner, 2026-09: **"you didn't have to invent a bespoke
+      JV format when we already have lots of bracket formats that work beyond 16"**
+      and *"the JV event needs unique qualification logic, not unique
+      presentation."* The qualifying round is the draw's first column, so it is in
+      the tree, in the round tabs and in the results list for free.
     - **Eligibility is ladder rank #12+ (`jv_pool`, the one cut — no second roster split
       is invented) AND actual JV participation this season**, read off the `played` list
       `play_jv_dual` already records. Split-time players fall out for free: eligible if
@@ -1287,22 +1290,25 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
       `templates/_bracket.html` render it unchanged — never a fourth bracket. The page
       is `/jhsaa/jv-state`, a fifth entry on the **Championship sub-rail**, class-blind
       like the TOC and carrying `group` for the same reason (the rail is the section's
-      scope memory, not a filter). The **qualifying round is its own panel above the
-      tree**: eight teams into four seats is not a halving and the canvas links
-      columns positionally — and it is **not the Round of 16**, which the draw plays in
-      full (owner: "20 champions → 16 → 8, 4, 2, don't skip the R16").
+      scope memory, not a filter). ‼️ **THE PAGE IS `jhsaa_bracket.html`'S STRUCTURE**
+      — the same hero, `brk_toolbar`/`brk-stage`/`brk_canvas` tree, `jh_round_tabs`
+      mobile fallback and `jh-mgame` result cards — and the regional champions are a
+      **full-width `.bl-table` inside a `.bl-tablescroll`**, never the 322px rail: that
+      table carries a 920px min-width, so in the rail it parked its own champion column
+      off the viewport, which is the exact fault the app's row components were written
+      to replace. Wide content scrolls inside its own wrapper; the page never does.
     - **‼️ THE TWENTY REGIONS ALWAYS FILL** (owner, 2026-09) — ~875 boys'/~912 girls'
       programs on full rosters, so this is the only shape the event is ever played at
       and a short field needs NO machinery. A test fixture crowning twelve is a
       fixture, and it is also the reason a `set()` of `JVEntry` (a dataclass, so
-      unhashable) sat unexecuted on the play-in path through a full green suite: the
+      unhashable) sat unexecuted on the qualifying-round path through a green suite: the
       path a real save takes every season is the one a small world never reaches.
       `tests/test_jhsaa_jv_state.py` therefore runs TWO real JV seasons, the larger one
       sized to actually play the qualifying round.
     - **‼️ THE POSTSEASON NEVER MOVES THE RECORD IT IS SEEDED FROM.** `play_dual` writes
       the schedule row and the box score but never touches `wins`/`points_for`: a
-      region final that moved them would re-rank the statewide field the play-in and
-      the State draw are cut from — the mid-event drift the eligibility freeze exists
+      region final that moved them would re-rank the statewide field the qualifying
+      round and the State draw are cut from — the mid-event drift the eligibility freeze exists
       to stop, arriving through the record instead of the roster.
     - `jhsaa_jv_individuals.run_jv_state` was renamed **`run_jv_individuals`**: two
       different events shared a function name and only avoided collision because
