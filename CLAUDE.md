@@ -2235,6 +2235,19 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   - The ledger is **one row per move**, each row's `from` being where they were
     BEFORE it (the previous destination), which is the only reading where a move home
     does not print as a move from itself. `tests/test_jhsaa_transfers.py`.
+  - **‼️ A TRANSFER STOPS MATTERING WHEN THE PLAYER GRADUATES (owner, 2026-09) —
+    the ledger is 11,000+ rows on a real save and NOTHING may read all of it per
+    roster or per page.** `build_roster` reads `enrolled_transfers(year)` (the
+    four enrolled cohorts, inbound indexed by `(gender, school)`), never the whole
+    map; `jhsaa_transfer_version()` is a ONE-ROW stamp kept by SQLite triggers in
+    `overrides._SCHEMA` (never hash the table per call — it is resolved once per
+    roster built); the page renders pending moves plus ONE season of history
+    (`hy`) and resolves names off `_seat_name` (the name draw alone, WITH the
+    world's salt — `""` printed strangers' names) via `resolve_transfer_names`,
+    never `_gen_seat` per row; `roster_pid_index` is PATCHED across edits
+    (rebuild only the schools a changed record names), never keyed on the
+    fingerprint. `set_jhsaa_transfer` reads ONE row (`get_jhsaa_transfer`), not
+    the table. See `docs/AAR-jhsaa-transfer-page-ledger-scale.md`.
 - **‼️ FAMILY TIES ARE OWNER-AUTHORED METADATA (owner rule 2026-08, `jhsaa.family_add`
   / `overrides` kind `jhsaa_family`).** A tie links two PIDS and never touches a name —
   required, since `world_jhsaa_dual.lines` archives NAMES and `_jh_line_records` keys
@@ -2979,6 +2992,16 @@ was a school marker, shipped "Baptist HS High School".
   `reclassify()` is on prep-network's canonical name), and it runs LAST, because every
   school it names sits above `PROMOTE_2A_ABOVE` and would otherwise be promoted straight
   back.
+- **‼️ THE COLUMBIA GORGE DISTRICT AND COLUMBIA RANGE LEAGUE ARE 1A (owner rule
+  2026-09, `scripts/jhsaa_columbia_to_1a.py`).** Both 2052 affiliate leagues (18
+  sponsoring programs plus the dormant Nixyaawii row, Mt Jacqueline included)
+  reclassified DOWN from 2A as INTACT leagues — a district is `(classification,
+  name)`, so the names travelled with the rows and nothing was redrawn (1A 7→9
+  leagues, 2A 10→8, both what `district_count` wants). A RECLASSIFICATION, the
+  Lower Lake idiom: `classification`, `group` AND `enrollment` moved (all but Mt
+  Jacqueline already sat inside 1A's band). These leagues are not in the
+  importer — they exist through the 2052/affiliate/border scripts — so replay
+  this script after those on a re-import.
 - **‼️ `COMPETITIVE_MOVES` is the mirror of PLAY_UP** — a program may be placed BELOW its
   enrollment class when it cannot compete where enrollment puts it, and the ENROLLMENT is
   scaled to match rather than the other way round (the numbers are fictional; the number

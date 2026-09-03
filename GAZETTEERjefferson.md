@@ -172,20 +172,20 @@ class, enrollment, and locality where the school carries one.
 ### Gilliam County — Gilliam County, OR
 
 - **Condon** — 680 · 45.23N 120.19W
-    - Condon — 2A, 130 · Columbia Gorge District
+    - Condon — 1A, 130 · Columbia Gorge District
 - **Arlington** — 600 · 45.72N 120.20W
-    - Arlington — 2A, 110 · Columbia Gorge District
+    - Arlington — 1A, 110 · Columbia Gorge District
 
 ### Klickitat County — Klickitat County, WA
 
 - **Glenwood** — 530 · 46.02N 121.29W
-    - Glenwood — 2A, 90 · Columbia Gorge District
+    - Glenwood — 1A, 90 · Columbia Gorge District
 - **Lyle** — 530 · 45.70N 121.29W
-    - Lyle — 2A, 105 · Columbia Gorge District
+    - Lyle — 1A, 105 · Columbia Gorge District
 - **Klickitat** — 400 · 45.82N 121.16W
-    - Klickitat — 2A, 95 · Columbia Gorge District
+    - Klickitat — 1A, 95 · Columbia Gorge District
 - **Wishram** — 340 · 45.66N 120.97W
-    - Wishram — 2A, 88 · Columbia Gorge District
+    - Wishram — 1A, 88 · Columbia Gorge District
 
 ### Sherman County — Sherman County, OR
 
@@ -197,7 +197,7 @@ class, enrollment, and locality where the school carries one.
 - **The Dalles** — 16,400 · 45.59N 121.18W
     - The Dalles — 5A, 975 · Valle Vista League
 - **Dufur** — 630 · 45.45N 121.13W
-    - Dufur — 2A, 160 · Columbia Gorge District
+    - Dufur — 1A, 160 · Columbia Gorge District
 
 ## Blue Mountain Country
 
@@ -212,7 +212,7 @@ class, enrollment, and locality where the school carries one.
 - **Halfway** — 350 · 44.88N 117.11W
     - Pine Eagle — 2A, 120 · Snake River District
 - **Unity** — 100 · 44.44N 118.19W
-    - Burnt River — 2A, 88 · Columbia Range League
+    - Burnt River — 1A, 88 · Columbia Range League
 
 ### Malheur County — Malheur County, OR
 
@@ -224,16 +224,16 @@ class, enrollment, and locality where the school carries one.
 - **Vale** — 1,900 · 43.98N 117.24W
     - Vale — 2A, 300 · Valle Vista League
 - **Adrian** — 180 · 43.74N 117.07W
-    - Adrian — 2A, 140 · Columbia Range League
+    - Adrian — 1A, 140 · Columbia Range League
 
 ### Morrow County — Morrow County, OR
 
 - **Boardman** — 4,100 · 45.84N 119.70W
     - Riverside — 5A, 885 · Eastern Oregon League
 - **Irrigon** — 2,000 · 45.90N 119.49W
-    - Irrigon — 2A, 300 · Columbia Range League
+    - Irrigon — 1A, 300 · Columbia Range League
 - **Ione** — 330 · 45.50N 119.83W
-    - Ione — 2A, 100 · Columbia Range League
+    - Ione — 1A, 100 · Columbia Range League
 
 ### Umatilla County — Umatilla County, OR
 
@@ -241,17 +241,17 @@ class, enrollment, and locality where the school carries one.
     - Hermiston — 5A, 1,015 · Eastern Oregon League
 - **Pendleton** — 17,100 · 45.67N 118.79W
     - Pendleton — 5A, 990 · Eastern Oregon League
-    - Nixyaawii — 2A, 92 · Columbia Range League
+    - Nixyaawii — 1A, 92 · Columbia Range League
 - **Umatilla** — 7,500 · 45.92N 119.34W
     - Umatilla — 5A, 905 · Eastern Oregon League
 - **Milton-Freewater** — 7,100 · 45.93N 118.39W
     - McLoughlin — 2A, 360 · Snake River District
 - **Stanfield** — 2,300 · 45.78N 119.22W
-    - Stanfield — 2A, 220 · Columbia Range League
+    - Stanfield — 1A, 220 · Columbia Range League
 - **Pilot Rock** — 1,500 · 45.48N 118.83W
-    - Pilot Rock — 2A, 170 · Columbia Range League
+    - Pilot Rock — 1A, 170 · Columbia Range League
 - **Athena** — 1,200 · 45.81N 118.49W
-    - Weston-McEwen — 2A, 250 · Columbia Range League
+    - Weston-McEwen — 1A, 250 · Columbia Range League
 - **Echo** — 700 · 45.74N 119.19W
     - Echo — 2A, 120 · Snake River District
 
@@ -275,9 +275,9 @@ class, enrollment, and locality where the school carries one.
 - **Enterprise** — 2,100 · 45.43N 117.28W
     - Enterprise — 2A, 210 · Desert Sky League
 - **Joseph** — 1,100 · 45.35N 117.23W
-    - Joseph — 2A, 120 · Columbia Range League
+    - Joseph — 1A, 120 · Columbia Range League
 - **Wallowa** — 800 · 45.57N 117.53W
-    - Wallowa — 2A, 130 · Columbia Range League
+    - Wallowa — 1A, 130 · Columbia Range League
 
 ## Boise Frontier
 
@@ -1115,7 +1115,7 @@ class, enrollment, and locality where the school carries one.
 - **California Canyons** — 7,200 · 41.53N 120.17W
     - California Canyons — 3A, 399 · Timber Valley League
 - **Mt Jacqueline** — 6,400 · 41.89N 121.37W
-    - Mt Jacqueline — 2A, 347 · Columbia Gorge District
+    - Mt Jacqueline — 1A, 176 · Columbia Gorge District
 - **Elk Spur** — 4,400 · 41.44N 120.87W
     - Larchmont Ridge — 8A, 1,891 · Rim Country League
 - **Seamus Town** — 4,400 · 41.19N 120.95W
@@ -1166,7 +1166,7 @@ class, enrollment, and locality where the school carries one.
     - Owl Canyon — 3A, 382 · Rim Country League
     - South Rim — 2A, 268 · Valle Vista League
 - **Trout Lake** — 6,800 · 42.19N 120.43W
-    - Trout Lake — 2A, 110 · Columbia Gorge District
+    - Trout Lake — 1A, 110 · Columbia Gorge District
 - **Camas Landing** — 6,200 · 43.36N 121.05W
     - Ostrander Union — 3A, 393 · Rim Country League
 - **Stovepipe** — 2,700 · 42.32N 120.82W

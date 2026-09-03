@@ -4794,7 +4794,8 @@ def jhsaa_career_wins(world_id: int, gender: str, salt: str = "",
     # and merged into one pid-keyed career, oldest stint first ---
     careers: list[dict] = []
     claimed: set = set()
-    movers = {r["pid"]: r for r in _jh.transfer_rows()}
+    # Names off the ledger — the real salt, and only the name draw per mover.
+    movers = {r["pid"]: r for r in _jh.transfer_rows(salt)}
     for pid, rec in _jh.transfers().items():
         if rec.get("gender") != gender:
             continue
@@ -6066,6 +6067,30 @@ def jhsaa_jv_player_record(sched: list[dict], name: str) -> tuple[int, int, int]
     return w, l, t
 
 
+def jh_honor_lines(honors: list[str]) -> list[dict]:
+    """Fold one season's per-selection honour strings ("LABEL — Name") into one
+    entry per LABEL, in first-seen order, listing every name under it:
+    `[{"label": "All-District (Snake River District)",
+       "names": ["Isaac Evans", "Cameron Johnson / Logan Rivera"]}, …]`.
+    A string without the separator is its own line with an empty label. The
+    program page prints the label once and the names after it — a pure fold,
+    so the count of names always equals `len(honors)`."""
+    out: list[dict] = []
+    by_label: dict[str, dict] = {}
+    for h in honors:
+        label, sep, name = h.rpartition(" — ")
+        if not sep:
+            label, name = "", h
+        line = by_label.get(label) if label else None
+        if line is None:
+            line = {"label": label, "names": []}
+            out.append(line)
+            if label:
+                by_label[label] = line
+        line["names"].append(name)
+    return out
+
+
 def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | None:
     """One archived season as this program lived it. `None` if the program has no
     standings row that year (it didn't sponsor the sport, or the archive predates
@@ -6228,6 +6253,11 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
             if r.get("school") == school:
                 row["all_district"].append(r)
                 row["honors"].append(f"All-District ({dname}) — {r['name']}")
+    # ONE LINE PER HONOUR PER SEASON on the program page (owner, 2026-09): the
+    # award label once, then everybody from this program who made it — never a
+    # line per selection. `honors` itself stays one entry per selection, since
+    # the History column, the header chips and the tab count all count those.
+    row["honor_lines"] = jh_honor_lines(row["honors"])
     # ‼️ `honors` is the INDIVIDUAL awards, and the TEAM titles are rendered from
     # `champion` / `toc_champion` as banners of their own. So "did this season carry an
     # honour?" is not `bool(honors)` — a program that won its classification and the
