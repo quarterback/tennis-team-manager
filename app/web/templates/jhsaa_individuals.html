@@ -4,6 +4,7 @@
 {% block title %}JHSAA {{ view.event_name }} — Individual State{% endblock %}
 {% block content %}
 
+
 {# ‼️ NO EXPLANATORY SUBTITLE (owner, 2026-08). The bracket, the flight rail and the
    counts state what this is; a paragraph explaining the event to its own reader is
    microcopy nobody asked for. #}
@@ -86,36 +87,6 @@
    the wrong one renders empty rows rather than raising. Until that exists the
    canvas stays visible at every width and scrolls inside `.brk-scroll`, which it
    already does. #}
-{% for layer in view.playins %}
-{# Each qualifying ROUND is its own panel, printed as a RESULTS LIST — one row a
-   match, winner then loser then the score — which is how an association actually
-   publishes qualifying, and what `.jh-qual` is for.
-
-   ‼️ NOT `.jh-seedtiers`, which this used to borrow. That component is a 220px
-   auto-fill grid of short name lists with `white-space: nowrap` and an ellipsis:
-   correct for the seed tiers it was built for, and for a match result it truncates
-   the opponent and the score — the two things the row exists to show — while
-   labelling every match "LINE n", a number that means a seed line in a play-in and
-   nothing at all here. Borrowing a component borrows its constraints. #}
-<div class="bl-panel" style="margin-bottom:12px">
-  <div class="bl-panel-head"><h2>{{ layer[0].rnd if layer and layer[0].rnd else 'Play-in' }}{% if view.playins|length > 1 and not (layer and layer[0].rnd) %} {{ loop.index }}{% endif %}</h2>
-    <span class="sub">{{ layer|length }} match{{ 'es' if layer|length != 1 }} ·
-      {% if loop.last %}winners {{ 'qualify for the State draw' if view.qualifying else 'join the main draw' }}{% if view.qual_advance %} — {{ view.qual_advance }} of {{ view.field_n }} advance{% endif %}{% else %}winners advance a round{% endif %}</span></div>
-  <ol class="jh-qual">
-    {% for m in layer %}
-    <li>
-      <span class="n">{{ loop.index }}</span>
-      <a class="w" href="{{ url_for('jhsaa_player', school=m.winner.school, pid=m.winner.players[0].pid, u=u, g=view.gender, year=view.scope.pin) }}">{{ m.winner.label }}</a>
-      <span class="ws">{{ m.winner.school }}</span>
-      <a class="l" href="{{ url_for('jhsaa_player', school=m.loser.school, pid=m.loser.players[0].pid, u=u, g=view.gender, year=view.scope.pin) }}">{{ m.loser.label }}</a>
-      <span class="ls">{{ m.loser.school }}</span>
-      <span class="sc">{{ m.scoreline }}</span>
-    </li>
-    {% endfor %}
-  </ol>
-</div>
-{% endfor %}
-
 <div class="brk-stage" id="brkstage">
   <section class="brk-region" data-view="all">
     <div class="brk-region-head">
