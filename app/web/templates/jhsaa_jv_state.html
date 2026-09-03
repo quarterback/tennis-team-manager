@@ -130,7 +130,7 @@
         <span class="bl-cell-num">{{ r.field_n }}</span>
         {# Direct / Qualified / Lost qualifier — derived from the draw itself, since
            a bye in the opening round IS entering directly. #}
-        <span class="jh-tag {{ 'state' if r.entry == 'Direct' else 'dist' if r.entry == 'Qualified' }}">{{ r.entry or '—' }}</span>
+        <span class="jh-tag {{ 'jvstate' if r.entry == 'Direct' else 'jvroad' if r.entry == 'Qualified' }}">{{ r.entry or '—' }}</span>
       </div>
       {% endfor %}
     </div>

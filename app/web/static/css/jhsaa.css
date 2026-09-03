@@ -545,6 +545,13 @@
    postseason stage. It takes the neutral tint the app already uses for "no result
    either way" rather than a win/loss or a stakes colour. */
 .jh-tag.show { background: var(--tint-even-bg); color: var(--tint-even-fg); }
+/* THE JV POSTSEASON — its own colours, never the varsity road's or the varsity
+   state event's (owner, 2026-09). The two sit on the same program page, and a JV
+   card that borrowed them read as a washed-out varsity one. The playoff tag is a
+   tint like `road`; the state tag is a solid fill like `state`, because it is the
+   championship — only in the JV event's own colour. */
+.jh-tag.jvroad { background: var(--tint-jvroad-bg); color: var(--tint-jvroad-fg); }
+.jh-tag.jvstate { background: var(--jv-state); color: #fff; }
 /* The bracket round, beside the STATE/TOC tag. */
 .jh-tag.rd { background: transparent; color: var(--text-muted);
   box-shadow: inset 0 0 0 1px var(--border-subtle); margin-left: 4px; }

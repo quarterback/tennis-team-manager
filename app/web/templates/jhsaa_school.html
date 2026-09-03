@@ -223,7 +223,7 @@
                match center"). The inline line-score expand below is the
                JV box score and stays; only the new Match Center link is
                varsity-only. #}
-            <td><span class="jh-tag {{ 'dist' if jvk == 'JV DISTRICT' else 'state' if jvk == 'JV STATE' else 'road' if jvk == 'JV REGIONALS' else 'show' if jvk == 'WEEKEND' }}">{{ jvk }}</span>
+            <td><span class="jh-tag {{ 'dist' if jvk == 'JV DISTRICT' else 'jvstate' if jvk == 'JV STATE' else 'jvroad' if jvk == 'JV REGIONALS' else 'show' if jvk == 'WEEKEND' }}">{{ jvk }}</span>
               {# The bracket ROUND, on the varsity card's own second chip — a State
                  row otherwise tags five different rounds identically. Only State
                  duals carry one; a regional or league dual's round is what its own
