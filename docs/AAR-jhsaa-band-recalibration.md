@@ -116,13 +116,27 @@ overshoot. The cost lands entirely above 21 OVR: at 34 the underdog's chance goe
 — "a huge underdog's win is rare, usually narrow, and compounding rounds of it
 vanishingly so" — is the reason the upset recalibration was done in the first place.
 
-## 6. ‼️ THE 6-OVR MISS IS STRUCTURAL AND CANNOT BE FITTED AWAY
+## 6. ‼️ THE FIRST TARGET WAS MISSED BY A BOUNDARY, NOT BY A SLOPE
 
-6 OVR sits at the TOP of the peer band, which is identity by owner rule. Its 60.9% is
-therefore a property of `skill_slope` 0.9 and the match format, not of any band slope
-— no post-peer fit can move it, and the 1.1pp gap to the 62% target is the price of
-the peer band being identity. Worth stating so a future pass does not chase it by
-steepening band 2 (which would overshoot 14 to reach a number it cannot touch).
+While the peer band ended at 6, its edge measured **60.9%** against a 62% target, and
+no post-peer fit could move it: 6 OVR sits at the TOP of an identity band, so its win
+rate is a property of `skill_slope` 0.9 and the match format, not of any band slope.
+This section previously concluded the 1.1pp gap was structural and had to be lived
+with.
+
+That was wrong, and the owner's relabel is what showed it. **7 OVR measures 62.7%.**
+Moving the semantic boundary to 7 puts the peer edge where the 62% number actually
+lives, so the first target is now met — by naming the band correctly rather than by
+fitting anything. The curve never needed to change.
+
+The lesson generalises past this table: **when a measurement misses a target at a
+fixed x, check whether the x is the thing that is wrong before concluding the curve
+is.** A whole re-solve was run on the assumption that the four edges were immovable
+inputs; one of them was a label.
+
+Post-relabel, the edges read 62.7 / 74.1 / 86.7 / 95.9 against targets 62 / 75 / 87 /
+95 — every one within about a point, the first essentially exact. Do not chase the
+remaining 0.9pp at 14 by steepening band 2; §5 measures what that costs.
 
 ## 7. Scoreline benchmark — a regression DESCRIPTION, not an objective
 
