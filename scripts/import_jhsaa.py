@@ -993,7 +993,7 @@ RENAMES = {
     "Archbishop Quinlan": "Quaking Aspen",
     "Beargrass Christian": "Beargrass",
     "Bishop Ferraro": "Ferraro",
-    "Central Christian": "Winter Valley School",
+    "Central Christian": "Winter Valley",
     "Coolidge": "Seagrove",
     "Cub River Catholic": "Coldwater",
     "Eastmont Christian": "Eastmont",
