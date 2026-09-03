@@ -2992,6 +2992,16 @@ was a school marker, shipped "Baptist HS High School".
   `reclassify()` is on prep-network's canonical name), and it runs LAST, because every
   school it names sits above `PROMOTE_2A_ABOVE` and would otherwise be promoted straight
   back.
+- **‼️ THE COLUMBIA GORGE DISTRICT AND COLUMBIA RANGE LEAGUE ARE 1A (owner rule
+  2026-09, `scripts/jhsaa_columbia_to_1a.py`).** Both 2052 affiliate leagues (18
+  sponsoring programs plus the dormant Nixyaawii row, Mt Jacqueline included)
+  reclassified DOWN from 2A as INTACT leagues — a district is `(classification,
+  name)`, so the names travelled with the rows and nothing was redrawn (1A 7→9
+  leagues, 2A 10→8, both what `district_count` wants). A RECLASSIFICATION, the
+  Lower Lake idiom: `classification`, `group` AND `enrollment` moved (all but Mt
+  Jacqueline already sat inside 1A's band). These leagues are not in the
+  importer — they exist through the 2052/affiliate/border scripts — so replay
+  this script after those on a re-import.
 - **‼️ `COMPETITIVE_MOVES` is the mirror of PLAY_UP** — a program may be placed BELOW its
   enrollment class when it cannot compete where enrollment puts it, and the ENROLLMENT is
   scaled to match rather than the other way round (the numbers are fictional; the number

@@ -476,7 +476,7 @@ Abbey Vale — 1 program (Ferris County, Gold Valley)
     2A   348 pub  Booker T Washington                                       Millworks Athletic Association     Abbey Vale Orchard Hill
 
 Adrian — 1 program (Malheur County, Blue Mountain Country)
-    2A   140 pub  Adrian                                                    Columbia Range League              Adrian High
+    1A   140 pub  Adrian                                                    Columbia Range League              Adrian High
 
 Aftdahl Ridge — 1 program (Galena County, Millersylvania)
    Group 3   147 pub  Silver Lake                                               Basalt League                      Silver Lake
@@ -548,7 +548,7 @@ Antler Prairie — 1 program (Stagewater County, Kangas)
    Group 3   192 pub  Antler Prairie                                            Inland Empire League               Antler Prairie
 
 Arlington — 1 program (Gilliam County, Columbia Gorge)
-    2A   110 pub  Arlington                                                 Columbia Gorge District            Arlington High
+    1A   110 pub  Arlington                                                 Columbia Gorge District            Arlington High
 
 Arrieta — 3 programs (Halbrook County, Halbrook Basin)
     9A  2367 pub  Arrieta                                                   Forks League                       Arrieta
@@ -584,7 +584,7 @@ Assay — 1 program (Windrow County, Millersylvania)
    Group 3   100 pub  Assay                                                     Basalt League                      Assay
 
 Athena — 1 program (Umatilla County, Blue Mountain Country)
-    2A   250 pub  Weston-McEwen                                             Columbia Range League              Weston-McEwen High
+    1A   250 pub  Weston-McEwen                                             Columbia Range League              Weston-McEwen High
 
 Aurelia — 4 programs (Emigrant County, Kangas)
    Group 1  2556 pub  Ruth Bader Ginsburg                                       Sage Plains League                 Nicolás Cordero
@@ -900,7 +900,7 @@ Clover Reach — 1 program (Olivet County, Yarrowmere)
     5A   948 pub  Clover Reach                                              Mariners League                    Clover Reach
 
 Condon — 1 program (Gilliam County, Columbia Gorge)
-    2A   130 pub  Condon                                                    Columbia Gorge District            Condon High
+    1A   130 pub  Condon                                                    Columbia Gorge District            Condon High
 
 Cook City — 3 programs (Featherstone County, Southern Jefferson)
     8A  1568 pub  Cook City                                                 Mariners League                    Ewart City
@@ -993,7 +993,7 @@ Dry Bar — 1 program (Scheelite County, Millersylvania)
    Group 2   836 pub  Scheelite County                                          High Lakes League                  Scheelite County
 
 Dufur — 1 program (Wasco County, Columbia Gorge)
-    2A   160 pub  Dufur                                                     Columbia Gorge District            Dufur High
+    1A   160 pub  Dufur                                                     Columbia Gorge District            Dufur High
 
 Eagleton — 1 program (Vance County, Silver Basin)
    Group 3   315 pub  Eagleton                                                  Black Canyon League                Eagleton
@@ -1183,7 +1183,7 @@ Gilhooly — 1 program (Featherstone County, Southern Jefferson)
     2A   319 pub  Gilhooly                                                  Marble Valley League               Gilhooly
 
 Glenwood — 1 program (Klickitat County, Columbia Gorge)
-    2A    90 pub  Glenwood                                                  Columbia Gorge District            Glenwood High
+    1A    90 pub  Glenwood                                                  Columbia Gorge District            Glenwood High
 
 Gold Hollow — 1 program (Antler County, Alderwold)
     2A   253 pub  Gold Hollow                                               Foundry League                     Gold Hollow
@@ -1318,10 +1318,10 @@ Imbler — 1 program (Union County, Blue Mountain Country)
     2A   160 pub  Imbler                                                    Snake River District               Imbler High
 
 Ione — 1 program (Morrow County, Blue Mountain Country)
-    2A   100 pub  Ione                                                      Columbia Range League              Ione High
+    1A   100 pub  Ione                                                      Columbia Range League              Ione High
 
 Irrigon — 1 program (Morrow County, Blue Mountain Country)
-    2A   300 pub  Irrigon                                                   Columbia Range League              Irrigon High
+    1A   300 pub  Irrigon                                                   Columbia Range League              Irrigon High
 
 Jackson — 1 program (Teton County, Bear River Country)
    Group 2   553 pub  Jackson Hole                                              Marble Valley League               Jackson Hole High
@@ -1339,7 +1339,7 @@ Jessup Bar — 1 program (Olivet County, Yarrowmere)
     2A   238 pub  Jessup Bar                                                Marble Valley League               Jessup Bar
 
 Joseph — 1 program (Wallowa County, Blue Mountain Country)
-    2A   120 pub  Joseph                                                    Columbia Range League              Joseph High
+    1A   120 pub  Joseph                                                    Columbia Range League              Joseph High
 
 Juniper Bar — 1 program (Tamarack County, Cascade Divide)
     1A   166 pub  Juniper Bar                                               East Cascades League               Juniper Bar
@@ -1379,7 +1379,7 @@ Klamoya — 1 program (Tamarack County, Cascade Divide)
     3A   370 pub  North Wind                                                Rim Country League                 St. Sophia School
 
 Klickitat — 1 program (Klickitat County, Columbia Gorge)
-    2A    95 pub  Klickitat                                                 Columbia Gorge District            Klickitat High
+    1A    95 pub  Klickitat                                                 Columbia Gorge District            Klickitat High
 
 Kokomo — 1 program (Vance County, Silver Basin)
    Group 1  1119 pub  Kokomo                                 Kokomo             Marble Valley League               Belmonte Northwest
@@ -1487,7 +1487,7 @@ Lower Lake — 1 program (Lake County, Cascade Divide)
     8A  1450 pub  Lower Lake                                                Sunkist League                     Lower Lake High
 
 Lyle — 1 program (Klickitat County, Columbia Gorge)
-    2A   105 pub  Lyle                                                      Columbia Gorge District            Lyle High
+    1A   105 pub  Lyle                                                      Columbia Gorge District            Lyle High
 
 Lyman — 1 program (Bridger County, Bear River Country)
    Group 2   900 pub  Bridger Regional                                          PacWest League                     Bridger Regional
@@ -1603,7 +1603,7 @@ Mountain View — 1 program (Bridger County, Bear River Country)
    Group 2   460 priv Bridger County Christian                                  Olympic League                     Bridger County Christian
 
 Mt Jacqueline — 1 program (Juniper County, Juniper Highlands)
-    2A   347 pub  Mt Jacqueline                                             Columbia Gorge District            Elmburg
+    1A   176 pub  Mt Jacqueline                                             Columbia Gorge District            Elmburg
 
 Muskogee — 1 program (Minidoka County, Snake River Plain)
    Group 2   509 pub  Muskogee                                                  Confluence Athletic Association    Muskogee
@@ -1760,7 +1760,7 @@ Pellmont — 1 program (Antler County, Alderwold)
 
 Pendleton — 2 programs (Umatilla County, Blue Mountain Country)
     5A   990 pub  Pendleton                                                 Eastern Oregon League              Pendleton High
-    2A    92 pub  Nixyaawii                                                 Columbia Range League              Nixyaawii Community School
+    1A    92 pub  Nixyaawii                                                 Columbia Range League              Nixyaawii Community School
 
 Perryville — 3 programs (Marlow County, Ashbury Metro)
     8A  2058 pub  James Baldwin                                             Summit League                      James Baldwin
@@ -1774,7 +1774,7 @@ Petoskey — 1 program (Lincoln County, Bear River Country)
    Group 2   946 pub  Petoskey                               Petoskey           Olympic League                     Treasure Valley North
 
 Pilot Rock — 1 program (Umatilla County, Blue Mountain Country)
-    2A   170 pub  Pilot Rock                                                Columbia Range League              Pilot Rock High
+    1A   170 pub  Pilot Rock                                                Columbia Range League              Pilot Rock High
 
 Pine Siding — 1 program (Antler County, Alderwold)
     1A   190 pub  Pine Siding                                               Orchard League                     Pine Siding
@@ -2149,7 +2149,7 @@ Stagewater — 1 program (Stagewater County, Kangas)
    Group 3   168 pub  Oscar Michaeux                                            Inland Empire League               Oscar Michaeux
 
 Stanfield — 1 program (Umatilla County, Blue Mountain Country)
-    2A   220 pub  Stanfield                                                 Columbia Range League              Stanfield High
+    1A   220 pub  Stanfield                                                 Columbia Range League              Stanfield High
 
 Starlake — 2 programs (Vance County, Silver Basin)
    Group 3   352 pub  Canal Lock                                                Black Canyon League                Starlake Canal View
@@ -2242,7 +2242,7 @@ Toussaint — 1 program (Vance County, Silver Basin)
    Group 2   642 pub  Toussaint                                                 Confluence Athletic Association    Northside Christian North
 
 Trout Lake — 1 program (Klickitat County, Columbia Gorge)
-    2A   110 pub  Trout Lake                                                Columbia Gorge District            Trout Lake
+    1A   110 pub  Trout Lake                                                Columbia Gorge District            Trout Lake
 
 Tule Flat — 2 programs (Kernwood County, Yarrowmere)
     3A   464 pub  Tule Flat                                                 Assay Athletic Association         Tule Flat
@@ -2285,7 +2285,7 @@ Union — 1 program (Union County, Blue Mountain Country)
     2A   200 pub  Union                                                     Valle Vista League                 Union High
 
 Unity — 1 program (Baker County, Blue Mountain Country)
-    2A    88 pub  Burnt River                                               Columbia Range League              Burnt River High
+    1A    88 pub  Burnt River                                               Columbia Range League              Burnt River High
 
 Valderra — 19 programs (Ferris County, Gold Valley)
     9A  2527 pub  Ferris                                                    Valle Vista League                 Carmen Valera
@@ -2343,7 +2343,7 @@ Wales City — 3 programs (Weller County, Selquah)
     4A   744 pub  Bracken                                                   Gateway League                     Renata Adler
 
 Wallowa — 1 program (Wallowa County, Blue Mountain Country)
-    2A   130 pub  Wallowa                                                   Columbia Range League              Wallowa High
+    1A   130 pub  Wallowa                                                   Columbia Range League              Wallowa High
 
 Wardlow Depot — 1 program (Olivet County, Yarrowmere)
     2A   275 pub  Wardlow Depot                                             Marble Valley League               Wardlow Depot
@@ -2382,7 +2382,7 @@ Windrow — 1 program (Windrow County, Millersylvania)
    Group 3   118 pub  Windrow                                                   Basalt League                      Windrow
 
 Wishram — 1 program (Klickitat County, Columbia Gorge)
-    2A    88 pub  Wishram                                                   Columbia Gorge District            Wishram High
+    1A    88 pub  Wishram                                                   Columbia Gorge District            Wishram High
 
 Wyalusing — 1 program (Minidoka County, Snake River Plain)
    Group 2   819 pub  Wyalusing Providence                   Wyalusing          Olympic League                     Providence Academy North
