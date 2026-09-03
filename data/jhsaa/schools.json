@@ -562,14 +562,14 @@
       "source": "Archbishop Quinlan"
     },
     {
-      "name": "Archbishop Valois",
+      "name": "Verrettes",
       "city": "Belyakov",
       "county": "Vance",
       "area": "Boise Frontier",
       "classification": "6A",
       "group": "6A",
       "enrollment": 1043,
-      "private": true,
+      "private": false,
       "mascot": "Knights",
       "colors": [
         "#8c1d40",
@@ -1870,7 +1870,7 @@
       "source": "Bishop Ferraro"
     },
     {
-      "name": "Bishop Turner",
+      "name": "West Valderra",
       "city": "Valderra",
       "county": "Ferris",
       "area": "Gold Valley",
@@ -3054,14 +3054,14 @@
       "source": "Winifred Booker North"
     },
     {
-      "name": "Cardinal Newman",
+      "name": "Ibarra",
       "city": "Homecroft",
       "county": "Vance",
       "area": "Silver Basin",
       "classification": "Group 2",
       "group": "Group 2",
       "enrollment": 520,
-      "private": true,
+      "private": false,
       "mascot": "Cardinals",
       "colors": [
         "#6d1a36",
@@ -13607,14 +13607,14 @@
       "locality": "Pointe Coupee"
     },
     {
-      "name": "Pointe Coupee Catholic",
+      "name": "Playa Honda",
       "city": "San Borondón",
       "county": "San Marcos",
       "area": "Sebastian Cape",
       "classification": "1A",
       "group": "1A",
       "enrollment": 100,
-      "private": true,
+      "private": false,
       "mascot": "Mustangs",
       "colors": [
         "#14294e",
@@ -15332,7 +15332,7 @@
       "source": "Saint Francis"
     },
     {
-      "name": "Saint Marc",
+      "name": "Cap Rouge",
       "city": "Belyakov",
       "county": "Vance",
       "area": "Boise Frontier",
@@ -16825,14 +16825,14 @@
       "source": "Isaiah Price"
     },
     {
-      "name": "St. Agnes Academy",
+      "name": "Jacmel",
       "city": "Belyakov",
       "county": "Vance",
       "area": "Boise Frontier",
       "classification": "7A",
       "group": "7A",
       "enrollment": 1527,
-      "private": true,
+      "private": false,
       "mascot": "Blue Devils",
       "colors": [
         "#0e7490",
@@ -16841,7 +16841,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Timber Valley League",
-      "boys_district": "Timber Valley League"
+      "boys_district": "Timber Valley League",
+      "source": "St. Agnes Academy"
     },
     {
       "name": "Montelago West",
@@ -16864,7 +16865,7 @@
       "source": "St. Agnes Preparatory"
     },
     {
-      "name": "St. Brigid",
+      "name": "Kuopio",
       "source": "St. Brigid School",
       "city": "Harrow",
       "county": "Emigrant",
@@ -16872,7 +16873,7 @@
       "classification": "Group 2",
       "group": "Group 2",
       "enrollment": 412,
-      "private": true,
+      "private": false,
       "mascot": "Cougars",
       "colors": [
         "#1e5631",
@@ -16924,14 +16925,14 @@
       "source": "Nathaniel Gaines"
     },
     {
-      "name": "St. Catherine College Prep",
+      "name": "Lizarra",
       "city": "Aldecoa",
       "county": "Vance",
       "area": "Silver Basin",
       "classification": "Group 2",
       "group": "Group 2",
       "enrollment": 1035,
-      "private": true,
+      "private": false,
       "mascot": "Coyotes",
       "colors": [
         "#204e39",
@@ -16940,17 +16941,18 @@
       "girls": true,
       "boys": true,
       "girls_district": "Confluence Athletic Association",
-      "boys_district": "Confluence Athletic Association"
+      "boys_district": "Confluence Athletic Association",
+      "source": "St. Catherine College Prep"
     },
     {
-      "name": "St. Cecilia Academy",
+      "name": "Quartzburg",
       "city": "Tunnel Diggings",
       "county": "Goldbank",
       "area": "Southern Jefferson",
       "classification": "1A",
       "group": "1A",
       "enrollment": 127,
-      "private": true,
+      "private": false,
       "mascot": "Wolves",
       "colors": [
         "#1d4e9e",
@@ -16959,7 +16961,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League"
+      "boys_district": "Marble Valley League",
+      "source": "St. Cecilia Academy"
     },
     {
       "name": "Wildrye",
@@ -16982,7 +16985,7 @@
       "source": "St. Dominic Academy"
     },
     {
-      "name": "St. Elian",
+      "name": "Elian",
       "city": "St. Elian",
       "county": "Ferris",
       "area": "Gold Valley",
@@ -16998,7 +17001,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League"
+      "boys_district": "Marble Valley League",
+      "source": "St. Elian"
     },
     {
       "name": "Port Ainsley",
@@ -17021,14 +17025,14 @@
       "source": "St. Elias Academy"
     },
     {
-      "name": "St. Elias College Prep",
+      "name": "Aranaz",
       "city": "Echevarria",
       "county": "Vance",
       "area": "Silver Basin",
       "classification": "Group 2",
       "group": "Group 2",
       "enrollment": 730,
-      "private": true,
+      "private": false,
       "mascot": "Rattlers",
       "colors": [
         "#6d1a36",
@@ -17037,17 +17041,18 @@
       "girls": true,
       "boys": true,
       "girls_district": "Dual County League",
-      "boys_district": "Dual County League"
+      "boys_district": "Dual County League",
+      "source": "St. Elias College Prep"
     },
     {
-      "name": "St. Francis Catholic",
+      "name": "Robledo",
       "city": "Los Robles",
       "county": "Marlow",
       "area": "Ashbury Metro",
       "classification": "7A",
       "group": "7A",
       "enrollment": 1575,
-      "private": true,
+      "private": false,
       "mascot": "Lancers",
       "colors": [
         "#0f6a70",
@@ -17200,14 +17205,14 @@
       "source": "St. Isidore"
     },
     {
-      "name": "St. Jerome Academy",
+      "name": "Isla Verde",
       "city": "San Borondón",
       "county": "San Marcos",
       "area": "Sebastian Cape",
       "classification": "1A",
       "group": "1A",
       "enrollment": 306,
-      "private": true,
+      "private": false,
       "mascot": "Albatross",
       "colors": [
         "#0f6a70",
@@ -17216,7 +17221,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "South Coast League",
-      "boys_district": "South Coast League"
+      "boys_district": "South Coast League",
+      "source": "St. Jerome Academy"
     },
     {
       "name": "St. Josephine Bakhita",
@@ -17418,14 +17424,14 @@
       "locality": "Webster Groves"
     },
     {
-      "name": "St. Sergius",
+      "name": "Alderpoint",
       "city": "Novak",
       "county": "Tamarack",
       "area": "Cascade Divide",
       "classification": "3A",
       "group": "3A",
       "enrollment": 446,
-      "private": true,
+      "private": false,
       "mascot": "Northern Lights",
       "colors": [
         "#7f1d1d",
@@ -17478,7 +17484,7 @@
       "boys_district": "Sage Plains League"
     },
     {
-      "name": "St. Varian",
+      "name": "Varian",
       "city": "St. Varian",
       "county": "Marlow",
       "area": "Ashbury Metro",
@@ -17494,17 +17500,18 @@
       "girls": true,
       "boys": true,
       "girls_district": "Metro League",
-      "boys_district": "Metro League"
+      "boys_district": "Metro League",
+      "source": "St. Varian"
     },
     {
-      "name": "St. Veronica",
+      "name": "Yarrowfield",
       "city": "Garrow",
       "county": "Kernwood",
       "area": "Yarrowmere",
       "classification": "3A",
       "group": "3A",
       "enrollment": 464,
-      "private": true,
+      "private": false,
       "mascot": "Bucks",
       "colors": [
         "#3a5a78",
@@ -17513,7 +17520,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Quarry League",
-      "boys_district": "Quarry League"
+      "boys_district": "Quarry League",
+      "source": "St. Veronica"
     },
     {
       "name": "St. Vincent",
@@ -18275,7 +18283,7 @@
       "source": "Tamarack Harbor"
     },
     {
-      "name": "Tidewater Catholic",
+      "name": "Tidewater",
       "source": "St. Elias School",
       "city": "Port Veles",
       "county": "Bidwell",
@@ -18283,7 +18291,7 @@
       "classification": "6A",
       "group": "6A",
       "enrollment": 1164,
-      "private": true,
+      "private": false,
       "mascot": "Wildcats",
       "colors": [
         "#3a5a78",
@@ -20150,7 +20158,7 @@
       "locality": "Wyalusing"
     },
     {
-      "name": "Wyalusing Providence",
+      "name": "Minidoka",
       "city": "Wyalusing",
       "county": "Minidoka",
       "area": "Snake River Plain",

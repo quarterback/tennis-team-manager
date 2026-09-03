@@ -326,6 +326,13 @@ def jv_dual_format(a_spare: int, b_spare: int) -> DualFormat | None:
 #: plays fewer. The showcase weekend is NOT counted here.
 JV_DUAL_CAP = 16
 
+#: ‼️ THE JV TEAM STATE TOURNAMENT IS A PILOT, and this is the season it starts
+#: (JHSAA 2068). A year gate rather than a feature flag, for the reason the 1A
+#: 2S/3D pilot is gated on its class: archived seasons must keep reading as the
+#: years they actually were, and an event that back-applied itself would rewrite
+#: them. See `app/jhsaa_jv_state.py`.
+JV_STATE_FROM = 2068
+
 #: The JV SHOWCASE WEEKEND — the season-ending event, and the only JV event there is
 #: (owner rule 2026-08). One per program, played after the invitational cap has bound,
 #: and it does NOT count against `JV_DUAL_CAP`. The varsity showcase machinery is
@@ -7916,6 +7923,23 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     # It writes nothing any line below this can see: no `records`, no `matches`, no
     # `power`, no standings row. That is `JVTeam`'s doing, not this call's.
     out["jv"] = play_jv_season(by_group, year, gender, salt)
+    # ‼️ THE JV TEAM STATE TOURNAMENT — a PILOT from `JV_STATE_FROM` (JHSAA 2068).
+    # Gated on the season year exactly as the 1A 2S/3D postseason pilot is gated on
+    # its class: a world that has already archived earlier seasons must keep reading
+    # them as the years they were, and a pilot that silently back-applied itself
+    # would rewrite what those seasons were.
+    #
+    # It runs AFTER the JV season and reads only its results, so it cannot disturb
+    # anything above: `JVTeam` has no `records`/`matches` to reach, and these duals
+    # are archived at JV `level` under their own phase.
+    if year >= JV_STATE_FROM:
+        from .jhsaa_jv_state import run_jv_state
+        # ‼️ blake2s, never `hash()` — Python salts str hashes per process and this
+        # event is ARCHIVED, so "the same season" has to survive a restart.
+        jvs_seed = int(hashlib.blake2s(
+            f"{salt}|jvstate|{gender}|{year}".encode(), digest_size=8).hexdigest(), 16)
+        out["jv_state"] = run_jv_state(out["jv"], gender=gender, year=year,
+                                       seed=jvs_seed % (1 << 30))
     # TOSS was computed over the whole gender inside `play_regular_season` — once, on the
     # finished regular season, before any state tournament, since it is both the seeding
     # input and rung 4 of the district tiebreak. Across all classifications together

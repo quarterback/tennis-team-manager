@@ -115,6 +115,69 @@ _EXPANSION_2046_PLACES = [
 # Malheur County, Fort Valois on Ontario's site) — two ontologies, the Baker
 # precedent. Amelia City is the one JEFFERSON town in the batch: a revived
 # ghost town on the real Amelia City, OR site, filed under Barlowe County.
+# --- towns NEITHER source anchors (owner rule 2026-09) -----------------------
+# ‼️ A TOWN WITH NO PLACE ROW TAKES ITS SCHOOLS OUT OF THE DOCUMENT WITH IT.
+# `build` groups programs `by_town` and then walks `place`, so a town missing from
+# both prep-network and the expansion tables is not merely printed without
+# coordinates — it is skipped, silently, and so is every program in it. That hid 49
+# live programs across 40 towns, including all SEVEN in Louisville, because Port
+# Valdez is Jefferson-side territory prep-network has never had a row for.
+#
+# The gazetteer's job is to be the school/geography reference, so a program absent
+# from it is worse than one placed approximately. Owner: "for cities without
+# coordinates, just add them … it's all fictional anyway." Real places keep their
+# true coordinates (the out-of-state affiliates); Jefferson's own towns are anchored
+# on the real county ground their area stands on, spread so bearings and distances
+# between them stay sane.
+_UNANCHORED_PLACES = [
+    # (name, county, area, real_county, lat, lon, population)
+    # --- out-of-state affiliates: real towns, real coordinates ---------------
+    ("Bend",            "Deschutes",  "Cascade Divide",     "Deschutes County, OR",   44.058, -121.315, 102000),
+    ("Boise",           "Ada",        "Boise Frontier",     "Ada County, ID",         43.615, -116.202, 235000),
+    ("Green River",     "Sweetwater", "Bear River Country", "Sweetwater County, WY",  41.529, -109.466,  11500),
+    ("Rock Springs",    "Sweetwater", "Bear River Country", "Sweetwater County, WY",  41.587, -109.203,  23000),
+    ("Jackson",         "Teton",      "Bear River Country", "Teton County, WY",       43.479, -110.762,  10500),
+    ("Lower Lake",      "Lake",       "Cascade Divide",     "Lake County, CA",        38.911, -122.611,   1300),
+    ("Ukiah",           "Mendocino",  "Cascade Divide",     "Mendocino County, CA",   39.150, -123.208,  16600),
+    ("Money",           "Box Elder",  "Bear River Country", "Box Elder County, UT",   41.640, -112.500,    300),
+    ("Spring Harvest",  "Box Elder",  "Bear River Country", "Box Elder County, UT",   41.780, -112.150,    900),
+    # --- Minidoka county: Rupert / Paul / Heyburn ground, south-central Idaho -
+    ("Wyalusing",       "Minidoka",   "Snake River Plain",  "Minidoka County, ID",    42.619, -113.677,   3100),
+    ("Boley",           "Minidoka",   "Snake River Plain",  "Minidoka County, ID",    42.755, -113.489,    620),
+    ("Langston",        "Minidoka",   "Snake River Plain",  "Minidoka County, ID",    42.702, -113.552,    540),
+    ("Caney",           "Minidoka",   "Snake River Plain",  "Minidoka County, ID",    42.607, -113.784,    410),
+    ("Chillicothe",     "Minidoka",   "Snake River Plain",  "Minidoka County, ID",    42.556, -113.762,    880),
+    ("Eatonville",      "Minidoka",   "Snake River Plain",  "Minidoka County, ID",    42.630, -113.598,    350),
+    ("Hampton",         "Minidoka",   "Snake River Plain",  "Minidoka County, ID",    42.481, -113.836,    470),
+    ("Kingston",        "Minidoka",   "Snake River Plain",  "Minidoka County, ID",    42.834, -113.605,    290),
+    ("Monongahela",     "Minidoka",   "Snake River Plain",  "Minidoka County, ID",    42.512, -113.470,    760),
+    ("Muskogee",        "Minidoka",   "Snake River Plain",  "Minidoka County, ID",    42.688, -113.870,    930),
+    ("Natchez",         "Minidoka",   "Snake River Plain",  "Minidoka County, ID",    42.560, -113.921,   1200),
+    ("Nicodemus",       "Minidoka",   "Snake River Plain",  "Minidoka County, ID",    42.792, -113.742,    260),
+    ("Okmulgee",        "Minidoka",   "Snake River Plain",  "Minidoka County, ID",    42.463, -113.640,    680),
+    ("Tallulah",        "Minidoka",   "Snake River Plain",  "Minidoka County, ID",    42.735, -113.930,    840),
+    ("Topeka",          "Minidoka",   "Snake River Plain",  "Minidoka County, ID",    42.441, -113.735,    510),
+    ("Tuskegee",        "Minidoka",   "Snake River Plain",  "Minidoka County, ID",    42.664, -113.430,    720),
+    # --- Vance county: Elko ground, northeastern Nevada ----------------------
+    ("Tuscarora",       "Vance",      "Silver Basin",       "Elko County, NV",        41.312, -116.230,    170),
+    ("Chickasaw",       "Vance",      "Silver Basin",       "Elko County, NV",        40.942, -115.492,    640),
+    ("Kokomo",          "Vance",      "Silver Basin",       "Elko County, NV",        40.671, -115.981,    390),
+    ("Norfolk",         "Vance",      "Silver Basin",       "Elko County, NV",        41.086, -116.019,    810),
+    ("Petersburg",      "Vance",      "Silver Basin",       "Elko County, NV",        40.760, -115.402,    450),
+    ("Richmond",        "Vance",      "Silver Basin",       "Elko County, NV",        41.204, -115.717,    580),
+    ("Toussaint",       "Vance",      "Silver Basin",       "Elko County, NV",        40.598, -115.640,    330),
+    # --- Lincoln county: Kemmerer / Afton ground, western Wyoming ------------
+    ("Emporia",         "Lincoln",    "Bear River Country", "Lincoln County, WY",     41.792, -110.537,   2400),
+    ("Guthrie",         "Lincoln",    "Bear River Country", "Lincoln County, WY",     42.104, -110.928,    690),
+    ("Kearney",         "Lincoln",    "Bear River Country", "Lincoln County, WY",     42.451, -110.812,    520),
+    ("Timberline",      "Lincoln",    "Bear River Country", "Lincoln County, WY",     42.723, -110.933,    880),
+    # --- Jefferson's own, unlisted in prep-network ---------------------------
+    ("Louisville",      "Valdez",     "Port Valdez",        "Coos County, OR",        43.412, -124.201,  88000),
+    ("Harmons Landing", "Antler",     "Alderwold",          "Douglas County, OR",     43.551, -123.847,   1900),
+    ("Wheatley",        "Cinder",     "Cascade Divide",     "Siskiyou County, CA",    41.622, -122.904,    740),
+    ("Stagewater",      "Stagewater", "Kangas",             "Malheur County, OR",     43.618, -117.104,   4200),
+]
+
 _EXPANSION_2052_PLACES = [
     # (name, county, area, real_county, lat, lon, population)
     ("Hermiston",        "Umatilla",  "Blue Mountain Country", "Umatilla County, OR",  45.840, -119.289, 20500),
@@ -188,7 +251,8 @@ def build(m, rows: list[dict], cities: list[dict]) -> str:
     # net-new — prep-network has no rows for it, so its places are anchored
     # locally (see the _EXPANSION_*_PLACES tables above).
     for name, county, area, realc, lat, lon, pop in (
-            _EXPANSION_2046_PLACES + _EXPANSION_2052_PLACES):
+            _EXPANSION_2046_PLACES + _EXPANSION_2052_PLACES
+            + _UNANCHORED_PLACES):
         place.setdefault(name, {"name": name, "county": county, "area": area,
                                 "real_county": realc, "lat": lat, "lon": lon,
                                 "population": pop})
