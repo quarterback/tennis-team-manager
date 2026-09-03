@@ -116,13 +116,27 @@ overshoot. The cost lands entirely above 21 OVR: at 34 the underdog's chance goe
 — "a huge underdog's win is rare, usually narrow, and compounding rounds of it
 vanishingly so" — is the reason the upset recalibration was done in the first place.
 
-## 6. ‼️ THE 6-OVR MISS IS STRUCTURAL AND CANNOT BE FITTED AWAY
+## 6. ‼️ THE FIRST TARGET WAS MISSED BY A BOUNDARY, NOT BY A SLOPE
 
-6 OVR sits at the TOP of the peer band, which is identity by owner rule. Its 60.9% is
-therefore a property of `skill_slope` 0.9 and the match format, not of any band slope
-— no post-peer fit can move it, and the 1.1pp gap to the 62% target is the price of
-the peer band being identity. Worth stating so a future pass does not chase it by
-steepening band 2 (which would overshoot 14 to reach a number it cannot touch).
+While the peer band ended at 6, its edge measured **60.9%** against a 62% target, and
+no post-peer fit could move it: 6 OVR sits at the TOP of an identity band, so its win
+rate is a property of `skill_slope` 0.9 and the match format, not of any band slope.
+This section previously concluded the 1.1pp gap was structural and had to be lived
+with.
+
+That was wrong, and the owner's relabel is what showed it. **7 OVR measures 62.7%.**
+Moving the semantic boundary to 7 puts the peer edge where the 62% number actually
+lives, so the first target is now met — by naming the band correctly rather than by
+fitting anything. The curve never needed to change.
+
+The lesson generalises past this table: **when a measurement misses a target at a
+fixed x, check whether the x is the thing that is wrong before concluding the curve
+is.** A whole re-solve was run on the assumption that the four edges were immovable
+inputs; one of them was a label.
+
+Post-relabel, the edges read 62.7 / 74.1 / 86.7 / 95.9 against targets 62 / 75 / 87 /
+95 — every one within about a point, the first essentially exact. Do not chase the
+remaining 0.9pp at 14 by steepening band 2; §5 measures what that costs.
 
 ## 7. Scoreline benchmark — a regression DESCRIPTION, not an objective
 
@@ -167,6 +181,123 @@ and 2 are both ×1.0, so the edge between them is invisible to the transform: ov
 0–60 OVR at 0.1-point steps, `band_gap` is byte-identical before and after. No
 archived season, scoreline, seed or upset rate can move. What changes is only what the
 five ranges are *called* — which is what was actually wrong.
+
+## 9. ‼️ THE REAL GOAL WAS TWO GOALS AT OPPOSITE ENDS OF ONE CURVE
+
+The owner then named what they had been reaching for the whole time:
+
+> "i want upsets, but i want there to be upsets between top tier players playing
+> each other not someone way worse fluking into wins all the time, those should be
+> rarer occasions"
+
+That is not one dial. It is **volatility preserved at the bottom and thinned at the
+top**, and every pass above had been treating the curve as a single thing to be made
+more or less steep. The answer is a fine 12-band ramp: 3-point steps, gentle through
+27 OVR, accelerating after.
+
+## 10. ‼️ A FINER BAND TABLE CAN BE FLATTER THAN A COARSE ONE
+
+The shipped table's top slope is **2.70** against the 5-band curve's **3.0**, and it
+reads as obviously the steeper of the two — twelve bands, every one accelerating,
+reaching further up the scale. It is not. **Slopes multiply BAND WIDTHS, and narrow
+bands accumulate less**, so it crosses BELOW the old curve at 24 OVR and stays there:
+
+| OVR | eff gap, 5-band | eff gap, 12-band |
+|---|---|---|
+| 14 | 0.2333 | 0.2618 |
+| 21 | 0.4083 | 0.4320 |
+| 24 | 0.5183 | 0.5170 |
+| 28 | 0.6650 | 0.6460 |
+| 34 | 0.9650 | 0.8727 |
+| 40 | 1.2650 | 1.1427 |
+
+**Never eyeball a band tuple. Evaluate `band_gap(x)` at the gaps you care about.**
+The tuple is a table of derivatives; what decides matches is its integral.
+
+## 11. ‼️ AND THE FLATTER TAIL IS THE POINT — IT IS NOT A REGRESSION
+
+That crossover raises the underdog at 34 OVR from 0.70% to 1.32% and at 40 OVR from
+0.11% to 0.21%. An earlier pass here read those rows as a defect, raised the last
+three slopes to 2.45/3.30/4.20 to "restore" the old suppression, and was reverted by
+the owner:
+
+> "no the tail is right. you want them to be able to win, it's high school tennis."
+
+A big mismatch in high school is improbable, not impossible, and the previous curve
+had been suppressing it on the strength of a college-era argument about compounding
+bracket runs. **Do not redo that correction.** The whole point of §9 is that the two
+ends are tuned for different reasons; measuring the tail against the old curve and
+calling the difference a regression is exactly the single-dial thinking §9 replaces.
+
+‼️ Note also what this cost: the "fix" was applied and documented as a correction
+before the owner had ruled on it, on the strength of a stated intent ("flukes should
+be rarer") that the numbers appeared to contradict. The numbers did contradict it —
+and the owner's intent had a threshold in it that no measurement could supply. When a
+change turns on where a line sits rather than on what the data says, that line is the
+owner's to draw.
+
+## 12. The mid-curve step — what finally landed
+
+The smooth 12-band ramp separated the middle better than the 5-band curve but was
+still, in effect, one gesture: it cancelled the logistic's flattening and produced a
+near-LINEAR 5.5 points of favourite win rate per 3 OVR from 0 to 18. The owner's next
+table put a real step in it — 1.30 at 13-15 jumping to **1.60 at 16-18** — and that is
+the shape now shipped.
+
+‼️ **A logistic flattens as the favourite nears certainty, so a smooth ramp buys less
+win probability per OVR point the further out it goes.** The step reverses that
+locally, and it is visible in the per-band lift:
+
+| band | this table | smooth ramp | 5-band |
+|---|---|---|---|
+| 0-3 | 5.7 | 5.7 | 5.7 |
+| 3-6 | 5.9 | 5.7 | 5.4 |
+| 6-9 | 6.0 | 5.7 | 5.2 |
+| 9-12 | 5.5 | 5.6 | 4.9 |
+| 12-15 | 5.4 | 5.4 | 5.2 |
+| **15-18** | **5.8** | 5.3 | 5.7 |
+| 18-21 | 4.9 | 4.7 | 4.8 |
+| 21-24 | 4.0 | 3.8 | 5.0 |
+| 24-27 | 2.7 | 3.1 | 3.4 |
+| 27-30 | 1.9 | 2.2 | 2.5 |
+| 30-34 | 1.4 | 1.7 | 1.7 |
+
+15-18 is the only band that buys MORE than the band below it. That is a kink, not a
+ramp, and it is where the owner wants a mismatch to start telling.
+
+‼️ **The flat top costs almost nothing.** The last two bands are both 2.20, so the
+curve goes linear from 31 OVR up instead of accelerating — and the underdog at 40 OVR
+is 0.23% against the smooth ramp's 0.21%. Past ~30 the CEILING does the work, not the
+slope: the favourite is already at 97.5% with 2.5 points left to win. This is the
+practical form of the rule in §10 — steepening the middle is cheap, steepening the top
+is expensive and barely moves anything.
+
+### Shipped
+
+    BAND_EDGES_OVR (3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 34)
+    BAND_SLOPES    (1.00, 1.10, 1.16, 1.20, 1.30, 1.60, 1.71, 1.96, 2.04,
+                    2.13, 2.20, 2.20)
+
+Every band edge, 60k matches a point:
+
+| OVR | 0 | 3 | 6 | 9 | 12 | 15 | 18 | 21 | 24 | 27 | 30 | 34 | 40 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| fav win % | 49.8 | 55.4 | 61.3 | 67.3 | 72.8 | 78.2 | 84.0 | 88.9 | 92.9 | 95.6 | 97.5 | 98.9 | 99.8 |
+| underdog % | 50.3 | 44.6 | 38.7 | 32.7 | 27.2 | 21.8 | 16.0 | 11.1 | 7.1 | 4.4 | 2.5 | 1.1 | 0.2 |
+| eff gap | .000 | .050 | .105 | .163 | .223 | .288 | .368 | .454 | .552 | .654 | .760 | .907 | 1.127 |
+
+Peers are untouched by every reshape in this document (0 OVR 49.8%, 3 OVR 55.4%,
+identical across all four curves tried), the middle separates hardest of any version,
+and the tail stays deliberately soft.
+
+Scoreline benchmark as a regression description only, never an objective: the close-
+set profile is an accepted consequence of the band spec.
+
+`tests/test_jhsaa_scorelines.py` needed one repair along the way: it asserted the peer
+band was identity across a hardcoded 0-6, which the 0-3 peer band breaks. It now
+derives the width from `BAND_EDGES_OVR[0]` — that band has moved three times
+(6 -> 7 -> 3) and a literal fails on the next move while saying nothing about the
+property.
 
 ### What the aborted re-solve is still worth
 

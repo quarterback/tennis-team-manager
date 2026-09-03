@@ -4413,6 +4413,74 @@ def _jh_indiv_grade_label(players: list, full: bool = False) -> str:
     return " / ".join(parts)
 
 
+def _jh_qual_cols(draw: dict, schools: dict) -> list:
+    """A qualifying draw as bracket COLUMNS — N independent sub-brackets stacked.
+
+    ‼️ A QUALIFYING DRAW IS A TREE, IT IS JUST NOT *ONE* TREE. It is N independent
+    sub-brackets, one per qualifying place, each ending in a qualifier rather than
+    advancing to a single champion — which is exactly how a slam prints qualifying.
+    93 entries over rounds of [27, 33] is 33 sub-brackets: 27 of three players (a
+    first-round match, then its winner meets the third) and 6 of two. Each halves
+    perfectly; what does not halve is 27 feeding 33, i.e. the two rounds handed to
+    the canvas as one column list.
+
+    The fix is the one `_jh_bracket_cols` already uses for the team draw: MATERIALISE
+    EVERY BYE as a pass-through card, so each sub-bracket is the same depth and the
+    column widths halve. Here that turns 27 + 33 into 66 -> 33, and the 66 is 27 real
+    first-round matches plus exactly the 39 players who byed into round two.
+
+    Cards are ORDERED BY THEIR REAL FEEDERS, walking back from the last round, for
+    the same reason the team draw does it: `_bracket_canvas` links positionally
+    (cards `2k` and `2k+1` feed card `k`) and the archive stores each round in draw
+    order, not in an order that happens to satisfy that rule.
+    """
+    rounds = draw["rounds"]
+    entries = draw["entries"]
+    if not rounds:
+        return []
+
+    def card(m):
+        hi, lo = entries[m["hi"]], entries[m["lo"]]
+        hw = m["winner_is_hi"]
+        return {"home": _jh_indiv_card_side(hi, hw, schools),
+                "away": _jh_indiv_card_side(lo, not hw, schools),
+                "played": True, "id": None, "tbd": False, "region": None,
+                "bpos": 0, "home_won": hw, "winner": None,
+                "score": m["scoreline"], "score_full": True}
+
+    def bye(idx):
+        """An entrant who reached this round without playing. Rendered BYE rather
+        than TBD — the slot is not undecided, there was genuinely no opponent."""
+        return {"home": _jh_indiv_card_side(entries[idx], True, schools),
+                "away": {"school": "", "abbr": "", "color": "", "won": False,
+                         "seed": None, "conf": "", "aq": False, "tbd": True,
+                         "label": "BYE", "name": "BYE", "sub": "", "pid": ""},
+                "played": False, "id": None, "tbd": False, "region": None,
+                "bpos": 0, "home_won": True, "winner": None,
+                "score": "", "score_full": True, "bye": True}
+
+    def won_by(m):
+        return m["hi"] if m["winner_is_hi"] else m["lo"]
+
+    cols = [[card(m) for m in rounds[-1]]]
+    for r in range(len(rounds) - 1, 0, -1):
+        source = {won_by(m): m for m in rounds[r - 1]}
+        layer = []
+        for m in rounds[r]:
+            for side in (m["hi"], m["lo"]):
+                got = source.get(side)
+                layer.append(card(got) if got is not None else bye(side))
+        cols.insert(0, layer)
+    return [{"name": _jhi().round_label(rnd[0]["rnd"]) if rnd else "",
+             "matchups": c}
+            for rnd, c in zip(rounds, cols)]
+
+
+def _jhi():
+    import app.jhsaa_individuals as ji
+    return ji
+
+
 def _jh_indiv_card_side(e: dict, won: bool, schools: dict) -> dict:
     """One side of an individual bracket card.
 
@@ -4557,13 +4625,21 @@ def _jh_indiv_drawn(draw: dict, schools: dict, as_rounds: bool = False) -> dict:
     # round; splitting only `rounds[0]` would hand the tree a second one whose
     # size does not halve from the round before it, which is exactly the input
     # `_bracket_canvas` cannot draw.
-    # ‼️ A QUALIFYING DRAW IS NOT A TREE AND MUST NOT BE FED TO ONE.
-    # `_bracket_canvas` links columns positionally on the main draw's halving;
-    # Regional Qualifying is two INDEPENDENT rounds whose sizes do not halve (31
-    # matches then 32, because the opening round byes a third of the field into
-    # the final one). Rendered on the canvas it would draw links between matches
-    # that have nothing to do with each other. `as_rounds` sends every round to
-    # the panel list instead, which is how a slam prints its qualifying anyway.
+    # ‼️ QUALIFYING IS RENDERED AS ROUND LISTS, NOT AS ONE TREE — and the reason
+    # is NOT that it cannot be a tree. It can: a qualifying draw is N INDEPENDENT
+    # sub-brackets, one per qualifying place, exactly as a slam prints them (four
+    # players -> two -> a qualifier, stacked N times, with no overall champion).
+    # This draw's 93 entries and [27, 33] rounds are 33 sub-brackets — 27 of three
+    # players (a first-round match, then the winner meets the third) and 6 of two.
+    # Each of those halves perfectly.
+    #
+    # What CANNOT be drawn is the whole thing as ONE tree: `_bracket_canvas` links
+    # columns positionally, and 27 matches feeding 33 is not a halving, so it would
+    # elbow together matches with no relationship. That is a fact about feeding the
+    # canvas one column list, not about qualifying — an earlier version of this
+    # comment drew the wrong conclusion from it and said a qualifying draw "is not a
+    # tree". Rendering the sub-brackets is open whenever it is wanted; `as_rounds`
+    # is the list presentation, which is also how an association publishes qualifying.
     playins = []
     if as_rounds:
         rounds, tail = [], rounds
@@ -4584,7 +4660,13 @@ def _jh_indiv_drawn(draw: dict, schools: dict, as_rounds: bool = False) -> dict:
     # AttributeError on the FIRST non-empty round of any archived draw, varsity
     # included, which is a 500 on the whole championship route. Deleting a
     # mechanism means grepping its sentinel, not just its implementation.
-    cols = []
+    # ‼️ QUALIFYING GETS ITS SUB-BRACKETS DRAWN (owner, 2026-09). `as_rounds` empties
+    # `rounds` above so the flat loop below builds nothing, and the canvas used to be
+    # left empty on the belief that a qualifying draw has no tree. It has N of them —
+    # `_jh_qual_cols` materialises the byes and hands the canvas a shape that halves.
+    # The round LISTS stay too: a bracket shows the structure, the list carries the
+    # scores, and that is how a slam publishes qualifying.
+    cols = _jh_qual_cols(draw, schools) if as_rounds else []
     for rnd in rounds:
         ms = []
         for m in rnd:
@@ -4612,6 +4694,10 @@ def _jh_indiv_drawn(draw: dict, schools: dict, as_rounds: bool = False) -> dict:
     runner_sc = schools.get(runner["school"]) if runner else None
     return {
         "ready": True, "playins": playins,
+        # What the reader of a qualifying sheet actually wants to know, and what
+        # neither DRAW nor SEEDS in the header answers: how many of this field
+        # come out of it. The last round is one match per qualifying place.
+        "qual_advance": len(playins[-1]) if playins else 0,
         "n_seeds": draw["n_seeds"], "field_n": len(entries),
         "champion": champ, "runner_up": runner,
         # Grade/hometown sit UNDER the name on the hero announcement, never

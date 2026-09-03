@@ -87,27 +87,32 @@
    canvas stays visible at every width and scrolls inside `.brk-scroll`, which it
    already does. #}
 {% for layer in view.playins %}
-{# The preliminary layers — surplus qualifiers past the 96 main draw playing in.
-   NOT bracket columns: the tree links columns positionally on the main draw's
-   halving, and a real association prints its play-ins as a list above the draw
-   anyway. Each LAYER is its own round and its own panel: a field over 192 needs
-   more than one, and a player is in at most one match per layer. #}
+{# Each qualifying ROUND is its own panel, printed as a RESULTS LIST — one row a
+   match, winner then loser then the score — which is how an association actually
+   publishes qualifying, and what `.jh-qual` is for.
+
+   ‼️ NOT `.jh-seedtiers`, which this used to borrow. That component is a 220px
+   auto-fill grid of short name lists with `white-space: nowrap` and an ellipsis:
+   correct for the seed tiers it was built for, and for a match result it truncates
+   the opponent and the score — the two things the row exists to show — while
+   labelling every match "LINE n", a number that means a seed line in a play-in and
+   nothing at all here. Borrowing a component borrows its constraints. #}
 <div class="bl-panel" style="margin-bottom:12px">
   <div class="bl-panel-head"><h2>{{ layer[0].rnd if layer and layer[0].rnd else 'Play-in' }}{% if view.playins|length > 1 and not (layer and layer[0].rnd) %} {{ loop.index }}{% endif %}</h2>
-    <span class="sub">{{ layer|length }} match{{ 'es' if layer|length != 1 }} · winners {{ 'advance a round' if not loop.last else ('qualify for the State draw' if view.qualifying else 'join the main draw') }}</span></div>
-  <div class="jh-seedtiers">
+    <span class="sub">{{ layer|length }} match{{ 'es' if layer|length != 1 }} ·
+      {% if loop.last %}winners {{ 'qualify for the State draw' if view.qualifying else 'join the main draw' }}{% if view.qual_advance %} — {{ view.qual_advance }} of {{ view.field_n }} advance{% endif %}{% else %}winners advance a round{% endif %}</span></div>
+  <ol class="jh-qual">
     {% for m in layer %}
-    <div class="tier">
-      <div class="lbl">{% if m.seed_line %}Line {{ m.seed_line }}{% endif %}</div>
-      <div class="rows">
-        <div class="row">
-          <a href="{{ url_for('jhsaa_player', school=m.winner.school, pid=m.winner.players[0].pid, u=u, g=view.gender, year=view.scope.pin) }}">{{ m.winner.label }}</a>
-          <span class="sch">{{ m.winner.school }} · def. {{ m.loser.label }}, {{ m.loser.school }} {{ m.scoreline }}</span>
-        </div>
-      </div>
-    </div>
+    <li>
+      <span class="n">{{ loop.index }}</span>
+      <a class="w" href="{{ url_for('jhsaa_player', school=m.winner.school, pid=m.winner.players[0].pid, u=u, g=view.gender, year=view.scope.pin) }}">{{ m.winner.label }}</a>
+      <span class="ws">{{ m.winner.school }}</span>
+      <a class="l" href="{{ url_for('jhsaa_player', school=m.loser.school, pid=m.loser.players[0].pid, u=u, g=view.gender, year=view.scope.pin) }}">{{ m.loser.label }}</a>
+      <span class="ls">{{ m.loser.school }}</span>
+      <span class="sc">{{ m.scoreline }}</span>
+    </li>
     {% endfor %}
-  </div>
+  </ol>
 </div>
 {% endfor %}
 
@@ -116,13 +121,16 @@
     <div class="brk-region-head">
       <h2>{{ view.season_year }} {{ view.event_name }} · {{ view.field_n }} entries</h2>
       <span class="brk-region-champ">
-        {% if view.champion %}{{ view.champion.label }}{% if view.runner_up %} def. {{ view.runner_up.label }}{% endif %}{% else %}in progress{% endif %}</span>
+        {% if view.qualifying %}{{ view.qual_advance }} qualify{% elif view.champion %}{{ view.champion.label }}{% if view.runner_up %} def. {{ view.runner_up.label }}{% endif %}{% else %}in progress{% endif %}</span>
     </div>
     {% if view.canvas.columns %}
+    {# ‼️ A QUALIFYING DRAW IS N SUB-BRACKETS, one per qualifying place, each ending
+       in a qualifier rather than in a champion — the same tree a slam prints for its
+       qualifying. `_jh_qual_cols` materialises the byes so the columns halve and the
+       shared canvas can draw it; this used to render "Played as rounds, above" on
+       the belief that qualifying has no tree at all. #}
     {{ brk_canvas(view.canvas, u, false, 'jhsaa_player', {'g': view.gender, 'year': view.scope.pin}) }}
     {% else %}
-    {# A qualifying draw has no tree — its rounds are above, as an association
-       prints them. #}
     <div class="jh-empty" style="padding:12px">Played as rounds, above.</div>
     {% endif %}
   </section>
