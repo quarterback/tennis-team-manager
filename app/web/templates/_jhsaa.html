@@ -181,7 +181,7 @@
      draws plus mixed doubles, which are a championship the association crowns and
      therefore belong here, not on a tab of their own. The flight is switched
      INSIDE that view. #}
-  {% if tab in ('state', 'bracket', 'toc', 'individuals') %}
+  {% if tab in ('state', 'bracket', 'toc', 'individuals', 'jv_state') %}
   <div class="jh-subrail">
     <a class="{{ 'on' if tab == 'state' }}"
        href="{{ url_for('jhsaa_page', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Overview</a>
@@ -196,6 +196,12 @@
        href="{{ url_for('jhsaa_toc', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Tournament of Champions</a>
     <a class="{{ 'on' if tab == 'individuals' }}" title="No. 1-3 singles and doubles — six individual state champions, plus mixed"
        href="{{ url_for('jhsaa_individuals', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Individual State</a>
+    {# The JV TEAM championship (pilot from 2068) — a championship the association
+       crowns, so it belongs on this rail beside the others rather than on a tab of
+       its own. Class-blind like the TOC and carrying `group` for the same reason:
+       the rail is the section's scope memory, not a filter on this page. #}
+    <a class="{{ 'on' if tab == 'jv_state' }}" title="The JV team championship — statewide, no classifications, one champion a gender"
+       href="{{ url_for('jhsaa_jv_state', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">JV Team State</a>
   </div>
   {% endif %}
 

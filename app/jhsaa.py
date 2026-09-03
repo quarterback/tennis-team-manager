@@ -7895,7 +7895,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     # has no results to read and IS ability order — which is the same basis the
     # varsity flights select on, so this is the honest cut rather than a weaker
     # one. The JV SEASON stays where it is, after the regular season.
-    from .jhsaa_jv_individuals import run_jv_state as _run_jv_individuals
+    from .jhsaa_jv_individuals import run_jv_individuals as _run_jv_individuals
     out["jv_individuals"] = _run_jv_individuals(by_group, gender, year,
                                                 seed=seed)
     from .jhsaa_individuals import run_preseason as _run_individuals

@@ -34,7 +34,7 @@ WHAT IS DIFFERENT FROM THE VARSITY INDIVIDUAL EVENT, and why:
     association having judged the event a success). Jefferson has ~95 districts
     and a 128 draw needs more entrants than that, so the field is the Grand Slam
     shape: district champions, ONE defending-champion autobid, and Regional
-    Qualifying winners drawn from every district's RUNNER-UP. See `run_jv_state`.
+    Qualifying winners drawn from every district's RUNNER-UP. See `run_jv_individuals`.
 
 ‼️ IT CREDITS NOTHING, AND IT CANNOT. `JVTeam` has no `records` and no
 `matches` by construction (see `jhsaa.JVTeam`), which is the association's
@@ -137,7 +137,7 @@ ELIGIBLE_GRADES = {SINGLES: _JV_GRADES, DOUBLES: _JV_GRADES}
 #: ‼️ A FULL 128 DRAW (owner rule 2026-09, the association having judged the event
 #: a success). Not a cap on a smaller field any more — an EXACT size the three entry
 #: sources are built to fill: district champions, one defending-champion autobid,
-#: and Regional Qualifying winners. See `run_jv_state`.
+#: and Regional Qualifying winners. See `run_jv_individuals`.
 STATE_FIELD = 128
 
 #: Berths the defending champion's PROGRAM receives on top of its district entry.
@@ -430,7 +430,7 @@ FINAL_QUALIFYING_ROUND = "Final Qualifying"
 def qualifying_spots(n_champions: int, autobids: int = 0) -> int:
     """Seats left in the State draw for qualifiers: `STATE_FIELD` minus the direct
     entries. Never negative — an association that ever grows past 128 districts has
-    outgrown this shape, and `run_jv_state` says so loudly rather than quietly
+    outgrown this shape, and `run_jv_individuals` says so loudly rather than quietly
     playing a qualifying tournament for no seats."""
     return max(0, STATE_FIELD - n_champions - autobids)
 
@@ -661,7 +661,7 @@ AUTOBID_DISTRICT = "TOC"
 def run_state(field: list, bracket: str, *, gender: str,
               seed: int) -> FlightDraw | None:
     """The 128-entry State draw, over a field already assembled from its three
-    sources (`run_jv_state`).
+    sources (`run_jv_individuals`).
 
     ‼️ HOW MANY ARE SEEDED IS THE USTA CONVENTION AND IS NOT SET HERE: a quarter
     of the padded draw, so 128 seeds 32. That is exactly
@@ -691,7 +691,7 @@ def run_state(field: list, bracket: str, *, gender: str,
     return _assemble(gender, GROUP_KEY, bracket, result, played)
 
 
-def run_jv_state(by_group: dict, gender: str, year: int, *, seed: int = 0,
+def run_jv_individuals(by_group: dict, gender: str, year: int, *, seed: int = 0,
                  season_year: int | None = None) -> dict:
     """A gender's whole JV individual postseason, archive-flattened as
     `{"state": …, "districts": …, "qualifying": …}`.

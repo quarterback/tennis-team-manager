@@ -44,6 +44,7 @@ from .state import (jhsaa_view, jhsaa_scope_view, jhsaa_school_view, jhsaa_past_
                     jhsaa_rankings_view, jhsaa_player_view, jhsaa_players_search,
                     jhsaa_misapplied_players, jhsaa_lineup_lab, jhsaa_schools_view,
                     jhsaa_titles_view, jhsaa_individual_view, jhsaa_realism_view,
+                    jhsaa_jv_state_view,
                     jhsaa_district_jv_view,
                     jhsaa_individual_winners, jhsaa_retired_view,
                     jhsaa_repeat_poy, jhsaa_repeat_individual_champions,
@@ -2433,6 +2434,18 @@ def create_app() -> Flask:
                                      request.args.get("flight"), year)
         return render_template("jhsaa_individuals.html", active="High School",
                                view=view, gender=gender, u=u, uni_label=label)
+
+    @app.route("/jhsaa/jv-state")
+    def jhsaa_jv_state():
+        """The JV Team State Tournament — statewide, classless, one champion a gender.
+
+        Class-blind like the TOC and, like it, still taking `group`: the class rail is
+        the section's scope MEMORY, and dropping it here would send you back to 9A
+        rather than to the class you were browsing."""
+        gender, label, u, g, group, year = _jh_scope_args()
+        return render_template("jhsaa_jv_state.html", active="High School",
+                               view=jhsaa_jv_state_view(DEFAULT_SEED, g, group, year),
+                               gender=gender, uni_label=label, u=u)
 
     @app.route("/jhsaa/toc")
     def jhsaa_toc():

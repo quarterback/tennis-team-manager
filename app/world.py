@@ -254,6 +254,26 @@ CREATE TABLE IF NOT EXISTS world_jhsaa_injury (
 );
 CREATE INDEX IF NOT EXISTS ix_jhsaa_injury
   ON world_jhsaa_injury(world_id, year, gender, school);
+-- THE JV TEAM STATE TOURNAMENT (pilot from `jhsaa.JV_STATE_FROM`) — ONE ROW PER
+-- GENDER PER YEAR, holding the whole event: every region's draw, the state
+-- qualifying round and the State bracket.
+--
+-- ‼️ NOT `world_jhsaa_individual`, whose name is the giveaway: that table holds
+-- per-PLAYER draws, and two of its readers scan EVERY flight (the champion-history
+-- rolls) — a team bracket dropped in there would be served under an individual
+-- heading with no error anywhere. And not the `world_jhsaa` summary blob either,
+-- which every JHSAA page reads in full; this is a few hundred school names and has
+-- no business on the hub's read path.
+--
+-- ‼️ ITS DUALS ARE NOT HERE. They are ordinary rows in `world_jhsaa_dual` at
+-- `level='jv'` and `phase='jv_state'` — that is what puts them on a program's
+-- schedule and folds them into the JV column of the career ledger, and what keeps
+-- them out of every varsity record. This table holds only the DRAW.
+CREATE TABLE IF NOT EXISTS world_jhsaa_jv_state (
+  world_id INTEGER, year INTEGER, gender TEXT, data TEXT
+);
+CREATE INDEX IF NOT EXISTS ix_jhsaa_jv_state
+  ON world_jhsaa_jv_state(world_id, year, gender);
 CREATE TABLE IF NOT EXISTS world_cups (
   world_id INTEGER, year INTEGER, gender TEXT, data TEXT
 );
@@ -554,7 +574,7 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     conn = _db()
     conn.executescript("DELETE FROM world_championship; DELETE FROM world_cups;"
                        " DELETE FROM world_jhsaa; DELETE FROM world_jhsaa_dual;"
-                       " DELETE FROM world_jhsaa_individual; DELETE FROM world_jhsaa_injury;")
+                       " DELETE FROM world_jhsaa_individual; DELETE FROM world_jhsaa_injury; DELETE FROM world_jhsaa_jv_state;")
     conn.commit()
     conn.close()
     # God-mode editor overrides (player moves, lineups, prestige/academics priors,
@@ -3905,6 +3925,16 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                 [(world["id"], year, gender, jv_indiv.GROUP_KEY,
                   jv_indiv.QUAL_OF[bracket], json.dumps(draw))
                  for bracket, draw in (jv_arc.get("qualifying") or {}).items()])
+            # THE JV TEAM STATE TOURNAMENT — one row, the whole event (pilot from
+            # `jhsaa.JV_STATE_FROM`; `run_season` returns nothing for earlier years,
+            # so an archived season keeps reading as the year it was). Its DUALS went
+            # into `world_jhsaa_dual` with the JV schedules above — they are on those
+            # teams' schedules, at `phase='jv_state'` — so this is the draw alone.
+            if season.get("jv_state"):
+                conn.execute(
+                    "INSERT INTO world_jhsaa_jv_state (world_id, year, gender, data)"
+                    " VALUES (?,?,?,?)",
+                    (world["id"], year, gender, json.dumps(season["jv_state"])))
             # INJURIES — VARSITY only, one row per injury actually rolled
             # (`t.injury_log`, see `jhsaa.TeamSeason`). JV never carries one.
             conn.executemany(
@@ -3957,6 +3987,14 @@ _NOT_A_SCHOOL = frozenset({
     "city", "locality", "town", "county", "area", "district", "districts",
     "league", "group", "classification", "unit", "units", "unit_wins", "phase",
     "region", "state", "mascot", "colors", "name_era", "season_year",
+    # ‼️ THE JV TEAM STATE EVENT IS KEYED BY GEOGRAPHIC AREA. `regions` and
+    # `region_champions` are dicts whose KEYS are places, and ten retired school
+    # names are also live Jefferson town names (Port Veles, Ashbury, Telfair,
+    # Orellana) — walked unguarded, a region would be filed under a school's
+    # current name and its bracket would vanish from the page. Listing the key
+    # here protects only this level's keys: the recursion below descends with the
+    # region name as `key`, so the CHAMPIONS under it are still relabelled.
+    "regions", "region_champions",
     # ‼️ PEOPLE ARE NOT SCHOOLS. Award rows carry the PLAYER under "name"/"names"
     # and the school under "school" — and Jefferson names its schools after people,
     # so an athlete who happens to share a former school's name would be silently
@@ -4006,6 +4044,21 @@ def get_jhsaa(world_id: int, year: int, gender: str) -> dict | None:
     finally:
         conn.close()
     # Relabelled into today's names so a renamed program keeps every row it earned.
+    return _relabel(json.loads(r["data"])) if r else None
+
+
+def jhsaa_jv_state(world_id: int, year: int, gender: str) -> dict | None:
+    """The archived JV Team State Tournament for a world-year-gender, or None.
+
+    Relabelled into today's names like every other JHSAA archive: the event names
+    schools, and a rename must not orphan a title somebody won."""
+    conn = _db()
+    try:
+        r = conn.execute(
+            "SELECT data FROM world_jhsaa_jv_state WHERE world_id=? AND year=?"
+            " AND gender=?", (world_id, year, gender)).fetchone()
+    finally:
+        conn.close()
     return _relabel(json.loads(r["data"])) if r else None
 
 

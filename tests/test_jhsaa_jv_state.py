@@ -26,6 +26,95 @@ def arc(jv):
     return jvs.run_jv_state(jv, gender="boys", year=2068)
 
 
+@pytest.fixture(scope="module")
+def big():
+    """‼️ A SEASON BIG ENOUGH TO PLAY THE QUALIFYING ROUND.
+
+    The play-in only happens when MORE than `DIRECT_SEEDS` regions crown a champion.
+    The `jv` fixture crowns twelve, so it never reaches that code at all — and the
+    real association crowns twenty and reaches it every single year. A `set()` of
+    entries (a dataclass, so unhashable) sat on that path through a full green suite
+    for exactly this reason. Owner: "my save has a lot more teams and full rosters
+    on them so I'm far more likely to fill out all 20 regions than you are in your
+    smaller tests."
+    """
+    gender, salt = "boys", ""
+    by_group = {g: {n: jh.district_teams(ss, 0, salt)
+                    for n, ss in sorted(jh.districts(gender, g).items())[:8]}
+                for g in ("9A", "7A", "5A", "3A", "2A", "Group 2")}
+    jv = jh.play_jv_season(by_group, 2068, gender, salt)
+    return jvs.run_jv_state(jv, gender=gender, year=2068, seed=11)
+
+
+def test_a_full_sized_field_plays_the_qualifying_round(big):
+    """The path the real association takes every season: more region champions than
+    direct seats, so the surplus plays in for the last seats in the draw.
+
+    ‼️ ON `big`, NOT `arc`. A fixture that crowns twelve or fewer regions never runs
+    this code at all — and the association crowns twenty and runs it every year. A
+    `set()` of entries (a dataclass, so unhashable) sat on this exact path through a
+    full green suite. Owner: "my save has a lot more teams and full rosters on them so
+    I'm far more likely to fill out all 20 regions than you are in your smaller
+    tests."
+    """
+    ranked = big["ranked"]
+    assert len(ranked) > jvs.DIRECT_SEEDS, "fixture too small to test the play-in"
+    rest = ranked[jvs.DIRECT_SEEDS:]
+    games = big["play_in"]["rounds"][0]
+    assert len(games) == len(rest) // 2
+    winners = {gm["winner"] for gm in games}
+    assert winners <= set(rest)
+    assert set(ranked[:jvs.DIRECT_SEEDS]) | winners == set(big["state"]["field"])
+
+
+def test_the_state_draw_never_skips_a_round(big):
+    """‼️ 20 -> 16 -> 8 -> 4 -> 2 (owner, 2026-09: "don't skip the R16"). The
+    qualifying round is a round of its OWN, in front of the draw — a play-in winner
+    has qualified FOR the bracket, not through its first round — so every column of
+    the State draw is exactly half the one before it."""
+    import app.world as world
+    rounds = world.jhsaa_state_rounds(big["state"])
+    alive = [r["alive"] for r in rounds]
+    assert alive[0] == len(big["state"]["field"])
+    for i, r in enumerate(rounds[1:], 1):
+        assert r["alive"] == alive[i - 1] - len(rounds[i - 1]["games"])
+    assert rounds[-1]["alive"] == 2 and len(rounds[-1]["games"]) == 1
+    # The qualifying round is NOT one of them.
+    assert big["play_in"]["round_names"] == [jvs.QUALIFYING_NAME]
+
+
+def test_the_postseason_never_moves_the_record_it_is_seeded_from(jv):
+    """A region final that bumped `wins` would re-rank the statewide field the
+    play-in and the State draw are cut from — the mid-event drift the eligibility
+    freeze exists to stop, arriving through the record instead of the roster."""
+    field = jvs.entries(jv)
+    a, b = field[0], field[1]
+    before = [(e.jv.wins, e.jv.losses, e.jv.ties,
+               e.jv.points_for, e.jv.points_against) for e in (a, b)]
+    jvs.play_dual(a, b, seed=4242)
+    after = [(e.jv.wins, e.jv.losses, e.jv.ties,
+              e.jv.points_for, e.jv.points_against) for e in (a, b)]
+    assert before == after
+
+
+def test_the_dual_is_recorded_on_both_schedules_with_its_box_score(jv):
+    """‼️ THE ROW IS THE ONLY WAY THE EVENT REACHES A PROGRAM'S PAGE. `world.
+    run_jhsaa` archives JV schedule entries into `world_jhsaa_dual`; a dual played
+    and not recorded is a dual nobody can ever see."""
+    field = jvs.entries(jv)
+    a, b = field[2], field[3]
+    n = len(a.jv.schedule)
+    jvs.play_dual(a, b, seed=99)
+    row = a.jv.schedule[-1]
+    assert len(a.jv.schedule) == n + 1 and b.jv.schedule[-1]["opp"] == a.name
+    assert row["phase"] == jvs.PHASE and row["level"] == jh.LEVEL_JV
+    assert row["shape"] == "3S/2D" and not row["tied"]
+    # Five courts, and the players named are the seven who dressed.
+    assert len(row["lines"]) == 5
+    assert len(row["played"]) == jvs.LINEUP
+    assert row["won"] != b.jv.schedule[-1]["won"]
+
+
 def test_the_card_is_five_odd_courts_and_seven_players():
     """‼️ THE ODD COURT COUNT IS THE LOAD-BEARING PART. Three of the eight
     JV_FORMATS are even and `jv_outcome` really does return draws; a bracket cannot
@@ -102,30 +191,18 @@ def test_seeding_orders_a_better_record_first(jv):
     assert jvs.seed_key(good) > jvs.seed_key(bad)
 
 
-def test_the_play_in_pairs_highest_against_lowest(arc):
-    """13v20, 14v19, 15v18, 16v17 — folded from the ranking, so it stays right at any
-    number of regions rather than pairing four typed seeds."""
-    ranked = arc["ranked"]
-    rest = ranked[jvs.DIRECT_SEEDS:]
-    for i, p in enumerate(arc["play_in"]):
-        assert p["hi"] == rest[i]
-        assert p["lo"] == rest[len(rest) - 1 - i]
-        assert p["winner"] in (p["hi"], p["lo"])
-
-
-def test_the_state_field_is_the_direct_seeds_plus_the_play_in_winners(arc):
-    direct = arc["ranked"][:jvs.DIRECT_SEEDS]
-    winners = {p["winner"] for p in arc["play_in"]}
-    assert set(arc["state_field"]) == set(direct) | winners
-    assert len(arc["state_field"]) == len(set(arc["state_field"]))
-    assert len(arc["state_field"]) <= jvs.STATE_FIELD
+def test_the_state_draw_is_cut_from_the_region_champions(arc):
+    """Every team in the draw is a region champion, and nobody is in it twice."""
+    field = arc["state"]["field"]
+    assert field and set(field) <= set(arc["ranked"])
+    assert len(field) == len(set(field)) <= jvs.STATE_FIELD
 
 
 def test_one_champion_per_region_and_a_single_state_champion(arc):
     champs = [c for c in arc["region_champions"].values() if c]
     assert champs and len(champs) == len(set(champs)), "a program won two regions"
     assert arc["ranked"] and set(arc["ranked"]) == set(champs)
-    assert arc["champion"] in arc["state_field"]
+    assert arc["champion"] in arc["state"]["field"]
 
 
 def test_qualifiers_come_from_their_own_district_and_within_its_berths(jv):
