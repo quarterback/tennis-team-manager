@@ -486,14 +486,21 @@
 .jh-chip.ico svg { display: block; }
 .jh-chip.ico:hover { color: var(--text-primary); border-color: var(--text-muted); }
 
-/* ---- Scoreline realism (/jhsaa/realism): paired sim-vs-real bars ---- */
-.jh-rl-bars { display: grid; gap: 2px; min-width: 120px; }
+/* ---- Scoreline realism (/jhsaa/realism): this season vs last, Oregon as a tick ---- */
+.jh-rl-table { max-width: 620px; }
+.jh-rl-bars { display: grid; gap: 2px; min-width: 120px; position: relative; }
 .jh-rl-bar { height: 6px; border-radius: 3px; min-width: 2px; }
 .jh-rl-bar.sim { background: var(--brand); }
-.jh-rl-bar.real { background: var(--gray-400); }
+.jh-rl-bar.prev { background: var(--gray-400); }
+/* the baseline is a marker on the same scale, not a third bar — it is a reference,
+   and a bar would read as a third season */
+.jh-rl-tick { position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px;
+  background: var(--text-muted); opacity: .7; }
 .jh-rl-key { display: inline-block; width: 10px; height: 6px; border-radius: 3px; vertical-align: middle; }
 .jh-rl-key.sim { background: var(--brand); }
-.jh-rl-key.real { background: var(--gray-400); }
+.jh-rl-key.prev { background: var(--gray-400); }
+.jh-rl-key.tick { width: 2px; height: 10px; border-radius: 0; background: var(--text-muted); }
+.jh-rl-base { color: var(--text-muted); }
 .jh-roster td.pos { color: var(--pos); }
 .jh-roster td.neg { color: var(--neg); }
 
