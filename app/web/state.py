@@ -4645,6 +4645,21 @@ def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
     # (`world._relabel`), and for the same reason: the archive is the record of what
     # was played, and the next shape change would need another migration nobody runs.
     legacy_qual = ((ev.get("play_in") or {}).get("rounds") or [[]])[0]
+    render_st = st
+    if legacy_qual:
+        # The old writer split one logical 20-team bracket into an eight-team
+        # ``play_in`` stub and a 16-team ``state`` bracket. Rejoin them for every
+        # result derived on read: the first column then materialises the twelve
+        # byes, halves cleanly into the archived R16, and opening-round losers are
+        # members of the field whose finish is correctly recorded as Round of 20.
+        legacy_field = list(ev.get("ranked") or ev.get("field") or ())
+        render_st = {
+            **st,
+            "field": legacy_field,
+            "rounds": [legacy_qual] + list(st.get("rounds") or ()),
+            "round_names": [],
+            "seed_map": seeds,
+        }
 
     # ‼️ AND ITS ROUND IS RELABELLED. That build stored the name "State Qualifying",
     # which describes something this event does not have: winning your region IS
@@ -4681,7 +4696,7 @@ def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
     for region in sorted(ev.get("regions") or {}):
         br = ev["regions"][region]
         champ = br.get("champion") or ""
-        res = world.jhsaa_state_result(st, champ) if champ else {}
+        res = world.jhsaa_state_result(render_st, champ) if champ else {}
         regions.append({"region": region, "field_n": len(br.get("field") or ()),
                         "champion": champ, "seed": seeds.get(champ, 0),
                         "finish": res.get("finish", ""),
@@ -4693,13 +4708,11 @@ def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
         "qualifier_n": len(ev.get("qualifiers") or ()),
         "state_field_n": len(st.get("field") or ()),
         "regions": regions, "region_n": len(regions),
-        # A legacy archive's opening round is a bracket of its own, so it is prepended
-        # to the round list rather than being one of the draw's columns — which is
-        # exactly what it was when it was played. The list feeds the MOBILE round
-        # tabs; there is no results panel any more (the tree is the results).
-        "rounds": (_rounds(ev["play_in"]) if legacy_qual else []) + _rounds(st),
+        # Legacy opening games are merged back into their State bracket above, so
+        # desktop's tree and the mobile round tabs render the same complete event.
+        "rounds": _rounds(render_st),
         "canvas": _bracket_canvas(
-            _jh_bracket_cols({**st, "seed_map": seeds}, schools),
+            _jh_bracket_cols({**render_st, "seed_map": seeds}, schools),
             card_w=232, card_h=60, gutter=56, leaf_gap=18),
         **_jh_final_four(st, schools),
         "champion_region": region_of.get(st.get("champion"), ""),
