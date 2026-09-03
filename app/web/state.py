@@ -5405,25 +5405,42 @@ def jhsaa_districts_view(seed: int, gender: str, group: str | None = None,
 
 def jhsaa_realism_view(seed: int, gender: str, group: str | None = None,
                        year: int | None = None) -> dict:
-    """SCORELINE REALISM — the archived season's set scores against the real
-    Oregon HS target the match profile was calibrated on (a Juniors tab, owner
-    request 2026-08: the benchmark must be viewable in the game, not only via
-    scripts/jhsaa_scoreline_benchmark.py). A pure fold over `world_jhsaa_dual`
-    (`world.jhsaa_scoreline_realism`) — nothing is simulated on the request.
+    """SCORELINE REALISM — the season on screen's set scores against the SEASON
+    BEFORE IT, with the real Oregon HS figures beside them as a baseline (owner
+    rule 2026-09; the page opened in 2026-08 as a fit against Oregon as a
+    TARGET, which the banded matchup curve has since superseded). Two pure folds
+    over `world_jhsaa_dual` (`world.jhsaa_scoreline_realism`, memoised per
+    season) composed by `world.scoreline_compare` — nothing is simulated on the
+    request.
 
-    Class-BLIND like the Title Board: the target is association-wide (the real
+    "Previous" is the next-older ARCHIVED season relative to the one selected,
+    so the season switcher walks the comparison back through the save; on the
+    oldest season there is nothing to compare against and the view says so.
+
+    Class-BLIND like the Title Board: the shape is association-wide (the real
     data is near-uniform across classes); `group` rides for the scope bar's
-    memory alone. The SEASON is honoured — this page answers "did the season I
-    just played score like real tennis", per year."""
+    memory alone."""
     import app.jhsaa as jh
     import app.world as world
     w = world.get_or_create(seed)
     g = _jh_g(gender)
-    years = world.jhsaa_years(w["id"], g)
+    years = world.jhsaa_years(w["id"], g)          # newest first
     yr = (years[0] if years else w["year"]) if year is None else year
     grp = group if group in jh.GROUPS else jh.GROUPS[0]
-    data = world.jhsaa_scoreline_realism(w["id"], yr, g) if years else None
+    data = None
+    prev_yr = None
+    if years and yr in years:
+        i = years.index(yr)
+        prev_yr = years[i + 1] if i + 1 < len(years) else None
+        cur = world.jhsaa_scoreline_realism(w["id"], yr, g)
+        prev = (world.jhsaa_scoreline_realism(w["id"], prev_yr, g)
+                if prev_yr is not None else None)
+        data = world.scoreline_compare(cur, prev)
     return {"ready": bool(years), "gender": g, "years": years, "year": yr,
+            "prev_year": prev_yr,
+            "season_label": world.BASE_YEAR + yr + 1,
+            "prev_label": (world.BASE_YEAR + prev_yr + 1
+                           if prev_yr is not None else None),
             "data": data,
             "scope": _jh_scope(g, grp, list(jh.GROUPS), yr, years, None, None)}
 

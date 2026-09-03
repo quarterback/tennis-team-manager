@@ -2425,6 +2425,18 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   strength (corr ~0.76), so diagnose "upsets" on eff gaps via
   `scripts/jhsaa_upset_calibration.py` first. See
   `docs/AAR-jhsaa-upset-variance-recalibration.md`.
+- **‼️ THE REALISM TAB (`/jhsaa/realism`) COMPARES THIS SEASON TO LAST; OREGON IS A
+  BASELINE, NOT A TARGET (owner rule 2026-09, `world.scoreline_compare`).** The
+  page opened as a fit against the real-Oregon set-score distribution; the banded
+  matchup curve then superseded that fit by decision, so a page framed as "distance
+  from target" read as broken while folding the archive faithfully. It was reported
+  as "the same numbers every season regardless of the data" — and identical
+  PERCENTAGES season after season are the expected reading: ~200k sets a season
+  puts sampling error at ~0.1 point and the shape is a property of the engine and
+  the talent scale, so only the COUNTS move until the engine does. The fold is
+  per-season (pinned) and memoised on `(world_id, year, gender)` (`_scoreline_cache`,
+  an archived season is immutable; cleared by `reset()`). Do not put the pass/fail
+  colouring or the target framing back. See `docs/AAR-jhsaa-scoreline-realism.md`.
 - **`Prospect.jhsaa` is a real dataclass field** — `prospect_to_dict` is `asdict()`, so an
   ad-hoc attribute would erase a recruit's entire high-school past the moment they sign.
 

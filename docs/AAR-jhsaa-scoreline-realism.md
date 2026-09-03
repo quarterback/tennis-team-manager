@@ -132,7 +132,58 @@ flow). Class-blind like the Title Board; the SEASON switcher is honoured,
 which is what makes the 2053 boundary above browsable. Pinned by
 `test_realism_fold_reads_the_archive_varsity_only`.
 
+## 2026-09 — "it reports the same numbers every season": the page was right, the framing was wrong
+
+**Owner report:** the Realism tab "is reporting the same numbers each year
+regardless of what data is inside my sim". Diagnosis, in order:
+
+1. **The fold WAS reading the selected season.** The archive writes each year's
+   duals under its own `year`, the season switcher carries `year=` through
+   `jh_scope_url`, and the view folds exactly that year. Pinned now by
+   `test_realism_fold_is_per_season` (two seasons archived with opposite
+   shapes fold to opposite histograms).
+2. **The percentages are identical across seasons because they SHOULD be.** A
+   gender-season is ~200k standard sets, so the sampling error on any bucket is
+   ~0.1 point, and the set-score shape is a property of the engine dials plus the
+   talent distribution — both stable year to year. The counts move; the shares
+   do not. The owner's own paste (6-0 3.3%, 7-6 12.4%, three-set 45.5%) is
+   exactly the banded curve's shape documented in `engine/fast.py`.
+3. **The page was asking a superseded question.** It presented Oregon as the
+   TARGET and printed "distance from Oregon 35" in the failure colour — but the
+   banded matchup curve (owner ruling 2026-08) deliberately does not reproduce
+   the Oregon fit, so a page framed as a fit to it reads as broken while
+   reporting the archive faithfully.
+
+**Owner rule (2026-09):** "compare the previous season to the current one and
+then leave the Oregon comps there not because they're targets, but rather as
+baselines." So `/jhsaa/realism` is now **this season vs last season**, bucket by
+bucket, with the shift in points and a total-variation "shift from last season"
+per table; the Oregon column stays at the far edge as a BASELINE (a tick on the
+bar scale, muted text, no pass/fail colour). "Previous" is the next-older
+ARCHIVED season relative to the one on screen, so the season switcher walks the
+comparison back through the save; on the oldest season the page says there is
+nothing earlier and shows dashes, never zeros.
+
+- `world.jhsaa_scoreline_realism` is unchanged as the per-season fold, now
+  memoised on `(world_id, year, gender)` (`_scoreline_cache`, cleared by
+  `reset()`) — an archived season is immutable, and the page folds two of them
+  per request on the one gthread.
+- `world.scoreline_compare(cur, prev)` is the pure composition; the view
+  (`state.jhsaa_realism_view`) only picks the two years.
+- **A shift near zero is the expected reading while nothing in the engine or
+  the talent scale changes.** The page now exists to show WHEN it moves — the
+  §24 talent-scale change, a `HS_PROFILE` retune, a `_TALENT` reshape — as a
+  jump between two consecutive seasons, with the real-world figures beside it
+  for orientation.
+
 ## Traps for the next agent
+
+- **Oregon is a BASELINE on the realism page, not a target** (owner, 2026-09).
+  Do not put the pass/fail colouring or the "distance from target" framing
+  back; the season-over-season shift is the page's question.
+- **Identical percentages season after season are not a bug.** Check the set
+  COUNTS on the footer line before suspecting the fold — they move; the shape
+  does not until the engine does.
 
 - **Calibrate hold% to hold%, then VERIFY scorelines** — fitting scorelines
   alone lets multiple wrong mechanisms reproduce them. The benchmark reports

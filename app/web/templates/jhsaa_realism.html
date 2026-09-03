@@ -4,7 +4,7 @@
 {% block content %}
 
 {{ jh_header(view.scope, u, 'realism', 'Scoreline Realism',
-             'This season\'s archived set scores against five seasons of REAL Oregon high-school tennis (41,932 varsity matches) — the target the match engine is calibrated on. Real HS tennis is blowout-shaped: 6-0 is the most common set and 7-6 the rarest. Association-wide; the class rail is scope memory only.') }}
+             'This season\'s archived set scores beside last season\'s — did the shape of a set move? Five seasons of real Oregon high-school tennis (41,932 varsity matches) sit alongside as a baseline, not a target: the match engine runs on the competitive-band curve, and the Oregon column is there to show where real tennis sits. Association-wide; the class rail is scope memory only.') }}
 
 <div class="jh-shell">
 {% if not view.ready or not view.data %}
@@ -13,48 +13,70 @@
 </div></div>
 {% else %}
 {% set d = view.data %}
+{% set has_prev = view.prev_year is not none %}
 
+{# One column set for every table on the page: this season, last season, the
+   shift between them, paired bars for the two, and the Oregon baseline at the
+   far edge. The shift carries no colour — a change of shape is neither good
+   nor bad here; only the count of it is the point. #}
 {% macro dist_table(t, three_real) %}
-  <table class="jh-roster" style="max-width:560px">
-    <tr><th style="width:52px">Set</th><th class="num" style="width:64px">Sim %</th>
-      <th class="num" style="width:64px">Real %</th><th>&nbsp;</th>
-      <th class="num" style="width:56px">Diff</th></tr>
+  <table class="jh-roster jh-rl-table">
+    <tr><th style="width:44px">Set</th>
+      <th class="num" style="width:62px">{{ view.season_label }}</th>
+      <th class="num" style="width:62px">{{ view.prev_label if has_prev else 'Prev.' }}</th>
+      <th class="num" style="width:56px" title="Season-over-season shift, percentage points">Shift</th>
+      <th>&nbsp;</th>
+      <th class="num jh-rl-base" style="width:62px" title="Real Oregon high-school tennis, 2021-25 — a baseline, not a target">Oregon</th></tr>
     {% for r in t.rows %}
     <tr>
       <td class="pl"><b>{{ r.key }}</b></td>
-      <td class="num">{{ '%.1f'|format(r.sim) }}</td>
-      <td class="num">{{ '%.1f'|format(r.real) }}</td>
+      <td class="num"><b>{{ '%.1f'|format(r.sim) }}</b></td>
+      <td class="num">{% if r.prev is not none %}{{ '%.1f'|format(r.prev) }}{% else %}—{% endif %}</td>
+      <td class="num">{% if r.delta is not none %}{{ '%+.1f'|format(r.delta) }}{% else %}—{% endif %}</td>
       <td>
-        {# paired bars, share one 0-35% scale: sim on top, real beneath #}
+        {# paired bars on one 0-35% scale: this season on top, last season beneath,
+           and the Oregon baseline as a thin tick on the same scale #}
         <div class="jh-rl-bars" aria-hidden="true">
           <div class="jh-rl-bar sim" style="width:{{ [r.sim / 35 * 100, 100]|min }}%"></div>
-          <div class="jh-rl-bar real" style="width:{{ [r.real / 35 * 100, 100]|min }}%"></div>
+          {% if r.prev is not none %}
+          <div class="jh-rl-bar prev" style="width:{{ [r.prev / 35 * 100, 100]|min }}%"></div>
+          {% endif %}
+          <div class="jh-rl-tick" style="left:{{ [r.real / 35 * 100, 100]|min }}%"></div>
         </div>
       </td>
-      <td class="num {{ 'pos' if r.diff|abs <= 2.5 else 'neg' }}">{{ '%+.1f'|format(r.diff) }}</td>
+      <td class="num jh-rl-base" title="{{ '%+.1f'|format(r.vs_real) }} vs Oregon">{{ '%.1f'|format(r.real) }}</td>
     </tr>
     {% endfor %}
   </table>
   <div class="bit" style="margin-top:8px">
-    {{ t.sets }} sets over {{ t.matches }} best-of-3 matches ·
-    three-set rate <b>{{ '%.1f'|format(t.three_set) }}%</b> (real {{ three_real }}) ·
-    distance from Oregon <b>{{ '%.1f'|format(t.tv) }}</b>
-    <span title="Total-variation distance: half the summed percentage-point gaps. Under ~5 is a close match.">ⓘ</span>
+    {{ '{:,}'.format(t.sets) }} sets over {{ '{:,}'.format(t.matches) }} best-of-3 matches
+    {% if t.prev_sets is not none %}(last season {{ '{:,}'.format(t.prev_sets) }} / {{ '{:,}'.format(t.prev_matches) }}){% endif %} ·
+    three-set rate <b>{{ '%.1f'|format(t.three_set) }}%</b>{% if t.three_set_delta is not none %}
+      ({{ '%+.1f'|format(t.three_set_delta) }} on last season){% endif %}<span class="jh-rl-base">, Oregon {{ three_real }}</span>
+    {% if t.shift is not none %}
+    · shift from last season <b>{{ '%.1f'|format(t.shift) }}</b>
+    <span title="Total-variation distance between the two seasons: half the summed percentage-point shifts. Under ~1 the shape is unchanged; a real engine or talent change shows as several points.">ⓘ</span>
+    {% endif %}
+    <span class="jh-rl-base">· {{ '%.1f'|format(t.tv) }} from the Oregon baseline</span>
   </div>
 {% endmacro %}
 
 <div class="bl-panel" style="margin-bottom:14px">
-  <div class="bl-panel-head"><span class="bl-panel-title">Whole association — sim vs real</span>
-    <span class="bit"><span class="jh-rl-key sim"></span> this season &nbsp;
-      <span class="jh-rl-key real"></span> real Oregon</span></div>
+  <div class="bl-panel-head"><span class="bl-panel-title">Whole association — {{ view.season_label }}{% if has_prev %} vs {{ view.prev_label }}{% endif %}</span>
+    <span class="bit"><span class="jh-rl-key sim"></span> {{ view.season_label }} &nbsp;
+      {% if has_prev %}<span class="jh-rl-key prev"></span> {{ view.prev_label }} &nbsp;{% endif %}
+      <span class="jh-rl-key tick"></span> Oregon baseline</span></div>
   <div class="bl-panel-body" style="padding:12px">
+    {% if not has_prev %}
+    <div class="bit" style="margin-bottom:10px">Oldest archived season — nothing earlier to compare against yet. The Oregon column still reads as a baseline.</div>
+    {% endif %}
     {{ dist_table(d.overall, d.real_three_set) }}
   </div>
 </div>
 
 <div class="bl-panel">
   <div class="bl-panel-head"><span class="bl-panel-title">By phase</span>
-    <span class="bit">the formats differ by design — judge each against the same target</span></div>
+    <span class="bit">the formats differ by design — compare each phase with itself, season on season</span></div>
   <div class="bl-panel-body" style="padding:12px;display:flex;flex-wrap:wrap;gap:24px">
     {% for f in d.families %}{% if f.sets %}
     <div>

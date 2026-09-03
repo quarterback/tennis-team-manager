@@ -586,6 +586,10 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     scholarships.clear_overrides()
     # Drop every in-memory cache so nothing stale survives the reset.
     _base_cache.clear()
+    # The per-season scoreline fold is keyed (world_id, year, gender) and SQLite
+    # reuses world_id=1 after this reset, so the next save's year 0 would read the
+    # prior save's histogram. The archive rows it folds were deleted above.
+    _scoreline_cache.clear()
     _dev_cache.clear()
     _primed.clear()
     _class_cache.clear()
@@ -4546,20 +4550,53 @@ def jhsaa_underplayed(world_id: int, gender: str, salt: str = "",
     return out
 
 
+#: One archived season's scoreline fold, keyed (world_id, year, gender). An
+#: archived season is immutable — `run_jhsaa` writes a year's duals once and
+#: the only DELETE is `reset()`, which clears this — so the memo can never go
+#: stale, and the realism page now folds TWO seasons per request (this one and
+#: the one before it), which doubles a ~24k-row JSON parse on the one gthread.
+#: Published local-first (`.get()` read, compute into a local, return the
+#: local) per the module-global cache rules.
+_scoreline_cache: dict = {}
+
+
 def jhsaa_scoreline_realism(world_id: int, year: int, gender: str) -> dict:
-    """The archived season's set scores folded against the real-Oregon target
-    (`jhsaa.OREGON_SET_TARGET`) — the in-game face of
+    """ONE archived season's set-score histogram, with the real-Oregon figures
+    (`jhsaa.OREGON_SET_TARGET`) beside it as a BASELINE — the in-game face of
     scripts/jhsaa_scoreline_benchmark.py, and deliberately a READ: it parses the
     score strings the archive already holds (the `jhsaa._games` precedent) and
     simulates nothing on the request thread.
 
+    ‼️ THE OREGON NUMBERS ARE A BASELINE, NOT A TARGET (owner rule 2026-09).
+    The banded matchup curve (`engine.fast.BAND_EDGES_OVR`) superseded the
+    Oregon scoreline fit, so the sim's shape sits ~35 points from Oregon BY
+    DECISION, and a page framed as "distance from target" reads as broken
+    while reporting exactly what the archive holds. The comparison that
+    carries information is season-over-season — `scoreline_compare` below —
+    and the Oregon column stays as the real-world reference point it is.
+
+    ‼️ AND THE SAME PERCENTAGES EVERY SEASON IS THE EXPECTED READING. A
+    gender-season is ~200k standard sets, so the sampling error on any bucket
+    is ~0.1 point; the set-score shape is a property of the engine dials and
+    the talent distribution, both of which are stable across seasons, so the
+    percentages print identically year after year while the COUNTS move. That
+    was reported as "the page shows the same data regardless of the season"
+    — it was folding the right year each time (pinned by
+    `test_realism_fold_is_per_season`). Only an engine or talent-scale change
+    moves the shape, and that is precisely what the season-over-season view
+    exists to show.
+
     Varsity only (`COALESCE(level,'v')='v'` — the table is shared with JV and a
     pre-JV archive reads back NULL), one side of each dual (`home=1`). Only
     completed standard sets (6-0..6-4, 7-5, 7-6) enter the histogram, exactly
-    the target's own filter — showcase-pod pro sets and anything malformed fall
-    out. The three-set rate is over best-of-3 matches (>= 2 standard sets
+    the baseline's own filter — showcase-pod pro sets and anything malformed
+    fall out. The three-set rate is over best-of-3 matches (>= 2 standard sets
     parsed). Split by phase family because the formats differ by design."""
     from . import jhsaa as _jh
+    ck = (world_id, year, gender)
+    got = _scoreline_cache.get(ck)
+    if got is not None:
+        return got
     keys = list(_jh.OREGON_SET_TARGET)
     fams = ("regular", "postseason", "showcase")
 
@@ -4623,12 +4660,68 @@ def jhsaa_scoreline_realism(world_id: int, year: int, gender: str) -> dict:
         return {"rows": out, "sets": total, "matches": m, "three_set": t3,
                 "tv": tv / 2}
 
-    return {"overall": table(fams),
-            "families": [{"key": f, "label": lbl, **table((f,))}
-                         for f, lbl in (("regular", "League season"),
-                                        ("postseason", "Postseason"),
-                                        ("showcase", "Showcases"))],
-            "real_three_set": _jh.OREGON_THREE_SET}
+    out = {"year": year,
+           "overall": table(fams),
+           "families": [{"key": f, "label": lbl, **table((f,))}
+                        for f, lbl in (("regular", "League season"),
+                                       ("postseason", "Postseason"),
+                                       ("showcase", "Showcases"))],
+           "real_three_set": _jh.OREGON_THREE_SET}
+    _scoreline_cache[ck] = out
+    return out
+
+
+def scoreline_compare(cur: dict, prev: dict | None) -> dict:
+    """THIS season's fold against LAST season's, bucket by bucket, with the Oregon
+    baseline riding along — the realism page's actual question (owner, 2026-09:
+    "compare the previous season to the current one and leave the Oregon comps
+    there not because they're targets, but rather as baselines").
+
+    A pure fold over two `jhsaa_scoreline_realism` results, so it needs no
+    archive to test. `prev` is None on the oldest archived season (nothing to
+    compare against yet): every previous-season figure is then None and the
+    template prints a dash rather than a zero — a zero would read as "no sets
+    last year", which is a different claim.
+
+    Per bucket: `sim` (this season %), `prev` (last season %), `delta` (the
+    season-over-season shift in points), `real` (Oregon %), `vs_real` (this
+    season's gap to the baseline). Per table: `shift` is the total-variation
+    distance between the two seasons — the one number that says "did the
+    shape move" — and `tv` the distance to the baseline, kept for reference."""
+    def merge(a: dict, b: dict | None) -> dict:
+        # A season with no sets in this family (a small world, or a phase that
+        # did not convene) has nothing to compare: every previous-season figure
+        # is None — rows AND footer alike — rather than a 0.0 share and a shift
+        # equal to this season's number, which would read as a real change.
+        comparable = bool(b is not None and b.get("sets") and a.get("sets"))
+        prev_by_key = ({r["key"]: r for r in b["rows"]} if comparable else {})
+        rows, shift = [], 0.0
+        for r in a["rows"]:
+            p = prev_by_key.get(r["key"])
+            pv = p["sim"] if p is not None else None
+            delta = (r["sim"] - pv) if pv is not None else None
+            if delta is not None:
+                shift += abs(delta)
+            rows.append({"key": r["key"], "sim": r["sim"], "prev": pv,
+                         "delta": delta, "real": r["real"],
+                         "vs_real": r["sim"] - r["real"]})
+        out = {k: v for k, v in a.items() if k != "rows"}
+        out.update({"rows": rows,
+                    "prev_sets": b["sets"] if b else None,
+                    "prev_matches": b["matches"] if b else None,
+                    "prev_three_set": b["three_set"] if b else None,
+                    "three_set_delta": (a["three_set"] - b["three_set"]
+                                        if comparable else None),
+                    "shift": shift / 2 if comparable else None})
+        return out
+
+    prev_fams = {f["key"]: f for f in (prev or {}).get("families", ())}
+    return {"year": cur.get("year"),
+            "prev_year": prev.get("year") if prev else None,
+            "overall": merge(cur["overall"], prev["overall"] if prev else None),
+            "families": [merge(f, prev_fams.get(f["key"]))
+                         for f in cur["families"]],
+            "real_three_set": cur["real_three_set"]}
 
 
 def jhsaa_years(world_id: int, gender: str) -> list[int]:

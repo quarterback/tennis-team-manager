@@ -55,6 +55,11 @@ ROUTES = [
     "/jhsaa/district-jv/9A/Halbrook%20Basin%20District?flight=JVD",
     "/jhsaa/individual-champions?flight=JVS",
     "/jhsaa/individual-champions?flight=JVD&g=boys",
+    # Scoreline realism — this season against last, Oregon as a baseline. With
+    # nothing archived it must render its empty state; the data-bearing render
+    # is in tests/test_jhsaa_scorelines.py.
+    "/jhsaa/realism",
+    "/jhsaa/realism?g=boys",
 ]
 
 

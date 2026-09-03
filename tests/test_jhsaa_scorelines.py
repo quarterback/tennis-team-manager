@@ -223,6 +223,7 @@ def test_realism_fold_reads_the_archive_varsity_only():
     finally:
         conn.close()
 
+    world._scoreline_cache.clear()
     d = world.jhsaa_scoreline_realism(w["id"], 7, "girls")
     o = d["overall"]
     got = {r["key"]: round(r["sim"], 1) for r in o["rows"] if r["sim"]}
@@ -237,3 +238,174 @@ def test_realism_fold_reads_the_archive_varsity_only():
     assert fams["regular"]["sets"] == 5
     assert fams["postseason"]["sets"] == 2       # the level-NULL state dual
     assert fams["showcase"]["sets"] == 0         # the pro set fell out
+
+
+def _archive_season(world, w, year, gender, scores, phase="regular"):
+    """Archive one synthetic varsity season: `scores` is a list of set-score
+    strings, one line each, written as home-side rows so the fold sees each
+    exactly once. Also writes the `world_jhsaa` summary row `jhsaa_years`
+    reads, since that is what makes a year exist to the pages."""
+    import json as _json
+    conn = world._db()
+    try:
+        conn.execute("INSERT INTO world_jhsaa (world_id, year, gender, data)"
+                     " VALUES (?,?,?,?)", (w["id"], year, gender, "{}"))
+        conn.executemany(
+            "INSERT INTO world_jhsaa_dual (world_id, year, gender, school, opp,"
+            " home, phase, pf, pa, won, district, lines, level, tied, shape,"
+            " played) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            [(w["id"], year, gender, "A", "B", 1, phase, 1, 0, 1, 1,
+              _json.dumps([{"score": s}]), "v", 0, "", "[]") for s in scores])
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _drop_seasons(world, w, gender):
+    conn = world._db()
+    try:
+        conn.execute("DELETE FROM world_jhsaa WHERE world_id=? AND gender=?",
+                     (w["id"], gender))
+        conn.execute("DELETE FROM world_jhsaa_dual WHERE world_id=? AND gender=?",
+                     (w["id"], gender))
+        conn.commit()
+    finally:
+        conn.close()
+    world._scoreline_cache.clear()
+
+
+def test_realism_fold_is_per_season():
+    """‼️ THE REPORT: "the realism page reports the same numbers every season
+    regardless of what is in the sim." The fold WAS folding the right season —
+    the shape is a property of the engine and prints identically at ~200k sets
+    — so this pins the property the report doubted: two seasons archived with
+    different shapes fold to different histograms, each equal to its own rows,
+    and the memo never serves one season's fold for another."""
+    import app.world as world
+    w = world.get_or_create(4343)
+    _drop_seasons(world, w, "boys")
+    try:
+        # year 3: blowout-shaped (three 6-0s, one 7-6); year 4: the inverse
+        _archive_season(world, w, 3, "boys", ["6-0, 6-0", "6-0, 7-6"])
+        _archive_season(world, w, 4, "boys", ["7-6, 7-6", "7-6, 6-0"])
+        d3 = world.jhsaa_scoreline_realism(w["id"], 3, "boys")
+        d4 = world.jhsaa_scoreline_realism(w["id"], 4, "boys")
+        s3 = {r["key"]: r["sim"] for r in d3["overall"]["rows"]}
+        s4 = {r["key"]: r["sim"] for r in d4["overall"]["rows"]}
+        assert s3["6-0"] == 75.0 and s3["7-6"] == 25.0
+        assert s4["6-0"] == 25.0 and s4["7-6"] == 75.0
+        assert d3["year"] == 3 and d4["year"] == 4
+        # memoised per season: the same object comes back, and never the other's
+        assert world.jhsaa_scoreline_realism(w["id"], 3, "boys") is d3
+        assert world.jhsaa_scoreline_realism(w["id"], 4, "boys") is d4
+
+        # and the season-over-season composition reads the two as this/last
+        cmp = world.scoreline_compare(d4, d3)
+        row = {r["key"]: r for r in cmp["overall"]["rows"]}
+        assert cmp["year"] == 4 and cmp["prev_year"] == 3
+        assert row["6-0"]["sim"] == 25.0 and row["6-0"]["prev"] == 75.0
+        assert row["6-0"]["delta"] == -50.0
+        assert row["7-6"]["delta"] == 50.0
+        assert cmp["overall"]["shift"] == 50.0       # TV: half of |−50|+|50|
+        # the Oregon baseline rides along untouched, as a reference, per row
+        assert row["6-0"]["real"] == 26.4
+        assert round(row["6-0"]["vs_real"], 1) == -1.4
+    finally:
+        _drop_seasons(world, w, "boys")
+
+
+def test_scoreline_compare_handles_the_oldest_season():
+    """On the oldest archived season there is no previous one: every last-season
+    figure is None (a dash on the page), never a zero — a zero would claim "no
+    sets last year", which is a different statement. And a family the previous
+    season did not play (no sets) has no shift, rather than a perfect 0.0."""
+    import app.world as world
+    keys = ["6-0", "6-1", "6-2", "6-3", "6-4", "7-5", "7-6"]
+
+    def table(shares, sets, three=10.0, **extra):
+        return {"rows": [{"key": k, "sim": shares.get(k, 0.0), "real": 1.0,
+                          "diff": 0.0} for k in keys],
+                "sets": sets, "matches": sets // 2, "three_set": three,
+                "tv": 0.0, **extra}
+
+    cur = {"year": 9,
+           "overall": table({"6-0": 50.0, "7-6": 50.0}, 10),
+           "families": [table({"6-0": 50.0, "7-6": 50.0}, 10, key="regular",
+                              label="League season"),
+                        table({}, 0, key="showcase", label="Showcases")],
+           "real_three_set": 13.8}
+    solo = world.scoreline_compare(cur, None)
+    assert solo["prev_year"] is None
+    assert all(r["prev"] is None and r["delta"] is None
+               for r in solo["overall"]["rows"])
+    assert solo["overall"]["shift"] is None
+    assert solo["overall"]["prev_sets"] is None
+    assert solo["overall"]["three_set_delta"] is None
+    # `sim` and the baseline are still there to read
+    assert solo["overall"]["rows"][0]["sim"] == 50.0
+    assert solo["overall"]["rows"][0]["real"] == 1.0
+
+    prev = {"year": 8,
+            "overall": table({"6-0": 40.0, "7-6": 60.0}, 20, three=30.0),
+            "families": [table({"6-0": 40.0, "7-6": 60.0}, 20, three=30.0,
+                               key="regular", label="League season"),
+                         table({}, 0, key="showcase", label="Showcases")],
+            "real_three_set": 13.8}
+    both = world.scoreline_compare(cur, prev)
+    assert both["overall"]["shift"] == 10.0
+    assert both["overall"]["three_set_delta"] == -20.0
+    fams = {f["key"]: f for f in both["families"]}
+    assert fams["regular"]["shift"] == 10.0
+    # neither season played a showcase: nothing to compare, not a match of 0.0 —
+    # and the rows say so too, never a 0.0 share beside a shift
+    assert fams["showcase"]["shift"] is None
+    assert fams["showcase"]["three_set_delta"] is None
+    assert all(r["prev"] is None and r["delta"] is None
+               for r in fams["showcase"]["rows"])
+
+
+def test_realism_page_renders_this_season_against_last():
+    """The page dereferences the comparison by attribute, and a template is the
+    one place where a wrong shape renders instead of raising — so render it with
+    two archived seasons under the app's own world and read the numbers back
+    off the HTML: both season labels, this season's share, last season's, and
+    the shift between them."""
+    import re
+    import app.world as world
+    from app.web.server import create_app
+    from app.web.state import DEFAULT_SEED
+    import os
+    os.environ.setdefault("PTC_NO_BOOT_WARM", "1")
+    w = world.get_or_create(DEFAULT_SEED)
+    _drop_seasons(world, w, "girls")
+    # Once a world row exists a cold request gets the WARMING SHELL, not the page
+    # (`_prime_world`); no JHSAA surface reads a college program, so reporting
+    # warm is honest here — the stub `tests/test_jhsaa_routes.py::warm_client` uses.
+    real_primed, real_prime = world.is_primed, world.prime
+    world.is_primed = lambda *a, **k: True
+    world.prime = lambda *a, **k: None
+    try:
+        _archive_season(world, w, 5, "girls", ["6-0, 6-0", "6-0, 7-6"])
+        _archive_season(world, w, 6, "girls", ["7-6, 7-6", "7-6, 6-0"])
+        client = create_app().test_client()
+        html = client.get("/jhsaa/realism?g=girls").get_data(as_text=True)
+        # newest season (6 -> 2033) against the one before it (5 -> 2032)
+        y6, y5 = world.BASE_YEAR + 6 + 1, world.BASE_YEAR + 5 + 1
+        assert f"{y6} vs {y5}" in html
+        # the 6-0 row: this season 25.0, last season 75.0, shift -50.0, Oregon 26.4
+        row = re.search(r"<tr>\s*<td class=\"pl\"><b>6-0</b>.*?</tr>", html, re.S).group(0)
+        cells = re.findall(r"<td[^>]*>(.*?)</td>", row, re.S)
+        text = [re.sub(r"<[^>]+>", "", c).strip() for c in cells]
+        assert text[1] == "25.0" and text[2] == "75.0" and text[3] == "-50.0"
+        assert text[-1] == "26.4"
+        assert "shift from last season <b>50.0</b>" in html
+        # the oldest season has nothing before it and says so
+        html5 = client.get(f"/jhsaa/realism?g=girls&year=5").get_data(as_text=True)
+        assert "nothing earlier to compare against" in html5
+        row5 = re.search(r"<tr>\s*<td class=\"pl\"><b>6-0</b>.*?</tr>", html5, re.S).group(0)
+        text5 = [re.sub(r"<[^>]+>", "", c).strip()
+                 for c in re.findall(r"<td[^>]*>(.*?)</td>", row5, re.S)]
+        assert text5[1] == "75.0" and text5[2] == "—" and text5[3] == "—"
+    finally:
+        world.is_primed, world.prime = real_primed, real_prime
+        _drop_seasons(world, w, "girls")
