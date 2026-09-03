@@ -182,6 +182,94 @@ and 2 are both ×1.0, so the edge between them is invisible to the transform: ov
 archived season, scoreline, seed or upset rate can move. What changes is only what the
 five ranges are *called* — which is what was actually wrong.
 
+## 9. ‼️ THE REAL GOAL WAS TWO GOALS AT OPPOSITE ENDS OF ONE CURVE
+
+The owner then named what they had been reaching for the whole time:
+
+> "i want upsets, but i want there to be upsets between top tier players playing
+> each other not someone way worse fluking into wins all the time, those should be
+> rarer occasions"
+
+That is not one dial. It is **volatility preserved at the bottom and thinned at the
+top**, and every pass above had been treating the curve as a single thing to be made
+more or less steep. The answer is a fine 12-band ramp: 3-point steps, gentle through
+27 OVR, accelerating after.
+
+## 10. ‼️ A FINER BAND TABLE CAN BE FLATTER THAN A COARSE ONE
+
+The shipped table's top slope is **2.70** against the 5-band curve's **3.0**, and it
+reads as obviously the steeper of the two — twelve bands, every one accelerating,
+reaching further up the scale. It is not. **Slopes multiply BAND WIDTHS, and narrow
+bands accumulate less**, so it crosses BELOW the old curve at 24 OVR and stays there:
+
+| OVR | eff gap, 5-band | eff gap, 12-band |
+|---|---|---|
+| 14 | 0.2333 | 0.2618 |
+| 21 | 0.4083 | 0.4320 |
+| 24 | 0.5183 | 0.5170 |
+| 28 | 0.6650 | 0.6460 |
+| 34 | 0.9650 | 0.8727 |
+| 40 | 1.2650 | 1.1427 |
+
+**Never eyeball a band tuple. Evaluate `band_gap(x)` at the gaps you care about.**
+The tuple is a table of derivatives; what decides matches is its integral.
+
+## 11. ‼️ AND THE FLATTER TAIL IS THE POINT — IT IS NOT A REGRESSION
+
+That crossover raises the underdog at 34 OVR from 0.70% to 1.32% and at 40 OVR from
+0.11% to 0.21%. An earlier pass here read those rows as a defect, raised the last
+three slopes to 2.45/3.30/4.20 to "restore" the old suppression, and was reverted by
+the owner:
+
+> "no the tail is right. you want them to be able to win, it's high school tennis."
+
+A big mismatch in high school is improbable, not impossible, and the previous curve
+had been suppressing it on the strength of a college-era argument about compounding
+bracket runs. **Do not redo that correction.** The whole point of §9 is that the two
+ends are tuned for different reasons; measuring the tail against the old curve and
+calling the difference a regression is exactly the single-dial thinking §9 replaces.
+
+‼️ Note also what this cost: the "fix" was applied and documented as a correction
+before the owner had ruled on it, on the strength of a stated intent ("flukes should
+be rarer") that the numbers appeared to contradict. The numbers did contradict it —
+and the owner's intent had a threshold in it that no measurement could supply. When a
+change turns on where a line sits rather than on what the data says, that line is the
+owner's to draw.
+
+### Shipped
+
+    BAND_EDGES_OVR (3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 34)
+    BAND_SLOPES    (1.00, 1.05, 1.12, 1.20, 1.30, 1.42, 1.55, 1.70, 1.88,
+                    2.10, 2.35, 2.70)
+
+Every band edge, 60k matches a point (favourite win % · underdog % · previous curve):
+
+| OVR | 3 | 6 | 9 | 12 | 15 | 18 | 21 | 24 | 27 | 30 | 34 | 40 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| fav | 55.4 | 61.1 | 66.8 | 72.5 | 77.9 | 83.2 | 87.9 | 91.7 | 94.8 | 97.0 | 98.7 | 99.8 |
+| dog | 44.6 | 38.9 | 33.2 | 27.5 | 22.1 | 16.8 | 12.1 | 8.3 | 5.2 | 3.1 | 1.3 | 0.2 |
+| prev fav | 55.4 | 60.9 | 66.1 | 71.1 | 76.2 | 81.9 | 86.7 | 91.7 | 95.1 | 97.6 | 99.3 | 99.9 |
+
+Peers are untouched (0 OVR 49.8%, 3 OVR 55.4%, identical to the previous curve), the
+middle separates harder everywhere from 9 to 21, and the tail is deliberately softer.
+
+‼️ **The curve is near-LINEAR from 0 to 18** — about 5.5 points of favourite win rate
+per 3 OVR, all the way — because the ramp is almost exactly cancelling the logistic's
+natural flattening. Anyone wanting a *cliff* in the middle has to break that with a
+step in the slopes, not a gentler ramp. And the per-band lift necessarily decays past
+~21 whatever the slopes do: the favourite is already at 88% and there are only 12
+points left to win, which is why 30-34 buys 1.7 points under BOTH tables despite very
+different slopes there. Steepening the middle is cheap; steepening the top costs a
+great deal of slope for very little movement.
+
+Scoreline benchmark unchanged as a regression description: TVD 37.0, three-set 48.2%,
+hold 39.3% — still not an objective.
+
+`tests/test_jhsaa_scorelines.py` needed one repair: it asserted the peer band was
+identity across a hardcoded 0-6, which the new 0-3 peer band breaks. It now derives
+the width from `BAND_EDGES_OVR[0]` — the peer band has moved three times (6 -> 7 -> 3)
+and a literal fails on the next move while saying nothing about the property.
+
 ### What the aborted re-solve is still worth
 
 The fit is kept in this document and in `scripts/jhsaa_band_calibration.py` as the

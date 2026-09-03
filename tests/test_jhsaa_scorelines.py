@@ -123,7 +123,12 @@ def test_peer_band_is_identity_and_the_curve_is_monotone():
     any band edge (a discontinuity would make one OVR point worth a jump)."""
     from engine.fast import band_gap, BAND_EDGES_OVR, GRADE_SPAN
 
-    for ovr in (0.0, 1.0, 3.0, 5.5, 6.0):
+    # ‼️ DERIVED FROM THE TABLE, never a typed 6.0 — the peer band's WIDTH is a
+    # tuning decision that has moved twice (6 -> 7 -> 3), and a literal here
+    # fails the day it moves again while saying nothing about the property.
+    peer = BAND_EDGES_OVR[0]
+    for frac in (0.0, 0.2, 0.5, 0.9, 1.0):
+        ovr = peer * frac
         assert band_gap(ovr / GRADE_SPAN) == ovr / GRADE_SPAN
 
     assert band_gap(-0.35) == -band_gap(0.35)          # sign-symmetric
