@@ -180,56 +180,63 @@ HS_PROFILE = {
 GRADE_SPAN = 60.0
 
 #: COMPETITIVE BANDS — the high-school matchup curve (owner spec 2026-08;
-#: re-shaped 2026-09 into a fine 12-band ramp). An OVR difference is read through
-#: a piecewise-linear transform: identity inside the peer band, progressively
-#: steeper above it, continuous by construction (each band starts where the last
-#: one ended), sign-symmetric and monotonic.
+#: re-shaped 2026-09 into a fine 12-band ramp with a deliberate mid-curve step).
+#: An OVR difference is read through a piecewise-linear transform: identity inside
+#: the peer band, steeper above it, continuous by construction (each band starts
+#: where the last one ended), sign-symmetric and monotonic.
 #:
 #: ‼️ THE SHAPE IS "UPSETS AMONG PEERS, NOT CONSTANT FLUKES FROM FAR BELOW"
 #: (owner, 2026-09) — two goals at opposite ends of one curve, tuned as two
-#: different things. The bottom stays SMOOTH in 3-point steps so near-equal
-#: players keep their volatility and a good player beats a slightly better one on
-#: the day; the middle separates harder than the old 5-band curve did (14 OVR
-#: 74.1% -> 76.2%, 21 OVR 86.7% -> 87.9%).
+#: different things, which is what every earlier single-dial pass got wrong. The
+#: bottom stays SMOOTH in 3-point steps so near-equal players keep their
+#: volatility; the middle steps up hard; the top thins out without becoming a
+#: wall.
+#:
+#: ‼️ THE STEP AT 16-18 (1.30 -> 1.60) IS THE POINT OF THIS TABLE. A logistic
+#: naturally flattens as the favourite approaches certainty, so a smooth ramp
+#: buys LESS win-probability per OVR point the further out you go. The jump at
+#: 16-18 reverses that locally: measured, that band buys 5.8 points of favourite
+#: win rate where 12-15 bought 5.4 and the previous smooth table bought 5.3. That
+#: is a real kink in the curve, and it is where the owner wants a mismatch to
+#: start telling. Do not "tidy" it into a gentle ramp.
 #:
 #: ‼️ AND THE TAIL IS DELIBERATELY NOT A WALL (owner ruling 2026-09: "the tail is
-#: right, you want them to be able to win, it's high school tennis"). This table
-#: is genuinely FLATTER above 24 OVR than the 5-band curve it replaced — underdog
-#: at 34 OVR 0.70% -> 1.32%, at 40 OVR 0.11% -> 0.21% — and that is the point,
-#: not a regression to be corrected. A big mismatch in high school is improbable,
-#: not impossible. An earlier pass here raised the last three slopes to
-#: 2.45/3.30/4.20 to "restore" the old suppression and was reverted; do not
-#: redo it.
+#: right, you want them to be able to win, it's high school tennis"). The last two
+#: bands are BOTH 2.20, so the curve goes linear from 31 OVR up rather than
+#: continuing to accelerate: underdog 1.05% at 34 OVR and 0.23% at 40, against the
+#: old 5-band curve's 0.70% and 0.11%. A big mismatch in high school is
+#: improbable, not impossible. An earlier pass raised the top slopes to restore
+#: the old suppression and was reverted; do not redo it. Flattening the last two
+#: bands costs almost nothing anyway — past ~30 OVR the CEILING is doing the work,
+#: not the slope.
 #:
 #: ‼️ SLOPES MULTIPLY BAND WIDTHS — EVALUATE `band_gap(x)`, NEVER EYEBALL THE
 #: TUPLE. Narrow bands accumulate less, so a fine table whose every number looks
-#: bigger can integrate to LESS gap than a coarse one: this table's top slope is
-#: 2.70 against the old 3.0, reads as steeper across twelve accelerating bands,
-#: and crosses BELOW the old curve at 24 OVR (0.517 vs 0.518) and stays there
-#: (34 OVR: 0.873 vs 0.965). The tuple is a table of derivatives; what decides
-#: matches is its integral.
+#: bigger can integrate to LESS gap than a coarse one: this top slope is 2.20
+#: against the old 5-band curve's 3.0 and still lands the middle harder, because
+#: twelve bands of ramp accumulate faster where it matters. The tuple is a table
+#: of derivatives; what decides matches is its integral.
 #:
-#: Measured favourite win rates (scripts/jhsaa_band_calibration.py, 60k matches
-#: a point): 3 -> 55.4%, 7 -> 63.0%, 10 -> 68.8%, 14 -> 76.2%, 18 -> 83.2%,
-#: 21 -> 87.9%, 24 -> 91.7%, 28 -> 95.5%, 34 -> 98.7%, 40 -> 99.8%. Peers are
-#: untouched by the reshape (0 OVR 49.8%, 3 OVR 55.4%).
+#: Measured favourite win rates (scripts/jhsaa_band_calibration.py, 60k matches a
+#: point): 3 -> 55.4%, 6 -> 61.3%, 9 -> 67.3%, 12 -> 72.8%, 15 -> 78.2%,
+#: 18 -> 84.0%, 21 -> 88.9%, 24 -> 92.9%, 27 -> 95.6%, 30 -> 97.5%, 34 -> 98.9%,
+#: 40 -> 99.8%. Peers are untouched by every reshape (0 OVR 49.8%, 3 OVR 55.4%).
 #: ‼️ The harness validates itself against these before fitting; one that reads
 #: driver attributes on a 0-100 scale instead of the 20-80 GRADE SPAN understates
 #: every gap by a third and looks entirely plausible.
 #:
 #: ‼️ A BAND IS A SEMANTIC LABEL, NOT A PROMISE OF EXTRA SLOPE (owner ruling
-#: 2026-09). Adjacent segments may share a slope; the base win-probability curve
-#: is already rising across them, so a 10-point gap means something plainly
-#: different from a 3-point one without acceleration being added to say so. An
-#: earlier version of this comment claimed "each band above the peer band is
-#: progressively steeper", which was false of the table beneath it and cost a
-#: review cycle — an analysis read the identity segment as a defect and proposed
-#: steepening it. Fix the prose, not the curve.
+#: 2026-09). Adjacent segments may share a slope — 31-34 and 35+ both do — and the
+#: base win-probability curve is already rising across them. An earlier version of
+#: this comment claimed "each band above the peer band is progressively steeper",
+#: which was false of the table beneath it and cost a review cycle: an analysis
+#: read an identity segment as a defect and proposed steepening it. Fix the prose,
+#: not the curve.
 #: See docs/AAR-jhsaa-band-recalibration.md and
 #: docs/PROPOSAL-development-model-redesign.md §25.
 BAND_EDGES_OVR = (3.0, 6.0, 9.0, 12.0, 15.0, 18.0, 21.0, 24.0, 27.0, 30.0, 34.0)
-BAND_SLOPES = (1.00, 1.05, 1.12, 1.20, 1.30, 1.42, 1.55, 1.70, 1.88,
-               2.10, 2.35, 2.70)
+BAND_SLOPES = (1.00, 1.10, 1.16, 1.20, 1.30, 1.60, 1.71, 1.96, 2.04,
+               2.13, 2.20, 2.20)
 def _build_bands() -> tuple[tuple[float, float, float], ...]:
     """(unit edge, slope, output at that edge) per band, precomputed at import so
     the per-point hot path is a short scan that never re-derives the table."""

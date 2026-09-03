@@ -236,39 +236,68 @@ and the owner's intent had a threshold in it that no measurement could supply. W
 change turns on where a line sits rather than on what the data says, that line is the
 owner's to draw.
 
+## 12. The mid-curve step — what finally landed
+
+The smooth 12-band ramp separated the middle better than the 5-band curve but was
+still, in effect, one gesture: it cancelled the logistic's flattening and produced a
+near-LINEAR 5.5 points of favourite win rate per 3 OVR from 0 to 18. The owner's next
+table put a real step in it — 1.30 at 13-15 jumping to **1.60 at 16-18** — and that is
+the shape now shipped.
+
+‼️ **A logistic flattens as the favourite nears certainty, so a smooth ramp buys less
+win probability per OVR point the further out it goes.** The step reverses that
+locally, and it is visible in the per-band lift:
+
+| band | this table | smooth ramp | 5-band |
+|---|---|---|---|
+| 0-3 | 5.7 | 5.7 | 5.7 |
+| 3-6 | 5.9 | 5.7 | 5.4 |
+| 6-9 | 6.0 | 5.7 | 5.2 |
+| 9-12 | 5.5 | 5.6 | 4.9 |
+| 12-15 | 5.4 | 5.4 | 5.2 |
+| **15-18** | **5.8** | 5.3 | 5.7 |
+| 18-21 | 4.9 | 4.7 | 4.8 |
+| 21-24 | 4.0 | 3.8 | 5.0 |
+| 24-27 | 2.7 | 3.1 | 3.4 |
+| 27-30 | 1.9 | 2.2 | 2.5 |
+| 30-34 | 1.4 | 1.7 | 1.7 |
+
+15-18 is the only band that buys MORE than the band below it. That is a kink, not a
+ramp, and it is where the owner wants a mismatch to start telling.
+
+‼️ **The flat top costs almost nothing.** The last two bands are both 2.20, so the
+curve goes linear from 31 OVR up instead of accelerating — and the underdog at 40 OVR
+is 0.23% against the smooth ramp's 0.21%. Past ~30 the CEILING does the work, not the
+slope: the favourite is already at 97.5% with 2.5 points left to win. This is the
+practical form of the rule in §10 — steepening the middle is cheap, steepening the top
+is expensive and barely moves anything.
+
 ### Shipped
 
     BAND_EDGES_OVR (3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 34)
-    BAND_SLOPES    (1.00, 1.05, 1.12, 1.20, 1.30, 1.42, 1.55, 1.70, 1.88,
-                    2.10, 2.35, 2.70)
+    BAND_SLOPES    (1.00, 1.10, 1.16, 1.20, 1.30, 1.60, 1.71, 1.96, 2.04,
+                    2.13, 2.20, 2.20)
 
-Every band edge, 60k matches a point (favourite win % · underdog % · previous curve):
+Every band edge, 60k matches a point:
 
-| OVR | 3 | 6 | 9 | 12 | 15 | 18 | 21 | 24 | 27 | 30 | 34 | 40 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| fav | 55.4 | 61.1 | 66.8 | 72.5 | 77.9 | 83.2 | 87.9 | 91.7 | 94.8 | 97.0 | 98.7 | 99.8 |
-| dog | 44.6 | 38.9 | 33.2 | 27.5 | 22.1 | 16.8 | 12.1 | 8.3 | 5.2 | 3.1 | 1.3 | 0.2 |
-| prev fav | 55.4 | 60.9 | 66.1 | 71.1 | 76.2 | 81.9 | 86.7 | 91.7 | 95.1 | 97.6 | 99.3 | 99.9 |
+| OVR | 0 | 3 | 6 | 9 | 12 | 15 | 18 | 21 | 24 | 27 | 30 | 34 | 40 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| fav win % | 49.8 | 55.4 | 61.3 | 67.3 | 72.8 | 78.2 | 84.0 | 88.9 | 92.9 | 95.6 | 97.5 | 98.9 | 99.8 |
+| underdog % | 50.3 | 44.6 | 38.7 | 32.7 | 27.2 | 21.8 | 16.0 | 11.1 | 7.1 | 4.4 | 2.5 | 1.1 | 0.2 |
+| eff gap | .000 | .050 | .105 | .163 | .223 | .288 | .368 | .454 | .552 | .654 | .760 | .907 | 1.127 |
 
-Peers are untouched (0 OVR 49.8%, 3 OVR 55.4%, identical to the previous curve), the
-middle separates harder everywhere from 9 to 21, and the tail is deliberately softer.
+Peers are untouched by every reshape in this document (0 OVR 49.8%, 3 OVR 55.4%,
+identical across all four curves tried), the middle separates hardest of any version,
+and the tail stays deliberately soft.
 
-‼️ **The curve is near-LINEAR from 0 to 18** — about 5.5 points of favourite win rate
-per 3 OVR, all the way — because the ramp is almost exactly cancelling the logistic's
-natural flattening. Anyone wanting a *cliff* in the middle has to break that with a
-step in the slopes, not a gentler ramp. And the per-band lift necessarily decays past
-~21 whatever the slopes do: the favourite is already at 88% and there are only 12
-points left to win, which is why 30-34 buys 1.7 points under BOTH tables despite very
-different slopes there. Steepening the middle is cheap; steepening the top costs a
-great deal of slope for very little movement.
+Scoreline benchmark as a regression description only, never an objective: the close-
+set profile is an accepted consequence of the band spec.
 
-Scoreline benchmark unchanged as a regression description: TVD 37.0, three-set 48.2%,
-hold 39.3% — still not an objective.
-
-`tests/test_jhsaa_scorelines.py` needed one repair: it asserted the peer band was
-identity across a hardcoded 0-6, which the new 0-3 peer band breaks. It now derives
-the width from `BAND_EDGES_OVR[0]` — the peer band has moved three times (6 -> 7 -> 3)
-and a literal fails on the next move while saying nothing about the property.
+`tests/test_jhsaa_scorelines.py` needed one repair along the way: it asserted the peer
+band was identity across a hardcoded 0-6, which the 0-3 peer band breaks. It now
+derives the width from `BAND_EDGES_OVR[0]` — that band has moved three times
+(6 -> 7 -> 3) and a literal fails on the next move while saying nothing about the
+property.
 
 ### What the aborted re-solve is still worth
 
