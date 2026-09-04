@@ -294,9 +294,24 @@ def _flight_no(slot: str) -> int:
         return 99
 
 
-def _weight(slot: str, phase: str, postseason, alpha: float = 1.0) -> float:
-    from .jhsaa import FLIGHT_WEIGHTS
-    base = FLIGHT_WEIGHTS.get(slot, 0.25)
+def _weight(slot: str, phase: str, postseason, alpha: float = 1.0,
+            group: str | None = None) -> float:
+    """The résumé weight of one appearance.
+
+    ‼️ NORMALISED BY THE TABLE'S TOP COURT, which matters now that a shape can price
+    the same flight name differently (8A/9A's 4S/5D card puts S1 and D1 at 2.00 where
+    every other JHSAA shape puts them at 1.00 — owner rule 2070). The association's
+    ABSOLUTE scale is a property of the card, and a résumé score is compared ACROSS
+    classifications — All-Region is region-wide and class-blind — so taking the raw
+    numbers would hand every 8A/9A postseason match twice the credit of a 7A one for
+    the same court. Dividing by the table's maximum keeps the association's ORDERING
+    (which is the decision it made) and drops its scale (which is not about players).
+    The ordinary table's maximum is 1.00, so every other class is untouched to the
+    last bit."""
+    from .jhsaa import flight_weights
+    table = flight_weights(phase, group)
+    top = max(table.values()) or 1.0
+    base = table.get(slot, 0.25) / top
     if phase == "regular" and slot in FLIGHT_S2S3_REGULAR:
         base = FLIGHT_S2S3_REGULAR[slot]
     w = base ** alpha
@@ -434,15 +449,18 @@ def _base_pairs(pairs: dict) -> dict:
     return {k: _shrunk(pr["log"]) for k, pr in pairs.items()}
 
 
-def _resume(log, q_of, postseason, alpha: float = 1.0) -> float:
+def _resume(log, q_of, postseason, alpha: float = 1.0,
+            group: str | None = None) -> float:
     """Signed résumé credit — the SOP's criteria 1-5 and 7, per match.
 
     `q_of(opps)` returns the opposition's rating: the mean of the individual
     opponents in singles, the OPPOSING PAIR's rating in doubles. `alpha` is the
-    level's flight emphasis (`FLIGHT_ALPHA`)."""
+    level's flight emphasis (`FLIGHT_ALPHA`). `group` is the athlete's own
+    classification — it selects the flight weight table for the shapes that
+    classification plays (see `_weight`)."""
     total = 0.0
     for slot, won, phase, opps, _partner, _os in log:
-        w = _weight(slot, phase, postseason, alpha)
+        w = _weight(slot, phase, postseason, alpha, group)
         q = q_of(opps)
         if won:
             total += w * (WIN_BASE + WIN_SLOPE * q)
@@ -763,13 +781,13 @@ def build_pool(teams, postseason=None) -> dict:
     for rec in players.values():
         sl = [m for m in rec["log"] if _is_singles(m[0])]
         for scope, alpha in FLIGHT_ALPHA.items():
-            rec[f"s:{scope}"] = _resume(sl, qs, postseason, alpha)
+            rec[f"s:{scope}"] = _resume(sl, qs, postseason, alpha, rec["group"])
         rec["s"] = rec["s:state"]
     for pr in pairs.values():
         pr["d_n"] = len(pr["log"])
         pr["d_w"] = sum(1 for m in pr["log"] if m[1])
         for scope, alpha in FLIGHT_ALPHA.items():
-            pr[f"d:{scope}"] = _resume(pr["log"], qp, postseason, alpha)
+            pr[f"d:{scope}"] = _resume(pr["log"], qp, postseason, alpha, pr["group"])
         pr["d"] = pr["d:state"]
 
     # Every athlete gets ONE category, decided on standing (see `_assign_primary`),

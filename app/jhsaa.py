@@ -120,8 +120,25 @@ FORMATS = {
     "state":    DualFormat(n_singles=1, n_doubles=4, doubles_team_point=False),
     # 1A's pilot postseason shape (owner rule 2026-08) — see `dual_format()`.
     "state_1a": DualFormat(n_singles=2, n_doubles=3, doubles_team_point=False),
+    # 8A/9A's pilot shape (owner rule 2070) — see `dual_format()` and `WIDE_GROUPS`.
+    "state_4s5d": DualFormat(n_singles=4, n_doubles=5, doubles_team_point=False),
 }
 PILOT_GROUPS = ("1A",)          # groups whose road-to-State plays `state_1a`
+
+# ‼️ 8A/9A PLAY 4S/5D — NINE POINTS (owner rule 2070). The association's two deepest
+# classifications play a wider dual than the rest: their whole road to State (and the
+# State draw itself) plays 4 singles / 5 doubles instead of 1S/4D, and their EARLY
+# non-district window plays it too instead of 5S/2D — the same reasoning that put the
+# early window on a different shape in the first place, which is that the window is
+# where a program rehearses the card it will have to win with. Fourteen on court.
+#
+# Everything else about these two classes is untouched: the league season is still
+# 3S/4D, the mid-season showcases are still 1S/4D, the TOC is still 1S/4D (it fields
+# every classification's champion at ONE shape — the 1A pilot's own carve-out, for the
+# same reason), and the individual state tournaments are still 3S+3D and read no dual
+# format at all. Nine courts is odd, so a 4S/5D dual cannot tie and no tie-breaking
+# logic is needed anywhere; high school has no clinch, so all nine are always played.
+WIDE_GROUPS = ("8A", "9A")      # groups whose road-to-State AND early window play 4S/5D
 
 # THE LEAGUE CARD PLAYS 3S/4D (owner rule 2027-08, swapped from the original 5S/2D so
 # it matches the 1S/4D postseason's doubles-forward character all season, not just in
@@ -178,15 +195,56 @@ def dual_format(phase: str, group: str | None = None) -> DualFormat:
     Champions fields every classification's champion at the SAME shape, so 1A's
     entrant plays it at 1S/4D like everyone else; only its OWN road (Sectionals
     through State) plays `state_1a`. Showcases are untouched for every group,
-    1A included — pass `group` only for a `POSTSEASON` phase; it does nothing
-    for `SHOWCASE` or any other phase."""
-    if (group in PILOT_GROUPS and phase in POSTSEASON and phase != "toc"):
+    1A included.
+
+    ‼️ 8A/9A's PILOT (`WIDE_GROUPS`, owner rule 2070) covers the road-to-State on
+    the same terms AND the EARLY non-district window, which is the one pilot branch
+    that reaches a phase where the two sides of a dual can be in DIFFERENT groups
+    (the early window pairs on geography within one classification of each other).
+    A dual has one shape, so resolve it with `shape_group` and pass THAT — never
+    one side's own group — anywhere a real dual is being played."""
+    wide = group in WIDE_GROUPS
+    road = phase in POSTSEASON and phase != "toc"
+    if wide and (road or phase == EARLY_FORMAT_PHASE):
+        return FORMATS["state_4s5d"]
+    if group in PILOT_GROUPS and road:
         return FORMATS["state_1a"]
     if phase in POSTSEASON or phase in SHOWCASE:
         return FORMATS["state"]
     if phase == EARLY_FORMAT_PHASE:
         return FORMATS["early"]
     return FORMATS["regular"]
+
+
+def shape_group(phase: str, a_group: str | None, b_group: str | None) -> str | None:
+    """The group whose shape governs a dual between programs in `a_group` and
+    `b_group` — what to hand `dual_format`, `lineup_need`, `_squad`, `_lineup` and
+    `_slot_players` for that dual.
+
+    ‼️ A DUAL HAS ONE SHAPE, AND THE TWO SIDES NEED NOT AGREE ON WHICH. Every pilot
+    before 2070 was scoped to the postseason, where a bracket never crosses a
+    classification, so resolving the shape from the home side's group was always
+    right and `play_dual` said so in a comment. 8A/9A's early window breaks that: the
+    early non-district draw pairs a program with one in its own classification OR one
+    apart, so an 8A-vs-7A early dual has one side wanting 4S/5D and the other 5S/2D.
+    Read off ONE side, the other dresses for a card it is not playing —
+    `_squad`/`_slot_players` WRAP rather than raise, so the same player takes two
+    courts and the box score still looks plausible.
+
+    ‼️ THE WIDER CARD WINS (owner rule 2070). It does NOT fall back to the narrower
+    shape when the two disagree: every program in this association carries the bench
+    for a nine-court dual (`ROSTER_SIZE_BAND_BY_CLASS` puts 7A/6A at 19-22 and
+    `ROSTER_FLOOR` is a hard 16, against fourteen on court), so a 7A team meeting an
+    8A one in the early window simply plays 4S/5D. Forcing the dual down to 5S/2D
+    would be defending a roster constraint that does not exist here."""
+    fa, fb = dual_format(phase, a_group), dual_format(phase, b_group)
+    if fa is fb:
+        return a_group
+    return a_group if _courts(fa) >= _courts(fb) else b_group
+
+
+def _courts(f: DualFormat) -> int:
+    return f.n_singles + f.n_doubles
 
 
 # SCORING (owner rule 2027-08), a different axis from the SHAPE above: every high-school
@@ -1693,6 +1751,30 @@ def jv_pool(ts: TeamSeason) -> list:
     rule 2026-08). Threading a varsity dual's rest into a JV dual's size would couple
     two schedules that are explicitly independent."""
     return _order(ts)[lineup_need("regular"):]
+
+
+def jv_postseason_cut(group: str | None = None) -> int:
+    """Where the ladder cut sits for the JV STATE TOURNAMENT's eligibility freeze.
+
+    ‼️ THE JV SEASON'S OWN CUT NEVER MOVES (owner rule 2070). `jv_pool` is rank #12
+    down for every classification, 8A/9A included — the JV league season is staffed
+    off the 3S/4D varsity eleven and nothing about the 4S/5D pilot touches it. What
+    moves is the POSTSEASON freeze: 8A/9A dress FOURTEEN in the varsity playoffs, so
+    their JV playoff field is frozen below that, at rank #15 down.
+
+    ‼️ AND IT IS NOT AN EXCLUSION. A player may be in the varsity playoff fourteen
+    AND the JV championship squad — the owner is explicit that the overlap does not
+    matter — so this is where the JV bracket's own line is drawn, not a rule about
+    who is spoken for. Derived from `lineup_need` rather than typed, so it follows
+    the pilot's shape if the shape ever moves."""
+    return max(lineup_need("regular", group),
+               lineup_need(EARLY_FORMAT_PHASE, group),
+               lineup_need("state", group))
+
+
+def jv_state_pool(ts: TeamSeason) -> list:
+    """`jv_pool` for the JV STATE TOURNAMENT — cut at `jv_postseason_cut`."""
+    return _order(ts)[jv_postseason_cut(ts.school.group):]
 
 
 def jv_spare(ts: TeamSeason) -> int:
@@ -4174,6 +4256,94 @@ def _arrange_state(nine: list, sibling_ids: dict | None = None) -> list:
     return out
 
 
+def _arrange_wide(players: list, n_singles: int,
+                  sibling_ids: dict | None = None) -> list:
+    """`_arrange_state`'s mechanism at ANY singles width — the general form of the
+    postseason arrangement, used by 1A's 2S/3D pilot and 8A/9A's 4S/5D one.
+
+    Arrange a frozen-order top `n_singles + 2*n_doubles` into SLOT ORDER:
+    [S1..Sn, D1a, D1b, D2a, D2b, …]. Same contract as `_arrange_state`: `_squad`
+    dresses by position and `_slot_players` reads it back the same way, so this
+    list IS the lineup. Anything short of the full card plays the plain order.
+
+    ‼️ ONE MECHANISM, NOT A REGIME PER SHAPE (owner correction 2026-08).
+    `_arrange_state` pools the top THREE and searches which ONE plays singles (the
+    other two form D1) — the association's best player is NOT pinned to S1; a team
+    can pair its #1 into D1 and start #2 or #3 at singles if that scores better.
+    Every wider card is the same search one seat wider: pool the top
+    `n_singles + 2`, pick `n_singles` of them for the singles seats, the remaining
+    two are D1. 2S/3D pools four and picks two; 4S/5D pools six and picks four. The
+    rest of the card replays `_arrange_state`'s own logic on the players below the
+    pool: a search over every way to pair them, best total doubles ability wins,
+    then `_order_pairs`'s anti-stacking rank-sum boundary.
+
+    ‼️ The FLIGHT WEIGHT TABLE is what makes the search mean something at 4S/5D
+    (`FLIGHT_WEIGHTS_4S5D`): the association prices S1 and D1 at 2.00 and the tail
+    at 0.30/0.20/0.10, so where a coach spends the top six is the whole decision."""
+    top_n = n_singles + 2
+    if len(players) < top_n or (len(players) - top_n) % 2:
+        return players
+    from engine.doubles import doubles_rating
+    eng = {p.pid: p.engine_player() for p in players}
+    rank = {p.pid: i + 1 for i, p in enumerate(players)}
+
+    sibs = sibling_ids or {}
+
+    # MEMOISED on the pid pair: the partition search below is 105 partitions at
+    # 4S/5D and every one of them re-asks about pairs drawn from the same 28, so
+    # `doubles_rating` would be called 420 times to answer 28 questions. Identical
+    # results, ~10x less work on the association's biggest postseason.
+    _pr: dict = {}
+
+    def pair_rating(a, b):
+        key = _pk((a, b))
+        if key not in _pr:
+            r = doubles_rating(eng[a.pid], eng[b.pid])
+            if b.pid in sibs.get(a.pid, ()):     # the map is symmetric by construction
+                r += FAMILY_CHEMISTRY
+            _pr[key] = r
+        return _pr[key]
+
+    # The singles seats + D1 consume the top `n_singles + 2`: every way to pick
+    # `n_singles` of them for singles, the other two pairing for D1.
+    top, rest = players[:top_n], players[top_n:]
+    combos = list(itertools.combinations(range(top_n), n_singles))
+    forced = _sibling_units(players, sibs)
+    # A sibling pair inside the pool must not be SPLIT across the singles seats and
+    # D1 — the two of them either both start at singles or they are D1. If nothing
+    # survives the constraint the search runs unconstrained rather than failing a
+    # lineup.
+    tp = {p.pid: i for i, p in enumerate(top)}
+    units = [tuple(tp[p.pid] for p in f) for f in forced
+             if f[0].pid in tp and f[1].pid in tp]
+    legal = [c for c in combos
+             if all(len({i, j} & set(c)) != 1 for i, j in units)]
+    combos = legal or combos
+
+    def cfg_score(combo):
+        s = [top[i] for i in combo]
+        d = [top[i] for i in range(top_n) if i not in combo]
+        return sum(eng[x.pid].overall for x in s) + pair_rating(d[0], d[1])
+    # tie: prefer the combo drawing on the higher-ranked (lower-index) pool
+    # members for singles, same spirit as `_arrange_state`'s `-i` tiebreak.
+    combo = max(combos, key=lambda c: (cfg_score(c), -sum(c)))
+    singles = sorted((top[i] for i in combo), key=lambda p: rank[p.pid])
+    d1 = [top[i] for i in range(top_n) if i not in combo]
+
+    def part_key(part):
+        return (-sum(pair_rating(a, b) for a, b in part),
+                [rank[a.pid] + rank[b.pid] for a, b in part])
+    pairs = min(_legal_partitions(rest, forced), key=part_key)
+
+    pairs = _order_pairs(pairs,
+                         {_pk(pr): rank[pr[0].pid] + rank[pr[1].pid] for pr in pairs},
+                         {_pk(pr): pair_rating(*pr) for pr in pairs})
+    out = list(singles) + list(d1)
+    for a, b in pairs:
+        out += [a, b]
+    return out
+
+
 def _arrange_1a_postseason(eight: list, sibling_ids: dict | None = None) -> list:
     """1A's PILOT road-to-State shape (owner rule 2026-08): arrange a frozen-order
     top EIGHT into SLOT ORDER for the 2S/3D card: [S1, S2, D1a, D1b, D2a, D2b,
@@ -4192,61 +4362,7 @@ def _arrange_1a_postseason(eight: list, sibling_ids: dict | None = None) -> list
     own logic on the remaining four (#5-#8): a search over the three ways to pair
     them, best total doubles ability wins, then `_order_pairs`'s rank-sum
     boundary. Anything short of eight (a degraded side) plays the plain order."""
-    if len(eight) < 8:
-        return eight
-    from engine.doubles import doubles_rating
-    eng = {p.pid: p.engine_player() for p in eight}
-    rank = {p.pid: i + 1 for i, p in enumerate(eight)}
-
-    sibs = sibling_ids or {}
-
-    def pair_rating(a, b):
-        r = doubles_rating(eng[a.pid], eng[b.pid])
-        if b.pid in sibs.get(a.pid, ()):
-            r += FAMILY_CHEMISTRY
-        return r
-
-    # S1 + S2 + D1 consume ranks #1-#4: every way to pick TWO of the four for
-    # singles, the other two pairing for D1 — the direct generalisation of
-    # `_arrange_state`'s "pick ONE of three for S1" search.
-    top4, rest = eight[:4], eight[4:8]
-    combos = list(itertools.combinations(range(4), 2))
-    forced = _sibling_units(eight, sibs)
-    # A sibling pair inside the top four must not be SPLIT across the singles seats
-    # and D1 — the two of them either start together at S1/S2 or they are D1. Two
-    # sibling pairs in one top four leave exactly one combo, which is the right answer
-    # rather than a coincidence; if nothing survives (it cannot today), the search runs
-    # unconstrained rather than failing a lineup.
-    tp = {p.pid: i for i, p in enumerate(top4)}
-    units = [tuple(tp[p.pid] for p in f) for f in forced
-             if f[0].pid in tp and f[1].pid in tp]
-    legal = [c for c in combos
-             if all(len({i, j} & set(c)) != 1 for i, j in units)]
-    combos = legal or combos
-
-    def cfg_score(combo):
-        s = [top4[i] for i in combo]
-        d = [top4[i] for i in range(4) if i not in combo]
-        return sum(eng[x.pid].overall for x in s) + pair_rating(d[0], d[1])
-    # tie: prefer the combo drawing on the higher-ranked (lower-index) pool
-    # members for singles, same spirit as `_arrange_state`'s `-i` tiebreak.
-    combo = max(combos, key=lambda c: (cfg_score(c), -sum(c)))
-    singles = sorted((top4[i] for i in combo), key=lambda p: rank[p.pid])
-    s1, s2 = singles
-    d1 = [top4[i] for i in range(4) if i not in combo]
-
-    def part_key(part):
-        return (-sum(pair_rating(a, b) for a, b in part),
-                [rank[a.pid] + rank[b.pid] for a, b in part])
-    pairs = min(_legal_partitions(rest, forced), key=part_key)
-
-    pairs = _order_pairs(pairs,
-                         {_pk(pr): rank[pr[0].pid] + rank[pr[1].pid] for pr in pairs},
-                         {_pk(pr): pair_rating(*pr) for pr in pairs})
-    out = [s1, s2] + list(d1)
-    for a, b in pairs:
-        out += [a, b]
-    return out
+    return _arrange_wide(eight, 2, sibling_ids)
 
 
 def _order_pairs(pairs: list, rank_sum: dict, rating: dict) -> list:
@@ -4475,8 +4591,11 @@ def _arrange_regular(eleven: list, strategy: str,
     return out
 
 
-def _arrange_early(nine: list, sibling_ids: dict | None = None) -> list:
-    """The early window's 5S/2D card in SLOT ORDER [S1-S5, D1a, D1b, D2a, D2b].
+def _arrange_early(nine: list, sibling_ids: dict | None = None,
+                   group: str | None = None) -> list:
+    """The early window's 5S/2D card in SLOT ORDER [S1-S5, D1a, D1b, D2a, D2b] —
+    or 8A/9A's 4S/5D one, [S1-S4, D1a, D1b, … D5a, D5b] (owner rule 2070), which is
+    the same plain-order allocation at a different width: pass the dual's `group`.
 
     That order IS the plain ladder — the allocation is fixed by the shape (the top five
     play singles, #6-#9 are the doubles pool) and there is no strategy here, which is
@@ -4488,10 +4607,10 @@ def _arrange_early(nine: list, sibling_ids: dict | None = None) -> list:
     A pair straddling the singles seats and the doubles pool is not honoured, for the
     same reason it is not in `_arrange_regular`: the allocation is the format's, and a
     lineup is never rearranged to put two siblings together."""
-    need = lineup_need(EARLY_FORMAT_PHASE)
+    need = lineup_need(EARLY_FORMAT_PHASE, group)
     if len(nine) < need:
         return nine
-    n_s = dual_format(EARLY_FORMAT_PHASE).n_singles
+    n_s = dual_format(EARLY_FORMAT_PHASE, group).n_singles
     singles, pool = nine[:n_s], nine[n_s:need]
     forced = _sibling_units(pool, sibling_ids or {})
     if not forced:
@@ -4506,7 +4625,12 @@ def _arrange_early(nine: list, sibling_ids: dict | None = None) -> list:
     return out + list(nine[need:])
 
 
-def _postseason_nine(ts: TeamSeason, phase: str = "state") -> list:
+#: Sentinel for "this program's own group" — distinct from `None`, which is a real
+#: value meaning the classification-blind shape for the phase (see `shape_group`).
+_OWN_GROUP = object()
+
+
+def _postseason_nine(ts: TeamSeason, phase: str = "state", group=_OWN_GROUP) -> list:
     """The frozen Order of Ability's top N for `phase` (nine, or 1A's pilot
     eight — see `dual_format`), freezing the ORDER on first use — the
     association establishes it before a program's first postseason dual and it
@@ -4514,7 +4638,13 @@ def _postseason_nine(ts: TeamSeason, phase: str = "state") -> list:
     never sees it; lineups are recorded per dual as always). Freezing the full
     ladder rather than a fixed-length slice is what lets 1A's road (eight) and
     its TOC entry (nine, back to 1S/4D — see `dual_format`) read the SAME
-    frozen order at different slice lengths without a second freeze."""
+    frozen order at different slice lengths without a second freeze. It is also
+    what lets 8A/9A dress FOURTEEN on their road and nine at the TOC off one
+    order (owner rule 2070).
+
+    `group` is the group whose SHAPE this dual is being played at — pass
+    `shape_group`'s answer, not a side's own group, wherever two programs are
+    actually meeting; it defaults to this program's own."""
     if not ts.order_of_ability:
         ts.order_of_ability = [p.pid for p in _order(ts)]
     by_pid = {p.pid: p for p in ts.roster}
@@ -4522,20 +4652,33 @@ def _postseason_nine(ts: TeamSeason, phase: str = "state") -> list:
     # An injury SUBSTITUTES within the frozen order rather than reopening it — the
     # rest of the order does not move, an unavailable name is simply skipped.
     ranked = _healthy(ts, ranked)
-    return ranked[:lineup_need(phase, ts.school.group)]
+    g = ts.school.group if group is _OWN_GROUP else group
+    return ranked[:lineup_need(phase, g)]
 
 
-def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None) -> list:
-    """The nine (or, for 1A's road to State, eight) who dress for THIS dual, in
-    slot order. `opp` (the opposing TeamSeason, regular season only) lets the
-    coach rest starters against a truly weaker side — see `_rest_count`. Every
-    branch pulls from a HEALTHY pool first (`_healthy`) — an injured player is
-    skipped, and depth steps up, without changing anyone's rank."""
+def _arrange_postseason(pool: list, fmt: DualFormat, sibling_ids: dict | None) -> list:
+    """Arrange a frozen-order pool onto `fmt`'s card. Keyed on the SHAPE, never on
+    the group: the shape is what the arrangement is about, and one dual has one
+    shape however its two sides are classified (see `shape_group`)."""
+    if fmt.n_singles == 1:
+        return _arrange_state(pool, sibling_ids)
+    return _arrange_wide(pool, fmt.n_singles, sibling_ids)
+
+
+def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None,
+            group=_OWN_GROUP) -> list:
+    """The nine — or eight on 1A's road to State, fourteen on 8A/9A's — who dress
+    for THIS dual, in slot order. `opp` (the opposing TeamSeason, regular season
+    only) lets the coach rest starters against a truly weaker side — see
+    `_rest_count`. Every branch pulls from a HEALTHY pool first (`_healthy`) — an
+    injured player is skipped, and depth steps up, without changing anyone's rank.
+
+    `group` is the group whose SHAPE this dual is played at (`shape_group`), which
+    is not necessarily either side's own — see `dual_format`."""
     if phase in POSTSEASON:                        # strict, frozen, arranged
-        pool = _postseason_nine(ts, phase)
-        if ts.school.group in PILOT_GROUPS and phase != "toc":
-            return _arrange_1a_postseason(pool, ts.sibling_ids)
-        return _arrange_state(pool, ts.sibling_ids)
+        pool = _postseason_nine(ts, phase, group)
+        g = ts.school.group if group is _OWN_GROUP else group
+        return _arrange_postseason(pool, dual_format(phase, g), ts.sibling_ids)
     if phase in SHOWCASE:
         # ‼️ A SHOWCASE MUST NOT FREEZE THE ORDER OF ABILITY. The freeze is the
         # association's anti-stacking rule and it binds from a program's first
@@ -4552,7 +4695,8 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None) -> list:
             nine[-1] = bench[rng.randrange(len(bench))]
         return _arrange_state(nine, ts.sibling_ids)
     order = _healthy(ts, _order(ts))
-    need = lineup_need(phase)
+    g = ts.school.group if group is _OWN_GROUP else group
+    need = lineup_need(phase, g)
     # Talent-aware staffing: sit a run of starters from the TOP against a truly
     # weaker side and shift everyone up a rung — the ladder ORDER is untouched, so
     # the card still reads as the ladder. Regular-season phases only (this branch).
@@ -4573,7 +4717,9 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None) -> list:
     # positions (S1/S2-S3/D1-D4) specifically, and only applies to `phase ==
     # "regular"`. The early window plays the OTHER shape (5S/2D, swapped with
     # regular — see `EARLY_FORMAT_PHASE`) and gets the plain ladder order, same
-    # as `_squad`'s default positional mapping always did for that shape.
+    # as `_squad`'s default positional mapping always did for that shape. 8A/9A's early
+    # window plays 4S/5D (owner rule 2070) and takes the same plain-order path — the
+    # allocation is the format's there too.
     if phase == "regular":
         # the per-dual flip draw runs either way, so the rng stream stays aligned.
         flip = rng.random() < _PHILOSOPHY_FLIP
@@ -4582,7 +4728,7 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None) -> list:
             strategy = _flip_strategy(strategy)
         return _arrange_regular(nine, strategy, ts.sibling_ids)
     if phase == EARLY_FORMAT_PHASE:
-        return _arrange_early(nine, ts.sibling_ids)
+        return _arrange_early(nine, ts.sibling_ids, g)
     return nine
 
 
@@ -4611,7 +4757,7 @@ def _slot_players(lineup: list, phase: str, slot: str,
 
 def _credit(ts: TeamSeason, lineup: list, phase: str, slot: str, won: bool,
             opp_lineup: list | None = None, opp_school: str = "",
-            opp_group: str | None = None) -> None:
+            fmt: DualFormat | None = None) -> None:
     """Credit a line to the players who played it — and LOG the match.
 
     The W-L counters alone cannot answer any of the questions the awards ask
@@ -4620,13 +4766,15 @@ def _credit(ts: TeamSeason, lineup: list, phase: str, slot: str, won: bool,
     résumé, not a record. Kept as a tuple rather than a dict because a gender's
     season logs ~100k of these.
 
-    ‼️ `_slot_players` MUST be told the shape THIS side was dressed with — see
-    its own docstring. `ts.school.group`/`opp_group` are threaded through so a
-    1A postseason dual (2S/3D) resolves D-slots against 2 singles, not the
-    1S/4D default `dual_format(phase, None)` would silently fall back to."""
-    mates = _slot_players(lineup, phase, slot, dual_format(phase, ts.school.group))
-    opps = (tuple(p.pid for p in _slot_players(opp_lineup, phase, slot,
-                                               dual_format(phase, opp_group)))
+    ‼️ `_slot_players` MUST be told the shape THE DUAL WAS PLAYED AT — see its own
+    docstring. `fmt` is threaded through from `play_dual` so a 1A postseason dual
+    (2S/3D) resolves D-slots against 2 singles and an 8A/9A one (4S/5D) against 4,
+    rather than the 1S/4D default `dual_format(phase, None)` would silently fall
+    back to. It is ONE shape for both sides — a dual has one card, and taking it
+    from each side's own group is what `shape_group` exists to prevent."""
+    f = fmt or dual_format(phase, ts.school.group)
+    mates = _slot_players(lineup, phase, slot, f)
+    opps = (tuple(p.pid for p in _slot_players(opp_lineup, phase, slot, f))
             if opp_lineup else ())
     for p in mates:
         rec = ts.records.setdefault(p.pid, [0, 0])
@@ -4818,17 +4966,22 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     and so the tests can assert it never reaches a district record. If a view ever needs
     to mark it, the column comes first — do not infer it from position in the card."""
     lrng = random.Random(f"lineup|{seed}")
-    la, lb = _lineup(a, phase, lrng, b), _lineup(b, phase, lrng, a)
+    # ‼️ ONE SHAPE PER DUAL, resolved from BOTH sides. `a`/`b` share a classification in
+    # every postseason pairing (a bracket never crosses groups), so this used to read
+    # the home side's group and say so — but 8A/9A's pilot reaches the EARLY window
+    # (owner rule 2070), which pairs across one classification, so the two sides need
+    # not want the same card. See `shape_group`: mismatch falls back to the phase's
+    # classification-blind shape rather than dressing one side short.
+    grp = shape_group(phase, a.school.group, b.school.group)
+    shape = dual_format(phase, grp)
+    la, lb = _lineup(a, phase, lrng, b, grp), _lineup(b, phase, lrng, a, grp)
     fmt = match_format(phase)
-    # `a`/`b` share a classification in every postseason pairing (a bracket never
-    # crosses groups), so either side's group is the right one to resolve the
-    # shape from — see `dual_format`'s 1A-pilot branch.
     # `a` is the home side by construction (it is `a` whose schedule row says so a few
     # lines down), so the host's lift goes on `a` and nothing goes on `b`.
-    res = simulate_dual(_squad(a, phase, la, lift=home_court(seed, phase)),
-                        _squad(b, phase, lb), seed=seed,
+    res = simulate_dual(_squad(a, phase, la, shape, lift=home_court(seed, phase)),
+                        _squad(b, phase, lb, shape), seed=seed,
                         play_all=True, fidelity=FIDELITY,
-                        dual_fmt=dual_format(phase, a.school.group),
+                        dual_fmt=shape,
                         singles_fmt=fmt, doubles_fmt=fmt, profile=HS_PROFILE)
     lines = []
     for ln in res.lines:                       # individual records, for awards
@@ -4836,15 +4989,11 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
         if hw is None:
             continue
         slot = getattr(ln, "slot", "")
-        _credit(a, la, phase, slot, bool(hw), lb, b.school.name, b.school.group)
-        _credit(b, lb, phase, slot, not hw, la, a.school.name, a.school.group)
+        _credit(a, la, phase, slot, bool(hw), lb, b.school.name, shape)
+        _credit(b, lb, phase, slot, not hw, la, a.school.name, shape)
         lines.append({"slot": slot,
-                      "home": [x.name for x in
-                               _slot_players(la, phase, slot,
-                                            dual_format(phase, a.school.group))],
-                      "away": [x.name for x in
-                               _slot_players(lb, phase, slot,
-                                            dual_format(phase, b.school.group))],
+                      "home": [x.name for x in _slot_players(la, phase, slot, shape)],
+                      "away": [x.name for x in _slot_players(lb, phase, slot, shape)],
                       "score": _score_str(ln), "home_won": bool(hw)})
     a.points_for += res.home_points
     a.points_against += res.away_points
@@ -5303,7 +5452,41 @@ FLIGHT_WEIGHTS = {
     # cutoff table (`SHOWCASE_RATED`); now they are load-bearing for the whole
     # regular season, not just those two carve-outs. Same decay as above.
     "D3": 0.25, "D4": 0.10,
+    # D5 is contested in NO shape on this table — it exists so that a generic
+    # per-slot reader (the awards résumé weighting) ranks 8A/9A's fifth doubles
+    # court BELOW its fourth instead of taking a bare `.get(slot, 0.25)` default
+    # and pricing the card's last court above four of its others. The weight a
+    # 4S/5D dual is actually RATED on is the association's own, below.
+    "D5": 0.05,
 }
+
+#: ‼️ THE 4S/5D TABLE IS THE ASSOCIATION'S OWN AND IS SEPARATE (owner rule 2070).
+#: 8A/9A's nine-court card is not the 1S/4D table with two rows bolted on: the
+#: association re-priced the whole thing, S1 and D1 at 2.00 each and a steep decay
+#: to 0.10 at D5, max 7.50. So the same flight NAME is worth different amounts in
+#: different shapes, which is why the table is resolved per DUAL (`flight_weights`)
+#: rather than being one module constant — and why nothing may merge the two.
+#:
+#: `rating._flight_score` normalises by the weight actually CONTESTED in each dual,
+#: so a 7.50-max shape and a 3.85-max one each contribute a 0-1 share to the same
+#: TOSS table; that is the same property that already lets 5S/2D, 3S/4D and 1S/4D
+#: share one rating graph, and it is what makes a per-dual table safe here.
+FLIGHT_WEIGHTS_4S5D = {
+    "S1": 2.00, "S2": 1.00, "S3": 0.65, "S4": 0.30,
+    "D1": 2.00, "D2": 0.80, "D3": 0.45, "D4": 0.20, "D5": 0.10,
+}
+
+
+def flight_weights(phase: str, group: str | None = None) -> dict:
+    """The flight weight table for a dual of `phase` at `group`'s shape.
+
+    ‼️ KEYED ON THE SHAPE, NOT THE CLASSIFICATION. 8A/9A's league season is 3S/4D
+    like everybody's and rates on the ordinary table; only the shapes that actually
+    play nine courts — their road to State and their early window — use
+    `FLIGHT_WEIGHTS_4S5D`. Pass `shape_group`'s answer for a real dual."""
+    return (FLIGHT_WEIGHTS_4S5D
+            if dual_format(phase, group) is FORMATS["state_4s5d"]
+            else FLIGHT_WEIGHTS)
 # ‼️ NOT a shared denominator FQI divides by, and NOT the max for any one dual shape
 # any more (the three cards — 5S/2D early, 3S/4D regular, 1S/4D state/showcase — each
 # contest a different weight total now that D3/D4 are load-bearing everywhere).
@@ -5366,6 +5549,8 @@ def rating_duals(teams, prestate: bool = False) -> list[dict]:
     if not SHOWCASE_RATED:
         drop = tuple(drop) + SHOWCASE
     out = []
+    teams = list(teams)                      # iterated twice: the group map, then the duals
+    _group_of = {t.school.name: t.school.group for t in teams}
     for t in teams:
         for d in t.schedule:
             if not d.get("home") or d.get("phase") in drop:
@@ -5375,8 +5560,17 @@ def rating_duals(teams, prestate: bool = False) -> list[dict]:
                 hg, ag = _games(ln.get("score", ""))
                 lines.append({"slot": ln.get("slot", ""), "home_won": ln.get("home_won"),
                               "home_games": hg, "away_games": ag})
+            # ‼️ THE WEIGHT TABLE RIDES ON THE DUAL, because 8A/9A's road and early
+            # window play a shape with its OWN prices for the same flight names
+            # (`FLIGHT_WEIGHTS_4S5D`). Resolved from BOTH sides via `shape_group`,
+            # exactly as `play_dual` resolved the shape it was played at — reading
+            # the home side alone would rate a mixed-classification early dual on a
+            # table nobody played.
+            grp = shape_group(d.get("phase") or "regular", t.school.group,
+                              _group_of.get(d["opp"]))
             out.append({"home": t.school.name, "away": d["opp"], "home_won": d["won"],
-                        "home_points": d["pf"], "away_points": d["pa"], "lines": lines})
+                        "home_points": d["pf"], "away_points": d["pa"], "lines": lines,
+                        "weights": flight_weights(d.get("phase") or "regular", grp)})
     return out
 
 

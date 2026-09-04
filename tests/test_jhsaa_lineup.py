@@ -191,19 +191,30 @@ def _real_ts(i=0, gender="boys", year=2031):
 
 
 def test_postseason_lineup_is_legal_under_the_order_of_ability():
+    """‼️ SHAPE-AWARE, because three shapes now play a road to State: 1S/4D, 1A's
+    2S/3D and 8A/9A's 4S/5D. The anti-stacking rule is ONE mechanism at every width
+    — the singles seats plus D1 consume the top `n_singles + 2` of the frozen order
+    and the pairs below them respect the rank-sum boundary — so the assertion is
+    written in those terms rather than in nines."""
     for i in (0, 7, 40, 120, 300):
         ts = _real_ts(i)
+        f = jh.dual_format("sectional", ts.school.group)
+        need = jh.lineup_need("sectional", ts.school.group)
+        if len(ts.roster) < need:
+            continue
         lu = jh._lineup(ts, "sectional", _random.Random(1))
         oo = ts.order_of_ability
         assert oo, "the Order of Ability freezes on first postseason use"
         rank = {pid: k + 1 for k, pid in enumerate(oo)}
-        # the nine who dress are the frozen order's top nine
-        assert {p.pid for p in lu} == set(oo[:9])
-        # S1 + D1 consume ranks #1-#3; nobody top-three appears at D2-D4
-        assert {rank[p.pid] for p in lu[:3]} == {1, 2, 3}
-        assert all(rank[p.pid] > 3 for p in lu[3:])
-        # D2-D4 rank sums respect the anti-stacking boundary
-        sums = [rank[lu[k].pid] + rank[lu[k + 1].pid] for k in (3, 5, 7)]
+        top = f.n_singles + 2                       # the singles seats + D1
+        # the players who dress are the frozen order's top `need`
+        assert {p.pid for p in lu} == set(oo[:need])
+        # the singles seats + D1 consume the top pool; nobody in it hides below D1
+        assert {rank[p.pid] for p in lu[:top]} == set(range(1, top + 1))
+        assert all(rank[p.pid] > top for p in lu[top:])
+        # the remaining pairs' rank sums respect the anti-stacking boundary
+        starts = range(top, len(lu) - 1, 2)
+        sums = [rank[lu[k].pid] + rank[lu[k + 1].pid] for k in starts]
         for hi, lo in zip(sums, sums[1:]):
             assert hi <= lo + jh.PAIR_SUM_TOL, (i, sums)
 
@@ -329,8 +340,11 @@ def test_only_1a_road_to_state_plays_2s3d():
     assert (road.n_singles, road.n_doubles) == (2, 3)
     # the TOC fields every class's champion, so it stays one shape for everyone
     assert jh.dual_format("toc", "1A") == jh.FORMATS["state"]
-    for g in ("2A", "5A", "9A", None):
+    for g in ("2A", "5A", "7A", None):
         assert jh.dual_format("state", g) == jh.FORMATS["state"], g
+    # 8A/9A are the OTHER pilot (owner rule 2070) and are not this one
+    for g in jh.WIDE_GROUPS:
+        assert jh.dual_format("state", g) == jh.FORMATS["state_4s5d"], g
     # untouched outside the postseason, 1A included
     assert jh.dual_format("regular", "1A") == jh.FORMATS["regular"]
     assert jh.dual_format("showcase_pod", "1A") == jh.FORMATS["state"]
@@ -513,17 +527,131 @@ def test_the_early_window_lineup_goes_through_the_arranger():
     """The wiring, not just the helper — `_lineup` returned `nine` unarranged for this
     phase and a fix that only adds the function changes nothing."""
     ts = _real_ts(8)
-    need = jh.lineup_need(jh.EARLY_FORMAT_PHASE)
+    # ‼️ Shape-aware: 8A/9A play the early window at 4S/5D (owner rule 2070), so the
+    # window's width and singles count are read at the PROGRAM's group. Taken bare,
+    # the pool indices below are the wrong ones and the sibling check quietly never
+    # fires — the test then measures nothing while looking like it passed.
+    g = ts.school.group
+    need = jh.lineup_need(jh.EARLY_FORMAT_PHASE, g)
     order = jh._order(ts)[:need]
     if len(order) < need:
         return
-    n_s = jh.dual_format(jh.EARLY_FORMAT_PHASE).n_singles
+    n_s = jh.dual_format(jh.EARLY_FORMAT_PHASE, g).n_singles
     ts.sibling_ids = _sibs(order, n_s, n_s + 2)
     seen = set()
     for seed in range(25):
-        lu = jh._lineup(ts, jh.EARLY_FORMAT_PHASE, _random.Random(seed))
+        lu = jh._lineup(ts, jh.EARLY_FORMAT_PHASE, _random.Random(seed), None, g)
         pool = {p.pid for p in lu[n_s:need]}
         if {order[n_s].pid, order[n_s + 2].pid} <= pool:
             seen.add(frozenset((order[n_s].pid, order[n_s + 2].pid))
                      in _partners(lu, n_s))
     assert seen == {True}, "an early dual dressed the siblings apart"
+
+
+# --- the 8A/9A 4S/5D postseason pilot (owner rule 2070) ----------------------
+# The association's two deepest classifications play NINE points on their road to
+# State (and in their early non-district window). Scoped the same three ways as
+# 1A's: by group, by phase (never the TOC), and by season half (the league card and
+# the showcases are untouched) — plus one the 1A pilot never had to think about,
+# since it is the first pilot to reach a phase where a dual can cross groups.
+
+def test_only_8a_9a_play_4s5d_and_only_on_the_road_and_in_the_early_window():
+    for g in jh.WIDE_GROUPS:
+        for phase in ("sectional", "zonal", "conference", "state_special", "state",
+                      jh.EARLY_FORMAT_PHASE):
+            f = jh.dual_format(phase, g)
+            assert (f.n_singles, f.n_doubles) == (4, 5), (g, phase)
+            assert jh.lineup_need(phase, g) == 14, (g, phase)
+        # the TOC fields every class's champion, so an 8A/9A champion reverts to 1S/4D
+        assert jh.dual_format("toc", g) == jh.FORMATS["state"]
+        assert jh.lineup_need("toc", g) == 9
+        # the league season and the showcases are untouched
+        assert jh.dual_format("regular", g) == jh.FORMATS["regular"]
+        for sh in jh.SHOWCASE:
+            assert jh.dual_format(sh, g) == jh.FORMATS["state"]
+    # and nobody else moved
+    for g in ("1A", "2A", "5A", "7A", None):
+        assert jh.dual_format(jh.EARLY_FORMAT_PHASE, g) == jh.FORMATS["early"], g
+
+
+def test_nine_courts_is_odd_so_a_4s5d_dual_cannot_tie():
+    """The association has no tie-break anywhere, by design — every dual shape it
+    plays has an odd court count and that is a property to keep, not a coincidence."""
+    for name, f in jh.FORMATS.items():
+        assert (f.n_singles + f.n_doubles) % 2 == 1, name
+
+
+def test_a_dual_across_classifications_plays_ONE_shape_AND_IT_IS_THE_WIDER():
+    """‼️ The early non-district window pairs a program with one in its own
+    classification OR one apart, so an 8A-vs-7A early dual has two sides wanting
+    different cards. A dual has one card, and it is the WIDER one (owner rule
+    2070): every program here carries the bench for nine courts, so the 7A side
+    plays 4S/5D rather than dragging the dual down to 5S/2D. Read off the home side
+    alone instead, the away side would dress for a card it is not playing and
+    `_squad`/`_slot_players` would WRAP — the same player on two courts, raising
+    nothing."""
+    ep = jh.EARLY_FORMAT_PHASE
+    wide = jh.FORMATS["state_4s5d"]
+    for a, b in (("8A", "9A"), ("9A", "9A"), ("8A", "7A"), ("7A", "8A")):
+        assert jh.dual_format(ep, jh.shape_group(ep, a, b)) == wide, (a, b)
+    # two narrow sides still play the narrow card
+    for a, b in (("7A", "6A"), ("1A", "2A")):
+        assert jh.dual_format(ep, jh.shape_group(ep, a, b)) == jh.FORMATS["early"], (a, b)
+    # a postseason bracket never crosses groups, so the sides always agree there
+    assert jh.dual_format("state", jh.shape_group("state", "8A", "8A")) == wide
+    # ...and the roster the wider card needs is comfortably inside every band
+    for cls, (lo, _hi) in jh.ROSTER_SIZE_BAND_BY_CLASS.items():
+        if cls in ("8A", "9A", "7A", "6A"):
+            assert lo >= jh.lineup_need(ep, "8A"), cls
+
+
+def test_the_4s5d_postseason_lineup_is_legal_under_the_order_of_ability():
+    """The same anti-stacking mechanism, three seats wider: ranks #1-#6 are consumed
+    by S1-S4 and D1 (nobody from the top six hides at D2-D5), and the pairs below
+    respect the rank-sum boundary. The best player is NOT pinned to S1."""
+    ts = _ts_in_group("8A") or _ts_in_group("9A")
+    if ts is None or len(ts.roster) < 14:
+        pytest.skip("no 8A/9A program deep enough in the patched association")
+    lu = jh._lineup(ts, "sectional", _random.Random(1))
+    oo = ts.order_of_ability
+    rank = {pid: k + 1 for k, pid in enumerate(oo)}
+    assert len(lu) == 14, "4S/5D dresses fourteen"
+    assert {p.pid for p in lu} == set(oo[:14])
+    assert {rank[p.pid] for p in lu[:6]} == {1, 2, 3, 4, 5, 6}
+    assert all(rank[p.pid] > 6 for p in lu[6:])
+    # the four singles seats are ordered by ladder rank between themselves
+    assert [rank[p.pid] for p in lu[:4]] == sorted(rank[p.pid] for p in lu[:4])
+    sums = [rank[lu[k].pid] + rank[lu[k + 1].pid] for k in (6, 8, 10, 12)]
+    for hi, lo in zip(sums, sums[1:]):
+        assert hi <= lo + jh.PAIR_SUM_TOL, sums
+
+
+def test_the_4s5d_dual_is_rated_on_the_associations_own_weight_table():
+    """‼️ The same flight NAME is worth different amounts in different shapes (S1 is
+    2.00 on the nine-court card and 1.00 everywhere else), so the table is resolved
+    per DUAL and a 4S/5D dual carries its own — `rating._flight_score` normalises by
+    the weight contested, which is what lets both live in one TOSS graph. D5 must be
+    weighted at all: an unrecognised flight RAISES, by design."""
+    from app import rating as rt
+    w = jh.flight_weights("state", "8A")
+    assert w is jh.FLIGHT_WEIGHTS_4S5D
+    assert max(w.values()) == 2.00 and w["D5"] == 0.10
+    assert w["S4"] > w["D5"] and w["D4"] > w["D5"]
+    # a class's LEAGUE season is 3S/4D whatever its playoff shape, and rates on the
+    # ordinary table — the resolution is on the SHAPE, not the classification
+    assert jh.flight_weights("regular", "8A") is jh.FLIGHT_WEIGHTS
+    lines = [{"slot": s, "home_won": True, "home_games": 12, "away_games": 4}
+             for s in ("S1", "S2", "S3", "S4", "D1", "D2", "D3", "D4", "D5")]
+    assert rt._flight_score(lines, "home", w) == 1.0
+
+
+def test_the_jv_playoff_cut_moves_but_the_jv_SEASON_cut_does_not():
+    """8A/9A dress fourteen in the varsity playoffs, so their JV championship field
+    freezes below that (#15 down) — while the JV LEAGUE season's own cut stays #12
+    down for every classification, 8A/9A included. The overlap is deliberate: a
+    player may dress for both playoff fields."""
+    assert jh.lineup_need("regular", "8A") == 11        # the JV season's cut
+    for g in jh.WIDE_GROUPS:
+        assert jh.jv_postseason_cut(g) == 14
+    for g in ("1A", "5A", "7A", None):
+        assert jh.jv_postseason_cut(g) == 11, g

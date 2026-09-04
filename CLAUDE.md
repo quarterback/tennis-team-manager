@@ -991,6 +991,75 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   branch (seeds 1-8 bye, 9-24 play in), never the Qualifiers-Round expansion.
   District-champion `PROTECTED` entry at Regionals is unchanged. See
   `docs/AAR-jhsaa-1a-2a-classification-split.md`.
+- **‼️ 8A/9A'S ROAD TO STATE PLAYS 4S/5D — NINE POINTS (owner rule 2070,
+  `jhsaa.WIDE_GROUPS`, `docs/AAR-jhsaa-8a-9a-4s5d-postseason-pilot.md`).** 4S/5D
+  REPLACES 1S/4D for those two classes from the end of the regular season on — the
+  whole road, the Specials, the Challengers, the Epiregional and State — and takes
+  the **early non-district window** with it (that window's job is rehearsing the card
+  you must win with, so it was the one other block that had to move; it was the last
+  5S/2D in the association). Fourteen on court. **The TOC stays 1S/4D**: it fields
+  every class's champion at ONE shape, so an 8A/9A champion reverts to nine there
+  (the 1A carve-out, same reason, same `phase != "toc"` branch). The league season
+  (3S/4D), the showcases (1S/4D) and the individual state tournaments (3S+3D, which
+  read no dual format at all) are UNTOUCHED. Nine is odd, so it cannot tie and no
+  tie-break was added; there is no clinch, so all nine are played. There is **NO
+  YEAR GATE** — the 2070 date is for the record, not a branch (owner: explicit).
+  Chosen on a five-season backtest of every 8A/9A State qualifier: the pilot flips
+  the field from top-heavy to deep (depth correlation +0.561 → +0.683, top-player
+  +0.586 → **+0.465** — adding singles courts DILUTES the ace rather than
+  concentrating power, which is the opposite of the stated fear), at a measured cost
+  of 15.4% of state participants having under five matches, accepted as stated and
+  compensated for NOWHERE.
+  - **‼️ IT IS THE FIRST PILOT WHERE THE TWO SIDES OF A DUAL CAN WANT DIFFERENT
+    CARDS, so a dual's shape is resolved from BOTH (`jhsaa.shape_group`).** Every
+    earlier pilot was postseason-only and a bracket never crosses a classification,
+    which is why `play_dual` read the HOME side's group and said so. The early window
+    pairs within one classification EITHER WAY, so 8A-vs-7A is a real pairing: read
+    off one side, the 7A team dresses ELEVEN for a fourteen-court dual and
+    `_squad`/`_slot_players` WRAP rather than raise (deliberate, so a short side
+    degrades instead of 500ing) — the same players on two courts, a plausible box
+    score, nothing raised. **THE WIDER CARD WINS, it does NOT fall back** (owner
+    rule 2070): every program in this association carries the bench for nine courts
+    (7A/6A band 19-22, `ROSTER_FLOOR` a hard 16, against fourteen on court), so a 7A
+    team meeting an 8A one in the early window plays 4S/5D — forcing the dual down
+    to 5S/2D would defend a roster constraint that does not exist here. Resolved
+    ONCE and threaded to both lineups, squads, slot resolutions and credits —
+    nothing downstream may read a side's own group again.
+  - **‼️ ONE FLIGHT NAME, TWO PRICES — so the weight table is PER DUAL
+    (`FLIGHT_WEIGHTS_4S5D`, `flight_weights(phase, group)`).** The association
+    re-priced the whole card (owner's numbers): S1 and D1 **2.00**, then 1.00 · 0.80
+    · 0.65 · 0.45 · 0.30 · 0.20 · 0.10, max **7.50**. S1 is therefore worth 2.00 here
+    and 1.00 in every other JHSAA shape, which one `compute_ratings(weights=)` cannot
+    describe — a dual may now carry its own table under a `"weights"` key. It
+    composes for the reason the three existing shapes already share one TOSS table:
+    `rating._flight_score` normalises by the weight CONTESTED per dual, so a table's
+    absolute scale never reaches the rating. Resolve it from `shape_group`, never the
+    home side. **`D5` must be weighted** — an unrecognised flight RAISES, by design.
+  - **‼️ THE AWARDS SCALE IS NOT THE DUAL'S SCALE.** A résumé is compared ACROSS
+    classifications (All-Region is region-wide and class-blind), so the raw prices
+    would hand every 8A/9A postseason appearance twice a 7A one's credit for the same
+    court on nothing but arithmetic. `jhsaa_awards._weight` normalises by the table's
+    top court — the association's ORDERING is its decision, its SCALE is a property
+    of the card — and the ordinary table's max is 1.00, so every other class is
+    untouched to the last bit. `FLIGHT_WEIGHTS` carries a `D5` 0.05 for the same
+    reason: a bare `.get(slot, 0.25)` priced the nine-court card's LAST court above
+    four of its others.
+  - **The arrangement is ONE mechanism at a third width** (`_arrange_wide`): pool the
+    top `n_singles + 2`, pick `n_singles` for singles, the other two are D1 — 1S/4D
+    pools three, 1A pools four, this pools SIX. The best player is NOT pinned to S1.
+    1A's arranger delegates to it. The FREEZE needed nothing: `_postseason_nine`
+    already stored the full ladder and sliced per phase, which is what lets one order
+    dress fourteen on the road and nine at the TOC.
+  - **‼️ THE JV *PLAYOFF* CUT MOVES; THE JV *SEASON* CUT DOES NOT** (owner rule
+    2070). `jv_pool` stays rank #12 down for EVERY class, 8A/9A included — the JV
+    league season is staffed off the varsity eleven and the pilot does not touch it.
+    Only the JV state tournament's eligibility freeze moves, cut below the varsity
+    playoff lineup (`jv_postseason_cut`, DERIVED from `lineup_need`, never typed), so
+    8A/9A freeze at **#15 down**. It is NOT an exclusion — a player may dress for the
+    varsity playoff fourteen AND the JV championship squad (owner: it does not
+    matter). The JV INDIVIDUAL events are preseason and needed nothing. Consequence,
+    accepted: cut at #15 the thinnest 8A/9A rosters cannot field the JV state
+    tournament's seven, and the event drops a program rather than degrading a dual.
 - **‼️ 1A'S ROAD TO STATE PLAYS 2S/3D — a PILOT, scoped three ways (owner rule
   2026-08, `docs/AAR-jhsaa-1a-2s3d-postseason-pilot.md`).** `dual_format(phase,
   group)` / `lineup_need(phase, group)` / `_arrange_1a_postseason`. 1A alone, its

@@ -156,9 +156,12 @@ def freeze_eligibility(jvt) -> list:
     """The program's championship-eligible players, FROZEN.
 
     Three rules, all the spec's:
-      * ranked #12 or lower on the school ladder — which is exactly `jv_pool`, the
-        one ladder cut below `lineup_need("regular")`. No second roster split is
-        invented here; there has never been one and there must not start being one.
+      * ranked below the varsity playoff lineup on the school ladder — #12 or
+        lower in every classification, and #15 or lower in 8A/9A, whose playoffs
+        dress fourteen (owner rule 2070). That is `jv_postseason_cut`, derived from
+        `lineup_need` and NOT a second roster split: the JV SEASON's own cut
+        (`jv_pool`) is #12 everywhere and does not move. The overlap is deliberate
+        and harmless — a player may dress for both playoff fields.
       * they actually played JV this season.
       * split-time players count, and fall out for free: a player who spent the year
         moving between varsity and JV is eligible if the ladder has them at #12 or
@@ -170,7 +173,7 @@ def freeze_eligibility(jvt) -> list:
     anti-stacking freeze exists to stop, arriving by a different door.
     """
     played = played_jv(jvt)
-    return [p for p in jh.jv_pool(jvt.team) if p.name in played]
+    return [p for p in jh.jv_state_pool(jvt.team) if p.name in played]
 
 
 def entries(jv: dict) -> list[JVEntry]:
