@@ -167,8 +167,16 @@ def compute_ratings(duals: list[dict], *,
                     weights: dict | None = None) -> dict[str, RatingLine]:
     """Power Index over a list of dual dicts. `weights` overrides the flight table
     for a league whose dual isn't shaped like a college one (the JHSAA's 3S/4D
-    regular season, 5S/2D early window, and 1S/4D state/showcase card all share
-    one weight table — see `jhsaa.FLIGHT_WEIGHTS`); omitted, college is unchanged."""
+    regular season, 5S/2D early window and 1S/4D state/showcase card all share one
+    weight table — see `jhsaa.FLIGHT_WEIGHTS`); omitted, college is unchanged.
+
+    ‼️ A DUAL MAY CARRY ITS OWN TABLE, under a `"weights"` key, which wins over the
+    argument for that dual alone. One league can play shapes that price the SAME
+    flight name differently — 8A/9A's 4S/5D card puts S1 at 2.00 where every other
+    JHSAA shape puts it at 1.00 (owner rule 2070) — and a graph spanning both cannot
+    be rated from a single table. It composes because `_flight_score` normalises by
+    the weight actually contested per dual, so each shape still contributes a 0-1
+    share; a table's ABSOLUTE scale therefore never reaches the rating."""
     teams: dict[str, RatingLine] = {}
     opps: dict[str, list[str]] = {}
 
@@ -241,7 +249,7 @@ def compute_ratings(duals: list[dict], *,
         mh = teams[a].apr / median_apr   # home's opponent multiplier
         ma = teams[h].apr / median_apr
         for side, t, m in (("home", h, mh), ("away", a, ma)):
-            fs = _flight_score(lines, side, weights)
+            fs = _flight_score(lines, side, d.get("weights") or weights)
             gs = _game_share(lines, side)
             if fs is not None:
                 fqi_acc[t].append(fs * m)
