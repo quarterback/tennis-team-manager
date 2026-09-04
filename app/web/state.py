@@ -4740,10 +4740,19 @@ def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
             "name": sel, "options": region_names,
             "field_n": len(br.get("field") or ()),
             "champion": br.get("champion") or "",
+            "champ_deco": (_jh_deco(schools, br["champion"], 22)
+                           if br.get("champion") else None),
             "rounds": r_rounds,
-            "canvas": _bracket_canvas(
+            # ‼️ A REGION OF ONE PLAYS NO ROUNDS — a lone district qualifier is its
+            # region's champion unopposed (`run_tournament`'s own rule, and real:
+            # `district_berths` sends one even from a district of one). There is no
+            # tree to draw: `_jh_bracket_cols` of an empty round list is empty and
+            # `_bracket_canvas` returns None, which the template would render as an
+            # empty box. The unopposed champion is stated as a fact instead.
+            "canvas": (_bracket_canvas(
                 _jh_bracket_cols({**br, "seed_map": r_seeds}, schools),
-                card_w=232, card_h=60, gutter=56, leaf_gap=18),
+                card_w=232, card_h=60, gutter=56, leaf_gap=18)
+                if r_rounds else None),
         }
     return {
         **base, "ready": True,

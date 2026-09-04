@@ -432,7 +432,9 @@ def test_the_regional_bracket_is_on_the_page_one_region_at_a_time(arc, monkeypat
     assert v["region_brk"]["champion"] == ev["regions"][v["champion_region"]]["champion"]
 
     # switching shows THAT region's draw, at its own size, with its own champion
-    other = next(r for r in sorted(ev["regions"]) if r != v["champion_region"])
+    # (a region with real rounds — a region of ONE plays none, and is checked below)
+    other = next(r for r in sorted(ev["regions"])
+                 if r != v["champion_region"] and ev["regions"][r].get("rounds"))
     v2 = jhsaa_jv_state_view(DEFAULT_SEED, "boys", None, w["year"], other)
     br = ev["regions"][other]
     rb = v2["region_brk"]
@@ -448,3 +450,16 @@ def test_the_regional_bracket_is_on_the_page_one_region_at_a_time(arc, monkeypat
     # a nonsense region falls back rather than 500ing
     v3 = jhsaa_jv_state_view(DEFAULT_SEED, "boys", None, w["year"], "Nowhere")
     assert v3["region_brk"]["name"] == v["champion_region"]
+
+    # ‼️ a region of ONE district qualifier crowns unopposed: no rounds, and the
+    # view builds NO canvas — `_bracket_canvas` of an empty column list is None,
+    # and an empty tree box would read as missing data. The champion is still
+    # named, which is the fact the panel exists to preserve.
+    lone = next((r for r in sorted(ev["regions"])
+                 if not ev["regions"][r].get("rounds")), None)
+    if lone:
+        v4 = jhsaa_jv_state_view(DEFAULT_SEED, "boys", None, w["year"], lone)
+        rb4 = v4["region_brk"]
+        assert rb4["name"] == lone and rb4["canvas"] is None
+        assert rb4["rounds"] == [] and rb4["field_n"] == 1
+        assert rb4["champion"] == ev["regions"][lone]["champion"]
