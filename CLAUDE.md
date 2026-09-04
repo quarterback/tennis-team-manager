@@ -1018,10 +1018,13 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     off one side, the 7A team dresses ELEVEN for a fourteen-court dual and
     `_squad`/`_slot_players` WRAP rather than raise (deliberate, so a short side
     degrades instead of 500ing) — the same players on two courts, a plausible box
-    score, nothing raised. The rule is AGREEMENT: both sides play the pilot shape or
-    the dual falls back to the phase's classification-blind one. Resolved ONCE and
-    threaded to both lineups, squads, slot resolutions and credits — nothing
-    downstream may read a side's own group again.
+    score, nothing raised. **THE WIDER CARD WINS, it does NOT fall back** (owner
+    rule 2070): every program in this association carries the bench for nine courts
+    (7A/6A band 19-22, `ROSTER_FLOOR` a hard 16, against fourteen on court), so a 7A
+    team meeting an 8A one in the early window plays 4S/5D — forcing the dual down
+    to 5S/2D would defend a roster constraint that does not exist here. Resolved
+    ONCE and threaded to both lineups, squads, slot resolutions and credits —
+    nothing downstream may read a side's own group again.
   - **‼️ ONE FLIGHT NAME, TWO PRICES — so the weight table is PER DUAL
     (`FLIGHT_WEIGHTS_4S5D`, `flight_weights(phase, group)`).** The association
     re-priced the whole card (owner's numbers): S1 and D1 **2.00**, then 1.00 · 0.80

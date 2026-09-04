@@ -45,16 +45,21 @@ said so in a comment. This pilot reaches the **early window**, which pairs a pro
 with one in its own classification *or one apart* — so an 8A-vs-7A early dual has one
 side wanting 4S/5D and the other 5S/2D.
 
-Read off one side, the 7A team dresses **eleven for a fourteen-court dual** and
+Read off one side, the other team dresses for a card it is not playing and
 `_squad` / `_slot_players` **wrap** rather than raise (`at(i % len(r))`, by design, so
 a short side degrades instead of 500ing the page): the same players on two courts at
 once, a plausible-looking box score, nothing logged, nothing to see on the card.
 
-`jhsaa.shape_group(phase, a, b)` is the fix and the rule: **agreement plays the pilot
-shape, mismatch falls back to the phase's classification-blind one.** 8A-8A, 8A-9A and
-9A-9A get 4S/5D; 8A-7A gets the ordinary 5S/2D window. It is resolved once per dual
-and threaded to both lineups, both squads, both slot resolutions and both credits —
-nothing downstream reads a side's own group any more.
+`jhsaa.shape_group(phase, a, b)` is the fix, and the rule is **the wider card wins**
+(owner rule 2070) — not a fallback to the narrower one. Every program in this
+association carries the bench for a nine-court dual: `ROSTER_SIZE_BAND_BY_CLASS` puts
+7A/6A at 19-22 and `ROSTER_FLOOR` is a hard 16, against fourteen on court. So an
+8A-vs-7A early dual plays 4S/5D and the 7A side simply dresses fourteen. A first pass
+dropped that dual to 5S/2D on the theory that the smaller school could not staff nine
+courts, which is defending a constraint this simulation does not have — the owner's
+correction. It is resolved once per dual and threaded to both lineups, both squads,
+both slot resolutions and both credits; nothing downstream reads a side's own group
+any more.
 
 ## ‼️ THE FLIGHT WEIGHT TABLE IS PER-DUAL NOW, BECAUSE ONE NAME HAS TWO PRICES
 

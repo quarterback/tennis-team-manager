@@ -227,16 +227,24 @@ def shape_group(phase: str, a_group: str | None, b_group: str | None) -> str | N
     right and `play_dual` said so in a comment. 8A/9A's early window breaks that: the
     early non-district draw pairs a program with one in its own classification OR one
     apart, so an 8A-vs-7A early dual has one side wanting 4S/5D and the other 5S/2D.
-    Read off `a` alone, the 7A side dresses eleven for a fourteen-court dual and
-    `_squad`/`_slot_players` WRAP rather than raise — the same players on two courts,
-    nothing logged, nothing to see on the card.
+    Read off ONE side, the other dresses for a card it is not playing —
+    `_squad`/`_slot_players` WRAP rather than raise, so the same player takes two
+    courts and the box score still looks plausible.
 
-    So the rule is agreement: play the pilot shape only where both sides play it, and
-    otherwise fall back to the classification-blind shape for the phase. 8A-8A, 8A-9A
-    and 9A-9A get 4S/5D; 8A-7A gets the ordinary 5S/2D early window."""
-    if dual_format(phase, a_group) is dual_format(phase, b_group):
+    ‼️ THE WIDER CARD WINS (owner rule 2070). It does NOT fall back to the narrower
+    shape when the two disagree: every program in this association carries the bench
+    for a nine-court dual (`ROSTER_SIZE_BAND_BY_CLASS` puts 7A/6A at 19-22 and
+    `ROSTER_FLOOR` is a hard 16, against fourteen on court), so a 7A team meeting an
+    8A one in the early window simply plays 4S/5D. Forcing the dual down to 5S/2D
+    would be defending a roster constraint that does not exist here."""
+    fa, fb = dual_format(phase, a_group), dual_format(phase, b_group)
+    if fa is fb:
         return a_group
-    return None
+    return a_group if _courts(fa) >= _courts(fb) else b_group
+
+
+def _courts(f: DualFormat) -> int:
+    return f.n_singles + f.n_doubles
 
 
 # SCORING (owner rule 2027-08), a different axis from the SHAPE above: every high-school

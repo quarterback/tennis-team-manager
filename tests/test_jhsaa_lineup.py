@@ -581,22 +581,28 @@ def test_nine_courts_is_odd_so_a_4s5d_dual_cannot_tie():
         assert (f.n_singles + f.n_doubles) % 2 == 1, name
 
 
-def test_a_dual_across_classifications_plays_ONE_shape():
+def test_a_dual_across_classifications_plays_ONE_shape_AND_IT_IS_THE_WIDER():
     """‼️ The early non-district window pairs a program with one in its own
     classification OR one apart, so an 8A-vs-7A early dual has two sides wanting
-    different cards. A dual has one card: agreement plays the pilot shape, mismatch
-    falls back to the phase's classification-blind one. Read off the home side
-    alone, the 7A side would dress ELEVEN for a fourteen-court dual and
+    different cards. A dual has one card, and it is the WIDER one (owner rule
+    2070): every program here carries the bench for nine courts, so the 7A side
+    plays 4S/5D rather than dragging the dual down to 5S/2D. Read off the home side
+    alone instead, the away side would dress for a card it is not playing and
     `_squad`/`_slot_players` would WRAP — the same player on two courts, raising
     nothing."""
     ep = jh.EARLY_FORMAT_PHASE
-    assert jh.dual_format(ep, jh.shape_group(ep, "8A", "9A")) == jh.FORMATS["state_4s5d"]
-    assert jh.dual_format(ep, jh.shape_group(ep, "9A", "9A")) == jh.FORMATS["state_4s5d"]
-    assert jh.dual_format(ep, jh.shape_group(ep, "8A", "7A")) == jh.FORMATS["early"]
-    assert jh.dual_format(ep, jh.shape_group(ep, "7A", "8A")) == jh.FORMATS["early"]
-    # a postseason bracket never crosses groups, so agreement is the only case
-    assert jh.dual_format("state", jh.shape_group("state", "8A", "8A")) \
-        == jh.FORMATS["state_4s5d"]
+    wide = jh.FORMATS["state_4s5d"]
+    for a, b in (("8A", "9A"), ("9A", "9A"), ("8A", "7A"), ("7A", "8A")):
+        assert jh.dual_format(ep, jh.shape_group(ep, a, b)) == wide, (a, b)
+    # two narrow sides still play the narrow card
+    for a, b in (("7A", "6A"), ("1A", "2A")):
+        assert jh.dual_format(ep, jh.shape_group(ep, a, b)) == jh.FORMATS["early"], (a, b)
+    # a postseason bracket never crosses groups, so the sides always agree there
+    assert jh.dual_format("state", jh.shape_group("state", "8A", "8A")) == wide
+    # ...and the roster the wider card needs is comfortably inside every band
+    for cls, (lo, _hi) in jh.ROSTER_SIZE_BAND_BY_CLASS.items():
+        if cls in ("8A", "9A", "7A", "6A"):
+            assert lo >= jh.lineup_need(ep, "8A"), cls
 
 
 def test_the_4s5d_postseason_lineup_is_legal_under_the_order_of_ability():
