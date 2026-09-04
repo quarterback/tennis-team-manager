@@ -57,26 +57,24 @@ def _load_archived_jhsaa_season(year: int, gender: str) -> dict:
 
     conn = wd._db()
     try:
-        # ‼️ VARSITY ONLY. The JV season and the varsity season share this one
-        # table, and this loader is the ONLY thing standing between them and
-        # the export — `build_jhsaa` just walks whatever schedule it is handed.
+        # ‼️ BOTH LEVELS, LABELLED (owner rule 2070 — the JV team and individual
+        # events "have become signature events statewide and the JHSAA needs
+        # that detail"). This loader used to be varsity-only, and for a reason
+        # that still binds: the two seasons share this table, and a JV dual
+        # reaching `duals.csv` UNLABELLED corrupts every consumer that derives
+        # a phase's shape from its line counts (the 2039 leak — see
+        # docs/AAR-jv-duals-leaked-into-the-research-export.md). The
+        # precondition that AAR named is now met — every exported dual row
+        # carries `level` (plus the JV row's own `shape` and `tied`), the
+        # manifest says so, and `analytics/ptc_analytics/aggregate.py` filters
+        # on it — so JV rows ride along as DATA rather than as contamination.
         #
-        # Unfiltered, JV duals reach `duals.csv` with nothing on the row to
-        # mark them, and a consumer cannot tell the two apart: the 2039 boys
-        # export carried 18,096 duals against 2038's 10,709, and under
-        # `phase="regular"` only 62% of them were the varsity 3S/4D shape, the
-        # rest being the elastic `JV_FORMATS` table. Anything deriving a
-        # phase's shape from the most common line count is then one JV growth
-        # step from inverting — in `showcase_pod` it already had, where a
-        # 5-line JV shape outnumbered the varsity 7.
-        #
-        # COALESCE, not `level='v'`: seasons archived before the JV column
-        # existed can read back NULL, and those are all varsity.
+        # COALESCE semantics still matter to readers: a season archived before
+        # the JV column existed reads back NULL, and those are all varsity.
         rows = conn.execute(
             "SELECT school, opp, home, phase, pf, pa, won, district, lines,"
             " level, tied, shape"
             " FROM world_jhsaa_dual WHERE world_id=? AND year=? AND gender=?"
-            " AND COALESCE(level, 'v') = 'v'"
             " ORDER BY school, rowid",
             (world["id"], world_year, gender)).fetchall()
 
@@ -144,7 +142,12 @@ def _load_archived_jhsaa_season(year: int, gender: str) -> dict:
             schedule=schedule_by_school.get(school.name, []))
     return {"teams": teams, "groups": {g: {"state": data.get("brackets", {}).get(g, {})}
                                        for g in jhsaa.GROUPS},
-            "awards": data.get("awards", {}), "individuals": individuals}
+            "awards": data.get("awards", {}), "individuals": individuals,
+            # The JV TEAM State Tournament draw — its own table
+            # (`world_jhsaa_jv_state`, one row per gender-year), relabelled on
+            # read like every JHSAA archive. Its DUALS are ordinary
+            # level='jv' phase='jv_state' rows and ride in with the schedule.
+            "jv_state": wd.jhsaa_jv_state(world["id"], world_year, gender) or {}}
 
 
 def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=None) -> dict[str, bytes]:
@@ -197,11 +200,24 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             })
 
     duals, lines, line_players = [], [], []
-    for team in all_teams:
-        for ordinal, dual in enumerate(team.schedule, 1):
+    # The ARCHIVE path already delivers JV duals inside each school's schedule
+    # (one shared table, labelled by `level`). A LIVE `run_season` dict keeps
+    # them on the JVTeam objects under season["jv"] instead, so fold those
+    # schedules in behind the varsity ones — the archive loader sets no "jv"
+    # key, which is what keeps the two paths from double-counting.
+    team_by_name = {t.school.name: t for t in all_teams}
+    walks = [(t, t.schedule) for t in all_teams]
+    walks += [(team_by_name[name], jvt.schedule)
+              for name, jvt in (season.get("jv") or {}).items()
+              if name in team_by_name]
+    for team, schedule in walks:
+        for ordinal, dual in enumerate(schedule, 1):
             if not dual.get("home") or not ({team.school.name, dual["opp"]} & selected_names):
                 continue                         # each event appears on both cards
-            key = f"{year}|{gender}|{team.school.name}|{dual['opp']}|{ordinal}|{dual['phase']}"
+            level = dual.get("level") or "v"
+            tied = bool(dual.get("tied"))
+            key = (f"{year}|{gender}|{team.school.name}|{dual['opp']}|{ordinal}"
+                   f"|{dual['phase']}|{level}")
             dual_id = "jhdual:" + hashlib.sha1(key.encode()).hexdigest()[:16]
             duals.append({
                 "dual_id": dual_id, "year": year, "gender": gender,
@@ -217,10 +233,17 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                 # lines averages JV's elastic lineup into the varsity one.
                 # "no lines" is not a usable substitute — that is also what a
                 # varsity dual whose lines failed to record looks like.
-                "level": dual.get("level") or "v",
+                "level": level,
+                # The JV lineup is ELASTIC (`JV_FORMATS`), so a JV row states its
+                # shape ("2S/2D") outright; a varsity row leaves it empty — its
+                # shape is a function of phase + classification. And an
+                # even-court JV dual can genuinely TIE (the association's only
+                # ties): `tied=1` and NO winner, rather than inventing one.
+                "shape": dual.get("shape") or "",
+                "tied": int(tied),
                 "phase": dual["phase"], "district": int(bool(dual.get("district"))),
                 "home_points": dual["pf"], "away_points": dual["pa"],
-                "winner_program_id": team.school.key if dual["won"] else next((x.school.key for x in all_teams if x.school.name == dual["opp"]), dual["opp"]),
+                "winner_program_id": "" if tied else (team.school.key if dual["won"] else next((x.school.key for x in all_teams if x.school.name == dual["opp"]), dual["opp"])),
             })
             for line_no, line in enumerate(dual.get("lines", []), 1):
                 line_id = f"{dual_id}:{line_no}"
@@ -279,11 +302,24 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
         # does to the team championship JSON.
         "jhsaa_individuals.json": {
             draw_gender: {
+                # ‼️ "ALL" survives every scope: the JV Singles/JV Doubles
+                # tournaments (flights JVS/JVD + their qualifying draws) are
+                # STATEWIDE AND CLASSLESS, archived under group "ALL" — a value
+                # no classification can collide with — so a class-scoped export
+                # that filtered on the class alone silently dropped two state
+                # championships (the known group-scoped-reader trap).
                 group: flights for group, flights in groups.items()
-                if classification == "all" or group == classification
+                if classification == "all" or group in (classification, "ALL")
             }
             for draw_gender, groups in season.get("individuals", {}).items()
         },
+        # The JV TEAM State Tournament (owner rule 2070 — a signature event, in
+        # the export like the varsity brackets): the archived draw itself —
+        # regions, region champions, the state field/rounds in the varsity
+        # bracket shape. Classless and statewide, so classification scope does
+        # not cut it. Its duals are the level='jv' phase='jv_state' rows in
+        # duals.csv. Empty when the season predates the event (JV_STATE_FROM).
+        "jhsaa_jv_state.json": season.get("jv_state") or {},
     }
     tables = {"programs.csv": programs, "players.csv": players, "duals.csv": duals,
               "lines.csv": lines, "line_players.csv": line_players,
@@ -312,8 +348,20 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "per program per year — the app's program-history ledger), not just this export's "
             "scope year; it is empty only when the save has no archived seasons.",
             "duals.level is 'v' for varsity and 'jv' for the JV season; they share a "
-            "schedule table, so a consumer that wants one must filter on it. Absent on "
-            "seasons exported before the JV season existed, where every dual is varsity.",
+            "schedule table, so a consumer that wants one must filter on it. JV duals ARE "
+            "included (the JV season, its Showcase, and the JV Team State Tournament at "
+            "phase='jv_state'); jhsaa_standings.csv and every rating stay varsity-only, so "
+            "filter level='v' before deriving varsity records. Absent on seasons exported "
+            "before the JV season existed, where every dual is varsity.",
+            "duals.shape states a JV dual's elastic lineup ('2S/2D'); varsity rows leave it "
+            "empty because their shape is a function of phase and classification. duals.tied "
+            "marks the association's only drawn results (even-court JV duals); a tied dual "
+            "has no winner_program_id.",
+            "jhsaa_jv_state.json is the JV Team State Tournament: the twenty geographic-area "
+            "regional championships and the statewide classless bracket their champions play. "
+            "jhsaa_individuals.json carries the JV Singles/JV Doubles state draws (flights "
+            "JVS/JVD, qualifying QJVS/QJVD) under classification key 'ALL' — statewide and "
+            "classless, kept in every classification scope.",
             "duals.date is the game's own display calendar (world.jhsaa_match_dates — one date "
             "per dual, identical from both sides); empty on seasons archived before dates existed. "
             "It is the play order: there is no clock inside a JHSAA season.",

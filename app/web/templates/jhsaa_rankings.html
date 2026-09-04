@@ -17,7 +17,7 @@
 
 {{ jh_header(view.scope, u, 'rankings', view.group ~ ' Rankings',
              'Every program in the classification, in the order the association itself
-              ranks them — the TOSS Power Index the season was seeded from.',
+              ranks them — the TOSS Power Index, with the ATR the postseason is seeded on beside it.',
              [('Season', view.season_year), ('Programs', view.rows|length),
               ('Qualified', view.qualified)] if view.ready else []) }}
 
@@ -50,7 +50,7 @@
         {{ th('place', 'Pl', 36, 'District place — 1 is the district title') }}
         {{ th('pf', 'PF', 50, 'Courts won per dual') }}
         {{ th('pa', 'PA', 50, 'Courts lost per dual') }}
-        {{ th('pi', 'TOSS', 56, 'TOSS Power Index — the archived seeding number') }}
+        {{ th('pi', 'TOSS', 56, 'TOSS Power Index — the archived season rating') }}
         {{ th('atr', 'ATR', 56, 'Average Team Rating — half TOSS, half win percentage') }}
         {{ th('seed', 'Seed', 44) }}{{ th('state_finish', 'Finish', 64, 'State tournament finish — hover for the full label') }}
         {{ th('sc_n', 'SC', 40, 'Mid-season 1S/4D Match Showcases played. Everything right of this is built on that many duals.') }}

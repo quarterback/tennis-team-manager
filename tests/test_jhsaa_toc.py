@@ -995,3 +995,41 @@ def test_the_epiregional_panel_and_match_center_label(archived):
     row = next(d for d in sched if d.get("phase") == "epiregional")
     html = archived["client"].get(f"/jhsaa/dual/{row['id']}?g={g}").get_data(as_text=True)
     assert "Epiregional" in html and "Invitational" not in html
+
+
+def test_the_research_export_carries_the_jv_events(archived):
+    """‼️ THE JV EVENTS ARE IN THE EXPORT (owner rule 2070, reversing the 2026-08
+    varsity-only decision): the JV season's duals ride in duals.csv labelled
+    level='jv' with their elastic shape stated, the JV Team State Tournament ships
+    as jhsaa_jv_state.json plus its phase='jv_state' duals, and the JV
+    Singles/Doubles draws sit in jhsaa_individuals.json under the classless "ALL"
+    key — which a classification-scoped export must KEEP (the group-scoped-reader
+    trap). Through the ARCHIVE path, which is the only path a real export uses."""
+    import csv as _csv
+    import io as _io
+    import json as _json
+    from app.research_export import build_jhsaa
+    from app import world as wd2
+    y = archived["arc"]["season_year"]
+    files = build_jhsaa(y, "girls")
+    rows = list(_csv.DictReader(_io.TextIOWrapper(_io.BytesIO(files["duals.csv"]))))
+    jv = [r for r in rows if r["level"] == "jv"]
+    assert jv, "no JV duals reached the export"
+    assert all(r["level"] in ("v", "jv") for r in rows)
+    # a JV row states its elastic shape; varsity rows leave the column empty
+    assert all(r["shape"] for r in jv)
+    assert all(not r["shape"] for r in rows if r["level"] == "v")
+    # a tied JV dual names no winner; an untied one always does
+    for r in jv:
+        assert (r["tied"] == "1") == (not r["winner_program_id"]), r
+    # the JV Team State Tournament: its own JSON, and its duals in the table
+    jvs = _json.loads(files["jhsaa_jv_state.json"])
+    if wd2.jhsaa_jv_state(archived["world"]["id"], archived["world"]["year"],
+                          "girls"):
+        assert jvs.get("champion") and jvs.get("regions")
+        assert any(r["phase"] == "jv_state" for r in jv)
+    # the classless JV individual draws survive a class-scoped export
+    for scope in ("all", "7A"):
+        indiv = _json.loads(build_jhsaa(y, "girls", scope)["jhsaa_individuals.json"])
+        assert "ALL" in indiv.get("girls", {}), scope
+        assert {"JVS", "JVD"} <= set(indiv["girls"]["ALL"]), scope

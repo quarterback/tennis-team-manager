@@ -681,7 +681,8 @@ FIDELITY = "fast"
 #                                privileged path: they are the State draw's top
 #                                seeds, so a 24-team field's eight byes are theirs)
 #      The protected 16 enter at Regionals: district champions first, then the
-#      best remaining cutoff TOSS until the seats are filled.
+#      best remaining ATR until the seats are filled (owner rule 2070 — every
+#      postseason seeding sort runs on ATR, never raw TOSS; see `_atr_key`).
 #   3. THE DISTRICT GUARANTEE — a district champion is guaranteed State ACCESS
 #      even if it loses in the ladder (a geographic-access safeguard: no region
 #      is excluded from State because TOSS dislikes it). Access only: no State
@@ -5784,26 +5785,16 @@ def power_index(teams, *, prestate: bool = False) -> dict:
                            weights=FLIGHT_WEIGHTS)
 
 
-def _power_key(power: dict | None):
-    """Sort key factory: Power Index order when we have one (`power`, from
-    `power_index`), win rate for a caller running a district in isolation. Shared by
-    every postseason-field function so protected/unprotected/seed order all agree."""
-    def key(t: TeamSeason):
-        if power is not None and t.school.name in power:
-            return (-power[t.school.name].pi_raw, t.school.name)
-        return (-t.win_pct, -(t.points_for - t.points_against), t.school.name)
-    return key
-
-
 def sectional_field(group: str, standings: dict[str, list[TeamSeason]],
                      power: dict | None = None
                      ) -> tuple[list[TeamSeason], list[TeamSeason]]:
     """(protected, entrants) for `group` — every program in the classification.
 
     Protected (`PROTECTED` seats, enter at Regionals): district champions
-    first, then the best remaining cutoff TOSS until the seats are filled. Everyone
-    else enters Sectionals. Both lists come back cutoff-TOSS ordered."""
-    key = _power_key(power)
+    first, then the best remaining ATR until the seats are filled (owner rule
+    2070 — postseason seeding runs on ATR, see `_atr_key`). Everyone else enters
+    Sectionals. Both lists come back ATR ordered."""
+    key = _atr_key(power)
     champs = sorted((ts[0] for ts in standings.values() if ts), key=key)
     rest = sorted((t for ts in standings.values() for t in ts[1:]), key=key)
     fill = max(0, PROTECTED - len(champs))
@@ -5814,7 +5805,7 @@ def sectional_field(group: str, standings: dict[str, list[TeamSeason]],
 def _elim_round(pool: list[TeamSeason], byes: int, *, rng: random.Random,
                  phase: str) -> tuple[list[TeamSeason], list[dict]]:
     """One round of single elimination over `pool` (already strength-ordered,
-    strongest first, e.g. by `_power_key`): the top `byes` entries advance without
+    strongest first, e.g. by `_atr_key`): the top `byes` entries advance without
     playing, and the rest pair strongest-vs-weakest among THEMSELVES and every match
     is actually played. Returns (survivors, games) — survivors strength-ordered
     (byes first, then winners in the order their matches were seeded), ready to feed
@@ -6160,7 +6151,7 @@ def atr(team: TeamSeason, power: dict | None) -> float:
     """The Average Team Rating: `ATR_TOSS_WEIGHT` TOSS + the rest win percentage.
 
     `power` maps school -> `rating.RatingLine`, so the TOSS term is `pi_raw` —
-    the SAME full-precision value the seeds are drawn from (`_power_key`), never
+    the SAME full-precision value the seeding key blends in (`_atr_key`), never
     a rounded or re-derived one. A team the rating does not know contributes its
     win percentage alone rather than defaulting to a zero it did not earn."""
     line = (power or {}).get(team.school.name)
@@ -6169,10 +6160,31 @@ def atr(team: TeamSeason, power: dict | None) -> float:
     return atr_of(line.pi_raw, team.win_pct)
 
 
-def _atr_key(power: dict):
+def _atr_key(power: dict | None):
     """Sort key: best ATR first, school name breaking ties (never a raw float
-    comparison on equal ratings — the order has to be reproducible)."""
-    return lambda t: (-atr(t, power), t.school.name)
+    comparison on equal ratings — the order has to be reproducible).
+
+    ‼️ THE ONE POSTSEASON SEEDING KEY (owner rule 2070). Every postseason-field
+    sort — the protected fill, the Ward and Regional field seedings, every
+    recovery pool, the Divisional tiers, the Conference pools — ranks on ATR now,
+    never on raw TOSS. It replaced the retired `_power_key` (pure `pi_raw`): with
+    1A's road at 2S/3D and 8A/9A's whole postseason and early window at 4S/5D,
+    three dual shapes feed one TOSS graph, and an opponent-strength composite
+    folded across formats distorts exactly the comparisons a seed order is made
+    of. ATR's win term is format-blind, which is what damps the distortion. The
+    STATE draw itself already seeds on `seed_atr` (the Epiregional's z-blend) and
+    the district tiebreak ladder still reads TOSS at rung 4 — that is a LEAGUE
+    decision, not state seeding, and it did not move.
+
+    Shared by every postseason-field function so protected/unprotected/pool order
+    all agree. Without a `power` table (a caller running a district in isolation),
+    ATR degrades to win percentage and the old point-differential tiebreak keeps
+    the order reproducible."""
+    def key(t: TeamSeason):
+        if power is None:
+            return (-t.win_pct, -(t.points_for - t.points_against), t.school.name)
+        return (-atr(t, power), t.school.name)
+    return key
 
 
 CONFERENCE_NAME = "Conference"
@@ -6539,7 +6551,7 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     for tier in tiers:
         pick = sorted((by_name[n] for n in tier
                        if n in by_name and n not in taken),
-                      key=_power_key(power))
+                      key=_atr_key(power))
         bodies += pick
         taken |= {t.school.name for t in pick}
     # ‼️ `bodies` STARTS AT WARDS, which is exactly why it cannot be the whole
@@ -6563,7 +6575,7 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     # readmitted one rung later, into the Divisionals, so both rounds are the
     # same size and deliver the same block of berths. The old `ceil(4*berths/3)`
     # Semi-State floor (and the readmission window it sized) is gone with it.
-    sr_pool = sorted(reg_losers, key=_power_key(power))
+    sr_pool = sorted(reg_losers, key=_atr_key(power))
     if len(sr_pool) % 2:                        # reservoir dry: the weakest sits out
         sr_pool = sr_pool[:-1]
     rng = random.Random(seed)
@@ -6573,8 +6585,8 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     # else. Byeless, so an odd pool drops its weakest — which cannot happen at
     # full size (both halves are even by construction).
     won = {id(t) for t in sr_winners}
-    sr_losers = sorted((t for t in sr_pool if id(t) not in won), key=_power_key(power))
-    ss_pool = sorted(list(sr_winners) + zon_losers, key=_power_key(power))
+    sr_losers = sorted((t for t in sr_pool if id(t) not in won), key=_atr_key(power))
+    ss_pool = sorted(list(sr_winners) + zon_losers, key=_atr_key(power))
     if len(ss_pool) % 2:
         ss_pool = ss_pool[:-1]
     ss_arc, ss_winners = _recovery_round(ss_pool, phase="semi_state", rng=rng)
@@ -6583,7 +6595,7 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     # Semi-State losers. `L = 0` is legal and means the round did not convene.
     ss_won = {id(t) for t in ss_winners}
     ss_losers = sorted((t for t in ss_pool if id(t) not in ss_won),
-                       key=_power_key(power))
+                       key=_atr_key(power))
     # At most ONE block here; the Conference takes whatever is left (see
     # `recovery_shape`). 24 -> 4, 32 -> 8, 40 -> 8.
     dv_n = min(len(zonal_champs), max(0, berths - len(ss_winners)) // 2)
@@ -6795,9 +6807,9 @@ def _recovery_24(group: str, by_name: dict, prestate: dict, zonal_champs: list,
 
     dc_names = set(district_champs)
     dc_losers = sorted((t for t in reg_losers if t.school.name in dc_names),
-                       key=_power_key(power))
+                       key=_atr_key(power))
     other_losers = sorted((t for t in reg_losers if t.school.name not in dc_names),
-                          key=_power_key(power))
+                          key=_atr_key(power))
     preferred = list(dc_losers[:8])
     if len(preferred) < 8:
         need = 8 - len(preferred)
@@ -6806,12 +6818,12 @@ def _recovery_24(group: str, by_name: dict, prestate: dict, zonal_champs: list,
     else:
         held_back = dc_losers[8:] + other_losers
 
-    sr_pool = sorted(list(zon_losers) + preferred, key=_power_key(power))
+    sr_pool = sorted(list(zon_losers) + preferred, key=_atr_key(power))
     sr_arc, sr_winners = _recovery_round(sr_pool, phase="super_regional", rng=rng)
     sr_won = {id(t) for t in sr_winners}
     sr_losers = [t for t in sr_pool if id(t) not in sr_won]
 
-    ss_pool = sorted(list(held_back) + list(sr_losers), key=_power_key(power))
+    ss_pool = sorted(list(held_back) + list(sr_losers), key=_atr_key(power))
     ss_arc, ss_winners = _recovery_round(ss_pool, phase="semi_state", rng=rng)
     ss_won = {id(t) for t in ss_winners}
     ss_losers = sorted((t for t in ss_pool if id(t) not in ss_won),
@@ -8365,10 +8377,10 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
         gseed = seed + hash(group) % 9973
         sectionals[group], ward_field = run_sectional(entrants, WARD_FIELD,
                                                        seed=gseed)
-        ward_field = sorted(ward_field, key=_power_key(power))
+        ward_field = sorted(ward_field, key=_atr_key(power))
         wards[group], ward_champs = run_rounds(ward_field, ("ward",),
                                                seed=gseed + 4111)
-        reg_field = sorted(protected + ward_champs, key=_power_key(power))
+        reg_field = sorted(protected + ward_champs, key=_atr_key(power))
         prestates[group], zonal_champs[group] = run_rounds(
             reg_field, ("regional", "zonal"), seed=gseed + 8219)
         # ‼️ THE EPIREGIONAL — the Zonal champions' play-in (owner rule 2026-09),

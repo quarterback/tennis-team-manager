@@ -649,10 +649,25 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   indexed read of ~26 rows per season), and a second store would be a second source of
   truth for numbers the archive already determines. Before persisting, check whether the
   thing is a PROJECTION of a layer you already have.
-- **Seeding runs on TOSS, not on win-loss** (`jhsaa.power_index` → `app.rating`). TOSS is
+- **‼️ TOSS RATES; ATR SEEDS THE POSTSEASON (owner rule 2070, superseding "seeding
+  runs on TOSS").** With 1A's road at 2S/3D and 8A/9A's postseason + early window at
+  4S/5D, three dual shapes feed one TOSS graph, and an opponent-strength composite
+  folded across formats distorts exactly the comparisons a seed order is made of —
+  measured on the owner's 2069/2070 saves, ~85% of programs shift class rank between
+  the two orderings (mean 2-4 places) and the pilot classes shift most. So
+  `jhsaa._atr_key` (ATR: 0.5 TOSS + 0.5 win%, the win term format-blind) is THE ONE
+  postseason seeding key — protected fill, Ward/Regional fields, every recovery pool,
+  the Divisional tiers, the Conference pools — and `_power_key` (raw `pi_raw`) is
+  RETIRED; do not reintroduce a raw-TOSS sort on any postseason field. The STATE draw
+  itself already seeds on `seed_atr` (the Epiregional z-blend) and is untouched.
+  Three deliberate NON-moves: the **TOC still seeds on TOSS** (`run_toc`, `t.power` —
+  the owner's decree named state seeding, not the TOC), the **district tiebreak
+  ladder still reads TOSS at rung 4** (a league decision, not state seeding), and the
+  **rankings page still shows archived `pi`** (TOSS remains the association's
+  rating; ATR is shown beside it). See `docs/AAR-jhsaa-atr-postseason-seeding.md`.
+- **TOSS itself is unchanged** (`jhsaa.power_index` → `app.rating`). TOSS is
   oregontennis.org's Tennis Opponent-Strength System, the same composite the college
-  league uses: **0.40 APR + 0.40 FQI + 0.20 oGS**. `qualifiers` sorts at-large bids AND
-  seed order on it, so an automatic bid buys entry rather than a seed. Rules:
+  league uses: **0.40 APR + 0.40 FQI + 0.20 oGS**. Rules:
   **`jhsaa.FLIGHT_WEIGHTS` is the association's own table** (S1 1.00, S2 0.75, S3 0.25,
   S4/S5 0.10, D1 1.00, D2 0.50 — max 3.70/dual, owner's numbers); it is NOT the college
   table and NOT Oregon's 4S/4D one, and it is the only place a flight is weighted.
@@ -1283,14 +1298,23 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     never render it as though it were a per-court W-L beside the varsity
     singles/doubles figures. A season archived before `played` folds to (0,0,0) and
     shows nothing, which is honest.
-  - **‼️ THE ANALYTICS SIDECAR IS VARSITY-ONLY, BY DECISION** (owner 2026-08: *"it can
-    ignore JV generally i do not need JV analytics"*). `research_export.build_jhsaa`
-    iterates `season["teams"]` and never `season["jv"]`, so no JV dual has ever reached
-    a zip. If that is revisited, `duals.csv` needs a `level` column FIRST: `analytics/
-    ptc_analytics/aggregate.py` DERIVES each phase's dual shape by counting the lines it
-    sees, and JV duals are `phase="regular"` with an elastic shape — dropped in
-    unlabelled they would corrupt the derived shape of the varsity regular season rather
-    than adding a JV section.
+  - **‼️ THE JV EVENTS ARE IN THE RESEARCH EXPORT (owner rule 2070, REVERSING the
+    2026-08 varsity-only decision — the JV team and individual events "have become
+    signature events statewide and the JHSAA needs that detail").** The precondition
+    the old rule named is met and stays load-bearing: every exported dual row carries
+    `level` (JV rows add their elastic `shape` outright and `tied` — a tied dual has
+    NO `winner_program_id`), `jhsaa_standings.csv` and every rating stay
+    varsity-only, and `analytics/ptc_analytics/aggregate.py` filters `level='v'`
+    before deriving a phase's shape — JV rides as labelled DATA, never contamination.
+    The JV Team State Tournament ships as `jhsaa_jv_state.json` (from
+    `world_jhsaa_jv_state`, relabelled on read) plus its `phase='jv_state'` duals;
+    the JV Singles/Doubles draws sit in `jhsaa_individuals.json` under the classless
+    **"ALL"** key, which a classification-scoped export must KEEP (the
+    group-scoped-reader trap). The archive path delivers JV inside each school's
+    schedule; a LIVE `run_season` dict keeps them on `season["jv"]`, which
+    `build_jhsaa` folds in — the loader sets no `"jv"` key, which is what stops
+    double-counting. Pinned by `test_the_research_export_carries_the_jv_events`
+    (archive path, real season).
   - **‼️ AND WHEN THE JHSAA NEEDS SOMETHING, CHECK WHAT THE COLLEGE SIDE ALREADY HAS.**
     Full per-court JV detail was argued against partly on "the JHSAA flight box is
     fixed at S1-S5/D1-D4 and elastic JV needs dynamic columns" — which was WRONG:
