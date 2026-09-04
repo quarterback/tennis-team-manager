@@ -2578,18 +2578,23 @@ list is `server.SCHEMES`.
   `grep -o 'var(--[a-z-]*' | sort -u` against the defined set after any token change.
 See `docs/AAR-design-port-readability-and-suite-hermeticity.md`.
 
-## ⚠️ VOCABULARY — "card" is NOT how tennis talks about a lineup (owner rule 2026-08)
-An agent introduced "card" for a team's lineup/format and every later agent copied it
-out of the code comments; it is now ~120 occurrences and it is **wrong**. Nobody in
-high-school tennis says it. GHSA states the format as three singles and two doubles and
-names the positions No. 1 through No. 3 singles / No. 1-No. 2 doubles; coverage says
-"No. 1 singles spot", "second flight", "singles lineup". "Lineup Card" exists as KHSAA
-*paperwork* (a form you hand the official) and some scorecards use it — administrative
-language, never the natural noun for a team's competitive structure.
+## ⚠️ TENNIS VOCABULARY — use the sport's actual language (owner rule 2026-09)
 
-The real vocabulary: **lineup · dual format · singles lineup · doubles lineup ·
-No. 1 singles · No. 1 doubles · flight · court · position · playoff roster ·
-state lineup**.
+Agents repeatedly import generic sports / UI language into tennis prose. Stop doing that.
+This is not an owner-specific house style; these are ordinary team-tennis terms.
+
+### Competitive structure
+Use:
+- **dual / dual match** = the team competition between two programs
+- **format / dual format** = the competitive shape, e.g. **3S/4D**, **1S/4D**, **4S/5D**
+- **lineup** = the players assigned to the format
+- **singles lineup / doubles lineup** when referring to one discipline
+- **playoff roster / postseason roster** = the eligible group available to be dressed
+- **state lineup / postseason lineup** = the actual lineup used in that event
+
+Do **NOT** call the competitive structure a **card**. "Lineup card" can mean paperwork or
+a submitted form, and **UI card** is ordinary interface language, but neither makes
+"state card", "4S/5D card", or "championship card" acceptable tennis prose.
 
 | Wrong | Right |
 |---|---|
@@ -2597,16 +2602,52 @@ state lineup**.
 | regular-season card | regular-season format · 3S/4D format · league lineup |
 | doubles-forward card | doubles-forward format |
 | championship card | postseason format · state lineup |
+| nine-court card | nine-flight format · 4S/5D format |
 
-‼️ **"card" has THREE senses here and only the lineup one is the mistake.** A **UI card**
-(bracket card, player card, matchup card, `.brk-card`/`.jh-card`) is ordinary interface
-language and is correct. A **schedule** sense ("a dual on a card") is real sports English
-but not tennis — prefer *schedule* or *slate*. So this is never a blanket find-and-replace:
-a sweep that rewrote `cv.cards` or `card_w` would break the bracket geometry.
+### Flights, positions, and courts
+A **flight** or **position** is a competitive slot in the lineup:
+**No. 1 singles (S1), No. 2 singles (S2), No. 1 doubles (D1),** etc.
 
-**Not worth a migration on its own** (owner: the microcopy is all bad anyway) — the code
-is unchanged and this is filed so it stops spreading. Fix the wording in files you are
-already editing for another reason; don't open a rename PR for it.
+Use **flight** when talking about the ordered competitive slot, its weight, its result,
+or its place in a format:
+- "D5 is the ninth flight."
+- "S4 and D5 are the new flights."
+- "Flight weights decline down the lineup."
+- "The 4S/5D format has nine flights."
+
+Use **position** or the explicit tennis name when that reads more naturally:
+- "the No. 1 singles position"
+- "she moved from No. 3 singles to No. 2 singles"
+- "the top doubles position"
+
+A **court** is the physical playing surface, or occasionally shorthand for the match
+being played on that physical court. Do not use *court* as the default synonym for a
+flight/position in analysis or rules prose. Say "winning S4", "the D3 flight", or
+"five doubles flights", not "winning the S4 court" or "five doubles courts" unless the
+physical court allocation is actually what is being discussed.
+
+### Team-tennis phrasing
+Prefer:
+- "8A/9A move from a 1S/4D postseason format to 4S/5D."
+- "The 4S/5D lineup uses 14 players."
+- "An 8A champion reverts to the 1S/4D TOC format."
+- "S1 and D1 are the highest-weighted flights."
+- "The dual finished 5-4."
+- "The team swept the doubles flights."
+- "The postseason adds S4 and D5."
+
+Avoid generic imports such as **card**, **matchup slot**, **lane**, or **court** when the
+tennis term is **format**, **lineup**, **flight**, or **position**.
+
+‼️ **"card" still has valid non-lineup senses in this repo.** A **UI card** (bracket
+card, player card, matchup card, `.brk-card`/`.jh-card`) is correct interface language.
+A scorecard / lineup card may also exist as paperwork. Never do a blanket
+find-and-replace: rewriting `cv.cards`, `card_w`, bracket cards, etc. would break or
+misdescribe unrelated UI machinery.
+
+**Not worth a migration on its own** — fix tennis prose in files already being edited
+and use the correct vocabulary in all new comments, AARs, prompts, tests, microcopy,
+and analysis. Do not open a vocabulary-only rename PR unless the owner asks.
 
 ## ⚠️ NAMES — the pools are curated data with THREE authorities that must agree
 `generators/names.py` draws a player's name from `regions.json` (regions, subregions
