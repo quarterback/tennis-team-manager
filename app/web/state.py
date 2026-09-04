@@ -3638,6 +3638,7 @@ _JH_PHASE_LABEL = {"showcase_pod": "Showcase (Pod)", "showcase_tiered": "Showcas
                    "conference": "Conference",
                    "semi_conference": "Semi-Conference", "divisional": "Divisionals",
                    "semi_state": "Semi-State", "super_regional": "Super Regional",
+                   "epiregional": "Epiregional",
                    "zonal": "Zonal", "regional": "Regional", "ward": "Ward",
                    "sectional": "Sectional"}
 
@@ -5011,11 +5012,15 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
     epi_seeds = _jh_seeds(epi)
     winners = set(epi.get("survivors") or ())
     field_n = len(br.get("field") or ())
-    n_byes = jh.STATE_BYES if field_n > jh.STATE_BYES else 0
     # The bye a top-eight line carries in THIS shape: none in a power-of-two field,
     # a single bye in a 24, a double bye (the Qualifiers Round) in an expanded 40.
     bye_kind = ("none" if field_n and field_n & (field_n - 1) == 0
                 else "double" if br.get("round_names") else "single")
+    # ‼️ A 32 HAS NO BYES — listing its top eight under "Byes" would describe a
+    # draw `run_state` never played. The eight lines still exist there (placement
+    # only), so the panel names them as SEED LINES instead.
+    n_byes = jh.STATE_BYES if (field_n > jh.STATE_BYES and bye_kind != "none") else 0
+    n_lines = jh.STATE_BYES if field_n > jh.STATE_BYES else 0
     epiregional = {
         "games": [{**gm, "home_deco": _jh_deco(schools, gm["home"], 20),
                    "away_deco": _jh_deco(schools, gm["away"], 20),
@@ -5024,8 +5029,9 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
                   for gm in epi_games],
         "bye_lines": [{"seed": i + 1, **_jh_deco(schools, nm, 20),
                        "how": ("Epiregional" if nm in winners else "ATR")}
-                      for i, nm in enumerate((br.get("field") or ())[:n_byes])],
+                      for i, nm in enumerate((br.get("field") or ())[:n_lines])],
         "bye_kind": bye_kind,
+        "n_byes": n_byes,
     } if epi_games else None
     if ward.get("rounds"):
         stages.append({"name": "Wards", "rounds": _deco_rounds(ward, _jh_seeds(ward))})

@@ -53,6 +53,15 @@ Why not TOSS alone: over 2065-2068, 9A picked the same four merit teams either
 way; 8A disagreed every season, always in the same shape (TOSS rating a 22-11
 above a 24-3). A bye should require having won matches.
 
+## Backtest
+
+Owner's replay over 2064-2068: **356 of 960 State bye lines (37.1%) change
+hands** — each swap replaces a Zonal champion outside the class ATR top eight
+with a merit team, while the displaced champion keeps an on-court Epiregional
+path back to a bye. The same measure on the 2067-2068 exports alone comes out at
+45 of 128 (35.2%), consistent with it. (32-team classes carry no bye lines and
+are excluded; there the change is placement only.)
+
 ## The units
 
 Each Epiregional dual is a named unit off the NCAA tournament's cosmetic pool
