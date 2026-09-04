@@ -4591,7 +4591,7 @@ def jhsaa_individual_view(seed: int, gender: str, group: str | None = None,
 
 
 def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
-                        year: int | None = None) -> dict:
+                        year: int | None = None, region: str | None = None) -> dict:
     """THE JV TEAM STATE TOURNAMENT — the statewide draw, its qualifying round and
     the twenty regional championships that fed it.
 
@@ -4627,6 +4627,11 @@ def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
             "season_year": ((arc or {}).get("season_year")
                             or world.jhsaa_season_year(w)),
             "from_year": jh.JV_STATE_FROM}
+    # ‼️ CAPTURED BEFORE ANY LOOP: the regional-table fold below reuses `region`
+    # as its loop variable, so by the time the regional-bracket panel resolves its
+    # selection the PARAMETER has been silently overwritten with the last sorted
+    # region — the switcher then ignores every choice and always shows that one.
+    requested_region = region
     ev = world.jhsaa_jv_state(w["id"], yr, g)
     if not ev or not (ev.get("state") or {}).get("rounds"):
         return {**base, "ready": False}
@@ -4703,6 +4708,43 @@ def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
                         "finish": res.get("finish", ""),
                         "deco": _jh_deco(schools, champ, 22) if champ else None})
     regions.sort(key=lambda r: (r["seed"] or 999, r["region"]))
+
+    # ‼️ THE REGIONAL BRACKETS ARE ARCHIVED AND NOW RENDERED (owner rule 2070 — "make
+    # it so I can see the team JV regional bracket somewhere; it's not been preserved
+    # year over year"). They always WERE preserved — `run_regionals` archives every
+    # region's full draw under `ev["regions"]`, for every season — but nothing ever
+    # rendered one, which from the site is indistinguishable from the data being
+    # gone. One region on screen at a time through a <select>, the section's own
+    # sibling-switcher idiom — never twenty trees down the page (that presentation
+    # was rejected when the summary table was designed, and the table stays).
+    # Seeds here are WITHIN-REGION: the archived `field` is the region's own seed
+    # order, unrelated to the statewide ranking the State draw is cut from.
+    region_names = sorted(ev.get("regions") or {})
+    sel = requested_region if requested_region in (ev.get("regions") or {}) else (
+        region_of.get(st.get("champion")) or (region_names[0] if region_names else None))
+    region_brk = None
+    if sel:
+        br = ev["regions"][sel]
+        r_seeds = {n: i + 1 for i, n in enumerate(br.get("field") or ())}
+        r_rounds = []
+        for rd in world.jhsaa_state_rounds(br):
+            r_rounds.append({**rd, "games": [
+                {**gm, "home_deco": _jh_deco(schools, gm["home"], 20),
+                 "away_deco": _jh_deco(schools, gm["away"], 20),
+                 "home_seed": r_seeds.get(gm["home"], 0),
+                 "away_seed": r_seeds.get(gm["away"], 0),
+                 "win_points": max(gm["home_points"], gm["away_points"]),
+                 "lose_points": min(gm["home_points"], gm["away_points"])}
+                for gm in rd["games"]]})
+        region_brk = {
+            "name": sel, "options": region_names,
+            "field_n": len(br.get("field") or ()),
+            "champion": br.get("champion") or "",
+            "rounds": r_rounds,
+            "canvas": _bracket_canvas(
+                _jh_bracket_cols({**br, "seed_map": r_seeds}, schools),
+                card_w=232, card_h=60, gutter=56, leaf_gap=18),
+        }
     return {
         **base, "ready": True,
         "field_n": len(ev.get("field") or ()),
@@ -4717,6 +4759,7 @@ def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
             card_w=232, card_h=60, gutter=56, leaf_gap=18),
         **_jh_final_four(st, schools),
         "champion_region": region_of.get(st.get("champion"), ""),
+        "region_brk": region_brk,
     }
 
 

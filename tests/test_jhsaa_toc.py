@@ -1033,3 +1033,29 @@ def test_the_research_export_carries_the_jv_events(archived):
         indiv = _json.loads(build_jhsaa(y, "girls", scope)["jhsaa_individuals.json"])
         assert "ALL" in indiv.get("girls", {}), scope
         assert {"JVS", "JVD"} <= set(indiv["girls"]["ALL"]), scope
+
+
+def test_the_jv_regional_bracket_renders_and_switches(archived):
+    """‼️ The regional draws were ALWAYS archived (`ev["regions"]`, every season) and
+    never rendered — which from the site reads as the brackets not being preserved
+    year over year (owner report 2070). One region at a time through a <select>;
+    checked by RENDERING, because a template dereferencing the wrong type paints an
+    empty box instead of raising."""
+    from app import world as wd2
+    ev = wd2.jhsaa_jv_state(archived["world"]["id"], archived["world"]["year"],
+                            "girls")
+    if not ev or not ev.get("regions"):
+        import pytest as _pytest
+        _pytest.skip("no JV state event archived in this fixture")
+    regions = sorted(ev["regions"])
+    html = archived["client"].get("/jhsaa/jv-state?g=girls").get_data(as_text=True)
+    assert "Regional Championships" in html
+    for rn in regions:                      # every region is offered in the switcher
+        assert rn in html
+    # switching regions shows THAT region's champion on its bracket
+    rn = regions[-1]
+    html2 = archived["client"].get(
+        f"/jhsaa/jv-state?g=girls&region={rn}").get_data(as_text=True)
+    champ = ev["regions"][rn].get("champion")
+    assert champ and champ in html2
+    assert f"{rn} Regional" in html2

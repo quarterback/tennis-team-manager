@@ -111,6 +111,41 @@
     </div>
   </div>
 </div>
+{# ‼️ THE REGIONAL BRACKET, ONE REGION AT A TIME (owner rule 2070). Every region's
+   full draw has been archived since the event began — `run_regionals` stores it under
+   `ev["regions"]` for every season — but no surface ever rendered one, which read as
+   the brackets not being preserved year over year. The <select> is the section's
+   sibling-switcher idiom; twenty trees down the page stays rejected, and the
+   champions table above is untouched. Seeds shown are WITHIN-REGION seed order,
+   not the statewide ranking the State draw is cut from. #}
+{% if view.region_brk %}
+<div class="jh-brk-desktop" style="margin-top:14px">
+  {{ brk_toolbar([('all', 'Regional Championships')]) }}
+  <div class="brk-stage" id="brkstage-region">
+    <section class="brk-region" data-view="all">
+      <div class="brk-region-head">
+        <h2>{{ view.region_brk.name }} Regional · {{ view.region_brk.field_n }} district qualifier{{ '' if view.region_brk.field_n == 1 else 's' }}</h2>
+        <span class="brk-region-champ">
+          <form method="get" style="display:inline">
+            {% if u %}<input type="hidden" name="u" value="{{ u }}">{% endif %}
+            <input type="hidden" name="g" value="{{ view.gender }}">
+            <input type="hidden" name="group" value="{{ view.scope.group }}">
+            {% if view.scope.pin %}<input type="hidden" name="year" value="{{ view.scope.pin }}">{% endif %}
+            <select name="region" onchange="this.form.submit()">
+              {% for rn in view.region_brk.options %}
+              <option value="{{ rn }}" {{ 'selected' if rn == view.region_brk.name }}>{{ rn }}</option>
+              {% endfor %}
+            </select>
+          </form>
+        </span>
+      </div>
+      {{ brk_canvas(view.region_brk.canvas, u, false, 'jhsaa_school', {'g': view.gender, 'year': view.scope.pin}) }}
+    </section>
+  </div>
+</div>
+<div style="margin-top:6px">{{ jh_round_tabs(view.region_brk.rounds, u, view.gender, 'jhjvrrd', view.scope.pin) }}</div>
+{% endif %}
+
 {% endif %}
 </div>
 {{ brk_script() }}
