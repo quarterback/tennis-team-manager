@@ -1298,14 +1298,23 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     never render it as though it were a per-court W-L beside the varsity
     singles/doubles figures. A season archived before `played` folds to (0,0,0) and
     shows nothing, which is honest.
-  - **‼️ THE ANALYTICS SIDECAR IS VARSITY-ONLY, BY DECISION** (owner 2026-08: *"it can
-    ignore JV generally i do not need JV analytics"*). `research_export.build_jhsaa`
-    iterates `season["teams"]` and never `season["jv"]`, so no JV dual has ever reached
-    a zip. If that is revisited, `duals.csv` needs a `level` column FIRST: `analytics/
-    ptc_analytics/aggregate.py` DERIVES each phase's dual shape by counting the lines it
-    sees, and JV duals are `phase="regular"` with an elastic shape — dropped in
-    unlabelled they would corrupt the derived shape of the varsity regular season rather
-    than adding a JV section.
+  - **‼️ THE JV EVENTS ARE IN THE RESEARCH EXPORT (owner rule 2070, REVERSING the
+    2026-08 varsity-only decision — the JV team and individual events "have become
+    signature events statewide and the JHSAA needs that detail").** The precondition
+    the old rule named is met and stays load-bearing: every exported dual row carries
+    `level` (JV rows add their elastic `shape` outright and `tied` — a tied dual has
+    NO `winner_program_id`), `jhsaa_standings.csv` and every rating stay
+    varsity-only, and `analytics/ptc_analytics/aggregate.py` filters `level='v'`
+    before deriving a phase's shape — JV rides as labelled DATA, never contamination.
+    The JV Team State Tournament ships as `jhsaa_jv_state.json` (from
+    `world_jhsaa_jv_state`, relabelled on read) plus its `phase='jv_state'` duals;
+    the JV Singles/Doubles draws sit in `jhsaa_individuals.json` under the classless
+    **"ALL"** key, which a classification-scoped export must KEEP (the
+    group-scoped-reader trap). The archive path delivers JV inside each school's
+    schedule; a LIVE `run_season` dict keeps them on `season["jv"]`, which
+    `build_jhsaa` folds in — the loader sets no `"jv"` key, which is what stops
+    double-counting. Pinned by `test_the_research_export_carries_the_jv_events`
+    (archive path, real season).
   - **‼️ AND WHEN THE JHSAA NEEDS SOMETHING, CHECK WHAT THE COLLEGE SIDE ALREADY HAS.**
     Full per-court JV detail was argued against partly on "the JHSAA flight box is
     fixed at S1-S5/D1-D4 and elastic JV needs dynamic columns" — which was WRONG:
