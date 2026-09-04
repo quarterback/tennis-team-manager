@@ -9,57 +9,44 @@
 
 <div class="jh-shell">
 
-{# ‼️ A PERSON-LEVEL LIST. A doubles title credits each partner INDIVIDUALLY — the
-   same player wins with different partners in different years, and that is one
-   career, not two half-careers. The partner is context on the title, never a
-   co-holder of the row. MIXED DOUBLES COUNTS (owner, 2026-08) — it credits no
-   award, but this is a record of titles won, not a résumé — and only THIS gender's
-   half of a mixed pair is credited, since the pair is one player from each field.
+{# ‼️ ONE DENSE TABLE, THE OSAA/MHSAA SHAPE (owner, 2026-09: the card roll "is too
+   bloated now that we've run a lot of these and it covers the whole state"). One
+   row per player: count · player · school(s) · the titles as a compact year list.
+   The count BANDS survive as separator rows inside the one table — the heading
+   still states the rarest thing on the page (owner layout 2026-08, empty bands
+   included) without each band being its own panel of cards.
 
-   FLIGHT AND CLASS RIDE ON EACH TITLE so two No. 3 doubles titles in 1A read
-   differently from two No. 1 singles titles in 9A — without the page judging. The
-   only judgement made anywhere here is the tie-break inside a band, on flight
-   quality. #}
-{% for band in view.bands %}
-<div class="bl-panel jh-yearpanel" {{ 'style=margin-top:14px'|safe if not loop.first }}>
-  <div class="bl-panel-head">
-    <span class="bl-panel-title">{{ band.heading }}</span>
-    <span class="bit">{{ band.rows|length }} player{{ '' if band.rows|length == 1 else 's' }}</span>
-  </div>
-  <div class="jh-roll">
-    {# An empty band is still rendered — see the POY roll. #}
-    {% if not band.rows %}<div class="row none">Nobody yet.</div>{% endif %}
+   A PERSON-LEVEL LIST: a doubles title credits each partner individually — the same
+   player wins with different partners in different years, and that is one career,
+   not two half-careers. The partner is context, in the title attribute, never a
+   co-holder of the row. MIXED DOUBLES COUNTS (owner, 2026-08), this gender's half
+   only. Flight and class ride on each title so two No. 3 doubles titles in 1A read
+   differently from two No. 1 singles titles in 9A — without the page judging. #}
+<div class="bl-panel">
+  <div class="bl-tablescroll">
+  <table class="bl-table jh-repeat">
+    <thead><tr>
+      <th class="n">Titles</th><th>Player</th><th>School</th><th>Championships</th>
+    </tr></thead>
+    <tbody>
+    {% for band in view.bands %}
+    <tr class="band"><td colspan="4">{{ band.heading }} <span class="ct">{{ band.rows|length }}</span></td></tr>
+    {% if not band.rows %}<tr class="none"><td colspan="4">Nobody yet.</td></tr>{% endif %}
     {% for r in band.rows %}
-    {# ‼️ TWO LINES INSIDE ONE ROW, not two rows: `.jh-roll .row` carries the
-       divider, so a sibling block would draw a rule through the middle of every
-       player. #}
-    <div class="row rc">
-      <div class="hd">
-        <a class="nm" href="{{ url_for('jhsaa_player', school=r.link, pid=r.pid, u=u, g=view.gender) }}">{{ r.name }}</a>
-        {# ‼️ RENDERED SOLO, EVEN FOR DOUBLES (owner, 2026-08): "doubles players are
-           individuals who can win with other people, so they're rendered as solo for
-           this list even if they won two together." The partner is context and rides
-           in the title attribute; putting it on the line turns a person's career back
-           into a pairing's, which is exactly what this list is not. #}
-        <span class="ct">{{ r.count }} titles</span>
-      </div>
-      {# ‼️ THE TITLES GET THEIR OWN LINE, AS CHIPS. Inline in parentheses they were
-         a grey comma run-on — "(2057 3A No. 2 Doubles, 2058 3A No. 1 Doubles, 2059
-         3A No. 2 Singles)" — with the class repeated on every one and nothing for
-         the eye to land on. The class is hoisted to the stint when every title
-         shares it (`_jh_career_stints`), so a chip carries the year and the flight,
-         which is what actually differs. #}
-      <div class="tl">
-        {% for st in r.stints %}<span class="stint">{% if st.deco.mark %}<span class="mk">{{ st.deco.mark|safe }}</span>{% endif %}<span
-          class="sch">{{ st.school }}</span>{% if st.group %}<span class="cls">{{ st.group }}</span>{% endif %}{% for t in st.won %}<span
-          class="ti" title="{{ t.season_year }} {{ t.group }} {{ t.flight_name }}{% if t.partner %} · with {{ t.partner }}{% endif %}"
-          ><b>{{ t.season_year }}</b> {% if not st.group %}{{ t.group }} {% endif %}{{ t.flight_name }}</span>{% endfor %}</span>{% endfor %}
-      </div>
-    </div>
+    <tr>
+      <td class="n">{{ r.count }}</td>
+      <td><a class="nm" href="{{ url_for('jhsaa_player', school=r.link, pid=r.pid, u=u, g=view.gender) }}">{{ r.name }}</a></td>
+      <td class="sch">{% for st in r.stints %}<span class="stint">{% if st.deco.mark %}<span class="mk">{{ st.deco.mark|safe }}</span>{% endif %}{{ st.school }}</span>{{ ' · ' if not loop.last }}{% endfor %}</td>
+      <td class="won">{% for st in r.stints %}{% for t in st.won %}<span class="ti"
+        title="{{ t.season_year }} {{ t.group }} {{ t.flight_name }} · {{ st.school }}{% if t.partner %} · with {{ t.partner }}{% endif %}"
+        ><b>{{ t.season_year }}</b> {{ t.group }} {{ t.flight }}{% if t.partner %} <span class="pt">w/ {{ t.partner }}</span>{% endif %}</span>{{ ', ' if not (loop.last and st is sameas r.stints[-1]) }}{% endfor %}{% endfor %}</td>
+    </tr>
     {% endfor %}
+    {% endfor %}
+    </tbody>
+  </table>
   </div>
 </div>
-{% endfor %}
 
 </div>
 {% endblock %}

@@ -297,6 +297,30 @@
 }
 .jh-roll .rc .ti b { font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
 
+/* ---- The career rolls as ONE dense table (owner, 2026-09) ----
+   The OSAA/MHSAA champions-list shape: a row per player, the titles a compact
+   year list. Replaces the card roll above for the two repeat pages, which had
+   grown to a whole-state scroll. Band separators carry the count heading. */
+.jh-repeat { min-width: 720px; }
+.jh-repeat td, .jh-repeat th { padding: 5px 10px; font-size: 13px; line-height: 1.4; vertical-align: top; }
+.jh-repeat .n { width: 56px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 800; }
+.jh-repeat td.n { color: var(--text-secondary); }
+.jh-repeat .nm { font-weight: 750; color: var(--text-primary); text-decoration: none; white-space: nowrap; }
+.jh-repeat .nm:hover { color: var(--brand-strong); text-decoration: underline; }
+.jh-repeat td.sch { white-space: nowrap; color: var(--text-secondary); }
+.jh-repeat .stint { display: inline-flex; align-items: center; gap: 5px; }
+.jh-repeat .stint .mk { display: inline-flex; }
+.jh-repeat td.won { color: var(--text-secondary); }
+.jh-repeat .ti { white-space: nowrap; }
+.jh-repeat .ti b { font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.jh-repeat .ti .pt { color: var(--text-faint); font-size: 12px; }
+.jh-repeat tr.band td {
+  padding-top: 10px; font-size: 11.5px; font-weight: 800; letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase; color: var(--text-faint); background: var(--surface-subtle);
+}
+.jh-repeat tr.band .ct { margin-left: 8px; font-weight: 700; color: var(--text-secondary); }
+.jh-repeat tr.none td { color: var(--text-faint); font-style: italic; }
+
 /* ---- Program directory (/jhsaa/schools) ---- */
 .jh-dirbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 14px; }
 .jh-dirfind {
