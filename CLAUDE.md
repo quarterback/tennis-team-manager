@@ -649,10 +649,25 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   indexed read of ~26 rows per season), and a second store would be a second source of
   truth for numbers the archive already determines. Before persisting, check whether the
   thing is a PROJECTION of a layer you already have.
-- **Seeding runs on TOSS, not on win-loss** (`jhsaa.power_index` → `app.rating`). TOSS is
+- **‼️ TOSS RATES; ATR SEEDS THE POSTSEASON (owner rule 2070, superseding "seeding
+  runs on TOSS").** With 1A's road at 2S/3D and 8A/9A's postseason + early window at
+  4S/5D, three dual shapes feed one TOSS graph, and an opponent-strength composite
+  folded across formats distorts exactly the comparisons a seed order is made of —
+  measured on the owner's 2069/2070 saves, ~85% of programs shift class rank between
+  the two orderings (mean 2-4 places) and the pilot classes shift most. So
+  `jhsaa._atr_key` (ATR: 0.5 TOSS + 0.5 win%, the win term format-blind) is THE ONE
+  postseason seeding key — protected fill, Ward/Regional fields, every recovery pool,
+  the Divisional tiers, the Conference pools — and `_power_key` (raw `pi_raw`) is
+  RETIRED; do not reintroduce a raw-TOSS sort on any postseason field. The STATE draw
+  itself already seeds on `seed_atr` (the Epiregional z-blend) and is untouched.
+  Three deliberate NON-moves: the **TOC still seeds on TOSS** (`run_toc`, `t.power` —
+  the owner's decree named state seeding, not the TOC), the **district tiebreak
+  ladder still reads TOSS at rung 4** (a league decision, not state seeding), and the
+  **rankings page still shows archived `pi`** (TOSS remains the association's
+  rating; ATR is shown beside it). See `docs/AAR-jhsaa-atr-postseason-seeding.md`.
+- **TOSS itself is unchanged** (`jhsaa.power_index` → `app.rating`). TOSS is
   oregontennis.org's Tennis Opponent-Strength System, the same composite the college
-  league uses: **0.40 APR + 0.40 FQI + 0.20 oGS**. `qualifiers` sorts at-large bids AND
-  seed order on it, so an automatic bid buys entry rather than a seed. Rules:
+  league uses: **0.40 APR + 0.40 FQI + 0.20 oGS**. Rules:
   **`jhsaa.FLIGHT_WEIGHTS` is the association's own table** (S1 1.00, S2 0.75, S3 0.25,
   S4/S5 0.10, D1 1.00, D2 0.50 — max 3.70/dual, owner's numbers); it is NOT the college
   table and NOT Oregon's 4S/4D one, and it is the only place a flight is weighted.
