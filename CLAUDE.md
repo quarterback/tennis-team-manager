@@ -1390,6 +1390,19 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
       is what made it read as a gate in front of the tournament. An archive from the
       play-in build stored "State Qualifying" and is RELABELLED ON READ (by how many
       were alive in the EVENT, not in that stub bracket) — never migrated.
+    - **‼️ THE REGIONAL BRACKETS RENDER, ONE REGION AT A TIME (owner rule 2070 —
+      "make it so I can see the team JV regional bracket; it's not been preserved
+      YoY").** They always WERE preserved — `run_regionals` archives every region's
+      full draw under `ev["regions"]`, every season — but no surface rendered one,
+      which from the site is indistinguishable from the data being gone. A
+      `<select>` on `/jhsaa/jv-state` (the section's sibling-switcher idiom) shows
+      the chosen region's draw through the SAME shared tree; default is the state
+      champion's own region; twenty trees down the page stays rejected and the
+      champions table is untouched. Seeds shown are WITHIN-REGION seed order, not
+      the statewide ranking. ‼️ The view's regional-table fold reuses `region` as a
+      loop variable, so the `region` PARAMETER is captured into `requested_region`
+      BEFORE that loop runs — read after it, every selection silently resolved to
+      the last sorted region while nothing raised.
     - **‼️ NO RESULTS-BY-ROUND PANEL: THE TREE IS THE RESULTS.** It restated the
       bracket card for card, and the bracket already carries all twenty —
       `_jh_bracket_cols` materialises every bye as a pass-through card, so a

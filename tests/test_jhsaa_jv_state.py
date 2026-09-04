@@ -389,3 +389,77 @@ def test_the_region_draws_are_played_under_the_regional_phase(arc, jv):
     """The event's own regional duals, not just a hand-called one."""
     phases = {d["phase"] for t in jv.values() for d in t.schedule}
     assert jvs.PHASE_REGION in phases and jvs.PHASE in phases
+
+
+def test_the_regional_bracket_is_on_the_page_one_region_at_a_time(arc, monkeypatch,
+                                                                  tmp_path):
+    """‼️ THE REGIONAL BRACKETS RENDER (owner rule 2070). Every region's full draw
+    has been archived since the event began (`run_regionals` → `ev["regions"]`), but
+    no surface ever rendered one — which from the site is indistinguishable from the
+    brackets not being preserved year over year. One region at a time through the
+    section's sibling <select>; the champions table and the State tree are untouched.
+    Asserted on the view INCLUDING the canvas result's own attributes, because
+    `brk_canvas` dereferences a `_bracket_canvas` RESULT and Jinja renders a wrong
+    type as an empty box rather than raising."""
+    import json
+    import app.world as world
+    from app.web.state import DEFAULT_SEED, jhsaa_jv_state_view
+    monkeypatch.setenv("TENNIS_DB_PATH", str(tmp_path / "regional.db"))
+    monkeypatch.setattr(world, "WORLD_DB", str(tmp_path / "regional.db"),
+                        raising=False)
+    w = world.get_or_create(DEFAULT_SEED)
+    conn = world._db()
+    conn.execute("INSERT INTO world_jhsaa (world_id, year, gender, data)"
+                 " VALUES (?,?,?,?)",
+                 (w["id"], w["year"], "boys", json.dumps({"season_year": 2068})))
+    conn.execute("INSERT INTO world_jhsaa_jv_state (world_id, year, gender, data)"
+                 " VALUES (?,?,?,?)", (w["id"], w["year"], "boys",
+                                       json.dumps(arc, default=str)))
+    conn.commit(); conn.close()
+
+    # ‼️ COMPARE AGAINST THE RELABELLED READ, NOT THE RAW DICT. The view reads the
+    # archive through `world.jhsaa_jv_state` -> `_relabel` (the GLOBAL former-names
+    # data, not per-save), so a school or place name in the raw `arc` need not be
+    # the name the page shows — the first draft of this test compared raw against
+    # relabelled and failed on exactly that.
+    ev = world.jhsaa_jv_state(w["id"], w["year"], "boys")
+
+    # default: the state champion's own region is on screen
+    v = jhsaa_jv_state_view(DEFAULT_SEED, "boys", None, w["year"])
+    assert v["ready"] and v["region_brk"]
+    assert v["region_brk"]["name"] == v["champion_region"]
+    assert v["region_brk"]["options"] == sorted(ev["regions"])
+    assert v["region_brk"]["champion"] == ev["regions"][v["champion_region"]]["champion"]
+
+    # switching shows THAT region's draw, at its own size, with its own champion
+    # (a region with real rounds — a region of ONE plays none, and is checked below)
+    other = next(r for r in sorted(ev["regions"])
+                 if r != v["champion_region"] and ev["regions"][r].get("rounds"))
+    v2 = jhsaa_jv_state_view(DEFAULT_SEED, "boys", None, w["year"], other)
+    br = ev["regions"][other]
+    rb = v2["region_brk"]
+    assert rb["name"] == other and rb["champion"] == br["champion"]
+    assert rb["field_n"] == len(br["field"])
+    # the canvas is a real `_bracket_canvas` result: columns/cards are what
+    # `brk_canvas` dereferences (a card's home/away are DECO objects, so the
+    # name check reads the round tabs, whose games carry plain name strings)
+    assert rb["canvas"]["columns"] and rb["canvas"]["cards"]
+    assert any(br["champion"] in (gm.get("home"), gm.get("away"))
+               for rd in rb["rounds"] for gm in rd["games"])
+    assert rb["rounds"][-1]["games"], "the regional final is on the tabs"
+    # a nonsense region falls back rather than 500ing
+    v3 = jhsaa_jv_state_view(DEFAULT_SEED, "boys", None, w["year"], "Nowhere")
+    assert v3["region_brk"]["name"] == v["champion_region"]
+
+    # ‼️ a region of ONE district qualifier crowns unopposed: no rounds, and the
+    # view builds NO canvas — `_bracket_canvas` of an empty column list is None,
+    # and an empty tree box would read as missing data. The champion is still
+    # named, which is the fact the panel exists to preserve.
+    lone = next((r for r in sorted(ev["regions"])
+                 if not ev["regions"][r].get("rounds")), None)
+    if lone:
+        v4 = jhsaa_jv_state_view(DEFAULT_SEED, "boys", None, w["year"], lone)
+        rb4 = v4["region_brk"]
+        assert rb4["name"] == lone and rb4["canvas"] is None
+        assert rb4["rounds"] == [] and rb4["field_n"] == 1
+        assert rb4["champion"] == ev["regions"][lone]["champion"]

@@ -2444,7 +2444,8 @@ def create_app() -> Flask:
         rather than to the class you were browsing."""
         gender, label, u, g, group, year = _jh_scope_args()
         return render_template("jhsaa_jv_state.html", active="High School",
-                               view=jhsaa_jv_state_view(DEFAULT_SEED, g, group, year),
+                               view=jhsaa_jv_state_view(DEFAULT_SEED, g, group, year,
+                                                        request.args.get("region")),
                                gender=gender, uni_label=label, u=u)
 
     @app.route("/jhsaa/toc")
