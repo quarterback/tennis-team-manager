@@ -3638,6 +3638,7 @@ _JH_PHASE_LABEL = {"showcase_pod": "Showcase (Pod)", "showcase_tiered": "Showcas
                    "conference": "Conference",
                    "semi_conference": "Semi-Conference", "divisional": "Divisionals",
                    "semi_state": "Semi-State", "super_regional": "Super Regional",
+                   "epiregional": "Epiregional",
                    "zonal": "Zonal", "regional": "Regional", "ward": "Ward",
                    "sectional": "Sectional"}
 
@@ -5000,6 +5001,38 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
         for rd in reversed(_deco_rounds(pre, _jh_seeds(pre))):
             stages.append({"name": rd["name"], "rounds": [rd]})
     ward = (arc.get("wards") or {}).get(grp) or {}
+    # ‼️ THE EPIREGIONAL IS ITS OWN PANEL, NEVER A COLUMN OF THE TREE (owner rule
+    # 2026-09). Four duals producing four PLACEMENTS is not a halving, and
+    # `_bracket_canvas` links columns on exactly that halving — drawn inside the
+    # tree it would connect matches with no relationship, the JV qualifying
+    # round's lesson. Rendered above the road folds as the pre-bracket playoff it
+    # is: the four named duals, then who holds the eight bye lines and on what.
+    epi = (arc.get("epiregional") or {}).get(grp) or {}
+    epi_games = [gm for rd in (epi.get("rounds") or ()) for gm in rd]
+    epi_seeds = _jh_seeds(epi)
+    winners = set(epi.get("survivors") or ())
+    field_n = len(br.get("field") or ())
+    # The bye a top-eight line carries in THIS shape: none in a power-of-two field,
+    # a single bye in a 24, a double bye (the Qualifiers Round) in an expanded 40.
+    bye_kind = ("none" if field_n and field_n & (field_n - 1) == 0
+                else "double" if br.get("round_names") else "single")
+    # ‼️ A 32 HAS NO BYES — listing its top eight under "Byes" would describe a
+    # draw `run_state` never played. The eight lines still exist there (placement
+    # only), so the panel names them as SEED LINES instead.
+    n_byes = jh.STATE_BYES if (field_n > jh.STATE_BYES and bye_kind != "none") else 0
+    n_lines = jh.STATE_BYES if field_n > jh.STATE_BYES else 0
+    epiregional = {
+        "games": [{**gm, "home_deco": _jh_deco(schools, gm["home"], 20),
+                   "away_deco": _jh_deco(schools, gm["away"], 20),
+                   "home_seed": epi_seeds.get(gm["home"], 0),
+                   "away_seed": epi_seeds.get(gm["away"], 0)}
+                  for gm in epi_games],
+        "bye_lines": [{"seed": i + 1, **_jh_deco(schools, nm, 20),
+                       "how": ("Epiregional" if nm in winners else "ATR")}
+                      for i, nm in enumerate((br.get("field") or ())[:n_lines])],
+        "bye_kind": bye_kind,
+        "n_byes": n_byes,
+    } if epi_games else None
     if ward.get("rounds"):
         stages.append({"name": "Wards", "rounds": _deco_rounds(ward, _jh_seeds(ward))})
     sec = (arc.get("sectionals") or {}).get(grp) or {}
@@ -5029,6 +5062,7 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
                                         leaf_gap=12) if qual_br else None),
         "rounds": _deco_rounds(br, seeds),
         "stages": stages,
+        "epiregional": epiregional,
     }
 
 
@@ -5105,6 +5139,7 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     sec_seeds = _jh_seeds(sec_arc)
     ward_seeds = _jh_seeds((arc or {}).get("wards", {}).get(sc.group) or {})
     pre_seeds = _jh_seeds((arc or {}).get("prestate", {}).get(sc.group) or {})
+    epi_seeds = _jh_seeds((arc or {}).get("epiregional", {}).get(sc.group) or {})
     sr_seeds = _jh_seeds((arc or {}).get("super_regional", {}).get(sc.group) or {})
     ss_seeds = _jh_seeds((arc or {}).get("semi_state", {}).get(sc.group) or {})
     dv_seeds = _jh_seeds((arc or {}).get("divisional", {}).get(sc.group) or {})
@@ -5126,7 +5161,8 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
              "conference": "CONFERENCE",
              "semi_conference": "SEMI-CONFERENCE",
              "divisional": "DIVISIONAL", "semi_state": "SEMI-STATE",
-             "super_regional": "SUPER REGIONAL", "zonal": "ZONAL",
+             "super_regional": "SUPER REGIONAL", "epiregional": "EPIREGIONAL",
+             "zonal": "ZONAL",
              "regional": "REGIONAL", "ward": "WARD", "sectional": "SECTIONAL"}
     # The sectional PHASE holds every cut round, but a multi-round Sectionals
     # OPENS WITH AREAS (owner rule — jhsaa.run_sectional): only the last round is
@@ -5199,7 +5235,8 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
               "SEMI-CONFERENCE": sc_seeds,
               "DIVISIONAL": dv_seeds,
               "SEMI-STATE": ss_seeds,
-              "SUPER REGIONAL": sr_seeds, "ZONAL": pre_seeds,
+              "SUPER REGIONAL": sr_seeds, "EPIREGIONAL": epi_seeds,
+              "ZONAL": pre_seeds,
               "REGIONAL": pre_seeds, "WARD": ward_seeds, "SECTIONAL": sec_seeds,
               "AREA": sec_seeds}
 

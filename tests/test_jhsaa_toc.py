@@ -963,3 +963,35 @@ def test_a_rivalry_dual_is_played_and_the_card_marks_it(archived):
         if marked >= 3:
             break
     assert marked >= 3, "no rendered card carried a rivalry chip"
+
+
+# --- the Epiregional on the page --------------------------------------------------
+
+def test_the_epiregional_panel_and_match_center_label(archived):
+    """The Zonal champions' play-in (owner rule 2026-09) on every surface that
+    shows it: its OWN panel on the bracket page (never a tree column), the bye
+    list worded for the draw's real shape — a 32 has no byes and must not list
+    its top eight under "Byes" — and the Match Center naming the phase rather than
+    falling through to "Invitational" (the non-district fallback)."""
+    arc, w, g = archived["arc"], archived["world"], "girls"
+    for grp in jh.GROUPS:
+        epi = (arc.get("epiregional") or {}).get(grp) or {}
+        assert epi.get("rounds") and epi["rounds"][0], grp
+        html = archived["client"].get(
+            f"/jhsaa/bracket?g={g}&group={grp}").get_data(as_text=True)
+        assert f"{grp} Epiregionals" in html
+        assert epi["rounds"][0][0]["unit"] in html
+        n = len(arc["brackets"][grp]["field"])
+        if n & (n - 1) == 0:
+            assert "Seed lines 1–8" in html and ">Byes:" not in html, grp
+        elif arc["brackets"][grp].get("round_names"):
+            assert "Double byes" in html, grp
+        else:
+            assert "Byes:" in html, grp
+    # the Match Center page for one Epiregional dual
+    grp = jh.GROUPS[0]
+    gm = (arc["epiregional"][grp]["rounds"][0])[0]
+    sched = wd.jhsaa_schedule(w["id"], w["year"], g, gm["home"])
+    row = next(d for d in sched if d.get("phase") == "epiregional")
+    html = archived["client"].get(f"/jhsaa/dual/{row['id']}?g={g}").get_data(as_text=True)
+    assert "Epiregional" in html and "Invitational" not in html

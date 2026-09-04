@@ -148,7 +148,12 @@ EARLY_FORMAT_PHASE = "early"
 # 1S/4D shape, the strict best-nine lineup, and exclusion from the cutoff TOSS.
 # "super_regional" and "semi_state" are the RECOVERY rounds (owner rule 2027-08):
 # the second-chance ladder that earns the non-automatic State berths on court.
-POSTSEASON = ("sectional", "ward", "regional", "zonal",
+# "epiregional" is the Zonal champions' PLAY-IN (owner rule 2026-09): the eight
+# champions of a class play one round among themselves, and the four winners hold
+# the State draw's first four bye lines. It sits right after "zonal" so the calendar
+# lane, the lineup freeze, the dual shape and the TOSS exclusion all fall out of
+# membership, exactly as they do for every other rung.
+POSTSEASON = ("sectional", "ward", "regional", "zonal", "epiregional",
               "super_regional", "semi_state", "divisional", "semi_conference",
               "conference", "special_challenger", "state_special", "state", "toc")
 
@@ -5731,6 +5736,196 @@ def run_rounds(field: list[TeamSeason], phases: tuple[str, ...], *, seed: int
              "round_names": [_STAGE_NAMES[p] for p in phases]}, survivors)
 
 
+# --- THE EPIREGIONAL — the Zonal champions' play-in (owner rule 2026-09) ---------
+
+#: The round's heading (plural, no "Round", like every other stage heading —
+#: "7A Epiregionals"). The per-dual UNIT is a REGION NAME drawn from the NCAA
+#: tournament's cosmetic pool (`app.regions.LEAGUE_NAMES`) — "Cascade Epiregional".
+EPIREGIONAL_NAME = "Epiregionals"
+#: ‼️ THE SEEDING ATR — the number the State draw is ordered on (owner rule
+#: 2026-09: "ATR not TOSS for seeding!"). Deliberately a SECOND formula beside
+#: `atr`/`ATR_TOSS_WEIGHT` above: that one ranks the Semi-Conference and Conference
+#: pools, is archived on every standings row, and retuning it would move the
+#: recovery ladder. This one is a z-score blend WITHIN one class-gender State
+#: field, so both terms are on the same scale before they are weighted — the raw
+#: 0-1 blend lets TOSS's narrow spread be swamped by win percentage's wide one.
+#: Measured over 2065-2068 in 8A/9A: TOSS alone seeded a 22-11 above a 24-3 in 8A
+#: every season, while 9A picked the same four either way. TOSS stays dominant at
+#: 0.6 so a bye still needs a real schedule; record decides those 8A cases.
+#: Tuning constants, not derived values — retune here, nowhere else.
+SEED_ATR_TOSS_WEIGHT = 0.6
+SEED_ATR_WIN_WEIGHT = 0.4
+
+
+def seed_atr(teams: list, power: dict | None) -> dict[str, float]:
+    """{school: seeding ATR} over exactly `teams` — the z-score blend above,
+    standardised WITHIN this list (a class-gender State field, or the eight Zonal
+    champions), never over the gender. Standardising within the field is what makes
+    the two weights mean what they say: 0.6 of a TOSS standard deviation against
+    0.4 of a win-percentage one. A one-team or all-equal list gets zeros (no
+    spread to standardise), so the caller's name tie-break decides.
+
+    `power` maps school -> `rating.RatingLine`; the TOSS term is `pi_raw`, the same
+    full-precision value every other seed in the association is drawn from. A
+    team the rating does not know contributes the field mean (a z of zero) on that
+    term rather than a zero it did not earn."""
+    if not teams:
+        return {}
+    known = [(power or {}).get(t.school.name) for t in teams]
+    pis = [ln.pi_raw for ln in known if ln is not None]
+    mean_pi = sum(pis) / len(pis) if pis else 0.0
+    xs = [(ln.pi_raw if ln is not None else mean_pi) for ln in known]
+    ys = [t.win_pct for t in teams]
+
+    def _z(vals):
+        n = len(vals)
+        m = sum(vals) / n
+        var = sum((v - m) ** 2 for v in vals) / n
+        sd = var ** 0.5
+        return [((v - m) / sd if sd > 1e-12 else 0.0) for v in vals]
+
+    zx, zy = _z(xs), _z(ys)
+    return {t.school.name: SEED_ATR_TOSS_WEIGHT * a + SEED_ATR_WIN_WEIGHT * b
+            for t, a, b in zip(teams, zx, zy)}
+
+
+def _seed_atr_key(satr: dict[str, float]):
+    """Sort key: best seeding ATR first, school name breaking ties — the order has
+    to reproduce, never a raw float comparison alone."""
+    return lambda t: (-satr.get(t.school.name, 0.0), t.school.name)
+
+
+def epiregional_names(gender: str, year: int, group: str, salt: str = "") -> list[str]:
+    """Four cosmetic region names for a class-gender's Epiregional duals — the NCAA
+    tournament's own generator (`app.regions.region_names`), fed a stable digest
+    so the names rotate year to year and differ class to class while an archived
+    season reproduces after a restart (blake2s, never `hash()`: these units are
+    archived and honoured). Labels only: a "Cascade Epiregional" carries no
+    geography, exactly as the college regions do not."""
+    from .regions import region_names
+    digest = hashlib.blake2s(f"epiregional|{gender}|{year}|{group}|{salt}".encode(),
+                             digest_size=8).digest()
+    return region_names(int.from_bytes(digest, "big"), 4)
+
+
+def run_epiregional(champs: list[TeamSeason], power: dict | None,
+                    prestate: dict, names: list[str], *,
+                    seed: int) -> tuple[dict, list[TeamSeason], list[TeamSeason]]:
+    """THE EPIREGIONAL (owner rule 2026-09): the eight Zonal champions of a class
+    play ONE round among themselves, and the four winners take the State draw's
+    first four bye lines. It decides PLACEMENT only — all eight are already in
+    State, and a loser here drops into the merit pool with everyone else (where it
+    may still earn a bye on its own ATR).
+
+    Why it exists: a Zonal title used to buy seeds 1-8 outright, and Zonals vary a
+    lot in strength. Measured on 2068 across all 24 class-genders, the worst-placed
+    team in a State field carried seed 8 in 20 of them and ranked 19th-27th in its
+    own class; girls' 8A's rank-1 team was seeded 12th because it did not win its
+    Zonal, and that field was won by a 31 seed. Qualification is earned on court;
+    seed placement now is too.
+
+    Pairing is 1v8, 2v7, 3v6, 4v5 on the seeding ATR (`seed_atr`) AMONG THESE EIGHT
+    — a separate pass from the State draw's own seeding over the whole field. The
+    higher seed HOSTS. Rematch rule: never immediately replay a road opponent.
+    Two Zonal champions came out of different Zonals, and Regionals feed Zonals
+    positionally, so a rematch is impossible by construction — the swap repair is
+    kept so the rule is stated in code rather than assumed of the draw upstream.
+
+    Each dual is a named UNIT — one of `names`, the four cosmetic region names —
+    so a winner's honours chip reads "Cascade Epiregional", never a number.
+
+    Returns (archive_dict, winners, losers) in the `run_rounds` archive shape.
+    `field` is the seed order among the eight (`state._jh_seeds` labels off it)."""
+    field = list(champs)
+    if len(field) < 2:
+        return ({"field": [t.school.name for t in field], "rounds": [[]],
+                 "survivors": [t.school.name for t in field],
+                 "round_names": [EPIREGIONAL_NAME], "names": []}, field, [])
+    satr = seed_atr(field, power)
+    order = sorted(field, key=_seed_atr_key(satr))
+    n = len(order)
+    if n % 2:
+        # Never at association size (the ladder halves 32 -> 16 -> 8). A scaled
+        # fixture could hand over an odd count; the last seed sits out and stays
+        # a plain field member, never a winner.
+        order, odd = order[:-1], order[-1:]
+    else:
+        odd = []
+    n = len(order)
+    pairs = [[order[i], order[n - 1 - i]] for i in range(n // 2)]
+    met = set()
+    for games in (prestate or {}).get("rounds") or ():
+        for gm in games:
+            met.add(frozenset((gm.get("home"), gm.get("away"))))
+    # One swap of the LOWER seeds between adjacent pairs repairs a rematch without
+    # touching the top-seed side of either pairing.
+    for i in range(len(pairs)):
+        a, b = pairs[i]
+        if frozenset((a.school.name, b.school.name)) in met:
+            for j in range(len(pairs)):
+                if j == i:
+                    continue
+                c, d = pairs[j]
+                if (frozenset((a.school.name, d.school.name)) not in met
+                        and frozenset((c.school.name, b.school.name)) not in met):
+                    pairs[i][1], pairs[j][1] = d, b
+                    break
+    rng = random.Random(seed)
+    games, winners, losers = [], [], []
+    for k, (hi, lo) in enumerate(pairs):
+        res = play_dual(hi, lo, seed=rng.randrange(1 << 30), phase="epiregional")
+        win, lose = (hi, lo) if res.winner == 0 else (lo, hi)
+        unit = f"{names[k]} Epiregional" if k < len(names) else f"Epiregional {k + 1}"
+        games.append({"home": hi.school.name, "away": lo.school.name,
+                      "home_points": res.home_points,
+                      "away_points": res.away_points,
+                      "winner": win.school.name, "unit": unit})
+        winners.append(win)
+        losers.append(lose)
+    losers += odd
+    return ({"field": [t.school.name for t in order + odd], "rounds": [games],
+             "survivors": [t.school.name for t in winners],
+             "round_names": [EPIREGIONAL_NAME], "names": list(names)},
+            winners, losers)
+
+
+#: How many bye lines the State draw holds — four to the Epiregional winners and
+#: four on merit. `run_state`'s `champions` is this count: it sizes the bye budget
+#: and decides whether a field expands (a 40's Qualifiers Round), and it must stay
+#: at the ladder's Zonal count so every draw keeps exactly the shape it had.
+STATE_BYES = 8
+EPIREGIONAL_BYES = 4
+
+
+def state_seed_order(zonal_champs: list[TeamSeason], epi_winners: list[TeamSeason],
+                     rest: list[TeamSeason], power: dict | None
+                     ) -> tuple[list[TeamSeason], list[str]]:
+    """The State field in SEED ORDER (owner rule 2026-09), and the bye holders.
+
+    Bye lines 1-8: the `EPIREGIONAL_BYES` Epiregional winners plus the best
+    `STATE_BYES - EPIREGIONAL_BYES` teams among EVERYONE ELSE on the seeding ATR
+    (`seed_atr`, standardised over this whole field). An Epiregional loser is
+    eligible for a merit bye — in a season where the Zonal champions really are
+    the eight strongest teams they take all eight, which is the right answer.
+    The eight are then seeded 1-8 AMONG THEMSELVES on ATR (an Epiregional win
+    guarantees a top-eight line, not a top-four one), and everyone else 9+ on ATR
+    regardless of how they qualified.
+
+    In a 24 the first eight lines are the single byes; in a 40 the double byes;
+    in a 32 there are no byes and this is placement only. `run_state` derives all
+    three from the ORDER, so the shape is untouched."""
+    field = list(zonal_champs) + list(rest)
+    satr = seed_atr(field, power)
+    key = _seed_atr_key(satr)
+    win_names = {t.school.name for t in epi_winners}
+    winners = [t for t in field if t.school.name in win_names]
+    others = sorted((t for t in field if t.school.name not in win_names), key=key)
+    merit = others[:max(0, STATE_BYES - len(winners))]
+    byes = sorted(winners + merit, key=key)
+    tail = sorted(others[len(merit):], key=key)
+    return byes + tail, [t.school.name for t in byes]
+
+
 # --- the RECOVERY ROUNDS (owner rule 2027-08): Super Regionals -> Semi-State ---
 
 # ⚠️ DIVISIONAL_NAME is the only place the round is named; change it here and
@@ -6767,12 +6962,13 @@ def _state_specials(group: str, by_name: dict, stages: list[dict],
 
 
 def run_state(field: list[TeamSeason], *, seed: int, champions: int = 8) -> dict:
-    """The State Tournament: a fresh seeded draw (24 teams in the three largest
-    classes, 40 elsewhere — Zonal champions first, then the district-guarantee and
-    Semi-State qualifiers in post-recovery TOSS order) played to a champion.
+    """The State Tournament: a fresh seeded draw (24 / 32 / 40 teams by class,
+    handed over in SEED ORDER — `state_seed_order`: the eight bye lines first,
+    then everyone else on the seeding ATR) played to a champion.
 
-    `champions` is how many Zonal champions lead the field (the caller's `len(zc)`,
-    scaled with the ladder) — the draw's bye budget, and the count that decides
+    `champions` is how many entrants lead the field on the bye lines (the caller's
+    `STATE_BYES`; it was the Zonal-champion count before the Epiregional, owner
+    rule 2026-09) — the draw's bye budget, and the count that decides
     whether the field is EXPANDED. A field whose padding byes are exactly the
     champions (24 in 32 slots) plays one fixed draw. A larger field — 40 — is
     that same draw with a
@@ -7964,6 +8160,8 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     # group's Zonals must be done before any group's Super Regionals can start.
     sectionals, wards, prestates, protecteds, zonal_champs = {}, {}, {}, {}, {}
     district_champs = {}
+    epiregionals: dict[str, dict] = {}
+    epi_winners: dict[str, list] = {}
     for group in GROUPS:
         standings = by_group[group]
         protected, entrants = sectional_field(group, standings, power)
@@ -7979,6 +8177,18 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
         reg_field = sorted(protected + ward_champs, key=_power_key(power))
         prestates[group], zonal_champs[group] = run_rounds(
             reg_field, ("regional", "zonal"), seed=gseed + 8219)
+        # ‼️ THE EPIREGIONAL — the Zonal champions' play-in (owner rule 2026-09),
+        # straight after the Zonals and BEFORE the recovery rounds, so its duals
+        # are in the pre-state results graph the recovery fields are seeded on.
+        # Placement only: all eight stay in the field, the four winners hold the
+        # first four bye lines (`state_seed_order`). Seeded on blake2s — these
+        # duals are archived and their units honoured, and `hash(group)` is the
+        # per-process wart this module is told not to copy.
+        epi_seed = seed + int.from_bytes(hashlib.blake2s(
+            f"jh-epiregional|{group}".encode(), digest_size=4).digest(), "big")
+        epiregionals[group], epi_winners[group], _ = run_epiregional(
+            zonal_champs[group], power, prestates[group],
+            epiregional_names(gender, year, group, salt), seed=epi_seed)
     post_power = power_index(every_team, prestate=True)
     # The RECOVERY rounds (Super Regionals -> Semi-State), every group, before
     # any State draw: the remaining berths are earned on court, and the State
@@ -8105,9 +8315,17 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
         # RECOVERY ladder underneath them is wired differently. `champions=
         # len(zc)` (8) on a 24-team field lands on `run_state`'s single-draw
         # branch (no Qualifiers Round), so "seeds 1-8 bye" falls out for free.
-        zc = sorted(zonal_champs[group], key=_power_key(final_power))
-        rest = sorted(state_pools[group], key=_power_key(final_power))
-        states[group] = run_state(zc + rest, champions=len(zc),
+        # ‼️ SEED PLACEMENT IS MERIT, NOT THE ZONAL TITLE (owner rule 2026-09).
+        # A Zonal title still buys the berth; the first eight lines now go to the
+        # four EPIREGIONAL winners plus the best four of everyone else on the
+        # seeding ATR (an Epiregional loser included), the eight ordered 1-8 on
+        # ATR among themselves and the rest 9+ on ATR whatever their door in.
+        # `champions=STATE_BYES` keeps `run_state`'s bye budget and expansion
+        # rule exactly where they were, so every draw keeps its shape: 8 single
+        # byes in a 24, 8 double byes in a 40, placement only in a 32.
+        ordered, _byes = state_seed_order(zonal_champs[group], epi_winners[group],
+                                          state_pools[group], final_power)
+        states[group] = run_state(ordered, champions=STATE_BYES,
                                   seed=seed + hash(group) % 9973 + 12281)
     champs = [t for group, st in states.items()
               for ts in by_group[group].values() for t in ts
@@ -8176,6 +8394,12 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
             "sectional": sectionals[group],
             "ward": wards[group],
             "prestate": prestates[group],
+            # THE EPIREGIONAL — the Zonal champions' play-in (owner rule 2026-09),
+            # its own key and its own panel on the bracket page: four duals
+            # producing four placements is not a halving, so it must never be
+            # rendered as a column of the tree. `.get` on read — seasons archived
+            # before it existed carry no key.
+            "epiregional": epiregionals[group],
             "super_regional": super_regionals[group],
             "semi_state": semi_states[group],
             "divisional": divisionals[group],

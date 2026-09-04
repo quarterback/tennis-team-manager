@@ -8,8 +8,12 @@ The qualification structure (owner spec 2027-08, expanded State fields):
   2. The ladder — fixed shape for every classification, both genders:
      Wards 32→16, Regionals 32→16 (Ward champions + protected), Zonals 16→8.
      Protected entrants (district champions first, then best cutoff TOSS) enter
-     at Regionals. Zonal champions qualify for State automatically WITH the
-     privileged path: they are the State draw's top seeds, so its byes are theirs.
+     at Regionals. Zonal champions qualify for State automatically; the EPIREGIONAL
+     (owner rule 2026-09) then plays the eight among themselves and its four
+     winners hold the State draw's first four bye lines. The other four bye lines
+     go on the seeding ATR to the best of everyone else (a play-in loser included),
+     and the whole field is seeded on ATR — the Zonal title buys the berth, never
+     the seed.
   3. NO district guarantee (owner reversal 2027-08). Winning a district buys a
      PROTECTED seat and nothing at State: a champion that loses falls into the
      same recovery pools as everyone else and wins its way in, or does not go.
@@ -154,6 +158,14 @@ def _specials(archived, g, gender="girls"):
         {"field": [], "survivors": [], "rounds": [[]]}
 
 
+def _epi(archived, g, gender="girls"):
+    """The Epiregional arc for a class — the Zonal champions' play-in (owner rule
+    2026-09). Fetched per test, like `_specials`, for the same arity reason."""
+    key = "arc" if gender == "girls" else "arc_boys"
+    return (archived[key].get("epiregional") or {}).get(g) or \
+        {"field": [], "survivors": [], "rounds": [[]]}
+
+
 def test_the_state_field_is_champions_and_recovery_survivors(archived):
     """‼️ TWO ways in and no others (owner rule 2027-08, REVERSING the district
     guarantee): win a Zonal, or win your way through recovery. A district title
@@ -173,27 +185,69 @@ def test_the_state_field_is_champions_and_recovery_survivors(archived):
         assert set(state["field"]) == (zonal_champs
                                        | _berth_survivors(g, sr, ss, dv)
                                        | set(_specials(archived, g)["survivors"]))
-        # the privileged path: champions are the draw's TOP seeds
-        assert set(state["field"][:len(zonal_champs)]) == zonal_champs
+        # the privileged path is the BERTH, not the seed (owner rule 2026-09):
+        # every champion is in the field, and the four Epiregional winners hold
+        # four of the eight bye lines
+        epi = _epi(archived, g)
+        assert set(epi["field"]) == zonal_champs, g
+        assert set(epi["survivors"]) <= set(state["field"][:jh.STATE_BYES]), g
 
 
-def test_zonal_champions_are_the_top_seeds_byes_or_not(archived):
-    """‼️ WINNING A ZONAL BUYS SEEDS 1-8 (owner clarification 2027-08). This is a
-    SEEDING guarantee in its own right, not a side effect of byes. In a 24-team
-    field the top eight seeds also collect the eight first-round byes, so the
-    rule LOOKS like a bye rule — but 7A's field is 32, a power of two with no
-    byes at all, and the guarantee there is purely that the Zonal champions are
-    seeded 1-8. Asserted for BOTH shapes, so a change that ties the privilege to
-    byes fails on the no-bye classification."""
+def test_the_epiregional_plays_all_eight_champions_for_four_bye_lines(archived):
+    """‼️ THE ZONAL TITLE BUYS THE BERTH, THE EPIREGIONAL BUYS THE LINE (owner rule
+    2026-09). The eight Zonal champions play ONE round among themselves — every
+    one of them, on the real ladder, in every class and both genders — four win,
+    all eight stay in State, and the winners hold four of the draw's eight bye
+    lines. The other four lines go on ATR to the best of everyone else, a play-in
+    loser included, and the eight are ordered 1-8 on ATR among themselves — so a
+    Zonal champion is guaranteed a top-EIGHT seed, never a top-four one. Asserted
+    on the 24, 32 and 40 shapes alike: in a 32 there is no bye and this is
+    placement only, which is exactly the case that keeps the rule honest."""
+    checked_bye_free = False
+    for gender in ("girls", "boys"):
+        key = "arc" if gender == "girls" else "arc_boys"
+        for g in jh.GROUPS:
+            pre = archived[key]["prestate"][g]
+            state = archived[key]["brackets"][g]
+            epi = _epi(archived, g, gender)
+            champs = set(pre["survivors"])
+            assert len(champs) == 8, (gender, g)        # the fixture crowns eight
+            assert set(epi["field"]) == champs, (gender, g)
+            assert len(epi["rounds"]) == 1 and len(epi["rounds"][0]) == 4, (gender, g)
+            played = [n for gm in epi["rounds"][0] for n in (gm["home"], gm["away"])]
+            assert sorted(played) == sorted(champs), (gender, g)
+            winners = set(epi["survivors"])
+            assert len(winners) == 4 and winners <= champs
+            assert epi["round_names"] == [jh.EPIREGIONAL_NAME]
+            assert all(gm["unit"].endswith(" Epiregional") for gm in epi["rounds"][0])
+            # the higher seed HOSTS: home is the earlier entry in the seed order
+            for gm in epi["rounds"][0]:
+                assert epi["field"].index(gm["home"]) < epi["field"].index(gm["away"])
+            field = state["field"]
+            assert champs <= set(field), (gender, g)
+            assert winners <= set(field[:jh.STATE_BYES]), (gender, g)
+            n = len(field)
+            if n and n & (n - 1) == 0:
+                checked_bye_free = True
+            if state.get("round_names"):
+                checked_bye_free = True
+    assert checked_bye_free, "no bye-free draw in the fixture — the no-bye case is untested"
+
+
+def test_the_state_field_is_seeded_on_merit_not_the_zonal_title(archived):
+    """Nobody is seeded above a stronger team for having won a Zonal: outside the
+    four Epiregional winners' guaranteed lines, a champion and a non-champion are
+    placed on the SAME number. Checked as ordering consistency off the archive:
+    the field is one monotone list with the winners inside its head."""
     checked_bye_free = False
     for g in jh.GROUPS:
         sec, ward, pre, state, protected, dq, sr, ss, dv, sc, lc = _stages(archived, g)
         champs = list(pre["survivors"])
         field = state["field"]
-        # the champions hold the top seed slots, in TOSS order among themselves
-        assert set(field[:len(champs)]) == set(champs), g
-        # ...and nobody else is seeded above one
-        assert not (set(field[len(champs):]) & set(champs)), g
+        epi = _epi(archived, g)
+        # the winners are in the top eight; the LOSERS hold no guarantee at all
+        assert set(epi["survivors"]) <= set(field[:jh.STATE_BYES]), g
+        assert set(champs) <= set(field), g
         n = len(field)
         if n and n & (n - 1) == 0:            # a power of two: no first-round byes
             checked_bye_free = True
@@ -329,6 +383,9 @@ def test_wards_regionals_and_zonals_are_byes_free(archived):
             for games in br["rounds"]:
                 assert len(games) * 2 == alive, (g, alive, len(games))
                 alive -= len(games)
+        # the Epiregional pairs all eight champions — nobody byes into a line
+        epi = _epi(archived, g)
+        assert len(epi["rounds"][0]) * 2 == len(epi["field"]) == 8, g
         # every RECOVERY round pairs its entire field, the Conference included
         for br in (sr, ss, dv, lc):
             for games in br["rounds"]:
@@ -336,22 +393,25 @@ def test_wards_regionals_and_zonals_are_byes_free(archived):
                     assert len(games) * 2 == len(br["field"]), (g, len(br["field"]))
 
 
-def test_state_byes_belong_to_the_zonal_champions(archived):
-    """A 24-team seeded draw has eight first-round byes, and those byes ARE the
-    champions' privilege — every bye-taker is a Zonal champion. An EXPANDED field
-    (the 40s and their scaled images) sharpens the same privilege into a DOUBLE
-    BYE: the champions appear in none of the qualifying rounds, and the fresh
-    main draw they enter is a full power of two with no byes at all."""
+def test_state_byes_belong_to_the_eight_bye_lines(archived):
+    """A 24-team seeded draw has eight first-round byes, and those byes are the
+    first eight SEED LINES — the four Epiregional winners plus the four merit
+    seeds (owner rule 2026-09; they used to be the Zonal champions outright). An
+    EXPANDED field (the 40s and their scaled images) sharpens the same eight into
+    a DOUBLE BYE: they appear in none of the qualifying rounds, and the fresh main
+    draw they enter is a full power of two with no byes at all. Bye totals stay
+    8 / 8 / 0 by field size."""
     for g in jh.GROUPS:
         sec, ward, pre, state, protected, dq, sr, ss, dv, sc, lc = _stages(archived, g)
         names = state.get("round_names") or []
-        champs = set(pre["survivors"])
+        champs = set(state["field"][:jh.STATE_BYES])
+        assert set(_epi(archived, g)["survivors"]) <= champs, g
         if names:
-            # the double bye: no champion in any qualifying round...
+            # the double bye: no bye line in any qualifying round...
             for rd in state["rounds"][:len(names)]:
                 played = {n for gm in rd for n in (gm["home"], gm["away"])}
                 assert not (played & champs), g
-            # ...and the main draw pairs EVERYONE alive — champions plus the
+            # ...and the main draw pairs EVERYONE alive — the bye lines plus the
             # last qualifying round's winners — so nobody byes into it either.
             alive = champs | {gm["winner"] for gm in state["rounds"][len(names) - 1]}
             first_main = {n for gm in state["rounds"][len(names)]
@@ -367,6 +427,7 @@ def test_state_byes_belong_to_the_zonal_champions(archived):
         sat_out = set(state["field"]) - first_round
         assert len(sat_out) == byes
         assert sat_out <= champs
+        assert byes in (0, jh.STATE_BYES), (g, byes)
 
 
 # --- stage names ride the archive ---------------------------------------------------
@@ -514,19 +575,28 @@ def test_prestate_stages_stay_out_of_the_cutoff_toss(archived):
     assert len(cutoff) == n_regular
 
 
-def test_state_seeds_are_champions_first_then_recovery_toss(archived):
-    """Zonal champions are the draw's top seeds (TOSS-ordered among themselves);
-    the district-guarantee and Semi-State qualifiers follow together in
-    post-recovery TOSS order — the guarantee buys access, never seeding."""
+def test_state_seeds_are_bye_lines_then_the_field_on_atr(archived):
+    """‼️ THE STATE DRAW IS SEEDED ON THE SEEDING ATR, WITHIN THE CLASS (owner rule
+    2026-09 — "ATR not TOSS for seeding!"). Lines 1-8 are the four Epiregional
+    winners plus the best four of everyone else on ATR, ordered 1-8 on ATR among
+    themselves; lines 9+ are everyone else on ATR, whatever their door in. The
+    post-Specials rating is recomputed here exactly as `run_season` does it, so
+    the archived order is reproduced, not merely shape-checked."""
     season = jh.run_season("girls", archived["arc"]["season_year"], seed=0,
                            salt=wd.active_salt(wd.DEFAULT_SEED))
     post = jh.power_index(list(season["teams"].values()), prestate=True)
     for g in jh.GROUPS:
         field = archived["arc"]["brackets"][g]["field"]
-        zc = archived["arc"]["prestate"][g]["survivors"]
-        head, tail = field[:len(zc)], field[len(zc):]
-        assert head == sorted(head, key=lambda n: (-post[n].pi_raw, n))
-        assert tail == sorted(tail, key=lambda n: (-post[n].pi_raw, n))
+        winners = set(_epi(archived, g)["survivors"])
+        ts = [season["teams"][n] for n in field]
+        satr = jh.seed_atr(ts, post)
+        key = lambda n: (-satr[n], n)                             # noqa: E731
+        head, tail = field[:jh.STATE_BYES], field[jh.STATE_BYES:]
+        assert winners <= set(head), g
+        others = sorted((n for n in field if n not in winners), key=key)
+        assert set(head) == winners | set(others[:jh.STATE_BYES - len(winners)]), g
+        assert head == sorted(head, key=key), g
+        assert tail == sorted(tail, key=key), g
 
 
 def test_the_postseason_recompute_sees_prestate_duals(archived):
