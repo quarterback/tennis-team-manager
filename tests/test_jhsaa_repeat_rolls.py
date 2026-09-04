@@ -269,6 +269,13 @@ def _render_rolls(c):
     champs = c.get("/jhsaa/repeat-champions?g=girls").get_data(as_text=True)
     assert "Bo Reyes" in champs and "Cy Odom" in champs      # partner shown as context
     assert "Dee Fox" in champs                               # the other partner
+    # ‼️ ONE DENSE TABLE, not a roll of cards (owner, 2026-09: the card layout "is
+    # too bloated now that we've run a lot of these and it covers the whole
+    # state"). The bands survive as separator rows inside that one table.
+    for html in (poy, champs):
+        assert html.count('<table class="bl-table jh-repeat">') == 1
+        assert 'class="jh-roll"' not in html
+        assert '<tr class="band">' in html
 
 
 def test_a_player_who_left_and_came_back_is_two_stints():
