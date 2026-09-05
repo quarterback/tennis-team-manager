@@ -79,9 +79,9 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     2A   359  Pointe des Brumes                      San Borondón           Naomi Langston North
 
     3A   338  Port Ainsley                           Port Ainsley           St. Elias Academy
+    9A  2189  Port Meridian Central                  Port Meridian          Port Meridian West
     8A  1877  Port Meridian North                    Port Meridian          Port Meridian Polytechnic
     7A  1405  Port Meridian South                    Port Meridian          Port Meridian South
-    9A  2189  Port Meridian West                     Port Meridian          Port Meridian West
     4A   775  Port Veles Episcopal                   Port Veles             Geraldine Cross
 
    Group 2  1059  Rostova Junction                       Rostova Junction       Rostova Junction
@@ -1751,7 +1751,7 @@ Port Ainsley — 1 program (Bidwell County, Selquah)
 
 Port Meridian — 11 programs (Bidwell County, Selquah)
     9A  2479 priv Westside Christian                                        Gateway League                     Westside Christian
-    9A  2189 pub  Port Meridian West                                        Gateway League                     Port Meridian West
+    9A  2189 pub  Port Meridian Central                                     Gateway League                     Port Meridian West
     8A  2009 pub  Bell                                                      Narpes Interscholastic League      Bell
     8A  1949 priv Holy Cross                                                Narpes Interscholastic League      Holy Cross
     8A  1877 pub  Port Meridian North                                       Narpes Interscholastic League      Port Meridian Polytechnic

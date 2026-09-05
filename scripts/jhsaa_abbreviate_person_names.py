@@ -160,6 +160,10 @@ RENAMES: dict[str, str] = {
     # name. The other stem coincidences (Assay/Basalt League, Summit
     # League…) are cross-class: those schools play in other leagues.
     "Sluice Landing": "Landing",
+    # Port Meridian's flagship (owner, 2026-09): West is the main high
+    # school in town and the only one of the three in 9A, so it reads as
+    # the city's Central — North (8A) and South (7A) stay compass.
+    "Port Meridian West": "Port Meridian Central",
     # initials — only because the bare surname is a duplicate
     "Benjamin Harrison": "B. Harrison",        # two Harrisons
     "William Henry Harrison": "W.H. Harrison",

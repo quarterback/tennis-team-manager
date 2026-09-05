@@ -13795,7 +13795,7 @@
       "boys_district": "Metro League"
     },
     {
-      "name": "Port Meridian West",
+      "name": "Port Meridian Central",
       "city": "Port Meridian",
       "county": "Bidwell",
       "area": "Selquah",
@@ -13811,7 +13811,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Gateway League",
-      "boys_district": "Gateway League"
+      "boys_district": "Gateway League",
+      "source": "Port Meridian West"
     },
     {
       "name": "Port Veles Episcopal",

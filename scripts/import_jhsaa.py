@@ -1031,6 +1031,7 @@ RENAMES = {
     "Oscar Michaeux": "Michaeux",
     "Paul Robeson": "Robeson",
     "Pine Siding": "Pine",
+    "Port Meridian West": "Port Meridian Central",
     "Prune Siding": "Prunedale",
     "Ralph Bellamy": "Bellamy",
     "Rita Moreno": "Moreno",
