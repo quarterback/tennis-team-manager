@@ -143,22 +143,32 @@ def test_a_named_pair_survives_a_better_claim_in_town():
 
 def test_rivals_are_symmetric_capped_and_in_town():
     """The three structural properties of the derivation, over the whole association.
-    The cap binds the DERIVED pairs only — an override is a decision and takes its seat
-    ahead of them, so a program can never exceed the cap by way of one either."""
+    The cap binds the DERIVED pairs only — an override is a decision and takes its
+    seat ahead of them, and a program carrying MORE overrides than the cap (a
+    returned North holds its town triangle plus its cross-town twin) simply plays
+    them all; derived pairs never push anyone past the cap. Overrides are likewise
+    exempt from the same-town and class-gap gates — an owner-declared rivalry
+    answers to no gate."""
     overrides = {frozenset(p) for p in jh.RIVAL_OVERRIDES}
+    ov_of: dict[str, set[str]] = {}
+    for x, y in jh.RIVAL_OVERRIDES:
+        ov_of.setdefault(x, set()).add(y)
+        ov_of.setdefault(y, set()).add(x)
     for gender in ("girls", "boys"):
         schools = jh.load_schools(gender)
         by = {s.name: s for s in schools}
         rm = jh.rival_map(schools)
         assert set(rm) == set(by)
         for a, mates in rm.items():
-            assert len(mates) <= jh.RIVALS_PER_PROGRAM, (a, sorted(mates))
+            held = ov_of.get(a, set()) & mates
+            assert len(mates) <= max(jh.RIVALS_PER_PROGRAM, len(held)), (a, sorted(mates))
+            assert len(mates - held) <= jh.RIVALS_PER_PROGRAM, (a, sorted(mates))
             for b in mates:
                 assert a in rm[b], (a, b)                     # symmetric
                 assert a != b
-                assert by[a].city == by[b].city, (a, b)       # same town, always
                 if frozenset((a, b)) in overrides:
                     continue
+                assert by[a].city == by[b].city, (a, b)       # same town, always
                 gap = abs(jh._GROUP_IX[by[a].group] - jh._GROUP_IX[by[b].group])
                 assert gap <= jh.RIVAL_MAX_GAP, (a, by[a].group, b, by[b].group)
 

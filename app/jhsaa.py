@@ -7471,6 +7471,15 @@ RIVAL_OVERRIDES: list[tuple[str, str]] = [
     ("Cherry Hill East", "Cherry Hill North"),
     ("Cherry Hill East", "Cherry Hill South"),
     ("Cherry Hill North", "Cherry Hill South"),
+    # …and the two returned Norths are rivals with each other (owner rule
+    # 2026-09: both play 2A now — see scripts/jhsaa_norths_to_2a.py). An
+    # override is city-blind, so the cross-town pair needs no machinery.
+    ("Port Meridian North", "Cherry Hill North"),
+    # The Central triangle consumed the seats that used to pair Westside
+    # Christian into town, leaving the metro's other 9A with nobody in
+    # range and room — so the two religious schools hold each other's
+    # fixture, which is the rivalry that town would actually have.
+    ("Holy Cross", "Westside Christian"),
 ]
 
 #: Directional and ordinal words a town hangs on ONE stem to name its several high

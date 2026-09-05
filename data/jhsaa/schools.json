@@ -3619,19 +3619,19 @@
       "city": "Caswell",
       "county": "Halbrook",
       "area": "Belmonte Metro",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 2139,
+      "classification": "2A",
+      "group": "2A",
+      "enrollment": 361,
       "private": false,
       "mascot": "Grainmen",
       "colors": [
         "#333d29",
         "#d97706"
       ],
-      "girls": false,
-      "boys": false,
-      "girls_district": "Four Rivers Interscholastic League",
-      "boys_district": "Four Rivers Interscholastic League"
+      "girls": true,
+      "boys": true,
+      "girls_district": "Desert Sky League",
+      "boys_district": "Desert Sky League"
     },
     {
       "name": "Cherry Hill South",
@@ -13761,19 +13761,19 @@
       "city": "Port Meridian",
       "county": "Bidwell",
       "area": "Selquah",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 1877,
+      "classification": "2A",
+      "group": "2A",
+      "enrollment": 348,
       "private": false,
       "mascot": "Maroon Warriors",
       "colors": [
         "#0e7490",
         "#fbbf24"
       ],
-      "girls": false,
-      "boys": false,
-      "girls_district": "Narpes Interscholastic League",
-      "boys_district": "Narpes Interscholastic League"
+      "girls": true,
+      "boys": true,
+      "girls_district": "Foundry League",
+      "boys_district": "Foundry League"
     },
     {
       "name": "Port Meridian South",
