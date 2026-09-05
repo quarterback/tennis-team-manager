@@ -7458,6 +7458,28 @@ RIVAL_MAX_GAP = 3
 # the seat and the association's oldest rivalry stops being played.
 RIVAL_OVERRIDES: list[tuple[str, str]] = [
     ("Condotti Vanguard Academy", "Romero-Finniski"),
+    # The three-campus towns are full round robins (owner rule 2026-09,
+    # "they are all rivals with each other") — a triangle gives each member
+    # exactly `RIVALS_PER_PROGRAM` seats. Deliberately NOT in
+    # `import_jhsaa.RIVALRIES`: these campuses sit in different
+    # classifications on purpose, and that table would weld them into one.
+    # Both Norths sponsor no tennis this season, so their pairs are inert
+    # until one fields a team again — then the triangle plays by itself.
+    ("Port Meridian Central", "Port Meridian North"),
+    ("Port Meridian Central", "Port Meridian South"),
+    ("Port Meridian North", "Port Meridian South"),
+    ("Cherry Hill East", "Cherry Hill North"),
+    ("Cherry Hill East", "Cherry Hill South"),
+    ("Cherry Hill North", "Cherry Hill South"),
+    # …and the two returned Norths are rivals with each other (owner rule
+    # 2026-09: both play 2A now — see scripts/jhsaa_norths_to_2a.py). An
+    # override is city-blind, so the cross-town pair needs no machinery.
+    ("Port Meridian North", "Cherry Hill North"),
+    # The Central triangle consumed the seats that used to pair Westside
+    # Christian into town, leaving the metro's other 9A with nobody in
+    # range and room — so the two religious schools hold each other's
+    # fixture, which is the rivalry that town would actually have.
+    ("Holy Cross", "Westside Christian"),
 ]
 
 #: Directional and ordinal words a town hangs on ONE stem to name its several high

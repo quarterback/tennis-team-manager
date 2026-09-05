@@ -6,8 +6,11 @@
 
 {{ jh_header(view.scope, u, 'bracket',
              view.group ~ ' State Tournament',
-             'Single elimination, 1 singles / 4 doubles — five points, every match played out.',
+             '',
              [('Season', view.season_year), ('Field', view.field_n)] if view.ready else []) }}
+{# no format microcopy under the title (owner, 2026-09): the dual format varies
+   by class (8A/9A play 4S/5D) and moves by owner decision — a hardcoded line
+   here was inaccurate and would rot again. #}
 
 <div class="jh-shell">
 {% if not view.ready %}
