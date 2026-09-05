@@ -119,7 +119,7 @@ ALWAYS_EXTRA = [
     "Condotti Vanguard Academy",
     "Cortland",
     "Crown Hill",
-    "Huerta",
+    "Dolores Huerta",
     "Dry Lake",
     "Eastmont Christian",
     "Echevarria Foundry High",
@@ -130,11 +130,11 @@ ALWAYS_EXTRA = [
     "Fort Valois",
     "Gagarin School of Public Service",
     "Galena",
-    "Carver",
+    "George Washington Carver",
     "Gold Hollow",
     "Gold Junction",
     "Golden Gate",
-    "Brooks",
+    "Gwendolyn Brooks",
     "Halfway House",
     "Harlan Cole",
     "Harrow",
@@ -157,7 +157,7 @@ ALWAYS_EXTRA = [
     "North Valley Christian",
     "Owl Canyon",
     "Pacific Friends School",
-    "Robeson",
+    "Paul Robeson",
     "Pinecrest School",
     "Port Meridian Polytechnic",
     "Port Meridian West",
@@ -999,6 +999,35 @@ FORMER_NAMES = {
 }
 
 RENAMES = {
+    # ── the 2026-09 surname abbreviations (scripts/jhsaa_abbreviate_person_names.py) ──
+    "Alben Barkley": "Barkley",
+    "Bayard Rustin": "Rustin",
+    "Benjamin Banneker": "Banneker",
+    "Dolores Huerta": "Huerta",
+    "Ella Baker": "E. Baker",
+    "George Washington Carver": "Carver",
+    "Grace Lee Boggs": "Boggs",
+    "Gwendolyn Brooks": "Brooks",
+    "Harry Truman": "Truman",
+    "Herbert Hoover": "Hoover",
+    "Ida B. Wells": "Wells",
+    "James Baldwin": "Baldwin",
+    "Jean Baptiste": "Baptiste",
+    "Jimmy Carter": "Carter",
+    "John Lewis": "Lewis",
+    "Katherine Johnson": "K. Johnson",
+    "Leonard Coleman": "Coleman",
+    "Mae Jemison": "Jemison",
+    "Octavia Butler": "Butler",
+    "Oscar Michaeux": "Michaeux",
+    "Paul Robeson": "Robeson",
+    "Ralph Bellamy": "Bellamy",
+    "Rita Moreno": "Moreno",
+    "Ronald Reagan": "Reagan",
+    "Shirley Chisholm": "Chisholm",
+    "Thurgood Marshall": "Marshall",
+    "Walter Mondale": "Mondale",
+    "Yuri Kochiyama": "Kochiyama",
     # 2026-09 — more saint names retired at the owner's request. Their display
     # name WAS their roster identity, so without a row here `jhsaa_former_names`
     # has no chain to walk and the old name resolves to nothing.
@@ -1109,10 +1138,10 @@ RENAMES = {
     # 2026-08 owner rename, resolved twice in-session: "Abbey Vale Orchard
     # Hill" was first asked for as "just Orchard Hill", which collided with the
     # live 9A Orchard Hill (Valderra) — a display name is the archive identity.
-    # The owner's final call: the 2A becomes "B.T. Washington" (owner's
+    # The owner's final call: the 2A becomes "Booker T Washington" (owner's
     # punctuation — no period after the T) and the 9A KEEPS its original name,
     # so nothing is reissued and no history merges. Transient targets "Bishop
-    # Turner" and a brief 9A "B.T. Washington" lived only inside this
+    # Turner" and a brief 9A "Booker T Washington" lived only inside this
     # session; no season was ever archived under either. The 9A renames to
     # "West Valderra" (the owner's earlier pick, confirmed) in the same batch,
     # so NO school carries "Orchard Hill" — the archived name resolves through
@@ -2011,7 +2040,7 @@ EXTRA_SPONSORS = frozenset({
     "Covenant Christian",           # 8A 1878 — Ashbury Metro, Ambassador League
     "Llerena School of Science and Industry",   # Crow Basin, 8A 1988 — Halbrook Basin,
                                      # Four Rivers Interscholastic League
-    "Coleman",              # 8A 2024 — Ashbury Metro, Ambassador League
+    "Leonard Coleman",              # 8A 2024 — Ashbury Metro, Ambassador League
     "Sergei Belov",                 # Malcolm X Shabazz, 8A 1751 — Sebastian Cape,
                                      # South Coast League
     "Rosa Salcedo",                 # Quarry Workers, 8A 1745 — Sebastian Cape,

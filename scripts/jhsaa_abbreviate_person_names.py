@@ -141,12 +141,14 @@ def main() -> int:
               "| new name aliases another school:", clashes)
         return 1
 
+    direct_renames: dict[str, str] = {}   # roster identity -> new display
     for row in rows:
         old = row["name"]
         if old not in RENAMES:
             continue
         row.setdefault("source", old)   # pin the roster identity first
         row["name"] = RENAMES[old]
+        direct_renames[row["source"]] = row["name"]
         print(f"  {old:<26} -> {row['name']:<16} {row['group']:<8} {row['city']}")
     for row in rows:
         if row.get("locality") in LOCALITY_FIXES:
@@ -171,17 +173,65 @@ def main() -> int:
         return 1
     former["former_names"] = dict(sorted(table.items()))
 
-    # the importer: exact quoted-string replacement — key-driven, never a
-    # blanket text swap ("George Washington" the university, the state and the
-    # unquoted comment mentions are all left alone by the quotes).
+    # ── the importer, TABLE-AWARE ─────────────────────────────────────────
+    # A quoted old name means different things in different tables:
+    # ALWAYS_EXTRA / ALWAYS_GIRLS_ONLY / EXTRA_SPONSORS / NEVER_SPONSOR /
+    # SUBSTITUTIONS key on PREP-NETWORK source names and must keep them (the
+    # sponsor draw and build()'s by_name run BEFORE renaming); RENAMES and
+    # FORMER_NAMES have source-side KEYS and display-side VALUES; everything
+    # else (MASCOTS, LOCALITIES, OWNER_EDICTS, RECLASSIFY_TO_2A…) is
+    # display-keyed and takes the new name. Unquoted comment mentions,
+    # "George Washington" the university and the US state are untouched.
     text = IMPORTER.read_text()
     for key, val in REVERSAL_KEYS.items():
         line = next((ln for ln in text.splitlines()
                      if ln.strip().startswith(f'"{key}":') and f'"{val}"' in ln), None)
         if line:
             text = text.replace(line + "\n", "")
-    for old, fresh in RENAMES.items():
-        text = text.replace(f'"{old}"', f'"{fresh}"')
+
+    SOURCE_TABLES = ("ALWAYS_GIRLS_ONLY", "ALWAYS_EXTRA", "NEVER_SPONSOR",
+                     "EXTRA_SPONSORS", "SUBSTITUTIONS")
+    VALUE_TABLES = ("FORMER_NAMES", "RENAMES")
+
+    def _sub(chunk: str) -> str:
+        for old, fresh in RENAMES.items():
+            chunk = chunk.replace(f'"{old}"', f'"{fresh}"')
+        return chunk
+
+    lines, table = text.splitlines(keepends=True), None
+    for i, ln in enumerate(lines):
+        head = ln.split(" = ")[0]
+        if not ln[:1].isspace() and head in SOURCE_TABLES + VALUE_TABLES:
+            table = head
+        elif table and ln.rstrip() in ("}", "]", "})"):
+            table = None
+            continue
+        if table in SOURCE_TABLES:
+            continue                      # prep-network spelling stays
+        if table in VALUE_TABLES:
+            cut = ln.find('":')           # replace the VALUE, never the key
+            if cut != -1:
+                lines[i] = ln[:cut + 2] + _sub(ln[cut + 2:])
+            continue
+        lines[i] = _sub(ln)
+    text = "".join(lines)
+
+    # Direct-source renames: a school whose source key produced no RENAMES
+    # entry before still needs one, or a re-import emits the full name while
+    # every display-keyed table now says the abbreviation. Keys are each a
+    # live school's roster identity, so check_rename_keys stays satisfied.
+    start = text.index("RENAMES = {")
+    span_end = text.index("\n}", start)
+    span = text[start:span_end]
+    inserts = [f'    "{key}": "{fresh}",'
+               for key, fresh in sorted(direct_renames.items())
+               if f'"{key}":' not in span]
+    if inserts:
+        head_end = text.index("\n", start) + 1
+        block = ("    # ── the 2026-09 surname abbreviations "
+                 "(scripts/jhsaa_abbreviate_person_names.py) ──\n"
+                 + "\n".join(inserts) + "\n")
+        text = text[:head_end] + block + text[head_end:]
 
     if not dry:
         SCHOOLS.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n")
