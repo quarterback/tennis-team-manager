@@ -360,7 +360,6 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
    Group 3   160  Silver Junction                        Silver Junction        Silver Junction
 
    Group 2   870  Sluice Valley                          Sage Junction          Sluice Valley
-    2A   264  Sluice Landing                         Sluice Landing         Sluice Landing
    Group 1  1074  Sluice Gate                            Zubieta                Zubieta Manufacturing and Technology Academy
 
     2A   301  South Fork                             Ansotegui              South Fork
@@ -2077,7 +2076,7 @@ Sluice Crossing — 2 programs (Goldbank County, Southern Jefferson)
     4A   792 pub  Flume River                                               Vermilion Valley League            Eisenhower
 
 Sluice Landing — 1 program (Highgrade County, Southern Jefferson)
-    2A   264 pub  Sluice Landing                                            Sluice League                      Sluice Landing
+    2A   264 pub  Landing                                                   Sluice League                      Sluice Landing
 
 Smithfield — 1 program (Wellsville County, Bear River Country)
    Group 1  1250 pub  West Oberlin                                              Halbrook Basin League              West Oberlin

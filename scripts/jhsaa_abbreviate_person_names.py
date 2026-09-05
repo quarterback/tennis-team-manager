@@ -153,6 +153,13 @@ RENAMES: dict[str, str] = {
     "Olive Reach Baptist": "Olive Baptist",
     "Saltbush Reach": "Saltbush",
     "Tungsten Reach": "Tungsten",
+    # a school never matches its own league's name (owner rule 2026-09,
+    # "like naming a conference after yourself"): Sluice Landing plays in
+    # the Sluice League, so the school drops the stem — the same shape as
+    # Sluice Crossing's school being plain "Crossing". The town keeps its
+    # name. The other stem coincidences (Assay/Basalt League, Summit
+    # League…) are cross-class: those schools play in other leagues.
+    "Sluice Landing": "Landing",
     # initials — only because the bare surname is a duplicate
     "Benjamin Harrison": "B. Harrison",        # two Harrisons
     "William Henry Harrison": "W.H. Harrison",

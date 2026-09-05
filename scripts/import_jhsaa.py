@@ -1038,6 +1038,7 @@ RENAMES = {
     "Saltbush Reach": "Saltbush",
     "Shirley Chisholm": "Chisholm",
     "Sierra Works": "Sierra",
+    "Sluice Landing": "Landing",
     "Thurgood Marshall": "Marshall",
     "Tungsten Reach": "Tungsten",
     "Walter Mondale": "Mondale",
