@@ -72,8 +72,8 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     6A  1285  Natchez Prep                           San Borondón           St. Nicholas College Prep
 
     8A  1423  Olive Head                             Olive Head             Olive Head
-    5A   998  Olive Reach                            Olive Reach            Olive Reach
-    3A   320  Olive Reach Baptist                    Olive Reach            Olive Reach Baptist
+    5A   998  Olive                                  Olive Reach            Olive Reach
+    3A   320  Olive Baptist                          Olive Reach            Olive Reach Baptist
 
     5A   834  Pointe Coupee                          San Borondón           Claudette Cole North
     2A   359  Pointe des Brumes                      San Borondón           Naomi Langston North
@@ -853,7 +853,7 @@ Clear Springs — 2 programs (Rimrock County, Juniper Highlands)
     2A   268 pub  South Rim                                                 Valle Vista League                 Mikel Zubieta
 
 Clover Reach — 1 program (Olivet County, Yarrowmere)
-    5A   948 pub  Clover Reach                                              Mariners League                    Clover Reach
+    5A   948 pub  Clover                                                    Mariners League                    Clover Reach
 
 Condon — 1 program (Gilliam County, Columbia Gorge)
     1A   130 pub  Condon                                                    Columbia Gorge District            Condon High
@@ -909,7 +909,7 @@ Cove — 1 program (Union County, Blue Mountain Country)
     2A   150 pub  Cove                                                      Desert Sky League                  Cove High
 
 Cradle Reach — 1 program (Goldbank County, Southern Jefferson)
-    2A   282 pub  Cradle Reach                                              Sluice League                      Cradle Reach
+    2A   282 pub  Cradle                                                    Sluice League                      Cradle Reach
 
 Cutbank — 1 program (Windrow County, Millersylvania)
    Group 2   470 pub  Cutbank                                                   High Lakes League                  Cutbank
@@ -1667,9 +1667,9 @@ Olive Head — 1 program (Kernwood County, Yarrowmere)
 
 Olive Reach — 6 programs (Kernwood County, Yarrowmere)
     9A  2392 pub  Seagrove                                                  Gold Valley League                 Coolidge
-    5A   998 pub  Olive Reach                                               Mariners League                    Olive Reach
+    5A   998 pub  Olive                                                     Mariners League                    Olive Reach
     4A   754 pub  Buckeye Ridge                                             Vermilion Valley League            Olive Reach North
-    3A   320 priv Olive Reach Baptist                                       Quarry League                      Olive Reach Baptist
+    3A   320 priv Olive Baptist                                             Quarry League                      Olive Reach Baptist
     1A   193 priv Kilbride Hall                                             Marble Valley League               Kilbride Hall
     1A    91 pub  Stillwater                                                Marble Valley League               Trinity Christian
 
@@ -1933,7 +1933,7 @@ Salmonberry Glen — 1 program (Antler County, Alderwold)
     2A   321 pub  Salmonberry Glen                                          Millworks Athletic Association     Salmonberry Glen
 
 Saltbush Reach — 1 program (Scheelite County, Millersylvania)
-   Group 3   187 pub  Saltbush Reach                                            Big Sky League                     Saltbush Reach
+   Group 3   187 pub  Saltbush                                                  Big Sky League                     Saltbush Reach
 
 San Aurelio — 1 program (San Marcos County, Sebastian Cape)
     1A    58 pub  San Aurelio                                               Placer League                      San Aurelio
@@ -2205,7 +2205,7 @@ Tule Flat — 2 programs (Kernwood County, Yarrowmere)
     1A   123 pub  Reed Lake                                                 Tailings League                    Tule Flat Lutheran
 
 Tungsten Reach — 1 program (Scheelite County, Millersylvania)
-   Group 3   231 pub  Tungsten Reach                                            Big Sky League                     Tungsten Reach
+   Group 3   231 pub  Tungsten                                                  Big Sky League                     Tungsten Reach
 
 Tunnel Diggings — 7 programs (Goldbank County, Southern Jefferson)
     9A  2318 pub  Mondale                                                   Gold Valley League                 Walter Mondale

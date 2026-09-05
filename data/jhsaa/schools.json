@@ -4000,7 +4000,7 @@
       "locality": "Occoquan"
     },
     {
-      "name": "Clover Reach",
+      "name": "Clover",
       "city": "Clover Reach",
       "county": "Olivet",
       "area": "Yarrowmere",
@@ -4016,7 +4016,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Mariners League",
-      "boys_district": "Mariners League"
+      "boys_district": "Mariners League",
+      "source": "Clover Reach"
     },
     {
       "name": "Coast Prairie",
@@ -4593,7 +4594,7 @@
       "boys_district": "High Desert League"
     },
     {
-      "name": "Cradle Reach",
+      "name": "Cradle",
       "city": "Cradle Reach",
       "county": "Goldbank",
       "area": "Southern Jefferson",
@@ -4609,7 +4610,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Sluice League",
-      "boys_district": "Sluice League"
+      "boys_district": "Sluice League",
+      "source": "Cradle Reach"
     },
     {
       "name": "Crane",
@@ -12628,7 +12630,7 @@
       "boys_district": "Mariners League"
     },
     {
-      "name": "Olive Reach",
+      "name": "Olive",
       "city": "Olive Reach",
       "county": "Kernwood",
       "area": "Yarrowmere",
@@ -12644,10 +12646,11 @@
       "girls": true,
       "boys": true,
       "girls_district": "Mariners League",
-      "boys_district": "Mariners League"
+      "boys_district": "Mariners League",
+      "source": "Olive Reach"
     },
     {
-      "name": "Olive Reach Baptist",
+      "name": "Olive Baptist",
       "city": "Olive Reach",
       "county": "Kernwood",
       "area": "Yarrowmere",
@@ -12663,7 +12666,8 @@
       "girls": false,
       "boys": false,
       "girls_district": "Quarry League",
-      "boys_district": "Quarry League"
+      "boys_district": "Quarry League",
+      "source": "Olive Reach Baptist"
     },
     {
       "name": "Olivet County",
@@ -15420,7 +15424,7 @@
       "boys_district": "Millworks Athletic Association"
     },
     {
-      "name": "Saltbush Reach",
+      "name": "Saltbush",
       "city": "Saltbush Reach",
       "county": "Scheelite",
       "area": "Millersylvania",
@@ -15436,7 +15440,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Big Sky League",
-      "boys_district": "Big Sky League"
+      "boys_district": "Big Sky League",
+      "source": "Saltbush Reach"
     },
     {
       "name": "San Aurelio",
@@ -18714,7 +18719,7 @@
       "source": "Tule Flat Lutheran"
     },
     {
-      "name": "Tungsten Reach",
+      "name": "Tungsten",
       "city": "Tungsten Reach",
       "county": "Scheelite",
       "area": "Millersylvania",
@@ -18730,7 +18735,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Big Sky League",
-      "boys_district": "Big Sky League"
+      "boys_district": "Big Sky League",
+      "source": "Tungsten Reach"
     },
     {
       "name": "Tunnel Diggings",

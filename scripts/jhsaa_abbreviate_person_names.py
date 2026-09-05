@@ -145,6 +145,14 @@ RENAMES: dict[str, str] = {
     # and "Basalt" beside "Basalt Prairie Union" is the same thing (owner,
     # 2026-09) — the Union school renames; its town stays Basalt Prairie.
     "Basalt Prairie Union": "Prairie",
+    # "Reach" (owner rule 2026-09, "keep the school remove Reach") — the
+    # towns keep their Reaches, the schools drop the word.
+    "Clover Reach": "Clover",
+    "Cradle Reach": "Cradle",
+    "Olive Reach": "Olive",
+    "Olive Reach Baptist": "Olive Baptist",
+    "Saltbush Reach": "Saltbush",
+    "Tungsten Reach": "Tungsten",
     # initials — only because the bare surname is a duplicate
     "Benjamin Harrison": "B. Harrison",        # two Harrisons
     "William Henry Harrison": "W.H. Harrison",
