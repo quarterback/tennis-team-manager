@@ -106,7 +106,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
 
 -- SAME LEADING WORD, DIFFERENT CITIES (82 groups)
     7A  1444  Alder Crossing                         Boyerstown             Boyerstown North
-    3A   438  Alder                                  Monte Blanco           Claudette Freeman
+    3A   438  Alder Co-op                            Monte Blanco           Claudette Freeman
 
    Group 3   192  Antler Prairie                         Antler Prairie         Antler Prairie
     2A   327  Antler County                          Purcell Crossing       Antler County High
@@ -165,7 +165,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     7A  1473  Crown Hill                             Rye                    Crown Hill
 
     8A  2030  Dry Fork                               Ashbury                North Fork
-    5A  1020  Dry Creek                              Boyerstown             Opal Stokes
+    5A  1020  Dry Creek Co-op                        Boyerstown             Opal Stokes
     6A  1201  Dry Lake                               Three Saints           Dry Lake
 
     8A  1894  East Moscow                            Belyakov               Belyakov
@@ -209,7 +209,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
 
     1A   199  High Timber                            Annes Summits Landing  High Timber
     3A   380  High Desert Christian                  Doyle Pass             High Desert Christian
-   Group 1  1158  High Desert                            Etchartville           Sadie Freeman
+   Group 1  1158  High Desert Co-op                      Etchartville           Sadie Freeman
     2A   291  High Bar                               High Bar               High Bar
    Group 3    57  High Prairie                           Placer                 High Prairie
 
@@ -263,7 +263,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
 
     8A   536  Mesa Dorada                            Mesa Dorada            Mesa Dorada
     9A  2453  Mesa Verde                             San Cordero            San Cordero School of Commerce
-    7A  1421  Mesa                                   Santa Cruz del Norte   Winifred Stokes
+    7A  1421  Mesa Co-op                             Santa Cruz del Norte   Winifred Stokes
 
     3A   465  Mill Bar                               Fellows Mill           Fellows Mill International School
     3A   531  Mill Creek                             Tamarack Flat          Mill Creek
@@ -722,7 +722,7 @@ Boyerstown — 7 programs (Marlow County, Ashbury Metro)
     8A  2024 pub  Coleman                                                   Summit League                      Leonard Coleman
     7A  1444 pub  Alder Crossing                                            Premier Athletic Association       Boyerstown North
     6A  1022 pub  Eastgate North                                            Metro League                       Eastgate North
-    5A  1020 pub  Dry Creek                                                 Ambassador League                  Opal Stokes
+    5A  1020 pub  Dry Creek Co-op                                           Ambassador League                  Opal Stokes
     5A   944 pub  Boyerstown                                                Ambassador League                  Boyerstown
 
 Bracken — 2 programs (Olivet County, Yarrowmere)
@@ -1016,7 +1016,7 @@ Etchart — 1 program (Lodestone County, Millersylvania)
 Etchartville — 3 programs (Vance County, Silver Basin)
    Group 1  1645 pub  Etchartville                                              Ambassador League                  Etchartville
    Group 1  1219 pub  Terrace Park                                              Far West League                    Terrace Park
-   Group 1  1158 pub  High Desert                                               Far West League                    Sadie Freeman
+   Group 1  1158 pub  High Desert Co-op                                         Far West League                    Sadie Freeman
 
 Evanston — 1 program (Bridger County, Bear River Country)
    Group 1  1550 pub  Rio San Juan                                              Ambassador League                  Rio San Juan
@@ -1517,7 +1517,7 @@ Monongahela — 1 program (Minidoka County, Snake River Plain)
    Group 1  1324 pub  Monongahela                            Monongahela        Marble Valley League               Andrés Ibarra
 
 Monte Blanco — 2 programs (Ferris County, Gold Valley)
-    3A   438 pub  Alder                                                     Mission League                     Claudette Freeman
+    3A   438 pub  Alder Co-op                                               Mission League                     Claudette Freeman
     3A   386 pub  Monte Blanco                                              Quarry League                      Monte Blanco
 
 Montelago — 9 programs (Ferris County, Gold Valley)
@@ -2021,7 +2021,7 @@ San Vito — 1 program (Emigrant County, Kangas)
 Santa Cruz del Norte — 4 programs (San Marcos County, Sebastian Cape)
     8A  1990 pub  Harlan                                                    Gold Valley League                 Harlan Cole
     7A  1581 pub  Santa Cruz del Norte                                      Pacific Coast League               Santa Cruz del Norte
-    7A  1421 pub  Mesa                                                      Pacific Coast League               Winifred Stokes
+    7A  1421 pub  Mesa Co-op                                                Pacific Coast League               Winifred Stokes
     5A   987 pub  Kingwood                                                  Valley Coast Interscholastic League Winifred Ellison
 
 Santa Laura — 3 programs (San Marcos County, Sebastian Cape)

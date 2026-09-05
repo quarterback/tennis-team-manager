@@ -481,7 +481,7 @@ FORMER_NAMES = {
     "Clara Brown HS":                              "Brown",
     "Clara Cross":                                 "Red Mesa",
     "Claudette Cole North":                        "Pointe Coupee",
-    "Claudette Freeman":                           "Alder",
+    "Claudette Freeman":                           "Alder Co-op",
     "Coolidge":                                    "Seagrove",
     "Copper Crossing":                             "Copper Gap",
     "Copper Lake East":                            "Bridgewater",
@@ -745,7 +745,7 @@ FORMER_NAMES = {
     "Olive Reach North":                           "Buckeye Ridge",
     "Opal Avery":                                  "Ford",
     "Opal Avery North":                            "Bush",
-    "Opal Stokes":                                 "Dry Creek",
+    "Opal Stokes":                                 "Dry Creek Co-op",
     "Opal Tillman":                                "Granite",
     "Orchard Gate":                                "Bellefontaine",
     "Orchard Gate North":                          "Bois Neuf",
@@ -817,7 +817,7 @@ FORMER_NAMES = {
     "Rumsfeld Hill School":                        "Rumsfeld Hill",
     "Rye Academy of Arts and Letters":             "Barley Point",
     "Sacred Heart Cathedral":                      "Sacred Heart",
-    "Sadie Freeman":                               "High Desert",
+    "Sadie Freeman":                               "High Desert Co-op",
     "Sage Lake":                                   "Sage Village",
     "Sage Meadows":                                "Galactica Plains",
     "Sage Point":                                  "California Canyons",
@@ -981,7 +981,7 @@ FORMER_NAMES = {
     "Winifred Browne":                             "Rogers Park",
     "Winifred Davenport":                          "Lost River",
     "Winifred Ellison":                            "Kingwood",
-    "Winifred Stokes":                             "Mesa",
+    "Winifred Stokes":                             "Mesa Co-op",
     "Winter Valley School":                        "Winter Valley",
     "Wolf Gap":                                    "Corey Canyon",
     "Wolf Gap International School":               "Wolf Gap International",
@@ -1620,7 +1620,7 @@ RENAMES = {
     # INSTITUTION_NAMES below for the bank this was drawn from.
     "Amaia Echevarria": "Redwood",
     "Anya Belov": "Arroyo",                # 2026-08: was "Arroyo Water District"
-    "Claudette Freeman": "Alder",
+    "Claudette Freeman": "Alder Co-op",
     "Eleanor Tillman": "Anchor",
     "Elias Mercier": "Cascade",
     "Frances Gaines": "North Carroway",
@@ -1642,21 +1642,21 @@ RENAMES = {
     "Nathaniel Ward": "Juniper Agricultural",
     "Nerea Mendizabal": "Sparrowhawk",
     "Nicolás Salcedo": "South Serrano",
-    "Opal Stokes": "Dry Creek",
+    "Opal Stokes": "Dry Creek Co-op",
     "Opal Tillman": "Granite",
     "Petra Jansen": "Southern Pacific Tech",
     "Rafael Escobedo": "Bolton",           # 2026-08: was "Pioneer Electric"
     "Renata Adler": "Bracken",             # 2026-08: was "Bracken Works"
     "Rosa Salcedo": "Quarry Workers",
     "Ruby Stokes": "Klamath",
-    "Sadie Freeman": "High Desert",
+    "Sadie Freeman": "High Desert Co-op",
     "Sergei Belov": "Shabazz",
     "Svenja Adler": "East Range Agricultural",
     "Teresa Escobedo": "Canyon",           # 2026-08: was "Cañada Irrigation"
     "Thelma Stokes": "Iron Gate",
     "Thomas Jansen": "Lone Pine",
     "Winifred Davenport": "Lost River",    # 2026-08: was "Lost River Irrigation"
-    "Winifred Stokes": "Mesa",
+    "Winifred Stokes": "Mesa Co-op",
     "Xavier Robles": "Elk River",
     "Yelena Belov": "Pennsauke",
 
@@ -1946,13 +1946,13 @@ RENAMES = {
 # a name here to a TOWN or a LEAGUE; these are school identities only, the way "Crown
 # Paper" names a school a company town built, not the town itself.
 INSTITUTION_NAMES = [
-    "Alder", "Anchor", "Arroyo Water District", "Basalt",
+    "Alder Co-op", "Anchor", "Arroyo Water District", "Basalt",
     "Blue Mountain", "Bracken Works", "Cañada Irrigation", "Cascade",
-    "Cedar", "Copper Belt", "Crown Paper", "Dry Creek",
+    "Cedar", "Copper Belt", "Crown Paper", "Dry Creek Co-op",
     "East Range Agricultural", "Elk River", "North Carroway", "Fallon",
     "Fir Valley", "Golden State", "Granite",
-    "High Desert", "Iron Gate", "Juniper Agricultural",
-    "Klamath", "Lone Pine", "Lost River Irrigation", "Mesa",
+    "High Desert Co-op", "Iron Gate", "Juniper Agricultural",
+    "Klamath", "Lone Pine", "Lost River Irrigation", "Mesa Co-op",
     "Millrace Technical", "North Coast", "Pacific Fruit Exchange",
     "Pioneer Electric", "Quarry Workers", "Red Butte Cooperative", "Redwood",
     "Rogue Valley", "Round Mountain", "Shasta Agricultural",
@@ -3077,7 +3077,7 @@ MASCOTS = {
     "Drayfield": "Draymen",
     "Jemison": "Orbiters",
     "William McKinley": "Buckeyes",
-    "High Desert": "Sheepwagons",             # Etchartville
+    "High Desert Co-op": "Sheepwagons",             # Etchartville
     "Armour Fields": "Thunderheads",            # gromov — thunder
     "Springfield": "Headgates",                  # Orellana
     "Grizzly Gulch": "Riverboats",
@@ -3092,7 +3092,7 @@ MASCOTS = {
     "Pine Barrens": "Steelhead",
     "Southridge Christian": "Lamplighters",
     "St. Sebastian Prep": "Archers",            # the saint's own iconography
-    "Dry Creek": "Glassblowers",
+    "Dry Creek Co-op": "Glassblowers",
     # ⚠️ Was keyed "Oskar Bellini" and had to move with the name: MASCOTS is keyed
     # on the DISPLAY name (see the emit block), so a rename silently orphans its
     # entry and the school quietly reverts to its source record's mascot.

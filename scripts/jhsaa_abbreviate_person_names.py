@@ -97,8 +97,10 @@ RENAMES: dict[str, str] = {
     # made any sense". The school keeps the rest of its name (its TOWN keeps
     # the full name, the fake-saint rule again); where the remainder is
     # taken, the second choice is the town or the real-district compass
-    # pattern. Assay and Ditch Fork stay: those ARE their towns' names.
-    "Alder Cooperative": "Alder",
+    # pattern. "Cooperative" is not dropped but shortened — always "Co-op"
+    # (owner rule 2026-09). Assay and Ditch Fork stay: those ARE their
+    # towns' names.
+    "Alder Cooperative": "Alder Co-op",
     "Anchor Glass": "Anchor",
     "Ansotegui Siding": "Ansotegui",
     "Averill Grange": "North Averill",         # "Averill" is live
@@ -107,7 +109,7 @@ RENAMES: dict[str, str] = {
     "Canal Lock": "North Starlake",            # "Starlake" and "Canal View" are live
     "Cascade Mutual": "Cascade",
     "Cedar Exchange": "Cedar",
-    "Dry Creek Cooperative": "Dry Creek",
+    "Dry Creek Cooperative": "Dry Creek Co-op",
     "Elk River Power": "Elk River",
     "Empire Milling": "North Carroway",        # "Empire" and "Carroway" are live
     "Fallon Works": "Fallon",
@@ -117,11 +119,11 @@ RENAMES: dict[str, str] = {
     "Granite Water & Power": "Granite",
     "Haddon Siding": "Haddon",
     "Harmon Siding": "Harmon Valley",          # "Harmon" aliases Annes Summit
-    "High Desert Cooperative": "High Desert",
+    "High Desert Cooperative": "High Desert Co-op",
     "Iron Gate Works": "Iron Gate",
     "Klamath Exchange": "Klamath",
     "Lone Pine Mutual": "Lone Pine",
-    "Mesa Cooperative": "Mesa",
+    "Mesa Cooperative": "Mesa Co-op",
     "Mirage Siding Regional": "Mirage Regional",
     "North Coast Packing": "North Coast",
     "Pine Siding": "Pine",
