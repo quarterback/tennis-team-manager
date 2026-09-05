@@ -805,6 +805,21 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     ("Division XI"). Pinned by `test_no_recovery_round_has_a_bye`; explainer in
     `docs/JHSAA-road-to-state.md`.
   See `docs/AAR-jhsaa-state-expansion-recovery-rounds.md`.
+- **‼️ COMPUTER RATINGS + THE AT-LARGE COMMITTEE (owner spec 2026-09,
+  `app/jhsaa_ratings.py` / `app/jhsaa_committee.py`,
+  `docs/AAR-jhsaa-computer-ratings-and-at-large-committee.md`).** Nine
+  independent systems + composite per (group, gender), archived on the season
+  (`ratings` key, the `pi` rule — never refit on read), PARALLEL to TOSS/ATR
+  and feeding neither. **7A and Group 1 play a 48-team State field**
+  (`ATLARGE_GROUPS`, `run_state_48`): the road still qualifies its 32
+  untouched; a five-member deterministic committee picks 16 at-larges from
+  EVERY non-road team (district champions who missed the road are automatic) —
+  and **an at-large is ALWAYS seeded 33-48**, structurally. The Parastate
+  (17v48…32v33, winners keep their seed) renders via `_jh_split_state`'s named
+  prelim split. Margins in the margin systems are FORMAT-NORMALISED (a 5-0,
+  7-0 and 9-0 are all +1.0) — never feed raw margins across mixed formats.
+  Both groups are in `WIDE_GROUPS` (4S/5D everywhere on the road). Pages:
+  `/jhsaa/computer-ratings` (all groups), `/jhsaa/committee` (48 groups only).
 - **‼️ THE EPIREGIONAL — STATE SEED PLACEMENT IS MERIT, THE ZONAL TITLE IS ONLY
   THE BERTH (owner rule 2026-09, `jhsaa.run_epiregional` / `state_seed_order`,
   `docs/AAR-jhsaa-epiregional-seeding.md`).** A Zonal title used to buy seeds 1-8

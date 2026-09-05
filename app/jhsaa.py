@@ -140,7 +140,20 @@ PILOT_GROUPS = ("1A",)          # groups whose road-to-State plays `state_1a`
 # same reason), and the individual state tournaments are still 3S+3D and read no dual
 # format at all. Nine courts is odd, so a 4S/5D dual cannot tie and no tie-breaking
 # logic is needed anywhere; high school has no clinch, so all nine are always played.
-WIDE_GROUPS = ("7A", "8A", "9A")  # groups whose road-to-State AND early window play 4S/5D
+WIDE_GROUPS = ("7A", "8A", "9A", "Group 1")  # groups whose road-to-State AND early window play 4S/5D
+
+# ‼️ THE 48-TEAM GROUPS (owner spec 2026-09): 7A and Group 1 expand State to 48 —
+# the road still qualifies exactly 32 by the existing ladder (UNTOUCHED), and the
+# at-large committee (`jhsaa_committee`) adds 16, always seeded 33-48. Group 1
+# joins `WIDE_GROUPS` with the same rule (4S/5D in every State round, the
+# Parastate included). See `run_state_48` and `docs` spec.
+ATLARGE_GROUPS = ("7A", "Group 1")
+ATLARGE_FIELD = 48
+#: The opening round's name — seeds 17-48 play, seeds 1-16 bye to the Round of
+#: 32. Named in `round_names`, which is what makes `state._jh_split_state`
+#: render it as its own tree (no bracket path from a Parastate slot to a
+#: main-draw slot the positional canvas could invent).
+PARASTATE_NAME = "Parastate"
 
 # THE LEAGUE CARD PLAYS 3S/4D (owner rule 2027-08, swapped from the original 5S/2D so
 # it matches the 1S/4D postseason's doubles-forward character all season, not just in
@@ -7380,6 +7393,54 @@ def run_state(field: list[TeamSeason], *, seed: int, champions: int = 8) -> dict
             "field": [t.school.name for t in field]}
 
 
+def run_state_48(seeds: list[TeamSeason], *, seed: int) -> dict:
+    """The 48-team State event for `ATLARGE_GROUPS` (owner spec 2026-09).
+
+    `seeds` is the WHOLE field in seed order: 1-16 the earned byes (Epiregional
+    winners, Epiregional losers, then the best eight non-champion road
+    qualifiers, all ordered by the seeding ATR), 17-32 the rest of the road by
+    ATR, 33-48 the committee's at-larges by Borda. Every bye is earned on court
+    — the committee never awards one, and an at-large can NEVER be seeded above
+    a road qualifier: the floor is structural (they arrive after the 32 road
+    seeds in this list), not a sort key.
+
+    THE PARASTATE (seeds 17-48) pairs high-low, pinned: 17v48, 18v47, ... 32v33
+    — the higher seed hosts. Winners RETAIN their original seed; they and the
+    sixteen byes enter a fresh 32 draw played by `run_state` itself
+    (`champions=16` on a full 32 lands on the plain single-draw branch), so the
+    Round of 32 onward is the association's ordinary seeded bracket. The
+    Parastate is named in `round_names`, which is exactly what makes
+    `state._jh_split_state` draw it as its own tree — there is no bracket path
+    from a Parastate slot to a main-draw slot.
+
+    Short fields (tiny worlds, a road that ran dry) degrade generically: the
+    first sixteen seeds bye, the rest fold high-low, an odd team advances
+    unplayed. The 48 shape is the only one the association plays at full size."""
+    rng = random.Random(seed)
+    byes, rest = list(seeds[:16]), list(seeds[16:])
+    para_games = []
+    alive = set()
+    for i in range(len(rest) // 2):
+        a, b = rest[i], rest[len(rest) - 1 - i]
+        res = play_dual(a, b, seed=rng.randrange(1 << 30), phase="state")
+        win = a if res.winner == 0 else b
+        para_games.append({"home": a.school.name, "away": b.school.name,
+                           "home_points": res.home_points,
+                           "away_points": res.away_points,
+                           "winner": win.school.name})
+        alive.add(win.school.name)
+    if len(rest) % 2:                              # degraded odd field only
+        alive.add(rest[len(rest) // 2].school.name)
+    survivors = byes + [t for t in rest if t.school.name in alive]
+    inner = run_state(survivors, champions=min(16, max(1, len(byes))),
+                      seed=rng.randrange(1 << 30))
+    rounds = ([para_games] if para_games else []) + inner["rounds"]
+    names = ([PARASTATE_NAME] if para_games else []) + list(inner["round_names"])
+    return {"champion": inner["champion"], "rounds": rounds,
+            "round_names": names,
+            "field": [t.school.name for t in seeds]}
+
+
 def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
     """The TOURNAMENT OF CHAMPIONS — one dual-team champion for all of Jefferson.
 
@@ -8617,6 +8678,18 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
     # round (the archived-not-recomputed rule cuts the other way here: the seeds
     # are the DECISION, and they must be taken off the complete input).
     final_power = power_index(every_team, prestate=True)
+    # THE COMPUTER-RATINGS LAYER (owner spec 2026-09, `jhsaa_ratings`) — nine
+    # independent systems + composite, per group, for EVERY group and gender
+    # whether or not it selects at-large. Computed HERE, on the complete
+    # pre-State results graph (the same posture as `final_power` above), and
+    # ARCHIVED with the season — a page never recomputes them, the `pi` rule.
+    # Parallel to TOSS/ATR, feeding neither.
+    from .jhsaa_ratings import group_ratings as _group_ratings
+    from . import jhsaa_committee as _jc
+    ratings_by_group = {
+        group: _group_ratings([t for ts in by_group[group].values() for t in ts])
+        for group in GROUPS}
+    committee_by_group: dict[str, dict | None] = {}
     for group in GROUPS:
         # ‼️ ZONAL CHAMPIONS ARE THE TOP SEEDS — the whole privileged path, and
         # it is a SEEDING guarantee in its own right, not a side effect of byes
@@ -8644,6 +8717,41 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
         # `champions=STATE_BYES` keeps `run_state`'s bye budget and expansion
         # rule exactly where they were, so every draw keeps its shape: 8 single
         # byes in a 24, 8 double byes in a 40, placement only in a 32.
+        if group in ATLARGE_GROUPS:
+            # THE 48-TEAM FIELD (owner spec 2026-09). The road is untouched —
+            # its 32 qualifiers are exactly `zonal_champs + state_pools` — and
+            # the seeds are all EARNED: 1-4 Epiregional winners, 5-8 Epiregional
+            # losers, 9-16 the best eight non-champion road qualifiers, 17-32
+            # the rest, all on the EXISTING seeding ATR (`seed_atr`, unchanged);
+            # 33-48 the committee's sixteen at-larges by Borda. The committee
+            # may pick ANY team outside the road field — a district champion who
+            # missed the road is automatic — but its picks are always seeded
+            # 33-48, never above a road qualifier.
+            field32 = list(zonal_champs[group]) + list(state_pools[group])
+            satr = seed_atr(field32, final_power)
+            key = _seed_atr_key(satr)
+            win_names = {t.school.name for t in epi_winners[group]}
+            epi_w = sorted((t for t in zonal_champs[group]
+                            if t.school.name in win_names), key=key)
+            epi_l = sorted((t for t in zonal_champs[group]
+                            if t.school.name not in win_names), key=key)
+            others = sorted(state_pools[group], key=key)
+            road_seeds = epi_w + epi_l + others
+            road_names = {t.school.name for t in road_seeds}
+            g_teams = [t for ts in by_group[group].values() for t in ts]
+            atr_map = {t.school.name: atr(t, final_power) for t in g_teams}
+            sel = _jc.select(ratings_by_group[group], road_names,
+                             district_champs[group], atr=atr_map)
+            committee_by_group[group] = sel
+            by_name_g = {t.school.name: t
+                         for ts in by_group[group].values() for t in ts}
+            at_large = [by_name_g[n] for n in sel["selected"] if n in by_name_g]
+            arc = run_state_48(road_seeds + at_large,
+                               seed=seed + hash(group) % 9973 + 12281)
+            arc["at_large"] = [t.school.name for t in at_large]
+            states[group] = arc
+            continue
+        committee_by_group[group] = None
         ordered, _byes = state_seed_order(zonal_champs[group], epi_winners[group],
                                           state_pools[group], final_power)
         states[group] = run_state(ordered, champions=STATE_BYES,
@@ -8737,6 +8845,13 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
             # TOSS wild cards; old archives keep their "wildcards" key.
             "district_qualifiers": district_q[group],
             "state": state,
+            # THE COMPUTER-RATINGS LAYER + COMMITTEE (owner spec 2026-09):
+            # archived like `pi` — computed once on the pre-State graph, read
+            # back, never rebuilt on a page request. `committee` is None for
+            # the ten groups that keep a 32/24 field; readers `.get` both
+            # (seasons archived before they existed carry no key).
+            "ratings": ratings_by_group[group],
+            "committee": committee_by_group.get(group),
         }
         for ts in standings.values():
             for t in ts:

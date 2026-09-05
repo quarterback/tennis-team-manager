@@ -60,6 +60,14 @@ ROUTES = [
     # is in tests/test_jhsaa_scorelines.py.
     "/jhsaa/realism",
     "/jhsaa/realism?g=boys",
+    # The computer-ratings layer and the at-large committee (owner spec
+    # 2026-09) — empty state with nothing archived, never a raise. The
+    # data-bearing coverage is tests/test_jhsaa_ratings.py /
+    # tests/test_jhsaa_committee.py.
+    "/jhsaa/computer-ratings",
+    "/jhsaa/computer-ratings?g=boys&group=Group%201",
+    "/jhsaa/committee",
+    "/jhsaa/committee?g=boys&group=Group%201",
 ]
 
 

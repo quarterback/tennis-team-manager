@@ -3847,6 +3847,16 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                 "toc": season.get("toc") or {},
                 "all_district": {g: season["awards"][g].get("all_district", {})
                                  for g in jhsaa.GROUPS},
+                # THE COMPUTER-RATINGS LAYER + AT-LARGE COMMITTEE (owner spec
+                # 2026-09): archived per group like `pi` — the ratings and the
+                # committee's ballots/selection are the DECISION the 48-team
+                # fields were built from, so a page reads them back rather than
+                # refitting nine systems on request. `.get` on read; committee
+                # is None outside `jhsaa.ATLARGE_GROUPS`.
+                "ratings": {g: season["groups"][g].get("ratings")
+                            for g in jhsaa.GROUPS},
+                "committee": {g: season["groups"][g].get("committee")
+                              for g in jhsaa.GROUPS},
             }
             champs[gender] = summary["champions"]
             conn.execute("INSERT INTO world_jhsaa (world_id, year, gender, data)"

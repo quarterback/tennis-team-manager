@@ -42,6 +42,7 @@ from .state import (jhsaa_view, jhsaa_scope_view, jhsaa_school_view, jhsaa_past_
                     jhsaa_bracket_view, jhsaa_toc_view, jhsaa_district_view, jhsaa_districts_view,
                     jhsaa_honors_view,
                     jhsaa_rankings_view, jhsaa_player_view, jhsaa_players_search,
+                    jhsaa_computer_ratings_view, jhsaa_committee_view,
                     jhsaa_misapplied_players, jhsaa_lineup_lab, jhsaa_schools_view,
                     jhsaa_titles_view, jhsaa_individual_view, jhsaa_realism_view,
                     jhsaa_jv_state_view,
@@ -3205,6 +3206,29 @@ def create_app() -> Flask:
         view = jhsaa_rankings_view(DEFAULT_SEED, g, group, year, sort=sort, dir=dir_)
         return render_template("jhsaa_rankings.html", active="High School", view=view,
                                gender=gender, u=u, uni_label=label)
+
+    @app.route("/jhsaa/computer-ratings")
+    def jhsaa_computer():
+        """The computer-ratings layer (owner spec 2026-09): nine independent
+        systems plus the composite, per classification, every season — read
+        back off the archive, never refit on request."""
+        gender, label, u, g, group, year = _jh_scope_args()
+        sort = request.args.get("sort") or None
+        dir_ = request.args.get("dir", "asc")
+        view = jhsaa_computer_ratings_view(DEFAULT_SEED, g, group, year,
+                                           sort=sort, dir=dir_)
+        return render_template("jhsaa_computer.html", active="High School",
+                               view=view, gender=gender, u=u, uni_label=label)
+
+    @app.route("/jhsaa/committee")
+    def jhsaa_committee():
+        """The at-large committee tracking page — 48-team groups only (7A and
+        Group 1): composite table with Borda and Status, and the five ballots
+        side by side."""
+        gender, label, u, g, group, year = _jh_scope_args()
+        view = jhsaa_committee_view(DEFAULT_SEED, g, group, year)
+        return render_template("jhsaa_committee.html", active="High School",
+                               view=view, gender=gender, u=u, uni_label=label)
 
     @app.route("/jhsaa/honors")
     def jhsaa_honors():
