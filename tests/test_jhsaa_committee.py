@@ -164,3 +164,23 @@ def test_the_48_field_is_road_then_at_large(monkeypatch):
     arc = jh.run_state_48(road + al, seed=1)
     assert arc["field"][:32] == [t.school.name for t in road]
     assert arc["field"][32:] == [t.school.name for t in al]
+
+
+def test_a_parastate_exit_reads_as_the_parastate(monkeypatch):
+    """The finish label comes off the round's archived name — 'Parastate', short
+    'Paras' — never the 'Round of 48' team-count band that files a seed's only
+    State dual under a qualifying label (owner, 2026-09)."""
+    import app.world as world
+    import app.web.state as st
+    seeds = [_T(f"S{i:02d}") for i in range(1, 49)]
+    monkeypatch.setattr(jh, "play_dual",
+                        lambda a, b, *, seed, phase: _Res(0))
+    arc = jh.run_state_48(seeds, seed=1)
+    res = world.jhsaa_state_result(arc, "S48")      # 17v48 loser
+    assert res["finish"] == jh.PARASTATE_NAME
+    assert res["place"] == 48 and res["made_state"]
+    assert st._finish_short(jh.PARASTATE_NAME) == "Paras"
+    # an R32 exit is a main-draw finish, not a Parastate one
+    r32 = arc["rounds"][1][0]
+    r32_loser = r32["away"] if r32["winner"] == r32["home"] else r32["home"]
+    assert world.jhsaa_state_result(arc, r32_loser)["finish"] != jh.PARASTATE_NAME

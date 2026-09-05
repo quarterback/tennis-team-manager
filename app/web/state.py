@@ -4089,7 +4089,12 @@ def _jh_scope(gender: str, group: str, groups: list, year: int, years: list,
 #: CHAMP · F · SF · QF · OF · R1 · QUAL. The full label always rides along as a title.
 _FINISH_SHORT = {"Champion": "CHAMP", "Runner-up": "F",
                  "Semifinalist": "SF", "Quarterfinalist": "QF",
-                 "Octofinalist": "OF"}
+                 "Octofinalist": "OF",
+                 # The 48-team groups' opening round (owner spec 2026-09) — its
+                 # losers went out in the Parastate, not a "qualifying" round.
+                 # The title board still buckets it by PLACE (`_jh_state_col`),
+                 # which files 33-48 under QUAL; this is display only.
+                 "Parastate": "Paras"}
 
 
 def _finish_short(label: str) -> str:

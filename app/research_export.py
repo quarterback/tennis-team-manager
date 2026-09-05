@@ -143,6 +143,13 @@ def _load_archived_jhsaa_season(year: int, gender: str) -> dict:
     return {"teams": teams, "groups": {g: {"state": data.get("brackets", {}).get(g, {})}
                                        for g in jhsaa.GROUPS},
             "awards": data.get("awards", {}), "individuals": individuals,
+            # THE COMPUTER-RATINGS LAYER + AT-LARGE COMMITTEE (owner spec
+            # 2026-09): archived on the summary blob per group, relabelled on
+            # read by `get_jhsaa` like everything else. `.get` — seasons
+            # archived before they existed carry no key, and an injected test
+            # season need not fake them.
+            "ratings": data.get("ratings", {}),
+            "committee": data.get("committee", {}),
             # The JV TEAM State Tournament draw — its own table
             # (`world_jhsaa_jv_state`, one row per gender-year), relabelled on
             # read like every JHSAA archive. Its DUALS are ordinary
@@ -320,10 +327,48 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
         # not cut it. Its duals are the level='jv' phase='jv_state' rows in
         # duals.csv. Empty when the season predates the event (JV_STATE_FROM).
         "jhsaa_jv_state.json": season.get("jv_state") or {},
+        # THE AT-LARGE COMMITTEE (owner spec 2026-09): the full archived
+        # selection per 48-team group — ballots, ranges, Borda (bubble and
+        # seeding), locks, automatic bids, statuses and the published member
+        # weights. None/absent for the ten groups without a committee and for
+        # seasons archived before it existed.
+        "jhsaa_committee.json": {
+            g: sel for g, sel in (season.get("committee") or {}).items()
+            if sel and (classification == "all" or g == classification)
+        },
     }
+
+    # THE COMPUTER-RATINGS LAYER (owner spec 2026-09): one row per
+    # (championship_group, program) — the nine system ranks AND raw values,
+    # the composite (mean/median/sigma), the published SOR benchmark and the
+    # disconnected flag. Joined on program_id like every other table (display
+    # names repeat across renames; ids do not). Archived seasons predating the
+    # layer simply emit an empty table.
+    from app.jhsaa_ratings import SYSTEMS as _rating_systems
+    name_to_id = {t.school.name: t.school.key for t in all_teams}
+    computer_ratings = []
+    for group, layer in sorted((season.get("ratings") or {}).items()):
+        if not layer or (classification != "all" and group != classification):
+            continue
+        for name, t in sorted((layer.get("teams") or {}).items()):
+            row = {"program_id": name_to_id.get(name, ""), "name": name,
+                   "gender": gender, "championship_group": group,
+                   "record": t.get("record", ""),
+                   "district": t.get("district", ""),
+                   "mean_rank": t.get("mean", ""),
+                   "median_rank": t.get("median", ""),
+                   "sigma": t.get("sigma", ""),
+                   "disconnected": int(bool(layer.get("disconnected"))),
+                   "sor_bench": layer.get("sor_bench", "")}
+            for s in _rating_systems:
+                row[f"rank_{s}"] = (t.get("ranks") or {}).get(s, "")
+                row[f"value_{s}"] = (t.get("values") or {}).get(s, "")
+            computer_ratings.append(row)
+
     tables = {"programs.csv": programs, "players.csv": players, "duals.csv": duals,
               "lines.csv": lines, "line_players.csv": line_players,
               "jhsaa_standings.csv": standings,
+              "jhsaa_computer_ratings.csv": computer_ratings,
               "jhsaa_program_history.csv": history}
     files = {name: _csv(rows) for name, rows in tables.items()}
     files.update({name: json.dumps(value, indent=2, ensure_ascii=False, default=str).encode()
@@ -365,7 +410,24 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "duals.date is the game's own display calendar (world.jhsaa_match_dates — one date "
             "per dual, identical from both sides); empty on seasons archived before dates existed. "
             "It is the play order: there is no clock inside a JHSAA season.",
-            "Regular duals use 3 singles/4 doubles; early-window dates use 5/2; showcases and postseason use 1/4.",
+            "jhsaa_computer_ratings.csv is the nine-system computer-ratings layer (Colley, "
+            "Bradley-Terry, Win%, Massey dual, SRS, Massey game, Set share, SOR, Elo) plus the "
+            "composite mean/median/sigma of the system RANKS, per championship_group — fitted "
+            "on same-group varsity duals only, margins format-normalised, State/TOC excluded. "
+            "sor_bench is the published SOR benchmark (median Bradley-Terry rating of the "
+            "group's ranks 9-16); disconnected=1 means the group's schedule graph was not one "
+            "component and the least-squares systems (Massey dual/game, SRS) were withheld. "
+            "Parallel to TOSS/ATR — it feeds neither. Empty on seasons archived before the "
+            "layer existed.",
+            "jhsaa_committee.json is the at-large selection committee for the 48-team groups "
+            "(7A and Group 1): the five members' full ballots and published weights, the "
+            "per-member at-large ranges, locks, automatic bids (district champions who missed "
+            "the road), bubble and seeding Borda totals, statuses, and the sixteen selections "
+            "in seed order 33-48. The road's 32 qualifiers are unchanged; an at-large is never "
+            "seeded above 33. Their State bracket opens with the Parastate (17v48..32v33) in "
+            "jhsaa_championships.json, its duals ordinary phase='state' rows in duals.csv.",
+            "Regular duals use 3 singles/4 doubles; early-window dates use 5/2; showcases and postseason use 1/4. "
+            "7A, 8A, 9A and Group 1 play 4S/5D on the road to State and in the early window.",
             "Every court finishes. JHSAA has no clinch abandonment.",
             "1A crowns from a 24-team field on a fixed recovery shape (Super Regional/"
             "Semi-State/Divisional/Semi-Conference/Conference all award direct State "

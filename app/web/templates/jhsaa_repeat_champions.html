@@ -4,7 +4,7 @@
 {% block content %}
 
 {{ jh_header(view.scope, u, 'repeat_champs', 'Repeat Individual State Champions',
-             'Every player with more than one individual state title.',
+             '',
              [('Players', view.rows|length)]) }}
 
 <div class="jh-shell">
@@ -26,15 +26,17 @@
   <div class="bl-tablescroll">
   <table class="bl-table jh-repeat">
     <thead><tr>
-      <th class="n">Titles</th><th>Player</th><th>School</th><th>Championships</th>
+      {# No Titles column and no explanatory microcopy (owner, 2026-09): the
+         count is the BAND HEADING's whole content, so a per-row number restates
+         it, and these rolls carry no explainer text. #}
+      <th>Player</th><th>School</th><th>Championships</th>
     </tr></thead>
     <tbody>
     {% for band in view.bands %}
-    <tr class="band"><td colspan="4">{{ band.heading }} <span class="ct">{{ band.rows|length }}</span></td></tr>
-    {% if not band.rows %}<tr class="none"><td colspan="4">Nobody yet.</td></tr>{% endif %}
+    <tr class="band"><td colspan="3">{{ band.heading }} <span class="ct">{{ band.rows|length }}</span></td></tr>
+    {% if not band.rows %}<tr class="none"><td colspan="3">Nobody yet.</td></tr>{% endif %}
     {% for r in band.rows %}
     <tr>
-      <td class="n">{{ r.count }}</td>
       <td><a class="nm" href="{{ url_for('jhsaa_player', school=r.link, pid=r.pid, u=u, g=view.gender) }}">{{ r.name }}</a></td>
       <td class="sch">{% for st in r.stints %}<span class="stint">{% if st.deco.mark %}<span class="mk">{{ st.deco.mark|safe }}</span>{% endif %}{{ st.school }}</span>{{ ' · ' if not loop.last }}{% endfor %}</td>
       <td class="won">{% for st in r.stints %}{% for t in st.won %}<span class="ti"

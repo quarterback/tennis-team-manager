@@ -5994,8 +5994,18 @@ def jhsaa_state_result(bracket: dict, school: str) -> dict:
     # The champion is read off the archive, not inferred from "won its last game" —
     # a bye means a program can sit out a round without being out of the tournament.
     place = 1 if champion else (last["alive"] if last else len(field))
+    finish = _finish_label(place)
+    # A PARASTATE exit reads as the round it was (owner spec 2026-09, the 48-team
+    # groups): the round carries its archived name, and "Round of 48" banded off
+    # the alive count would file seeds 33-48's only State dual under a label no
+    # reader can place. Scoped to the named round, so every other archive is
+    # byte-identical.
+    from . import jhsaa as _jh
+    if not champion and last is not None and \
+            last.get("name") == _jh.PARASTATE_NAME:
+        finish = _jh.PARASTATE_NAME
     out.update(made_state=True, seed=field.index(school) + 1, place=place,
-               finish=_finish_label(place), champion=champion)
+               finish=finish, champion=champion)
     return out
 
 
