@@ -1002,6 +1002,7 @@ RENAMES = {
     # ── the 2026-09 surname abbreviations (scripts/jhsaa_abbreviate_person_names.py) ──
     "Alben Barkley": "Barkley",
     "Ansotegui Siding": "Ansotegui",
+    "Basalt Prairie Union": "Prairie",
     "Bayard Rustin": "Rustin",
     "Benjamin Banneker": "Banneker",
     "Dolores Huerta": "Huerta",

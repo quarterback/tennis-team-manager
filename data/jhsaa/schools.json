@@ -1217,7 +1217,7 @@
       "source": "Andrés Valera"
     },
     {
-      "name": "Basalt Prairie Union",
+      "name": "Prairie",
       "city": "Basalt Prairie",
       "county": "Stagewater",
       "area": "Kangas",
@@ -1233,7 +1233,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Greater Ashbury Interscholastic League",
-      "boys_district": "Greater Ashbury Interscholastic League"
+      "boys_district": "Greater Ashbury Interscholastic League",
+      "source": "Basalt Prairie Union"
     },
     {
       "name": "Basin Gate",

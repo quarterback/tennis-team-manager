@@ -104,7 +104,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     9A  2458  Veles Vo-Tech                          Port Veles             Port Veles Maritime Academy
 
 
--- SAME LEADING WORD, DIFFERENT CITIES (82 groups)
+-- SAME LEADING WORD, DIFFERENT CITIES (81 groups)
     7A  1444  Alder Crossing                         Boyerstown             Boyerstown North
     3A   438  Alder Co-op                            Monte Blanco           Claudette Freeman
 
@@ -123,9 +123,6 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
 
     1A    59  Barley Gap                             Barley Gap             Barley Gap
     5A   896  Barley Point                           Rye                    Rye Academy of Arts and Letters
-
-   Group 3   128  Basalt Prairie Union                   Basalt Prairie         Basalt Prairie Union
-    4A   762  Basalt                                 Caswell                Andrés Valera
 
     2A   315  Benton Cross                           Benton Cross           Benton Cross
     9A  2409  Benton Park                            Santa Michaela         Hazel Bennett
@@ -587,7 +584,7 @@ Barleyfield — 3 programs (Kernwood County, Yarrowmere)
     1A   141 priv Kernwood Lutheran                                         Tailings League                    Kernwood Lutheran
 
 Basalt Prairie — 1 program (Stagewater County, Kangas)
-   Group 3   128 pub  Basalt Prairie Union                                      Greater Ashbury Interscholastic League Basalt Prairie Union
+   Group 3   128 pub  Prairie                                                   Greater Ashbury Interscholastic League Basalt Prairie Union
 
 Bay Oregon — 1 program (Weller County, Selquah)
     2A   225 pub  Bay Oregon                                                Del Rey Athletic Association       Alder Landing Beacon Hill

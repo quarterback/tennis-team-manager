@@ -142,6 +142,9 @@ RENAMES: dict[str, str] = {
     # other "X Union" schools are each the lone school in their town, the
     # real union-district pattern, and stay.
     "Pomar Union": "South Pomar",
+    # and "Basalt" beside "Basalt Prairie Union" is the same thing (owner,
+    # 2026-09) — the Union school renames; its town stays Basalt Prairie.
+    "Basalt Prairie Union": "Prairie",
     # initials — only because the bare surname is a duplicate
     "Benjamin Harrison": "B. Harrison",        # two Harrisons
     "William Henry Harrison": "W.H. Harrison",
