@@ -125,7 +125,9 @@ FORMATS = {
 }
 PILOT_GROUPS = ("1A",)          # groups whose road-to-State plays `state_1a`
 
-# ‼️ 8A/9A PLAY 4S/5D — NINE POINTS (owner rule 2070). The association's two deepest
+# ‼️ 8A/9A PLAY 4S/5D — NINE POINTS (owner rule 2070), AND 7A JOINED THE PILOT
+# (JHSAA-approved 7A pilot, owner rule 2026-09 — membership in `WIDE_GROUPS` is the
+# whole change; every consumer keys off it). The association's deepest
 # classifications play a wider dual than the rest: their whole road to State (and the
 # State draw itself) plays 4 singles / 5 doubles instead of 1S/4D, and their EARLY
 # non-district window plays it too instead of 5S/2D — the same reasoning that put the
@@ -138,7 +140,7 @@ PILOT_GROUPS = ("1A",)          # groups whose road-to-State plays `state_1a`
 # same reason), and the individual state tournaments are still 3S+3D and read no dual
 # format at all. Nine courts is odd, so a 4S/5D dual cannot tie and no tie-breaking
 # logic is needed anywhere; high school has no clinch, so all nine are always played.
-WIDE_GROUPS = ("8A", "9A")      # groups whose road-to-State AND early window play 4S/5D
+WIDE_GROUPS = ("7A", "8A", "9A")  # groups whose road-to-State AND early window play 4S/5D
 
 # THE LEAGUE CARD PLAYS 3S/4D (owner rule 2027-08, swapped from the original 5S/2D so
 # it matches the 1S/4D postseason's doubles-forward character all season, not just in
@@ -1635,6 +1637,13 @@ class TeamSeason:
     # per dual that is ~5,100 queries a gender, the exact shape of the play-up
     # fingerprint storm. A dual reads this dict instead.
     sibling_ids: dict = field(default_factory=dict)
+    # {(pid, pid) sorted: [lines together, wins together]} — how often two players
+    # have PARTNERED this season and how it went, written by `_credit` on every
+    # doubles line. The whole input to partner continuity (owner rule 2026-09):
+    # pairs that have worked together are more likely to stay together — see
+    # `_established_units` / `partner_chemistry`. Season-scoped by construction
+    # (a TeamSeason lives one season), so nothing persists across years.
+    pair_counts: dict = field(default_factory=dict)
     # ‼️ INJURIES (owner rule 2026-08, ported off the college model — see
     # `app/injuries.py`). VARSITY ONLY: `play_dual` rolls these, `play_jv_dual`
     # never touches this dict — JV is deliberately injury-blind (`jv_pool`),
@@ -4196,7 +4205,8 @@ def _pair_partitions(pool: list):
             yield [(a, b)] + tail
 
 
-def _arrange_state(nine: list, sibling_ids: dict | None = None) -> list:
+def _arrange_state(nine: list, sibling_ids: dict | None = None,
+                   pair_counts: dict | None = None) -> list:
     """Arrange a frozen-order top nine into SLOT ORDER for the 1S/4D card:
     [S1, D1a, D1b, D2a, D2b, D3a, D3b, D4a, D4b]. `_squad` dresses by position
     and `_slot_players` reads it back the same way, so this list IS the lineup.
@@ -4217,7 +4227,10 @@ def _arrange_state(nine: list, sibling_ids: dict | None = None) -> list:
         # boundary afterwards, so this cannot produce an illegal lineup.
         if b.pid in sibs.get(a.pid, ()):
             r += FAMILY_CHEMISTRY
-        return r
+        # Partner continuity (owner rule 2026-09): a near-tie settles toward the
+        # pair that has been playing together this season. Same scale as the
+        # sibling nudge; `_order_pairs`'s boundary still binds afterwards.
+        return r + partner_chemistry(pair_counts, a.pid, b.pid)
 
     # S1 + D1 consume ranks #1-#3: the coach picks which of the three plays
     # singles by what it does for the two points those players cover.
@@ -4258,7 +4271,8 @@ def _arrange_state(nine: list, sibling_ids: dict | None = None) -> list:
 
 
 def _arrange_wide(players: list, n_singles: int,
-                  sibling_ids: dict | None = None) -> list:
+                  sibling_ids: dict | None = None,
+                  pair_counts: dict | None = None) -> list:
     """`_arrange_state`'s mechanism at ANY singles width — the general form of the
     postseason arrangement, used by 1A's 2S/3D pilot and 8A/9A's 4S/5D one.
 
@@ -4302,7 +4316,8 @@ def _arrange_wide(players: list, n_singles: int,
             r = doubles_rating(eng[a.pid], eng[b.pid])
             if b.pid in sibs.get(a.pid, ()):     # the map is symmetric by construction
                 r += FAMILY_CHEMISTRY
-            _pr[key] = r
+            # Partner continuity — see `_arrange_state`'s note.
+            _pr[key] = r + partner_chemistry(pair_counts, a.pid, b.pid)
         return _pr[key]
 
     # The singles seats + D1 consume the top `n_singles + 2`: every way to pick
@@ -4345,7 +4360,8 @@ def _arrange_wide(players: list, n_singles: int,
     return out
 
 
-def _arrange_1a_postseason(eight: list, sibling_ids: dict | None = None) -> list:
+def _arrange_1a_postseason(eight: list, sibling_ids: dict | None = None,
+                           pair_counts: dict | None = None) -> list:
     """1A's PILOT road-to-State shape (owner rule 2026-08): arrange a frozen-order
     top EIGHT into SLOT ORDER for the 2S/3D card: [S1, S2, D1a, D1b, D2a, D2b,
     D3a, D3b]. Same contract as `_arrange_state`: `_squad` dresses by position,
@@ -4363,7 +4379,7 @@ def _arrange_1a_postseason(eight: list, sibling_ids: dict | None = None) -> list
     own logic on the remaining four (#5-#8): a search over the three ways to pair
     them, best total doubles ability wins, then `_order_pairs`'s rank-sum
     boundary. Anything short of eight (a degraded side) plays the plain order."""
-    return _arrange_wide(eight, 2, sibling_ids)
+    return _arrange_wide(eight, 2, sibling_ids, pair_counts)
 
 
 def _order_pairs(pairs: list, rank_sum: dict, rating: dict) -> list:
@@ -4437,6 +4453,61 @@ def _sibling_units(players: list, sibs: dict) -> list[tuple]:
                 out.append((a, b))
                 used |= {a.pid, b.pid}
                 break
+    return out
+
+
+#: Partner continuity (owner rule 2026-09): "when partners work together they should
+#: be more likely to stay together." Season-to-season only — the evidence lives on
+#: `TeamSeason.pair_counts`, which lives one season — and it must never hurt the
+#: team, so it arrives by the two doors the sibling rule already opened:
+#:   (1) an ESTABLISHED pair — `PARTNER_ESTABLISHED_MIN` doubles lines together this
+#:       season at a non-losing share — is kept together by the DIRECT arrangers
+#:       (`_arrange_regular`, `_arrange_early`) the way a sibling pair is, via
+#:       `_force_pairs`; siblings outrank continuity where the two conflict. A pair
+#:       LOSING together is never protected: the coach breaks it up, which is the
+#:       realism, and is what keeps the mandate from ever costing the team.
+#:   (2) the SEARCHING arrangers (`_arrange_state`, `_arrange_wide` — the postseason,
+#:       where the stakes argue against a mandate) take continuity as a CHEMISTRY
+#:       BONUS on the pair score, evidence-weighted and capped at `PARTNER_CHEMISTRY`
+#:       — the `FAMILY_CHEMISTRY` scale exactly (~1/4 sd of the pair-rating spread),
+#:       so it settles a near-tie toward the pair that has been playing together and
+#:       never overrides a real ability difference. `_order_pairs`'s anti-stacking
+#:       rank-sum boundary still runs afterwards, so no lineup this produces can be
+#:       illegal.
+PARTNER_CHEMISTRY = 0.025
+PARTNER_ESTABLISHED_MIN = 6   # lines together before a pair is "established" —
+                              # the awards' own `MIN_PAIR_MATCHES` bar, which is the
+                              # module that first separated a partnership from two
+                              # people put together once.
+PARTNER_PRIOR = 6             # evidence weighting: 6 lines → half the bonus
+
+
+def partner_chemistry(pair_counts: dict, a_pid: str, b_pid: str) -> float:
+    """The continuity bonus for a candidate pair — 0.0 for two players who have
+    never partnered, ramping toward `PARTNER_CHEMISTRY` with lines played together
+    (`n/(n+PARTNER_PRIOR)`, the `ladder_score` evidence-weighting idiom)."""
+    n = (pair_counts or {}).get(tuple(sorted((a_pid, b_pid))), (0, 0))[0]
+    return PARTNER_CHEMISTRY * n / (n + PARTNER_PRIOR)
+
+
+def _established_units(players: list, pair_counts: dict, forced: list) -> list[tuple]:
+    """The disjoint ESTABLISHED pairs inside `players` — most lines together first,
+    ties on the pid key (deterministic) — skipping anyone a `forced` (sibling) unit
+    already claims: siblings outrank continuity. A pair qualifies on
+    `PARTNER_ESTABLISHED_MIN` lines together AND a non-losing record together."""
+    if not pair_counts:
+        return []
+    used = {p.pid for pr in forced for p in pr}
+    by_pid = {p.pid: p for p in players}
+    cands = [(rec[0], key) for key, rec in pair_counts.items()
+             if rec[0] >= PARTNER_ESTABLISHED_MIN and 2 * rec[1] >= rec[0]
+             and key[0] in by_pid and key[1] in by_pid]
+    out = []
+    for _, (a, b) in sorted(cands, key=lambda t: (-t[0], t[1])):
+        if a in used or b in used:
+            continue
+        out.append((by_pid[a], by_pid[b]))
+        used |= {a, b}
     return out
 
 
@@ -4518,7 +4589,8 @@ def _flip_strategy(strategy: str) -> str:
 
 
 def _arrange_regular(eleven: list, strategy: str,
-                     sibling_ids: dict | None = None) -> list:
+                     sibling_ids: dict | None = None,
+                     pair_counts: dict | None = None) -> list:
     """The 3S/4D card under `strategy`, in SLOT ORDER
     [S1, S2, S3, D1a, D1b, D2a, D2b, D3a, D3b, D4a, D4b] — same contract as
     `_arrange_state`: `_squad` dresses by position, `_slot_players` reads it
@@ -4553,6 +4625,9 @@ def _arrange_regular(eleven: list, strategy: str,
     # their one direct decision. A sibling at S1 or in the S2/S3 seats is out of reach:
     # the 3S/4D allocation is fixed and is never rearranged for this.
     forced = _sibling_units(pool, sibling_ids or {})
+    # Partner continuity (owner rule 2026-09): an established pair rides the same
+    # swap machinery the sibling rule uses, after siblings have claimed their seats.
+    forced = forced + _established_units(pool, pair_counts or {}, forced)
     if strategy == "traditional":
         pairs = [(pool[0], pool[1]), (pool[2], pool[3]),
                  (pool[4], pool[5]), (pool[6], pool[7])]
@@ -4567,7 +4642,7 @@ def _arrange_regular(eleven: list, strategy: str,
             r = doubles_rating(eng[a.pid], eng[b.pid])
             if b.pid in sibs.get(a.pid, ()):
                 r += FAMILY_CHEMISTRY      # see `_arrange_state` — a tiebreak only
-            return r
+            return r + partner_chemistry(pair_counts, a.pid, b.pid)
 
         if strategy == "balanced":
             # Snake-pair strongest with weakest, next-strongest with
@@ -4593,7 +4668,8 @@ def _arrange_regular(eleven: list, strategy: str,
 
 
 def _arrange_early(nine: list, sibling_ids: dict | None = None,
-                   group: str | None = None) -> list:
+                   group: str | None = None,
+                   pair_counts: dict | None = None) -> list:
     """The early window's 5S/2D card in SLOT ORDER [S1-S5, D1a, D1b, D2a, D2b] —
     or 8A/9A's 4S/5D one, [S1-S4, D1a, D1b, … D5a, D5b] (owner rule 2070), which is
     the same plain-order allocation at a different width: pass the dual's `group`.
@@ -4614,6 +4690,11 @@ def _arrange_early(nine: list, sibling_ids: dict | None = None,
     n_s = dual_format(EARLY_FORMAT_PHASE, group).n_singles
     singles, pool = nine[:n_s], nine[n_s:need]
     forced = _sibling_units(pool, sibling_ids or {})
+    # Partner continuity (owner rule 2026-09) — same swap, after siblings. In
+    # practice the early window is the season's FIRST block, so pairs are rarely
+    # established yet and this is usually empty; it matters when the window is
+    # revisited by a degraded schedule or a test.
+    forced = forced + _established_units(pool, pair_counts or {}, forced)
     if not forced:
         return nine                          # byte-identical to the pre-rule lineup
     # Swapped in place, so D1 is still the higher pair of the pool and nothing but the
@@ -4657,13 +4738,14 @@ def _postseason_nine(ts: TeamSeason, phase: str = "state", group=_OWN_GROUP) -> 
     return ranked[:lineup_need(phase, g)]
 
 
-def _arrange_postseason(pool: list, fmt: DualFormat, sibling_ids: dict | None) -> list:
+def _arrange_postseason(pool: list, fmt: DualFormat, sibling_ids: dict | None,
+                        pair_counts: dict | None = None) -> list:
     """Arrange a frozen-order pool onto `fmt`'s card. Keyed on the SHAPE, never on
     the group: the shape is what the arrangement is about, and one dual has one
     shape however its two sides are classified (see `shape_group`)."""
     if fmt.n_singles == 1:
-        return _arrange_state(pool, sibling_ids)
-    return _arrange_wide(pool, fmt.n_singles, sibling_ids)
+        return _arrange_state(pool, sibling_ids, pair_counts)
+    return _arrange_wide(pool, fmt.n_singles, sibling_ids, pair_counts)
 
 
 def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None,
@@ -4679,7 +4761,8 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None,
     if phase in POSTSEASON:                        # strict, frozen, arranged
         pool = _postseason_nine(ts, phase, group)
         g = ts.school.group if group is _OWN_GROUP else group
-        return _arrange_postseason(pool, dual_format(phase, g), ts.sibling_ids)
+        return _arrange_postseason(pool, dual_format(phase, g), ts.sibling_ids,
+                                   ts.pair_counts)
     if phase in SHOWCASE:
         # ‼️ A SHOWCASE MUST NOT FREEZE THE ORDER OF ABILITY. The freeze is the
         # association's anti-stacking rule and it binds from a program's first
@@ -4694,7 +4777,7 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None,
         nine, bench = order[:need], order[need:]
         if bench and rng.random() < _ROTATE_ONE:
             nine[-1] = bench[rng.randrange(len(bench))]
-        return _arrange_state(nine, ts.sibling_ids)
+        return _arrange_state(nine, ts.sibling_ids, ts.pair_counts)
     order = _healthy(ts, _order(ts))
     g = ts.school.group if group is _OWN_GROUP else group
     need = lineup_need(phase, g)
@@ -4727,9 +4810,9 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None,
         strategy = _coach_strategy(ts.school.key)
         if flip:
             strategy = _flip_strategy(strategy)
-        return _arrange_regular(nine, strategy, ts.sibling_ids)
+        return _arrange_regular(nine, strategy, ts.sibling_ids, ts.pair_counts)
     if phase == EARLY_FORMAT_PHASE:
-        return _arrange_early(nine, ts.sibling_ids, g)
+        return _arrange_early(nine, ts.sibling_ids, g, ts.pair_counts)
     return nine
 
 
@@ -4777,6 +4860,16 @@ def _credit(ts: TeamSeason, lineup: list, phase: str, slot: str, won: bool,
     mates = _slot_players(lineup, phase, slot, f)
     opps = (tuple(p.pid for p in _slot_players(opp_lineup, phase, slot, f))
             if opp_lineup else ())
+    if len(mates) == 2 and mates[0].pid != mates[1].pid:
+        # Partner continuity's evidence (owner rule 2026-09) — a doubles line is a
+        # pair working together, whatever the phase. The `!=` guard keeps a degraded
+        # side's wrapped lineup (`_slot_players` wraps rather than raises) from
+        # crediting a player as their own partner.
+        pc = ts.pair_counts.setdefault(
+            tuple(sorted((mates[0].pid, mates[1].pid))), [0, 0])
+        pc[0] += 1
+        if won:
+            pc[1] += 1
     for p in mates:
         rec = ts.records.setdefault(p.pid, [0, 0])
         rec[0 if won else 1] += 1

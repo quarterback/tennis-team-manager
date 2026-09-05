@@ -340,9 +340,9 @@ def test_only_1a_road_to_state_plays_2s3d():
     assert (road.n_singles, road.n_doubles) == (2, 3)
     # the TOC fields every class's champion, so it stays one shape for everyone
     assert jh.dual_format("toc", "1A") == jh.FORMATS["state"]
-    for g in ("2A", "5A", "7A", None):
+    for g in ("2A", "5A", "6A", None):
         assert jh.dual_format("state", g) == jh.FORMATS["state"], g
-    # 8A/9A are the OTHER pilot (owner rule 2070) and are not this one
+    # 7A/8A/9A are the OTHER pilot (owner rule 2070; 7A joined 2026-09) — not this one
     for g in jh.WIDE_GROUPS:
         assert jh.dual_format("state", g) == jh.FORMATS["state_4s5d"], g
     # untouched outside the postseason, 1A included
@@ -570,7 +570,7 @@ def test_only_8a_9a_play_4s5d_and_only_on_the_road_and_in_the_early_window():
         for sh in jh.SHOWCASE:
             assert jh.dual_format(sh, g) == jh.FORMATS["state"]
     # and nobody else moved
-    for g in ("1A", "2A", "5A", "7A", None):
+    for g in ("1A", "2A", "5A", "6A", None):
         assert jh.dual_format(jh.EARLY_FORMAT_PHASE, g) == jh.FORMATS["early"], g
 
 
@@ -595,7 +595,10 @@ def test_a_dual_across_classifications_plays_ONE_shape_AND_IT_IS_THE_WIDER():
     for a, b in (("8A", "9A"), ("9A", "9A"), ("8A", "7A"), ("7A", "8A")):
         assert jh.dual_format(ep, jh.shape_group(ep, a, b)) == wide, (a, b)
     # two narrow sides still play the narrow card
-    for a, b in (("7A", "6A"), ("1A", "2A")):
+    # 7A is in the pilot now (owner rule 2026-09), so a 7A-vs-6A early dual is the
+    # crossing case and plays wide; two genuinely narrow sides still play narrow
+    assert jh.dual_format(ep, jh.shape_group(ep, "7A", "6A")) == wide
+    for a, b in (("6A", "5A"), ("1A", "2A")):
         assert jh.dual_format(ep, jh.shape_group(ep, a, b)) == jh.FORMATS["early"], (a, b)
     # a postseason bracket never crosses groups, so the sides always agree there
     assert jh.dual_format("state", jh.shape_group("state", "8A", "8A")) == wide
@@ -653,5 +656,105 @@ def test_the_jv_playoff_cut_moves_but_the_jv_SEASON_cut_does_not():
     assert jh.lineup_need("regular", "8A") == 11        # the JV season's cut
     for g in jh.WIDE_GROUPS:
         assert jh.jv_postseason_cut(g) == 14
-    for g in ("1A", "5A", "7A", None):
+    for g in ("1A", "5A", "6A", None):
         assert jh.jv_postseason_cut(g) == 11, g
+
+# --- PARTNER CONTINUITY (owner rule 2026-09) ----------------------------------
+#
+# "when partners work together they should be more likely to stay together" —
+# within ONE season only (the evidence lives on `TeamSeason.pair_counts`, which
+# lives one season), and never at the team's expense: an ESTABLISHED pair (6+
+# doubles lines together at a non-losing share) rides the sibling rule's swap in
+# the direct arrangers, siblings outranking it; the searching postseason
+# arrangers take it as a capped chemistry bonus instead, under the same
+# anti-stacking boundary as everything else.
+
+
+def _pc(order, i, j, n=8, w=5):
+    """A `TeamSeason.pair_counts` map establishing ladder positions i and j."""
+    return {tuple(sorted((order[i].pid, order[j].pid))): [n, w]}
+
+
+def test_an_established_pair_stays_together_in_every_regular_season_strategy():
+    """#2 and #9 are the two ends of the doubles pool: no strategy pairs them by
+    accident, so this cannot pass for the wrong reason."""
+    ts = _real_ts(5)
+    order = jh._order(ts)[:11]
+    assert len(order) == 11
+    for strategy in jh._STRATEGIES:
+        lu = jh._arrange_regular(order, strategy, {}, _pc(order, 1, 8))
+        assert len(lu) == 11 and len({p.pid for p in lu}) == 11, strategy
+        assert frozenset((order[1].pid, order[8].pid)) in _partners(lu, 3), strategy
+        # the fixed allocation is untouched
+        assert lu[0].pid == order[0].pid
+        assert {lu[1].pid, lu[2].pid} == {order[9].pid, order[10].pid}
+
+
+def test_a_pair_losing_together_is_not_protected():
+    """The coach breaks up a losing pair — which is the realism, and what keeps
+    the mandate from costing the team. 2-6 together is not an established pair."""
+    ts = _real_ts(5)
+    order = jh._order(ts)[:11]
+    lu = jh._arrange_regular(order, "traditional", {}, _pc(order, 1, 8, n=8, w=2))
+    assert frozenset((order[1].pid, order[8].pid)) not in _partners(lu, 3)
+
+
+def test_a_short_history_is_not_an_established_pair():
+    ts = _real_ts(5)
+    order = jh._order(ts)[:11]
+    lu = jh._arrange_regular(order, "traditional", {},
+                             _pc(order, 1, 8, n=jh.PARTNER_ESTABLISHED_MIN - 1, w=5))
+    assert frozenset((order[1].pid, order[8].pid)) not in _partners(lu, 3)
+
+
+def test_siblings_outrank_partner_continuity():
+    """Both claims on one player: the sibling pair holds, the established partner
+    yields — and the lineup stays a legal permutation."""
+    ts = _real_ts(5)
+    order = jh._order(ts)[:11]
+    lu = jh._arrange_regular(order, "traditional", _sibs(order, 1, 8),
+                             _pc(order, 1, 6, n=20, w=15))
+    assert frozenset((order[1].pid, order[8].pid)) in _partners(lu, 3)
+    assert len({p.pid for p in lu}) == 11
+
+
+def test_partner_chemistry_is_capped_and_evidence_weighted():
+    """Zero history is zero bonus; the bonus grows with lines together and never
+    reaches `PARTNER_CHEMISTRY` — the FAMILY_CHEMISTRY scale, a tiebreak only."""
+    pc = {("a", "b"): [jh.PARTNER_PRIOR, jh.PARTNER_PRIOR]}
+    assert jh.partner_chemistry({}, "a", "b") == 0.0
+    assert jh.partner_chemistry(pc, "x", "y") == 0.0
+    half = jh.partner_chemistry(pc, "a", "b")
+    assert abs(half - jh.PARTNER_CHEMISTRY / 2) < 1e-12
+    lots = jh.partner_chemistry({("a", "b"): [200, 120]}, "b", "a")  # symmetric
+    assert half < lots < jh.PARTNER_CHEMISTRY
+
+
+def test_the_postseason_arrangement_stays_legal_under_the_chemistry_bonus():
+    """The searching arrangers take continuity as a bonus, never a mandate — the
+    anti-stacking boundary still binds and S1+D1 still consume ranks #1-#3."""
+    ts = _real_ts(11)
+    nine = jh._order(ts)[:9]
+    if len(nine) < 9:
+        pytest.skip("thin roster in the patched association")
+    rank = {p.pid: k + 1 for k, p in enumerate(nine)}
+    lu = jh._arrange_state(nine, {}, _pc(nine, 4, 7, n=30, w=20))
+    assert len({p.pid for p in lu}) == 9
+    assert {rank[p.pid] for p in lu[:3]} == {1, 2, 3}
+    sums = [rank[lu[k].pid] + rank[lu[k + 1].pid] for k in (3, 5, 7)]
+    for hi, lo in zip(sums, sums[1:]):
+        assert hi <= lo + jh.PAIR_SUM_TOL, sums
+    # and with no history at all, the arrangement is byte-identical to before
+    assert ([p.pid for p in jh._arrange_state(nine, {})]
+            == [p.pid for p in jh._arrange_state(nine, {}, {})])
+
+
+def test_a_doubles_line_records_the_pair_and_a_singles_line_does_not():
+    ts = jh.TeamSeason(school=None, roster=[])
+    lu = [_P(f"p{k}", 40) for k in range(11)]
+    f = jh.FORMATS["regular"]
+    jh._credit(ts, lu, "regular", "D1", True, fmt=f)
+    jh._credit(ts, lu, "regular", "D1", False, fmt=f)
+    jh._credit(ts, lu, "regular", "S1", True, fmt=f)
+    key = tuple(sorted((lu[3].pid, lu[4].pid)))
+    assert ts.pair_counts == {key: [2, 1]}

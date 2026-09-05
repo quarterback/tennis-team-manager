@@ -1007,7 +1007,11 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   District-champion `PROTECTED` entry at Regionals is unchanged. See
   `docs/AAR-jhsaa-1a-2a-classification-split.md`.
 - **‼️ 8A/9A'S ROAD TO STATE PLAYS 4S/5D — NINE POINTS (owner rule 2070,
-  `jhsaa.WIDE_GROUPS`, `docs/AAR-jhsaa-8a-9a-4s5d-postseason-pilot.md`).** 4S/5D
+  `jhsaa.WIDE_GROUPS`, `docs/AAR-jhsaa-8a-9a-4s5d-postseason-pilot.md`) — AND 7A
+  JOINED THE PILOT (JHSAA-approved, owner rule 2026-09: `WIDE_GROUPS` is now
+  `("7A","8A","9A")` and membership is the whole change; `CHALLENGE_SLOTS` does NOT
+  move with it — the 4 contested seats are a property of the 40-team State field
+  and 7A's is still 32. See `docs/AAR-jhsaa-partner-continuity-and-7a-pilot.md`).** 4S/5D
   REPLACES 1S/4D for those two classes from the end of the regular season on — the
   whole road, the Specials, the Challengers, the Epiregional and State — and takes
   the **early non-district window** with it (that window's job is rehearsing the card
