@@ -92,6 +92,48 @@ RENAMES: dict[str, str] = {
     # Hurston school (displayed "Hurston", the surname rule above).
     "Elian": "Kimberly",
     "Varian": "Hurston",
+    # industrial references (owner rule 2026-09): a school is not a siding,
+    # a glassworks, a packing plant or a utility — "those references never
+    # made any sense". The school keeps the rest of its name (its TOWN keeps
+    # the full name, the fake-saint rule again); where the remainder is
+    # taken, the second choice is the town or the real-district compass
+    # pattern. Assay and Ditch Fork stay: those ARE their towns' names.
+    "Alder Cooperative": "Alder",
+    "Anchor Glass": "Anchor",
+    "Ansotegui Siding": "Ansotegui",
+    "Averill Grange": "North Averill",         # "Averill" is live
+    "Basalt Electric": "Basalt",
+    "Blue Mountain Grange": "Blue Mountain",
+    "Canal Lock": "North Starlake",            # "Starlake" and "Canal View" are live
+    "Cascade Mutual": "Cascade",
+    "Cedar Exchange": "Cedar",
+    "Dry Creek Cooperative": "Dry Creek",
+    "Elk River Power": "Elk River",
+    "Empire Milling": "North Carroway",        # "Empire" and "Carroway" are live
+    "Fallon Works": "Fallon",
+    "Fir Valley Grange": "Fir Valley",
+    "Foundry": "Esperanza",                    # Lake Esperanza's second school
+    "Golden State Packing": "Golden State",
+    "Granite Water & Power": "Granite",
+    "Haddon Siding": "Haddon",
+    "Harmon Siding": "Harmon Valley",          # "Harmon" aliases Annes Summit
+    "High Desert Cooperative": "High Desert",
+    "Iron Gate Works": "Iron Gate",
+    "Klamath Exchange": "Klamath",
+    "Lone Pine Mutual": "Lone Pine",
+    "Mesa Cooperative": "Mesa",
+    "Mirage Siding Regional": "Mirage Regional",
+    "North Coast Packing": "North Coast",
+    "Pine Siding": "Pine",
+    "Prune Siding": "Prunedale",               # a bare "Prune" is nobody's school
+    "Railyard": "Rostova Tech",                # the Belmonte Tech pattern
+    "Redwood Mutual": "Redwood",
+    "River Market": "Riverview",               # "Dovetail" is live
+    "Rogue Valley Packing": "Rogue Valley",
+    "Round Mountain Grange": "Round Mountain",
+    "Sierra Works": "Sierra",
+    "Siskiyou Electric": "South Serrano",      # "Serrano" is live
+    "Wardlow Depot": "Wardlow",
     # initials — only because the bare surname is a duplicate
     "Benjamin Harrison": "B. Harrison",        # two Harrisons
     "William Henry Harrison": "W.H. Harrison",

@@ -167,7 +167,7 @@
       "boys_district": "High Desert League"
     },
     {
-      "name": "Alder Cooperative",
+      "name": "Alder",
       "city": "Monte Blanco",
       "county": "Ferris",
       "area": "Gold Valley",
@@ -325,7 +325,7 @@
       "boys_district": "Forks League"
     },
     {
-      "name": "Anchor Glass",
+      "name": "Anchor",
       "city": "Las Norias",
       "county": "Ferris",
       "area": "Gold Valley",
@@ -405,7 +405,7 @@
       "locality": "Anse Doree"
     },
     {
-      "name": "Ansotegui Siding",
+      "name": "Ansotegui",
       "city": "Ansotegui Siding",
       "county": "Camas",
       "area": "Ashbury Metro",
@@ -413,7 +413,7 @@
       "group": "1A",
       "enrollment": 241,
       "private": false,
-      "mascot": "Gandy Dancers",
+      "mascot": "Chokermen",
       "colors": [
         "#204e39",
         "#c8a24a"
@@ -421,7 +421,8 @@
       "girls": false,
       "boys": false,
       "girls_district": "East Cascades League",
-      "boys_district": "East Cascades League"
+      "boys_district": "East Cascades League",
+      "source": "Ansotegui Siding"
     },
     {
       "name": "Antelope Butte",
@@ -1196,7 +1197,7 @@
       "boys_district": "Millworks Athletic Association"
     },
     {
-      "name": "Basalt Electric",
+      "name": "Basalt",
       "city": "Caswell",
       "county": "Halbrook",
       "area": "Belmonte Metro",
@@ -1992,7 +1993,7 @@
       "source": "Lorna Booker"
     },
     {
-      "name": "Blue Mountain Grange",
+      "name": "Blue Mountain",
       "city": "Fellows Mill",
       "county": "Sablewood",
       "area": "Gold Valley",
@@ -2877,7 +2878,7 @@
       "boys_district": "Marble Valley League"
     },
     {
-      "name": "Canal Lock",
+      "name": "North Starlake",
       "city": "Starlake",
       "county": "Vance",
       "area": "Silver Basin",
@@ -3235,7 +3236,7 @@
       "source": "Marcus Mercer"
     },
     {
-      "name": "Cascade Mutual",
+      "name": "Cascade",
       "city": "Loomis City",
       "county": "Camas",
       "area": "Ashbury Metro",
@@ -3354,7 +3355,7 @@
       "boys_district": "Metro League"
     },
     {
-      "name": "Cedar Exchange",
+      "name": "Cedar",
       "city": "Tolland",
       "county": "Vance",
       "area": "Silver Basin",
@@ -5103,7 +5104,7 @@
       "source": "Marcus Price North"
     },
     {
-      "name": "Dry Creek Cooperative",
+      "name": "Dry Creek",
       "city": "Boyerstown",
       "county": "Marlow",
       "area": "Ashbury Metro",
@@ -5583,7 +5584,7 @@
       "boys_district": "Quarry League"
     },
     {
-      "name": "Elk River Power",
+      "name": "Elk River",
       "city": "San Tomás",
       "county": "Ferris",
       "area": "Gold Valley",
@@ -5722,7 +5723,7 @@
       "source": "Drayfield Foundry High"
     },
     {
-      "name": "Empire Milling",
+      "name": "North Carroway",
       "city": "Carroway",
       "county": "Rimrock",
       "area": "Juniper Highlands",
@@ -5982,7 +5983,7 @@
       "source": "Irina Kovalenko"
     },
     {
-      "name": "Fallon Works",
+      "name": "Fallon",
       "city": "Puerto de los Reyes",
       "county": "San Marcos",
       "area": "Sebastian Cape",
@@ -6122,7 +6123,7 @@
       "locality": "Mattaponi"
     },
     {
-      "name": "Fir Valley Grange",
+      "name": "Fir Valley",
       "city": "Rostova Junction",
       "county": "Emigrant",
       "area": "Kangas",
@@ -6498,7 +6499,7 @@
       "source": "Silvale"
     },
     {
-      "name": "Foundry",
+      "name": "Esperanza",
       "city": "Lake Esperanza",
       "county": "Ferris",
       "area": "Gold Valley",
@@ -7156,7 +7157,7 @@
       "boys_district": "Gold Valley League"
     },
     {
-      "name": "Golden State Packing",
+      "name": "Golden State",
       "city": "San Joaquín",
       "county": "Marlow",
       "area": "Ashbury Metro",
@@ -7315,7 +7316,7 @@
       "boys_district": "Foundry League"
     },
     {
-      "name": "Granite Water & Power",
+      "name": "Granite",
       "city": "Carden City",
       "county": "Vance",
       "area": "Silver Basin",
@@ -7535,7 +7536,7 @@
       "locality": "Hackensack"
     },
     {
-      "name": "Haddon Siding",
+      "name": "Haddon",
       "city": "Haddon Siding",
       "county": "Barlowe",
       "area": "Boise Frontier",
@@ -7551,7 +7552,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Desert Sky League",
-      "boys_district": "Desert Sky League"
+      "boys_district": "Desert Sky League",
+      "source": "Haddon Siding"
     },
     {
       "name": "Hagerstown",
@@ -7672,7 +7674,7 @@
       "source": "Harlan Cole"
     },
     {
-      "name": "Harmon Siding",
+      "name": "Harmon Valley",
       "source": "Harmon Siding",
       "city": "Harmon Siding",
       "county": "Antler",
@@ -8086,7 +8088,7 @@
       "boys_district": "Rim Country League"
     },
     {
-      "name": "High Desert Cooperative",
+      "name": "High Desert",
       "city": "Etchartville",
       "county": "Vance",
       "area": "Silver Basin",
@@ -8522,7 +8524,7 @@
       "boys_district": "Columbia Range League"
     },
     {
-      "name": "Iron Gate Works",
+      "name": "Iron Gate",
       "city": "Altamonte",
       "county": "Juniper",
       "area": "Juniper Highlands",
@@ -9503,7 +9505,7 @@
       "locality": "Kittery"
     },
     {
-      "name": "Klamath Exchange",
+      "name": "Klamath",
       "city": "San Cordero",
       "county": "Tamarack",
       "area": "Cascade Divide",
@@ -10098,7 +10100,7 @@
       "boys_district": "Olympic League"
     },
     {
-      "name": "Lone Pine Mutual",
+      "name": "Lone Pine",
       "city": "Lake Esperanza",
       "county": "Ferris",
       "area": "Gold Valley",
@@ -10952,7 +10954,7 @@
       "boys_district": "Desert Sky League"
     },
     {
-      "name": "Mesa Cooperative",
+      "name": "Mesa",
       "city": "Santa Cruz del Norte",
       "county": "San Marcos",
       "area": "Sebastian Cape",
@@ -11188,7 +11190,7 @@
       "boys_district": "Big Sky League"
     },
     {
-      "name": "Mirage Siding Regional",
+      "name": "Mirage Regional",
       "source": "Mirage Siding Regional",
       "city": "Mirage Siding",
       "county": "Scheelite",
@@ -12186,7 +12188,7 @@
       "boys_district": "Foundry League"
     },
     {
-      "name": "North Coast Packing",
+      "name": "North Coast",
       "city": "Moriarty",
       "county": "Ferris",
       "area": "Gold Valley",
@@ -13486,7 +13488,7 @@
       "boys_district": "East Cascades League"
     },
     {
-      "name": "Pine Siding",
+      "name": "Pine",
       "city": "Pine Siding",
       "county": "Antler",
       "area": "Alderwold",
@@ -13502,7 +13504,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Orchard League",
-      "boys_district": "Orchard League"
+      "boys_district": "Orchard League",
+      "source": "Pine Siding"
     },
     {
       "name": "Pinebluffs",
@@ -14046,7 +14049,7 @@
       "source": "Naomi Ellison"
     },
     {
-      "name": "Prune Siding",
+      "name": "Prunedale",
       "source": "Prune Siding",
       "city": "Prune Siding",
       "county": "Olivet",
@@ -14319,7 +14322,7 @@
       "boys_district": "Northwest Assembly"
     },
     {
-      "name": "Railyard",
+      "name": "Rostova Tech",
       "city": "Rostova Junction",
       "county": "Emigrant",
       "area": "Kangas",
@@ -14516,7 +14519,7 @@
       "boys_district": "Orchard League"
     },
     {
-      "name": "Redwood Mutual",
+      "name": "Redwood",
       "city": "Echevarria",
       "county": "Vance",
       "area": "Silver Basin",
@@ -14694,7 +14697,7 @@
       "source": "Rita Moreno"
     },
     {
-      "name": "River Market",
+      "name": "Riverview",
       "city": "Dovetail",
       "county": "Stagewater",
       "area": "Kangas",
@@ -14897,7 +14900,7 @@
       "source": "Winifred Browne"
     },
     {
-      "name": "Rogue Valley Packing",
+      "name": "Rogue Valley",
       "city": "Bahía Leal",
       "county": "San Marcos",
       "area": "Sebastian Cape",
@@ -15037,7 +15040,7 @@
       "boys_district": "Vesterheim Athletic Association"
     },
     {
-      "name": "Round Mountain Grange",
+      "name": "Round Mountain",
       "city": "Santa Michaela",
       "county": "Bidwell",
       "area": "Selquah",
@@ -16170,7 +16173,7 @@
       "source": "Mila Chernov North"
     },
     {
-      "name": "Sierra Works",
+      "name": "Sierra",
       "source": "Sierra Works",
       "city": "Caverlyville",
       "county": "Featherstone",
@@ -16349,7 +16352,7 @@
       "play_up": true
     },
     {
-      "name": "Siskiyou Electric",
+      "name": "South Serrano",
       "city": "Serrano",
       "county": "Halbrook",
       "area": "Halbrook Basin",
@@ -17208,7 +17211,7 @@
       "boys_district": "Black Canyon League"
     },
     {
-      "name": "Averill Grange",
+      "name": "North Averill",
       "city": "Averill",
       "county": "Sablewood",
       "area": "Gold Valley",
@@ -19548,7 +19551,7 @@
       "boys_district": "Millworks Athletic Association"
     },
     {
-      "name": "Wardlow Depot",
+      "name": "Wardlow",
       "city": "Wardlow Depot",
       "county": "Olivet",
       "area": "Yarrowmere",
@@ -19564,7 +19567,8 @@
       "girls": false,
       "boys": false,
       "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League"
+      "boys_district": "Marble Valley League",
+      "source": "Wardlow Depot"
     },
     {
       "name": "Washington",
