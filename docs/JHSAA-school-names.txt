@@ -31,7 +31,7 @@ RENAMING IS SAFE AND IS THE DESIGNED PATH — but key it on the right thing:
 NEAR-DUPLICATES — pairs sharing a leading word, same city first
 ==============================================================================
 
--- SAME CITY — LOOK HERE FIRST (17 groups)
+-- SAME CITY — LOOK HERE FIRST (16 groups)
     6A  1225  Belmonte                               Belmonte               Belmonte
     6A  1257  Belmonte Collegiate                    Belmonte               Belmonte International School
     1A   256  Belmonte South                         Belmonte               Amaia Aramburu North
@@ -77,9 +77,6 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
 
     5A   834  Pointe Coupee                          San Borondón           Claudette Cole North
     2A   359  Pointe des Brumes                      San Borondón           Naomi Langston North
-
-    3A   532  Pomar                                  Pomar                  Pomar
-    2A   251  Pomar Union                            Pomar                  St. Francis Xavier College Prep
 
     3A   338  Port Ainsley                           Port Ainsley           St. Elias Academy
     8A  1877  Port Meridian North                    Port Meridian          Port Meridian Polytechnic
@@ -372,6 +369,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     2A   301  South Fork                             Ansotegui              South Fork
    Group 1  1500  South Wheeler                          Burley                 South Wheeler
     2A   268  South Rim                              Clear Springs          Mikel Zubieta
+    2A   251  South Pomar                            Pomar                  St. Francis Xavier College Prep
     9A  2359  South Serrano                          Serrano                Nicolás Salcedo
     2A   317  South Simmons                          South Simmons          Walnut Yard
 
@@ -1750,7 +1748,7 @@ Plainfield — 3 programs (Antler County, Alderwold)
 
 Pomar — 2 programs (Halbrook County, Halbrook Basin)
     3A   532 pub  Pomar                                                     Timber Valley League               Pomar
-    2A   251 pub  Pomar Union                                               Desert Sky League                  St. Francis Xavier College Prep
+    2A   251 pub  South Pomar                                               Desert Sky League                  St. Francis Xavier College Prep
 
 Port Ainsley — 1 program (Bidwell County, Selquah)
     3A   338 pub  Port Ainsley                                              Pori League                        St. Elias Academy

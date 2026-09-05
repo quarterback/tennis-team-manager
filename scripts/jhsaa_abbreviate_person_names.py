@@ -134,6 +134,12 @@ RENAMES: dict[str, str] = {
     "Sierra Works": "Sierra",
     "Siskiyou Electric": "South Serrano",      # "Serrano" is live
     "Wardlow Depot": "Wardlow",
+    # "Union" beside the bare name (owner rule 2026-09): a town holding both
+    # "Pomar" and "Pomar Union" makes no sense — the Union school is the one
+    # renamed, in every such instance. Pomar is the only instance; the twelve
+    # other "X Union" schools are each the lone school in their town, the
+    # real union-district pattern, and stay.
+    "Pomar Union": "South Pomar",
     # initials — only because the bare surname is a duplicate
     "Benjamin Harrison": "B. Harrison",        # two Harrisons
     "William Henry Harrison": "W.H. Harrison",

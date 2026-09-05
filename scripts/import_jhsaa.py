@@ -880,8 +880,8 @@ FORMER_NAMES = {
     "St. Elias College Prep":                      "Aranaz",
     "St. Elias School":                            "Tidewater",
     "St. Francis Catholic":                        "Robledo",
-    "St. Francis Xavier":                          "Pomar Union",
-    "St. Francis Xavier College Prep":             "Pomar Union",
+    "St. Francis Xavier":                          "South Pomar",
+    "St. Francis Xavier College Prep":             "South Pomar",
     "St. Francis Xavier Preparatory":              "Clarendon",
     "St. Gabriel Preparatory":                     "Orchardgate",
     "St. Genevieve":                               "Whitegrass",
@@ -1523,7 +1523,7 @@ RENAMES = {
     "Santa Laura North": "Janeaway",                           # 4A Santa Laura
     "Santa Michaela Harbor Gate": "Tidegate",                  # 8A Santa Michaela
     "St. Brigid Preparatory": "Kingston",                      # 6A Llerena
-    "St. Francis Xavier College Prep": "Pomar Union",   # 2A Pomar
+    "St. Francis Xavier College Prep": "South Pomar",   # 2A Pomar
     "St. Francis Xavier Preparatory": "Clarendon",             # 4A Rostova Junction
     "St. Helena Academy": "Helena Academy",                    # 4A Montelago
     "St. Helena College Prep": "Swiss Hills Prep",             # 7A Port Veles
