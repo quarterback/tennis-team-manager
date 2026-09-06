@@ -557,22 +557,24 @@ def test_the_early_window_lineup_goes_through_the_arranger():
 # the showcases are untouched) — plus one the 1A pilot never had to think about,
 # since it is the first pilot to reach a phase where a dual can cross groups.
 
-def test_only_8a_9a_play_4s5d_and_only_on_the_road_and_in_the_early_window():
+def test_only_the_wide_groups_play_4s5d_and_only_on_the_road_and_at_a_hosted_showcase():
     for g in jh.WIDE_GROUPS:
-        for phase in ("sectional", "zonal", "conference", "state_special", "state",
-                      jh.EARLY_FORMAT_PHASE):
+        for phase in ("sectional", "zonal", "conference", "state_special", "state"):
             f = jh.dual_format(phase, g)
             assert (f.n_singles, f.n_doubles) == (4, 5), (g, phase)
             assert jh.lineup_need(phase, g) == 14, (g, phase)
         # the TOC fields every class's champion, so an 8A/9A champion reverts to 1S/4D
         assert jh.dual_format("toc", g) == jh.FORMATS["state"]
         assert jh.lineup_need("toc", g) == 9
-        # the league season and the showcases are untouched
+        # the league season is untouched; a showcase HOSTED by a wide class plays
+        # 4S/5D (owner rule 2026-09 — the host class's state format)
         assert jh.dual_format("regular", g) == jh.FORMATS["regular"]
         for sh in jh.SHOWCASE:
-            assert jh.dual_format(sh, g) == jh.FORMATS["state"]
-    # and nobody else moved
-    for g in ("1A", "2A", "5A", "6A", None):
+            assert jh.dual_format(sh, g) == jh.FORMATS["state_4s5d"]
+    # ‼️ THE EARLY WINDOW IS 5S/2D FOR EVERYONE (owner rule 2026-09: "I don't want
+    # 5/2 tennis to go away") — the wide classes came back from 4S/5D there once
+    # the showcases became the rehearsal.
+    for g in tuple(jh.WIDE_GROUPS) + ("1A", "2A", "5A", "6A", "Group 2", None):
         assert jh.dual_format(jh.EARLY_FORMAT_PHASE, g) == jh.FORMATS["early"], g
 
 
@@ -721,30 +723,25 @@ def test_the_deciders_are_best_two_of_three_and_named_by_flight():
 
 
 def test_a_dual_across_classifications_plays_ONE_shape_AND_IT_IS_THE_WIDER():
-    """‼️ The early non-district window pairs a program with one in its own
-    classification OR one apart, so an 8A-vs-7A early dual has two sides wanting
-    different cards. A dual has one card, and it is the WIDER one (owner rule
-    2070): every program here carries the bench for nine courts, so the 7A side
-    plays 4S/5D rather than dragging the dual down to 5S/2D. Read off the home side
-    alone instead, the away side would dress for a card it is not playing and
-    `_squad`/`_slot_players` would WRAP — the same player on two courts, raising
-    nothing."""
+    """‼️ `shape_group` resolves ONE shape for a dual whose two sides want
+    different formats, and it is the WIDER one (owner rule 2070): every program
+    here carries the bench for the widest format. Since the early window went back
+    to 5S/2D for everyone (owner rule 2026-09) the two sides always agree there;
+    the rule still decides a SHOWCASE, where the host's format is passed straight
+    in, and stays pinned here on the road shapes for the day a phase mixes again."""
     ep = jh.EARLY_FORMAT_PHASE
     wide = jh.FORMATS["state_4s5d"]
-    for a, b in (("8A", "9A"), ("9A", "9A"), ("8A", "7A"), ("7A", "8A")):
-        assert jh.dual_format(ep, jh.shape_group(ep, a, b)) == wide, (a, b)
-    # two narrow sides still play the narrow card
-    # 7A is in the pilot now (owner rule 2026-09), so a 7A-vs-6A early dual is the
-    # crossing case and plays wide; two genuinely narrow sides still play narrow
-    assert jh.dual_format(ep, jh.shape_group(ep, "7A", "6A")) == wide
-    for a, b in (("6A", "5A"), ("1A", "2A")):
+    for a, b in (("8A", "9A"), ("8A", "7A"), ("7A", "6A"), ("6A", "5A"), ("1A", "2A")):
         assert jh.dual_format(ep, jh.shape_group(ep, a, b)) == jh.FORMATS["early"], (a, b)
+    # the wider side wins where shapes differ — a showcase host in a wide class
+    assert jh.dual_format("showcase_pod", jh.shape_group("showcase_pod", "9A", "5A")) == wide
+    assert jh.dual_format("showcase_pod", jh.shape_group("showcase_pod", "5A", "9A")) == wide
     # a postseason bracket never crosses groups, so the sides always agree there
     assert jh.dual_format("state", jh.shape_group("state", "8A", "8A")) == wide
-    # ...and the roster the wider card needs is comfortably inside every band
+    # ...and the roster the widest format needs is comfortably inside every band
     for cls, (lo, _hi) in jh.ROSTER_SIZE_BAND_BY_CLASS.items():
         if cls in ("8A", "9A", "7A", "6A"):
-            assert lo >= jh.lineup_need(ep, "8A"), cls
+            assert lo >= jh.lineup_need("state", "8A"), cls
 
 
 def test_the_4s5d_postseason_lineup_is_legal_under_the_order_of_ability():

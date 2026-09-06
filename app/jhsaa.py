@@ -252,10 +252,10 @@ def dual_format(phase: str, group: str | None = None) -> DualFormat:
     (owner rule 2026-08). `POSTSEASON` includes `"toc"` — the Tournament of
     Champions fields every classification's champion at the SAME shape, so 1A's
     entrant plays it at 1S/4D like everyone else; only its OWN road (Sectionals
-    through State) plays `state_1a`. Its SHOWCASES play it too (owner rule
-    2026-09 — the showcases rehearse the class's own state format, so 1A's are
-    2S/3D and Group 2's are 3S/3D, as the 1S/4D classes rehearse 1S/4D). A
-    Group 2 showcase can finish level; it is regular season, so it takes the JV
+    through State) plays `state_1a`. A SHOWCASE plays its HOST class's state
+    format (owner rule 2026-09 — pass the host's group): 4S/5D under a wide-class
+    host, 2S/3D under 1A, 3S/3D under Group 2, 1S/4D under the rest. A Group
+    2-hosted showcase can finish level; it is regular season, so it takes the JV
     ladder and can be a TIE — the one place a varsity draw is reachable.
 
     ‼️ 8A/9A's PILOT (`WIDE_GROUPS`, owner rule 2070) covers the road-to-State on
@@ -266,14 +266,20 @@ def dual_format(phase: str, group: str | None = None) -> DualFormat:
     one side's own group — anywhere a real dual is being played."""
     wide = group in WIDE_GROUPS
     road = phase in POSTSEASON and phase != "toc"
-    if wide and (road or phase == EARLY_FORMAT_PHASE):
-        return FORMATS["state_4s5d"]
-    # ‼️ A SHOWCASE PLAYS THE CLASS'S OWN STATE FORMAT (owner rule 2026-09): the
-    # showcases exist to rehearse the lineup a program must win with, so 1A's play
-    # 2S/3D and Group 2's play 3S/3D, exactly as the 1S/4D classes rehearse 1S/4D.
-    # A Group 2 showcase can therefore finish 3-3 — it is regular season, so it
-    # falls to the JV ladder (sets, games, then a TIE), never the deciders.
+    # ‼️ A SHOWCASE PLAYS THE HOST CLASS'S STATE FORMAT (owner rule 2026-09): the
+    # showcases exist to rehearse the lineup a program must win with, so a 9A-hosted
+    # showcase is 4S/5D, a 1A-hosted one 2S/3D, a Group 2-hosted one 3S/3D, and the
+    # 1S/4D classes' 1S/4D. `group` here is the HOST's (`play_dual(group=)` from
+    # `play_showcases`), never resolved from the two sides — a showcase field mixes
+    # classes and a small school simply plays the host's format ("everyone generates
+    # enough players to play every format"). ‼️ THE EARLY WINDOW IS 5S/2D FOR EVERY
+    # CLASS AGAIN (owner rule 2026-09: "I don't want 5/2 tennis to go away"): the
+    # showcases are now the rehearsal, so the wide classes' early window came back
+    # from 4S/5D. A Group 2 showcase can finish 3-3 — regular season, so the JV
+    # ladder (sets, games, then a TIE), never the deciders.
     rehearsal = road or phase in SHOWCASE
+    if wide and rehearsal:
+        return FORMATS["state_4s5d"]
     if group in PILOT_GROUPS and rehearsal:
         return FORMATS["state_1a"]
     # Group 2's 3S/3D (JHSAA rule 2026-09): the road and the showcases, the TOC
@@ -5187,7 +5193,8 @@ def _injury_tick_and_roll(ts: TeamSeason, dressed: list, dual_index: int) -> Non
 
 
 def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular",
-              district: bool = False, challenge: bool = False):
+              district: bool = False, challenge: bool = False,
+              group: str | None = _OWN_GROUP):
     """One dual. Always to completion — high school has no clinch. `district` marks it
     as counting toward district place as well as the overall record.
 
@@ -5210,7 +5217,12 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     # (owner rule 2070), which pairs across one classification, so the two sides need
     # not want the same card. See `shape_group`: mismatch falls back to the phase's
     # classification-blind shape rather than dressing one side short.
-    grp = shape_group(phase, a.school.group, b.school.group)
+    # `group` overrides that resolution: a SHOWCASE plays its HOST's format (owner
+    # rule 2026-09), which is neither side's own — `play_showcases` passes the event
+    # host's group. The group the dual was played at is archived on the row
+    # (`shape_group`) so `rating_duals` prices its flights on the right table.
+    grp = (shape_group(phase, a.school.group, b.school.group)
+           if group is _OWN_GROUP else group)
     shape = dual_format(phase, grp)
     la, lb = _lineup(a, phase, lrng, b, grp), _lineup(b, phase, lrng, a, grp)
     fmt = match_format(phase)
@@ -5276,13 +5288,13 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
                        "won": res.winner == 0 and not tied, "tied": tied,
                        "district": district, "level": LEVEL_VARSITY,
                        "challenge": challenge, "lines": lines,
-                       "tiebreak": deciders})
+                       "tiebreak": deciders, "shape_group": grp})
     b.schedule.append({"opp": a.school.name, "home": False, "phase": phase,
                        "pf": res.away_points, "pa": res.home_points,
                        "won": res.winner == 1 and not tied, "tied": tied,
                        "district": district, "level": LEVEL_VARSITY,
                        "challenge": challenge, "lines": lines,
-                       "tiebreak": deciders})
+                       "tiebreak": deciders, "shape_group": grp})
     if tied:
         a.ties += 1
         b.ties += 1
@@ -5836,8 +5848,11 @@ def rating_duals(teams, prestate: bool = False) -> list[dict]:
             # exactly as `play_dual` resolved the shape it was played at — reading
             # the home side alone would rate a mixed-classification early dual on a
             # table nobody played.
-            grp = shape_group(d.get("phase") or "regular", t.school.group,
-                              _group_of.get(d["opp"]))
+            # A showcase is played at its HOST's format (owner rule 2026-09), which
+            # the two sides cannot reproduce — the row carries the group it was
+            # played at. In-memory rows only; the archive path never rates.
+            grp = d.get("shape_group") if "shape_group" in d else shape_group(
+                d.get("phase") or "regular", t.school.group, _group_of.get(d["opp"]))
             out.append({"home": t.school.name, "away": d["opp"], "home_won": d["won"],
                         "home_points": d["pf"], "away_points": d["pa"], "lines": lines,
                         "weights": flight_weights(d.get("phase") or "regular", grp)})
@@ -8479,8 +8494,13 @@ def showcase_schedule(teams: list[TeamSeason], year: int, gender: str, salt: str
         duals = POD_DUALS if kind == "pod" else TIER_DUALS
         for tier, field in fields:
             for grp in _showcase_groups(field, size, played, rng):
+                # THE HOST (owner rule 2026-09): the weekend is played at one
+                # venue, and every dual of the event plays the host class's state
+                # format. The group is dealt shuffled, so the host is a draw — a
+                # program is not systematically at home. Hosting decides the
+                # FORMAT only; a showcase is still a neutral site for home court.
                 events.append({"kind": kind, "phase": phase, "window": w,
-                               "tier": tier, "teams": grp,
+                               "tier": tier, "teams": grp, "host": grp[0],
                                "rounds": _showcase_rounds(grp, duals, year, salt)})
     return events
 
@@ -8517,9 +8537,10 @@ def play_showcases(events: list[dict], rng: random.Random) -> dict[int, int]:
             for e in win:
                 if s >= len(e["rounds"]):
                     continue
+                host = e.get("host") or e["teams"][0]
                 for a, b in e["rounds"][s]:
                     play_dual(a, b, seed=rng.randrange(1 << 30), phase=e["phase"],
-                              district=False)
+                              district=False, group=host.school.group)
         for e in win:
             if e["kind"] == "tiered":
                 for t in e["teams"]:
