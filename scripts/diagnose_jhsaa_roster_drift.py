@@ -83,7 +83,15 @@ def main() -> None:
               f"save is ./tennis.db next to the repo.")
     conn = sqlite3.connect(db)
     conn.row_factory = sqlite3.Row
-    worlds = conn.execute("SELECT id, seed, salt, year FROM world").fetchall()
+    try:
+        worlds = conn.execute("SELECT id, seed, salt, year FROM world").fetchall()
+    except sqlite3.OperationalError:
+        worlds = []
+    if not worlds:
+        print("‼️ NO WORLD IN THIS FILE — it is empty or not a save at all. "
+              "Check the path: a mistyped TENNIS_DB_PATH creates a fresh empty "
+              "file rather than failing.")
+        return
     for w in worlds:
         print(f"world row: id={w['id']} seed={w['seed']} salt={w['salt']!r} year={w['year']}")
     if len(worlds) != 1:
