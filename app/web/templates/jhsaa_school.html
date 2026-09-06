@@ -105,7 +105,7 @@
   <div><span class="v">{{ t.state_appearances }}</span><span class="k">state trips</span></div>
   <div><span class="v">{{ t.district_titles }}</span><span class="k">district titles of {{ t.seasons }}</span></div>
   <div><span class="v">{{ t.toc_titles }}</span><span class="k">tournament of champions</span></div>
-  <div><span class="v">{{ t.road_titles }}</span><span class="k">road units won</span></div>
+  <div><span class="v">{{ t.road_titles }}</span><span class="k">unit titles</span></div>
   <div><span class="v">{{ view.history.individual_champions|length }}</span><span class="k">individual champions</span></div>
   {% if t.best %}
   <div><span class="v sm">{{ t.best.toc_finish or t.best.state_finish or '—' }}</span>
@@ -517,7 +517,11 @@
     <span class="bl-panel-meta">a row expands to that season's trophies and honours — the year link opens the season itself</span></div>
   <div class="tbl-scroll">
     {% if view.history.seasons %}
-    <table class="jh-ledger nowrap" id="jhledger">
+    {# `figures` opts this ONE table into the mono figure face: season, record,
+       district, seed and TOSS are all numbers here, which is true of the program
+       ledger and not of `.jh-ledger` in general — the class is shared with the
+       district, champion and rankings tables, whose cells are names. #}
+    <table class="jh-ledger nowrap figures" id="jhledger">
       <tr>
         <th style="width:80px">Season</th><th style="width:58px">Class</th>
         <th style="width:80px" title="The full season, postseason included">Record</th>

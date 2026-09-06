@@ -432,11 +432,17 @@
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;    /* mono runs wide; pull the columns back together */
 }
-/* The ledger is mostly figures, so it takes the mono wholesale and hands the two
-   TEXT columns back — the state finish (which carries chips and wraps) and the
-   honours count. Same split the sheet already makes for `font-variant-numeric`. */
-.jh-ledger td { font-family: var(--font-mono); letter-spacing: -0.02em; }
-.jh-ledger td.fin, .jh-ledger td:last-child {
+/* ‼️ THE LEDGER MONO IS OPT-IN, AND THE OPT-IN IS THE WHOLE POINT. `.jh-ledger` is
+   a SHARED table class — ten templates use it (districts, champions, rankings,
+   transfers, cohorts, committee, computer, player, district, school) — so a
+   blanket `.jh-ledger td { font-family: mono }` set every school name, league name
+   and champion in the association in a monospace face. That is exactly the mistake
+   the role list above is written to avoid, made one selector lower down: a table
+   being "mostly figures" is a fact about the program ledger, not about the class.
+   Only the table that opts in gets it, and even there the text columns are handed
+   back — the state finish (which carries chips and wraps) and the honours cell. */
+.jh-ledger.figures td { font-family: var(--font-mono); letter-spacing: -0.02em; }
+.jh-ledger.figures td.fin, .jh-ledger.figures td:last-child {
   font-family: var(--font-text); letter-spacing: normal;
 }
 .jh-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
@@ -578,9 +584,14 @@
   font-family: var(--font-text); font-size: var(--fs-body-l); font-weight: 700;
   letter-spacing: normal; white-space: normal; line-height: 1.25;
 }
+/* ‼️ THE LABEL WRAPS, IT DOES NOT ELLIPSIZE. `nowrap` + ellipsis clipped the
+   longest labels to "tournament of champi…" and "best season · 2059 · 3…" — the
+   half that identifies the tile. A figure with an unreadable caption is worse than
+   a caption on two lines, and the tiles are `auto-fit` so the row absorbs the
+   height rather than pushing anything sideways. */
 .jh-progstrip .k {
   display: block; margin-top: 4px; font-size: var(--fs-caption);
-  color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: var(--text-muted); line-height: 1.3; text-wrap: pretty;
 }
 
 /* ---- Trophy case (design 3a) ----
