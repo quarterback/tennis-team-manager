@@ -77,7 +77,7 @@
     <div class="bl-metric-grid">
       <div class="bl-metric"><span class="lbl">Field</span><strong>{{ br.seeds|length }}</strong><span>{{ br.autobids|length }} AQ / {{ br.seeds|length - br.autobids|length }} at-large</span></div>
       <div class="bl-metric"><span class="lbl">Rounds</span><strong>{{ br.rounds|length }}</strong><span>{{ first_round|length }} opening matchups</span></div>
-      <div class="bl-metric"><span class="lbl">Runner-up</span><strong>{% if rseed %}#{{ rseed }}{% else %}—{% endif %}</strong><span>{{ br.runner_up.school }}</span></div>
+      <div class="bl-metric"><span class="lbl">Finalist</span><strong>{% if rseed %}#{{ rseed }}{% else %}—{% endif %}</strong><span>{{ br.runner_up.school }}</span></div>
     </div>
   </section>
 

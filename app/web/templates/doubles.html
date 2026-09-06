@@ -85,7 +85,7 @@
       <div class="bl-metric"><span class="lbl">Draw</span><strong>{{ ch.entries|length }}</strong><span>pairs ({{ ch.entries|length * 2 }} players)</span></div>
       <div class="bl-metric"><span class="lbl">Rounds</span><strong>{{ ch.rounds|length }}</strong><span>{{ first_round|length }} opening matches</span></div>
       <div class="bl-metric"><span class="lbl">Upsets</span><strong>{{ total_upsets.count }}</strong><span>lower seed advanced</span></div>
-      <div class="bl-metric"><span class="lbl">Runner-up</span><strong>{% if rseed %}#{{ rseed }}{% else %}—{% endif %}</strong><span>{{ ch.runner_up.label }}</span></div>
+      <div class="bl-metric"><span class="lbl">Finalist</span><strong>{% if rseed %}#{{ rseed }}{% else %}—{% endif %}</strong><span>{{ ch.runner_up.label }}</span></div>
     </div>
   </section>
 

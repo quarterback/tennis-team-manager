@@ -432,11 +432,17 @@
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;    /* mono runs wide; pull the columns back together */
 }
-/* The ledger is mostly figures, so it takes the mono wholesale and hands the two
-   TEXT columns back — the state finish (which carries chips and wraps) and the
-   honours count. Same split the sheet already makes for `font-variant-numeric`. */
-.jh-ledger td { font-family: var(--font-mono); letter-spacing: -0.02em; }
-.jh-ledger td.fin, .jh-ledger td:last-child {
+/* ‼️ THE LEDGER MONO IS OPT-IN, AND THE OPT-IN IS THE WHOLE POINT. `.jh-ledger` is
+   a SHARED table class — ten templates use it (districts, champions, rankings,
+   transfers, cohorts, committee, computer, player, district, school) — so a
+   blanket `.jh-ledger td { font-family: mono }` set every school name, league name
+   and champion in the association in a monospace face. That is exactly the mistake
+   the role list above is written to avoid, made one selector lower down: a table
+   being "mostly figures" is a fact about the program ledger, not about the class.
+   Only the table that opts in gets it, and even there the text columns are handed
+   back — the state finish (which carries chips and wraps) and the honours cell. */
+.jh-ledger.figures td { font-family: var(--font-mono); letter-spacing: -0.02em; }
+.jh-ledger.figures td.fin, .jh-ledger.figures td:last-child {
   font-family: var(--font-text); letter-spacing: normal;
 }
 .jh-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
@@ -578,75 +584,77 @@
   font-family: var(--font-text); font-size: var(--fs-body-l); font-weight: 700;
   letter-spacing: normal; white-space: normal; line-height: 1.25;
 }
+/* ‼️ THE LABEL WRAPS, IT DOES NOT ELLIPSIZE. `nowrap` + ellipsis clipped the
+   longest labels to "tournament of champi…" and "best season · 2059 · 3…" — the
+   half that identifies the tile. A figure with an unreadable caption is worse than
+   a caption on two lines, and the tiles are `auto-fit` so the row absorbs the
+   height rather than pushing anything sideways. */
 .jh-progstrip .k {
   display: block; margin-top: 4px; font-size: var(--fs-caption);
-  color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: var(--text-muted); line-height: 1.3; text-wrap: pretty;
 }
 
-/* ---- The season as five stages (design 2b) ----
-   "How did this season go" answered before "here is every match". A season is a
-   sequence — invitationals, the league, the showcases, the road, the State draw —
-   and the ledger row that folds it (28–4) says nothing about WHERE the four went.
-   The stage a program's season actually ended in carries the accent. */
-.jh-stages {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1px; background: var(--border-subtle);
-  border-top: 1px solid var(--border-subtle);
+/* ---- Team banner (owner reference, 2026-09: the gym wall) ----
+   When a program keeps winning the same thing, the wall lists the YEARS, not a
+   row per season: "CONFERENCE — 67 · 68 · 70 · 71 …". One line per kind of
+   honour, label left, the years running right in the figure face and wrapping
+   as they must. Titles are gold like the ledger's champion rows; everything else
+   is ink. Banded like the record board, for the same reason. */
+.jh-banner .row {
+  display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 18px;
+  align-items: baseline; padding: 12px 16px;
 }
-.jh-stages > div { background: var(--surface-card); padding: 14px 16px; min-width: 0; }
-.jh-stages .k {
-  display: block; font-size: var(--fs-body-m); font-weight: 700; color: var(--text-primary);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.jh-stages .v {
-  display: block; margin-top: 7px; font-family: var(--font-mono);
-  font-size: var(--fs-display-s); line-height: 1.1; letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums; color: var(--text-primary);
-}
-.jh-stages .s { display: block; margin-top: 4px; font-size: var(--fs-caption); color: var(--text-muted); }
-/* The stage the season ENDED in — the one the reader came for. */
-.jh-stages > div.end { background: var(--green-50); box-shadow: inset 3px 0 0 var(--brand); }
-.jh-stages > div.none .v { color: var(--text-faint); }
-
-/* ---- Trophy case (design 3a) ----
-   ‼️ A SEASON IS ONE CARD, NOT FOUR ROWS. The Honors list spent a full-width row
-   on a season's state finish, then ANOTHER on the same year's unit chips, then a
-   third on its TOC line — three identical-looking rows, one year, and eleven
-   seasons of it before the reader found a champion. A card holds a season's whole
-   haul and the grid puts five across, so the gold years read as a PATTERN in the
-   sequence instead of as one more row in a stack. */
-.jh-tcase { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; padding: 14px; }
-.jh-tcard {
-  display: flex; flex-direction: column; gap: 11px; min-width: 0;
-  padding: 15px 17px; border: 1px solid var(--border-subtle);
-  border-radius: 10px; background: var(--surface-card);
-}
-.jh-tcard .hd { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.jh-tcard .yr {
-  font-family: var(--font-mono); font-size: var(--fs-display-s); font-weight: 600;
-  letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: var(--text-primary);
-  text-decoration: none;
-}
-.jh-tcard .yr:hover { color: var(--brand-strong); text-decoration: underline; }
-.jh-tcard .sd { font-size: var(--fs-caption); color: var(--text-muted); white-space: nowrap; }
-.jh-tcard .fin { font-size: var(--fs-title-l); font-weight: 700; line-height: 1.15; color: var(--text-primary); }
-.jh-tcard .units { display: flex; flex-wrap: wrap; gap: 6px; }
-/* `margin-top: auto` pins the footnote to the bottom edge, so a row of cards
-   holding different amounts of hardware still lines its last lines up. */
-.jh-tcard .ft { margin-top: auto; font-size: var(--fs-caption); color: var(--text-secondary); }
-/* A CHAMPION year, framed in metal. `--medal-gold` rather than `--rank-gold`,
-   which the palette resolves to oxblood in the default scheme — the card would
-   read red. Mixed toward the card surface so it stays a frame in every scheme
-   rather than a block of paint. */
-.jh-tcard.champ {
-  background: color-mix(in oklab, var(--medal-gold) 9%, var(--surface-card));
-  border-color: color-mix(in oklab, var(--medal-gold) 42%, var(--surface-card));
-}
-.jh-tcard.champ .fin {
-  font-family: var(--font-display); font-weight: 800; letter-spacing: -0.02em;
+.jh-banner .row:nth-child(even) { background: var(--surface-subtle); }
+.jh-banner .what { font-size: var(--fs-body-m); font-weight: 700; color: var(--text-primary); }
+.jh-banner .row.gold .what {
+  font-family: var(--font-display); font-weight: 800; letter-spacing: -0.01em;
   color: color-mix(in oklab, var(--medal-gold) 72%, var(--ink));
 }
-.jh-tcard.champ .units .jh-chip.unit { background: var(--surface-card); }
+.jh-banner .yrs {
+  display: flex; flex-wrap: wrap; gap: 4px 16px;
+  font-family: var(--font-mono); font-size: var(--fs-body-m);
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+}
+.jh-banner .yrs a { color: var(--text-primary); text-decoration: none; }
+.jh-banner .yrs a:hover { color: var(--brand-strong); text-decoration: underline; }
+.jh-banner .row.gold .yrs a { font-weight: 600; }
+@media (max-width: 760px) { .jh-banner .row { grid-template-columns: 1fr; gap: 4px; } }
+
+/* ---- Record board (owner reference, 2026-09: the wall plaque) ----
+   A list of PEOPLE is a record board, and a record board has three columns and no
+   ornament: who, what, when. "ALEXIS SUMMERS · 100M & 200M · 2023". The reference
+   boards — top-10 scorers, All-Americans, All-State, the state-champion banner —
+   agree on every point: name left, detail in the middle, year hard right, figures
+   in a mono column you can read down, and NOTHING else on the row. No chips, no
+   pills, no per-row rules.
+
+   The banding is what makes 40 rows scannable, and it must be a BAND rather than a
+   rule between rows: a hairline under every row draws 40 horizontal lines across
+   the eye's path down the name column, which is the direction it needs to travel. */
+.jh-board { width: 100%; border-collapse: collapse; font-size: var(--fs-body-m); }
+.jh-board th {
+  text-align: left; padding: 9px 14px; font-size: var(--fs-micro); font-weight: 700;
+  letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-muted);
+  background: var(--surface-th); border-bottom: 1px solid var(--border-default);
+  white-space: nowrap;
+}
+.jh-board td { padding: 8px 14px; color: var(--text-primary); vertical-align: baseline; }
+.jh-board tbody tr:nth-child(even) td { background: var(--surface-subtle); }
+.jh-board tbody tr:hover td { background: var(--surface-hover); }
+.jh-board .nm { font-weight: 600; }
+.jh-board .nm a { color: inherit; text-decoration: none; }
+.jh-board .nm a:hover { color: var(--brand-strong); text-decoration: underline; }
+/* The middle column — the flight, the honour, the span. Secondary to the name. */
+.jh-board .what { color: var(--text-secondary); }
+/* Every figure column: the mono face, right-aligned, so it reads as a column. */
+.jh-board .yr, .jh-board .num {
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em; text-align: right; white-space: nowrap;
+}
+.jh-board .rk {
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  color: var(--text-muted); text-align: right; white-space: nowrap;
+}
 
 /* Key/value rows for the Overview's career glance — a list, not a tile grid
    (owner: "the point is orientation, not showing every statistic"). */

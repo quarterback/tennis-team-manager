@@ -265,7 +265,7 @@ def test_a_title_survives_a_season_with_no_individual_awards(archived):
         # subject of this test is that an awardless season still DRAWS its titles,
         # which is a question about the pane's filter, not about the casing.
         assert "Tournament of Champions" in html
-        assert f"{grp} state champion" in html
+        assert "State champion" in html          # one row, whatever the class
     finally:
         conn.execute("UPDATE world_jhsaa SET data=? WHERE world_id=? AND year=? AND"
                      " gender='girls'", (original, w["id"], w["year"]))

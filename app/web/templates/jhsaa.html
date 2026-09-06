@@ -48,7 +48,7 @@
       {% if st.runner_up %}
       <a class="jh-pod" href="{{ url_for('jhsaa_school', school=st.runner_up.name, u=u, g=view.gender, year=view.scope.pin) }}">
         {{ st.runner_up.mark|safe }}
-        <span style="min-width:0"><span class="k">Runner-up</span><span class="n">{{ st.runner_up.name }}</span></span></a>
+        <span style="min-width:0"><span class="k">Finalist</span><span class="n">{{ st.runner_up.name }}</span></span></a>
       {% endif %}
       {% for s in st.semifinalists %}
       <a class="jh-pod" href="{{ url_for('jhsaa_school', school=s.name, u=u, g=view.gender, year=view.scope.pin) }}">
