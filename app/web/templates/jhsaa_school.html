@@ -528,10 +528,10 @@
     <table class="jh-ledger nowrap figures" id="jhledger">
       <tr>
         <th style="width:80px">Season</th><th style="width:58px">Class</th>
-        <th style="width:80px" title="The full season, postseason included">Record</th>
-        <th style="width:80px">District</th><th style="width:70px">Place</th>
+        <th style="width:84px" title="The full season, postseason included">Record</th>
+        <th style="width:84px" title="District record">Dist</th><th style="width:70px">Place</th>
         <th style="width:56px">Seed</th><th style="width:170px">State finish</th>
-        <th style="width:56px" title="TOSS Power Index rank">TOSS</th><th>Honours</th>
+        <th style="width:60px" title="TOSS Power Index rank">TOSS</th><th>Honours</th>
       </tr>
       {% for s in view.history.seasons %}
       {% set n_honors = ((s.honor_lines or [])|length) + ((s.unit_wins or [])|length) + ((s.team_honors or [])|length) %}

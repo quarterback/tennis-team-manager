@@ -97,7 +97,7 @@
       <a class="jh-modrow" href="{{ url_for('jhsaa_school', school=t.name, u=u, g=view.gender, year=view.scope.pin) }}">
         <span class="rk">{{ t.seed }}</span>
         {{ t.mark|safe }}
-        <span class="bd"><span class="n">{{ t.name }}</span><span class="s">{{ t.district }}</span></span>
+        <span class="bd"><span class="n">{{ t.name }}</span></span>
         {% if t.group %}<span class="jh-chip c-{{ t.group|replace(' ','') }}">{{ t.group|jh_group_short }}</span>{% endif %}
       </a>
       {% endfor %}

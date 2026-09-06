@@ -4131,6 +4131,46 @@ def jhsaa_scope_view(seed: int, gender: str, group: str | None = None,
             "scope": _jh_scope(g, grp, list(jh.GROUPS), yr, years, None, None)}
 
 
+def jhsaa_front_view(seed: int, gender: str, year: int | None = None) -> dict:
+    """The association FRONT PAGE (owner spec 2026-09): the story desk's output for
+    one season, both genders, plus the section scope for the header. The class in
+    the scope is only the rail's memory — the page itself is class-blind."""
+    import app.jhsaa as jh
+    import app.jhsaa_desk as desk
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    # Seasons are the union over both genders — the front page shows both, and
+    # a lab world may archive them a rung apart.
+    years = sorted(set(world.jhsaa_years(w["id"], "girls")) |
+                   set(world.jhsaa_years(w["id"], "boys")), reverse=True)
+    yr = (years[0] if years else w["year"]) if year is None else year
+    page = desk.front_page(w["id"], yr) if years else None
+    scope = _jh_scope(g, jh.GROUPS[0], list(jh.GROUPS), yr, years,
+                      (page or {}).get("season_year"), None)
+    if not page:
+        return {"ready": False, "gender": g, "year": yr, "years": years,
+                "groups": list(jh.GROUPS), "scope": scope}
+    schools = {gg: _jh_schools(gg) for gg in page["genders"]}
+
+    def deco(story):
+        """A story's mark: the school it is about, when it is about one."""
+        args = (story.get("link") or {}).get("args") or {}
+        sch = args.get("school")
+        gg = args.get("g") or story["gender"]
+        if sch and gg in schools:
+            return _jh_deco(schools[gg], sch, 40)["mark"]
+        return ""
+
+    for s in [page["lead"]] + page["feed"] + page["programs"] + page["freshmen"]:
+        if s:
+            s["mark"] = deco(s)
+    for r in page["players"]:
+        r["mark"] = _jh_deco(schools.get(r["gender"], {}), r["school"], 28)["mark"]
+    return {"ready": True, "gender": g, "year": yr, "years": years,
+            "groups": list(jh.GROUPS), "scope": scope, **page}
+
+
 def jhsaa_view(seed: int, gender: str, group: str | None = None,
                year: int | None = None) -> dict:
     """The JHSAA hub — the state high-school home, organised around the season being

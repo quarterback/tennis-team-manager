@@ -93,17 +93,17 @@
       </div>
       <div class="tbl-scroll">
         <table class="jh-ledger nowrap">
-          <tr><th>District</th><th style="width:44%">Champion</th>
-            <th style="width:66px">District</th><th style="width:66px">Overall</th>
-            <th style="width:74px">To state</th></tr>
+          <tr><th>District</th><th style="width:40%">Champion</th>
+            <th style="width:80px" title="District record">Dist</th><th style="width:80px">Overall</th>
+            <th style="width:84px">To state</th></tr>
           {% for d in view.districts %}
           <tr>
-            <td style="font-variant-numeric:normal">
+            <td class="nm" style="font-variant-numeric:normal">
               <a style="font-weight:700;color:var(--text-primary);text-decoration:none"
                  href="{{ url_for('jhsaa_district', group=view.group, district=d.district, u=u, g=view.gender, year=view.scope.pin) }}">{{ d.district }}</a>
               <div style="font-size:13px;color:var(--text-muted)">{{ d.members }} schools</div>
             </td>
-            <td style="font-variant-numeric:normal">
+            <td class="nm" style="font-variant-numeric:normal">
               <span class="jh-schoolcell">{{ d.champion.mark|safe }}
                 <a href="{{ url_for('jhsaa_school', school=d.champion.name, u=u, g=view.gender, year=view.scope.pin) }}">{{ d.champion.name }}</a>
                 {% if d.champion.seed %}<span class="jh-chip ghost" title="state tournament seed">#{{ d.champion.seed }}</span>{% endif %}</span>
@@ -130,7 +130,7 @@
           <span class="rk">{{ r.rank }}</span>
           {{ r.mark|safe }}
           <span class="bd"><span class="n">{{ r.name }}</span>
-            <span class="s">{{ r.district }}{% if r.place %} · {{ r.place }}{{ 'st' if r.place == 1 else 'nd' if r.place == 2 else 'rd' if r.place == 3 else 'th' }} in district{% endif %}</span></span>
+            <span class="s">{{ r.record }}{% if r.place %} · {{ r.place }}{{ 'st' if r.place == 1 else 'nd' if r.place == 2 else 'rd' if r.place == 3 else 'th' }} in district{% endif %}</span></span>
           <span class="v">{{ '%.3f'|format(r.pi) if r.pi is not none else r.record }}</span>
         </a>
         {% endfor %}

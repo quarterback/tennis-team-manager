@@ -2146,6 +2146,20 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   own `gender` filter are deliberately DROPPED from the carried args: kept, `gender`
   silently outranks the gender just picked in the header.
 - **Sport is a DROPDOWN** (owner, 2026-08), like the season — not a two-button rail.
+- **‼️ `/jhsaa` IS THE FRONT PAGE, NOT A CLASS HUB (owner spec 2026-09, `app/jhsaa_desk.py`,
+  `docs/AAR-jhsaa-front-page-story-desk.md`).** An editorial front door — facts strip,
+  ONE lead, a short feed, the POY and Programs desks, one chart, the doors — built from
+  DETERMINISTIC story detectors over the archive, ranked by salience. The class hub is
+  `/jhsaa/class` (endpoint still `jhsaa_page`). **NO GENERATED PROSE, NO ADJECTIVES:** a
+  headline leads with a number or a name ("No. 7 seed G reached the 9A final"), pinned by
+  `tests/test_jhsaa_desk.py`. NOT on the front page, by owner decision: a champions grid
+  (Honors owns it), repeat runs, streaks, droughts, JV, rankings as content, and season
+  PHASES (a JHSAA season is simulated whole at week 0 — there is no "in progress").
+- **‼️ TRUNCATION: NUMBERS NEVER SHRINK, NAMES WRAP (owner rule 2026-09).** In a `nowrap`
+  ledger every fixed column is a number sized to its widest value and the one unsized
+  column is `td.nm`, which wraps — never `text-overflow: ellipsis` on a name, never a
+  record cut to "18-1(". District NAMES are omitted from every secondary line (rankings,
+  directories, rails); the district record stays and the name is one click away.
 - **‼️ ONE "CHAMPIONSHIP" TAB, THREE VIEWS OF IT (owner, 2026-08).** State, Bracket and
   TOC each led with the same champion hero and the same draw, so three of twelve tabs
   asked one question. They are still three PAGES (an index, a full tree, a different

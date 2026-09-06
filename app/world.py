@@ -565,6 +565,8 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     worldconfig.set("jhsaa_dev_era", "")
     from . import jhsaa as _jhsaa
     _jhsaa.reset_schools()
+    from . import jhsaa_desk as _desk
+    _desk.reset()
     # Stored individual championships AND the national-team cups (Davis / BJK) are
     # off-season snapshots keyed by world_id — and SQLite REUSES world_id=1 after
     # this reset drops the world row, so the next save's get_or_create() lands on

@@ -162,7 +162,7 @@
       <a class="jh-modrow" href="{{ url_for('jhsaa_school', school=s.name, u=u, g=view.gender, year=view.scope.pin) }}">
         <span class="rk">{{ s.seed }}</span>
         {{ s.mark|safe }}
-        <span class="bd"><span class="n">{{ s.name }}</span><span class="s">{{ s.district }}</span></span>
+        <span class="bd"><span class="n">{{ s.name }}</span></span>
       </a>
       {% endfor %}
     </div>

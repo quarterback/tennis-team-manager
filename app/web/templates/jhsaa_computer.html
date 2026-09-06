@@ -53,8 +53,7 @@ rather than fit per component — the composite folds the systems that remain.</
       <tr>
         <th style="width:40px">#</th>
         {{ th('school', 'Team') }}
-        <th style="width:56px">Rec</th>
-        <th style="width:104px" title="District — hover a row for the full name">District</th>
+        <th style="width:72px">Rec</th>
         {{ th('mean', 'Mean', 52, 'Mean rank across the nine systems — the composite order') }}
         {{ th('median', 'Med', 44, 'Median rank across the nine systems') }}
         {{ th('sigma', 'σ', 44, 'Standard deviation of the nine ranks — the disagreement measure. Sort it both ways: high σ is the controversy list.') }}
@@ -63,10 +62,9 @@ rather than fit per component — the composite folds the systems that remain.</
       {% for r in view.rows %}
       <tr>
         <td>{{ loop.index }}</td>
-        <td><span class="jh-schoolcell">{{ r.mark|safe }}
+        <td class="nm"><span class="jh-schoolcell">{{ r.mark|safe }}
           <a href="{{ url_for('jhsaa_school', school=r.school, u=u, g=view.gender, year=view.scope.pin) }}">{{ r.school }}</a></span></td>
         <td>{{ r.record }}</td>
-        <td title="{{ r.district }}">{{ r.district_short }}</td>
         <td><b>{{ '%.1f'|format(r.mean) }}</b></td>
         <td>{{ '%.1f'|format(r.median) }}</td>
         <td>{{ '%.1f'|format(r.sigma) }}</td>

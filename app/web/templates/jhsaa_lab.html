@@ -41,7 +41,7 @@
     {% if exists %}
     <p class="bit"><b>{{ years_archived }}</b> season{{ '' if years_archived == 1 else 's' }}
       archived here, latest is {{ season_year }}.
-      <a href="{{ url_for('jhsaa_page') }}">Browse it at /jhsaa</a> ·
+      <a href="{{ url_for('jhsaa_front') }}">Browse it at /jhsaa</a> ·
       <a href="{{ url_for('research_export') }}">Export any of them as CSV/JSON</a>.
       Program history, honours and records accumulate across every season
       you advance through — this is one continuous world, not separate runs.</p>
