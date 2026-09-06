@@ -5112,7 +5112,7 @@ def jhsaa_career_wins(world_id: int, gender: str, salt: str = "",
     # "top" versions the key: a fold cached before the top-flight tallies existed
     # has no `t_*` fields and would KeyError the view it is served to.
     key = (world_id, gender, years[0], salt, ov.jhsaa_transfer_version(), limit,
-           "top")
+           "top2")
     got = _careerwins_cache.get(key)
     if got is not None:
         return got
@@ -5247,6 +5247,11 @@ def jhsaa_career_wins(world_id: int, gender: str, salt: str = "",
         # Top flight only — S1 and D1 wins, the era-comparable list (see the
         # docstring: lower flights and the 4S/5D era inflate raw totals).
         "top": _top(careers, lambda r: (-r["t_w"], r["t_l"], r["name"])),
+        # ...and its two halves (owner request 2026-09): the most S1 wins and
+        # the most D1 wins on their own — a D1 specialist need not crack the
+        # combined top-flight cut at all.
+        "top_s": _top(careers, lambda r: (-r["t_s_w"], r["t_s_l"], r["name"])),
+        "top_d": _top(careers, lambda r: (-r["t_d_w"], r["t_d_l"], r["name"])),
     }
     shown = {id(r): r for rows in boards.values() for r in rows}
     schools_by_name = {s.name: s for s in _jh.load_schools(gender)}

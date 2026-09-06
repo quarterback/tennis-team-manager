@@ -75,6 +75,17 @@ def test_the_top_flight_board_counts_s1_and_d1_only(archive):
     assert bea is None or bea["t_w"] == 0               # S4/D3 never count
 
 
+def test_the_s1_and_d1_boards_are_each_half_alone(archive):
+    s1 = {r["name"]: r for r in archive["players"]["top_s"]}
+    d1 = {r["name"]: r for r in archive["players"]["top_d"]}
+    assert s1["Ada Ace"]["t_s_w"] == 2
+    assert d1["Ada Ace"]["t_d_w"] == 1
+    # Cara's ONLY top-flight win is the D1 — she must lead nobody on the S1
+    # board yet stand on the D1 board on her own merit.
+    assert d1["Cara Depth"]["t_d_w"] == 1
+    assert s1.get("Cara Depth", {"t_s_w": 0})["t_s_w"] == 0
+
+
 def test_the_flight_independent_boards_are_unchanged_by_the_gate(archive):
     overall = {r["name"]: r for r in archive["players"]["overall"]}
     assert overall["Bea Bulk"]["w"] == 5                # opportunity still counts here
