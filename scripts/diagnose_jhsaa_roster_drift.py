@@ -55,12 +55,80 @@ def newest_played_season(world_id: int, gender: str, school: str,
     return None, set()
 
 
+def find_saves() -> None:
+    """--find: no paths, no guessing — walk the home folder for SQLite files
+    that contain a world, and say which one is the big universe. Born of a
+    support session in which every path the owner and the tool guessed at was
+    a different fresh one-season file while the real 47-season save sat
+    somewhere none of them named."""
+    import subprocess
+    import time
+    home = os.path.expanduser("~")
+    skip = {".Trash", "node_modules", ".git", ".cache", ".venv"}
+    candidates = []
+    # Spotlight first (macOS): instant, and it sees iCloud Drive and mounted
+    # volumes — the two places a home walk misses. Best-effort everywhere else.
+    try:
+        out = subprocess.run(["mdfind", "kMDItemFSName == '*.db'"],
+                             capture_output=True, text=True, timeout=30)
+        candidates += [l for l in out.stdout.splitlines() if l.endswith(".db")]
+    except Exception:
+        pass
+    roots = [home] + [os.path.join("/Volumes", v) for v in
+                      (os.listdir("/Volumes") if os.path.isdir("/Volumes") else [])]
+    for base in roots:
+        for root, dirs, files in os.walk(base):
+            dirs[:] = [d for d in dirs if d not in skip and not d.startswith(".Trash")]
+            if root.count(os.sep) - base.count(os.sep) > 6:
+                dirs[:] = []
+                continue
+            candidates += [os.path.join(root, f) for f in files if f.endswith(".db")]
+    found, seen = [], set()
+    for path in candidates:
+        path = os.path.realpath(path)
+        if path in seen or not os.path.isfile(path):
+            continue
+        seen.add(path)
+        if True:
+            try:
+                c = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+                w = c.execute("SELECT seed, salt, year FROM world").fetchone()
+                try:
+                    latest = c.execute("SELECT MAX(year) FROM world_jhsaa").fetchone()[0]
+                except sqlite3.OperationalError:
+                    latest = None
+                c.close()
+            except sqlite3.Error:
+                continue
+            if w is None:
+                continue
+            found.append((latest if latest is not None else -1, path, w))
+    if not found:
+        print("no save files with a world found under", home)
+        return
+    found.sort(reverse=True)
+    print("saves found (most archived JHSAA seasons first):")
+    for latest, path, w in found:
+        seasons = latest + 1 if latest >= 0 else 0
+        mtime = time.strftime("%Y-%m-%d", time.localtime(os.path.getmtime(path)))
+        size = os.path.getsize(path) // (1024 * 1024)
+        print(f"  {seasons:3d} JHSAA seasons · world year {w[2]:3d} · {size:4d} MB"
+              f" · modified {mtime} · {path}")
+    best = found[0][1]
+    print("\nthe top one is almost certainly your universe. Next, run:")
+    print(f'  TENNIS_DB_PATH="{best}" python3 scripts/diagnose_jhsaa_roster_drift.py'
+          f' "Coast Prairie" boys')
+
+
 def main() -> None:
     # --set-name-era N: repair a poisoned era row. While the dbpath probe race
     # was live (see app/dbpath.py), an era self-configured against the SHADOW
     # DB's archive could be persisted into the real save — a wrong value that
     # then renames every cohort it covers. Run the plain diagnostic first: its
     # sweep names the era that restores the archived names, and this writes it.
+    if "--find" in sys.argv[1:]:
+        find_saves()
+        return
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     fix = next((a for a in sys.argv[1:] if a.startswith("--set-name-era=")), None)
     if fix is not None:
@@ -83,7 +151,15 @@ def main() -> None:
               f"save is ./tennis.db next to the repo.")
     conn = sqlite3.connect(db)
     conn.row_factory = sqlite3.Row
-    worlds = conn.execute("SELECT id, seed, salt, year FROM world").fetchall()
+    try:
+        worlds = conn.execute("SELECT id, seed, salt, year FROM world").fetchall()
+    except sqlite3.OperationalError:
+        worlds = []
+    if not worlds:
+        print("‼️ NO WORLD IN THIS FILE — it is empty or not a save at all. "
+              "Check the path: a mistyped TENNIS_DB_PATH creates a fresh empty "
+              "file rather than failing.")
+        return
     for w in worlds:
         print(f"world row: id={w['id']} seed={w['seed']} salt={w['salt']!r} year={w['year']}")
     if len(worlds) != 1:
