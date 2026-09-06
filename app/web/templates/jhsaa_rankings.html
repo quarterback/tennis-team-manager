@@ -37,10 +37,6 @@
               {{ 'selected' if gp == view.group }}>{{ gp }}</option>
       {% endfor %}
     </select></label>
-  <a class="jh-chip" href="{{ url_for('jhsaa_computer', u=u, g=view.gender, group=view.group, year=view.scope.pin) }}"
-     title="Nine independent computer systems and their composite — parallel to TOSS, never a replacement">Computer ratings</a>
-  <a class="jh-chip" href="{{ url_for('jhsaa_committee', u=u, g=view.gender, year=view.scope.pin) }}"
-     title="The 48-team at-large committee — 7A and Group 1">Committee</a>
 </div>
 
 <div class="bl-panel">

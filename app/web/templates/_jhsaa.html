@@ -141,7 +141,7 @@
       <a class="{{ 'on' if tab in ('state', 'bracket', 'toc') }}"
          title="State tournament, the full draw and the Tournament of Champions"
          href="{{ url_for('jhsaa_page', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Championship</a>
-      <a class="{{ 'on' if tab == 'rankings' }}"
+      <a class="{{ 'on' if tab in ('rankings', 'computer', 'committee') }}"
          href="{{ url_for('jhsaa_rankings', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Rankings</a>
       <a class="{{ 'on' if tab == 'honors' }}" title="Player of the Year, All-State, All-District"
          href="{{ url_for('jhsaa_honors', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Honors</a>
@@ -202,6 +202,24 @@
        the rail is the section's scope memory, not a filter on this page. #}
     <a class="{{ 'on' if tab == 'jv_state' }}" title="The JV team championship — statewide, no classifications, one champion a gender"
        href="{{ url_for('jhsaa_jv_state', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">JV Team State</a>
+  </div>
+  {% endif %}
+
+  {# The RANKINGS views (owner spec 2026-09). One destination, three parallel
+     reads of the same season — the association's own TOSS order, the nine-system
+     computer-ratings layer beside it, and the at-large committee the 48-team
+     groups select from. A sub-rail rather than three tabs, the Championship
+     rail's rule exactly. #}
+  {% if tab in ('rankings', 'computer', 'committee') %}
+  <div class="jh-subrail">
+    <a class="{{ 'on' if tab == 'rankings' }}"
+       href="{{ url_for('jhsaa_rankings', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">TOSS Rankings</a>
+    <a class="{{ 'on' if tab == 'computer' }}" title="Nine independent computer systems and their composite — parallel to TOSS, never a replacement"
+       href="{{ url_for('jhsaa_computer', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Computer Ratings</a>
+    {# The committee runs for the 48-team groups only, and the page says so for
+       the rest — carrying `group` keeps the scope bar's memory, the TOC's rule. #}
+    <a class="{{ 'on' if tab == 'committee' }}" title="The at-large selection committee — 7A and Group 1's 48-team fields"
+       href="{{ url_for('jhsaa_committee', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">At-Large Committee</a>
   </div>
   {% endif %}
 

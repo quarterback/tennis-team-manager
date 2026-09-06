@@ -17,7 +17,7 @@
   </th>
 {% endmacro %}
 
-{{ jh_header(view.scope, u, 'rankings', view.group ~ ' Computer Ratings',
+{{ jh_header(view.scope, u, 'computer', view.group ~ ' Computer Ratings',
              'Nine independent rating systems and their composite — parallel to TOSS and
               the seeding ATR, never a replacement. σ is the disagreement measure: a
               high-σ team is controversial by construction, not by opinion.',
@@ -37,10 +37,6 @@
               {{ 'selected' if gp == view.group }}>{{ gp }}</option>
       {% endfor %}
     </select></label>
-  <a class="jh-chip" href="{{ url_for('jhsaa_rankings', u=u, g=view.gender, group=view.group, year=view.scope.pin) }}">TOSS rankings</a>
-  {% if view.group in ('7A', 'Group 1') %}
-  <a class="jh-chip" href="{{ url_for('jhsaa_committee', u=u, g=view.gender, group=view.group, year=view.scope.pin) }}">Committee</a>
-  {% endif %}
 </div>
 
 {% if view.disconnected %}
