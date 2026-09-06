@@ -5201,8 +5201,13 @@ def _jh_trophy_banner(seasons_in: list[dict]) -> list[dict]:
             else:
                 _row((2, place, s["state_finish"]),
                      f"State {s['state_finish'].lower()}")["years"].append(_yr(s))
-        # A TOC run short of the title hangs nothing (owner, 2026-09): making that
-        # field is already said by the state title that put them in it.
+        # ‼️ A TOC FINAL HANGS; A TOC APPEARANCE DOES NOT (owner, 2026-09). Making
+        # that field is already said by the state title that put them in it, so a
+        # quarterfinal or semifinal there restates a gold row one line up. The
+        # final is the one run worth its own banner. Exact label match, no parsing
+        # — `_toc_finish` writes "TOC Runner-up" and nothing else means it.
+        if s.get("toc_finish") == "TOC Runner-up":
+            _row((0, "finalist"), "Tournament of Champions finalist")["years"].append(_yr(s))
         units = list(s.get("unit_wins") or [])
         if s.get("district_title") and units:
             units.pop(0)                        # `_season_row` leads with the league
