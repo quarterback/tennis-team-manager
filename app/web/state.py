@@ -6572,7 +6572,12 @@ JH_CAREER_CATS = (("overall", "Overall"), ("singles", "Singles"),
                   # era hands wide-format seasons nine flights of it; S1/D1 top
                   # every shape ever played, so this is the all-time-greatest
                   # list. The other three boards are deliberately unchanged.
-                  ("top", "Top Flight (S1/D1)"))
+                  # ...in three cuts (owner request 2026-09): combined, and
+                  # each half alone — a D1 specialist need not make the
+                  # combined list at all.
+                  ("top", "Top Flight (S1/D1)"),
+                  ("top_s", "No. 1 Singles"),
+                  ("top_d", "No. 1 Doubles"))
 
 
 def jhsaa_career_wins_view(seed: int, gender: str, cat: str | None = None,
@@ -6594,7 +6599,8 @@ def jhsaa_career_wins_view(seed: int, gender: str, cat: str | None = None,
     years = world.jhsaa_years(w["id"], g)
     schools = _jh_schools(g)
     data = world.jhsaa_career_wins(w["id"], g)
-    win_key = {"overall": "w", "singles": "s_w", "doubles": "d_w", "top": "t_w"}
+    win_key = {"overall": "w", "singles": "s_w", "doubles": "d_w", "top": "t_w",
+               "top_s": "t_s_w", "top_d": "t_d_w"}
     boards = {}
     for key, _label in JH_CAREER_CATS:
         rows = []
