@@ -5319,8 +5319,12 @@ def _career_row(name: str, stints: list[tuple], tot: list,
 
 
 def _career_run(school: str, name: str, run: list[tuple]) -> dict:
-    """A consecutive-year run at one school, folded into a career row."""
-    tot = [sum(t[j] for _y, t in run) for j in range(8)]
+    """A consecutive-year run at one school, folded into a career row.
+
+    ‼️ Two callers, two tally widths: the career fold passes 8-counter tallies
+    (with the top-flight S1/D1 split), the program-page roll still tallies 4
+    (it never shows top-flight columns) — pad, never index blind."""
+    tot = [sum((t[j] if j < len(t) else 0) for _y, t in run) for j in range(8)]
     stints = [(school, BASE_YEAR + y + 1) for y, _t in run]
     return _career_row(name, stints, tot)
 
