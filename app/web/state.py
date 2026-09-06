@@ -4089,7 +4089,12 @@ def _jh_scope(gender: str, group: str, groups: list, year: int, years: list,
 #: CHAMP · F · SF · QF · OF · R1 · QUAL. The full label always rides along as a title.
 _FINISH_SHORT = {"Champion": "CHAMP", "Runner-up": "F",
                  "Semifinalist": "SF", "Quarterfinalist": "QF",
-                 "Octofinalist": "OF"}
+                 "Octofinalist": "OF",
+                 # The 48-team groups' opening round (owner spec 2026-09) — its
+                 # losers went out in the Parastate, not a "qualifying" round.
+                 # The title board still buckets it by PLACE (`_jh_state_col`),
+                 # which files 33-48 under QUAL; this is display only.
+                 "Parastate": "Paras"}
 
 
 def _finish_short(label: str) -> str:
@@ -5064,15 +5069,32 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
     epi_seeds = _jh_seeds(epi)
     winners = set(epi.get("survivors") or ())
     field_n = len(br.get("field") or ())
-    # The bye a top-eight line carries in THIS shape: none in a power-of-two field,
-    # a single bye in a 24, a double bye (the Qualifiers Round) in an expanded 40.
-    bye_kind = ("none" if field_n and field_n & (field_n - 1) == 0
+    # The bye a top line carries in THIS shape: none in a power-of-two field,
+    # a single bye in a 24, a double bye (the Qualifiers Round) in an expanded 40 —
+    # and in the 48-team groups (owner spec 2026-09) a SINGLE bye through the
+    # Parastate, held by SIXTEEN lines: 1-4 Epiregional winners, 5-8 Epiregional
+    # losers (still Zonal champions), 9-16 the best non-champion road qualifiers
+    # by ATR. The Parastate is a named round, so `round_names` alone no longer
+    # implies the 40's double bye.
+    para = jh.PARASTATE_NAME in (br.get("round_names") or ())
+    bye_kind = ("parastate" if para
+                else "none" if field_n and field_n & (field_n - 1) == 0
                 else "double" if br.get("round_names") else "single")
     # ‼️ A 32 HAS NO BYES — listing its top eight under "Byes" would describe a
     # draw `run_state` never played. The eight lines still exist there (placement
     # only), so the panel names them as SEED LINES instead.
-    n_byes = jh.STATE_BYES if (field_n > jh.STATE_BYES and bye_kind != "none") else 0
-    n_lines = jh.STATE_BYES if field_n > jh.STATE_BYES else 0
+    n_lines = (16 if para
+               else jh.STATE_BYES if field_n > jh.STATE_BYES else 0)
+    n_byes = n_lines if bye_kind != "none" else 0
+    zonal = set(epi.get("field") or ())
+
+    def _how(i, nm):
+        if nm in winners:
+            return "Epiregional"
+        if para and nm in zonal:
+            return "Zonal champion"
+        return "ATR"
+
     epiregional = {
         "games": [{**gm, "home_deco": _jh_deco(schools, gm["home"], 20),
                    "away_deco": _jh_deco(schools, gm["away"], 20),
@@ -5080,7 +5102,7 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
                    "away_seed": epi_seeds.get(gm["away"], 0)}
                   for gm in epi_games],
         "bye_lines": [{"seed": i + 1, **_jh_deco(schools, nm, 20),
-                       "how": ("Epiregional" if nm in winners else "ATR")}
+                       "how": _how(i, nm)}
                       for i, nm in enumerate((br.get("field") or ())[:n_lines])],
         "bye_kind": bye_kind,
         "n_byes": n_byes,
@@ -6770,3 +6792,119 @@ def jhsaa_past_winners(seed: int, gender: str, group: str | None = None,
                                list(jh.GROUPS),
                                years[0]["year"] if years else 0,
                                [y["year"] for y in years], None, None)}
+
+
+# --- THE COMPUTER RATINGS + COMMITTEE PAGES (owner spec 2026-09) ---------------
+
+def jhsaa_computer_ratings_view(seed: int, gender: str, group: str | None = None,
+                                year: int | None = None, sort: str | None = None,
+                                dir: str = "asc") -> dict:
+    """The computer-ratings page: nine independent systems and the composite,
+    per (season, group, gender), for every group whether or not it selects
+    at-large. Read back off the archive (`world_jhsaa` `ratings`), never
+    recomputed — the layer is the input the 48-team fields were built from, so
+    a re-fit that drifted from it would be the region-drift bug again."""
+    import app.jhsaa as jh
+    import app.world as world
+    from app.jhsaa_ratings import SYSTEMS, GLOSSARY
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    years = world.jhsaa_years(w["id"], g)
+    yr = (years[0] if years else w["year"]) if year is None else year
+    arc = world.get_jhsaa(w["id"], yr, g)
+    grp = group if group in jh.GROUPS else jh.GROUPS[0]
+    scope = _jh_scope(g, grp, list(jh.GROUPS), yr, years,
+                      (arc or {}).get("season_year"), arc)
+    base = {"gender": g, "year": yr, "years": years, "group": grp,
+            "groups": list(jh.GROUPS), "scope": scope,
+            "systems": list(SYSTEMS), "glossary": GLOSSARY,
+            "sort": sort or "mean", "dir": dir,
+            "season_year": (arc or {}).get("season_year")}
+    ratings = ((arc or {}).get("ratings") or {}).get(grp)
+    if not arc or not ratings:
+        return {**base, "ready": False, "rows": []}
+    schools = _jh_schools(g)
+    rows = []
+    for name, t in ratings["teams"].items():
+        rows.append({**_jh_deco(schools, name, 24), "school": name,
+                     "record": t["record"],
+                     "district_short": jh.district_short(t.get("district", "")),
+                     "district": t.get("district", ""),
+                     "mean": t["mean"], "median": t["median"],
+                     "sigma": t["sigma"], "ranks": t["ranks"]})
+    key = sort if sort in ("school", "mean", "median", "sigma") else \
+        (sort if sort in SYSTEMS else "mean")
+    def _k(r):
+        if key in ("school",):
+            return r["school"]
+        if key in ("mean", "median", "sigma"):
+            return r[key]
+        return r["ranks"].get(key, 10**6)
+    rows.sort(key=lambda r: (_k(r), r["school"]), reverse=(dir == "desc"))
+    return {**base, "ready": True, "rows": rows, "sort": key,
+            "disconnected": ratings.get("disconnected", False)}
+
+
+def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
+                         year: int | None = None) -> dict:
+    """The at-large tracking page for the 48-team groups: the composite table
+    with Borda and Status, plus the five members' ballots side by side — the
+    feature that makes the committee legible rather than a black box. Archived
+    with the season (`committee` key), read back, never re-deliberated."""
+    import app.jhsaa as jh
+    import app.world as world
+    from app.jhsaa_ratings import SYSTEMS
+    from app.jhsaa_committee import MEMBERS, AT_LARGE
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    years = world.jhsaa_years(w["id"], g)
+    yr = (years[0] if years else w["year"]) if year is None else year
+    arc = world.get_jhsaa(w["id"], yr, g)
+    grp = group if group in jh.ATLARGE_GROUPS else jh.ATLARGE_GROUPS[0]
+    scope = _jh_scope(g, grp, list(jh.GROUPS), yr, years,
+                      (arc or {}).get("season_year"), arc)
+    base = {"gender": g, "year": yr, "years": years, "group": grp,
+            "groups": list(jh.ATLARGE_GROUPS), "scope": scope,
+            "systems": list(SYSTEMS), "members": list(MEMBERS),
+            "season_year": (arc or {}).get("season_year")}
+    ratings = ((arc or {}).get("ratings") or {}).get(grp)
+    sel = ((arc or {}).get("committee") or {}).get(grp)
+    if not arc or not ratings or not sel:
+        return {**base, "ready": False, "rows": [], "ballots": []}
+    schools = _jh_schools(g)
+    order = {"Qualified": 0, "Lock": 1, "In": 2, "Bubble": 3, "Out": 4}
+    # Each member's read of every candidate — the ballot POSITION columns the
+    # owner asked for beside the composite (road teams have no candidate
+    # position; they show a dash).
+    positions = {m: {n: i + 1 for i, n in enumerate(sel["ballots"].get(m) or ())}
+                 for m in MEMBERS}
+    seed_borda = sel.get("seed_borda") or {}
+    rows = []
+    for name, t in ratings["teams"].items():
+        borda = seed_borda.get(name, sel["borda"].get(name))
+        rows.append({**_jh_deco(schools, name, 24), "school": name,
+                     "record": t["record"], "mean": t["mean"],
+                     "median": t["median"], "sigma": t["sigma"],
+                     "ranks": t["ranks"],
+                     "borda": borda,
+                     "positions": {m: positions[m].get(name) for m in MEMBERS},
+                     "auto": name in set(sel.get("auto") or ()),
+                     "status": sel["status"].get(name, "Out")})
+    rows.sort(key=lambda r: (order.get(r["status"], 9),
+                             -(r["borda"] or 0), r["mean"], r["school"]))
+    # Ballot view: each member's current top `AT_LARGE + 32` (their read of the
+    # whole 48-team question), with the weights they are known by.
+    ballots = []
+    for m in MEMBERS:
+        top = (sel["ballots"].get(m) or [])[:AT_LARGE + 32]
+        ballots.append({"member": m,
+                        "weights": sel.get("weights", {}).get(m, {}),
+                        "heavy": sorted(s for s, wgt in
+                                        sel.get("weights", {}).get(m, {}).items()
+                                        if wgt > 1.0),
+                        "top": [{**_jh_deco(schools, n, 20), "school": n,
+                                 "status": sel["status"].get(n, "Out")}
+                                for n in top]})
+    return {**base, "ready": True, "rows": rows, "ballots": ballots,
+            "selected": sel.get("selected") or [],
+            "auto": sel.get("auto") or [], "locks": sel.get("locks") or []}

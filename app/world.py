@@ -3847,6 +3847,16 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                 "toc": season.get("toc") or {},
                 "all_district": {g: season["awards"][g].get("all_district", {})
                                  for g in jhsaa.GROUPS},
+                # THE COMPUTER-RATINGS LAYER + AT-LARGE COMMITTEE (owner spec
+                # 2026-09): archived per group like `pi` — the ratings and the
+                # committee's ballots/selection are the DECISION the 48-team
+                # fields were built from, so a page reads them back rather than
+                # refitting nine systems on request. `.get` on read; committee
+                # is None outside `jhsaa.ATLARGE_GROUPS`.
+                "ratings": {g: season["groups"][g].get("ratings")
+                            for g in jhsaa.GROUPS},
+                "committee": {g: season["groups"][g].get("committee")
+                              for g in jhsaa.GROUPS},
             }
             champs[gender] = summary["champions"]
             conn.execute("INSERT INTO world_jhsaa (world_id, year, gender, data)"
@@ -5984,8 +5994,18 @@ def jhsaa_state_result(bracket: dict, school: str) -> dict:
     # The champion is read off the archive, not inferred from "won its last game" —
     # a bye means a program can sit out a round without being out of the tournament.
     place = 1 if champion else (last["alive"] if last else len(field))
+    finish = _finish_label(place)
+    # A PARASTATE exit reads as the round it was (owner spec 2026-09, the 48-team
+    # groups): the round carries its archived name, and "Round of 48" banded off
+    # the alive count would file seeds 33-48's only State dual under a label no
+    # reader can place. Scoped to the named round, so every other archive is
+    # byte-identical.
+    from . import jhsaa as _jh
+    if not champion and last is not None and \
+            last.get("name") == _jh.PARASTATE_NAME:
+        finish = _jh.PARASTATE_NAME
     out.update(made_state=True, seed=field.index(school) + 1, place=place,
-               finish=_finish_label(place), champion=champion)
+               finish=finish, champion=champion)
     return out
 
 

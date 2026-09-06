@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header %}
+{% block title %}JHSAA {{ view.group }} Computer Ratings{% endblock %}
+{% block content %}
+
+{% set LABELS = {'colley': 'Colley', 'bt': 'BT', 'win_pct': 'Win%',
+                 'massey_dual': 'Massey-D', 'srs': 'SRS',
+                 'massey_game': 'Massey-G', 'set_share': 'SetShare',
+                 'sor': 'SOR', 'elo': 'Elo'} %}
+
+{% macro th(key, label, width=none, title=none) %}
+  {% set active = (view.sort == key) %}
+  {% set newdir = 'asc' if (active and view.dir == 'desc') else ('desc' if active else 'asc') %}
+  <th{% if width %} style="width:{{ width }}px"{% endif %}{% if title %} title="{{ title }}"{% endif %}>
+    <a class="jh-sortth{{ ' on' if active }}"
+       href="{{ url_for('jhsaa_computer', u=u, g=view.gender, group=view.group, year=view.scope.pin, sort=key, dir=newdir) }}">{{ label }}{% if active %}<span class="jh-sortarr">{{ '▾' if view.dir == 'desc' else '▴' }}</span>{% endif %}</a>
+  </th>
+{% endmacro %}
+
+{{ jh_header(view.scope, u, 'computer', view.group ~ ' Computer Ratings',
+             'Nine independent rating systems and their composite — parallel to TOSS and
+              the seeding ATR, never a replacement. σ is the disagreement measure: a
+              high-σ team is controversial by construction, not by opinion.',
+             [('Season', view.season_year), ('Teams', view.rows|length),
+              ('Systems', view.systems|length)] if view.ready else []) }}
+
+<div class="jh-shell">
+{% if not view.ready %}
+<div class="bl-panel"><div class="jh-empty">No computer ratings archived for this season.</div></div>
+{% else %}
+
+<div class="jh-jump">
+  <label><span class="k">Classification</span>
+    <select onchange="if(this.value)window.location=this.value">
+      {% for gp in view.groups %}
+      <option value="{{ url_for('jhsaa_computer', u=u, g=view.gender, group=gp, year=view.scope.pin) }}"
+              {{ 'selected' if gp == view.group }}>{{ gp }}</option>
+      {% endfor %}
+    </select></label>
+</div>
+
+{% if view.disconnected %}
+<div class="bl-panel"><div class="jh-empty">This group's schedule graph is
+disconnected, so the least-squares systems (Massey-D, Massey-G, SRS) are withheld
+rather than fit per component — the composite folds the systems that remain.</div></div>
+{% endif %}
+
+<div class="bl-panel">
+  <div class="bl-panel-head">
+    <span class="bl-panel-title">{{ view.season_year }} {{ view.group }} — composite by mean rank</span></div>
+  <div class="tbl-scroll">
+    <table class="jh-ledger nowrap">
+      <tr>
+        <th style="width:40px">#</th>
+        {{ th('school', 'Team') }}
+        <th style="width:56px">Rec</th>
+        <th style="width:104px" title="District — hover a row for the full name">District</th>
+        {{ th('mean', 'Mean', 52, 'Mean rank across the nine systems — the composite order') }}
+        {{ th('median', 'Med', 44, 'Median rank across the nine systems') }}
+        {{ th('sigma', 'σ', 44, 'Standard deviation of the nine ranks — the disagreement measure. Sort it both ways: high σ is the controversy list.') }}
+        {% for s in view.systems %}{{ th(s, LABELS[s], 62, view.glossary[s]) }}{% endfor %}
+      </tr>
+      {% for r in view.rows %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td><span class="jh-schoolcell">{{ r.mark|safe }}
+          <a href="{{ url_for('jhsaa_school', school=r.school, u=u, g=view.gender, year=view.scope.pin) }}">{{ r.school }}</a></span></td>
+        <td>{{ r.record }}</td>
+        <td title="{{ r.district }}">{{ r.district_short }}</td>
+        <td><b>{{ '%.1f'|format(r.mean) }}</b></td>
+        <td>{{ '%.1f'|format(r.median) }}</td>
+        <td>{{ '%.1f'|format(r.sigma) }}</td>
+        {% for s in view.systems %}
+        <td>{{ r.ranks.get(s, '—') }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">The nine systems — a glossary</span></div>
+  <div style="padding:10px 14px">
+    {% for s in view.systems %}
+    <p style="margin:6px 0"><b>{{ LABELS[s] }}</b> — {{ view.glossary[s] }}</p>
+    {% endfor %}
+  </div>
+</div>
+
+{% endif %}
+</div>
+{% endblock %}

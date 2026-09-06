@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header, jh_tabs, jh_tabs_script %}
+{% block title %}JHSAA {{ view.group }} At-Large Committee{% endblock %}
+{% block content %}
+
+{% set LABELS = {'colley': 'Colley', 'bt': 'BT', 'win_pct': 'Win%',
+                 'massey_dual': 'Massey-D', 'srs': 'SRS',
+                 'massey_game': 'Massey-G', 'set_share': 'SetShare',
+                 'sor': 'SOR', 'elo': 'Elo'} %}
+
+{{ jh_header(view.scope, u, 'committee', view.group ~ ' At-Large Committee',
+             'The 48-team field: 32 road qualifiers plus 16 committee at-larges, always
+              seeded 33-48. Five members, each a fixed published philosophy over the nine
+              computer systems — every selection traces to five ballots, never a coin flip.',
+             [('Season', view.season_year), ('At-larges', view.selected|length),
+              ('Auto bids', view.auto|length), ('Locks', view.locks|length)]
+             if view.ready else []) }}
+
+<div class="jh-shell">
+{% if not view.ready %}
+<div class="bl-panel"><div class="jh-empty">No committee archived — the at-large
+committee runs for 7A and Group 1 only, from the season the 48-team field began.</div></div>
+{% else %}
+
+<div class="jh-jump">
+  <label><span class="k">Group</span>
+    <select onchange="if(this.value)window.location=this.value">
+      {% for gp in view.groups %}
+      <option value="{{ url_for('jhsaa_committee', u=u, g=view.gender, group=gp, year=view.scope.pin) }}"
+              {{ 'selected' if gp == view.group }}>{{ gp }}</option>
+      {% endfor %}
+    </select></label>
+</div>
+
+<div class="bl-panel">
+  {{ jh_tabs([('board', 'Selection board', view.rows|length),
+              ('ballots', 'The five ballots', view.ballots|length)], 'jhcomm') }}
+
+  <div class="jh-pane" data-pane="board">
+  <div class="tbl-scroll">
+    <table class="jh-ledger nowrap">
+      <tr>
+        <th style="width:40px">#</th><th>Team</th>
+        <th style="width:56px">Rec</th>
+        <th style="width:52px" title="Mean rank across the nine systems">Mean</th>
+        <th style="width:44px" title="Median rank">Med</th>
+        <th style="width:44px" title="Rank disagreement — the controversy measure">σ</th>
+        {% for s in view.systems %}<th style="width:60px">{{ LABELS[s] }}</th>{% endfor %}
+        {% for m in view.members %}<th style="width:52px" title="{{ m }} — this member's ballot position among at-large candidates">{{ m.replace('The ', '')[:5] }}</th>{% endfor %}
+        <th style="width:56px" title="Borda count across the five ballots (seed Borda for the selected sixteen, bubble Borda otherwise)">Borda</th>
+        <th style="width:76px">Status</th>
+      </tr>
+      {% for r in view.rows %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td><span class="jh-schoolcell">{{ r.mark|safe }}
+          <a href="{{ url_for('jhsaa_school', school=r.school, u=u, g=view.gender, year=view.scope.pin) }}">{{ r.school }}</a>
+          {% if r.auto %}<span class="jh-chip" title="District champion who missed the road — automatic at-large berth">AUTO</span>{% endif %}
+        </span></td>
+        <td><b>{{ r.record }}</b></td>
+        <td>{{ '%.1f'|format(r.mean) }}</td>
+        <td>{{ '%.1f'|format(r.median) }}</td>
+        <td>{{ '%.1f'|format(r.sigma) }}</td>
+        {% for s in view.systems %}<td>{{ r.ranks.get(s, '—') }}</td>{% endfor %}
+        {% for m in view.members %}<td>{{ r.positions.get(m) or '—' }}</td>{% endfor %}
+        <td class="num">{{ r.borda if r.borda is not none else '—' }}</td>
+        <td>
+          {% if r.status == 'Qualified' %}<span class="jh-chip" title="In the road-to-State field — at-large irrelevant">Qualified</span>
+          {% elif r.status == 'Lock' %}<span class="jh-chip gold" title="In the at-large range on all five ballots">Lock</span>
+          {% elif r.status == 'In' %}<span class="jh-chip green" title="Above the Borda cut">In</span>
+          {% elif r.status == 'Bubble' %}<span class="jh-chip" title="Within the Borda window of the cut">Bubble</span>
+          {% else %}<span style="color:var(--text-faint)">Out</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  </div>
+
+  <div class="jh-pane" data-pane="ballots" hidden>
+    <div class="tbl-scroll">
+      <table class="jh-ledger nowrap">
+        <tr>
+          <th style="width:36px">#</th>
+          {% for b in view.ballots %}
+          <th title="Heavy on: {{ b.heavy|map('upper')|join(', ') }} — weights {{ b.weights }}">{{ b.member }}</th>
+          {% endfor %}
+        </tr>
+        {% for i in range(48) %}
+        <tr>
+          <td>{{ i + 1 }}</td>
+          {% for b in view.ballots %}
+          {% set t = b.top[i] if i < b.top|length else none %}
+          <td>{% if t %}<span class="jh-schoolcell">{{ t.mark|safe }}
+              <span title="{{ t.status }}">{{ t.school }}</span></span>{% else %}—{% endif %}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+    <div style="padding:8px 14px;color:var(--text-faint)">
+      Each member is a fixed philosophy over the nine systems, published in the
+      column tooltips. A coach reading which member keeps them out is the point
+      of this tab.
+    </div>
+  </div>
+
+  {{ jh_tabs_script('jhcomm') }}
+</div>
+
+{% endif %}
+</div>
+{% endblock %}

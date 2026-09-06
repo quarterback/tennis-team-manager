@@ -4,7 +4,7 @@
 {% block content %}
 
 {{ jh_header(view.scope, u, 'repeat_poy', 'Repeat Players of the Year',
-             'Every player who has won a classification Player of the Year more than once.',
+             '',
              [('Players', view.rows|length)]) }}
 
 <div class="jh-shell">
@@ -18,15 +18,14 @@
   <div class="bl-tablescroll">
   <table class="bl-table jh-repeat">
     <thead><tr>
-      <th class="n">Awards</th><th>Player</th><th>School</th><th>Players of the Year</th>
+      <th>Player</th><th>School</th><th>Players of the Year</th>
     </tr></thead>
     <tbody>
     {% for band in view.bands %}
-    <tr class="band"><td colspan="4">{{ band.heading }} <span class="ct">{{ band.rows|length }}</span></td></tr>
-    {% if not band.rows %}<tr class="none"><td colspan="4">Nobody yet.</td></tr>{% endif %}
+    <tr class="band"><td colspan="3">{{ band.heading }} <span class="ct">{{ band.rows|length }}</span></td></tr>
+    {% if not band.rows %}<tr class="none"><td colspan="3">Nobody yet.</td></tr>{% endif %}
     {% for r in band.rows %}
     <tr>
-      <td class="n">{{ r.count }}</td>
       <td><a class="nm" href="{{ url_for('jhsaa_player', school=r.link, pid=r.pid, u=u, g=view.gender) }}">{{ r.name }}</a></td>
       <td class="sch">{% for st in r.stints %}<span class="stint">{% if st.deco.mark %}<span class="mk">{{ st.deco.mark|safe }}</span>{% endif %}{{ st.school }}</span>{{ ' · ' if not loop.last }}{% endfor %}</td>
       <td class="won">{% for st in r.stints %}{% for a in st.won %}<span class="ti" title="{{ a.season_year }} {{ a.group }} · {{ st.school }}"><b>{{ a.season_year }}</b> {{ a.group }}</span>{{ ', ' if not (loop.last and st is sameas r.stints[-1]) }}{% endfor %}{% endfor %}</td>
