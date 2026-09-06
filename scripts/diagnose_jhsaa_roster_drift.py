@@ -34,6 +34,27 @@ from app import worldconfig                                    # noqa: E402
 from app.dbpath import resolve_db_path                         # noqa: E402
 
 
+def newest_played_season(world_id: int, gender: str, school: str,
+                         latest: int | None) -> tuple[int | None, set]:
+    """(archive year index, archived varsity line names) for the NEWEST archived
+    season this school actually played — walking back from `latest`, because the
+    current world year may not have played or archived yet. (None, empty) when
+    no archived season carries a varsity line for the school. The calendar year
+    to regenerate the roster at is `BASE_YEAR + index + 1`, the same conversion
+    the era gates document."""
+    for year_ix in range(latest if latest is not None else -1, -1, -1):
+        got = set()
+        for d in wd.jhsaa_schedule(world_id, year_ix, gender, school):
+            if (d.get("level") or "v") != "v":
+                continue
+            side = "home" if d.get("home") else "away"
+            for ln in d.get("lines") or ():
+                got.update(ln.get(side) or ())
+        if got:
+            return year_ix, got
+    return None, set()
+
+
 def main() -> None:
     # --set-name-era N: repair a poisoned era row. While the dbpath probe race
     # was live (see app/dbpath.py), an era self-configured against the SHADOW
@@ -94,24 +115,9 @@ def main() -> None:
         print(f"school {school_name!r} not found for {gender}"); return
     print(f"\nschool: {sc.name} ({gender}) — ident {sc.ident!r} key {sc.key!r}")
 
-    def line_names(year_ix: int) -> set:
-        got = set()
-        for d in wd.jhsaa_schedule(w["id"], year_ix, gender, sc.name):
-            if (d.get("level") or "v") != "v":
-                continue
-            side = "home" if d.get("home") else "away"
-            for ln in d.get("lines") or ():
-                got.update(ln.get(side) or ())
-        return got
-
     # Newest archived season with line scores for this school — the current
     # world year may not have played/archived yet.
-    archived, arc_ix = set(), None
-    for year_ix in range(latest if latest is not None else -1, -1, -1):
-        archived = line_names(year_ix)
-        if archived:
-            arc_ix = year_ix
-            break
+    arc_ix, archived = newest_played_season(w["id"], gender, sc.name, latest)
     if not archived:
         print("no archived lines for this school in ANY season — pick one that played")
         return
