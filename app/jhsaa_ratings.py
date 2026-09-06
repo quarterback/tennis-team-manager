@@ -61,6 +61,23 @@ SOR_BENCH_RANKS = (9, 16)
 
 # --- ingestion ---------------------------------------------------------------
 
+def _phase_rank(phase: str) -> int:
+    """Where a phase sits in the season's actual play sequence: the early
+    non-district window first, the whole regular block (league passes, invites,
+    showcases, challenges) next, then the road's rounds in `POSTSEASON` order.
+    Phases are played WHOLE-GENDER in sequence (`play_regular_season` /
+    `run_season`), so ordering phase-major first is what makes a per-team
+    schedule index usable as the within-phase clock — without it, a road dual
+    hosted by a short-schedule team sorted BEFORE another team's late league
+    dual and Elo updated out of play order."""
+    from .jhsaa import EARLY_FORMAT_PHASE, POSTSEASON
+    if phase == EARLY_FORMAT_PHASE:
+        return 0
+    if phase in POSTSEASON:
+        return 2 + POSTSEASON.index(phase)
+    return 1                      # league passes, invitationals, showcases
+
+
 def dual_rows(teams: list) -> list[dict]:
     """The group's duals as flat rows, deduped and in a deterministic play-order
     proxy. One row per dual (the HOME side's schedule row — `play_dual` writes
@@ -68,25 +85,27 @@ def dual_rows(teams: list) -> list[dict]:
     State/TOC excluded (the prestate posture: these ratings are the input a
     selection is made from, and State has not been played when they are taken).
 
-    Order: a JHSAA season has no clock — a dual's position in its team's
-    schedule is the calendar — so the global sequence Elo walks is
-    (home-side schedule index, home, away): phases are played whole-gender in
-    sequence, so the index is monotone with real play order per team, and the
-    name tiebreak makes the walk reproducible.
-    """
+    Order: a JHSAA season has no clock — the global sequence Elo walks is
+    (phase rank, home-side schedule index, home, away). The PHASE carries the
+    real calendar (each phase is played whole-gender before the next begins);
+    the schedule index is the within-phase clock, monotone per team; the name
+    tiebreak makes the walk reproducible. Rows also carry `phase` — the set and
+    game currencies need it (`dual_shares`' pro-set rule)."""
     names = {t.school.name for t in teams}
     rows = []
     for t in teams:
         for idx, d in enumerate(t.schedule):
             if not d.get("home"):
                 continue
-            if d.get("phase") in ("state", "toc"):
+            phase = d.get("phase") or "regular"
+            if phase in ("state", "toc"):
                 continue
             if d["opp"] not in names:
                 continue
             rows.append({"home": t.school.name, "away": d["opp"],
-                         "hp": d["pf"], "ap": d["pa"],
-                         "order": (idx, t.school.name, d["opp"]),
+                         "hp": d["pf"], "ap": d["pa"], "phase": phase,
+                         "order": (_phase_rank(phase), idx,
+                                   t.school.name, d["opp"]),
                          "lines": d.get("lines") or []})
     rows.sort(key=lambda r: r["order"])
     return rows
@@ -114,12 +133,19 @@ def dual_shares(row: dict) -> tuple[int, int, int, int] | None:
 
     ‼️ THE RETIREMENT GUARD (spec 1.2): a line with a SINGLE parsed set is a
     retirement or default (~3.1k a gender-season) and is dropped — left raw it
-    hands the healthy side a full-line game ratio it never played for."""
+    hands the healthy side a full-line game ratio it never played for.
+
+    ‼️ EXCEPT AT A POD SHOWCASE. `showcase_pod` deliberately scores every court
+    as ONE 8-game pro set (`PRESETS["pro_set_8"]` — three pro sets is the USTA
+    junior daily limit), so a single-set line there is the COMPLETE match, not
+    a retirement. Read the guard off the row's `phase`: a pod line counts as
+    one set and its real games; everywhere else the two-set floor holds."""
+    min_sets = 1 if row.get("phase") == "showcase_pod" else 2
     hs = as_ = hg = ag = 0
     any_line = False
     for ln in row["lines"]:
         sets = _parse_sets(ln.get("score", ""))
-        if len(sets) < 2:
+        if len(sets) < min_sets:
             continue
         any_line = True
         for h, a in sets:

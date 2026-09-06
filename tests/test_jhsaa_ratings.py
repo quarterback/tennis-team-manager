@@ -176,3 +176,35 @@ def test_state_and_toc_never_reach_the_ratings_input():
                               "lines": []})
     rows = jr.dual_rows(teams)
     assert len(rows) == 1 and rows[0]["hp"] == 4
+
+
+def test_a_pod_showcase_pro_set_is_a_complete_match_not_a_retirement():
+    """`showcase_pod` scores every court as ONE 8-game pro set, so its
+    single-set lines must reach the set/game currencies (Codex finding,
+    2026-09) — while an ordinary phase's single-set line stays excluded."""
+    pod = {**_row("A", "B", 3, 0, scores=["8-3", "8-6", "8-2"]),
+           "phase": "showcase_pod"}
+    assert jr.dual_shares(pod) == (3, 0, 24, 11)
+    league = {**_row("A", "B", 4, 3, scores=["8-3"]), "phase": "regular"}
+    assert jr.dual_shares(league) is None
+
+
+def test_elo_walks_phase_major_play_order():
+    """A road dual sorts after every regular-season dual whatever the two
+    teams' schedule lengths — the phase is the calendar, the index only the
+    within-phase clock (Codex finding, 2026-09)."""
+    duals = [("A", "B", 4, 3, None), ("C", "D", 4, 3, None),
+             ("A", "C", 4, 3, None)]
+    teams = _teams(duals)
+    a = next(t for t in teams if t.school.name == "A")
+    # A's THIRD schedule entry is a road dual; C is on only two duals, so a
+    # bare index sort would slot it before C's second regular dual.
+    h, aw = _sched("A", "D", 5, 4)
+    h["phase"] = "sectional"
+    a.schedule.append(h)
+    next(t for t in teams if t.school.name == "D").schedule.append(aw)
+    rows = jr.dual_rows(teams)
+    assert rows[-1]["phase"] == "sectional"
+    assert [r["phase"] for r in rows[:-1]] == ["regular"] * (len(rows) - 1)
+    assert jr._phase_rank("early") < jr._phase_rank("regular") \
+        < jr._phase_rank("sectional") < jr._phase_rank("conference")
