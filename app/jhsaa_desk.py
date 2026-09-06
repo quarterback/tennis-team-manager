@@ -20,7 +20,9 @@ of that order — and a `link` (endpoint + args) into the page that owns the det
 """
 from __future__ import annotations
 
+import copy
 import json
+import threading
 from typing import Any
 
 from . import jhsaa as jh
@@ -121,6 +123,8 @@ def load_season(world_id: int, year: int) -> dict | None:
         try:
             cw = wd.jhsaa_career_wins(world_id, g, limit=3)
             records[g] = {"top": (cw.get("players") or {}).get("top") or [],
+                          # Repeat champions only (owner: a first season's leaders
+                          # "would just be a lot of 1s"); empty until someone repeats.
                           "titles": wd.jhsaa_individual_title_repeats(world_id, g)[:3]}
         except Exception:                       # a record board must never sink the page
             records[g] = {"top": [], "titles": []}
@@ -280,15 +284,24 @@ def d_freshman_champ(data: dict) -> list[dict]:
         for grp, flights in groups.items():
             for fl, entry in flights.items():
                 players = entry.get("players") or []
-                if not players or any((p.get("grade") or 12) != 9 for p in players):
+                # A pair counts if EITHER athlete is a ninth-grader — the story is
+                # the freshman, and the partner is named in the dek.
+                fresh = [p for p in players if (p.get("grade") or 12) == 9]
+                if not fresh:
                     continue
-                name = " / ".join(p.get("name", "") for p in players)
                 from .jhsaa_individuals import FLIGHT_NAMES
                 fname = FLIGHT_NAMES.get(fl, fl)
-                head = f"{name} won {grp} {fname} as a freshman" if fl == "S1" else \
-                    f"{name} won {grp} {fname} as freshmen"
-                dek = f"{GENDER_LABEL[g]} · {entry.get('school', '')}"
-                pid = players[0].get("pid")
+                if len(fresh) == len(players) and len(players) > 1:
+                    name = " / ".join(p.get("name", "") for p in players)
+                    head = f"{name} won {grp} {fname} as freshmen"
+                    dek = f"{GENDER_LABEL[g]} · {entry.get('school', '')}"
+                else:
+                    name = fresh[0].get("name", "")
+                    partner = [p for p in players if p is not fresh[0]]
+                    head = f"{name} won {grp} {fname} as a freshman"
+                    dek = f"{GENDER_LABEL[g]} · {entry.get('school', '')}" + \
+                        (f" · with {partner[0].get('name', '')} ({partner[0].get('grade', '')})" if partner else "")
+                pid = fresh[0].get("pid")
                 link = {"ep": "jhsaa_player", "args": {"school": entry.get("school", ""),
                                                         "pid": pid, "g": g}} if pid else \
                     {"ep": "jhsaa_individuals", "args": {"group": grp, "g": g, "flight": fl}}
@@ -563,12 +576,18 @@ def compile_desk(data: dict, feed: int = 6) -> dict:
 
 
 _front_cache: dict = {}
+_front_lock = threading.Lock()
 
 
 def front_page(world_id: int, year: int) -> dict | None:
     """The compiled front page for one world-year, memoised on the archive's own
     stamp (an archived season is immutable; a lab regenerate rewrites its rows
-    and so moves the stamp). Compute into a local, publish, return the local."""
+    and so moves the stamp). Compute into a local, publish, return the local.
+
+    ‼️ THREAD-SAFE UNDER THE ONE-WORKER, MANY-THREADS SERVER: the cache is read and
+    replaced under a lock, and the caller gets a DEEP COPY — the view attaches
+    marks to the stories it renders, and a shared cached dict mutated by one
+    request while another reads it is the module-global-cache class of outage."""
     from . import world as wd
     conn = wd._db()
     try:
@@ -577,17 +596,22 @@ def front_page(world_id: int, year: int) -> dict | None:
     finally:
         conn.close()
     key = (world_id, year, st["n"], st["r"], id(jh.former_names()))
-    hit = _front_cache.get(key)
+    with _front_lock:
+        hit = _front_cache.get(key)
     if hit is not None:
-        return hit
+        return copy.deepcopy(hit)
     data = load_season(world_id, year)
     if data is None:
         return None
     out = compile_desk(data)
-    _front_cache.clear()
-    _front_cache[key] = out
-    return out
+    with _front_lock:
+        # One season at a time is enough (the front page is browsed one season
+        # at a time); replace rather than accumulate.
+        _front_cache.clear()
+        _front_cache[key] = out
+    return copy.deepcopy(out)
 
 
 def reset() -> None:
-    _front_cache.clear()
+    with _front_lock:
+        _front_cache.clear()
