@@ -98,10 +98,15 @@
         </nav>
 
         {% if game %}
+        {# ‼️ The corner agrees with the page under it: the JHSAA plays a year
+           AHEAD of the college calendar (its summer→spring season graduates the
+           class the college year then recruits), so High School pages show the
+           JHSAA year — 2072 in the corner over a page full of 2073 read as a
+           bug, not a calendar (owner report 2026-09). #}
         <div class="fm-gc fm-gc-team fm-gc-year">
           <span class="fm-gc-stack">
-            <span class="fm-gc-k">Season {{ game.season_no }}</span>
-            <span class="fm-gc-v">{{ game.year }}</span>
+            <span class="fm-gc-k">Season {{ game.season_no }}{% if active == 'High School' %} · HS{% endif %}</span>
+            <span class="fm-gc-v">{{ game.jh_year if active == 'High School' else game.year }}</span>
           </span>
         </div>
         <div class="fm-gc fm-gc-sep">

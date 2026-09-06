@@ -330,7 +330,16 @@ def _game_context():
             action = "Play JHSAA season"
         elif w["week"] == 0 and w["year"] > 0 and not wd.pros_rolled(w):
             action = "Run pro offseason"
-        return {"year": 2026 + w["year"], "season_no": w["year"] + 1,
+        # ‼️ TWO CALENDARS, ONE CLOCK (owner report 2026-09). The JHSAA season is
+        # a year AHEAD of the college one by design — its year runs summer→spring
+        # and its seniors are the class the college season then recruits
+        # (`world.jhsaa_season_year` = BASE + index + 1). The masthead chip used
+        # to show the college year on every page, so on a JHSAA surface the
+        # corner said 2072 under a page full of 2073 — "the one in the corner is
+        # wrong". The shell shows `jh_year` while the reader is in the High
+        # School section, so the corner always agrees with the page under it.
+        return {"year": 2026 + w["year"], "jh_year": 2026 + w["year"] + 1,
+                "season_no": w["year"] + 1,
                 "week": w["week"], "phase": _LBL.get(stage, "Regular season"),
                 "stage": stage, "action": action, "awards_pending": awards_pending,
                 "complete": stage == "complete",
