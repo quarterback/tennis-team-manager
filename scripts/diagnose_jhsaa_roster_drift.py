@@ -10,11 +10,17 @@ compares one school's archived line names against its regenerated roster, and
 sweeps the candidate inputs (each era key at its stored value vs the values it
 could have held) to name the one that restores the match.
 
-Run against the real save:  TENNIS_DB_PATH=/path/to/tennis.db \
-    python3 scripts/diagnose_jhsaa_roster_drift.py [School Name] [boys|girls]
+Run it from the repo folder the game runs from, with NO TENNIS_DB_PATH, so it
+reads exactly the save the app reads (the default is ./tennis.db next to the
+repo):
 
-Read-only: nothing is written, and the era memo caches are restored after each
-probe.
+    python3 scripts/diagnose_jhsaa_roster_drift.py "Coast Prairie" boys
+
+Set TENNIS_DB_PATH only if your game runs with it set too.
+
+Near read-only: the only write it can make is the one the app itself would make
+on the next page load — persisting a MISSING era row at its self-configured
+value. The sweep probes never write; the era memo caches are restored after.
 """
 import os
 import sqlite3
@@ -32,8 +38,14 @@ def main() -> None:
     school_name = sys.argv[1] if len(sys.argv) > 1 else None
     gender = sys.argv[2] if len(sys.argv) > 2 else "boys"
 
+    configured = os.environ.get("TENNIS_DB_PATH")
     db = resolve_db_path()
     print(f"db: {db}")
+    if configured and os.path.abspath(configured) != os.path.abspath(db):
+        print(f"‼️ TENNIS_DB_PATH={configured!r} was NOT usable and the app fell back "
+              f"to the file above. If that is not your real save, re-run from the "
+              f"game's own folder with NO TENNIS_DB_PATH at all — the app's default "
+              f"save is ./tennis.db next to the repo.")
     conn = sqlite3.connect(db)
     conn.row_factory = sqlite3.Row
     worlds = conn.execute("SELECT id, seed, salt, year FROM world").fetchall()
@@ -42,9 +54,16 @@ def main() -> None:
     if len(worlds) != 1:
         print("‼️ EXPECTED EXACTLY ONE WORLD ROW — a stray world means pages can "
               "resolve a different salt than the one the season simulated with.")
-    for key in ("jhsaa_name_era", "jhsaa_dev_era", "jhsaa_talent_era",
-                "jhsaa_career_era"):
-        print(f"worldconfig {key} = {worldconfig.get(key)!r}")
+    # Raw stored value ('' = the row does not exist) AND the value generation
+    # actually resolves — resolving also self-configures and persists a missing
+    # row, exactly as the first page load after an update does.
+    for key, fn in (("jhsaa_name_era", jh.name_era), ("jhsaa_dev_era", jh.dev_era),
+                    ("jhsaa_talent_era", jh.talent_era),
+                    ("jhsaa_career_era", jh.career_era)):
+        raw = worldconfig.get(key)
+        print(f"worldconfig {key} = {raw!r} (missing)" if not str(raw).strip()
+              else f"worldconfig {key} = {raw!r}", end="")
+        print(f"  -> resolves to {fn()}")
     latest = conn.execute("SELECT MAX(year) FROM world_jhsaa").fetchone()[0]
     print(f"latest archived world_jhsaa.year index: {latest} "
           f"(season {wd.BASE_YEAR + latest + 1 if latest is not None else '—'})")
@@ -53,7 +72,6 @@ def main() -> None:
     if not w:
         print("no world — nothing to compare"); return
     salt = wd.active_salt(wd.DEFAULT_SEED)
-    season_year = wd.jhsaa_season_year(w)
 
     schools = jh.load_schools(gender)
     sc = next((s for s in schools if s.name == school_name), None) if school_name \
@@ -62,19 +80,31 @@ def main() -> None:
         print(f"school {school_name!r} not found for {gender}"); return
     print(f"\nschool: {sc.name} ({gender}) — ident {sc.ident!r} key {sc.key!r}")
 
-    sched = wd.jhsaa_schedule(w["id"], w["year"], gender, sc.name)
-    archived = set()
-    for d in sched:
-        if (d.get("level") or "v") != "v":
-            continue
-        side = "home" if d.get("home") else "away"
-        for ln in d.get("lines") or ():
-            archived.update(ln.get(side) or ())
+    def line_names(year_ix: int) -> set:
+        got = set()
+        for d in wd.jhsaa_schedule(w["id"], year_ix, gender, sc.name):
+            if (d.get("level") or "v") != "v":
+                continue
+            side = "home" if d.get("home") else "away"
+            for ln in d.get("lines") or ():
+                got.update(ln.get(side) or ())
+        return got
+
+    # Newest archived season with line scores for this school — the current
+    # world year may not have played/archived yet.
+    archived, arc_ix = set(), None
+    for year_ix in range(latest if latest is not None else -1, -1, -1):
+        archived = line_names(year_ix)
+        if archived:
+            arc_ix = year_ix
+            break
+    if not archived:
+        print("no archived lines for this school in ANY season — pick one that played")
+        return
+    season_year = wd.BASE_YEAR + arc_ix + 1
+    print(f"comparing season {season_year} (archive year index {arc_ix})")
     print(f"archived varsity line names ({len(archived)}): "
           f"{sorted(archived)[:8]}{' …' if len(archived) > 8 else ''}")
-    if not archived:
-        print("no archived lines for the current season — pick a school that played")
-        return
 
     def overlap(label: str) -> int:
         roster = {p.name for p in jh.build_roster(sc, season_year, salt)}
