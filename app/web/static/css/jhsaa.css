@@ -583,31 +583,6 @@
   color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
-/* ---- The season as five stages (design 2b) ----
-   "How did this season go" answered before "here is every match". A season is a
-   sequence — invitationals, the league, the showcases, the road, the State draw —
-   and the ledger row that folds it (28–4) says nothing about WHERE the four went.
-   The stage a program's season actually ended in carries the accent. */
-.jh-stages {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1px; background: var(--border-subtle);
-  border-top: 1px solid var(--border-subtle);
-}
-.jh-stages > div { background: var(--surface-card); padding: 14px 16px; min-width: 0; }
-.jh-stages .k {
-  display: block; font-size: var(--fs-body-m); font-weight: 700; color: var(--text-primary);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.jh-stages .v {
-  display: block; margin-top: 7px; font-family: var(--font-mono);
-  font-size: var(--fs-display-s); line-height: 1.1; letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums; color: var(--text-primary);
-}
-.jh-stages .s { display: block; margin-top: 4px; font-size: var(--fs-caption); color: var(--text-muted); }
-/* The stage the season ENDED in — the one the reader came for. */
-.jh-stages > div.end { background: var(--green-50); box-shadow: inset 3px 0 0 var(--brand); }
-.jh-stages > div.none .v { color: var(--text-faint); }
-
 /* ---- Trophy case (design 3a) ----
    ‼️ A SEASON IS ONE CARD, NOT FOUR ROWS. The Honors list spent a full-width row
    on a season's state finish, then ANOTHER on the same year's unit chips, then a

@@ -134,30 +134,6 @@
    what the program is all-time — each linking into the destination that owns the
    full answer. #}
 {% set postseason = view.schedule | rejectattr('kind', 'in', ('DIST', 'INVITE', 'SHOWCASE')) | list %}
-{# ‼️ THE SEASON READS AS A SEQUENCE BEFORE IT READS AS A LIST (owner rule 2026-09).
-   "28–4" folds a season without saying where the four went — a program that went
-   unbeaten in its league and lost the semifinal folded to the same string as one
-   that limped through the league and went out in the first round. Five stages, in
-   the order they were played, and the stage the season ENDED in takes the accent.
-   The fold is `view.season_stages`, built off the same `_kind` the schedule tags
-   with, so a stage the association adds later lands here by construction. #}
-{% if view.schedule %}
-<div class="bl-panel" style="margin-bottom:18px">
-  <div class="bl-panel-head"><span class="bl-panel-title">Season</span>
-    <span class="bl-panel-meta">{{ view.record }}{% if view.state_rank %} · No. {{ view.state_rank }} in {{ view.group }}{% endif %}</span>
-    <a class="jh-hqmore" href="{{ hq_url('season') }}">Schedule →</a></div>
-  <div class="jh-stages">
-    {% for st in view.season_stages %}
-    <div class="{{ 'end' if st.end }}{{ ' none' if not st.played }}">
-      <span class="k">{{ st.label }}</span>
-      <span class="v">{% if st.played %}{{ st.w }}–{{ st.l }}{% else %}—{% endif %}</span>
-      {% if st.note %}<span class="s">{{ st.note }}</span>
-      {% elif not st.played %}<span class="s">did not reach</span>{% endif %}
-    </div>
-    {% endfor %}
-  </div>
-</div>
-{% endif %}
 <div class="jh-cols2">
   <div class="jh-stack">
     <div class="bl-panel">

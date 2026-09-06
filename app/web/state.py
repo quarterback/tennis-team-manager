@@ -5364,47 +5364,6 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                             "span": (str(r["first"]) if r["first"] == r["last"]
                                      else f"{r['first']}–{str(r['last'])[2:]}")})
 
-    # ‼️ THE SEASON AS FIVE STAGES (owner rule 2026-09) — "how did this season go"
-    # answered before "here is every match". A season is a sequence, and the record
-    # that folds it (28–4) says nothing about WHERE the four losses went: a program
-    # that went 16–0 in its league and lost the semifinal read identically to one
-    # that limped through the league and lost in the first round.
-    #
-    # The stages are the association's own phases, grouped the way a reader thinks
-    # about them, and the grouping is BY EXCLUSION for the road: everything that is
-    # not an invitational, the league, a showcase or the State event is a step on
-    # the way up. That is the same construction `_kind` uses, so a stage the
-    # association adds later lands on the road strip without a change here.
-    _FIXED = {"INVITE", "DIST", "SHOWCASE", "STATE", "TOC"}
-    _STAGES = (("invite", "Invitationals", lambda k: k == "INVITE"),
-               ("league", sc.district, lambda k: k == "DIST"),
-               ("showcase", "Showcases", lambda k: k == "SHOWCASE"),
-               ("road", "Road to state", lambda k: k not in _FIXED),
-               ("state", "State tournament", lambda k: k in ("STATE", "TOC")))
-    # The subcopy goes on a stage ONLY where it says something the W–L does not:
-    # where the league season placed, and how the State run actually ended. Every
-    # other stage's record is the whole story and a caption under it is decoration.
-    place = (season or {}).get("place", 0)
-    _ORD = {1: "1st", 2: "2nd", 3: "3rd"}
-    notes = {
-        "league": f"{_ORD.get(place, f'{place}th')} in the league" if place else "",
-        "state": ((season or {}).get("toc_finish")
-                  or (season or {}).get("state_finish") or ""),
-    }
-    season_stages = []
-    for key, label, match in _STAGES:
-        rows = [d for d, k in zip(sched, kinds) if match(k)]
-        won = sum(1 for d in rows if d["won"])
-        season_stages.append({"key": key, "label": label, "played": bool(rows),
-                              "w": won, "l": len(rows) - won,
-                              "note": notes.get(key, "")})
-    # The stage the season ENDED in — the last one actually played, which is what
-    # the Overview accents. A season that never reached the road ends in its league.
-    for st in reversed(season_stages):
-        if st["played"]:
-            st["end"] = True
-            break
-
     return {
         "found": True, "school": school, "gender": g, "year": yr, "years": years,
         "season_year": season_year, "is_current": bool(years) and yr == years[0],
@@ -5493,7 +5452,6 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                     "family": _family_row(fam_map, p.pid)}
                    for p in roster],
         "honors": (season or {}).get("honors", []),
-        "season_stages": season_stages,
         "history": hist,
         "career_wins": career_wins,
     }
