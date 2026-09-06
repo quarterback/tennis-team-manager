@@ -92,17 +92,43 @@
     </div>
   </div>
 </div>
+{# ‼️ WHAT THE PROGRAM IS, IN THE MASTHEAD (owner rule 2026-09). This fold used to
+   sit under History — below the fold of a page whose whole job is "you have
+   entered this program's HQ". 1233–241, ten titles, 47 trips is not an archive you
+   navigate to, it is the persistent context, so it belongs with the identity block
+   and stays on every destination. History keeps its own copy of the same fold with
+   the ledger it folds; that panel is where the numbers are EXPLAINED, this strip is
+   where they simply are. #}
+<div class="jh-progstrip">
+  <div><span class="v">{{ t.record }}</span><span class="k">all-time · {{ '%.3f'|format(t.pct)|replace('0.', '.') }}</span></div>
+  <div><span class="v">{{ t.state_titles }}</span><span class="k">state titles{% if t.last_title %} · last {{ t.last_title.season_year }}{% endif %}</span></div>
+  <div><span class="v">{{ t.state_appearances }}</span><span class="k">state trips</span></div>
+  <div><span class="v">{{ t.district_titles }}</span><span class="k">district titles of {{ t.seasons }}</span></div>
+  <div><span class="v">{{ t.toc_titles }}</span><span class="k">tournament of champions</span></div>
+  {# "unit titles" is the owner's label, and the league title IS a unit title — the
+     trophy case counts it as one (`unit_wins` leads with it). `t.road_titles` has
+     the league deliberately subtracted, so alone under this label it undercounted
+     every district champion and disagreed with the trophy case on the same page. #}
+  <div><span class="v">{{ t.road_titles + t.district_titles }}</span><span class="k">unit titles</span></div>
+  <div><span class="v">{{ view.history.individual_champions|length }}</span><span class="k">individual champions</span></div>
+  {% if t.best %}
+  <div><span class="v sm">{{ t.best.toc_finish or t.best.state_finish or '—' }}</span>
+    <span class="k">best season · {{ t.best.season_year }} · {{ t.best.record }}</span></div>
+  {% endif %}
+  <div><span class="v sm">{{ t.poy }} POY · {{ t.all_state }} A-S</span>
+    <span class="k">{{ t.all_district }} all-district</span></div>
+</div>
 {# The HQ nav joins the identity card above it — one object, the program's own
    navigation. NO counts on these (owner: tabs wearing "104 · 347 · 56" read as
    database dumps, which is the impression this page is being rebuilt to stop
    giving). #}
 <nav class="jh-hqnav">
   <a class="{{ 'on' if hq == 'overview' }}" href="{{ hq_url('overview') }}">Overview</a>
-  <a class="{{ 'on' if hq == 'team' }}" href="{{ hq_url('team') }}">Team</a>
-  <a class="{{ 'on' if hq == 'season' }}" href="{{ hq_url('season') }}">Season</a>
+  <a class="{{ 'on' if hq == 'team' }}" href="{{ hq_url('team') }}">Roster</a>
+  <a class="{{ 'on' if hq == 'season' }}" href="{{ hq_url('season') }}">Schedule</a>
   <a class="{{ 'on' if hq == 'history' }}" href="{{ hq_url('history') }}">History</a>
   <a class="{{ 'on' if hq == 'honors' }}" href="{{ hq_url('honors') }}">Honors</a>
-  <a class="{{ 'on' if hq == 'records' }}" href="{{ hq_url('records') }}">Champions &amp; Records</a>
+  <a class="{{ 'on' if hq == 'records' }}" href="{{ hq_url('records') }}">Records</a>
 </nav>
 
 {% if hq == 'overview' %}
@@ -115,12 +141,26 @@
 <div class="jh-cols2">
   <div class="jh-stack">
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">{{ view.season_year }} postseason</span>
-        <a class="jh-hqmore" href="{{ hq_url('season') }}">Full season →</a></div>
-      {% if postseason %}
+      <div class="bl-panel-head"><span class="bl-panel-title">Schedule</span>
+        <a class="jh-hqmore" href="{{ hq_url('season') }}">Schedule →</a></div>
+      {# ‼️ A PROGRAM WITH NO POSTSEASON STILL HAS A SEASON, AND THIS PANEL SHOWS IT
+         (owner, 2026-09: "I want to see their schedule"). The miss used to be
+         answered with a SENTENCE — "No postseason this year — 15-3 in Gold Valley
+         League, 2nd place" — which restates what the masthead already carries, in
+         place of the one thing the panel exists to show. Most programs miss the
+         road in most seasons, so the COMMON case got a paragraph and the rare case
+         got the content. It falls back to the tail of the card instead: the matches
+         they actually played, with the full run one click away.
+         The row markup is shared, so a league dual renders here exactly as it does
+         on the Schedule view — including its tint, which is why the class test is
+         the full one rather than `else 'road'`. That shortcut was safe while only
+         postseason rows reached it and would paint every league dual as a road
+         stage the moment this fell back. #}
+      {% set rows = postseason if postseason else view.schedule[-6:] %}
+      {% if rows %}
       <table class="jh-sched">
-        {% for d in postseason %}
-        <tr class="{{ 'state' if d.kind in ('STATE', 'TOC') else 'road' }}">
+        {% for d in rows %}
+        <tr class="{{ 'state' if d.kind in ('STATE', 'TOC') else 'road' if d.kind not in ('DIST', 'INVITE', 'SHOWCASE') }}">
           <td class="dt" style="width:62px">{{ d.date }}</td>
           {# vs/at, same as the full Season view — schedules render the way the
              game presents them, and a summary is not licence to drop the venue. #}
@@ -135,11 +175,6 @@
         </tr>
         {% endfor %}
       </table>
-      {% elif view.schedule %}
-      {# The season is played (or playing) but ended short of the road — that IS the
-         season's state, said plainly rather than as an empty table. #}
-      <p class="jh-empty">No postseason this year — {{ view.district_record }} in
-        {{ view.district }}{% if view.place %}, {{ view.place }}{{ 'st' if view.place == 1 else 'nd' if view.place == 2 else 'rd' if view.place == 3 else 'th' }} place{% endif %}.</p>
       {% else %}
       <p class="jh-empty">Season not played yet this world year.</p>
       {% endif %}
@@ -147,8 +182,8 @@
 
     {% if cur_season and (cur_season.unit_wins or cur_season.honor_lines) %}
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">Won this season</span>
-        <a class="jh-hqmore" href="{{ hq_url('honors') }}">Trophy case →</a></div>
+      <div class="bl-panel-head"><span class="bl-panel-title">Honors</span>
+        <a class="jh-hqmore" href="{{ hq_url('honors') }}">Honors →</a></div>
       {% if cur_season.unit_wins %}
       <div class="jh-honor"><span class="y">{{ cur_season.season_year }}</span>
         <span>{% for w in cur_season.unit_wins %}<span class="jh-chip unit">{{ w }}</span>{% if not loop.last %} {% endif %}{% endfor %}</span></div>
@@ -163,8 +198,8 @@
 
   <div class="jh-stack">
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">Top of the ladder</span>
-        <a class="jh-hqmore" href="{{ hq_url('team') }}">Full team{% if view.roster %} · {{ view.roster|length }}{% endif %} →</a></div>
+      <div class="bl-panel-head"><span class="bl-panel-title">Roster</span>
+        <a class="jh-hqmore" href="{{ hq_url('team') }}">Roster{% if view.roster %} · {{ view.roster|length }}{% endif %} →</a></div>
       {% if view.roster %}
       <table class="jh-roster">
         <tr><th>Player</th><th style="width:48px">Gr</th><th class="num" style="width:64px">Singles</th>
@@ -202,8 +237,8 @@
 {% elif hq == 'team' %}
 <!-- ============ TEAM: the current roster, in ladder order ============ -->
 <div class="bl-panel jh-hqnarrow">
-  <div class="bl-panel-head"><span class="bl-panel-title">{{ view.season_year }} Roster</span>
-    {% if view.jv_schedule %}<span class="bl-panel-meta">JV season {{ view.jv_record }} — schedule under <a href="{{ hq_url('season') }}">Season</a></span>{% endif %}</div>
+  <div class="bl-panel-head"><span class="bl-panel-title">Roster</span>
+    {% if view.jv_schedule %}<span class="bl-panel-meta">JV season {{ view.jv_record }} — schedule under <a href="{{ hq_url('season') }}">Schedule</a></span>{% endif %}</div>
   <div class="tbl-scroll">
     <table class="jh-roster">
       <tr><th>Player</th><th style="width:48px">Gr</th><th class="num" style="width:64px">Singles</th>
@@ -236,7 +271,7 @@
 <!-- ============ SEASON: the schedule, match by match ============ -->
 <div class="bl-panel jh-hqnarrow">
   <div class="bl-panel-head">
-    <span class="bl-panel-title">{{ view.season_year }} Schedule</span></div>
+    <span class="bl-panel-title">Schedule</span></div>
   {# Varsity and JV are two views of one season, so they are tabs. #}
   {% if view.jv_schedule %}
   {{ jh_tabs([('v', 'Varsity', view.schedule|length),
@@ -441,7 +476,7 @@
    which is noise dressed as detail. It now renders ONLY when it carries information
    the big number does not: a last-title year, a finals/semis split, a denominator. #}
 <div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">Program</span>
+  <div class="bl-panel-head"><span class="bl-panel-title">All-time</span>
     <span class="bl-panel-meta">{{ t.seasons }} season{{ '' if t.seasons == 1 else 's' }}{% if t.classifications|length > 1 %} · {{ t.classifications|join(', ') }}{% endif %}</span></div>
   <div class="bl-panel-body" style="padding:12px">
     <div class="jh-metrics">
@@ -482,11 +517,15 @@
    the honours COLUMN says how much is behind it, never who. #}
 <div class="bl-panel" style="margin-top:18px">
   <div class="bl-panel-head">
-    <span class="bl-panel-title">Season by season</span>
+    <span class="bl-panel-title">Seasons</span>
     <span class="bl-panel-meta">a row expands to that season's trophies and honours — the year link opens the season itself</span></div>
   <div class="tbl-scroll">
     {% if view.history.seasons %}
-    <table class="jh-ledger nowrap" id="jhledger">
+    {# `figures` opts this ONE table into the mono figure face: season, record,
+       district, seed and TOSS are all numbers here, which is true of the program
+       ledger and not of `.jh-ledger` in general — the class is shared with the
+       district, champion and rankings tables, whose cells are names. #}
+    <table class="jh-ledger nowrap figures" id="jhledger">
       <tr>
         <th style="width:80px">Season</th><th style="width:58px">Class</th>
         <th style="width:84px" title="The full season, postseason included">Record</th>
@@ -596,53 +635,60 @@
 {% set player_tab = ('players', 'Player honours', ns.players) %}
 {% set tabs = [team_tab, player_tab] if ns.team else [player_tab, team_tab] %}
 {% set active = tabs[0][0] %}
-<div class="bl-panel jh-hqnarrow">
+{# NOT `jh-hqnarrow`: the trophy wall is the one thing on this page that wants the
+   association's full measure — five cards across is what turns eleven seasons into
+   a glance. The player-honours pane is a list and stays readable either way. #}
+<div class="bl-panel">
   {{ jh_tabs(tabs, 'jhhon') }}
 
+  {# ‼️ TEAM TROPHIES HANG LIKE A GYM BANNER (owner reference, 2026-09). Cards
+     were "far better than before" and still "very clunky": 47 cards to say what a
+     banner says in twelve lines. When a program keeps winning the same thing the
+     wall lists the YEARS — "CONFERENCE — 67 · 68 · 70 · 71 …" — one line per kind
+     of honour, the years running out behind it. Folded in `view.trophy_banner`
+     (ladder order, biggest first); the year is the link to that season, which is
+     where "which region" and the record live. #}
   <div class="jh-pane" data-pane="team"{{ '' if active == 'team' else ' hidden' }}>
-    {% if ns.team %}
-    {# ‼️ ONE ROW PER YEAR (owner rule 2026-09). Each season used to take two to
-       four rows — the finish, then a row of road-unit chips, then a TOC line —
-       and twenty seasons of that was a wall. Now: year · the FINISH on the left
-       (gold title / silver finalist / bronze semifinalist / blue any other State
-       finish, plus the TOC) · the road units as small marks on the right. The eye
-       scans the left column and sees the shape of the program's history. #}
-    {% for s in honor_years if s.champion or s.toc_champion or s.made_state or s.unit_wins or s.team_honors %}
-    <div class="jh-honor row"><span class="y">{{ s.season_year }}</span>
-      <span class="fin">
-        {% if s.champion %}<span class="jh-chip gold">{{ s.group }} STATE CHAMPION</span>{% endif %}
-        {% if s.toc_champion %}<span class="jh-chip gold">TOURNAMENT OF CHAMPIONS</span>{% endif %}
-        {% if s.made_state and not s.champion %}
-          <span class="jh-chip {{ 'silver' if s.state_place == 2 else 'bronze' if s.state_place <= 4 else 'state' }}">STATE {{ s.state_finish|upper }}</span>
-          {% if s.seed %}<span class="seed">No. {{ s.seed }} seed</span>{% endif %}
-        {% endif %}
-        {# A TOC finish short of the title — team-level text, never among the
-           individual awards. #}
-        {% for h in s.team_honors %}<span class="txt">{{ h }}</span>{% endfor %}
-      </span>
-      {% if s.unit_wins %}
-      <span class="units">{% for w in s.unit_wins %}<span class="jh-chip unit sm">{{ w }}</span>{% endfor %}</span>
-      {% endif %}
+    {% if view.trophy_banner %}
+    <div class="jh-banner">
+      {% for row in view.trophy_banner %}
+      <div class="row{{ ' gold' if row.gold }}">
+        <span class="what">{{ row.label }}</span>
+        <span class="yrs">{% for y in row.years %}<a href="{{ url_for('jhsaa_school', school=view.school, year=y.year, u=u, g=view.gender) }}">{{ y.season_year }}</a>{% endfor %}</span>
+      </div>
+      {% endfor %}
     </div>
-    {% endfor %}
     {% else %}
     <p class="jh-empty">No team trophies yet.</p>
     {% endif %}
   </div>
 
   <div class="jh-pane" data-pane="players"{{ '' if active == 'players' else ' hidden' }}>
+    {# ‼️ ONE ATHLETE PER ROW — THIS IS A RECORD BOARD (owner reference, 2026-09).
+       It used to be one line per honour per season, with that year's selections
+       run together behind a label: "All-District — Isaac Evans · Cameron Johnson /
+       Logan Rivera". That reads as a sentence about a season, and the question a
+       trophy wall answers is about a PERSON — the reader is looking for a name, and
+       a name buried third in a run of five is not findable. Every board in the
+       reference set puts one person on one row: who, what, when.
+       A doubles pairing stays ONE name with a slash — it is one honour, won by a
+       pair — so the folding in `world.jh_honor_lines` is unchanged and nothing is
+       string-split here. #}
     {% if ns.players %}
-    {% for s in honor_years %}
-    {# ONE LINE PER HONOUR PER SEASON (owner, 2026-09): the label once, then
-       every selection from this program that year — "All-District (…) —
-       Isaac Evans · Cameron Johnson / Logan Rivera". Folded in
-       `world.jh_honor_lines`, never string-split here; a doubles pairing is
-       one name with a slash, so the names are joined on a middle dot. #}
-    {% for line in s.honor_lines %}
-    <div class="jh-honor"><span class="y">{{ s.season_year }}</span>
-      <span>{% if line.label %}{{ line.label }} — {% endif %}{% for n in line.names %}<strong>{{ n }}</strong>{% if not loop.last %} · {% endif %}{% endfor %}</span></div>
-    {% endfor %}
-    {% endfor %}
+    <div class="tbl-scroll">
+      <table class="jh-board">
+        <thead><tr><th>Player</th><th>Honour</th><th style="width:110px;text-align:right">Season</th></tr></thead>
+        <tbody>
+        {% for s in honor_years %}{% for line in s.honor_lines %}{% for n in line.names %}
+        <tr>
+          <td class="nm">{{ n }}</td>
+          <td class="what">{{ line.label or '—' }}</td>
+          <td class="yr">{{ s.season_year }}</td>
+        </tr>
+        {% endfor %}{% endfor %}{% endfor %}
+        </tbody>
+      </table>
+    </div>
     {% else %}
     <p class="jh-empty">No player honours yet.</p>
     {% endif %}
@@ -660,13 +706,27 @@
      season. A doubles title names both partners. No match log, no microcopy —
      the same restraint the player page's own section keeps. #}
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Individual State Champions</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Individual state champions</span></div>
+    {# The state-champions banner, exactly: "ALEXIS SUMMERS · 100M & 200M · 2023".
+       The flight is the middle column as PLAIN TEXT — it was a gold chip, which on
+       a board where every single row is a state champion decorates nothing: the
+       panel's own title is what makes these gold, and a pill on all of them just
+       costs the column its alignment. #}
     {% if view.history.individual_champions %}
-    {% for r in view.history.individual_champions %}
-    <div class="jh-honor"><span class="y">{{ r.season_year }}</span>
-      <span>{% for p in r.players %}{{ p.name }}{% if p.class_year %} ({{ p.class_year }}){% endif %}{% if not loop.last %} &amp; {% endif %}{% endfor %}
-        <span class="jh-chip gold" style="margin-left:6px">{{ r.flight_name }}</span></span></div>
-    {% endfor %}
+    <div class="tbl-scroll">
+      <table class="jh-board">
+        <thead><tr><th>Champion</th><th>Flight</th><th style="width:110px;text-align:right">Season</th></tr></thead>
+        <tbody>
+        {% for r in view.history.individual_champions %}
+        <tr>
+          <td class="nm">{% for p in r.players %}{{ p.name }}{% if p.class_year %} ({{ p.class_year }}){% endif %}{% if not loop.last %} &amp; {% endif %}{% endfor %}</td>
+          <td class="what">{{ r.flight_name }}</td>
+          <td class="yr">{{ r.season_year }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
     {% else %}
     <p class="jh-empty">No individual state champions yet.</p>
     {% endif %}
@@ -677,17 +737,28 @@
      A transfer shows the wins they earned HERE; their other school's are on its
      own page. #}
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Most Program Wins</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Career wins</span></div>
+    {# The top-10 scorers board: rank, name, the years they played, the number the
+       board is ranked BY — hard right, in the figure column, so the ranking reads
+       straight down. The span was a ghost chip and the record a coloured bold run
+       mid-sentence; on a board they are both just columns. #}
     {% if view.career_wins %}
-    {% for r in view.career_wins %}
-    {# Name bolded so it reads as the row's subject; the years are a TAG (the
-       "when", secondary) and the record is bold TEXT (the "how good", the
-       actual stat). #}
-    <div class="jh-honor"><span class="y">{{ loop.index }}</span>
-      <span><strong>{% if r.pid %}<a href="{{ url_for('jhsaa_player', school=view.school, pid=r.pid, u=u, g=view.gender) }}">{{ r.name }}</a>{% else %}{{ r.name }}{% endif %}</strong>
-        <span class="jh-chip ghost" style="margin-left:6px">{{ r.span }}</span>
-        <strong style="color:var(--stat-power);margin-left:6px">{{ r.w }}–{{ r.l }}</strong></span></div>
-    {% endfor %}
+    <div class="tbl-scroll">
+      <table class="jh-board">
+        <thead><tr><th style="width:44px;text-align:right">#</th><th>Player</th>
+          <th>Years</th><th style="width:96px;text-align:right">Record</th></tr></thead>
+        <tbody>
+        {% for r in view.career_wins %}
+        <tr>
+          <td class="rk">{{ loop.index }}</td>
+          <td class="nm">{% if r.pid %}<a href="{{ url_for('jhsaa_player', school=view.school, pid=r.pid, u=u, g=view.gender) }}">{{ r.name }}</a>{% else %}{{ r.name }}{% endif %}</td>
+          <td class="what">{{ r.span }}</td>
+          <td class="num">{{ r.w }}–{{ r.l }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
     {% else %}
     <p class="jh-empty">No varsity matches archived yet.</p>
     {% endif %}

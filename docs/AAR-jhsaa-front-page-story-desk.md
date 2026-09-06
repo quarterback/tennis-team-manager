@@ -90,10 +90,11 @@ secondary line** — the rankings and computer-ratings tables, the players
 directory, the hub rail, the TOC and bracket field lists, the POY sub-line. The
 district record stays; the name is one click away on the school page.
 
-Two smaller layout calls from the same pass: the Program HQ trophies ledger is
-**one row per year** (finish left, road units as small marks right — twenty
-seasons no longer a wall of chips), and rankings rows carry a **finish marker**
-(CHAMP / F / SF chips) so the list reads as who converted, not just who was ranked.
+One smaller layout call from the same pass: rankings rows carry a **finish
+marker** (CHAMP / F / SF chips) so the list reads as who converted, not just who
+was ranked. (A one-row-per-year trophies ledger was built here too and then
+dropped at the merge — main's Program HQ design pass had already replaced that
+pane with the gym-banner wall, which answers the same complaint better.)
 
 ## 4. Lessons
 

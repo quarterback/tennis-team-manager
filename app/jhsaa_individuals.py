@@ -144,7 +144,7 @@ MIXED_FROM_RANK = 9
 #: only its arithmetic name. Never emit both.
 FINISH_BANDS = {
     1: ("Champion", "CHAMP"),
-    2: ("Runner-up", "F"),
+    2: ("Finalist", "F"),
     4: ("Semifinalist", "SF"),
     8: ("Quarterfinalist", "QF"),
     16: ("Octofinalist", "OF"),
@@ -194,7 +194,7 @@ def round_label(rnd: str) -> str:
 #: `server.jhsaa_medal`.
 FINISH_TIERS = {
     "CHAMP": ("gold",   "noun-1st-place-medal-6892193-FFB258.png", "State champion"),
-    "F":     ("podium", "noun-second-4146723-9B9B9B.png",          "Runner-up"),
+    "F":     ("podium", "noun-second-4146723-9B9B9B.png",          "Finalist"),
     "SF":    ("podium", "noun-3rd-place-trophy-2347008-a47f00.png", "Semifinalist"),
     "QF":    ("podium", "final8.png",                              "Quarterfinalist"),
 }

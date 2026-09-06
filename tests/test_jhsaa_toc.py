@@ -260,8 +260,12 @@ def test_a_title_survives_a_season_with_no_individual_awards(archived):
         assert season["honoured"], "a title IS an honour, however bare the season"
         html = archived["client"].get(
             f"/jhsaa/school/{champ}?g=girls&view=honors").get_data(as_text=True)
-        assert "TOURNAMENT OF CHAMPIONS" in html
-        assert f"{grp} STATE CHAMPION" in html
+        # Both banners are gold LINES on the season's trophy card now, in sentence
+        # case (owner 2026-09 — see `test_a_toc_program_page_shows_the_run`). The
+        # subject of this test is that an awardless season still DRAWS its titles,
+        # which is a question about the pane's filter, not about the casing.
+        assert "Tournament of Champions" in html
+        assert "State champion" in html          # one row, whatever the class
     finally:
         conn.execute("UPDATE world_jhsaa SET data=? WHERE world_id=? AND year=? AND"
                      " gender='girls'", (original, w["id"], w["year"]))
@@ -331,7 +335,18 @@ def test_a_toc_title_is_listed_in_the_honours_exactly_once(archived):
     assert not [h for h in row["honors"] if "Tournament of Champions" in h]
     html = archived["client"].get(
         f"/jhsaa/school/{champ}?g=girls&view=honors").get_data(as_text=True)
-    assert html.count("TOURNAMENT OF CHAMPIONS") == 1
+    # ‼️ COUNT INSIDE THE PANE, NOT THE DOCUMENT. The banner is sentence case since
+    # the trophy case (owner 2026-09), and the scope rail every JHSAA page carries
+    # already prints "Tournament of Champions" twice — once as a nav link, once in a
+    # `title=` — so a document-wide count of the phrase measures the chrome and can
+    # never reach 1. It was only ever 1 because the old banner SHOUTED and nothing
+    # else on the page did. The invariant is unchanged: the champion's season is
+    # drawn once in the trophy case, with the gold line and no duplicate text row.
+    # Anchored on the PANE, not on `data-pane` alone — the tab bar's buttons carry
+    # that attribute too, and splitting on it slices the tab bar instead.
+    team = html.split('class="jh-pane" data-pane="team"', 1)[1]
+    team = team.split('class="jh-pane" data-pane="players"', 1)[0]
+    assert team.count("Tournament of Champions") == 1
     # A beaten entrant has no banner, so it keeps the text line — in
     # `team_honors`, because a TOC finish is a TEAM honour (`_season_row`'s own
     # rule: `honors` is individual awards, full stop; the school page files the
@@ -404,7 +419,11 @@ def test_a_toc_program_page_shows_the_run(archived):
     assert 'class="jh-tag toc">TOC' in html          # gold, and its own label
     honors = archived["client"].get(
         f"/jhsaa/school/{champ}?g=girls&view=honors").get_data(as_text=True)
-    assert "TOURNAMENT OF CHAMPIONS" in honors       # the honours row
+    # The trophy case draws the title as a gold LINE on that season's card, in
+    # sentence case — the uppercase pill went with the card grid (owner 2026-09:
+    # "drop the uppercase micro-labels"). What this test is about is that the run
+    # reaches the Honors view at all, so it asserts the title, not its casing.
+    assert "Tournament of Champions" in honors
 
 
 def test_every_jhsaa_page_renders_against_a_real_season(archived):

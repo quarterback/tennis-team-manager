@@ -105,7 +105,7 @@
            draw, so "entered directly / qualified" described a distinction that does
            not exist; the finish is the thing this row can say that the bracket
            cannot say at a glance for twenty programs. #}
-        <span class="jh-tag {{ 'jvstate' if r.finish == 'Champion' else 'jvroad' if r.finish in ('Runner-up', 'Semifinalist') }}">{{ r.finish or '—' }}</span>
+        <span class="jh-tag {{ 'jvstate' if r.finish == 'Champion' else 'jvroad' if r.finish in ('Finalist', 'Semifinalist') }}">{{ r.finish or '—' }}</span>
       </div>
       {% endfor %}
     </div>

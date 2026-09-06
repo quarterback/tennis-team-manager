@@ -4087,7 +4087,7 @@ def _jh_scope(gender: str, group: str, groups: list, year: int, years: list,
 
 #: A State FINISH, abbreviated for a dense table (owner's set, 2026-08):
 #: CHAMP · F · SF · QF · OF · R1 · QUAL. The full label always rides along as a title.
-_FINISH_SHORT = {"Champion": "CHAMP", "Runner-up": "F",
+_FINISH_SHORT = {"Champion": "CHAMP", "Finalist": "F",
                  "Semifinalist": "SF", "Quarterfinalist": "QF",
                  "Octofinalist": "OF",
                  # The 48-team groups' opening round (owner spec 2026-09) — its
@@ -5180,6 +5180,110 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
     }
 
 
+#: The road's unit KINDS, top rung first — the order the banner hangs them beneath
+#: the State rows (owner, 2026-09: "highest level first beneath state, lowest —
+#: Section/Areas/Wards — towards the end"). This is `world.jhsaa_title_stages()`
+#: REVERSED, written in the words `_unit_honour` puts on a unit ("Regional" ->
+#: "Region", "Zonal" -> "Zone"), so the banner and the title board agree on what
+#: outranks what. A kind not listed here (a rung added later) sorts after these,
+#: alphabetically, rather than vanishing.
+_JH_BANNER_LADDER = ("State Special", "Challenge", "Conference", "Semi-Conference",
+                     "Division", "Semi-State", "Super Region", "Epiregional",
+                     "Zone", "Region", "Ward", "Section", "Area")
+_JH_BANNER_RANK = {k: i for i, k in enumerate(_JH_BANNER_LADDER)}
+
+
+def _jh_trophy_banner(seasons_in: list[dict]) -> list[dict]:
+    """One banner row per KIND of team honour, years behind it. See the
+    owner note inline; called by `jhsaa_school_view`."""
+    # ‼️ TEAM TROPHIES FOLD LIKE A GYM BANNER (owner reference, 2026-09). When a
+    # program keeps winning the same thing, the wall lists the YEARS, not a row (or
+    # a card) per season: "CONFERENCE — 67 · 68 · 70 · 71 …", "REGIONALS — 66 · 67
+    # …". One line per kind of honour, the years run out behind it. A 47-season
+    # program's whole team history fits in a dozen lines instead of 47 cards.
+    #
+    # Rows, in ladder order, biggest first: the TOC title, the state title — ONE
+    # row whatever class it was won in (owner, 2026-09: "a state title is a state
+    # title"; the class is on the season, a click behind the year), every other
+    # State finish by depth, the district title — ONE row,
+    # "District" (the association's word for it), however many leagues realignment
+    # has moved them through (owner, 2026-09: "it's the same gist and what a real
+    # life school would do"; the wall says CONFERENCE CHAMPIONS, not one banner per
+    # conference name) — then each tournament unit by
+    # KIND. Which region it was is the season's business, one click behind the year.
+    #
+    # ‼️ THE KIND IS WHICHEVER END OF THE LABEL IS NOT THE NUMBER. `_unit_honour`
+    # writes two shapes: "<Kind> <numeral>" for the ladder's counted units — "Region
+    # IX", "Zone D", "Semi-State I", "State Special CLXXII" — and "<Name> <Kind>" for
+    # the NAMED ones — "Coral Epiregional", "7A-UJ Conference". Dropping the last
+    # token blindly turned the epiregionals into "Coral", "Olive" and "Taiga", three
+    # one-year banners for the same rung. So: a Roman numeral, a single letter or a
+    # digit run on the end means the kind is the head; anything else means it is the
+    # tail.
+    def _kind(u: str) -> str:
+        head, _, tail = u.rpartition(" ")
+        if not head:
+            return u
+        numeric = (tail.isdigit() or (len(tail) == 1 and tail.isalpha())
+                   or (tail.isupper() and set(tail) <= set("IVXLCDM")))
+        return head if numeric else tail
+
+    def _yr(s):
+        return {"year": s["year"], "season_year": s["season_year"]}
+    seasons = [s for s in seasons_in if s.get("honoured")]
+    banner: dict[tuple, dict] = {}
+
+    def _row(key, label, gold=False):
+        return banner.setdefault(key, {"label": label, "gold": gold, "years": []})
+    for s in seasons:
+        if s.get("toc_champion"):
+            _row((0, ""), "Tournament of Champions", gold=True)["years"].append(_yr(s))
+        if s.get("champion"):
+            _row((1, ""), "State champion", gold=True)["years"].append(_yr(s))
+        elif s.get("made_state") and s.get("state_finish"):
+            # ‼️ A LOSS BEFORE THE OCTOFINALS IS AN APPEARANCE (owner, 2026-09). The
+            # banner names the finishes a wall names — finalist, semis, quarters,
+            # octos — and folds everything below into one line, "State tournament
+            # appearances": a program does not hang a "Round of 40" banner. The cut
+            # is `_finish_label`'s own band (alive <= 16 is the octofinalist), so a
+            # field that pads to 40 or 48 lands on the right side of it.
+            place = s.get("state_place") or 99
+            if place > 16:
+                _row((2, 17, ""), "State tournament appearances")["years"].append(_yr(s))
+            else:
+                fin = s["state_finish"].lower()
+                _row((2, place, fin), f"State {fin}")["years"].append(_yr(s))
+        # ‼️ A TOC FINAL HANGS; A TOC APPEARANCE DOES NOT (owner, 2026-09). Making
+        # that field is already said by the state title that put them in it, so a
+        # quarterfinal or semifinal there restates a gold row one line up. The
+        # final is the one run worth its own banner. Exact label match, no parsing
+        # — `_toc_finish_label` writes "TOC Finalist" and nothing else means it.
+        if s.get("toc_finish") == "TOC Finalist":
+            _row((0, "finalist"), "Tournament of Champions finalist")["years"].append(_yr(s))
+        units = list(s.get("unit_wins") or [])
+        if s.get("district_title") and units:
+            units.pop(0)                        # `_season_row` leads with the league
+            _row((3, ""), "District")["years"].append(_yr(s))
+        for u in units:
+            kind = _kind(u)
+            _row((4, kind), kind)["years"].append(_yr(s))
+
+    # Order within a band: titles and leagues by RECENCY, State finishes by depth,
+    # and the road's units by RUNG — `_JH_BANNER_LADDER`, top rung first, so the
+    # wall reads down from State the way significance does. (It was "the ladder
+    # position each kind was first won at", which put an Area above a Conference
+    # because that program happened to win the Area first.)
+    def _order(k):
+        row = banner[k]
+        newest = -max(y["season_year"] for y in row["years"])
+        if k[0] in (1, 3):
+            return (k[0], newest, row["label"])
+        if k[0] == 4:
+            return (k[0], _JH_BANNER_RANK.get(k[1], len(_JH_BANNER_LADDER)), row["label"])
+        return (k[0],) + tuple(k[1:])
+    return [banner[k] for k in sorted(banner, key=_order)]
+
+
 def jhsaa_school_view(seed: int, gender: str, school: str,
                       year: int | None = None) -> dict:
     """One JHSAA program, as a PROGRAM page: who they are, how this season went, the
@@ -5404,6 +5508,8 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                             "span": (str(r["first"]) if r["first"] == r["last"]
                                      else f"{r['first']}–{str(r['last'])[2:]}")})
 
+    trophy_banner = _jh_trophy_banner(hist["seasons"])
+
     return {
         "found": True, "school": school, "gender": g, "year": yr, "years": years,
         "season_year": season_year, "is_current": bool(years) and yr == years[0],
@@ -5492,6 +5598,7 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                     "family": _family_row(fam_map, p.pid)}
                    for p in roster],
         "honors": (season or {}).get("honors", []),
+        "trophy_banner": trophy_banner,
         "history": hist,
         "career_wins": career_wins,
     }
