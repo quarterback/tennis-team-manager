@@ -99,7 +99,7 @@
       </div>
       {% if view.epiregional.bye_lines %}
       {# A 32 is placement only — its eight lines are seeds, never byes. #}
-      <p class="jh-byes">{{ 'Parastate byes (seeds 1–16)' if view.epiregional.bye_kind == 'parastate' else 'Double byes' if view.epiregional.bye_kind == 'double' else 'Byes' if view.epiregional.n_byes else 'Seed lines 1–8' }}:
+      <p class="jh-byes">{{ 'Parastate byes (seeds 1–' ~ view.epiregional.n_byes ~ ')' if view.epiregional.bye_kind == 'parastate' else 'Double byes' if view.epiregional.bye_kind == 'double' else 'Byes' if view.epiregional.n_byes else 'Seed lines 1–8' }}:
         {% for b in view.epiregional.bye_lines %}<a href="{{ url_for('jhsaa_school', school=b.name, u=u, g=view.gender, year=view.scope.pin) }}">{{ b.seed }} {{ b.name }}</a> ({{ b.how }}){{ ", " if not loop.last }}{% endfor %}</p>
       {% endif %}
     </div>

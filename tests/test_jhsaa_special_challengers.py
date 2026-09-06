@@ -142,17 +142,23 @@ def test_a_holder_who_wins_keeps_the_seat(home_wins):
     assert arc["rounds"][0][0]["winner"] == "Ch2"
 
 
-def test_slots_are_two_and_four_in_the_forty_field_classes(home_wins):
-    """The wider valve is a property of the big-field shape and has moved
-    with it twice (3A/4A carried it at 40, dropped it at 32; 8A/9A inherited
-    it going back up)."""
+def test_slots_are_two_and_four_in_the_forty_field_classes(home_wins, monkeypatch):
+    """The wider valve is a property of the 40-ROAD shape and has moved with it
+    every time (3A/4A carried it at 40, dropped it at 32; 8A/9A inherited it
+    going back up, and left it again in 2026-09 when they took the Parastate
+    structure — road 32, at-larges on top). No class is on the 40 road today,
+    so the table is empty and every class runs the standard two; the rule is
+    exercised by putting a class back on it."""
     by = teams(*[(f"Ch{i}", (20 - i, i)) for i in range(1, 6)],
                *[(f"E{i}", (14 - i, i)) for i in range(1, 6)])
     chs = [by[f"Ch{i}"] for i in range(1, 6)]
     arc, _ = bridge(by, chs, group="7A")
     assert len(arc["rounds"][0]) == jh.CHALLENGE_SLOTS_DEFAULT == 2
     assert {g for g, n in jh.CHALLENGE_SLOTS.items() if n == 4} \
-        == {g for g in jh.GROUPS if jh.state_field_size(g) == 40}
+        == {g for g in jh.GROUPS if jh.state_field_size(g) == 40} == set()
+    arc, _ = bridge(by, chs, group="9A")
+    assert len(arc["rounds"][0]) == 2, "9A is a road-32 Parastate class now"
+    monkeypatch.setitem(jh.CHALLENGE_SLOTS, "9A", 4)
     arc, _ = bridge(by, chs, group="9A")
     assert len(arc["rounds"][0]) == 4
     assert (arc["rounds"][0][0]["home"], arc["rounds"][0][0]["away"]) \

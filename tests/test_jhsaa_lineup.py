@@ -574,11 +574,145 @@ def test_only_8a_9a_play_4s5d_and_only_on_the_road_and_in_the_early_window():
         assert jh.dual_format(jh.EARLY_FORMAT_PHASE, g) == jh.FORMATS["early"], g
 
 
-def test_nine_courts_is_odd_so_a_4s5d_dual_cannot_tie():
-    """The association has no tie-break anywhere, by design — every dual shape it
-    plays has an odd court count and that is a property to keep, not a coincidence."""
+def test_every_shape_but_group_2s_is_odd_and_cannot_tie():
+    """Every varsity dual shape has an odd court count — a property to keep, not a
+    coincidence — with ONE exception the association wrote a rule for: Group 2's
+    3S/3D postseason (JHSAA rule 2026-09), whose 3-3 is settled by the deciders
+    (`_deciding_tiebreaks`). Nothing else may go even without one."""
     for name, f in jh.FORMATS.items():
+        if name == "state_3s3d":
+            assert (f.n_singles + f.n_doubles) == 6
+            continue
         assert (f.n_singles + f.n_doubles) % 2 == 1, name
+
+
+# --- Group 2's 3S/3D postseason and the deciders (JHSAA rule 2026-09) ----------
+
+def test_only_group_2s_road_to_state_plays_3s3d():
+    """Scoped the 1A pilot's three ways: by group (Group 2 only), by phase (the
+    road, never the TOC), by season half (league season, early window and
+    showcases untouched)."""
+    road = jh.dual_format("state", "Group 2")
+    assert (road.n_singles, road.n_doubles) == (3, 3)
+    for phase in ("sectional", "zonal", "conference", "state_special", "state"):
+        assert jh.dual_format(phase, "Group 2") is jh.FORMATS["state_3s3d"], phase
+        assert jh.lineup_need(phase, "Group 2") == 9
+    assert jh.dual_format("toc", "Group 2") == jh.FORMATS["state"]
+    assert jh.dual_format("regular", "Group 2") == jh.FORMATS["regular"]
+    assert jh.dual_format(jh.EARLY_FORMAT_PHASE, "Group 2") == jh.FORMATS["early"]
+    for sh in jh.SHOWCASE:
+        assert jh.dual_format(sh, "Group 2") == jh.FORMATS["state"]
+    for g in ("Group 1", "Group 3", "2A", "6A", None):
+        assert jh.dual_format("state", g) is not jh.FORMATS["state_3s3d"], g
+    # the flight table already prices S1-S3 / D1-D3
+    w = jh.flight_weights("state", "Group 2")
+    assert all(s in w for s in ("S1", "S2", "S3", "D1", "D2", "D3"))
+
+
+def test_the_3s3d_postseason_lineup_is_legal_under_the_order_of_ability():
+    """`_arrange_wide` at three singles: ranks #1-#5 are consumed by S1-S3 and D1,
+    the two pairs below respect the rank-sum boundary, nine dress."""
+    ts = _ts_in_group("Group 2")
+    if ts is None or len(ts.roster) < 9:
+        pytest.skip("no Group 2 program in the patched association")
+    lu = jh._lineup(ts, "sectional", _random.Random(1))
+    oo = ts.order_of_ability
+    rank = {pid: k + 1 for k, pid in enumerate(oo)}
+    assert len(lu) == 9
+    assert {p.pid for p in lu} == set(oo[:9])
+    assert {rank[p.pid] for p in lu[:5]} == {1, 2, 3, 4, 5}
+    assert [rank[p.pid] for p in lu[:3]] == sorted(rank[p.pid] for p in lu[:3])
+    s1 = rank[lu[5].pid] + rank[lu[6].pid]
+    s2 = rank[lu[7].pid] + rank[lu[8].pid]
+    assert s1 <= s2 + jh.PAIR_SUM_TOL
+
+
+def _level_group2_dual(seed_start=1, tries=4000):
+    """Two Group 2 programs and a seed on which their `state`-phase dual finishes
+    3-3 — found by searching seeds, since the deciders only fire on a level dual."""
+    schools = [s for s in jh.load_schools("girls") if s.group == "Group 2"][:2]
+    if len(schools) < 2:
+        return None
+    teams = jh.district_teams(schools, 0, "g2tb")
+    a, b = teams
+    for seed in range(seed_start, seed_start + tries):
+        for t in (a, b):
+            t.schedule.clear(); t.records.clear(); t.matches.clear()
+            t.pair_counts.clear()
+            t.wins = t.losses = t.ties = 0
+        res = jh.play_dual(a, b, seed=seed, phase="state")
+        if res.home_points == res.away_points:
+            return a, b, res, seed
+    return None
+
+
+def test_a_level_group_2_postseason_dual_is_decided_on_three_tiebreakers():
+    """A 3-3 in Group 2's road is settled by THREE CONCURRENT 10-point tiebreakers
+    at S1, D1 and D2, best two of three, by the players who played those flights;
+    the winner is credited a W (never a tie), the deciders ride their own
+    `tiebreak` key, and nothing about them reaches `lines` or a player record."""
+    found = _level_group2_dual()
+    if found is None:
+        pytest.skip("no level Group 2 dual found in the seed window")
+    a, b, res, seed = found
+    row_a, row_b = a.schedule[-1], b.schedule[-1]
+    tb = row_a["tiebreak"]
+    assert row_a["pf"] == row_a["pa"] == 3
+    assert [t["slot"] for t in tb] == list(jh.DECIDER_FLIGHTS) == ["S1", "D1", "D2"]
+    home_tb = sum(1 for t in tb if t["home_won"])
+    assert (res.winner == 0) == (home_tb >= 2)
+    assert row_a["won"] != row_b["won"] and not row_a["tied"] and not row_b["tied"]
+    assert row_a["won"] == (res.winner == 0)
+    assert a.wins + b.wins == 1 and a.ties == b.ties == 0
+    # the deciders are played by the flight's own players, and print real points
+    lines = {ln["slot"]: ln for ln in row_a["lines"]}
+    for t in tb:
+        assert t["home"] == lines[t["slot"]]["home"]
+        assert t["away"] == lines[t["slot"]]["away"]
+        hi, lo = (int(x) for x in t["score"].split("-"))
+        assert max(hi, lo) == jh.DECIDER_TARGET and min(hi, lo) <= jh.DECIDER_TARGET - 2
+    # a decider is not a match: six lines, and exactly nine player credits (three
+    # singles players + three pairs) — a decider adds none
+    assert len(row_a["lines"]) == 6
+    assert sum(sum(v) for v in a.records.values()) == 9
+    # ...and the same seed reproduces the same deciders
+    a.schedule.clear(); b.schedule.clear()
+    res2 = jh.play_dual(a, b, seed=seed, phase="state")
+    assert res2.winner == res.winner and a.schedule[-1]["tiebreak"] == tb
+
+
+def test_the_deciders_are_best_two_of_three_and_named_by_flight():
+    """The fold itself, on engine players: the side that takes two of the three
+    advances, whatever the third does."""
+    from engine.dual import Team
+    from engine import Player
+
+    def flat(name, v):
+        return Player(name=name, serve_power=v, serve_placement=v, movement=v,
+                      forehand=v, mental=v, return_game=v, backhand=v,
+                      stamina=v, consistency=v)
+    hp = [flat(f"h{i}", 0.75) for i in range(9)]
+    ap = [flat(f"a{i}", 0.25) for i in range(9)]
+    home = Team(name="H", singles=hp[:3], doubles=[(0, 1), (2, 3), (4, 5)],
+                doubles_players=hp[3:])
+    away = Team(name="A", singles=ap[:3], doubles=[(0, 1), (2, 3), (4, 5)],
+                doubles_players=ap[3:])
+
+    class _Pl:
+        def __init__(self, name):
+            self.name = name
+    la = [_Pl(f"h{i}") for i in range(9)]
+    lb = [_Pl(f"a{i}") for i in range(9)]
+    shape = jh.FORMATS["state_3s3d"]
+    wins = 0
+    for seed in range(40):
+        tb, w = jh._deciding_tiebreaks(home, away, la, lb, "state", shape, seed)
+        assert [t["slot"] for t in tb] == ["S1", "D1", "D2"]
+        assert tb[0]["home"] == ["h0"] and tb[1]["home"] == ["h3", "h4"] \
+            and tb[2]["home"] == ["h5", "h6"]
+        assert w == (0 if sum(t["home_won"] for t in tb) >= 2 else 1)
+        wins += w == 0
+    assert wins >= 30, "a clear favourite wins the deciders most of the time"
 
 
 def test_a_dual_across_classifications_plays_ONE_shape_AND_IT_IS_THE_WIDER():

@@ -225,7 +225,7 @@
        href="{{ url_for('jhsaa_computer', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Computer Ratings</a>
     {# The committee runs for the 48-team groups only, and the page says so for
        the rest — carrying `group` keeps the scope bar's memory, the TOC's rule. #}
-    <a class="{{ 'on' if tab == 'committee' }}" title="The at-large selection committee — 7A and Group 1's 48-team fields"
+    <a class="{{ 'on' if tab == 'committee' }}" title="The at-large selection committee — the Parastate classes (8A, 9A and Group 1 at 48 teams; 7A at 40)"
        href="{{ url_for('jhsaa_committee', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">At-Large Committee</a>
   </div>
   {% endif %}

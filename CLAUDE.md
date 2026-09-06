@@ -823,15 +823,28 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   `docs/AAR-jhsaa-computer-ratings-and-at-large-committee.md`).** Nine
   independent systems + composite per (group, gender), archived on the season
   (`ratings` key, the `pi` rule — never refit on read), PARALLEL to TOSS/ATR
-  and feeding neither. **7A and Group 1 play a 48-team State field**
-  (`ATLARGE_GROUPS`, `run_state_48`): the road still qualifies its 32
-  untouched; a five-member deterministic committee picks 16 at-larges from
-  EVERY non-road team (district champions who missed the road are automatic) —
-  and **an at-large is ALWAYS seeded 33-48**, structurally. The Parastate
-  (17v48…32v33, winners keep their seed) renders via `_jh_split_state`'s named
-  prelim split. Margins in the margin systems are FORMAT-NORMALISED (a 5-0,
+  and feeding neither. **The PARASTATE classes (JHSAA rule 2026-09): 8A, 9A and
+  Group 1 play 48 = 32 road + 16 at-large; 7A plays 40 = 32 road + 8**
+  (`AT_LARGE_BIDS`, `ATLARGE_GROUPS` derived from it, `run_state_parastate(byes=
+  road − bids)`): the road qualifies its 32 untouched (`STATE_FIELD` is 32 for
+  all four — never 48/40); a five-member deterministic committee (`select(seats=)`)
+  picks the bids from EVERY non-road team (a district champion who missed the road
+  is automatic and CONSUMES a bid) — and **an at-large is ALWAYS seeded below
+  every road qualifier**, structurally. The Parastate is the `2 × bids` lowest
+  seeds high-low (17v48…32v33; 25v40…32v33 in 7A), winners keep their seed; it
+  renders via `_jh_split_state`'s named prelim split, and every surface reads
+  bye/seat counts OFF THE ARCHIVE so a 7A season selected at 16 still renders as
+  sixteen. `CHALLENGE_SLOTS` is empty — the 4-seat valve belongs to a 40 ROAD and
+  no class is on one. Margins in the margin systems are FORMAT-NORMALISED (a 5-0,
   7-0 and 9-0 are all +1.0) — never feed raw margins across mixed formats.
-  Both groups are in `WIDE_GROUPS` (4S/5D everywhere on the road). Pages:
+  All four groups are in `WIDE_GROUPS` (4S/5D everywhere on the road).
+  **‼️ GROUP 2 PLAYS 3S/3D ON ITS ROAD (JHSAA rule 2026-09, `THREE_THREE_GROUPS`,
+  `docs/AAR-jhsaa-group2-3s3d-postseason-deciders.md`) — the ONE even shape.** A
+  3-3 postseason dual is decided by THREE CONCURRENT 10-point tiebreakers at S1,
+  D1, D2 by the flight's own players, best two of three (`_deciding_tiebreaks`);
+  `play_dual` overrides `res.winner` (a draw reads as an AWAY win otherwise). A
+  regular-season tie (unreachable today) uses `jv_outcome` and records a T. The
+  deciders ride their OWN `tiebreak` key/column — never `lines`, never a credit. Pages:
   `/jhsaa/computer-ratings` (all groups), `/jhsaa/committee` (48 groups only).
 - **‼️ THE EPIREGIONAL — STATE SEED PLACEMENT IS MERIT, THE ZONAL TITLE IS ONLY
   THE BERTH (owner rule 2026-09, `jhsaa.run_epiregional` / `state_seed_order`,

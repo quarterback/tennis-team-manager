@@ -87,6 +87,12 @@ first spec draft read as bottom-only). And **‼️ an at-large is ALWAYS seeded
 33-48** — structural, not a sort key: the at-larges arrive after the 32 road
 seeds in `run_state_48`'s field.
 
+> **2026-09 resize.** 8A and 9A adopted this structure (48 = 32 + 16); 7A moved
+> to 40 = 32 + 8 keeping Parastate (25v40 … 32v33, seeds 1-24 bye). Bids are
+> per group in `jhsaa.AT_LARGE_BIDS`; `run_state_48` is now `run_state_parastate`
+> at `byes=16`; `select` takes `seats`. See
+> `docs/AAR-jhsaa-group2-3s3d-postseason-deciders.md` §1.
+
 ## The 48-team field (`jhsaa.run_state_48`, `ATLARGE_GROUPS`)
 
 Road unchanged (still exactly 32 by the existing ladder). Seeds all earned:

@@ -316,8 +316,8 @@
             <a href="{{ url_for('jhsaa_school', school=d.opp, u=u, g=view.gender, year=view.scope.pin) }}">{{ d.opp }}</a>
             {% if d.opp_seed %}<span class="jh-chip ghost">#{{ d.opp_seed }}</span>{% endif %}</span>
         </td>
-        <td class="{{ 'W' if d.won else 'L' }}">{{ 'W' if d.won else 'L' }}</td>
-        <td class="sc">{{ d.pf|int }}–{{ d.pa|int }}</td>
+        <td class="{{ 'T' if d.tied else 'W' if d.won else 'L' }}">{{ 'T' if d.tied else 'W' if d.won else 'L' }}</td>
+        <td class="sc">{{ d.pf|int }}–{{ d.pa|int }}{% if d.tiebreak %}<span class="jh-chip ghost" title="Level dual, decided on three concurrent 10-point tiebreakers (S1, D1, D2)">TB</span>{% endif %}</td>
         {# Tag colours, because these are different things: the league season,
            the INVITATIONALS a program arranges around it, the mid-season
            SHOWCASES (a weekend event, and the only 1S/4D duals before the
@@ -356,6 +356,20 @@
           {% set we = ln.home_won if d.home else not ln.home_won %}
           <div class="jh-line">
             <span class="sl">{{ ln.slot }}</span>
+            <span class="nm {{ 'won' if we }}">{{ us|join(' / ') }}</span>
+            <span class="sl">{{ 'd.' if we else 'l.' }}</span>
+            <span class="nm {{ 'won' if not we }}">{{ them|join(' / ') }}</span>
+            <span class="st">{{ ln.score }}</span>
+          </div>
+          {% endfor %}
+          {# The deciders of a level Group 2 postseason dual (JHSAA rule
+             2026-09): three concurrent 10-point tiebreakers, S1/D1/D2. Shown
+             under the flights and labelled as tiebreakers, never as courts. #}
+          {% for ln in d.tiebreak %}
+          {% set us = ln.home if d.home else ln.away %}{% set them = ln.away if d.home else ln.home %}
+          {% set we = ln.home_won if d.home else not ln.home_won %}
+          <div class="jh-line">
+            <span class="sl" title="Deciding 10-point tiebreaker">TB {{ ln.slot }}</span>
             <span class="nm {{ 'won' if we }}">{{ us|join(' / ') }}</span>
             <span class="sl">{{ 'd.' if we else 'l.' }}</span>
             <span class="nm {{ 'won' if not we }}">{{ them|join(' / ') }}</span>
