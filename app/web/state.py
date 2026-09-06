@@ -6566,7 +6566,13 @@ def jhsaa_repeat_individual_champions(seed: int, gender: str,
 #: The career-wins boards' categories, in the owner's order; the page opens on
 #: overall because that is the headline question the sub-rail item asks.
 JH_CAREER_CATS = (("overall", "Overall"), ("singles", "Singles"),
-                  ("doubles", "Doubles"))
+                  ("doubles", "Doubles"),
+                  # Top flight only — S1/D1 wins (owner rule 2026-09): the
+                  # flight-independent boards reward opportunity, and the 4S/5D
+                  # era hands wide-format seasons nine flights of it; S1/D1 top
+                  # every shape ever played, so this is the all-time-greatest
+                  # list. The other three boards are deliberately unchanged.
+                  ("top", "Top Flight (S1/D1)"))
 
 
 def jhsaa_career_wins_view(seed: int, gender: str, cat: str | None = None,
@@ -6588,7 +6594,7 @@ def jhsaa_career_wins_view(seed: int, gender: str, cat: str | None = None,
     years = world.jhsaa_years(w["id"], g)
     schools = _jh_schools(g)
     data = world.jhsaa_career_wins(w["id"], g)
-    win_key = {"overall": "w", "singles": "s_w", "doubles": "d_w"}
+    win_key = {"overall": "w", "singles": "s_w", "doubles": "d_w", "top": "t_w"}
     boards = {}
     for key, _label in JH_CAREER_CATS:
         rows = []
@@ -6599,7 +6605,7 @@ def jhsaa_career_wins_view(seed: int, gender: str, cat: str | None = None,
         # the tie it was included FOR. Rank moves only when the win count drops.
         wk = win_key[key]
         prev_wins, prev_rank = None, 0
-        for i, r in enumerate(data["players"][key], 1):
+        for i, r in enumerate(data["players"].get(key) or (), 1):
             wins = r[wk]
             rank = prev_rank if wins == prev_wins else i
             prev_wins, prev_rank = wins, rank

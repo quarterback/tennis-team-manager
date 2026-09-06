@@ -5061,9 +5061,17 @@ def jhsaa_career_wins(world_id: int, gender: str, salt: str = "",
     """THE CAREER WINS BOARDS (owner request, 2026-08): the most match wins over a
     high-school career (players) and all-time (programs), folded out of the archive.
 
-    Returns {"players": {"overall"|"singles"|"doubles": [row, ...]},   # top `limit`
+    Returns {"players": {"overall"|"singles"|"doubles"|"top": [row, ...]},
              "programs": [row, ...],                                   # every program
              "years": [...]}.
+
+    ‼️ THE "top" BOARD IS TOP-FLIGHT WINS ONLY — No. 1 singles and No. 1 doubles
+    (owner rule 2026-09): raw totals reward OPPORTUNITY, not level — a career at
+    the lower flights piles up wins against lower flights, and the 4S/5D era
+    hands every wide-format season nine flights of them. S1/D1 exist at the top
+    of EVERY shape the association has ever played (and anti-stacking staffs
+    them from ranks #1-#3), so the top-flight count is the era-comparable
+    "all-time greatest" list. The flight-independent boards stay as they are.
 
     ‼️ WHAT A "WIN" IS HERE: a court won on a VARSITY dual card — the DUAL record,
     exactly what the player page's career ledger counts. JV is excluded (`level`
@@ -5101,14 +5109,19 @@ def jhsaa_career_wins(world_id: int, gender: str, salt: str = "",
                 "programs": [], "years": []}
     if not salt:
         salt = active_salt(DEFAULT_SEED)
-    key = (world_id, gender, years[0], salt, ov.jhsaa_transfer_version(), limit)
+    # "top" versions the key: a fold cached before the top-flight tallies existed
+    # has no `t_*` fields and would KeyError the view it is served to.
+    key = (world_id, gender, years[0], salt, ov.jhsaa_transfer_version(), limit,
+           "top")
     got = _careerwins_cache.get(key)
     if got is not None:
         return got
     alias = _jh.former_names()
 
-    # --- the duals: per (school, name, year) court tallies, plus program courts ---
-    tal: dict = defaultdict(lambda: [0, 0, 0, 0])       # [sw, sl, dw, dl]
+    # --- the duals: per (school, name, year) court tallies, plus program courts.
+    # Eight counters: singles/doubles W-L over every flight, then the same pair
+    # restricted to the TOP FLIGHT (S1/D1) for the era-comparable board. ---
+    tal: dict = defaultdict(lambda: [0] * 8)   # [sw, sl, dw, dl, tsw, tsl, tdw, tdl]
     prog_courts: dict = defaultdict(lambda: [0, 0, 0, 0])
     conn = _db()
     try:
@@ -5125,9 +5138,13 @@ def jhsaa_career_wins(world_id: int, gender: str, salt: str = "",
                     continue
                 won = bool(hw) == bool(d["home"])
                 i = (0 if won else 1) if slot[0] == "S" else (2 if won else 3)
+                top = slot in ("S1", "D1")
                 names = ln.get(side) or ()
                 for nm in names:
-                    tal[(school, nm, d["year"])][i] += 1
+                    t = tal[(school, nm, d["year"])]
+                    t[i] += 1
+                    if top:
+                        t[i + 4] += 1
                 prog_courts[school][i] += 1
     finally:
         conn.close()
@@ -5176,7 +5193,7 @@ def jhsaa_career_wins(world_id: int, gender: str, salt: str = "",
             continue
         entry = rec.get("entry") or 0
         stints: list[tuple] = []                       # (school, season_year)
-        sw = sl = dw = dl = 0
+        tot = [0] * 8
         for year in sorted(years):
             sy = BASE_YEAR + year + 1
             if not (entry <= sy <= entry + 3):
@@ -5186,12 +5203,12 @@ def jhsaa_career_wins(world_id: int, gender: str, salt: str = "",
             k = (school, name, year)
             if k in tal:
                 claimed.add(k)
-                t = tal[k]
-                sw += t[0]; sl += t[1]; dw += t[2]; dl += t[3]
+                for j, v in enumerate(tal[k]):
+                    tot[j] += v
                 stints.append((school, sy))
         if not stints:
             continue
-        careers.append(_career_row(name, stints, sw, sl, dw, dl, pid=pid))
+        careers.append(_career_row(name, stints, tot, pid=pid))
 
     # --- everyone else: consecutive-year runs per (school, name) ---
     by_player: dict = defaultdict(list)
@@ -5227,6 +5244,9 @@ def jhsaa_career_wins(world_id: int, gender: str, salt: str = "",
         "overall": _top(careers, lambda r: (-r["w"], r["l"], r["name"])),
         "singles": _top(careers, lambda r: (-r["s_w"], r["s_l"], r["name"])),
         "doubles": _top(careers, lambda r: (-r["d_w"], r["d_l"], r["name"])),
+        # Top flight only — S1 and D1 wins, the era-comparable list (see the
+        # docstring: lower flights and the 4S/5D era inflate raw totals).
+        "top": _top(careers, lambda r: (-r["t_w"], r["t_l"], r["name"])),
     }
     shown = {id(r): r for rows in boards.values() for r in rows}
     schools_by_name = {s.name: s for s in _jh.load_schools(gender)}
@@ -5270,29 +5290,34 @@ def jhsaa_career_wins(world_id: int, gender: str, salt: str = "",
     return out
 
 
-def _career_row(name: str, stints: list[tuple], sw: int, sl: int,
-                dw: int, dl: int, pid: str = "") -> dict:
-    """One career row. `stints` is [(school, season_year), ...] in year order;
-    consecutive same-school years collapse into one stint for display."""
+def _career_row(name: str, stints: list[tuple], tot: list,
+                pid: str = "") -> dict:
+    """One career row off the eight-counter tally ([sw, sl, dw, dl, then the
+    same four restricted to S1/D1]). `stints` is [(school, season_year), ...]
+    in year order; consecutive same-school years collapse into one stint for
+    display."""
     runs: list[dict] = []
     for school, sy in stints:
         if runs and runs[-1]["school"] == school:
             runs[-1]["last"] = sy
         else:
             runs.append({"school": school, "first": sy, "last": sy})
+    sw, sl, dw, dl, tsw, tsl, tdw, tdl = (list(tot) + [0] * 8)[:8]
     return {"name": name, "pid": pid,
             "school": stints[-1][0], "stints": runs,
             "first": stints[0][1], "last": stints[-1][1],
             "s_w": sw, "s_l": sl, "d_w": dw, "d_l": dl,
-            "w": sw + dw, "l": sl + dl}
+            "w": sw + dw, "l": sl + dl,
+            # Top flight (S1/D1) alone — the era-comparable career.
+            "t_s_w": tsw, "t_s_l": tsl, "t_d_w": tdw, "t_d_l": tdl,
+            "t_w": tsw + tdw, "t_l": tsl + tdl}
 
 
 def _career_run(school: str, name: str, run: list[tuple]) -> dict:
     """A consecutive-year run at one school, folded into a career row."""
-    sw = sum(t[0] for _y, t in run); sl = sum(t[1] for _y, t in run)
-    dw = sum(t[2] for _y, t in run); dl = sum(t[3] for _y, t in run)
+    tot = [sum(t[j] for _y, t in run) for j in range(8)]
     stints = [(school, BASE_YEAR + y + 1) for y, _t in run]
-    return _career_row(name, stints, sw, sl, dw, dl)
+    return _career_row(name, stints, tot)
 
 
 def _schedule_rows(conn, world_id: int, year: int, gender: str, school: str) -> list[dict]:

@@ -45,15 +45,23 @@
         <th class="rk">#</th>
         <th class="nm">Player</th>
         <th>Years</th>
+        {% if key == 'top' %}
+        {# Top flight only (owner rule 2026-09): No. 1 singles and No. 1
+           doubles wins — the era-comparable career; raw totals inflate with
+           the lower flights and the 4S/5D era's nine-flight seasons. #}
+        <th title="No. 1 singles record">S1</th>
+        <th title="No. 1 doubles record">D1</th>
+        {% else %}
         {% if key != 'doubles' %}<th>Singles</th>{% endif %}
         {% if key != 'singles' %}<th>Doubles</th>{% endif %}
+        {% endif %}
         <th class="tot">W</th>
         <th>L</th>
       </tr></thead>
       <tbody>
         {% for r in view.boards[key] %}
-        {% set w = r.w if key == 'overall' else (r.s_w if key == 'singles' else r.d_w) %}
-        {% set l = r.l if key == 'overall' else (r.s_l if key == 'singles' else r.d_l) %}
+        {% set w = r.t_w if key == 'top' else (r.w if key == 'overall' else (r.s_w if key == 'singles' else r.d_w)) %}
+        {% set l = r.t_l if key == 'top' else (r.l if key == 'overall' else (r.s_l if key == 'singles' else r.d_l)) %}
         <tr>
           <td class="rk">{{ r.rank }}</td>
           <td class="nm">
@@ -62,8 +70,13 @@
             <span class="sub">{% for st in r.stint_rows %}{% if st.deco.mark %}<span class="mk">{{ st.deco.mark|safe }}</span>{% endif %}{{ st.school }}{{ ' · ' if not loop.last }}{% endfor %}</span>
           </td>
           <td>{{ r.span }}</td>
+          {% if key == 'top' %}
+          <td>{{ r.t_s_w }}–{{ r.t_s_l }}</td>
+          <td>{{ r.t_d_w }}–{{ r.t_d_l }}</td>
+          {% else %}
           {% if key != 'doubles' %}<td>{{ r.s_w }}–{{ r.s_l }}</td>{% endif %}
           {% if key != 'singles' %}<td>{{ r.d_w }}–{{ r.d_l }}</td>{% endif %}
+          {% endif %}
           <td class="tot">{{ w }}</td>
           <td>{{ l }}</td>
         </tr>
