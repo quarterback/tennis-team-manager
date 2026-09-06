@@ -122,6 +122,9 @@
         {% for d in postseason %}
         <tr class="{{ 'state' if d.kind in ('STATE', 'TOC') else 'road' }}">
           <td class="dt" style="width:62px">{{ d.date }}</td>
+          {# vs/at, same as the full Season view — schedules render the way the
+             game presents them, and a summary is not licence to drop the venue. #}
+          <td class="ha" style="width:26px">{{ 'vs' if d.home else 'at' }}</td>
           <td class="op"><span class="jh-schoolcell">{{ d.opp_deco.mark|safe }}
             <a href="{{ url_for('jhsaa_school', school=d.opp, u=u, g=view.gender, year=view.scope.pin) }}">{{ d.opp }}</a>
             {% if d.opp_seed %}<span class="jh-chip ghost">#{{ d.opp_seed }}</span>{% endif %}</span></td>
@@ -523,9 +526,26 @@
           {% for h in (s.team_honors or []) %}
           <div class="jh-honor" style="border-bottom:0;padding-left:0"><span class="y"></span><span>{{ h }}</span></div>
           {% endfor %}
+          {# ‼️ POY AND ALL-STATE RENDER FROM THE STRUCTURED AWARD ROWS, exactly as
+             the old ledger cell did — `jh_award_names` carries the archived grade
+             per athlete and the player link ("a player's grade appears in every
+             list a player appears in"). `honor_lines` flattens both away, so it
+             renders only the honours that have NO structured row on the season
+             (district POY, All-Region, All-District), filtered by the labels
+             `_season_row` writes for the two structured kinds. #}
+          {% for r in (s.poy or []) %}
+          <div class="jh-honor" style="border-bottom:0;padding-left:0"><span class="y"></span>
+            <span><span class="jh-chip gold">POY</span> {{ jh_award_names(r, u, view.gender) }}</span></div>
+          {% endfor %}
+          {% for r in (s.all_state or []) %}
+          <div class="jh-honor" style="border-bottom:0;padding-left:0"><span class="y"></span>
+            <span>All-State {{ jh_award_names(r, u, view.gender) }}</span></div>
+          {% endfor %}
           {% for line in (s.honor_lines or []) %}
+          {% if not (line.label.startswith('All-State') or line.label == s.group ~ ' Player of the Year') %}
           <div class="jh-honor" style="border-bottom:0;padding-left:0"><span class="y"></span>
             <span>{% if line.label %}{{ line.label }} — {% endif %}{% for n in line.names %}<strong>{{ n }}</strong>{% if not loop.last %} · {% endif %}{% endfor %}</span></div>
+          {% endif %}
           {% endfor %}
         </div>
       </td></tr>
