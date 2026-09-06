@@ -64,6 +64,9 @@ ROUTES = [
     # 2026-09) — empty state with nothing archived, never a raise. The
     # data-bearing coverage is tests/test_jhsaa_ratings.py /
     # tests/test_jhsaa_committee.py.
+    # The Career Wins boards, the top-flight (S1/D1) category included.
+    "/jhsaa/career-wins",
+    "/jhsaa/career-wins?cat=top",
     "/jhsaa/computer-ratings",
     "/jhsaa/computer-ratings?g=boys&group=Group%201",
     "/jhsaa/committee",
