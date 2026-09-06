@@ -55,12 +55,64 @@ def newest_played_season(world_id: int, gender: str, school: str,
     return None, set()
 
 
+def find_saves() -> None:
+    """--find: no paths, no guessing — walk the home folder for SQLite files
+    that contain a world, and say which one is the big universe. Born of a
+    support session in which every path the owner and the tool guessed at was
+    a different fresh one-season file while the real 47-season save sat
+    somewhere none of them named."""
+    import time
+    home = os.path.expanduser("~")
+    skip = {"Library", ".Trash", "node_modules", ".git", ".cache", ".venv"}
+    found = []
+    for root, dirs, files in os.walk(home):
+        dirs[:] = [d for d in dirs if d not in skip and not d.startswith(".Trash")]
+        if root.count(os.sep) - home.count(os.sep) > 6:
+            dirs[:] = []
+            continue
+        for f in files:
+            if not f.endswith(".db"):
+                continue
+            path = os.path.join(root, f)
+            try:
+                c = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+                w = c.execute("SELECT seed, salt, year FROM world").fetchone()
+                try:
+                    latest = c.execute("SELECT MAX(year) FROM world_jhsaa").fetchone()[0]
+                except sqlite3.OperationalError:
+                    latest = None
+                c.close()
+            except sqlite3.Error:
+                continue
+            if w is None:
+                continue
+            found.append((latest if latest is not None else -1, path, w))
+    if not found:
+        print("no save files with a world found under", home)
+        return
+    found.sort(reverse=True)
+    print("saves found (most archived JHSAA seasons first):")
+    for latest, path, w in found:
+        seasons = latest + 1 if latest >= 0 else 0
+        mtime = time.strftime("%Y-%m-%d", time.localtime(os.path.getmtime(path)))
+        size = os.path.getsize(path) // (1024 * 1024)
+        print(f"  {seasons:3d} JHSAA seasons · world year {w[2]:3d} · {size:4d} MB"
+              f" · modified {mtime} · {path}")
+    best = found[0][1]
+    print("\nthe top one is almost certainly your universe. Next, run:")
+    print(f'  TENNIS_DB_PATH="{best}" python3 scripts/diagnose_jhsaa_roster_drift.py'
+          f' "Coast Prairie" boys')
+
+
 def main() -> None:
     # --set-name-era N: repair a poisoned era row. While the dbpath probe race
     # was live (see app/dbpath.py), an era self-configured against the SHADOW
     # DB's archive could be persisted into the real save — a wrong value that
     # then renames every cohort it covers. Run the plain diagnostic first: its
     # sweep names the era that restores the archived names, and this writes it.
+    if "--find" in sys.argv[1:]:
+        find_saves()
+        return
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     fix = next((a for a in sys.argv[1:] if a.startswith("--set-name-era=")), None)
     if fix is not None:
