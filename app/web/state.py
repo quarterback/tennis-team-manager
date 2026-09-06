@@ -5140,6 +5140,19 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
     }
 
 
+#: The road's unit KINDS, top rung first — the order the banner hangs them beneath
+#: the State rows (owner, 2026-09: "highest level first beneath state, lowest —
+#: Section/Areas/Wards — towards the end"). This is `world.jhsaa_title_stages()`
+#: REVERSED, written in the words `_unit_honour` puts on a unit ("Regional" ->
+#: "Region", "Zonal" -> "Zone"), so the banner and the title board agree on what
+#: outranks what. A kind not listed here (a rung added later) sorts after these,
+#: alphabetically, rather than vanishing.
+_JH_BANNER_LADDER = ("State Special", "Challenge", "Conference", "Semi-Conference",
+                     "Division", "Semi-State", "Super Region", "Epiregional",
+                     "Zone", "Region", "Ward", "Section", "Area")
+_JH_BANNER_RANK = {k: i for i, k in enumerate(_JH_BANNER_LADDER)}
+
+
 def _jh_trophy_banner(seasons_in: list[dict]) -> list[dict]:
     """One banner row per KIND of team honour, years behind it. See the
     owner note inline; called by `jhsaa_school_view`."""
@@ -5182,7 +5195,6 @@ def _jh_trophy_banner(seasons_in: list[dict]) -> list[dict]:
 
     def _row(key, label, gold=False):
         return banner.setdefault(key, {"label": label, "gold": gold, "years": []})
-    unit_rank: dict[str, int] = {}          # kind -> first ladder position seen
     for s in seasons:
         if s.get("toc_champion"):
             _row((0, ""), "Tournament of Champions", gold=True)["years"].append(_yr(s))
@@ -5212,22 +5224,22 @@ def _jh_trophy_banner(seasons_in: list[dict]) -> list[dict]:
         if s.get("district_title") and units:
             units.pop(0)                        # `_season_row` leads with the league
             _row((3, ""), "District")["years"].append(_yr(s))
-        for i, u in enumerate(units):
+        for u in units:
             kind = _kind(u)
-            unit_rank[kind] = min(unit_rank.get(kind, i), i)
             _row((4, kind), kind)["years"].append(_yr(s))
 
-    # Order within a band: titles and leagues by RECENCY (the class they play in
-    # now hangs first — "6A" sorting above "7A" because 6 < 7 is not an order),
-    # State finishes by depth, unit kinds by the ladder position they were first
-    # won at so the road reads bottom-up the way a season is played.
+    # Order within a band: titles and leagues by RECENCY, State finishes by depth,
+    # and the road's units by RUNG — `_JH_BANNER_LADDER`, top rung first, so the
+    # wall reads down from State the way significance does. (It was "the ladder
+    # position each kind was first won at", which put an Area above a Conference
+    # because that program happened to win the Area first.)
     def _order(k):
         row = banner[k]
         newest = -max(y["season_year"] for y in row["years"])
         if k[0] in (1, 3):
             return (k[0], newest, row["label"])
         if k[0] == 4:
-            return (k[0], unit_rank.get(k[1], 0), row["label"])
+            return (k[0], _JH_BANNER_RANK.get(k[1], len(_JH_BANNER_LADDER)), row["label"])
         return (k[0],) + tuple(k[1:])
     return [banner[k] for k in sorted(banner, key=_order)]
 
