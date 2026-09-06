@@ -19,17 +19,35 @@ log = logging.getLogger("baseline.dbpath")
 
 _DEFAULT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tennis.db")
 _warned = False
+#: The resolved answer per configured path — decided ONCE per process. See
+#: `resolve_db_path`: re-probing per call is what let a single flaky probe flip
+#: one connection onto the fallback save mid-run.
+_resolved: dict[str, str] = {}
 
 
 def _writable_dir(path: str) -> bool:
-    """Can we actually create/write the parent directory of `path`?"""
+    """Can we actually create/write the parent directory of `path`?
+
+    ‼️ THE PROBE FILENAME MUST BE UNIQUE PER PROBE. It was a fixed
+    `.write_probe`, and this function used to run on EVERY connection: two
+    threads (or spawn workers) probing the same directory at once would each
+    create the file, the first `os.remove` won, the second raised
+    FileNotFoundError — an OSError — and that caller concluded "not writable"
+    and silently resolved to the FALLBACK save. A per-process/per-call name
+    cannot collide, and a lost delete-race is tolerated outright: someone
+    removing our file proves the directory writable, not broken. This race
+    forked a real 47-season save onto a shadow DB in `~/.tennis-team-manager/`
+    before it was found."""
     d = os.path.dirname(os.path.abspath(path)) or "."
+    probe = os.path.join(d, f".write_probe.{os.getpid()}.{id(object()):x}")
     try:
         os.makedirs(d, exist_ok=True)
-        probe = os.path.join(d, ".write_probe")
         with open(probe, "w") as fh:
             fh.write("ok")
-        os.remove(probe)
+        try:
+            os.remove(probe)
+        except FileNotFoundError:
+            pass
         return True
     except OSError:
         return False
@@ -65,7 +83,29 @@ def resolve_db_path() -> str:
     Memo-warns once, naming the path actually used and whether it persists."""
     global _warned
     configured = os.environ.get("TENNIS_DB_PATH", _DEFAULT)
+    got = _resolved.get(configured)
+    if got is not None:
+        return got
+    # ‼️ AN EXISTING SAVE IS NEVER ABANDONED ON A PROBE. This resolver used to
+    # re-probe the directory on every call, and one lost probe race (see
+    # `_writable_dir`) silently moved that ONE call onto the fallback file —
+    # the app then ran with its subsystems split across two saves: the pages
+    # read the real archive while the era settings resolved against a shadow
+    # DB, every roster regenerated under the wrong inputs (all records 0-0),
+    # and a boot that lost the race at import came up in the shadow universe
+    # entirely. The repo's own world-resolution doctrine applies here too:
+    # a graceful fallback turns a should-be-crash into plausible-looking wrong
+    # data. If the configured FILE exists, it is the save, full stop — SQLite
+    # will fail loudly if the directory truly cannot take its journal, which
+    # is strictly better than quietly forking the universe. The fallback
+    # remains only for a path that does not exist yet AND cannot be created
+    # (a fresh install on a read-only volume). And the answer is memoised per
+    # configured path, so one decision holds for the whole process.
+    if os.path.exists(configured):
+        _resolved[configured] = configured
+        return configured
     if _writable_dir(configured):
+        _resolved[configured] = configured
         return configured
     home = os.path.join(os.path.expanduser("~"), ".tennis-team-manager", "tennis.db")
     if _writable_dir(home):
@@ -81,4 +121,5 @@ def resolve_db_path() -> str:
         log.warning("TENNIS_DB_PATH=%r is not writable; using %r instead. %s%s",
                     configured, fallback, note, hint)
         _warned = True
+    _resolved[configured] = fallback
     return fallback
