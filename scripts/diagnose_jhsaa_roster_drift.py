@@ -61,19 +61,35 @@ def find_saves() -> None:
     support session in which every path the owner and the tool guessed at was
     a different fresh one-season file while the real 47-season save sat
     somewhere none of them named."""
+    import subprocess
     import time
     home = os.path.expanduser("~")
-    skip = {"Library", ".Trash", "node_modules", ".git", ".cache", ".venv"}
-    found = []
-    for root, dirs, files in os.walk(home):
-        dirs[:] = [d for d in dirs if d not in skip and not d.startswith(".Trash")]
-        if root.count(os.sep) - home.count(os.sep) > 6:
-            dirs[:] = []
-            continue
-        for f in files:
-            if not f.endswith(".db"):
+    skip = {".Trash", "node_modules", ".git", ".cache", ".venv"}
+    candidates = []
+    # Spotlight first (macOS): instant, and it sees iCloud Drive and mounted
+    # volumes — the two places a home walk misses. Best-effort everywhere else.
+    try:
+        out = subprocess.run(["mdfind", "kMDItemFSName == '*.db'"],
+                             capture_output=True, text=True, timeout=30)
+        candidates += [l for l in out.stdout.splitlines() if l.endswith(".db")]
+    except Exception:
+        pass
+    roots = [home] + [os.path.join("/Volumes", v) for v in
+                      (os.listdir("/Volumes") if os.path.isdir("/Volumes") else [])]
+    for base in roots:
+        for root, dirs, files in os.walk(base):
+            dirs[:] = [d for d in dirs if d not in skip and not d.startswith(".Trash")]
+            if root.count(os.sep) - base.count(os.sep) > 6:
+                dirs[:] = []
                 continue
-            path = os.path.join(root, f)
+            candidates += [os.path.join(root, f) for f in files if f.endswith(".db")]
+    found, seen = [], set()
+    for path in candidates:
+        path = os.path.realpath(path)
+        if path in seen or not os.path.isfile(path):
+            continue
+        seen.add(path)
+        if True:
             try:
                 c = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
                 w = c.execute("SELECT seed, salt, year FROM world").fetchone()
