@@ -489,10 +489,10 @@
     <table class="jh-ledger nowrap" id="jhledger">
       <tr>
         <th style="width:80px">Season</th><th style="width:58px">Class</th>
-        <th style="width:80px" title="The full season, postseason included">Record</th>
-        <th style="width:80px">District</th><th style="width:70px">Place</th>
+        <th style="width:84px" title="The full season, postseason included">Record</th>
+        <th style="width:84px" title="District record">Dist</th><th style="width:70px">Place</th>
         <th style="width:56px">Seed</th><th style="width:170px">State finish</th>
-        <th style="width:56px" title="TOSS Power Index rank">TOSS</th><th>Honours</th>
+        <th style="width:60px" title="TOSS Power Index rank">TOSS</th><th>Honours</th>
       </tr>
       {% for s in view.history.seasons %}
       {% set n_honors = ((s.honor_lines or [])|length) + ((s.unit_wins or [])|length) + ((s.team_honors or [])|length) %}
@@ -601,36 +601,29 @@
 
   <div class="jh-pane" data-pane="team"{{ '' if active == 'team' else ' hidden' }}>
     {% if ns.team %}
-    {% for s in honor_years %}
-    {% if s.champion %}
-    <div class="jh-honor"><span class="y">{{ s.season_year }}</span>
-      <span><span class="jh-chip gold">{{ s.group }} STATE CHAMPION</span></span></div>
-    {% endif %}
-    {% if s.toc_champion %}
-    <div class="jh-honor"><span class="y">{{ s.season_year }}</span>
-      <span><span class="jh-chip gold">TOURNAMENT OF CHAMPIONS</span></span></div>
-    {% endif %}
-    {# Reaching State is an honour of its own — its own line, and its own colour:
-       gold is the title, silver the finalist, bronze the semifinalist, and BLUE
-       every other State finish, so the tiers stay readable at a glance. #}
-    {% if s.made_state and not s.champion %}
-    <div class="jh-honor"><span class="y">{{ s.season_year }}</span>
-      <span><span class="jh-chip {{ 'silver' if s.state_place == 2 else 'bronze' if s.state_place <= 4 else 'state' }}">STATE {{ s.state_finish|upper }}</span>
-        {% if s.seed %}<span style="color:var(--text-muted)">No. {{ s.seed }} seed</span>{% endif %}</span></div>
-    {% endif %}
-    {# Every unit a program won, on ONE line — the district title first, then
-       "Region IX · Ward IV" (owner rule 2027-08: the district title sits with
-       the zone/ward/section chips). Real honours, several a season, so they
-       never get a line each. #}
-    {% if s.unit_wins %}
-    <div class="jh-honor"><span class="y">{{ s.season_year }}</span>
-      <span>{% for u in s.unit_wins %}<span class="jh-chip unit">{{ u }}</span>{% if not loop.last %} {% endif %}{% endfor %}</span></div>
-    {% endif %}
-    {# Team results carried as text rather than a chip — a TOC finish short of the
-       title. These belong HERE, not among the individual awards. #}
-    {% for h in s.team_honors %}
-    <div class="jh-honor"><span class="y">{{ s.season_year }}</span><span>{{ h }}</span></div>
-    {% endfor %}
+    {# ‼️ ONE ROW PER YEAR (owner rule 2026-09). Each season used to take two to
+       four rows — the finish, then a row of road-unit chips, then a TOC line —
+       and twenty seasons of that was a wall. Now: year · the FINISH on the left
+       (gold title / silver finalist / bronze semifinalist / blue any other State
+       finish, plus the TOC) · the road units as small marks on the right. The eye
+       scans the left column and sees the shape of the program's history. #}
+    {% for s in honor_years if s.champion or s.toc_champion or s.made_state or s.unit_wins or s.team_honors %}
+    <div class="jh-honor row"><span class="y">{{ s.season_year }}</span>
+      <span class="fin">
+        {% if s.champion %}<span class="jh-chip gold">{{ s.group }} STATE CHAMPION</span>{% endif %}
+        {% if s.toc_champion %}<span class="jh-chip gold">TOURNAMENT OF CHAMPIONS</span>{% endif %}
+        {% if s.made_state and not s.champion %}
+          <span class="jh-chip {{ 'silver' if s.state_place == 2 else 'bronze' if s.state_place <= 4 else 'state' }}">STATE {{ s.state_finish|upper }}</span>
+          {% if s.seed %}<span class="seed">No. {{ s.seed }} seed</span>{% endif %}
+        {% endif %}
+        {# A TOC finish short of the title — team-level text, never among the
+           individual awards. #}
+        {% for h in s.team_honors %}<span class="txt">{{ h }}</span>{% endfor %}
+      </span>
+      {% if s.unit_wins %}
+      <span class="units">{% for w in s.unit_wins %}<span class="jh-chip unit sm">{{ w }}</span>{% endfor %}</span>
+      {% endif %}
+    </div>
     {% endfor %}
     {% else %}
     <p class="jh-empty">No team trophies yet.</p>

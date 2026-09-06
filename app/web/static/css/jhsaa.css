@@ -15,8 +15,9 @@
 .jh-head-inner { max-width: 1320px; margin: 0 auto; padding: 20px 20px 0; }
 .jh-eyebrow {
   font-size: var(--fs-micro); font-weight: 700; letter-spacing: var(--ls-eyebrow);
-  text-transform: uppercase; color: var(--text-muted);
+  text-transform: uppercase; color: var(--text-muted); text-decoration: none; display: inline-block;
 }
+a.jh-eyebrow:hover { color: var(--brand-strong); }
 .jh-titlerow { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
 .jh-title {
   margin: 4px 0 0; font-family: var(--font-display); font-size: 30px; line-height: 1.08;
@@ -668,6 +669,16 @@
    long <th> label overruns its neighbour. Both have to be told. */
 .jh-ledger th { overflow: hidden; }
 .jh-ledger.nowrap td, .jh-ledger.nowrap th { white-space: nowrap; }
+/* ‼️ NUMBERS NEVER SHRINK, NAMES WRAP (owner rule 2026-09). Every fixed column in a
+   `nowrap` ledger is a NUMBER sized to its widest value; the one unsized column is
+   the name, which takes the remainder and must WRAP rather than ellipsize — a
+   record cut to "18-1(" or a league cut to "Timber Valle" is what the owner kept
+   seeing, and the name is the one cell a reader can still parse across two lines.
+   Selector weight matches `.jh-ledger.nowrap td` (0,2,1), so it wins by order. */
+.jh-ledger.nowrap td.nm, .jh-ledger td.nm { white-space: normal; overflow-wrap: anywhere; }
+.jh-ledger td.nm .jh-schoolcell a { white-space: normal; overflow: visible; text-overflow: clip; }
+.jh-ledger td.nm .jh-schoolcell { align-items: flex-start; }
+.jh-ledger td.nm .jh-schoolcell .mk { margin-top: 2px; }
 /* A `width:100%` fixed-layout table is never wider than its container, so its
    `.tbl-scroll` wrapper never scrolls — on a narrow viewport the columns compress
    and the honours chips clip instead. A min-width (the fixed column widths plus a
@@ -766,8 +777,10 @@
 /* `.bd` wraps two SPANS, so they need display:block or the name and its subtitle
    run together on one line ("Ruby StokesCascade Divide District"). */
 .jh-modrow .bd { min-width: 0; flex: 1 1 auto; overflow: hidden; }
-.jh-modrow .n { display: block; font-size: 15px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.jh-modrow .s { display: block; font-size: 13px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* A rail row's NAME wraps to a second line rather than clipping ("Valley Coast
+   Interscholastic Le…"); the number beside it (`.v`) is fixed and never shrinks. */
+.jh-modrow .n { display: block; font-size: 15px; font-weight: 600; color: var(--text-primary); line-height: 1.25; overflow-wrap: anywhere; }
+.jh-modrow .s { display: block; font-size: 13px; color: var(--text-muted); overflow-wrap: anywhere; }
 .jh-modrow .v { flex: 0 0 auto; font-size: 15px; font-weight: 700; color: var(--text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .jh-modrow > svg, .jh-modrow > span > svg { flex: 0 0 auto; }
 /* A long side panel (All-District is six players across every district) collapses
@@ -839,12 +852,19 @@
 .jh-crumb .sep { color: var(--text-faint); }
 .jh-schoolcell { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .jh-schoolcell .mk { flex: 0 0 auto; display: inline-flex; }
-.jh-schoolcell a { min-width: 0; color: var(--text-primary); font-weight: 600; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jh-schoolcell a { min-width: 0; color: var(--text-primary); font-weight: 600; text-decoration: none; overflow-wrap: anywhere; }
 .jh-schoolcell a:hover { color: var(--brand-strong); text-decoration: underline; }
 .jh-empty { padding: 18px; font-size: 16px; color: var(--text-muted); }
 .jh-honor { font-size: 15px; color: var(--text-secondary); padding: 5px 13px; border-bottom: 1px solid var(--border-subtle); display: flex; gap: 9px; }
 .jh-honor:last-child { border-bottom: 0; }
 .jh-honor .y { font-weight: 800; color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 34px; }
+/* One row per year: finish left, road units right as small marks. */
+.jh-honor.row { align-items: center; }
+.jh-honor.row .fin { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.jh-honor.row .fin .seed { color: var(--text-muted); font-size: 14px; }
+.jh-honor.row .fin .txt { color: var(--text-secondary); }
+.jh-honor.row .units { margin-left: auto; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; flex: 0 1 auto; }
+.jh-chip.unit.sm { height: 18px; font-size: 11px; padding: 0 6px; letter-spacing: .02em; }
 
 @media (max-width: 700px) {
   .jh-head-inner, .jh-shell { padding-left: 14px; padding-right: 14px; }
@@ -1088,3 +1108,115 @@ html[data-jh-scout="on"] .jh-scout { visibility: visible; }
    the result is not more readable, it is just wider. History's ledger and the
    Records pair keep the full width, which they use. */
 .jh-hqnarrow { max-width: 1000px; }
+
+/* ==================== THE FRONT PAGE (owner spec 2026-09) ====================
+   A newspaper front with a data desk. Hierarchy is the whole design: the facts
+   strip is large type on the ground, the lead gets three times any story's
+   space, the feed is cards at one weight, the desks are lists, the chart is the
+   one visual, the doors are the last row. No panels around the facts or lead. */
+.jh-front { max-width: 1180px; }
+.jh-facts {
+  display: flex; flex-wrap: wrap; gap: 10px 34px; align-items: flex-end;
+  padding: 6px 0 20px; border-bottom: 2px solid var(--text-primary); margin-bottom: 22px;
+}
+.jh-fact .n { display: block; font-family: var(--font-display); font-size: 42px; line-height: 1;
+  letter-spacing: -0.02em; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.jh-fact .l { display: block; margin-top: 4px; font-size: 14px; color: var(--text-muted); max-width: 170px; line-height: 1.3; }
+
+.jh-gtag { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px;
+  border-radius: 4px; font-size: 12px; font-weight: 800; color: #fff; margin-right: 4px; }
+.jh-gtag.g { background: var(--cat-3a); }
+.jh-gtag.b { background: var(--cat-5a); }
+
+.jh-lead {
+  display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 24px; align-items: center;
+  padding: 8px 0 26px; margin-bottom: 22px; border-bottom: 1px solid var(--border-default);
+  text-decoration: none; color: inherit;
+}
+.jh-lead .eyebrow, .jh-story .eyebrow { display: flex; align-items: center; gap: 4px; margin-bottom: 10px; }
+.jh-lead .hl { margin: 0; font-family: var(--font-display); font-size: 44px; line-height: 1.04;
+  letter-spacing: -0.025em; color: var(--text-primary); overflow-wrap: anywhere; }
+.jh-lead:hover .hl { color: var(--brand-strong); }
+.jh-lead .dek { margin: 12px 0 0; font-size: 20px; line-height: 1.4; color: var(--text-secondary); }
+.jh-lead .stat { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px;
+  padding: 18px 12px; background: var(--surface-subtle); border-radius: 10px; }
+.jh-lead .stat .mk { display: flex; margin-bottom: 4px; }
+.jh-lead .stat .n { font-family: var(--font-display); font-size: 40px; line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.jh-lead .stat .l { font-size: 13px; font-weight: 700; letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-muted); }
+
+.jh-feed { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-bottom: 22px; }
+.jh-story {
+  display: block; position: relative; padding: 16px 18px 18px; border: 1px solid var(--border-subtle);
+  border-radius: 10px; background: var(--surface); text-decoration: none; color: inherit; min-width: 0;
+}
+.jh-story:hover { border-color: var(--brand); }
+.jh-story .eyebrow { justify-content: flex-start; }
+.jh-story .stat { margin-left: auto; text-align: right; flex: 0 0 auto; }
+.jh-story .stat .n { display: block; font-family: var(--font-display); font-size: 26px; line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.jh-story .stat .l { display: block; font-size: 12px; font-weight: 700; letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-faint); margin-top: 3px; }
+.jh-story .hl { margin: 0; font-size: 22px; line-height: 1.2; font-weight: 750; color: var(--text-primary); overflow-wrap: anywhere; }
+.jh-story .dek { margin: 8px 0 0; font-size: 16px; line-height: 1.4; color: var(--text-secondary); }
+
+/* Desk rows: the POY list and the programs list — one row a story, name wraps,
+   number never shrinks (the same rule as every other row in the section). */
+.jh-poyrow { display: flex; align-items: center; gap: 8px; padding: 9px 14px; border-bottom: 1px solid var(--border-subtle);
+  text-decoration: none; color: inherit; min-width: 0; }
+.jh-poyrow:last-child { border-bottom: 0; }
+a.jh-poyrow:hover { background: var(--surface-hover); }
+.jh-poyrow .mk { flex: 0 0 auto; display: inline-flex; }
+.jh-poyrow .bd { min-width: 0; flex: 1 1 auto; }
+.jh-poyrow .n { display: block; font-size: 16px; font-weight: 650; color: var(--text-primary); line-height: 1.25; overflow-wrap: anywhere; }
+.jh-poyrow .n a { color: inherit; text-decoration: none; }
+.jh-poyrow .n a:hover { color: var(--brand-strong); text-decoration: underline; }
+.jh-poyrow .s { display: block; font-size: 14px; color: var(--text-muted); }
+.jh-poyrow .v { flex: 0 0 auto; font-size: 16px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.jh-poyrow .jh-chip { flex: 0 0 auto; }
+.jh-desk-sub { padding: 10px 14px 4px; font-size: 13px; font-weight: 700; letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase; color: var(--text-muted); background: var(--surface-th); border-top: 1px solid var(--border-subtle); }
+
+.jh-records { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0; }
+.jh-rec { display: flex; flex-direction: column; padding: 14px; text-decoration: none; color: inherit; border-right: 1px solid var(--border-subtle); }
+.jh-rec:last-child { border-right: 0; }
+.jh-rec:hover { background: var(--surface-hover); }
+.jh-rec .n { font-family: var(--font-display); font-size: 34px; line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.jh-rec .who { margin-top: 6px; font-size: 16px; font-weight: 700; color: var(--text-primary); }
+.jh-rec .l { margin-top: 2px; font-size: 13px; color: var(--text-muted); }
+
+/* The data desk — inline bars, no library. */
+.jh-datadesk { margin-top: 18px; }
+.jh-dd-title { font-size: 15px; font-weight: 750; color: var(--text-primary); margin-bottom: 10px; }
+.jh-bar-row { display: grid; grid-template-columns: 52px minmax(0, 1fr) 92px; gap: 10px; align-items: center; padding: 4px 0; }
+.jh-bar-row .k { font-size: 14px; font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.jh-bar-row .bars { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.jh-bar-row .bar { display: block; height: 9px; border-radius: 2px; background: var(--cat-5a); max-width: 100%; }
+.jh-bar-row .bar.girls { background: var(--cat-3a); }
+.jh-bar-row .v { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+.jh-bar-row .v .girls { color: var(--cat-3a); }
+.jh-bar-row .v .boys { color: var(--cat-5a); }
+.jh-dd-note { margin-top: 10px; font-size: 13px; color: var(--text-faint); }
+.jh-dd-note .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; background: var(--cat-5a); vertical-align: -1px; }
+.jh-dd-note .sw.girls { background: var(--cat-3a); }
+.jh-seedgrid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.jh-seedgrid .cell { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px; background: var(--surface-subtle); border-radius: 6px; }
+.jh-seedgrid .g { font-size: 12px; font-weight: 800; letter-spacing: .04em; color: var(--text-muted); }
+.jh-seedgrid .sd { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 26px; border-radius: 5px;
+  font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; border: 2px solid transparent; color: var(--text-secondary); }
+.jh-seedgrid .sd.girls.one { background: var(--cat-3a); color: #fff; }
+.jh-seedgrid .sd.boys.one { background: var(--cat-5a); color: #fff; }
+.jh-seedgrid .sd.girls.top { border-color: var(--cat-3a); color: var(--cat-3a); }
+.jh-seedgrid .sd.boys.top { border-color: var(--cat-5a); color: var(--cat-5a); }
+.jh-seedgrid .sd.deep { background: var(--tint-road-bg); color: var(--text-primary); }
+
+.jh-doors { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 26px;
+  padding-top: 18px; border-top: 2px solid var(--text-primary); }
+.jh-doors .door { display: flex; flex-direction: column; gap: 3px; }
+.jh-doors .k { font-size: 13px; font-weight: 700; letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+.jh-doors a { font-size: 16px; color: var(--text-link); text-decoration: none; }
+.jh-doors a:hover { text-decoration: underline; }
+
+@media (max-width: 720px) {
+  .jh-lead { grid-template-columns: minmax(0, 1fr); }
+  .jh-lead .hl { font-size: 32px; }
+  .jh-fact .n { font-size: 32px; }
+  .jh-seedgrid { grid-template-columns: repeat(4, 1fr); }
+}

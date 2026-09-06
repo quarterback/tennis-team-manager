@@ -58,12 +58,13 @@
 {%- endmacro %}
 
 {# The section header + scope bar. `tab` marks which JHSAA surface is on screen. #}
-{% macro jh_header(scope, u, tab='state', title='JHSAA', sub='', meta=[]) %}
+{% macro jh_header(scope, u, tab='state', title='JHSAA', sub='', meta=[], classless=false) %}
 <div class="jh-head"><div class="jh-head-inner">
   <div class="jh-titlerow">
     <div style="min-width:0">
-      <div class="jh-eyebrow"><i class="fa-solid fa-school-flag" aria-hidden="true"></i>
-        Jefferson High School Activities Association</div>
+      {# The eyebrow is the way HOME: every JHSAA page links back to the front page. #}
+      <a class="jh-eyebrow" href="{{ url_for('jhsaa_front', u=u, g=scope.gender, year=scope.pin) }}"><i class="fa-solid fa-school-flag" aria-hidden="true"></i>
+        Jefferson High School Activities Association</a>
       <h1 class="jh-title">{{ title }}</h1>
       {% if sub %}<p class="jh-sub">{{ sub }}</p>{% endif %}
     </div>
@@ -103,6 +104,9 @@
         </select>
       </span>
     </div>
+    {# The FRONT PAGE is association-wide and carries no class rail (owner spec
+       2026-09): the class becomes relevant when you enter a class. #}
+    {% if not classless %}
     <div class="jh-scope-group">
       <span class="jh-scope-label">Class</span>
       <span class="jh-class">
@@ -112,6 +116,7 @@
         {% endfor %}
       </span>
     </div>
+    {% endif %}
     {# ‼️ SEASONS ARE A DROPDOWN, NOT A SEGMENTED RAIL (owner, 2026-08). Sport is two
        and Class is nine — both bounded, so a rail is right for them. Seasons grow by
        one every year forever, so a rail that fits today wraps the header next year
@@ -132,6 +137,8 @@
     </div>
     {% endif %}
     <div class="jh-tabs">
+      <a class="{{ 'on' if tab == 'front' }}" title="The association front page"
+         href="{{ url_for('jhsaa_front', u=u, g=scope.gender, year=scope.pin) }}">Front Page</a>
       {# ‼️ ONE CHAMPIONSHIP TAB, THREE VIEWS OF IT (owner, 2026-08). State, Bracket
          and TOC each led with the same champion hero and the same draw, so three of
          the twelve tabs asked one question. They stay three PAGES — the hub is an

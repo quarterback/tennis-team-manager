@@ -24,6 +24,8 @@ def client():
 ROUTES = [
     "/jhsaa",
     "/jhsaa?g=boys",
+    "/jhsaa/class",
+    "/jhsaa/class?g=boys&group=5A",
     "/jhsaa/toc",
     "/jhsaa/toc?g=boys",
     # The JV TEAM state tournament (pilot from 2068). An empty-state render cannot see
@@ -82,7 +84,9 @@ def test_the_page_responds(client, path):
 
 # --- every classification is reachable from every surface --------------------------
 
-CLASS_SURFACES = ["/jhsaa", "/jhsaa/rankings", "/jhsaa/honors", "/jhsaa/bracket",
+# `/jhsaa` is the FRONT PAGE now (owner spec 2026-09) — association-wide, no
+# class rail; the class hub moved to `/jhsaa/class`.
+CLASS_SURFACES = ["/jhsaa/class", "/jhsaa/rankings", "/jhsaa/honors", "/jhsaa/bracket",
                   "/jhsaa/districts", "/jhsaa/toc", "/jhsaa/champions"]
 
 
@@ -238,7 +242,7 @@ def test_the_toc_link_carries_the_class_it_was_taken_from(warm_client):
     class is the scope bar's memory, and a link that drops it resets the rail on the
     way in, so leaving the TOC lands you on the first class instead of the one you
     were browsing."""
-    html = warm_client.get("/jhsaa?g=boys&group=5A").get_data(as_text=True) \
+    html = warm_client.get("/jhsaa/class?g=boys&group=5A").get_data(as_text=True) \
         .replace("&amp;", "&")
     assert "/jhsaa/toc?u=" in html or "/jhsaa/toc?" in html
     toc = [h for h in html.split('href="') if h.startswith("/jhsaa/toc")]

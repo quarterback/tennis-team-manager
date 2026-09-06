@@ -63,7 +63,7 @@
   <div class="tbl-scroll">
     <table class="jh-roster">
       <tr><th>Player</th><th>School</th><th style="width:44px">Class</th>
-        <th style="width:60px">Grade</th><th style="width:78px">District</th>
+        <th style="width:64px">Grade</th>
         <th class="num jh-scout" style="width:42px">OVR</th><th class="num jh-scout" style="width:42px">Pot</th>
         <th class="jh-scout" style="width:78px">Rating</th><th>Hometown</th></tr>
       {% for r in rows %}
@@ -74,7 +74,6 @@
         <td><a href="{{ url_for('jhsaa_school', school=r.school, u=u, g=r.gender) }}">{{ r.school }}</a></td>
         <td>{{ r.group }}</td>
         <td>{{ r.grade }}th</td>
-        <td>{{ r.district }}</td>
         <td class="num jh-scout">{{ r.ovr }}</td>
         <td class="num jh-scout">{{ r.ceiling }}</td>
         <td class="jh-scout">{{ stars(r.stars) }}</td>

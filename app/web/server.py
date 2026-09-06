@@ -39,6 +39,7 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     world_hub, player_career, get_coach, injury_rows, fall_portal_view,
                     player_ranks, player_journey)
 from .state import preseason_view as preseason_view_data
+from .state import jhsaa_front_view
 from .state import (jhsaa_view, jhsaa_scope_view, jhsaa_school_view, jhsaa_past_winners,
                     jhsaa_bracket_view, jhsaa_toc_view, jhsaa_district_view, jhsaa_districts_view,
                     jhsaa_honors_view,
@@ -153,7 +154,7 @@ NAV_GROUPS = [
     # moved three times for being unfindable; the nav is where the owner looks, and
     # a thing is only findable in the nav if it sits under the heading it belongs to.
     ("Juniors", [
-        {"id": "jhsaa",     "label": "High School",   "icon": "fa-solid fa-school-flag", "endpoint": "jhsaa_page",       "args": {}},
+        {"id": "jhsaa",     "label": "High School",   "icon": "fa-solid fa-school-flag", "endpoint": "jhsaa_front",      "args": {}},
         {"id": "juniors",   "label": "Junior Rankings","icon": "fa-solid fa-globe", "endpoint": "junior_rankings",  "args": {}},
         {"id": "jrtour",    "label": "Junior Tour",   "icon": "fa-solid fa-calendar-days", "endpoint": "junior_tour",      "args": {}},
         {"id": "jh_schools","label": "HS Schools",     "icon": "fa-solid fa-building-columns", "endpoint": "jhsaa_schools",    "args": {}},
@@ -2446,9 +2447,23 @@ def create_app() -> Flask:
                                gender=gender, u=u, uni_label=label)
 
     @app.route("/jhsaa")
+    def jhsaa_front():
+        """‼️ THE ASSOCIATION FRONT PAGE (owner spec 2026-09) — an editorial front
+        door, not a dashboard: a facts strip, one lead story, a short feed, the
+        players and programs desks, one chart, the record book, and the doors into
+        every section. Association-wide, both genders, no class picker: the class
+        becomes relevant when you enter a class (`/jhsaa/class`). Every headline is
+        a deterministic detector over the archive (`app.jhsaa_desk`), never prose."""
+        gender, label, u, g, group, year = _jh_scope_args()
+        view = jhsaa_front_view(DEFAULT_SEED, g, year)
+        return render_template("jhsaa_front.html", active="High School", view=view,
+                               gender=gender, u=u, uni_label=label)
+
+    @app.route("/jhsaa/class")
     def jhsaa_page():
-        """The state high-school home: the selected classification's state tournament
-        as the dominant object, its awards beside it, its districts below."""
+        """A classification's home: its state tournament as the dominant object, its
+        awards beside it, its districts below. Was `/jhsaa` until the front page
+        (above) took the door; the endpoint name is unchanged so every link holds."""
         gender, label, u, g, group, year = _jh_scope_args()
         view = jhsaa_view(DEFAULT_SEED, g, group, year)
         return render_template("jhsaa.html", active="High School", view=view,

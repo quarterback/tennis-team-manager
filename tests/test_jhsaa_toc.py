@@ -411,7 +411,7 @@ def test_every_jhsaa_page_renders_against_a_real_season(archived):
     c = archived["client"]
     champ = archived["arc"]["toc"]["champion"]
     sc = next(s for s in jh.load_schools("girls") if s.name == champ)
-    for path in ("/jhsaa?g=girls", "/jhsaa/toc?g=girls", "/jhsaa/bracket?g=girls",
+    for path in ("/jhsaa?g=girls", "/jhsaa/class?g=girls", "/jhsaa/toc?g=girls", "/jhsaa/bracket?g=girls",
                  "/jhsaa/rankings?g=girls", f"/jhsaa/rankings?g=girls&group={sc.group}",
                  "/jhsaa/districts?g=girls", "/jhsaa/champions?g=girls",
                  f"/jhsaa/district/{sc.group}/{sc.district}?g=girls",

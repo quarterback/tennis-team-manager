@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header, jh_player %}
+{% block title %}JHSAA {{ view.season_year }} — High School{% endblock %}
+{% block content %}
+
+{# ‼️ THE FRONT PAGE (owner spec 2026-09): a newspaper front with a data desk.
+   One rule for every word on it — a headline leads with a number or a name,
+   carries no adjective, and links into the page that owns the detail. Nothing
+   here is generated prose; every line is a template over the archive
+   (`app.jhsaa_desk`). Association-wide, both genders, no class rail. #}
+
+{% macro story_link(s) -%}
+{{ url_for(s.link.ep, u=u, **s.link.args) }}
+{%- endmacro %}
+
+{% macro gtag(g) -%}
+{% if g == 'girls' %}<span class="jh-gtag g">G</span>{% elif g == 'boys' %}<span class="jh-gtag b">B</span>{% else %}<span class="jh-gtag g">G</span><span class="jh-gtag b">B</span>{% endif %}
+{%- endmacro %}
+
+{{ jh_header(view.scope, u, 'front', 'The ' ~ view.season_year ~ ' Season', '',
+             [('Season', view.season_year)] if view.ready else [], classless=true) }}
+
+<div class="jh-shell jh-front">
+{% if not view.ready %}
+<div class="bl-panel"><div class="jh-empty">No high-school season has been archived yet.
+  It runs as its own step at week&nbsp;0 — advance the world once and the front page fills.</div></div>
+{% else %}
+
+{# ---- The facts strip: counts over the season, large type, no panels ---- #}
+<div class="jh-facts">
+  {% for f in view.facts %}
+  <div class="jh-fact"><span class="n">{{ f.n }}</span><span class="l">{{ f.label }}</span></div>
+  {% endfor %}
+</div>
+
+{# ---- The lead: one story, three times the space of anything else ---- #}
+{% if view.lead %}
+{% set s = view.lead %}
+<a class="jh-lead" href="{{ story_link(s) }}">
+  <div class="body">
+    <div class="eyebrow">{{ gtag(s.gender) }}{% if s.group %}<span class="jh-chip c-{{ s.group|replace(' ','') }}">{{ s.group|jh_group_short }}</span>{% endif %}</div>
+    <h2 class="hl">{{ s.headline }}</h2>
+    <p class="dek">{{ s.dek }}</p>
+  </div>
+  <div class="stat">
+    {% if s.mark %}<span class="mk">{{ s.mark|safe }}</span>{% endif %}
+    <span class="n">{{ s.stat }}</span><span class="l">{{ s.stat_label }}</span>
+  </div>
+</a>
+{% endif %}
+
+{# ---- The feed ---- #}
+{% if view.feed %}
+<div class="jh-feed">
+  {% for s in view.feed %}
+  <a class="jh-story" href="{{ story_link(s) }}">
+    <div class="eyebrow">{{ gtag(s.gender) }}{% if s.group %}<span class="jh-chip c-{{ s.group|replace(' ','') }}">{{ s.group|jh_group_short }}</span>{% endif %}
+      <span class="stat"><span class="n">{{ s.stat }}</span><span class="l">{{ s.stat_label }}</span></span></div>
+    <h3 class="hl">{{ s.headline }}</h3>
+    <p class="dek">{{ s.dek }}</p>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="jh-cols2">
+  {# ---- Players desk: the Players of the Year, then the freshman champions ---- #}
+  <div class="bl-panel jh-desk">
+    <div class="bl-panel-head"><span class="bl-panel-title">Players of the Year</span>
+      <a class="bl-panel-meta" href="{{ url_for('jhsaa_honors', u=u, g=view.gender, year=view.scope.pin) }}">honors →</a></div>
+    <div class="bl-panel-body" style="padding:0">
+      {% for r in view.players %}
+      <div class="jh-poyrow">
+        {{ gtag(r.gender) }}<span class="jh-chip c-{{ r.group|replace(' ','') }}">{{ r.group|jh_group_short }}</span>
+        <span class="mk">{{ r.mark|safe }}</span>
+        <span class="bd">
+          <span class="n">{% for nm in r.names %}{{ jh_player(nm, r.school, r.pids[loop.index0], u, r.gender) }}{% if r.grades|length > loop.index0 and r.grades[loop.index0] %}<span class="jh-gr{{ ' u' if r.grades[loop.index0]|int != 12 }}">({{ r.grades[loop.index0] }})</span>{% endif %}{% if not loop.last %} / {% endif %}{% endfor %}</span>
+          <span class="s">{{ r.school }}</span>
+        </span>
+        <span class="v">{{ r.record }}</span>
+      </div>
+      {% endfor %}
+      {% if view.freshmen %}
+      <div class="jh-desk-sub">Freshman No. 1 champions</div>
+      {% for s in view.freshmen %}
+      <a class="jh-poyrow" href="{{ story_link(s) }}">
+        {{ gtag(s.gender) }}<span class="jh-chip c-{{ s.group|replace(' ','') }}">{{ s.group|jh_group_short }}</span>
+        <span class="bd"><span class="n">{{ s.headline }}</span><span class="s">{{ s.dek }}</span></span>
+      </a>
+      {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="jh-stack">
+    {# ---- Programs desk ---- #}
+    <div class="bl-panel jh-desk">
+      <div class="bl-panel-head"><span class="bl-panel-title">Programs</span>
+        <a class="bl-panel-meta" href="{{ url_for('jhsaa_titles', u=u, g=view.gender) }}">title board →</a></div>
+      <div class="bl-panel-body" style="padding:0">
+        {% for s in view.programs %}
+        <a class="jh-poyrow" href="{{ story_link(s) }}">
+          {{ gtag(s.gender) }}{% if s.group %}<span class="jh-chip c-{{ s.group|replace(' ','') }}">{{ s.group|jh_group_short }}</span>{% endif %}
+          {% if s.mark %}<span class="mk">{{ s.mark|safe }}</span>{% endif %}
+          <span class="bd"><span class="n">{{ s.headline }}</span><span class="s">{{ s.dek }}</span></span>
+          <span class="v">{{ s.stat }}</span>
+        </a>
+        {% else %}
+        <p class="jh-empty">Nothing this season cleared the bar.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    {# ---- Record book ---- #}
+    {% if view.record_book %}
+    <div class="bl-panel jh-desk">
+      <div class="bl-panel-head"><span class="bl-panel-title">Record book</span>
+        <a class="bl-panel-meta" href="{{ url_for('jhsaa_career_wins', u=u, g=view.gender) }}">career wins →</a></div>
+      <div class="jh-records">
+        {% for r in view.record_book %}
+        <a class="jh-rec" href="{{ url_for(r.ep, u=u, g=r.gender) }}">
+          <span class="n">{{ r.n }}</span>
+          <span class="who">{{ r.name }}</span>
+          <span class="l">{{ r.label }}</span>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{# ---- Data desk: the one chart on the page. Seed against outcome. ---- #}
+{% set ch = view.chart %}
+<div class="bl-panel jh-datadesk">
+  <div class="bl-panel-head"><span class="bl-panel-title">Data desk</span>
+    <span class="bl-panel-meta">every State dual this season — {% for g, n in ch.n.items() %}{{ g }} {{ n }}{% if not loop.last %} · {% endif %}{% endfor %}</span></div>
+  <div class="bl-panel-body jh-cols2">
+    <div>
+      <div class="jh-dd-title">Favourite's win rate, by seed gap</div>
+      {% for b in ch.bands %}
+      <div class="jh-bar-row">
+        <span class="k">{{ b.label }}</span>
+        <span class="bars">
+          {% for g in view.genders %}
+          {% set v = b[g] %}
+          <span class="bar {{ g }}"{% if v.pct is not none %} style="width:{{ v.pct }}%" title="{{ g }} · {{ v.pct }}% of {{ v.n }}"{% else %} style="width:0"{% endif %}></span>
+          {% endfor %}
+        </span>
+        <span class="v">{% for g in view.genders %}{% set v = b[g] %}<span class="{{ g }}">{{ v.pct ~ '%' if v.pct is not none else '—' }}</span>{% if not loop.last %} · {% endif %}{% endfor %}</span>
+      </div>
+      {% endfor %}
+      <div class="jh-dd-note">{% for g in view.genders %}<span class="sw {{ g }}"></span>{{ g }}{% if not loop.last %} &nbsp; {% endif %}{% endfor %} · gap = seed difference between the two sides</div>
+    </div>
+    <div>
+      <div class="jh-dd-title">Champion's seed, by class</div>
+      <div class="jh-seedgrid">
+        {% for r in ch.champ_seeds %}
+        <div class="cell">
+          <span class="g">{{ r.short }}</span>
+          {% for g in view.genders %}
+          {% set sd = r[g] %}
+          <span class="sd {{ g }} {{ 'one' if sd == 1 else 'top' if sd and sd <= 4 else 'deep' if sd else '' }}">{{ sd if sd else '—' }}</span>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      <div class="jh-dd-note">No. 1 seeds filled · top-4 outlined · lower seeds tinted</div>
+    </div>
+  </div>
+</div>
+
+{# ---- The doors: every section, one row ---- #}
+<div class="jh-doors">
+  <div class="door">
+    <span class="k">Classes</span>
+    {% for gp in view.groups %}<a href="{{ url_for('jhsaa_page', u=u, g=view.gender, group=gp, year=view.scope.pin) }}">{{ gp }}</a>{% endfor %}
+  </div>
+  <div class="door">
+    <span class="k">Team tournaments</span>
+    <a href="{{ url_for('jhsaa_page', u=u, g=view.gender, year=view.scope.pin) }}">State</a>
+    <a href="{{ url_for('jhsaa_bracket', u=u, g=view.gender, year=view.scope.pin) }}">Draw</a>
+    <a href="{{ url_for('jhsaa_toc', u=u, g=view.gender, year=view.scope.pin) }}">Tournament of Champions</a>
+    <a href="{{ url_for('jhsaa_jv_state', u=u, g=view.gender, year=view.scope.pin) }}">JV State</a>
+  </div>
+  <div class="door">
+    <span class="k">Individual tournaments</span>
+    <a href="{{ url_for('jhsaa_individuals', u=u, g=view.gender, year=view.scope.pin) }}">State flights</a>
+    <a href="{{ url_for('jhsaa_individual_champions', u=u, g=view.gender) }}">Champions</a>
+    <a href="{{ url_for('jhsaa_repeat_champions', u=u, g=view.gender) }}">Repeat champions</a>
+  </div>
+  <div class="door">
+    <span class="k">Honors &amp; awards</span>
+    <a href="{{ url_for('jhsaa_honors', u=u, g=view.gender, year=view.scope.pin) }}">All-State</a>
+    <a href="{{ url_for('jhsaa_champions', u=u, g=view.gender) }}">State champions</a>
+    <a href="{{ url_for('jhsaa_titles', u=u, g=view.gender) }}">Title board</a>
+    <a href="{{ url_for('jhsaa_repeat_poy_view', u=u, g=view.gender) }}">Repeat POY</a>
+  </div>
+  <div class="door">
+    <span class="k">Data &amp; analysis</span>
+    <a href="{{ url_for('jhsaa_rankings', u=u, g=view.gender, year=view.scope.pin) }}">TOSS rankings</a>
+    <a href="{{ url_for('jhsaa_computer', u=u, g=view.gender, year=view.scope.pin) }}">Computer ratings</a>
+    <a href="{{ url_for('jhsaa_committee', u=u, g=view.gender, year=view.scope.pin) }}">Committee</a>
+    <a href="{{ url_for('jhsaa_career_wins', u=u, g=view.gender) }}">Career wins</a>
+    <a href="{{ url_for('jhsaa_realism', u=u, g=view.gender) }}">Realism</a>
+    <a href="{{ url_for('jhsaa_schools', u=u, g=view.gender) }}">Schools</a>
+    <a href="{{ url_for('jhsaa_players', u=u, g=view.gender) }}">Players</a>
+  </div>
+</div>
+{% endif %}
+</div>
+{% endblock %}
