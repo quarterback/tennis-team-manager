@@ -35,8 +35,22 @@ from app.dbpath import resolve_db_path                         # noqa: E402
 
 
 def main() -> None:
-    school_name = sys.argv[1] if len(sys.argv) > 1 else None
-    gender = sys.argv[2] if len(sys.argv) > 2 else "boys"
+    # --set-name-era N: repair a poisoned era row. While the dbpath probe race
+    # was live (see app/dbpath.py), an era self-configured against the SHADOW
+    # DB's archive could be persisted into the real save — a wrong value that
+    # then renames every cohort it covers. Run the plain diagnostic first: its
+    # sweep names the era that restores the archived names, and this writes it.
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    fix = next((a for a in sys.argv[1:] if a.startswith("--set-name-era=")), None)
+    if fix is not None:
+        from app import worldconfig as wc
+        val = str(int(fix.split("=", 1)[1]))
+        print(f"jhsaa_name_era: {wc.get('jhsaa_name_era')!r} -> {val!r}")
+        wc.set("jhsaa_name_era", val)
+        jh._name_era_cache.clear()
+        print("written — restart the app.")
+    school_name = args[0] if args else None
+    gender = args[1] if len(args) > 1 else "boys"
 
     configured = os.environ.get("TENNIS_DB_PATH")
     db = resolve_db_path()
