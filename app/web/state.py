@@ -5140,6 +5140,96 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
     }
 
 
+def _jh_trophy_banner(seasons_in: list[dict]) -> list[dict]:
+    """One banner row per KIND of team honour, years behind it. See the
+    owner note inline; called by `jhsaa_school_view`."""
+    # ‼️ TEAM TROPHIES FOLD LIKE A GYM BANNER (owner reference, 2026-09). When a
+    # program keeps winning the same thing, the wall lists the YEARS, not a row (or
+    # a card) per season: "CONFERENCE — 67 · 68 · 70 · 71 …", "REGIONALS — 66 · 67
+    # …". One line per kind of honour, the years run out behind it. A 47-season
+    # program's whole team history fits in a dozen lines instead of 47 cards.
+    #
+    # Rows, in ladder order, biggest first: the TOC title, the state title (per
+    # class — a title in 7A and a title in 6A after reclassification are different
+    # banners), every other State finish by depth, the district title — ONE row,
+    # "District" (the association's word for it), however many leagues realignment
+    # has moved them through (owner, 2026-09: "it's the same gist and what a real
+    # life school would do"; the wall says CONFERENCE CHAMPIONS, not one banner per
+    # conference name) — then each tournament unit by
+    # KIND. Which region it was is the season's business, one click behind the year.
+    #
+    # ‼️ THE KIND IS WHICHEVER END OF THE LABEL IS NOT THE NUMBER. `_unit_honour`
+    # writes two shapes: "<Kind> <numeral>" for the ladder's counted units — "Region
+    # IX", "Zone D", "Semi-State I", "State Special CLXXII" — and "<Name> <Kind>" for
+    # the NAMED ones — "Coral Epiregional", "7A-UJ Conference". Dropping the last
+    # token blindly turned the epiregionals into "Coral", "Olive" and "Taiga", three
+    # one-year banners for the same rung. So: a Roman numeral, a single letter or a
+    # digit run on the end means the kind is the head; anything else means it is the
+    # tail.
+    def _kind(u: str) -> str:
+        head, _, tail = u.rpartition(" ")
+        if not head:
+            return u
+        numeric = (tail.isdigit() or (len(tail) == 1 and tail.isalpha())
+                   or (tail.isupper() and set(tail) <= set("IVXLCDM")))
+        return head if numeric else tail
+
+    def _yr(s):
+        return {"year": s["year"], "season_year": s["season_year"]}
+    seasons = [s for s in seasons_in if s.get("honoured")]
+    banner: dict[tuple, dict] = {}
+
+    def _row(key, label, gold=False):
+        return banner.setdefault(key, {"label": label, "gold": gold, "years": []})
+    unit_rank: dict[str, int] = {}          # kind -> first ladder position seen
+    for s in seasons:
+        if s.get("toc_champion"):
+            _row((0, ""), "Tournament of Champions", gold=True)["years"].append(_yr(s))
+        if s.get("champion"):
+            _row((1, s["group"]), f"{s['group']} state champion", gold=True)["years"].append(_yr(s))
+        elif s.get("made_state") and s.get("state_finish"):
+            # ‼️ A LOSS BEFORE THE OCTOFINALS IS AN APPEARANCE (owner, 2026-09). The
+            # banner names the finishes a wall names — runner-up, semis, quarters,
+            # octos — and folds everything below into one line, "State tournament
+            # appearances": a program does not hang a "Round of 40" banner. The cut
+            # is `_finish_label`'s own band (alive <= 16 is the octofinalist), so a
+            # field that pads to 40 or 48 lands on the right side of it.
+            place = s.get("state_place") or 99
+            if place > 16:
+                _row((2, 17, ""), "State tournament appearances")["years"].append(_yr(s))
+            else:
+                _row((2, place, s["state_finish"]),
+                     f"State {s['state_finish'].lower()}")["years"].append(_yr(s))
+        # A TOC run short of the title outranks any State finish — only a class
+        # champion is ever in that field — so it sorts above them (place 0). Same
+        # casing as the State rows: the event capitalised, the finish not.
+        if s.get("made_toc") and not s.get("toc_champion") and s.get("toc_finish"):
+            fin = s["toc_finish"].replace("TOC", "", 1).strip().lower()
+            _row((2, 0, fin), f"Tournament of Champions {fin}")["years"].append(_yr(s))
+        units = list(s.get("unit_wins") or [])
+        if s.get("district_title") and units:
+            units.pop(0)                        # `_season_row` leads with the league
+            _row((3, ""), "District")["years"].append(_yr(s))
+        for i, u in enumerate(units):
+            kind = _kind(u)
+            unit_rank[kind] = min(unit_rank.get(kind, i), i)
+            _row((4, kind), kind)["years"].append(_yr(s))
+
+    # Order within a band: titles and leagues by RECENCY (the class they play in
+    # now hangs first — "6A" sorting above "7A" because 6 < 7 is not an order),
+    # State finishes by depth, unit kinds by the ladder position they were first
+    # won at so the road reads bottom-up the way a season is played.
+    def _order(k):
+        row = banner[k]
+        newest = -max(y["season_year"] for y in row["years"])
+        if k[0] in (1, 3):
+            return (k[0], newest, row["label"])
+        if k[0] == 4:
+            return (k[0], unit_rank.get(k[1], 0), row["label"])
+        return (k[0],) + tuple(k[1:])
+    return [banner[k] for k in sorted(banner, key=_order)]
+
+
 def jhsaa_school_view(seed: int, gender: str, school: str,
                       year: int | None = None) -> dict:
     """One JHSAA program, as a PROGRAM page: who they are, how this season went, the
@@ -5364,6 +5454,8 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                             "span": (str(r["first"]) if r["first"] == r["last"]
                                      else f"{r['first']}–{str(r['last'])[2:]}")})
 
+    trophy_banner = _jh_trophy_banner(hist["seasons"])
+
     return {
         "found": True, "school": school, "gender": g, "year": yr, "years": years,
         "season_year": season_year, "is_current": bool(years) and yr == years[0],
@@ -5452,6 +5544,7 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                     "family": _family_row(fam_map, p.pid)}
                    for p in roster],
         "honors": (season or {}).get("honors", []),
+        "trophy_banner": trophy_banner,
         "history": hist,
         "career_wins": career_wins,
     }
