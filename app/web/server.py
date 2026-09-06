@@ -10,6 +10,7 @@ Run:  python3 manage.py runserver   (PORT env to override; default 5000)
 """
 from __future__ import annotations
 
+import logging
 import os
 import threading
 from flask import (Flask, render_template, request, abort, redirect, url_for,
@@ -404,6 +405,28 @@ def create_app() -> Flask:
     # connections never deadlock on first-time table creation.
     from app import db as _db
     _db.bootstrap()
+
+    # ‼️ SAY WHICH UNIVERSE THIS IS, at every boot (owner incident 2026-09).
+    # A JHSAA lab world lives in its OWN database, bound by the lab launcher
+    # (`scripts/jhsaa_lab_server.sh` → TENNIS_DB_PATH + JHSAA_LAB_MODE); a
+    # plain launch reads ./tennis.db and will happily CREATE a fresh league
+    # there. The two launches look identical until a page renders the wrong
+    # year — the owner, who designed the split, lost an evening to it ("my
+    # 2073 save says 2027"). One line at boot naming the file, the mode and
+    # the world it holds is the difference between a two-second catch and a
+    # forked-universe hunt. WARNING level on purpose: it must print under the
+    # default logging config, like dbpath's fallback warning does.
+    from app.dbpath import resolve_db_path as _rdp
+    from app import world as _wd
+    _w = _wd.load_world(_wd.DEFAULT_SEED)
+    _mode = " [JHSAA LAB]" if os.environ.get("JHSAA_LAB_MODE") else ""
+    logging.getLogger("baseline.server").warning(
+        "save%s: %s — %s", _mode, _rdp(),
+        f"world year {_w['year']} (season {2026 + _w['year']})" if _w else
+        "NO WORLD YET — a new league will be created on first load. If you "
+        "expected an existing save (or a JHSAA lab world, which lives in its "
+        "own database via scripts/jhsaa_lab_server.sh), stop and check the "
+        "path above.")
 
     # Warm the expensive caches at BOOT, off the request path, in a daemon thread.
     # The first reload after a cold start or a Fly machine recycle otherwise pays

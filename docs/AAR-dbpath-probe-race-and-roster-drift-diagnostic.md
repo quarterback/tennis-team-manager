@@ -104,3 +104,24 @@ run taught, each now built in:
   placeholder path, printed '' without saying "missing", and bailed on an
   unarchived year — three holes, three user round-trips. A tool built for a
   non-developer's machine earns the same hardening as a page.
+
+## 5. Epilogue — the actual root cause was the LAUNCH, not the file
+
+After the dbpath fix shipped, the owner found the real answer themselves: the
+47-season universe was a **JHSAA lab world**, which lives in its own database
+by design (`scripts/jhsaa_lab_server.sh` binds `TENNIS_DB_PATH` +
+`JHSAA_LAB_MODE`), and they had been opening the app "through the college
+route" — a plain launch, which reads `./tennis.db` and creates a fresh league
+there when none exists. The "2027 universe" was that fresh league; the real
+save was never touched. The owner, who designed the split: "this needs to be
+updated somewhere because I'm the one that designed it and still forgot."
+
+So it is written down in three places now: `create_app` announces
+`save[ MODE]: <path> — world year N (season Y)` at every boot (WARNING level,
+so it prints under the default logging config — read that line FIRST when a
+save looks wrong), CLAUDE.md carries the guardrail beside ONE WORLD PER SAVE,
+and this section is the record. The dbpath race (§1-2) was real and stays
+fixed — it just was not the whole story. Two lessons stack: **a mode that
+silently decides which universe you are in must say so on every boot**, and
+**"the save is wrong" is a question about WHICH FILE before it is a question
+about what is in it.**
