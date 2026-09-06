@@ -5149,9 +5149,10 @@ def _jh_trophy_banner(seasons_in: list[dict]) -> list[dict]:
     # …". One line per kind of honour, the years run out behind it. A 47-season
     # program's whole team history fits in a dozen lines instead of 47 cards.
     #
-    # Rows, in ladder order, biggest first: the TOC title, the state title (per
-    # class — a title in 7A and a title in 6A after reclassification are different
-    # banners), every other State finish by depth, the district title — ONE row,
+    # Rows, in ladder order, biggest first: the TOC title, the state title — ONE
+    # row whatever class it was won in (owner, 2026-09: "a state title is a state
+    # title"; the class is on the season, a click behind the year), every other
+    # State finish by depth, the district title — ONE row,
     # "District" (the association's word for it), however many leagues realignment
     # has moved them through (owner, 2026-09: "it's the same gist and what a real
     # life school would do"; the wall says CONFERENCE CHAMPIONS, not one banner per
@@ -5186,7 +5187,7 @@ def _jh_trophy_banner(seasons_in: list[dict]) -> list[dict]:
         if s.get("toc_champion"):
             _row((0, ""), "Tournament of Champions", gold=True)["years"].append(_yr(s))
         if s.get("champion"):
-            _row((1, s["group"]), f"{s['group']} state champion", gold=True)["years"].append(_yr(s))
+            _row((1, ""), "State champion", gold=True)["years"].append(_yr(s))
         elif s.get("made_state") and s.get("state_finish"):
             # ‼️ A LOSS BEFORE THE OCTOFINALS IS AN APPEARANCE (owner, 2026-09). The
             # banner names the finishes a wall names — runner-up, semis, quarters,
