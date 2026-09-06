@@ -620,6 +620,18 @@
 /* `margin-top: auto` pins the footnote to the bottom edge, so a row of cards
    holding different amounts of hardware still lines its last lines up. */
 .jh-tcard .ft { margin-top: auto; font-size: var(--fs-caption); color: var(--text-secondary); }
+/* Year and record are one unit — "2029 24-3 (10-3)" — so they group on the left and
+   the seed keeps the right edge. Baseline-aligned: the record is a step down from
+   the year and the two must sit on the same line, not on their box centres. */
+.jh-tcard .yrrec { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+/* The record is a FIGURE, so it takes the mono face like every other one. The
+   overall record is the number being read; the league record is its qualifier. */
+.jh-tcard .rec {
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em; font-size: var(--fs-body-s); color: var(--text-muted);
+  white-space: nowrap;
+}
+.jh-tcard .rec b { font-weight: 600; color: var(--text-primary); }
 /* A CHAMPION year, framed in metal. `--medal-gold` rather than `--rank-gold`,
    which the palette resolves to oxblood in the default scheme — the card would
    read red. Mixed toward the card surface so it stays a frame in every scheme

@@ -652,7 +652,16 @@
       {% if s.champion or s.toc_champion or s.made_state or s.unit_wins or s.team_honors %}
       <div class="jh-tcard{{ ' champ' if s.champion or s.toc_champion }}">
         <div class="hd">
-          <a class="yr" href="{{ url_for('jhsaa_school', school=view.school, year=s.year, u=u, g=view.gender) }}">{{ s.season_year }}</a>
+          {# ‼️ THE RECORD SITS WITH THE YEAR: "2029 24-3 (10-3)" (owner, 2026-09).
+             It was a footnote at the bottom of the card, which is not what a record
+             is — it is half of what identifies the season, and the reader scanning a
+             wall of 47 cards is reading year-then-record, not hunting the last line.
+             The parenthesis IS the notation for a league record, so the words that
+             used to spell it out ("· 10-3 in the league") are gone from all 47. #}
+          <span class="yrrec">
+            <a class="yr" href="{{ url_for('jhsaa_school', school=view.school, year=s.year, u=u, g=view.gender) }}">{{ s.season_year }}</a>
+            <span class="rec"><b>{{ s.record }}</b>{% if s.district_record %} ({{ s.district_record }}){% endif %}</span>
+          </span>
           {% if s.seed %}<span class="sd">No. {{ s.seed }} seed</span>{% endif %}
         </div>
         {# The headline is the furthest the program got that year — the title if
@@ -678,13 +687,12 @@
         {% if s.unit_wins %}
         <div class="units">{% for un in s.unit_wins %}<span class="jh-chip unit">{{ un }}</span>{% endfor %}</div>
         {% endif %}
-        {# The footnote: a TOC finish short of the title if there is one, otherwise
-           the season's own record — which is what a reader wants from a card whose
-           headline is a unit title rather than a State run. #}
-        <div class="ft">
-          {% if s.team_honors %}{% for h in s.team_honors %}{{ h }}{% if not loop.last %} · {% endif %}{% endfor %}
-          {% else %}{{ s.record }}{% if s.district_record %} · {{ s.district_record }} in the league{% endif %}{% endif %}
-        </div>
+        {# What is left for the foot is a TEAM RESULT carried as text — a TOC finish
+           short of the title. The record moved up to the year, so a card with no
+           such line simply ends at its chips rather than reserving an empty row. #}
+        {% if s.team_honors %}
+        <div class="ft">{% for h in s.team_honors %}{{ h }}{% if not loop.last %} · {% endif %}{% endfor %}</div>
+        {% endif %}
       </div>
       {% endif %}
       {% endfor %}
