@@ -102,8 +102,15 @@ def dual_rows(teams: list) -> list[dict]:
                 continue
             if d["opp"] not in names:
                 continue
+            # `hw`: the archived HOME result — True won, False lost, None a drawn
+            # league dual. ‼️ Never derive it from the points: Group 2's 3S/3D
+            # road (JHSAA rule 2026-09) archives a LEVEL 3-3 with the winner
+            # decided on tiebreakers, and `hp > ap` would read every one of
+            # those as an away win (Colley/BT/Elo/SOR) or as no win at all
+            # (win_pct). Every win/loss system reads `home_won(r)`.
             rows.append({"home": t.school.name, "away": d["opp"],
                          "hp": d["pf"], "ap": d["pa"], "phase": phase,
+                         "hw": None if d.get("tied") else bool(d.get("won")),
                          "order": (_phase_rank(phase), idx,
                                    t.school.name, d["opp"]),
                          "lines": d.get("lines") or []})
@@ -241,9 +248,20 @@ def _colley_frac(rows: list[dict], frac) -> dict[str, float]:
     return {names[i]: r[i] for i in range(n)}
 
 
+def home_won(r: dict) -> bool | None:
+    """Did the home side win this row? The archived result when the row carries
+    one (`hw` — a level dual decided on tiebreakers reads correctly), the points
+    otherwise (synthetic rows, older callers). None is a drawn dual."""
+    if "hw" in r:
+        return r["hw"]
+    if r["hp"] == r["ap"]:
+        return None
+    return r["hp"] > r["ap"]
+
+
 def colley(rows: list[dict]) -> dict[str, float]:
     """System 1 — Colley: wins and losses with schedule adjustment."""
-    return _colley_frac(rows, lambda r: 1.0 if r["hp"] > r["ap"] else 0.0)
+    return _colley_frac(rows, lambda r: {True: 1.0, False: 0.0}.get(home_won(r), 0.5))
 
 
 def bradley_terry(rows: list[dict]) -> dict[str, float]:
@@ -259,7 +277,12 @@ def bradley_terry(rows: list[dict]) -> dict[str, float]:
     matchups: list[list[int]] = [[] for _ in range(n)]
     for r in rows:
         hi, ai = idx[r["home"]], idx[r["away"]]
-        wins[hi if r["hp"] > r["ap"] else ai] += 1.0
+        hw = home_won(r)
+        if hw is None:
+            wins[hi] += 0.5
+            wins[ai] += 0.5
+        else:
+            wins[hi if hw else ai] += 1.0
         matchups[hi].append(ai)
         matchups[ai].append(hi)
     rating = [1.0] * n
@@ -285,9 +308,9 @@ def win_pct(rows: list[dict]) -> dict[str, float]:
     w: dict[str, float] = {}
     g: dict[str, int] = {}
     for r in rows:
-        for name, won in ((r["home"], r["hp"] > r["ap"]),
-                          (r["away"], r["ap"] > r["hp"])):
-            w[name] = w.get(name, 0.0) + (1.0 if won else 0.0)
+        hw = home_won(r)
+        for name, won in ((r["home"], hw), (r["away"], None if hw is None else not hw)):
+            w[name] = w.get(name, 0.0) + (0.5 if won is None else 1.0 if won else 0.0)
             g[name] = g.get(name, 0) + 1
     return {n: w[n] / g[n] for n in w}
 
@@ -415,8 +438,11 @@ def elo(rows: list[dict]) -> dict[str, float]:
         eh = val.setdefault(h, ELO_BASE)
         ea = val.setdefault(a, ELO_BASE)
         exp_h = _elo_expected(eh, ea)
-        actual = 1.0 if r["hp"] > r["ap"] else 0.0
-        mov = abs(r["hp"] - r["ap"])
+        hw = home_won(r)
+        actual = 0.5 if hw is None else (1.0 if hw else 0.0)
+        # A decided level dual has no margin in flights; a tiebreak win is worth
+        # the narrowest margin there is, never zero movement.
+        mov = max(abs(r["hp"] - r["ap"]), 1 if hw is not None else 0)
         k = ELO_K * math.log(1.0 + mov) * (2.2 / (2.2 + 0.001 * abs(eh - ea)))
         delta = k * (actual - exp_h)
         val[h] = eh + delta
@@ -451,8 +477,9 @@ def sor(rows: list[dict], bt: dict[str, float]) -> dict[str, float]:
     for r in rows:
         sched.setdefault(r["home"], []).append(r["away"])
         sched.setdefault(r["away"], []).append(r["home"])
-        wins[r["home"]] = wins.get(r["home"], 0) + (1 if r["hp"] > r["ap"] else 0)
-        wins[r["away"]] = wins.get(r["away"], 0) + (1 if r["ap"] > r["hp"] else 0)
+        hw = home_won(r)
+        wins[r["home"]] = wins.get(r["home"], 0) + (1 if hw else 0)
+        wins[r["away"]] = wins.get(r["away"], 0) + (1 if hw is False else 0)
     out = {}
     for name, opps in sched.items():
         dist = [1.0]                                 # P(k wins) over duals so far

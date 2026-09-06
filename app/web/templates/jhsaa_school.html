@@ -376,6 +376,18 @@
             <span class="st">{{ ln.score }}</span>
           </div>
           {% endfor %}
+          {% if d.tiebreak %}
+          {# Points, then deciders won in parentheses — the owner's box-score line. #}
+          {% set tbw = d.tiebreak|selectattr('home_won')|list|length %}
+          {% set tb_us = tbw if d.home else d.tiebreak|length - tbw %}
+          <div class="jh-line" style="font-weight:600">
+            <span class="sl"></span>
+            <span class="nm">{{ d.pf|int }} ({{ tb_us }})</span>
+            <span class="sl"></span>
+            <span class="nm">{{ d.pa|int }} ({{ d.tiebreak|length - tb_us }})</span>
+            <span class="st"></span>
+          </div>
+          {% endif %}
         </div>
       </td></tr>
       {% endif %}

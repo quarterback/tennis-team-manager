@@ -5904,7 +5904,7 @@ def jhsaa_prior_meetings(world_id: int, gender: str, home: str, away: str,
         qmarks_h = ",".join("?" * len(home_names))
         qmarks_a = ",".join("?" * len(away_names))
         rows = conn.execute(
-            "SELECT rowid AS id, year, school, opp, pf, pa, phase, district"
+            "SELECT rowid AS id, year, school, opp, pf, pa, phase, district, won, tied"
             " FROM world_jhsaa_dual"
             " WHERE world_id=? AND gender=? AND home=1 AND COALESCE(level,'v')=?"
             f" AND ((school IN ({qmarks_h}) AND opp IN ({qmarks_a}))"
@@ -5925,10 +5925,15 @@ def jhsaa_prior_meetings(world_id: int, gender: str, home: str, away: str,
         # dict just to hand it to that function.
         day = cal.get((level, r["phase"] or "", int(bool(r["district"])), r["school"], r["opp"]))
         label = f"{day:%b} {day.day}, {season_year}" if day else str(season_year)
+        home_n, away_n = alias.get(r["school"], r["school"]), alias.get(r["opp"], r["opp"])
+        # The ARCHIVED outcome rides beside the points: a Group 2 postseason dual
+        # decided on tiebreakers is 3-3 with a winner, a drawn JV dual is level
+        # with none — the points alone cannot tell them apart.
+        winner = None if r["tied"] else (home_n if r["won"] else away_n)
         out.append({"id": r["id"], "label": label,
-                    "home": alias.get(r["school"], r["school"]),
-                    "away": alias.get(r["opp"], r["opp"]),
+                    "home": home_n, "away": away_n,
                     "home_points": int(r["pf"]), "away_points": int(r["pa"]),
+                    "winner": winner, "tied": bool(r["tied"]),
                     "postseason": r["phase"] in _jh.POSTSEASON})
     return out
 

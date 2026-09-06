@@ -192,6 +192,11 @@ def summarize_series(meetings: list[dict], team_a: str, team_b: str) -> dict | N
         return None
 
     def winner_of(m: dict) -> str | None:
+        # A row that states its outcome wins over the points: a level dual can be
+        # a draw (JV) OR decided on tiebreakers (Group 2's road), and only the
+        # archived result says which.
+        if "winner" in m:
+            return None if m.get("tied") else m["winner"]
         if m["home_points"] == m["away_points"]:
             return None
         return m["home"] if m["home_points"] > m["away_points"] else m["away"]

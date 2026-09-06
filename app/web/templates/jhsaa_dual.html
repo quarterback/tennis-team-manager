@@ -67,6 +67,16 @@
       <div class="bl-final">{{ ln.score or '—' }}</div>
     </div>
     {% endfor %}
+    {# The owner's box-score line: points, then deciders won in parentheses. #}
+    {% set tbh = d.tiebreak|selectattr('home_won')|list|length %}
+    <div class="bl-matchrow" style="font-weight:600">
+      <div class="bl-court"><span class="kind">Total</span><span class="num"></span></div>
+      <div class="bl-match-sides">
+        <div class="bl-side"><span class="nm">{{ d.home }} <span class="bl-court-team">{{ d.home_points }} ({{ tbh }})</span></span></div>
+        <div class="bl-side"><span class="nm">{{ d.away }} <span class="bl-court-team">{{ d.away_points }} ({{ d.tiebreak|length - tbh }})</span></span></div>
+      </div>
+      <div class="bl-final">{{ d.home_points }} ({{ tbh }}) · {{ d.away_points }} ({{ d.tiebreak|length - tbh }})</div>
+    </div>
     {% endif %}
     </div>
   </div>

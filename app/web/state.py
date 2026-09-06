@@ -3850,6 +3850,15 @@ def _jh_score(gm: dict) -> str:
     return f"{max(hp, ap)}-{min(hp, ap)}"
 
 
+def _jh_tb(gm: dict) -> bool:
+    """Was this bracket game DECIDED ON TIEBREAKERS? Derived on read: a level
+    score with a named winner can only be Group 2's 3S/3D deciders (JHSAA rule
+    2026-09) — every other varsity shape is odd and a bracket never draws. No
+    archive marker needed, so every bracket builder stays untouched."""
+    return (gm.get("home_points") == gm.get("away_points")
+            and bool(gm.get("winner")) and gm.get("home_points") is not None)
+
+
 def _jh_brk_team(name: str, won: bool, seeds: dict, schools: dict) -> dict:
     """One side of a bracket card, in the shape `_bracket.html` already renders."""
     return {"school": name, "abbr": "", "color": "var(--gray-400)", "won": won,
@@ -4019,7 +4028,7 @@ def _jh_bracket_cols(bracket: dict, schools: dict, keep: int = 0) -> list:
                        "bpos": 0, "home_won": hw, "winner": gm.get("winner"),
                        # WINNER-FIRST: `brk_row` picks its half of this string by which
                        # side won, not by which side is home (see _bracket.html).
-                       "score": _jh_score(gm)})
+                       "score": _jh_score(gm), "tb": _jh_tb(gm)})
         byes = [t for t in alive if t not in playing]
         ms.extend(_jh_bye_card(t, seeds, schools) for t in byes)
         alive = [gm.get("winner") for gm in rd["games"]] + byes
@@ -4074,7 +4083,7 @@ def _jh_final_four(bracket: dict, schools: dict) -> dict:
         # place it is stated in words. `score` stays for the shared card macro.
         wp, lp = max(final["home_points"], final["away_points"]), \
             min(final["home_points"], final["away_points"])
-        out["final"] = {**final, "score": _jh_score(final),
+        out["final"] = {**final, "score": _jh_score(final), "tb": _jh_tb(final),
                         "win_points": int(wp), "lose_points": int(lp)}
     if len(rounds) > 1:
         for gm in rounds[-2]["games"]:
@@ -7054,7 +7063,10 @@ def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
     # `jhsaa_committee.select`) — a 7A season selected at 16 keeps reading as
     # sixteen after the move to 8. Seasons archived before the key fall back to
     # the group's current table; the road is 32 in every Parastate group.
-    seats = (sel or {}).get("seats") or jh.at_large_bids(grp) or AT_LARGE
+    # A season archived before the key: the selection's own length IS the seat
+    # count (a 7A year selected at sixteen must not read as an eight-bid one).
+    seats = ((sel or {}).get("seats") or len((sel or {}).get("selected") or ())
+             or jh.at_large_bids(grp) or AT_LARGE)
     road_n = jh.state_field_size(grp)
     base = {"gender": g, "year": yr, "years": years, "group": grp,
             "groups": list(jh.ATLARGE_GROUPS), "scope": scope,
