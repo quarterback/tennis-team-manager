@@ -12,20 +12,20 @@
 
 /* ---- Section header ---- */
 .jh-head { background: var(--surface-th); border-bottom: 1px solid var(--border-subtle); }
-.jh-head-inner { max-width: 1320px; margin: 0 auto; padding: 20px 20px 0; }
+.jh-head-inner { max-width: var(--jh-measure); margin: 0 auto; padding: 20px 20px 0; }
 .jh-eyebrow {
   font-size: var(--fs-micro); font-weight: 700; letter-spacing: var(--ls-eyebrow);
   text-transform: uppercase; color: var(--text-muted);
 }
 .jh-titlerow { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
 .jh-title {
-  margin: 4px 0 0; font-family: var(--font-display); font-size: 30px; line-height: 1.08;
+  margin: 4px 0 0; font-family: var(--font-display); font-size: var(--fs-display-l); line-height: 1.08;
   letter-spacing: -0.02em; color: var(--text-primary);
 }
-.jh-sub { margin: 5px 0 0; font-size: 16px; color: var(--text-secondary); }
+.jh-sub { margin: 5px 0 0; font-size: var(--fs-body-l); color: var(--text-secondary); }
 .jh-headmeta { display: flex; gap: 18px; align-items: flex-end; }
-.jh-headmeta .k { display: block; font-size: 13px; font-weight: 700; letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-muted); }
-.jh-headmeta .v { display: block; font-family: var(--font-display); font-size: 22px; line-height: 1.1; color: var(--text-primary); }
+.jh-headmeta .k { display: block; font-size: var(--fs-micro); font-weight: 700; letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-muted); }
+.jh-headmeta .v { display: block; font-family: var(--font-display); font-size: var(--fs-display-s); line-height: 1.1; color: var(--text-primary); }
 
 /* ---- The persistent scope bar: gender, classification, season ----
    Not "tiny pills floating at the top-right": it is a full-width band under the
@@ -33,10 +33,10 @@
    move state → classification → district → school → player. */
 .jh-scope { display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap; padding: 12px 0 0; }
 .jh-scope-group { display: flex; align-items: center; gap: 6px; }
-.jh-scope-label { font-size: 13px; font-weight: 700; letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-faint); }
+.jh-scope-label { font-size: var(--fs-micro); font-weight: 700; letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-faint); }
 .jh-seg { display: inline-flex; border: 1px solid var(--border-default); border-radius: 7px; overflow: hidden; background: var(--surface-card); }
 .jh-seg a {
-  padding: 5px 13px; font-size: 15px; font-weight: 700; text-decoration: none;
+  padding: 5px 13px; font-size: var(--fs-body-m); font-weight: 700; text-decoration: none;
   color: var(--text-secondary); border-right: 1px solid var(--border-subtle);
 }
 .jh-seg a:last-child { border-right: 0; }
@@ -46,7 +46,7 @@
 .jh-class { display: inline-flex; gap: 5px; flex-wrap: wrap; }
 .jh-class a {
   min-width: 46px; text-align: center; padding: 5px 11px; border-radius: 7px;
-  font-size: 15px; font-weight: 800; text-decoration: none; letter-spacing: .01em;
+  font-size: var(--fs-body-m); font-weight: 800; text-decoration: none; letter-spacing: .01em;
   border: 1px solid var(--border-default); background: var(--surface-card); color: var(--text-secondary);
 }
 .jh-class a:hover { border-color: var(--brand); }
@@ -84,7 +84,7 @@
 
 .jh-tabs { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
 .jh-tabs a {
-  padding: 5px 11px; border-radius: 999px; font-size: 14px; font-weight: 700;
+  padding: 5px 11px; border-radius: 999px; font-size: var(--fs-caption); font-weight: 700;
   text-decoration: none; color: var(--text-secondary); border: 1px solid var(--border-default);
   background: var(--surface-card);
 }
@@ -96,7 +96,7 @@
    section tabs above it — it selects WITHIN one destination, not between them. */
 .jh-subrail { display: flex; gap: 16px; padding: 10px 0 0; }
 .jh-subrail a {
-  font-size: 14px; font-weight: 700; text-decoration: none; color: var(--text-muted);
+  font-size: var(--fs-caption); font-weight: 700; text-decoration: none; color: var(--text-muted);
   padding: 3px 0 8px; border-bottom: 2px solid transparent;
 }
 .jh-subrail a:hover { color: var(--brand-strong); }
@@ -107,7 +107,7 @@
    rail above it, and it wraps, because seven items do not fit a phone in one row.
    The separator sets MIXED apart: it is a different event, not a seventh flight. */
 .jh-flightrail { flex-wrap: wrap; gap: 14px; padding-top: 4px; align-items: center; }
-.jh-flightrail a { font-size: 13px; }
+.jh-flightrail a { font-size: var(--fs-micro); }
 .jh-flightrail .sep {
   width: 1px; align-self: stretch; margin: 4px 2px 10px;
   background: var(--border-default);
@@ -121,18 +121,18 @@
 }
 .jh-seedtiers .tier { min-width: 0; }
 .jh-seedtiers .lbl {
-  font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+  font-size: var(--fs-micro); font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
   color: var(--text-muted); padding-bottom: 6px; margin-bottom: 6px;
   border-bottom: 1px solid var(--border-subtle);
 }
 .jh-seedtiers .row { display: flex; flex-direction: column; padding: 3px 0; min-width: 0; }
 .jh-seedtiers .row a {
-  font-size: 14px; font-weight: 650; color: var(--text-primary); text-decoration: none;
+  font-size: var(--fs-caption); font-weight: 650; color: var(--text-primary); text-decoration: none;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .jh-seedtiers .row a:hover { color: var(--brand-strong); }
 .jh-seedtiers .row .sch {
-  font-size: 13px; color: var(--text-muted);
+  font-size: var(--fs-micro); color: var(--text-muted);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
@@ -180,19 +180,19 @@
 .jh-solo .ic { flex: 0 0 auto; width: 44px; height: 44px; object-fit: contain; }
 .jh-solo .meat { min-width: 0; flex: 1 1 auto; }
 .jh-solo .when {
-  font-size: 13px; font-weight: 700; color: var(--text-faint);
+  font-size: var(--fs-micro); font-weight: 700; color: var(--text-faint);
   letter-spacing: .02em; margin-bottom: 1px;
 }
 .jh-solo .when .yr {
   margin-left: 6px; padding: 0 5px; border-radius: 4px;
   background: var(--surface-sunken, rgba(0,0,0,.05)); color: var(--text-muted);
 }
-.jh-solo .what { font-size: 16px; font-weight: 750; color: var(--text-primary);
+.jh-solo .what { font-size: var(--fs-body-l); font-weight: 750; color: var(--text-primary);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.jh-solo .sub { font-size: 13px; color: var(--text-faint); }
+.jh-solo .sub { font-size: var(--fs-micro); color: var(--text-faint); }
 .jh-solo .right { flex: 0 0 auto; text-align: right; }
-.jh-solo .right .rnd { font-size: 14px; font-weight: 700; color: var(--text-secondary); }
-.jh-solo .right .seed { font-size: 13px; color: var(--text-faint); }
+.jh-solo .right .rnd { font-size: var(--fs-caption); font-weight: 700; color: var(--text-secondary); }
+.jh-solo .right .seed { font-size: var(--fs-micro); color: var(--text-faint); }
 
 /* GOLD — the champion, and nothing else on the page gets this.
    ‼️ Mixed off `--medal-gold`, a DEFINED token (see `tokens/colors.css`), never an
@@ -220,15 +220,15 @@
 /* ---- Individual champions, one flight at a time ---- */
 .jh-flightpick { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; }
 .jh-flightpick label {
-  font-size: 12px; font-weight: 800; letter-spacing: .12em;
+  font-size: var(--fs-micro); font-weight: 800; letter-spacing: .12em;
   text-transform: uppercase; color: var(--text-muted);
 }
 .jh-flightpick select {
-  padding: 6px 10px; border-radius: 8px; font-size: 14px; font-weight: 650;
+  padding: 6px 10px; border-radius: 8px; font-size: var(--fs-caption); font-weight: 650;
   border: 1px solid var(--border-default); background: var(--surface-card);
   color: var(--text-primary);
 }
-.jh-flightpick .ct { font-size: 13px; color: var(--text-faint); }
+.jh-flightpick .ct { font-size: var(--fs-micro); color: var(--text-faint); }
 
 .jh-roll { display: flex; flex-direction: column; }
 .jh-roll .row {
@@ -238,14 +238,14 @@
 .jh-roll .row:first-child { border-top: 0; }
 .jh-roll .ic { flex: 0 0 auto; width: 30px; height: 30px; object-fit: contain; }
 .jh-roll .yr {
-  flex: 0 0 auto; font-size: 14px; font-weight: 800; color: var(--text-muted);
+  flex: 0 0 auto; font-size: var(--fs-caption); font-weight: 800; color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
 .jh-roll .meat { min-width: 0; flex: 1 1 auto; }
 /* The result is ONE SENTENCE and it wraps as prose — champion, def., runner-up,
    score. Truncating it would cut the score off the end, which is the half a reader
    scans for. */
-.jh-roll .line { font-size: 15px; line-height: 1.45; color: var(--text-secondary); }
+.jh-roll .line { font-size: var(--fs-body-m); line-height: 1.45; color: var(--text-secondary); }
 .jh-roll .who { font-weight: 750; color: var(--text-primary); text-decoration: none; }
 .jh-roll .who:hover, .jh-roll .ru:hover { color: var(--brand-strong); }
 .jh-roll .def { color: var(--text-faint); }
@@ -258,7 +258,7 @@
 /* The grade a player won in, beside their name on every award surface. Seniors
    are the default case and stay quiet; an underclassman is the thing worth
    spotting, so it keeps full ink. */
-.jh-gr { margin-left: 3px; font-size: 13px; font-weight: 700; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+.jh-gr { margin-left: 3px; font-size: var(--fs-micro); font-weight: 700; color: var(--text-faint); font-variant-numeric: tabular-nums; }
 .jh-gr.u { color: var(--brand-strong); font-weight: 800; }
 
 /* ---- Repeat champions / POY rolls (/jhsaa/repeat-champions) ----
@@ -269,29 +269,29 @@
 .jh-roll .row.rc { flex-direction: column; align-items: stretch; gap: 5px; }
 .jh-roll .rc .hd { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
 .jh-roll .rc .hd .nm {
-  font-size: 16px; font-weight: 800; color: var(--text-primary);
+  font-size: var(--fs-body-l); font-weight: 800; color: var(--text-primary);
   text-decoration: none; min-width: 0;
 }
 .jh-roll .rc .hd .nm:hover { color: var(--brand-strong); text-decoration: underline; }
 /* The count is the reason the row is on this page, so it is stated rather than
    left to be inferred from the number of chips. */
 .jh-roll .rc .ct {
-  margin-left: auto; flex: 0 0 auto; font-size: 13px; font-weight: 800;
+  margin-left: auto; flex: 0 0 auto; font-size: var(--fs-micro); font-weight: 800;
   letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-faint);
   font-variant-numeric: tabular-nums;
 }
 .jh-roll .rc .tl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .jh-roll .rc .stint { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
 .jh-roll .rc .stint .mk { flex: 0 0 auto; display: inline-flex; }
-.jh-roll .rc .stint .sch { font-size: 14px; font-weight: 700; color: var(--text-secondary); }
+.jh-roll .rc .stint .sch { font-size: var(--fs-caption); font-weight: 700; color: var(--text-secondary); }
 /* The class, said ONCE per stint when every title shares it. */
 .jh-roll .rc .stint .cls {
-  font-size: 12px; font-weight: 800; letter-spacing: var(--ls-eyebrow);
+  font-size: var(--fs-micro); font-weight: 800; letter-spacing: var(--ls-eyebrow);
   color: var(--text-faint); padding: 1px 5px; border-radius: 4px;
   border: 1px solid var(--border-subtle);
 }
 .jh-roll .rc .ti {
-  font-size: 14px; color: var(--text-secondary); white-space: nowrap;
+  font-size: var(--fs-caption); color: var(--text-secondary); white-space: nowrap;
   padding: 2px 8px; border-radius: 999px; background: var(--surface-subtle);
   border: 1px solid var(--border-subtle);
 }
@@ -302,7 +302,7 @@
    year list. Replaces the card roll above for the two repeat pages, which had
    grown to a whole-state scroll. Band separators carry the count heading. */
 .jh-repeat { min-width: 780px; }
-.jh-repeat td, .jh-repeat th { padding: 5px 10px; font-size: 14px; line-height: 1.4; vertical-align: top; }
+.jh-repeat td, .jh-repeat th { padding: 5px 10px; font-size: var(--fs-caption); line-height: 1.4; vertical-align: top; }
 .jh-repeat .n { width: 56px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 800; }
 .jh-repeat td.n { color: var(--text-secondary); }
 .jh-repeat .nm { font-weight: 750; color: var(--text-primary); text-decoration: none; white-space: nowrap; }
@@ -313,9 +313,9 @@
 .jh-repeat td.won { color: var(--text-secondary); }
 .jh-repeat .ti { white-space: nowrap; }
 .jh-repeat .ti b { font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
-.jh-repeat .ti .pt { color: var(--text-faint); font-size: 13px; }
+.jh-repeat .ti .pt { color: var(--text-faint); font-size: var(--fs-micro); }
 .jh-repeat tr.band td {
-  padding-top: 10px; font-size: 13px; font-weight: 800; letter-spacing: var(--ls-eyebrow);
+  padding-top: 10px; font-size: var(--fs-micro); font-weight: 800; letter-spacing: var(--ls-eyebrow);
   text-transform: uppercase; color: var(--text-faint); background: var(--surface-subtle);
 }
 .jh-repeat tr.band .ct { margin-left: 8px; font-weight: 700; color: var(--text-secondary); }
@@ -326,10 +326,10 @@
 .jh-dirfind {
   flex: 1 1 260px; min-width: 200px; padding: 7px 11px; border-radius: 8px;
   border: 1px solid var(--border-default); background: var(--surface-card);
-  font-size: 15px; color: var(--text-primary);
+  font-size: var(--fs-body-m); color: var(--text-primary);
 }
 .jh-dirfind:focus { outline: none; border-color: var(--brand); }
-.jh-dircount { font-size: 13px; font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.jh-dircount { font-size: var(--fs-micro); font-weight: 700; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 .jh-dirsec { margin-bottom: 14px; }
 /* Three across on a wide screen: ~860 programs one per line is the scroll this
    page exists to end. */
@@ -341,10 +341,10 @@
 }
 .jh-dirrow:hover { background: var(--surface-hover); }
 .jh-dirrow .bd { min-width: 0; flex: 1 1 auto; overflow: hidden; }
-.jh-dirrow .n { display: block; font-size: 15px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.jh-dirrow .s { display: block; font-size: 13px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jh-dirrow .n { display: block; font-size: var(--fs-body-m); font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jh-dirrow .s { display: block; font-size: var(--fs-micro); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .jh-dirrow .rt { flex: 0 0 auto; display: flex; align-items: center; gap: 7px; }
-.jh-dirrow .rt .lg { font-size: 13px; color: var(--text-faint); max-width: 130px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jh-dirrow .rt .lg { font-size: var(--fs-micro); color: var(--text-faint); max-width: 130px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 720px) { .jh-dirrow .rt .lg { display: none; } }
 
 /* ---- Title board (/jhsaa/titles) ----
@@ -352,12 +352,12 @@
    a faint dot for zero (an empty cell reads as missing data, a 0 reads as noise),
    and the school column pinned so a count is never orphaned from its program. */
 .jh-ttfilter { display: flex; align-items: center; gap: 6px; }
-.jh-ttfilter .k { font-size: 13px; font-weight: 700; letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-faint); }
+.jh-ttfilter .k { font-size: var(--fs-micro); font-weight: 700; letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-faint); }
 .jh-tt { width: 100%; border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums; }
 .jh-tt th, .jh-tt td { padding: 8px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--border-subtle); }
 .jh-tt thead th {
   position: sticky; top: 0; z-index: 2; background: var(--surface-th);
-  font-size: 12px; font-weight: 800; letter-spacing: .04em; color: var(--text-muted);
+  font-size: var(--fs-micro); font-weight: 800; letter-spacing: .04em; color: var(--text-muted);
   cursor: pointer; user-select: none;
 }
 .jh-tt thead tr.grp th {
@@ -383,13 +383,62 @@
 .jh-tt thead .nm { z-index: 3; background: var(--surface-th); }
 .jh-tt tbody tr:hover td { background: var(--surface-hover); }
 .jh-tt tbody tr:hover .nm { background: var(--surface-hover); }
-.jh-tt .nm .sub { display: flex; align-items: center; gap: 6px; margin-top: 2px; font-size: 13px; color: var(--text-muted); }
-.jh-tt td { font-size: 14px; color: var(--text-primary); }
+.jh-tt .nm .sub { display: flex; align-items: center; gap: 6px; margin-top: 2px; font-size: var(--fs-micro); color: var(--text-muted); }
+.jh-tt td { font-size: var(--fs-caption); color: var(--text-primary); }
 .jh-tt td.tot { font-weight: 800; }
 .jh-tt .z { color: var(--text-faint); }
 
-/* ---- Page shell + layout ---- */
-.jh-shell { max-width: 1320px; margin: 0 auto; padding: 18px 20px 52px; }
+/* ---- Page shell + layout ----
+   ‼️ ONE MEASURE FOR THE ASSOCIATION, AND IT IS WIDE (owner, 2026-09: the program
+   page is "a lot of information compressed into an area with a lot of wasted space
+   on the sides"). The gutters were the whole problem. A nine-column ledger and a
+   five-across trophy grid do not fit a 1320px column, so they folded into a long
+   scroll while a third of the viewport sat empty either side. The header inner and
+   the shell read the SAME token — they are one page, and a masthead that stops
+   short of the content beneath it is the tell that the two drifted apart. */
+:root { --jh-measure: 1800px; }
+.jh-shell { max-width: var(--jh-measure); margin: 0 auto; padding: 18px 20px 52px; }
+
+/* ---- ‼️ EVERY FIGURE IS AZERET MONO (owner, 2026-09: "perhaps it's a typeface
+   selection issue") ----
+   It was. This sheet had 120 font-size declarations and ZERO uses of
+   `--font-mono`: every record, score, seed and rating was Neue Montreal wearing
+   `font-variant-numeric: tabular-nums`, which aligns figures into columns but
+   leaves them the same colour and texture as the words beside them. A dense stat
+   table needs the number to read as a DIFFERENT KIND OF THING from its label, and
+   one family cannot do that with alignment alone.
+
+   Azeret Mono is already licensed and self-hosted here (`--font-mono`, variable
+   100–900) and was already the app's figure face on paper — it had simply never
+   reached these pages. It is a NARROW mono, so it also buys back the width the
+   raised type scale spends.
+
+   The list below is the figure roles, named. It is deliberately explicit rather
+   than a blanket `[class] { font-family }`: a name, a school, a state finish and
+   an honours line are TEXT and must stay in the text face, and several of them
+   live in cells that also carry tabular-nums for their neighbours' sake. */
+.jh-ident .now .rec,          /* the season record, in the identity block */
+.jh-ident .now .bit b,        /* district record, state rank, seed */
+.jh-metric .v,                /* the program fold's figures */
+.jh-kv .v,                    /* the Overview's career glance */
+.jh-honor .y,                 /* the year a trophy was won */
+.jh-sched .dt, .jh-sched .sc, /* schedule date and scoreline */
+.jh-line .st,                 /* a line score */
+.jh-roster td.num,            /* singles/doubles/OVR/Pot */
+.jh-ledger .yr a,             /* the ledger's season year */
+.jh-champ .sc .n,             /* the champion hero's scoreline */
+.jh-poy .v {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;    /* mono runs wide; pull the columns back together */
+}
+/* The ledger is mostly figures, so it takes the mono wholesale and hands the two
+   TEXT columns back — the state finish (which carries chips and wraps) and the
+   honours count. Same split the sheet already makes for `font-variant-numeric`. */
+.jh-ledger td { font-family: var(--font-mono); letter-spacing: -0.02em; }
+.jh-ledger td.fin, .jh-ledger td:last-child {
+  font-family: var(--font-text); letter-spacing: normal;
+}
 .jh-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
 .jh-layout.wide { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); }
 .jh-stack { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
@@ -407,16 +456,16 @@
   color: #fff; box-shadow: 0 10px 26px rgba(9, 40, 28, .16); min-width: 0;
 }
 .jh-champ .mark { flex: 0 0 auto; display: flex; }
-.jh-champ .lbl { font-size: 13px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.8); }
+.jh-champ .lbl { font-size: var(--fs-micro); font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.8); }
 .jh-champ .nm {
   display: block; margin-top: 3px; font-family: var(--font-display); font-size: clamp(22px, 3.2vw, 34px);
   line-height: 1.04; letter-spacing: -0.02em; color: #fff; text-decoration: none;
 }
 .jh-champ .nm:hover { text-decoration: underline; }
-.jh-champ .sub { margin-top: 6px; font-size: 15px; color: rgba(255,255,255,.84); }
+.jh-champ .sub { margin-top: 6px; font-size: var(--fs-body-m); color: rgba(255,255,255,.84); }
 .jh-champ .sc { margin-left: auto; text-align: right; flex: 0 0 auto; }
-.jh-champ .sc .n { font-family: var(--font-display); font-size: 30px; line-height: 1; }
-.jh-champ .sc .o { font-size: 14px; color: rgba(255,255,255,.8); margin-top: 4px; }
+.jh-champ .sc .n { font-family: var(--font-display); font-size: var(--fs-display-l); line-height: 1; }
+.jh-champ .sc .o { font-size: var(--fs-caption); color: rgba(255,255,255,.8); margin-top: 4px; }
 .jh-champ.pending { background: var(--surface-subtle); color: var(--text-primary); box-shadow: none; border: 1px solid var(--border-subtle); }
 .jh-champ.pending .lbl, .jh-champ.pending .sub { color: var(--text-muted); }
 .jh-champ.pending .nm { color: var(--text-primary); }
@@ -429,8 +478,8 @@
   text-decoration: none; color: inherit;
 }
 .jh-pod:hover { border-color: var(--brand); }
-.jh-pod .k { display: block; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
-.jh-pod .n { display: block; font-size: 16px; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jh-pod .k { display: block; font-size: var(--fs-micro); font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
+.jh-pod .n { display: block; font-size: var(--fs-body-l); font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ---- Metric strip: the program summary row ---- */
 .jh-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 9px; }
@@ -438,15 +487,15 @@
   min-width: 0; padding: 10px 12px; border: 1px solid var(--border-subtle);
   border-radius: 9px; background: var(--surface-card);
 }
-.jh-metric .k { display: block; font-size: 13px; font-weight: 800; letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-muted); }
+.jh-metric .k { display: block; font-size: var(--fs-micro); font-weight: 800; letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-muted); }
 .jh-metric .v {
-  display: block; margin-top: 3px; font-family: var(--font-display); font-size: 24px; line-height: 1.08;
+  display: block; margin-top: 3px; font-family: var(--font-display); font-size: var(--fs-display-m); line-height: 1.08;
   color: var(--text-primary); font-variant-numeric: tabular-nums;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.jh-metric .v.sm { font-size: 18px; font-weight: 700; font-family: var(--font-text);
+.jh-metric .v.sm { font-size: var(--fs-title-s); font-weight: 700; font-family: var(--font-text);
   white-space: normal; line-height: 1.3; }  /* 'TOC Champion' must not ellipsize */
-.jh-metric .s { display: block; margin-top: 3px; font-size: 14px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jh-metric .s { display: block; margin-top: 3px; font-size: var(--fs-caption); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .jh-metric.hot { box-shadow: inset 3px 0 0 var(--brand); }
 
 /* ---- School identity block ---- */
@@ -467,14 +516,14 @@
    champion's name RED. The ink mix keeps it readable on the card surface in every
    scheme, since neither ingredient is scheme-light. */
 .jh-ident h1.champ { color: color-mix(in oklab, var(--medal-gold) 72%, var(--ink)); }
-.jh-ident .mascot { font-size: 16px; font-weight: 600; color: var(--text-secondary); margin-top: 2px; }
-.jh-ident .where { margin-top: 6px; font-size: 15px; color: var(--text-muted); }
+.jh-ident .mascot { font-size: var(--fs-body-l); font-weight: 600; color: var(--text-secondary); margin-top: 2px; }
+.jh-ident .where { margin-top: 6px; font-size: var(--fs-body-m); color: var(--text-muted); }
 .jh-ident .where a { color: var(--text-link); text-decoration: none; }
 .jh-ident .where a:hover { text-decoration: underline; }
 /* The record lives IN the identity block, not floated off at the viewport edge. */
 .jh-ident .now { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; margin-top: 9px; }
-.jh-ident .now .rec { font-family: var(--font-display); font-size: 24px; line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
-.jh-ident .now .bit { font-size: 15px; color: var(--text-secondary); }
+.jh-ident .now .rec { font-family: var(--font-display); font-size: var(--fs-display-m); line-height: 1; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.jh-ident .now .bit { font-size: var(--fs-body-m); color: var(--text-secondary); }
 .jh-ident .now .bit b { color: var(--text-primary); font-variant-numeric: tabular-nums; }
 
 /* ---- Program HQ (owner rule 2026-09) ----
@@ -492,7 +541,7 @@
   background: var(--surface-th);
 }
 .jh-hqnav a {
-  padding: 8px 15px; border-radius: 8px; font-size: 15px; font-weight: 700;
+  padding: 8px 15px; border-radius: 8px; font-size: var(--fs-body-m); font-weight: 700;
   text-decoration: none; color: var(--text-secondary);
 }
 .jh-hqnav a:hover { background: var(--surface-card); color: var(--brand-strong); }
@@ -500,9 +549,104 @@
   box-shadow: inset 0 -2px 0 var(--tab-accent), 0 0 0 1px var(--border-subtle); }
 
 /* "Full season →" — the panel-head link into the destination that owns the rest. */
-.jh-hqmore { margin-left: auto; font-size: 14px; font-weight: 700;
+.jh-hqmore { margin-left: auto; font-size: var(--fs-caption); font-weight: 700;
   color: var(--text-link); text-decoration: none; white-space: nowrap; }
 .jh-hqmore:hover { text-decoration: underline; }
+
+/* ---- The program record, IN the masthead (design 2a) ----
+   The all-time fold used to live only under History, below the fold of a page
+   whose whole job is "you have entered this program's HQ". What a program IS —
+   1233–241, ten titles, 47 trips — is persistent context, not an archive you
+   navigate to, so it sits with the identity block and stays on every tab.
+   A strip of plain figures, not bordered tiles: it is the masthead's second line,
+   and nine boxes there would compete with the crest and the name. */
+.jh-progstrip {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 1px; background: var(--border-subtle);
+  border: 1px solid var(--border-subtle); border-top: 0; border-bottom: 0;
+}
+.jh-progstrip > div { background: var(--surface-card); padding: 11px 14px; min-width: 0; }
+.jh-progstrip .v {
+  display: block; font-family: var(--font-mono); font-size: var(--fs-display-s);
+  line-height: 1.08; letter-spacing: -0.03em; color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* 'TOC Champion' and '2062, 30–3' are words, not a figure — they must not
+   ellipsize away, so they wrap in the text face at a step down. */
+.jh-progstrip .v.sm {
+  font-family: var(--font-text); font-size: var(--fs-body-l); font-weight: 700;
+  letter-spacing: normal; white-space: normal; line-height: 1.25;
+}
+.jh-progstrip .k {
+  display: block; margin-top: 4px; font-size: var(--fs-caption);
+  color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ---- The season as five stages (design 2b) ----
+   "How did this season go" answered before "here is every match". A season is a
+   sequence — invitationals, the league, the showcases, the road, the State draw —
+   and the ledger row that folds it (28–4) says nothing about WHERE the four went.
+   The stage a program's season actually ended in carries the accent. */
+.jh-stages {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1px; background: var(--border-subtle);
+  border-top: 1px solid var(--border-subtle);
+}
+.jh-stages > div { background: var(--surface-card); padding: 14px 16px; min-width: 0; }
+.jh-stages .k {
+  display: block; font-size: var(--fs-body-m); font-weight: 700; color: var(--text-primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.jh-stages .v {
+  display: block; margin-top: 7px; font-family: var(--font-mono);
+  font-size: var(--fs-display-s); line-height: 1.1; letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums; color: var(--text-primary);
+}
+.jh-stages .s { display: block; margin-top: 4px; font-size: var(--fs-caption); color: var(--text-muted); }
+/* The stage the season ENDED in — the one the reader came for. */
+.jh-stages > div.end { background: var(--green-50); box-shadow: inset 3px 0 0 var(--brand); }
+.jh-stages > div.none .v { color: var(--text-faint); }
+
+/* ---- Trophy case (design 3a) ----
+   ‼️ A SEASON IS ONE CARD, NOT FOUR ROWS. The Honors list spent a full-width row
+   on a season's state finish, then ANOTHER on the same year's unit chips, then a
+   third on its TOC line — three identical-looking rows, one year, and eleven
+   seasons of it before the reader found a champion. A card holds a season's whole
+   haul and the grid puts five across, so the gold years read as a PATTERN in the
+   sequence instead of as one more row in a stack. */
+.jh-tcase { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; padding: 14px; }
+.jh-tcard {
+  display: flex; flex-direction: column; gap: 11px; min-width: 0;
+  padding: 15px 17px; border: 1px solid var(--border-subtle);
+  border-radius: 10px; background: var(--surface-card);
+}
+.jh-tcard .hd { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.jh-tcard .yr {
+  font-family: var(--font-mono); font-size: var(--fs-display-s); font-weight: 600;
+  letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: var(--text-primary);
+  text-decoration: none;
+}
+.jh-tcard .yr:hover { color: var(--brand-strong); text-decoration: underline; }
+.jh-tcard .sd { font-size: var(--fs-caption); color: var(--text-muted); white-space: nowrap; }
+.jh-tcard .fin { font-size: var(--fs-title-l); font-weight: 700; line-height: 1.15; color: var(--text-primary); }
+.jh-tcard .units { display: flex; flex-wrap: wrap; gap: 6px; }
+/* `margin-top: auto` pins the footnote to the bottom edge, so a row of cards
+   holding different amounts of hardware still lines its last lines up. */
+.jh-tcard .ft { margin-top: auto; font-size: var(--fs-caption); color: var(--text-secondary); }
+/* A CHAMPION year, framed in metal. `--medal-gold` rather than `--rank-gold`,
+   which the palette resolves to oxblood in the default scheme — the card would
+   read red. Mixed toward the card surface so it stays a frame in every scheme
+   rather than a block of paint. */
+.jh-tcard.champ {
+  background: color-mix(in oklab, var(--medal-gold) 9%, var(--surface-card));
+  border-color: color-mix(in oklab, var(--medal-gold) 42%, var(--surface-card));
+}
+.jh-tcard.champ .fin {
+  font-family: var(--font-display); font-weight: 800; letter-spacing: -0.02em;
+  color: color-mix(in oklab, var(--medal-gold) 72%, var(--ink));
+}
+.jh-tcard.champ .units .jh-chip.unit { background: var(--surface-card); }
 
 /* Key/value rows for the Overview's career glance — a list, not a tile grid
    (owner: "the point is orientation, not showing every statistic"). */
@@ -521,7 +665,7 @@
 
 .jh-chip {
   display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 999px;
-  font-size: 13px; font-weight: 800; letter-spacing: .03em; color: #fff; background: var(--gray-600);
+  font-size: var(--fs-micro); font-weight: 800; letter-spacing: .03em; color: #fff; background: var(--gray-600);
   white-space: nowrap;
 }
 .jh-chip.c-9A { background: var(--cat-7a); }
@@ -574,15 +718,15 @@
 .jh-roster td.neg { color: var(--neg); }
 
 /* ---- Schedule ---- */
-.jh-sched { width: 100%; border-collapse: collapse; font-size: 15px; }
+.jh-sched { width: 100%; border-collapse: collapse; font-size: var(--fs-body-m); }
 .jh-sched th {
-  text-align: left; padding: 9px 12px; font-size: 13px; font-weight: 700;
+  text-align: left; padding: 9px 12px; font-size: var(--fs-micro); font-weight: 700;
   letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-muted);
   background: var(--surface-th); border-bottom: 1px solid var(--border-default); white-space: nowrap;
 }
 .jh-sched td { padding: 9px 12px; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
 .jh-sched tr.seg td {
-  background: var(--surface-subtle); font-size: 13px; font-weight: 800; letter-spacing: var(--ls-eyebrow);
+  background: var(--surface-subtle); font-size: var(--fs-micro); font-weight: 800; letter-spacing: var(--ls-eyebrow);
   text-transform: uppercase; color: var(--text-secondary); padding: 5px 10px;
 }
 /* The State event, the ROAD to it, and the ordinary league/invite rows are three
@@ -599,7 +743,7 @@
 .jh-sched tr.road td { background: var(--tint-road-bg); }
 .jh-sched tr.road td:first-child { box-shadow: inset 3px 0 0 var(--tint-road-fg); }
 .jh-sched .dt { color: var(--text-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.jh-sched .ha { color: var(--text-faint); font-size: 14px; }
+.jh-sched .ha { color: var(--text-faint); font-size: var(--fs-caption); }
 .jh-sched .op { min-width: 0; }
 .jh-sched .op a { color: var(--text-primary); font-weight: 600; text-decoration: none; }
 .jh-sched .op a:hover { color: var(--brand-strong); text-decoration: underline; }
@@ -607,7 +751,7 @@
 .jh-sched .W { color: var(--stat-good-strong); font-weight: 800; }
 .jh-sched .L { color: var(--tint-loss-fg); font-weight: 800; }
 .jh-tag {
-  display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 12px; font-weight: 800;
+  display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: var(--fs-micro); font-weight: 800;
   letter-spacing: .04em; text-transform: uppercase; background: var(--gray-200); color: var(--text-secondary);
 }
 .jh-tag.dist { background: var(--stat-power-bg); color: var(--stat-power); }
@@ -646,7 +790,7 @@
 .jh-caret { float: right; color: var(--text-faint); font-weight: 800; transition: transform .12s; display: inline-block; }
 .jh-sched tr.open .jh-caret { transform: rotate(90deg); }
 .jh-lines { padding: 6px 10px 10px 34px; background: var(--surface-subtle); }
-.jh-line { display: grid; grid-template-columns: 30px minmax(0,1fr) 18px minmax(0,1fr) 118px; gap: 8px; font-size: 14px; padding: 2px 0; }
+.jh-line { display: grid; grid-template-columns: 30px minmax(0,1fr) 18px minmax(0,1fr) 118px; gap: 8px; font-size: var(--fs-caption); padding: 2px 0; }
 .jh-line .sl { color: var(--text-muted); font-weight: 700; }
 .jh-line .won { font-weight: 700; color: var(--text-primary); }
 .jh-line .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -656,9 +800,9 @@
    `table-layout: fixed` is load-bearing, not a tidy-up: without it a long school
    name sets its column's width from content and the neighbouring numeric columns
    are pushed into each other. The <th> widths below are then the real widths. */
-.jh-ledger { width: 100%; border-collapse: collapse; font-size: 15px; table-layout: fixed; }
+.jh-ledger { width: 100%; border-collapse: collapse; font-size: var(--fs-body-m); table-layout: fixed; }
 .jh-ledger th {
-  text-align: left; padding: 9px 12px; font-size: 13px; font-weight: 700;
+  text-align: left; padding: 9px 12px; font-size: var(--fs-micro); font-weight: 700;
   letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-muted);
   background: var(--surface-th); border-bottom: 1px solid var(--border-default); white-space: nowrap;
 }
@@ -693,22 +837,22 @@
    screens of scrolling to compare two numbers that should sit side by side. */
 .jh-tabbar { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; padding: 8px 12px; border-bottom: 1px solid var(--border-subtle); background: var(--surface-th); }
 .jh-tabbar button {
-  padding: 5px 12px; border-radius: 6px; font-size: 15px; font-weight: 700; cursor: pointer;
+  padding: 5px 12px; border-radius: 6px; font-size: var(--fs-body-m); font-weight: 700; cursor: pointer;
   border: 1px solid transparent; background: transparent; color: var(--text-secondary);
 }
 .jh-tabbar button:hover { background: var(--surface-card); color: var(--brand-strong); }
 .jh-tabbar button.on { background: var(--surface-card); border-color: var(--border-default); color: var(--text-primary);
   box-shadow: inset 0 2px 0 var(--tab-accent); }
-.jh-tabbar .ct { margin-left: 5px; font-size: 13px; font-weight: 700; color: var(--text-faint); }
-.jh-tabbar .note { margin-left: auto; font-size: 14px; color: var(--text-muted); }
+.jh-tabbar .ct { margin-left: 5px; font-size: var(--fs-micro); font-weight: 700; color: var(--text-faint); }
+.jh-tabbar .note { margin-left: auto; font-size: var(--fs-caption); color: var(--text-muted); }
 .jh-pane[hidden] { display: none; }
 
 /* ---- Jump control: switch district/class without going back up a level ---- */
 .jh-jump { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 .jh-jump label { display: flex; align-items: center; gap: 6px; }
-.jh-jump .k { font-size: 13px; font-weight: 700; letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-faint); }
+.jh-jump .k { font-size: var(--fs-micro); font-weight: 700; letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-faint); }
 .jh-jump select {
-  height: 30px; padding: 0 26px 0 9px; font-size: 15px; font-weight: 600; cursor: pointer;
+  height: 30px; padding: 0 26px 0 9px; font-size: var(--fs-body-m); font-weight: 600; cursor: pointer;
   border: 1px solid var(--border-default); border-radius: 6px; background: var(--surface-card);
   color: var(--text-primary); max-width: 280px;
   appearance: none;
@@ -727,16 +871,16 @@
    qualifying brackets, the only entry point those have. */
 .jh-jump .jh-qlink {
   display: inline-flex; align-items: center; height: 30px; padding: 0 10px;
-  font-size: 15px; font-weight: 600; text-decoration: none;
+  font-size: var(--fs-body-m); font-weight: 600; text-decoration: none;
   border: 1px solid var(--border-default); border-radius: 6px;
   background: var(--surface-card); color: var(--text-primary);
 }
 .jh-jump .jh-qlink:hover { border-color: var(--brand); color: var(--brand); }
 
 /* ---- Head-to-head grid: a district's whole double round-robin at a glance ---- */
-.jh-grid { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+.jh-grid { width: 100%; border-collapse: collapse; font-size: var(--fs-caption); font-variant-numeric: tabular-nums; }
 .jh-grid th {
-  padding: 6px 4px; font-size: 13px; font-weight: 700; color: var(--text-muted);
+  padding: 6px 4px; font-size: var(--fs-micro); font-weight: 700; color: var(--text-muted);
   background: var(--surface-th); border-bottom: 1px solid var(--border-default); text-align: center;
 }
 .jh-grid th.nm { text-align: left; padding-left: 10px; min-width: 190px; }
@@ -762,33 +906,33 @@
 }
 .jh-modrow:last-child { border-bottom: 0; }
 .jh-modrow:hover { background: var(--surface-hover); }
-.jh-modrow .rk { flex: 0 0 auto; width: 22px; font-size: 14px; font-weight: 800; color: var(--text-faint); text-align: right; font-variant-numeric: tabular-nums; }
+.jh-modrow .rk { flex: 0 0 auto; width: 22px; font-size: var(--fs-caption); font-weight: 800; color: var(--text-faint); text-align: right; font-variant-numeric: tabular-nums; }
 /* `.bd` wraps two SPANS, so they need display:block or the name and its subtitle
    run together on one line ("Ruby StokesCascade Divide District"). */
 .jh-modrow .bd { min-width: 0; flex: 1 1 auto; overflow: hidden; }
-.jh-modrow .n { display: block; font-size: 15px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.jh-modrow .s { display: block; font-size: 13px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.jh-modrow .v { flex: 0 0 auto; font-size: 15px; font-weight: 700; color: var(--text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.jh-modrow .n { display: block; font-size: var(--fs-body-m); font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jh-modrow .s { display: block; font-size: var(--fs-micro); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jh-modrow .v { flex: 0 0 auto; font-size: var(--fs-body-m); font-weight: 700; color: var(--text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .jh-modrow > svg, .jh-modrow > span > svg { flex: 0 0 auto; }
 /* A long side panel (All-District is six players across every district) collapses
    rather than running the rail past the bottom of the page it sits beside. */
 .jh-fold > summary {
-  padding: 7px 13px; font-size: 14px; font-weight: 700; color: var(--text-secondary);
+  padding: 7px 13px; font-size: var(--fs-caption); font-weight: 700; color: var(--text-secondary);
   cursor: pointer; border-bottom: 1px solid var(--border-subtle);
 }
 .jh-fold > summary:hover { background: var(--surface-hover); color: var(--brand-strong); }
 .jh-fold[open] > summary { color: var(--text-primary); }
-.jh-modsplit { padding: 8px 13px 4px; font-size: 12px; font-weight: 800; letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-faint); }
+.jh-modsplit { padding: 8px 13px 4px; font-size: var(--fs-micro); font-weight: 800; letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-faint); }
 .jh-poy { display: flex; gap: 11px; align-items: center; padding: 12px 13px; text-decoration: none; color: inherit; }
 .jh-poy:hover { background: var(--surface-hover); }
-.jh-poy .n { font-family: var(--font-display); font-size: 22px; line-height: 1.1; color: var(--text-primary); }
-.jh-poy .s { font-size: 14px; color: var(--text-muted); margin-top: 3px; }
-.jh-poy .v { margin-left: auto; font-family: var(--font-display); font-size: 24px; color: var(--brand-strong); font-variant-numeric: tabular-nums; }
+.jh-poy .n { font-family: var(--font-display); font-size: var(--fs-display-s); line-height: 1.1; color: var(--text-primary); }
+.jh-poy .s { font-size: var(--fs-caption); color: var(--text-muted); margin-top: 3px; }
+.jh-poy .v { margin-left: auto; font-family: var(--font-display); font-size: var(--fs-display-m); color: var(--brand-strong); font-variant-numeric: tabular-nums; }
 
 /* ---- Roster ---- */
-.jh-roster { width: 100%; border-collapse: collapse; font-size: 15px; }
+.jh-roster { width: 100%; border-collapse: collapse; font-size: var(--fs-body-m); }
 .jh-roster th {
-  text-align: left; padding: 9px 12px; font-size: 13px; font-weight: 700;
+  text-align: left; padding: 9px 12px; font-size: var(--fs-micro); font-weight: 700;
   letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-muted);
   background: var(--surface-th); border-bottom: 1px solid var(--border-default);
 }
@@ -803,7 +947,7 @@
 .jh-brk-mobile { display: none; }
 .jh-rdtabs { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
 .jh-rdtabs button {
-  padding: 5px 11px; border-radius: 999px; font-size: 14px; font-weight: 700; cursor: pointer;
+  padding: 5px 11px; border-radius: 999px; font-size: var(--fs-caption); font-weight: 700; cursor: pointer;
   border: 1px solid var(--border-default); background: var(--surface-card); color: var(--text-secondary);
 }
 .jh-rdtabs button.on { background: var(--brand); border-color: var(--brand); color: #fff;
@@ -812,11 +956,11 @@
 .jh-mgame {
   display: grid; grid-template-columns: 20px minmax(0,1fr) 26px; gap: 8px; align-items: center;
   padding: 6px 10px; border: 1px solid var(--border-subtle); border-radius: 8px;
-  background: var(--surface-card); margin-bottom: 6px; font-size: 15px;
+  background: var(--surface-card); margin-bottom: 6px; font-size: var(--fs-body-m);
 }
 .jh-mgame + .jh-mgame { margin-top: -2px; }
 .jh-mside { display: contents; }
-.jh-mgame .sd { font-size: 13px; font-weight: 800; color: var(--text-faint); text-align: right; }
+.jh-mgame .sd { font-size: var(--fs-micro); font-weight: 800; color: var(--text-faint); text-align: right; }
 .jh-mgame .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .jh-mgame .nm a { color: inherit; text-decoration: none; }
 .jh-mgame .pt { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-muted); }
@@ -833,7 +977,7 @@
 .brk-mark svg { width: 100%; height: 100%; }
 
 /* ---- Small shared bits ---- */
-.jh-crumb { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-size: 15px; color: var(--text-muted); margin-bottom: 12px; }
+.jh-crumb { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-size: var(--fs-body-m); color: var(--text-muted); margin-bottom: 12px; }
 .jh-crumb a { color: var(--text-link); text-decoration: none; }
 .jh-crumb a:hover { text-decoration: underline; }
 .jh-crumb .sep { color: var(--text-faint); }
@@ -841,14 +985,14 @@
 .jh-schoolcell .mk { flex: 0 0 auto; display: inline-flex; }
 .jh-schoolcell a { min-width: 0; color: var(--text-primary); font-weight: 600; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .jh-schoolcell a:hover { color: var(--brand-strong); text-decoration: underline; }
-.jh-empty { padding: 18px; font-size: 16px; color: var(--text-muted); }
-.jh-honor { font-size: 15px; color: var(--text-secondary); padding: 5px 13px; border-bottom: 1px solid var(--border-subtle); display: flex; gap: 9px; }
+.jh-empty { padding: 18px; font-size: var(--fs-body-l); color: var(--text-muted); }
+.jh-honor { font-size: var(--fs-body-m); color: var(--text-secondary); padding: 5px 13px; border-bottom: 1px solid var(--border-subtle); display: flex; gap: 9px; }
 .jh-honor:last-child { border-bottom: 0; }
 .jh-honor .y { font-weight: 800; color: var(--text-muted); font-variant-numeric: tabular-nums; min-width: 34px; }
 
 @media (max-width: 700px) {
   .jh-head-inner, .jh-shell { padding-left: 14px; padding-right: 14px; }
-  .jh-title { font-size: 24px; }
+  .jh-title { font-size: var(--fs-display-m); }
   .jh-tabs { margin-left: 0; width: 100%; }
 }
 
@@ -862,15 +1006,15 @@
 .jh-stagefold > summary::-webkit-details-marker { display: none; }
 .jh-stagefold > summary .cr { color: var(--text-faint); font-weight: 800; transition: transform .12s; }
 .jh-stagefold[open] > summary .cr { transform: rotate(90deg); }
-.jh-stagefold > summary .nm { font-weight: 800; font-size: 16px; color: var(--text-primary); }
+.jh-stagefold > summary .nm { font-weight: 800; font-size: var(--fs-body-l); color: var(--text-primary); }
 .jh-stagefold > summary:hover .nm { color: var(--brand-strong); }
 .jh-stagefold > .bd { padding: 2px 16px 14px; }
-.jh-mgame .cap { grid-column: 1 / -1; font-size: 12px; font-weight: 800;
+.jh-mgame .cap { grid-column: 1 / -1; font-size: var(--fs-micro); font-weight: 800;
   letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-faint); }
 
 /* Recovery-round byes — a footnote under the stage's duals, nothing more (owner
    rule 2027-08). Without it a lucky loser reads as having skipped the stage. */
-.jh-byes { margin: 8px 2px 0; font-size: 14px; line-height: 1.5;
+.jh-byes { margin: 8px 2px 0; font-size: var(--fs-caption); line-height: 1.5;
   color: var(--text-muted); }
 .jh-byes a { color: var(--text-secondary); text-decoration: none; }
 .jh-byes a:hover { color: var(--brand); }
@@ -880,18 +1024,18 @@
    ability column — these describe what happened, not how good anyone is. */
 .jh-award {
   display: grid; grid-template-columns: 32px 26px 1fr 210px 96px 70px;
-  align-items: center; gap: 9px; padding: 8px 16px; font-size: 15px;
+  align-items: center; gap: 9px; padding: 8px 16px; font-size: var(--fs-body-m);
   border-bottom: 1px solid var(--border-subtle);
 }
 .jh-award:last-child { border-bottom: 0; }
-.jh-award .rk { color: var(--text-faint); font-size: 14px; font-variant-numeric: tabular-nums; }
+.jh-award .rk { color: var(--text-faint); font-size: var(--fs-caption); font-variant-numeric: tabular-nums; }
 .jh-award .nm { font-weight: 650; }
-.jh-award .nm .gr { color: var(--text-faint); font-weight: 400; font-size: 14px; margin-left: 4px; }
+.jh-award .nm .gr { color: var(--text-faint); font-weight: 400; font-size: var(--fs-caption); margin-left: 4px; }
 .jh-award .sch { color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .jh-award .rec { text-align: right; font-variant-numeric: tabular-nums; color: var(--text-secondary); }
 .jh-poy { display: flex; align-items: center; gap: 12px; }
-.jh-poy .nm { font-size: 20px; font-weight: 750; }
-.jh-poy .sub { color: var(--text-secondary); font-size: 15px; }
+.jh-poy .nm { font-size: var(--fs-title-l); font-weight: 750; }
+.jh-poy .sub { color: var(--text-secondary); font-size: var(--fs-body-m); }
 .jh-poy .jh-chip { margin-left: auto; }
 .jh-award .nm a { color: inherit; text-decoration: none; }
 .jh-award .nm a:hover { color: var(--brand-strong); text-decoration: underline; }
@@ -904,21 +1048,21 @@
    is announced. Without the split, "8 doubles" read as eight people. */
 .jh-awardhead {
   display: flex; align-items: baseline; gap: 8px; padding: 9px 16px 5px;
-  font-size: 13px; font-weight: 700; letter-spacing: var(--ls-eyebrow);
+  font-size: var(--fs-micro); font-weight: 700; letter-spacing: var(--ls-eyebrow);
   text-transform: uppercase; color: var(--text-secondary);
   border-bottom: 1px solid var(--border-subtle); background: var(--surface-sunken, transparent);
 }
 .jh-awardhead span { font-weight: 400; letter-spacing: 0; text-transform: none;
-  font-size: 14px; color: var(--text-faint); }
+  font-size: var(--fs-caption); color: var(--text-faint); }
 
 /* One award section — a numbered team, an HM group, a region, a district. */
 .jh-awardsec { border-top: 1px solid var(--border-subtle); }
 .jh-awardsec:first-child { border-top: 0; }
 .jh-awardsec-head {
   display: flex; align-items: baseline; gap: 10px; padding: 11px 16px 8px;
-  font-family: var(--font-display); font-size: 18px; color: var(--text-primary);
+  font-family: var(--font-display); font-size: var(--fs-title-s); color: var(--text-primary);
 }
-.jh-awardsec-head span { font-family: var(--font-body, inherit); font-size: 14px;
+.jh-awardsec-head span { font-family: var(--font-body, inherit); font-size: var(--fs-caption);
   color: var(--text-muted); }
 
 @media (max-width: 720px) {
@@ -934,7 +1078,7 @@
 .jh-regionnote {
   margin: 10px 14px 0; padding: 9px 12px; border-radius: 7px;
   border: 1px solid var(--border-subtle); background: var(--surface-sunken, transparent);
-  font-size: 15px; line-height: 1.55; color: var(--text-secondary);
+  font-size: var(--fs-body-m); line-height: 1.55; color: var(--text-secondary);
 }
 .jh-regionnote strong { color: var(--text-primary); }
 
@@ -945,7 +1089,7 @@
 }
 .jh-sortth:hover { color: var(--brand-strong); }
 .jh-sortth.on { color: var(--brand-strong); font-weight: 800; }
-.jh-sortarr { font-size: 11px; }
+.jh-sortarr { font-size: var(--fs-micro); }
 /* Shift columns carry a sign the reader should read as meaning, not identity —
    same rule as a win/loss chip: --pos/--neg, never a raw colour. */
 .jh-up { color: var(--pos); }
@@ -978,7 +1122,7 @@ html[data-jh-scout="on"] .jh-scout { visibility: visible; }
 
 .jh-scout-toggle {
   display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
-  font-size: 14px; color: var(--text-secondary); user-select: none;
+  font-size: var(--fs-caption); color: var(--text-secondary); user-select: none;
 }
 .jh-scout-toggle input { margin: 0; cursor: pointer; }
 
@@ -1000,7 +1144,7 @@ html[data-jh-scout="on"] .jh-scout { visibility: visible; }
    already wrapping there, so a record on the same line would be the thing that
    pushes it to a third. */
 .jh-champ-cell .rec {
-  display: block; margin-top: 1px; font-size: 13px; color: var(--text-faint);
+  display: block; margin-top: 1px; font-size: var(--fs-micro); color: var(--text-faint);
   font-variant-numeric: tabular-nums;
 }
 /* Bigger rows in the grid, and NO mid-word breaking. `overflow-wrap: anywhere` is
@@ -1015,11 +1159,11 @@ html[data-jh-scout="on"] .jh-scout { visibility: visible; }
 /* ---- Layout switcher (By year · Grid) ---- */
 .jh-laypick { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; }
 .jh-laypick .lbl {
-  font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+  font-size: var(--fs-micro); font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
   color: var(--text-muted);
 }
 .jh-laypick a {
-  padding: 4px 12px; border-radius: 999px; font-size: 14px; font-weight: 700;
+  padding: 4px 12px; border-radius: 999px; font-size: var(--fs-caption); font-weight: 700;
   text-decoration: none; color: var(--text-secondary);
   border: 1px solid var(--border-default); background: var(--surface-card);
 }
@@ -1045,12 +1189,12 @@ html[data-jh-scout="on"] .jh-scout { visibility: visible; }
 .jh-yearchamps .jh-chip { flex: 0 0 auto; min-width: 58px; text-align: center; }
 .jh-yearchamps .mk { flex: 0 0 auto; display: flex; }
 .jh-yearchamps .nm {
-  min-width: 0; font-size: 16px; font-weight: 700; color: var(--text-primary);
+  min-width: 0; font-size: var(--fs-body-l); font-weight: 700; color: var(--text-primary);
   text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .jh-yearchamps .nm:hover { color: var(--brand-strong); }
 .jh-yearchamps .rec {
-  flex: 0 0 auto; font-size: 14px; color: var(--text-faint);
+  flex: 0 0 auto; font-size: var(--fs-caption); color: var(--text-faint);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1067,24 +1211,29 @@ html[data-jh-scout="on"] .jh-scout { visibility: visible; }
 .jh-roll .row:first-child { border-top: 0; }
 .jh-roll .row:hover { background: var(--surface-hover); }
 .jh-roll .nm {
-  font-size: 16px; font-weight: 800; color: var(--text-primary); text-decoration: none;
+  font-size: var(--fs-body-l); font-weight: 800; color: var(--text-primary); text-decoration: none;
 }
 .jh-roll .nm:hover { color: var(--brand-strong); }
 .jh-roll .stint { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
 .jh-roll .mk { display: flex; flex: 0 0 auto; }
 /* An empty band is a statement, not a gap — it reads as quiet rather than broken. */
-.jh-roll .row.none { color: var(--text-faint); font-size: 14px; font-style: italic; }
-.jh-roll .sch { font-size: 15px; font-weight: 700; color: var(--text-secondary); }
+.jh-roll .row.none { color: var(--text-faint); font-size: var(--fs-caption); font-style: italic; }
+.jh-roll .sch { font-size: var(--fs-body-m); font-weight: 700; color: var(--text-secondary); }
 .jh-roll .yrs {
-  font-size: 14px; color: var(--text-faint); font-variant-numeric: tabular-nums;
+  font-size: var(--fs-caption); color: var(--text-faint); font-variant-numeric: tabular-nums;
 }
 
 /* The season picker sits in the scope rail beside two segmented controls, so it has
    to read as their sibling rather than as a form field dropped into a header. */
-.jh-season-pick { height: 30px; padding: 0 26px 0 10px; font-size: 15px; font-weight: 700; }
+.jh-season-pick { height: 30px; padding: 0 26px 0 10px; font-size: var(--fs-body-m); font-weight: 700; }
 
-/* A single-table HQ view (Team, Season, Honors) does not stretch the whole
-   1320px shell — a schedule row with 400px of nothing between the opponent and
-   the result is not more readable, it is just wider. History's ledger and the
-   Records pair keep the full width, which they use. */
-.jh-hqnarrow { max-width: 1000px; }
+/* A single-table HQ view (Team, Season) does not stretch the whole shell — a
+   schedule row with 400px of nothing between the opponent and the result is not
+   more readable, it is just wider. History's ledger, the Records pair and the
+   trophy wall keep the full width, which they use.
+   ‼️ Raised with the measure (1000 → 1240): the cap is a READING MEASURE, not a
+   fixed number, and left at 1000 against an 1800px shell it stopped being "don't
+   stretch this table" and became the 800px-of-dead-gutter problem the wider
+   measure was adopted to fix. It also has to clear `.jh-ledger.minw` (900px) with
+   room to spare, or the Season tab scrolls a table that had space to sit still. */
+.jh-hqnarrow { max-width: 1240px; }
