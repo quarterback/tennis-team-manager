@@ -5199,8 +5199,10 @@ def _jh_trophy_banner(seasons_in: list[dict]) -> list[dict]:
             if place > 16:
                 _row((2, 17, ""), "State tournament appearances")["years"].append(_yr(s))
             else:
-                _row((2, place, s["state_finish"]),
-                     f"State {s['state_finish'].lower()}")["years"].append(_yr(s))
+                # "Finalist", not "runner-up" (owner, 2026-09) — the wall names the
+                # round reached, the same word the TOC row uses one band up.
+                fin = "finalist" if s["state_finish"] == "Runner-up" else s["state_finish"].lower()
+                _row((2, place, fin), f"State {fin}")["years"].append(_yr(s))
         # ‼️ A TOC FINAL HANGS; A TOC APPEARANCE DOES NOT (owner, 2026-09). Making
         # that field is already said by the state title that put them in it, so a
         # quarterfinal or semifinal there restates a gold row one line up. The
