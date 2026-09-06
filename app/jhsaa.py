@@ -252,8 +252,11 @@ def dual_format(phase: str, group: str | None = None) -> DualFormat:
     (owner rule 2026-08). `POSTSEASON` includes `"toc"` — the Tournament of
     Champions fields every classification's champion at the SAME shape, so 1A's
     entrant plays it at 1S/4D like everyone else; only its OWN road (Sectionals
-    through State) plays `state_1a`. Showcases are untouched for every group,
-    1A included.
+    through State) plays `state_1a`. Its SHOWCASES play it too (owner rule
+    2026-09 — the showcases rehearse the class's own state format, so 1A's are
+    2S/3D and Group 2's are 3S/3D, as the 1S/4D classes rehearse 1S/4D). A
+    Group 2 showcase can finish level; it is regular season, so it takes the JV
+    ladder and can be a TIE — the one place a varsity draw is reachable.
 
     ‼️ 8A/9A's PILOT (`WIDE_GROUPS`, owner rule 2070) covers the road-to-State on
     the same terms AND the EARLY non-district window, which is the one pilot branch
@@ -265,11 +268,17 @@ def dual_format(phase: str, group: str | None = None) -> DualFormat:
     road = phase in POSTSEASON and phase != "toc"
     if wide and (road or phase == EARLY_FORMAT_PHASE):
         return FORMATS["state_4s5d"]
-    if group in PILOT_GROUPS and road:
+    # ‼️ A SHOWCASE PLAYS THE CLASS'S OWN STATE FORMAT (owner rule 2026-09): the
+    # showcases exist to rehearse the lineup a program must win with, so 1A's play
+    # 2S/3D and Group 2's play 3S/3D, exactly as the 1S/4D classes rehearse 1S/4D.
+    # A Group 2 showcase can therefore finish 3-3 — it is regular season, so it
+    # falls to the JV ladder (sets, games, then a TIE), never the deciders.
+    rehearsal = road or phase in SHOWCASE
+    if group in PILOT_GROUPS and rehearsal:
         return FORMATS["state_1a"]
-    # Group 2's 3S/3D (JHSAA rule 2026-09): the road only, the TOC excepted — the
-    # 1A pilot's scoping exactly. The one EVEN shape; `play_dual` settles a 3-3.
-    if group in THREE_THREE_GROUPS and road:
+    # Group 2's 3S/3D (JHSAA rule 2026-09): the road and the showcases, the TOC
+    # excepted. The one EVEN shape; `play_dual` settles a postseason 3-3.
+    if group in THREE_THREE_GROUPS and rehearsal:
         return FORMATS["state_3s3d"]
     if phase in POSTSEASON or phase in SHOWCASE:
         return FORMATS["state"]
@@ -4849,12 +4858,16 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None,
         # So: the LIVE ladder, with the league's bench rotation (a showcase is
         # where a coach tries people), arranged onto the 1S/4D card by the same
         # anti-stacking arrangement the postseason uses.
+        # ...at the DUAL's shape (`shape_group`): a showcase plays the class's own
+        # state format (owner rule 2026-09), and a pod mixes classes.
+        g = ts.school.group if group is _OWN_GROUP else group
         order = _healthy(ts, _order(ts))
-        need = lineup_need(phase)
+        need = lineup_need(phase, g)
         nine, bench = order[:need], order[need:]
         if bench and rng.random() < _ROTATE_ONE:
             nine[-1] = bench[rng.randrange(len(bench))]
-        return _arrange_state(nine, ts.sibling_ids, ts.pair_counts)
+        return _arrange_postseason(nine, dual_format(phase, g), ts.sibling_ids,
+                                   ts.pair_counts)
     order = _healthy(ts, _order(ts))
     g = ts.school.group if group is _OWN_GROUP else group
     need = lineup_need(phase, g)

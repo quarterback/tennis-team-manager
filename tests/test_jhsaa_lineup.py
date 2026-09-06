@@ -347,7 +347,9 @@ def test_only_1a_road_to_state_plays_2s3d():
         assert jh.dual_format("state", g) == jh.FORMATS["state_4s5d"], g
     # untouched outside the postseason, 1A included
     assert jh.dual_format("regular", "1A") == jh.FORMATS["regular"]
-    assert jh.dual_format("showcase_pod", "1A") == jh.FORMATS["state"]
+    # a showcase rehearses the class's OWN state format (owner rule 2026-09)
+    assert jh.dual_format("showcase_pod", "1A") == jh.FORMATS["state_1a"]
+    assert jh.dual_format("showcase_tiered", "5A") == jh.FORMATS["state"]
     assert jh.dual_format("early", "1A") == jh.FORMATS["early"]
     # ...and the roster the shape demands follows it
     assert jh.lineup_need("state", "1A") == 8
@@ -600,8 +602,11 @@ def test_only_group_2s_road_to_state_plays_3s3d():
     assert jh.dual_format("toc", "Group 2") == jh.FORMATS["state"]
     assert jh.dual_format("regular", "Group 2") == jh.FORMATS["regular"]
     assert jh.dual_format(jh.EARLY_FORMAT_PHASE, "Group 2") == jh.FORMATS["early"]
+    # the showcases rehearse the class's own state format (owner rule 2026-09), so
+    # a Group 2 showcase is 3S/3D and can be drawn — regular season, JV ladder
     for sh in jh.SHOWCASE:
-        assert jh.dual_format(sh, "Group 2") == jh.FORMATS["state"]
+        assert jh.dual_format(sh, "Group 2") is jh.FORMATS["state_3s3d"]
+        assert jh.lineup_need(sh, "Group 2") == 9
     for g in ("Group 1", "Group 3", "2A", "6A", None):
         assert jh.dual_format("state", g) is not jh.FORMATS["state_3s3d"], g
     # the flight table already prices S1-S3 / D1-D3
