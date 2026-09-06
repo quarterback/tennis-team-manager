@@ -120,11 +120,11 @@
    giving). #}
 <nav class="jh-hqnav">
   <a class="{{ 'on' if hq == 'overview' }}" href="{{ hq_url('overview') }}">Overview</a>
-  <a class="{{ 'on' if hq == 'team' }}" href="{{ hq_url('team') }}">Team</a>
-  <a class="{{ 'on' if hq == 'season' }}" href="{{ hq_url('season') }}">Season</a>
+  <a class="{{ 'on' if hq == 'team' }}" href="{{ hq_url('team') }}">Roster</a>
+  <a class="{{ 'on' if hq == 'season' }}" href="{{ hq_url('season') }}">Schedule</a>
   <a class="{{ 'on' if hq == 'history' }}" href="{{ hq_url('history') }}">History</a>
   <a class="{{ 'on' if hq == 'honors' }}" href="{{ hq_url('honors') }}">Honors</a>
-  <a class="{{ 'on' if hq == 'records' }}" href="{{ hq_url('records') }}">Champions &amp; Records</a>
+  <a class="{{ 'on' if hq == 'records' }}" href="{{ hq_url('records') }}">Records</a>
 </nav>
 
 {% if hq == 'overview' %}
@@ -143,9 +143,9 @@
    with, so a stage the association adds later lands here by construction. #}
 {% if view.schedule %}
 <div class="bl-panel" style="margin-bottom:18px">
-  <div class="bl-panel-head"><span class="bl-panel-title">{{ view.season_year }} season</span>
+  <div class="bl-panel-head"><span class="bl-panel-title">Season</span>
     <span class="bl-panel-meta">{{ view.record }}{% if view.state_rank %} · No. {{ view.state_rank }} in {{ view.group }}{% endif %}</span>
-    <a class="jh-hqmore" href="{{ hq_url('season') }}">Every match →</a></div>
+    <a class="jh-hqmore" href="{{ hq_url('season') }}">Schedule →</a></div>
   <div class="jh-stages">
     {% for st in view.season_stages %}
     <div class="{{ 'end' if st.end }}{{ ' none' if not st.played }}">
@@ -161,12 +161,26 @@
 <div class="jh-cols2">
   <div class="jh-stack">
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">{{ view.season_year }} postseason</span>
-        <a class="jh-hqmore" href="{{ hq_url('season') }}">Full season →</a></div>
-      {% if postseason %}
+      <div class="bl-panel-head"><span class="bl-panel-title">Schedule</span>
+        <a class="jh-hqmore" href="{{ hq_url('season') }}">Schedule →</a></div>
+      {# ‼️ A PROGRAM WITH NO POSTSEASON STILL HAS A SEASON, AND THIS PANEL SHOWS IT
+         (owner, 2026-09: "I want to see their schedule"). The miss used to be
+         answered with a SENTENCE — "No postseason this year — 15-3 in Gold Valley
+         League, 2nd place" — which restates what the masthead already carries, in
+         place of the one thing the panel exists to show. Most programs miss the
+         road in most seasons, so the COMMON case got a paragraph and the rare case
+         got the content. It falls back to the tail of the card instead: the matches
+         they actually played, with the full run one click away.
+         The row markup is shared, so a league dual renders here exactly as it does
+         on the Schedule view — including its tint, which is why the class test is
+         the full one rather than `else 'road'`. That shortcut was safe while only
+         postseason rows reached it and would paint every league dual as a road
+         stage the moment this fell back. #}
+      {% set rows = postseason if postseason else view.schedule[-6:] %}
+      {% if rows %}
       <table class="jh-sched">
-        {% for d in postseason %}
-        <tr class="{{ 'state' if d.kind in ('STATE', 'TOC') else 'road' }}">
+        {% for d in rows %}
+        <tr class="{{ 'state' if d.kind in ('STATE', 'TOC') else 'road' if d.kind not in ('DIST', 'INVITE', 'SHOWCASE') }}">
           <td class="dt" style="width:62px">{{ d.date }}</td>
           {# vs/at, same as the full Season view — schedules render the way the
              game presents them, and a summary is not licence to drop the venue. #}
@@ -181,11 +195,6 @@
         </tr>
         {% endfor %}
       </table>
-      {% elif view.schedule %}
-      {# The season is played (or playing) but ended short of the road — that IS the
-         season's state, said plainly rather than as an empty table. #}
-      <p class="jh-empty">No postseason this year — {{ view.district_record }} in
-        {{ view.district }}{% if view.place %}, {{ view.place }}{{ 'st' if view.place == 1 else 'nd' if view.place == 2 else 'rd' if view.place == 3 else 'th' }} place{% endif %}.</p>
       {% else %}
       <p class="jh-empty">Season not played yet this world year.</p>
       {% endif %}
@@ -193,8 +202,8 @@
 
     {% if cur_season and (cur_season.unit_wins or cur_season.honor_lines) %}
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">Won this season</span>
-        <a class="jh-hqmore" href="{{ hq_url('honors') }}">Trophy case →</a></div>
+      <div class="bl-panel-head"><span class="bl-panel-title">Honors</span>
+        <a class="jh-hqmore" href="{{ hq_url('honors') }}">Honors →</a></div>
       {% if cur_season.unit_wins %}
       <div class="jh-honor"><span class="y">{{ cur_season.season_year }}</span>
         <span>{% for w in cur_season.unit_wins %}<span class="jh-chip unit">{{ w }}</span>{% if not loop.last %} {% endif %}{% endfor %}</span></div>
@@ -209,8 +218,8 @@
 
   <div class="jh-stack">
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">Top of the ladder</span>
-        <a class="jh-hqmore" href="{{ hq_url('team') }}">Full team{% if view.roster %} · {{ view.roster|length }}{% endif %} →</a></div>
+      <div class="bl-panel-head"><span class="bl-panel-title">Roster</span>
+        <a class="jh-hqmore" href="{{ hq_url('team') }}">Roster{% if view.roster %} · {{ view.roster|length }}{% endif %} →</a></div>
       {% if view.roster %}
       <table class="jh-roster">
         <tr><th>Player</th><th style="width:48px">Gr</th><th class="num" style="width:64px">Singles</th>
@@ -248,8 +257,8 @@
 {% elif hq == 'team' %}
 <!-- ============ TEAM: the current roster, in ladder order ============ -->
 <div class="bl-panel jh-hqnarrow">
-  <div class="bl-panel-head"><span class="bl-panel-title">{{ view.season_year }} Roster</span>
-    {% if view.jv_schedule %}<span class="bl-panel-meta">JV season {{ view.jv_record }} — schedule under <a href="{{ hq_url('season') }}">Season</a></span>{% endif %}</div>
+  <div class="bl-panel-head"><span class="bl-panel-title">Roster</span>
+    {% if view.jv_schedule %}<span class="bl-panel-meta">JV season {{ view.jv_record }} — schedule under <a href="{{ hq_url('season') }}">Schedule</a></span>{% endif %}</div>
   <div class="tbl-scroll">
     <table class="jh-roster">
       <tr><th>Player</th><th style="width:48px">Gr</th><th class="num" style="width:64px">Singles</th>
@@ -282,7 +291,7 @@
 <!-- ============ SEASON: the schedule, match by match ============ -->
 <div class="bl-panel jh-hqnarrow">
   <div class="bl-panel-head">
-    <span class="bl-panel-title">{{ view.season_year }} Schedule</span></div>
+    <span class="bl-panel-title">Schedule</span></div>
   {# Varsity and JV are two views of one season, so they are tabs. #}
   {% if view.jv_schedule %}
   {{ jh_tabs([('v', 'Varsity', view.schedule|length),
@@ -487,7 +496,7 @@
    which is noise dressed as detail. It now renders ONLY when it carries information
    the big number does not: a last-title year, a finals/semis split, a denominator. #}
 <div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">Program</span>
+  <div class="bl-panel-head"><span class="bl-panel-title">All-time</span>
     <span class="bl-panel-meta">{{ t.seasons }} season{{ '' if t.seasons == 1 else 's' }}{% if t.classifications|length > 1 %} · {{ t.classifications|join(', ') }}{% endif %}</span></div>
   <div class="bl-panel-body" style="padding:12px">
     <div class="jh-metrics">
@@ -528,7 +537,7 @@
    the honours COLUMN says how much is behind it, never who. #}
 <div class="bl-panel" style="margin-top:18px">
   <div class="bl-panel-head">
-    <span class="bl-panel-title">Season by season</span>
+    <span class="bl-panel-title">Seasons</span>
     <span class="bl-panel-meta">a row expands to that season's trophies and honours — the year link opens the season itself</span></div>
   <div class="tbl-scroll">
     {% if view.history.seasons %}
@@ -735,7 +744,7 @@
      season. A doubles title names both partners. No match log, no microcopy —
      the same restraint the player page's own section keeps. #}
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Individual State Champions</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Individual state champions</span></div>
     {% if view.history.individual_champions %}
     {% for r in view.history.individual_champions %}
     <div class="jh-honor"><span class="y">{{ r.season_year }}</span>
@@ -752,7 +761,7 @@
      A transfer shows the wins they earned HERE; their other school's are on its
      own page. #}
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Most Program Wins</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Career wins</span></div>
     {% if view.career_wins %}
     {% for r in view.career_wins %}
     {# Name bolded so it reads as the row's subject; the years are a TAG (the
