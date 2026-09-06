@@ -444,7 +444,8 @@
   color: var(--text-primary); font-variant-numeric: tabular-nums;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.jh-metric .v.sm { font-size: 18px; font-weight: 700; font-family: var(--font-text); }
+.jh-metric .v.sm { font-size: 18px; font-weight: 700; font-family: var(--font-text);
+  white-space: normal; line-height: 1.3; }  /* 'TOC Champion' must not ellipsize */
 .jh-metric .s { display: block; margin-top: 3px; font-size: 14px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .jh-metric.hot { box-shadow: inset 3px 0 0 var(--brand); }
 
@@ -476,8 +477,50 @@
 .jh-ident .now .bit { font-size: 15px; color: var(--text-secondary); }
 .jh-ident .now .bit b { color: var(--text-primary); font-variant-numeric: tabular-nums; }
 
+/* ---- Program HQ (owner rule 2026-09) ----
+   The identity block + the HQ nav are ONE persistent object — the program's own
+   context — over a small set of internal destinations (Overview · Team · Season ·
+   History · Honors · Champions & Records). The nav visually joins the card above
+   it: square top corners, shared border, so it reads as the card's bottom edge
+   rather than a second floating control. NO counts on these links — a tab wearing
+   "347" reads as a database dump, which is what the HQ exists to stop. */
+.jh-hqident { border-radius: 12px 12px 0 0; border-bottom: 0; margin-bottom: 0; }
+.jh-hqnav {
+  display: flex; gap: 2px; flex-wrap: wrap; align-items: center;
+  padding: 6px 10px; margin-bottom: 18px;
+  border: 1px solid var(--border-subtle); border-radius: 0 0 12px 12px;
+  background: var(--surface-th);
+}
+.jh-hqnav a {
+  padding: 8px 15px; border-radius: 8px; font-size: 15px; font-weight: 700;
+  text-decoration: none; color: var(--text-secondary);
+}
+.jh-hqnav a:hover { background: var(--surface-card); color: var(--brand-strong); }
+.jh-hqnav a.on { background: var(--surface-card); color: var(--text-primary);
+  box-shadow: inset 0 -2px 0 var(--tab-accent), 0 0 0 1px var(--border-subtle); }
+
+/* "Full season →" — the panel-head link into the destination that owns the rest. */
+.jh-hqmore { margin-left: auto; font-size: 14px; font-weight: 700;
+  color: var(--text-link); text-decoration: none; white-space: nowrap; }
+.jh-hqmore:hover { text-decoration: underline; }
+
+/* Key/value rows for the Overview's career glance — a list, not a tile grid
+   (owner: "the point is orientation, not showing every statistic"). */
+.jh-kv {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  padding: 9px 14px; border-top: 1px solid var(--border-subtle);
+}
+.jh-kv:first-of-type { border-top: 0; }
+.jh-kv .k { color: var(--text-secondary); }
+.jh-kv .v { font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; text-align: right; }
+.jh-kv .v .s { font-weight: 400; color: var(--text-muted); }
+
+/* The history ledger's expandable season rows — the schedule's has-lines idiom. */
+.jh-ledger tr.has-lines { cursor: pointer; }
+.jh-ledger tr.has-lines:hover td { background: var(--surface-hover); }
+
 .jh-chip {
-  display: inline-flex; align-items: center; height: 19px; padding: 0 8px; border-radius: 999px;
+  display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 999px;
   font-size: 13px; font-weight: 800; letter-spacing: .03em; color: #fff; background: var(--gray-600);
   white-space: nowrap;
 }
@@ -1039,3 +1082,9 @@ html[data-jh-scout="on"] .jh-scout { visibility: visible; }
 /* The season picker sits in the scope rail beside two segmented controls, so it has
    to read as their sibling rather than as a form field dropped into a header. */
 .jh-season-pick { height: 30px; padding: 0 26px 0 10px; font-size: 15px; font-weight: 700; }
+
+/* A single-table HQ view (Team, Season, Honors) does not stretch the whole
+   1320px shell — a schedule row with 400px of nothing between the opponent and
+   the result is not more readable, it is just wider. History's ledger and the
+   Records pair keep the full width, which they use. */
+.jh-hqnarrow { max-width: 1000px; }

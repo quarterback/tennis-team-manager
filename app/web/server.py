@@ -3312,8 +3312,16 @@ def create_app() -> Flask:
                                  year if year is not None else qyear)
         if not view.get("found"):
             abort(404)
+        # The program HQ's internal destination (owner rule 2026-09): one program,
+        # a handful of clearly separated views — Overview is the light landing
+        # ("what is happening with this program now"), the archives one click away.
+        # A query arg, not a route, so `jh_scope_url` carries it: switching gender
+        # or season keeps you on the view you were reading.
+        hq = request.args.get("view", "overview")
+        if hq not in ("overview", "team", "season", "history", "honors", "records"):
+            hq = "overview"
         return render_template("jhsaa_school.html", active="High School", view=view,
-                               gender=gender, u=u, uni_label=label)
+                               gender=gender, u=u, uni_label=label, hq=hq)
 
     @app.route("/jhsaa/dual/<int:dual_id>")
     def jhsaa_dual(dual_id):

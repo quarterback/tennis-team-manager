@@ -259,7 +259,7 @@ def test_a_title_survives_a_season_with_no_individual_awards(archived):
         assert season["honors"] == [] and season["champion"] and season["toc_champion"]
         assert season["honoured"], "a title IS an honour, however bare the season"
         html = archived["client"].get(
-            f"/jhsaa/school/{champ}?g=girls").get_data(as_text=True)
+            f"/jhsaa/school/{champ}?g=girls&view=honors").get_data(as_text=True)
         assert "TOURNAMENT OF CHAMPIONS" in html
         assert f"{grp} STATE CHAMPION" in html
     finally:
@@ -330,7 +330,7 @@ def test_a_toc_title_is_listed_in_the_honours_exactly_once(archived):
     row = wd.jhsaa_school_history(w["id"], "girls", champ)["seasons"][0]
     assert not [h for h in row["honors"] if "Tournament of Champions" in h]
     html = archived["client"].get(
-        f"/jhsaa/school/{champ}?g=girls").get_data(as_text=True)
+        f"/jhsaa/school/{champ}?g=girls&view=honors").get_data(as_text=True)
     assert html.count("TOURNAMENT OF CHAMPIONS") == 1
     # A beaten entrant has no banner, so it keeps the text line — in
     # `team_honors`, because a TOC finish is a TEAM honour (`_season_row`'s own
@@ -395,11 +395,16 @@ def test_a_toc_program_page_shows_the_run(archived):
     """Making the field is the honour, so it has to be ON the program page — the chip
     beside the state finish, the duals on the card, and a line in the honours."""
     champ = archived["arc"]["toc"]["champion"]
+    # The program HQ (owner rule 2026-09) files the run where each piece lives:
+    # the chip stays on the identity block, the duals on the Season view's card,
+    # the banner in the Honors view's trophy case.
     html = archived["client"].get(
-        f"/jhsaa/school/{champ}?g=girls").get_data(as_text=True)
+        f"/jhsaa/school/{champ}?g=girls&view=season").get_data(as_text=True)
     assert "Tournament of Champions" in html
     assert 'class="jh-tag toc">TOC' in html          # gold, and its own label
-    assert "TOURNAMENT OF CHAMPIONS" in html         # the honours row
+    honors = archived["client"].get(
+        f"/jhsaa/school/{champ}?g=girls&view=honors").get_data(as_text=True)
+    assert "TOURNAMENT OF CHAMPIONS" in honors       # the honours row
 
 
 def test_every_jhsaa_page_renders_against_a_real_season(archived):
@@ -410,7 +415,12 @@ def test_every_jhsaa_page_renders_against_a_real_season(archived):
                  "/jhsaa/rankings?g=girls", f"/jhsaa/rankings?g=girls&group={sc.group}",
                  "/jhsaa/districts?g=girls", "/jhsaa/champions?g=girls",
                  f"/jhsaa/district/{sc.group}/{sc.district}?g=girls",
-                 f"/jhsaa/school/{champ}?g=girls"):
+                 f"/jhsaa/school/{champ}?g=girls",
+                 f"/jhsaa/school/{champ}?g=girls&view=team",
+                 f"/jhsaa/school/{champ}?g=girls&view=season",
+                 f"/jhsaa/school/{champ}?g=girls&view=history",
+                 f"/jhsaa/school/{champ}?g=girls&view=honors",
+                 f"/jhsaa/school/{champ}?g=girls&view=records"):
         assert c.get(path).status_code == 200, path
 
 
@@ -813,7 +823,7 @@ def test_the_jv_schedule_rows_are_expandable_like_the_varsity_ones(archived):
     w, g = archived["world"], "girls"
     school = next(iter(archived["arc"]["standings"]["9A"].values()))[0]["school"]
     html = archived["client"].get(
-        f"/jhsaa/school/{school}?g={g}").get_data(as_text=True)
+        f"/jhsaa/school/{school}?g={g}&view=season").get_data(as_text=True)
     assert 'data-pane="jv"' in html
     assert 'data-lines="jv' in html, "no expandable JV row rendered"
     assert 'data-for="jv' in html, "no JV line-score row rendered"
@@ -954,7 +964,7 @@ def test_a_rivalry_dual_is_played_and_the_card_marks_it(archived):
         if not sched:
             continue
         html = archived["client"].get(
-            f"/jhsaa/school/{name}?g=girls").get_data(as_text=True)
+            f"/jhsaa/school/{name}?g=girls&view=season").get_data(as_text=True)
         if "RIVALRY" not in html:
             continue
         for opp in cross:                       # the chip sits on the rival's row
