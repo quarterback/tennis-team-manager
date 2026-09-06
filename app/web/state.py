@@ -4087,7 +4087,7 @@ def _jh_scope(gender: str, group: str, groups: list, year: int, years: list,
 
 #: A State FINISH, abbreviated for a dense table (owner's set, 2026-08):
 #: CHAMP · F · SF · QF · OF · R1 · QUAL. The full label always rides along as a title.
-_FINISH_SHORT = {"Champion": "CHAMP", "Runner-up": "F",
+_FINISH_SHORT = {"Champion": "CHAMP", "Finalist": "F",
                  "Semifinalist": "SF", "Quarterfinalist": "QF",
                  "Octofinalist": "OF",
                  # The 48-team groups' opening round (owner spec 2026-09) — its
@@ -5190,7 +5190,7 @@ def _jh_trophy_banner(seasons_in: list[dict]) -> list[dict]:
             _row((1, ""), "State champion", gold=True)["years"].append(_yr(s))
         elif s.get("made_state") and s.get("state_finish"):
             # ‼️ A LOSS BEFORE THE OCTOFINALS IS AN APPEARANCE (owner, 2026-09). The
-            # banner names the finishes a wall names — runner-up, semis, quarters,
+            # banner names the finishes a wall names — finalist, semis, quarters,
             # octos — and folds everything below into one line, "State tournament
             # appearances": a program does not hang a "Round of 40" banner. The cut
             # is `_finish_label`'s own band (alive <= 16 is the octofinalist), so a
@@ -5199,16 +5199,14 @@ def _jh_trophy_banner(seasons_in: list[dict]) -> list[dict]:
             if place > 16:
                 _row((2, 17, ""), "State tournament appearances")["years"].append(_yr(s))
             else:
-                # "Finalist", not "runner-up" (owner, 2026-09) — the wall names the
-                # round reached, the same word the TOC row uses one band up.
-                fin = "finalist" if s["state_finish"] == "Runner-up" else s["state_finish"].lower()
+                fin = s["state_finish"].lower()
                 _row((2, place, fin), f"State {fin}")["years"].append(_yr(s))
         # ‼️ A TOC FINAL HANGS; A TOC APPEARANCE DOES NOT (owner, 2026-09). Making
         # that field is already said by the state title that put them in it, so a
         # quarterfinal or semifinal there restates a gold row one line up. The
         # final is the one run worth its own banner. Exact label match, no parsing
-        # — `_toc_finish` writes "TOC Runner-up" and nothing else means it.
-        if s.get("toc_finish") == "TOC Runner-up":
+        # — `_toc_finish_label` writes "TOC Finalist" and nothing else means it.
+        if s.get("toc_finish") == "TOC Finalist":
             _row((0, "finalist"), "Tournament of Champions finalist")["years"].append(_yr(s))
         units = list(s.get("unit_wins") or [])
         if s.get("district_title") and units:

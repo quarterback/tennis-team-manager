@@ -5960,7 +5960,7 @@ def _finish_label(alive: int) -> str:
     if alive == 1:
         return "Champion"
     if alive == 2:
-        return "Runner-up"
+        return "Finalist"
     if alive <= 4:
         return "Semifinalist"
     if alive <= 8:
@@ -6156,7 +6156,7 @@ def _toc_finish_label(alive: int) -> str:
     if alive == 1:
         return "TOC Champion"
     if alive == 2:
-        return "TOC Runner-up"
+        return "TOC Finalist"
     if alive <= 4:
         return "TOC Semifinalist"
     if alive <= 8:

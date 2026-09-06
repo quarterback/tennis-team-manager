@@ -454,7 +454,7 @@ def archived():
                              "players": players}],
                 "champion": 1, "runner_up": 0,
                 "finishes": {"Sixes": {"label": "Champion", "tag": "CHAMP"},
-                             "Harrow": {"label": "Runner-up", "tag": "F"}},
+                             "Harrow": {"label": "Finalist", "tag": "F"}},
                 "rounds": [[{"rnd": "Final", "hi": 0, "lo": 1,
                              "winner_is_hi": False, "scoreline": "6-4 6-4",
                              "upset": True}]]})
