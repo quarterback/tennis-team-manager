@@ -71,13 +71,55 @@ The owner: "we already use the ties format in the JV world so there's precedent.
   block; its winner is read off the row's `won` when points are level. The
   research export gains `duals.decided_on_tiebreak` and the manifest says so.
 
+## 3. Showcases play the HOST class's state format; the early window is 5S/2D for all
+
+**Rule (owner, 2026-09).** "Showcases move to match the format of the classification
+hosting" — so a 9A-hosted showcase is 4S/5D, a 1A-hosted one 2S/3D, a Group
+2-hosted one 3S/3D, and a 1S/4D-class host 1S/4D. A small school drawn into a
+big host's pod plays the big format: "everyone generates enough players to play
+every format so there's no issue." And "I don't want 5/2 tennis to go away
+completely", so the early non-district window went BACK to 5S/2D for every class —
+the wide classes' 4S/5D early window (owner rule 2070) is retired; the showcases
+are their rehearsal now.
+
+**Implementation.**
+- `showcase_schedule` stamps a `host` on every event — the first team of the
+  dealt group, which is shuffled, so no program is systematically the host.
+  Hosting decides the FORMAT only; a showcase stays a neutral site for home court.
+- `play_dual(group=)` overrides `shape_group`'s resolution; `play_showcases`
+  passes the host's group. The row archives `shape_group` (the group the dual was
+  played at) so `rating_duals` prices the flights on the right table — the two
+  sides cannot reproduce a host's format.
+- `dual_format`: `wide and (road or showcase)` → 4S/5D; `PILOT_GROUPS` /
+  `THREE_THREE_GROUPS` and `(road or showcase)` → their shapes; the early window
+  falls through to `FORMATS["early"]` for everyone.
+- `_lineup`'s showcase branch arranges onto the dual's shape (`_arrange_postseason`
+  at the host's format), not `_arrange_state` unconditionally.
+
+**Consequence.** A Group 2-hosted showcase can finish 3-3. It is regular season,
+so it takes the JV ladder — sets, games, then a TIE — and `TeamSeason.ties`, the
+W-L-T record, the `T` cell and the half-win arms in the rating systems are live
+code, not the dead path §2 first described. The deciders remain postseason-only.
+
+## What I got wrong on the way
+
+- Wrote the tie path as "unreachable" and said so in three places. The owner
+  asked how a varsity draw could ever happen; the answer was that the showcases
+  should have been shaped like the state formats all along, which makes it
+  reachable. Rule stated as unreachable → check whether a sibling mechanism was
+  meant to reach it.
+- Moved the wide classes' showcases only after being asked "is this true of
+  7A-9A too?". The rule was "showcases rehearse the state format"; I applied it
+  to the two classes named instead of to the rule.
+
 ## Assumptions made (not confirmed by the owner)
 
 - Group 1 stays at 48/16.
 - 8A/9A's Special Challengers drop to the standard two seats with the 40 road.
 - The deciders are 10-point match tiebreaks by the flight's own players, and
   count for nothing on any player record.
-- Group 2's regular season, early window and showcases are untouched.
+- A showcase's host is the first team of the dealt group (a random draw); the
+  owner said "hosting" without naming a rule for who hosts.
 
 ## Tests
 

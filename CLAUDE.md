@@ -843,8 +843,15 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   3-3 postseason dual is decided by THREE CONCURRENT 10-point tiebreakers at S1,
   D1, D2 by the flight's own players, best two of three (`_deciding_tiebreaks`);
   `play_dual` overrides `res.winner` (a draw reads as an AWAY win otherwise). A
-  regular-season tie (unreachable today) uses `jv_outcome` and records a T. The
-  deciders ride their OWN `tiebreak` key/column — never `lines`, never a credit. Pages:
+  regular-season tie uses `jv_outcome` and records a T (`TeamSeason.ties`, W-L-T).
+  The deciders ride their OWN `tiebreak` key/column — never `lines`, never a credit.
+  **‼️ A SHOWCASE PLAYS ITS HOST CLASS'S STATE FORMAT (owner rule 2026-09):** every
+  event has a `host` (dealt at random), `play_showcases` passes `play_dual(group=
+  host.group)`, and the row archives `shape_group` for TOSS. A 9A host → 4S/5D for
+  everyone in the pod, a Group 2 host → 3S/3D (so a showcase CAN tie — the one
+  reachable varsity draw), 1A → 2S/3D. **THE EARLY WINDOW IS 5S/2D FOR EVERY CLASS
+  AGAIN** ("I don't want 5/2 tennis to go away") — the wide classes' 4S/5D early
+  window is retired; supersedes the 2070 note below. Pages:
   `/jhsaa/computer-ratings` (all groups), `/jhsaa/committee` (48 groups only).
 - **‼️ THE EPIREGIONAL — STATE SEED PLACEMENT IS MERIT, THE ZONAL TITLE IS ONLY
   THE BERTH (owner rule 2026-09, `jhsaa.run_epiregional` / `state_seed_order`,
