@@ -2362,6 +2362,19 @@ def create_app() -> Flask:
         surface; on the History sub-rail with the other career rolls."""
         gender, label, u, g, group, _year = _jh_scope_args()
         cat = request.args.get("cat")
+        # The fold behind this page (`world.jhsaa_career_wins`) parses every
+        # archived varsity line in `world_jhsaa_dual` — minutes cold on a deep
+        # save — so it is deferred like every other heavy board: the module
+        # memo is the publish side, and the refresh lands on the warm cache.
+        import app.world as wd
+        w = wd.load_world(DEFAULT_SEED)
+        if w:
+            ckey = ("careerwins", g)
+            wid = w["id"]
+            job = _jh_deferred(ckey, lambda: wd.jhsaa_career_wins(wid, g))
+            if job is None:
+                return _jh_building("the career wins board")
+            _jh_job_pop(ckey)
         view = jhsaa_career_wins_view(DEFAULT_SEED, g, cat, group)
         return render_template("jhsaa_career_wins.html", active="High School",
                                view=view, gender=gender, u=u, uni_label=label)
@@ -2372,6 +2385,17 @@ def create_app() -> Flask:
         Title Board's sortable-table format but a SEPARATE view (owner request,
         2026-08): trophies and wins are different questions."""
         gender, label, u, g, group, year = _jh_scope_args()
+        # Same career fold behind it as /jhsaa/career-wins — same deferred key,
+        # so whichever board is opened first warms the memo for both.
+        import app.world as wd
+        w = wd.load_world(DEFAULT_SEED)
+        if w:
+            ckey = ("careerwins", g)
+            wid = w["id"]
+            job = _jh_deferred(ckey, lambda: wd.jhsaa_career_wins(wid, g))
+            if job is None:
+                return _jh_building("the program wins board")
+            _jh_job_pop(ckey)
         view = jhsaa_program_wins_view(DEFAULT_SEED, g, group, year)
         return render_template("jhsaa_program_wins.html", active="High School",
                                view=view, gender=gender, u=u, uni_label=label)
