@@ -289,6 +289,19 @@ RNG seeds. They are all plain ints — nothing stops you passing the wrong one.
   should-be-crash into plausible-looking wrong data — generated players have
   realistic names, so nobody notices. Fail loudly instead.
 See `docs/AAR-pro-grad-transfers.md` + the world-binding commit for history.
+- **‼️ A JHSAA LAB WORLD IS ITS OWN DATABASE FILE — the launch decides which
+  universe you are in (owner incident 2026-09: the owner designed the split and
+  still lost an evening to it).** The lab launcher (`scripts/jhsaa_lab_server.sh`)
+  binds `TENNIS_DB_PATH` to the lab's own file and sets `JHSAA_LAB_MODE`; a plain
+  launch reads `./tennis.db` and will CREATE a fresh league there if none exists.
+  Opening a lab save "through the college route" therefore shows a brand-new
+  world ("my 2073 save says 2027") while the real universe sits untouched in the
+  lab's file — nothing is lost, the wrong door was used. `create_app` announces
+  `save[ MODE]: <path> — world year N` at every boot; read that line FIRST when
+  a save looks wrong, before any drift/corruption theory. Related fix, same
+  episode: `dbpath.resolve_db_path` decides ONCE per process, with race-safe
+  probes, and never abandons an existing save file for a fallback (see
+  `docs/AAR-dbpath-probe-race-and-roster-drift-diagnostic.md`).
 
 ## ⚠️ ONE WORLD, ONE CLOCK, ONE BUTTON — `/world/advance` is the only advance surface
 Every active division×gender universe advances TOGETHER under `world.advance_week`
