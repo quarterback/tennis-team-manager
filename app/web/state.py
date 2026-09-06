@@ -5201,12 +5201,8 @@ def _jh_trophy_banner(seasons_in: list[dict]) -> list[dict]:
             else:
                 _row((2, place, s["state_finish"]),
                      f"State {s['state_finish'].lower()}")["years"].append(_yr(s))
-        # A TOC run short of the title outranks any State finish — only a class
-        # champion is ever in that field — so it sorts above them (place 0). Same
-        # casing as the State rows: the event capitalised, the finish not.
-        if s.get("made_toc") and not s.get("toc_champion") and s.get("toc_finish"):
-            fin = s["toc_finish"].replace("TOC", "", 1).strip().lower()
-            _row((2, 0, fin), f"Tournament of Champions {fin}")["years"].append(_yr(s))
+        # A TOC run short of the title hangs nothing (owner, 2026-09): making that
+        # field is already said by the state title that put them in it.
         units = list(s.get("unit_wins") or [])
         if s.get("district_title") and units:
             units.pop(0)                        # `_season_row` leads with the league
