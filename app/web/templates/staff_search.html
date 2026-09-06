@@ -7,7 +7,7 @@
 <form method="get">
 <input type="hidden" name="u" value="{{ u }}">
 <div class="bl-toolbar"><div class="bl-toolbar-inner" style="flex-wrap:wrap">
-  <span style="font-size:14.5px;color:var(--text-muted)">Management › Staff Search</span>
+  <span style="font-size:16px;color:var(--text-muted)">Management › Staff Search</span>
   <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Role</span>
     <span class="bl-select-wrap"><select class="bl-select" name="role" onchange="this.form.submit()" style="min-width:150px">
       {% for rv, rl in roles %}<option value="{{ rv }}"{% if rv == role %} selected{% endif %}>{{ rl }}</option>{% endfor %}

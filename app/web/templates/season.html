@@ -10,7 +10,7 @@
         {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
       </select></span></label>
   </form>
-  <span style="font-size:14.5px;color:var(--text-muted)">2026 Season · {{ uni_label }}</span>
+  <span style="font-size:16px;color:var(--text-muted)">2026 Season · {{ uni_label }}</span>
   <span style="margin-left:auto;display:inline-flex;gap:8px;align-items:center">
     <span class="bl-field-label">
       {% if ph == 'ita_kickoff' %}Preseason NIT — Kickoff Weekend
@@ -81,7 +81,7 @@
           <span class="bl-conf">{{ r.rec }}</span>
           <span class="bl-stat power">{{ "%.3f"|format(r.pi) }}</span>
         </div>{% endfor %}
-        {% else %}<div class="bl-panel-body"><p style="margin:0;color:var(--text-muted);font-size:14.5px">Advance a week to generate results.</p></div>{% endif %}
+        {% else %}<div class="bl-panel-body"><p style="margin:0;color:var(--text-muted);font-size:16px">Advance a week to generate results.</p></div>{% endif %}
       </div>
     </div>
     </div>

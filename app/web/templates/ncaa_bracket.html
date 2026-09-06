@@ -15,7 +15,7 @@
 {% endmacro %}
 
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:14.5px;color:var(--text-muted)">{{ uni_label }} · NCAA {{ division }} Team Championship — as played</span>
+  <span style="font-size:16px;color:var(--text-muted)">{{ uni_label }} · NCAA {{ division }} Team Championship — as played</span>
   <span class="bl-bracket-pills" style="margin-left:auto">
     {% for val, d, g, lbl in universes %}
       <a class="bl-pill{% if val == u %} active{% endif %}" href="{{ url_for('ncaa_bracket', u=val, year=sel_year) }}">{{ lbl }}</a>
@@ -103,11 +103,11 @@
 .rs-field { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1px 14px; padding: 6px 4px; }
 .rs-field-rgn { grid-template-columns: 1fr; }
 .rs-seedrow { display: flex; align-items: center; gap: 8px; padding: 5px 4px; text-decoration: none;
-  color: var(--text-primary); font-size: 14.5px; border-bottom: 1px solid var(--border-subtle); }
+  color: var(--text-primary); font-size: 16px; border-bottom: 1px solid var(--border-subtle); }
 .rs-seedrow:hover { background: var(--green-50); }
 .rs-seedrow .seed { width: 26px; text-align: right; font-weight: 800; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 .rs-seedrow .nm { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rs-seedrow .conf { font-size: 12.5px; color: var(--text-muted); }
+.rs-seedrow .conf { font-size: 14px; color: var(--text-muted); }
 </style>
 
 {% else %}
@@ -116,7 +116,7 @@
 <div class="bl-container"><div class="bl-champ">
   {{ crest_box(br.champion.school, br.champion.abbr, br.champion.color, 'lg') }}
   <div><div class="label">National Champion</div>
-    <div style="font-size:22px;font-weight:800;color:var(--text-primary)">{% if br.champion.seed %}#{{ br.champion.seed }} {% endif %}{{ br.champion.school }}</div></div>
+    <div style="font-size:24px;font-weight:800;color:var(--text-primary)">{% if br.champion.seed %}#{{ br.champion.seed }} {% endif %}{{ br.champion.school }}</div></div>
 </div></div>
 {% endif %}
 

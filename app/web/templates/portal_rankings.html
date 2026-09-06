@@ -6,7 +6,7 @@
 <form method="get">
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
   <input type="hidden" name="u" value="{{ u }}">
-  <span style="font-size:14.5px;color:var(--text-muted)">Transfer Portal › Class Rankings</span>
+  <span style="font-size:16px;color:var(--text-muted)">Transfer Portal › Class Rankings</span>
   <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Year</span>
     <span class="bl-select-wrap"><select class="bl-select" name="year" onchange="this.form.submit()" style="min-width:88px">
       {% for y in pr.years %}<option value="{{ y.val }}"{% if y.val == pr.year %} selected{% endif %}>{{ y.label }}</option>{% endfor %}
@@ -25,7 +25,7 @@
 
 <div class="bl-container" style="padding-bottom:0">
   <h1 style="margin:2px 0 2px;font-size:24px">{{ pr.year_label or '' }} Transfer Portal Team Rankings</h1>
-  <p style="margin:0 0 4px;font-size:13.5px;color:var(--text-muted)">
+  <p style="margin:0 0 4px;font-size:15px;color:var(--text-muted)">
     {{ pr.division if pr.division != 'All' else 'All divisions' }} · {{ {'all':'Men & Women','men':'Men','women':'Women'}[pr.gender] }}
   </p>
 </div>

@@ -12,7 +12,7 @@
 <div class="bl-container" style="padding-top:18px;padding-bottom:50px;max-width:860px">
 
   <div class="bl-toolbar"><div class="bl-toolbar-inner">
-    <span style="font-size:14.5px;color:var(--text-muted)">National-team cups</span>
+    <span style="font-size:16px;color:var(--text-muted)">National-team cups</span>
   </div></div>
 
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin:14px 0">
@@ -38,18 +38,18 @@
     <div style="padding:18px 20px;display:flex;gap:14px;align-items:center;flex-wrap:wrap">
       <span style="font-size:34px">{{ cup.champion.flag }}</span>
       <div>
-        <div style="font-size:13.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted)">{{ cup.event }} Champion</div>
-        <div style="font-size:22px;font-weight:800">{{ cup.champion.name }}</div>
-        {% if cup.runner_up %}<div style="color:var(--text-muted);font-size:14.5px">def. {{ cup.runner_up.flag }} {{ cup.runner_up.name }} in the final</div>{% endif %}
+        <div style="font-size:15px;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted)">{{ cup.event }} Champion</div>
+        <div style="font-size:24px;font-weight:800">{{ cup.champion.name }}</div>
+        {% if cup.runner_up %}<div style="color:var(--text-muted);font-size:16px">def. {{ cup.runner_up.flag }} {{ cup.runner_up.name }} in the final</div>{% endif %}
       </div>
       <div style="margin-left:auto;display:flex;gap:16px">
-        <div style="text-align:center"><div style="font-weight:700;font-size:19px">{{ cup.field }}</div><div style="font-size:12.5px;color:var(--text-muted)">nations</div></div>
-        <div style="text-align:center"><div style="font-weight:700;font-size:19px">{{ cup.n_seeds }}</div><div style="font-size:12.5px;color:var(--text-muted)">seeded</div></div>
+        <div style="text-align:center"><div style="font-weight:700;font-size:21px">{{ cup.field }}</div><div style="font-size:14px;color:var(--text-muted)">nations</div></div>
+        <div style="text-align:center"><div style="font-weight:700;font-size:21px">{{ cup.n_seeds }}</div><div style="font-size:14px;color:var(--text-muted)">seeded</div></div>
       </div>
     </div>
     <div style="padding:0 20px 16px;display:flex;gap:8px;flex-wrap:wrap">
       {% for pl in cup.champion.squad %}
-      <a class="bl-pill" style="text-decoration:none" href="{{ url_for('player', pid=pl.pid) }}">{{ pl.name }} <span style="color:var(--text-muted);font-size:12.5px">{{ pl.school }} · {{ pl.division }}</span></a>
+      <a class="bl-pill" style="text-decoration:none" href="{{ url_for('player', pid=pl.pid) }}">{{ pl.name }} <span style="color:var(--text-muted);font-size:14px">{{ pl.school }} · {{ pl.division }}</span></a>
       {% endfor %}
     </div>
   </div>
@@ -64,12 +64,12 @@
       {% set lose = m.lo if m.winner_is_hi else m.hi %}
       <div style="padding:10px 0;border-bottom:1px solid var(--border-subtle)">
         <div style="display:flex;gap:8px;align-items:baseline;flex-wrap:wrap">
-          <span style="font-weight:700">{{ win.flag }} {% if win.seed %}<span style="color:var(--text-muted);font-size:12.5px">#{{ win.seed }}</span> {% endif %}{{ win.name }}</span>
+          <span style="font-weight:700">{{ win.flag }} {% if win.seed %}<span style="color:var(--text-muted);font-size:14px">#{{ win.seed }}</span> {% endif %}{{ win.name }}</span>
           <span class="bl-rec" style="font-variant-numeric:tabular-nums">{{ m.score }}</span>
-          <span style="color:var(--text-muted)">{{ lose.flag }} {% if lose.seed %}<span style="font-size:12.5px">#{{ lose.seed }}</span> {% endif %}{{ lose.name }}</span>
-          {% if m.upset %}<span class="bl-pill" style="font-size:11.5px;background:#c0392b;color:#fff">UPSET</span>{% endif %}
+          <span style="color:var(--text-muted)">{{ lose.flag }} {% if lose.seed %}<span style="font-size:14px">#{{ lose.seed }}</span> {% endif %}{{ lose.name }}</span>
+          {% if m.upset %}<span class="bl-pill" style="font-size:13px;background:#c0392b;color:#fff">UPSET</span>{% endif %}
         </div>
-        <div style="margin-top:4px;display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--text-muted);font-variant-numeric:tabular-nums">
+        <div style="margin-top:4px;display:flex;gap:14px;flex-wrap:wrap;font-size:14px;color:var(--text-muted);font-variant-numeric:tabular-nums">
           {% for rb in m.rubbers %}
           <span><b style="color:var(--text-primary)">{{ rb.slot }}</b>
             {% if rb.home_won %}{{ plinks(rb.home, rb.home_pids) }} d. {{ plinks(rb.away, rb.away_pids) }}
@@ -88,12 +88,12 @@
     <div style="padding:8px 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px 22px">
       {% for n in cup.nations %}
       <div style="padding:6px 0;border-bottom:1px solid var(--border-subtle)">
-        <div style="font-weight:700">{{ n.flag }} {% if n.seed %}<span style="color:var(--text-muted);font-size:12.5px">#{{ n.seed }}</span> {% endif %}{{ n.name }}
-          <span style="color:var(--text-muted);font-size:12.5px;font-weight:400">· {{ n.rating }}</span></div>
-        <div style="font-size:13.5px;color:var(--text-muted)">
+        <div style="font-weight:700">{{ n.flag }} {% if n.seed %}<span style="color:var(--text-muted);font-size:14px">#{{ n.seed }}</span> {% endif %}{{ n.name }}
+          <span style="color:var(--text-muted);font-size:14px;font-weight:400">· {{ n.rating }}</span></div>
+        <div style="font-size:15px;color:var(--text-muted)">
           {% for pl in n.squad %}<a href="{{ url_for('player', pid=pl.pid) }}" style="text-decoration:none;color:inherit"
             title="{{ pl.school }} · {{ pl.division }} · OVR {{ pl.ovr }}">{{ pl.name }}
-            <span style="font-size:11.5px;opacity:.75">({{ pl.school }})</span></a>{% if not loop.last %} · {% endif %}{% endfor %}
+            <span style="font-size:13px;opacity:.75">({{ pl.school }})</span></a>{% if not loop.last %} · {% endif %}{% endfor %}
         </div>
       </div>
       {% endfor %}

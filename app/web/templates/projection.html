@@ -3,7 +3,7 @@
 {% block title %}Play to Clinch — Bracket Projection{% endblock %}
 {% block content %}
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:14.5px;color:var(--text-muted)">Season › Bracket Projection · {{ uni_label }}</span>
+  <span style="font-size:16px;color:var(--text-muted)">Season › Bracket Projection · {{ uni_label }}</span>
   <span style="margin-left:auto;display:inline-flex;gap:8px">
     <a class="bl-pill" style="text-decoration:none" href="{{ url_for('season_standings', u=u) }}">Standings</a>
     <a class="bl-pill" style="text-decoration:none" href="{{ url_for('bracket', u=u) }}">Simulate Bracket →</a>
@@ -23,7 +23,7 @@
 
   <div style="margin-bottom:14px">
     <h1 style="margin:0 0 4px;font-size:24px">NCAA {{ division }} Bracket Projection</h1>
-    <p style="margin:0;font-size:14.5px;color:var(--text-muted);line-height:1.5;max-width:720px">
+    <p style="margin:0;font-size:16px;color:var(--text-muted);line-height:1.5;max-width:720px">
       The {{ proj.field }}-team field if the tournament were seeded today. <strong>Selection:</strong>
       projected conference leaders take the {{ proj.aq|length }} automatic bids (AQ); the remaining {{ cut }}
       at-large spots (AL) go to the best of the rest by <strong>Committee Seed Score</strong>.
@@ -100,7 +100,7 @@
 {% endif %}
 </div>
 <style>
-.bl-proj-bid{font-size:11.5px;font-weight:700;letter-spacing:.03em;text-align:center;
+.bl-proj-bid{font-size:13px;font-weight:700;letter-spacing:.03em;text-align:center;
   border-radius:5px;padding:2px 0;align-self:center}
 .bl-proj-bid--aq{background:rgba(14,124,134,.14);color:#0e7c86}
 .bl-proj-bid--al{background:var(--surface-2,rgba(0,0,0,.05));color:var(--text-muted)}

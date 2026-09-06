@@ -3,7 +3,7 @@
 {% block content %}
 <div class="bl-container" style="padding-top:18px;padding-bottom:50px">
   <div class="bl-toolbar"><div class="bl-toolbar-inner">
-    <span style="font-size:14.5px;color:var(--text-muted)">
+    <span style="font-size:16px;color:var(--text-muted)">
       Everyone who persisted past college — playing, on the wire, coaching, or done.</span>
   </div></div>
 
@@ -28,10 +28,10 @@
     <div class="bl-row" style="grid-template-columns:1.6fr .8fr .5fr .5fr 1.2fr .6fr">
       <span class="bl-cell"><a href="{{ url_for('gtt_player', pid=p.pid, lg=league.id) }}"
         style="text-decoration:none;font-weight:600">{% if p.country %}{{ p.country|flag }} {% endif %}{{ p.name }}</a></span>
-      <span class="bl-cell" style="color:var(--text-muted);font-size:13.5px">{{ p.state.replace('-', ' ')|title }}</span>
+      <span class="bl-cell" style="color:var(--text-muted);font-size:15px">{{ p.state.replace('-', ' ')|title }}</span>
       <span class="bl-cell-num">{{ p.age }}</span>
       <span class="bl-cell-num">{{ p.seasons }}</span>
-      <span class="bl-cell" style="font-size:13.5px">
+      <span class="bl-cell" style="font-size:15px">
         {%- if p.coaching %}{{ p.coaching }} · {{ (p.archetype or '')|replace('-', ' ')|title }}
         {%- elif p.club %}{{ p.club }}{% else %}—{% endif %}</span>
       <span class="bl-cell-num">{{ p.str }}</span>

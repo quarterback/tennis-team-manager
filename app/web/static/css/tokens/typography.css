@@ -21,21 +21,29 @@
 
      If you add a size, use a TOKEN. A literal is how the scale drifted from 12
      values to 31 in the first place, and the literals are what made the app
-     unreadable while the scale on paper looked fine. */
+     unreadable while the scale on paper looked fine.
+
+     ‼️ RAISED AGAIN 2026-09 (owner: the type was still hard to read; "the
+     readability is the cheapest fix"). One more full step, whole-pixel values,
+     and the literal sweep moved with it — the same rule as 2027-08: raising the
+     scale without the literals (or the other way round) inverts the hierarchy
+     exactly where the tokens were used correctly. The floor is now 12px and it
+     still belongs to uppercase tracked labels alone. Fixed-size icon boxes
+     (crests) remain exempt and clip. */
   --fs-display-xl: 44px;
   --fs-display-l:  32px;
   --fs-display-m:  26px;
   --fs-display-s:  22px;
 
-  --fs-title-l:    19px;
-  --fs-title-m:    17px;
-  --fs-title-s:    16px;
+  --fs-title-l:    21px;
+  --fs-title-m:    19px;
+  --fs-title-s:    18px;
 
-  --fs-body-l:     16px;
-  --fs-body-m:     15.5px;   /* body */
-  --fs-body-s:     14.5px;
-  --fs-caption:    13.5px;
-  --fs-micro:      12.5px;   /* uppercase tracked column headers — the floor */
+  --fs-body-l:     19px;
+  --fs-body-m:     18px;     /* body */
+  --fs-body-s:     16px;
+  --fs-caption:    15px;
+  --fs-micro:      14px;     /* uppercase tracked column headers */
 
   /* Weights */
   --fw-regular: 400;

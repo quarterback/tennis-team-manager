@@ -4,12 +4,34 @@
 {% block title %}{{ view.school }} — JHSAA{% endblock %}
 {% block content %}
 {% set t = view.history.totals %}
+{# The season row for THE YEAR ON SCREEN — the Overview and Season views read it
+   for honours; every fold below it is the archive's. #}
+{% set cur_season = view.history.seasons | selectattr('season_year', 'equalto', view.season_year) | first %}
+
+{# ‼️ THE PROGRAM PAGE IS AN HQ, NOT A REPORT (owner rule 2026-09). Clicking a
+   program used to land on every archive the program has — schedule, roster,
+   career fold, a 40-year ledger and four honours tabs on one conceptual level.
+   The page is now ONE persistent context (crumb, identity block, HQ nav) over a
+   small set of internal destinations, and the default answers "what is happening
+   with this program now". Historical depth is one click away, never the landing.
+     Overview  — this season's state, the top of the ladder, a career glance
+     Team      — the current roster, in ladder order
+     Season    — the full schedule (varsity + JV), this season's honours
+     History   — the career fold + the season-by-season ledger (rows expand)
+     Honors    — team trophies and player awards, each its own archive
+     Records   — individual state champions and the program's winningest careers
+   The destination is a QUERY ARG so `jh_scope_url` carries it: a gender or
+   season switch keeps the view you were reading. #}
 
 {# An affiliate's real geography is city, state — never a Jefferson-style
    "city, Jefferson" line, and never a state abbreviation on the name. #}
 {{ jh_header(view.scope, u, 'state', view.school,
              view.mascot ~ ' · ' ~ view.city ~ ', ' ~ (view.state if view.state else 'Jefferson'),
              [('Season', view.season_year), ('Class', view.group)]) }}
+
+{% macro hq_url(dest) -%}
+{{ url_for('jhsaa_school', school=view.school, year=view.scope.pin, u=u, g=view.gender, view=(dest if dest != 'overview' else none)) }}
+{%- endmacro %}
 
 <div class="jh-shell">
 <div class="jh-crumb">
@@ -39,8 +61,8 @@
 </div>
 {% endif %}
 
-<!-- ============ Identity: who they are and how this season went ============ -->
-<div class="jh-ident" style="margin-bottom:12px">
+<!-- ============ The persistent program context: identity + HQ nav ============ -->
+<div class="jh-ident jh-hqident">
   <span class="crest">{{ view.mark|safe }}</span>
   <div class="jh-ident-body">
     <span class="jh-chip c-{{ view.group|replace(' ','') }}">{{ view.classification }}</span>
@@ -70,264 +92,355 @@
     </div>
   </div>
 </div>
+{# The HQ nav joins the identity card above it — one object, the program's own
+   navigation. NO counts on these (owner: tabs wearing "104 · 347 · 56" read as
+   database dumps, which is the impression this page is being rebuilt to stop
+   giving). #}
+<nav class="jh-hqnav">
+  <a class="{{ 'on' if hq == 'overview' }}" href="{{ hq_url('overview') }}">Overview</a>
+  <a class="{{ 'on' if hq == 'team' }}" href="{{ hq_url('team') }}">Team</a>
+  <a class="{{ 'on' if hq == 'season' }}" href="{{ hq_url('season') }}">Season</a>
+  <a class="{{ 'on' if hq == 'history' }}" href="{{ hq_url('history') }}">History</a>
+  <a class="{{ 'on' if hq == 'honors' }}" href="{{ hq_url('honors') }}">Honors</a>
+  <a class="{{ 'on' if hq == 'records' }}" href="{{ hq_url('records') }}">Champions &amp; Records</a>
+</nav>
 
-{# ‼️ NO SEASON-SUMMARY STRIP (owner rule 2026-08). A row of tiles used to sit here
-   restating the season that the identity block directly above already states — the
-   overall record, the district record, the postseason finish — and then restating
-   the CAREER that the Program panel below states, all-time record and state trips
-   included. "The data on the page is redundant… all-time is reported twice."
-   The identity block owns THIS season; the Program panel owns the career; nothing
-   owns both. #}
-
-<div class="jh-layout wide">
-  <!-- ============ LEFT: the season, match by match ============ -->
+{% if hq == 'overview' %}
+<!-- ============ OVERVIEW: what is happening with this program now ============ -->
+{# Orientation, not statistics (owner rule 2026-09: "do not fill the Overview with
+   ten metric cards"). Three light panels — how the season stands, who the team is,
+   what the program is all-time — each linking into the destination that owns the
+   full answer. #}
+{% set postseason = view.schedule | rejectattr('kind', 'in', ('DIST', 'INVITE', 'SHOWCASE')) | list %}
+<div class="jh-cols2">
   <div class="jh-stack">
     <div class="bl-panel">
-      <div class="bl-panel-head">
-        <span class="bl-panel-title">{{ view.season_year }} Schedule</span></div>
-      {# Varsity and JV are two views of one season, so they are tabs. #}
-      {% if view.jv_schedule %}
-      {{ jh_tabs([('v', 'Varsity', view.schedule|length),
-                  ('jv', 'JV ' ~ view.jv_record, view.jv_schedule|length)], 'jhsch') }}
+      <div class="bl-panel-head"><span class="bl-panel-title">{{ view.season_year }} postseason</span>
+        <a class="jh-hqmore" href="{{ hq_url('season') }}">Full season →</a></div>
+      {% if postseason %}
+      <table class="jh-sched">
+        {% for d in postseason %}
+        <tr class="{{ 'state' if d.kind in ('STATE', 'TOC') else 'road' }}">
+          <td class="dt" style="width:62px">{{ d.date }}</td>
+          {# vs/at, same as the full Season view — schedules render the way the
+             game presents them, and a summary is not licence to drop the venue. #}
+          <td class="ha" style="width:26px">{{ 'vs' if d.home else 'at' }}</td>
+          <td class="op"><span class="jh-schoolcell">{{ d.opp_deco.mark|safe }}
+            <a href="{{ url_for('jhsaa_school', school=d.opp, u=u, g=view.gender, year=view.scope.pin) }}">{{ d.opp }}</a>
+            {% if d.opp_seed %}<span class="jh-chip ghost">#{{ d.opp_seed }}</span>{% endif %}</span></td>
+          <td class="{{ 'W' if d.won else 'L' }}" style="width:34px">{{ 'W' if d.won else 'L' }}</td>
+          <td class="sc" style="width:56px">{{ d.pf|int }}–{{ d.pa|int }}</td>
+          <td style="width:150px"><span class="jh-tag {{ 'toc' if d.kind == 'TOC' else 'state' if d.kind == 'STATE' else 'road' }}">{{ d.kind }}</span>
+            {% if d.round %}<span class="jh-tag rd">{{ d.round }}</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </table>
+      {% elif view.schedule %}
+      {# The season is played (or playing) but ended short of the road — that IS the
+         season's state, said plainly rather than as an empty table. #}
+      <p class="jh-empty">No postseason this year — {{ view.district_record }} in
+        {{ view.district }}{% if view.place %}, {{ view.place }}{{ 'st' if view.place == 1 else 'nd' if view.place == 2 else 'rd' if view.place == 3 else 'th' }} place{% endif %}.</p>
+      {% else %}
+      <p class="jh-empty">Season not played yet this world year.</p>
       {% endif %}
-      <div class="jh-pane tbl-scroll" data-pane="v">
-        {% if view.schedule %}
-        <table class="jh-sched">
-          <tr><th style="width:62px">Date</th><th style="width:26px"></th><th>Opponent</th>
-            <th style="width:34px">Res</th><th style="width:56px">Score</th><th style="width:92px">Type</th></tr>
-          {% set ns = namespace(seg='') %}
-          {% for d in view.schedule %}
-          {% if d.kind != ns.seg %}{% set ns.seg = d.kind %}
-          {# Keyed lookup, so a phase nobody labelled raises here rather than printing
-             a blank band over a block of duals. #}
-          <tr class="seg"><td colspan="6">{{ {'INVITE': 'Invitationals',
-                'SHOWCASE': 'Mid-season Match Showcases',
-                'DIST': view.district ~ ' — league play',
-                'AREA': view.group ~ ' Areas',
-                'SECTIONAL': view.group ~ ' Sectionals',
-                'WARD': view.group ~ ' Wards',
-                'REGIONAL': view.group ~ ' Regionals',
-                'ZONAL': view.group ~ ' Zonals',
-                'SUPER REGIONAL': view.group ~ ' Super Regionals',
-                'SEMI-STATE': view.group ~ ' Semi-State',
-                'DIVISIONAL': view.group ~ ' Divisionals',
-                'CONFERENCE': view.group ~ ' Conference',
-                'STATE SPECIAL': view.group ~ ' State Specials',
-                'STATE': view.group ~ ' State Tournament',
-                'TOC': 'Tournament of Champions'}[d.kind] }}</td></tr>
-          {% endif %}
-          {# The dual ROW is the toggle for its line scores. An always-visible
-             "line scores" row under every dual doubled the length of a 35-match
-             schedule and made it unscannable, which is the thing this page was
-             redesigned to stop being. #}
-          <tr class="{{ 'state' if d.kind in ('STATE', 'TOC') else 'road' if d.kind not in ('DIST', 'INVITE', 'SHOWCASE') }}{{ ' has-lines' if d.lines }}"
-              {% if d.lines %}data-lines="{{ loop.index }}" title="line scores"{% endif %}>
-            <td class="dt">{{ d.date }}</td>
-            <td class="ha">{{ 'vs' if d.home else 'at' }}</td>
-            <td class="op">
-              <span class="jh-schoolcell">{{ d.opp_deco.mark|safe }}
-                <a href="{{ url_for('jhsaa_school', school=d.opp, u=u, g=view.gender, year=view.scope.pin) }}">{{ d.opp }}</a>
-                {% if d.opp_seed %}<span class="jh-chip ghost">#{{ d.opp_seed }}</span>{% endif %}</span>
-            </td>
-            <td class="{{ 'W' if d.won else 'L' }}">{{ 'W' if d.won else 'L' }}</td>
-            <td class="sc">{{ d.pf|int }}–{{ d.pa|int }}</td>
-            {# Tag colours, because these are different things: the league season,
-               the INVITATIONALS a program arranges around it, the mid-season
-               SHOWCASES (a weekend event, and the only 1S/4D duals before the
-               postseason), the ROAD to State (Areas..Conference) and the State
-               event itself. A State/TOC dual names its bracket round beside the
-               tag and a showcase names its event. Everything that is not
-               DIST/INVITE/SHOWCASE/STATE/TOC is a road stage, so a new recovery
-               round is tagged by construction. #}
-            <td><span class="jh-tag {{ 'toc' if d.kind == 'TOC' else 'dist' if d.kind == 'DIST'
-                     else 'show' if d.kind == 'SHOWCASE'
-                     else 'state' if d.kind == 'STATE' else 'road' if d.kind != 'INVITE' }}">{{ d.kind }}</span>
-              {% if d.round %}<span class="jh-tag rd">{{ d.round }}</span>{% endif %}
-              {# The crosstown fixture (owner rule 2026-09) — the association's
-                 codified rivalries are on the schedule every season, and which
-                 invitational is the rivalry game is the one thing on this row a
-                 reader cannot work out from the row. #}
-              {% if d.rival %}<span class="jh-tag rival">RIVALRY</span>{% endif %}
-              {# Match Center is an ICON, not a labelled pill (owner rule 2026-08):
-                 a text chip on every schedule row shouted over the results. #}
-              {% if d.lines and d.id %}<a class="jh-chip ghost ico" title="Match Center"
-                 aria-label="Match Center"
-                 href="{{ url_for('jhsaa_dual', dual_id=d.id, u=u, g=view.gender) }}"><svg
-                 viewBox="0 0 16 16" width="13" height="13" fill="none"
-                 stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
-                 aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="2"/><line
-                 x1="8" y1="2.5" x2="8" y2="13.5"/><line x1="3.8" y1="6" x2="6" y2="6"/><line
-                 x1="3.8" y1="8.5" x2="6" y2="8.5"/><line x1="10" y1="6" x2="12.2" y2="6"/><line
-                 x1="10" y1="8.5" x2="12.2" y2="8.5"/></svg></a>{% endif %}
-              {% if d.lines %}<span class="jh-caret" aria-hidden="true">›</span>{% endif %}</td>
-          </tr>
-          {% if d.lines %}
-          <tr class="jh-linerow" data-for="{{ loop.index }}" hidden><td colspan="6" style="padding:0">
-            <div class="jh-lines">
-              {% for ln in d.lines %}
-              {% set us = ln.home if d.home else ln.away %}{% set them = ln.away if d.home else ln.home %}
-              {% set we = ln.home_won if d.home else not ln.home_won %}
-              <div class="jh-line">
-                <span class="sl">{{ ln.slot }}</span>
-                <span class="nm {{ 'won' if we }}">{{ us|join(' / ') }}</span>
-                <span class="sl">{{ 'd.' if we else 'l.' }}</span>
-                <span class="nm {{ 'won' if not we }}">{{ them|join(' / ') }}</span>
-                <span class="st">{{ ln.score }}</span>
-              </div>
-              {% endfor %}
-            </div>
-          </td></tr>
-          {% endif %}
-          {% endfor %}
-        </table>
-        {% else %}
-        <p class="jh-empty">Season not played yet this world year.</p>
-        {% endif %}
-      </div>
-      {% if view.jv_schedule %}
-      <div class="jh-pane tbl-scroll" data-pane="jv" hidden>
-        <table class="jh-sched">
-          <tr><th style="width:62px">Date</th><th style="width:26px"></th><th>Opponent</th>
-            <th style="width:34px">Res</th><th style="width:56px">Score</th><th style="width:92px">Format</th></tr>
-          {% for d in view.jv_schedule %}
-          {# The JV box score expands exactly as the varsity one does. `data-lines`
-             must not collide with the varsity pane's indices — `jh-linerow` is matched
-             on it — so the JV rows are keyed on a prefixed value of their own. #}
-          <tr class="{{ 'dist' if d.district }}{{ ' has-lines' if d.lines }}"
-              {% if d.lines %}data-lines="jv{{ loop.index }}" title="line scores"{% endif %}>
-            <td class="dt">{{ d.date }}</td>
-            <td class="ha">{{ 'vs' if d.home else 'at' }}</td>
-            <td class="op">
-              <span class="jh-schoolcell">{{ d.opp_deco.mark|safe }}
-                <a href="{{ url_for('jhsaa_school', school=d.opp, u=u, g=view.gender, year=view.scope.pin) }}">{{ d.opp }}</a>
-                </span>
-            </td>
-            {# Three outcomes: a JV dual can be drawn. #}
-            <td class="{{ 'T' if d.tied else 'W' if d.won else 'L' }}">{{ 'T' if d.tied else 'W' if d.won else 'L' }}</td>
-            <td class="sc">{{ d.pf|int }}–{{ d.pa|int }}</td>
-            {# ‼️ THE CHAMPIONSHIP ROUNDS ARE NAMED, IN THE VARSITY VOCABULARY. Every
-               JV Team State dual is archived non-district, so the INVITE fallback
-               labelled the association's JV championship an invitational on every
-               program's card. The rounds are the association's existing ones and so
-               are the words for them (owner, 2026-09: "since the labels already
-               exist it's not different but labeling can be") — only the wording says
-               JV. The phase is what tells a regional championship from the State
-               draw, which is why the event archives two. #}
-            {% set jvk = 'JV DISTRICT' if d.district
-                         else 'WEEKEND' if d.phase.startswith('showcase')
-                         else 'JV STATE' if d.phase == 'jv_state'
-                         else 'JV REGIONALS' if d.phase == 'jv_region'
-                         else 'INVITE' %}
-            {# No Match Center link for JV — owner rule 2026-08: JV duals
-               aren't tracked as a series ("those matches don't even need a
-               match center"). The inline line-score expand below is the
-               JV box score and stays; only the new Match Center link is
-               varsity-only. #}
-            <td><span class="jh-tag {{ 'dist' if jvk == 'JV DISTRICT' else 'jvstate' if jvk == 'JV STATE' else 'jvroad' if jvk == 'JV REGIONALS' else 'show' if jvk == 'WEEKEND' }}">{{ jvk }}</span>
-              {# The bracket ROUND, on the varsity card's own second chip — a State
-                 row otherwise tags five different rounds identically. Only State
-                 duals carry one; a regional or league dual's round is what its own
-                 tag already says. The elastic JV format is worth showing where the
-                 shape really does vary (the league), and never in the championship,
-                 whose shape is fixed at 3S/2D by the event. #}
-              {% if d.round %}<span class="jh-tag rd">{{ d.round }}</span>
-              {% elif d.shape %}<span class="jh-tag rd">{{ d.shape }}</span>{% endif %}
-              {% if d.lines %}<span class="jh-caret" aria-hidden="true">›</span>{% endif %}</td>
-          </tr>
-          {% if d.lines %}
-          <tr class="jh-linerow" data-for="jv{{ loop.index }}" hidden><td colspan="6" style="padding:0">
-            <div class="jh-lines">
-              {% for ln in d.lines %}
-              {% set us = ln.home if d.home else ln.away %}{% set them = ln.away if d.home else ln.home %}
-              {% set we = ln.home_won if d.home else not ln.home_won %}
-              <div class="jh-line">
-                <span class="sl">{{ ln.slot }}</span>
-                <span class="nm {{ 'won' if we }}">{{ us|join(' / ') }}</span>
-                <span class="sl">{{ 'd.' if we else 'l.' }}</span>
-                <span class="nm {{ 'won' if not we }}">{{ them|join(' / ') }}</span>
-                <span class="st">{{ ln.score }}</span>
-              </div>
-              {% endfor %}
-            </div>
-          </td></tr>
-          {% endif %}
-          {% endfor %}
-        </table>
-      </div>
-      {% endif %}
-      {# ‼️ ONE handler for BOTH panes, delegated from the panel. It used to bind to
-         `document.currentScript.previousElementSibling` — i.e. the varsity table alone —
-         so when the JV pane arrived its rows rendered the caret and the hidden line row
-         and simply had nothing listening. The markup looked right, which is exactly why
-         it read as "JV toggling is broken" rather than as a missing script. Resolving
-         the detail row within the clicked row's OWN table is what keeps the two panes
-         from matching each other's indices. #}
-      <script>
-      (function () {
-        var panel = document.currentScript.closest('.bl-panel') || document;
-        panel.addEventListener('click', function (e) {
-          if (e.target.closest('a')) return;                // a school link is still a link
-          var row = e.target.closest('tr[data-lines]');
-          if (!row) return;
-          var tbl = row.closest('table');
-          if (!tbl) return;
-          var det = tbl.querySelector('tr.jh-linerow[data-for="' + row.dataset.lines + '"]');
-          if (det) { det.hidden = !det.hidden; row.classList.toggle('open', !det.hidden); }
-        });
-      })();
-      </script>
     </div>
+
+    {% if cur_season and (cur_season.unit_wins or cur_season.honor_lines) %}
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">Won this season</span>
+        <a class="jh-hqmore" href="{{ hq_url('honors') }}">Trophy case →</a></div>
+      {% if cur_season.unit_wins %}
+      <div class="jh-honor"><span class="y">{{ cur_season.season_year }}</span>
+        <span>{% for w in cur_season.unit_wins %}<span class="jh-chip unit">{{ w }}</span>{% if not loop.last %} {% endif %}{% endfor %}</span></div>
+      {% endif %}
+      {% for line in (cur_season.honor_lines or []) %}
+      <div class="jh-honor"><span class="y">{{ cur_season.season_year }}</span>
+        <span>{% if line.label %}{{ line.label }} — {% endif %}{% for n in line.names %}<strong>{{ n }}</strong>{% if not loop.last %} · {% endif %}{% endfor %}</span></div>
+      {% endfor %}
+    </div>
+    {% endif %}
   </div>
 
-  <!-- ============ RIGHT: roster, then the program at a glance ============ -->
   <div class="jh-stack">
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">{{ view.season_year }} Roster</span></div>
-      <div class="tbl-scroll">
-        <table class="jh-roster">
-          <tr><th>Player</th><th style="width:44px">Gr</th><th class="num" style="width:56px">Singles</th>
-            <th class="num" style="width:56px">Doubles</th><th class="num jh-scout" style="width:42px">OVR</th>
-            <th class="num jh-scout" style="width:42px">Pot</th><th class="jh-scout" style="width:78px">Rating</th></tr>
-          {% for p in view.roster %}
-          <tr>
-            <td class="pl">
-              <a href="{{ url_for('jhsaa_player', school=view.school, pid=p.pid, u=u, g=view.gender) }}">{{ p.name }}</a>
-              {% for h in p.honors %}<span class="jh-chip {{ 'gold' if 'Player of the Year' in h }}" style="margin-left:4px">{{ 'POY' if 'Player of the Year' in h else 'A-S' if h == 'All-State' else 'A-D' }}</span>{% endfor %}
-              {# A family tie, if the owner has recorded one. `title` carries the
-                 detail so the row itself stays one short chip wide. #}
-              {% if p.family %}<span class="jh-chip unit" style="margin-left:4px"
-                title="{{ p.family.label }}: {{ p.family.others | map(attribute='name') | join(', ') }}">{{ p.family.label }}</span>{% endif %}
-            </td>
-            <td>{{ p.grade }}th</td>
-            <td class="num">{{ p.singles }}</td>
-            <td class="num">{{ p.doubles }}</td>
-            <td class="num jh-scout">{{ p.ovr }}</td>
-            <td class="num jh-scout">{{ p.ceiling }}</td>
-            <td class="jh-scout">{{ stars(p.stars) }}</td>
-          </tr>
-          {% endfor %}
-        </table>
-      </div>
+      <div class="bl-panel-head"><span class="bl-panel-title">Top of the ladder</span>
+        <a class="jh-hqmore" href="{{ hq_url('team') }}">Full team{% if view.roster %} · {{ view.roster|length }}{% endif %} →</a></div>
+      {% if view.roster %}
+      <table class="jh-roster">
+        <tr><th>Player</th><th style="width:48px">Gr</th><th class="num" style="width:64px">Singles</th>
+          <th class="num" style="width:64px">Doubles</th></tr>
+        {% for p in view.roster[:6] %}
+        <tr>
+          <td class="pl"><a href="{{ url_for('jhsaa_player', school=view.school, pid=p.pid, u=u, g=view.gender) }}">{{ p.name }}</a>
+            {% for h in p.honors %}<span class="jh-chip {{ 'gold' if 'Player of the Year' in h }}" style="margin-left:4px">{{ 'POY' if 'Player of the Year' in h else 'A-S' if h == 'All-State' else 'A-D' }}</span>{% endfor %}</td>
+          <td>{{ p.grade }}th</td>
+          <td class="num">{{ p.singles }}</td>
+          <td class="num">{{ p.doubles }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+      {% else %}
+      <p class="jh-empty">No roster this season.</p>
+      {% endif %}
     </div>
 
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">All-time</span>
+        <a class="jh-hqmore" href="{{ hq_url('history') }}">History →</a></div>
+      <div class="jh-kv"><span class="k">Record</span><span class="v">{{ t.record }} · {{ '%.3f'|format(t.pct)|replace('0.', '.') }}</span></div>
+      <div class="jh-kv"><span class="k">State titles</span><span class="v">{{ t.state_titles }}{% if t.last_title %} <span class="s">last {{ t.last_title.season_year }}</span>{% endif %}</span></div>
+      <div class="jh-kv"><span class="k">State trips</span><span class="v">{{ t.state_appearances }}</span></div>
+      <div class="jh-kv"><span class="k">District titles</span><span class="v">{{ t.district_titles }} <span class="s">of {{ t.seasons }}</span></span></div>
+      {% if t.best %}
+      <div class="jh-kv"><span class="k">Best season</span><span class="v">{{ t.best.toc_finish or t.best.state_finish }} <span class="s">{{ t.best.season_year }} · {{ t.best.record }}</span></span></div>
+      {% endif %}
+      <div class="jh-kv"><span class="k">Individual state champs</span><span class="v">{{ view.history.individual_champions|length }}</span></div>
+    </div>
   </div>
 </div>
 
-<!-- ============ Program: the career, above the ledger it folds ============ -->
+{% elif hq == 'team' %}
+<!-- ============ TEAM: the current roster, in ladder order ============ -->
+<div class="bl-panel jh-hqnarrow">
+  <div class="bl-panel-head"><span class="bl-panel-title">{{ view.season_year }} Roster</span>
+    {% if view.jv_schedule %}<span class="bl-panel-meta">JV season {{ view.jv_record }} — schedule under <a href="{{ hq_url('season') }}">Season</a></span>{% endif %}</div>
+  <div class="tbl-scroll">
+    <table class="jh-roster">
+      <tr><th>Player</th><th style="width:48px">Gr</th><th class="num" style="width:64px">Singles</th>
+        <th class="num" style="width:64px">Doubles</th><th class="num jh-scout" style="width:48px">OVR</th>
+        <th class="num jh-scout" style="width:48px">Pot</th><th class="jh-scout" style="width:86px">Rating</th></tr>
+      {% for p in view.roster %}
+      <tr>
+        <td class="pl">
+          <a href="{{ url_for('jhsaa_player', school=view.school, pid=p.pid, u=u, g=view.gender) }}">{{ p.name }}</a>
+          {% for h in p.honors %}<span class="jh-chip {{ 'gold' if 'Player of the Year' in h }}" style="margin-left:4px">{{ 'POY' if 'Player of the Year' in h else 'A-S' if h == 'All-State' else 'A-D' }}</span>{% endfor %}
+          {# A family tie, if the owner has recorded one. `title` carries the
+             detail so the row itself stays one short chip wide. #}
+          {% if p.family %}<span class="jh-chip unit" style="margin-left:4px"
+            title="{{ p.family.label }}: {{ p.family.others | map(attribute='name') | join(', ') }}">{{ p.family.label }}</span>{% endif %}
+        </td>
+        <td>{{ p.grade }}th</td>
+        <td class="num">{{ p.singles }}</td>
+        <td class="num">{{ p.doubles }}</td>
+        <td class="num jh-scout">{{ p.ovr }}</td>
+        <td class="num jh-scout">{{ p.ceiling }}</td>
+        <td class="jh-scout">{{ stars(p.stars) }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% if not view.roster %}<p class="jh-empty">No roster this season.</p>{% endif %}
+</div>
+
+{% elif hq == 'season' %}
+<!-- ============ SEASON: the schedule, match by match ============ -->
+<div class="bl-panel jh-hqnarrow">
+  <div class="bl-panel-head">
+    <span class="bl-panel-title">{{ view.season_year }} Schedule</span></div>
+  {# Varsity and JV are two views of one season, so they are tabs. #}
+  {% if view.jv_schedule %}
+  {{ jh_tabs([('v', 'Varsity', view.schedule|length),
+              ('jv', 'JV ' ~ view.jv_record, view.jv_schedule|length)], 'jhsch') }}
+  {% endif %}
+  <div class="jh-pane tbl-scroll" data-pane="v">
+    {% if view.schedule %}
+    <table class="jh-sched">
+      <tr><th style="width:62px">Date</th><th style="width:26px"></th><th>Opponent</th>
+        <th style="width:34px">Res</th><th style="width:56px">Score</th><th style="width:92px">Type</th></tr>
+      {% set ns = namespace(seg='') %}
+      {% for d in view.schedule %}
+      {% if d.kind != ns.seg %}{% set ns.seg = d.kind %}
+      {# Keyed lookup, so a phase nobody labelled raises here rather than printing
+         a blank band over a block of duals. #}
+      <tr class="seg"><td colspan="6">{{ {'INVITE': 'Invitationals',
+            'SHOWCASE': 'Mid-season Match Showcases',
+            'DIST': view.district ~ ' — league play',
+            'AREA': view.group ~ ' Areas',
+            'SECTIONAL': view.group ~ ' Sectionals',
+            'WARD': view.group ~ ' Wards',
+            'REGIONAL': view.group ~ ' Regionals',
+            'ZONAL': view.group ~ ' Zonals',
+            'SUPER REGIONAL': view.group ~ ' Super Regionals',
+            'SEMI-STATE': view.group ~ ' Semi-State',
+            'DIVISIONAL': view.group ~ ' Divisionals',
+            'CONFERENCE': view.group ~ ' Conference',
+            'STATE SPECIAL': view.group ~ ' State Specials',
+            'STATE': view.group ~ ' State Tournament',
+            'TOC': 'Tournament of Champions'}[d.kind] }}</td></tr>
+      {% endif %}
+      {# The dual ROW is the toggle for its line scores. An always-visible
+         "line scores" row under every dual doubled the length of a 35-match
+         schedule and made it unscannable, which is the thing this page was
+         redesigned to stop being. #}
+      <tr class="{{ 'state' if d.kind in ('STATE', 'TOC') else 'road' if d.kind not in ('DIST', 'INVITE', 'SHOWCASE') }}{{ ' has-lines' if d.lines }}"
+          {% if d.lines %}data-lines="{{ loop.index }}" title="line scores"{% endif %}>
+        <td class="dt">{{ d.date }}</td>
+        <td class="ha">{{ 'vs' if d.home else 'at' }}</td>
+        <td class="op">
+          <span class="jh-schoolcell">{{ d.opp_deco.mark|safe }}
+            <a href="{{ url_for('jhsaa_school', school=d.opp, u=u, g=view.gender, year=view.scope.pin) }}">{{ d.opp }}</a>
+            {% if d.opp_seed %}<span class="jh-chip ghost">#{{ d.opp_seed }}</span>{% endif %}</span>
+        </td>
+        <td class="{{ 'W' if d.won else 'L' }}">{{ 'W' if d.won else 'L' }}</td>
+        <td class="sc">{{ d.pf|int }}–{{ d.pa|int }}</td>
+        {# Tag colours, because these are different things: the league season,
+           the INVITATIONALS a program arranges around it, the mid-season
+           SHOWCASES (a weekend event, and the only 1S/4D duals before the
+           postseason), the ROAD to State (Areas..Conference) and the State
+           event itself. A State/TOC dual names its bracket round beside the
+           tag and a showcase names its event. Everything that is not
+           DIST/INVITE/SHOWCASE/STATE/TOC is a road stage, so a new recovery
+           round is tagged by construction. #}
+        <td><span class="jh-tag {{ 'toc' if d.kind == 'TOC' else 'dist' if d.kind == 'DIST'
+                 else 'show' if d.kind == 'SHOWCASE'
+                 else 'state' if d.kind == 'STATE' else 'road' if d.kind != 'INVITE' }}">{{ d.kind }}</span>
+          {% if d.round %}<span class="jh-tag rd">{{ d.round }}</span>{% endif %}
+          {# The crosstown fixture (owner rule 2026-09) — the association's
+             codified rivalries are on the schedule every season, and which
+             invitational is the rivalry game is the one thing on this row a
+             reader cannot work out from the row. #}
+          {% if d.rival %}<span class="jh-tag rival">RIVALRY</span>{% endif %}
+          {# Match Center is an ICON, not a labelled pill (owner rule 2026-08):
+             a text chip on every schedule row shouted over the results. #}
+          {% if d.lines and d.id %}<a class="jh-chip ghost ico" title="Match Center"
+             aria-label="Match Center"
+             href="{{ url_for('jhsaa_dual', dual_id=d.id, u=u, g=view.gender) }}"><svg
+             viewBox="0 0 16 16" width="13" height="13" fill="none"
+             stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+             aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="2"/><line
+             x1="8" y1="2.5" x2="8" y2="13.5"/><line x1="3.8" y1="6" x2="6" y2="6"/><line
+             x1="3.8" y1="8.5" x2="6" y2="8.5"/><line x1="10" y1="6" x2="12.2" y2="6"/><line
+             x1="10" y1="8.5" x2="12.2" y2="8.5"/></svg></a>{% endif %}
+          {% if d.lines %}<span class="jh-caret" aria-hidden="true">›</span>{% endif %}</td>
+      </tr>
+      {% if d.lines %}
+      <tr class="jh-linerow" data-for="{{ loop.index }}" hidden><td colspan="6" style="padding:0">
+        <div class="jh-lines">
+          {% for ln in d.lines %}
+          {% set us = ln.home if d.home else ln.away %}{% set them = ln.away if d.home else ln.home %}
+          {% set we = ln.home_won if d.home else not ln.home_won %}
+          <div class="jh-line">
+            <span class="sl">{{ ln.slot }}</span>
+            <span class="nm {{ 'won' if we }}">{{ us|join(' / ') }}</span>
+            <span class="sl">{{ 'd.' if we else 'l.' }}</span>
+            <span class="nm {{ 'won' if not we }}">{{ them|join(' / ') }}</span>
+            <span class="st">{{ ln.score }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </td></tr>
+      {% endif %}
+      {% endfor %}
+    </table>
+    {% else %}
+    <p class="jh-empty">Season not played yet this world year.</p>
+    {% endif %}
+  </div>
+  {% if view.jv_schedule %}
+  <div class="jh-pane tbl-scroll" data-pane="jv" hidden>
+    <table class="jh-sched">
+      <tr><th style="width:62px">Date</th><th style="width:26px"></th><th>Opponent</th>
+        <th style="width:34px">Res</th><th style="width:56px">Score</th><th style="width:92px">Format</th></tr>
+      {% for d in view.jv_schedule %}
+      {# The JV box score expands exactly as the varsity one does. `data-lines`
+         must not collide with the varsity pane's indices — `jh-linerow` is matched
+         on it — so the JV rows are keyed on a prefixed value of their own. #}
+      <tr class="{{ 'dist' if d.district }}{{ ' has-lines' if d.lines }}"
+          {% if d.lines %}data-lines="jv{{ loop.index }}" title="line scores"{% endif %}>
+        <td class="dt">{{ d.date }}</td>
+        <td class="ha">{{ 'vs' if d.home else 'at' }}</td>
+        <td class="op">
+          <span class="jh-schoolcell">{{ d.opp_deco.mark|safe }}
+            <a href="{{ url_for('jhsaa_school', school=d.opp, u=u, g=view.gender, year=view.scope.pin) }}">{{ d.opp }}</a>
+            </span>
+        </td>
+        {# Three outcomes: a JV dual can be drawn. #}
+        <td class="{{ 'T' if d.tied else 'W' if d.won else 'L' }}">{{ 'T' if d.tied else 'W' if d.won else 'L' }}</td>
+        <td class="sc">{{ d.pf|int }}–{{ d.pa|int }}</td>
+        {# ‼️ THE CHAMPIONSHIP ROUNDS ARE NAMED, IN THE VARSITY VOCABULARY. Every
+           JV Team State dual is archived non-district, so the INVITE fallback
+           labelled the association's JV championship an invitational on every
+           program's card. The rounds are the association's existing ones and so
+           are the words for them (owner, 2026-09: "since the labels already
+           exist it's not different but labeling can be") — only the wording says
+           JV. The phase is what tells a regional championship from the State
+           draw, which is why the event archives two. #}
+        {% set jvk = 'JV DISTRICT' if d.district
+                     else 'WEEKEND' if d.phase.startswith('showcase')
+                     else 'JV STATE' if d.phase == 'jv_state'
+                     else 'JV REGIONALS' if d.phase == 'jv_region'
+                     else 'INVITE' %}
+        {# No Match Center link for JV — owner rule 2026-08: JV duals
+           aren't tracked as a series ("those matches don't even need a
+           match center"). The inline line-score expand below is the
+           JV box score and stays; only the new Match Center link is
+           varsity-only. #}
+        <td><span class="jh-tag {{ 'dist' if jvk == 'JV DISTRICT' else 'jvstate' if jvk == 'JV STATE' else 'jvroad' if jvk == 'JV REGIONALS' else 'show' if jvk == 'WEEKEND' }}">{{ jvk }}</span>
+          {# The bracket ROUND, on the varsity card's own second chip — a State
+             row otherwise tags five different rounds identically. Only State
+             duals carry one; a regional or league dual's round is what its own
+             tag already says. The elastic JV format is worth showing where the
+             shape really does vary (the league), and never in the championship,
+             whose shape is fixed at 3S/2D by the event. #}
+          {% if d.round %}<span class="jh-tag rd">{{ d.round }}</span>
+          {% elif d.shape %}<span class="jh-tag rd">{{ d.shape }}</span>{% endif %}
+          {% if d.lines %}<span class="jh-caret" aria-hidden="true">›</span>{% endif %}</td>
+      </tr>
+      {% if d.lines %}
+      <tr class="jh-linerow" data-for="jv{{ loop.index }}" hidden><td colspan="6" style="padding:0">
+        <div class="jh-lines">
+          {% for ln in d.lines %}
+          {% set us = ln.home if d.home else ln.away %}{% set them = ln.away if d.home else ln.home %}
+          {% set we = ln.home_won if d.home else not ln.home_won %}
+          <div class="jh-line">
+            <span class="sl">{{ ln.slot }}</span>
+            <span class="nm {{ 'won' if we }}">{{ us|join(' / ') }}</span>
+            <span class="sl">{{ 'd.' if we else 'l.' }}</span>
+            <span class="nm {{ 'won' if not we }}">{{ them|join(' / ') }}</span>
+            <span class="st">{{ ln.score }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </td></tr>
+      {% endif %}
+      {% endfor %}
+    </table>
+  </div>
+  {% endif %}
+  {# ‼️ ONE handler for BOTH panes, delegated from the panel. It used to bind to
+     `document.currentScript.previousElementSibling` — i.e. the varsity table alone —
+     so when the JV pane arrived its rows rendered the caret and the hidden line row
+     and simply had nothing listening. The markup looked right, which is exactly why
+     it read as "JV toggling is broken" rather than as a missing script. Resolving
+     the detail row within the clicked row's OWN table is what keeps the two panes
+     from matching each other's indices. #}
+  <script>
+  (function () {
+    var panel = document.currentScript.closest('.bl-panel') || document;
+    panel.addEventListener('click', function (e) {
+      if (e.target.closest('a')) return;                // a school link is still a link
+      var row = e.target.closest('tr[data-lines]');
+      if (!row) return;
+      var tbl = row.closest('table');
+      if (!tbl) return;
+      var det = tbl.querySelector('tr.jh-linerow[data-for="' + row.dataset.lines + '"]');
+      if (det) { det.hidden = !det.hidden; row.classList.toggle('open', !det.hidden); }
+    });
+  })();
+  </script>
+</div>
+{% if view.jv_schedule %}{{ jh_tabs_script('jhsch') }}{% endif %}
+
+{% elif hq == 'history' %}
+<!-- ============ HISTORY: the career, above the ledger it folds ============ -->
 {# Every number here is a fold over the season rows below, so the two panels read as
-   one object and must sit together. It was a narrow third-column card beside the
-   roster, which made an eight-metric grid three columns of nothing.
+   one object and must sit together.
 
    ‼️ SUBCOPY ONLY WHERE IT ADDS SOMETHING (owner rule 2026-08). The `.s` line used to
    restate the number above it — a zero over "none yet", a zero over "0 appearances" —
    which is noise dressed as detail. It now renders ONLY when it carries information
-   the big number does not: a last-title year, a finals/semis split, a denominator.
-   The all-time COURTS metric was dropped outright — no association, coach or paper
-   tracks a program's career individual-line record, and it was the widest thing here.
-
-   ‼️ These are Jinja comments, not HTML ones: an `<!-- -->` block ships to every
-   browser that loads the page. #}
-<div class="bl-panel" style="margin-top:14px">
+   the big number does not: a last-title year, a finals/semis split, a denominator. #}
+<div class="bl-panel">
   <div class="bl-panel-head"><span class="bl-panel-title">Program</span>
     <span class="bl-panel-meta">{{ t.seasons }} season{{ '' if t.seasons == 1 else 's' }}{% if t.classifications|length > 1 %} · {{ t.classifications|join(', ') }}{% endif %}</span></div>
   <div class="bl-panel-body" style="padding:12px">
@@ -349,17 +462,9 @@
          double-counted here. #}
       <div class="jh-metric"><span class="k">Road to State</span><span class="v">{{ t.road_titles }}</span>
         <span class="s">units won</span></div>
-      {# One title per FLIGHT — a doubles championship is one state champion, not two
-         (the row carries both players). #}
-      <div class="jh-metric"><span class="k">Individual state champs</span>
-        <span class="v">{{ view.history.individual_champions|length }}</span>
-        {% if view.history.individual_champions %}<span class="s">last {{ view.history.individual_champions[0].season_year }}</span>{% endif %}</div>
       {# ‼️ THE BEST SEASON IS THE FURTHEST RUN, NOT THE BEST RECORD (owner rule
-         2026-08) — so the FINISH is the number and the record is the subcopy. A
-         28-4 that lost in the Octofinals used to outrank a 22-7 that reached the
-         semifinal; the semifinal is the better season, and the record only breaks a
-         tie between two runs that got equally far (`world.jhsaa_season_depth`).
-         Worst season was dropped outright: nobody scans a program page for it. #}
+         2026-08) — so the FINISH is the number and the record is the subcopy
+         (`world.jhsaa_season_depth`). #}
       <div class="jh-metric"><span class="k">Best season</span>
         <span class="v sm">{{ (t.best.toc_finish or t.best.state_finish or '—') if t.best else '—' }}</span>
         {% if t.best %}<span class="s">{{ t.best.season_year }} · {{ t.best.record }}</span>{% endif %}</div>
@@ -370,22 +475,29 @@
   </div>
 </div>
 
-<!-- ============ Program history: the ledger, at full width ============ -->
-<div class="bl-panel" style="margin-top:14px">
+{# ‼️ SEASONS FIRST, DETAIL ON DEMAND (owner rule 2026-09, progressive disclosure):
+   a ledger row is the season's summary — record, place, seed, finish — and the
+   names and unit chips it used to spray across the row now live in an expandable
+   detail, the schedule's own has-lines idiom. A row with detail shows a caret;
+   the honours COLUMN says how much is behind it, never who. #}
+<div class="bl-panel" style="margin-top:18px">
   <div class="bl-panel-head">
-    <span class="bl-panel-title">Program History</span></div>
+    <span class="bl-panel-title">Season by season</span>
+    <span class="bl-panel-meta">a row expands to that season's trophies and honours — the year link opens the season itself</span></div>
   <div class="tbl-scroll">
     {% if view.history.seasons %}
-    <table class="jh-ledger nowrap">
+    <table class="jh-ledger nowrap" id="jhledger">
       <tr>
-        <th style="width:66px">Season</th><th style="width:46px">Class</th>
-        <th style="width:66px" title="The full season, postseason included">Record</th>
-        <th style="width:66px">District</th><th style="width:62px">Place</th>
-        <th style="width:48px">Seed</th><th style="width:150px">State finish</th>
-        <th style="width:48px" title="TOSS Power Index rank">TOSS</th><th>Honours</th>
+        <th style="width:80px">Season</th><th style="width:58px">Class</th>
+        <th style="width:80px" title="The full season, postseason included">Record</th>
+        <th style="width:80px">District</th><th style="width:70px">Place</th>
+        <th style="width:56px">Seed</th><th style="width:170px">State finish</th>
+        <th style="width:56px" title="TOSS Power Index rank">TOSS</th><th>Honours</th>
       </tr>
       {% for s in view.history.seasons %}
-      <tr class="{{ 'title' if s.champion }}">
+      {% set n_honors = ((s.honor_lines or [])|length) + ((s.unit_wins or [])|length) + ((s.team_honors or [])|length) %}
+      <tr class="{{ 'title' if s.champion }}{{ ' has-lines' if n_honors }}"
+          {% if n_honors %}data-lines="{{ loop.index }}" title="this season's honours"{% endif %}>
         <td class="yr"><a href="{{ url_for('jhsaa_school', school=view.school, year=s.year, u=u, g=view.gender) }}">{{ s.season_year }}</a></td>
         {# ‼️ SHORT FORM — this column is a fixed 46px in a `nowrap` ledger, sized for
            the ladder's 9A..1A (<=2 chars); "Group 1" ran past it and clipped to
@@ -399,33 +511,77 @@
           {% elif s.state_finish %}{{ s.state_finish }}{% else %}<span style="color:var(--text-faint)">—</span>{% endif %}
           {% if s.made_toc %}<span class="jh-chip {{ 'gold' if s.toc_champion }}">{{ s.toc_finish|upper }}</span>{% endif %}</td>
         <td>{{ s.state_rank or '—' }}</td>
-        <td style="font-variant-numeric:normal;font-size:12.5px;color:var(--text-secondary)">
-          {% for r in s.poy %}<span class="jh-chip gold">POY</span> {{ jh_award_names(r, u, view.gender) }}{% if not loop.last or s.all_state %} · {% endif %}{% endfor %}
-          {% for r in s.all_state %}All-State {{ jh_award_names(r, u, view.gender) }}{% if not loop.last %} · {% endif %}{% endfor %}
-          {% if not s.poy and not s.all_state and s.all_district %}{{ s.all_district|length }} all-district{% endif %}
+        <td style="font-variant-numeric:normal;color:var(--text-secondary)">
+          {% if n_honors %}{{ n_honors }} honour{{ '' if n_honors == 1 else 's' }} <span class="jh-caret" aria-hidden="true">›</span>
+          {% else %}<span style="color:var(--text-faint)">—</span>{% endif %}
         </td>
       </tr>
+      {% if n_honors %}
+      <tr class="jh-linerow" data-for="{{ loop.index }}" hidden><td colspan="9" style="padding:0">
+        <div class="jh-lines">
+          {% if s.unit_wins %}
+          <div class="jh-honor" style="border-bottom:0;padding-left:0"><span class="y"></span>
+            <span>{% for w in s.unit_wins %}<span class="jh-chip unit">{{ w }}</span>{% if not loop.last %} {% endif %}{% endfor %}</span></div>
+          {% endif %}
+          {% for h in (s.team_honors or []) %}
+          <div class="jh-honor" style="border-bottom:0;padding-left:0"><span class="y"></span><span>{{ h }}</span></div>
+          {% endfor %}
+          {# ‼️ POY AND ALL-STATE RENDER FROM THE STRUCTURED AWARD ROWS, exactly as
+             the old ledger cell did — `jh_award_names` carries the archived grade
+             per athlete and the player link ("a player's grade appears in every
+             list a player appears in"). `honor_lines` flattens both away, so it
+             renders only the honours that have NO structured row on the season
+             (district POY, All-Region, All-District), filtered by the labels
+             `_season_row` writes for the two structured kinds. #}
+          {% for r in (s.poy or []) %}
+          <div class="jh-honor" style="border-bottom:0;padding-left:0"><span class="y"></span>
+            <span><span class="jh-chip gold">POY</span> {{ jh_award_names(r, u, view.gender) }}</span></div>
+          {% endfor %}
+          {% for r in (s.all_state or []) %}
+          <div class="jh-honor" style="border-bottom:0;padding-left:0"><span class="y"></span>
+            <span>All-State {{ jh_award_names(r, u, view.gender) }}</span></div>
+          {% endfor %}
+          {% for line in (s.honor_lines or []) %}
+          {% if not (line.label.startswith('All-State') or line.label == s.group ~ ' Player of the Year') %}
+          <div class="jh-honor" style="border-bottom:0;padding-left:0"><span class="y"></span>
+            <span>{% if line.label %}{{ line.label }} — {% endif %}{% for n in line.names %}<strong>{{ n }}</strong>{% if not loop.last %} · {% endif %}{% endfor %}</span></div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </td></tr>
+      {% endif %}
       {% endfor %}
     </table>
+    <script>
+    (function () {
+      var tbl = document.getElementById('jhledger');
+      tbl.addEventListener('click', function (e) {
+        if (e.target.closest('a')) return;
+        var row = e.target.closest('tr[data-lines]');
+        if (!row) return;
+        var det = tbl.querySelector('tr.jh-linerow[data-for="' + row.dataset.lines + '"]');
+        if (det) { det.hidden = !det.hidden; row.classList.toggle('open', !det.hidden); }
+      });
+    })();
+    </script>
     {% else %}
     <p class="jh-empty">No archived seasons yet — the JHSAA rung writes one each world year.</p>
     {% endif %}
   </div>
 </div>
 
-<!-- Honours annotate the history; they do not replace it, so they sit under it. -->
+{% elif hq == 'honors' %}
+<!-- ============ HONORS: team trophies and player awards ============ -->
 {# `honoured`, not `honors`: a team title is drawn as a banner below and carries no
    entry in the individual-awards list, so filtering on that list alone hid the very
-   seasons this panel exists for. #}
+   seasons this panel exists for.
+
+   ‼️ TWO KINDS OF HONOUR, TWO TABS (owner rule 2026-08). Trophies the PROGRAM won and
+   awards its PLAYERS won answer different questions — "how good has this team been"
+   and "who are its legends" — and must never interleave into one list.
+   ‼️ THE FIRST TAB IS THE ACTIVE ONE, so it must not be the empty one: most
+   programs never win anything team-level, so the panes are ORDERED by content. #}
 {% set honor_years = view.history.seasons | selectattr('honoured') | list %}
-{% set indiv_champs = view.history.individual_champions %}
-{% if honor_years or indiv_champs %}
-{# ‼️ TWO KINDS OF HONOUR, TWO TABS (owner rule 2026-08). Trophies the PROGRAM won and
-   awards its PLAYERS won were one interleaved list, so a decorated program's page ran
-   to hundreds of rows and the two questions it answers — "how good has this team been"
-   and "who are its legends" — could only be read by scrolling past each other. The list
-   grows by ~10 rows a season, so this gets worse every world year, not better.
-   Same `jh_tabs` macro the district page uses; parallel views of one set are tabs. #}
 {% set ns = namespace(team=0, players=0) %}
 {% for s in honor_years %}
   {% if s.champion %}{% set ns.team = ns.team + 1 %}{% endif %}
@@ -435,41 +591,12 @@
   {% set ns.team = ns.team + (s.team_honors|length) %}
   {% set ns.players = ns.players + s.honors|length %}
 {% endfor %}
-{# A third view of the same "who's this program's history" question — every
-   individual-flight state title a player of theirs has won, over EVERY archived
-   season, not just the ones that also carry a team honour (owner rule 2026-08:
-   "append it to the team history page in its own tab"). `indiv_champs` is set
-   above the `honor_years` gate for exactly this: a program can have a state
-   singles/doubles champion in a season with no All-State pick and no State
-   trip, and hiding this tab behind `honor_years` would bury exactly the
-   seasons it exists to surface. #}
-{# ‼️ THE FIRST TAB IS THE ACTIVE ONE, so it must not be the empty one. `jh_tabs`
-   always activates the first pane, and a program with All-District players but no
-   title, State trip or unit win has honours while `ns.team` is zero — that page
-   opened on "No team trophies yet" with every real honour hidden behind a tab.
-   Common, not an edge case: most programs never win anything team-level. So the
-   panes are ORDERED by which has content rather than fixed. #}
-{% set team_first = ns.team > 0 %}
-{% set players_first = not team_first and ns.players > 0 %}
-<div class="bl-panel" style="margin-top:14px">
-  {% set team_tab = ('team', 'Team trophies', ns.team) %}
-  {% set player_tab = ('players', 'Player honours', ns.players) %}
-  {% set indiv_tab = ('indiv', 'Individual State Champions', indiv_champs|length) %}
-  {# The program's all-time top ten by career wins (owner, 2026-08) — singles
-     and doubles combined by explicit rule. It sits LAST unless it is the only
-     tab with content: a played program with no honours at all still has wins,
-     and the first tab is the active one, so it must not be the empty one. #}
-  {% set career_tab = ('careerwins', 'Most Program Wins', view.career_wins|length) %}
-  {% if team_first %}
-    {% set tabs = [team_tab, player_tab, indiv_tab, career_tab] %}
-  {% elif players_first %}
-    {% set tabs = [player_tab, team_tab, indiv_tab, career_tab] %}
-  {% elif indiv_champs %}
-    {% set tabs = [indiv_tab, team_tab, player_tab, career_tab] %}
-  {% else %}
-    {% set tabs = [career_tab, team_tab, player_tab, indiv_tab] %}
-  {% endif %}
-  {% set active = tabs[0][0] %}
+{% if ns.team or ns.players %}
+{% set team_tab = ('team', 'Team trophies', ns.team) %}
+{% set player_tab = ('players', 'Player honours', ns.players) %}
+{% set tabs = [team_tab, player_tab] if ns.team else [player_tab, team_tab] %}
+{% set active = tabs[0][0] %}
+<div class="bl-panel jh-hqnarrow">
   {{ jh_tabs(tabs, 'jhhon') }}
 
   <div class="jh-pane" data-pane="team"{{ '' if active == 'team' else ' hidden' }}>
@@ -527,15 +654,22 @@
     <p class="jh-empty">No player honours yet.</p>
     {% endif %}
   </div>
+</div>
+{{ jh_tabs_script('jhhon') }}
+{% else %}
+<div class="bl-panel"><p class="jh-empty">No trophies or honours yet.</p></div>
+{% endif %}
 
+{% elif hq == 'records' %}
+<!-- ============ CHAMPIONS & RECORDS: the program's legends ============ -->
+<div class="jh-cols2">
   {# One row per title, newest first — name (class year), the flight, and the
-     season. A doubles title names both partners; `jh_award_names`-style "and"
-     joins were built for award ROWS (which carry a `partner` field), not this
-     shape, so it's joined here directly. No match log, no microcopy — the same
-     restraint the player page's own section keeps. #}
-  <div class="jh-pane" data-pane="indiv"{{ '' if active == 'indiv' else ' hidden' }}>
-    {% if indiv_champs %}
-    {% for r in indiv_champs %}
+     season. A doubles title names both partners. No match log, no microcopy —
+     the same restraint the player page's own section keeps. #}
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Individual State Champions</span></div>
+    {% if view.history.individual_champions %}
+    {% for r in view.history.individual_champions %}
     <div class="jh-honor"><span class="y">{{ r.season_year }}</span>
       <span>{% for p in r.players %}{{ p.name }}{% if p.class_year %} ({{ p.class_year }}){% endif %}{% if not loop.last %} &amp; {% endif %}{% endfor %}
         <span class="jh-chip gold" style="margin-left:6px">{{ r.flight_name }}</span></span></div>
@@ -549,14 +683,13 @@
      shirt, singles and doubles combined (owner rule: no need to differentiate).
      A transfer shows the wins they earned HERE; their other school's are on its
      own page. #}
-  <div class="jh-pane" data-pane="careerwins"{{ '' if active == 'careerwins' else ' hidden' }}>
+  <div class="bl-panel">
+    <div class="bl-panel-head"><span class="bl-panel-title">Most Program Wins</span></div>
     {% if view.career_wins %}
     {% for r in view.career_wins %}
     {# Name bolded so it reads as the row's subject; the years are a TAG (the
        "when", secondary) and the record is bold TEXT (the "how good", the
-       actual stat) — the record used to be the chip and the years plain,
-       which buried the number that matters behind a border and left the
-       name no more visible than either. #}
+       actual stat). #}
     <div class="jh-honor"><span class="y">{{ loop.index }}</span>
       <span><strong>{% if r.pid %}<a href="{{ url_for('jhsaa_player', school=view.school, pid=r.pid, u=u, g=view.gender) }}">{{ r.name }}</a>{% else %}{{ r.name }}{% endif %}</strong>
         <span class="jh-chip ghost" style="margin-left:6px">{{ r.span }}</span>
@@ -567,9 +700,6 @@
     {% endif %}
   </div>
 </div>
-{{ jh_tabs_script('jhhon') }}
-{# The schedule's Varsity/JV switcher. Its own id — two tab bars on one page. #}
-{{ jh_tabs_script('jhsch') }}
 {% endif %}
 </div>
 {% endblock %}

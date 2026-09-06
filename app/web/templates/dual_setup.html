@@ -12,7 +12,7 @@
         <option value="women"{% if gender == 'women' %} selected{% endif %}>Women</option>
       </select></span></label>
   </form>
-  <span style="font-size:14.5px;color:var(--text-muted)">Simulate › exhibition dual · cross-division benchmark</span>
+  <span style="font-size:16px;color:var(--text-muted)">Simulate › exhibition dual · cross-division benchmark</span>
 </div></div>
 
 <form class="bl-setup" method="get" action="{{ url_for('dual_run') }}">
@@ -50,8 +50,8 @@
           </div>
         </div>
         {% if row %}<div style="text-align:right">
-          <div class="bl-th" style="font-size:11.5px">POWER</div>
-          <span class="bl-stat power" style="font-size:17px">{{ row.fmt(row.pi) }}</span>
+          <div class="bl-th" style="font-size:13px">POWER</div>
+          <span class="bl-stat power" style="font-size:19px">{{ row.fmt(row.pi) }}</span>
         </div>{% endif %}
       </div>
     </div>

@@ -18,7 +18,7 @@
       <option value="active"{% if status != 'all' %} selected{% endif %}>Currently out</option>
       <option value="all"{% if status == 'all' %} selected{% endif %}>All (season)</option>
     </select></span></label>
-  <span style="font-size:14.5px;color:var(--text-muted)">{{ uni_label }} · {{ rows|length }} {{ 'currently out' if status != 'all' else ('injury' if rows|length == 1 else 'injuries') }}</span>
+  <span style="font-size:16px;color:var(--text-muted)">{{ uni_label }} · {{ rows|length }} {{ 'currently out' if status != 'all' else ('injury' if rows|length == 1 else 'injuries') }}</span>
 </div></div>
 </form>
 

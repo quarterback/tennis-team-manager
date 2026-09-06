@@ -7,7 +7,7 @@
 <form method="get">
 <input type="hidden" name="u" value="{{ u }}">
 <div class="bl-toolbar"><div class="bl-toolbar-inner" style="flex-wrap:wrap">
-  <span style="font-size:14.5px;color:var(--text-muted)">Analytics Bureau › Portal Search</span>
+  <span style="font-size:16px;color:var(--text-muted)">Analytics Bureau › Portal Search</span>
   <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Gender</span>
     <span class="bl-select-wrap"><select class="bl-select" name="gender" onchange="this.form.submit()" style="min-width:82px">
       {% for gv, gl in genders %}<option value="{{ gv }}"{% if gv == gender %} selected{% endif %}>{{ gl }}</option>{% endfor %}

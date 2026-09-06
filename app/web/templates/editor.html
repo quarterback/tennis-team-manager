@@ -17,7 +17,7 @@
     <span class="bl-select-wrap"><select class="bl-select" name="school" onchange="this.form.submit()" style="min-width:200px">
       {% for s in schools %}<option{% if s == school %} selected{% endif %}>{{ s }}</option>{% endfor %}
     </select></span></label>
-  <span style="font-size:14.5px;color:var(--text-muted)">Editor › move players across programs &amp; set lineups for testing</span>
+  <span style="font-size:16px;color:var(--text-muted)">Editor › move players across programs &amp; set lineups for testing</span>
 </div></div>
 </form>
 
@@ -51,7 +51,7 @@
         </div>
       </div>
       <div style="display:flex;gap:8px;padding:0 16px 14px">
-        <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">Save scholarships</button>
+        <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:16px">Save scholarships</button>
         <button class="bl-pill" formaction="{{ url_for('editor_scholarship_reset') }}" style="cursor:pointer">Reset to defaults</button>
       </div>
     </form>
@@ -69,7 +69,7 @@
         <input type="hidden" name="conf" value="{{ conf }}">
         <label class="bl-schol-f" style="max-width:150px">Prestige (0–100){% if prestige.overridden %} · <b style="color:var(--brand-strong)">edited</b>{% endif %}
           <input class="bl-input" type="number" name="prestige" value="{{ prestige.value }}" min="0" max="100" step="1"></label>
-        <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">Save</button>
+        <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:16px">Save</button>
         {% if prestige.overridden %}
         <button class="bl-pill" formaction="{{ url_for('editor_prestige_clear') }}" style="cursor:pointer">Reset</button>
         {% endif %}
@@ -81,13 +81,13 @@
         <input type="hidden" name="conf" value="{{ conf }}">
         <label class="bl-schol-f" style="max-width:150px">Academics (0–100){% if academics.overridden %} · <b style="color:var(--brand-strong)">edited</b>{% endif %}
           <input class="bl-input" type="number" name="academics" value="{{ academics.value }}" min="0" max="100" step="1"></label>
-        <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">Save</button>
+        <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:16px">Save</button>
         {% if academics.overridden %}
         <button class="bl-pill" formaction="{{ url_for('editor_academics_clear') }}" style="cursor:pointer">Reset</button>
         {% endif %}
       </form>
     </div>
-    <div style="padding:0 16px 12px;font-size:13.5px;color:var(--text-muted)">
+    <div style="padding:0 16px 12px;font-size:15px;color:var(--text-muted)">
       Bump a program above its conference default so it stands out and recruits accordingly. Edits feed recruiting appeal, not match results.</div>
   </div>
 </div>
@@ -100,7 +100,7 @@
     <div class="bl-panel-body" style="display:flex;flex-direction:column;gap:8px">
       {% for s in staff %}
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid var(--border-subtle)">
-        <span style="min-width:150px;font-size:14.5px"><span style="color:var(--text-muted)">{{ s.title }}</span><br>
+        <span style="min-width:150px;font-size:16px"><span style="color:var(--text-muted)">{{ s.title }}</span><br>
           {% if s.vacant %}<span style="color:var(--text-faint);font-style:italic">Vacant</span>
           {% else %}<a href="{{ url_for('coach', coach_id=s.coach_id, u=u) }}" style="font-weight:600;text-decoration:none">{{ s.name }}</a>{% endif %}</span>
         {% if not s.vacant %}
@@ -183,7 +183,7 @@
         <input type="hidden" name="conf" value="{{ conf }}">
         <label class="bl-schol-f" style="max-width:150px">Prestige (0–100){% if conf_ratings.prestige_overridden %} · <b style="color:var(--brand-strong)">edited</b>{% endif %}
           <input class="bl-input" type="number" name="conf_prestige" value="{{ conf_ratings.prestige }}" min="0" max="100" step="1"></label>
-        <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">Save</button>
+        <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:16px">Save</button>
         {% if conf_ratings.prestige_overridden %}
         <button class="bl-pill" formaction="{{ url_for('editor_conf_prestige_clear') }}" style="cursor:pointer">Reset</button>
         {% endif %}
@@ -195,7 +195,7 @@
         <input type="hidden" name="conf" value="{{ conf }}">
         <label class="bl-schol-f" style="max-width:150px">Academics (0–100){% if conf_ratings.academics_overridden %} · <b style="color:var(--brand-strong)">edited</b>{% endif %}
           <input class="bl-input" type="number" name="conf_academics" value="{{ conf_ratings.academics }}" min="0" max="100" step="1"></label>
-        <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">Save</button>
+        <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:16px">Save</button>
         {% if conf_ratings.academics_overridden %}
         <button class="bl-pill" formaction="{{ url_for('editor_conf_academics_clear') }}" style="cursor:pointer">Reset</button>
         {% endif %}
@@ -208,10 +208,10 @@
 <style>
 .bl-schol-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; padding: 14px 16px; }
 .bl-schol-cell { border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px 12px; }
-.bl-schol-f { display: flex; flex-direction: column; gap: 3px; font-size: 13.5px; color: var(--text-secondary); margin-top: 8px; }
+.bl-schol-f { display: flex; flex-direction: column; gap: 3px; font-size: 15px; color: var(--text-secondary); margin-top: 8px; }
 .bl-schol-f .bl-input { width: 100%; }
-.bl-schol-val { font-size: 13.5px; color: var(--text-muted); margin-top: 8px; }
-.bl-schol-val b { color: var(--brand-strong); font-size: 15.5px; }
+.bl-schol-val { font-size: 15px; color: var(--text-muted); margin-top: 8px; }
+.bl-schol-val b { color: var(--brand-strong); font-size: 18px; }
 </style>
 
 <div class="bl-board-grid" style="align-items:start">
@@ -253,7 +253,7 @@
           <span>{% if r.walk_on %}<span class="bl-badge tier-D3">Walk-on</span>{% else %}<span class="bl-badge tier-IVY">Schol.</span>{% endif %}</span>
           <span>
             <select class="bl-select mv-dest" form="massmove" name="dest_{{ r.pid }}"
-                    data-home="{{ school }}" style="min-width:130px;font-size:13.5px">
+                    data-home="{{ school }}" style="min-width:130px;font-size:15px">
               {% for label, slist in groups %}<optgroup label="{{ label }}">
                 {% for s in slist %}<option{% if s == school %} selected{% endif %}>{{ s }}</option>{% endfor %}
               </optgroup>{% endfor %}
@@ -267,7 +267,7 @@
           style="display:flex;gap:10px;align-items:center;margin-top:10px">
       <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="school" value="{{ school }}">
       <button class="bl-pill" type="submit" id="massmove-btn" disabled>Apply moves</button>
-      <span style="font-size:13.5px;color:var(--text-muted)" id="massmove-note">Pick new programs in the
+      <span style="font-size:15px;color:var(--text-muted)" id="massmove-note">Pick new programs in the
         MOVE column, then apply them all at once — one rebuild for the whole batch instead of one per player.</span>
     </form>
     <script>
@@ -305,7 +305,7 @@
         <div style="display:flex;align-items:center;gap:8px">
           <span class="bl-rank" style="width:28px">D{{ i + 1 }}</span>
           {% for si in (1, 2) %}
-          <select class="bl-select" name="d{{ i + 1 }}{{ 'a' if si == 1 else 'b' }}" style="flex:1;min-width:0;font-size:13.5px">
+          <select class="bl-select" name="d{{ i + 1 }}{{ 'a' if si == 1 else 'b' }}" style="flex:1;min-width:0;font-size:15px">
             {% for r in rows %}<option value="{{ r.pid }}"{% if r.pid == dpin[base + si - 1] %} selected{% endif %}>{{ r.name }}{% if r.line %} · S{{ r.line }}{% endif %}</option>{% endfor %}
           </select>
           {% if si == 1 %}<span style="color:var(--text-faint)">&amp;</span>{% endif %}
@@ -315,8 +315,8 @@
         <div style="display:flex;gap:8px;align-items:center">
           <button class="bl-pill" type="submit" style="background:var(--brand);color:#fff">Save doubles</button>
           {% if doubles_pin|length == dslots %}
-          <span style="font-size:13.5px;color:var(--stat-good,var(--brand))">✓ Pinned</span>
-          {% else %}<span style="font-size:13.5px;color:var(--text-muted)">Auto (best pairing of the top {{ dslots }})</span>{% endif %}
+          <span style="font-size:15px;color:var(--stat-good,var(--brand))">✓ Pinned</span>
+          {% else %}<span style="font-size:15px;color:var(--text-muted)">Auto (best pairing of the top {{ dslots }})</span>{% endif %}
         </div>
       </form>
     </div>
@@ -327,12 +327,12 @@
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">Active overrides</span></div>
       <div class="bl-panel-body" style="display:flex;flex-direction:column;gap:10px">
-        {% if not ov.any %}<div style="color:var(--text-faint);font-size:14.5px">No edits yet — rosters are at their deterministic defaults.</div>{% endif %}
+        {% if not ov.any %}<div style="color:var(--text-faint);font-size:16px">No edits yet — rosters are at their deterministic defaults.</div>{% endif %}
         {% for m in ov.moves %}
         <div class="bl-clinchrow" style="align-items:center">
           <span class="bl-clinch-name" style="flex-direction:column;align-items:flex-start;gap:0">
-            <span>{{ m.name }} <span class="bl-stat power" style="font-size:13.5px">{{ m.str }}</span></span>
-            <span style="font-size:12.5px;color:var(--text-muted)">→ {{ m.dest }}</span></span>
+            <span>{{ m.name }} <span class="bl-stat power" style="font-size:15px">{{ m.str }}</span></span>
+            <span style="font-size:14px;color:var(--text-muted)">→ {{ m.dest }}</span></span>
           <form method="post" action="{{ url_for('editor_clear_move') }}">
             <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="school" value="{{ school }}">
             <input type="hidden" name="pid" value="{{ m.pid }}">
@@ -341,7 +341,7 @@
         {% endfor %}
         {% for ln in ov.lineups %}
         <div class="bl-clinchrow" style="align-items:center">
-          <span class="bl-clinch-name" style="font-size:13.5px">Lineup pinned · {{ ln.school }} ({{ ln.n }})</span>
+          <span class="bl-clinch-name" style="font-size:15px">Lineup pinned · {{ ln.school }} ({{ ln.n }})</span>
           <form method="post" action="{{ url_for('editor_clear_lineup') }}">
             <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="school" value="{{ ln.school }}">
             <button class="bl-pill" type="submit">Undo</button></form>
@@ -349,7 +349,7 @@
         {% endfor %}
         {% for db in ov.doubles %}
         <div class="bl-clinchrow" style="align-items:center">
-          <span class="bl-clinch-name" style="font-size:13.5px">Doubles pinned · {{ db.school }} ({{ db.n }} pairs)</span>
+          <span class="bl-clinch-name" style="font-size:15px">Doubles pinned · {{ db.school }} ({{ db.n }} pairs)</span>
           <form method="post" action="{{ url_for('editor_clear_doubles') }}">
             <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="school" value="{{ db.school }}">
             <button class="bl-pill" type="submit">Undo</button></form>
@@ -357,7 +357,7 @@
         {% endfor %}
         {% for pr in ov.prestige %}
         <div class="bl-clinchrow" style="align-items:center">
-          <span class="bl-clinch-name" style="font-size:13.5px">Prestige · {{ pr.school }} → <b class="bl-stat power">{{ pr.value }}</b></span>
+          <span class="bl-clinch-name" style="font-size:15px">Prestige · {{ pr.school }} → <b class="bl-stat power">{{ pr.value }}</b></span>
           <form method="post" action="{{ url_for('editor_prestige_clear') }}">
             <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="school" value="{{ pr.school }}">
             <button class="bl-pill" type="submit">Undo</button></form>

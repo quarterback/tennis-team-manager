@@ -7,7 +7,7 @@
 <form method="get">
 <input type="hidden" name="u" value="{{ u }}">
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:14.5px;color:var(--text-muted)">Analytics Bureau › Underplaced Talent</span>
+  <span style="font-size:16px;color:var(--text-muted)">Analytics Bureau › Underplaced Talent</span>
   <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Sort</span>
     <span class="bl-select-wrap"><select class="bl-select" name="sort" onchange="this.form.submit()" style="min-width:150px">
       <option value="gap"{% if sort == 'gap' %} selected{% endif %}>Most underplaced</option>
@@ -36,7 +36,7 @@
 
 <div class="bl-container" style="padding-top:0">
   <form method="post" action="{{ url_for('intel_underplaced_fit_band') }}"
-        style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13.5px;color:var(--text-muted)"
+        style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:15px;color:var(--text-muted)"
         title="How wide a calibre band (OVR grade points) a talent is matched to programs for in the FITS column">
     <input type="hidden" name="sort" value="{{ sort }}"><input type="hidden" name="div" value="{{ div_f }}">
     <input type="hidden" name="class" value="{{ cls_f }}"><input type="hidden" name="q" value="{{ q }}">
