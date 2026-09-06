@@ -22,7 +22,7 @@
 {% endmacro %}
 
 <form method="get"><div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:14.5px;color:var(--text-muted)">Awards › Past winners</span>
+  <span style="font-size:16px;color:var(--text-muted)">Awards › Past winners</span>
   <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Division</span>
     <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
       {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
@@ -143,23 +143,23 @@
 .aw-top { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 @media (max-width: 760px) { .aw-top { grid-template-columns: 1fr; } }
 .aw-poty-nat, .aw-natchamp { display: flex; align-items: center; gap: 12px; padding: 4px 0 12px; }
-.aw-poty-label { font-size: 11.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--brand-strong); }
-.aw-poty-name { font-size: 19px; font-weight: 800; display: block; }
+.aw-poty-label { font-size: 13px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--brand-strong); }
+.aw-poty-name { font-size: 21px; font-weight: 800; display: block; }
 .aw-cpoty-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 2px 14px; border-top: 1px solid var(--border-subtle); padding-top: 8px; }
-.aw-confchamp-head { font-size: 12.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin: 10px 0 6px; }
+.aw-confchamp-head { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin: 10px 0 6px; }
 .aw-aa-grid, .aw-conf-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
-.aw-team-head { font-size: 12.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--brand-strong); padding: 0 0 8px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 6px; }
+.aw-team-head { font-size: 14px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--brand-strong); padding: 0 0 8px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 6px; }
 .aw-row { display: grid; grid-template-columns: 22px minmax(80px,1fr) auto; align-items: center; gap: 10px; padding: 6px 2px; }
 .aw-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.aw-school { font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
-.aw-empty { color: var(--text-muted); font-size: 15.5px; padding: 6px 2px; }
+.aw-school { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+.aw-empty { color: var(--text-muted); font-size: 18px; padding: 6px 2px; }
 .aw-confgroup { border-top: 1px solid var(--border-subtle); }
 .aw-confgroup summary { display: flex; align-items: center; gap: 12px; padding: 10px 2px; cursor: pointer; font-weight: 700; list-style: none; }
 .aw-confgroup summary::-webkit-details-marker { display: none; }
-.aw-confgroup summary::before { content: "▸"; color: var(--text-muted); font-size: 12.5px; }
+.aw-confgroup summary::before { content: "▸"; color: var(--text-muted); font-size: 14px; }
 .aw-confgroup[open] summary::before { content: "▾"; }
 .aw-confgroup summary .bl-conf { margin-left: auto; }
-.aw-confname { font-size: 15.5px; }
+.aw-confname { font-size: 18px; }
 .aw-confgroup .aw-conf-grid { padding: 0 0 12px 18px; }
 </style>
 {% endblock %}

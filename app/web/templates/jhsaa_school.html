@@ -399,7 +399,7 @@
           {% elif s.state_finish %}{{ s.state_finish }}{% else %}<span style="color:var(--text-faint)">—</span>{% endif %}
           {% if s.made_toc %}<span class="jh-chip {{ 'gold' if s.toc_champion }}">{{ s.toc_finish|upper }}</span>{% endif %}</td>
         <td>{{ s.state_rank or '—' }}</td>
-        <td style="font-variant-numeric:normal;font-size:12.5px;color:var(--text-secondary)">
+        <td style="font-variant-numeric:normal;font-size:14px;color:var(--text-secondary)">
           {% for r in s.poy %}<span class="jh-chip gold">POY</span> {{ jh_award_names(r, u, view.gender) }}{% if not loop.last or s.all_state %} · {% endif %}{% endfor %}
           {% for r in s.all_state %}All-State {{ jh_award_names(r, u, view.gender) }}{% if not loop.last %} · {% endif %}{% endfor %}
           {% if not s.poy and not s.all_state and s.all_district %}{{ s.all_district|length }} all-district{% endif %}

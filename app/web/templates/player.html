@@ -30,10 +30,10 @@
 {% set abbr, color = crest(info.school) %}
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
   {% if info.free_agent %}
-  <span style="font-size:14.5px;color:var(--text-muted)">Portal › Pros pool › Free agent</span>
+  <span style="font-size:16px;color:var(--text-muted)">Portal › Pros pool › Free agent</span>
   <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('preseason_portal') }}">← Pro free agents</a>
   {% else %}
-  <span style="font-size:14.5px;color:var(--text-muted)">Teams › {{ info.school }} › Player</span>
+  <span style="font-size:16px;color:var(--text-muted)">Teams › {{ info.school }} › Player</span>
   <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('teams', school=info.school, u=u) }}">← {{ info.school }} roster</a>
   {% endif %}
 </div></div>
@@ -44,16 +44,16 @@
     <div><div class="tname">
         <span class="player-flag" title="{{ info.country|country_name }}">{{ info.country|flags(info.secondary_country) }}</span>
         {{ info.name }}{% if info.is_pro %} <span class="pro-badge" title="Ex-pro — entered via the portal">PRO</span>{% endif %}
-        <span style="font-size:14.5px;color:var(--text-muted)">{{ info.country|country_abbrev }}{% if info.secondary_country %} / {{ info.secondary_country|country_abbrev }}{% endif %}</span></div>
+        <span style="font-size:16px;color:var(--text-muted)">{{ info.country|country_abbrev }}{% if info.secondary_country %} / {{ info.secondary_country|country_abbrev }}{% endif %}</span></div>
       <div class="tsub">{{ info.class }} · {{ info.school }} · {{ uni_label }}{% if info.walk_on %} · walk-on{% endif %}{% if info.hometown %} · Born {{ info.hometown }}{% endif %}</div>
       {% if honor_years and honor_years[0].awards %}<div class="pl-honors">{% for h in honor_years[0].awards %}<span class="pl-honor{{ ' aa' if 'national' in h.award or 'champion' in h.award or 'poty' in h.award }}"><i class="fa-solid fa-medal" aria-hidden="true"></i> {{ h.label }}</span>{% endfor %}</div>{% endif %}</div>
     <div style="display:flex;gap:20px;text-align:right">
       <div title="OVERALL — static talent rating (20–80); ceiling is the projected peak">
-        <div class="bl-th" style="font-size:11.5px">OVR</div>
+        <div class="bl-th" style="font-size:13px">OVR</div>
         <span class="bl-stat" style="font-size:24px;color:var(--text-primary)">{{ info.overall }}</span>
         <div class="tsub">talent · ceiling {{ info.ceiling }}</div></div>
       <div title="STR — live results-based rating, earned from this season's matches">
-        <div class="bl-th" style="font-size:11.5px">STR</div>
+        <div class="bl-th" style="font-size:13px">STR</div>
         <span class="bl-stat power" style="font-size:24px">{% if strv %}{{ "%.1f"|format(strv) }}{% else %}—{% endif %}</span>
         <div class="tsub">{% if strv %}reliability {{ "%.2f"|format(rel) }}{% else %}no matches yet{% endif %}</div></div>
     </div>
@@ -77,7 +77,7 @@
                 {%- elif s.transferred %} <span class="pl-live" style="background:#c0392b">transfer</span>{% endif %}</span>
               <a class="bl-school" href="{{ url_for('teams', school=s.school, u=s.division ~ '-' ~ gender) }}">
                 <span class="bl-crest xs" style="background:{{ s.color }}">{{ s.abbr }}</span>{{ s.school }}
-                <span class="bl-conf" style="font-size:12.5px">{{ s.division }}</span></a>
+                <span class="bl-conf" style="font-size:14px">{{ s.division }}</span></a>
               <span class="bl-conf">{{ s.class }}</span>
               <span class="bl-conf">{{ s.pos }}</span>
               <span class="bl-rec" style="text-align:right">{% if s.w is none %}—{% else %}{{ s.w }}-{{ s.l }}{% endif %}</span>
@@ -135,7 +135,7 @@
               </div>
               {% for m in yrg.log %}
               <div class="bl-row">
-                <span class="bl-conf" style="font-size:13.5px">{{ m.phase }}</span>
+                <span class="bl-conf" style="font-size:15px">{{ m.phase }}</span>
                 <span class="bl-conf">{{ m.slot }}</span>
                 <span class="bl-rec">{% if m.opp_pid %}<a class="bl-school" href="{{ url_for('player', pid=m.opp_pid, school=m.opp_school, u=u) }}">{{ m.opp }}</a>{% else %}{{ m.opp }}{% endif %}</span>
                 <span class="bl-conf" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><a class="bl-school" href="{{ url_for('teams', school=m.opp_school, u=u) }}">{{ m.opp_school }}</a></span>
@@ -156,18 +156,18 @@
         <div class="bl-panel-body">
           <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px">
             <span class="bl-stat power" style="font-size:30px">{{ "%.1f"|format(ranks.str) }}</span>
-            {% if info.recruit_stars %}<span style="color:#e8a13a;font-size:16px;letter-spacing:1px">{% for _ in range(info.recruit_stars) %}★{% endfor %}</span>{% endif %}
+            {% if info.recruit_stars %}<span style="color:#e8a13a;font-size:18px;letter-spacing:1px">{% for _ in range(info.recruit_stars) %}★{% endfor %}</span>{% endif %}
           </div>
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center">
-            <div><div class="bl-th" style="font-size:11.5px">NATIONAL</div>
-              <div class="bl-stat power" style="font-size:19px">#{{ ranks.natl }}</div>
-              <div class="tsub" style="font-size:11.5px">of {{ ranks.natl_total }}</div></div>
-            <div><div class="bl-th" style="font-size:11.5px">CONFERENCE</div>
-              <div class="bl-stat power" style="font-size:19px">#{{ ranks.conf }}</div>
-              <div class="tsub" style="font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{ ranks.conf_name }}">{{ ranks.conf_abbr or ranks.conf_name }}</div></div>
-            <div><div class="bl-th" style="font-size:11.5px">TEAM</div>
-              <div class="bl-stat power" style="font-size:19px">#{{ ranks.team }}</div>
-              <div class="tsub" style="font-size:11.5px">of {{ ranks.team_total }}</div></div>
+            <div><div class="bl-th" style="font-size:13px">NATIONAL</div>
+              <div class="bl-stat power" style="font-size:21px">#{{ ranks.natl }}</div>
+              <div class="tsub" style="font-size:13px">of {{ ranks.natl_total }}</div></div>
+            <div><div class="bl-th" style="font-size:13px">CONFERENCE</div>
+              <div class="bl-stat power" style="font-size:21px">#{{ ranks.conf }}</div>
+              <div class="tsub" style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{ ranks.conf_name }}">{{ ranks.conf_abbr or ranks.conf_name }}</div></div>
+            <div><div class="bl-th" style="font-size:13px">TEAM</div>
+              <div class="bl-stat power" style="font-size:21px">#{{ ranks.team }}</div>
+              <div class="tsub" style="font-size:13px">of {{ ranks.team_total }}</div></div>
           </div>
         </div>
       </div>
@@ -177,7 +177,7 @@
         <div class="bl-panel-body">
           {% for kind, st in [('Singles', season_stats.get('singles')), ('Doubles', season_stats.get('doubles'))] %}
           {% if st %}
-          <div class="bl-th" style="font-size:11.5px;margin:{{ '10px' if not loop.first else '0' }} 0 4px">{{ kind }} · {{ st.matches }} match{{ 'es' if st.matches != 1 }}</div>
+          <div class="bl-th" style="font-size:13px;margin:{{ '10px' if not loop.first else '0' }} 0 4px">{{ kind }} · {{ st.matches }} match{{ 'es' if st.matches != 1 }}</div>
           <table class="bl-protable" style="width:100%"><tbody>
             <tr><td style="width:130px">Aces / DFs</td><td class="w">{{ st.aces }} / {{ st.double_faults }}</td></tr>
             <tr><td>1st serve in</td><td class="w">{{ (st.first_serve_pct * 100)|round|int }}%</td></tr>
@@ -216,19 +216,19 @@
             <div style="flex:1;min-width:0">
               <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
                 {% if st.badge != 'high_school' %}<a class="bl-school" href="{{ url_for('teams', school=st.school, u=st.division ~ '-' ~ gender) }}">{{ st.school }}</a>{% else %}{{ st.school }}{% endif %}
-                {% if st.division %}<span class="bl-conf" style="font-size:12.5px">{{ st.division }}</span>{% endif %}
+                {% if st.division %}<span class="bl-conf" style="font-size:14px">{{ st.division }}</span>{% endif %}
               </div>
-              <div class="tsub" style="font-size:12.5px">{{ st.years }}{% if st.stars %} · <span style="color:#e8a13a">{% for _ in range(st.stars) %}★{% endfor %}</span>{% endif %}</div>
+              <div class="tsub" style="font-size:14px">{{ st.years }}{% if st.stars %} · <span style="color:#e8a13a">{% for _ in range(st.stars) %}★{% endfor %}</span>{% endif %}</div>
               {% if st.hs_record %}
-              <div class="tsub" style="font-size:12.5px">{{ st.hs_district }} · played #{{ st.hs_ladder }} · {{ st.hs_record }}{% if st.hs_champion %} · <span style="color:#e8a13a">state champion</span>{% endif %}</div>
+              <div class="tsub" style="font-size:14px">{{ st.hs_district }} · played #{{ st.hs_ladder }} · {{ st.hs_record }}{% if st.hs_champion %} · <span style="color:#e8a13a">state champion</span>{% endif %}</div>
               {% endif %}
               {% if st.hs_honors %}
-              <div style="font-size:11.5px;margin-top:3px;display:flex;flex-wrap:wrap;gap:4px">
-                {% for h in st.hs_honors %}<span class="bl-badge tier-D2" style="font-size:11px">{{ h }}</span>{% endfor %}
+              <div style="font-size:13px;margin-top:3px;display:flex;flex-wrap:wrap;gap:4px">
+                {% for h in st.hs_honors %}<span class="bl-badge tier-D2" style="font-size:12px">{{ h }}</span>{% endfor %}
               </div>
               {% endif %}
             </div>
-            <span class="bl-badge {{ badge_class[st.badge] }}" style="font-size:11px">{{ badge_label[st.badge] }}</span>
+            <span class="bl-badge {{ badge_class[st.badge] }}" style="font-size:12px">{{ badge_label[st.badge] }}</span>
           </div>
           {% endfor %}
         </div>
@@ -238,10 +238,10 @@
       <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title"><i class="fa-solid fa-earth-americas" aria-hidden="true"></i> International</span></div>
         <div class="bl-panel-body">
           {% for r in intl %}
-          <div style="display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--border-subtle);align-items:baseline;font-size:14.5px">
+          <div style="display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--border-subtle);align-items:baseline;font-size:16px">
             <span style="font-variant-numeric:tabular-nums;color:var(--text-muted)">{{ r.year }}</span>
             <span>{{ r.flag }} <a href="{{ url_for('world_cups', g=gender, year=r.year) }}" style="text-decoration:none;color:inherit;font-weight:600">{{ r.event }}</a></span>
-            <span style="color:var(--text-muted);font-size:13.5px;margin-left:auto;font-variant-numeric:tabular-nums">
+            <span style="color:var(--text-muted);font-size:15px;margin-left:auto;font-variant-numeric:tabular-nums">
               {{ r.ties }} tie{{ 's' if r.ties != 1 }} · S {{ r.singles }} · D {{ r.doubles }}{% if r.finish %} · <b style="color:var(--text-primary)">{{ r.finish }}</b>{% endif %}</span>
           </div>
           {% endfor %}

@@ -60,7 +60,7 @@
           <tr{% if s.transferred %} style="opacity:.72"{% endif %}>
             <td class="yr"><a href="{{ url_for('jhsaa_school', school=s.school, year=s.year, u=u, g=view.gender) }}">{{ s.season_year }}</a></td>
             <td style="font-variant-numeric:normal">{{ s.class }}</td>
-            <td style="font-size:12.5px">
+            <td style="font-size:14px">
               <a href="{{ url_for('jhsaa_school', school=s.school, year=s.year, u=u, g=view.gender) }}"
                  style="display:inline-flex;align-items:center;gap:5px;color:inherit">
                 {{ s.school_mark|safe }}{{ s.school }}</a></td>
@@ -71,7 +71,7 @@
             {% if view.any_jv %}<td style="color:var(--text-secondary)">{{ s.jv or s.jv_dressed or '—' }}</td>{% endif %}
             <td class="jh-scout">{{ s.ovr }}</td>
             <td>{{ s.team.record if s.team else '—' }}</td>
-            <td style="font-variant-numeric:normal;font-size:12.5px;color:var(--text-secondary)">
+            <td style="font-variant-numeric:normal;font-size:14px;color:var(--text-secondary)">
               {% if s.team and s.team.champion %}<span class="jh-chip gold">{{ s.team.group }} CHAMPION</span> {% endif %}
               {{ s.honors|join(' · ') }}</td>
           </tr>
@@ -301,7 +301,7 @@
           <input type="hidden" name="drop_pid" value="{{ view.pid }}">
           <input type="hidden" name="do" value="remove">
           <input type="hidden" name="u" value="{{ u }}">
-          <button type="submit" class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">Remove tie</button>
+          <button type="submit" class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:16px">Remove tie</button>
         </form>
         {% endif %}
         {% endif %}
@@ -368,7 +368,7 @@
           <label class="s">Note
             <input type="text" name="note" placeholder="optional" style="width:170px"></label>
           {% endif %}
-          <button type="submit" class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">{{ 'Add to family' if family else 'Associate' }}</button>
+          <button type="submit" class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:16px">{{ 'Add to family' if family else 'Associate' }}</button>
         </form>
         {% endif %}
         {% endif %}
@@ -424,7 +424,7 @@
                against every season back to year zero, since the small index is
                always <= any real calendar year. #}
             <input type="number" name="jh_year" value="{{ view.scope.season_year + 1 }}" required></label>
-          <button type="submit" class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">Transfer</button>
+          <button type="submit" class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:16px">Transfer</button>
         </form>
         <p class="bit">Manual and always-approved — no eligibility rules, no
           sit-out. Takes effect the FOLLOWING season, never mid-year.

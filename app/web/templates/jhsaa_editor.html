@@ -59,13 +59,13 @@
     <label class="bl-schol-f" style="max-width:340px">Or search by name
       <input class="bl-input" type="text" name="school" list="jh-names" autocomplete="off"
              placeholder="start typing a name…"></label>
-    <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">Find</button>
+    <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:16px">Find</button>
   </form>
   <datalist id="jh-names">{% for n in ed.names %}<option value="{{ n }}">{% endfor %}</datalist>
 
   {% if ed.recent %}
   <div style="padding:0 16px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-    <span style="font-size:13.5px;color:var(--text-muted)">Recently viewed:</span>
+    <span style="font-size:15px;color:var(--text-muted)">Recently viewed:</span>
     {% for s in ed.recent %}
     <a class="bl-pill" href="{{ url_for('jhsaa_programs', u=u, g=view.scope.gender, school=s.name) }}">{{ s.name }}</a>
     {% endfor %}
@@ -95,7 +95,7 @@
           </select></span></label>
         <textarea class="bl-input" name="names" rows="8" placeholder="One school name per line"
                   style="font-family:inherit;resize:vertical"></textarea>
-        <button class="bl-run-big" style="width:auto;height:32px;padding:0 14px;font-size:14.5px;align-self:flex-start">
+        <button class="bl-run-big" style="width:auto;height:32px;padding:0 14px;font-size:16px;align-self:flex-start">
           Add all
         </button>
       </form>
@@ -120,7 +120,7 @@
 <div class="bl-panel">
   <div class="bl-panel-head"><span class="bl-panel-title">{{ s.name }}</span></div>
   <div style="padding:12px 16px">
-    <div style="color:var(--text-muted);font-size:13.5px;margin-bottom:12px">
+    <div style="color:var(--text-muted);font-size:15px;margin-bottom:12px">
       {{ s.classification }} · {{ s.city }}{% if s.district %} · {{ s.district }}{% endif %}</div>
     <div style="display:flex;gap:24px;flex-wrap:wrap">
       <form method="post" action="{{ url_for('editor_jhsaa_archetype') }}"
@@ -135,7 +135,7 @@
             <option value="{{ k }}"{% if k == s.archetype %} selected{% endif %}>{{ k|replace('_', ' ') }}</option>
             {% endfor %}
           </select></span></label>
-        <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">Save</button>
+        <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:16px">Save</button>
         {% if s.arch_edited %}
         <button class="bl-pill" name="archetype" value="clear" style="cursor:pointer">Reset</button>
         {% endif %}
@@ -157,11 +157,11 @@
             {% endfor %}
           </select></span>
           {% else %}
-          <span style="display:block;color:var(--text-muted);font-size:13.5px;padding-top:6px">
+          <span style="display:block;color:var(--text-muted);font-size:15px;padding-top:6px">
             {{ s.classification }} is too big — 4A and below only</span>
           {% endif %}</label>
         {% if s.can_play_up %}
-        <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:14.5px">Save</button>
+        <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:16px">Save</button>
         {% endif %}
         {% if s.play_edited %}
         <button class="bl-pill" name="play_up" value="clear" style="cursor:pointer">Reset</button>
@@ -197,12 +197,12 @@
   <div style="padding:12px 16px;display:flex;gap:20px;flex-wrap:wrap">
     {% for k in ed.kinds %}
     <div><div class="t-eyebrow">{{ k|replace('_', ' ') }}</div>
-      <div style="font-size:22px;font-weight:800">{{ ed.counts[k] }}</div></div>
+      <div style="font-size:24px;font-weight:800">{{ ed.counts[k] }}</div></div>
     {% endfor %}
     <div><div class="t-eyebrow">playing up</div>
-      <div style="font-size:22px;font-weight:800">{{ ed.counts.play_up }}</div></div>
+      <div style="font-size:24px;font-weight:800">{{ ed.counts.play_up }}</div></div>
   </div>
-  <div style="padding:0 16px 12px;font-size:13.5px;color:var(--text-muted)">
+  <div style="padding:0 16px 12px;font-size:15px;color:var(--text-muted)">
     Archetypes are durable program conditions — a <b>blue blood</b> generates better and
     clusters, a <b>development</b> program has ordinary freshmen and the best seniors, a
     <b>doubles</b> program lifts its doubles courts only. Playing up moves a small school

@@ -5,7 +5,7 @@
 {% set ab = crest(p.school) %}
 
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:14.5px;color:var(--text-muted)">Analytics Bureau › Fit Finder</span>
+  <span style="font-size:16px;color:var(--text-muted)">Analytics Bureau › Fit Finder</span>
   <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('player', pid=p.pid, school=p.school, u=p.division ~ '-' ~ p.gender) }}">View player profile →</a>
   <a class="bl-pill" style="text-decoration:none" href="{{ url_for('intel_underplaced', u=u) }}">← Underplaced board</a>
 </div></div>
@@ -40,9 +40,9 @@
       <span class="rc-rate-grade composite">+{{ '%.0f'|format(p.placement_gap*100) }}</span>
       <span class="rc-rate-stars"><span class="rc-rate-tier">talent − program level gap</span></span></div>
     <div class="rc-rankrow">
-      <div class="rc-rankcell"><div class="k">SCHOOL</div><div class="v" style="font-size:14.5px">{{ p.school }}</div></div>
+      <div class="rc-rankcell"><div class="k">SCHOOL</div><div class="v" style="font-size:16px">{{ p.school }}</div></div>
       <div class="rc-rankcell"><div class="k">LINEUP</div><div class="v">{% if p.line %}No. {{ p.line }}{% else %}—{% endif %}</div></div>
-      <div class="rc-rankcell"><div class="k">AID</div><div class="v" style="font-size:15.5px">{{ p.schol_label if not p.walk_on else 'Walk-on' }}</div></div>
+      <div class="rc-rankcell"><div class="k">AID</div><div class="v" style="font-size:18px">{{ p.schol_label if not p.walk_on else 'Walk-on' }}</div></div>
     </div>
   </div>
 </div>

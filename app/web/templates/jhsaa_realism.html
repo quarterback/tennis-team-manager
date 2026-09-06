@@ -96,7 +96,7 @@
     <div style="display:flex;flex-wrap:wrap;gap:24px">
     {% for grp in bd.groups %}
     <div>
-      <div class="bl-panel-title" style="font-size:12.5px;margin-bottom:6px">{{ grp.label }}</div>
+      <div class="bl-panel-title" style="font-size:14px;margin-bottom:6px">{{ grp.label }}</div>
       <table class="jh-roster jh-rl-bands">
         <tr><th rowspan="2" style="width:58px">Gap</th><th rowspan="2" class="num" style="width:62px" title="matches this season / last season">n</th>
           <th colspan="3" class="num">Favourite won %</th>
@@ -132,7 +132,7 @@
   <div class="bl-panel-body" style="padding:12px;display:flex;flex-wrap:wrap;gap:24px">
     {% for f in d.families %}{% if f.sets %}
     <div>
-      <div class="bl-panel-title" style="font-size:12.5px;margin-bottom:6px">{{ f.label }}</div>
+      <div class="bl-panel-title" style="font-size:14px;margin-bottom:6px">{{ f.label }}</div>
       {{ dist_table(f, d.real_three_set) }}
     </div>
     {% endif %}{% endfor %}

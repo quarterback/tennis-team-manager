@@ -57,7 +57,7 @@
     <form method="post" action="{{ url_for('jhsaa_lab_advance') }}">
       <label class="s">Years to advance
         <input type="number" name="years" value="1" min="1" max="50" {{ 'disabled' if not exists or job_running }}></label>
-      <button type="submit" class="bl-run-big" style="width:auto;height:36px;margin-top:10px;padding:0 16px;font-size:14.5px" {{ 'disabled' if not exists or job_running }}>
+      <button type="submit" class="bl-run-big" style="width:auto;height:36px;margin-top:10px;padding:0 16px;font-size:16px" {{ 'disabled' if not exists or job_running }}>
         Advance
       </button>
     </form>
@@ -80,7 +80,7 @@
     <form method="post" action="{{ url_for('jhsaa_lab_generate') }}">
       <label class="s">Salt (optional — leave blank for a fresh random one)
         <input type="text" name="salt" placeholder="e.g. run-014" {{ 'disabled' if job_running }}></label>
-      <button type="submit" class="bl-run-big" style="width:auto;height:36px;margin-top:10px;padding:0 16px;font-size:14.5px" {{ 'disabled' if job_running }}>
+      <button type="submit" class="bl-run-big" style="width:auto;height:36px;margin-top:10px;padding:0 16px;font-size:16px" {{ 'disabled' if job_running }}>
         Generate new season (both genders)
       </button>
     </form>

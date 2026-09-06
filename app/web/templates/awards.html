@@ -21,7 +21,7 @@
     <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
       {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
     </select></span></label>
-  <span style="font-size:14.5px;color:var(--text-muted)">{{ uni_label }} · singles honors · selected from {{ aw.player_count }} rated players</span>
+  <span style="font-size:16px;color:var(--text-muted)">{{ uni_label }} · singles honors · selected from {{ aw.player_count }} rated players</span>
   {% if past_years %}<a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('awards_archive_page', u=u) }}"><i class="fa-solid fa-box-archive" aria-hidden="true"></i> Past winners →</a>{% endif %}
 </div></div></form>
 
@@ -170,29 +170,29 @@
 <div class="bl-container">{{ pager(conf_p, 'conferences') }}</div>
 
 <style>
-.aw-banner { display: flex; align-items: baseline; gap: 10px; font-size: 14.5px; line-height: 1.5;
+.aw-banner { display: flex; align-items: baseline; gap: 10px; font-size: 16px; line-height: 1.5;
   padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border-subtle); color: var(--text-muted); }
 .aw-banner.is-projected { background: color-mix(in srgb, var(--brand-strong) 7%, transparent); }
-.aw-banner-tag { flex: none; font-size: 11.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+.aw-banner-tag { flex: none; font-size: 13px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
   padding: 3px 8px; border-radius: 999px; color: #fff; background: var(--brand-strong); }
 .aw-banner.is-projected .aw-banner-tag { background: #b4690e; }
 .aw-top { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 @media (max-width: 760px) { .aw-top { grid-template-columns: 1fr; } }
 .aw-poty-nat, .aw-natchamp { display: flex; align-items: center; gap: 12px; padding: 4px 0 12px; }
-.aw-poty-label { font-size: 11.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--brand-strong); }
-.aw-poty-name { font-size: 19px; font-weight: 800; display: block; }
+.aw-poty-label { font-size: 13px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--brand-strong); }
+.aw-poty-name { font-size: 21px; font-weight: 800; display: block; }
 .aw-cpoty-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 2px 14px; border-top: 1px solid var(--border-subtle); padding-top: 8px; }
-.aw-confchamp-head { font-size: 12.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin: 10px 0 6px; }
+.aw-confchamp-head { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); margin: 10px 0 6px; }
 .aw-aa-grid, .aw-conf-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
-.aw-team-head { font-size: 12.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
+.aw-team-head { font-size: 14px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
   color: var(--brand-strong); padding: 0 0 8px; border-bottom: 1px solid var(--border-subtle); margin-bottom: 6px; }
 .aw-row { display: grid; grid-template-columns: 22px minmax(80px,1fr) auto 52px 48px; align-items: center;
   gap: 10px; padding: 6px 2px; }
 .aw-name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.aw-school { font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
-.aw-rec { font-size: 13.5px; text-align: right; }
+.aw-school { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+.aw-rec { font-size: 15px; text-align: right; }
 .aw-str { text-align: right; }
-.aw-empty { color: var(--text-muted); font-size: 15.5px; padding: 6px 2px; }
+.aw-empty { color: var(--text-muted); font-size: 18px; padding: 6px 2px; }
 @media (max-width: 480px) { .aw-row { grid-template-columns: 22px 1fr 48px 44px; } .aw-school { display: none; } }
 </style>
 {% endblock %}

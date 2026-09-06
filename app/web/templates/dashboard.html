@@ -8,7 +8,7 @@
     <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
       {% for val, dd, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
     </select></span></label>
-  <span style="font-size:14.5px;color:var(--text-muted)">{{ uni_label }} · {{ d.n_programs }} programs · {{ d.n_conferences }} conferences · simulated 2026 season</span>
+  <span style="font-size:16px;color:var(--text-muted)">{{ uni_label }} · {{ d.n_programs }} programs · {{ d.n_conferences }} conferences · simulated 2026 season</span>
 </div></div>
 </form>
 
@@ -110,8 +110,8 @@
             <span class="bl-rank" style="width:20px">{{ loop.index }}</span>
             <span class="bl-crest sm" style="background:{{ s.color }}">{{ s.abbr }}</span>
             <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.school }}
-              {% if s.autobid %}<span class="bl-badge tier-IVY" style="font-size:11px">AQ</span>{% endif %}</span>
-            <span class="bl-rec" style="font-size:13.5px">{{ s.rec }}</span>
+              {% if s.autobid %}<span class="bl-badge tier-IVY" style="font-size:12px">AQ</span>{% endif %}</span>
+            <span class="bl-rec" style="font-size:15px">{{ s.rec }}</span>
           </div>
           {% endfor %}
         </div>

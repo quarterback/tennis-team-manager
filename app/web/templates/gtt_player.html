@@ -17,12 +17,12 @@
     <div class="bl-panel-head">
       <span class="bl-panel-title">{% if p.country %}{{ p.country|flag }} {% endif %}{{ p.name }}</span></div>
     {% if p.origin == 'college' %}
-    <div style="padding:10px 16px 0;color:var(--stat-good-strong);font-size:13.5px">
+    <div style="padding:10px 16px 0;color:var(--stat-good-strong);font-size:15px">
       <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i>
       College graduate{% if p.college_school %} — {{ p.college_school }}{% endif %} · career below spans college and pro.
     </div>
     {% elif p.origin == 'pro' %}
-    <div style="padding:10px 16px 0;color:var(--stat-good-strong);font-size:13.5px">
+    <div style="padding:10px 16px 0;color:var(--stat-good-strong);font-size:15px">
       <i class="fa-solid fa-bolt" aria-hidden="true"></i>
       Former tour pro{% if p.college_school %} — one college season at {{ p.college_school }}{% endif %} · drafted in the Pro Round.
     </div>
@@ -52,10 +52,10 @@
           <span class="bl-conf" style="white-space:nowrap">{{ s.cal_year }}</span>
           {% if s.kind == 'college' and s.division and s.gender %}
           <a class="bl-school" href="{{ url_for('teams', school=s.team, u=s.division ~ '-' ~ s.gender) }}">{{ s.team }}
-            <span class="bl-conf" style="font-size:12.5px">{{ s.division }}</span></a>
+            <span class="bl-conf" style="font-size:14px">{{ s.division }}</span></a>
           {% else %}
           <span class="bl-school" style="cursor:default">{{ s.team }}
-            <span class="bl-conf" style="font-size:12.5px;{% if s.kind == 'pro' %}color:var(--accent){% endif %}">{{ s.division }}</span></span>
+            <span class="bl-conf" style="font-size:14px;{% if s.kind == 'pro' %}color:var(--accent){% endif %}">{{ s.division }}</span></span>
           {% endif %}
           <span class="bl-conf">{{ s.cls }}</span>
           <span class="bl-conf">{{ s.pos }}</span>
@@ -90,9 +90,9 @@
       {% for a in grp.awards %}
       <div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--border-subtle);align-items:baseline">
         <span style="font-variant-numeric:tabular-nums;color:var(--text-muted);width:48px">{{ grp.year }}</span>
-        <span class="bl-pill" style="font-size:11.5px;{{ 'background:var(--accent);color:#fff' if a.division == 'GTT' else '' }}">{{ a.division or '—' }}</span>
+        <span class="bl-pill" style="font-size:13px;{{ 'background:var(--accent);color:#fff' if a.division == 'GTT' else '' }}">{{ a.division or '—' }}</span>
         <span style="font-weight:600">{{ a.label }}</span>
-        {% if a.school %}<span style="color:var(--text-muted);font-size:13.5px;margin-left:auto">{{ a.school }}</span>{% endif %}
+        {% if a.school %}<span style="color:var(--text-muted);font-size:15px;margin-left:auto">{{ a.school }}</span>{% endif %}
       </div>
       {% endfor %}
       {% endfor %}
@@ -108,7 +108,7 @@
         <div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--border-subtle);align-items:baseline">
           <span style="font-variant-numeric:tabular-nums;color:var(--text-muted);width:48px">{{ m.cal_year }}</span>
           <span style="font-weight:600;color:{{ 'var(--stat-good-strong)' if m.added else 'var(--text-muted)' }}">{{ m.kind }}</span>
-          <span style="color:var(--text-muted);font-size:13.5px;margin-left:auto">{{ m.franchise }}{% if m.week %} · wk {{ m.week }}{% endif %}</span>
+          <span style="color:var(--text-muted);font-size:15px;margin-left:auto">{{ m.franchise }}{% if m.week %} · wk {{ m.week }}{% endif %}</span>
         </div>
         {% endfor %}
         {% if not p.moves %}<div style="padding:6px 0;color:var(--text-muted)">No moves on record.</div>{% endif %}

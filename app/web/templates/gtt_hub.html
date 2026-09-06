@@ -19,8 +19,8 @@
       {% if league %}
       <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
         <div>
-          <div style="font-size:18px;font-weight:700;color:var(--text-primary)">{{ league.name }}</div>
-          <div style="color:var(--text-muted);font-size:14.5px">
+          <div style="font-size:20px;font-weight:700;color:var(--text-primary)">{{ league.name }}</div>
+          <div style="color:var(--text-muted);font-size:16px">
             Season {{ league.current_year + 1 }} ·
             {% if league.phase == 'complete' %}complete
             {% elif league.phase == 'playoffs' %}Playoffs
@@ -62,16 +62,16 @@
     <div class="bl-panel-head"><span class="bl-panel-title">Honors</span></div>
     <div style="display:flex;gap:24px;padding:14px 16px;flex-wrap:wrap">
       {% if honors.champion %}
-      <div><div style="color:var(--text-muted);font-size:13.5px;text-transform:uppercase;letter-spacing:.04em"><i class="fa-solid fa-trophy" aria-hidden="true"></i> Champion</div>
-        <a href="{{ url_for('gtt_franchise', fid=honors.champion.id, lg=league.id) }}" style="font-weight:700;font-size:17px;text-decoration:none;color:var(--text-primary)">{{ honors.champion.name }}</a></div>
+      <div><div style="color:var(--text-muted);font-size:15px;text-transform:uppercase;letter-spacing:.04em"><i class="fa-solid fa-trophy" aria-hidden="true"></i> Champion</div>
+        <a href="{{ url_for('gtt_franchise', fid=honors.champion.id, lg=league.id) }}" style="font-weight:700;font-size:19px;text-decoration:none;color:var(--text-primary)">{{ honors.champion.name }}</a></div>
       {% endif %}
       {% if honors.mvp %}
-      <div><div style="color:var(--text-muted);font-size:13.5px;text-transform:uppercase;letter-spacing:.04em"><i class="fa-solid fa-medal" aria-hidden="true"></i> Season MVP</div>
-        <a href="{{ url_for('gtt_player', pid=honors.mvp.pid, lg=league.id) }}" style="font-weight:700;font-size:17px;text-decoration:none;color:var(--text-primary)">{{ honors.mvp.name }}</a>
+      <div><div style="color:var(--text-muted);font-size:15px;text-transform:uppercase;letter-spacing:.04em"><i class="fa-solid fa-medal" aria-hidden="true"></i> Season MVP</div>
+        <a href="{{ url_for('gtt_player', pid=honors.mvp.pid, lg=league.id) }}" style="font-weight:700;font-size:19px;text-decoration:none;color:var(--text-primary)">{{ honors.mvp.name }}</a>
         <span style="color:var(--text-muted)">· {{ honors.mvp.w }}-{{ honors.mvp.l }} · {{ honors.mvp.franchise }}</span></div>
       {% elif honors.potw %}
-      <div><div style="color:var(--text-muted);font-size:13.5px;text-transform:uppercase;letter-spacing:.04em"><i class="fa-solid fa-star" aria-hidden="true"></i> Player of the Week {{ honors.potw.week }}</div>
-        <a href="{{ url_for('gtt_player', pid=honors.potw.pid, lg=league.id) }}" style="font-weight:700;font-size:17px;text-decoration:none;color:var(--text-primary)">{{ honors.potw.name }}</a>
+      <div><div style="color:var(--text-muted);font-size:15px;text-transform:uppercase;letter-spacing:.04em"><i class="fa-solid fa-star" aria-hidden="true"></i> Player of the Week {{ honors.potw.week }}</div>
+        <a href="{{ url_for('gtt_player', pid=honors.potw.pid, lg=league.id) }}" style="font-weight:700;font-size:19px;text-decoration:none;color:var(--text-primary)">{{ honors.potw.name }}</a>
         <span style="color:var(--text-muted)">· {{ honors.potw.w }}-{{ honors.potw.l }} · {{ honors.potw.franchise }}</span></div>
       {% endif %}
     </div>
@@ -128,8 +128,8 @@
       <div class="bl-row gtt-tx-row">
         <span class="bl-cell-num">{{ t.week }}</span>
         <span class="bl-cell"><a href="{{ url_for('gtt_franchise', fid=t.fid, lg=league.id) }}" style="text-decoration:none;font-weight:600">{{ t.franchise }}</a></span>
-        <span class="bl-cell" style="color:var(--stat-good-strong)">{% if t.add_pid %}▲ <a href="{{ url_for('gtt_player', pid=t.add_pid, lg=league.id) }}" style="text-decoration:none;color:inherit">{{ t.add_name }}</a> <span style="color:var(--text-muted);font-size:12.5px">{{ t.add_str }}{% if t.add_origin == 'college' %} · college{% elif t.add_origin == 'rookie' %} · rookie{% elif t.add_origin == 'pro' %} · <b style="color:var(--stat-good-strong)">PRO ROUND</b>{% endif %}</span>{% else %}<span style="color:var(--text-muted)">—</span>{% endif %}</span>
-        <span class="bl-cell" style="color:var(--text-muted)">{% if t.drop_pid %}▼ <a href="{{ url_for('gtt_player', pid=t.drop_pid, lg=league.id) }}" style="text-decoration:none;color:inherit">{{ t.drop_name }}</a> <span style="font-size:12.5px">{{ t.drop_str }}{% if t.drop_origin == 'founder' %} · founder released{% endif %}</span>{% else %}<span style="color:var(--text-muted)">—</span>{% endif %}</span>
+        <span class="bl-cell" style="color:var(--stat-good-strong)">{% if t.add_pid %}▲ <a href="{{ url_for('gtt_player', pid=t.add_pid, lg=league.id) }}" style="text-decoration:none;color:inherit">{{ t.add_name }}</a> <span style="color:var(--text-muted);font-size:14px">{{ t.add_str }}{% if t.add_origin == 'college' %} · college{% elif t.add_origin == 'rookie' %} · rookie{% elif t.add_origin == 'pro' %} · <b style="color:var(--stat-good-strong)">PRO ROUND</b>{% endif %}</span>{% else %}<span style="color:var(--text-muted)">—</span>{% endif %}</span>
+        <span class="bl-cell" style="color:var(--text-muted)">{% if t.drop_pid %}▼ <a href="{{ url_for('gtt_player', pid=t.drop_pid, lg=league.id) }}" style="text-decoration:none;color:inherit">{{ t.drop_name }}</a> <span style="font-size:14px">{{ t.drop_str }}{% if t.drop_origin == 'founder' %} · founder released{% endif %}</span>{% else %}<span style="color:var(--text-muted)">—</span>{% endif %}</span>
       </div>
       {% endfor %}
     </div></div>

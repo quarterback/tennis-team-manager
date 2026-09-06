@@ -93,7 +93,12 @@
   --text-primary: var(--ink);
   --text-secondary: var(--gray-600);
   --text-muted: var(--gray-500);
-  --text-faint: var(--gray-400);
+  /* ‼️ Faint is a HIERARCHY tier, not an invitation to fall under AA — the old
+     alias read gray-400 raw (~3:1 on white in most schemes), which is where
+     "too low-contrast" metadata came from (owner, 2026-09). Mixed toward
+     gray-500 IN THE ALIAS layer so all ten schemes lift together; a scheme
+     overrides layers 1-2 only and never this line. */
+  --text-faint: color-mix(in oklab, var(--gray-500) 55%, var(--gray-400));
   --text-link: var(--brand-strong);
 
   --border-subtle: var(--gray-200);
@@ -112,8 +117,12 @@
   --font-poster: 'PP Formula Extended', 'Arial Black', sans-serif;
   --font-mono: 'Azeret Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
-  --fs-display: 30px; --fs-title: 18px; --fs-body: 14px; --fs-small: 13px;
-  --fs-caption: 12px; --fs-micro: 11px;
+  /* Legacy size aliases — raised with the 2026-09 scale so a component still
+     reading these cannot render below the new floor. `--fs-micro` matches
+     typography.css exactly (both files declare it; whichever loads second wins,
+     so they must agree). */
+  --fs-display: 30px; --fs-title: 20px; --fs-body: 16px; --fs-small: 15px;
+  --fs-caption: 14px; --fs-micro: 14px;
   --ls-caps: 0.06em;
 
   --radius: 8px; --radius-pill: 999px;

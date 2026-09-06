@@ -7,7 +7,7 @@
 <form method="get">
 <input type="hidden" name="u" value="{{ u }}">
 <div class="bl-toolbar"><div class="bl-toolbar-inner" style="flex-wrap:wrap">
-  <span style="font-size:14.5px;color:var(--text-muted)">The Wire</span>
+  <span style="font-size:16px;color:var(--text-muted)">The Wire</span>
   <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Season</span>
     <span class="bl-select-wrap"><select class="bl-select" name="year" onchange="this.form.submit()" style="min-width:88px">
       <option value="all"{% if v.year == 'all' %} selected{% endif %}>All seasons</option>
@@ -136,16 +136,16 @@
   align-items:baseline;padding:2px 0}
 /* The journey chain: a second line under the name, deliberately quiet — it is
    context for the move on this row, not a competing headline. */
-.wire-journey{display:block;width:100%;font-size:12.5px;line-height:1.55;color:var(--text-faint);
+.wire-journey{display:block;width:100%;font-size:14px;line-height:1.55;color:var(--text-faint);
   white-space:normal;font-weight:500}
 .wire-stop{white-space:nowrap}
 .wire-stop.is-now{color:var(--text-secondary);font-weight:700}
 .wire-arrow{margin:0 4px;opacity:.55}
-.wire-step{display:flex;align-items:center;justify-content:center;font-size:14.5px;font-weight:700}
+.wire-step{display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700}
 .wire-step.up{color:var(--green-600,#2f6f4f)}
 .wire-step.down{color:var(--text-faint)}
 .wire-step.flat{color:var(--text-faint)}
-.wire-kind{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11.5px;
+.wire-kind{display:inline-block;padding:1px 7px;border-radius:999px;font-size:13px;
   font-weight:700;letter-spacing:.02em;white-space:nowrap}
 .wire-kind.k-riser{background:rgba(47,111,79,.13);color:#2f6f4f}
 .wire-kind.k-cascade{background:var(--surface-subtle);color:var(--text-muted)}

@@ -11,7 +11,7 @@
     <a class="bl-row" style="text-decoration:none" href="{{ url_for('gtt_player', pid=p.pid, lg=league.id) }}">
       <span class="bl-cell-num" style="color:var(--text-muted)">{{ loop.index }}</span>
       <span class="bl-cell" style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{% if p.country %}{{ p.country|flag }} {% endif %}{{ p.name }}</span>
-      <span class="bl-cell" style="color:var(--text-muted);font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.club }}</span>
+      <span class="bl-cell" style="color:var(--text-muted);font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.club }}</span>
       <span class="bl-cell-num"><span class="bl-rec">{{ p.w }}-{{ p.l }}</span></span>
       <span class="bl-cell-num" style="color:var(--text-muted)">{{ (p.pct ~ '%') if kind == 'wins' else p.rel }}</span>
       <span class="bl-cell-num"><span class="bl-stat power">{{ p.str }}</span></span>
@@ -23,7 +23,7 @@
 <div class="bl-container" style="padding-top:18px;padding-bottom:50px;max-width:980px">
 
   <div class="bl-toolbar"><div class="bl-toolbar-inner">
-    <span style="font-size:14.5px;color:var(--text-muted)">{{ league.name }} · {{ leaders.cal_year }} season leaders · line wins across singles &amp; mixed</span>
+    <span style="font-size:16px;color:var(--text-muted)">{{ league.name }} · {{ leaders.cal_year }} season leaders · line wins across singles &amp; mixed</span>
     <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('gtt_hub', lg=league.id) }}">League Hub</a>
     <a class="bl-pill" style="text-decoration:none" href="{{ url_for('gtt_schedule', lg=league.id) }}">Schedule</a>
   </div></div>
