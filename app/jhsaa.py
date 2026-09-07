@@ -185,6 +185,28 @@ WIDE_GROUPS = ("7A", "8A", "9A", "Group 1")  # groups whose road-to-State AND ea
 # ‼️ EIGHT BIDS IS THE ASSOCIATION'S NUMBER; the FIELD is whatever the road plus
 # eight comes to (40 off a 32 road, 32 off 1A's 24). Read it that way round: the
 # committee's size is the decision, the field size is the consequence.
+#   Group 3            — 28 = 24 road + 4 at-large; 4-dual Parastate (21v28 …
+#                        24v25), seeds 1-20 bye. ‼️ THE ONLY FOUR-BID CLASS, and
+#                        deliberately NOT 1A's eight though the two classes look
+#                        alike (owner decision 2026-09). MEASURED over 2071-2075,
+#                        both genders: Group 3's road left the class's best
+#                        omission at rank #14.3 — the worst in the association,
+#                        an 8th-ranked 16-12 team home in one season — and FOUR
+#                        bids removes 97% of that (3.00 top-24 omissions a
+#                        class-season -> 0.10, top-16 omissions -> 0), while
+#                        eight would take the committee to #32 of ~68 programs.
+#                        That is the "searching for reasons to fill the back
+#                        half" the association rejected when it cut 7A to 8.
+#                        ‼️ TWO JUSTIFICATIONS WERE TESTED AND FAILED — do not
+#                        restore either: (1) "the middle of a shallow class wins
+#                        as often as the top" is FALSE (the better-ranked team
+#                        wins 73.9% of Group 3 duals against a 73.9-77.9% band
+#                        across every class), and (2) "Group 3 travels furthest"
+#                        is FALSE (mean league spread 47/43 mi B/G, mid-pack;
+#                        Group 2 is the association's worst at 65/64). The bid
+#                        count rests on the omission measurement alone — plus
+#                        the owner's stated wish to run 4 and 8 side by side in
+#                        two comparable classes and see which reaches too deep.
 #   1A                 — 32 = 24 road + 8 at-large; 8-dual Parastate (17v32 …
 #                        24v25), seeds 1-16 bye. ‼️ THE ONE CLASS THAT IS NOT ON
 #                        A 40, BY OWNER DECISION (2026-09): "I do not want 16
@@ -221,7 +243,7 @@ WIDE_GROUPS = ("7A", "8A", "9A", "Group 1")  # groups whose road-to-State AND ea
 # group switcher and opens on the first).
 AT_LARGE_BIDS: dict[str, int] = {"9A": 16, "8A": 16, "7A": 8, "6A": 8, "5A": 8,
                                  "4A": 8, "3A": 8, "2A": 8, "1A": 8,
-                                 "Group 1": 16}
+                                 "Group 1": 16, "Group 3": 4}
 ATLARGE_GROUPS = tuple(AT_LARGE_BIDS)
 #: The opening round's name — the at-larges' round. Named in `round_names`, which
 #: is what makes `state._jh_split_state` render it as its own tree (no bracket
