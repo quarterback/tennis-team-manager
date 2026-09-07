@@ -5208,7 +5208,21 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
         "qual_canvas": (_bracket_canvas(_jh_bracket_cols(qual_br, schools),
                                         card_w=206, card_h=56, gutter=44,
                                         leaf_gap=12) if qual_br else None),
+        # ‼️ EVERY ARCHIVED ROUND, WHATEVER ITS SHAPE — read off the FULL archive
+        # (`br`), never the split main tree. The desktop page draws the CANVAS,
+        # and a canvas can only show what it can lay out: a preliminary round
+        # (Parastate, Qualifiers) appears there only when `_jh_split_state`
+        # produced a second tree for it, and the round-by-round list under it
+        # lives in `.jh-brk-mobile`, which CSS hides on a desktop. So a past
+        # season whose prelim did not split was READABLE NOWHERE on a wide
+        # screen — the association's own history, invisible because of a layout
+        # rule. This list is rendered unconditionally and is the guarantee that
+        # every dual an archive holds can be read back at any field size.
         "rounds": _deco_rounds(br, seeds),
+        # How many leading rounds the main tree does NOT draw, so the page can
+        # open exactly those folds. 0 when nothing was split off.
+        "prelim_n": max(0, len(br.get("rounds") or ())
+                        - len((main_br or {}).get("rounds") or ())),
         "stages": stages,
         "epiregional": epiregional,
     }
