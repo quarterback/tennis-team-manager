@@ -5332,6 +5332,32 @@ def _jh_trophy_banner(seasons_in: list[dict]) -> list[dict]:
     return [banner[k] for k in sorted(banner, key=_order)]
 
 
+def _jh_injury_badges(rows: list[dict]) -> dict:
+    """Fold archived injury events into the roster's one badge per player.
+
+    `dual_index` is already the one-based team-dual ordinal because injuries are
+    rolled after appending that dual's schedule row. A finite `duals_out` is the
+    duration assigned at the roll, not proof that that many later duals remained
+    to be missed, so the tooltip describes the scheduled absence rather than a
+    retrospective appearance count.
+    """
+    injury_pids = {}
+    for r in rows:
+        e = injury_pids.setdefault(r["pid"], {"duals_out": 0, "season_ending": False,
+                                              "count": 0, "first": r["dual_index"]})
+        e["count"] += 1
+        e["season_ending"] = e["season_ending"] or bool(r["season_ending"])
+        if not r["season_ending"]:
+            e["duals_out"] += max(0, int(r["duals_out"] or 0))
+    for e in injury_pids.values():
+        e["label"] = "OUT" if e["season_ending"] else "INJ"
+        e["detail"] = ("Season-ending injury (dual %d)" % e["first"]
+                       if e["season_ending"] else
+                       "Scheduled out for %d dual%s" % (e["duals_out"],
+                                                        "" if e["duals_out"] == 1 else "s"))
+    return injury_pids
+
+
 def jhsaa_school_view(seed: int, gender: str, school: str,
                       year: int | None = None) -> dict:
     """One JHSAA program, as a PROGRAM page: who they are, how this season went, the
@@ -5531,36 +5557,21 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     # JHSAA season is simulated whole at the world's week 0, so by the time any page
     # renders it the season is over and nobody is currently hurt (owner: "that's
     # because the season runs and it's done so it would never persist"). So the row
-    # says what happened — how many duals he missed, and whether it ended his year —
-    # never "OUT" as though he were unavailable now.
+    # says what happened — his assigned absence window, and whether it ended his
+    # year — never "OUT" as though he were unavailable now.
     #
     # ONE query per page, folded per pid, beside the family fingerprint and for the
     # same reason: never inside the per-player comprehension below.
     # ‼️ `g` and `sc.name`, never the raw route arguments — `gender` may arrive as
-    # "men"/"male" and `school` is the name that was ASKED for, which for a renamed
-    # program is not the name the archive was written under. The player page's own
-    # injury read already keys it this way.
+    # "men"/"male" and `school` is the name that was ASKED for. The archive reader
+    # expands `sc.name` through `known_names`, so renamed seasons are included.
     # CAPTAINS (owner rule 2026-09) — read off the archive, never re-derived:
     # `jhsaa.pick_captains` reads the ladder as it stood after the individual state
     # tournaments, so recovering it here would mean replaying them on the request
     # thread. One query per page, same as the injuries below.
     captain_pids = set(world.jhsaa_captains(w["id"], yr, g).get(sc.name) or ())
-    injury_pids = {}
-    for r in world.jhsaa_school_injuries(w["id"], yr, g, sc.name):
-        e = injury_pids.setdefault(r["pid"], {"duals_out": 0, "season_ending": False,
-                                              "count": 0, "first": r["dual_index"]})
-        e["count"] += 1
-        e["season_ending"] = e["season_ending"] or bool(r["season_ending"])
-        # A season-ending row carries the `injuries.SEASON_ENDING` sentinel rather
-        # than a count of duals, so it must never be summed into one.
-        if not r["season_ending"]:
-            e["duals_out"] += max(0, int(r["duals_out"] or 0))
-    for e in injury_pids.values():
-        e["label"] = "OUT" if e["season_ending"] else "INJ"
-        e["detail"] = ("Season-ending injury (dual %d)" % (e["first"] + 1)
-                       if e["season_ending"] else
-                       "Missed %d dual%s to injury" % (e["duals_out"],
-                                                       "" if e["duals_out"] == 1 else "s"))
+    injury_pids = _jh_injury_badges(
+        world.jhsaa_school_injuries(w["id"], yr, g, sc.name))
     honor_pids = {}
     # ‼️ A DOUBLES AWARD ROW HONOURS TWO ATHLETES (owner, 2027-08) — doubles
     # honours go to PAIRINGS. `jaw.row_pids` is the one place that knows how many
