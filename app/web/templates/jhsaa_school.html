@@ -206,7 +206,7 @@
           <th class="num" style="width:64px">Doubles</th></tr>
         {% for p in view.roster[:6] %}
         <tr>
-          <td class="pl"><a href="{{ url_for('jhsaa_player', school=view.school, pid=p.pid, u=u, g=view.gender) }}">{{ p.name }}</a>
+          <td class="pl">{% if p.country and p.country != 'US' %}<span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags }}</span> {% endif %}<a href="{{ url_for('jhsaa_player', school=view.school, pid=p.pid, u=u, g=view.gender) }}">{{ p.name }}</a>
             {% for h in p.honors %}<span class="jh-chip {{ 'gold' if 'Player of the Year' in h }}" style="margin-left:4px">{{ 'POY' if 'Player of the Year' in h else 'A-S' if h == 'All-State' else 'A-D' }}</span>{% endfor %}</td>
           <td>{{ p.grade }}th</td>
           <td class="num">{{ p.singles }}</td>
