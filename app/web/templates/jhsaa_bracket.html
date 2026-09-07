@@ -65,6 +65,53 @@
 
 <div style="margin-top:6px">{{ jh_round_tabs(view.rounds, u, view.gender, 'jhbrkrd', view.scope.pin) }}</div>
 
+{# ‼️ EVERY ROUND THE ARCHIVE HOLDS, READABLE AT ANY FIELD SIZE (owner rule
+   2026-09). The tree above is a CANVAS and shows only what it can lay out: a
+   preliminary round (Parastate, Qualifiers) reaches the desktop only when the
+   split produced a second tree for it, and the round-by-round list is inside
+   `.jh-brk-mobile`, which is hidden on a wide screen. A past season whose
+   prelim did not split was therefore unreadable on desktop — history erased by
+   a layout rule. This panel is unconditional and reads straight off the
+   archive, so a 48-team Parastate year, a 40-team Qualifiers year and a plain
+   32 all show every dual they played. Folds the main tree does not draw
+   (`prelim_n`) open by default. #}
+{% if view.rounds %}
+<div class="bl-panel" style="margin-top:14px">
+  <div class="bl-panel-head"><span class="bl-panel-title">{{ view.group }} Draw · every round</span>
+    <span class="bl-panel-meta">{{ view.season_year }} · {{ view.field_n }}-team field</span></div>
+  <div class="bl-panel-body">
+    {% for rd in view.rounds %}
+    <details class="jh-stagefold"{{ ' open' if loop.index0 < view.prelim_n }}>
+      <summary><span class="cr">›</span><span class="nm">{{ rd.name }}</span></summary>
+      <div class="bd">
+        <div class="jh-cols2">
+          {% for col in rd.games|batch((rd.games|length / 2)|round(0, 'ceil')|int, none) %}
+          <div>
+            {% for gm in col if gm %}
+            <div class="jh-mgame">
+              {% if gm.unit %}<div class="cap">{{ gm.unit }}</div>{% endif %}
+              <div class="jh-mside {{ 'win' if gm.winner == gm.home else 'out' }}">
+                <span class="sd">{{ gm.home_seed or '' }}</span>
+                <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.home, u=u, g=view.gender, year=view.scope.pin) }}">{{ gm.home }}</a></span>
+                <span class="pt">{{ gm.home_points|int }}</span>
+              </div>
+              <div class="jh-mside {{ 'win' if gm.winner == gm.away else 'out' }}">
+                <span class="sd">{{ gm.away_seed or '' }}</span>
+                <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.away, u=u, g=view.gender, year=view.scope.pin) }}">{{ gm.away }}</a></span>
+                <span class="pt">{{ gm.away_points|int }}</span>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </details>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
 <div class="jh-layout" style="margin-top:14px">
   {% if view.epiregional %}
   {# THE EPIREGIONAL — the Zonal champions' play-in for the first four bye lines
