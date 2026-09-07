@@ -43,7 +43,7 @@
         <thead><tr>
           <th class="num">Cls#</th><th class="num">St#</th><th data-nosort>Team</th>
           <th>Class</th><th>District</th>
-          <th class="num">W-L</th><th class="num">Pct</th>
+          <th class="num">W-L-T</th><th class="num">Pct</th>
           <th class="num">District</th><th class="num">Power</th>
         </tr></thead>
         <tbody>
@@ -55,7 +55,7 @@
             <td><a href="{{ team_href(r.program_id, board.bundle.scope_id) }}">{{ r.name }}</a></td>
             <td><span class="pt-chip">{{ r.classification }}</span></td>
             <td>{{ r.league }}</td>
-            <td class="num t-num" data-sort="{{ r.wins }}">{{ r.wins }}-{{ r.losses }}</td>
+            <td class="num t-num" data-sort="{{ r.pct }}">{{ r.wins }}-{{ r.losses }}{% if r.ties %}-{{ r.ties }}{% endif %}</td>
             <td class="num t-num">{{ "%.3f"|format(r.pct) }}</td>
             <td class="num t-num" data-sort="{{ r.league_pct }}">{{ r.league_wins }}-{{ r.league_losses }}{% if r.league_place %} · {{ r.league_place }}{{ ["th","st","nd","rd"][r.league_place % 10] if r.league_place % 10 < 4 and r.league_place % 100 not in (11,12,13) else "th" }}{% endif %}</td>
             <td class="num t-num">{{ "%.3f"|format(r.power) if r.power is not none else "—" }}</td>
@@ -84,7 +84,7 @@
             <td class="num t-num">{{ r.league_place or loop.index }}</td>
             <td><a href="{{ team_href(r.program_id, board.bundle.scope_id) }}">{{ r.name }}</a></td>
             <td class="num t-num">{{ r.league_wins }}-{{ r.league_losses }}</td>
-            <td class="num t-num">{{ r.wins }}-{{ r.losses }}</td>
+            <td class="num t-num">{{ r.wins }}-{{ r.losses }}{% if r.ties %}-{{ r.ties }}{% endif %}</td>
             <td class="num t-num">{{ "%.3f"|format(r.pct) }}</td>
             <td class="num t-num">{{ "%.3f"|format(r.power) if r.power is not none else "—" }}</td>
             <td class="num t-num">{{ r.class_rank }}</td>

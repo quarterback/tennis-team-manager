@@ -20,7 +20,7 @@
 <p class="t-dek">{{ blurb }}</p>
 
 <div class="pt-kpis">
-  <div class="pt-kpi"><div class="pt-kpi-k">Record</div><div class="pt-kpi-v">{{ team.wins }}-{{ team.losses }}</div>
+  <div class="pt-kpi"><div class="pt-kpi-k">Record</div><div class="pt-kpi-v">{{ team.wins }}-{{ team.losses }}{% if team.ties %}-{{ team.ties }}{% endif %}</div>
     <div class="pt-kpi-sub">overall</div></div>
   {% if standing %}
   <div class="pt-kpi"><div class="pt-kpi-k">District</div><div class="pt-kpi-v">{{ standing.league_wins }}-{{ standing.league_losses }}</div>
@@ -55,7 +55,7 @@
             <td class="pt-venue">{{ "vs" if s.home else "at" }}</td>
             <td><a href="{{ team_href(s.opp_id, team.bundle.scope_id) }}">{{ s.opp_name }}</a></td>
             <td><span class="pt-tagchip tag-{{ s.tag_kind }}">{{ s.tag }}</span></td>
-            <td class="num"><span class="{{ 'pt-win' if s.won else 'pt-loss' }}">{{ 'W' if s.won else 'L' }}</span></td>
+            <td class="num"><span class="{{ 'pt-win' if s.won else ('pt-dim' if s.tied else 'pt-loss') }}">{{ 'W' if s.won else ('T' if s.tied else 'L') }}</span></td>
             <td class="num t-num">{{ s.score }}</td>
           </tr>
           {% endfor %}
@@ -183,8 +183,8 @@
         <tr><td>Doubles reliance (D% − S%)</td><td class="num t-num">{{ "%+.1f pts"|format(m.doubles_reliance) if m.doubles_reliance is not none else "—" }}</td></tr>
         <tr><td>Format lift (regular → State card)</td><td class="num t-num {{ 'pt-win' if m.fmt_lift and m.fmt_lift > 0 else ('pt-loss' if m.fmt_lift and m.fmt_lift < 0) }}">{{ "%+.1f pts"|format(m.fmt_lift) if m.fmt_lift is not none else "—" }}</td></tr>
         <tr><td>State-card dual win prob.</td><td class="num t-num">{{ "%.3f"|format(m.state_dual_win_prob()) if m.state_dual_win_prob() is not none else "—" }}</td></tr>
-        <tr><td>vs top-quartile power</td><td class="num t-num">{{ m.quartile_record.get("Q1", {}).get("w", 0) }}-{{ m.quartile_record.get("Q1", {}).get("l", 0) }}</td></tr>
-        <tr><td>vs bottom-quartile power</td><td class="num t-num">{{ m.quartile_record.get("Q4", {}).get("w", 0) }}-{{ m.quartile_record.get("Q4", {}).get("l", 0) }}</td></tr>
+        <tr><td>vs top-quartile power</td><td class="num t-num">{{ m.quartile_record.get("Q1", {}).get("w", 0) }}-{{ m.quartile_record.get("Q1", {}).get("l", 0) }}{% if m.quartile_record.get("Q1", {}).get("t", 0) %}-{{ m.quartile_record["Q1"]["t"] }}{% endif %}</td></tr>
+        <tr><td>vs bottom-quartile power</td><td class="num t-num">{{ m.quartile_record.get("Q4", {}).get("w", 0) }}-{{ m.quartile_record.get("Q4", {}).get("l", 0) }}{% if m.quartile_record.get("Q4", {}).get("t", 0) %}-{{ m.quartile_record["Q4"]["t"] }}{% endif %}</td></tr>
         <tr><td>One-point duals</td><td class="num t-num">{{ m.close_wins }}-{{ m.close_duals - m.close_wins }}</td></tr>
         <tr><td>Expected wins (power model)</td><td class="num t-num">{{ "%.1f"|format(m.expected_wins) if m.expected_wins is not none else "—" }}</td></tr>
         <tr><td>Record luck</td><td class="num t-num {{ 'pt-win' if m.record_luck and m.record_luck > 0 else ('pt-loss' if m.record_luck and m.record_luck < 0) }}">{{ "%+.1f"|format(m.record_luck) if m.record_luck is not none else "—" }}</td></tr>

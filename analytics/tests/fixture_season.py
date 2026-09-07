@@ -107,17 +107,21 @@ def _lines(shape: tuple[int, int], home_team, away_team, home_wins: bool):
     return out
 
 
-def _dual(home, away, *, phase: str, district: bool, date: str, shape=(3, 4)):
+def _dual(home, away, *, phase: str, district: bool, date: str, shape=(3, 4), tied=False):
     """Play one dual: the alphabetically-earlier STRENGTH RANK (roster index
     order encoded by team.rank) wins every line. Appends the home-card entry
     (the only copy the exporter reads) and updates both records."""
     home_wins = home.rank < away.rank
-    pf = float(sum(shape)) if home_wins else 0.0
+    pf = float(sum(shape)) / 2 if tied else (float(sum(shape)) if home_wins else 0.0)
     pa = float(sum(shape)) - pf
     home.schedule.append({"opp": away.school.name, "home": True, "phase": phase,
-                          "pf": pf, "pa": pa, "won": home_wins,
+                          "pf": pf, "pa": pa, "won": home_wins and not tied, "tied": tied,
                           "district": district, "date": date,
                           "lines": _lines(shape, home, away, home_wins)})
+    if tied:
+        home.ties += 1
+        away.ties += 1
+        return
     winner, loser = (home, away) if home_wins else (away, home)
     winner.wins += 1
     loser.losses += 1
@@ -142,6 +146,8 @@ def build_season(year: int = 2028, *, bump: float = 0.0, moves: dict | None = No
     second season passes one, so development is measurable); `moves` relocates
     players by pid before anything is played, so the whole season is internally
     consistent with the move having happened."""
+    from app.jhsaa import GROUPS
+
     groups = {"9A": ["Halbrook Basin District", "Ashbury Metro League"],
               "5A": ["Gold Valley League", "Sebastian Cape District"]}
     teams = {}
@@ -158,7 +164,7 @@ def build_season(year: int = 2028, *, bump: float = 0.0, moves: dict | None = No
                                     roster=[_player(name, j, 72 - 1.5 * r, bump, decay,
                                                     STARS.get(name))
                                             for j in range(1, size + 1)],
-                                    wins=0, losses=0, dwins=0, dlosses=0,
+                                    wins=0, losses=0, ties=0, dwins=0, dlosses=0,
                                     district_place=None, points_for=0, points_against=0,
                                     power=0.0, schedule=[], rank=r)
                 teams[school.key] = t
@@ -198,8 +204,9 @@ def build_season(year: int = 2028, *, bump: float = 0.0, moves: dict | None = No
     sebastian = by_district["Sebastian Cape District"]
     for a, b in zip(halbrook, ashbury):
         _dual(a, b, phase="regular", district=False, date=next_date())
-    for a, b in zip(halbrook, gold):
-        _dual(a, b, phase="regular", district=False, date=next_date())
+    for i, (a, b) in enumerate(zip(halbrook, gold)):
+        _dual(a, b, phase="showcase_pod", district=False, date=next_date(),
+              shape=(3, 3), tied=i == 0)
     for a, b in zip(ashbury, sebastian):
         _dual(b, a, phase="regular", district=False, date=next_date())
 
@@ -223,5 +230,5 @@ def build_season(year: int = 2028, *, bump: float = 0.0, moves: dict | None = No
                              "wins": 9, "losses": 0, "flight": "#1 Singles"}}}
     groups_out = {g: {"state": {"champion": halbrook[0].school.name if g == "9A" else "",
                                 "rounds": []}}
-                  for g in ("9A", "8A", "7A", "6A", "5A", "4A", "3A", "2A", "1A")}
+                  for g in GROUPS}
     return {"teams": teams, "groups": groups_out, "awards": awards}
