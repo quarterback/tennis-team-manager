@@ -289,10 +289,17 @@ RNG seeds. They are all plain ints — nothing stops you passing the wrong one.
   should-be-crash into plausible-looking wrong data — generated players have
   realistic names, so nobody notices. Fail loudly instead.
 See `docs/AAR-pro-grad-transfers.md` + the world-binding commit for history.
+- **‼️ NORMAL JHSAA GAMEPLAY HAS EXACTLY ONE CANONICAL LOCAL DATABASE:
+  `~/.tennis-team-manager/jhsaa_lab.db`.** The launcher does not accept a path,
+  does not inherit a different `TENNIS_DB_PATH`, and does not fall back. If the
+  canonical file cannot be used, startup stops. Known stale DBs are announced
+  but never copied, merged, deleted, migrated, or selected; a stale alternate
+  plus a missing canonical file fails closed for manual recovery. Explicit
+  scratch/test runs require `JHSAA_LAB_DEV_OVERRIDE=1`.
 - **‼️ A JHSAA LAB WORLD IS ITS OWN DATABASE FILE — the launch decides which
   universe you are in (owner incident 2026-09: the owner designed the split and
   still lost an evening to it).** The lab launcher (`scripts/jhsaa_lab_server.sh`)
-  binds `TENNIS_DB_PATH` to the lab's own file and sets `JHSAA_LAB_MODE`; a plain
+  binds `TENNIS_DB_PATH` to that canonical file and sets `JHSAA_LAB_MODE`; a plain
   launch reads `./tennis.db` and will CREATE a fresh league there if none exists.
   Opening a lab save "through the college route" therefore shows a brand-new
   world ("my 2073 save says 2027") while the real universe sits untouched in the

@@ -24,6 +24,35 @@ _warned = False
 #: one connection onto the fallback save mid-run.
 _resolved: dict[str, str] = {}
 
+JHSAA_LAB_CANONICAL_DB = os.path.abspath(os.path.expanduser(
+    "~/.tennis-team-manager/jhsaa_lab.db"))
+JHSAA_LAB_DEV_OVERRIDE = "JHSAA_LAB_DEV_OVERRIDE"
+_jhsaa_lab_checked = False
+
+
+def _jhsaa_lab_path_invariant(configured: str) -> str:
+    """Enforce the one-file rule before any app module can open a lab DB.
+
+    Alternate paths remain available only when the deliberately named developer
+    override is set.  The ordinary launcher never sets that override.
+    """
+    global _jhsaa_lab_checked
+    configured = os.path.abspath(os.path.expanduser(configured))
+    if os.environ.get(JHSAA_LAB_DEV_OVERRIDE):
+        return configured
+    if configured != JHSAA_LAB_CANONICAL_DB:
+        raise RuntimeError(
+            "JHSAA lab startup refused: TENNIS_DB_PATH resolves to "
+            f"{configured}, not the canonical database {JHSAA_LAB_CANONICAL_DB}. "
+            f"Scratch/test runs must explicitly set {JHSAA_LAB_DEV_OVERRIDE}=1.")
+    if not _jhsaa_lab_checked:
+        # Import lazily: startup owns SQLite inspection, while this leaf module
+        # remains usable by the rest of the application without an import cycle.
+        from .jhsaa_lab_startup import preflight
+        preflight(configured)
+        _jhsaa_lab_checked = True
+    return configured
+
 
 def _writable_dir(path: str) -> bool:
     """Can we actually create/write the parent directory of `path`?
@@ -83,6 +112,8 @@ def resolve_db_path() -> str:
     Memo-warns once, naming the path actually used and whether it persists."""
     global _warned
     configured = os.environ.get("TENNIS_DB_PATH", _DEFAULT)
+    if os.environ.get("JHSAA_LAB_MODE"):
+        configured = _jhsaa_lab_path_invariant(configured)
     got = _resolved.get(configured)
     if got is not None:
         return got

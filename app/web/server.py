@@ -3160,7 +3160,7 @@ def create_app() -> Flask:
     def _jhsaa_lab_mode() -> bool:
         """Gate for the standalone JHSAA lab surface (see
         docs/PLAN-jhsaa-standalone-lab-mode.md). Set ONLY on a process launched
-        against a dedicated scratch database (`scripts/jhsaa_lab_server.sh`) —
+        against the dedicated canonical database (`scripts/jhsaa_lab_server.sh`) —
         never on the real save's process. `/jhsaa-lab*` 404s unless this is set,
         so the destructive "generate" action can never reach a real save even if
         this code ships to every instance."""
@@ -3203,7 +3203,7 @@ def create_app() -> Flask:
     def jhsaa_lab():
         """A standalone JHSAA season generator, decoupled from the college/pro
         sim: click to produce a brand-new, full-fidelity, both-gender season in
-        THIS process's own (scratch) database, browsable at the ordinary /jhsaa
+        THIS process's canonical lab database, browsable at the ordinary /jhsaa
         pages and exportable via the ordinary /research/export page — neither
         needs any change, since this process's DEFAULT_SEED world IS the lab
         season once one exists."""
@@ -3226,7 +3226,7 @@ def create_app() -> Flask:
 
     @app.route("/jhsaa-lab/generate", methods=["POST"])
     def jhsaa_lab_generate():
-        """Wipe this (scratch) database's world and simulate a brand-new,
+        """Reset this canonical lab database's world and simulate a brand-new,
         independent JHSAA season for both genders — no college universe built
         (`skip_college=True`). `world.reset` + `get_or_create_jhsaa_only` never
         runs anywhere but a lab-mode process (gated above), and a lab process's

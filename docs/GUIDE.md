@@ -846,10 +846,10 @@ recruit board needs its output.
   (many independent seasons, multi-year cohort aging/graduation) without
   building a whole college universe just to get one season. Launch it with:
   ```bash
-  scripts/jhsaa_lab_server.sh [db-path] [port]   # defaults: /tmp/jhsaa_lab.db, port 5050
+  scripts/jhsaa_lab_server.sh [port]   # canonical DB; default port 5050
   ```
   then open `http://localhost:<port>/jhsaa-lab` in a browser. It runs against
-  its **own scratch database** — never your real save — and is safe to run
+  its canonical persistent database, `~/.tennis-team-manager/jhsaa_lab.db`, and is safe to run
   alongside your normal app instance (which defaults to port 5000). The
   `/jhsaa-lab*` routes only exist when `JHSAA_LAB_MODE=1`, which the launcher
   script sets automatically. On the page: **Generate new season** wipes that
@@ -861,6 +861,15 @@ recruit board needs its output.
   minutes per season from a cold process. That cost is real (~600 programs
   across both genders); the normal app just hides it behind a boot-time
   cache warm the lab doesn't have.
+
+  **Normal JHSAA gameplay has one canonical local database:
+  `~/.tennis-team-manager/jhsaa_lab.db`. If that database cannot be used, the
+  app stops. It never creates or falls back to another JHSAA database.** On
+  every boot the launcher reports the world pointer, salt, and archive-year
+  range before any creation or simulation. A stale DB in `/tmp` or
+  `/private/tmp` is reported but never selected or changed; if the canonical
+  file is absent, such a DB makes startup fail for manual recovery. Scratch
+  databases are developer/test-only and require `JHSAA_LAB_DEV_OVERRIDE=1`.
 
 ### 22. The Pro Tour (GTT) <a id="gtt"></a>
 
