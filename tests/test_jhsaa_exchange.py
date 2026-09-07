@@ -72,15 +72,33 @@ def test_the_roll_is_local_to_the_school():
     assert [p.pid for p in before if p] == [p.pid for p in reversed(after) if p]
 
 
-def test_arrivals_favour_the_small_classifications():
-    """The "helps smaller programs" half, and the ONLY place that preference
-    lives: `EXCHANGE_RATE` is a per-class probability, so a 1A program is given
-    one more OFTEN — never a better one. The talent lift is identical in every
-    class."""
-    assert jh.EXCHANGE_RATE["1A"] > jh.EXCHANGE_RATE["9A"]
-    assert jh.EXCHANGE_RATE["Group 3"] > jh.EXCHANGE_RATE["Group 1"]
-    # The lift itself carries no class term.
-    assert isinstance(jh.EXCHANGE_MEAN, float) and jh.EXCHANGE_SPREAD > 1.0
+def test_every_classification_can_host_at_one_rate():
+    """‼️ NOT A SMALL-SCHOOL MECHANIC (owner rule 2026-09: "any school from
+    Group 3 to 9A can roll an exchange student … it's not exclusively a mechanic
+    for smaller programs"). One rate for the association, no class term anywhere
+    — which also makes the play-up bug unrepeatable: the first version keyed on
+    `school.group`, the CHAMPIONSHIP a program enters, so a played-up 3A drew
+    7A's rate. Anything that reads a program's class must read `classification`
+    (what it is), never `group` (where it plays)."""
+    assert isinstance(jh.EXCHANGE_RATE, float)
+    hosts = _hosts()
+    classes = {s.classification for s, _p in hosts}
+    # Every band is represented across a full association, big schools included.
+    assert {"9A", "8A"} & classes and {"1A", "Group 3"} & classes
+    assert len(classes) >= 8, sorted(classes)
+
+
+def test_the_four_named_archetypes_never_host():
+    """Owner rule 2026-09: a program "flagged with neglect, turnout, coaching or
+    blueblood" does not roll one — each is a program whose story is already about
+    its own intake. `upstart` is deliberately NOT excluded (a rolled run, not a
+    standing property, and the owner did not name it)."""
+    assert set(jh.EXCHANGE_EXCLUDED_ARCHETYPES) == {
+        "blue_blood", "coaching", "neglect", "turnout"}
+    for school in jh.load_schools("boys"):
+        mod = _mod(school)
+        if mod.get("kind") in jh.EXCHANGE_EXCLUDED_ARCHETYPES:
+            assert jh.exchange_student(school, 0, "", mod) is None, school.name
 
 
 def test_the_arrival_rate_is_a_wrinkle_not_a_wave():
@@ -146,6 +164,25 @@ def test_nothing_marks_them_as_an_exchange_student():
     assert {type(q) for q in ordinary} == {type(p)}
     for attr in ("exchange", "is_exchange", "exchange_student", "arrival"):
         assert not hasattr(p, attr), attr
+
+
+def test_no_arrival_predates_the_rollout_era(monkeypatch):
+    """‼️ THE ONE THAT WOULD HAVE CORRUPTED A REAL SAVE. Every archived JHSAA
+    season is REBUILT from seed — the school page, the player page and the
+    research export all replay history through `build_roster` — so an ungated
+    arrival appears on rosters for seasons played before the mechanic existed,
+    whose duals, ladders and honours were archived without them. `exchange_era`
+    is the `name_era` idiom and gates on the SEASON."""
+    monkeypatch.setattr(jh, "exchange_era", lambda: 2040)
+    schools = jh.load_schools("boys")[:150]
+    for year in (2030, 2039):
+        assert not [s for s in schools
+                    if jh.exchange_student(s, year, "", _mod(s))], year
+    assert [s for s in schools if jh.exchange_student(s, 2040, "", _mod(s))]
+    # And the gate is on the roster too, not only the helper.
+    host = next(s for s in schools if jh.exchange_student(s, 2040, "", _mod(s)))
+    grade11 = lambda y: [q for q in jh.build_roster(host, y, "") if q.grade == 11]
+    assert len(grade11(2039)) < len(grade11(2040))
 
 
 def test_the_kill_switch_returns_the_pre_feature_association(monkeypatch):

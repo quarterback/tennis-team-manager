@@ -2678,19 +2678,34 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   (1,722 of 17,718 in the owner's 2075 boys season). That cohort draw is a
   different thing — four-year seats, born here — and is UNTOUCHED: it is
   era-gated because widening it renames every archived roster.
+  **‼️ NOTHING PREDATES `exchange_era()`** (the `name_era` idiom, gating on the
+  SEASON rather than an entry-year cohort). Every archived JHSAA season is REBUILT
+  from seed — the school page, the player page and the research export all replay
+  history through `build_roster` — so an ungated arrival grows an extra player on
+  ~5% of rosters in EVERY already-played year, whose duals, ladders and honours
+  were archived without them. **In this section a new roster ingredient is
+  retroactive by default: anything that changes who is on a roster needs an era
+  gate before it needs anything else.**
+  **‼️ IT IS NOT A SMALL-SCHOOL MECHANIC** (owner rule 2026-09: "any school from
+  Group 3 to 9A can roll an exchange student … it's not exclusively a mechanic for
+  smaller programs"). `EXCHANGE_RATE` is ONE number (0.05) for the association and
+  there is no class term anywhere; `EXCHANGE_EXCLUDED_ARCHETYPES` (blue_blood,
+  coaching, neglect, turnout — never `upstart`, a rolled run the owner did not
+  name) are the only programs that never host. ‼️ The retired per-class table was
+  also WRONG: it keyed on `school.group`, the CHAMPIONSHIP a program enters, so a
+  played-up 3A drew 7A's rate — **anything reading a program's class must read
+  `classification` (what it IS), never `group` (where it plays)**, the `_TALENT`
+  distinction exactly.
   **‼️ THE ROLL IS PER SCHOOL** (`(school, year, salt)`), the `upstart` idiom and
   for its stated reason: a draw over the whole pool is NON-LOCAL, so adding or
   dropping one program would change which OTHERS host and retroactively rewrite
   archived rosters. That locality is what lets the whole mechanic exist with no
   table.
-  **Two halves of "helps smaller programs", only one class-aware**: `EXCHANGE_RATE`
-  is a per-classification probability (1A/Group 3 0.08, 9A/8A 0.02 — a small
-  program is given one more OFTEN), while the lift (`EXCHANGE_MEAN` +6.0,
-  `EXCHANGE_SPREAD` ×1.35 on the program's own `mod`, the `blue_blood` lever) is
-  IDENTICAL everywhere — never hand a small class a better player. Measured:
-  arrivals land at a median 80th percentile of their class and 19% arrive as
-  their team's No. 1; a flat lift would make nearly all of them No. 1 and turn the
-  mechanic into a championship lottery. Appended after the `ROSTER_FLOOR` top-up
+  **The lift** (`EXCHANGE_MEAN` +6.0, `EXCHANGE_SPREAD` ×1.35 on the program's own
+  `mod`, the `blue_blood` lever) is the same everywhere. Measured: arrivals land at
+  a median 80th percentile of their class and 19% arrive as their team's No. 1; a
+  flat lift would make nearly all of them No. 1 and turn the mechanic into a
+  championship lottery. Appended after the `ROSTER_FLOOR` top-up
   like a transfer (a floor is what a program fields on its OWN);
   `EXCHANGE_SEAT_BASE` 900 keeps the pid clear of every cohort seat.
   **Nationality is DERIVED from the owner's `global_college` preset** (the widest,

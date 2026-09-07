@@ -2162,6 +2162,7 @@ def reset_schools() -> None:
     _dev_era_cache.clear()
     _talent_era_cache.clear()
     _career_era_cache.clear()
+    _exchange_era_cache.clear()
     _expo_cache.clear()
     _expo_world.clear()
     _transfer_name_cache.clear()
@@ -2246,21 +2247,30 @@ EXCHANGE_GRADE = 11
 #: (real rosters run 12-36) and above the floor top-up's continuation, so an
 #: exchange pid can never collide with a cohort seat's.
 EXCHANGE_SEAT_BASE = 900
-#: Chance a program hosts one in a given season, by classification. ‼️ THIS IS
-#: THE "HELPS SMALLER PROGRAMS" HALF and it is the only place the preference
-#: lives: the talent lift below is the SAME everywhere, so a 1A host is not given
-#: a better player than a 9A host — it is simply given one more often. Expected
-#: ~41 arrivals a gender against ~870 programs (4-5%), so it reads as a wrinkle
-#: rather than a wave.
+#: Chance a program hosts one in a given season — ONE RATE FOR THE WHOLE
+#: ASSOCIATION, Group 3 to 9A (owner rule 2026-09: "any school from Group 3 to
+#: 9A can roll an exchange student … it's not exclusively a mechanic for smaller
+#: programs"). Expected ~39 arrivals a gender against ~870 programs, so it reads
+#: as a wrinkle rather than a wave.
 #
-# ‼️ ROLLED PER SCHOOL, INDEPENDENTLY — the `upstart` idiom, and for its stated
-# reason: a draw over the whole pool is NON-LOCAL, so adding or dropping one
-# program would change which OTHERS host, retroactively rewriting archived
-# seasons' rosters. A per-school Bernoulli keyed on (school, year) cannot.
-EXCHANGE_RATE = {"9A": 0.02, "8A": 0.02, "7A": 0.03, "6A": 0.03, "5A": 0.04,
-                 "4A": 0.05, "3A": 0.06, "2A": 0.07, "1A": 0.08,
-                 "Group 1": 0.03, "Group 2": 0.05, "Group 3": 0.08}
-EXCHANGE_RATE_DEFAULT = 0.04
+# ‼️ IT WAS A PER-CLASSIFICATION TABLE FIRST AND THAT WAS WRONG TWICE OVER. The
+# small-school tilt was never asked for — it was inferred from "a good way to
+# help smaller programs infuse talent", which is a description of the EFFECT on
+# a small program, not a request to ration the mechanic by class. And keyed on
+# `school.group` it did not even do what it claimed: `group` is the CHAMPIONSHIP
+# the program enters, so a played-up 3A competing in 7A drew 7A's rate. A rule
+# that reads a program's class has to read `classification` (what it IS), never
+# `group` (where it plays) — the `_TALENT` distinction exactly. There is now no
+# class term at all, so neither fault can return.
+EXCHANGE_RATE = 0.05
+#: The programs that do NOT roll one (owner rule 2026-09). An exchange placement
+#: is a school with the room and the wish to take somebody in; these four
+#: archetypes each describe a program whose story is already about its own
+#: intake — a blue blood that does not need one, a turnout program already deep,
+#: and the two coaching-quality tags whose whole character is what the program
+#: does with the players it has. `upstart` is deliberately NOT here: it is a
+#: rolled run, not a standing property, and the owner did not name it.
+EXCHANGE_EXCLUDED_ARCHETYPES = ("blue_blood", "coaching", "neglect", "turnout")
 #: The infusion, expressed in the SAME lever `blue_blood` and `upstart` use
 #: (`mod["mean"]` / `mod["spread"]`, consumed by `_talent`): centred above the
 #: host class with a WIDER spread, so an arrival is usually a real addition and
@@ -2321,6 +2331,30 @@ def _exchange_weights() -> dict:
     return w
 
 
+_exchange_era_cache: dict = {}
+
+
+def exchange_era() -> int:
+    """The first SEASON that has exchange students in this save — the `name_era`
+    idiom (`_resolve_era`), and load-bearing for the same reason.
+
+    Every archived JHSAA season is rebuilt from seed on demand, so a new roster
+    ingredient is retroactive by default: without this, a save with ten years of
+    history would grow an eleventh player on ~4% of its rosters in EVERY one of
+    those years, and the archived duals, ladders and honours — written when
+    those players did not exist — would disagree with the roster the page
+    rebuilds beside them.
+
+    ‼️ It gates on the SEASON, not on an entry-year cohort like the other four,
+    because an arrival belongs to one season rather than to a class of players.
+    `_resolve_era` happens to return the right number for both: the newest
+    archive's season is `BASE_YEAR + index + 1`, so the first unseen season and
+    the first unseen cohort are the same year. A fresh save gets 0 — everything
+    is new — and an explicit `worldconfig` value wins, which is how a save can
+    start the mechanic at a chosen season."""
+    return _resolve_era("jhsaa_exchange_era", _exchange_era_cache)
+
+
 def exchange_student(school: School, year: int, salt: str,
                      mod: dict | None = None) -> Prospect | None:
     """This program's exchange student for `year`, or None — the whole mechanic.
@@ -2334,9 +2368,20 @@ def exchange_student(school: School, year: int, salt: str,
     """
     if not EXCHANGE_ENABLED:
         return None
-    rate = EXCHANGE_RATE.get(school.group, EXCHANGE_RATE_DEFAULT)
+    # ‼️ NOTHING BEFORE THE ROLLOUT ERA. `build_roster` is how every archived
+    # season is REBUILT — the school page, the player page and the research
+    # export all replay history through it — so an ungated arrival would appear
+    # on rosters for seasons played before the mechanic existed, in years whose
+    # duals, ladders and honours were archived without them. Phantom team-mates,
+    # and every stored result disagreeing with the roster it supposedly came
+    # from. `exchange_era` is the `name_era` idiom, for the same reason those
+    # gates exist.
+    if year < exchange_era():
+        return None
+    if (mod or {}).get("kind", archetype(school.name)) in EXCHANGE_EXCLUDED_ARCHETYPES:
+        return None
     rng = random.Random(f"{salt}|jhsaa-exchange|{school.key}|{year}")
-    if rng.random() >= rate:
+    if rng.random() >= EXCHANGE_RATE:
         return None
     # The lift rides on the program's OWN modifier, so a blue blood's arrival is
     # still drawn on a blue blood's numbers — the arrival is an addition to the
