@@ -82,6 +82,29 @@ def test_the_page_responds(client, path):
     assert r.status_code in (200, 302), (path, r.status_code)
 
 
+def test_jhsaa_pages_do_not_wait_for_the_college_world_prime(monkeypatch):
+    """A restored/cold save must still open the high-school front door directly.
+
+    JHSAA readers never use the college roster cache.  This specifically exercises
+    the before-request hook, rather than stubbing warmth as older route tests did,
+    so a regression cannot hide behind the generic loading response.
+    """
+    from app import world as wd
+
+    monkeypatch.setattr(wd, "exists", lambda *a, **k: True)
+    monkeypatch.setattr(wd, "is_primed", lambda *a, **k: False)
+
+    def unexpected_prime(*args, **kwargs):
+        raise AssertionError("a JHSAA request tried to prime the college world")
+
+    monkeypatch.setattr(wd, "prime", unexpected_prime)
+    response = create_app().test_client().get("/jhsaa")
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Warming up the league" not in html
+    assert 'class="jh-shell jh-front"' in html
+
+
 # --- every classification is reachable from every surface --------------------------
 
 # `/jhsaa` is the FRONT PAGE now (owner spec 2026-09) — association-wide, no
@@ -92,14 +115,10 @@ CLASS_SURFACES = ["/jhsaa/class", "/jhsaa/rankings", "/jhsaa/honors", "/jhsaa/br
 
 @pytest.fixture(scope="module")
 def warm_client():
-    """A client that always gets the PAGE, never the warming loader.
+    """A client with college warmth stubbed for legacy cross-module isolation.
 
-    Once a world row exists, `_prime_world` answers a cold request with the
-    warming shell — which carries no scope rail, so a class-coverage assertion
-    against it fails for a reason that has nothing to do with the ladder (and
-    only once another test in the module has warmed the world, which is what
-    made it order-dependent). No JHSAA surface reads a college program, so
-    reporting warm is honest here — the same stub `test_jhsaa_toc` uses."""
+    JHSAA routes now bypass the college prime entirely; these stubs remain because
+    other test modules share the process-level caches and application globals."""
     import os
     from app import world as wd
     os.environ.setdefault("PTC_NO_BOOT_WARM", "1")

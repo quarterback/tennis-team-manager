@@ -569,6 +569,13 @@ def create_app() -> Flask:
         # minute, fly marks the machine unhealthy, and it recycles (the 503 loop).
         if request.endpoint in ("health", "ready", "static"):
             return
+        # JHSAA pages are archive/high-school readers and do not touch the college
+        # roster cache.  Making them wait for `world.prime()` meant a cold or
+        # restored save showed the minute-long college warming shell before even a
+        # program page could open.  Keep the whole route namespace independent;
+        # the standalone lab already relied on the same separation below.
+        if request.path.startswith("/jhsaa"):
+            return
         # A JHSAA-lab process never builds the college roster cache at all
         # (skip_college=True — see `_jhsaa_lab_mode` below), so `is_primed()`
         # can never go true here (see `/api/ready` above for why) and every
