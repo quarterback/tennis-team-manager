@@ -14,6 +14,13 @@ render broke" from "the season was played under different rules".
 Reads `world_jhsaa` straight out of the save (`$TENNIS_DB_PATH`, else
 ./tennis.db) — no simulation, no writes, nothing cached.
 
+‼️ IT NEVER CREATES A DATABASE. `sqlite3.connect` makes an empty file for a
+path that does not exist, so a mistyped `--db` would leave a zero-byte save
+sitting next to the real one — and "which save am I actually looking at" is
+precisely the question this script exists to answer (see the lab-database
+note in CLAUDE.md). A missing path is refused before connecting, and the
+connection is opened `mode=ro` so the tool cannot write even by accident.
+
 `pts` is the point total of the draw's first archived dual, which is the dual
 FORMAT the season was played at: 5 = 1S/4D, 6 = 3S/3D, 9 = 4S/5D.
 """
@@ -24,6 +31,7 @@ import json
 import os
 import sqlite3
 import sys
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -50,7 +58,13 @@ def main() -> int:
 
     path = a.db or resolve_db_path()
     print(f"save: {path}\n")
-    conn = sqlite3.connect(path)
+    if not os.path.isfile(path):
+        print("no save file there — nothing was created; check the path "
+              "(the JHSAA lab keeps its own file, see CLAUDE.md)")
+        return 1
+    # `mode=ro` on a URI: read-only for real, so a wrong path can never be
+    # turned into an empty database by the act of looking at it.
+    conn = sqlite3.connect(f"{Path(path).resolve().as_uri()}?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
     try:
         rows = conn.execute(
