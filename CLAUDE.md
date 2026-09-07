@@ -830,29 +830,35 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   Group 3 (JHSAA rule 2026-09, EXPANDED 2026-09,
   `docs/AAR-jhsaa-playoff-expansion-40.md`): 8A, 9A and Group 1 play 48 = 32 road
   + 16 at-large; 7A, 6A, 5A, 4A, 3A and 2A play 40 = 32 road + 8; 1A plays
-  40 = 24 road + 16** (`AT_LARGE_BIDS`, `ATLARGE_GROUPS` derived from it,
+  32 = 24 road + 8** (`AT_LARGE_BIDS`, `ATLARGE_GROUPS` derived from it,
   `run_state_parastate(byes= road − bids)`): the road qualifies its own
   `state_field_size` untouched — the TABLE never says 48/40 — and a five-member
   deterministic committee (`select(seats=)`) picks the bids from EVERY non-road
   team (a district champion who missed the road is automatic and CONSUMES a bid)
   — and **an at-large is ALWAYS seeded below every road qualifier**,
   structurally. The Parastate is the `2 × bids` lowest seeds high-low
-  (17v48…32v33; 25v40…32v33 at a 32 road; 9v40…24v25 in 1A), winners keep their
+  (17v48…32v33; 25v40…32v33 at a 32 road; 17v32…24v25 in 1A), winners keep their
   seed; it renders via `_jh_split_state`'s named prelim split, and every surface
   reads bye/seat counts OFF THE ARCHIVE so a 7A season selected at 16 still
   renders as sixteen. `CHALLENGE_SLOTS` is empty — the 4-seat valve belongs to a
   40 ROAD and no class is on one. Margins in the margin systems are
   FORMAT-NORMALISED (a 5-0, 7-0 and 9-0 are all +1.0) — never feed raw margins
   across mixed formats.
-  **‼️ 1A REACHES 40 ON BIDS, NOT ON A BIGGER ROAD** — because the expansion
-  touches no class's road, not because 1A's road is wired differently. Its 24 is
-  a TALENT decision in `STATE_FIELD`; `_recovery` runs the SAME rungs for every
-  class and only the counts differ (1A's Divisionals/Semi-Conference/Conference
-  are 8 against a 32-road class's 16), and **`_recovery_24` is RETIRED AND
-  UNWIRED** — never cite it as what a 24 field routes to. So 1A takes 16 bids
-  over its 24 road and the Parastate's survivors land on the 24 draw it has
-  always played; moving it to a 32 road later is a one-number `STATE_FIELD` edit
-  the ladder re-derives from, i.e. an owner call about 1A's depth.
+  **‼️ THE BID COUNT IS THE DECISION; THE FIELD SIZE IS THE CONSEQUENCE.** Eight
+  bids is a 40 off a 32 road and a **32 off 1A's 24** — so "every class crowns
+  from 40" is NOT the rule and 1A must not be "tidied" onto one. **1A IS NOT ON A
+  40 BY OWNER DECISION (2026-09): "I do not want 16 at-large teams in 1A"** — a
+  40 there costs 16 bids, which would make it the one class where the committee
+  picks 40% of the field against everyone else's 20%. It takes the same eight as
+  7A-2A, its Parastate reduces 32 to 24, and its State draw is the untouched 24
+  it has always played (first round seeds 9-24, the eight Zonal champions
+  byeing). Its road is untouched too: 24 is a TALENT decision in `STATE_FIELD`,
+  NOT a different wiring — `_recovery` runs the SAME rungs for every class and
+  only the counts differ (1A's Divisionals/Semi-Conference/Conference are 8
+  against a 32-road class's 16), and **`_recovery_24` is RETIRED AND UNWIRED**,
+  so never cite it as what a 24 field routes to. The Epiregional needed nothing:
+  it already runs `for group in GROUPS`, so 1A's champions were always placed
+  1-4 (winners) / 5-8 (losers).
   Asserted at import: `bids <= state_field_size(group)`, since every at-large
   must have a road qualifier to play for its seat.
   **‼️ PLAYOFF SIZE AND DUAL FORMAT ARE SEPARATE AXES.** The expansion changed

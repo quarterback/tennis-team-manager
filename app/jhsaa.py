@@ -181,21 +181,28 @@ WIDE_GROUPS = ("7A", "8A", "9A", "Group 1")  # groups whose road-to-State AND ea
 #                        depth of the class.
 #   6A / 5A / 4A       — 40 = 32 road + 8 at-large, 7A's shape exactly.
 #   3A / 2A            — likewise: JHSAA playoff expansion, 2026-09.
-#   1A                 — 40 = 24 road + 16 at-large; 16-dual Parastate (9-40),
-#                        seeds 1-8 bye. ‼️ THE EXPANSION DOES NOT TOUCH A ROAD,
-#                        so 1A's 24 stands and the bids make up the difference:
-#                        bids are `field − road` and nothing else, and the
-#                        survivors plus the byes land on the 24 draw 1A has
-#                        always played. Its 24 is a TALENT decision (`STATE_FIELD`
-#                        — "the talent really degrades at that level"), NOT a
-#                        different wiring: `_recovery` runs the same rungs for
-#                        every class and only the counts differ (1A's
-#                        Divisionals/Semi-Conference/Conference are 8 where a
-#                        32-road class runs 16). ‼️ `_recovery_24` is RETIRED AND
-#                        UNWIRED — do not cite it as the reason 1A's road is
-#                        what it is. Moving 1A to a 32 road is a `STATE_FIELD`
-#                        edit and the ladder re-derives; it is an owner call
-#                        about 1A's depth, not a structural obstacle.
+#
+# ‼️ EIGHT BIDS IS THE ASSOCIATION'S NUMBER; the FIELD is whatever the road plus
+# eight comes to (40 off a 32 road, 32 off 1A's 24). Read it that way round: the
+# committee's size is the decision, the field size is the consequence.
+#   1A                 — 32 = 24 road + 8 at-large; 8-dual Parastate (17v32 …
+#                        24v25), seeds 1-16 bye. ‼️ THE ONE CLASS THAT IS NOT ON
+#                        A 40, BY OWNER DECISION (2026-09): "I do not want 16
+#                        at-large teams in 1A." Sixteen bids is what a 40 costs
+#                        off a 24 road, and it would have made 1A the one class
+#                        where the committee picks 40% of the field against
+#                        everybody else's 20%. So 1A takes the SAME EIGHT BIDS
+#                        as 7A-2A and the Parastate reduces 32 to 24 — its State
+#                        draw is untouched, the 24 it has always played, with
+#                        its eight Zonal champions still byeing the first round.
+#                        Its road is untouched too: 24 is a TALENT decision
+#                        (`STATE_FIELD` — "the talent really degrades at that
+#                        level"), NOT a different wiring — `_recovery` runs the
+#                        same rungs for every class and only the counts differ
+#                        (1A's Divisionals/Semi-Conference/Conference are 8
+#                        where a 32-road class runs 16), and ‼️ `_recovery_24`
+#                        is RETIRED AND UNWIRED, so never cite it as the reason
+#                        1A's road is what it is.
 #
 # ‼️ THE EXPANSION IS PLAYOFF SIZE ONLY — 6A down to 1A keep their dual formats
 # exactly as they are (owner rule 2026-09: "none of those classifications will
@@ -213,7 +220,7 @@ WIDE_GROUPS = ("7A", "8A", "9A", "Group 1")  # groups whose road-to-State AND ea
 # Ordered by classification (the committee page lists `ATLARGE_GROUPS` as its
 # group switcher and opens on the first).
 AT_LARGE_BIDS: dict[str, int] = {"9A": 16, "8A": 16, "7A": 8, "6A": 8, "5A": 8,
-                                 "4A": 8, "3A": 8, "2A": 8, "1A": 16,
+                                 "4A": 8, "3A": 8, "2A": 8, "1A": 8,
                                  "Group 1": 16}
 ATLARGE_GROUPS = tuple(AT_LARGE_BIDS)
 #: The opening round's name — the at-larges' round. Named in `round_names`, which
@@ -7633,14 +7640,14 @@ def run_state_parastate(seeds: list[TeamSeason], *, byes: int, seed: int) -> dic
     `byes` is how many top seeds sit the Parastate out — `road − bids`, so the
     Parastate is exactly the `2 × bids` lowest seeds: a 48 (32 road, 16 bids)
     byes 1-16 and plays 17v48 … 32v33; a 40 off a 32 road (8 bids) byes 1-24 and
-    plays 25v40 … 32v33; 1A's 40 off its 24 road (16 bids) byes 1-8 and plays
-    9v40 … 24v25. Pairs are pinned high-low, the higher seed hosts. Winners
+    plays 25v40 … 32v33; 1A's 32 off its 24 road (8 bids) byes 1-16 and plays
+    17v32 … 24v25. Pairs are pinned high-low, the higher seed hosts. Winners
     RETAIN their original seed; they and the byes enter a fresh draw the size of
     the ROAD, played by `run_state` itself (`champions=byes`, which on a full 32
-    lands on the plain single-draw branch and on 1A's 24 gives its eight bye
-    lines the single bye that shape has always had), so from the Round of 32 —
-    the Octofinals in 1A — it is the association's ordinary seeded bracket at
-    the shape that class already played. The Parastate is named in
+    lands on the plain single-draw branch and on 1A's 24 gives its eight Zonal
+    champions the single first-round bye that shape has always had), so from the
+    Round of 32 — the 24-team first round in 1A — it is the association's
+    ordinary seeded bracket at the shape that class already played. The Parastate is named in
     `round_names`, which is exactly what
     makes `state._jh_split_state` draw it as its own tree — there is no bracket
     path from a Parastate slot to a main-draw slot.

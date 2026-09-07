@@ -1,4 +1,4 @@
-# AAR — the 2026-09 JHSAA playoff expansion: 6A-1A to 40 on the Parastate
+# AAR — the 2026-09 JHSAA playoff expansion: 6A-1A onto the Parastate
 
 **Owner rule (2026-09).** "JHSAA has approved playoff expansion in 6A, 5A, 4A,
 3A, 2A, 1A TO 40 teams using the same parastate format that 7A uses. None of
@@ -20,41 +20,60 @@ ARCHIVE. So six new entries is the feature:
 |---|---:|---:|---:|
 | 9A · 8A · Group 1 | 32 | 16 | 48 |
 | 7A · 6A · 5A · 4A · 3A · 2A | 32 | 8 | 40 |
-| **1A** | **24** | **16** | **40** |
+| **1A** | **24** | **8** | **32** |
 | Group 2 · Group 3 | 32 / 24 | 0 | road only |
+
+‼️ **THE BID COUNT IS THE DECISION; THE FIELD SIZE IS THE CONSEQUENCE.** Eight
+bids is a 40 off a 32 road and a 32 off 1A's 24. Read the table that way round —
+"every class crowns from 40" is not the rule and never was.
 
 Nothing else moved. The road qualifies exactly what it qualified before, by the
 same ladder, with the same Zonal/Epiregional/recovery/Specials arithmetic; the
 at-larges are added on top and seeded below every road qualifier, structurally.
 
-## ‼️ 1A REACHES 40 ON BIDS — because the expansion touches no road at all
+## ‼️ 1A IS NOT ON A 40 — the owner refused sixteen bids
 
-Every other expanded class is 32 + 8; 1A's road is **24**, so it takes **16 bids
-on that 24 road**. The Parastate is byes 1-8 and 9v40 … 24v25; the sixteen
-winners join the eight bye lines on the 24-team draw 1A has always played.
+The approval said "to 40 teams" in six classes, and for five of them that is
+32 + 8. 1A's road is **24**, so a 40 there costs **16** bids — and that would
+have made 1A the one class where the committee picks 40% of the field against
+everyone else's 20%. Owner, plainly: **"I do not want 16 at-large teams in
+1A."**
 
-‼️ **The reason is the rule, not a structural obstacle — and a draft of this AAR
-got that wrong.** It claimed `state_field_size(group) == 24` "routes a class to
-the fixed `_recovery_24` wiring", so a 32 road would have re-plumbed 1A's whole
-ladder. **`_recovery_24` is RETIRED AND UNWIRED** (owner rule 2026-08, and its
-own docstring says so): `run_season` sends EVERY class through `_recovery`, the
-same rungs everywhere with only the counts changing — at a 24 field the
-Divisionals, Semi-Conference and Conference are 8 where a 32-road class runs 16,
-and the berths split 8 Zonal + 8 Semi-State + 4 Divisional + 4 Specials instead
-of 8/8/8/8. 1A's 24 is a TALENT decision recorded in `STATE_FIELD` ("the talent
-really degrades at that level"), full stop.
+So 1A takes the SAME EIGHT BIDS as 7A-2A and its structure is **32 = 24 + 8**:
 
-So the honest statement of the choice: **moving 1A to a 32 road is a one-number
-`STATE_FIELD` edit that the ladder re-derives from** (`recovery_shape` projects
-it; both field sizes need the same 48 sponsors and 1A has 77-87). It was not
-done because the owner asked to expand the PLAYOFF, not to lengthen 1A's road —
-a values call about how much of 1A's field should be earned on court versus
-selected, which is the owner's to make and cheap to change either way.
+| stage | who plays | alive after |
+|---|---|---:|
+| Road | qualifies 24 | 24 |
+| Epiregional | the 8 Zonal champions, one round among themselves | 24 (placement only) |
+| Committee | adds 8, seeded 25-32 | **32** |
+| **Parastate** | seeds 17-32 — 17v32 … 24v25; 1-16 bye | **24** |
+| R24 first round | seeds 9-24; **the 8 Zonal champions bye** | 16 |
+| R16 → QF → SF → Final | ordinary bracket | 1 |
 
-**The lesson:** a retired code path with a long explanatory docstring reads
-exactly like a live one. Before citing a function as the reason a rule exists,
-check that anything still calls it — `grep` for the call site, not the
-definition.
+Its State draw is **untouched** — the same 24 with the same eight first-round
+byes it has always played. The Parastate is simply a reduction round in front
+of it. Seeds: 1-4 Epiregional winners, 5-8 Epiregional losers, 9-24 the rest of
+the road by ATR, 25-32 the at-larges by Borda — which is what
+`epi_w + epi_l + others + at_large` already produced, with no seeding change.
+
+**The Epiregional needed nothing.** `run_epiregional` has always run
+`for group in GROUPS`; 1A's champions were already placed 1-4 / 5-8 by it.
+
+**Two corrections this section records, both of which shipped in a draft:**
+
+1. A draft explained 1A's 24 road by saying `state_field_size(group) == 24`
+   "routes a class to the fixed `_recovery_24` wiring". **`_recovery_24` is
+   RETIRED AND UNWIRED** (its own docstring says so): every class runs
+   `_recovery`, the same rungs with different counts — 1A's Divisionals,
+   Semi-Conference and Conference are 8 where a 32-road class runs 16. A
+   retired code path with a long explanatory docstring reads exactly like a
+   live one; **grep the call site, not the definition.**
+2. A draft then pinned "every Parastate class totals 40 or 48" as an
+   invariant, and a later one invented "no class lets the committee pick more
+   than a quarter of its field" — which is false for the 48s (16 of 48 is a
+   third). **Do not promote an observation about today's table into a rule the
+   owner never stated.** The test now pins the three totals as consequences of
+   the bid counts, which is what they are.
 
 **The general lesson:** when a spec says "same format as X", find the
 PARAMETER that produced X's shape rather than copying X's numbers. Here the
@@ -90,13 +109,13 @@ so the check earns its keep immediately.
   reading as the field it was actually selected at.
 - The bracket page — `state._jh_split_state` splits on the named Parastate round
   and `_jh_state_view` computes the bye count as `field − 2 × bids` **off the
-  archive**, never off today's table. 1A's eight bye lines fall out.
+  archive**, never off today's table. 1A's sixteen Parastate bye lines fall out.
 - `recovery_shape` / `sponsor_floor` — projections of the ROAD, which did not move.
 
 ## Cost
 
-The Parastate is the only new duals: 8 a class a gender for 7A-2A and 16 for
-1A, so **64 more duals per gender** against a season's ~5,100. The main draws
+The Parastate is the only new duals: 8 a class a gender for 7A-2A and 1A alike,
+so **56 more duals per gender** against a season's ~5,100. The main draws
 are the same size they were — a Parastate does not lengthen the bracket behind
 it, it fills the same seed lines from a larger pool.
 
@@ -104,5 +123,5 @@ it, it fills the same seed lines from a larger pool.
 
 `tests/test_jhsaa_committee.py`: the bid table pinned with its arithmetic
 (`road + bids in (40, 48)`, `bids <= road`), the WIDE/Parastate overlap pinned
-as unchanged, and 1A's 24-road 40 walked end to end through the real
-`run_state_parastate` (pairings, round sizes, the surviving 24).
+as unchanged, and 1A's 32 walked end to end through the real
+`run_state_parastate` (17v32 … 24v25, round sizes, the surviving 24).

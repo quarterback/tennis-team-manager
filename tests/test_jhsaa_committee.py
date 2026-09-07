@@ -191,40 +191,40 @@ def test_the_40_team_parastate_is_eight_bids_and_byes_1_to_24(monkeypatch):
                                   byes=16, seed=3)
 
 
-def test_1a_reaches_40_on_bids_because_its_road_never_moves(monkeypatch):
-    """The 2026-09 expansion takes 1A to 40 as well, and it is the one class
-    whose road is not 32: `STATE_FIELD["1A"] == 24` is a TALENT decision, so
-    reaching 40 is 16 BIDS on top of that road (the expansion touches no class's
-    road at all — 1A is NOT wired to a different ladder; `_recovery` runs the
-    same rungs everywhere and `_recovery_24` is retired and unwired). Seeds 1-8
-    bye — 1A's own eight bye lines — the
-    Parastate is 9v40 … 24v25, and the 24 survivors play the 24-team draw 1A has
-    always played (Octofinals down, seeds 1-8 carrying its single bye)."""
-    seeds = [_T(f"S{i:02d}") for i in range(1, 41)]
+def test_1a_takes_the_same_eight_bids_and_its_parastate_reduces_32_to_24(monkeypatch):
+    """‼️ 1A IS THE ONE CLASS NOT ON A 40 (owner rule 2026-09: "I do not want 16
+    at-large teams in 1A"). Sixteen bids is what a 40 costs off its 24 road, and
+    it would have made 1A the only class where the committee picks 40% of the
+    field. It takes the SAME EIGHT as 7A-2A, so its structure is 32 = 24 road +
+    8: the Parastate is 17v32 … 24v25 with seeds 1-16 byeing, and the 24
+    survivors play the 24-team draw 1A has always played — first round seeds
+    9-24, its eight Zonal champions byeing to the Round of 16."""
+    seeds = [_T(f"S{i:02d}") for i in range(1, 33)]
     monkeypatch.setattr(jh, "play_dual", lambda a, b, *, seed, phase: _Res(0))
     bids = jh.AT_LARGE_BIDS["1A"]
-    assert bids == 16 and jh.state_field_size("1A") == 24
+    assert bids == 8 == jh.AT_LARGE_BIDS["7A"] and jh.state_field_size("1A") == 24
     arc = jh.run_state_parastate(seeds, byes=jh.state_field_size("1A") - bids,
                                  seed=5)
     para = arc["rounds"][0]
     assert arc["round_names"][0] == jh.PARASTATE_NAME
     assert [(g["home"], g["away"]) for g in para] == \
-        [(f"S{9 + k:02d}", f"S{40 - k:02d}") for k in range(16)]
-    # 16 Parastate duals, then the 24-team draw: 8 byes, so 8 duals, then 8/4/2/1.
-    assert [len(rd) for rd in arc["rounds"]] == [16, 8, 8, 4, 2, 1]
+        [(f"S{17 + k:02d}", f"S{32 - k:02d}") for k in range(8)]
+    # 8 Parastate duals -> 24 alive; the 24 draw byes 8 and plays 8, then 8/4/2/1.
+    assert [len(rd) for rd in arc["rounds"]] == [8, 8, 8, 4, 2, 1]
     alive = {g["home"] for g in arc["rounds"][1]} | {g["away"] for g in arc["rounds"][1]}
     assert alive == {f"S{i:02d}" for i in range(9, 25)}
-    assert len(arc["field"]) == 40 and arc["champion"] == "S01"
+    assert len(arc["field"]) == 32 and arc["champion"] == "S01"
 
 
 def test_the_bid_table_and_the_committee_seat_count_agree():
-    """8A/9A/Group 1 at 16, 7A at 8 (owner rule 2026-09); 6A down to 1A joined
-    with the 2026-09 playoff expansion — every class crowns from 40 but the
-    48-field three, and 1A gets there on 16 bids because its ROAD stays the 24
-    it has always played. The committee selects exactly the group's seats and an
-    automatic bid CONSUMES one of them."""
+    """8A/9A/Group 1 at 16, everybody else at 8 (owner rules 2026-09 — 7A first,
+    then 6A-1A with the playoff expansion). ‼️ THE BID COUNT IS THE DECISION AND
+    THE FIELD IS THE CONSEQUENCE: eight bids is a 40 off a 32 road and a 32 off
+    1A's 24, which is why 1A is not on a 40 and must not be "fixed" onto one.
+    The committee selects exactly the group's seats and an automatic bid
+    CONSUMES one of them."""
     assert jh.AT_LARGE_BIDS == {"9A": 16, "8A": 16, "7A": 8, "6A": 8, "5A": 8,
-                                "4A": 8, "3A": 8, "2A": 8, "1A": 16,
+                                "4A": 8, "3A": 8, "2A": 8, "1A": 8,
                                 "Group 1": 16}
     for g in jh.ATLARGE_GROUPS:
         road = jh.state_field_size(g)
@@ -232,7 +232,12 @@ def test_the_bid_table_and_the_committee_seat_count_agree():
         # Every at-large plays a ROAD qualifier for its seat — the Parastate is
         # the `2 × bids` lowest seeds, so the bids can never outnumber the road.
         assert bids <= road, g
-        assert road + bids in (40, 48), (g, road, bids)
+        assert bids in (8, 16), g
+    # The consequence, spelled out so a "tidy 1A onto a 40" edit fails here:
+    # eight bids is a 40 off a 32 road and a 32 off 1A's 24.
+    assert jh.state_field_size("1A") + jh.at_large_bids("1A") == 32
+    assert jh.state_field_size("7A") + jh.at_large_bids("7A") == 40
+    assert jh.state_field_size("9A") + jh.at_large_bids("9A") == 48
     # ‼️ THE EXPANSION IS PLAYOFF SIZE ONLY: the dual format is a SEPARATE axis
     # (`WIDE_GROUPS`) and did not move with it. Every class added in 2026-09
     # plays the Parastate at whatever shape its road already played.
