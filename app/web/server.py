@@ -477,6 +477,28 @@ def create_app() -> Flask:
         "expected an existing save (or a JHSAA lab world, which lives in its "
         "own database via scripts/jhsaa_lab_server.sh), stop and check the "
         "path above.")
+    # ‼️ AND NAME THE UNIVERSE YOU ARE *NOT* OPENING. The canonical-path guard in
+    # `dbpath` only fires under JHSAA_LAB_MODE, so it is inert on exactly the
+    # launch that loses a save: a plain start reads ./tennis.db while the real
+    # JHSAA universe sits untouched in the lab's own file, and both launches look
+    # identical until a page renders the wrong year. Advisory, never fatal — a
+    # plain launch IS the ordinary college game, so this must not refuse it; it
+    # just makes the fork impossible to miss at the one moment it is cheap to
+    # catch. Loudest when this file has no world at all, since that is the launch
+    # that CREATES a second universe rather than merely reading one.
+    if not os.environ.get("JHSAA_LAB_MODE"):
+        try:
+            from app.dbpath import JHSAA_LAB_CANONICAL_DB
+            from app.jhsaa_lab_startup import canonical_universe_elsewhere
+            other = canonical_universe_elsewhere(JHSAA_LAB_CANONICAL_DB, _rdp())
+        except Exception:                 # advisory only — never break a boot
+            other = None
+        if other:
+            logging.getLogger("baseline.server").warning(
+                "%s a JHSAA lab universe exists at %s. This process is NOT "
+                "using it; open it with scripts/jhsaa_lab_server.sh.",
+                "‼️ ABOUT TO CREATE A NEW LEAGUE —" if not _w
+                else "NOTE:", other)
 
     # Warm the expensive caches at BOOT, off the request path, in a daemon thread.
     # The first reload after a cold start or a Fly machine recycle otherwise pays

@@ -312,12 +312,28 @@ See `docs/AAR-pro-grad-transfers.md` + the world-binding commit for history.
   `world.is_jhsaa_only()` (one indexed probe, cold path only, deliberately NOT
   memoised), and serve a LOUD diagnostic naming `scripts/jhsaa_lab_server.sh` and the
   resolved path rather than spinning. `tests/test_jhsaa_only_launch.py`.
-- **‼️ AND THE CANONICAL-PATH GUARD ABOVE IS ITSELF FLAG-GATED, so it does NOT cover
-  the launch that loses saves.** `dbpath.resolve_db_path` only calls
-  `_jhsaa_lab_path_invariant` when `JHSAA_LAB_MODE` is set — but opening a lab save
-  "through the college route" is BY DEFINITION a launch without that flag, so the
-  plain launch still silently reads `./tennis.db`. The `save[ MODE]:` boot line and
-  the JHSAA-only diagnostic are what actually catch it today; read them FIRST.
+- **‼️ THE CANONICAL-PATH GUARD IS FLAG-GATED, SO IT CANNOT COVER THE LAUNCH THAT
+  LOSES SAVES — an ADVISORY does.** `dbpath.resolve_db_path` only calls
+  `_jhsaa_lab_path_invariant` under `JHSAA_LAB_MODE`, but opening a lab save
+  "through the college route" is BY DEFINITION a launch without that flag: the guard
+  is inert in exactly the situation it exists for. Enforcing the canonical path on
+  every launch is NOT the fix — a plain launch onto `./tennis.db` is the ordinary,
+  correct college game. So `jhsaa_lab_startup.canonical_universe_elsewhere` names the
+  lab universe the process is NOT opening, on the `save[ MODE]:` boot line, loudest
+  ("‼️ ABOUT TO CREATE A NEW LEAGUE") when this file has no world — the launch that
+  FORKS a universe rather than merely reading one. It is advisory and must stay so:
+  `mode=ro`, never creates, never selects, and every failure swallowed (a college
+  boot must not die because a lab file it is not using is unreadable).
+- **‼️ AN ARCHIVE ONE YEAR AHEAD OF `world.year` IS THE DESIGNED CRASH STATE, NOT
+  CORRUPTION.** `advance_jhsaa_lab` commits the season's archive BEFORE moving the
+  year pointer, precisely so a crash mid-simulation leaves that year REPLAYABLE (the
+  next advance recomputes the same year instead of skipping a permanently
+  un-simulated season). The lab preflight first demanded `max == world.year`, which
+  made startup FATAL on the one outcome that ordering exists to produce: a sim that
+  died mid-advance did not just lose the season, it locked the owner out of the save
+  it died in. `_check_consistency` now warns and starts. Still fatal, and must stay
+  so: a HOLE in the archive, and a world claiming years it never archived (the
+  pointer ahead of the archive — the direction that means a season was skipped).
 - **‼️ A JHSAA LAB WORLD IS ITS OWN DATABASE FILE — the launch decides which
   universe you are in (owner incident 2026-09: the owner designed the split and
   still lost an evening to it).** The lab launcher (`scripts/jhsaa_lab_server.sh`)

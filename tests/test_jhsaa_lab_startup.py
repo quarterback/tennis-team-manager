@@ -153,3 +153,78 @@ def test_launcher_rejects_inherited_alternate_and_old_path_argument(tmp_path):
     assert old.returncode == 2
     assert "arbitrary paths are not accepted" in old.stderr
     assert not (tmp_path / "old.db").exists()
+
+
+def test_a_crashed_advance_is_recoverable_not_fatal(tmp_path, monkeypatch, capsys):
+    """‼️ PR #425 BRICKED THE SAVE ON ITS OWN DESIGNED CRASH STATE.
+    `world.advance_jhsaa_lab` commits the season's archive FIRST and only then
+    moves `world.year`, so that a crash mid-simulation leaves the year
+    REPLAYABLE (the next advance recomputes the same year). That leaves the
+    archive exactly one year ahead of the pointer — which the original
+    `max == world.year` check made fatal, so a sim that died mid-advance also
+    locked the owner out of the save it died in."""
+    canonical = str(_lab_db(tmp_path / "canonical.db", year=4, archived=[0, 1, 2, 3, 4, 5]))
+    monkeypatch.setattr("app.jhsaa_lab_startup.known_alternate_paths", lambda _: [])
+    preflight(canonical)                      # must NOT raise
+    err = capsys.readouterr().err
+    assert "archive is ahead of the world pointer" in err
+    assert "replays year 5" in err
+
+
+def test_a_hole_in_the_archive_is_still_fatal(tmp_path, monkeypatch):
+    """The carve-out above must not swallow genuine incoherence."""
+    canonical = str(_lab_db(tmp_path / "canonical.db", year=3, archived=[0, 1, 3]))
+    monkeypatch.setattr("app.jhsaa_lab_startup.known_alternate_paths", lambda _: [])
+    with pytest.raises(JHSAALabStartupError, match="CONTIGUOUS"):
+        preflight(canonical)
+
+
+def test_a_world_claiming_unsimulated_seasons_is_still_fatal(tmp_path, monkeypatch):
+    """The pointer ahead of the archive is the direction that must never happen:
+    it means a season the world claims was never played."""
+    canonical = str(_lab_db(tmp_path / "canonical.db", year=6, archived=[0, 1, 2]))
+    monkeypatch.setattr("app.jhsaa_lab_startup.known_alternate_paths", lambda _: [])
+    with pytest.raises(JHSAALabStartupError, match="never simulated"):
+        preflight(canonical)
+
+
+def test_a_clean_save_still_passes_silently(tmp_path, monkeypatch, capsys):
+    canonical = str(_lab_db(tmp_path / "canonical.db", year=47))
+    monkeypatch.setattr("app.jhsaa_lab_startup.known_alternate_paths", lambda _: [])
+    preflight(canonical)
+    assert "ahead of the world pointer" not in capsys.readouterr().err
+
+
+# --- the advisory that covers the launch the path invariant cannot reach -----
+
+def test_a_plain_launch_is_told_which_universe_it_is_not_opening(tmp_path):
+    """`dbpath` only enforces the canonical path under JHSAA_LAB_MODE, so it is
+    inert on the college-route launch that caused the incident. This names the
+    lab universe the process is NOT using."""
+    from app.jhsaa_lab_startup import canonical_universe_elsewhere
+
+    canonical = str(_lab_db(tmp_path / "lab.db", year=49))
+    line = canonical_universe_elsewhere(canonical, str(tmp_path / "tennis.db"))
+    assert line is not None
+    assert canonical in line and "world year 49" in line and "50 archived seasons" in line
+
+
+def test_the_advisory_is_silent_when_there_is_nothing_to_warn_about(tmp_path):
+    from app.jhsaa_lab_startup import canonical_universe_elsewhere
+
+    canonical = str(_lab_db(tmp_path / "lab.db", year=2))
+    # Already opening it — nothing to say.
+    assert canonical_universe_elsewhere(canonical, canonical) is None
+    # No lab database at all.
+    assert canonical_universe_elsewhere(str(tmp_path / "absent.db"),
+                                        str(tmp_path / "tennis.db")) is None
+
+
+def test_the_advisory_never_raises_on_an_unreadable_lab_database(tmp_path):
+    """A college boot must not die because a lab file it is not using is broken."""
+    from app.jhsaa_lab_startup import canonical_universe_elsewhere
+
+    broken = tmp_path / "lab.db"
+    broken.write_bytes(b"this is not a sqlite database")
+    line = canonical_universe_elsewhere(str(broken), str(tmp_path / "tennis.db"))
+    assert line is None or "unreadable" in line

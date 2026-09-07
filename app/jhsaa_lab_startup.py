@@ -88,6 +88,22 @@ def _describe(info: dict) -> str:
 
 
 def _check_consistency(info: dict) -> None:
+    """Fatal on an incoherent universe — but NOT on a crashed advance.
+
+    ‼️ AN ARCHIVE RUNNING ONE YEAR AHEAD OF THE WORLD POINTER IS THE DESIGNED
+    CRASH STATE, NOT CORRUPTION. `world.advance_jhsaa_lab` commits the season's
+    archive FIRST and only then moves `world.year`, precisely so that a crash
+    (or a kill) part-way through a long simulation leaves the year replayable:
+    the world row still claims the old year, so the next advance recomputes the
+    SAME year and re-runs it rather than skipping a permanently un-simulated
+    season. Requiring `max == world.year` therefore made startup fatal on the
+    one outcome that module's ordering exists to produce — so a sim that died
+    mid-advance did not just lose the season, it bricked the save it was still
+    sitting in. Fail closed on a forked or holed universe; never on one that is
+    merely mid-recovery.
+
+    Everything else stays fatal: a hole in the middle, or a world claiming years
+    it never archived, are real incoherence and no repair is attempted."""
     world = info["world"]
     mn, mx, count = info["archive"]
     if not world:
@@ -96,12 +112,29 @@ def _check_consistency(info: dict) -> None:
                 "archive rows exist without the single JHSAA world pointer")
         return
     year = world[2]
-    expected = year + 1
-    if (mn, mx, count) != (0, year, expected):
+    if not count:                       # a world generated but never archived
+        if year:
+            raise JHSAALabStartupError(
+                f"JHSAA world/archive mismatch: world.year={year} but nothing is "
+                "archived. No repair was attempted.")
+        return
+    if (mn, count) != (0, mx + 1):
         raise JHSAALabStartupError(
-            "JHSAA world/archive mismatch: advance_jhsaa_lab requires contiguous "
-            f"archived years 0..{year} ({expected} distinct), but found "
-            f"min={mn}, max={mx}, distinct={count}. No repair was attempted.")
+            "JHSAA world/archive mismatch: advance_jhsaa_lab requires CONTIGUOUS "
+            f"archived years from 0, but found min={mn}, max={mx}, "
+            f"distinct={count} (a contiguous 0..{mx} would be {mx + 1}). "
+            "No repair was attempted.")
+    if mx < year:
+        raise JHSAALabStartupError(
+            f"JHSAA world/archive mismatch: world.year={year} but the archive "
+            f"stops at {mx}, so the world claims {year - mx} season(s) it never "
+            "simulated. No repair was attempted.")
+    if mx > year:
+        print(f"WARNING: JHSAA archive is ahead of the world pointer "
+              f"(world.year={year}, archived through {mx}). This is what a "
+              "crash part-way through an advance leaves behind; the next "
+              f"advance replays year {year + 1}. Starting normally.",
+              file=sys.stderr, flush=True)
 
 
 def _assert_writable(path: str) -> None:
@@ -118,6 +151,38 @@ def _assert_writable(path: str) -> None:
     except sqlite3.Error as exc:
         raise JHSAALabStartupError(
             f"canonical JHSAA database cannot be opened for writing: {path}: {exc}") from exc
+
+
+def canonical_universe_elsewhere(canonical: str, configured: str) -> str | None:
+    """One line describing the canonical lab universe when this process is about
+    to open something ELSE — or None when there is nothing to say.
+
+    ‼️ THIS IS THE HALF THE PATH INVARIANT CANNOT REACH. `dbpath` only enforces
+    the canonical database when `JHSAA_LAB_MODE` is set, but opening a lab save
+    "through the college route" is BY DEFINITION a launch without that flag: the
+    guard is inert in exactly the situation that lost a season. Enforcing the
+    canonical path on every launch is not the fix either — a plain launch onto
+    `./tennis.db` is the ordinary, correct college game.
+
+    So this is ADVISORY and must stay that way: never raises, never creates,
+    never selects. `mode=ro` throughout, and every failure is swallowed — a
+    college boot must not die because a lab file it is not using is unreadable.
+    """
+    canonical = os.path.abspath(os.path.expanduser(canonical))
+    if os.path.abspath(os.path.expanduser(configured)) == canonical:
+        return None
+    if not os.path.isfile(canonical):
+        return None
+    try:
+        info = inspect_database(canonical)
+    except (JHSAALabStartupError, OSError):
+        return f"{canonical} (exists; metadata unreadable)"
+    world = info["world"]
+    if not world:
+        return None
+    _, _, count = info["archive"]
+    seasons = f", {count} archived season{'s' if count != 1 else ''}" if count else ""
+    return f"{canonical} — world year {world[2]}{seasons}"
 
 
 def preflight(canonical: str) -> None:
