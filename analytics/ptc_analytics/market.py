@@ -251,8 +251,9 @@ def player_rows(bundles, careers, boards, ability, move, growth) -> dict:
             pct = stat.get("pct")
             team_pct = None
             tw, tl = _i(standing.get("wins")), _i(standing.get("losses"))
-            if tw is not None and tl is not None and (tw + tl):
-                team_pct = tw / (tw + tl)
+            tt = _i(standing.get("ties"))
+            if tw is not None and tl is not None and (tw + tl + tt):
+                team_pct = (tw + 0.5 * tt) / (tw + tl + tt)
 
             prev_ovr = prev_pot = None
             if prev_ability and pid in prev_ability.ovr:
@@ -285,7 +286,8 @@ def player_rows(bundles, careers, boards, ability, move, growth) -> dict:
                 # 'Good player on a bad team', in one number: the player's own
                 # win rate minus the rate at which their team wins duals.
                 "lift": (pct - team_pct) if (pct is not None and team_pct is not None) else None,
-                "team_record": f"{tw}-{tl}" if tw is not None and tl is not None else "",
+                "team_record": ((f"{tw}-{tl}-{tt}" if tt else f"{tw}-{tl}")
+                                if tw is not None and tl is not None else ""),
                 "team_pct": team_pct,
                 "team_class_rank": standing.get("class_rank"),
                 "team_class_size": standing.get("class_size"),

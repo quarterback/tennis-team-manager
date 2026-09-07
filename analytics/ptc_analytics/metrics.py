@@ -141,6 +141,7 @@ class TeamMetrics:
 
     duals: int = 0
     dual_wins: int = 0
+    dual_ties: int = 0
     close_duals: int = 0            # decided by 1 point (proxy for a 2-1/3-2 dogfight)
     close_wins: int = 0
 
@@ -416,7 +417,7 @@ class TeamMetrics:
 
     @property
     def resistance_rate(self) -> float | None:
-        losses = self.duals - self.dual_wins
+        losses = self.duals - self.dual_wins - self.dual_ties
         return self.resistance_losses / losses if losses else None
 
     @property
@@ -426,7 +427,7 @@ class TeamMetrics:
         = the team may be better than its record."""
         if self.expected_wins is None:
             return None
-        return self.dual_wins - self.expected_wins
+        return self.dual_wins + 0.5 * self.dual_ties - self.expected_wins
 
     @property
     def upset_rate(self) -> float | None:
@@ -551,11 +552,13 @@ def compute_team_metrics(bundles, careers: dict) -> dict:
                 opp_id = d["away_program_id"] if side == "home" else d["home_program_id"]
                 us = d["home_points"] if side == "home" else d["away_points"]
                 them = d["away_points"] if side == "home" else d["home_points"]
-                won = d["winner_program_id"] == pid
+                tied = bool(int(d.get("tied") or 0))
+                won = not tied and d["winner_program_id"] == pid
                 m.duals += 1
                 m.dual_wins += 1 if won else 0
+                m.dual_ties += 1 if tied else 0
                 margin = abs(float(us) - float(them))
-                if margin <= 1:
+                if margin <= 1 and not tied:
                     m.close_duals += 1
                     m.close_wins += 1 if won else 0
 
@@ -568,7 +571,7 @@ def compute_team_metrics(bundles, careers: dict) -> dict:
                     per_dual_share.append(share)
                     if won and share >= 0.8:
                         m.blowout_wins += 1
-                    if not won and share >= 0.4:
+                    if not won and not tied and share >= 0.4:
                         m.resistance_losses += 1
 
                 # JHSAA `district` = in-league play (the association's league
@@ -582,13 +585,13 @@ def compute_team_metrics(bundles, careers: dict) -> dict:
                     in_league = bool(int(d.get("is_conference") or 0))
                 if in_league is not None:
                     key = "league" if in_league else "non_league"
-                    rec = m.league_record.setdefault(key, {"w": 0, "l": 0})
-                    rec["w" if won else "l"] += 1
+                    rec = m.league_record.setdefault(key, {"w": 0, "l": 0, "t": 0})
+                    rec["t" if tied else ("w" if won else "l")] += 1
 
                 if opp_id in opp_power:
                     q = quartile_of(opp_power[opp_id])
-                    rec = m.quartile_record.setdefault(q, {"w": 0, "l": 0})
-                    rec["w" if won else "l"] += 1
+                    rec = m.quartile_record.setdefault(q, {"w": 0, "l": 0, "t": 0})
+                    rec["t" if tied else ("w" if won else "l")] += 1
 
                 # power-based pre-match win-probability model, for expected
                 # record / upset / elite-win-share — only where both teams
@@ -603,7 +606,7 @@ def compute_team_metrics(bundles, careers: dict) -> dict:
                         m.upsets += 1
                     if won:
                         m.upset_value += max(0.0, 0.5 - p)
-                    else:
+                    elif not tied:
                         m.bad_loss_value += max(0.0, p - 0.5)
                 if won:
                     m.elite_win_share_den += 1

@@ -262,8 +262,8 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                 # The JV lineup is ELASTIC (`JV_FORMATS`), so a JV row states its
                 # shape ("2S/2D") outright; a varsity row leaves it empty — its
                 # shape is a function of phase + classification. And an
-                # even-court JV dual can genuinely TIE (the association's only
-                # ties): `tied=1` and NO winner, rather than inventing one.
+                # an even-court dual can genuinely TIE (JV, or a varsity showcase
+                # on Group 2's format): `tied=1` and NO winner, rather than inventing one.
                 "shape": dual.get("shape") or "",
                 "tied": int(tied),
                 # A LEVEL varsity postseason dual settled by the deciders (Group 2's
@@ -423,7 +423,8 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "before the JV season existed, where every dual is varsity.",
             "duals.shape states a JV dual's elastic lineup ('2S/2D'); varsity rows leave it "
             "empty because their shape is a function of phase and classification. duals.tied "
-            "marks the association's only drawn results (even-court JV duals); a tied dual "
+            "marks drawn results: even-court JV duals and an even-format varsity showcase "
+            "that remains level after the sets-and-games ladder. A tied dual "
             "has no winner_program_id. duals.decided_on_tiebreak marks a LEVEL varsity "
             "postseason dual (Group 2's 3S/3D road) whose winner was decided on three "
             "concurrent 10-point tiebreakers — its points are level and it is NOT a tie.",

@@ -35,7 +35,7 @@
      data-name="{{ t.program.name|lower }} {{ t.league|lower }}" href="{{ t.href }}">
     <button class="pt-star" data-team-id="{{ t.href }}" data-team-name="{{ t.program.name }}" onclick="return toggleFav(event,this)" title="Pin to My Teams">☆</button>
     <h4><span class="pt-crest" style="background:{{ t.color }}">{{ t.initials }}</span> {{ t.program.name }}</h4>
-    <div class="sub">{{ t.bundle.label }} · {{ t.classification }} · {{ t.league }} · {{ t.wins }}-{{ t.losses }}</div>
+    <div class="sub">{{ t.bundle.label }} · {{ t.classification }} · {{ t.league }} · {{ t.wins }}-{{ t.losses }}{% if t.ties %}-{{ t.ties }}{% endif %}</div>
   </a>
   {% endfor %}
 </div>

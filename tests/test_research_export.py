@@ -55,6 +55,7 @@ def test_jhsaa_bundle_is_self_describing_and_normalized():
     assert manifest["dataset_family"] == "jhsaa"
     assert manifest["college_plan"]["status"] == "available"
     assert manifest["files"]["jhsaa_individuals.json"]["media_type"] == "application/json"
+    assert any("even-format varsity showcase" in rule for rule in manifest["domain_rules"])
     individuals = json.loads(files["jhsaa_individuals.json"])
     assert individuals == {"girls": {"7A": {"S1": individual_draw}},
                            "mixed": {"7A": {"XD": individual_draw}}}

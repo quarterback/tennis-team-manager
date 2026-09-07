@@ -319,6 +319,11 @@ And "carries no lines" is NOT a usable substitute for the column: that is also
 what a varsity dual whose lines failed to record looks like, which is why the
 export was given `duals.level` rather than this side being taught to guess.
 
+Varsity showcases played on an even format can also finish tied. The standings
+export carries an optional `ties` column and `duals.tied=1` identifies the schedule
+result; old exports without the column mean zero ties. The desk treats a tie as half
+a win when calculating team percentage and renders records as W-L-T when needed.
+
 ## The ability layer — the one input the engine reads (`ptc_analytics/ability.py`)
 
 Everything in `metrics.py` measures OUTCOMES, and its win-probability model

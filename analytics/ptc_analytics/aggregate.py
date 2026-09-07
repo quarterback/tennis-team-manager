@@ -343,11 +343,12 @@ def team_pages(bundles: list[Bundle]) -> dict:
                 opp_id = d["away_program_id"] if home else d["home_program_id"]
                 us = _f(d["home_points"] if home else d["away_points"])
                 them = _f(d["away_points"] if home else d["home_points"])
-                won = d["winner_program_id"] == pid
+                tied = bool(_i(d.get("tied")))
+                won = not tied and d["winner_program_id"] == pid
                 tag, tag_kind, section = _dual_presentation(d, b.family)
                 schedule.append({
                     "dual_id": did, "opp_id": opp_id, "opp_name": b.program_name(opp_id),
-                    "home": home, "us": us, "them": them, "won": won,
+                    "home": home, "us": us, "them": them, "won": won, "tied": tied,
                     # a dual's team score is written WINNER-first, like every
                     # scoreline in the game (see the bracket-score AAR) — the
                     # W/L marker carries whose result it was.
@@ -374,7 +375,8 @@ def team_pages(bundles: list[Bundle]) -> dict:
                 "bundle": b, "program_id": pid, "program": prog, "standing": standing,
                 "roster": roster, "schedule": schedule,
                 "wins": sum(1 for s in schedule if s["won"]),
-                "losses": sum(1 for s in schedule if not s["won"]),
+                "losses": sum(1 for s in schedule if not s["won"] and not s["tied"]),
+                "ties": sum(1 for s in schedule if s["tied"]),
             }
     return out
 
@@ -514,7 +516,8 @@ def leaderboards(bundles: list[Bundle], careers: dict) -> dict:
             prog = b.programs.get(pid, {})
             wins = _i(standing.get("wins"))
             losses = _i(standing.get("losses"))
-            total = wins + losses
+            ties = _i(standing.get("ties"))
+            total = wins + losses + ties
             raw_power = standing.get("toss_power_raw")
             power = _f(raw_power) if raw_power not in (None, "") else None
             dw = _i(standing.get("district_wins"))
@@ -523,8 +526,8 @@ def leaderboards(bundles: list[Bundle], careers: dict) -> dict:
             rows.append({
                 "program_id": pid, "name": b.program_name(pid),
                 "classification": program_class(prog), "league": program_league(prog),
-                "wins": wins, "losses": losses,
-                "pct": wins / total if total else 0.0,
+                "wins": wins, "losses": losses, "ties": ties,
+                "pct": (wins + 0.5 * ties) / total if total else 0.0,
                 "power": power,
                 "league_wins": dw, "league_losses": dl,
                 "league_pct": dw / (dw + dl) if (dw + dl) else 0.0,

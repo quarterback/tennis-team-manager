@@ -79,6 +79,18 @@ def test_team_page_carries_rank_and_standing_context(site):
     assert "Singles" in html and "Doubles" in html
 
 
+def test_varsity_ties_survive_ingestion_aggregation_and_rendering(site):
+    """The exported tie is a half-win and is never rendered as a loss."""
+    team_html = read(site, f"teams/{SCOPE}__halbrook-9a-team1-girls.html")
+    season_html = read(site, f"seasons/{SCOPE}.html")
+    index_html = read(site, "teams/index.html")
+
+    assert "8-0-1 (0.944) across 9 duals" in team_html
+    assert ">T</span>" in team_html
+    assert "8-0-1" in season_html
+    assert "8-0-1" in index_html
+
+
 def test_scores_render_winner_first(site):
     # Team2 lost the invitational 0-7: its card must show "7–0" with an L
     # marker, never "0–7" (a scoreline is written from the winner's side).

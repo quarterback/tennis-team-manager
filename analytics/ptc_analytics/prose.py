@@ -11,12 +11,12 @@ from __future__ import annotations
 def team_blurb(team: dict) -> str:
     prog = team["program"]
     standing = team["standing"]
-    wins, losses = team["wins"], team["losses"]
-    total = wins + losses
+    wins, losses, ties = team["wins"], team["losses"], team.get("ties", 0)
+    total = wins + losses + ties
     name = prog["name"]
     if total == 0:
         return f"{name} has no completed duals on record for this export."
-    pct = wins / total
+    pct = (wins + 0.5 * ties) / total
     if pct >= 0.75:
         tone = "one of the stronger programs in this snapshot"
     elif pct >= 0.5:
@@ -29,7 +29,8 @@ def team_blurb(team: dict) -> str:
     sched = team["schedule"]
     streak = _streak(sched)
     streak_txt = f" {streak}." if streak else ""
-    return (f"{name} is {wins}-{losses} ({pct:.3f}) across {total} duals on record, "
+    record = f"{wins}-{losses}-{ties}" if ties else f"{wins}-{losses}"
+    return (f"{name} is {record} ({pct:.3f}) across {total} duals on record, "
             f"{tone}{place_txt} in {district or 'its league'}.{streak_txt}")
 
 
@@ -39,10 +40,12 @@ def _streak(schedule: list[dict]) -> str:
     last = schedule[-3:]
     if not last:
         return ""
+    if last[-1].get("tied"):
+        return ""
     result = last[-1]["won"]
     n = 0
     for s in reversed(schedule):
-        if s["won"] == result:
+        if not s.get("tied") and s["won"] == result:
             n += 1
         else:
             break

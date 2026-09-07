@@ -155,7 +155,8 @@ def _team_stat_row(pid: str, scope_id: str, m, b, abil=None, mv=None) -> dict:
         "scope_label": b.label,
         "classification": aggregate.program_class(prog),
         "league": aggregate.program_league(prog),
-        "record": f"{m.dual_wins}-{m.duals - m.dual_wins}",
+        "record": (f"{m.dual_wins}-{m.duals - m.dual_wins - m.dual_ties}-{m.dual_ties}"
+                   if m.dual_ties else f"{m.dual_wins}-{m.duals - m.dual_wins}"),
         "lines_played": m.lines_played,
         # shape
         "s_pct": m.s_pct, "d_pct": m.d_pct, "dr": m.doubles_reliance,
@@ -268,6 +269,7 @@ def build_site(raw_bundles: list[dict], player_pages: bool = True) -> None:
         classification = aggregate.program_class(prog)
         league = aggregate.program_league(prog)
         team_cards.append({"program": prog, "bundle": b, "wins": t["wins"], "losses": t["losses"],
+                            "ties": t.get("ties", 0),
                             "color": crest_color(prog["name"]), "initials": initials(prog["name"]),
                             "classification": classification, "league": league,
                             "href": f"{aggregate.slug(scope_id)}__{aggregate.slug(pid)}.html"})
