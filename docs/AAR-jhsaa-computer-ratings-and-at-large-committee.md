@@ -93,11 +93,13 @@ seeds in `run_state_48`'s field.
 > at `byes=16`; `select` takes `seats`. See
 > `docs/AAR-jhsaa-group2-3s3d-postseason-deciders.md` §1.
 >
-> **2026-09 expansion.** 6A, 5A, 4A, 3A and 2A joined on 7A's shape (32 + 8),
-> and 1A on **16 bids over the 24 road it keeps** — every one of them to a
-> 40-team field. The dual formats did NOT move with it: `WIDE_GROUPS` is a
-> separate axis and the new classes are not in it. See
-> `docs/AAR-jhsaa-playoff-expansion-40.md`.
+> **2026-09 expansion.** 6A, 5A, 4A, 3A, 2A **and 1A** joined on 7A's shape —
+> **eight bids each**, over the road each already had. That is a 40-team
+> structure for the five 32-road classes and a **32** for 1A, whose road is 24:
+> the bid count is the decision and the field size is the consequence (the
+> owner refused the sixteen bids a 40 would have cost 1A). The dual formats did
+> NOT move with it: `WIDE_GROUPS` is a separate axis and the new classes are not
+> in it. See `docs/AAR-jhsaa-playoff-expansion-parastate.md`.
 
 ## The 48-team field (`jhsaa.run_state_48`, `ATLARGE_GROUPS`)
 

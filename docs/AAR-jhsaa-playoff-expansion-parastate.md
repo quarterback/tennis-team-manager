@@ -9,6 +9,11 @@ just expanding the playoffs to include at-large committee decided seats."
 `state_field_size`), `app/jhsaa_committee.py` and `app/web/state.py` (prose
 only), `tests/test_jhsaa_committee.py`.
 
+‼️ **The approval quoted above says "to 40 teams" and 1A is on a 32** — see the
+1A section: the owner refused the sixteen bids a 40 costs off a 24 road. The
+quote is left as written because it is what was approved; the section is where
+it was amended.
+
 ## The whole change is one table
 
 `AT_LARGE_BIDS` is what makes a class a Parastate class — `ATLARGE_GROUPS` is
@@ -98,8 +103,10 @@ lowest seeds paired high-low, so every at-large plays a ROAD qualifier for its
 seat; `bids > road` would pair at-larges against each other and hand one of
 them a berth nobody defended. Two owner tables have to agree and neither knows
 about the other, which is precisely when the agreement gets asserted rather
-than assumed — the expansion added entries of both kinds (32 + 8 and 24 + 16),
-so the check earns its keep immediately.
+than assumed — the tables are edited independently and by different reasoning
+(a class's road moves on sponsor counts and talent, its bids on how big a
+committee the association wants), so nothing but this line stops a future edit
+to one from silently invalidating the other.
 
 ## Surfaces that needed nothing
 
@@ -121,7 +128,9 @@ it, it fills the same seed lines from a larger pool.
 
 ## Tests
 
-`tests/test_jhsaa_committee.py`: the bid table pinned with its arithmetic
-(`road + bids in (40, 48)`, `bids <= road`), the WIDE/Parastate overlap pinned
-as unchanged, and 1A's 32 walked end to end through the real
-`run_state_parastate` (17v32 … 24v25, round sizes, the surviving 24).
+`tests/test_jhsaa_committee.py`: the bid table pinned (`bids in (8, 16)`,
+`bids <= road`) with the three totals pinned as CONSEQUENCES of it — 1A 32,
+7A 40, 9A 48, so a "tidy 1A onto a 40" edit fails here and says why; the
+WIDE/Parastate overlap pinned as unchanged; and 1A's 32 walked end to end
+through the real `run_state_parastate` (17v32 … 24v25, round sizes, the
+surviving 24).

@@ -828,7 +828,7 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   (`ratings` key, the `pi` rule — never refit on read), PARALLEL to TOSS/ATR
   and feeding neither. **THE PARASTATE CLASSES — every class but Group 2 and
   Group 3 (JHSAA rule 2026-09, EXPANDED 2026-09,
-  `docs/AAR-jhsaa-playoff-expansion-40.md`): 8A, 9A and Group 1 play 48 = 32 road
+  `docs/AAR-jhsaa-playoff-expansion-parastate.md`): 8A, 9A and Group 1 play 48 = 32 road
   + 16 at-large; 7A, 6A, 5A, 4A, 3A and 2A play 40 = 32 road + 8; 1A plays
   32 = 24 road + 8** (`AT_LARGE_BIDS`, `ATLARGE_GROUPS` derived from it,
   `run_state_parastate(byes= road − bids)`): the road qualifies its own
