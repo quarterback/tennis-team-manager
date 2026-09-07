@@ -27,19 +27,34 @@ Nothing else moved. The road qualifies exactly what it qualified before, by the
 same ladder, with the same Zonal/Epiregional/recovery/Specials arithmetic; the
 at-larges are added on top and seeded below every road qualifier, structurally.
 
-## ‼️ 1A REACHES 40 ON BIDS, BECAUSE ITS ROAD IS THE THING THAT MUST NOT MOVE
+## ‼️ 1A REACHES 40 ON BIDS — because the expansion touches no road at all
 
-Every other expanded class is 32 + 8. 1A's road is **24** — and that number is
-not incidental: `state_field_size(group) == 24` is what routes a class to the
-fixed `_recovery_24` wiring, and 1A sits there on a stated TALENT decision
-("the talent really degrades at that level"). Raising its road to 32 to reach
-40 the same way as 6A-2A would have re-plumbed its entire recovery ladder —
-a change the owner did not ask for, in service of an arithmetic tidiness
-nobody wants.
+Every other expanded class is 32 + 8; 1A's road is **24**, so it takes **16 bids
+on that 24 road**. The Parastate is byes 1-8 and 9v40 … 24v25; the sixteen
+winners join the eight bye lines on the 24-team draw 1A has always played.
 
-So 1A takes **16 bids on a 24 road**. The Parastate is byes 1-8 and 9v40 … 24v25;
-the sixteen winners join the eight bye lines on the 24-team draw 1A has always
-played. Two owner rules met at once: 40 teams, status quo underneath.
+‼️ **The reason is the rule, not a structural obstacle — and a draft of this AAR
+got that wrong.** It claimed `state_field_size(group) == 24` "routes a class to
+the fixed `_recovery_24` wiring", so a 32 road would have re-plumbed 1A's whole
+ladder. **`_recovery_24` is RETIRED AND UNWIRED** (owner rule 2026-08, and its
+own docstring says so): `run_season` sends EVERY class through `_recovery`, the
+same rungs everywhere with only the counts changing — at a 24 field the
+Divisionals, Semi-Conference and Conference are 8 where a 32-road class runs 16,
+and the berths split 8 Zonal + 8 Semi-State + 4 Divisional + 4 Specials instead
+of 8/8/8/8. 1A's 24 is a TALENT decision recorded in `STATE_FIELD` ("the talent
+really degrades at that level"), full stop.
+
+So the honest statement of the choice: **moving 1A to a 32 road is a one-number
+`STATE_FIELD` edit that the ladder re-derives from** (`recovery_shape` projects
+it; both field sizes need the same 48 sponsors and 1A has 77-87). It was not
+done because the owner asked to expand the PLAYOFF, not to lengthen 1A's road —
+a values call about how much of 1A's field should be earned on court versus
+selected, which is the owner's to make and cheap to change either way.
+
+**The lesson:** a retired code path with a long explanatory docstring reads
+exactly like a live one. Before citing a function as the reason a rule exists,
+check that anything still calls it — `grep` for the call site, not the
+definition.
 
 **The general lesson:** when a spec says "same format as X", find the
 PARAMETER that produced X's shape rather than copying X's numbers. Here the

@@ -182,13 +182,20 @@ WIDE_GROUPS = ("7A", "8A", "9A", "Group 1")  # groups whose road-to-State AND ea
 #   6A / 5A / 4A       — 40 = 32 road + 8 at-large, 7A's shape exactly.
 #   3A / 2A            — likewise: JHSAA playoff expansion, 2026-09.
 #   1A                 — 40 = 24 road + 16 at-large; 16-dual Parastate (9-40),
-#                        seeds 1-8 bye. ‼️ THE ROAD IS THE THING THAT DOES NOT
-#                        MOVE: 1A crowns off the fixed `_recovery_24` wiring (a
-#                        TALENT decision, `STATE_FIELD["1A"] == 24` is what
-#                        routes it there), so reaching 40 is a BID count, never
-#                        a bigger road. Bids are `field − road` and nothing
-#                        else; the survivors plus the byes land on 1A's own 24
-#                        draw, which is the shape it has always played.
+#                        seeds 1-8 bye. ‼️ THE EXPANSION DOES NOT TOUCH A ROAD,
+#                        so 1A's 24 stands and the bids make up the difference:
+#                        bids are `field − road` and nothing else, and the
+#                        survivors plus the byes land on the 24 draw 1A has
+#                        always played. Its 24 is a TALENT decision (`STATE_FIELD`
+#                        — "the talent really degrades at that level"), NOT a
+#                        different wiring: `_recovery` runs the same rungs for
+#                        every class and only the counts differ (1A's
+#                        Divisionals/Semi-Conference/Conference are 8 where a
+#                        32-road class runs 16). ‼️ `_recovery_24` is RETIRED AND
+#                        UNWIRED — do not cite it as the reason 1A's road is
+#                        what it is. Moving 1A to a 32 road is a `STATE_FIELD`
+#                        edit and the ladder re-derives; it is an owner call
+#                        about 1A's depth, not a structural obstacle.
 #
 # ‼️ THE EXPANSION IS PLAYOFF SIZE ONLY — 6A down to 1A keep their dual formats
 # exactly as they are (owner rule 2026-09: "none of those classifications will

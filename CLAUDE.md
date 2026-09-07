@@ -844,10 +844,15 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   40 ROAD and no class is on one. Margins in the margin systems are
   FORMAT-NORMALISED (a 5-0, 7-0 and 9-0 are all +1.0) — never feed raw margins
   across mixed formats.
-  **‼️ 1A REACHES 40 ON BIDS, NOT ON A BIGGER ROAD.** `state_field_size(group)
-  == 24` is what routes a class to the fixed `_recovery_24` wiring, and 1A sits
-  there on a TALENT decision — so the expansion is 16 bids over the 24 road it
-  keeps, and the Parastate's survivors land on the 24 draw it has always played.
+  **‼️ 1A REACHES 40 ON BIDS, NOT ON A BIGGER ROAD** — because the expansion
+  touches no class's road, not because 1A's road is wired differently. Its 24 is
+  a TALENT decision in `STATE_FIELD`; `_recovery` runs the SAME rungs for every
+  class and only the counts differ (1A's Divisionals/Semi-Conference/Conference
+  are 8 against a 32-road class's 16), and **`_recovery_24` is RETIRED AND
+  UNWIRED** — never cite it as what a 24 field routes to. So 1A takes 16 bids
+  over its 24 road and the Parastate's survivors land on the 24 draw it has
+  always played; moving it to a 32 road later is a one-number `STATE_FIELD` edit
+  the ladder re-derives from, i.e. an owner call about 1A's depth.
   Asserted at import: `bids <= state_field_size(group)`, since every at-large
   must have a road qualifier to play for its seat.
   **‼️ PLAYOFF SIZE AND DUAL FORMAT ARE SEPARATE AXES.** The expansion changed

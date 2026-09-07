@@ -193,9 +193,11 @@ def test_the_40_team_parastate_is_eight_bids_and_byes_1_to_24(monkeypatch):
 
 def test_1a_reaches_40_on_bids_because_its_road_never_moves(monkeypatch):
     """The 2026-09 expansion takes 1A to 40 as well, and it is the one class
-    whose road is not 32: `STATE_FIELD["1A"] == 24` is what routes it to the
-    fixed `_recovery_24` wiring, so reaching 40 is 16 BIDS on top of that road,
-    never a bigger road. Seeds 1-8 bye — 1A's own eight bye lines — the
+    whose road is not 32: `STATE_FIELD["1A"] == 24` is a TALENT decision, so
+    reaching 40 is 16 BIDS on top of that road (the expansion touches no class's
+    road at all — 1A is NOT wired to a different ladder; `_recovery` runs the
+    same rungs everywhere and `_recovery_24` is retired and unwired). Seeds 1-8
+    bye — 1A's own eight bye lines — the
     Parastate is 9v40 … 24v25, and the 24 survivors play the 24-team draw 1A has
     always played (Octofinals down, seeds 1-8 carrying its single bye)."""
     seeds = [_T(f"S{i:02d}") for i in range(1, 41)]
