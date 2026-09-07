@@ -2163,6 +2163,7 @@ def reset_schools() -> None:
     _talent_era_cache.clear()
     _career_era_cache.clear()
     _exchange_era_cache.clear()
+    _intl_era_cache.clear()
     _expo_cache.clear()
     _expo_world.clear()
     _transfer_name_cache.clear()
@@ -2192,13 +2193,36 @@ _name_era_cache: dict = {}
 #: remainder ("IRL there are exchange students who play HS for a year"). ~90/5/5.
 NAME_V2_US = 0.90
 NAME_V2_CANADA = 0.05
+#: ‼️ CANADA WAS HALF OF EVERY FOREIGN NAME IN JEFFERSON. At 0.05 against the
+#: international slice's 0.05 it took **50%** of all non-US names, and Canadian
+#: draws are overwhelmingly Anglo/French — the second half of why the cohort
+#: "only draws white people names" (owner, 2026-09), the first being that the
+#: international slice itself was a 69%-Europe pro-tour mix. From `intl_era()`
+#: on, Canada is 1.5% and the world takes 8.5%, so ~85% of Jefferson's foreign
+#: names come from the broad pool instead of 50%.
+#:
+#: ‼️ The US head is UNCHANGED at 90% and was never the problem: it is
+#: Census-frequency weighted, so its top 25 surnames already run Martinez, Lopez,
+#: Garcia, Hernandez, Lee, Perez, Rivera, Torres, Nguyen, Rodriguez. Raising the
+#: foreign share overall is a separate decision nobody has asked for.
+NAME_V3_CANADA = 0.015
 
 _intl_weights_cache: dict | None = None
 
 
 def _intl_weights() -> dict:
-    """The exchange-student mix: the owner's tennis_global preset minus the two
-    shares that draw separately. Static data — computed once, published whole."""
+    """‼️ RETIRED FOR NEW COHORTS, KEPT FOR OLD ONES. The original international
+    slice: the `tennis_global` preset minus the two shares that draw separately.
+
+    `tennis_global` is a PRO-TOUR mix, and professional tennis is
+    Europe-dominated — measured, this lands at **69.3% Europe and 3.5% Africa**.
+    The slice exists to give Jefferson a diverse cohort, and instead it drew
+    overwhelmingly European names for every cohort since the 2026-08 name era
+    (owner, 2026-09: "i don't know why it only draws white people names that's
+    not what i intended at all").
+
+    Cohorts that entered before `intl_era()` KEEP it, because their names are
+    already archived — see `_broad_intl_weights`."""
     global _intl_weights_cache
     w = _intl_weights_cache
     if w is None:
@@ -2207,6 +2231,50 @@ def _intl_weights() -> dict:
              if k not in ("us", "canada")}
         _intl_weights_cache = w
     return w
+
+
+_broad_intl_cache: dict | None = None
+
+
+def _broad_intl_weights() -> dict:
+    """The international slice for cohorts entering from `intl_era()` on: the
+    owner's `global_college` preset (the widest one — "realistic NCAA geography,
+    Africa fully represented") minus the two shares that draw separately.
+
+    92 regions against the retired mix's 36, and the shape is the point:
+    Europe 29% / Africa 23% / Asia 22% / Americas 17% / Oceania 8%, where the
+    pro-tour mix had Europe at 69% and Africa at 3.5%.
+
+    ‼️ This is the ORDINARY cohort's mix — immigrant families, four-year students
+    born in Jefferson. It is NOT `_exchange_weights`, which starts from the same
+    preset but re-cuts the Americas for who actually crosses for a school year
+    (1% Canada, 8% West Indies, 5% Latin America, no South America). Two
+    populations, two mixes, one preset behind both."""
+    global _broad_intl_cache
+    w = _broad_intl_cache
+    if w is None:
+        from generators import region_preset
+        w = {k: v for k, v in region_preset("global_college").items()
+             if k not in ("us", "canada")}
+        _broad_intl_cache = w
+    return w
+
+
+_intl_era_cache: dict = {}
+
+
+def intl_era() -> int:
+    """The first ENTRY year drawn from the broad international mix — the
+    `name_era` idiom, and needed for exactly the same reason.
+
+    A JHSAA player's name is regenerated from seed every time a roster is built,
+    so changing the mix renames every already-archived cohort that draws from it.
+    `name_era` protects the cohorts that predate the 90/5/5 draw; this protects
+    the ones that predate the WIDENING of its international slice. Without it, a
+    save's whole international population would be renamed in place — the
+    archived box scores name people who would no longer exist, and
+    `_jh_line_records` keys off those names."""
+    return _resolve_era("jhsaa_intl_era", _intl_era_cache)
 
 
 # --- EXCHANGE STUDENTS (owner rule 2026-09) ----------------------------------
@@ -4111,14 +4179,23 @@ def _draw_name(rng: random.Random, school: School, entry: int) -> tuple[str, str
         # untouched curated pools, plus the exchange-student slices. ~90/5/5.
         from generators import draw_us_weighted
         roll = nrng.random()
+        # The Canadian slice shrank from `intl_era()` on so the world gets the
+        # room — see `NAME_V3_CANADA`. Still exactly one draw off `nrng` on every
+        # branch either side of the era, so no attribute roll moves.
+        broad = entry >= intl_era()
+        canada = NAME_V3_CANADA if broad else NAME_V2_CANADA
         if roll < NAME_V2_US:
             nm, country = draw_us_weighted(nrng, sex)
-        elif roll < NAME_V2_US + NAME_V2_CANADA:
+        elif roll < NAME_V2_US + canada:
             nm, country = make_name_picker(nrng, gender=sex,
                                            region_weights={"canada": 1.0})()
         else:
+            # ‼️ The mix WIDENED for cohorts entering from `intl_era()` on
+            # (owner, 2026-09). Both branches consume the same single draw off
+            # `nrng`, so the era boundary shifts no attribute roll for anybody.
+            weights = _broad_intl_weights() if broad else _intl_weights()
             nm, country = make_name_picker(nrng, gender=sex,
-                                           region_weights=_intl_weights())()
+                                           region_weights=weights)()
         return nm, (country or "US")
     # Legacy draw, byte-identical — existing cohorts keep their exact names.
     nm, _ = make_name_picker(nrng, gender=sex, region_weights={"us": 1.0})()
