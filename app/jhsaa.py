@@ -2473,6 +2473,27 @@ def exchange_student(school: School, year: int, salt: str,
     return p
 
 
+#: Every per-save era cutover, as `worldconfig` keys. ‼️ DERIVED FROM HERE BY
+#: `world.reset()`, never retyped there: a new save deletes the JHSAA archive but
+#: KEEPS `world_setting`, so an era left behind carries the PRIOR league's
+#: calendar-year cutoff into the new one and holds its opening cohorts on the
+#: retired behaviour — for decades, since the stale year can be far in the new
+#: save's future. `reset()` hand-listed two of them and had silently missed
+#: `jhsaa_talent_era` and `jhsaa_career_era` since those were added; a list the
+#: resetter reads is what stops the sixth being forgotten too.
+ERA_SETTINGS = ("jhsaa_name_era", "jhsaa_dev_era", "jhsaa_talent_era",
+                "jhsaa_career_era", "jhsaa_exchange_era", "jhsaa_intl_era")
+
+
+def reset_eras() -> None:
+    """Clear every era cutover and its memo — for `world.reset()`, which starts a
+    new league on a database that keeps `world_setting`."""
+    from . import worldconfig
+    for setting in ERA_SETTINGS:
+        worldconfig.set(setting, "")
+    reset_schools()
+
+
 def _resolve_era(setting: str, cache: dict) -> int:
     """Shared resolver for the four era gates (`name_era`, `dev_era`,
     `talent_era`, `career_era`). They all answer the same question — what is the

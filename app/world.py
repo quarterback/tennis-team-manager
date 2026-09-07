@@ -578,19 +578,18 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     # in the next save — the new league's first rollover also lands on year 1 — and
     # its first graduating class would never be drafted. Clear the value AND the memo.
     worldconfig.set("pros_rolled_year", "")
-    # The JHSAA name-era cutover is per-save the same way: this reset deletes the
-    # world_jhsaa archive below but keeps world_setting, so a stale
-    # "jhsaa_name_era" would carry the PRIOR league's cutoff (a calendar year)
-    # into the new one and hold its opening cohorts on legacy names for seasons.
-    # Clear the value AND the memo (`_name_era_cache` clears with the school
-    # caches in `reset_schools`).
-    worldconfig.set("jhsaa_name_era", "")
-    # The development-era cutover (`jhsaa.dev_era`) is the same idiom with the
-    # same failure mode: left behind, a prior save's cutoff would hold the new
-    # save's opening cohorts on the legacy lockstep maturity bands for years.
-    worldconfig.set("jhsaa_dev_era", "")
+    # ‼️ EVERY JHSAA ERA CUTOVER IS PER-SAVE, AND THE LIST LIVES WITH THE ERAS.
+    # This reset deletes the world_jhsaa archive below but keeps world_setting, so
+    # an era left behind carries the PRIOR league's cutoff — a calendar year — into
+    # the new one and holds its opening cohorts on the retired behaviour until the
+    # new save reaches that year, which can be decades away.
+    #
+    # It used to hand-list the two eras that existed when it was written, and had
+    # silently stopped covering `jhsaa_talent_era` and `jhsaa_career_era` when
+    # those were added. `jhsaa.reset_eras()` walks `jhsaa.ERA_SETTINGS`, so a new
+    # era is covered by existing; it clears the memos too (`reset_schools`).
     from . import jhsaa as _jhsaa
-    _jhsaa.reset_schools()
+    _jhsaa.reset_eras()
     from . import jhsaa_desk as _desk
     _desk.reset()
     # Stored individual championships AND the national-team cups (Davis / BJK) are

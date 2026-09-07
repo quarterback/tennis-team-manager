@@ -92,3 +92,32 @@ def test_the_association_actually_draws_broadly_now():
     # Not a Europe-and-Canada list any more.
     assert seen & {"JP", "KR", "CN", "PH", "ID", "TW", "HK"}, "no Asia"
     assert seen & {"NG", "ZA", "ET", "MA", "KE", "GH", "EG", "SN"}, "no Africa"
+
+
+def test_every_era_is_cleared_when_a_new_save_starts():
+    """‼️ A NEW SAVE KEEPS `world_setting`. `world.reset()` deletes the JHSAA
+    archive but not the settings table, so an era left behind carries the PRIOR
+    league's cutoff — a CALENDAR YEAR — into the new one and holds its opening
+    cohorts on the retired behaviour until the new save reaches that year, which
+    can be decades away.
+
+    `reset()` hand-listed the two eras that existed when it was written and had
+    silently stopped covering `jhsaa_talent_era` and `jhsaa_career_era` when
+    those were added. It now walks `jhsaa.ERA_SETTINGS`, so the list and the
+    resetter cannot drift — which is the only reason a sixth era added later is
+    covered by existing."""
+    import inspect
+    import app.world as wd
+    # Every era resolver's setting name is in the table…
+    src = inspect.getsource(__import__("app.jhsaa", fromlist=["x"]))
+    declared = set(jh.ERA_SETTINGS)
+    used = set(__import__("re").findall(r'_resolve_era\("([a-z_]+)"', src))
+    assert used == declared, used ^ declared
+    # …and `world.reset()` reads the table rather than naming any era itself.
+    reset_src = inspect.getsource(wd.reset)
+    assert "reset_eras()" in reset_src
+    # No era named in reset's CODE (its prose may cite them as history).
+    code = [ln.split("#", 1)[0] for ln in reset_src.splitlines()]
+    for setting in jh.ERA_SETTINGS:
+        assert not any(setting in ln for ln in code), \
+            f"{setting} hand-listed in world.reset"
