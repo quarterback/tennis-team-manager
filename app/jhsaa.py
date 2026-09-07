@@ -4448,11 +4448,23 @@ def proof_tier(st: PriorSeason | None) -> int:
     # time, so it counts consecutive seasons of proof rather than of enrolment.
     if st.has(PROOF_HONORED) or (st.years >= 2 and trusted and st.win_pct >= 0.600):
         return 3
-    # ESTABLISHED: a regular who was still there when it mattered, or one who held a
-    # top-nine seat on a winning record.
-    if trusted or (st.rank and st.rank <= 9 and st.win_pct >= 0.500):
+    # ESTABLISHED: a regular who was there when it mattered AND held up while he was
+    # — a top-nine seat on a winning record.
+    #
+    # ‼️ `trusted` ALONE IS NOT ENOUGH, and the first cut made that mistake. Every
+    # program in this association enters the road to State and every road dual
+    # dresses the top nine, so `PROOF_POSTSEASON` is true of essentially every
+    # returning starter: keyed on it, tier 2 swallowed the ladder and tier 1 went
+    # nearly unused. Measured over two scaled seasons, the mix was 5,706 established
+    # to 435 contributors — i.e. two tiers, not three, with the ORDINARY starter
+    # sitting on the middle value instead of the small one. The tiers only mean
+    # something if the middle one asks for a season that actually went well.
+    if st.apps >= PROOF_MIN_APPS and st.win_pct >= 0.500 and (
+            trusted or (st.rank and st.rank <= 9)):
         return 2
-    return 1 if st.apps >= PROOF_MIN_APPS else 0
+    # CONTRIBUTOR: he was in the lineup. That is worth the benefit of the doubt over
+    # a newcomer and nothing more.
+    return 1
 
 
 def varsity_proof(p, st: PriorSeason | None, lens: CoachLens,

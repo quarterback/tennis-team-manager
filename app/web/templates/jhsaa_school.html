@@ -207,7 +207,11 @@
         {% for p in view.roster[:6] %}
         <tr>
           <td class="pl"><a href="{{ url_for('jhsaa_player', school=view.school, pid=p.pid, u=u, g=view.gender) }}">{{ p.name }}</a>
-            {% for h in p.honors %}<span class="jh-chip {{ 'gold' if 'Player of the Year' in h }}" style="margin-left:4px">{{ 'POY' if 'Player of the Year' in h else 'A-S' if h == 'All-State' else 'A-D' }}</span>{% endfor %}</td>
+            {% for h in p.honors %}<span class="jh-chip {{ 'gold' if 'Player of the Year' in h }}" style="margin-left:4px">{{ 'POY' if 'Player of the Year' in h else 'A-S' if h == 'All-State' else 'A-D' }}</span>{% endfor %}
+            {# The injury chip rides here too: this snippet shows the top SIX, which
+               is exactly where a short record on a strong player is most visible. #}
+            {% if p.injury %}<span class="jh-chip inj {{ 'out' if p.injury.season_ending }}" style="margin-left:4px"
+              title="{{ p.injury.detail }}">{{ p.injury.label }}</span>{% endif %}</td>
           <td>{{ p.grade }}th</td>
           <td class="num">{{ p.singles }}</td>
           <td class="num">{{ p.doubles }}</td>
@@ -253,6 +257,13 @@
              detail so the row itself stays one short chip wide. #}
           {% if p.family %}<span class="jh-chip unit" style="margin-left:4px"
             title="{{ p.family.label }}: {{ p.family.others | map(attribute='name') | join(', ') }}">{{ p.family.label }}</span>{% endif %}
+          {# What injury cost this player THIS season — the chip that explains a
+             short record on an otherwise strong row. It is a season log and not a
+             live status: the season is simulated whole and is over by the time this
+             renders, so "OUT" means the injury ended his year, never that he is
+             unavailable now. `title` carries the detail so the row stays one chip. #}
+          {% if p.injury %}<span class="jh-chip inj {{ 'out' if p.injury.season_ending }}" style="margin-left:4px"
+            title="{{ p.injury.detail }}">{{ p.injury.label }}</span>{% endif %}
         </td>
         <td>{{ p.grade }}th</td>
         <td class="num">{{ p.singles }}</td>

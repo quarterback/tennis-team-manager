@@ -32,6 +32,29 @@ first place anybody reads about who dresses. Corrected. **A stale comment in a
 load-bearing explanation costs a diagnosis**, and this one cost the owner a bug
 report on working code.
 
+### …and the roster never said so either
+
+> "Injured players do not have anything on the roster list telling you. It's on
+> their page, but it's not indicated when they're actually hurt."
+
+The injury log existed only on the player page. The **roster** — the one surface
+where "why does this 92-OVR senior have five matches?" is actually asked — showed
+nothing. So the archive had the answer and the page that raises the question did not
+carry it, which is most of why this was reported as a selection fault at all.
+
+Now an `INJ` / `OUT` chip on the roster row, beside the honours and family chips,
+with the detail in the title. Outlined like `unit` because it annotates a row rather
+than decorating it; the season-ending case fills in, since that is the one a reader
+must not miss.
+
+‼️ **It is a season LOG and can never be a live status.** A JHSAA season is simulated
+whole at the world's week 0, so by the time any page renders it the season is over
+and nobody is currently hurt — as the owner put it, *"that's because the season runs
+and it's done so it would never persist."* So the chip says what happened (how many
+duals he missed, or that it ended his year) and never "OUT" as though he were
+unavailable now. One query per page, folded per pid beside the family fingerprint —
+never inside the per-player comprehension.
+
 ## The first one: what was actually happening
 
 `TeamSeason` is rebuilt every season with an empty `records`, so before the first dual
@@ -134,6 +157,40 @@ season in exactly the way the win-COUNT ladder used to (see `LADDER_SWING`'s not
 ranked low, so never dressed, so nothing ever corrects the coach. The bench rotation
 (`_ROTATE_ONE`) and rest staffing put him on court anyway, and from his first match
 his own results start outweighing the first impression.
+
+## What it actually did
+
+Two consecutive scaled seasons, boys, run with the layer and again with no memory at
+all (the same fixture, the same salt, so the only difference is the evidence):
+
+| | with the layer | no memory |
+|---|---:|---:|
+| returning varsity regulars | 4,949 | 4,957 |
+| held 50%+ of their team's duals | **95.8%** | 94.0% |
+| lost their place (<25% of duals) | **1.7%** (83) | 2.8% (137) |
+| freshman share of varsity appearances | **20.3%** | 21.2% |
+
+Displacement down about 40%, and the freshman share of varsity court time barely
+moved — 20.3% against 21.2%. That second number is the one that matters: it is the
+evidence that the lineups did not fossilise. Newcomers still take the same share of
+the season; what changed is *which* newcomers, and on what margin.
+
+### ‼️ The measurement also caught a calibration fault, and it was mine
+
+The first tier mix came out **5,706 established : 1,856 decorated : 435 contributor**
+— tier 1 nearly unused, and the *ordinary* returning starter sitting on the middle
+value instead of the small one. The cause is structural and obvious in hindsight:
+every program in this association enters the road to State and every road dual dresses
+the top nine, so `PROOF_POSTSEASON` is true of essentially every returning starter. A
+tier keyed on it alone is not a tier, it is a synonym for "was a starter".
+
+Tier 2 now requires a season that actually went well — the appearances *and* a
+winning record *and* a top-nine seat or a postseason lineup. A losing starter drops
+to contributor, which is what the owner's spec said in the first place: *"a player
+with one ordinary varsity year might be protected only into the varsity 11."*
+
+**Three tiers that collapse to two is a calibration that reads fine in code review and
+only shows up when you count what the population actually lands on.**
 
 ## Two components deliberately NOT in the ordering
 

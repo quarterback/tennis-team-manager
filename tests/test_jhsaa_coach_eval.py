@@ -76,13 +76,28 @@ def test_proof_tiers_separate_turning_up_from_being_a_reason_they_won():
     assert jh.proof_tier(None) == 0
     assert jh.proof_tier(_proof(apps=4)) == 0                     # a call-up
     assert jh.proof_tier(_proof(apps=20, rank=11)) == 1           # a regular
-    assert jh.proof_tier(_proof(flags=jh.PROOF_POSTSEASON)) == 2  # there at the end
+    assert jh.proof_tier(_proof(flags=jh.PROOF_POSTSEASON)) == 2  # and it went well
     assert jh.proof_tier(_proof(flags=jh.PROOF_HONORED)) == 3     # the association said so
     # "Two strong years" without an award: trusted with the postseason, twice, winning.
     assert jh.proof_tier(_proof(flags=jh.PROOF_POSTSEASON, years=2,
                                 wins=25, losses=5)) == 3
-    assert jh.proof_tier(_proof(flags=jh.PROOF_POSTSEASON, years=2,
-                                wins=10, losses=20)) == 2
+
+
+def test_being_in_the_postseason_lineup_is_not_by_itself_established():
+    """‼️ THE TIERS ONLY MEAN SOMETHING IF THE MIDDLE ONE ASKS FOR A GOOD SEASON.
+    Every program in this association enters the road to State and every road dual
+    dresses the top nine, so `PROOF_POSTSEASON` is true of essentially every
+    returning starter. Keyed on it alone, tier 2 swallowed the ladder: measured over
+    two scaled seasons the mix came out 5,706 established to 435 contributors — two
+    tiers rather than three, with the ORDINARY starter sitting on the middle value
+    instead of the small one."""
+    losing = _proof(flags=jh.PROOF_POSTSEASON, years=2, wins=10, losses=20)
+    assert jh.proof_tier(losing) == 1
+    winning = _proof(flags=jh.PROOF_POSTSEASON, wins=20, losses=10)
+    assert jh.proof_tier(winning) == 2
+    # …and volume still matters: a handful of postseason duals is not a season.
+    assert jh.proof_tier(_proof(apps=5, wins=5, losses=0,
+                                flags=jh.PROOF_POSTSEASON)) == 1
 
 
 def test_an_award_alone_is_proof_even_on_a_short_season():
