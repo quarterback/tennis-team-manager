@@ -82,6 +82,45 @@ def test_the_page_responds(client, path):
     assert r.status_code in (200, 302), (path, r.status_code)
 
 
+
+def test_jhsaa_pages_do_not_wait_for_the_college_world_prime(monkeypatch):
+    """A cold or restored COLLEGE save must still open the high-school door.
+
+    JHSAA readers never touch the college roster cache, so gating them on
+    `world.prime()` only ever bought the minute-long warming shell in front of a
+    program page. Exercises the before-request hook itself rather than stubbing
+    warmth, so a regression cannot hide behind the generic loading response."""
+    from app import world as wd
+
+    monkeypatch.setattr(wd, "exists", lambda *a, **k: True)
+    monkeypatch.setattr(wd, "is_primed", lambda *a, **k: False)
+    monkeypatch.setattr(wd, "is_jhsaa_only", lambda *a, **k: False)   # a college save
+
+    def unexpected_prime(*a, **k):
+        raise AssertionError("a JHSAA request tried to prime the college world")
+
+    monkeypatch.setattr(wd, "prime", unexpected_prime)
+    r = create_app().test_client().get("/jhsaa")
+    assert r.status_code == 200
+    assert "Warming up the league" not in r.get_data(as_text=True)
+
+
+def test_the_college_bypass_never_outranks_the_wrong_database_check(monkeypatch):
+    """‼️ THE ORDER IS THE WHOLE POINT. The bypass above must sit BELOW the
+    JHSAA-only check: lifted above it, a lab save opened through the college
+    route renders the high-school pages happily and you browse the wrong
+    universe through the wrong door with no warning — the exact outcome the
+    diagnostic exists to prevent."""
+    from app import world as wd
+
+    monkeypatch.setattr(wd, "exists", lambda *a, **k: True)
+    monkeypatch.setattr(wd, "is_primed", lambda *a, **k: False)
+    monkeypatch.setattr(wd, "is_jhsaa_only", lambda *a, **k: True)
+    r = create_app().test_client().get("/jhsaa")
+    assert r.status_code == 503
+    assert "wrong database" in r.get_data(as_text=True)
+
+
 # --- every classification is reachable from every surface --------------------------
 
 # `/jhsaa` is the FRONT PAGE now (owner spec 2026-09) — association-wide, no
@@ -94,10 +133,14 @@ CLASS_SURFACES = ["/jhsaa/class", "/jhsaa/rankings", "/jhsaa/honors", "/jhsaa/br
 def warm_client():
     """A client that always gets the PAGE, never the warming loader.
 
-    Once a world row exists, `_prime_world` answers a cold request with the
-    warming shell — which carries no scope rail, so a class-coverage assertion
-    against it fails for a reason that has nothing to do with the ladder (and
-    only once another test in the module has warmed the world, which is what
+    JHSAA routes now bypass the college prime outright, so these stubs are belt
+    and braces: they remain because this process's world caches and application
+    globals are shared with other test modules, which can leave a world row
+    behind. Historically they were load-bearing — `_prime_world` answered a cold
+    request with the warming shell, which carries no scope rail, so a
+    class-coverage assertion against it failed for a reason that had nothing to
+    do with the ladder (and only once another test in the module had warmed the
+    world, which is what
     made it order-dependent). No JHSAA surface reads a college program, so
     reporting warm is honest here — the same stub `test_jhsaa_toc` uses."""
     import os

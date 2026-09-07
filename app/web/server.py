@@ -657,6 +657,18 @@ def create_app() -> Flask:
             from app.dbpath import resolve_db_path
             page = JHSAA_ONLY_HTML.replace("__PATH__", str(escape(resolve_db_path())))
             return Response(page, status=503, mimetype="text/html")
+        # A JHSAA page reads its own archive, school data and high-school roster
+        # builders — it never consumes the college roster cache, so making it wait
+        # on a cold ~170MB college prime bought nothing but the warming shell.
+        # ‼️ ORDER: this sits BELOW the JHSAA-only check above, deliberately. Placed
+        # any higher it would render the high-school pages happily on a lab save
+        # opened through the college route — silently browsing the wrong universe
+        # through the wrong door, which is the outcome that diagnostic exists to
+        # prevent. It must also stay a NAMESPACE test, never a list of endpoints:
+        # there are dozens of program, player, history and tournament routes, and a
+        # typed list quietly sends the next new one back through the college loader.
+        if request.path.startswith("/jhsaa"):
+            return
         # Cold. Decide loader vs inline by WORLD IDENTITY (the generation salt — a
         # fresh random per New League / takeover, stable within a league), NOT a
         # process flag and NOT the world row id (SQLite reuses the rowid after

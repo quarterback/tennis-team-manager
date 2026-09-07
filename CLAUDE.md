@@ -312,6 +312,16 @@ See `docs/AAR-pro-grad-transfers.md` + the world-binding commit for history.
   `world.is_jhsaa_only()` (one indexed probe, cold path only, deliberately NOT
   memoised), and serve a LOUD diagnostic naming `scripts/jhsaa_lab_server.sh` and the
   resolved path rather than spinning. `tests/test_jhsaa_only_launch.py`.
+  - **A JHSAA page never waits for the COLLEGE prime either** — it reads its own
+    archive and roster builders and touches no `_roster_cache`, so `_prime_world`
+    returns early for the whole `/jhsaa` NAMESPACE (never a list of endpoints: there
+    are dozens of program/player/history/tournament routes and a typed list quietly
+    sends the next new one back through the loader). ‼️ **ORDER IS LOAD-BEARING: that
+    bypass sits BELOW the JHSAA-only check.** Lifted above it, a lab save opened
+    through the college route renders the high-school pages happily and you browse
+    the wrong universe through the wrong door with no warning — the outcome the
+    diagnostic exists to prevent. Pinned by
+    `test_the_college_bypass_never_outranks_the_wrong_database_check`.
 - **‼️ THE CANONICAL-PATH GUARD IS FLAG-GATED, SO IT CANNOT COVER THE LAUNCH THAT
   LOSES SAVES — an ADVISORY does.** `dbpath.resolve_db_path` only calls
   `_jhsaa_lab_path_invariant` under `JHSAA_LAB_MODE`, but opening a lab save
