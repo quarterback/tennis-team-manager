@@ -38,8 +38,8 @@
       </div>
       {% if st.final %}
       <div class="sc">
-        <div class="n">{{ st.final.win_points }}–{{ st.final.lose_points }}</div>
-        <div class="o">final · def. {{ st.runner_up.name }}</div>
+        <div class="n">{{ st.final.win_points }}–{{ st.final.lose_points }}{% if st.final.tb %} <small title="level dual, decided on tiebreakers">TB</small>{% endif %}</div>
+        <div class="o">final{% if st.final.tb %} · on tiebreakers{% endif %} · def. {{ st.runner_up.name }}</div>
       </div>
       {% endif %}
     </div>

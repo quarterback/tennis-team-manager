@@ -44,6 +44,40 @@
     {% else %}
     <p class="jh-empty">No line scores recorded for this dual.</p>
     {% endfor %}
+    {# THE DECIDERS (JHSAA rule 2026-09): a level Group 2 postseason dual is
+       settled by three concurrent 10-point tiebreakers at S1, D1 and D2, best
+       two of three. Its own block under the flights — a decider is not a
+       match and is never counted as one. #}
+    {% if d.tiebreak %}
+    <p class="jh-empty" style="padding-top:10px">Dual level at {{ d.home_points }}–{{ d.away_points }} — decided on three concurrent 10-point tiebreakers</p>
+    {% for ln in d.tiebreak %}
+    <div class="bl-matchrow">
+      <div class="bl-court">
+        <span class="kind">Tiebreaker</span>
+        <span class="num">{{ ln.slot }}</span>
+      </div>
+      <div class="bl-match-sides">
+        <div class="bl-side {{ 'won' if ln.home_won }}">
+          <span class="nm">{% if ln.home_won %}<span class="chk">✓</span>{% endif %}{{ (ln.home or [])|join(' / ') }} <span class="bl-court-team">{{ d.home }}</span></span>
+        </div>
+        <div class="bl-side {{ 'won' if not ln.home_won }}">
+          <span class="nm">{% if not ln.home_won %}<span class="chk">✓</span>{% endif %}{{ (ln.away or [])|join(' / ') }} <span class="bl-court-team">{{ d.away }}</span></span>
+        </div>
+      </div>
+      <div class="bl-final">{{ ln.score or '—' }}</div>
+    </div>
+    {% endfor %}
+    {# The owner's box-score line: points, then deciders won in parentheses. #}
+    {% set tbh = d.tiebreak|selectattr('home_won')|list|length %}
+    <div class="bl-matchrow" style="font-weight:600">
+      <div class="bl-court"><span class="kind">Total</span><span class="num"></span></div>
+      <div class="bl-match-sides">
+        <div class="bl-side"><span class="nm">{{ d.home }} <span class="bl-court-team">{{ d.home_points }} ({{ tbh }})</span></span></div>
+        <div class="bl-side"><span class="nm">{{ d.away }} <span class="bl-court-team">{{ d.away_points }} ({{ d.tiebreak|length - tbh }})</span></span></div>
+      </div>
+      <div class="bl-final">{{ d.home_points }} ({{ tbh }}) · {{ d.away_points }} ({{ d.tiebreak|length - tbh }})</div>
+    </div>
+    {% endif %}
     </div>
   </div>
   {{ mc_panel_close() }}

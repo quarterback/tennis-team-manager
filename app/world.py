@@ -215,7 +215,8 @@ CREATE TABLE IF NOT EXISTS world_jhsaa_dual (
   home INTEGER, phase TEXT, pf REAL, pa REAL, won INTEGER, district INTEGER,
   lines TEXT DEFAULT '[]',
   level TEXT DEFAULT 'v', tied INTEGER DEFAULT 0, shape TEXT DEFAULT '',
-  played TEXT DEFAULT '[]'
+  played TEXT DEFAULT '[]',
+  tiebreak TEXT DEFAULT '[]'
 );
 CREATE INDEX IF NOT EXISTS ix_jhsaa_dual ON world_jhsaa_dual(world_id, year, gender, school);
 -- The INDIVIDUAL state tournaments — one row per completed draw, so a page loads the
@@ -335,8 +336,12 @@ def init_schema() -> None:
     # page can say "played JV, 8-3". It is deliberately NOT part of `lines`: see
     # `jhsaa.play_jv_dual`. A season archived before it reads back as '[]', which is
     # honestly "we did not record who played", not "nobody played".
+    # `tiebreak` (JHSAA rule 2026-09): the DECIDERS' box score for a level Group 2
+    # postseason dual — its own column, never rows in `lines`, because every reader
+    # of `lines` counts a match and a 10-point decider is not one.
     for col, typ in (("level", "TEXT DEFAULT 'v'"), ("tied", "INTEGER DEFAULT 0"),
-                     ("shape", "TEXT DEFAULT ''"), ("played", "TEXT DEFAULT '[]'")):
+                     ("shape", "TEXT DEFAULT ''"), ("played", "TEXT DEFAULT '[]'"),
+                     ("tiebreak", "TEXT DEFAULT '[]'")):
         try:
             conn.execute(f"ALTER TABLE world_jhsaa_dual ADD COLUMN {col} {typ}")
         except sqlite3.OperationalError:
@@ -3874,10 +3879,13 @@ def run_jhsaa(seed: int, world: dict) -> dict:
             # guaranteed by JV rows having no lines to read, and it is not any more.
             # Every reader of `lines` filters on it — see `_jh_line_records`'s callers
             # and `jhsaa_underplayed`.
+            # `tiebreak` is varsity-only: the deciders that settled a level Group 2
+            # postseason dual (`jhsaa._deciding_tiebreaks`), empty everywhere else.
             rows = [(world["id"], year, gender, t.school.name, d["opp"], int(d["home"]),
                      d["phase"], d["pf"], d["pa"], int(d["won"]), int(d["district"]),
                      json.dumps(d.get("lines", [])), d.get("level", "v"),
-                     int(bool(d.get("tied"))), d.get("shape", ""), "[]")
+                     int(bool(d.get("tied"))), d.get("shape", ""), "[]",
+                     json.dumps(d.get("tiebreak") or []))
                     for t in season["teams"].values() for d in t.schedule]
             # `played` is JV-only: a varsity row's participants are already in its
             # lines, and the career ledger's JV column folds this without having to
@@ -3886,12 +3894,13 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                       d["phase"], d["pf"], d["pa"], int(d["won"]), int(d["district"]),
                       json.dumps(d.get("lines", [])), d.get("level", "jv"),
                       int(bool(d.get("tied"))),
-                      d.get("shape", ""), json.dumps(d.get("played", [])))
+                      d.get("shape", ""), json.dumps(d.get("played", [])), "[]")
                      for t in (season.get("jv") or {}).values() for d in t.schedule]
             conn.executemany(
                 "INSERT INTO world_jhsaa_dual (world_id, year, gender, school, opp,"
-                " home, phase, pf, pa, won, district, lines, level, tied, shape, played)"
-                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
+                " home, phase, pf, pa, won, district, lines, level, tied, shape, played,"
+                " tiebreak)"
+                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
             # THE INDIVIDUAL STATE TOURNAMENTS — one row per completed draw, in their
             # own table rather than on the summary blob above (see the schema note).
             conn.executemany(
@@ -5342,7 +5351,7 @@ def _schedule_rows(conn, world_id: int, year: int, gender: str, school: str) -> 
     names = _jh.known_names(school, gender)
     rows = conn.execute(
         "SELECT rowid AS id, opp, home, phase, pf, pa, won, district, lines, level,"
-        " tied, shape, played FROM world_jhsaa_dual"
+        " tied, shape, played, tiebreak FROM world_jhsaa_dual"
         " WHERE world_id=? AND year=? AND gender=? AND school IN (%s) ORDER BY rowid"
         % ",".join("?" * len(names)),
         (world_id, year, gender, *names)).fetchall()
@@ -5356,7 +5365,7 @@ def _schedule_rows(conn, world_id: int, year: int, gender: str, school: str) -> 
         # self-describing, so `jh_match_key` can identify the match from either
         # side without the caller threading the school through.
         d["school"] = school
-        for k in ("lines", "played"):
+        for k in ("lines", "played", "tiebreak"):
             try:
                 d[k] = json.loads(d.get(k) or "[]")
             except ValueError:
@@ -5817,7 +5826,7 @@ def jhsaa_dual_row(dual_id: int) -> dict | None:
     try:
         r = conn.execute(
             "SELECT rowid AS id, world_id, year, gender, school, opp, home, phase,"
-            " pf, pa, won, district, lines, level, tied, shape, played"
+            " pf, pa, won, district, lines, level, tied, shape, played, tiebreak"
             " FROM world_jhsaa_dual WHERE rowid=?", (dual_id,)).fetchone()
     finally:
         conn.close()
@@ -5831,6 +5840,7 @@ def jhsaa_dual_row(dual_id: int) -> dict | None:
     d["school"] = alias.get(d["school"], d["school"])
     d["opp"] = alias.get(d["opp"], d["opp"])
     d["lines"] = json.loads(d["lines"] or "[]")
+    d["tiebreak"] = json.loads(d.get("tiebreak") or "[]")
     return d
 
 
@@ -5894,7 +5904,7 @@ def jhsaa_prior_meetings(world_id: int, gender: str, home: str, away: str,
         qmarks_h = ",".join("?" * len(home_names))
         qmarks_a = ",".join("?" * len(away_names))
         rows = conn.execute(
-            "SELECT rowid AS id, year, school, opp, pf, pa, phase, district"
+            "SELECT rowid AS id, year, school, opp, pf, pa, phase, district, won, tied"
             " FROM world_jhsaa_dual"
             " WHERE world_id=? AND gender=? AND home=1 AND COALESCE(level,'v')=?"
             f" AND ((school IN ({qmarks_h}) AND opp IN ({qmarks_a}))"
@@ -5915,10 +5925,15 @@ def jhsaa_prior_meetings(world_id: int, gender: str, home: str, away: str,
         # dict just to hand it to that function.
         day = cal.get((level, r["phase"] or "", int(bool(r["district"])), r["school"], r["opp"]))
         label = f"{day:%b} {day.day}, {season_year}" if day else str(season_year)
+        home_n, away_n = alias.get(r["school"], r["school"]), alias.get(r["opp"], r["opp"])
+        # The ARCHIVED outcome rides beside the points: a Group 2 postseason dual
+        # decided on tiebreakers is 3-3 with a winner, a drawn JV dual is level
+        # with none — the points alone cannot tell them apart.
+        winner = None if r["tied"] else (home_n if r["won"] else away_n)
         out.append({"id": r["id"], "label": label,
-                    "home": alias.get(r["school"], r["school"]),
-                    "away": alias.get(r["opp"], r["opp"]),
+                    "home": home_n, "away": away_n,
                     "home_points": int(r["pf"]), "away_points": int(r["pa"]),
+                    "winner": winner, "tied": bool(r["tied"]),
                     "postseason": r["phase"] in _jh.POSTSEASON})
     return out
 

@@ -23,7 +23,14 @@ keep 1S/4D). Nothing else about 1A changes: its regular season stays the univers
 since the regular season's 3-singles structure already exercises multi-singles-court
 management, so a showcase specifically rehearsing a 2S/3D shape adds nothing a coach
 hasn't already run all year. See the AAR for the calibration data behind the call.
-All totals are ODD, so a dual cannot be tied and no tie-breaking exists anywhere.
+‼️ GROUP 2 (JHSAA rule 2026-09, `docs/AAR-jhsaa-group2-3s3d-postseason-deciders.md`):
+Group 2 ALONE plays 3 singles / 3 doubles → 6 points on its road to State (TOC
+excepted, like every other pilot). Six is EVEN, so a postseason dual can finish 3-3;
+it is then decided by THREE CONCURRENT 10-point tiebreakers — No. 1 singles, No. 1
+doubles and No. 2 doubles, the same players who played those flights — and the side
+that wins two of the three advances (`_deciding_tiebreaks`). Every other varsity
+total is odd and cannot tie; a regular-season dual that ever did would use the JV
+ladder (`jv_outcome`: points, sets, games, then a draw) and NEVER the deciders.
 Every match plays to completion — there is no clinch in high school
 (`simulate_dual(play_all=True)`, as D3/D4 already do).
 
@@ -122,8 +129,20 @@ FORMATS = {
     "state_1a": DualFormat(n_singles=2, n_doubles=3, doubles_team_point=False),
     # 8A/9A's pilot shape (owner rule 2070) — see `dual_format()` and `WIDE_GROUPS`.
     "state_4s5d": DualFormat(n_singles=4, n_doubles=5, doubles_team_point=False),
+    # Group 2's postseason shape (JHSAA rule 2026-09) — the association's ONE even
+    # dual; a 3-3 is settled by `_deciding_tiebreaks`. See `THREE_THREE_GROUPS`.
+    "state_3s3d": DualFormat(n_singles=3, n_doubles=3, doubles_team_point=False),
 }
 PILOT_GROUPS = ("1A",)          # groups whose road-to-State plays `state_1a`
+#: Groups whose road-to-State plays `state_3s3d` (JHSAA rule 2026-09). Scoped like
+#: the 1A pilot: the road only (never the TOC, which fields every champion at one
+#: shape), never the league season, the early window or the showcases.
+THREE_THREE_GROUPS = ("Group 2",)
+#: The flights whose 10-point tiebreakers decide a level `state_3s3d` dual, in the
+#: order they are reported. Best two of three; the players are the ones who played
+#: those flights in the dual itself (owner: "3 concurrent tiebreakers").
+DECIDER_FLIGHTS = ("S1", "D1", "D2")
+DECIDER_TARGET = 10
 
 # ‼️ 8A/9A PLAY 4S/5D — NINE POINTS (owner rule 2070), AND 7A JOINED THE PILOT
 # (JHSAA-approved 7A pilot, owner rule 2026-09 — membership in `WIDE_GROUPS` is the
@@ -142,18 +161,42 @@ PILOT_GROUPS = ("1A",)          # groups whose road-to-State plays `state_1a`
 # logic is needed anywhere; high school has no clinch, so all nine are always played.
 WIDE_GROUPS = ("7A", "8A", "9A", "Group 1")  # groups whose road-to-State AND early window play 4S/5D
 
-# ‼️ THE 48-TEAM GROUPS (owner spec 2026-09): 7A and Group 1 expand State to 48 —
-# the road still qualifies exactly 32 by the existing ladder (UNTOUCHED), and the
-# at-large committee (`jhsaa_committee`) adds 16, always seeded 33-48. Group 1
-# joins `WIDE_GROUPS` with the same rule (4S/5D in every State round, the
-# Parastate included). See `run_state_48` and `docs` spec.
-ATLARGE_GROUPS = ("7A", "Group 1")
-ATLARGE_FIELD = 48
-#: The opening round's name — seeds 17-48 play, seeds 1-16 bye to the Round of
-#: 32. Named in `round_names`, which is what makes `state._jh_split_state`
-#: render it as its own tree (no bracket path from a Parastate slot to a
-#: main-draw slot the positional canvas could invent).
+# ‼️ THE PARASTATE GROUPS (owner spec 2026-09, resized 2026-09): the road still
+# qualifies exactly 32 by the existing ladder (UNTOUCHED — `STATE_FIELD` is 32 for
+# every one of them), and the at-large committee (`jhsaa_committee`) adds
+# `AT_LARGE_BIDS[group]` more, ALWAYS seeded below every road qualifier. The
+# Parastate is the opening round the at-larges play into: the `2 × bids` lowest
+# seeds pair high-low and the rest bye to the Round of 32, so the Parastate is
+# exactly the boundary between reaching the State structure and entering the
+# ordinary 32-team championship bracket, whatever the bid count.
+#
+#   8A / 9A / Group 1 — 48 = 32 road + 16 at-large; 16-dual Parastate (17-48),
+#                        seeds 1-16 bye.
+#   7A                — 40 = 32 road +  8 at-large;  8-dual Parastate (25-40),
+#                        seeds 1-24 bye. 7A carried 16 first; the owner's own
+#                        history had it missing ~3-4 TOSS top-32 teams a
+#                        gender-season, so 8 rescues the obvious omissions
+#                        without a committee "searching for reasons to fill
+#                        the back half". Same mechanism, field sized to the
+#                        depth of the class.
+#
+# A district champion who missed the road CONSUMES one of the bids rather than
+# adding a berth (`jhsaa_committee.select`). All four are in `WIDE_GROUPS`, so
+# every State round including the Parastate plays 4S/5D. See
+# `run_state_parastate` and `docs/AAR-jhsaa-computer-ratings-and-at-large-committee.md`.
+AT_LARGE_BIDS: dict[str, int] = {"7A": 8, "8A": 16, "9A": 16, "Group 1": 16}
+ATLARGE_GROUPS = tuple(AT_LARGE_BIDS)
+#: The opening round's name — the at-larges' round. Named in `round_names`, which
+#: is what makes `state._jh_split_state` render it as its own tree (no bracket
+#: path from a Parastate slot to a main-draw slot the positional canvas could
+#: invent).
 PARASTATE_NAME = "Parastate"
+
+
+def at_large_bids(group: str | None) -> int:
+    """How many committee at-larges `group` adds on top of its 32 road
+    qualifiers — 0 for every class outside the Parastate groups."""
+    return AT_LARGE_BIDS.get(group or "", 0)
 
 # THE LEAGUE CARD PLAYS 3S/4D (owner rule 2027-08, swapped from the original 5S/2D so
 # it matches the 1S/4D postseason's doubles-forward character all season, not just in
@@ -209,8 +252,11 @@ def dual_format(phase: str, group: str | None = None) -> DualFormat:
     (owner rule 2026-08). `POSTSEASON` includes `"toc"` — the Tournament of
     Champions fields every classification's champion at the SAME shape, so 1A's
     entrant plays it at 1S/4D like everyone else; only its OWN road (Sectionals
-    through State) plays `state_1a`. Showcases are untouched for every group,
-    1A included.
+    through State) plays `state_1a`. A SHOWCASE plays its HOST class's state
+    format (owner rule 2026-09 — pass the host's group): 4S/5D under a wide-class
+    host, 2S/3D under 1A, 3S/3D under Group 2, 1S/4D under the rest. A Group
+    2-hosted showcase can finish level; it is regular season, so it takes the JV
+    ladder and can be a TIE — the one place a varsity draw is reachable.
 
     ‼️ 8A/9A's PILOT (`WIDE_GROUPS`, owner rule 2070) covers the road-to-State on
     the same terms AND the EARLY non-district window, which is the one pilot branch
@@ -220,10 +266,26 @@ def dual_format(phase: str, group: str | None = None) -> DualFormat:
     one side's own group — anywhere a real dual is being played."""
     wide = group in WIDE_GROUPS
     road = phase in POSTSEASON and phase != "toc"
-    if wide and (road or phase == EARLY_FORMAT_PHASE):
+    # ‼️ A SHOWCASE PLAYS THE HOST CLASS'S STATE FORMAT (owner rule 2026-09): the
+    # showcases exist to rehearse the lineup a program must win with, so a 9A-hosted
+    # showcase is 4S/5D, a 1A-hosted one 2S/3D, a Group 2-hosted one 3S/3D, and the
+    # 1S/4D classes' 1S/4D. `group` here is the HOST's (`play_dual(group=)` from
+    # `play_showcases`), never resolved from the two sides — a showcase field mixes
+    # classes and a small school simply plays the host's format ("everyone generates
+    # enough players to play every format"). ‼️ THE EARLY WINDOW IS 5S/2D FOR EVERY
+    # CLASS AGAIN (owner rule 2026-09: "I don't want 5/2 tennis to go away"): the
+    # showcases are now the rehearsal, so the wide classes' early window came back
+    # from 4S/5D. A Group 2 showcase can finish 3-3 — regular season, so the JV
+    # ladder (sets, games, then a TIE), never the deciders.
+    rehearsal = road or phase in SHOWCASE
+    if wide and rehearsal:
         return FORMATS["state_4s5d"]
-    if group in PILOT_GROUPS and road:
+    if group in PILOT_GROUPS and rehearsal:
         return FORMATS["state_1a"]
+    # Group 2's 3S/3D (JHSAA rule 2026-09): the road and the showcases, the TOC
+    # excepted. The one EVEN shape; `play_dual` settles a postseason 3-3.
+    if group in THREE_THREE_GROUPS and rehearsal:
+        return FORMATS["state_3s3d"]
     if phase in POSTSEASON or phase in SHOWCASE:
         return FORMATS["state"]
     if phase == EARLY_FORMAT_PHASE:
@@ -302,7 +364,7 @@ def match_format(phase: str):
 def lineup_need(phase: str, group: str | None = None) -> int:
     """Players a program must dress for `phase` with nobody doubling up."""
     f = dual_format(phase, group)
-    return f.n_singles + 2 * f.n_doubles          # 3+8=11 regular, 1+8=9 state, 2+6=8 1A
+    return f.n_singles + 2 * f.n_doubles          # 3+8=11 regular, 1+8=9 state, 2+6=8 1A, 3+6=9 Group 2
 
 
 # --- THE JV SEASON (owner rule 2026-08) --------------------------------------
@@ -809,7 +871,15 @@ WARD_FIELD = 32
                # class to the fixed `_recovery_24` wiring, so this is also
                # what moves 2A onto the dynamic ladder every other class runs.
                # 1A is now the only A-class left on the 24 (with Group 3).
-STATE_FIELD = {"9A": 40, "8A": 40, "7A": 32, "6A": 32, "5A": 32,
+               # ‼️ 9A AND 8A ARE ROAD-32 PARASTATE CLASSES (JHSAA rule 2026-09):
+               # they adopted 7A's structure — the road qualifies 32 (this
+               # table), the at-large committee adds `AT_LARGE_BIDS` (16) on
+               # top, and the Parastate is the opening round — so this table
+               # says 32 for them, not 48. The 40-field's `sc_head` degrade 9A
+               # used to run every season goes away with it (its 64 sponsors
+               # clear the 32-field's 44 floor). No class is on the 40 road any
+               # more; the table keeps the shape for the day one is.
+STATE_FIELD = {"9A": 32, "8A": 32, "7A": 32, "6A": 32, "5A": 32,
                "4A": 32, "3A": 32, "2A": 32, "1A": 24,
                # 2046 expansion (owner rule): the Great Basin groups are more
                # classifications, full stop -- "think of them more as 10A and
@@ -1619,6 +1689,12 @@ class TeamSeason:
     roster: list
     wins: int = 0                       # overall, district + crossover
     losses: int = 0
+    # A DRAWN regular-season dual (JHSAA rule 2026-09). Unreachable on today's
+    # shapes — every varsity regular-season format is odd — and kept so the rule
+    # the owner restated ("cumulative sets, cumulative games, and if still tied it
+    # remains a tie", the JV ladder) has somewhere to land if a shape ever changes.
+    # A POSTSEASON dual is never drawn: a level one is settled by the deciders.
+    ties: int = 0
     dwins: int = 0                      # DISTRICT only — what decides district place
     dlosses: int = 0
     points_for: float = 0.0
@@ -1681,7 +1757,10 @@ class TeamSeason:
 
     @property
     def record(self) -> str:
-        return f"{self.wins}-{self.losses}"
+        # W-L-T only when a T exists — the JV record's own rule, so every archived
+        # varsity record (none of which can carry a tie) reads exactly as before.
+        return (f"{self.wins}-{self.losses}-{self.ties}" if self.ties
+                else f"{self.wins}-{self.losses}")
 
     @property
     def district_record(self) -> str:
@@ -1689,8 +1768,8 @@ class TeamSeason:
 
     @property
     def win_pct(self) -> float:
-        n = self.wins + self.losses
-        return self.wins / n if n else 0.0
+        n = self.wins + self.losses + self.ties
+        return (self.wins + 0.5 * self.ties) / n if n else 0.0   # a T is a half, as JV
 
     @property
     def district_pct(self) -> float:
@@ -4785,12 +4864,16 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None,
         # So: the LIVE ladder, with the league's bench rotation (a showcase is
         # where a coach tries people), arranged onto the 1S/4D card by the same
         # anti-stacking arrangement the postseason uses.
+        # ...at the DUAL's shape (`shape_group`): a showcase plays the class's own
+        # state format (owner rule 2026-09), and a pod mixes classes.
+        g = ts.school.group if group is _OWN_GROUP else group
         order = _healthy(ts, _order(ts))
-        need = lineup_need(phase)
+        need = lineup_need(phase, g)
         nine, bench = order[:need], order[need:]
         if bench and rng.random() < _ROTATE_ONE:
             nine[-1] = bench[rng.randrange(len(bench))]
-        return _arrange_state(nine, ts.sibling_ids, ts.pair_counts)
+        return _arrange_postseason(nine, dual_format(phase, g), ts.sibling_ids,
+                                   ts.pair_counts)
     order = _healthy(ts, _order(ts))
     g = ts.school.group if group is _OWN_GROUP else group
     need = lineup_need(phase, g)
@@ -4939,6 +5022,60 @@ def jv_outcome(res) -> int:
     return 0
 
 
+def _deciding_tiebreaks(home: Team, away: Team, la: list, lb: list, phase: str,
+                        shape: DualFormat, seed: int) -> tuple[list[dict], int]:
+    """THE DECIDERS (JHSAA rule 2026-09) — how a level postseason dual is settled
+    in the association's one even shape, Group 2's 3S/3D: THREE CONCURRENT
+    10-point tiebreakers, at No. 1 singles, No. 1 doubles and No. 2 doubles
+    (`DECIDER_FLIGHTS`), played by the SAME players who played those flights in
+    the dual (`home`/`away` are the dressed engine Teams — home court lift and
+    all), and the side that wins two of the three advances. Returns the three
+    box-score rows and the winner (0 home, 1 away).
+
+    Scored by the engine's own fast tiebreak dice: `engine.fast._tb_prob` for the
+    singles decider and the doubles fast model's tiebreak logit for the pairs,
+    both under `HS_PROFILE`, with `_mtb_score` turning the draw into a real
+    `10-7` rather than `1-0` (owner: "1-0 doesn't tell me anything"). Its OWN rng
+    stream off the dual's seed — drawing from the dual's stream would shift every
+    later match in the association.
+
+    ‼️ A decider is NOT a match: nothing is credited to `records`/`matches`
+    (awards, the ladder), it never reaches `lines` (records, flight boxes, court
+    totals, TOSS), and it rides its own `tiebreak` key and archive column. It is
+    regular-season-blind by construction — `play_dual` only asks for it in a
+    POSTSEASON phase; a drawn league dual uses `jv_outcome`."""
+    from engine.fast import TUNE, _edges, _logistic, _mtb_score, _tb_prob, effective_gap
+    from engine.doubles import doubles_rating
+    from engine.state import MatchContext
+    rng = random.Random(f"{seed}|jhsaa-decider")
+    tune = {**TUNE, **HS_PROFILE}
+    ctx = MatchContext()
+    out: list[dict] = []
+    home_wins = 0
+    for slot in DECIDER_FLIGHTS:
+        kind, i = slot[0], int(slot[1:]) - 1
+        if kind == "S":
+            p0, p1 = home.singles[i % len(home.singles)], away.singles[i % len(away.singles)]
+            p = _tb_prob(p0, p1, ctx, _edges(p0), _edges(p1), True, tune)
+        else:
+            hd, ad = home.doubles_players or home.singles, away.doubles_players or away.singles
+            h2 = [hd[k % len(hd)] for k in (2 * i, 2 * i + 1)]
+            a2 = [ad[k % len(ad)] for k in (2 * i, 2 * i + 1)]
+            gap = doubles_rating(*h2) - doubles_rating(*a2)
+            p = _logistic(tune["d_tb_slope"]
+                          * effective_gap(gap, tune["gap_knee"], tune["gap_accel"],
+                                          tune.get("gap_bands", False)))
+        r = rng.random()
+        win = 0 if r < p else 1
+        hs, as_ = _mtb_score(win, r, p, DECIDER_TARGET)
+        home_wins += win == 0
+        out.append({"slot": slot,
+                    "home": [x.name for x in _slot_players(la, phase, slot, shape)],
+                    "away": [x.name for x in _slot_players(lb, phase, slot, shape)],
+                    "score": f"{hs}-{as_}", "home_won": win == 0})
+    return out, 0 if home_wins * 2 > len(DECIDER_FLIGHTS) else 1
+
+
 def play_jv_dual(a: JVTeam, b: JVTeam, *, seed: int, phase: str = "regular",
                  district: bool = False) -> None:
     """One JV dual. The shape is the SMALLER side's capacity (`jv_dual_format`); a
@@ -5056,7 +5193,8 @@ def _injury_tick_and_roll(ts: TeamSeason, dressed: list, dual_index: int) -> Non
 
 
 def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular",
-              district: bool = False, challenge: bool = False):
+              district: bool = False, challenge: bool = False,
+              group: str | None = _OWN_GROUP):
     """One dual. Always to completion — high school has no clinch. `district` marks it
     as counting toward district place as well as the overall record.
 
@@ -5079,14 +5217,22 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     # (owner rule 2070), which pairs across one classification, so the two sides need
     # not want the same card. See `shape_group`: mismatch falls back to the phase's
     # classification-blind shape rather than dressing one side short.
-    grp = shape_group(phase, a.school.group, b.school.group)
+    # `group` overrides that resolution: a SHOWCASE plays its HOST's format (owner
+    # rule 2026-09), which is neither side's own — `play_showcases` passes the event
+    # host's group. The group the dual was played at is archived on the row
+    # (`shape_group`) so `rating_duals` prices its flights on the right table.
+    grp = (shape_group(phase, a.school.group, b.school.group)
+           if group is _OWN_GROUP else group)
     shape = dual_format(phase, grp)
     la, lb = _lineup(a, phase, lrng, b, grp), _lineup(b, phase, lrng, a, grp)
     fmt = match_format(phase)
     # `a` is the home side by construction (it is `a` whose schedule row says so a few
-    # lines down), so the host's lift goes on `a` and nothing goes on `b`.
-    res = simulate_dual(_squad(a, phase, la, shape, lift=home_court(seed, phase)),
-                        _squad(b, phase, lb, shape), seed=seed,
+    # lines down), so the host's lift goes on `a` and nothing goes on `b`. The two
+    # dressed Teams are kept: a level dual's deciders are played by the SAME engine
+    # players (lift included) who played the flights.
+    home_team = _squad(a, phase, la, shape, lift=home_court(seed, phase))
+    away_team = _squad(b, phase, lb, shape)
+    res = simulate_dual(home_team, away_team, seed=seed,
                         play_all=True, fidelity=FIDELITY,
                         dual_fmt=shape,
                         singles_fmt=fmt, doubles_fmt=fmt, profile=HS_PROFILE)
@@ -5106,6 +5252,25 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     a.points_against += res.away_points
     b.points_for += res.away_points
     b.points_against += res.home_points
+    # ‼️ A LEVEL DUAL (JHSAA rule 2026-09). Only Group 2's 3S/3D postseason shape
+    # can produce one today (every other varsity total is odd) and `res.winner`
+    # is WRONG for it — the engine reports `0 if points[0] > points[1] else 1`,
+    # i.e. an AWAY win on a draw (the `jv_outcome` trap). A POSTSEASON dual is
+    # settled by three concurrent 10-point tiebreakers — S1, D1, D2, best two of
+    # three, the same players who played those flights (`_deciding_tiebreaks`);
+    # a REGULAR-SEASON dual (unreachable today) uses the JV ladder — points,
+    # sets, games — and a dual still level after that is a TIE, recorded as one.
+    deciders: list = []
+    tied = False
+    if res.home_points == res.away_points:
+        if phase in POSTSEASON:
+            deciders, dec_winner = _deciding_tiebreaks(
+                home_team, away_team, la, lb, phase, shape, seed)
+            res.winner = dec_winner
+        else:
+            out = jv_outcome(res)
+            tied = out == 0
+            res.winner = 0 if out > 0 else 1
     # DualResult.winner is an INT — 0 home, 1 away. Comparing it to "home" silently
     # credits the away team every dual; under the home-and-home schedule this used to
     # run, that left every side at exactly .500 with correct-looking point
@@ -5113,17 +5278,27 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     # `level` is stamped on every VARSITY row too, not only on JV rows: the archive
     # column is not nullable-by-convention, and a row that merely OMITS the marker is
     # indistinguishable from one written before the column existed.
+    # `tiebreak` is the deciders' box score — its OWN key and its own archive
+    # column, never entries in `lines`: every reader of `lines` (records, flight
+    # boxes, court totals, the research export's shape inference) would count a
+    # 10-point decider as a match, and a tiebreaker is not one (nothing is
+    # credited to a player record for it).
     a.schedule.append({"opp": b.school.name, "home": True, "phase": phase,
                        "pf": res.home_points, "pa": res.away_points,
-                       "won": res.winner == 0, "district": district,
-                       "level": LEVEL_VARSITY,
-                       "challenge": challenge, "lines": lines})
+                       "won": res.winner == 0 and not tied, "tied": tied,
+                       "district": district, "level": LEVEL_VARSITY,
+                       "challenge": challenge, "lines": lines,
+                       "tiebreak": deciders, "shape_group": grp})
     b.schedule.append({"opp": a.school.name, "home": False, "phase": phase,
                        "pf": res.away_points, "pa": res.home_points,
-                       "won": res.winner == 1, "district": district,
-                       "level": LEVEL_VARSITY,
-                       "challenge": challenge, "lines": lines})
-    if res.winner == 0:
+                       "won": res.winner == 1 and not tied, "tied": tied,
+                       "district": district, "level": LEVEL_VARSITY,
+                       "challenge": challenge, "lines": lines,
+                       "tiebreak": deciders, "shape_group": grp})
+    if tied:
+        a.ties += 1
+        b.ties += 1
+    elif res.winner == 0:
         a.wins += 1
         b.losses += 1
         if district:
@@ -5673,8 +5848,11 @@ def rating_duals(teams, prestate: bool = False) -> list[dict]:
             # exactly as `play_dual` resolved the shape it was played at — reading
             # the home side alone would rate a mixed-classification early dual on a
             # table nobody played.
-            grp = shape_group(d.get("phase") or "regular", t.school.group,
-                              _group_of.get(d["opp"]))
+            # A showcase is played at its HOST's format (owner rule 2026-09), which
+            # the two sides cannot reproduce — the row carries the group it was
+            # played at. In-memory rows only; the archive path never rates.
+            grp = d.get("shape_group") if "shape_group" in d else shape_group(
+                d.get("phase") or "regular", t.school.group, _group_of.get(d["opp"]))
             out.append({"home": t.school.name, "away": d["opp"], "home_won": d["won"],
                         "home_points": d["pf"], "away_points": d["pa"], "lines": lines,
                         "weights": flight_weights(d.get("phase") or "regular", grp)})
@@ -7023,7 +7201,11 @@ def _select_challengers(by_name: dict, conference_winners: list,
 #: "there should always be challenger specials"): the round convenes EVERY
 #: season in every class, and only a class with fewer teams than seats (a tiny
 #: test world) plays fewer.
-CHALLENGE_SLOTS: dict[str, int] = {"8A": 4, "9A": 4}
+#: Empty since 2026-09: 8A/9A left the 40 road for the Parastate structure (road
+#: 32 + 16 at-large), and the wider valve is a property of the 40 road, not of the
+#: class — it moved with the field every time and it moves with it now. The dict
+#: stays the dispatch so the day a class goes back to a 40 road it is one entry.
+CHALLENGE_SLOTS: dict[str, int] = {}
 CHALLENGE_SLOTS_DEFAULT = 2
 
 
@@ -7393,31 +7575,35 @@ def run_state(field: list[TeamSeason], *, seed: int, champions: int = 8) -> dict
             "field": [t.school.name for t in field]}
 
 
-def run_state_48(seeds: list[TeamSeason], *, seed: int) -> dict:
-    """The 48-team State event for `ATLARGE_GROUPS` (owner spec 2026-09).
+def run_state_parastate(seeds: list[TeamSeason], *, byes: int, seed: int) -> dict:
+    """The Parastate State event for `ATLARGE_GROUPS` (owner spec 2026-09,
+    resized 2026-09 — 48 for 8A/9A/Group 1, 40 for 7A).
 
-    `seeds` is the WHOLE field in seed order: 1-16 the earned byes (Epiregional
-    winners, Epiregional losers, then the best eight non-champion road
-    qualifiers, all ordered by the seeding ATR), 17-32 the rest of the road by
-    ATR, 33-48 the committee's at-larges by Borda. Every bye is earned on court
-    — the committee never awards one, and an at-large can NEVER be seeded above
-    a road qualifier: the floor is structural (they arrive after the 32 road
-    seeds in this list), not a sort key.
+    `seeds` is the WHOLE field in seed order: the road's 32 first (1-8 the
+    earned bye lines — Epiregional winners, Epiregional losers, then the best
+    non-champion road qualifiers, all ordered by the seeding ATR — then the rest
+    of the road by ATR), and the committee's at-larges after them by Borda. An
+    at-large can NEVER be seeded above a road qualifier: the floor is structural
+    (they arrive after the 32 road seeds in this list), not a sort key.
 
-    THE PARASTATE (seeds 17-48) pairs high-low, pinned: 17v48, 18v47, ... 32v33
-    — the higher seed hosts. Winners RETAIN their original seed; they and the
-    sixteen byes enter a fresh 32 draw played by `run_state` itself
-    (`champions=16` on a full 32 lands on the plain single-draw branch), so the
-    Round of 32 onward is the association's ordinary seeded bracket. The
-    Parastate is named in `round_names`, which is exactly what makes
-    `state._jh_split_state` draw it as its own tree — there is no bracket path
-    from a Parastate slot to a main-draw slot.
+    `byes` is how many top seeds sit the Parastate out — `road − bids`, so the
+    Parastate is exactly the `2 × bids` lowest seeds: a 48 (16 bids) byes 1-16
+    and plays 17v48 … 32v33; a 40 (8 bids) byes 1-24 and plays 25v40 … 32v33.
+    Pairs are pinned high-low, the higher seed hosts. Winners RETAIN their
+    original seed; they and the byes enter a fresh 32 draw played by `run_state`
+    itself (`champions=byes` on a full 32 lands on the plain single-draw
+    branch), so the Round of 32 onward is the association's ordinary seeded
+    bracket. The Parastate is named in `round_names`, which is exactly what
+    makes `state._jh_split_state` draw it as its own tree — there is no bracket
+    path from a Parastate slot to a main-draw slot.
 
     Short fields (tiny worlds, a road that ran dry) degrade generically: the
-    first sixteen seeds bye, the rest fold high-low, an odd team advances
-    unplayed. The 48 shape is the only one the association plays at full size."""
+    first `byes` seeds bye, the rest fold high-low, an odd team advances
+    unplayed. The table shapes are the only ones the association plays at full
+    size."""
     rng = random.Random(seed)
-    byes, rest = list(seeds[:16]), list(seeds[16:])
+    n_byes = max(0, min(byes, len(seeds)))
+    byes_, rest = list(seeds[:n_byes]), list(seeds[n_byes:])
     para_games = []
     alive = set()
     for i in range(len(rest) // 2):
@@ -7431,14 +7617,20 @@ def run_state_48(seeds: list[TeamSeason], *, seed: int) -> dict:
         alive.add(win.school.name)
     if len(rest) % 2:                              # degraded odd field only
         alive.add(rest[len(rest) // 2].school.name)
-    survivors = byes + [t for t in rest if t.school.name in alive]
-    inner = run_state(survivors, champions=min(16, max(1, len(byes))),
+    survivors = byes_ + [t for t in rest if t.school.name in alive]
+    inner = run_state(survivors, champions=max(1, len(byes_)),
                       seed=rng.randrange(1 << 30))
     rounds = ([para_games] if para_games else []) + inner["rounds"]
     names = ([PARASTATE_NAME] if para_games else []) + list(inner["round_names"])
     return {"champion": inner["champion"], "rounds": rounds,
             "round_names": names,
             "field": [t.school.name for t in seeds]}
+
+
+def run_state_48(seeds: list[TeamSeason], *, seed: int) -> dict:
+    """The original 48 shape (16 bids, seeds 1-16 bye) — `run_state_parastate`
+    at `byes=16`. Kept as the name the 2026-09 spec and its AAR use."""
+    return run_state_parastate(seeds, byes=16, seed=seed)
 
 
 def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
@@ -8302,8 +8494,13 @@ def showcase_schedule(teams: list[TeamSeason], year: int, gender: str, salt: str
         duals = POD_DUALS if kind == "pod" else TIER_DUALS
         for tier, field in fields:
             for grp in _showcase_groups(field, size, played, rng):
+                # THE HOST (owner rule 2026-09): the weekend is played at one
+                # venue, and every dual of the event plays the host class's state
+                # format. The group is dealt shuffled, so the host is a draw — a
+                # program is not systematically at home. Hosting decides the
+                # FORMAT only; a showcase is still a neutral site for home court.
                 events.append({"kind": kind, "phase": phase, "window": w,
-                               "tier": tier, "teams": grp,
+                               "tier": tier, "teams": grp, "host": grp[0],
                                "rounds": _showcase_rounds(grp, duals, year, salt)})
     return events
 
@@ -8340,9 +8537,10 @@ def play_showcases(events: list[dict], rng: random.Random) -> dict[int, int]:
             for e in win:
                 if s >= len(e["rounds"]):
                     continue
+                host = e.get("host") or e["teams"][0]
                 for a, b in e["rounds"][s]:
                     play_dual(a, b, seed=rng.randrange(1 << 30), phase=e["phase"],
-                              district=False)
+                              district=False, group=host.school.group)
         for e in win:
             if e["kind"] == "tiered":
                 for t in e["teams"]:
@@ -8718,15 +8916,17 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
         # rule exactly where they were, so every draw keeps its shape: 8 single
         # byes in a 24, 8 double byes in a 40, placement only in a 32.
         if group in ATLARGE_GROUPS:
-            # THE 48-TEAM FIELD (owner spec 2026-09). The road is untouched —
-            # its 32 qualifiers are exactly `zonal_champs + state_pools` — and
-            # the seeds are all EARNED: 1-4 Epiregional winners, 5-8 Epiregional
-            # losers, 9-16 the best eight non-champion road qualifiers, 17-32
-            # the rest, all on the EXISTING seeding ATR (`seed_atr`, unchanged);
-            # 33-48 the committee's sixteen at-larges by Borda. The committee
-            # may pick ANY team outside the road field — a district champion who
-            # missed the road is automatic — but its picks are always seeded
-            # 33-48, never above a road qualifier.
+            # THE PARASTATE FIELD (owner spec 2026-09; 8A/9A joined and 7A went
+            # to 8 bids 2026-09). The road is untouched — its 32 qualifiers are
+            # exactly `zonal_champs + state_pools` — and the seeds are all
+            # EARNED: 1-4 Epiregional winners, 5-8 Epiregional losers, then the
+            # non-champion road qualifiers, all on the EXISTING seeding ATR
+            # (`seed_atr`, unchanged); the committee's `AT_LARGE_BIDS[group]`
+            # at-larges follow by Borda. The committee may pick ANY team
+            # outside the road field — a district champion who missed the road
+            # is automatic and consumes a bid — but its picks are always seeded
+            # below every road qualifier.
+            bids = AT_LARGE_BIDS[group]
             field32 = list(zonal_champs[group]) + list(state_pools[group])
             satr = seed_atr(field32, final_power)
             key = _seed_atr_key(satr)
@@ -8741,13 +8941,18 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "") -> dict
             g_teams = [t for ts in by_group[group].values() for t in ts]
             atr_map = {t.school.name: atr(t, final_power) for t in g_teams}
             sel = _jc.select(ratings_by_group[group], road_names,
-                             district_champs[group], atr=atr_map)
+                             district_champs[group], atr=atr_map, seats=bids)
             committee_by_group[group] = sel
             by_name_g = {t.school.name: t
                          for ts in by_group[group].values() for t in ts}
             at_large = [by_name_g[n] for n in sel["selected"] if n in by_name_g]
-            arc = run_state_48(road_seeds + at_large,
-                               seed=seed + hash(group) % 9973 + 12281)
+            # Byes = the road field less the bids, so the Parastate is exactly
+            # the at-larges and their `bids` road opponents (a 48: 1-16 bye; a
+            # 40: 1-24 bye). Off the TABLE size, never `len(road_seeds)`: a
+            # short road (tiny world) still byes the right lines.
+            arc = run_state_parastate(
+                road_seeds + at_large, byes=state_field_size(group) - bids,
+                seed=seed + hash(group) % 9973 + 12281)
             arc["at_large"] = [t.school.name for t in at_large]
             states[group] = arc
             continue

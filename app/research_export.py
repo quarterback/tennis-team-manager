@@ -73,7 +73,7 @@ def _load_archived_jhsaa_season(year: int, gender: str) -> dict:
         # the JV column existed reads back NULL, and those are all varsity.
         rows = conn.execute(
             "SELECT school, opp, home, phase, pf, pa, won, district, lines,"
-            " level, tied, shape"
+            " level, tied, shape, tiebreak"
             " FROM world_jhsaa_dual WHERE world_id=? AND year=? AND gender=?"
             " ORDER BY school, rowid",
             (world["id"], world_year, gender)).fetchall()
@@ -110,6 +110,10 @@ def _load_archived_jhsaa_season(year: int, gender: str) -> dict:
         d["level"] = d.get("level") or "v"
         d["tied"] = bool(d.get("tied"))
         d["lines"] = json.loads(d.pop("lines") or "[]")
+        # The deciders of a level Group 2 postseason dual (JHSAA rule 2026-09) —
+        # their own field, NEVER folded into `lines`: a 10-point tiebreaker is not
+        # a match, and every line-count consumer downstream would count it as one.
+        d["tiebreak"] = json.loads(d.pop("tiebreak", None) or "[]")
         played = dates.get(wd.jh_match_key(d))
         d["date"] = played.isoformat() if played else ""
         schedule_by_school.setdefault(d.pop("school"), []).append(d)
@@ -248,6 +252,11 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                 # ties): `tied=1` and NO winner, rather than inventing one.
                 "shape": dual.get("shape") or "",
                 "tied": int(tied),
+                # A LEVEL varsity postseason dual settled by the deciders (Group 2's
+                # 3S/3D, JHSAA rule 2026-09): points read 3-3 and `winner_program_id`
+                # names who won the three 10-point tiebreakers. Flagged so a reader
+                # does not mistake the level score for a tie.
+                "decided_on_tiebreak": int(bool(dual.get("tiebreak"))),
                 "phase": dual["phase"], "district": int(bool(dual.get("district"))),
                 "home_points": dual["pf"], "away_points": dual["pa"],
                 "winner_program_id": "" if tied else (team.school.key if dual["won"] else next((x.school.key for x in all_teams if x.school.name == dual["opp"]), dual["opp"])),
@@ -401,7 +410,9 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "duals.shape states a JV dual's elastic lineup ('2S/2D'); varsity rows leave it "
             "empty because their shape is a function of phase and classification. duals.tied "
             "marks the association's only drawn results (even-court JV duals); a tied dual "
-            "has no winner_program_id.",
+            "has no winner_program_id. duals.decided_on_tiebreak marks a LEVEL varsity "
+            "postseason dual (Group 2's 3S/3D road) whose winner was decided on three "
+            "concurrent 10-point tiebreakers — its points are level and it is NOT a tie.",
             "jhsaa_jv_state.json is the JV Team State Tournament: the twenty geographic-area "
             "regional championships and the statewide classless bracket their champions play. "
             "jhsaa_individuals.json carries the JV Singles/JV Doubles state draws (flights "

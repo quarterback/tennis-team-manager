@@ -27,8 +27,8 @@
     <div class="sub">{{ view.champion.mascot }} · {{ view.champion.city }}, {{ view.champion.state if view.champion.state else 'Jefferson' }} · {{ view.champion.district }}</div>
   </div>
   {% if view.final %}
-  <div class="sc"><div class="n">{{ view.final.win_points }}–{{ view.final.lose_points }}</div>
-    <div class="o">final · def. {{ view.runner_up.name }}</div></div>
+  <div class="sc"><div class="n">{{ view.final.win_points }}–{{ view.final.lose_points }}{% if view.final.tb %} <small title="level dual, decided on tiebreakers">TB</small>{% endif %}</div>
+    <div class="o">final{% if view.final.tb %} · on tiebreakers{% endif %} · def. {{ view.runner_up.name }}</div></div>
   {% endif %}
 </div>
 {% endif %}
@@ -99,7 +99,7 @@
       </div>
       {% if view.epiregional.bye_lines %}
       {# A 32 is placement only — its eight lines are seeds, never byes. #}
-      <p class="jh-byes">{{ 'Parastate byes (seeds 1–16)' if view.epiregional.bye_kind == 'parastate' else 'Double byes' if view.epiregional.bye_kind == 'double' else 'Byes' if view.epiregional.n_byes else 'Seed lines 1–8' }}:
+      <p class="jh-byes">{{ 'Parastate byes (seeds 1–' ~ view.epiregional.n_byes ~ ')' if view.epiregional.bye_kind == 'parastate' else 'Double byes' if view.epiregional.bye_kind == 'double' else 'Byes' if view.epiregional.n_byes else 'Seed lines 1–8' }}:
         {% for b in view.epiregional.bye_lines %}<a href="{{ url_for('jhsaa_school', school=b.name, u=u, g=view.gender, year=view.scope.pin) }}">{{ b.seed }} {{ b.name }}</a> ({{ b.how }}){{ ", " if not loop.last }}{% endfor %}</p>
       {% endif %}
     </div>

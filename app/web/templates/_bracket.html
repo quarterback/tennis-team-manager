@@ -69,7 +69,8 @@
      so it is printed once, in full, on the winner's row. #}
   <span class="brk-score{{ ' is-line' if m.score_full }}">{% if m.played %}{%
     if m.score_full %}{{ m.score if t.won }}{%
-    else %}{{ m.score.split('-')[0] if t.won else m.score.split('-')[1] }}{% endif %}{% endif %}</span>
+    else %}{{ m.score.split('-')[0] if t.won else m.score.split('-')[1] }}{% endif %}{%
+    if m.tb and t.won %}<small title="level dual, decided on tiebreakers">TB</small>{% endif %}{% endif %}</span>
 </div>
 {% endif %}
 {% endmacro %}

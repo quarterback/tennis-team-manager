@@ -9,8 +9,9 @@
                  'sor': 'SOR', 'elo': 'Elo'} %}
 
 {{ jh_header(view.scope, u, 'committee', view.group ~ ' At-Large Committee',
-             'The 48-team field: 32 road qualifiers plus 16 committee at-larges, always
-              seeded 33-48. Five members, each a fixed published philosophy over the nine
+             'The ' ~ view.field_n ~ '-team field: ' ~ view.road_n ~ ' road qualifiers plus '
+              ~ view.seats ~ ' committee at-larges, always seeded ' ~ (view.road_n + 1) ~ '-'
+              ~ view.field_n ~ '. Five members, each a fixed published philosophy over the nine
               computer systems — every selection traces to five ballots, never a coin flip.',
              [('Season', view.season_year), ('At-larges', view.selected|length),
               ('Auto bids', view.auto|length), ('Locks', view.locks|length)]
@@ -19,7 +20,8 @@
 <div class="jh-shell">
 {% if not view.ready %}
 <div class="bl-panel"><div class="jh-empty">No committee archived — the at-large
-committee runs for 7A and Group 1 only, from the season the 48-team field began.</div></div>
+committee runs for the Parastate classes only (7A, 8A, 9A and Group 1), from the season
+each class's expanded field began.</div></div>
 {% else %}
 
 <div class="jh-jump">
@@ -47,7 +49,7 @@ committee runs for 7A and Group 1 only, from the season the 48-team field began.
         <th style="width:44px" title="Rank disagreement — the controversy measure">σ</th>
         {% for s in view.systems %}<th style="width:60px">{{ LABELS[s] }}</th>{% endfor %}
         {% for m in view.members %}<th style="width:52px" title="{{ m }} — this member's ballot position among at-large candidates">{{ m.replace('The ', '')[:5] }}</th>{% endfor %}
-        <th style="width:56px" title="Borda count across the five ballots (seed Borda for the selected sixteen, bubble Borda otherwise)">Borda</th>
+        <th style="width:56px" title="Borda count across the five ballots (seed Borda for the selected at-larges, bubble Borda otherwise)">Borda</th>
         <th style="width:76px">Status</th>
       </tr>
       {% for r in view.rows %}
@@ -86,7 +88,7 @@ committee runs for 7A and Group 1 only, from the season the 48-team field began.
           <th title="Heavy on: {{ b.heavy|map('upper')|join(', ') }} — weights {{ b.weights }}">{{ b.member }}</th>
           {% endfor %}
         </tr>
-        {% for i in range(48) %}
+        {% for i in range(view.field_n) %}
         <tr>
           <td>{{ i + 1 }}</td>
           {% for b in view.ballots %}

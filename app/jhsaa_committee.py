@@ -1,7 +1,7 @@
 """The JHSAA at-large selection committee (owner spec 2026-09) — five named
 members, each a FIXED, CONCENTRATED preference vector over the `jhsaa_ratings`
-systems, used only by the 48-team groups (`jhsaa.ATLARGE_GROUPS`: 7A and
-Group 1).
+systems, used only by the Parastate groups (`jhsaa.ATLARGE_GROUPS`: 8A, 9A and
+Group 1 at 16 bids in a 48-team field, 7A at 8 bids in a 40 — `AT_LARGE_BIDS`).
 
 The committee is deliberately deterministic and legible: the same five members
 exist every season, their weights are published in the UI, every ballot is a
@@ -18,14 +18,16 @@ nine.
 
 What it can and cannot do (spec, hard rules):
   * The road to State is untouched — it still qualifies exactly 32 teams. The
-    committee only fills the sixteen at-large seats.
+    committee only fills the group's at-large seats (`seats`).
   * The candidate pool is EVERY team outside the road field — including teams
     the systems rank above road qualifiers. Nothing pre-cuts it.
-  * A district champion who missed the road gets an AUTOMATIC at-large berth.
-  * ‼️ At-large teams are ALWAYS seeded 33-48. Never above a road qualifier,
-    whatever the record, rating or Borda total. `jhsaa.run_state_48` enforces
-    it structurally (the at-larges arrive after the 32 road seeds); a test pins
-    a case whose Borda would otherwise outrank a road seed.
+  * A district champion who missed the road gets an AUTOMATIC at-large berth,
+    and it CONSUMES a seat rather than adding a berth.
+  * ‼️ At-large teams are ALWAYS seeded 33 down (33-48 in a 48, 33-40 in a
+    40). Never above a road qualifier, whatever the record, rating or Borda
+    total. `jhsaa.run_state_parastate` enforces it structurally (the at-larges
+    arrive after the 32 road seeds); a test pins a case whose Borda would
+    otherwise outrank a road seed.
 """
 from __future__ import annotations
 
@@ -47,7 +49,9 @@ MEMBERS: dict[str, dict[str, float]] = {
                       "massey_game", "set_share", "sor", "elo")},
 }
 
-#: At-large seats (spec 2.1).
+#: At-large seats (spec 2.1) — the DEFAULT. The seat count is per group now
+#: (`jhsaa.AT_LARGE_BIDS`: 16 for 8A/9A/Group 1, 8 for 7A) and `select` takes it
+#: as `seats`; this is the 48-field's number and what a bare call gets.
 AT_LARGE = 16
 
 
@@ -75,11 +79,13 @@ def ballots(ratings: dict) -> dict[str, list[str]]:
 
 
 def select(ratings: dict, road: set[str], district_champions: list[str],
-           atr: dict[str, float] | None = None) -> dict:
+           atr: dict[str, float] | None = None, seats: int = AT_LARGE) -> dict:
     """The whole selection (spec 3.2, owner refinements 2026-09), returning an
-    auditable dict:
+    auditable dict. `seats` is the group's at-large count (`jhsaa.AT_LARGE_BIDS`
+    — 16 in a 48, 8 in 7A's 40); every step below scales off it and a district
+    champion who missed the road consumes one of them, never adds one.
 
-      {"selected": [16 names in SEED ORDER 33-48], "auto": [...],
+      {"selected": [`seats` names in SEED ORDER, 33 down], "auto": [...],
        "locks": [...], "borda": {bubble name: total}, "seed_borda": {...},
        "ballots": {member: full candidate ordering},
        "ranges": {member: that member's at-large range},
@@ -109,8 +115,8 @@ def select(ratings: dict, road: set[str], district_champions: list[str],
 
     # Step 1 — automatic bids.
     auto = [n for n in district_champions
-            if n not in road and n in ratings["teams"]][:AT_LARGE]
-    open_seats = AT_LARGE - len(auto)
+            if n not in road and n in ratings["teams"]][:seats]
+    open_seats = seats - len(auto)
 
     # Each member's at-large range: their top `open_seats` remaining candidates.
     ranges = {m: [n for n in order if n not in auto][:open_seats]
@@ -176,4 +182,5 @@ def select(ratings: dict, road: set[str], district_champions: list[str],
     return {"selected": selected, "auto": auto, "locks": locks,
             "borda": borda, "seed_borda": seed_borda,
             "ballots": cand_ballots, "ranges": ranges, "status": status,
+            "seats": seats,
             "weights": {m: dict(w) for m, w in MEMBERS.items()}}

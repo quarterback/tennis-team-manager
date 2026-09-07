@@ -95,9 +95,10 @@
 {% macro mc_h2h_row(m) %}
 <div class="bl-h2hrow">
   <span class="lbl">{{ m.label }}{% if m.postseason %}<span class="bl-h2h-ps">PS</span>{% endif %}</span>
-  <span class="side {{ 'win' if m.home_points > m.away_points }}">{{ m.home }}</span>
-  <span class="score">{% if m.url %}<a href="{{ m.url }}">{{ m.home_points }}–{{ m.away_points }}</a>{% else %}{{ m.home_points }}–{{ m.away_points }}{% endif %}</span>
-  <span class="side {{ 'win' if m.away_points > m.home_points }}">{{ m.away }}</span>
+  {% set mw = m.winner if 'winner' in m else (m.home if m.home_points > m.away_points else (m.away if m.away_points > m.home_points else none)) %}
+  <span class="side {{ 'win' if mw == m.home }}">{{ m.home }}</span>
+  <span class="score">{% if m.url %}<a href="{{ m.url }}">{{ m.home_points }}–{{ m.away_points }}</a>{% else %}{{ m.home_points }}–{{ m.away_points }}{% endif %}{% if mw and m.home_points == m.away_points %} <small title="decided on tiebreakers">TB</small>{% endif %}</span>
+  <span class="side {{ 'win' if mw == m.away }}">{{ m.away }}</span>
 </div>
 {% endmacro %}
 

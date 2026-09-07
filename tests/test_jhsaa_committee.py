@@ -166,6 +166,48 @@ def test_the_48_field_is_road_then_at_large(monkeypatch):
     assert arc["field"][32:] == [t.school.name for t in al]
 
 
+def test_the_40_team_parastate_is_eight_bids_and_byes_1_to_24(monkeypatch):
+    """7A's shape (owner rule 2026-09): 32 road + 8 at-large. Seeds 1-24 bye to
+    the Round of 32; the Parastate is 25v40 … 32v33, winners keep their seed,
+    then 32 → 16 → 8 → 4 → 2 — the same mechanism as the 48 at a smaller bid
+    count, which is the whole point of keeping Parastate rather than dropping
+    it with the field size."""
+    seeds = [_T(f"S{i:02d}") for i in range(1, 41)]
+    monkeypatch.setattr(jh, "play_dual", lambda a, b, *, seed, phase: _Res(0))
+    bids = jh.AT_LARGE_BIDS["7A"]
+    assert bids == 8 and jh.state_field_size("7A") == 32
+    arc = jh.run_state_parastate(seeds, byes=jh.state_field_size("7A") - bids, seed=3)
+    para = arc["rounds"][0]
+    assert arc["round_names"][0] == jh.PARASTATE_NAME
+    assert [(g["home"], g["away"]) for g in para] == \
+        [(f"S{25 + k:02d}", f"S{40 - k:02d}") for k in range(8)]
+    assert [len(rd) for rd in arc["rounds"]] == [8, 16, 8, 4, 2, 1]
+    r32 = {g["home"] for g in arc["rounds"][1]} | {g["away"] for g in arc["rounds"][1]}
+    assert r32 == {f"S{i:02d}" for i in range(1, 33)}
+    assert len(arc["field"]) == 40 and arc["champion"] == "S01"
+    # the 48 is the same function at byes=16; `run_state_48` is that call
+    assert jh.run_state_48(seeds + [_T(f"S{i}") for i in range(41, 49)], seed=3) \
+        == jh.run_state_parastate(seeds + [_T(f"S{i}") for i in range(41, 49)],
+                                  byes=16, seed=3)
+
+
+def test_the_bid_table_and_the_committee_seat_count_agree():
+    """8A/9A/Group 1 at 16, 7A at 8 (owner rule 2026-09); every Parastate class
+    is a road-32 class and plays 4S/5D; the committee selects exactly the
+    group's seats and an automatic bid CONSUMES one of them."""
+    assert jh.AT_LARGE_BIDS == {"7A": 8, "8A": 16, "9A": 16, "Group 1": 16}
+    for g in jh.ATLARGE_GROUPS:
+        assert jh.state_field_size(g) == 32, g
+        assert g in jh.WIDE_GROUPS, g
+    assert jh.at_large_bids("6A") == 0
+    sel = jc.select(_ratings(), ROAD, [], seats=8)
+    assert len(sel["selected"]) == 8 == sel["seats"]
+    assert set(sel["selected"]) == {f"T{i:02d}" for i in range(33, 41)}
+    sel = jc.select(_ratings(), ROAD, ["T59"], seats=8)
+    assert "T59" in sel["auto"] and len(sel["selected"]) == 8
+    assert set(sel["selected"]) - {"T59"} == {f"T{i:02d}" for i in range(33, 40)}
+
+
 def test_a_parastate_exit_reads_as_the_parastate(monkeypatch):
     """The finish label comes off the round's archived name — 'Parastate', short
     'Paras' — never the 'Round of 48' team-count band that files a seed's only

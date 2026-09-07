@@ -3617,8 +3617,14 @@ def _jh_reported_lines(d: dict) -> list[dict]:
     directional split for oGS. So storage keeps the record and the report is normalised
     here. Which side is being viewed decides the name order and the d./l. marker; it never
     decides the numbers."""
+    return _jh_winner_first(d.get("lines") or ())
+
+
+def _jh_winner_first(lines) -> list[dict]:
+    """`_jh_reported_lines`'s rule on any home-first line list — the deciders
+    (`tiebreak`, a `10-7` a row) are stored home-first exactly as `lines` are."""
     out = []
-    for ln in d.get("lines") or ():
+    for ln in lines:
         if ln.get("home_won"):
             out.append(ln)                       # home won: home-first IS winner-first
             continue
@@ -3629,6 +3635,13 @@ def _jh_reported_lines(d: dict) -> list[dict]:
             flipped.append(f"{b}-{a}" if b else st)
         out.append({**ln, "score": ", ".join(flipped)})
     return out
+
+
+def _jh_reported_tiebreak(d: dict) -> list[dict]:
+    """The DECIDERS of a level Group 2 postseason dual (JHSAA rule 2026-09 —
+    `jhsaa._deciding_tiebreaks`), winner-first like the lines. Empty for every
+    dual that was not level, which is every dual outside that one shape."""
+    return _jh_winner_first(d.get("tiebreak") or ())
 
 
 _JH_PHASE_LABEL = {"showcase_pod": "Showcase (Pod)", "showcase_tiered": "Showcase (Tiered)",
@@ -3685,7 +3698,14 @@ def jhsaa_dual_view(dual_id: int) -> dict | None:
         # so exclusion works from either side.
         home_row_id = world.jhsaa_home_row_id(row["world_id"], row["year"], row["gender"],
                                               level, row["opp_raw"], row["school_raw"])
-    winner = 0 if home_pts > away_pts else (1 if away_pts > home_pts else None)
+    if home_pts != away_pts:
+        winner = 0 if home_pts > away_pts else 1
+    elif row.get("tied"):
+        winner = None                              # a drawn league dual (JV ladder)
+    else:
+        # A LEVEL POSTSEASON DUAL settled by the deciders (Group 2's 3S/3D, JHSAA
+        # rule 2026-09): the points cannot name the winner, the row's `won` can.
+        winner = 0 if bool(row["won"]) == bool(row["home"]) else 1
     meetings = world.jhsaa_prior_meetings(row["world_id"], row["gender"], home, away,
                                           level=level, exclude_id=home_row_id)
     import app.matchcenter as mc
@@ -3711,6 +3731,7 @@ def jhsaa_dual_view(dual_id: int) -> dict | None:
             "level": level, "year": row["year"],
             "season_year": season_year, "gender": row["gender"],
             "lines": _jh_reported_lines(row), "stat_groups": None,
+            "tiebreak": _jh_reported_tiebreak(row),
             "meetings": meetings, "series": series}
 
 
@@ -3827,6 +3848,15 @@ def _jh_score(gm: dict) -> str:
     was correct, and the wrong half read as a plausible upset."""
     hp, ap = int(gm.get("home_points", 0)), int(gm.get("away_points", 0))
     return f"{max(hp, ap)}-{min(hp, ap)}"
+
+
+def _jh_tb(gm: dict) -> bool:
+    """Was this bracket game DECIDED ON TIEBREAKERS? Derived on read: a level
+    score with a named winner can only be Group 2's 3S/3D deciders (JHSAA rule
+    2026-09) — every other varsity shape is odd and a bracket never draws. No
+    archive marker needed, so every bracket builder stays untouched."""
+    return (gm.get("home_points") == gm.get("away_points")
+            and bool(gm.get("winner")) and gm.get("home_points") is not None)
 
 
 def _jh_brk_team(name: str, won: bool, seeds: dict, schools: dict) -> dict:
@@ -3998,7 +4028,7 @@ def _jh_bracket_cols(bracket: dict, schools: dict, keep: int = 0) -> list:
                        "bpos": 0, "home_won": hw, "winner": gm.get("winner"),
                        # WINNER-FIRST: `brk_row` picks its half of this string by which
                        # side won, not by which side is home (see _bracket.html).
-                       "score": _jh_score(gm)})
+                       "score": _jh_score(gm), "tb": _jh_tb(gm)})
         byes = [t for t in alive if t not in playing]
         ms.extend(_jh_bye_card(t, seeds, schools) for t in byes)
         alive = [gm.get("winner") for gm in rd["games"]] + byes
@@ -4053,7 +4083,7 @@ def _jh_final_four(bracket: dict, schools: dict) -> dict:
         # place it is stated in words. `score` stays for the shared card macro.
         wp, lp = max(final["home_points"], final["away_points"]), \
             min(final["home_points"], final["away_points"])
-        out["final"] = {**final, "score": _jh_score(final),
+        out["final"] = {**final, "score": _jh_score(final), "tb": _jh_tb(final),
                         "win_points": int(wp), "lose_points": int(lp)}
     if len(rounds) > 1:
         for gm in rounds[-2]["games"]:
@@ -5111,11 +5141,14 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
     field_n = len(br.get("field") or ())
     # The bye a top line carries in THIS shape: none in a power-of-two field,
     # a single bye in a 24, a double bye (the Qualifiers Round) in an expanded 40 —
-    # and in the 48-team groups (owner spec 2026-09) a SINGLE bye through the
-    # Parastate, held by SIXTEEN lines: 1-4 Epiregional winners, 5-8 Epiregional
-    # losers (still Zonal champions), 9-16 the best non-champion road qualifiers
-    # by ATR. The Parastate is a named round, so `round_names` alone no longer
-    # implies the 40's double bye.
+    # and in the Parastate groups (owner spec 2026-09) a SINGLE bye through the
+    # Parastate, held by `field − 2 × bids` lines (sixteen in a 48, twenty-four in
+    # 7A's 40): 1-4 Epiregional winners, 5-8 Epiregional losers (still Zonal
+    # champions), then the best non-champion road qualifiers by ATR. The
+    # Parastate is a named round, so `round_names` alone no longer implies the
+    # 40's double bye. ‼️ The bye count is READ OFF THE ARCHIVE (the field less
+    # the Parastate's entrants), never off today's `AT_LARGE_BIDS`: 7A's seasons
+    # archived at 16 bids must keep rendering sixteen bye lines.
     para = jh.PARASTATE_NAME in (br.get("round_names") or ())
     bye_kind = ("parastate" if para
                 else "none" if field_n and field_n & (field_n - 1) == 0
@@ -5123,7 +5156,8 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
     # ‼️ A 32 HAS NO BYES — listing its top eight under "Byes" would describe a
     # draw `run_state` never played. The eight lines still exist there (placement
     # only), so the panel names them as SEED LINES instead.
-    n_lines = (16 if para
+    para_n = 2 * len((br.get("rounds") or [[]])[0]) if para else 0
+    n_lines = (max(0, field_n - para_n) if para
                else jh.STATE_BYES if field_n > jh.STATE_BYES else 0)
     n_byes = n_lines if bye_kind != "none" else 0
     zonal = set(epi.get("field") or ())
@@ -5541,6 +5575,7 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         "toc_seed": (season or {}).get("toc_seed", 0),
         "toc_finish": (season or {}).get("toc_finish", ""),
         "schedule": [{**d, "date": dates[i], "lines": _jh_reported_lines(d),
+                      "tiebreak": _jh_reported_tiebreak(d),
                       "kind": k, "opp_deco": _jh_deco(schools, d["opp"], 22),
                       "opp_seed": _SEEDS.get(k, {}).get(d["opp"], 0),
                       # ‼️ ONLY a BRACKET ROUND earns the second chip (owner, 2026-08).
@@ -7022,12 +7057,22 @@ def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
     grp = group if group in jh.ATLARGE_GROUPS else jh.ATLARGE_GROUPS[0]
     scope = _jh_scope(g, grp, list(jh.GROUPS), yr, years,
                       (arc or {}).get("season_year"), arc)
+    ratings = ((arc or {}).get("ratings") or {}).get(grp)
+    sel = ((arc or {}).get("committee") or {}).get(grp)
+    # The seat count is the ARCHIVED selection's (`seats`, written by
+    # `jhsaa_committee.select`) — a 7A season selected at 16 keeps reading as
+    # sixteen after the move to 8. Seasons archived before the key fall back to
+    # the group's current table; the road is 32 in every Parastate group.
+    # A season archived before the key: the selection's own length IS the seat
+    # count (a 7A year selected at sixteen must not read as an eight-bid one).
+    seats = ((sel or {}).get("seats") or len((sel or {}).get("selected") or ())
+             or jh.at_large_bids(grp) or AT_LARGE)
+    road_n = jh.state_field_size(grp)
     base = {"gender": g, "year": yr, "years": years, "group": grp,
             "groups": list(jh.ATLARGE_GROUPS), "scope": scope,
             "systems": list(SYSTEMS), "members": list(MEMBERS),
+            "seats": seats, "road_n": road_n, "field_n": road_n + seats,
             "season_year": (arc or {}).get("season_year")}
-    ratings = ((arc or {}).get("ratings") or {}).get(grp)
-    sel = ((arc or {}).get("committee") or {}).get(grp)
     if not arc or not ratings or not sel:
         return {**base, "ready": False, "rows": [], "ballots": []}
     schools = _jh_schools(g)
@@ -7051,11 +7096,11 @@ def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
                      "status": sel["status"].get(name, "Out")})
     rows.sort(key=lambda r: (order.get(r["status"], 9),
                              -(r["borda"] or 0), r["mean"], r["school"]))
-    # Ballot view: each member's current top `AT_LARGE + 32` (their read of the
-    # whole 48-team question), with the weights they are known by.
+    # Ballot view: each member's current top `seats + road` (their read of the
+    # whole field question — 48 or 40), with the weights they are known by.
     ballots = []
     for m in MEMBERS:
-        top = (sel["ballots"].get(m) or [])[:AT_LARGE + 32]
+        top = (sel["ballots"].get(m) or [])[:base["field_n"]]
         ballots.append({"member": m,
                         "weights": sel.get("weights", {}).get(m, {}),
                         "heavy": sorted(s for s, wgt in
