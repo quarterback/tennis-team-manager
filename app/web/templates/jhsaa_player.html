@@ -25,11 +25,11 @@
     <span class="jh-chip c-{{ view.group|replace(' ','') }}">{{ view.classification }}</span>
     {# A champion's name in gold — set from the same title count the Individual
        State panel header uses (titles, not appearances; mixed included). #}
-    <h1{% if view.individual_titles %} class="champ"{% endif %}>{{ view.name }}</h1>
+    <h1{% if view.individual_titles %} class="champ"{% endif %}>{% if view.country and view.country != 'US' %}<span class="player-flag" title="{{ view.country|country_name }}">{{ view.country|flags }}</span> {% endif %}{{ view.name }}</h1>
     <div class="mascot">
       <a style="color:inherit" href="{{ url_for('jhsaa_school', school=view.school, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.school }}</a>
       · grade {{ view.grade }}</div>
-    <div class="where">{{ view.hometown }} · {{ view.district }}</div>
+    <div class="where">{{ view.hometown }}{% if view.country and view.country != 'US' %} · {{ view.country|country_name }}{% endif %} · {{ view.district }}</div>
     <div class="now">
       <span class="rec">{{ view.record }}</span>
       <span class="bit">career, all lines · {{ view.seasons|length }} high-school season{{ '' if view.seasons|length == 1 else 's' }}</span>

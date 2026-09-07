@@ -5685,6 +5685,13 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                      (jv_w + jv_l + jv_t) else "",
         "jv_wins": jv_w, "jv_losses": jv_l, "jv_ties": jv_t,
         "roster": [{"pid": p.pid, "name": p.name, "grade": p.grade,
+                    # ‼️ THE FLAG WAS ALWAYS THERE AND NOTHING RENDERED IT. New-era
+                    # cohorts have drawn ~10% non-US since 2026-08 (`_draw_name`'s
+                    # Canada + international slices — 1,722 of 17,718 players in the
+                    # owner's 2075 boys season), `p.country` is stamped on every
+                    # one, and the college/coach/portal/GTT pages have shown flags
+                    # all along. The JHSAA simply never passed the field.
+                    "country": p.country,
                     "ovr": round(p.current_overall(), 1),
                     # Talent/potential visibility (owner request) — the ceiling and
                     # star rating were already computed by `Prospect` (the same
@@ -6255,6 +6262,7 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
     losses = sum(s["losses"] for s in seasons)
     return {
         "found": True, "school": school, "gender": g, "pid": pid, "name": player.name,
+        "country": player.country,
         "hometown": player.hometown, "grade": player.grade,
         "ovr": round(player.current_overall(), 1),
         "ceiling": round(player.ceiling_overall(), 1),
