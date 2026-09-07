@@ -33,6 +33,19 @@ def _player_id(school: str, name: str, lookup: dict) -> str:
         f"{school}|{name}".encode()).hexdigest()[:16]
 
 
+def _record_parts(record: str) -> tuple[int, int, int]:
+    """Read the archive's ``W-L`` or ``W-L-T`` record representation."""
+    try:
+        parts = tuple(map(int, record.split("-")))
+    except (AttributeError, ValueError) as exc:
+        raise ExportError(f"Invalid archived JHSAA record: {record!r}.") from exc
+    if len(parts) == 2:
+        return parts[0], parts[1], 0
+    if len(parts) == 3:
+        return parts
+    raise ExportError(f"Invalid archived JHSAA record: {record!r}.")
+
+
 def _load_archived_jhsaa_season(year: int, gender: str) -> dict:
     """Reconstruct a ``jhsaa.run_season``-shaped dict from the PERSISTED archive
     (``world_jhsaa`` / ``world_jhsaa_dual``) instead of resimulating the whole
@@ -135,11 +148,11 @@ def _load_archived_jhsaa_season(year: int, gender: str) -> dict:
     teams = {}
     for school in jhsaa.load_schools(gender):
         st = standings_by_school.get(school.name)
-        wins, losses = (map(int, st["record"].split("-")) if st else (0, 0))
-        dwins, dlosses = (map(int, st["drecord"].split("-")) if st else (0, 0))
+        wins, losses, ties = _record_parts(st["record"]) if st else (0, 0, 0)
+        dwins, dlosses, _ = _record_parts(st["drecord"]) if st else (0, 0, 0)
         teams[school.key] = SimpleNamespace(
             school=school, roster=jhsaa.build_roster(school, season_year, salt),
-            wins=wins, losses=losses, dwins=dwins, dlosses=dlosses,
+            wins=wins, losses=losses, ties=ties, dwins=dwins, dlosses=dlosses,
             district_place=st["place"] if st else None,
             points_for=st["pf"] if st else 0, points_against=st["pa"] if st else 0,
             power=st["pi"] if st else 0.0,
@@ -195,6 +208,7 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
         if s.name in selected_names:
             standings.append({
                 "program_id": s.key, "wins": team.wins, "losses": team.losses,
+                "ties": getattr(team, "ties", 0),
                 "district_wins": team.dwins, "district_losses": team.dlosses,
                 "district_place": team.district_place, "points_for": team.points_for,
                 "points_against": team.points_against, "toss_power_raw": team.power,

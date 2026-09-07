@@ -6,7 +6,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.research_export import ExportError, build_college, build_jhsaa, export_zip
+from app.research_export import (
+    ExportError, _record_parts, build_college, build_jhsaa, export_zip,
+)
 from app.web.server import NAV_GROUPS, _active_nav
 
 
@@ -28,7 +30,7 @@ def _team(name, group, home):
                  "district": True, "lines": [line]}]
     player = _prospect("ana" if home else "bea", "Ana Ace" if home else "Bea Ball", 12)
     return SimpleNamespace(school=school, roster=[player], wins=1 if home else 0,
-        losses=0 if home else 1, dwins=1 if home else 0, dlosses=0 if home else 1,
+        losses=0 if home else 1, ties=0, dwins=1 if home else 0, dlosses=0 if home else 1,
         district_place=1 if home else 2, points_for=4, points_against=3, power=1.25,
         schedule=schedule)
 
@@ -63,6 +65,32 @@ def test_jhsaa_bundle_is_self_describing_and_normalized():
     assert players[0]["grade"] == "12"
     assert players[0]["current_grade"] == "42"
     assert players[0]["potential_grade"] == "55"
+
+
+def test_jhsaa_bundle_preserves_a_varsity_tie_in_rendered_standings():
+    """Group 2 showcases can produce the archive's three-part W-L-T record."""
+    from app.jhsaa import GROUPS
+
+    a, b = _team("Ace High", "Group 2", True), _team("Ball High", "Group 2", False)
+    a.wins, a.losses, a.ties = 3, 1, 1
+    groups = {g: {"state": {}} for g in GROUPS}
+
+    files = build_jhsaa(2027, "girls", "Group 2",
+                        season={"teams": {"a": a, "b": b}, "groups": groups,
+                                "awards": {}, "individuals": {}})
+    rows = list(csv.DictReader(io.StringIO(files["jhsaa_standings.csv"].decode())))
+
+    ace = next(row for row in rows if row["program_id"] == "Ace High|girls")
+    assert (ace["wins"], ace["losses"], ace["ties"]) == ("3", "1", "1")
+
+
+def test_archived_jhsaa_record_parser_accepts_w_l_and_w_l_t():
+    assert _record_parts("12-3") == (12, 3, 0)
+    assert _record_parts("12-3-1") == (12, 3, 1)
+    with pytest.raises(ExportError, match="Invalid archived JHSAA record"):
+        _record_parts("12-3-1-0")
+    with pytest.raises(ExportError, match="Invalid archived JHSAA record"):
+        _record_parts("twelve-three")
 
 
 def test_export_zip_contains_manifest(monkeypatch):
