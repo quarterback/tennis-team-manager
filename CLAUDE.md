@@ -1322,7 +1322,7 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     it never was one; a reviewer caught it. **Measured before re-deriving it:** reading
     the ladder 10% into the season instead of at the end moves **4.1% of the JV pool**
     (13 of 408 players, 42 programs), median rank change over a season **0 places**
-    (mean 0.5, max 4) — small only because `ladder_score` is deliberately sticky
+    (mean 0.5, max 4) — small only because `coach_eval` is deliberately sticky
     (±`LADDER_SWING` 7 OVR, damped by evidence). ‼️ **The error scales with
     `LADDER_SWING`**: raise it and the shortcut bites, at which point the fix is to
     interleave `play_jv_season` with `play_regular_season`'s block seams (early → pass
@@ -1630,7 +1630,7 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     districts with no champion to send. "JV" is
     `jhsaa.jv_pool` and NOTHING else — the one ladder cut below `lineup_need("regular")`
     — so no second roster split exists to drift. Entries are the top of each pool by
-    `ladder_score` (established position, not a coach's pick — the varsity event's own
+    `coach_eval` (established position, not a coach's pick — the varsity event's own
     anti-sandbagging property), and the singles entrant is **held out of the pair**, so
     a school fields three different people.
   - **WIN YOUR DISTRICT.** One champion per district per bracket, no at-large, no wild
@@ -1831,7 +1831,7 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     `S1=#1 S2=#2 S3=#3 D1=#4+#5 D2=#6+#7 D3=#8+#9` off `_order`.
   - **PRESEASON is what makes ability-selection honest** and it is why the event is an
     INPUT: run before a league dual there are no results to earn a berth on, and
-    `credit_draw` writes into the same `records` `ladder_score` reads, so a deep run
+    `credit_draw` writes into the same `records` `coach_eval` reads, so a deep run
     moves a player up the ladder before the season starts.
   - **OPEN FIELD, NO DISTRICT QUOTA** (owner: talent is not evenly distributed
     geographically — "a strong league's third-best beats a weak league's champion").
@@ -1855,7 +1855,7 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     how many seeds exist. **Diagnose the defect before spending a design decision.**
   - **‼️ THE ENTRY SHEET IS FROZEN BEFORE THE FIRST DRAW (`entry_sheet`) — reading the
     ladder per flight is a CORRECTNESS bug.** `credit_draw` writes `ts.records` and
-    `_order` sorts on `ladder_score(p, ts.records.get(p.pid))`, so crediting S1 MOVES
+    `_order` sorts on `coach_eval(p, ts.records.get(p.pid), …)`, so crediting S1 MOVES
     the ladder S2 is then selected from: a No. 1 who slipped to No. 2 on his own S1
     result was entered at No. 2 singles as well while somebody else was entered
     nowhere. **Measured on a real 1A boys field: 23 of 751 players in two flights**,
@@ -2489,8 +2489,69 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   A blue-blood small school SHOULD beat an average big one — that is the talent model's
   thesis, not a bug. What must survive is the class ladder INSIDE each tag.
   Pinned by `tests/test_jhsaa_archetypes.py`.
+- **‼️ SELECTION RUNS THROUGH A COACH EVALUATION LAYER — `_order` IS A JUDGMENT, NOT A
+  TALENT RANKING (owner rule 2026-09, `jhsaa.coach_eval`, `docs/AAR-jhsaa-coach-evaluation-layer.md`).**
+  `RAW ABILITY → COACH EVALUATION → LINEUP SELECTION → MATCH ENGINE (raw ability)`. The
+  engine is the only thing entitled to read `current_overall()` as truth; a coach does
+  not see it perfectly and does not select on it alone. **Nothing in the layer changes
+  how anybody PLAYS** — that separation is what buys realistic lineup MISTAKES without
+  corrupting a rating, and it is what makes coaching a mechanic rather than a cosmetic
+  attribute. Four inputs: **ability lens** (OVR + a per-coach, per-player misread,
+  drawn once per SEASON and stable within it — per-dual it is a flickering lineup, not
+  an opinion), **recent form** (the `LADDER_SWING` term, coach-weighted), **varsity
+  proof** (`PriorSeason` — last season's appearances / postseason starts / individual
+  draw / award / consecutive years, in three tiers worth 3 · 5.5 · 8 OVR), and
+  **experience** (`PROOF_GRADE` by class year; a ninth-grader scores zero by
+  construction, so a wrong pid lookup is worth nothing). **ONE coach-quality draw
+  (`coach_lens`, seeded on the school alone, durable) drives all three weights** — the
+  failure modes are the same failure, a coach who cannot read a roster leans on
+  seniority and last week's results instead. Proof decays toward `PROOF_FLOOR` (0.35),
+  **never to zero** (the `program_level_floor` idiom).
+  - **‼️ IT IS A DISPLACEMENT THRESHOLD, NOT A RESERVED SEAT, and every coach in the
+    association evaluates** — so no program is advantaged and no balancing was needed.
+    Because it is an ORDERING, a genuinely better newcomer is never held back: he
+    enters at his own rank and everyone below shifts down exactly one seat. What stops
+    happening is a proven No. 5 falling to No. 15 because four newcomers are 1-3 points
+    better. Sized against MEASURED displacement on the owner's 2072→2075 saves: ~6,500
+    returning varsity regulars a year, **~3.7% (≈240, three quarters juniors/seniors)
+    lost their place, and the MEDIAN one was 3 OVR short of his team's 11th man** (p25
+    2, p75 6, p90 9), with a newcomer above him in 98% of cases. Recovery by bonus
+    size: +3 → 53%, +6 → 81%, +8 → 90%. Do not re-tune these by feel — re-measure.
+  - **‼️ THE MISREAD SHRINKS WITH EVIDENCE (`READ_PRIOR`) AND THAT IS AN ANTI-RATCHET
+    GUARD.** A persistent negative misread would bury a player exactly the way the
+    win-COUNT ladder did (next bullet): ranked low → never dressed → nothing corrects
+    the coach.
+  - **‼️ ROLE FIT IS DELIBERATELY NOT IN THE ORDERING**, though it belongs to the layer
+    conceptually. Three existing rules forbid it: the 3S/4D allocation is FIXED (a
+    coach chooses pairings, never who plays singles); the Order of Ability is an
+    ANTI-STACKING instrument; and `jhsaa_individuals.entry_sheet` reads `_order`, so a
+    doubles specialist would be entered at No. 1 SINGLES. Role value lives in the
+    ARRANGERS (`doubles_rating` / `partner_chemistry` / `_established_units` /
+    `_sibling_units`). CROSS-SEASON pair continuity is the real gap there and is its
+    own change (it needs `pair_counts` seeded from last season, reversing that field's
+    "season-scoped by construction" note). **LEADERSHIP/captaincy** likewise: a captain
+    is SELECTED through this layer and should be worth a small team-level composure
+    effect, never an OVR boost — an engine change, not built.
+  - **The store is `world_jhsaa_standing`** — one row per program per season, only for
+    players carrying proof. The ONLY per-player thing the JHSAA persists, because
+    `world_jhsaa_dual.lines` archives NAMES not pids and folding ~10k duals per roster
+    is the query storm. **ONE indexed read per gender per season**, resolved at the top
+    of `run_jhsaa` and threaded down through `district_teams`; flattened to
+    `{pid: PriorSeason}` so a transfer carries the record he earned. It KEYS the
+    `run_season` memo (`_prior_fingerprint`, blake2s — without it a save serves its
+    first year's no-memory season forever). A caller with no archive gets the
+    pre-layer ladder to the bit, and that is pinned.
+  - **‼️ "A high-OVR player who never gets in the lineup" IS AN INJURY, NOT SELECTION.**
+    Measured on the owner's 2075 save: of ~7,900 top-nine-by-OVR seats, exactly SEVEN
+    dressed for under a quarter of their team's duals, and all seven are season-ending
+    injuries (a contiguous early block, then nothing); association-wide 152 of 13,005
+    boys (1.2%) match, against ~0.9% predicted from `injuries.BASE_RATE`. Check
+    `world_jhsaa_injury` before reading the selection code. This was hard to see
+    because `jhsaa.py`'s JV-section comment still said the association has no
+    injuries — stale since 2026-08, now corrected. **A stale comment in a
+    load-bearing explanation costs a diagnosis.**
 - **‼️ THE LINEUP LADDER IS SEEDED ON ABILITY AND MOVED BY RESULTS** (`jhsaa.
-  ladder_score` / `_order`) — never ranked on a win COUNT. It sorted `(-wins, -pct, -ovr,
+  coach_eval` / `_order`) — never ranked on a win COUNT. It sorted `(-wins, -pct, -ovr,
   -str)` for a release, which is a ratchet, not a ladder: a win total measures
   OPPORTUNITY, so dressing earns wins, wins earn the next start, and a player who dropped
   his opening duals — or who was tenth in week one — could never climb back past
@@ -2499,7 +2560,7 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   rotation player banked wins faster than a number one drawing the toughest opponent.
   Measured: a top-four player finished outside the nine on **55 of 400 rosters**, 21 under
   seven matches all year (the report was a 51-OVR senior on six matches beside a 28-OVR
-  team-mate on twenty-seven). Now `ovr + LADDER_SWING × (pct − ½) × n/(n + LADDER_PRIOR)`
+  team-mate on twenty-seven). Now (inside `coach_eval`) `ovr + LADDER_SWING × (pct − ½) × n/(n + LADDER_PRIOR)`
   — a perfect record is worth ±7 OVR weighted by evidence, so **a player who has not
   played sits at his SEED, not at the bottom**, and a 1-2 opening week cannot outrank a
   season. The bench ROTATION (`_ROTATE_ONE`/`_ROTATE_TWO`) is the variation the owner

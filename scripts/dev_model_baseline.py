@@ -55,7 +55,7 @@ def load(root: str, year: int, gender: str) -> list[dict]:
 def ladder(rows: list[dict]) -> dict[str, int]:
     """Each player's 0-indexed rank on their own program, by current ability.
 
-    Ability order, not `jhsaa.ladder_score` — the export carries no per-player
+    Ability order, not `jhsaa.coach_eval` — the export carries no per-player
     win/loss, and the ladder is ability-SEEDED with results worth at most
     ±LADDER_SWING, so the seat distribution this measures is the ladder's to
     within that swing. Stated rather than silently approximated.

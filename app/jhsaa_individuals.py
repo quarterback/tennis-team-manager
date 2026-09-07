@@ -16,7 +16,7 @@ WHAT IS DIFFERENT FROM THE COLLEGE EVENT, and why:
     on ability honest rather than a violation of the association's "berths are
     earned on court" rule: there are no results yet, so ability is the only input
     there is. It is also what makes the event an INPUT — results credit
-    `TeamSeason.records`, so they move `ladder_score` before the first dual and a
+    `TeamSeason.records`, so they move `coach_eval` before the first dual and a
     deep run reorders a program's ladder for the season.
   * **NO CUT, NO QUALIFYING.** Every school enters its holder of each flight;
     the field (82-107) sits in a 128 bracket and the top seeds take byes. Talent
@@ -383,7 +383,7 @@ def entry_sheet(teams: list) -> dict:
 
     ‼️ THE LADDER MUST BE FROZEN BEFORE THE FIRST DRAW, and this is not a
     micro-optimisation — reading it per flight is a CORRECTNESS bug. `credit_draw`
-    writes results into `ts.records`, and `_order` sorts on `ladder_score(p,
+    writes results into `ts.records`, and `_order` sorts on `coach_eval(p,
     ts.records.get(p.pid))`, so crediting S1 MOVES the ladder that S2 is then
     selected from. Measured on a real 1A boys field before this existed: **23 of 751
     players were entered in two flights** — a No. 1 who slipped to No. 2 on his own
@@ -524,7 +524,7 @@ def run_preseason(by_group: dict, gender: str, year: int, *,
     no results to earn anything on — `ts.records` is empty, so `_order` IS ability
     order — and the event is therefore an INPUT to the season rather than a
     summary of it: `credit_draw` writes into the same `records` that
-    `ladder_score` reads, so a deep run in August moves a player up the ladder
+    `coach_eval` reads, so a deep run in August moves a player up the ladder
     before the first league dual.
 
     `by_group` is `run_season`'s own `{group: {district: [TeamSeason]}}`; a flight
@@ -559,7 +559,7 @@ def credit_draw(draw: FlightDraw, teams: dict) -> int:
 
     ‼️ FULL CREDIT, AND IT COST NO NEW CODE PATH (owner rule): a state individual
     match counts exactly the way a league dual's court does — the same `records`
-    W-L that moves `ladder_score`, and the same `matches` résumé row the awards
+    W-L that moves `coach_eval`, and the same `matches` résumé row the awards
     read. Three existing decisions are what make that free rather than a special
     case:
 
@@ -677,7 +677,7 @@ def run_mixed_season(year: int, *, salt: str = "", seed: int = 0) -> dict:
     ‼️ SO IT BUILDS ITS OWN TEAMS, and does NOT take `run_season`'s. Handing it
     `season["teams"]` gave it TeamSeasons whose `records` were full of a season
     that, on this calendar, HAS NOT BEEN PLAYED YET — `_ladder` reads `records`
-    through `ladder_score`, so the pool below #9 was cut from a finished ladder for
+    through `coach_eval`, so the pool below #9 was cut from a finished ladder for
     an event that opens the year. Fresh `district_teams` have no results, so
     `_order` is ability order, exactly as it is for the six flights.
 
