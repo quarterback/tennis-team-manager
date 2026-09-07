@@ -168,7 +168,7 @@ def freeze_eligibility(jvt) -> list:
         lower AT THE FREEZE, which is the only reading a frozen order can support.
 
     ‼️ CALLED ONCE, at the start of the postseason. The ladder is live all season
-    (`ladder_score` moves it on results), so re-reading it between rounds would let a
+    (`coach_eval` moves it on results), so re-reading it between rounds would let a
     program's eligible set drift mid-tournament — the same drift the varsity
     anti-stacking freeze exists to stop, arriving by a different door.
     """
@@ -210,7 +210,7 @@ def _dress(e: JVEntry, rng_seed: int) -> list:
     Lineups may change between rounds, but only from the frozen roster, so the choice
     is made HERE and only ever over `e.players`. Named in frozen-ladder order: the
     event's own anti-sandbagging property, the same one the individual draws get from
-    selecting on `ladder_score` rather than on a coach's pick.
+    selecting on `coach_eval` rather than on a coach's pick.
     """
     return e.players[:LINEUP]
 
