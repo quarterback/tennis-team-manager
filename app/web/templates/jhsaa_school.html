@@ -247,6 +247,10 @@
       {% for p in view.roster %}
       <tr>
         <td class="pl">
+          {# The flag rides ahead of the name, the app's own idiom everywhere else
+             a player is listed (roster, portal, GTT). US is unmarked — a flag on
+             ~90% of rows carries no information and just adds noise. #}
+          {% if p.country and p.country != 'US' %}<span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags }}</span> {% endif %}
           <a href="{{ url_for('jhsaa_player', school=view.school, pid=p.pid, u=u, g=view.gender) }}">{{ p.name }}</a>
           {% for h in p.honors %}<span class="jh-chip {{ 'gold' if 'Player of the Year' in h }}" style="margin-left:4px">{{ 'POY' if 'Player of the Year' in h else 'A-S' if h == 'All-State' else 'A-D' }}</span>{% endfor %}
           {# A family tie, if the owner has recorded one. `title` carries the

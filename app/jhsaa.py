@@ -2170,6 +2170,158 @@ def _intl_weights() -> dict:
     return w
 
 
+# --- EXCHANGE STUDENTS (owner rule 2026-09) ----------------------------------
+#
+# ‼️ HALF OF THIS ALREADY EXISTED AND NOTHING RENDERED IT. `_draw_name` has drawn
+# new-era cohorts at ~90% weighted-US / 5% Canada / 5% international since
+# 2026-08 and its own comment called that slice "the exchange-student slices" —
+# 1,722 of 17,718 players in the owner's 2075 boys season carry a foreign flag.
+# But those are ordinary four-year COHORT seats: they are born here, they are
+# generated as US (the flag is stamped after — see `_gen_seat`), and they are an
+# immigrant-family veneer, not an arrival. That draw is UNTOUCHED by this
+# section, era-gated as it always was; widening it would rename every archived
+# roster.
+#
+# THIS is the arrival. A real exchange student:
+#   * comes for ONE SEASON and is simply not generated the next year — "like a
+#     senior that graduates in terms of how the game treats them the next year"
+#     (owner). Their archived duals, box scores and honours stand, because a
+#     JHSAA season is rebuilt from seed and this year's build still produces
+#     them; nothing is deleted and nothing needs a migration.
+#   * is GRADE 11, always (owner). That is also what keeps them out of the
+#     college pipeline for free: `apply_to_class` swaps graduating SENIORS into
+#     the national class's Jefferson slots, and an eleventh-grader is never in
+#     that set. A real exchange student goes home; no filter was needed.
+#   * is fully eligible — league season, postseason, individual draws (owner:
+#     "JHSAA allows exchange students in the post-season so yes") — and MAY
+#     displace a domestic player down the ladder (owner: "that's not a problem").
+#   * carries a FLAG AND NOTHING ELSE (owner: "the exchange doesn't show up
+#     anywhere on their profile it just has a flag"). There is no badge, no
+#     roster label, no page section. Do not add one.
+#
+#: Off, and the association plays exactly the code it played before.
+EXCHANGE_ENABLED = True
+#: Always eleventh grade (owner). A tuple would invite a second value and a
+#: twelfth-grader would land in the college hand-off.
+EXCHANGE_GRADE = 11
+#: Seat numbers for the arrivals, far above anything `_freshman_class_size` rolls
+#: (real rosters run 12-36) and above the floor top-up's continuation, so an
+#: exchange pid can never collide with a cohort seat's.
+EXCHANGE_SEAT_BASE = 900
+#: Chance a program hosts one in a given season, by classification. ‼️ THIS IS
+#: THE "HELPS SMALLER PROGRAMS" HALF and it is the only place the preference
+#: lives: the talent lift below is the SAME everywhere, so a 1A host is not given
+#: a better player than a 9A host — it is simply given one more often. Expected
+#: ~41 arrivals a gender against ~870 programs (4-5%), so it reads as a wrinkle
+#: rather than a wave.
+#
+# ‼️ ROLLED PER SCHOOL, INDEPENDENTLY — the `upstart` idiom, and for its stated
+# reason: a draw over the whole pool is NON-LOCAL, so adding or dropping one
+# program would change which OTHERS host, retroactively rewriting archived
+# seasons' rosters. A per-school Bernoulli keyed on (school, year) cannot.
+EXCHANGE_RATE = {"9A": 0.02, "8A": 0.02, "7A": 0.03, "6A": 0.03, "5A": 0.04,
+                 "4A": 0.05, "3A": 0.06, "2A": 0.07, "1A": 0.08,
+                 "Group 1": 0.03, "Group 2": 0.05, "Group 3": 0.08}
+EXCHANGE_RATE_DEFAULT = 0.04
+#: The infusion, expressed in the SAME lever `blue_blood` and `upstart` use
+#: (`mod["mean"]` / `mod["spread"]`, consumed by `_talent`): centred above the
+#: host class with a WIDER spread, so an arrival is usually a real addition and
+#: occasionally an ordinary squad player. A flat lift with the class's own spread
+#: would make every exchange student a No. 1 and turn the mechanic into a
+#: championship lottery — the fall portal's lesson about curated flows.
+EXCHANGE_MEAN = 6.0
+EXCHANGE_SPREAD = 1.35
+#: The Americas' share of the arrivals, and its split (owner, 2026-09): 14% of
+#: the mix, as 1% Canada — "they almost never are exchange students" — 8% West
+#: Indies and the remaining 5% Latin America. Country-by-country South America is
+#: dropped entirely ("Americas should just be caribbean, latin america").
+EXCHANGE_CANADA_SHARE = 1.0
+EXCHANGE_WEST_INDIES_SHARE = 8.0
+EXCHANGE_LATIN_SHARE = 5.0
+_EXCHANGE_WEST_INDIES = ("dominican", "cuba", "caribbean_cricket", "haiti",
+                         "bahamas", "barbados", "bermuda", "aruba", "curacao",
+                         "caribbean_dutch")
+_EXCHANGE_LATIN = ("mexico", "latin_america")
+#: Dropped from the base preset: the domestic share, and South America by name.
+_EXCHANGE_DROP = ("us", "brazil", "argentina", "colombia", "chile", "peru",
+                  "ecuador", "uruguay", "venezuela", "guyana", "suriname",
+                  "south_america")
+_exchange_weights_cache: dict | None = None
+
+
+def _exchange_weights() -> dict:
+    """The arrivals' nationality mix — the OWNER'S OWN `global_college` preset
+    (the widest one, "realistic NCAA geography, Africa fully represented"), with
+    the Americas re-cut per the rule above.
+
+    ‼️ DERIVED from the preset, not typed out, so an edit to the owner's mix
+    moves this with it — and deliberately NOT `_intl_weights`'s `tennis_global`,
+    which is a PRO-TOUR mix: it carries Africa at ~3% and no meaningful
+    Caribbean, which is the opposite of who actually crosses for a school year.
+    Lands at Europe 30% / Africa 23% / Asia 23% / Americas 14% / Oceania 8%."""
+    global _exchange_weights_cache
+    w = _exchange_weights_cache
+    if w is None:
+        from generators import region_preset
+        base = region_preset("global_college")
+        drop = set(_EXCHANGE_DROP) | {"canada"} | set(_EXCHANGE_WEST_INDIES) \
+            | set(_EXCHANGE_LATIN)
+        rest = {k: v for k, v in base.items() if k not in drop}
+        # The three pinned blocks are shares of the FINISHED mix; the rest of the
+        # world is scaled to fill what they leave. `rng.choices` renormalises, so
+        # these are relative weights and need not sum to 1.
+        pinned = (EXCHANGE_CANADA_SHARE + EXCHANGE_WEST_INDIES_SHARE
+                  + EXCHANGE_LATIN_SHARE)
+        rt = sum(rest.values()) or 1.0
+        w = {k: v * (100.0 - pinned) / rt for k, v in rest.items()}
+        for block, share in ((_EXCHANGE_WEST_INDIES, EXCHANGE_WEST_INDIES_SHARE),
+                             (_EXCHANGE_LATIN, EXCHANGE_LATIN_SHARE)):
+            bt = sum(base.get(k, 0.0) for k in block) or 1.0
+            w.update({k: base.get(k, 0.0) * share / bt for k in block})
+        w["canada"] = EXCHANGE_CANADA_SHARE
+        _exchange_weights_cache = w
+    return w
+
+
+def exchange_student(school: School, year: int, salt: str,
+                     mod: dict | None = None) -> Prospect | None:
+    """This program's exchange student for `year`, or None — the whole mechanic.
+
+    Deterministic in (school, year, salt) and LOCAL to the school, so a season
+    rebuilt years later produces the same arrival and a change to the school list
+    cannot move anybody else's. Called by `build_roster`, which appends the
+    result on top of the roster exactly as it appends a transfer: an arrival is
+    never counted toward `ROSTER_FLOOR` (the floor is what a program must field
+    on its own) and never toward `_freshman_class_size`.
+    """
+    if not EXCHANGE_ENABLED:
+        return None
+    rate = EXCHANGE_RATE.get(school.group, EXCHANGE_RATE_DEFAULT)
+    rng = random.Random(f"{salt}|jhsaa-exchange|{school.key}|{year}")
+    if rng.random() >= rate:
+        return None
+    # The lift rides on the program's OWN modifier, so a blue blood's arrival is
+    # still drawn on a blue blood's numbers — the arrival is an addition to the
+    # program, not a replacement for what the program is.
+    emod = dict(mod or {})
+    emod["mean"] = emod.get("mean", 0.0) + EXCHANGE_MEAN
+    emod["spread"] = emod.get("spread", 1.0) * EXCHANGE_SPREAD
+    p = _gen_seat(school, emod, year, EXCHANGE_SEAT_BASE, EXCHANGE_GRADE, salt)
+    # ‼️ THE NAME AND FLAG ARE REDRAWN, THE PLAYER IS NOT. `_gen_seat` already
+    # generated them AS US and stamped a cohort flag; the arrival's nationality
+    # comes from a different mix, so it is restamped here on its OWN rng. The
+    # name stream inside `_gen_seat` is a sub-rng, so replacing its result shifts
+    # no attribute roll — the same guarantee `_draw_name` documents.
+    from generators import make_name_picker
+    sex = "male" if school.gender == "boys" else "female"
+    nrng = random.Random(f"{salt}|jhsaa-exchange-name|{school.key}|{year}")
+    nm, country = make_name_picker(nrng, gender=sex,
+                                   region_weights=_exchange_weights())()
+    p.name = nm
+    p.country = country or "US"
+    return p
+
+
 def _resolve_era(setting: str, cache: dict) -> int:
     """Shared resolver for the four era gates (`name_era`, `dev_era`,
     `talent_era`, `career_era`). They all answer the same question — what is the
@@ -4106,6 +4258,18 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
             continue                       # stale/mismatched record — never invent a player
         p.high_school = school.name
         out.append(p)
+    # THE EXCHANGE STUDENT (owner rule 2026-09), appended on top exactly as a
+    # transfer is: an arrival is not part of any cohort, so it must not reach
+    # `_freshman_class_size` or the `ROSTER_FLOOR` top-up above — a program's
+    # floor is what it fields on its own, and an arrival that counted toward it
+    # would let a thin program run a seat short the year one turns up. Nothing
+    # else in the build knows or cares that this player is an arrival; the sort
+    # below puts them wherever their ability earns, which is what lets them
+    # displace a domestic player down the ladder.
+    ex = exchange_student(school, year, salt, mod)
+    if ex is not None:
+        ex.high_school = school.name
+        out.append(ex)
     out.sort(key=lambda p: -p.current_overall())
     return out
 

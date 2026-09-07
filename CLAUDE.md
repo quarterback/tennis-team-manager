@@ -2596,6 +2596,48 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     (rebuild only the schools a changed record names), never keyed on the
     fingerprint. `set_jhsaa_transfer` reads ONE row (`get_jhsaa_transfer`), not
     the table. See `docs/AAR-jhsaa-transfer-page-ledger-scale.md`.
+- **‼️ EXCHANGE STUDENTS — a ONE-SEASON arrival, flag and nothing else (owner
+  rule 2026-09, `jhsaa.exchange_student`,
+  `docs/AAR-jhsaa-exchange-students.md`).** ~4% of programs gain one extra player
+  for ONE year; the next year they are simply not generated, "like a senior that
+  graduates in terms of how the game treats them the next year" — the season they
+  played still rebuilds with them in it, so box scores, honours and their player
+  page keep resolving, and nothing is stored, migrated or expired.
+  **‼️ GRADE 11, ALWAYS, AND THAT IS LOAD-BEARING**: `jhsaa_recruit_class` takes
+  `grade == 12`, so an eleventh-grader never reaches `apply_to_class` and a real
+  exchange student goes home with NO filter written. Allow grade 12 and that
+  exclusion has to be hand-built. Fully eligible (league, postseason, individual
+  draws) and free to displace a domestic player down the ladder — both owner
+  rules.
+  **‼️ IT IS ALL BEHIND THE SCENES.** No badge, no roster label, no record
+  column, no `Prospect` field: "they're like any other student to the UI except
+  they have a flag on their player profile" (owner). The only thing that
+  distinguishes one is `country` — which ~10% of ORDINARY players already carry,
+  since `_draw_name`'s new-era cohort mix is ~90/5/5 US/Canada/international
+  (1,722 of 17,718 in the owner's 2075 boys season). That cohort draw is a
+  different thing — four-year seats, born here — and is UNTOUCHED: it is
+  era-gated because widening it renames every archived roster.
+  **‼️ THE ROLL IS PER SCHOOL** (`(school, year, salt)`), the `upstart` idiom and
+  for its stated reason: a draw over the whole pool is NON-LOCAL, so adding or
+  dropping one program would change which OTHERS host and retroactively rewrite
+  archived rosters. That locality is what lets the whole mechanic exist with no
+  table.
+  **Two halves of "helps smaller programs", only one class-aware**: `EXCHANGE_RATE`
+  is a per-classification probability (1A/Group 3 0.08, 9A/8A 0.02 — a small
+  program is given one more OFTEN), while the lift (`EXCHANGE_MEAN` +6.0,
+  `EXCHANGE_SPREAD` ×1.35 on the program's own `mod`, the `blue_blood` lever) is
+  IDENTICAL everywhere — never hand a small class a better player. Measured:
+  arrivals land at a median 80th percentile of their class and 19% arrive as
+  their team's No. 1; a flat lift would make nearly all of them No. 1 and turn the
+  mechanic into a championship lottery. Appended after the `ROSTER_FLOOR` top-up
+  like a transfer (a floor is what a program fields on its OWN);
+  `EXCHANGE_SEAT_BASE` 900 keeps the pid clear of every cohort seat.
+  **Nationality is DERIVED from the owner's `global_college` preset** (the widest,
+  Africa-full one) — never `_intl_weights`'s pro-tour `tennis_global`, which
+  carries Africa at ~3%. The Americas are 14% of the mix: **1% Canada** ("they
+  almost never are exchange students"), **8% West Indies**, **5% Latin America**,
+  country-by-country South America dropped. Lands Europe 30 / Africa 23 / Asia 23
+  / Americas 14 / Oceania 8. `EXCHANGE_ENABLED` is the kill switch.
 - **‼️ FAMILY TIES ARE OWNER-AUTHORED METADATA (owner rule 2026-08, `jhsaa.family_add`
   / `overrides` kind `jhsaa_family`).** A tie links two PIDS and never touches a name —
   required, since `world_jhsaa_dual.lines` archives NAMES and `_jh_line_records` keys
