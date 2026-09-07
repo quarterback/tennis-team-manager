@@ -5143,7 +5143,7 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
     # a single bye in a 24, a double bye (the Qualifiers Round) in an expanded 40 —
     # and in the Parastate groups (owner spec 2026-09) a SINGLE bye through the
     # Parastate, held by `field − 2 × bids` lines (sixteen in a 48, twenty-four in
-    # a 32-road 40, eight in 1A's 24-road 40): 1-4 Epiregional winners, 5-8
+    # a 32-road 40, sixteen in 1A's 24-road 32): 1-4 Epiregional winners, 5-8
     # Epiregional losers (still Zonal
     # champions), then the best non-champion road qualifiers by ATR. The
     # Parastate is a named round, so `round_names` alone no longer implies the
@@ -7011,7 +7011,7 @@ def jhsaa_computer_ratings_view(seed: int, gender: str, group: str | None = None
     """The computer-ratings page: nine independent systems and the composite,
     per (season, group, gender), for every group whether or not it selects
     at-large. Read back off the archive (`world_jhsaa` `ratings`), never
-    recomputed — the layer is the input the 48-team fields were built from, so
+    recomputed — the layer is the input the Parastate fields were built from, so
     a re-fit that drifted from it would be the region-drift bug again."""
     import app.jhsaa as jh
     import app.world as world
@@ -7056,7 +7056,9 @@ def jhsaa_computer_ratings_view(seed: int, gender: str, group: str | None = None
 
 def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
                          year: int | None = None) -> dict:
-    """The at-large tracking page for the 48-team groups: the composite table
+    """The at-large tracking page for the Parastate groups (`ATLARGE_GROUPS` —
+    every class but Group 2/Group 3, at whatever field its road plus its bids
+    comes to): the composite table
     with Borda and Status, plus the five members' ballots side by side — the
     feature that makes the committee legible rather than a black box. Archived
     with the season (`committee` key), read back, never re-deliberated."""

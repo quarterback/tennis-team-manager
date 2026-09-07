@@ -336,11 +336,11 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
         # not cut it. Its duals are the level='jv' phase='jv_state' rows in
         # duals.csv. Empty when the season predates the event (JV_STATE_FROM).
         "jhsaa_jv_state.json": season.get("jv_state") or {},
-        # THE AT-LARGE COMMITTEE (owner spec 2026-09): the full archived
-        # selection per 48-team group — ballots, ranges, Borda (bubble and
-        # seeding), locks, automatic bids, statuses and the published member
-        # weights. None/absent for the ten groups without a committee and for
-        # seasons archived before it existed.
+        # THE AT-LARGE COMMITTEE (owner spec 2026-09, expanded 2026-09): the
+        # full archived selection per Parastate group — ballots, ranges, Borda
+        # (bubble and seeding), locks, automatic bids, statuses and the
+        # published member weights. Absent for the groups without a committee
+        # (Group 2 and Group 3) and for seasons archived before it existed.
         "jhsaa_committee.json": {
             g: sel for g, sel in (season.get("committee") or {}).items()
             if sel and (classification == "all" or g == classification)
@@ -430,13 +430,23 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "component and the least-squares systems (Massey dual/game, SRS) were withheld. "
             "Parallel to TOSS/ATR — it feeds neither. Empty on seasons archived before the "
             "layer existed.",
-            "jhsaa_committee.json is the at-large selection committee for the 48-team groups "
-            "(7A and Group 1): the five members' full ballots and published weights, the "
-            "per-member at-large ranges, locks, automatic bids (district champions who missed "
-            "the road), bubble and seeding Borda totals, statuses, and the sixteen selections "
-            "in seed order 33-48. The road's 32 qualifiers are unchanged; an at-large is never "
-            "seeded above 33. Their State bracket opens with the Parastate (17v48..32v33) in "
-            "jhsaa_championships.json, its duals ordinary phase='state' rows in duals.csv.",
+            # ‼️ DERIVED from `AT_LARGE_BIDS`/`STATE_FIELD`, never retyped: this
+            # sentence claimed "the 48-team groups (7A and Group 1)" and "sixteen
+            # selections in seed order 33-48" after both had stopped being true,
+            # so a consumer of a 6A-1A export was handed the wrong field
+            # semantics. Each shape states its own seat count and seed range.
+            "jhsaa_committee.json is the at-large selection committee, which runs for "
+            f"{jhsaa.parastate_blurb()}: the five members' full ballots and published "
+            "weights, the per-member at-large ranges, locks, automatic bids (district "
+            "champions who missed the road), bubble and seeding Borda totals, statuses, "
+            "and the selections in seed order — "
+            + "; ".join(f"{lbl.split(' ')[0]}-team: {bids} selections seeded "
+                        f"{road + 1}-{road + bids}"
+                        for lbl, _gs, road, bids in jhsaa.parastate_summary())
+            + ". The road's qualifiers are unchanged and an at-large is NEVER seeded "
+            "above the whole road. Their State bracket opens with the Parastate (the "
+            "2 x bids lowest seeds, paired high-low) in jhsaa_championships.json, its "
+            "duals ordinary phase='state' rows in duals.csv.",
             "Regular duals use 3 singles/4 doubles; early-window dates use 5/2; showcases and postseason use 1/4. "
             "7A, 8A, 9A and Group 1 play 4S/5D on the road to State and in the early window.",
             "Every court finishes. JHSAA has no clinch abandonment.",

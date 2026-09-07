@@ -2,7 +2,14 @@
 members, each a FIXED, CONCENTRATED preference vector over the `jhsaa_ratings`
 systems, used only by the Parastate groups (`jhsaa.ATLARGE_GROUPS`: 8A, 9A and
 Group 1 at 16 bids in a 48-team field; 7A/6A/5A/4A/3A/2A at 8 bids in a 40; and
-1A at 16 bids in a 40, off the 24-team road it keeps — `AT_LARGE_BIDS`).
+1A at 8 bids in a 32, off the 24-team road it keeps — `AT_LARGE_BIDS`, and
+`jhsaa.parastate_summary()` renders exactly this list for a reader).
+
+‼️ 1A IS ON A 32, NOT A 40, AND SIXTEEN BIDS THERE WAS EXPLICITLY REJECTED
+(owner rule 2026-09: "I do not want 16 at-large teams in 1A" — a 40 off a 24
+road costs 16 bids and would make 1A the one class where the committee picks
+40% of the field). The bid count is the decision; the field size is the
+consequence.
 
 The committee is deliberately deterministic and legible: the same five members
 exist every season, their weights are published in the UI, every ballot is a
@@ -26,7 +33,7 @@ What it can and cannot do (spec, hard rules):
   * A district champion who missed the road gets an AUTOMATIC at-large berth,
     and it CONSUMES a seat rather than adding a berth.
   * ‼️ At-large teams are ALWAYS seeded below the whole road — 33 down in a
-    48 (33-48) and in a 32-road 40 (33-40), 25 down in 1A's 24-road 40. Never
+    48 (33-48) and in a 32-road 40 (33-40), 25 down in 1A's 32 (25-32). Never
     above a road qualifier, whatever the record, rating or Borda total.
     `jhsaa.run_state_parastate` enforces it structurally (the at-larges arrive
     after every road seed); a test pins a case whose Borda would otherwise
@@ -53,7 +60,7 @@ MEMBERS: dict[str, dict[str, float]] = {
 }
 
 #: At-large seats (spec 2.1) — the DEFAULT. The seat count is per group now
-#: (`jhsaa.AT_LARGE_BIDS`: 16 for 8A/9A/Group 1/1A, 8 for 7A through 2A) and
+#: (`jhsaa.AT_LARGE_BIDS`: 16 for 8A/9A/Group 1, 8 for 7A through 1A) and
 #: `select` takes it as `seats`; this is the 48-field's number and what a bare
 #: call gets.
 AT_LARGE = 16
@@ -86,7 +93,7 @@ def select(ratings: dict, road: set[str], district_champions: list[str],
            atr: dict[str, float] | None = None, seats: int = AT_LARGE) -> dict:
     """The whole selection (spec 3.2, owner refinements 2026-09), returning an
     auditable dict. `seats` is the group's at-large count (`jhsaa.AT_LARGE_BIDS`
-    — 16 in a 48, 8 in a 32-road 40, 16 in 1A's 24-road 40); every step below
+    — 16 in a 48, 8 in a 32-road 40, 8 in 1A's 24-road 32); every step below
     scales off it and a district
     champion who missed the road consumes one of them, never adds one.
 
@@ -105,7 +112,7 @@ def select(ratings: dict, road: set[str], district_champions: list[str],
          automatics removed first): with B bubble teams a member's first gets
          B points down to 1 — so No. 17 on a ballot and No. 50 stay
          distinguishable, and the ranking disagreement itself keeps mattering.
-      4. SEEDING (33-48 in a 48; 33-40, or 25-40 in 1A, in a 40) — Borda over
+      4. SEEDING (33-48 in a 48; 33-40 in a 40; 25-32 in 1A's 32) — Borda over
          the selected teams, ties broken INSIDE
          the same conceptual system (owner ladder): number of ballots selecting
          the team, then median ballot rank, then composite mean rank, then the

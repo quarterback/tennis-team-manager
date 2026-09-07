@@ -216,6 +216,38 @@ def test_1a_takes_the_same_eight_bids_and_its_parastate_reduces_32_to_24(monkeyp
     assert len(arc["field"]) == 32 and arc["champion"] == "S01"
 
 
+def test_the_committee_blurb_is_derived_from_the_tables():
+    """‼️ EVERY HAND-WRITTEN COPY OF "which classes use the committee" HAS GONE
+    STALE. The sub-rail tooltip, the empty state and the research-export manifest
+    each carried their own list ("7A and Group 1", "the 48-team groups", "sixteen
+    selections seeded 33-48"), so after the expansion a reader browsing a 6A
+    archive was told their class never uses the committee, and a 6A-1A export
+    stated the wrong field semantics. `parastate_summary` is the one derivation
+    all three read; a description of a table belongs to the table."""
+    shapes = jh.parastate_summary()
+    # Every Parastate class appears exactly once. The rows GROUP BY SHAPE, so the
+    # flat order is not `GROUPS` order (Group 1 sits with 9A/8A at 48); within a
+    # row it is, which is what makes each row read as a class list.
+    listed = [g for _lbl, gs, _r, _b in shapes for g in gs]
+    assert sorted(listed) == sorted(jh.ATLARGE_GROUPS)
+    assert len(listed) == len(set(listed))
+    for _lbl, gs, _r, _b in shapes:
+        assert gs == [g for g in jh.GROUPS if g in set(gs)], gs
+    for _lbl, gs, road, bids in shapes:
+        for g in gs:
+            assert (jh.state_field_size(g), jh.at_large_bids(g)) == (road, bids), g
+    # The seed range an at-large occupies is `road+1 .. road+bids` — below the
+    # whole road, whatever the shape (25-32 in 1A, not 33-40).
+    by_class = {g: (r, b) for _l, gs, r, b in shapes for g in gs}
+    assert by_class["1A"] == (24, 8) and by_class["7A"] == (32, 8)
+    assert by_class["9A"] == (32, 16)
+    blurb = jh.parastate_blurb()
+    for g in jh.ATLARGE_GROUPS:
+        assert g in blurb, g
+    for g in ("Group 2", "Group 3"):
+        assert g not in blurb, g
+
+
 def test_the_bid_table_and_the_committee_seat_count_agree():
     """8A/9A/Group 1 at 16, everybody else at 8 (owner rules 2026-09 — 7A first,
     then 6A-1A with the playoff expansion). ‼️ THE BID COUNT IS THE DECISION AND

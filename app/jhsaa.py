@@ -230,6 +230,38 @@ ATLARGE_GROUPS = tuple(AT_LARGE_BIDS)
 PARASTATE_NAME = "Parastate"
 
 
+def parastate_summary() -> list[tuple[str, list[str], int, int]]:
+    """The Parastate classes grouped by the SHAPE they play, in `GROUPS` order:
+    `[(label, [classes], road, bids), …]`.
+
+    ‼️ DERIVED, because every hand-written copy of this list has already gone
+    stale. Three surfaces described the committee as running for "7A and Group 1"
+    / "the 48-team groups" / "16 selections seeded 33-48" long after the tables
+    said otherwise, and a reader of a 6A archive was told their class never uses
+    the committee. A description of a table belongs to the table."""
+    shapes: dict[tuple[int, int], list[str]] = {}
+    for g in GROUPS:
+        b = at_large_bids(g)
+        if b:
+            shapes.setdefault((state_field_size(g), b), []).append(g)
+    return [(f"{road + bids} ({road} road + {bids})", gs, road, bids)
+            for (road, bids), gs in shapes.items()]
+
+
+def parastate_blurb() -> str:
+    """`parastate_summary` as one sentence for a tooltip, an empty state or an
+    export manifest — "8A, 9A, Group 1 at 48 (32 road + 16); …"."""
+    return "; ".join(f"{_and_list(gs)} at {label}"
+                     for label, gs, _r, _b in parastate_summary())
+
+
+def _and_list(names: list[str]) -> str:
+    """"A, B and C" — the association's classes read as prose, not a CSV."""
+    if len(names) < 2:
+        return names[0] if names else ""
+    return f"{', '.join(names[:-1])} and {names[-1]}"
+
+
 def at_large_bids(group: str | None) -> int:
     """How many committee at-larges `group` adds on top of its road
     qualifiers — 0 for every class outside the Parastate groups."""
@@ -957,8 +989,10 @@ def state_field_size(group: str) -> int:
 # qualifier for its seat: `bids > road` would pair at-larges with each other and
 # hand one of them a berth nobody defended. ASSERTED rather than assumed —
 # `AT_LARGE_BIDS` and `STATE_FIELD` are two owner tables that have to agree, and
-# the 2026-09 expansion added both kinds of entry (a 40 as 32 + 8, and 1A's as
-# 24 + 16 off a road that must not move).
+# they are edited independently and for different reasons (a road moves on
+# sponsor counts and talent; a bid count on how big a committee the association
+# wants), so nothing but this line stops an edit to one from invalidating the
+# other.
 assert all(b <= state_field_size(g) for g, b in AT_LARGE_BIDS.items()), \
     "AT_LARGE_BIDS exceeds the road field: %r" % (
         {g: b for g, b in AT_LARGE_BIDS.items() if b > state_field_size(g)},)

@@ -2330,6 +2330,14 @@ def create_app() -> Flask:
         return url_for(ep, **{k: v for k, v in args.items() if v is not None})
 
     app.jinja_env.globals["jh_scope_url"] = jh_scope_url
+    # ‼️ WHICH CLASSES USE THE AT-LARGE COMMITTEE IS DERIVED, NEVER TYPED INTO A
+    # TEMPLATE. The committee's empty state and the sub-rail tooltip each carried
+    # their own hand-written list ("7A, 8A, 9A and Group 1", "the 48-team
+    # groups"), so after the 2026-09 expansion a reader browsing a 6A archive was
+    # told their class never uses the committee at all. `jhsaa.parastate_blurb`
+    # reads `AT_LARGE_BIDS`/`STATE_FIELD`, so the copy moves with the tables.
+    from app.jhsaa import parastate_blurb as _jh_parastate_blurb
+    app.jinja_env.globals["jh_parastate_blurb"] = _jh_parastate_blurb
     # A tight-space display form for a classification — "Group 1" -> "G1" — for
     # narrow table columns and chips. Never the stored identity; see jhsaa.group_short.
     from app.jhsaa import group_short as _jh_group_short
