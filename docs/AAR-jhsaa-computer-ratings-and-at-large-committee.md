@@ -92,6 +92,14 @@ seeds in `run_state_48`'s field.
 > per group in `jhsaa.AT_LARGE_BIDS`; `run_state_48` is now `run_state_parastate`
 > at `byes=16`; `select` takes `seats`. See
 > `docs/AAR-jhsaa-group2-3s3d-postseason-deciders.md` §1.
+>
+> **2026-09 expansion.** 6A, 5A, 4A, 3A, 2A **and 1A** joined on 7A's shape —
+> **eight bids each**, over the road each already had. That is a 40-team
+> structure for the five 32-road classes and a **32** for 1A, whose road is 24:
+> the bid count is the decision and the field size is the consequence (the
+> owner refused the sixteen bids a 40 would have cost 1A). The dual formats did
+> NOT move with it: `WIDE_GROUPS` is a separate axis and the new classes are not
+> in it. See `docs/AAR-jhsaa-playoff-expansion-parastate.md`.
 
 ## The 48-team field (`jhsaa.run_state_48`, `ATLARGE_GROUPS`)
 
@@ -106,7 +114,7 @@ so both groups play 4S/5D in every State round, Parastate included.
 ## Surfaces
 
 `/jhsaa/computer-ratings` (all groups; sortable composite + nine systems +
-glossary; the disconnected banner) and `/jhsaa/committee` (7A/Group 1;
+glossary; the disconnected banner) and `/jhsaa/committee` (every Parastate class;
 selection board with statuses Qualified/Lock/In/Bubble/Out, per-member ballot
 positions, Borda; a Ballots tab showing the five orderings side by side).
 Both read the ARCHIVE only. The spec's third "résumé" view is the existing

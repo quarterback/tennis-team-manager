@@ -1,7 +1,15 @@
 """The JHSAA at-large selection committee (owner spec 2026-09) — five named
 members, each a FIXED, CONCENTRATED preference vector over the `jhsaa_ratings`
 systems, used only by the Parastate groups (`jhsaa.ATLARGE_GROUPS`: 8A, 9A and
-Group 1 at 16 bids in a 48-team field, 7A at 8 bids in a 40 — `AT_LARGE_BIDS`).
+Group 1 at 16 bids in a 48-team field; 7A/6A/5A/4A/3A/2A at 8 bids in a 40; and
+1A at 8 bids in a 32, off the 24-team road it keeps — `AT_LARGE_BIDS`, and
+`jhsaa.parastate_summary()` renders exactly this list for a reader).
+
+‼️ 1A IS ON A 32, NOT A 40, AND SIXTEEN BIDS THERE WAS EXPLICITLY REJECTED
+(owner rule 2026-09: "I do not want 16 at-large teams in 1A" — a 40 off a 24
+road costs 16 bids and would make 1A the one class where the committee picks
+40% of the field). The bid count is the decision; the field size is the
+consequence.
 
 The committee is deliberately deterministic and legible: the same five members
 exist every season, their weights are published in the UI, every ballot is a
@@ -17,17 +25,19 @@ deletes the disagreement this exists to produce. Only the Balancer reads all
 nine.
 
 What it can and cannot do (spec, hard rules):
-  * The road to State is untouched — it still qualifies exactly 32 teams. The
+  * The road to State is untouched — it still qualifies exactly the group's
+    `jhsaa.state_field_size` (32 everywhere but 1A, which keeps its 24). The
     committee only fills the group's at-large seats (`seats`).
   * The candidate pool is EVERY team outside the road field — including teams
     the systems rank above road qualifiers. Nothing pre-cuts it.
   * A district champion who missed the road gets an AUTOMATIC at-large berth,
     and it CONSUMES a seat rather than adding a berth.
-  * ‼️ At-large teams are ALWAYS seeded 33 down (33-48 in a 48, 33-40 in a
-    40). Never above a road qualifier, whatever the record, rating or Borda
-    total. `jhsaa.run_state_parastate` enforces it structurally (the at-larges
-    arrive after the 32 road seeds); a test pins a case whose Borda would
-    otherwise outrank a road seed.
+  * ‼️ At-large teams are ALWAYS seeded below the whole road — 33 down in a
+    48 (33-48) and in a 32-road 40 (33-40), 25 down in 1A's 32 (25-32). Never
+    above a road qualifier, whatever the record, rating or Borda total.
+    `jhsaa.run_state_parastate` enforces it structurally (the at-larges arrive
+    after every road seed); a test pins a case whose Borda would otherwise
+    outrank a road seed.
 """
 from __future__ import annotations
 
@@ -50,8 +60,9 @@ MEMBERS: dict[str, dict[str, float]] = {
 }
 
 #: At-large seats (spec 2.1) — the DEFAULT. The seat count is per group now
-#: (`jhsaa.AT_LARGE_BIDS`: 16 for 8A/9A/Group 1, 8 for 7A) and `select` takes it
-#: as `seats`; this is the 48-field's number and what a bare call gets.
+#: (`jhsaa.AT_LARGE_BIDS`: 16 for 8A/9A/Group 1, 8 for 7A through 1A) and
+#: `select` takes it as `seats`; this is the 48-field's number and what a bare
+#: call gets.
 AT_LARGE = 16
 
 
@@ -82,7 +93,8 @@ def select(ratings: dict, road: set[str], district_champions: list[str],
            atr: dict[str, float] | None = None, seats: int = AT_LARGE) -> dict:
     """The whole selection (spec 3.2, owner refinements 2026-09), returning an
     auditable dict. `seats` is the group's at-large count (`jhsaa.AT_LARGE_BIDS`
-    — 16 in a 48, 8 in 7A's 40); every step below scales off it and a district
+    — 16 in a 48, 8 in a 32-road 40, 8 in 1A's 24-road 32); every step below
+    scales off it and a district
     champion who missed the road consumes one of them, never adds one.
 
       {"selected": [`seats` names in SEED ORDER, 33 down], "auto": [...],
@@ -100,7 +112,8 @@ def select(ratings: dict, road: set[str], district_champions: list[str],
          automatics removed first): with B bubble teams a member's first gets
          B points down to 1 — so No. 17 on a ballot and No. 50 stay
          distinguishable, and the ranking disagreement itself keeps mattering.
-      4. SEEDING 33-48 — Borda over the selected sixteen, ties broken INSIDE
+      4. SEEDING (33-48 in a 48; 33-40 in a 40; 25-32 in 1A's 32) — Borda over
+         the selected teams, ties broken INSIDE
          the same conceptual system (owner ladder): number of ballots selecting
          the team, then median ballot rank, then composite mean rank, then the
          seeding ATR, then the name (head-to-head sits in the ladder before ATR
@@ -144,7 +157,7 @@ def select(ratings: dict, road: set[str], district_champions: list[str],
 
     chosen = set(auto) | set(locks) | set(fill)
 
-    # Step 4 — seed 33-48: Borda over the SELECTED sixteen, then the owner's
+    # Step 4 — seed the at-larges below the road: Borda over the SELECTED, then the owner's
     # tie ladder, every rung inside the same conceptual system.
     ns = len(chosen)
     seed_borda: dict[str, int] = {n: 0 for n in chosen}

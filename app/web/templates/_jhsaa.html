@@ -214,8 +214,8 @@
 
   {# The RANKINGS views (owner spec 2026-09). One destination, three parallel
      reads of the same season — the association's own TOSS order, the nine-system
-     computer-ratings layer beside it, and the at-large committee the 48-team
-     groups select from. A sub-rail rather than three tabs, the Championship
+     computer-ratings layer beside it, and the at-large committee the Parastate
+     classes select from. A sub-rail rather than three tabs, the Championship
      rail's rule exactly. #}
   {% if tab in ('rankings', 'computer', 'committee') %}
   <div class="jh-subrail">
@@ -223,9 +223,11 @@
        href="{{ url_for('jhsaa_rankings', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">TOSS Rankings</a>
     <a class="{{ 'on' if tab == 'computer' }}" title="Nine independent computer systems and their composite — parallel to TOSS, never a replacement"
        href="{{ url_for('jhsaa_computer', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Computer Ratings</a>
-    {# The committee runs for the 48-team groups only, and the page says so for
-       the rest — carrying `group` keeps the scope bar's memory, the TOC's rule. #}
-    <a class="{{ 'on' if tab == 'committee' }}" title="The at-large selection committee — the Parastate classes (8A, 9A and Group 1 at 48 teams; 7A at 40)"
+    {# The committee runs for the Parastate classes only, and the page says so
+       for the rest — carrying `group` keeps the scope bar's memory, the TOC's
+       rule. The class list is DERIVED (`jh_parastate_blurb`): this tooltip named
+       four classes for a while after the expansion made it ten. #}
+    <a class="{{ 'on' if tab == 'committee' }}" title="The at-large selection committee — the Parastate classes ({{ jh_parastate_blurb() }})"
        href="{{ url_for('jhsaa_committee', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">At-Large Committee</a>
   </div>
   {% endif %}

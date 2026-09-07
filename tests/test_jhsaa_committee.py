@@ -191,15 +191,91 @@ def test_the_40_team_parastate_is_eight_bids_and_byes_1_to_24(monkeypatch):
                                   byes=16, seed=3)
 
 
-def test_the_bid_table_and_the_committee_seat_count_agree():
-    """8A/9A/Group 1 at 16, 7A at 8 (owner rule 2026-09); every Parastate class
-    is a road-32 class and plays 4S/5D; the committee selects exactly the
-    group's seats and an automatic bid CONSUMES one of them."""
-    assert jh.AT_LARGE_BIDS == {"7A": 8, "8A": 16, "9A": 16, "Group 1": 16}
+def test_1a_takes_the_same_eight_bids_and_its_parastate_reduces_32_to_24(monkeypatch):
+    """‼️ 1A IS THE ONE CLASS NOT ON A 40 (owner rule 2026-09: "I do not want 16
+    at-large teams in 1A"). Sixteen bids is what a 40 costs off its 24 road, and
+    it would have made 1A the only class where the committee picks 40% of the
+    field. It takes the SAME EIGHT as 7A-2A, so its structure is 32 = 24 road +
+    8: the Parastate is 17v32 … 24v25 with seeds 1-16 byeing, and the 24
+    survivors play the 24-team draw 1A has always played — first round seeds
+    9-24, its eight Zonal champions byeing to the Round of 16."""
+    seeds = [_T(f"S{i:02d}") for i in range(1, 33)]
+    monkeypatch.setattr(jh, "play_dual", lambda a, b, *, seed, phase: _Res(0))
+    bids = jh.AT_LARGE_BIDS["1A"]
+    assert bids == 8 == jh.AT_LARGE_BIDS["7A"] and jh.state_field_size("1A") == 24
+    arc = jh.run_state_parastate(seeds, byes=jh.state_field_size("1A") - bids,
+                                 seed=5)
+    para = arc["rounds"][0]
+    assert arc["round_names"][0] == jh.PARASTATE_NAME
+    assert [(g["home"], g["away"]) for g in para] == \
+        [(f"S{17 + k:02d}", f"S{32 - k:02d}") for k in range(8)]
+    # 8 Parastate duals -> 24 alive; the 24 draw byes 8 and plays 8, then 8/4/2/1.
+    assert [len(rd) for rd in arc["rounds"]] == [8, 8, 8, 4, 2, 1]
+    alive = {g["home"] for g in arc["rounds"][1]} | {g["away"] for g in arc["rounds"][1]}
+    assert alive == {f"S{i:02d}" for i in range(9, 25)}
+    assert len(arc["field"]) == 32 and arc["champion"] == "S01"
+
+
+def test_the_committee_blurb_is_derived_from_the_tables():
+    """‼️ EVERY HAND-WRITTEN COPY OF "which classes use the committee" HAS GONE
+    STALE. The sub-rail tooltip, the empty state and the research-export manifest
+    each carried their own list ("7A and Group 1", "the 48-team groups", "sixteen
+    selections seeded 33-48"), so after the expansion a reader browsing a 6A
+    archive was told their class never uses the committee, and a 6A-1A export
+    stated the wrong field semantics. `parastate_summary` is the one derivation
+    all three read; a description of a table belongs to the table."""
+    shapes = jh.parastate_summary()
+    # Every Parastate class appears exactly once. The rows GROUP BY SHAPE, so the
+    # flat order is not `GROUPS` order (Group 1 sits with 9A/8A at 48); within a
+    # row it is, which is what makes each row read as a class list.
+    listed = [g for _lbl, gs, _r, _b in shapes for g in gs]
+    assert sorted(listed) == sorted(jh.ATLARGE_GROUPS)
+    assert len(listed) == len(set(listed))
+    for _lbl, gs, _r, _b in shapes:
+        assert gs == [g for g in jh.GROUPS if g in set(gs)], gs
+    for _lbl, gs, road, bids in shapes:
+        for g in gs:
+            assert (jh.state_field_size(g), jh.at_large_bids(g)) == (road, bids), g
+    # The seed range an at-large occupies is `road+1 .. road+bids` — below the
+    # whole road, whatever the shape (25-32 in 1A, not 33-40).
+    by_class = {g: (r, b) for _l, gs, r, b in shapes for g in gs}
+    assert by_class["1A"] == (24, 8) and by_class["7A"] == (32, 8)
+    assert by_class["9A"] == (32, 16)
+    blurb = jh.parastate_blurb()
     for g in jh.ATLARGE_GROUPS:
-        assert jh.state_field_size(g) == 32, g
-        assert g in jh.WIDE_GROUPS, g
-    assert jh.at_large_bids("6A") == 0
+        assert g in blurb, g
+    for g in ("Group 2", "Group 3"):
+        assert g not in blurb, g
+
+
+def test_the_bid_table_and_the_committee_seat_count_agree():
+    """8A/9A/Group 1 at 16, everybody else at 8 (owner rules 2026-09 — 7A first,
+    then 6A-1A with the playoff expansion). ‼️ THE BID COUNT IS THE DECISION AND
+    THE FIELD IS THE CONSEQUENCE: eight bids is a 40 off a 32 road and a 32 off
+    1A's 24, which is why 1A is not on a 40 and must not be "fixed" onto one.
+    The committee selects exactly the group's seats and an automatic bid
+    CONSUMES one of them."""
+    assert jh.AT_LARGE_BIDS == {"9A": 16, "8A": 16, "7A": 8, "6A": 8, "5A": 8,
+                                "4A": 8, "3A": 8, "2A": 8, "1A": 8,
+                                "Group 1": 16}
+    for g in jh.ATLARGE_GROUPS:
+        road = jh.state_field_size(g)
+        bids = jh.at_large_bids(g)
+        # Every at-large plays a ROAD qualifier for its seat — the Parastate is
+        # the `2 × bids` lowest seeds, so the bids can never outnumber the road.
+        assert bids <= road, g
+        assert bids in (8, 16), g
+    # The consequence, spelled out so a "tidy 1A onto a 40" edit fails here:
+    # eight bids is a 40 off a 32 road and a 32 off 1A's 24.
+    assert jh.state_field_size("1A") + jh.at_large_bids("1A") == 32
+    assert jh.state_field_size("7A") + jh.at_large_bids("7A") == 40
+    assert jh.state_field_size("9A") + jh.at_large_bids("9A") == 48
+    # ‼️ THE EXPANSION IS PLAYOFF SIZE ONLY: the dual format is a SEPARATE axis
+    # (`WIDE_GROUPS`) and did not move with it. Every class added in 2026-09
+    # plays the Parastate at whatever shape its road already played.
+    assert not (set(jh.ATLARGE_GROUPS) & set(jh.WIDE_GROUPS)) - {
+        "7A", "8A", "9A", "Group 1"}
+    assert jh.at_large_bids("Group 2") == 0 and jh.at_large_bids("Group 3") == 0
     sel = jc.select(_ratings(), ROAD, [], seats=8)
     assert len(sel["selected"]) == 8 == sel["seats"]
     assert set(sel["selected"]) == {f"T{i:02d}" for i in range(33, 41)}

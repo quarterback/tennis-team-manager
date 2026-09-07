@@ -4120,7 +4120,7 @@ def _jh_scope(gender: str, group: str, groups: list, year: int, years: list,
 _FINISH_SHORT = {"Champion": "CHAMP", "Finalist": "F",
                  "Semifinalist": "SF", "Quarterfinalist": "QF",
                  "Octofinalist": "OF",
-                 # The 48-team groups' opening round (owner spec 2026-09) — its
+                 # The Parastate groups' opening round (owner spec 2026-09) — its
                  # losers went out in the Parastate, not a "qualifying" round.
                  # The title board still buckets it by PLACE (`_jh_state_col`),
                  # which files 33-48 under QUAL; this is display only.
@@ -5143,7 +5143,8 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
     # a single bye in a 24, a double bye (the Qualifiers Round) in an expanded 40 —
     # and in the Parastate groups (owner spec 2026-09) a SINGLE bye through the
     # Parastate, held by `field − 2 × bids` lines (sixteen in a 48, twenty-four in
-    # 7A's 40): 1-4 Epiregional winners, 5-8 Epiregional losers (still Zonal
+    # a 32-road 40, sixteen in 1A's 24-road 32): 1-4 Epiregional winners, 5-8
+    # Epiregional losers (still Zonal
     # champions), then the best non-champion road qualifiers by ATR. The
     # Parastate is a named round, so `round_names` alone no longer implies the
     # 40's double bye. ‼️ The bye count is READ OFF THE ARCHIVE (the field less
@@ -7010,7 +7011,7 @@ def jhsaa_computer_ratings_view(seed: int, gender: str, group: str | None = None
     """The computer-ratings page: nine independent systems and the composite,
     per (season, group, gender), for every group whether or not it selects
     at-large. Read back off the archive (`world_jhsaa` `ratings`), never
-    recomputed — the layer is the input the 48-team fields were built from, so
+    recomputed — the layer is the input the Parastate fields were built from, so
     a re-fit that drifted from it would be the region-drift bug again."""
     import app.jhsaa as jh
     import app.world as world
@@ -7055,7 +7056,9 @@ def jhsaa_computer_ratings_view(seed: int, gender: str, group: str | None = None
 
 def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
                          year: int | None = None) -> dict:
-    """The at-large tracking page for the 48-team groups: the composite table
+    """The at-large tracking page for the Parastate groups (`ATLARGE_GROUPS` —
+    every class but Group 2/Group 3, at whatever field its road plus its bids
+    comes to): the composite table
     with Borda and Status, plus the five members' ballots side by side — the
     feature that makes the committee legible rather than a black box. Archived
     with the season (`committee` key), read back, never re-deliberated."""
@@ -7076,7 +7079,8 @@ def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
     # The seat count is the ARCHIVED selection's (`seats`, written by
     # `jhsaa_committee.select`) — a 7A season selected at 16 keeps reading as
     # sixteen after the move to 8. Seasons archived before the key fall back to
-    # the group's current table; the road is 32 in every Parastate group.
+    # the group's current table; the road is whatever `state_field_size` says
+    # (32 in every Parastate group but 1A, which keeps its 24).
     # A season archived before the key: the selection's own length IS the seat
     # count (a 7A year selected at sixteen must not read as an eight-bid one).
     seats = ((sel or {}).get("seats") or len((sel or {}).get("selected") or ())
