@@ -265,6 +265,128 @@ def test_consecutive_years_of_proof_are_carried_forward():
     assert (first.years, second.years) == (1, 2)
 
 
+# --- captains (owner rule 2026-09) --------------------------------------------
+
+def _capteam(roster, prior=None, records=None):
+    ts = _team(roster, records=records, prior=prior)
+    ts.captains = jh.pick_captains(ts, "cap", 2075)
+    return ts
+
+
+def test_a_program_names_one_to_three_captains_never_more():
+    """Owner rule: "you can't have more than 3 captains"."""
+    roster = [_P(f"p{i}", 70 - i, grade=12 - i % 4) for i in range(16)]
+    counts = set()
+    for yr in range(2060, 2100):
+        ts = _team(roster)
+        counts.add(len(jh.pick_captains(ts, "cap", yr)))
+    assert counts and max(counts) <= jh.CAPTAINS_MAX == 3
+    assert min(counts) >= 1
+
+
+def test_the_best_player_is_almost_always_a_captain():
+    """"It's hard to run a team without doing it that way."
+
+    ‼️ THE COIN IS ONLY DECISIVE FOR AN UNDERCLASSMAN. A senior No. 1 who loses the
+    `CAPTAIN_BEST_CHANCE` roll is still the best remaining SENIOR, so the second seat
+    names him anyway — he is captain essentially always. A ninth-grade No. 1 is not
+    reachable that way and is captain at the coin's rate. That falls out of the two
+    rules rather than being designed, and it is the right behaviour: the exception
+    the owner left room for is a young star who does not lead the room, not a senior
+    No. 1 who somehow isn't a captain."""
+    senior = [_P(f"p{i}", 70 - i, grade=12) for i in range(16)]
+    always = sum(1 for yr in range(2000, 2200)
+                 if "p0" in jh.pick_captains(_team(senior), "cap", yr))
+    assert always == 200
+
+    young = ([_P("kid", 90, grade=9)]
+             + [_P(f"p{i}", 70 - i, grade=12) for i in range(15)])
+    hit = sum(1 for yr in range(2000, 2400)
+              if "kid" in jh.pick_captains(_team(young), "cap", yr))
+    assert 0.80 < hit / 400 < 0.96
+
+
+def test_every_captain_dresses_for_the_program():
+    """"They're always on varsity — it doesn't work otherwise." The pool is the
+    dressing group, so a coach never starts out having named someone who cannot
+    play."""
+    roster = [_P(f"p{i}", 70 - i, grade=12 if i < 6 else 10) for i in range(20)]
+    need = jh.lineup_need("regular")
+    for yr in range(2060, 2090):
+        ts = _team(roster)
+        caps = jh.pick_captains(ts, "cap", yr)
+        top = {p.pid for p in jh._order(ts)[:need]}
+        assert set(caps) <= top
+
+
+def test_the_second_seat_goes_to_a_senior_and_falls_to_a_junior_without_one():
+    """"The next best player or some other good senior/junior (on a team with no
+    seniors)"."""
+    sen = [_P("kid", 80, grade=9)] + [_P(f"s{i}", 70 - i, grade=12) for i in range(11)]
+    caps = jh.pick_captains(_team(sen), "cap", 2075)
+    assert caps[0] == "kid" and caps[1].startswith("s")
+    jun = [_P("kid", 80, grade=9)] + [_P(f"j{i}", 70 - i, grade=11) for i in range(11)]
+    caps = jh.pick_captains(_team(jun), "cap", 2075)
+    assert caps[1].startswith("j"), "a program with no seniors names its juniors"
+
+
+def test_the_glue_seat_is_not_ability_ranked():
+    """The third captain is "someone who is a culture/glue … the hardest working
+    person irrespective of talent — could be the last player on varsity"."""
+    roster = [_P(f"p{i}", 70 - i, grade=12) for i in range(11)]
+    # p9 has been on varsity three years; everyone else one.
+    prior = {"p9": _proof(years=3, flags=jh.PROOF_POSTSEASON)}
+    seats = [jh.pick_captains(_team(roster, prior=prior), "cap", yr)
+             for yr in range(2000, 2200)]
+    thirds = [c[2] for c in seats if len(c) >= 3]
+    assert thirds, "some years name three"
+    assert all(t == "p9" for t in thirds), "the longest-serving player, not the 3rd best"
+
+
+def test_captains_dress_even_after_the_ladder_moves_under_them():
+    """‼️ THE FORCE IS REAL AND IT CAN COST THE TEAM — which is the whole point:
+    "it creates an incentive by the coach NOT to pick kids who won't play." A glue
+    captain who slides down the ladder is still in the lineup."""
+    roster = [_P(f"p{i}", 70 - i, grade=12) for i in range(16)]
+    ts = _team(roster)
+    ts.captains = ["p0", "p13"]
+    ts.records["p13"] = [0, 40]                    # a disastrous season on top of it
+    order = jh._order(ts)
+    need = jh.lineup_need("regular")
+    assert "p13" not in [p.pid for p in order[:need]], \
+        "he really has fallen out of the dressing group"
+    # `_seat_captains` is the whole mechanism, and it is what every `_lineup` branch
+    # ends on. Called here directly rather than through `_lineup`, which arranges the
+    # result and so needs real `Prospect`s rather than this file's stub.
+    seated = jh._seat_captains(ts, order[:need], order)
+    assert {p.pid for p in seated} >= {"p0", "p13"}
+    assert len(seated) == need, "somebody gave up the seat; the group did not grow"
+
+
+def test_an_injured_captain_is_not_forced_onto_court():
+    """The one thing the owner allows to bench anybody. It holds by construction —
+    `_healthy` drops him before `_seat_captains` ever sees the order, which is why
+    there is no injury check inside the seating itself."""
+    roster = [_P(f"p{i}", 70 - i, grade=12) for i in range(16)]
+    ts = _team(roster)
+    ts.captains = ["p9"]
+    ts.injuries["p9"] = 3
+    order = jh._healthy(ts, jh._order(ts))
+    need = jh.lineup_need("regular")
+    assert not any(p.pid == "p9" for p in jh._seat_captains(ts, order[:need], order))
+
+
+def test_captaincy_sharpens_the_coachs_read_and_nothing_else():
+    """It is worth `CAPTAIN_VALUE` off the misread and NOTHING to a player: no
+    attribute moves, and the figure is flat however many captains are named."""
+    assert jh.captain_mitigation(["a"]) == jh.captain_mitigation(["a", "b", "c"])
+    assert jh.captain_mitigation([]) == 0.0
+    p = _P("a", 50)
+    before = p.current_overall()
+    jh.coach_eval(p, [3, 9], lens=jh.coach_lens("Vale"), read=2.0)
+    assert p.current_overall() == before
+
+
 def test_the_store_round_trips_and_flattens_to_pids(tmp_path, monkeypatch):
     """Rows are STORED per program (a program's memory is its own row) and READ
     flattened to `{pid: PriorSeason}`, so an owner-authored transfer carries the

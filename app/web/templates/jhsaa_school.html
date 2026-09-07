@@ -207,6 +207,8 @@
         {% for p in view.roster[:6] %}
         <tr>
           <td class="pl"><a href="{{ url_for('jhsaa_player', school=view.school, pid=p.pid, u=u, g=view.gender) }}">{{ p.name }}</a>
+            {% if p.captain %}<span class="jh-chip cap" style="margin-left:4px"
+            title="Team captain — dresses for every dual from the naming point on">C</span>{% endif %}
             {% for h in p.honors %}<span class="jh-chip {{ 'gold' if 'Player of the Year' in h }}" style="margin-left:4px">{{ 'POY' if 'Player of the Year' in h else 'A-S' if h == 'All-State' else 'A-D' }}</span>{% endfor %}
             {# The injury chip rides here too: this snippet shows the top SIX, which
                is exactly where a short record on a strong player is most visible. #}
@@ -252,6 +254,8 @@
       <tr>
         <td class="pl">
           <a href="{{ url_for('jhsaa_player', school=view.school, pid=p.pid, u=u, g=view.gender) }}">{{ p.name }}</a>
+          {% if p.captain %}<span class="jh-chip cap" style="margin-left:4px"
+          title="Team captain — dresses for every dual from the naming point on">C</span>{% endif %}
           {% for h in p.honors %}<span class="jh-chip {{ 'gold' if 'Player of the Year' in h }}" style="margin-left:4px">{{ 'POY' if 'Player of the Year' in h else 'A-S' if h == 'All-State' else 'A-D' }}</span>{% endfor %}
           {# A family tie, if the owner has recorded one. `title` carries the
              detail so the row itself stays one short chip wide. #}

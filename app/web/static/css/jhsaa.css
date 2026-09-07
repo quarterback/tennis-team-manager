@@ -711,6 +711,13 @@ a.jh-eyebrow:hover { color: var(--brand-strong); }
 .jh-chip.inj { background: transparent; color: var(--neg); font-weight: 700;
   border: 1px solid color-mix(in oklch, var(--neg) 35%, transparent); }
 .jh-chip.inj.out { background: var(--neg); color: #fff; border-color: transparent; }
+/* CAPTAIN (owner rule 2026-09) — a ROLE, not an award, which is why it is a single
+   solid letter rather than an outlined annotation like `unit`/`inj` and why it sits
+   AHEAD of the honours chips: it is the thing on the row that explains the row,
+   since a captain dresses for every dual from the naming point on whatever the
+   ladder says. `--stat-power` rather than a medal colour, for the same reason —
+   nothing here was won. */
+.jh-chip.cap { background: var(--stat-power); padding: 0 7px; }
 /* Icon-only chip (the schedule's Match Center link — an icon, never a labelled
    pill, owner rule 2026-08). Square-ish, glyph centered, no text metrics. */
 .jh-chip.ico { padding: 0 4px; height: 20px; text-decoration: none; }

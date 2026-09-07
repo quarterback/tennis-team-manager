@@ -5540,6 +5540,11 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     # "men"/"male" and `school` is the name that was ASKED for, which for a renamed
     # program is not the name the archive was written under. The player page's own
     # injury read already keys it this way.
+    # CAPTAINS (owner rule 2026-09) — read off the archive, never re-derived:
+    # `jhsaa.pick_captains` reads the ladder as it stood after the individual state
+    # tournaments, so recovering it here would mean replaying them on the request
+    # thread. One query per page, same as the injuries below.
+    captain_pids = set(world.jhsaa_captains(w["id"], yr, g).get(sc.name) or ())
     injury_pids = {}
     for r in world.jhsaa_school_injuries(w["id"], yr, g, sc.name):
         e = injury_pids.setdefault(r["pid"], {"duals_out": 0, "season_ending": False,
@@ -5682,6 +5687,10 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                     # What injury did to this player's season, if anything — the
                     # chip that explains a short record. See `injury_pids` above.
                     "injury": injury_pids.get(p.pid),
+                    # Wore the C this season. From the naming point on, a captain
+                    # dresses (`jhsaa._seat_captains`), so this also explains a
+                    # lineup that the ladder alone does not.
+                    "captain": p.pid in captain_pids,
                     # A recorded family tie, for the roster chip. `fam_map` is
                     # resolved ONCE above, never per player — `families()` reads an
                     # override fingerprint, which is a SQLite round trip.

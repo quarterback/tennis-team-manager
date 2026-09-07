@@ -1786,6 +1786,12 @@ class TeamSeason:
     prior: dict = field(default_factory=dict)
     lens: "CoachLens" = field(default_factory=lambda: CoachLens())
     read: dict = field(default_factory=dict)
+    # ‼️ CAPTAINS (owner rule 2026-09) — pids, best-known first, named PRESEASON in
+    # `district_teams` and never re-picked. They change nothing about any player:
+    # their whole effect is that `read` above was drawn at a smaller sd, so this
+    # coach misjudges his own roster less (`captain_mitigation`). Empty is a real
+    # answer — a program with no varsity to speak of names nobody.
+    captains: list = field(default_factory=list)
 
     @property
     def record(self) -> str:
@@ -4535,6 +4541,170 @@ def _order(ts: TeamSeason) -> list:
                                  -p.str_value()))
 
 
+# --- CAPTAINS (owner rule 2026-09) -------------------------------------------
+#
+# ‼️ A CAPTAIN IS WORTH NOTHING TO A PLAYER AND SOMETHING TO A COACH. Captaincy
+# touches no attribute — the owner was explicit — and it does not lift a line, a
+# court or a rating. What it does is MITIGATE A DIE THE SIM ALREADY ROLLS: the
+# coach's misread (`coach_read`). A program with credible leadership is one where
+# the coach knows who is actually playing well, so `CAPTAIN_VALUE` comes straight
+# off `CoachLens.read`.
+#
+# That is a real competitive benefit — the right players dress more often, and over
+# a season that is worth duals — bought without touching the ratings or the match
+# engine. It is also what a high-school captain actually does.
+#
+# ‼️ THE FIGURE IS PER TEAM AND FLAT (owner rule): 1.5, whether a program names one
+# captain or four. The count is FLAVOUR, not arithmetic — "either divided among the
+# captains or one captain provides the entire figure, it doesn't matter" — and
+# holding it flat is also what stops a player naming four captains to farm a bonus.
+#
+# It bites HARDEST WHERE THE COACH IS WORST, which is the point rather than a side
+# effect: against the `COACH_READ` band (0-2.5) a 1.5 takes the weakest coach from
+# 2.5 to 1.0 and a strong one to zero. A captain matters most on a badly-run team.
+CAPTAIN_VALUE = 1.5           # OVR points of misread mitigation, per TEAM
+CAPTAINS_MAX = 3              # owner rule — "you can't have more than 3 captains"
+#: How many a program names in a given year — "I usually have at least 1 captain but
+#: some years 3", weighted to the two- and three-captain shapes the owner described.
+CAPTAIN_COUNT_WEIGHTS = ((1, 0.20), (2, 0.45), (3, 0.35))
+#: "The best player is almost always a captain — it's hard to run a team without
+#: doing it that way." Almost, not always: a program occasionally has a No. 1 who
+#: does not lead, and that is a story worth being able to tell.
+CAPTAIN_BEST_CHANCE = 0.88
+
+
+def _captain_count(rng: random.Random) -> int:
+    r, acc = rng.random(), 0.0
+    for n, w in CAPTAIN_COUNT_WEIGHTS:
+        acc += w
+        if r < acc:
+            return n
+    return CAPTAIN_COUNT_WEIGHTS[-1][0]
+
+
+def _glue_key(p, prior: dict, salt: str):
+    """How much a team TRUSTS a player, irrespective of talent (owner rule): the
+    culture captain is "the hardest working person irrespective of talent — could be
+    the last player on varsity, but they're always on varsity, doesn't work
+    otherwise."
+
+    ‼️ NO NEW ATTRIBUTE. Work ethic is not modelled and does not need to be: the
+    longest-serving varsity player who is not already a captain IS that archetype,
+    and `PriorSeason.years` already counts consecutive seasons of standing. Ties
+    break on a stable per-player draw so it is a person rather than an alphabetical
+    accident, and on grade so it leans senior."""
+    st = prior.get(p.pid)
+    draw = random.Random(f"{salt}|jhsaa-glue|{p.pid}").random()
+    return (-(st.years if st else 0), -getattr(p, "grade", 0), -draw)
+
+
+def pick_captains(ts: TeamSeason, salt: str = "", year: int = 0) -> list:
+    """This program's captains for the season, best-known first — 1 to 4 pids.
+
+    Named PRESEASON off the ladder as the coach reads it, which is why this runs at
+    team-build time and never again: a captain named in October would be a captain
+    chosen from results.
+
+    The owner's three roles, in order:
+      1. THE BEST PLAYER, almost always — `CAPTAIN_BEST_CHANCE`, and grade-blind,
+         because a sophomore No. 1 still leads the team.
+      2. THE NEXT BEST, or another good senior (a junior on a team with no seniors)
+         — so the second captain is an upperclassman wherever the roster has one.
+      3. THE GLUE — see `_glue_key`. Drawn from the WHOLE varsity irrespective of
+         ladder position or grade, which is the point of the seat.
+    """
+    order = _order(ts)
+    if not order:
+        return []
+    # "They're always on varsity — it doesn't work otherwise." A captain who does not
+    # dress is not a captain, so every seat is filled from the dressing group.
+    varsity = order[:lineup_need("regular")] or order
+    rng = random.Random(f"{salt}|jhsaa-captains|{ts.school.key}|{year}")
+    want = min(_captain_count(rng), CAPTAINS_MAX, len(varsity))
+    taken: set = set()
+    picks: list = []
+
+    def take(p):
+        # ‼️ MEMBERSHIP BY PID, NEVER `p in picks`. `Prospect` is a dataclass, so `in`
+        # on a list of them compares field by field — the trap `showcase_entries`
+        # already documents: slow, and two players who happen to match on every
+        # attribute would collapse into one.
+        if p is not None and p.pid not in taken:
+            taken.add(p.pid)
+            picks.append(p)
+
+    if rng.random() < CAPTAIN_BEST_CHANCE:
+        take(order[0])
+
+    def upperclass():
+        """The best remaining SENIOR, or the best junior on a program with no
+        senior on varsity — the owner's "some other good senior/junior (on a team
+        with no seniors)". Falls through to anyone if the program has neither."""
+        for grades in ((12,), (11,)):
+            pool = [p for p in varsity
+                    if p.pid not in taken and getattr(p, "grade", 0) in grades]
+            if pool:
+                return pool[0]
+        rest = [p for p in varsity if p.pid not in taken]
+        return rest[0] if rest else None
+
+    while len(picks) < want:
+        before = len(picks)
+        if len(picks) == 2:                      # the third seat is the glue seat
+            pool = [p for p in varsity if p.pid not in taken]
+            take(min(pool, key=lambda p: _glue_key(p, ts.prior, salt))
+                 if pool else None)
+        else:
+            take(upperclass())
+        if len(picks) == before:                 # nobody left to name
+            break
+    return [p.pid for p in picks]
+
+
+def is_captain(ts: TeamSeason, pid: str) -> bool:
+    """Whether this player wears the C this season. The one place anything asks."""
+    return pid in (ts.captains or ())
+
+
+def _seat_captains(ts: TeamSeason, dressed: list, order: list) -> list:
+    """`dressed`, with every available captain forced into it (owner rule 2026-09:
+    "a flag that says is-captain and forces them in the lineup").
+
+    A captain dresses. It is not a preference the ladder can outvote: the third seat
+    is deliberately given to a player who may be the last man on varsity, and a glue
+    captain who gets rotated out on a bad week is not a captain. The lowest-ranked
+    NON-captain gives up the seat, and the result is put back into ladder order so
+    the arrangers still receive a ladder.
+
+    ‼️ IT SEATS FROM `order`, WHICH IS ALREADY FILTERED. Two exclusions therefore
+    hold by construction rather than by a check here, and both are correct: an
+    INJURED captain has been dropped by `_healthy` and is not forced back onto court
+    (the one thing the owner allows to bench anybody), and a captain the coach chose
+    to REST against a weak side has been dropped by `_rest_count` and stays rested —
+    resting is a decision about who is available, and this is a decision about who
+    dresses from the available."""
+    caps = set(ts.captains or ())
+    if not caps:
+        return dressed
+    have = {p.pid for p in dressed}
+    missing = [p for p in order if p.pid in caps and p.pid not in have]
+    if not missing:
+        return dressed
+    keep = [p for p in dressed if p.pid in caps]
+    others = [p for p in dressed if p.pid not in caps]
+    room = max(0, len(dressed) - len(keep) - len(missing))
+    seated = keep + missing + others[:room]
+    pos = {p.pid: i for i, p in enumerate(order)}
+    return sorted(seated, key=lambda p: pos.get(p.pid, len(order)))[:len(dressed)]
+
+
+def captain_mitigation(captains) -> float:
+    """OVR points off the coach's misread — flat `CAPTAIN_VALUE` for any program
+    that named a captain at all, and zero for one that did not. Flat is the owner's
+    rule: the count is flavour, not arithmetic."""
+    return CAPTAIN_VALUE if captains else 0.0
+
+
 def team_standing(ts: TeamSeason, awards: dict, prior: dict | None = None) -> dict:
     """One finished program's per-player standing, `{pid: PriorSeason}` — what
     next season's ladder will remember about this one.
@@ -4601,8 +4771,20 @@ def season_standing(season: dict, prior: dict | None = None) -> dict:
     for name, ts in (season.get("teams") or {}).items():
         aw = {**(season["awards"].get(ts.school.group) or {}), "all_region": region}
         rows = team_standing(ts, aw, prior)
-        if rows:
-            out[name] = {pid: st.to_row() for pid, st in rows.items()}
+        if not rows and not ts.captains:
+            continue
+        # ‼️ TWO KEYS, because two different readers want two different things: next
+        # season's ladders want `players`, and the PROGRAM PAGE wants `captains`.
+        # Captains have to be archived rather than re-derived — `pick_captains`
+        # reads the ladder as it stood after the individual state tournaments, so
+        # recovering it on a request would mean replaying them, which is the
+        # "read the archive, never resimulate" rule.
+        #
+        # A row written before captains existed is the bare player map, and
+        # `world.jhsaa_prior_standing` reads that shape too — derived on read, never
+        # migrated, the section's own idiom.
+        out[name] = {"players": {pid: st.to_row() for pid, st in rows.items()},
+                     "captains": list(ts.captains or ())}
     return out
 
 
@@ -5198,7 +5380,14 @@ def _postseason_nine(ts: TeamSeason, phase: str = "state", group=_OWN_GROUP) -> 
     # rest of the order does not move, an unavailable name is simply skipped.
     ranked = _healthy(ts, ranked)
     g = ts.school.group if group is _OWN_GROUP else group
-    return ranked[:lineup_need(phase, g)]
+    need = lineup_need(phase, g)
+    # CAPTAINS DRESS, in the postseason too (owner rule 2026-09: "from that point
+    # forward, captains dress"). It does NOT breach the anti-stacking rule and is
+    # not a re-rank: the frozen Order of Ability still decides the ORDER, which is
+    # what the rule governs and what `_arrange_postseason` reads — this only
+    # substitutes who is in the dressing group, exactly as `_healthy` above already
+    # does for an injury. Nothing is re-sorted and the freeze is untouched.
+    return _seat_captains(ts, ranked[:need], ranked)
 
 
 def _arrange_postseason(pool: list, fmt: DualFormat, sibling_ids: dict | None,
@@ -5243,6 +5432,9 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None,
         nine, bench = order[:need], order[need:]
         if bench and rng.random() < _ROTATE_ONE:
             nine[-1] = bench[rng.randrange(len(bench))]
+        # Captains dress — AFTER the rotation, so the rotation can never be what
+        # costs a captain his place (owner rule 2026-09).
+        nine = _seat_captains(ts, nine, order)
         return _arrange_postseason(nine, dual_format(phase, g), ts.sibling_ids,
                                    ts.pair_counts)
     order = _healthy(ts, _order(ts))
@@ -5263,6 +5455,16 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None,
             pick = bench[rng.randrange(len(bench))]
             if pick is not nine[-1]:
                 nine[-2] = pick
+    # ‼️ CAPTAINS DRESS, and this is the LAST word on the dressing group (owner rule
+    # 2026-09) — after both the rest shift and the rotation, so neither can be what
+    # takes a captain's place. It is deliberately NOT a safety net for the pick: a
+    # glue captain named at #11 who slides down the ladder is still forced in, and
+    # that costs the team a better player. That is the incentive the owner wants —
+    # "it creates an incentive by the coach NOT to pick kids who won't play" — and
+    # it only exists because the force is real. `pick_captains` already draws from
+    # the dressing group, so a coach never starts out with that problem; he can only
+    # acquire it by the season moving under him.
+    nine = _seat_captains(ts, nine, order)
     # League policy: the program's strategy decides how the 3S/4D card's doubles
     # pool pairs up — but `_arrange_regular` is built for THAT card's eleven
     # positions (S1/S2-S3/D1-D4) specifically, and only applies to `phase ==
@@ -5742,14 +5944,43 @@ def district_teams(schools: list[School], year: int, salt: str = "",
         # never again (the `sibling_ids` rule): his temperament, and his read of
         # each of these players for this season.
         lens = coach_lens(s.name, salt)
-        out.append(TeamSeason(
+        ts = TeamSeason(
             school=s, roster=roster, sibling_ids=sibs, lens=lens,
             # Only this roster's own evidence — `_order` looks up by pid so a
             # gender-wide dict would work, but a team should carry its own memory
             # and nothing else's.
             prior={p.pid: pr[p.pid] for p in roster if p.pid in pr},
             read={p.pid: coach_read(p.pid, s.name, year, lens, salt)
-                  for p in roster} if lens.read > 0.0 else {}))
+                  for p in roster} if lens.read > 0.0 else {})
+        # CAPTAINS (owner rule 2026-09), and the misread mitigation they buy.
+        #
+        # ‼️ THE MITIGATION IS APPLIED FIRST, AND IT IS NOT CIRCULAR TO DO SO.
+        # `captain_mitigation` is FLAT — any program that names a captain at all
+        # gets `CAPTAIN_VALUE`, and every program with a roster names at least one
+        # — so the scale factor does not depend on WHICH players are chosen. Doing
+        # it the other way round (pick, then sharpen) looked like the better causal
+        # story and quietly broke the owner's one hard rule about the third seat:
+        # the ladder moves under the picks, so a glue captain named at #11 could
+        # come out at #12 and not dress. "They're always on varsity — it doesn't
+        # work otherwise" has to hold on the ladder the season is actually played
+        # from, so that is the ladder they are named off.
+        #
+        # ‼️ The read map is SCALED, never redrawn. `coach_read` is seeded per
+        # (school, year, pid), so redrawing at a smaller sd gives a DIFFERENT
+        # misread rather than a smaller one — and scaling a gaussian draw by k is
+        # exactly a draw from the k-scaled distribution, so this is "the same
+        # misjudgement, less of it", which is what a captain earns.
+        if roster and lens.read > 0.0:
+            k = max(0.0, lens.read - CAPTAIN_VALUE) / lens.read
+            ts.read = {pid: v * k for pid, v in ts.read.items()}
+        # ‼️ THE MITIGATION IS APPLIED HERE, THE PICK IS NOT (owner rule 2026-09).
+        # `run_season` names captains AFTER the individual state tournaments, so
+        # `ts.captains` is empty at this point and stays empty for a standalone
+        # caller that never runs them. The two are separable precisely because the
+        # figure is FLAT: a program has a captaincy whether or not this function
+        # knows yet who wears the C, and the read has to be settled before the
+        # entry sheet is cut off it.
+        out.append(ts)
     return out
 
 
@@ -9078,6 +9309,21 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     out["individuals"] = _run_individuals(
         by_group, gender, year, seed=seed,
         wildcards=_jv_wildcards(out["jv_individuals"], by_group))
+    # ‼️ CAPTAINS ARE NAMED HERE — after the individual state tournaments and
+    # BEFORE the first league dual (owner rule 2026-09: "you run the captains draw
+    # after the individual state tournament or after the showcases in the early part
+    # of the season"). The earlier of the two points, because a captaincy that
+    # starts mid-season is not one, and this is still before any dual counts.
+    #
+    # The placement is the whole reason it is not done at team-build time: the
+    # individual draws have just been played and CREDITED (`credit_draw` writes
+    # `ts.records`), so the ladder these are named off carries real evidence rather
+    # than a preseason ability sort — a coach naming captains knows who just won the
+    # No. 1 singles draw. From this line forward, captains dress (`_seat_captains`).
+    for group in GROUPS:
+        for teams_in in by_group[group].values():
+            for t in teams_in:
+                t.captains = pick_captains(t, salt, year)
     every_team, power = play_regular_season(by_group, year, gender, salt)
     # THE JV SEASON, played here and nowhere else. It runs BEFORE the postseason
     # because that is where it sits on the calendar (April-May against the varsity

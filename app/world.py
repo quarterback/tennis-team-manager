@@ -3772,8 +3772,45 @@ def jhsaa_prior_standing(world_id: int, year: int, gender: str) -> dict:
         conn.close()
     out = {}
     for (data,) in rows:
-        for pid, row in (json.loads(data) or {}).items():
-            out[pid] = jhsaa.PriorSeason.from_row(row)
+        out.update({pid: jhsaa.PriorSeason.from_row(row)
+                    for pid, row in _standing_players(json.loads(data)).items()})
+    return out
+
+
+def _standing_players(data) -> dict:
+    """The per-player map out of a stored standing row.
+
+    ‼️ TWO ARCHIVE SHAPES. Rows written before captains existed ARE the player map;
+    rows written since carry it under `players` beside `captains`. Read, never
+    migrated — the JHSAA archive is written once and a season keeps reading as the
+    season it was."""
+    if not isinstance(data, dict):
+        return {}
+    inner = data.get("players")
+    return inner if isinstance(inner, dict) else data
+
+
+def jhsaa_captains(world_id: int, year: int, gender: str) -> dict:
+    """`{school: [pid, ...]}` — who wore the C, per program, for one archived season.
+
+    Its own reader rather than a second use of `jhsaa_prior_standing`, because the
+    two answer different questions for different callers: that one is next season's
+    evidence and is resolved once per SEASON RUN, this one is display and is
+    resolved once per PAGE."""
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT school, data FROM world_jhsaa_standing"
+            " WHERE world_id=? AND year=? AND gender=?",
+            (world_id, year, gender)).fetchall()
+    finally:
+        conn.close()
+    out = {}
+    for r in rows:
+        data = json.loads(r["data"])
+        caps = data.get("captains") if isinstance(data, dict) else None
+        if caps:
+            out[r["school"]] = list(caps)
     return out
 
 
