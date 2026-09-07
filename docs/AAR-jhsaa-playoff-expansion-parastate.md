@@ -26,7 +26,8 @@ ARCHIVE. So six new entries is the feature:
 | 9A · 8A · Group 1 | 32 | 16 | 48 |
 | 7A · 6A · 5A · 4A · 3A · 2A | 32 | 8 | 40 |
 | **1A** | **24** | **8** | **32** |
-| Group 2 · Group 3 | 32 / 24 | 0 | road only |
+| **Group 3** | **24** | **4** | **28** |
+| Group 2 | 32 | 0 | road only |
 
 ‼️ **THE BID COUNT IS THE DECISION; THE FIELD SIZE IS THE CONSEQUENCE.** Eight
 bids is a 40 off a 32 road and a 32 off 1A's 24. Read the table that way round —
@@ -85,6 +86,56 @@ PARAMETER that produced X's shape rather than copying X's numbers. Here the
 parameter is `bids`, and the field size is `road + bids` — `run_state_parastate`
 was already written that way and needed no change at any of the three shapes.
 
+## ‼️ GROUP 3 TOOK FOUR BIDS — the one class sized on measurement
+
+Group 3 was not in the approval (which named 6A-1A) and stayed at 24 while
+every other class grew, which left it with the association's smallest field
+share. Measured across the owner's 2071-2075 exports, both genders — 10
+class-seasons — against every other class:
+
+| | best team left home (mean class rank) | top-24 teams left home / season |
+|---|---:|---:|
+| **Group 3** | **#14.3** | **3.00** |
+| 1A | #16.9 | 2.80 |
+| Group 2 | #19.3 | 1.50 |
+| 2A | #21.6 | 0.90 |
+
+Its road left an 8th-ranked 16-12 team home in 2072. That is the strongest
+omission case in the association — but the same data says the FIX IS FOUR, not
+eight:
+
+| bids | best left home | top-24 left home | top-16 left home |
+|---:|---:|---:|---:|
+| 0 | #14.3 | 3.00 | 0.70 |
+| **4 (shipped)** | **#26.6** | **0.10** | **0.00** |
+| 8 | #31.9 | 0.00 | 0.00 |
+
+Four clears 97% of it and every top-16 omission; eight would take the committee
+to #32 of ~68 programs — the "searching for reasons to fill the back half" the
+association rejected when it cut 7A from 16 bids to 8. So Group 3 and 1A run 4
+and 8 side by side in two otherwise comparable classes, which the owner wants
+as a live comparison rather than a settled answer.
+
+‼️ **TWO JUSTIFICATIONS WERE PROPOSED, MEASURED, AND FAILED. Do not restore
+either.**
+
+1. *"In a shallow class the middle beats the top as often as not, so the cut
+   line is arbitrary anyway."* FALSE: over ~85,000 duals the better-ranked team
+   wins **73.9%** in Group 3 against a **73.9-77.9%** band across all twelve
+   classes, and 58.5% in close matchups against a 57.0-61.5% band. Group 3 is
+   the least predictable class by about two points on a four-point spread —
+   noise. A flat TALENT distribution did not produce flat OUTCOMES, because the
+   class's spread is still wide (21.5) and the engine converts the gaps that
+   exist at the normal rate.
+2. *"Group 3 travels furthest, so a smaller field is kinder."* FALSE: mean
+   league spread is 47 mi (boys) / 43 (girls), mid-pack — **Group 2 is the
+   association's worst at 65/64**, then 2A at 63/64. (Area-centroid resolution,
+   coarse but coarse identically for every class.)
+
+The number rests on the omission measurement alone. **A conclusion can be right
+while the argument for it is wrong** — both premises here failed and 28 still
+survived, on evidence neither of them named.
+
 ## ‼️ PLAYOFF SIZE AND DUAL FORMAT ARE SEPARATE AXES — do not tidy them together
 
 The owner said it explicitly, and the code already agreed: `WIDE_GROUPS` (the
@@ -122,7 +173,7 @@ to one from silently invalidating the other.
 ## Cost
 
 The Parastate is the only new duals: 8 a class a gender for 7A-2A and 1A alike,
-so **56 more duals per gender** against a season's ~5,100. The main draws
+so **60 more duals per gender** (Group 3 adds 4) against a season's ~5,100. The main draws
 are the same size they were — a Parastate does not lengthen the bracket behind
 it, it fills the same seed lines from a larger pool.
 
