@@ -275,6 +275,27 @@ CREATE TABLE IF NOT EXISTS world_jhsaa_jv_state (
 );
 CREATE INDEX IF NOT EXISTS ix_jhsaa_jv_state
   ON world_jhsaa_jv_state(world_id, year, gender);
+-- RETURNING VARSITY STANDING (owner rule 2026-09) — one row per program per season,
+-- holding `{pid: [apps, wins, losses, rank, flags, years]}` for the players who
+-- finished the year carrying standing. Read back by the NEXT season to seed its
+-- ladders (`jhsaa.varsity_proof`), and read by nothing else.
+--
+-- ‼️ IT HAS TO BE STORED, and it is the only per-player thing here that does. A
+-- JHSAA player is otherwise regenerated from (school, gender, entry year, seat) and
+-- their whole career is derived on demand — but "how many duals did he dress for"
+-- is a fact about a season that was PLAYED, and the only other place it exists is
+-- `world_jhsaa_dual.lines`, which archives NAMES rather than pids and would have to
+-- be folded over a gender's ~10k duals to answer it. That is the per-roster query
+-- storm this file has paid for twice; one indexed read a season is the alternative.
+--
+-- ‼️ AND NOT A KEY ON THE `world_jhsaa` SUMMARY, for the reason every other JHSAA
+-- side table exists: that blob is read IN FULL by every JHSAA page, and this is
+-- ~10k player rows a gender that no page reads at all.
+CREATE TABLE IF NOT EXISTS world_jhsaa_standing (
+  world_id INTEGER, year INTEGER, gender TEXT, school TEXT, data TEXT
+);
+CREATE INDEX IF NOT EXISTS ix_jhsaa_standing
+  ON world_jhsaa_standing(world_id, year, gender);
 CREATE TABLE IF NOT EXISTS world_cups (
   world_id INTEGER, year INTEGER, gender TEXT, data TEXT
 );
@@ -581,7 +602,8 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     conn = _db()
     conn.executescript("DELETE FROM world_championship; DELETE FROM world_cups;"
                        " DELETE FROM world_jhsaa; DELETE FROM world_jhsaa_dual;"
-                       " DELETE FROM world_jhsaa_individual; DELETE FROM world_jhsaa_injury; DELETE FROM world_jhsaa_jv_state;")
+                       " DELETE FROM world_jhsaa_individual; DELETE FROM world_jhsaa_injury; DELETE FROM world_jhsaa_jv_state;"
+                       " DELETE FROM world_jhsaa_standing;")
     conn.commit()
     conn.close()
     # God-mode editor overrides (player moves, lineups, prestige/academics priors,
@@ -3720,6 +3742,122 @@ def jhsaa_done(world: dict) -> bool:
     return n > 0
 
 
+def jhsaa_prior_standing(world_id: int, year: int, gender: str) -> dict:
+    """LAST season's per-player record for one gender, `{pid: PriorSeason}` —
+    the evidence the COACH EVALUATION LAYER runs on (`jhsaa.coach_eval`).
+
+    ‼️ ONE indexed read for the whole association, resolved at the top of the season
+    rung and threaded down (`jhsaa.district_teams`) — never per program and never per
+    player. `load_schools` learned that lesson the expensive way
+    (`AAR-jhsaa-playup-fingerprint-query-storm.md`); a season builds ~860 rosters and
+    a lookup in that loop is the same shape of mistake.
+
+    ‼️ FLATTENED TO PID, not kept per school. The rows are STORED per program (so a
+    program's memory is its own row and can be read alone), but the lookup a ladder
+    does is by pid: a pid survives an owner-authored transfer, so a player who moves
+    carries the standing he earned, which is the answer a coach would give about a
+    junior who transferred in having started two years somewhere else.
+
+    Empty for a year with nothing archived behind it — the first season of a save,
+    the JHSAA lab's opening year, any standalone run — which is exactly the ladder
+    this was before the rule."""
+    from . import jhsaa
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT data FROM world_jhsaa_standing"
+            " WHERE world_id=? AND year=? AND gender=?",
+            (world_id, year, gender)).fetchall()
+    finally:
+        conn.close()
+    out = {}
+    for (data,) in rows:
+        out.update({pid: jhsaa.PriorSeason.from_row(row)
+                    for pid, row in _standing_players(json.loads(data)).items()})
+    return out
+
+
+def _standing_players(data) -> dict:
+    """The per-player map out of a stored standing row.
+
+    ‼️ TWO ARCHIVE SHAPES. Rows written before captains existed ARE the player map;
+    rows written since carry it under `players` beside `captains`. Read, never
+    migrated — the JHSAA archive is written once and a season keeps reading as the
+    season it was."""
+    if not isinstance(data, dict):
+        return {}
+    inner = data.get("players")
+    return inner if isinstance(inner, dict) else data
+
+
+def jhsaa_captains(world_id: int, year: int, gender: str) -> dict:
+    """`{school: [pid, ...]}` — who wore the C, per program, for one archived season.
+
+    Its own reader rather than a second use of `jhsaa_prior_standing`, because the
+    two answer different questions for different callers: that one is next season's
+    evidence and is resolved once per SEASON RUN, this one is display and is
+    resolved once per PAGE."""
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT school, data FROM world_jhsaa_standing"
+            " WHERE world_id=? AND year=? AND gender=?",
+            (world_id, year, gender)).fetchall()
+    finally:
+        conn.close()
+    out = {}
+    for r in rows:
+        data = json.loads(r["data"])
+        caps = data.get("captains") if isinstance(data, dict) else None
+        if caps:
+            out[r["school"]] = list(caps)
+    return out
+
+
+def _active_world_id() -> int | None:
+    """THE world of this save, for a caller that has no world dict in hand.
+
+    There is only ever one real world per save (`start_new` resets before creating;
+    freshness comes from the salt), so this binds to the OLDEST world row — the
+    `gtt_seasonmode._active_world_seed` idiom, and for the same reason: never
+    `ORDER BY id DESC` and never a user-typed number, either of which can bind to a
+    stray row. `None` when no world exists at all, which is a real answer (the
+    JHSAA lab and every standalone caller) rather than a fallback."""
+    conn = _db()
+    try:
+        row = conn.execute("SELECT id FROM world ORDER BY id ASC LIMIT 1").fetchone()
+    except sqlite3.OperationalError:
+        return None
+    finally:
+        conn.close()
+    return row["id"] if row else None
+
+
+def jhsaa_prior_for_season(season_year: int, gender: str,
+                           world_id: int | None = None) -> dict:
+    """The coach-evaluation evidence for the season played at `season_year` — i.e.
+    the season BEFORE it, `{pid: PriorSeason}`.
+
+    ‼️ THE ONE PLACE A SEASON YEAR IS CONVERTED TO THE ARCHIVE'S KEY. The JHSAA rung
+    plays a season and the recruit hand-off (`jhsaa.apply_to_class` →
+    `graduating_class`) REPLAYS the same one to read its seniors, relying on
+    `run_season`'s memo to make that free. That memo is now keyed on the evidence
+    (it moves every ladder in the association), so the two callers drifting onto
+    different keys would not merely cost a second full simulation — it would hand
+    the college board a season played with DIFFERENT LINEUPS from the one archived
+    on the JHSAA pages, with every number internally consistent on both sides. So
+    both resolve through here.
+
+    `season_year` is `BASE_YEAR + world_year + 1` (`jhsaa_season_year`, identical to
+    `recruiting_grad_year` by design), so last season's row sits at
+    `season_year - BASE_YEAR - 2`."""
+    if world_id is None:
+        world_id = _active_world_id()
+        if world_id is None:
+            return {}
+    return jhsaa_prior_standing(world_id, season_year - BASE_YEAR - 2, gender)
+
+
 def run_jhsaa(seed: int, world: dict) -> dict:
     """One rung of the ladder: play Jefferson's high-school season for both genders and
     archive it. Runs BEFORE the college year, so the seniors it graduates are on the
@@ -3759,7 +3897,18 @@ def run_jhsaa(seed: int, world: dict) -> dict:
         # produced, so the counter runs across both genders too.
         challenge_no = 1
         for gender in ("girls", "boys"):
-            season = jhsaa.run_season(gender, season_year, seed=0, salt=salt)
+            # INCUMBENCY (owner rule 2026-09): what last season's ladders finished
+            # saying about their players, resolved ONCE for the whole gender before
+            # a single roster is built. Keyed on `year` — the world index, the DB
+            # key every other JHSAA table is written under — and NOT `season_year`,
+            # which is this rung's season PARAMETER. The two move together
+            # (`jhsaa_season_year` is BASE_YEAR + year + 1), so either would find
+            # the row; resolving through the ONE converter is what stops this rung
+            # and the recruit hand-off drifting onto different keys — see
+            # `jhsaa_prior_for_season`. Empty at year 0, the no-memory ladder.
+            prior = jhsaa_prior_for_season(season_year, gender, world["id"])
+            season = jhsaa.run_season(gender, season_year, seed=0, salt=salt,
+                                      prior=prior)
             division_no = jhsaa.renumber_divisions(season, division_no)
             conference_ix = jhsaa.reletter_conferences(season, conference_ix)
             special_no = jhsaa.renumber_state_specials(season, special_no)
@@ -3976,6 +4125,16 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                 [(world["id"], year, gender, t.school.name, e["pid"], e["name"],
                   e["dual_index"], e["duals_out"], int(e["season_ending"]))
                  for t in season["teams"].values() for e in t.injury_log])
+            # RETURNING VARSITY STANDING — what NEXT season's ladders will remember
+            # about this one (owner rule 2026-09). Only programs with at least one
+            # player carrying standing get a row; `season_standing` has already
+            # dropped everyone the rule would score at zero, so this is the top of
+            # each roster rather than all of it.
+            conn.executemany(
+                "INSERT INTO world_jhsaa_standing"
+                " (world_id, year, gender, school, data) VALUES (?,?,?,?,?)",
+                [(world["id"], year, gender, school, json.dumps(rows))
+                 for school, rows in (season.get("standing") or {}).items()])
         # MIXED DOUBLES — run here because a mixed pair is one player from each
         # gender and `run_season` only ever sees one. It is archived under gender
         # 'mixed': it belongs to neither field, so storing it on one gender's rows

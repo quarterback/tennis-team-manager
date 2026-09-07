@@ -700,6 +700,24 @@ a.jh-eyebrow:hover { color: var(--brand-strong); }
 .jh-chip.unit { background: transparent; color: var(--stat-power);
   border: 1px solid color-mix(in oklch, var(--stat-power) 35%, transparent); font-weight: 700; }
 .jh-chip.ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border-default); }
+/* INJURY (owner, 2026-09) — what injury cost this player THIS season, on the roster
+   row that shows his record. It is a season LOG and never a live status: a JHSAA
+   season is simulated whole at the world's week 0 and is finished before any page
+   renders it, so `out` means the injury ended his year, not that he is unavailable
+   now. Outlined like `unit`, because it ANNOTATES a row rather than decorating it —
+   the season-ending case fills in, since that is the one a reader must not miss.
+   `--neg` is the right token precisely because it is one of the two that carry
+   MEANING rather than identity in every scheme (the win/loss rule). */
+.jh-chip.inj { background: transparent; color: var(--neg); font-weight: 700;
+  border: 1px solid color-mix(in oklch, var(--neg) 35%, transparent); }
+.jh-chip.inj.out { background: var(--neg); color: #fff; border-color: transparent; }
+/* CAPTAIN (owner rule 2026-09) — a ROLE, not an award, which is why it is a single
+   solid letter rather than an outlined annotation like `unit`/`inj` and why it sits
+   AHEAD of the honours chips: it is the thing on the row that explains the row,
+   since a captain dresses for every dual from the naming point on whatever the
+   ladder says. `--stat-power` rather than a medal colour, for the same reason —
+   nothing here was won. */
+.jh-chip.cap { background: var(--stat-power); padding: 0 7px; }
 /* Icon-only chip (the schedule's Match Center link — an icon, never a labelled
    pill, owner rule 2026-08). Square-ish, glyph centered, no text metrics. */
 .jh-chip.ico { padding: 0 4px; height: 20px; text-decoration: none; }

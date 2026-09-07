@@ -208,7 +208,7 @@ def jv_ladder(ts) -> list:
     invented here, so a player who played his way onto varsity is correctly no
     longer JV.
 
-    The ORDER is what makes "JV No. 1" mean something: it is `ladder_score` —
+    The ORDER is what makes "JV No. 1" mean something: it is `coach_eval` —
     ability moved by results — so a school's entry is its ESTABLISHED position,
     not a coach's pick. That is the same anti-sandbagging property the varsity
     individual event gets from selecting off `_order`.

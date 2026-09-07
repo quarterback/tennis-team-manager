@@ -70,7 +70,7 @@ def _pair_seed(name_a: str, name_b: str, trial: int = 0) -> int:
 
 def order_program(school) -> list:
     roster = jh.build_roster(school, YEAR, SALT)
-    return sorted(roster, key=lambda p: (-jh.ladder_score(p, None), -p.str_value()))
+    return sorted(roster, key=lambda p: (-jh.coach_eval(p), -p.str_value()))
 
 
 def make_team(name: str, lineup: list, fmt) -> Team:

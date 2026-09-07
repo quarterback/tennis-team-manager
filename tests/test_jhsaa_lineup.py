@@ -34,8 +34,16 @@ class _P:
 
 
 class _TS:
+    """‼️ THE COACH EVALUATION LAYER's three inputs are part of `_order`'s contract
+    (owner rule 2026-09), so a stub standing in for a `TeamSeason` has to carry them.
+    Their "no opinion" defaults — no evidence from last season, a neutral lens, no
+    misread — are what make this file's assertions mean what they say: every test
+    below is about ability and results, and would otherwise be reading a coach's
+    judgment as well."""
+
     def __init__(self, roster, records=None):
         self.roster, self.records = roster, records or {}
+        self.prior, self.lens, self.read = {}, jh.CoachLens(), {}
 
 
 def test_a_player_who_has_not_played_is_ranked_at_his_ability():
@@ -75,8 +83,8 @@ def test_a_win_count_never_outranks_a_win_rate():
 def test_a_short_sample_moves_the_ladder_less_than_a_long_one():
     """`LADDER_PRIOR` is why a 1-2 opening week cannot outrank a whole season."""
     p = _P("x", 40)
-    early = jh.ladder_score(p, [0, 3])
-    late = jh.ladder_score(p, [0, 24])
+    early = jh.coach_eval(p, [0, 3])
+    late = jh.coach_eval(p, [0, 24])
     assert 40 > early > late
 
 
@@ -84,9 +92,9 @@ def test_the_ladder_is_a_bounded_adjustment_not_a_replacement():
     """A perfect record is worth `LADDER_SWING / 2`; nothing can swing further, so a
     genuine gap in ability still decides the lineup."""
     p = _P("x", 40)
-    assert jh.ladder_score(p, None) == 40
-    assert jh.ladder_score(p, [200, 0]) < 40 + jh.LADDER_SWING / 2
-    assert jh.ladder_score(p, [0, 200]) > 40 - jh.LADDER_SWING / 2
+    assert jh.coach_eval(p, None) == 40
+    assert jh.coach_eval(p, [200, 0]) < 40 + jh.LADDER_SWING / 2
+    assert jh.coach_eval(p, [0, 200]) > 40 - jh.LADDER_SWING / 2
 
 
 # --- over a real season ---------------------------------------------------------

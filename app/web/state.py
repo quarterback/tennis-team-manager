@@ -5519,6 +5519,49 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     # version fingerprint is how `AAR-jhsaa-playup-fingerprint-query-storm.md` happened.
     # The greedy cap is global, so there is no cheaper per-school answer to compute.
     rivals = jh.rival_map(list(schools.values()))
+    # ‼️ WHO GOT HURT, ON THE ROSTER ITSELF (owner, 2026-09). The injury log was on
+    # the player page and nowhere else, so the roster — the one surface where the
+    # question is actually asked — could show a 92-OVR senior with five matches and
+    # no explanation. That is not a hypothetical: sweeping the owner's 2075 save for
+    # top-nine-by-OVR players who dressed for under a quarter of their team's duals
+    # found exactly seven, and every one of the seven is a season-ending injury.
+    # Without a mark on the row it reads as a lineup-selection fault, and it was
+    # reported as one.
+    #
+    # ‼️ IT IS A SEASON LOG, NOT A LIVE STATUS, and it cannot be anything else: a
+    # JHSAA season is simulated whole at the world's week 0, so by the time any page
+    # renders it the season is over and nobody is currently hurt (owner: "that's
+    # because the season runs and it's done so it would never persist"). So the row
+    # says what happened — how many duals he missed, and whether it ended his year —
+    # never "OUT" as though he were unavailable now.
+    #
+    # ONE query per page, folded per pid, beside the family fingerprint and for the
+    # same reason: never inside the per-player comprehension below.
+    # ‼️ `g` and `sc.name`, never the raw route arguments — `gender` may arrive as
+    # "men"/"male" and `school` is the name that was ASKED for, which for a renamed
+    # program is not the name the archive was written under. The player page's own
+    # injury read already keys it this way.
+    # CAPTAINS (owner rule 2026-09) — read off the archive, never re-derived:
+    # `jhsaa.pick_captains` reads the ladder as it stood after the individual state
+    # tournaments, so recovering it here would mean replaying them on the request
+    # thread. One query per page, same as the injuries below.
+    captain_pids = set(world.jhsaa_captains(w["id"], yr, g).get(sc.name) or ())
+    injury_pids = {}
+    for r in world.jhsaa_school_injuries(w["id"], yr, g, sc.name):
+        e = injury_pids.setdefault(r["pid"], {"duals_out": 0, "season_ending": False,
+                                              "count": 0, "first": r["dual_index"]})
+        e["count"] += 1
+        e["season_ending"] = e["season_ending"] or bool(r["season_ending"])
+        # A season-ending row carries the `injuries.SEASON_ENDING` sentinel rather
+        # than a count of duals, so it must never be summed into one.
+        if not r["season_ending"]:
+            e["duals_out"] += max(0, int(r["duals_out"] or 0))
+    for e in injury_pids.values():
+        e["label"] = "OUT" if e["season_ending"] else "INJ"
+        e["detail"] = ("Season-ending injury (dual %d)" % (e["first"] + 1)
+                       if e["season_ending"] else
+                       "Missed %d dual%s to injury" % (e["duals_out"],
+                                                       "" if e["duals_out"] == 1 else "s"))
     honor_pids = {}
     # ‼️ A DOUBLES AWARD ROW HONOURS TWO ATHLETES (owner, 2027-08) — doubles
     # honours go to PAIRINGS. `jaw.row_pids` is the one place that knows how many
@@ -5642,6 +5685,13 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                     "singles": "{}-{}".format(*lines.get(p.name, {}).get("s", (0, 0))),
                     "doubles": "{}-{}".format(*lines.get(p.name, {}).get("d", (0, 0))),
                     "honors": honor_pids.get(p.pid, []),
+                    # What injury did to this player's season, if anything — the
+                    # chip that explains a short record. See `injury_pids` above.
+                    "injury": injury_pids.get(p.pid),
+                    # Wore the C this season. From the naming point on, a captain
+                    # dresses (`jhsaa._seat_captains`), so this also explains a
+                    # lineup that the ladder alone does not.
+                    "captain": p.pid in captain_pids,
                     # A recorded family tie, for the roster chip. `fam_map` is
                     # resolved ONCE above, never per player — `families()` reads an
                     # override fingerprint, which is a SQLite round trip.
