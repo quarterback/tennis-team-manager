@@ -2486,9 +2486,44 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     ARRANGERS (`doubles_rating` / `partner_chemistry` / `_established_units` /
     `_sibling_units`). CROSS-SEASON pair continuity is the real gap there and is its
     own change (it needs `pair_counts` seeded from last season, reversing that field's
-    "season-scoped by construction" note). **LEADERSHIP/captaincy** likewise: a captain
-    is SELECTED through this layer and should be worth a small team-level composure
-    effect, never an OVR boost — an engine change, not built.
+    "season-scoped by construction" note).
+  - **‼️ CAPTAINS — 1 to 3, and they change NOTHING about any player (owner rule
+    2026-09).** Named in `run_season` AFTER the individual state tournaments and
+    before the first league dual, so the ladder they come off carries real evidence.
+    Three seats: **the best player** almost always (the coin is only ever decisive for
+    an UNDERCLASSMAN — a senior No. 1 who loses it is named at seat 2 anyway); **the
+    best DOUBLES player**, on `net_rating` and with NO grade gate (it was "best
+    senior" and the owner corrected it — seat 1 is already No. 1 singles, and juniors
+    must not be excluded); and **the glue**, the longest-serving varsity player,
+    irrespective of ladder position or grade (‼️ no new attribute — `PriorSeason.years`
+    already IS that archetype). **HELD UNTIL GRADUATION** (`PROOF_CAPTAIN`; `want` is a
+    FLOOR of the returning count, never a cap), but **a TRANSFER does not carry it** —
+    the pid-keyed map follows a mover by design, which is right for his record and
+    wrong for a captaincy (`_uncaptain`, off the school stamped on read).
+    - **Worth a FLAT `CAPTAIN_VALUE` (1.5) off the coach's misread, per TEAM**, one
+      captain or three — the count is flavour, not arithmetic, which is also what stops
+      anyone naming three to farm it. Applied in `district_teams` BEFORE the pick (the
+      figure is flat, so it is not circular, and picking first let the ladder move
+      under the picks and drop a glue captain out of the dressing group).
+    - **‼️ CAPTAINS DRESS** (`_seat_captains`), regular season AND postseason. Not an
+      anti-stacking breach: the frozen order still decides the ORDER, this only
+      substitutes the dressing group as `_healthy` already does. The force is NOT a
+      safety net — a captain who slides down is still played and it costs the team,
+      which IS the incentive not to name someone who will not play. An injured captain
+      is never forced on (holds by construction: `_healthy` runs first).
+    - **‼️ PRESENCE + ABSORPTION.** `captain_presence` says how much each carries and
+      must be answerable with NO awards: ranked awards (POY > All-State > All-Region >
+      All-District, best only, never summed) + tenure + a winning record + a small
+      ladder term. `team_absorption` is the SUM, capped at 1.0 — three decorated
+      captains roll a whole slump off (owner's cap: 1-100%) — and covers the WHOLE
+      team. **‼️ IT SOFTENS ONLY THE DOWNSIDE of the form term; a winning run is never
+      inflated.** That asymmetry is what keeps it from being a team ability bonus in
+      disguise, and it is why this needed NO engine change and no calibration sweep.
+      Resolved ONCE beside the pick (`team_absorption` calls `_order`, which reads it).
+    - Archived on the standing row as `[pid, name]` PAIRS — the name deliberately, so
+      the Captains history panel never rebuilds forty rosters (the individual draws'
+      archived-grade rule). `C` chip on the roster ahead of the honours chips (a role,
+      not an award) + a Captains panel under History.
   - **The store is `world_jhsaa_standing`** — one row per program per season, only for
     players carrying proof. The ONLY per-player thing the JHSAA persists, because
     `world_jhsaa_dual.lines` archives NAMES not pids and folding ~10k duals per roster

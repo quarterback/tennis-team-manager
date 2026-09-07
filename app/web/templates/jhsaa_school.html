@@ -650,6 +650,38 @@
   </div>
 </div>
 
+{# ‼️ CAPTAINS ARE PART OF A PROGRAM'S HISTORY (owner rule 2026-09) — "so we can see
+   over time the program's history of captains". Its own panel under History rather
+   than a column on the ledger: the Seasons table answers "how did that year go" and
+   this answers "who led this team", which is a different question and would be a
+   fourth thing crammed into an already-wide nowrap row.
+
+   The names are read straight off the archive (they are stored beside the pids for
+   exactly this surface), so a forty-season history costs one indexed query and never
+   rebuilds a roster. #}
+<div class="bl-panel" style="margin-top:18px">
+  <div class="bl-panel-head">
+    <span class="bl-panel-title">Captains</span>
+    <span class="bl-panel-meta">named after the individual state tournaments, and held until they graduate</span></div>
+  <div class="tbl-scroll">
+    {% if view.captain_history %}
+    <table class="jh-ledger nowrap">
+      <tr><th style="width:80px">Season</th><th>Captains</th></tr>
+      {% for row in view.captain_history %}
+      <tr>
+        <td class="yr"><a href="{{ url_for('jhsaa_school', school=view.school, year=row.year, u=u, g=view.gender) }}">{{ row.season_year }}</a></td>
+        <td class="nm">{% for c in row.captains %}<span class="jh-chip cap">C</span>
+          {%- if c.pid %} <a href="{{ url_for('jhsaa_player', school=view.school, pid=c.pid, u=u, g=view.gender, year=row.year) }}">{{ c.name or c.pid }}</a>
+          {%- else %} {{ c.name }}{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}
+    <p class="jh-empty">No captains archived yet — they are recorded from the season the rule landed.</p>
+    {% endif %}
+  </div>
+</div>
+
 {% elif hq == 'honors' %}
 <!-- ============ HONORS: team trophies and player awards ============ -->
 {# `honoured`, not `honors`: a team title is drawn as a banner below and carries no

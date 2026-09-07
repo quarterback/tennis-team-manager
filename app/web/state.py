@@ -5544,7 +5544,8 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     # `jhsaa.pick_captains` reads the ladder as it stood after the individual state
     # tournaments, so recovering it here would mean replaying them on the request
     # thread. One query per page, same as the injuries below.
-    captain_pids = set(world.jhsaa_captains(w["id"], yr, g).get(sc.name) or ())
+    captain_pids = {c["pid"] for c in
+                    (world.jhsaa_captains(w["id"], yr, g).get(sc.name) or ())}
     injury_pids = {}
     for r in world.jhsaa_school_injuries(w["id"], yr, g, sc.name):
         e = injury_pids.setdefault(r["pid"], {"duals_out": 0, "season_ending": False,
@@ -5699,6 +5700,10 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         "honors": (season or {}).get("honors", []),
         "trophy_banner": trophy_banner,
         "history": hist,
+        # The program's captains, season by season (owner rule 2026-09) — a FOLD
+        # over the standing rows, never a second store, and it reads the names the
+        # archive already carries rather than rebuilding forty rosters.
+        "captain_history": world.jhsaa_captain_history(w["id"], g, sc.name),
         "career_wins": career_wins,
     }
 

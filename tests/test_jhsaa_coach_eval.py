@@ -25,18 +25,39 @@ import pytest
 from app import jhsaa as jh
 
 
-class _P:
-    """The four things the evaluation layer reads off a player, and a pid."""
+class _Eng:
+    """The `engine.doubles` fallback path's inputs — `net_rating` and friends use
+    these when a player carries no `rich` attribute dict, which is all this file
+    needs to make one stub a better doubles player than another."""
 
-    def __init__(self, pid, ovr, grade=12, strv=None):
+    rich = None
+
+    def __init__(self, net):
+        self.movement = self.forehand = self.mental = net
+        self.serve_power = self.serve_placement = net
+        self.return_game = self.consistency = net
+
+
+class _P:
+    """The things the evaluation layer reads off a player, and a pid.
+
+    `net` is the doubles aptitude the second captain's seat is chosen on; it
+    defaults to tracking ability so a test that does not care about doubles gets
+    the ordering it expects."""
+
+    def __init__(self, pid, ovr, grade=12, strv=None, net=None):
         self.pid, self._ovr, self.grade = pid, ovr, grade
         self._str = strv if strv is not None else ovr
+        self._net = ovr / 100.0 if net is None else net
 
     def current_overall(self):
         return self._ovr
 
     def str_value(self):
         return self._str
+
+    def engine_player(self):
+        return _Eng(self._net)
 
 
 def _proof(**kw):
@@ -299,8 +320,10 @@ def test_the_best_player_is_almost_always_a_captain():
                  if "p0" in jh.pick_captains(_team(senior), "cap", yr))
     assert always == 200
 
-    young = ([_P("kid", 90, grade=9)]
-             + [_P(f"p{i}", 70 - i, grade=12) for i in range(15)])
+    # ‼️ The young star must not ALSO be the best doubles player, or seat 2 would
+    # pick him up whatever the coin did and there would be nothing to measure.
+    young = ([_P("kid", 90, grade=9, net=0.1)]
+             + [_P(f"p{i}", 70 - i, grade=12, net=0.5) for i in range(15)])
     hit = sum(1 for yr in range(2000, 2400)
               if "kid" in jh.pick_captains(_team(young), "cap", yr))
     assert 0.80 < hit / 400 < 0.96
@@ -319,15 +342,26 @@ def test_every_captain_dresses_for_the_program():
         assert set(caps) <= top
 
 
-def test_the_second_seat_goes_to_a_senior_and_falls_to_a_junior_without_one():
-    """"The next best player or some other good senior/junior (on a team with no
-    seniors)"."""
-    sen = [_P("kid", 80, grade=9)] + [_P(f"s{i}", 70 - i, grade=12) for i in range(11)]
-    caps = jh.pick_captains(_team(sen), "cap", 2075)
-    assert caps[0] == "kid" and caps[1].startswith("s")
-    jun = [_P("kid", 80, grade=9)] + [_P(f"j{i}", 70 - i, grade=11) for i in range(11)]
-    caps = jh.pick_captains(_team(jun), "cap", 2075)
-    assert caps[1].startswith("j"), "a program with no seniors names its juniors"
+def test_the_second_seat_is_the_best_doubles_player_not_the_next_best_player():
+    """Owner rule 2026-09: "seat 1 will almost always be No. 1 singles", so the
+    second seat is the other half of the team. `dbl` here is a weak singles player
+    with the best hands at the net — the ladder would never reach him."""
+    # `dbl` is mid-ladder — comfortably inside the dressing group, nowhere near
+    # second on it — but has the best hands at the net on the team.
+    roster = [_P(f"p{i}", 70 - i, grade=12, net=0.5) for i in range(11)]
+    roster.append(_P("dbl", 64, grade=11, net=9.0))
+    caps = jh.pick_captains(_team(roster), "cap", 2075)
+    assert caps[0] == "p0", "the best player still takes seat 1"
+    assert caps[1] == "dbl", "seat 2 is the best doubles player, not p1"
+
+
+def test_the_second_seat_has_no_grade_gate():
+    """It used to prefer seniors; the owner removed that — "I don't want to restrict
+    juniors from becoming captains, since teams benefit from having captains who have
+    been around a bit." Tenure is seat 3's job."""
+    roster = [_P(f"s{i}", 70 - i, grade=12, net=0.5) for i in range(11)]
+    roster.append(_P("jun", 64, grade=11, net=9.0))
+    assert "jun" in jh.pick_captains(_team(roster), "cap", 2075)[:2]
 
 
 def test_the_glue_seat_is_not_ability_ranked():
@@ -374,6 +408,113 @@ def test_an_injured_captain_is_not_forced_onto_court():
     order = jh._healthy(ts, jh._order(ts))
     need = jh.lineup_need("regular")
     assert not any(p.pid == "p9" for p in jh._seat_captains(ts, order[:need], order))
+
+
+def test_a_captain_keeps_the_c_until_he_graduates():
+    """Owner rule 2026-09: named as a tenth- or eleventh-grader, captain until he
+    leaves. He is re-seated FIRST and unconditionally — including from outside the
+    dressing group, since a captain dresses anyway."""
+    roster = [_P(f"p{i}", 70 - i, grade=12) for i in range(16)]
+    was = _proof(flags=jh.PROOF_CAPTAIN, school="Vale")
+    ts = _team(roster, prior={"p13": was})
+    for yr in range(2000, 2040):
+        assert "p13" in jh.pick_captains(ts, "cap", yr), "he does not re-earn it"
+
+
+def test_returning_captains_never_get_stripped_by_a_lean_year():
+    """`want` is a FLOOR of the returning count. Drawn first and applied to them, a
+    one-captain year would have had to take the C off somebody still enrolled."""
+    roster = [_P(f"p{i}", 70 - i, grade=12) for i in range(16)]
+    prior = {p: _proof(flags=jh.PROOF_CAPTAIN, school="Vale")
+             for p in ("p2", "p5", "p9")}
+    for yr in range(2000, 2040):
+        caps = jh.pick_captains(_team(roster, prior=prior), "cap", yr)
+        assert set(caps) == {"p2", "p5", "p9"}, "three return, so nobody new is named"
+
+
+def test_a_captain_who_transfers_has_to_earn_it_again():
+    """"If a captain transfers, they'd need to be re-selected by their new program."
+    The evidence map is keyed on pid so it follows a mover by design — right for his
+    RECORD, wrong for a captaincy, which is a thing one particular room gave him."""
+    was = _proof(flags=jh.PROOF_CAPTAIN, school="Vale")
+    assert jh._uncaptain(was, "Vale").has(jh.PROOF_CAPTAIN)
+    moved = jh._uncaptain(was, "Ride")
+    assert not moved.has(jh.PROOF_CAPTAIN)
+    assert moved.apps == was.apps and moved.years == was.years, \
+        "everything else about the season he played comes with him"
+    # A row archived before the school was stamped is left alone: silently
+    # un-captaining every returning captain in an older save is the worse answer.
+    legacy = jh.PriorSeason(flags=jh.PROOF_CAPTAIN)
+    assert jh._uncaptain(legacy, "Ride").has(jh.PROOF_CAPTAIN)
+
+
+# --- presence, and what it absorbs --------------------------------------------
+
+def test_an_ordinary_captain_earns_presence_without_any_award():
+    """The question the three seats never answered. Tenure and a winning record are
+    worth real weight, so the three-year glue captain the team actually trusts is
+    not worth nothing next to a decorated one."""
+    poy = _proof(flags=jh.PROOF_HONORED | jh.PROOF_POY, years=3)
+    district = _proof(flags=jh.PROOF_HONORED | jh.PROOF_ALL_DISTRICT, years=1)
+    glue = _proof(apps=20, wins=8, losses=12, flags=0, years=3)
+    rookie = _proof(apps=14, wins=7, losses=7, flags=0, years=1)
+    p = [jh.captain_presence(st) for st in (poy, district, glue, rookie)]
+    assert p[0] > p[1] > p[2] > p[3] > 0.0, "everyone carries something; the order holds"
+    assert p[2] > 0.5 * p[1], "a three-year glue captain is not a rounding error"
+
+
+def test_awards_are_ranked_and_never_summed():
+    """"Decorated" is not one thing — a Player of the Year and an All-District pick
+    do not command the same room. And a player holding two takes the better, not
+    both."""
+    poy = jh.captain_presence(_proof(flags=jh.PROOF_HONORED | jh.PROOF_POY))
+    state = jh.captain_presence(_proof(flags=jh.PROOF_HONORED | jh.PROOF_ALL_STATE))
+    dist = jh.captain_presence(_proof(flags=jh.PROOF_HONORED | jh.PROOF_ALL_DISTRICT))
+    assert poy > state > dist
+    both = jh.captain_presence(_proof(
+        flags=jh.PROOF_HONORED | jh.PROOF_POY | jh.PROOF_ALL_DISTRICT))
+    assert both == poy
+
+
+def test_three_decorated_captains_can_roll_a_whole_slump_off():
+    """Owner rule: the cap is 1-100% — "if you have 3 decorated captains they could
+    roll all of a slump off"."""
+    roster = [_P(f"p{i}", 70 - i, grade=12) for i in range(11)]
+    decorated = _proof(flags=jh.PROOF_HONORED | jh.PROOF_POY, years=3)
+    ts = _team(roster, prior={p: decorated for p in ("p0", "p1", "p2")})
+    ts.captains = ["p0", "p1", "p2"]
+    assert jh.team_absorption(ts) == pytest.approx(1.0)
+    lean = _team(roster, prior={"p0": _proof(flags=0, years=1)})
+    lean.captains = ["p0"]
+    assert 0.0 < jh.team_absorption(lean) < 0.35
+
+
+def test_absorption_softens_a_slump_and_never_inflates_a_hot_streak():
+    """‼️ THE ASYMMETRY IS THE WHOLE THING. Leadership is a return to the mean, not
+    a lift above it — which is what keeps this from being a team-wide ability bonus
+    in disguise. And it never reaches the match engine: it changes where the coach
+    RANKS a slumping player, so a well-led team stops benching people over a bad
+    fortnight. Nobody plays any better."""
+    p = _P("a", 50)
+    slump, hot = [4, 20], [20, 4]
+    assert jh.coach_eval(p, slump) < 50.0 < jh.coach_eval(p, hot)
+    assert jh.coach_eval(p, slump, absorb=1.0) == pytest.approx(50.0)
+    assert jh.coach_eval(p, hot, absorb=1.0) == jh.coach_eval(p, hot)
+    half = jh.coach_eval(p, slump, absorb=0.5)
+    assert jh.coach_eval(p, slump) < half < 50.0
+
+
+def test_a_captain_with_no_proof_is_still_stored():
+    """`PROOF_CAPTAIN` is what carries the C across the boundary, so dropping a
+    tier-0 captain from the standing would quietly strip the captaincy off exactly
+    the glue player the third seat exists for."""
+    roster = [_P("a", 50)]
+    ts = _team(roster)
+    ts.captains = ["a"]
+    ts.matches["a"] = [("S1", False, "regular", (), "", "")] * 2   # tier 0
+    rows = jh.team_standing(ts, {}, None)
+    assert "a" in rows and rows["a"].has(jh.PROOF_CAPTAIN)
+    assert jh.proof_tier(rows["a"]) == 0, "kept for the C, not for his record"
 
 
 def test_captaincy_sharpens_the_coachs_read_and_nothing_else():

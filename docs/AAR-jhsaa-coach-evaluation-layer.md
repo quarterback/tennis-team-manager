@@ -216,9 +216,106 @@ from last season, which reverses `TeamSeason.pair_counts`'s documented
 "season-scoped by construction" note — so it is its own change, kept separate so this
 one can be measured cleanly.
 
-**Leadership / captaincy** — a captain should be *selected* through this layer and
-then be worth a small team-level composure effect in close duals, never an OVR boost.
-That is an engine change. Not built; noted at the constants.
+**Leadership / captaincy** — built, and it turned out to need no engine change at
+all. See the next section.
+
+## Captains (owner rule 2026-09)
+
+A program names **1 to 3**. They change nothing about any player.
+
+### Who, and how an ordinary one earns it
+
+Three seats, in the owner's own terms:
+
+1. **The best player, almost always.** ‼️ The coin turns out to be decisive only for
+   an *underclassman*: a senior No. 1 who loses it is still the best remaining
+   candidate for seat 2 and gets named anyway. So a senior No. 1 is captain
+   essentially always and a ninth-grade No. 1 at the coin's rate. That fell out of
+   the two rules rather than being designed, and it is the right shape — the
+   exception the rule leaves room for is a young star who does not lead the room.
+2. **The best DOUBLES player**, no grade gate. This started as "the best senior" and
+   the owner corrected it twice: seat 1 is almost always No. 1 singles, so seat 2
+   should be the other half of the team; and juniors must not be excluded, because
+   "teams benefit from having captains who have been around a bit". Judged on
+   `net_rating` — the engine's own "engine of doubles" — never on ladder position,
+   which is a singles ordering and would just re-pick No. 2. Measured over 38
+   programs it lands at ladder rank 2 most of the time but reaches to 5, which is
+   the evidence it is doing something a ladder read would not.
+3. **The glue** — the longest-serving varsity player not already named, drawn from
+   the whole dressing group irrespective of ladder position or grade. ‼️ **No new
+   attribute was needed**: work ethic is not modelled and does not have to be,
+   because `PriorSeason.years` already counts consecutive seasons of standing and
+   the longest-serving player who is not a star *is* that archetype. Measured, the
+   seat lands anywhere from #1 to #11.
+
+**Held until graduation** (`PROOF_CAPTAIN`). A captain named as a tenth-grader is
+captain for three years; returning captains are re-seated first and unconditionally,
+and `want` is a floor of their count rather than a cap on it — drawn first and
+applied to them, a one-captain year would have had to strip the C off somebody still
+enrolled. **A transfer does not carry it**: the evidence map is keyed on pid so it
+follows a mover by design, which is right for his record and wrong for a captaincy,
+which is a thing one particular room gave him.
+
+### What it is worth
+
+**A flat 1.5 OVR off the coach's misread, per team**, one captain or three — the
+count is flavour, not arithmetic, which is also what stops anyone naming three to
+farm a bonus. It bites hardest where the coach is worst: against the 0–2.5
+`COACH_READ` band a 1.5 takes the weakest coach to 1.0 and a good one to zero.
+
+**Captains dress**, from the naming point on, regular season and postseason alike. It
+does not breach anti-stacking — the frozen Order of Ability still decides the
+*order*, which is what that rule governs; this substitutes who is in the dressing
+group, exactly as the injury filter already does. ‼️ The force is deliberately **not**
+a safety net: a glue captain who slides down the ladder is still played and it costs
+the team. That is the incentive the owner wanted — "it creates an incentive by the
+coach NOT to pick kids who won't play" — and it exists only because the force is
+real. An injured captain is not forced back on, which holds by construction because
+`_healthy` has already dropped him.
+
+### Presence, and what it absorbs
+
+The three seats say *who*; **presence** says how much each carries, and it had to be
+answerable for a captain with no awards — most of them. Earned four ways, all of them
+things already recorded: **awards** (ranked — POY, All-State, All-Region,
+All-District, best only, never summed), **tenure**, **a winning record**, and a small
+term for topping the ladder.
+
+Measured: a three-year Player of the Year is at the ceiling (0.34), an All-District
+pick in his first year 0.17, a three-year glue captain with a *losing* record 0.135,
+a first-year captain 0.045. That middle number is the one that matters — the player
+the team actually trusts is not worth a rounding error next to a decorated one.
+
+**What it does** is the owner's own rule: *"if you roll a negative form, a decorated
+captain can absorb a % of that."* A player's standing already moves with their
+record; a team with strong captains **slides less**. The team's absorption is the
+**sum** of its captains' presence, capped at 100% — so three decorated captains can
+roll a whole slump off, which is the incentive for multiples — and it covers the
+**entire team**, "which is why they're captains".
+
+‼️ **THE ASYMMETRY IS THE WHOLE THING.** Only the downside is softened; a winning run
+is never inflated. That is what keeps this from being a team-wide ability bonus
+wearing a different hat, and it is why it needed no engine change and no calibration
+sweep: it changes where the coach *ranks* a slumping player, so a well-led team stops
+benching people over a bad fortnight. Nobody plays any better.
+
+‼️ **AND I HAD THE SIGN WRONG FIRST.** I proposed reduced match volatility and warned
+it would hurt underdogs, because suppressing variance also suppresses the upsets a
+weak team needs. The owner's version inverts that — good players *elevate* their
+teams — and softening a slump helps whoever is slumping, which a weak team does more
+of. The objection was to my mechanic, not to the idea, and I should have looked for
+the version that helped rather than reported the one that hurt.
+
+### Archived
+
+Captains ride on the standing row as `[pid, name]` pairs. ‼️ **The name is stored on
+purpose**: the program's Captains history walks every archived season, so deriving it
+would mean rebuilding forty rosters on a page load — the same call the individual
+draws already make in storing a player's grade with the entry. A `C` chip on the
+roster, ahead of the honours chips because a captaincy is a role rather than an
+award, and a **Captains panel under History** listing every season's, which is what
+the owner asked the archive for. Rows written before any of this read back as the
+bare shapes they were, never migrated.
 
 ## The store
 

@@ -56,7 +56,7 @@ import random
 import uuid
 import re
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace as _dc_replace
 
 log = logging.getLogger(__name__)
 
@@ -1792,6 +1792,11 @@ class TeamSeason:
     # coach misjudges his own roster less (`captain_mitigation`). Empty is a real
     # answer — a program with no varsity to speak of names nobody.
     captains: list = field(default_factory=list)
+    # The share of a BAD patch those captains absorb, 0..1 (`team_absorption`).
+    # Cached on the team because `_order` reads it on every dual and computing it
+    # calls `_order` itself — resolved once when the captains are named, never in
+    # the sort. Zero until then, and zero forever for a program with no captains.
+    absorb: float = 0.0
 
     @property
     def record(self) -> str:
@@ -4360,7 +4365,23 @@ PROOF_FLOOR = 0.35          # the residual a proven player keeps all season
 #: `PriorSeason` flags — what a player did last season beyond turning up.
 PROOF_POSTSEASON = 1        # dressed in at least one postseason dual
 PROOF_INDIVIDUAL = 2        # entered an individual state draw
-PROOF_HONORED = 4           # named on any award team (All-State/Region/District/POY)
+PROOF_HONORED = 4           # named on ANY award team — the tier rule reads this one
+#: …and WHICH award, because a captain's presence is ranked by it (`captain_presence`)
+#: and "decorated" is not one thing: a Player of the Year and an All-District pick are
+#: both honoured and do not command the same room. Separate bits rather than a level
+#: number so `PROOF_HONORED` keeps meaning exactly what it always meant and every
+#: season archived before these existed still reads (they are simply absent).
+PROOF_POY = 8               # Player of the Year, state or district
+PROOF_ALL_STATE = 16
+PROOF_ALL_REGION = 32
+PROOF_ALL_DISTRICT = 64
+#: ‼️ WORE THE C LAST SEASON. Captaincy is held until graduation (owner rule
+#: 2026-09), so this is what carries it across a season boundary — the same store
+#: and the same read as everything else the coach remembers.
+PROOF_CAPTAIN = 128
+#: Best first — `captain_presence` takes the highest a player holds, never a sum.
+PROOF_AWARD_RANK = ((PROOF_POY, 1.00), (PROOF_ALL_STATE, 0.85),
+                    (PROOF_ALL_REGION, 0.65), (PROOF_ALL_DISTRICT, 0.45))
 
 
 @dataclass(frozen=True)
@@ -4414,6 +4435,12 @@ class PriorSeason:
     rank: int = 0             # where he finished on the ladder, 1-based
     flags: int = 0
     years: int = 1            # consecutive seasons of proof, this one included
+    #: Where he played it. ‼️ NOT STORED — the archive row is already keyed by
+    #: school, so `world.jhsaa_prior_standing` stamps this on READ and the stored
+    #: row stays six numbers. It exists for one question: a captain who TRANSFERS
+    #: does not carry the C to his new program (owner rule 2026-09), and the flat
+    #: pid-keyed map cannot answer "did he move?" without it.
+    school: str = ""
 
     @property
     def win_pct(self) -> float:
@@ -4427,12 +4454,26 @@ class PriorSeason:
         return [self.apps, self.wins, self.losses, self.rank, self.flags, self.years]
 
     @classmethod
-    def from_row(cls, row) -> "PriorSeason":
+    def from_row(cls, row, school: str = "") -> "PriorSeason":
         """A stored row back into evidence. Tolerant of a SHORT row on purpose: the
         shape may grow, and a season archived under an older one has to keep reading
-        — the section's own rule (derived on read, never migrated)."""
+        — the section's own rule (derived on read, never migrated).
+
+        `school` is stamped by the reader from the row's own key; it is deliberately
+        not part of the stored six."""
         vals = list(row or ())[:6] + [0, 0, 0, 0, 0, 1][len(row or ()):]
-        return cls(*(int(v) for v in vals))
+        return cls(*(int(v) for v in vals), school=school)
+
+
+def _uncaptain(st: PriorSeason, school: str) -> PriorSeason:
+    """`st` as this program sees it — the C stripped if he earned it somewhere else.
+
+    A season stamped with no school at all (one archived before `PriorSeason` carried
+    it) is left alone: silently un-captaining every returning captain in an older
+    save would be worse than the rare mover who keeps a C he should have re-earned."""
+    if not st.school or st.school == school or not st.has(PROOF_CAPTAIN):
+        return st
+    return _dc_replace(st, flags=st.flags & ~PROOF_CAPTAIN)
 
 
 def proof_tier(st: PriorSeason | None) -> int:
@@ -4500,7 +4541,8 @@ def varsity_proof(p, st: PriorSeason | None, lens: CoachLens,
 
 def coach_eval(p, record: list[int] | None = None, *,
                prior: PriorSeason | None = None,
-               lens: CoachLens | None = None, read: float = 0.0) -> float:
+               lens: CoachLens | None = None, read: float = 0.0,
+               absorb: float = 0.0) -> float:
     """What the COACH thinks `p` is worth to his lineup — NOT what `p` is worth on
     a tennis court. `_order` sorts on this and the match engine never sees it.
 
@@ -4525,7 +4567,18 @@ def coach_eval(p, record: list[int] | None = None, *,
     out += varsity_proof(p, prior, ln, n)
     # RECENT FORM — this season's record, weighted by how much he chases it.
     if n:
-        out += ln.form * LADDER_SWING * (w / n - 0.5) * n / (n + LADDER_PRIOR)
+        form = ln.form * LADDER_SWING * (w / n - 0.5) * n / (n + LADDER_PRIOR)
+        # ‼️ CAPTAINS ABSORB A BAD PATCH, AND ONLY A BAD ONE (owner rule 2026-09):
+        # "if you roll a negative form, a decorated captain can absorb a % of that."
+        # Applied to the DOWNSIDE alone — a winning run is never inflated by
+        # leadership — which is the whole reason this is not a team ability bonus
+        # in disguise. It is a return to the mean, not a lift above it, and with
+        # three decorated captains it can roll a slump off entirely.
+        #
+        # It also never reaches the match engine: this changes where the coach
+        # ranks a slumping player, so a well-led team stops benching people over a
+        # bad fortnight. Nobody plays any better.
+        out += form * (1.0 - absorb) if form < 0.0 else form
     return out
 
 
@@ -4533,11 +4586,11 @@ def _order(ts: TeamSeason) -> list:
     """The ladder as the COACH reads it — his evaluation of who is useful to him,
     not a ranking of talent. Ties break on STR, which is ability, because two
     players he values identically are separated by the thing he cannot see."""
-    prior, lens, read = ts.prior, ts.lens, ts.read
+    prior, lens, read, ab = ts.prior, ts.lens, ts.read, ts.absorb
     return sorted(ts.roster,
                   key=lambda p: (-coach_eval(p, ts.records.get(p.pid),
                                              prior=prior.get(p.pid), lens=lens,
-                                             read=read.get(p.pid, 0.0)),
+                                             read=read.get(p.pid, 0.0), absorb=ab),
                                  -p.str_value()))
 
 
@@ -4612,17 +4665,34 @@ def pick_captains(ts: TeamSeason, salt: str = "", year: int = 0) -> list:
          — so the second captain is an upperclassman wherever the roster has one.
       3. THE GLUE — see `_glue_key`. Drawn from the WHOLE varsity irrespective of
          ladder position or grade, which is the point of the seat.
+
+    ‼️ A CAPTAIN KEEPS THE C UNTIL HE GRADUATES (owner rule 2026-09). Anyone who
+    wore it last season and is still enrolled is re-seated FIRST and unconditionally
+    — including from outside the dressing group, because captaincy is not re-earned
+    every autumn and a captain dresses anyway. Named as a tenth-grader, captain for
+    three years. Returning captains can therefore fill every seat, in which case the
+    program names nobody new that year.
     """
     order = _order(ts)
     if not order:
         return []
     # "They're always on varsity — it doesn't work otherwise." A captain who does not
-    # dress is not a captain, so every seat is filled from the dressing group.
+    # dress is not a captain, so every NEW seat is filled from the dressing group.
     varsity = order[:lineup_need("regular")] or order
     rng = random.Random(f"{salt}|jhsaa-captains|{ts.school.key}|{year}")
-    want = min(_captain_count(rng), CAPTAINS_MAX, len(varsity))
     taken: set = set()
     picks: list = []
+
+    def held(p):
+        st = ts.prior.get(p.pid)
+        return st is not None and st.has(PROOF_CAPTAIN)
+
+    returning = [p for p in order if held(p)][:CAPTAINS_MAX]
+    # ‼️ `want` is a FLOOR of the returning count, never a cap on it. Drawn first and
+    # applied to returning captains, a two-captain year would have had to strip the C
+    # off somebody who had not graduated.
+    want = min(_captain_count(rng), CAPTAINS_MAX, max(1, len(varsity)))
+    want = max(want, len(returning))
 
     def take(p):
         # ‼️ MEMBERSHIP BY PID, NEVER `p in picks`. `Prospect` is a dataclass, so `in`
@@ -4633,20 +4703,34 @@ def pick_captains(ts: TeamSeason, salt: str = "", year: int = 0) -> list:
             taken.add(p.pid)
             picks.append(p)
 
+    for p in returning:                          # held until graduation
+        take(p)
     if rng.random() < CAPTAIN_BEST_CHANCE:
         take(order[0])
 
-    def upperclass():
-        """The best remaining SENIOR, or the best junior on a program with no
-        senior on varsity — the owner's "some other good senior/junior (on a team
-        with no seniors)". Falls through to anyone if the program has neither."""
-        for grades in ((12,), (11,)):
-            pool = [p for p in varsity
-                    if p.pid not in taken and getattr(p, "grade", 0) in grades]
-            if pool:
-                return pool[0]
-        rest = [p for p in varsity if p.pid not in taken]
-        return rest[0] if rest else None
+    def best_doubles():
+        """The best DOUBLES player still unnamed (owner rule 2026-09), not the best
+        senior — "seat 1 will almost always be No. 1 singles", so the second seat is
+        the other half of the team rather than a second singles player.
+
+        ‼️ NO GRADE GATE. It used to prefer seniors and fall to juniors; the owner
+        removed that — "I don't want to restrict juniors from becoming captains,
+        since teams benefit from having captains who have been around a bit."
+        Tenure is seat 3's job, and a returning captain is re-seated above all of
+        this anyway.
+
+        Judged on `net_rating` — volleys, reflexes, positioning, which the engine's
+        own docstring calls "the engine of doubles" — rather than on ladder
+        position, which is a singles ordering and would just re-pick No. 2."""
+        from engine.doubles import net_rating, serve_rating, return_rating
+        pool = [p for p in varsity if p.pid not in taken]
+        if not pool:
+            return None
+
+        def dbl(p):
+            e = p.engine_player()
+            return 0.60 * net_rating(e) + 0.25 * serve_rating(e) + 0.15 * return_rating(e)
+        return max(pool, key=dbl)
 
     while len(picks) < want:
         before = len(picks)
@@ -4655,10 +4739,100 @@ def pick_captains(ts: TeamSeason, salt: str = "", year: int = 0) -> list:
             take(min(pool, key=lambda p: _glue_key(p, ts.prior, salt))
                  if pool else None)
         else:
-            take(upperclass())
+            take(best_doubles())
         if len(picks) == before:                 # nobody left to name
             break
     return [p.pid for p in picks]
+
+
+def _award_flags(honors) -> int:
+    """`honors_for`'s strings into award bits.
+
+    ‼️ IT READS THE STRINGS `honors_for` ALREADY BUILDS rather than re-walking the
+    award slate. That function is the ONE place that knows a doubles row honours two
+    athletes (`row_pids`), and a second walk here would be a second chance to get
+    that wrong — the exact fault the awards module documents. `PROOF_HONORED` is set
+    for anything at all, so every rule written against it is untouched by the tiers."""
+    out = 0
+    for h in honors or ():
+        out |= PROOF_HONORED
+        if "Player of the Year" in h:
+            out |= PROOF_POY
+        elif h.startswith("All-State"):
+            out |= PROOF_ALL_STATE
+        elif h.startswith("All-Region"):
+            out |= PROOF_ALL_REGION
+        elif h.startswith("All-District"):
+            out |= PROOF_ALL_DISTRICT
+    return out
+
+
+# --- CAPTAIN PRESENCE and what it absorbs (owner rule 2026-09) ----------------
+#
+# ‼️ WHAT A CAPTAIN IS WORTH TO A TEAM, AND HOW AN ORDINARY ONE EARNS IT. The three
+# seats say WHO is a captain; this says HOW MUCH each of them carries, and it has to
+# be answerable for a captain with no awards at all — most of them.
+#
+# A captain earns presence four ways, all of them things they already did:
+#   AWARDS      the largest single term, and RANKED — Player of the Year, All-State,
+#               All-Region, All-District. "Decorated" is not one thing.
+#   TENURE      years on varsity. This is what lets a three-year glue captain with
+#               no awards carry real weight, which is the point of that seat: the
+#               player the team actually trusts is often not the decorated one.
+#   RECORD      a winning season last year, modestly.
+#   LADDER      being at the top of it, slightly. Deliberately the smallest term —
+#               seat 1 is already the best player, and presence is not a second
+#               ability rating.
+#
+# ‼️ THREE DECORATED CAPTAINS CAN ABSORB A WHOLE SLUMP (owner rule): the cap is
+# 1-100%, so `PRESENCE_MAX` is a third and the team's absorption is the SUM. That is
+# the incentive for naming multiples, and it is why presence is not normalised per
+# captain — one decorated captain is a third of the way there, not the whole way.
+PRESENCE_MAX = 0.34         # one captain's ceiling; three decorated ones ≈ 100%
+PRESENCE_AWARD = 0.17       # × the award's own rank (`PROOF_AWARD_RANK`)
+PRESENCE_YEAR = 0.045       # per season of varsity standing, to `PRESENCE_YEARS_CAP`
+PRESENCE_YEARS_CAP = 3
+PRESENCE_RECORD = 0.05      # a winning season last year
+PRESENCE_LADDER = 0.035     # being No. 1 on the ladder
+ABSORB_MAX = 1.0            # "they could roll all of a slump off"
+
+
+def captain_presence(st: PriorSeason | None, rank: int = 0) -> float:
+    """How much room one captain commands, 0..`PRESENCE_MAX`.
+
+    A first-year captain with nothing behind him is near zero — real, but barely.
+    A three-year glue captain with no award sits in the middle. A Player of the Year
+    who has been there three years is at the ceiling."""
+    out = 0.0
+    if st is not None:
+        for bit, weight in PROOF_AWARD_RANK:
+            if st.has(bit):
+                out += PRESENCE_AWARD * weight
+                break                      # the BEST award, never a sum of them
+        out += PRESENCE_YEAR * min(st.years, PRESENCE_YEARS_CAP)
+        if st.win_pct > 0.500:
+            out += PRESENCE_RECORD
+    if rank == 1:
+        out += PRESENCE_LADDER
+    return min(PRESENCE_MAX, out)
+
+
+def team_absorption(ts: TeamSeason) -> float:
+    """The share of a BAD patch this team's captains soak up, 0..`ABSORB_MAX`.
+
+    ‼️ IT IS THE SUM ACROSS CAPTAINS AND IT COVERS THE WHOLE TEAM (owner rule):
+    "it covers the entire team, which is why they're captains — and yeah they
+    benefit, but it's not about them specifically." A captain steadies the room,
+    not himself.
+
+    ‼️ AND IT ONLY EVER TOUCHES THE DOWNSIDE — see `coach_eval`. Winning is never
+    inflated by leadership; a slump is just survived better. That asymmetry is what
+    keeps this from being a team-wide ability bonus wearing a different hat."""
+    if not ts.captains:
+        return 0.0
+    rank = {p.pid: i + 1 for i, p in enumerate(_order(ts))}
+    return min(ABSORB_MAX, sum(captain_presence(ts.prior.get(pid), rank.get(pid, 0))
+                               for pid in ts.captains))
 
 
 def is_captain(ts: TeamSeason, pid: str) -> bool:
@@ -4732,8 +4906,10 @@ def team_standing(ts: TeamSeason, awards: dict, prior: dict | None = None) -> di
             flags |= PROOF_POSTSEASON
         if any(m[2] == _INDIV_PHASE for m in log):
             flags |= PROOF_INDIVIDUAL
-        if honors_for(p.pid, awards, ts.school.group):
-            flags |= PROOF_HONORED
+        flags |= _award_flags(honors_for(p.pid, awards, ts.school.group))
+        # Captaincy is held until graduation, so it has to survive the boundary.
+        if is_captain(ts, p.pid):
+            flags |= PROOF_CAPTAIN
         was = pr.get(p.pid)
         st = PriorSeason(apps=len(duals), wins=wins, losses=len(duals) - wins,
                            rank=rank.get(p.pid, 0), flags=flags,
@@ -4741,7 +4917,12 @@ def team_standing(ts: TeamSeason, awards: dict, prior: dict | None = None) -> di
                            # rather than stored as a history, which is what lets
                            # "two strong years" be a tier without a second table.
                            years=(was.years + 1 if was is not None else 1))
-        if proof_tier(st):
+        # ‼️ A CAPTAIN IS KEPT WHATEVER HIS TIER. The rule below is "a row worth
+        # nothing is a row nobody needs", and a captain's row is never worth nothing
+        # even when he has no proof at all: `PROOF_CAPTAIN` is what carries the C to
+        # next season, so dropping a tier-0 captain would quietly strip the
+        # captaincy off exactly the glue player the third seat exists for.
+        if proof_tier(st) or st.has(PROOF_CAPTAIN):
             out[p.pid] = st
     return out
 
@@ -4783,8 +4964,17 @@ def season_standing(season: dict, prior: dict | None = None) -> dict:
         # A row written before captains existed is the bare player map, and
         # `world.jhsaa_prior_standing` reads that shape too — derived on read, never
         # migrated, the section's own idiom.
-        out[name] = {"players": {pid: st.to_row() for pid, st in rows.items()},
-                     "captains": list(ts.captains or ())}
+        # ‼️ CAPTAINS ARE ARCHIVED AS (pid, NAME) PAIRS. The name is redundant with
+        # the pid only if you are willing to rebuild the roster to recover it — and
+        # the program's Captains history walks every archived season, so that would
+        # mean rebuilding forty rosters on a page load. It is the same call the
+        # individual draws already make in storing a player's GRADE with the entry:
+        # a property of that season, cheaper to write down than to reconstruct.
+        by_pid = {p.pid: p for p in ts.roster}
+        out[name] = {
+            "players": {pid: st.to_row() for pid, st in rows.items()},
+            "captains": [[pid, by_pid[pid].name] for pid in (ts.captains or ())
+                         if pid in by_pid]}
     return out
 
 
@@ -5949,7 +6139,14 @@ def district_teams(schools: list[School], year: int, salt: str = "",
             # Only this roster's own evidence — `_order` looks up by pid so a
             # gender-wide dict would work, but a team should carry its own memory
             # and nothing else's.
-            prior={p.pid: pr[p.pid] for p in roster if p.pid in pr},
+            # ‼️ A TRANSFER DOES NOT CARRY THE C (owner rule 2026-09): "if a captain
+            # transfers, they'd need to be re-selected by their new program." The
+            # map is keyed on pid so it follows a mover by design — which is right
+            # for his RECORD and wrong for his captaincy, since leadership is a
+            # thing a particular room gave him. Everything else about the season he
+            # played comes with him.
+            prior={p.pid: _uncaptain(pr[p.pid], s.name)
+                   for p in roster if p.pid in pr},
             read={p.pid: coach_read(p.pid, s.name, year, lens, salt)
                   for p in roster} if lens.read > 0.0 else {})
         # CAPTAINS (owner rule 2026-09), and the misread mitigation they buy.
@@ -9324,6 +9521,11 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
         for teams_in in by_group[group].values():
             for t in teams_in:
                 t.captains = pick_captains(t, salt, year)
+                # …and what they absorb, resolved ONCE here. `team_absorption`
+                # calls `_order` itself, and `_order` reads this — computing it in
+                # the sort would recurse; computing it per dual would pay for the
+                # whole ladder twice on every match of the season.
+                t.absorb = team_absorption(t)
     every_team, power = play_regular_season(by_group, year, gender, salt)
     # THE JV SEASON, played here and nowhere else. It runs BEFORE the postseason
     # because that is where it sits on the calendar (April-May against the varsity

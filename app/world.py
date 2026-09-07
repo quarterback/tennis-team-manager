@@ -3765,15 +3765,19 @@ def jhsaa_prior_standing(world_id: int, year: int, gender: str) -> dict:
     conn = _db()
     try:
         rows = conn.execute(
-            "SELECT data FROM world_jhsaa_standing"
+            "SELECT school, data FROM world_jhsaa_standing"
             " WHERE world_id=? AND year=? AND gender=?",
             (world_id, year, gender)).fetchall()
     finally:
         conn.close()
     out = {}
-    for (data,) in rows:
-        out.update({pid: jhsaa.PriorSeason.from_row(row)
-                    for pid, row in _standing_players(json.loads(data)).items()})
+    for r in rows:
+        # ‼️ THE SCHOOL IS STAMPED HERE, NOT STORED. The row is already keyed by it,
+        # so writing it into every player's record would be ~150 KB a season of a
+        # string the query result already carries. `jhsaa._uncaptain` needs it to
+        # answer "did he move?" once this flat map has lost the row boundaries.
+        out.update({pid: jhsaa.PriorSeason.from_row(row, school=r["school"])
+                    for pid, row in _standing_players(json.loads(r["data"])).items()})
     return out
 
 
@@ -3807,10 +3811,51 @@ def jhsaa_captains(world_id: int, year: int, gender: str) -> dict:
         conn.close()
     out = {}
     for r in rows:
-        data = json.loads(r["data"])
-        caps = data.get("captains") if isinstance(data, dict) else None
+        caps = _standing_captains(json.loads(r["data"]))
         if caps:
-            out[r["school"]] = list(caps)
+            out[r["school"]] = caps
+    return out
+
+
+def _standing_captains(data) -> list:
+    """`[{pid, name}, ...]` out of a stored standing row.
+
+    ‼️ TWO SHAPES AGAIN. The first rows written stored bare pids; since then they
+    store `[pid, name]` pairs, so the program's captain history never has to rebuild
+    a decade of rosters to print a name. A bare-pid row reads back with an empty
+    name rather than being dropped — the season still knows WHO was captain, and a
+    page that shows nothing at all would be the worse answer."""
+    if not isinstance(data, dict):
+        return []
+    out = []
+    for c in data.get("captains") or ():
+        if isinstance(c, (list, tuple)):
+            out.append({"pid": c[0], "name": c[1] if len(c) > 1 else ""})
+        else:
+            out.append({"pid": c, "name": ""})
+    return out
+
+
+def jhsaa_captain_history(world_id: int, gender: str, school: str) -> list[dict]:
+    """Every archived season's captains for one program, newest first.
+
+    A FOLD over the standing rows, not a second store — the same rule
+    `jhsaa_school_history` follows. One indexed read of that program's own rows."""
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT year, data FROM world_jhsaa_standing"
+            " WHERE world_id=? AND gender=? AND school=? ORDER BY year DESC",
+            (world_id, gender, school)).fetchall()
+    finally:
+        conn.close()
+    out = []
+    for r in rows:
+        caps = _standing_captains(json.loads(r["data"]))
+        if caps:
+            out.append({"year": r["year"],
+                        "season_year": BASE_YEAR + r["year"] + 1,
+                        "captains": caps})
     return out
 
 
