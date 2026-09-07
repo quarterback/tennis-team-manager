@@ -66,18 +66,22 @@ def test_a_cohort_that_predates_the_era_keeps_its_names(monkeypatch):
     from it — and `world_jhsaa_dual.lines` archives NAMES, which
     `_jh_line_records` keys off. `intl_era` is the `name_era` idiom, for exactly
     the same reason."""
-    school = jh.load_schools("boys")[0]
-    monkeypatch.setattr(jh, "intl_era", lambda: 50)
-    old = {p.pid: p.name for p in jh.build_roster(school, 10, "")}
-    monkeypatch.setattr(jh, "intl_era", lambda: 0)
-    new = {p.pid: p.name for p in jh.build_roster(school, 10, "")}
-    assert old != new, "the era gate is doing nothing"
+    # ‼️ SCAN, never `load_schools()[0]`. Only the ~5% of seats that draw the
+    # international slice can differ between the mixes, so one arbitrary school
+    # usually shows no change at all — and which school sorts first moves with
+    # any rename. The first version of this test passed on luck and broke the
+    # day three schools were renamed.
+    schools = jh.load_schools("boys")[:60]
+
+    def names(era, year):
+        monkeypatch.setattr(jh, "intl_era", lambda: era)
+        return [{p.pid: p.name for p in jh.build_roster(s, year, "")}
+                for s in schools]
+
+    # A cohort BEFORE the era keeps the retired mix; after it, the broad one.
+    assert names(50, 10) != names(0, 10), "the era gate is doing nothing"
     # …and a cohort on the far side of either era is identical both ways.
-    monkeypatch.setattr(jh, "intl_era", lambda: 50)
-    a = {p.pid: p.name for p in jh.build_roster(school, 60, "")}
-    monkeypatch.setattr(jh, "intl_era", lambda: 40)
-    b = {p.pid: p.name for p in jh.build_roster(school, 60, "")}
-    assert a == b
+    assert names(50, 60) == names(40, 60)
 
 
 def test_the_association_actually_draws_broadly_now():

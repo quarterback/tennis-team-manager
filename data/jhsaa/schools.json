@@ -27,27 +27,6 @@
       "boys_district": "Narpes Interscholastic League"
     },
     {
-      "name": "Ride",
-      "source": "Nadia Sidorov",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Selquah",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1151,
-      "private": false,
-      "mascot": "Chandlers",
-      "colors": [
-        "#14294e",
-        "#c8ccd4"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Mariners League",
-      "boys_district": "Mariners League",
-      "locality": "Roanoke"
-    },
-    {
       "name": "Adrian",
       "source": "Adrian High",
       "city": "Adrian",
@@ -128,26 +107,6 @@
       "source": "Winifred Booker"
     },
     {
-      "name": "Barkley",
-      "city": "Tunnel Diggings",
-      "county": "Goldbank",
-      "area": "Southern Jefferson",
-      "classification": "2A",
-      "group": "2A",
-      "enrollment": 354,
-      "private": false,
-      "mascot": "Green Falcons",
-      "colors": [
-        "#4b2e83",
-        "#b7a57a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Sluice League",
-      "boys_district": "Sluice League",
-      "source": "Alben Barkley"
-    },
-    {
       "name": "Aldecoa",
       "city": "Aldecoa",
       "county": "Vance",
@@ -205,6 +164,26 @@
       "girls_district": "Premier Athletic Association",
       "boys_district": "Premier Athletic Association",
       "source": "Boyerstown North"
+    },
+    {
+      "name": "Alderpoint",
+      "city": "Novak",
+      "county": "Tamarack",
+      "area": "Cascade Divide",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 446,
+      "private": false,
+      "mascot": "Northern Lights",
+      "colors": [
+        "#7f1d1d",
+        "#d4d4d8"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Juniper League",
+      "boys_district": "Juniper League",
+      "source": "Soren Ekström"
     },
     {
       "name": "Alderton",
@@ -504,24 +483,24 @@
       "locality": "Apalachicola"
     },
     {
-      "name": "Doyle",
-      "city": "Halbrook",
-      "county": "Halbrook",
-      "area": "Halbrook Basin",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1214,
+      "name": "Aranaz",
+      "city": "Echevarria",
+      "county": "Vance",
+      "area": "Silver Basin",
+      "classification": "Group 2",
+      "group": "Group 2",
+      "enrollment": 730,
       "private": false,
-      "mascot": "Bellringers",
+      "mascot": "Rattlers",
       "colors": [
-        "#0e7490",
-        "#fbbf24"
+        "#6d1a36",
+        "#9fb4c7"
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Cascade Divide League",
-      "boys_district": "Cascade Divide League",
-      "source": "Archbishop Doyle Prep"
+      "girls_district": "Dual County League",
+      "boys_district": "Dual County League",
+      "source": "St. Elias College Prep"
     },
     {
       "name": "Archbishop Gregory",
@@ -542,46 +521,6 @@
       "girls_district": "Del Rey Athletic Association",
       "boys_district": "Del Rey Athletic Association",
       "source": "Oksana Romanov"
-    },
-    {
-      "name": "Quaking Aspen",
-      "city": "Furrow Crossing",
-      "county": "Barlowe",
-      "area": "Boise Frontier",
-      "classification": "1A",
-      "group": "1A",
-      "enrollment": 153,
-      "private": false,
-      "mascot": "Warriors",
-      "colors": [
-        "#92400e",
-        "#1d1d1f"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Hacienda League",
-      "boys_district": "Hacienda League",
-      "source": "Archbishop Quinlan"
-    },
-    {
-      "name": "Verrettes",
-      "city": "Belyakov",
-      "county": "Vance",
-      "area": "Boise Frontier",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1043,
-      "private": false,
-      "mascot": "Knights",
-      "colors": [
-        "#8c1d40",
-        "#f0b323"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Cascade Divide League",
-      "boys_district": "Cascade Divide League",
-      "source": "Viktor Antonov"
     },
     {
       "name": "Arlington",
@@ -702,6 +641,26 @@
       "girls_district": "Mariners League",
       "boys_district": "Mariners League",
       "source": "Irina Kovalenko North"
+    },
+    {
+      "name": "Arthur",
+      "source": "Caswell School of Science and Industry",
+      "city": "Caswell",
+      "county": "Halbrook",
+      "area": "Belmonte Metro",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 884,
+      "private": false,
+      "mascot": "Greenies",
+      "colors": [
+        "#4b2e83",
+        "#b7a57a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Twin Counties Athletic Association",
+      "boys_district": "Twin Counties Athletic Association"
     },
     {
       "name": "Ashbrook",
@@ -940,6 +899,47 @@
       "source": "Copper Lake West"
     },
     {
+      "name": "B. Harrison",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Selquah",
+      "classification": "7A",
+      "group": "7A",
+      "enrollment": 1348,
+      "private": false,
+      "mascot": "Bluejays",
+      "colors": [
+        "#92400e",
+        "#1d1d1f"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Chinook League",
+      "boys_district": "Chinook League",
+      "source": "Marina Moroz North",
+      "locality": "Schuylkill"
+    },
+    {
+      "name": "B.T. Washington",
+      "city": "Abbey Vale",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "2A",
+      "group": "2A",
+      "enrollment": 348,
+      "private": false,
+      "mascot": "Goldbacks",
+      "colors": [
+        "#3f2a56",
+        "#3ba55d"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Millworks Athletic Association",
+      "boys_district": "Millworks Athletic Association",
+      "source": "Abbey Vale Orchard Hill"
+    },
+    {
       "name": "Bahía Leal",
       "city": "Bahía Leal",
       "county": "San Marcos",
@@ -1001,6 +1001,26 @@
       "boys_district": "Eastern Oregon League"
     },
     {
+      "name": "Baldwin",
+      "city": "Perryville",
+      "county": "Marlow",
+      "area": "Ashbury Metro",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 2058,
+      "private": false,
+      "mascot": "Coyotes",
+      "colors": [
+        "#3f2a56",
+        "#3ba55d"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Summit League",
+      "boys_district": "Summit League",
+      "source": "James Baldwin"
+    },
+    {
       "name": "Bancroft",
       "city": "Bancroft",
       "county": "Ferris",
@@ -1038,6 +1058,27 @@
       "girls_district": "Marble Valley League",
       "boys_district": "Marble Valley League",
       "source": "Calvary Chapel Olivet"
+    },
+    {
+      "name": "Banneker",
+      "city": "Belmonte",
+      "county": "Halbrook",
+      "area": "Belmonte Metro",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2503,
+      "private": false,
+      "mascot": "Bison",
+      "colors": [
+        "#6d1a36",
+        "#9fb4c7"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Capital Athletic Association",
+      "boys_district": "Capital Athletic Association",
+      "locality": "Banneker",
+      "source": "Benjamin Banneker"
     },
     {
       "name": "Bannock",
@@ -1081,6 +1122,26 @@
       "boys_district": "Valle Vista League"
     },
     {
+      "name": "Baptiste",
+      "source": "Jean Baptiste",
+      "city": "Paris",
+      "county": "Beargrass",
+      "area": "Bear River Country",
+      "classification": "Group 2",
+      "group": "Group 2",
+      "enrollment": 610,
+      "private": false,
+      "mascot": "Prospectors",
+      "colors": [
+        "#1c3f5f",
+        "#c9a961"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Forks League",
+      "boys_district": "Forks League"
+    },
+    {
       "name": "Barclay",
       "city": "Barclay",
       "county": "Ferris",
@@ -1117,6 +1178,26 @@
       "boys": true,
       "girls_district": "Mariners League",
       "boys_district": "Mariners League"
+    },
+    {
+      "name": "Barkley",
+      "city": "Tunnel Diggings",
+      "county": "Goldbank",
+      "area": "Southern Jefferson",
+      "classification": "2A",
+      "group": "2A",
+      "enrollment": 354,
+      "private": false,
+      "mascot": "Green Falcons",
+      "colors": [
+        "#4b2e83",
+        "#b7a57a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Sluice League",
+      "boys_district": "Sluice League",
+      "source": "Alben Barkley"
     },
     {
       "name": "Barley Gap",
@@ -1217,26 +1298,6 @@
       "source": "Andrés Valera"
     },
     {
-      "name": "Prairie",
-      "city": "Basalt Prairie",
-      "county": "Stagewater",
-      "area": "Kangas",
-      "classification": "Group 3",
-      "group": "Group 3",
-      "enrollment": 128,
-      "private": false,
-      "mascot": "Cougars",
-      "colors": [
-        "#92400e",
-        "#1d1d1f"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Greater Ashbury Interscholastic League",
-      "boys_district": "Greater Ashbury Interscholastic League",
-      "source": "Basalt Prairie Union"
-    },
-    {
       "name": "Basin Gate",
       "source": "Halbrook Technical",
       "city": "Halbrook",
@@ -1277,25 +1338,24 @@
       "source": "Alder Landing Beacon Hill"
     },
     {
-      "name": "Rustin",
-      "city": "Belyakov",
-      "county": "Vance",
-      "area": "Boise Frontier",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2537,
-      "private": false,
-      "mascot": "Seeders",
+      "name": "Bayside Christian",
+      "source": "Fort Salish Independent School",
+      "city": "Fort Weller",
+      "county": "Weller",
+      "area": "Selquah",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 414,
+      "private": true,
+      "mascot": "Shipwrights",
       "colors": [
-        "#14532d",
-        "#e8c46b"
+        "#4b2e83",
+        "#b7a57a"
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Forks League",
-      "boys_district": "Forks League",
-      "locality": "Wilberforce",
-      "source": "Bayard Rustin"
+      "girls_district": "Pori League",
+      "boys_district": "Pori League"
     },
     {
       "name": "Beacon Hill",
@@ -1394,6 +1454,26 @@
       "boys_district": "Valle Vista League"
     },
     {
+      "name": "Bellamy",
+      "city": "Weissburg",
+      "county": "Halbrook",
+      "area": "Halbrook Basin",
+      "classification": "7A",
+      "group": "7A",
+      "enrollment": 1323,
+      "private": false,
+      "mascot": "Blacktails",
+      "colors": [
+        "#5b2a86",
+        "#e5e7eb"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Three Rivers League",
+      "boys_district": "Three Rivers League",
+      "source": "Ralph Bellamy"
+    },
+    {
       "name": "Bellarmine Prep",
       "city": "Serrano",
       "county": "Halbrook",
@@ -1475,26 +1555,6 @@
       "boys_district": "Black Canyon League"
     },
     {
-      "name": "Belmonte South",
-      "city": "Belmonte",
-      "county": "Halbrook",
-      "area": "Belmonte Metro",
-      "classification": "1A",
-      "group": "1A",
-      "enrollment": 256,
-      "private": false,
-      "mascot": "Trojans",
-      "colors": [
-        "#0f6a70",
-        "#f4f1ea"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Hacienda League",
-      "boys_district": "Hacienda League",
-      "source": "Amaia Aramburu North"
-    },
-    {
       "name": "Belmonte Collegiate",
       "source": "Belmonte International School",
       "city": "Belmonte",
@@ -1515,24 +1575,44 @@
       "boys_district": "Black Canyon League"
     },
     {
-      "name": "Franklin",
-      "city": "Mercer City",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 1957,
+      "name": "Belmonte South",
+      "city": "Belmonte",
+      "county": "Halbrook",
+      "area": "Belmonte Metro",
+      "classification": "1A",
+      "group": "1A",
+      "enrollment": 256,
       "private": false,
-      "mascot": "Crimson Bobcats",
+      "mascot": "Trojans",
       "colors": [
-        "#0e7490",
-        "#fbbf24"
+        "#0f6a70",
+        "#f4f1ea"
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Mariners League",
-      "boys_district": "Mariners League",
-      "source": "Lillian Stokes"
+      "girls_district": "Hacienda League",
+      "boys_district": "Hacienda League",
+      "source": "Amaia Aramburu North"
+    },
+    {
+      "name": "Belmonte Tech",
+      "city": "Belmonte",
+      "county": "Halbrook",
+      "area": "Belmonte Metro",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2550,
+      "private": false,
+      "mascot": "Sidewinders",
+      "colors": [
+        "#3a5a78",
+        "#f5e9d0"
+      ],
+      "girls": false,
+      "boys": false,
+      "girls_district": "Capital Athletic Association",
+      "boys_district": "Capital Athletic Association",
+      "source": "I-50 Technical"
     },
     {
       "name": "Benchlands",
@@ -1612,48 +1692,6 @@
       "boys": true,
       "girls_district": "Gold Valley League",
       "boys_district": "Gold Valley League"
-    },
-    {
-      "name": "Banneker",
-      "city": "Belmonte",
-      "county": "Halbrook",
-      "area": "Belmonte Metro",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2503,
-      "private": false,
-      "mascot": "Bison",
-      "colors": [
-        "#6d1a36",
-        "#9fb4c7"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Capital Athletic Association",
-      "boys_district": "Capital Athletic Association",
-      "locality": "Banneker",
-      "source": "Benjamin Banneker"
-    },
-    {
-      "name": "B. Harrison",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Selquah",
-      "classification": "7A",
-      "group": "7A",
-      "enrollment": 1348,
-      "private": false,
-      "mascot": "Bluejays",
-      "colors": [
-        "#92400e",
-        "#1d1d1f"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Chinook League",
-      "boys_district": "Chinook League",
-      "source": "Marina Moroz North",
-      "locality": "Schuylkill"
     },
     {
       "name": "Benton Cross",
@@ -1855,66 +1893,6 @@
       "locality": "Biloxi"
     },
     {
-      "name": "Ferraro",
-      "city": "Garrow",
-      "county": "Kernwood",
-      "area": "Yarrowmere",
-      "classification": "2A",
-      "group": "2A",
-      "enrollment": 256,
-      "private": false,
-      "mascot": "Weasels",
-      "colors": [
-        "#1d1d1f",
-        "#d97706"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League",
-      "source": "Bishop Ferraro"
-    },
-    {
-      "name": "West Valderra",
-      "city": "Valderra",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2273,
-      "private": false,
-      "mascot": "Orchardists",
-      "colors": [
-        "#5b2a86",
-        "#e5e7eb"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Valle Vista League",
-      "boys_district": "Valle Vista League",
-      "source": "Orchard Hill"
-    },
-    {
-      "name": "Valera",
-      "city": "Arrieta",
-      "county": "Halbrook",
-      "area": "Halbrook Basin",
-      "classification": "1A",
-      "group": "1A",
-      "enrollment": 229,
-      "private": false,
-      "mascot": "Bulldogs",
-      "colors": [
-        "#1e5631",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Hacienda League",
-      "boys_district": "Hacienda League",
-      "source": "Nicolás Treviño"
-    },
-    {
       "name": "Bitterroot",
       "source": "Echevarria Foundry High",
       "city": "Echevarria",
@@ -2032,6 +2010,26 @@
       "girls_district": "Basalt League",
       "boys_district": "Basalt League",
       "source": "Nerea Urrutia"
+    },
+    {
+      "name": "Boggs",
+      "city": "Norview",
+      "county": "Marlow",
+      "area": "Ashbury Metro",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 858,
+      "private": false,
+      "mascot": "Bobcats",
+      "colors": [
+        "#3f2a56",
+        "#3ba55d"
+      ],
+      "girls": true,
+      "boys": false,
+      "girls_district": "Ambassador League",
+      "boys_district": "Ambassador League",
+      "source": "Grace Lee Boggs"
     },
     {
       "name": "Bois Neuf",
@@ -2154,26 +2152,6 @@
       "boys": true,
       "girls_district": "PacWest League",
       "boys_district": "PacWest League"
-    },
-    {
-      "name": "B.T. Washington",
-      "city": "Abbey Vale",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "2A",
-      "group": "2A",
-      "enrollment": 348,
-      "private": false,
-      "mascot": "Goldbacks",
-      "colors": [
-        "#3f2a56",
-        "#3ba55d"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Millworks Athletic Association",
-      "boys_district": "Millworks Athletic Association",
-      "source": "Abbey Vale Orchard Hill"
     },
     {
       "name": "Borondón Mesa",
@@ -2337,6 +2315,26 @@
       "source": "Brackwood Union"
     },
     {
+      "name": "Bravewoman",
+      "source": "St. Genevieve High School",
+      "city": "San Cordero",
+      "county": "Tamarack",
+      "area": "Cascade Divide",
+      "classification": "1A",
+      "group": "1A",
+      "enrollment": 180,
+      "private": false,
+      "mascot": "Warriors",
+      "colors": [
+        "#6d1a36",
+        "#9fb4c7"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Desert Sky League",
+      "boys_district": "Desert Sky League"
+    },
+    {
       "name": "Breakwater",
       "city": "Fort Meriwether",
       "county": "Weller",
@@ -2437,6 +2435,27 @@
       "source": "Copper Lake East"
     },
     {
+      "name": "Brightwater",
+      "city": "San Borondón",
+      "county": "San Marcos",
+      "area": "Sebastian Cape",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 894,
+      "private": false,
+      "mascot": "Bighorns",
+      "colors": [
+        "#3a5a78",
+        "#f5e9d0"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Valley Coast Interscholastic League",
+      "boys_district": "Valley Coast Interscholastic League",
+      "source": "St. Casimir Preparatory",
+      "locality": "Natchitoches"
+    },
+    {
       "name": "Brookmont",
       "city": "Ansotegui Siding",
       "county": "Camas",
@@ -2454,6 +2473,26 @@
       "boys": true,
       "girls_district": "Metro League",
       "boys_district": "Metro League"
+    },
+    {
+      "name": "Brooks",
+      "city": "San Cordero",
+      "county": "Tamarack",
+      "area": "Cascade Divide",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 2032,
+      "private": false,
+      "mascot": "Poets",
+      "colors": [
+        "#1e2a4a",
+        "#c05621"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Sunkist League",
+      "boys_district": "Sunkist League",
+      "source": "Gwendolyn Brooks"
     },
     {
       "name": "Brookside",
@@ -2474,6 +2513,26 @@
       "girls_district": "Three Rivers League",
       "boys_district": "Three Rivers League",
       "source": "Katherine Whitaker"
+    },
+    {
+      "name": "Brown",
+      "source": "Petersburg High",
+      "city": "Petersburg",
+      "county": "Vance",
+      "area": "Silver Basin",
+      "classification": "Group 2",
+      "group": "Group 2",
+      "enrollment": 754,
+      "private": false,
+      "mascot": "Generals",
+      "colors": [
+        "#432818",
+        "#bb9457"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Confluence Athletic Association",
+      "boys_district": "Confluence Athletic Association"
     },
     {
       "name": "Brynildson Hill",
@@ -2577,6 +2636,47 @@
       "boys_district": "Columbia Range League"
     },
     {
+      "name": "Bush",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Selquah",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 852,
+      "private": false,
+      "mascot": "Cardinals",
+      "colors": [
+        "#6d1a36",
+        "#9fb4c7"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Narpes Interscholastic League",
+      "boys_district": "Narpes Interscholastic League",
+      "source": "Opal Avery North",
+      "locality": "Hackensack"
+    },
+    {
+      "name": "Butler",
+      "city": "Boyerstown",
+      "county": "Marlow",
+      "area": "Ashbury Metro",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2217,
+      "private": false,
+      "mascot": "Cablecars",
+      "colors": [
+        "#14532d",
+        "#e8c46b"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Valle Vista League",
+      "boys_district": "Valle Vista League",
+      "source": "Octavia Butler"
+    },
+    {
       "name": "Bywater",
       "city": "Montelago",
       "county": "Ferris",
@@ -2595,6 +2695,27 @@
       "girls_district": "Valle Vista League",
       "boys_district": "Valle Vista League",
       "source": "Matteo Dahl"
+    },
+    {
+      "name": "C. Coolidge",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Selquah",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1187,
+      "private": false,
+      "mascot": "Dredgemen",
+      "colors": [
+        "#0e7490",
+        "#fbbf24"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Mariners League",
+      "boys_district": "Mariners League",
+      "source": "Nadia Chernov",
+      "locality": "Shenandoah"
     },
     {
       "name": "Cabo Esperanza Tech",
@@ -2799,27 +2920,6 @@
       "source": "Janice Bennett"
     },
     {
-      "name": "C. Coolidge",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Selquah",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1187,
-      "private": false,
-      "mascot": "Dredgemen",
-      "colors": [
-        "#0e7490",
-        "#fbbf24"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Mariners League",
-      "boys_district": "Mariners League",
-      "source": "Nadia Chernov",
-      "locality": "Shenandoah"
-    },
-    {
       "name": "Camas",
       "city": "Tindall",
       "county": "Camas",
@@ -2877,26 +2977,6 @@
       "boys": true,
       "girls_district": "Marble Valley League",
       "boys_district": "Marble Valley League"
-    },
-    {
-      "name": "North Starlake",
-      "city": "Starlake",
-      "county": "Vance",
-      "area": "Silver Basin",
-      "classification": "Group 3",
-      "group": "Group 3",
-      "enrollment": 352,
-      "private": false,
-      "mascot": "Bobcats",
-      "colors": [
-        "#1e5631",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Black Canyon League",
-      "boys_district": "Black Canyon League",
-      "source": "Starlake Canal View"
     },
     {
       "name": "Canal View",
@@ -2980,6 +3060,27 @@
       "source": "Arrieta Treasure Valley"
     },
     {
+      "name": "Cap Rouge",
+      "city": "Belyakov",
+      "county": "Vance",
+      "area": "Boise Frontier",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1297,
+      "private": false,
+      "mascot": "Cougars",
+      "colors": [
+        "#1d4e9e",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Cascade Divide League",
+      "boys_district": "Cascade Divide League",
+      "source": "Mikhail Sidorov",
+      "locality": "Cap Rouge"
+    },
+    {
       "name": "Cape Angeles",
       "city": "Cape Angeles",
       "county": "Weller",
@@ -3059,24 +3160,24 @@
       "source": "Winifred Booker North"
     },
     {
-      "name": "Ibarra",
-      "city": "Homecroft",
-      "county": "Vance",
+      "name": "Carlin",
+      "source": "Ruby County Catholic",
+      "city": "Carlin",
+      "county": "Ruby",
       "area": "Silver Basin",
       "classification": "Group 2",
       "group": "Group 2",
-      "enrollment": 520,
+      "enrollment": 620,
       "private": false,
-      "mascot": "Cardinals",
+      "mascot": "Hawks",
       "colors": [
-        "#6d1a36",
-        "#9fb4c7"
+        "#3a2a1c",
+        "#d9a441"
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Olympic League",
-      "boys_district": "Olympic League",
-      "source": "Miren Garmendia"
+      "girls_district": "Dual County League",
+      "boys_district": "Dual County League"
     },
     {
       "name": "Carmina",
@@ -3177,6 +3278,46 @@
       "boys_district": "Rim Country League"
     },
     {
+      "name": "Carter",
+      "city": "Garrow",
+      "county": "Kernwood",
+      "area": "Yarrowmere",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2343,
+      "private": false,
+      "mascot": "Lancers",
+      "colors": [
+        "#5b2a86",
+        "#e5e7eb"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Gold Valley League",
+      "boys_district": "Gold Valley League",
+      "source": "Jimmy Carter"
+    },
+    {
+      "name": "Carver",
+      "city": "Plainfield",
+      "county": "Antler",
+      "area": "Alderwold",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1140,
+      "private": false,
+      "mascot": "Barkers",
+      "colors": [
+        "#6d1a36",
+        "#9fb4c7"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Mariners League",
+      "boys_district": "Mariners League",
+      "source": "George Washington Carver"
+    },
+    {
       "name": "Carverstead",
       "source": "Carverstead",
       "city": "Carverstead",
@@ -3215,26 +3356,6 @@
       "girls_district": "Black Canyon League",
       "boys_district": "Black Canyon League",
       "source": "Javier Cárdenas North"
-    },
-    {
-      "name": "Evenfall",
-      "city": "Vespertine",
-      "county": "Sablewood",
-      "area": "Gold Valley",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1023,
-      "private": false,
-      "mascot": "Warriors",
-      "colors": [
-        "#8c1d40",
-        "#f0b323"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Del Rey Athletic Association",
-      "boys_district": "Del Rey Athletic Association",
-      "source": "Marcus Mercer"
     },
     {
       "name": "Cascade",
@@ -3394,26 +3515,6 @@
       "girls_district": "Twin Counties Athletic Association",
       "boys_district": "Twin Counties Athletic Association",
       "source": "Viktor Kareva"
-    },
-    {
-      "name": "Winter Valley",
-      "city": "Summervale",
-      "county": "Juniper",
-      "area": "Juniper Highlands",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 515,
-      "private": false,
-      "mascot": "Lions",
-      "colors": [
-        "#0f6a70",
-        "#f4f1ea"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Juniper League",
-      "boys_district": "Juniper League",
-      "source": "Central Christian"
     },
     {
       "name": "Central West End",
@@ -3675,26 +3776,6 @@
       "locality": "Chesapeake"
     },
     {
-      "name": "Arthur",
-      "source": "Caswell School of Science and Industry",
-      "city": "Caswell",
-      "county": "Halbrook",
-      "area": "Belmonte Metro",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 884,
-      "private": false,
-      "mascot": "Greenies",
-      "colors": [
-        "#4b2e83",
-        "#b7a57a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Twin Counties Athletic Association",
-      "boys_district": "Twin Counties Athletic Association"
-    },
-    {
       "name": "Chicago Island",
       "source": "Chicago Island",
       "city": "Alpine",
@@ -3755,6 +3836,27 @@
       "boys_district": "Halbrook Basin League",
       "source": "Belmonte River Plain",
       "locality": "Chillicothe"
+    },
+    {
+      "name": "Chisholm",
+      "city": "Belmonte",
+      "county": "Halbrook",
+      "area": "Belmonte Metro",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 1789,
+      "private": false,
+      "mascot": "Blacktails",
+      "colors": [
+        "#167339",
+        "#e8e6df"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Ambassador League",
+      "boys_district": "Ambassador League",
+      "locality": "Burroughs",
+      "source": "Shirley Chisholm"
     },
     {
       "name": "Cholla Flats",
@@ -3874,26 +3976,6 @@
       "boys": true,
       "girls_district": "Halbrook Basin League",
       "boys_district": "Halbrook Basin League"
-    },
-    {
-      "name": "Brown",
-      "source": "Petersburg High",
-      "city": "Petersburg",
-      "county": "Vance",
-      "area": "Silver Basin",
-      "classification": "Group 2",
-      "group": "Group 2",
-      "enrollment": 754,
-      "private": false,
-      "mascot": "Generals",
-      "colors": [
-        "#432818",
-        "#bb9457"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Confluence Athletic Association",
-      "boys_district": "Confluence Athletic Association"
     },
     {
       "name": "Clarendon",
@@ -4059,6 +4141,26 @@
       "boys_district": "South Coast League"
     },
     {
+      "name": "Coldwater",
+      "source": "Cub River Catholic",
+      "city": "Weston",
+      "county": "Cub River",
+      "area": "Bear River Country",
+      "classification": "Group 2",
+      "group": "Group 2",
+      "enrollment": 410,
+      "private": false,
+      "mascot": "Mustangs",
+      "colors": [
+        "#1c3f5f",
+        "#c9a961"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "PacWest League",
+      "boys_district": "PacWest League"
+    },
+    {
       "name": "Cole Valley",
       "city": "Fort Valois",
       "county": "Stagewater",
@@ -4077,6 +4179,26 @@
       "girls_district": "Far West League",
       "boys_district": "Far West League",
       "source": "Lev Voronin"
+    },
+    {
+      "name": "Coleman",
+      "city": "Boyerstown",
+      "county": "Marlow",
+      "area": "Ashbury Metro",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 2024,
+      "private": false,
+      "mascot": "Kingfishers",
+      "colors": [
+        "#4b2e83",
+        "#b7a57a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Summit League",
+      "boys_district": "Summit League",
+      "source": "Leonard Coleman"
     },
     {
       "name": "Coles Creek",
@@ -4178,26 +4300,6 @@
       "girls_district": "Mariners League",
       "boys_district": "Mariners League",
       "source": "Ewart City"
-    },
-    {
-      "name": "Seagrove",
-      "city": "Olive Reach",
-      "county": "Kernwood",
-      "area": "Yarrowmere",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2392,
-      "private": false,
-      "mascot": "Spartans",
-      "colors": [
-        "#1d1d1f",
-        "#d97706"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Gold Valley League",
-      "boys_district": "Gold Valley League",
-      "source": "Coolidge"
     },
     {
       "name": "Copper Bar",
@@ -4397,26 +4499,6 @@
       "boys_district": "Assay Athletic Association"
     },
     {
-      "name": "South Rim",
-      "city": "Clear Springs",
-      "county": "Rimrock",
-      "area": "Juniper Highlands",
-      "classification": "2A",
-      "group": "2A",
-      "enrollment": 268,
-      "private": false,
-      "mascot": "Cougars",
-      "colors": [
-        "#92400e",
-        "#1d1d1f"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Valle Vista League",
-      "boys_district": "Valle Vista League",
-      "source": "Mikel Zubieta"
-    },
-    {
       "name": "Cortland",
       "city": "Cortland",
       "county": "Ferris",
@@ -4513,26 +4595,6 @@
       "boys": true,
       "girls_district": "Desert Sky League",
       "boys_district": "Desert Sky League"
-    },
-    {
-      "name": "Stonehaven",
-      "city": "Calder",
-      "county": "Rimrock",
-      "area": "Juniper Highlands",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 1501,
-      "private": false,
-      "mascot": "Red Devils",
-      "colors": [
-        "#14294e",
-        "#c8ccd4"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Rim Country League",
-      "boys_district": "Rim Country League",
-      "source": "Nicolás Quiñones"
     },
     {
       "name": "Covenant Christian",
@@ -4752,26 +4814,6 @@
       "source": "Naomi Price"
     },
     {
-      "name": "Coldwater",
-      "source": "Cub River Catholic",
-      "city": "Weston",
-      "county": "Cub River",
-      "area": "Bear River Country",
-      "classification": "Group 2",
-      "group": "Group 2",
-      "enrollment": 410,
-      "private": false,
-      "mascot": "Mustangs",
-      "colors": [
-        "#1c3f5f",
-        "#c9a961"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "PacWest League",
-      "boys_district": "PacWest League"
-    },
-    {
       "name": "Cutbank",
       "source": "Cutbank",
       "city": "Cutbank",
@@ -4790,6 +4832,26 @@
       "boys": true,
       "girls_district": "High Lakes League",
       "boys_district": "High Lakes League"
+    },
+    {
+      "name": "D. Eisenhower",
+      "source": "Valderra Technical Arts Academy",
+      "city": "Valderra",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 2118,
+      "private": false,
+      "mascot": "Sluicers",
+      "colors": [
+        "#3f2a56",
+        "#3ba55d"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Gold Valley League",
+      "boys_district": "Gold Valley League"
     },
     {
       "name": "Dahlberg Summit",
@@ -4850,6 +4912,26 @@
       "girls_district": "Gold Valley League",
       "boys_district": "Gold Valley League",
       "source": "César Mendoza"
+    },
+    {
+      "name": "Deaconsburg",
+      "city": "Halbrook",
+      "county": "Halbrook",
+      "area": "Halbrook Basin",
+      "classification": "7A",
+      "group": "7A",
+      "enrollment": 1418,
+      "private": false,
+      "mascot": "Purple Bulldogs",
+      "colors": [
+        "#3f2a56",
+        "#3ba55d"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Three Rivers League",
+      "boys_district": "Three Rivers League",
+      "source": "Halbrook Union"
     },
     {
       "name": "Deadwood",
@@ -4950,26 +5032,6 @@
       "locality": "Hackensack"
     },
     {
-      "name": "Huerta",
-      "city": "Los Robles",
-      "county": "Marlow",
-      "area": "Ashbury Metro",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2239,
-      "private": false,
-      "mascot": "Grape Pickers",
-      "colors": [
-        "#0e7490",
-        "#fbbf24"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Gateway League",
-      "boys_district": "Gateway League",
-      "source": "Dolores Huerta"
-    },
-    {
       "name": "Dovetail",
       "city": "Dovetail",
       "county": "Stagewater",
@@ -4987,6 +5049,26 @@
       "boys": true,
       "girls_district": "Inland Empire League",
       "boys_district": "Inland Empire League"
+    },
+    {
+      "name": "Doyle",
+      "city": "Halbrook",
+      "county": "Halbrook",
+      "area": "Halbrook Basin",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1214,
+      "private": false,
+      "mascot": "Bellringers",
+      "colors": [
+        "#0e7490",
+        "#fbbf24"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Cascade Divide League",
+      "boys_district": "Cascade Divide League",
+      "source": "Archbishop Doyle Prep"
     },
     {
       "name": "Doyle Pass",
@@ -5208,24 +5290,24 @@
       "boys_district": "Black Canyon League"
     },
     {
-      "name": "D. Eisenhower",
-      "source": "Valderra Technical Arts Academy",
-      "city": "Valderra",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 2118,
+      "name": "E. Baker",
+      "city": "Langston",
+      "county": "Minidoka",
+      "area": "Snake River Plain",
+      "classification": "Group 2",
+      "group": "Group 2",
+      "enrollment": 699,
       "private": false,
-      "mascot": "Sluicers",
+      "mascot": "Torchbearers",
       "colors": [
-        "#3f2a56",
-        "#3ba55d"
+        "#167339",
+        "#e8e6df"
       ],
       "girls": true,
-      "boys": true,
-      "girls_district": "Gold Valley League",
-      "boys_district": "Gold Valley League"
+      "boys": false,
+      "girls_district": "PacWest League",
+      "boys_district": "PacWest League",
+      "source": "Ella Baker"
     },
     {
       "name": "Eagleton",
@@ -5245,26 +5327,6 @@
       "boys": false,
       "girls_district": "Black Canyon League",
       "boys_district": "Black Canyon League"
-    },
-    {
-      "name": "Warren",
-      "city": "Fort Weller",
-      "county": "Weller",
-      "area": "Selquah",
-      "classification": "4A",
-      "group": "4A",
-      "enrollment": 667,
-      "private": false,
-      "mascot": "Falcons",
-      "colors": [
-        "#1d4e9e",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Chinook League",
-      "boys_district": "Chinook League",
-      "source": "Isaiah Booker"
     },
     {
       "name": "East Burlington",
@@ -5488,26 +5550,6 @@
       "source": "Lucía Quiñones"
     },
     {
-      "name": "Flume River",
-      "city": "Sluice Crossing",
-      "county": "Goldbank",
-      "area": "Southern Jefferson",
-      "classification": "4A",
-      "group": "4A",
-      "enrollment": 792,
-      "private": false,
-      "mascot": "Rebels",
-      "colors": [
-        "#1e2a4a",
-        "#c05621"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Vermilion Valley League",
-      "boys_district": "Vermilion Valley League",
-      "source": "Eisenhower"
-    },
-    {
       "name": "El Sereno",
       "city": "Bahía Leal",
       "county": "San Marcos",
@@ -5566,6 +5608,26 @@
       "boys": true,
       "girls_district": "Big Sky League",
       "boys_district": "Big Sky League"
+    },
+    {
+      "name": "Elk Bluff West",
+      "city": "Elk Bluff",
+      "county": "Windrow",
+      "area": "Millersylvania",
+      "classification": "Group 3",
+      "group": "Group 3",
+      "enrollment": 285,
+      "private": false,
+      "mascot": "Bobcats",
+      "colors": [
+        "#204e39",
+        "#c8a24a"
+      ],
+      "girls": true,
+      "boys": false,
+      "girls_district": "Big Sky League",
+      "boys_district": "Big Sky League",
+      "source": "St. Raphael College Prep"
     },
     {
       "name": "Elk Crossing",
@@ -5627,24 +5689,24 @@
       "boys_district": "Valle Vista League"
     },
     {
-      "name": "E. Baker",
-      "city": "Langston",
-      "county": "Minidoka",
-      "area": "Snake River Plain",
-      "classification": "Group 2",
-      "group": "Group 2",
-      "enrollment": 699,
+      "name": "Elkhorn",
+      "city": "Elk Crossing",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "2A",
+      "group": "2A",
+      "enrollment": 248,
       "private": false,
-      "mascot": "Torchbearers",
+      "mascot": "Shepherds",
       "colors": [
-        "#167339",
-        "#e8e6df"
+        "#3f2a56",
+        "#3ba55d"
       ],
       "girls": true,
-      "boys": false,
-      "girls_district": "PacWest League",
-      "boys_district": "PacWest League",
-      "source": "Ella Baker"
+      "boys": true,
+      "girls_district": "Millworks Athletic Association",
+      "boys_district": "Millworks Athletic Association",
+      "source": "Thomas Moreau"
     },
     {
       "name": "Elysian Valley",
@@ -5726,26 +5788,6 @@
       "source": "Drayfield Foundry High"
     },
     {
-      "name": "North Carroway",
-      "city": "Carroway",
-      "county": "Rimrock",
-      "area": "Juniper Highlands",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1185,
-      "private": false,
-      "mascot": "Pronghorns",
-      "colors": [
-        "#204e39",
-        "#c8a24a"
-      ],
-      "girls": false,
-      "boys": false,
-      "girls_district": "Juniper League",
-      "boys_district": "Juniper League",
-      "source": "Frances Gaines"
-    },
-    {
       "name": "Emporia",
       "source": "Emporia",
       "city": "Emporia",
@@ -5785,6 +5827,26 @@
       "boys": true,
       "girls_district": "Desert Sky League",
       "boys_district": "Desert Sky League"
+    },
+    {
+      "name": "Esperanza",
+      "city": "Lake Esperanza",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2352,
+      "private": false,
+      "mascot": "Gators",
+      "colors": [
+        "#6d1a36",
+        "#9fb4c7"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Gold Valley League",
+      "boys_district": "Gold Valley League",
+      "source": "Foundry High"
     },
     {
       "name": "Esperanza Basin",
@@ -5906,6 +5968,26 @@
       "locality": "Bannock"
     },
     {
+      "name": "Evenfall",
+      "city": "Vespertine",
+      "county": "Sablewood",
+      "area": "Gold Valley",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1023,
+      "private": false,
+      "mascot": "Warriors",
+      "colors": [
+        "#8c1d40",
+        "#f0b323"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Del Rey Athletic Association",
+      "boys_district": "Del Rey Athletic Association",
+      "source": "Marcus Mercer"
+    },
+    {
       "name": "Excelsior",
       "city": "Los Maderos",
       "county": "Bidwell",
@@ -5966,26 +6048,6 @@
       "source": "Tomás Mendoza"
     },
     {
-      "name": "Michaela East",
-      "city": "Santa Michaela",
-      "county": "Bidwell",
-      "area": "Selquah",
-      "classification": "4A",
-      "group": "4A",
-      "enrollment": 722,
-      "private": false,
-      "mascot": "Eagles",
-      "colors": [
-        "#1e2a4a",
-        "#c05621"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Chinook League",
-      "boys_district": "Chinook League",
-      "source": "Irina Kovalenko"
-    },
-    {
       "name": "Fallon",
       "city": "Puerto de los Reyes",
       "county": "San Marcos",
@@ -6024,6 +6086,26 @@
       "boys": false,
       "girls_district": "Desert Sky League",
       "boys_district": "Desert Sky League"
+    },
+    {
+      "name": "Farview",
+      "city": "Halbrook",
+      "county": "Halbrook",
+      "area": "Halbrook Basin",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1073,
+      "private": false,
+      "mascot": "Polecats",
+      "colors": [
+        "#8c1d40",
+        "#f0b323"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Cascade Divide League",
+      "boys_district": "Cascade Divide League",
+      "source": "St. Perpetua"
     },
     {
       "name": "Featherstone Tech",
@@ -6083,6 +6165,26 @@
       "boys": true,
       "girls_district": "Mission League",
       "boys_district": "Mission League"
+    },
+    {
+      "name": "Ferraro",
+      "city": "Garrow",
+      "county": "Kernwood",
+      "area": "Yarrowmere",
+      "classification": "2A",
+      "group": "2A",
+      "enrollment": 256,
+      "private": false,
+      "mascot": "Weasels",
+      "colors": [
+        "#1d1d1f",
+        "#d97706"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Marble Valley League",
+      "boys_district": "Marble Valley League",
+      "source": "Bishop Ferraro"
     },
     {
       "name": "Ferris",
@@ -6185,6 +6287,26 @@
       "boys_district": "Orchard League"
     },
     {
+      "name": "Flume River",
+      "city": "Sluice Crossing",
+      "county": "Goldbank",
+      "area": "Southern Jefferson",
+      "classification": "4A",
+      "group": "4A",
+      "enrollment": 792,
+      "private": false,
+      "mascot": "Rebels",
+      "colors": [
+        "#1e2a4a",
+        "#c05621"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Vermilion Valley League",
+      "boys_district": "Vermilion Valley League",
+      "source": "Eisenhower"
+    },
+    {
       "name": "Fogline",
       "source": "Fogline",
       "city": "Camas Ridge",
@@ -6242,6 +6364,27 @@
       "boys": true,
       "girls_district": "Tailings League",
       "boys_district": "Tailings League"
+    },
+    {
+      "name": "Ford",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Selquah",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 990,
+      "private": false,
+      "mascot": "Pelicans",
+      "colors": [
+        "#6d1a36",
+        "#9fb4c7"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Narpes Interscholastic League",
+      "boys_district": "Narpes Interscholastic League",
+      "source": "Opal Avery",
+      "locality": "Sassafras"
     },
     {
       "name": "Forest Park",
@@ -6502,26 +6645,6 @@
       "source": "Silvale"
     },
     {
-      "name": "Esperanza",
-      "city": "Lake Esperanza",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2352,
-      "private": false,
-      "mascot": "Gators",
-      "colors": [
-        "#6d1a36",
-        "#9fb4c7"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Gold Valley League",
-      "boys_district": "Gold Valley League",
-      "source": "Foundry High"
-    },
-    {
       "name": "Fountain Park",
       "city": "Fountain Park",
       "county": "Goldbank",
@@ -6582,15 +6705,15 @@
       "boys_district": "Narpes Interscholastic League"
     },
     {
-      "name": "Pierce",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Selquah",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2213,
+      "name": "Franklin",
+      "city": "Mercer City",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 1957,
       "private": false,
-      "mascot": "Deckhands",
+      "mascot": "Crimson Bobcats",
       "colors": [
         "#0e7490",
         "#fbbf24"
@@ -6599,8 +6722,7 @@
       "boys": true,
       "girls_district": "Mariners League",
       "boys_district": "Mariners League",
-      "source": "Katherine Williams",
-      "locality": "Patuxent"
+      "source": "Lillian Stokes"
     },
     {
       "name": "Free Hill",
@@ -6882,6 +7004,26 @@
       "boys_district": "Mariners League"
     },
     {
+      "name": "Garrow North",
+      "city": "Garrow",
+      "county": "Kernwood",
+      "area": "Yarrowmere",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 455,
+      "private": false,
+      "mascot": "Tigers",
+      "colors": [
+        "#0f6a70",
+        "#f4f1ea"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Quarry League",
+      "boys_district": "Quarry League",
+      "source": "Presentation Academy"
+    },
+    {
       "name": "Gate City",
       "city": "Barclay",
       "county": "Ferris",
@@ -6922,47 +7064,6 @@
       "source": "Rita Moreno North"
     },
     {
-      "name": "Bush",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Selquah",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 852,
-      "private": false,
-      "mascot": "Cardinals",
-      "colors": [
-        "#6d1a36",
-        "#9fb4c7"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Narpes Interscholastic League",
-      "boys_district": "Narpes Interscholastic League",
-      "source": "Opal Avery North",
-      "locality": "Hackensack"
-    },
-    {
-      "name": "Carver",
-      "city": "Plainfield",
-      "county": "Antler",
-      "area": "Alderwold",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1140,
-      "private": false,
-      "mascot": "Barkers",
-      "colors": [
-        "#6d1a36",
-        "#9fb4c7"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Mariners League",
-      "boys_district": "Mariners League",
-      "source": "George Washington Carver"
-    },
-    {
       "name": "Georgia Mills",
       "city": "Georgia Mills",
       "county": "Lodestone",
@@ -6983,27 +7084,6 @@
       "source": "Graymont"
     },
     {
-      "name": "Ford",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Selquah",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 990,
-      "private": false,
-      "mascot": "Pelicans",
-      "colors": [
-        "#6d1a36",
-        "#9fb4c7"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Narpes Interscholastic League",
-      "boys_district": "Narpes Interscholastic League",
-      "source": "Opal Avery",
-      "locality": "Sassafras"
-    },
-    {
       "name": "Gilhooly",
       "city": "Gilhooly",
       "county": "Featherstone",
@@ -7021,6 +7101,26 @@
       "boys": true,
       "girls_district": "Marble Valley League",
       "boys_district": "Marble Valley League"
+    },
+    {
+      "name": "Ginsburg",
+      "city": "Aurelia",
+      "county": "Emigrant",
+      "area": "Kangas",
+      "classification": "Group 1",
+      "group": "Group 1",
+      "enrollment": 2556,
+      "private": false,
+      "mascot": "Marauders",
+      "colors": [
+        "#1e5631",
+        "#f2f2ee"
+      ],
+      "girls": false,
+      "boys": false,
+      "girls_district": "Sage Plains League",
+      "boys_district": "Sage Plains League",
+      "source": "Nicolás Cordero"
     },
     {
       "name": "Glassell Park",
@@ -7220,6 +7320,26 @@
       "source": "Calvary Chapel Kilbride Switch"
     },
     {
+      "name": "Governor Woods",
+      "city": "Cook City",
+      "county": "Featherstone",
+      "area": "Southern Jefferson",
+      "classification": "2A",
+      "group": "2A",
+      "enrollment": 360,
+      "private": false,
+      "mascot": "Panthers",
+      "colors": [
+        "#6d1a36",
+        "#9fb4c7"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Sluice League",
+      "boys_district": "Sluice League",
+      "source": "Madison"
+    },
+    {
       "name": "Grace Christian",
       "city": "Prune Springs",
       "county": "Bardsley",
@@ -7237,26 +7357,6 @@
       "boys": true,
       "girls_district": "Tailings League",
       "boys_district": "Tailings League"
-    },
-    {
-      "name": "Boggs",
-      "city": "Norview",
-      "county": "Marlow",
-      "area": "Ashbury Metro",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 858,
-      "private": false,
-      "mascot": "Bobcats",
-      "colors": [
-        "#3f2a56",
-        "#3ba55d"
-      ],
-      "girls": true,
-      "boys": false,
-      "girls_district": "Ambassador League",
-      "boys_district": "Ambassador League",
-      "source": "Grace Lee Boggs"
     },
     {
       "name": "Grand Fond",
@@ -7300,6 +7400,26 @@
       "boys_district": "Ironwood League"
     },
     {
+      "name": "Granite",
+      "city": "Carden City",
+      "county": "Vance",
+      "area": "Silver Basin",
+      "classification": "Group 1",
+      "group": "Group 1",
+      "enrollment": 1228,
+      "private": false,
+      "mascot": "Fire Opals",
+      "colors": [
+        "#3f2a56",
+        "#3ba55d"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Ostrobothnia League",
+      "boys_district": "Ostrobothnia League",
+      "source": "Opal Tillman"
+    },
+    {
       "name": "Granite Basin",
       "city": "Cinder",
       "county": "Antler",
@@ -7319,24 +7439,24 @@
       "boys_district": "Foundry League"
     },
     {
-      "name": "Granite",
-      "city": "Carden City",
+      "name": "Grant",
+      "source": "Aldecoa Depot High",
+      "city": "Aldecoa",
       "county": "Vance",
       "area": "Silver Basin",
       "classification": "Group 1",
       "group": "Group 1",
-      "enrollment": 1228,
+      "enrollment": 2022,
       "private": false,
-      "mascot": "Fire Opals",
+      "mascot": "Blue Dragons",
       "colors": [
-        "#3f2a56",
-        "#3ba55d"
+        "#1e5631",
+        "#f2f2ee"
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Ostrobothnia League",
-      "boys_district": "Ostrobothnia League",
-      "source": "Opal Tillman"
+      "girls_district": "High Desert League",
+      "boys_district": "High Desert League"
     },
     {
       "name": "Gravel Narrows",
@@ -7395,6 +7515,26 @@
       "boys": true,
       "girls_district": "Ostrobothnia League",
       "boys_district": "Ostrobothnia League"
+    },
+    {
+      "name": "Greaves West",
+      "city": "Greaves",
+      "county": "Vance",
+      "area": "Silver Basin",
+      "classification": "Group 2",
+      "group": "Group 2",
+      "enrollment": 576,
+      "private": false,
+      "mascot": "Mountaineers",
+      "colors": [
+        "#1d1d1f",
+        "#d97706"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Olympic League",
+      "boys_district": "Olympic League",
+      "source": "St. Martin Preparatory"
     },
     {
       "name": "Green River",
@@ -7496,26 +7636,6 @@
       "boys": true,
       "girls_district": "Black Canyon League",
       "boys_district": "Black Canyon League"
-    },
-    {
-      "name": "Brooks",
-      "city": "San Cordero",
-      "county": "Tamarack",
-      "area": "Cascade Divide",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 2032,
-      "private": false,
-      "mascot": "Poets",
-      "colors": [
-        "#1e2a4a",
-        "#c05621"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Sunkist League",
-      "boys_district": "Sunkist League",
-      "source": "Gwendolyn Brooks"
     },
     {
       "name": "Hackensack",
@@ -7737,6 +7857,46 @@
       "boys_district": "Sage Plains League"
     },
     {
+      "name": "Harriman East",
+      "city": "Harriman",
+      "county": "Emigrant",
+      "area": "Kangas",
+      "classification": "Group 2",
+      "group": "Group 2",
+      "enrollment": 996,
+      "private": false,
+      "mascot": "Orioles",
+      "colors": [
+        "#1d1d1f",
+        "#d97706"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Vesterheim Athletic Association",
+      "boys_district": "Vesterheim Athletic Association",
+      "source": "St. Michael Academy"
+    },
+    {
+      "name": "Harriman Lyceum",
+      "source": "St. Casimir High School",
+      "city": "Harriman",
+      "county": "Emigrant",
+      "area": "Kangas",
+      "classification": "Group 2",
+      "group": "Group 2",
+      "enrollment": 1035,
+      "private": false,
+      "mascot": "Rams",
+      "colors": [
+        "#0f6a70",
+        "#f4f1ea"
+      ],
+      "girls": true,
+      "boys": false,
+      "girls_district": "Vesterheim Athletic Association",
+      "boys_district": "Vesterheim Athletic Association"
+    },
+    {
       "name": "Harrisburgh",
       "city": "Valderra",
       "county": "Ferris",
@@ -7774,26 +7934,6 @@
       "boys": false,
       "girls_district": "Vesterheim Athletic Association",
       "boys_district": "Vesterheim Athletic Association"
-    },
-    {
-      "name": "Truman",
-      "city": "Kilbride Switch",
-      "county": "Olivet",
-      "area": "Yarrowmere",
-      "classification": "4A",
-      "group": "4A",
-      "enrollment": 748,
-      "private": false,
-      "mascot": "Flapjacks",
-      "colors": [
-        "#3f2a56",
-        "#3ba55d"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Vermilion Valley League",
-      "boys_district": "Vermilion Valley League",
-      "source": "Harry Truman"
     },
     {
       "name": "Hartford City",
@@ -7871,6 +8011,27 @@
       "boys": false,
       "girls_district": "Del Rey Athletic Association",
       "boys_district": "Del Rey Athletic Association"
+    },
+    {
+      "name": "Hayes",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Selquah",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1124,
+      "private": false,
+      "mascot": "Cannerymen",
+      "colors": [
+        "#3a5a78",
+        "#f5e9d0"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Mariners League",
+      "boys_district": "Mariners League",
+      "source": "Marcus Langston",
+      "locality": "Wethersfield"
     },
     {
       "name": "Hayes Valley",
@@ -7951,46 +8112,6 @@
       "girls_district": "Chinook League",
       "boys_district": "Chinook League",
       "source": "Port Veles Civic Academy"
-    },
-    {
-      "name": "Hoover",
-      "city": "Furrow Crossing",
-      "county": "Barlowe",
-      "area": "Boise Frontier",
-      "classification": "4A",
-      "group": "4A",
-      "enrollment": 742,
-      "private": false,
-      "mascot": "Eagles",
-      "colors": [
-        "#1e5631",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Millworks Athletic Association",
-      "boys_district": "Millworks Athletic Association",
-      "source": "Herbert Hoover"
-    },
-    {
-      "name": "Longmeadow",
-      "city": "Corliss Junction",
-      "county": "Kernwood",
-      "area": "Yarrowmere",
-      "classification": "1A",
-      "group": "1A",
-      "enrollment": 188,
-      "private": false,
-      "mascot": "Mustangs",
-      "colors": [
-        "#8c1d40",
-        "#f0b323"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Tailings League",
-      "boys_district": "Tailings League",
-      "source": "Heritage Christian"
     },
     {
       "name": "Hermiston",
@@ -8268,6 +8389,26 @@
       "boys_district": "Sage Plains League"
     },
     {
+      "name": "Hoover",
+      "city": "Furrow Crossing",
+      "county": "Barlowe",
+      "area": "Boise Frontier",
+      "classification": "4A",
+      "group": "4A",
+      "enrollment": 742,
+      "private": false,
+      "mascot": "Eagles",
+      "colors": [
+        "#1e5631",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Millworks Athletic Association",
+      "boys_district": "Millworks Athletic Association",
+      "source": "Herbert Hoover"
+    },
+    {
       "name": "Horseshoe Bend",
       "city": "Kelford",
       "county": "Ferris",
@@ -8327,6 +8468,26 @@
       "boys_district": "Basalt League"
     },
     {
+      "name": "Huerta",
+      "city": "Los Robles",
+      "county": "Marlow",
+      "area": "Ashbury Metro",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2239,
+      "private": false,
+      "mascot": "Grape Pickers",
+      "colors": [
+        "#0e7490",
+        "#fbbf24"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Gateway League",
+      "boys_district": "Gateway League",
+      "source": "Dolores Huerta"
+    },
+    {
       "name": "Huntington",
       "source": "Huntington High",
       "city": "Huntington",
@@ -8348,6 +8509,26 @@
       "boys_district": "Snake River District"
     },
     {
+      "name": "Hurston",
+      "city": "St. Varian",
+      "county": "Marlow",
+      "area": "Ashbury Metro",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1212,
+      "private": false,
+      "mascot": "Eagles",
+      "colors": [
+        "#1e5631",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Metro League",
+      "boys_district": "Metro League",
+      "source": "St. Varian"
+    },
+    {
       "name": "Hydraulicwood",
       "city": "Hydraulicwood",
       "county": "Featherstone",
@@ -8367,44 +8548,44 @@
       "boys_district": "Sluice League"
     },
     {
-      "name": "Belmonte Tech",
-      "city": "Belmonte",
-      "county": "Halbrook",
-      "area": "Belmonte Metro",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2550,
+      "name": "Hyrum",
+      "source": "Wellsville County Catholic",
+      "city": "Hyrum",
+      "county": "Wellsville",
+      "area": "Bear River Country",
+      "classification": "Group 2",
+      "group": "Group 2",
+      "enrollment": 780,
       "private": false,
-      "mascot": "Sidewinders",
+      "mascot": "Falcons",
       "colors": [
-        "#3a5a78",
-        "#f5e9d0"
-      ],
-      "girls": false,
-      "boys": false,
-      "girls_district": "Capital Athletic Association",
-      "boys_district": "Capital Athletic Association",
-      "source": "I-50 Technical"
-    },
-    {
-      "name": "Wells",
-      "city": "San Joaquín",
-      "county": "Marlow",
-      "area": "Ashbury Metro",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2491,
-      "private": false,
-      "mascot": "Badgers",
-      "colors": [
-        "#167339",
-        "#e8e6df"
+        "#5c1a1a",
+        "#e0dcd0"
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Gateway League",
-      "boys_district": "Gateway League",
-      "source": "Ida B. Wells"
+      "girls_district": "PacWest League",
+      "boys_district": "PacWest League"
+    },
+    {
+      "name": "Ibarra",
+      "city": "Homecroft",
+      "county": "Vance",
+      "area": "Silver Basin",
+      "classification": "Group 2",
+      "group": "Group 2",
+      "enrollment": 520,
+      "private": true,
+      "mascot": "Cardinals",
+      "colors": [
+        "#6d1a36",
+        "#9fb4c7"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Olympic League",
+      "boys_district": "Olympic League",
+      "source": "Miren Garmendia"
     },
     {
       "name": "Idaho Valley",
@@ -8628,85 +8809,44 @@
       "boys_district": "Halbrook Basin League"
     },
     {
-      "name": "Jackson Hole",
-      "source": "Jackson Hole High",
-      "city": "Jackson",
-      "county": "Teton",
-      "area": "Bear River Country",
-      "state": "Wyoming",
-      "classification": "Group 2",
-      "group": "Group 1",
-      "enrollment": 553,
-      "private": false,
-      "mascot": "Broncs",
-      "colors": [
-        "#0c2340",
-        "#ffffff"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League"
-    },
-    {
-      "name": "Jamaica",
-      "city": "Jamaica",
-      "county": "Paddock",
-      "area": "Yarrowmere",
+      "name": "Isla Verde",
+      "city": "San Borondón",
+      "county": "San Marcos",
+      "area": "Sebastian Cape",
       "classification": "1A",
       "group": "1A",
-      "enrollment": 116,
+      "enrollment": 306,
       "private": false,
-      "mascot": "Eagles",
+      "mascot": "Albatross",
       "colors": [
-        "#7f1d1d",
-        "#d4d4d8"
-      ],
-      "girls": true,
-      "boys": false,
-      "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League",
-      "source": "Rentie Grove"
-    },
-    {
-      "name": "Baldwin",
-      "city": "Perryville",
-      "county": "Marlow",
-      "area": "Ashbury Metro",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 2058,
-      "private": false,
-      "mascot": "Coyotes",
-      "colors": [
-        "#3f2a56",
-        "#3ba55d"
+        "#0f6a70",
+        "#f4f1ea"
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Summit League",
-      "boys_district": "Summit League",
-      "source": "James Baldwin"
+      "girls_district": "South Coast League",
+      "boys_district": "South Coast League",
+      "source": "St. Jerome Academy"
     },
     {
-      "name": "Polk",
-      "city": "Orellana",
-      "county": "Vance",
-      "area": "Boise Frontier",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2516,
+      "name": "J. Jackson",
+      "city": "San Dámaso",
+      "county": "Bidwell",
+      "area": "Selquah",
+      "classification": "4A",
+      "group": "4A",
+      "enrollment": 730,
       "private": false,
-      "mascot": "Puffins",
+      "mascot": "Yellowjackets",
       "colors": [
-        "#7f1d1d",
-        "#d4d4d8"
+        "#6d1a36",
+        "#9fb4c7"
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Capital Athletic Association",
-      "boys_district": "Capital Athletic Association",
-      "source": "Katherine Booker"
+      "girls_district": "Chinook League",
+      "boys_district": "Chinook League",
+      "source": "San Dámaso Harbor Gate"
     },
     {
       "name": "J. Madison",
@@ -8730,25 +8870,85 @@
       "locality": "Kishwaukee"
     },
     {
-      "name": "Monroe",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Selquah",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2348,
+      "name": "J.Q. Adams",
+      "city": "St. Varian",
+      "county": "Marlow",
+      "area": "Ashbury Metro",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 913,
       "private": false,
-      "mascot": "Anchors",
+      "mascot": "Buffaloes",
       "colors": [
-        "#4b2e83",
-        "#b7a57a"
+        "#5b2a86",
+        "#e5e7eb"
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Mariners League",
-      "boys_district": "Mariners League",
-      "source": "Galina Markov",
-      "locality": "Susquehanna"
+      "girls_district": "Ambassador League",
+      "boys_district": "Ambassador League",
+      "source": "Sofía Cordero"
+    },
+    {
+      "name": "Jackson Hole",
+      "source": "Jackson Hole High",
+      "city": "Jackson",
+      "county": "Teton",
+      "area": "Bear River Country",
+      "state": "Wyoming",
+      "classification": "Group 2",
+      "group": "Group 1",
+      "enrollment": 553,
+      "private": false,
+      "mascot": "Broncs",
+      "colors": [
+        "#0c2340",
+        "#ffffff"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Marble Valley League",
+      "boys_district": "Marble Valley League"
+    },
+    {
+      "name": "Jacmel",
+      "city": "Belyakov",
+      "county": "Vance",
+      "area": "Boise Frontier",
+      "classification": "7A",
+      "group": "7A",
+      "enrollment": 1527,
+      "private": false,
+      "mascot": "Blue Devils",
+      "colors": [
+        "#0e7490",
+        "#fbbf24"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Timber Valley League",
+      "boys_district": "Timber Valley League",
+      "source": "St. Agnes Academy"
+    },
+    {
+      "name": "Jamaica",
+      "city": "Jamaica",
+      "county": "Paddock",
+      "area": "Yarrowmere",
+      "classification": "1A",
+      "group": "1A",
+      "enrollment": 116,
+      "private": false,
+      "mascot": "Eagles",
+      "colors": [
+        "#7f1d1d",
+        "#d4d4d8"
+      ],
+      "girls": true,
+      "boys": false,
+      "girls_district": "Marble Valley League",
+      "boys_district": "Marble Valley League",
+      "source": "Rentie Grove"
     },
     {
       "name": "Janeaway",
@@ -8769,26 +8969,6 @@
       "girls_district": "Mission League",
       "boys_district": "Mission League",
       "source": "Santa Laura North"
-    },
-    {
-      "name": "Baptiste",
-      "source": "Jean Baptiste",
-      "city": "Paris",
-      "county": "Beargrass",
-      "area": "Bear River Country",
-      "classification": "Group 2",
-      "group": "Group 2",
-      "enrollment": 610,
-      "private": false,
-      "mascot": "Prospectors",
-      "colors": [
-        "#1c3f5f",
-        "#c9a961"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Forks League",
-      "boys_district": "Forks League"
     },
     {
       "name": "Jefferson Park",
@@ -8832,6 +9012,26 @@
       "locality": "Tuscaloosa"
     },
     {
+      "name": "Jemison",
+      "city": "Echevarria",
+      "county": "Vance",
+      "area": "Silver Basin",
+      "classification": "Group 1",
+      "group": "Group 1",
+      "enrollment": 2186,
+      "private": false,
+      "mascot": "Orbiters",
+      "colors": [
+        "#1d1d1f",
+        "#d97706"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Metro League",
+      "boys_district": "Metro League",
+      "source": "Mae Jemison"
+    },
+    {
       "name": "Jersey City",
       "city": "Jersey City",
       "county": "Kernwood",
@@ -8850,26 +9050,6 @@
       "girls_district": "Gold Valley League",
       "boys_district": "Gold Valley League",
       "source": "Marsh Depot"
-    },
-    {
-      "name": "J. Jackson",
-      "city": "San Dámaso",
-      "county": "Bidwell",
-      "area": "Selquah",
-      "classification": "4A",
-      "group": "4A",
-      "enrollment": 730,
-      "private": false,
-      "mascot": "Yellowjackets",
-      "colors": [
-        "#6d1a36",
-        "#9fb4c7"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Chinook League",
-      "boys_district": "Chinook League",
-      "source": "San Dámaso Harbor Gate"
     },
     {
       "name": "Jessup Bar",
@@ -8909,86 +9089,6 @@
       "girls_district": "Gold Valley League",
       "boys_district": "Gold Valley League",
       "source": "Astrid Ricci"
-    },
-    {
-      "name": "Carter",
-      "city": "Garrow",
-      "county": "Kernwood",
-      "area": "Yarrowmere",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2343,
-      "private": false,
-      "mascot": "Lancers",
-      "colors": [
-        "#5b2a86",
-        "#e5e7eb"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Gold Valley League",
-      "boys_district": "Gold Valley League",
-      "source": "Jimmy Carter"
-    },
-    {
-      "name": "Kennedy",
-      "source": "Harriman Maritime Academy",
-      "city": "Harriman",
-      "county": "Emigrant",
-      "area": "Kangas",
-      "classification": "Group 1",
-      "group": "Group 1",
-      "enrollment": 2425,
-      "private": false,
-      "mascot": "Windmills",
-      "colors": [
-        "#14532d",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Sage Plains League",
-      "boys_district": "Sage Plains League"
-    },
-    {
-      "name": "Lewis",
-      "city": "Novak",
-      "county": "Tamarack",
-      "area": "Cascade Divide",
-      "classification": "2A",
-      "group": "2A",
-      "enrollment": 208,
-      "private": false,
-      "mascot": "Sharks",
-      "colors": [
-        "#3f2a56",
-        "#3ba55d"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Valle Vista League",
-      "boys_district": "Valle Vista League",
-      "source": "John Lewis"
-    },
-    {
-      "name": "J.Q. Adams",
-      "city": "St. Varian",
-      "county": "Marlow",
-      "area": "Ashbury Metro",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 913,
-      "private": false,
-      "mascot": "Buffaloes",
-      "colors": [
-        "#5b2a86",
-        "#e5e7eb"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Ambassador League",
-      "boys_district": "Ambassador League",
-      "source": "Sofía Cordero"
     },
     {
       "name": "Joseph",
@@ -9151,6 +9251,27 @@
       "source": "Katherine Johnson"
     },
     {
+      "name": "K.B. Jackson",
+      "city": "Belmonte",
+      "county": "Halbrook",
+      "area": "Belmonte Metro",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 815,
+      "private": false,
+      "mascot": "Pelotaris",
+      "colors": [
+        "#0f6a70",
+        "#f4f1ea"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Twin Counties Athletic Association",
+      "boys_district": "Twin Counties Athletic Association",
+      "source": "Amaia Aramburu",
+      "locality": "Pontotoc"
+    },
+    {
       "name": "Kearney",
       "source": "Kearney",
       "city": "Kearney",
@@ -9249,6 +9370,26 @@
       "boys_district": "Foundry League"
     },
     {
+      "name": "Kennedy",
+      "source": "Harriman Maritime Academy",
+      "city": "Harriman",
+      "county": "Emigrant",
+      "area": "Kangas",
+      "classification": "Group 1",
+      "group": "Group 1",
+      "enrollment": 2425,
+      "private": false,
+      "mascot": "Windmills",
+      "colors": [
+        "#14532d",
+        "#e8c46b"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Sage Plains League",
+      "boys_district": "Sage Plains League"
+    },
+    {
       "name": "Kenwood",
       "city": "Madrigal",
       "county": "Halbrook",
@@ -9307,27 +9448,6 @@
       "boys_district": "Tailings League"
     },
     {
-      "name": "K.B. Jackson",
-      "city": "Belmonte",
-      "county": "Halbrook",
-      "area": "Belmonte Metro",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 815,
-      "private": false,
-      "mascot": "Pelotaris",
-      "colors": [
-        "#0f6a70",
-        "#f4f1ea"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Twin Counties Athletic Association",
-      "boys_district": "Twin Counties Athletic Association",
-      "source": "Amaia Aramburu",
-      "locality": "Pontotoc"
-    },
-    {
       "name": "Kettle Ridge",
       "city": "Port Meridian",
       "county": "Bidwell",
@@ -9383,6 +9503,66 @@
       "boys": true,
       "girls_district": "Mariners League",
       "boys_district": "Mariners League"
+    },
+    {
+      "name": "Kimberly",
+      "city": "St. Elian",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "2A",
+      "group": "2A",
+      "enrollment": 224,
+      "private": false,
+      "mascot": "Abbots",
+      "colors": [
+        "#4b2e83",
+        "#b7a57a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Marble Valley League",
+      "boys_district": "Marble Valley League",
+      "source": "St. Elian"
+    },
+    {
+      "name": "King",
+      "city": "Ditch Fork",
+      "county": "Goldbank",
+      "area": "Southern Jefferson",
+      "classification": "1A",
+      "group": "1A",
+      "enrollment": 187,
+      "private": false,
+      "mascot": "Sidewinders",
+      "colors": [
+        "#1d4e9e",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Tailings League",
+      "boys_district": "Tailings League",
+      "source": "Martin Luther"
+    },
+    {
+      "name": "Kingsley",
+      "city": "Port Meridian",
+      "county": "Bidwell",
+      "area": "Selquah",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 966,
+      "private": false,
+      "mascot": "Vikings",
+      "colors": [
+        "#1d1d1f",
+        "#d97706"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Ostrobothnia League",
+      "boys_district": "Ostrobothnia League",
+      "source": "Saint Francis"
     },
     {
       "name": "Kingston",
@@ -9549,6 +9729,26 @@
       "boys_district": "Columbia Gorge District"
     },
     {
+      "name": "Kochiyama",
+      "city": "Los Alisos",
+      "county": "Marlow",
+      "area": "Ashbury Metro",
+      "classification": "4A",
+      "group": "4A",
+      "enrollment": 608,
+      "private": false,
+      "mascot": "Signalmen",
+      "colors": [
+        "#92400e",
+        "#1d1d1f"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Gateway League",
+      "boys_district": "Gateway League",
+      "source": "Yuri Kochiyama"
+    },
+    {
       "name": "Kokomo",
       "city": "Kokomo",
       "county": "Vance",
@@ -9590,6 +9790,26 @@
       "boys_district": "Four Rivers Interscholastic League"
     },
     {
+      "name": "Kuopio",
+      "source": "St. Brigid School",
+      "city": "Harrow",
+      "county": "Emigrant",
+      "area": "Kangas",
+      "classification": "Group 2",
+      "group": "Group 2",
+      "enrollment": 412,
+      "private": false,
+      "mascot": "Cougars",
+      "colors": [
+        "#1e5631",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "High Lakes League",
+      "boys_district": "High Lakes League"
+    },
+    {
       "name": "Kuusamo",
       "city": "Kuusamo",
       "county": "Emigrant",
@@ -9608,6 +9828,26 @@
       "girls_district": "Kaleva League",
       "boys_district": "Kaleva League",
       "source": "Millview"
+    },
+    {
+      "name": "L.B. Johnson",
+      "city": "Mercer City",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2300,
+      "private": false,
+      "mascot": "Smelters",
+      "colors": [
+        "#1e2a4a",
+        "#c05621"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Gold Valley League",
+      "boys_district": "Gold Valley League",
+      "source": "Amos Cross"
     },
     {
       "name": "La Grande",
@@ -9749,6 +9989,26 @@
       "girls_district": "Premier Athletic Association",
       "boys_district": "Premier Athletic Association",
       "source": "Gwendolyn Brooks North"
+    },
+    {
+      "name": "Landing",
+      "city": "Sluice Landing",
+      "county": "Highgrade",
+      "area": "Southern Jefferson",
+      "classification": "2A",
+      "group": "2A",
+      "enrollment": 264,
+      "private": false,
+      "mascot": "Tigers",
+      "colors": [
+        "#4b2e83",
+        "#b7a57a"
+      ],
+      "girls": false,
+      "boys": false,
+      "girls_district": "Sluice League",
+      "boys_district": "Sluice League",
+      "source": "Sluice Landing"
     },
     {
       "name": "Lanphere",
@@ -9906,26 +10166,6 @@
       "boys_district": "Gold Valley League"
     },
     {
-      "name": "Coleman",
-      "city": "Boyerstown",
-      "county": "Marlow",
-      "area": "Ashbury Metro",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 2024,
-      "private": false,
-      "mascot": "Kingfishers",
-      "colors": [
-        "#4b2e83",
-        "#b7a57a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Summit League",
-      "boys_district": "Summit League",
-      "source": "Leonard Coleman"
-    },
-    {
       "name": "Levee Bluff",
       "city": "Levee Bluff",
       "county": "Bardsley",
@@ -9943,6 +10183,26 @@
       "boys": true,
       "girls_district": "Tailings League",
       "boys_district": "Tailings League"
+    },
+    {
+      "name": "Lewis",
+      "city": "Novak",
+      "county": "Tamarack",
+      "area": "Cascade Divide",
+      "classification": "2A",
+      "group": "2A",
+      "enrollment": 208,
+      "private": false,
+      "mascot": "Sharks",
+      "colors": [
+        "#3f2a56",
+        "#3ba55d"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Valle Vista League",
+      "boys_district": "Valle Vista League",
+      "source": "John Lewis"
     },
     {
       "name": "Liberty Hill",
@@ -10043,6 +10303,26 @@
       "girls_district": "Hacienda League",
       "boys_district": "Hacienda League",
       "source": "Alderfield"
+    },
+    {
+      "name": "Lizarra",
+      "city": "Aldecoa",
+      "county": "Vance",
+      "area": "Silver Basin",
+      "classification": "Group 2",
+      "group": "Group 2",
+      "enrollment": 1035,
+      "private": false,
+      "mascot": "Coyotes",
+      "colors": [
+        "#204e39",
+        "#c8a24a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Confluence Athletic Association",
+      "boys_district": "Confluence Athletic Association",
+      "source": "St. Catherine College Prep"
     },
     {
       "name": "Llerena",
@@ -10160,6 +10440,26 @@
       "girls_district": "Rim Country League",
       "boys_district": "Rim Country League",
       "source": "Gabriel Zúñiga"
+    },
+    {
+      "name": "Longmeadow",
+      "city": "Corliss Junction",
+      "county": "Kernwood",
+      "area": "Yarrowmere",
+      "classification": "1A",
+      "group": "1A",
+      "enrollment": 188,
+      "private": false,
+      "mascot": "Mustangs",
+      "colors": [
+        "#8c1d40",
+        "#f0b323"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Tailings League",
+      "boys_district": "Tailings League",
+      "source": "Heritage Christian"
     },
     {
       "name": "Loomis City",
@@ -10360,26 +10660,6 @@
       "boys_district": "Columbia Gorge District"
     },
     {
-      "name": "L.B. Johnson",
-      "city": "Mercer City",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2300,
-      "private": false,
-      "mascot": "Smelters",
-      "colors": [
-        "#1e2a4a",
-        "#c05621"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Gold Valley League",
-      "boys_district": "Gold Valley League",
-      "source": "Amos Cross"
-    },
-    {
       "name": "Mabry Township",
       "source": "Mabry Township",
       "city": "Mabry",
@@ -10398,26 +10678,6 @@
       "boys": true,
       "girls_district": "Inland Empire League",
       "boys_district": "Inland Empire League"
-    },
-    {
-      "name": "Governor Woods",
-      "city": "Cook City",
-      "county": "Featherstone",
-      "area": "Southern Jefferson",
-      "classification": "2A",
-      "group": "2A",
-      "enrollment": 360,
-      "private": false,
-      "mascot": "Panthers",
-      "colors": [
-        "#6d1a36",
-        "#9fb4c7"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Sluice League",
-      "boys_district": "Sluice League",
-      "source": "Madison"
     },
     {
       "name": "Madrigal",
@@ -10439,26 +10699,6 @@
       "boys_district": "Ambassador League"
     },
     {
-      "name": "Jemison",
-      "city": "Echevarria",
-      "county": "Vance",
-      "area": "Silver Basin",
-      "classification": "Group 1",
-      "group": "Group 1",
-      "enrollment": 2186,
-      "private": false,
-      "mascot": "Orbiters",
-      "colors": [
-        "#1d1d1f",
-        "#d97706"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Metro League",
-      "boys_district": "Metro League",
-      "source": "Mae Jemison"
-    },
-    {
       "name": "Magnolia Park",
       "city": "Three Saints",
       "county": "Rimrock",
@@ -10477,47 +10717,6 @@
       "girls_district": "Millworks Athletic Association",
       "boys_district": "Millworks Athletic Association",
       "source": "Isabel Montalvo"
-    },
-    {
-      "name": "Sixmile",
-      "source": "Malad County Christian",
-      "city": "Malad City",
-      "county": "Malad",
-      "area": "Bear River Country",
-      "classification": "Group 3",
-      "group": "Group 3",
-      "enrollment": 360,
-      "private": false,
-      "mascot": "Rattlers",
-      "colors": [
-        "#5e2129",
-        "#dcd6c9"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Northwest Assembly",
-      "boys_district": "Northwest Assembly"
-    },
-    {
-      "name": "Shabazz",
-      "city": "San Borondón",
-      "county": "San Marcos",
-      "area": "Sebastian Cape",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 1751,
-      "private": false,
-      "mascot": "Silver Kings",
-      "colors": [
-        "#14532d",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Del Rey Athletic Association",
-      "boys_district": "Del Rey Athletic Association",
-      "source": "Sergei Belov",
-      "locality": "Cahaba"
     },
     {
       "name": "Malheur Flat",
@@ -10699,6 +10898,26 @@
       "boys_district": "Desert Sky League"
     },
     {
+      "name": "Marshall",
+      "city": "San Cordero",
+      "county": "Tamarack",
+      "area": "Cascade Divide",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2528,
+      "private": false,
+      "mascot": "Jackalopes",
+      "colors": [
+        "#8c1d40",
+        "#f0b323"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Ironwood League",
+      "boys_district": "Ironwood League",
+      "source": "Thurgood Marshall"
+    },
+    {
       "name": "Marshfield Prep",
       "city": "San Borondón",
       "county": "San Marcos",
@@ -10717,47 +10936,6 @@
       "girls_district": "Del Rey Athletic Association",
       "boys_district": "Del Rey Athletic Association",
       "source": "St. Sophia Preparatory"
-    },
-    {
-      "name": "King",
-      "city": "Ditch Fork",
-      "county": "Goldbank",
-      "area": "Southern Jefferson",
-      "classification": "1A",
-      "group": "1A",
-      "enrollment": 187,
-      "private": false,
-      "mascot": "Sidewinders",
-      "colors": [
-        "#1d4e9e",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Tailings League",
-      "boys_district": "Tailings League",
-      "source": "Martin Luther"
-    },
-    {
-      "name": "Van Buren",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Selquah",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2148,
-      "private": false,
-      "mascot": "Timberwolves",
-      "colors": [
-        "#167339",
-        "#e8e6df"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Mariners League",
-      "boys_district": "Mariners League",
-      "source": "Harbor Gate North",
-      "locality": "Piscataway"
     },
     {
       "name": "Mater Dei",
@@ -10900,6 +11078,26 @@
       "boys_district": "Valle Vista League"
     },
     {
+      "name": "Mercer Latin",
+      "city": "Mercer City",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 904,
+      "private": false,
+      "mascot": "Herons",
+      "colors": [
+        "#4b2e83",
+        "#b7a57a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Mariners League",
+      "boys_district": "Mariners League",
+      "source": "St. Olga College Prep"
+    },
+    {
       "name": "Mercy Academy Valley",
       "city": "Kelford",
       "county": "Ferris",
@@ -10955,6 +11153,46 @@
       "boys": true,
       "girls_district": "Desert Sky League",
       "boys_district": "Desert Sky League"
+    },
+    {
+      "name": "Meridian Valley",
+      "city": "Port Meridian",
+      "county": "Bidwell",
+      "area": "Selquah",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 379,
+      "private": false,
+      "mascot": "Longshoremen",
+      "colors": [
+        "#1d4e9e",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Pori League",
+      "boys_district": "Pori League",
+      "source": "Providence Academy Valley"
+    },
+    {
+      "name": "Meriwether",
+      "city": "Fort Meriwether",
+      "county": "Weller",
+      "area": "Selquah",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2271,
+      "private": false,
+      "mascot": "Storm Petrels",
+      "colors": [
+        "#204e39",
+        "#c8a24a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Gateway League",
+      "boys_district": "Gateway League",
+      "source": "Klara Marchand"
     },
     {
       "name": "Mesa Co-op",
@@ -11056,6 +11294,46 @@
       "source": "Naomi Moss"
     },
     {
+      "name": "Michaela East",
+      "city": "Santa Michaela",
+      "county": "Bidwell",
+      "area": "Selquah",
+      "classification": "4A",
+      "group": "4A",
+      "enrollment": 722,
+      "private": false,
+      "mascot": "Eagles",
+      "colors": [
+        "#1e2a4a",
+        "#c05621"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Chinook League",
+      "boys_district": "Chinook League",
+      "source": "Irina Kovalenko"
+    },
+    {
+      "name": "Michaeux",
+      "city": "Stagewater",
+      "county": "Stagewater",
+      "area": "Kangas",
+      "classification": "Group 3",
+      "group": "Group 3",
+      "enrollment": 168,
+      "private": false,
+      "mascot": "Pioneers",
+      "colors": [
+        "#1c1c1c",
+        "#c9a04a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Inland Empire League",
+      "boys_district": "Inland Empire League",
+      "source": "Oscar Michaeux"
+    },
+    {
       "name": "Mickey Mantle",
       "city": "Belyakov",
       "county": "Vance",
@@ -11153,6 +11431,27 @@
       "girls_district": "Valle Vista League",
       "boys_district": "Valle Vista League",
       "source": "Tamarack Springs"
+    },
+    {
+      "name": "Minidoka",
+      "city": "Wyalusing",
+      "county": "Minidoka",
+      "area": "Snake River Plain",
+      "classification": "Group 2",
+      "group": "Group 2",
+      "enrollment": 819,
+      "private": false,
+      "mascot": "Scarlet Spartans",
+      "colors": [
+        "#3f2a56",
+        "#3ba55d"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Olympic League",
+      "boys_district": "Olympic League",
+      "source": "Providence Academy North",
+      "locality": "Wyalusing"
     },
     {
       "name": "Minnesota City",
@@ -11290,6 +11589,26 @@
       "boys_district": "Premier Athletic Association"
     },
     {
+      "name": "Mondale",
+      "city": "Tunnel Diggings",
+      "county": "Goldbank",
+      "area": "Southern Jefferson",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2318,
+      "private": false,
+      "mascot": "Kingfishers",
+      "colors": [
+        "#0e7490",
+        "#fbbf24"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Gold Valley League",
+      "boys_district": "Gold Valley League",
+      "source": "Walter Mondale"
+    },
+    {
       "name": "Money",
       "source": "Money",
       "city": "Money",
@@ -11330,6 +11649,27 @@
       "boys_district": "Marble Valley League",
       "source": "Andrés Ibarra",
       "locality": "Monongahela"
+    },
+    {
+      "name": "Monroe",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Selquah",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2348,
+      "private": false,
+      "mascot": "Anchors",
+      "colors": [
+        "#4b2e83",
+        "#b7a57a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Mariners League",
+      "boys_district": "Mariners League",
+      "source": "Galina Markov",
+      "locality": "Susquehanna"
     },
     {
       "name": "Montclair",
@@ -11390,6 +11730,26 @@
       "boys_district": "Gold Valley League"
     },
     {
+      "name": "Montelago West",
+      "city": "Montelago",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "4A",
+      "group": "4A",
+      "enrollment": 591,
+      "private": false,
+      "mascot": "Lynx",
+      "colors": [
+        "#14294e",
+        "#c8ccd4"
+      ],
+      "girls": true,
+      "boys": false,
+      "girls_district": "Valle Vista League",
+      "boys_district": "Valle Vista League",
+      "source": "St. Agnes Preparatory"
+    },
+    {
       "name": "Montpelier",
       "city": "Tindall",
       "county": "Camas",
@@ -11408,6 +11768,26 @@
       "girls_district": "Ambassador League",
       "boys_district": "Ambassador League",
       "source": "Tindall Heights"
+    },
+    {
+      "name": "Moreno",
+      "city": "Valderra",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1179,
+      "private": false,
+      "mascot": "Yellowjackets",
+      "colors": [
+        "#167339",
+        "#e8e6df"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Mission League",
+      "boys_district": "Mission League",
+      "source": "Rita Moreno"
     },
     {
       "name": "Morgan Park",
@@ -11753,27 +12133,6 @@
       "girls_district": "Del Rey Athletic Association",
       "boys_district": "Del Rey Athletic Association",
       "source": "Las Palmas North",
-      "locality": "Natchitoches"
-    },
-    {
-      "name": "Brightwater",
-      "city": "San Borondón",
-      "county": "San Marcos",
-      "area": "Sebastian Cape",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 894,
-      "private": false,
-      "mascot": "Bighorns",
-      "colors": [
-        "#3a5a78",
-        "#f5e9d0"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Valley Coast Interscholastic League",
-      "boys_district": "Valley Coast Interscholastic League",
-      "source": "St. Casimir Preparatory",
       "locality": "Natchitoches"
     },
     {
@@ -12191,6 +12550,47 @@
       "boys_district": "Foundry League"
     },
     {
+      "name": "North Averill",
+      "city": "Averill",
+      "county": "Sablewood",
+      "area": "Gold Valley",
+      "classification": "4A",
+      "group": "4A",
+      "enrollment": 613,
+      "private": false,
+      "mascot": "Rockets",
+      "colors": [
+        "#8c1d40",
+        "#f0b323"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Mission League",
+      "boys_district": "Mission League",
+      "play_up": true,
+      "source": "St. Isidore"
+    },
+    {
+      "name": "North Carroway",
+      "city": "Carroway",
+      "county": "Rimrock",
+      "area": "Juniper Highlands",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1185,
+      "private": false,
+      "mascot": "Pronghorns",
+      "colors": [
+        "#204e39",
+        "#c8a24a"
+      ],
+      "girls": false,
+      "boys": false,
+      "girls_district": "Juniper League",
+      "boys_district": "Juniper League",
+      "source": "Frances Gaines"
+    },
+    {
       "name": "North Coast",
       "city": "Moriarty",
       "county": "Ferris",
@@ -12251,24 +12651,44 @@
       "source": "Trout Point"
     },
     {
-      "name": "Trailsend",
-      "city": "Netherwood",
-      "county": "Antler",
-      "area": "Alderwold",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 336,
+      "name": "North Starlake",
+      "city": "Starlake",
+      "county": "Vance",
+      "area": "Silver Basin",
+      "classification": "Group 3",
+      "group": "Group 3",
+      "enrollment": 352,
       "private": false,
-      "mascot": "Peelers",
+      "mascot": "Bobcats",
       "colors": [
-        "#7f1d1d",
-        "#d4d4d8"
+        "#1e5631",
+        "#f2f2ee"
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Sky-Em League",
-      "boys_district": "Sky-Em League",
-      "source": "North Valley Christian"
+      "girls_district": "Black Canyon League",
+      "boys_district": "Black Canyon League",
+      "source": "Starlake Canal View"
+    },
+    {
+      "name": "North Wind",
+      "source": "St. Sophia School",
+      "city": "Klamoya",
+      "county": "Tamarack",
+      "area": "Cascade Divide",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 370,
+      "private": false,
+      "mascot": "Black Spartans",
+      "colors": [
+        "#7b1e2b",
+        "#e8c46b"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Rim Country League",
+      "boys_district": "Rim Country League"
     },
     {
       "name": "Northgate",
@@ -12429,6 +12849,27 @@
       "boys_district": "Snake River District"
     },
     {
+      "name": "O'Connor",
+      "city": "Belmonte",
+      "county": "Halbrook",
+      "area": "Belmonte Metro",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2592,
+      "private": false,
+      "mascot": "Warriors",
+      "colors": [
+        "#167339",
+        "#e8e6df"
+      ],
+      "girls": false,
+      "boys": false,
+      "girls_district": "Capital Athletic Association",
+      "boys_district": "Capital Athletic Association",
+      "source": "Iker Aramburu",
+      "locality": "Choctaw"
+    },
+    {
       "name": "Oak Forest",
       "city": "Simmons",
       "county": "Vance",
@@ -12550,26 +12991,6 @@
       "source": "Garazi Aramburu"
     },
     {
-      "name": "Butler",
-      "city": "Boyerstown",
-      "county": "Marlow",
-      "area": "Ashbury Metro",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2217,
-      "private": false,
-      "mascot": "Cablecars",
-      "colors": [
-        "#14532d",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Valle Vista League",
-      "boys_district": "Valle Vista League",
-      "source": "Octavia Butler"
-    },
-    {
       "name": "Odellville",
       "source": "Odellville",
       "city": "Odellville",
@@ -12611,25 +13032,6 @@
       "locality": "Okefenokee"
     },
     {
-      "name": "Olive Head",
-      "city": "Olive Head",
-      "county": "Kernwood",
-      "area": "Yarrowmere",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 1423,
-      "private": false,
-      "mascot": "Bulldogs",
-      "colors": [
-        "#5b2a86",
-        "#e5e7eb"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Mariners League",
-      "boys_district": "Mariners League"
-    },
-    {
       "name": "Olive",
       "city": "Olive Reach",
       "county": "Kernwood",
@@ -12668,6 +13070,25 @@
       "girls_district": "Quarry League",
       "boys_district": "Quarry League",
       "source": "Olive Reach Baptist"
+    },
+    {
+      "name": "Olive Head",
+      "city": "Olive Head",
+      "county": "Kernwood",
+      "area": "Yarrowmere",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 1423,
+      "private": false,
+      "mascot": "Bulldogs",
+      "colors": [
+        "#5b2a86",
+        "#e5e7eb"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Mariners League",
+      "boys_district": "Mariners League"
     },
     {
       "name": "Olivet County",
@@ -12730,6 +13151,26 @@
       "source": "San Telmo Agricultural Sciences Academy"
     },
     {
+      "name": "Orchardgate",
+      "city": "Valderra",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "1A",
+      "group": "1A",
+      "enrollment": 242,
+      "private": false,
+      "mascot": "Archangels",
+      "colors": [
+        "#14294e",
+        "#c8ccd4"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Placer League",
+      "boys_district": "Placer League",
+      "source": "St. Gabriel Preparatory"
+    },
+    {
       "name": "Orellana Central",
       "city": "Orellana",
       "county": "Vance",
@@ -12789,26 +13230,6 @@
       "source": "Mission Terrace North"
     },
     {
-      "name": "Michaeux",
-      "city": "Stagewater",
-      "county": "Stagewater",
-      "area": "Kangas",
-      "classification": "Group 3",
-      "group": "Group 3",
-      "enrollment": 168,
-      "private": false,
-      "mascot": "Pioneers",
-      "colors": [
-        "#1c1c1c",
-        "#c9a04a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Inland Empire League",
-      "boys_district": "Inland Empire League",
-      "source": "Oscar Michaeux"
-    },
-    {
       "name": "Ostrander Union",
       "city": "Camas Landing",
       "county": "Rimrock",
@@ -12826,26 +13247,6 @@
       "boys": true,
       "girls_district": "Rim Country League",
       "boys_district": "Rim Country League"
-    },
-    {
-      "name": "Windward",
-      "city": "Tallow",
-      "county": "San Marcos",
-      "area": "Sebastian Cape",
-      "classification": "2A",
-      "group": "2A",
-      "enrollment": 226,
-      "private": false,
-      "mascot": "Stars",
-      "colors": [
-        "#1d1d1f",
-        "#d97706"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Del Rey Athletic Association",
-      "boys_district": "Del Rey Athletic Association",
-      "source": "Galina Moroz"
     },
     {
       "name": "Owl Canyon",
@@ -13065,26 +13466,6 @@
       "boys_district": "Far West League",
       "source": "Depot High",
       "locality": "Passaic"
-    },
-    {
-      "name": "Robeson",
-      "city": "Boley",
-      "county": "Minidoka",
-      "area": "Snake River Plain",
-      "classification": "Group 1",
-      "group": "Group 1",
-      "enrollment": 1156,
-      "private": false,
-      "mascot": "Rivermen",
-      "colors": [
-        "#1d1d1f",
-        "#d97706"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Halbrook Basin League",
-      "boys_district": "Halbrook Basin League",
-      "source": "Paul Robeson"
     },
     {
       "name": "Pawnee",
@@ -13391,6 +13772,27 @@
       "locality": "Petoskey"
     },
     {
+      "name": "Pierce",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Selquah",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2213,
+      "private": false,
+      "mascot": "Deckhands",
+      "colors": [
+        "#0e7490",
+        "#fbbf24"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Mariners League",
+      "boys_district": "Mariners League",
+      "source": "Katherine Williams",
+      "locality": "Patuxent"
+    },
+    {
       "name": "Pierre",
       "source": "Pierre",
       "city": "Hazelton",
@@ -13430,6 +13832,26 @@
       "boys": true,
       "girls_district": "Columbia Range League",
       "boys_district": "Columbia Range League"
+    },
+    {
+      "name": "Pine",
+      "city": "Pine Siding",
+      "county": "Antler",
+      "area": "Alderwold",
+      "classification": "1A",
+      "group": "1A",
+      "enrollment": 190,
+      "private": false,
+      "mascot": "Jaguars",
+      "colors": [
+        "#204e39",
+        "#c8a24a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Orchard League",
+      "boys_district": "Orchard League",
+      "source": "Pine Siding"
     },
     {
       "name": "Pine Barrens",
@@ -13491,26 +13913,6 @@
       "boys": false,
       "girls_district": "East Cascades League",
       "boys_district": "East Cascades League"
-    },
-    {
-      "name": "Pine",
-      "city": "Pine Siding",
-      "county": "Antler",
-      "area": "Alderwold",
-      "classification": "1A",
-      "group": "1A",
-      "enrollment": 190,
-      "private": false,
-      "mascot": "Jaguars",
-      "colors": [
-        "#204e39",
-        "#c8a24a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Orchard League",
-      "boys_district": "Orchard League",
-      "source": "Pine Siding"
     },
     {
       "name": "Pinebluffs",
@@ -13594,6 +13996,27 @@
       "boys_district": "Narpes Interscholastic League"
     },
     {
+      "name": "Playa Honda",
+      "city": "San Borondón",
+      "county": "San Marcos",
+      "area": "Sebastian Cape",
+      "classification": "1A",
+      "group": "1A",
+      "enrollment": 100,
+      "private": false,
+      "mascot": "Mustangs",
+      "colors": [
+        "#14294e",
+        "#c8ccd4"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "South Coast League",
+      "boys_district": "South Coast League",
+      "source": "Vernon Moss",
+      "locality": "Pointe Coupee"
+    },
+    {
       "name": "Point Loma",
       "city": "Aldecoa",
       "county": "Vance",
@@ -13635,27 +14058,6 @@
       "locality": "Pointe Coupee"
     },
     {
-      "name": "Playa Honda",
-      "city": "San Borondón",
-      "county": "San Marcos",
-      "area": "Sebastian Cape",
-      "classification": "1A",
-      "group": "1A",
-      "enrollment": 100,
-      "private": false,
-      "mascot": "Mustangs",
-      "colors": [
-        "#14294e",
-        "#c8ccd4"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "South Coast League",
-      "boys_district": "South Coast League",
-      "source": "Vernon Moss",
-      "locality": "Pointe Coupee"
-    },
-    {
       "name": "Pointe des Brumes",
       "city": "San Borondón",
       "county": "San Marcos",
@@ -13677,6 +14079,26 @@
       "locality": "Pointe des Brumes"
     },
     {
+      "name": "Polk",
+      "city": "Orellana",
+      "county": "Vance",
+      "area": "Boise Frontier",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2516,
+      "private": false,
+      "mascot": "Puffins",
+      "colors": [
+        "#7f1d1d",
+        "#d4d4d8"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Capital Athletic Association",
+      "boys_district": "Capital Athletic Association",
+      "source": "Katherine Booker"
+    },
+    {
       "name": "Pomar",
       "city": "Pomar",
       "county": "Halbrook",
@@ -13694,26 +14116,6 @@
       "boys": true,
       "girls_district": "Timber Valley League",
       "boys_district": "Timber Valley League"
-    },
-    {
-      "name": "Elkhorn",
-      "city": "Elk Crossing",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "2A",
-      "group": "2A",
-      "enrollment": 248,
-      "private": false,
-      "mascot": "Shepherds",
-      "colors": [
-        "#3f2a56",
-        "#3ba55d"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Millworks Athletic Association",
-      "boys_district": "Millworks Athletic Association",
-      "source": "Thomas Moreau"
     },
     {
       "name": "Pope Leo XIV",
@@ -13736,24 +14138,44 @@
       "source": "Jon Garmendia"
     },
     {
-      "name": "Bravewoman",
-      "source": "St. Genevieve High School",
-      "city": "San Cordero",
-      "county": "Tamarack",
-      "area": "Cascade Divide",
-      "classification": "1A",
-      "group": "1A",
-      "enrollment": 180,
+      "name": "Port Ainsley",
+      "city": "Port Ainsley",
+      "county": "Bidwell",
+      "area": "Selquah",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 338,
       "private": false,
-      "mascot": "Warriors",
+      "mascot": "Cormorants",
       "colors": [
-        "#6d1a36",
-        "#9fb4c7"
+        "#92400e",
+        "#1d1d1f"
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Desert Sky League",
-      "boys_district": "Desert Sky League"
+      "girls_district": "Pori League",
+      "boys_district": "Pori League",
+      "source": "St. Elias Academy"
+    },
+    {
+      "name": "Port Meridian Central",
+      "city": "Port Meridian",
+      "county": "Bidwell",
+      "area": "Selquah",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2189,
+      "private": false,
+      "mascot": "Whalers",
+      "colors": [
+        "#167339",
+        "#e8e6df"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Gateway League",
+      "boys_district": "Gateway League",
+      "source": "Port Meridian West"
     },
     {
       "name": "Port Meridian North",
@@ -13795,26 +14217,6 @@
       "boys_district": "Metro League"
     },
     {
-      "name": "Port Meridian Central",
-      "city": "Port Meridian",
-      "county": "Bidwell",
-      "area": "Selquah",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2189,
-      "private": false,
-      "mascot": "Whalers",
-      "colors": [
-        "#167339",
-        "#e8e6df"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Gateway League",
-      "boys_district": "Gateway League",
-      "source": "Port Meridian West"
-    },
-    {
       "name": "Port Veles Episcopal",
       "city": "Port Veles",
       "county": "Bidwell",
@@ -13833,26 +14235,6 @@
       "girls_district": "Chinook League",
       "boys_district": "Chinook League",
       "source": "Geraldine Cross"
-    },
-    {
-      "name": "Veles Union",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Selquah",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 865,
-      "private": false,
-      "mascot": "Dorymen",
-      "colors": [
-        "#1e2a4a",
-        "#c05621"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Narpes Interscholastic League",
-      "boys_district": "Narpes Interscholastic League",
-      "source": "Nathaniel Cross North"
     },
     {
       "name": "Porterfield",
@@ -13935,44 +14317,24 @@
       "boys_district": "Snake River District"
     },
     {
-      "name": "Deaconsburg",
-      "city": "Halbrook",
-      "county": "Halbrook",
-      "area": "Halbrook Basin",
-      "classification": "7A",
-      "group": "7A",
-      "enrollment": 1418,
+      "name": "Prairie",
+      "city": "Basalt Prairie",
+      "county": "Stagewater",
+      "area": "Kangas",
+      "classification": "Group 3",
+      "group": "Group 3",
+      "enrollment": 128,
       "private": false,
-      "mascot": "Purple Bulldogs",
+      "mascot": "Cougars",
       "colors": [
-        "#3f2a56",
-        "#3ba55d"
+        "#92400e",
+        "#1d1d1f"
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Three Rivers League",
-      "boys_district": "Three Rivers League",
-      "source": "Halbrook Union"
-    },
-    {
-      "name": "Garrow North",
-      "city": "Garrow",
-      "county": "Kernwood",
-      "area": "Yarrowmere",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 455,
-      "private": false,
-      "mascot": "Tigers",
-      "colors": [
-        "#0f6a70",
-        "#f4f1ea"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Quarry League",
-      "boys_district": "Quarry League",
-      "source": "Presentation Academy"
+      "girls_district": "Greater Ashbury Interscholastic League",
+      "boys_district": "Greater Ashbury Interscholastic League",
+      "source": "Basalt Prairie Union"
     },
     {
       "name": "Preston Hollow",
@@ -14035,24 +14397,23 @@
       "locality": "St. Matthews"
     },
     {
-      "name": "Starfield",
-      "city": "Gagarin",
-      "county": "Sablewood",
-      "area": "Gold Valley",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1319,
+      "name": "Prune Springs",
+      "city": "Prune Springs",
+      "county": "Bardsley",
+      "area": "Yarrowmere",
+      "classification": "4A",
+      "group": "4A",
+      "enrollment": 698,
       "private": false,
-      "mascot": "Celtics",
+      "mascot": "Elks",
       "colors": [
-        "#167339",
-        "#e8e6df"
+        "#3f2a56",
+        "#3ba55d"
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Del Rey Athletic Association",
-      "boys_district": "Del Rey Athletic Association",
-      "source": "Naomi Ellison"
+      "girls_district": "Vermilion Valley League",
+      "boys_district": "Vermilion Valley League"
     },
     {
       "name": "Prunedale",
@@ -14073,25 +14434,6 @@
       "boys": true,
       "girls_district": "Millworks Athletic Association",
       "boys_district": "Millworks Athletic Association"
-    },
-    {
-      "name": "Prune Springs",
-      "city": "Prune Springs",
-      "county": "Bardsley",
-      "area": "Yarrowmere",
-      "classification": "4A",
-      "group": "4A",
-      "enrollment": 698,
-      "private": false,
-      "mascot": "Elks",
-      "colors": [
-        "#3f2a56",
-        "#3ba55d"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Vermilion Valley League",
-      "boys_district": "Vermilion Valley League"
     },
     {
       "name": "Puerto Alma",
@@ -14210,6 +14552,26 @@
       "source": "Marian Cross"
     },
     {
+      "name": "Quaking Aspen",
+      "city": "Furrow Crossing",
+      "county": "Barlowe",
+      "area": "Boise Frontier",
+      "classification": "1A",
+      "group": "1A",
+      "enrollment": 153,
+      "private": false,
+      "mascot": "Warriors",
+      "colors": [
+        "#92400e",
+        "#1d1d1f"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Hacienda League",
+      "boys_district": "Hacienda League",
+      "source": "Archbishop Quinlan"
+    },
+    {
       "name": "Quarmont",
       "city": "Quarmont",
       "county": "Ostrander",
@@ -14247,6 +14609,26 @@
       "girls_district": "Del Rey Athletic Association",
       "boys_district": "Del Rey Athletic Association",
       "source": "Rosa Salcedo"
+    },
+    {
+      "name": "Quartzburg",
+      "city": "Tunnel Diggings",
+      "county": "Goldbank",
+      "area": "Southern Jefferson",
+      "classification": "1A",
+      "group": "1A",
+      "enrollment": 127,
+      "private": false,
+      "mascot": "Wolves",
+      "colors": [
+        "#1d4e9e",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Marble Valley League",
+      "boys_district": "Marble Valley League",
+      "source": "St. Cecilia Academy"
     },
     {
       "name": "Quillan",
@@ -14328,46 +14710,6 @@
       "boys_district": "Northwest Assembly"
     },
     {
-      "name": "Rostova Tech",
-      "city": "Rostova Junction",
-      "county": "Emigrant",
-      "area": "Kangas",
-      "classification": "Group 1",
-      "group": "Group 1",
-      "enrollment": 1557,
-      "private": false,
-      "mascot": "Darkwings",
-      "colors": [
-        "#0e7490",
-        "#fbbf24"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Ambassador League",
-      "boys_district": "Ambassador League",
-      "source": "Rostova Junction Technical Arts Academy"
-    },
-    {
-      "name": "Bellamy",
-      "city": "Weissburg",
-      "county": "Halbrook",
-      "area": "Halbrook Basin",
-      "classification": "7A",
-      "group": "7A",
-      "enrollment": 1323,
-      "private": false,
-      "mascot": "Blacktails",
-      "colors": [
-        "#5b2a86",
-        "#e5e7eb"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Three Rivers League",
-      "boys_district": "Three Rivers League",
-      "source": "Ralph Bellamy"
-    },
-    {
       "name": "Ransom Pass",
       "city": "Ransom Pass",
       "county": "Tamarack",
@@ -14447,6 +14789,26 @@
       "source": "Thelma Avery"
     },
     {
+      "name": "Reagan",
+      "city": "Furrow Crossing",
+      "county": "Barlowe",
+      "area": "Boise Frontier",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2187,
+      "private": false,
+      "mascot": "Mighty Bulldogs",
+      "colors": [
+        "#333d29",
+        "#d97706"
+      ],
+      "girls": false,
+      "boys": false,
+      "girls_district": "Capital Athletic Association",
+      "boys_district": "Capital Athletic Association",
+      "source": "Ronald Reagan"
+    },
+    {
       "name": "Red Bluff",
       "source": "Echevarria I-50 Technical",
       "city": "Echevarria",
@@ -14506,6 +14868,26 @@
       "boys_district": "Three Rivers League"
     },
     {
+      "name": "Redwood",
+      "city": "Echevarria",
+      "county": "Vance",
+      "area": "Silver Basin",
+      "classification": "Group 1",
+      "group": "Group 1",
+      "enrollment": 2513,
+      "private": false,
+      "mascot": "Wildcats",
+      "colors": [
+        "#0e7490",
+        "#fbbf24"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Metro League",
+      "boys_district": "Metro League",
+      "source": "Amaia Echevarria"
+    },
+    {
       "name": "Redwood Glen",
       "city": "Harmons Landing",
       "county": "Antler",
@@ -14525,24 +14907,24 @@
       "boys_district": "Orchard League"
     },
     {
-      "name": "Redwood",
-      "city": "Echevarria",
-      "county": "Vance",
-      "area": "Silver Basin",
-      "classification": "Group 1",
-      "group": "Group 1",
-      "enrollment": 2513,
+      "name": "Reed Lake",
+      "city": "Tule Flat",
+      "county": "Kernwood",
+      "area": "Yarrowmere",
+      "classification": "1A",
+      "group": "1A",
+      "enrollment": 123,
       "private": false,
-      "mascot": "Wildcats",
+      "mascot": "Chukars",
       "colors": [
-        "#0e7490",
-        "#fbbf24"
+        "#3f2a56",
+        "#3ba55d"
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Metro League",
-      "boys_district": "Metro League",
-      "source": "Amaia Echevarria"
+      "girls_district": "Tailings League",
+      "boys_district": "Tailings League",
+      "source": "Tule Flat Lutheran"
     },
     {
       "name": "Reservoir Park",
@@ -14625,6 +15007,27 @@
       "boys_district": "Confluence Athletic Association"
     },
     {
+      "name": "Ride",
+      "source": "Nadia Sidorov",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Selquah",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1151,
+      "private": false,
+      "mascot": "Chandlers",
+      "colors": [
+        "#14294e",
+        "#c8ccd4"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Mariners League",
+      "boys_district": "Mariners League",
+      "locality": "Roanoke"
+    },
+    {
       "name": "Rilland",
       "city": "Rilland",
       "county": "Emigrant",
@@ -14681,46 +15084,6 @@
       "boys": true,
       "girls_district": "Ambassador League",
       "boys_district": "Ambassador League"
-    },
-    {
-      "name": "Moreno",
-      "city": "Valderra",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1179,
-      "private": false,
-      "mascot": "Yellowjackets",
-      "colors": [
-        "#167339",
-        "#e8e6df"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Mission League",
-      "boys_district": "Mission League",
-      "source": "Rita Moreno"
-    },
-    {
-      "name": "Riverview",
-      "city": "Dovetail",
-      "county": "Stagewater",
-      "area": "Kangas",
-      "classification": "Group 3",
-      "group": "Group 3",
-      "enrollment": 336,
-      "private": false,
-      "mascot": "Joiners",
-      "colors": [
-        "#7f1d1d",
-        "#d4d4d8"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Inland Empire League",
-      "boys_district": "Inland Empire League",
-      "source": "Marian Browne"
     },
     {
       "name": "River North",
@@ -14804,6 +15167,26 @@
       "boys_district": "Eastern Oregon League"
     },
     {
+      "name": "Riverview",
+      "city": "Dovetail",
+      "county": "Stagewater",
+      "area": "Kangas",
+      "classification": "Group 3",
+      "group": "Group 3",
+      "enrollment": 336,
+      "private": false,
+      "mascot": "Joiners",
+      "colors": [
+        "#7f1d1d",
+        "#d4d4d8"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Inland Empire League",
+      "boys_district": "Inland Empire League",
+      "source": "Marian Browne"
+    },
+    {
       "name": "Riviere Salee",
       "city": "Belyakov",
       "county": "Vance",
@@ -14823,6 +15206,46 @@
       "boys_district": "Hacienda League",
       "source": "Anya Orlov",
       "locality": "Riviere Salee"
+    },
+    {
+      "name": "Robeson",
+      "city": "Boley",
+      "county": "Minidoka",
+      "area": "Snake River Plain",
+      "classification": "Group 1",
+      "group": "Group 1",
+      "enrollment": 1156,
+      "private": false,
+      "mascot": "Rivermen",
+      "colors": [
+        "#1d1d1f",
+        "#d97706"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Halbrook Basin League",
+      "boys_district": "Halbrook Basin League",
+      "source": "Paul Robeson"
+    },
+    {
+      "name": "Robledo",
+      "city": "Los Robles",
+      "county": "Marlow",
+      "area": "Ashbury Metro",
+      "classification": "7A",
+      "group": "7A",
+      "enrollment": 1575,
+      "private": true,
+      "mascot": "Lancers",
+      "colors": [
+        "#0f6a70",
+        "#f4f1ea"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Premier Athletic Association",
+      "boys_district": "Premier Athletic Association",
+      "source": "Amos Moss"
     },
     {
       "name": "Rock Springs",
@@ -14966,26 +15389,6 @@
       "locality": "Finiski"
     },
     {
-      "name": "Reagan",
-      "city": "Furrow Crossing",
-      "county": "Barlowe",
-      "area": "Boise Frontier",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2187,
-      "private": false,
-      "mascot": "Mighty Bulldogs",
-      "colors": [
-        "#333d29",
-        "#d97706"
-      ],
-      "girls": false,
-      "boys": false,
-      "girls_district": "Capital Athletic Association",
-      "boys_district": "Capital Athletic Association",
-      "source": "Ronald Reagan"
-    },
-    {
       "name": "Roosevelt",
       "city": "Port Veles",
       "county": "Bidwell",
@@ -15046,6 +15449,26 @@
       "boys_district": "Vesterheim Athletic Association"
     },
     {
+      "name": "Rostova Tech",
+      "city": "Rostova Junction",
+      "county": "Emigrant",
+      "area": "Kangas",
+      "classification": "Group 1",
+      "group": "Group 1",
+      "enrollment": 1557,
+      "private": false,
+      "mascot": "Darkwings",
+      "colors": [
+        "#0e7490",
+        "#fbbf24"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Ambassador League",
+      "boys_district": "Ambassador League",
+      "source": "Rostova Junction Technical Arts Academy"
+    },
+    {
       "name": "Round Mountain",
       "city": "Santa Michaela",
       "county": "Bidwell",
@@ -15064,26 +15487,6 @@
       "girls_district": "Mariners League",
       "boys_district": "Mariners League",
       "source": "Jeannette Freeman"
-    },
-    {
-      "name": "Carlin",
-      "source": "Ruby County Catholic",
-      "city": "Carlin",
-      "county": "Ruby",
-      "area": "Silver Basin",
-      "classification": "Group 2",
-      "group": "Group 2",
-      "enrollment": 620,
-      "private": false,
-      "mascot": "Hawks",
-      "colors": [
-        "#3a2a1c",
-        "#d9a441"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Dual County League",
-      "boys_district": "Dual County League"
     },
     {
       "name": "Rumsfeld Hill",
@@ -15106,45 +15509,25 @@
       "source": "San Borondón Civic Academy"
     },
     {
-      "name": "Ginsburg",
-      "city": "Aurelia",
-      "county": "Emigrant",
-      "area": "Kangas",
-      "classification": "Group 1",
-      "group": "Group 1",
-      "enrollment": 2556,
+      "name": "Rustin",
+      "city": "Belyakov",
+      "county": "Vance",
+      "area": "Boise Frontier",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2537,
       "private": false,
-      "mascot": "Marauders",
+      "mascot": "Seeders",
       "colors": [
-        "#1e5631",
-        "#f2f2ee"
-      ],
-      "girls": false,
-      "boys": false,
-      "girls_district": "Sage Plains League",
-      "boys_district": "Sage Plains League",
-      "source": "Nicolás Cordero"
-    },
-    {
-      "name": "Hayes",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Selquah",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1124,
-      "private": false,
-      "mascot": "Cannerymen",
-      "colors": [
-        "#3a5a78",
-        "#f5e9d0"
+        "#14532d",
+        "#e8c46b"
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Mariners League",
-      "boys_district": "Mariners League",
-      "source": "Marcus Langston",
-      "locality": "Wethersfield"
+      "girls_district": "Forks League",
+      "boys_district": "Forks League",
+      "locality": "Wilberforce",
+      "source": "Bayard Rustin"
     },
     {
       "name": "Rye",
@@ -15344,47 +15727,6 @@
       "boys_district": "Far West League"
     },
     {
-      "name": "Kingsley",
-      "city": "Port Meridian",
-      "county": "Bidwell",
-      "area": "Selquah",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 966,
-      "private": false,
-      "mascot": "Vikings",
-      "colors": [
-        "#1d1d1f",
-        "#d97706"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Ostrobothnia League",
-      "boys_district": "Ostrobothnia League",
-      "source": "Saint Francis"
-    },
-    {
-      "name": "Cap Rouge",
-      "city": "Belyakov",
-      "county": "Vance",
-      "area": "Boise Frontier",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1297,
-      "private": false,
-      "mascot": "Cougars",
-      "colors": [
-        "#1d4e9e",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Cascade Divide League",
-      "boys_district": "Cascade Divide League",
-      "source": "Mikhail Sidorov",
-      "locality": "Saint Michel"
-    },
-    {
       "name": "Salmon Bay",
       "city": "Salmon Bay",
       "county": "Weller",
@@ -15443,6 +15785,26 @@
       "girls_district": "Big Sky League",
       "boys_district": "Big Sky League",
       "source": "Saltbush Reach"
+    },
+    {
+      "name": "Saltmarsh",
+      "source": "St. Helena School",
+      "city": "Mount Clambake",
+      "county": "Antler",
+      "area": "Alderwold",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 463,
+      "private": false,
+      "mascot": "Tie Hackers",
+      "colors": [
+        "#5b2a86",
+        "#e5e7eb"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Pori League",
+      "boys_district": "Pori League"
     },
     {
       "name": "San Aurelio",
@@ -15639,27 +16001,6 @@
       "boys_district": "Valle Vista League"
     },
     {
-      "name": "O'Connor",
-      "city": "Belmonte",
-      "county": "Halbrook",
-      "area": "Belmonte Metro",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2592,
-      "private": false,
-      "mascot": "Warriors",
-      "colors": [
-        "#167339",
-        "#e8e6df"
-      ],
-      "girls": false,
-      "boys": false,
-      "girls_district": "Capital Athletic Association",
-      "boys_district": "Capital Athletic Association",
-      "source": "Iker Aramburu",
-      "locality": "Choctaw"
-    },
-    {
       "name": "Santa Cruz del Norte",
       "city": "Santa Cruz del Norte",
       "county": "San Marcos",
@@ -15817,6 +16158,26 @@
       "source": "Seafarer High"
     },
     {
+      "name": "Seagrove",
+      "city": "Olive Reach",
+      "county": "Kernwood",
+      "area": "Yarrowmere",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2392,
+      "private": false,
+      "mascot": "Spartans",
+      "colors": [
+        "#1d1d1f",
+        "#d97706"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Gold Valley League",
+      "boys_district": "Gold Valley League",
+      "source": "Coolidge"
+    },
+    {
       "name": "Seamus Town",
       "city": "Seamus Town",
       "county": "Juniper",
@@ -15894,26 +16255,6 @@
       "boys": true,
       "girls_district": "Metro League",
       "boys_district": "Metro League"
-    },
-    {
-      "name": "Veles Park",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Selquah",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 372,
-      "private": false,
-      "mascot": "Crabbers",
-      "colors": [
-        "#1e5631",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Pori League",
-      "boys_district": "Pori League",
-      "source": "Port Veles International Academy"
     },
     {
       "name": "Senator Gray",
@@ -15994,6 +16335,27 @@
       "girls_district": "Mariners League",
       "boys_district": "Mariners League",
       "locality": "Severn"
+    },
+    {
+      "name": "Shabazz",
+      "city": "San Borondón",
+      "county": "San Marcos",
+      "area": "Sebastian Cape",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 1751,
+      "private": false,
+      "mascot": "Silver Kings",
+      "colors": [
+        "#14532d",
+        "#e8c46b"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Del Rey Athletic Association",
+      "boys_district": "Del Rey Athletic Association",
+      "source": "Sergei Belov",
+      "locality": "Cahaba"
     },
     {
       "name": "Sharpstown",
@@ -16137,27 +16499,6 @@
       "boys": true,
       "girls_district": "Assay Athletic Association",
       "boys_district": "Assay Athletic Association"
-    },
-    {
-      "name": "Chisholm",
-      "city": "Belmonte",
-      "county": "Halbrook",
-      "area": "Belmonte Metro",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 1789,
-      "private": false,
-      "mascot": "Blacktails",
-      "colors": [
-        "#167339",
-        "#e8e6df"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Ambassador League",
-      "boys_district": "Ambassador League",
-      "locality": "Burroughs",
-      "source": "Shirley Chisholm"
     },
     {
       "name": "Siberia",
@@ -16359,26 +16700,6 @@
       "play_up": true
     },
     {
-      "name": "South Serrano",
-      "city": "Serrano",
-      "county": "Halbrook",
-      "area": "Halbrook Basin",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2359,
-      "private": false,
-      "mascot": "Golden Generals",
-      "colors": [
-        "#167339",
-        "#e8e6df"
-      ],
-      "girls": false,
-      "boys": false,
-      "girls_district": "Forks League",
-      "boys_district": "Forks League",
-      "source": "Nicolás Salcedo"
-    },
-    {
       "name": "Siskiyou Valley",
       "source": "Mother Lode",
       "city": "Copper Prairie",
@@ -16399,27 +16720,6 @@
       "boys_district": "Millworks Athletic Association"
     },
     {
-      "name": "Websterfield",
-      "city": "Louisville",
-      "county": "Valdez",
-      "area": "Port Valdez",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 854,
-      "private": false,
-      "mascot": "Martens",
-      "colors": [
-        "#4b2e83",
-        "#b7a57a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Valle Vista League",
-      "boys_district": "Valle Vista League",
-      "locality": "Carondelet",
-      "source": "Sisters of Mercy"
-    },
-    {
       "name": "Sixes",
       "city": "Sixes",
       "county": "Stagewater",
@@ -16437,6 +16737,26 @@
       "boys": true,
       "girls_district": "Greater Ashbury Interscholastic League",
       "boys_district": "Greater Ashbury Interscholastic League"
+    },
+    {
+      "name": "Sixmile",
+      "source": "Malad County Christian",
+      "city": "Malad City",
+      "county": "Malad",
+      "area": "Bear River Country",
+      "classification": "Group 3",
+      "group": "Group 3",
+      "enrollment": 360,
+      "private": false,
+      "mascot": "Rattlers",
+      "colors": [
+        "#5e2129",
+        "#dcd6c9"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Northwest Assembly",
+      "boys_district": "Northwest Assembly"
     },
     {
       "name": "Skypark",
@@ -16477,26 +16797,6 @@
       "girls_district": "Ostrobothnia League",
       "boys_district": "Ostrobothnia League",
       "source": "Zubieta Manufacturing and Technology Academy"
-    },
-    {
-      "name": "Landing",
-      "city": "Sluice Landing",
-      "county": "Highgrade",
-      "area": "Southern Jefferson",
-      "classification": "2A",
-      "group": "2A",
-      "enrollment": 264,
-      "private": false,
-      "mascot": "Tigers",
-      "colors": [
-        "#4b2e83",
-        "#b7a57a"
-      ],
-      "girls": false,
-      "boys": false,
-      "girls_district": "Sluice League",
-      "boys_district": "Sluice League",
-      "source": "Sluice Landing"
     },
     {
       "name": "Sluice Valley",
@@ -16559,26 +16859,6 @@
       "locality": "Tallulah"
     },
     {
-      "name": "Sotomayor",
-      "city": "Mount Horeb",
-      "county": "Marlow",
-      "area": "Ashbury Metro",
-      "classification": "4A",
-      "group": "4A",
-      "enrollment": 727,
-      "private": false,
-      "mascot": "Blue Mustangs",
-      "colors": [
-        "#0e7490",
-        "#fbbf24"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Gateway League",
-      "boys_district": "Gateway League",
-      "source": "Manuel Cordero"
-    },
-    {
       "name": "Sotavento",
       "source": "San Borondón Environmental Sciences Academy",
       "city": "San Borondón",
@@ -16619,6 +16899,26 @@
       "source": "Milldale Union"
     },
     {
+      "name": "Sotomayor",
+      "city": "Mount Horeb",
+      "county": "Marlow",
+      "area": "Ashbury Metro",
+      "classification": "4A",
+      "group": "4A",
+      "enrollment": 727,
+      "private": false,
+      "mascot": "Blue Mustangs",
+      "colors": [
+        "#0e7490",
+        "#fbbf24"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Gateway League",
+      "boys_district": "Gateway League",
+      "source": "Manuel Cordero"
+    },
+    {
       "name": "South Fork",
       "source": "South Fork",
       "city": "Ansotegui",
@@ -16637,6 +16937,66 @@
       "boys": false,
       "girls_district": "Foundry League",
       "boys_district": "Foundry League"
+    },
+    {
+      "name": "South Pomar",
+      "city": "Pomar",
+      "county": "Halbrook",
+      "area": "Halbrook Basin",
+      "classification": "2A",
+      "group": "2A",
+      "enrollment": 251,
+      "private": false,
+      "mascot": "Lions",
+      "colors": [
+        "#14294e",
+        "#c8ccd4"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Desert Sky League",
+      "boys_district": "Desert Sky League",
+      "source": "St. Francis Xavier College Prep"
+    },
+    {
+      "name": "South Rim",
+      "city": "Clear Springs",
+      "county": "Rimrock",
+      "area": "Juniper Highlands",
+      "classification": "2A",
+      "group": "2A",
+      "enrollment": 268,
+      "private": false,
+      "mascot": "Cougars",
+      "colors": [
+        "#92400e",
+        "#1d1d1f"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Valle Vista League",
+      "boys_district": "Valle Vista League",
+      "source": "Mikel Zubieta"
+    },
+    {
+      "name": "South Serrano",
+      "city": "Serrano",
+      "county": "Halbrook",
+      "area": "Halbrook Basin",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2359,
+      "private": false,
+      "mascot": "Golden Generals",
+      "colors": [
+        "#167339",
+        "#e8e6df"
+      ],
+      "girls": false,
+      "boys": false,
+      "girls_district": "Forks League",
+      "boys_district": "Forks League",
+      "source": "Nicolás Salcedo"
     },
     {
       "name": "South Simmons",
@@ -16677,26 +17037,6 @@
       "boys": true,
       "girls_district": "Marble Valley League",
       "boys_district": "Marble Valley League"
-    },
-    {
-      "name": "Uplands",
-      "city": "Latgaway",
-      "county": "Stagewater",
-      "area": "Kangas",
-      "classification": "Group 3",
-      "group": "Group 3",
-      "enrollment": 93,
-      "private": false,
-      "mascot": "Fireflies",
-      "colors": [
-        "#3f2a56",
-        "#3ba55d"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Inland Empire League",
-      "boys_district": "Inland Empire League",
-      "source": "Southern Jefferson Christian"
     },
     {
       "name": "Southern Pacific Tech",
@@ -16860,86 +17200,6 @@
       "source": "Isaiah Price"
     },
     {
-      "name": "Jacmel",
-      "city": "Belyakov",
-      "county": "Vance",
-      "area": "Boise Frontier",
-      "classification": "7A",
-      "group": "7A",
-      "enrollment": 1527,
-      "private": false,
-      "mascot": "Blue Devils",
-      "colors": [
-        "#0e7490",
-        "#fbbf24"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Timber Valley League",
-      "boys_district": "Timber Valley League",
-      "source": "St. Agnes Academy"
-    },
-    {
-      "name": "Montelago West",
-      "city": "Montelago",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "4A",
-      "group": "4A",
-      "enrollment": 591,
-      "private": false,
-      "mascot": "Lynx",
-      "colors": [
-        "#14294e",
-        "#c8ccd4"
-      ],
-      "girls": true,
-      "boys": false,
-      "girls_district": "Valle Vista League",
-      "boys_district": "Valle Vista League",
-      "source": "St. Agnes Preparatory"
-    },
-    {
-      "name": "Kuopio",
-      "source": "St. Brigid School",
-      "city": "Harrow",
-      "county": "Emigrant",
-      "area": "Kangas",
-      "classification": "Group 2",
-      "group": "Group 2",
-      "enrollment": 412,
-      "private": false,
-      "mascot": "Cougars",
-      "colors": [
-        "#1e5631",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "High Lakes League",
-      "boys_district": "High Lakes League"
-    },
-    {
-      "name": "Harriman Lyceum",
-      "source": "St. Casimir High School",
-      "city": "Harriman",
-      "county": "Emigrant",
-      "area": "Kangas",
-      "classification": "Group 2",
-      "group": "Group 2",
-      "enrollment": 1035,
-      "private": false,
-      "mascot": "Rams",
-      "colors": [
-        "#0f6a70",
-        "#f4f1ea"
-      ],
-      "girls": true,
-      "boys": false,
-      "girls_district": "Vesterheim Athletic Association",
-      "boys_district": "Vesterheim Athletic Association"
-    },
-    {
       "name": "St. Catherine Academy",
       "city": "St. Varian",
       "county": "Marlow",
@@ -16958,166 +17218,6 @@
       "girls_district": "Capital Athletic Association",
       "boys_district": "Capital Athletic Association",
       "source": "Nathaniel Gaines"
-    },
-    {
-      "name": "Lizarra",
-      "city": "Aldecoa",
-      "county": "Vance",
-      "area": "Silver Basin",
-      "classification": "Group 2",
-      "group": "Group 2",
-      "enrollment": 1035,
-      "private": false,
-      "mascot": "Coyotes",
-      "colors": [
-        "#204e39",
-        "#c8a24a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Confluence Athletic Association",
-      "boys_district": "Confluence Athletic Association",
-      "source": "St. Catherine College Prep"
-    },
-    {
-      "name": "Quartzburg",
-      "city": "Tunnel Diggings",
-      "county": "Goldbank",
-      "area": "Southern Jefferson",
-      "classification": "1A",
-      "group": "1A",
-      "enrollment": 127,
-      "private": false,
-      "mascot": "Wolves",
-      "colors": [
-        "#1d4e9e",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League",
-      "source": "St. Cecilia Academy"
-    },
-    {
-      "name": "Wildrye",
-      "city": "Vonjo City",
-      "county": "Windrow",
-      "area": "Millersylvania",
-      "classification": "Group 2",
-      "group": "Group 2",
-      "enrollment": 431,
-      "private": false,
-      "mascot": "Bulldogs",
-      "colors": [
-        "#14294e",
-        "#c8ccd4"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "High Lakes League",
-      "boys_district": "High Lakes League",
-      "source": "St. Dominic Academy"
-    },
-    {
-      "name": "Kimberly",
-      "city": "St. Elian",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "2A",
-      "group": "2A",
-      "enrollment": 224,
-      "private": false,
-      "mascot": "Abbots",
-      "colors": [
-        "#4b2e83",
-        "#b7a57a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League",
-      "source": "St. Elian"
-    },
-    {
-      "name": "Port Ainsley",
-      "city": "Port Ainsley",
-      "county": "Bidwell",
-      "area": "Selquah",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 338,
-      "private": false,
-      "mascot": "Cormorants",
-      "colors": [
-        "#92400e",
-        "#1d1d1f"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Pori League",
-      "boys_district": "Pori League",
-      "source": "St. Elias Academy"
-    },
-    {
-      "name": "Aranaz",
-      "city": "Echevarria",
-      "county": "Vance",
-      "area": "Silver Basin",
-      "classification": "Group 2",
-      "group": "Group 2",
-      "enrollment": 730,
-      "private": false,
-      "mascot": "Rattlers",
-      "colors": [
-        "#6d1a36",
-        "#9fb4c7"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Dual County League",
-      "boys_district": "Dual County League",
-      "source": "St. Elias College Prep"
-    },
-    {
-      "name": "Robledo",
-      "city": "Los Robles",
-      "county": "Marlow",
-      "area": "Ashbury Metro",
-      "classification": "7A",
-      "group": "7A",
-      "enrollment": 1575,
-      "private": false,
-      "mascot": "Lancers",
-      "colors": [
-        "#0f6a70",
-        "#f4f1ea"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Premier Athletic Association",
-      "boys_district": "Premier Athletic Association",
-      "source": "Amos Moss"
-    },
-    {
-      "name": "South Pomar",
-      "city": "Pomar",
-      "county": "Halbrook",
-      "area": "Halbrook Basin",
-      "classification": "2A",
-      "group": "2A",
-      "enrollment": 251,
-      "private": false,
-      "mascot": "Lions",
-      "colors": [
-        "#14294e",
-        "#c8ccd4"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Desert Sky League",
-      "boys_district": "Desert Sky League",
-      "source": "St. Francis Xavier College Prep"
     },
     {
       "name": "St. Gabriel Academy",
@@ -17139,66 +17239,6 @@
       "boys_district": "Olympic League"
     },
     {
-      "name": "Orchardgate",
-      "city": "Valderra",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "1A",
-      "group": "1A",
-      "enrollment": 242,
-      "private": false,
-      "mascot": "Archangels",
-      "colors": [
-        "#14294e",
-        "#c8ccd4"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Placer League",
-      "boys_district": "Placer League",
-      "source": "St. Gabriel Preparatory"
-    },
-    {
-      "name": "Whitegrass",
-      "city": "Benchton",
-      "county": "Barlowe",
-      "area": "Boise Frontier",
-      "classification": "1A",
-      "group": "1A",
-      "enrollment": 129,
-      "private": false,
-      "mascot": "Crimson Hurricanes",
-      "colors": [
-        "#167339",
-        "#e8e6df"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Hacienda League",
-      "boys_district": "Hacienda League",
-      "source": "St. Genevieve"
-    },
-    {
-      "name": "Saltmarsh",
-      "source": "St. Helena School",
-      "city": "Mount Clambake",
-      "county": "Antler",
-      "area": "Alderwold",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 463,
-      "private": false,
-      "mascot": "Tie Hackers",
-      "colors": [
-        "#5b2a86",
-        "#e5e7eb"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Pori League",
-      "boys_district": "Pori League"
-    },
-    {
       "name": "St. Ignatius",
       "source": "St. Basil School",
       "city": "Belmonte",
@@ -17217,47 +17257,6 @@
       "boys": false,
       "girls_district": "Black Canyon League",
       "boys_district": "Black Canyon League"
-    },
-    {
-      "name": "North Averill",
-      "city": "Averill",
-      "county": "Sablewood",
-      "area": "Gold Valley",
-      "classification": "4A",
-      "group": "4A",
-      "enrollment": 613,
-      "private": false,
-      "mascot": "Rockets",
-      "colors": [
-        "#8c1d40",
-        "#f0b323"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Mission League",
-      "boys_district": "Mission League",
-      "play_up": true,
-      "source": "St. Isidore"
-    },
-    {
-      "name": "Isla Verde",
-      "city": "San Borondón",
-      "county": "San Marcos",
-      "area": "Sebastian Cape",
-      "classification": "1A",
-      "group": "1A",
-      "enrollment": 306,
-      "private": false,
-      "mascot": "Albatross",
-      "colors": [
-        "#0f6a70",
-        "#f4f1ea"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "South Coast League",
-      "boys_district": "South Coast League",
-      "source": "St. Jerome Academy"
     },
     {
       "name": "St. Josephine Bakhita",
@@ -17299,66 +17298,6 @@
       "boys_district": "Desert Sky League"
     },
     {
-      "name": "Tallgrass",
-      "city": "Furrow Crossing",
-      "county": "Barlowe",
-      "area": "Boise Frontier",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 312,
-      "private": false,
-      "mascot": "Wildcats",
-      "colors": [
-        "#1e2a4a",
-        "#c05621"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Timber Valley League",
-      "boys_district": "Timber Valley League",
-      "source": "St. Lucy"
-    },
-    {
-      "name": "Greaves West",
-      "city": "Greaves",
-      "county": "Vance",
-      "area": "Silver Basin",
-      "classification": "Group 2",
-      "group": "Group 2",
-      "enrollment": 576,
-      "private": false,
-      "mascot": "Mountaineers",
-      "colors": [
-        "#1d1d1f",
-        "#d97706"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Olympic League",
-      "boys_district": "Olympic League",
-      "source": "St. Martin Preparatory"
-    },
-    {
-      "name": "Harriman East",
-      "city": "Harriman",
-      "county": "Emigrant",
-      "area": "Kangas",
-      "classification": "Group 2",
-      "group": "Group 2",
-      "enrollment": 996,
-      "private": false,
-      "mascot": "Orioles",
-      "colors": [
-        "#1d1d1f",
-        "#d97706"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Vesterheim Athletic Association",
-      "boys_district": "Vesterheim Athletic Association",
-      "source": "St. Michael Academy"
-    },
-    {
       "name": "St. Norbert Abbey",
       "city": "Louisville",
       "county": "Valdez",
@@ -17377,66 +17316,6 @@
       "girls_district": "Desert Sky League",
       "boys_district": "Desert Sky League",
       "locality": "Shively"
-    },
-    {
-      "name": "Mercer Latin",
-      "city": "Mercer City",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 904,
-      "private": false,
-      "mascot": "Herons",
-      "colors": [
-        "#4b2e83",
-        "#b7a57a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Mariners League",
-      "boys_district": "Mariners League",
-      "source": "St. Olga College Prep"
-    },
-    {
-      "name": "Farview",
-      "city": "Halbrook",
-      "county": "Halbrook",
-      "area": "Halbrook Basin",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1073,
-      "private": false,
-      "mascot": "Polecats",
-      "colors": [
-        "#8c1d40",
-        "#f0b323"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Cascade Divide League",
-      "boys_district": "Cascade Divide League",
-      "source": "St. Perpetua"
-    },
-    {
-      "name": "Elk Bluff West",
-      "city": "Elk Bluff",
-      "county": "Windrow",
-      "area": "Millersylvania",
-      "classification": "Group 3",
-      "group": "Group 3",
-      "enrollment": 285,
-      "private": false,
-      "mascot": "Bobcats",
-      "colors": [
-        "#204e39",
-        "#c8a24a"
-      ],
-      "girls": true,
-      "boys": false,
-      "girls_district": "Big Sky League",
-      "boys_district": "Big Sky League",
-      "source": "St. Raphael College Prep"
     },
     {
       "name": "St. Sebastian Prep",
@@ -17459,46 +17338,6 @@
       "locality": "Webster Groves"
     },
     {
-      "name": "Alderpoint",
-      "city": "Novak",
-      "county": "Tamarack",
-      "area": "Cascade Divide",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 446,
-      "private": false,
-      "mascot": "Northern Lights",
-      "colors": [
-        "#7f1d1d",
-        "#d4d4d8"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Juniper League",
-      "boys_district": "Juniper League",
-      "source": "Soren Ekström"
-    },
-    {
-      "name": "North Wind",
-      "source": "St. Sophia School",
-      "city": "Klamoya",
-      "county": "Tamarack",
-      "area": "Cascade Divide",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 370,
-      "private": false,
-      "mascot": "Black Spartans",
-      "colors": [
-        "#7b1e2b",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Rim Country League",
-      "boys_district": "Rim Country League"
-    },
-    {
       "name": "St. Teresa",
       "source": "St. Teresa High School",
       "city": "Harriman",
@@ -17517,46 +17356,6 @@
       "boys": true,
       "girls_district": "Sage Plains League",
       "boys_district": "Sage Plains League"
-    },
-    {
-      "name": "Hurston",
-      "city": "St. Varian",
-      "county": "Marlow",
-      "area": "Ashbury Metro",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1212,
-      "private": false,
-      "mascot": "Eagles",
-      "colors": [
-        "#1e5631",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Metro League",
-      "boys_district": "Metro League",
-      "source": "St. Varian"
-    },
-    {
-      "name": "Yarrowfield",
-      "city": "Garrow",
-      "county": "Kernwood",
-      "area": "Yarrowmere",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 464,
-      "private": false,
-      "mascot": "Bucks",
-      "colors": [
-        "#3a5a78",
-        "#f5e9d0"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Quarry League",
-      "boys_district": "Quarry League",
-      "source": "St. Veronica"
     },
     {
       "name": "St. Vincent",
@@ -17700,6 +17499,26 @@
       "boys_district": "Forks League"
     },
     {
+      "name": "Starfield",
+      "city": "Gagarin",
+      "county": "Sablewood",
+      "area": "Gold Valley",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1319,
+      "private": false,
+      "mascot": "Celtics",
+      "colors": [
+        "#167339",
+        "#e8e6df"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Del Rey Athletic Association",
+      "boys_district": "Del Rey Athletic Association",
+      "source": "Naomi Ellison"
+    },
+    {
       "name": "Starlake",
       "city": "Starlake",
       "county": "Vance",
@@ -17757,6 +17576,26 @@
       "boys_district": "Assay Athletic Association"
     },
     {
+      "name": "Stillwater",
+      "city": "Olive Reach",
+      "county": "Kernwood",
+      "area": "Yarrowmere",
+      "classification": "1A",
+      "group": "1A",
+      "enrollment": 91,
+      "private": false,
+      "mascot": "Bighorns",
+      "colors": [
+        "#14294e",
+        "#c8ccd4"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Marble Valley League",
+      "boys_district": "Marble Valley League",
+      "source": "Trinity Christian"
+    },
+    {
       "name": "Stone Ridge",
       "city": "Caswell",
       "county": "Halbrook",
@@ -17775,6 +17614,26 @@
       "girls_district": "Black Canyon League",
       "boys_district": "Black Canyon League",
       "source": "Salvador Montalvo North"
+    },
+    {
+      "name": "Stonehaven",
+      "city": "Calder",
+      "county": "Rimrock",
+      "area": "Juniper Highlands",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 1501,
+      "private": false,
+      "mascot": "Red Devils",
+      "colors": [
+        "#14294e",
+        "#c8ccd4"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Rim Country League",
+      "boys_district": "Rim Country League",
+      "source": "Nicolás Quiñones"
     },
     {
       "name": "Sulphur Springs",
@@ -17917,6 +17776,26 @@
       "source": "Kilbride Switch South"
     },
     {
+      "name": "Taft",
+      "city": "Mount Horeb",
+      "county": "Marlow",
+      "area": "Ashbury Metro",
+      "classification": "4A",
+      "group": "4A",
+      "enrollment": 560,
+      "private": false,
+      "mascot": "Highlanders",
+      "colors": [
+        "#7b1e2b",
+        "#e8c46b"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Gateway League",
+      "boys_district": "Gateway League",
+      "source": "Evelyn Booker"
+    },
+    {
       "name": "Tailing Crossing",
       "source": "Tailing Crossing",
       "city": "Tailing Crossing",
@@ -17976,6 +17855,26 @@
       "boys_district": "Del Rey Athletic Association",
       "source": "Elena Petrov",
       "locality": "Talladega"
+    },
+    {
+      "name": "Tallgrass",
+      "city": "Furrow Crossing",
+      "county": "Barlowe",
+      "area": "Boise Frontier",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 312,
+      "private": false,
+      "mascot": "Wildcats",
+      "colors": [
+        "#1e2a4a",
+        "#c05621"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Timber Valley League",
+      "boys_district": "Timber Valley League",
+      "source": "St. Lucy"
     },
     {
       "name": "Tallow",
@@ -18057,6 +17956,47 @@
       "girls_district": "Ironwood League",
       "boys_district": "Ironwood League",
       "source": "Svenja Bianchi"
+    },
+    {
+      "name": "Tamarack Harbor",
+      "city": "Tamarack Harbor",
+      "county": "Weller",
+      "area": "Selquah",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2355,
+      "private": false,
+      "mascot": "Pine Martens",
+      "colors": [
+        "#333d29",
+        "#d97706"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Gateway League",
+      "boys_district": "Gateway League",
+      "source": "Tamarack Harbor"
+    },
+    {
+      "name": "Taylor",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Selquah",
+      "classification": "8A",
+      "group": "8A",
+      "enrollment": 1685,
+      "private": false,
+      "mascot": "Gillnetters",
+      "colors": [
+        "#204e39",
+        "#c8a24a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Narpes Interscholastic League",
+      "boys_district": "Narpes Interscholastic League",
+      "source": "Igor Chernov",
+      "locality": "Pamunkey"
     },
     {
       "name": "Telfair Country Day",
@@ -18219,26 +18159,6 @@
       "boys_district": "Millworks Athletic Association"
     },
     {
-      "name": "Marshall",
-      "city": "San Cordero",
-      "county": "Tamarack",
-      "area": "Cascade Divide",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2528,
-      "private": false,
-      "mascot": "Jackalopes",
-      "colors": [
-        "#8c1d40",
-        "#f0b323"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Ironwood League",
-      "boys_district": "Ironwood League",
-      "source": "Thurgood Marshall"
-    },
-    {
       "name": "Tide Point",
       "city": "Fort Meriwether",
       "county": "Weller",
@@ -18297,26 +18217,6 @@
       "boys": false,
       "girls_district": "Rim Country League",
       "boys_district": "Rim Country League"
-    },
-    {
-      "name": "Tamarack Harbor",
-      "city": "Tamarack Harbor",
-      "county": "Weller",
-      "area": "Selquah",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2355,
-      "private": false,
-      "mascot": "Pine Martens",
-      "colors": [
-        "#333d29",
-        "#d97706"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Gateway League",
-      "boys_district": "Gateway League",
-      "source": "Tamarack Harbor"
     },
     {
       "name": "Tidewater",
@@ -18561,6 +18461,26 @@
       "source": "Emigrant Trail"
     },
     {
+      "name": "Trailsend",
+      "city": "Netherwood",
+      "county": "Antler",
+      "area": "Alderwold",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 336,
+      "private": false,
+      "mascot": "Peelers",
+      "colors": [
+        "#7f1d1d",
+        "#d4d4d8"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Sky-Em League",
+      "boys_district": "Sky-Em League",
+      "source": "North Valley Christian"
+    },
+    {
       "name": "Treasure Valley",
       "city": "Orellana",
       "county": "Vance",
@@ -18599,26 +18519,6 @@
       "girls_district": "Rim Country League",
       "boys_district": "Rim Country League",
       "play_up": true
-    },
-    {
-      "name": "Stillwater",
-      "city": "Olive Reach",
-      "county": "Kernwood",
-      "area": "Yarrowmere",
-      "classification": "1A",
-      "group": "1A",
-      "enrollment": 91,
-      "private": false,
-      "mascot": "Bighorns",
-      "colors": [
-        "#14294e",
-        "#c8ccd4"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League",
-      "source": "Trinity Christian"
     },
     {
       "name": "Trinity Fork",
@@ -18682,6 +18582,26 @@
       "state": "Washington"
     },
     {
+      "name": "Truman",
+      "city": "Kilbride Switch",
+      "county": "Olivet",
+      "area": "Yarrowmere",
+      "classification": "4A",
+      "group": "4A",
+      "enrollment": 748,
+      "private": false,
+      "mascot": "Flapjacks",
+      "colors": [
+        "#3f2a56",
+        "#3ba55d"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Vermilion Valley League",
+      "boys_district": "Vermilion Valley League",
+      "source": "Harry Truman"
+    },
+    {
       "name": "Tule Flat",
       "city": "Tule Flat",
       "county": "Kernwood",
@@ -18699,26 +18619,6 @@
       "boys": true,
       "girls_district": "Assay Athletic Association",
       "boys_district": "Assay Athletic Association"
-    },
-    {
-      "name": "Reed Lake",
-      "city": "Tule Flat",
-      "county": "Kernwood",
-      "area": "Yarrowmere",
-      "classification": "1A",
-      "group": "1A",
-      "enrollment": 123,
-      "private": false,
-      "mascot": "Chukars",
-      "colors": [
-        "#3f2a56",
-        "#3ba55d"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Tailings League",
-      "boys_district": "Tailings League",
-      "source": "Tule Flat Lutheran"
     },
     {
       "name": "Tungsten",
@@ -18922,26 +18822,6 @@
       "boys_district": "Sunkist League"
     },
     {
-      "name": "Grant",
-      "source": "Aldecoa Depot High",
-      "city": "Aldecoa",
-      "county": "Vance",
-      "area": "Silver Basin",
-      "classification": "Group 1",
-      "group": "Group 1",
-      "enrollment": 2022,
-      "private": false,
-      "mascot": "Blue Dragons",
-      "colors": [
-        "#1e5631",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "High Desert League",
-      "boys_district": "High Desert League"
-    },
-    {
       "name": "Umatilla",
       "source": "Umatilla High",
       "city": "Umatilla",
@@ -19004,6 +18884,26 @@
       "source": "Ferris Union"
     },
     {
+      "name": "Uplands",
+      "city": "Latgaway",
+      "county": "Stagewater",
+      "area": "Kangas",
+      "classification": "Group 3",
+      "group": "Group 3",
+      "enrollment": 93,
+      "private": false,
+      "mascot": "Fireflies",
+      "colors": [
+        "#3f2a56",
+        "#3ba55d"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Inland Empire League",
+      "boys_district": "Inland Empire League",
+      "source": "Southern Jefferson Christian"
+    },
+    {
       "name": "Utah",
       "source": "Utah",
       "city": "Logan",
@@ -19064,6 +18964,26 @@
       "boys_district": "Valle Vista League"
     },
     {
+      "name": "Valera",
+      "city": "Arrieta",
+      "county": "Halbrook",
+      "area": "Halbrook Basin",
+      "classification": "1A",
+      "group": "1A",
+      "enrollment": 229,
+      "private": false,
+      "mascot": "Bulldogs",
+      "colors": [
+        "#1e5631",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Hacienda League",
+      "boys_district": "Hacienda League",
+      "source": "Nicolás Treviño"
+    },
+    {
       "name": "Valley Christian",
       "city": "New Leiden",
       "county": "Tamarack",
@@ -19102,26 +19022,6 @@
       "boys_district": "Mission League"
     },
     {
-      "name": "Meridian Valley",
-      "city": "Port Meridian",
-      "county": "Bidwell",
-      "area": "Selquah",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 379,
-      "private": false,
-      "mascot": "Longshoremen",
-      "colors": [
-        "#1d4e9e",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Pori League",
-      "boys_district": "Pori League",
-      "source": "Providence Academy Valley"
-    },
-    {
       "name": "Valois Bluffs",
       "source": "Fort Valois School of Design and Engineering",
       "city": "Fort Valois",
@@ -19140,6 +19040,27 @@
       "boys": true,
       "girls_district": "Far West League",
       "boys_district": "Far West League"
+    },
+    {
+      "name": "Van Buren",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Selquah",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2148,
+      "private": false,
+      "mascot": "Timberwolves",
+      "colors": [
+        "#167339",
+        "#e8e6df"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Mariners League",
+      "boys_district": "Mariners League",
+      "source": "Harbor Gate North",
+      "locality": "Piscataway"
     },
     {
       "name": "Velasco",
@@ -19200,6 +19121,46 @@
       "girls_district": "Chinook League",
       "boys_district": "Chinook League",
       "source": "Nathaniel Cross"
+    },
+    {
+      "name": "Veles Park",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Selquah",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 372,
+      "private": false,
+      "mascot": "Crabbers",
+      "colors": [
+        "#1e5631",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Pori League",
+      "boys_district": "Pori League",
+      "source": "Port Veles International Academy"
+    },
+    {
+      "name": "Veles Union",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Selquah",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 865,
+      "private": false,
+      "mascot": "Dorymen",
+      "colors": [
+        "#1e2a4a",
+        "#c05621"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Narpes Interscholastic League",
+      "boys_district": "Narpes Interscholastic League",
+      "source": "Nathaniel Cross North"
     },
     {
       "name": "Veles Vo-Tech",
@@ -19280,6 +19241,26 @@
       "boys": true,
       "girls_district": "Metro League",
       "boys_district": "Metro League"
+    },
+    {
+      "name": "Verrettes",
+      "city": "Belyakov",
+      "county": "Vance",
+      "area": "Boise Frontier",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1043,
+      "private": true,
+      "mascot": "Knights",
+      "colors": [
+        "#8c1d40",
+        "#f0b323"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Cascade Divide League",
+      "boys_district": "Cascade Divide League",
+      "source": "Viktor Antonov"
     },
     {
       "name": "Vesper",
@@ -19460,6 +19441,27 @@
       "source": "Millport"
     },
     {
+      "name": "W.H. Harrison",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Selquah",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2553,
+      "private": false,
+      "mascot": "Saints",
+      "colors": [
+        "#6d1a36",
+        "#9fb4c7"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Gateway League",
+      "boys_district": "Gateway League",
+      "source": "Henrik Keller",
+      "locality": "Rappahannock"
+    },
+    {
       "name": "Waldo",
       "city": "Cortland",
       "county": "Ferris",
@@ -19520,26 +19522,6 @@
       "boys_district": "Columbia Range League"
     },
     {
-      "name": "Mondale",
-      "city": "Tunnel Diggings",
-      "county": "Goldbank",
-      "area": "Southern Jefferson",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2318,
-      "private": false,
-      "mascot": "Kingfishers",
-      "colors": [
-        "#0e7490",
-        "#fbbf24"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Gold Valley League",
-      "boys_district": "Gold Valley League",
-      "source": "Walter Mondale"
-    },
-    {
       "name": "Walter-Kenny",
       "source": "Belyakov Academy of Music and Media",
       "city": "Belyakov",
@@ -19580,6 +19562,26 @@
       "source": "Wardlow Depot"
     },
     {
+      "name": "Warren",
+      "city": "Fort Weller",
+      "county": "Weller",
+      "area": "Selquah",
+      "classification": "4A",
+      "group": "4A",
+      "enrollment": 667,
+      "private": false,
+      "mascot": "Falcons",
+      "colors": [
+        "#1d4e9e",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Chinook League",
+      "boys_district": "Chinook League",
+      "source": "Isaiah Booker"
+    },
+    {
       "name": "Washington",
       "city": "Port Veles",
       "county": "Bidwell",
@@ -19601,6 +19603,27 @@
       "locality": "Taunton"
     },
     {
+      "name": "Websterfield",
+      "city": "Louisville",
+      "county": "Valdez",
+      "area": "Port Valdez",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 854,
+      "private": false,
+      "mascot": "Martens",
+      "colors": [
+        "#4b2e83",
+        "#b7a57a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Valle Vista League",
+      "boys_district": "Valle Vista League",
+      "locality": "Natchez",
+      "source": "Sisters of Mercy"
+    },
+    {
       "name": "Weissburg",
       "city": "Weissburg",
       "county": "Halbrook",
@@ -19620,83 +19643,24 @@
       "boys_district": "Far West League"
     },
     {
-      "name": "Weller",
-      "city": "Fort Meriwether",
-      "county": "Weller",
-      "area": "Selquah",
+      "name": "Wells",
+      "city": "San Joaquín",
+      "county": "Marlow",
+      "area": "Ashbury Metro",
       "classification": "9A",
       "group": "9A",
-      "enrollment": 2271,
+      "enrollment": 2491,
       "private": false,
-      "mascot": "Storm Petrels",
+      "mascot": "Badgers",
       "colors": [
-        "#204e39",
-        "#c8a24a"
+        "#167339",
+        "#e8e6df"
       ],
       "girls": true,
       "boys": true,
       "girls_district": "Gateway League",
       "boys_district": "Gateway League",
-      "source": "Klara Marchand"
-    },
-    {
-      "name": "Weller Independent",
-      "source": "Fort Salish Independent School",
-      "city": "Fort Weller",
-      "county": "Weller",
-      "area": "Selquah",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 414,
-      "private": true,
-      "mascot": "Shipwrights",
-      "colors": [
-        "#4b2e83",
-        "#b7a57a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Pori League",
-      "boys_district": "Pori League"
-    },
-    {
-      "name": "Weller Regional",
-      "city": "Yandell City",
-      "county": "Emigrant",
-      "area": "Kangas",
-      "classification": "Group 3",
-      "group": "Group 3",
-      "enrollment": 187,
-      "private": false,
-      "mascot": "Howlers",
-      "colors": [
-        "#1e5631",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Greater Ashbury Interscholastic League",
-      "boys_district": "Greater Ashbury Interscholastic League"
-    },
-    {
-      "name": "Hyrum",
-      "source": "Wellsville County Catholic",
-      "city": "Hyrum",
-      "county": "Wellsville",
-      "area": "Bear River Country",
-      "classification": "Group 2",
-      "group": "Group 2",
-      "enrollment": 780,
-      "private": false,
-      "mascot": "Falcons",
-      "colors": [
-        "#5c1a1a",
-        "#e0dcd0"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "PacWest League",
-      "boys_district": "PacWest League"
+      "source": "Ida B. Wells"
     },
     {
       "name": "Welsh Plains",
@@ -19776,6 +19740,26 @@
       "boys": true,
       "girls_district": "Halbrook Basin League",
       "boys_district": "Halbrook Basin League"
+    },
+    {
+      "name": "West Valderra",
+      "city": "Valderra",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2273,
+      "private": false,
+      "mascot": "Orchardists",
+      "colors": [
+        "#5b2a86",
+        "#e5e7eb"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Valle Vista League",
+      "boys_district": "Valle Vista League",
+      "source": "Orchard Hill"
     },
     {
       "name": "Western Sky",
@@ -19955,6 +19939,26 @@
       "boys_district": "Hacienda League"
     },
     {
+      "name": "Whitegrass",
+      "city": "Benchton",
+      "county": "Barlowe",
+      "area": "Boise Frontier",
+      "classification": "1A",
+      "group": "1A",
+      "enrollment": 129,
+      "private": false,
+      "mascot": "Crimson Hurricanes",
+      "colors": [
+        "#167339",
+        "#e8e6df"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Hacienda League",
+      "boys_district": "Hacienda League",
+      "source": "St. Genevieve"
+    },
+    {
       "name": "Wicomico",
       "city": "Port Veles",
       "county": "Bidwell",
@@ -19976,45 +19980,24 @@
       "locality": "Wicomico"
     },
     {
-      "name": "W.H. Harrison",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Selquah",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2553,
+      "name": "Wildrye",
+      "city": "Vonjo City",
+      "county": "Windrow",
+      "area": "Millersylvania",
+      "classification": "Group 2",
+      "group": "Group 2",
+      "enrollment": 431,
       "private": false,
-      "mascot": "Saints",
+      "mascot": "Bulldogs",
       "colors": [
-        "#6d1a36",
-        "#9fb4c7"
+        "#14294e",
+        "#c8ccd4"
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Gateway League",
-      "boys_district": "Gateway League",
-      "source": "Henrik Keller",
-      "locality": "Rappahannock"
-    },
-    {
-      "name": "Taft",
-      "city": "Mount Horeb",
-      "county": "Marlow",
-      "area": "Ashbury Metro",
-      "classification": "4A",
-      "group": "4A",
-      "enrollment": 560,
-      "private": false,
-      "mascot": "Highlanders",
-      "colors": [
-        "#7b1e2b",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Gateway League",
-      "boys_district": "Gateway League",
-      "source": "Evelyn Booker"
+      "girls_district": "High Lakes League",
+      "boys_district": "High Lakes League",
+      "source": "St. Dominic Academy"
     },
     {
       "name": "Willow Creek",
@@ -20115,6 +20098,46 @@
       "boys_district": "Basalt League"
     },
     {
+      "name": "Windward",
+      "city": "Tallow",
+      "county": "San Marcos",
+      "area": "Sebastian Cape",
+      "classification": "2A",
+      "group": "2A",
+      "enrollment": 226,
+      "private": false,
+      "mascot": "Stars",
+      "colors": [
+        "#1d1d1f",
+        "#d97706"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Del Rey Athletic Association",
+      "boys_district": "Del Rey Athletic Association",
+      "source": "Galina Moroz"
+    },
+    {
+      "name": "Winter Valley",
+      "city": "Summervale",
+      "county": "Juniper",
+      "area": "Juniper Highlands",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 515,
+      "private": false,
+      "mascot": "Lions",
+      "colors": [
+        "#0f6a70",
+        "#f4f1ea"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Juniper League",
+      "boys_district": "Juniper League",
+      "source": "Central Christian"
+    },
+    {
       "name": "Wishram",
       "source": "Wishram High",
       "city": "Wishram",
@@ -20197,27 +20220,6 @@
       "locality": "Wyalusing"
     },
     {
-      "name": "Minidoka",
-      "city": "Wyalusing",
-      "county": "Minidoka",
-      "area": "Snake River Plain",
-      "classification": "Group 2",
-      "group": "Group 2",
-      "enrollment": 819,
-      "private": false,
-      "mascot": "Scarlet Spartans",
-      "colors": [
-        "#3f2a56",
-        "#3ba55d"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Olympic League",
-      "boys_district": "Olympic League",
-      "source": "Providence Academy North",
-      "locality": "Wyalusing"
-    },
-    {
       "name": "Wyoming Valley",
       "source": "Wyoming Valley",
       "city": "Montpelier",
@@ -20258,6 +20260,26 @@
       "source": "Harlan Tillman"
     },
     {
+      "name": "Yandell",
+      "city": "Yandell City",
+      "county": "Emigrant",
+      "area": "Kangas",
+      "classification": "Group 3",
+      "group": "Group 3",
+      "enrollment": 187,
+      "private": false,
+      "mascot": "Howlers",
+      "colors": [
+        "#1e5631",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Greater Ashbury Interscholastic League",
+      "boys_district": "Greater Ashbury Interscholastic League",
+      "source": "Weller Regional"
+    },
+    {
       "name": "Yarburg",
       "city": "Yarburg",
       "county": "Antler",
@@ -20296,6 +20318,26 @@
       "boys_district": "Placer League"
     },
     {
+      "name": "Yarrowfield",
+      "city": "Garrow",
+      "county": "Kernwood",
+      "area": "Yarrowmere",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 464,
+      "private": false,
+      "mascot": "Bucks",
+      "colors": [
+        "#3a5a78",
+        "#f5e9d0"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Quarry League",
+      "boys_district": "Quarry League",
+      "source": "St. Veronica"
+    },
+    {
       "name": "Yazoo",
       "source": "Belmonte Applied Sciences Institute",
       "city": "Belmonte",
@@ -20315,47 +20357,6 @@
       "girls_district": "Desert Sky League",
       "boys_district": "Desert Sky League",
       "locality": "Yazoo"
-    },
-    {
-      "name": "Kochiyama",
-      "city": "Los Alisos",
-      "county": "Marlow",
-      "area": "Ashbury Metro",
-      "classification": "4A",
-      "group": "4A",
-      "enrollment": 608,
-      "private": false,
-      "mascot": "Signalmen",
-      "colors": [
-        "#92400e",
-        "#1d1d1f"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Gateway League",
-      "boys_district": "Gateway League",
-      "source": "Yuri Kochiyama"
-    },
-    {
-      "name": "Taylor",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Selquah",
-      "classification": "8A",
-      "group": "8A",
-      "enrollment": 1685,
-      "private": false,
-      "mascot": "Gillnetters",
-      "colors": [
-        "#204e39",
-        "#c8a24a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Narpes Interscholastic League",
-      "boys_district": "Narpes Interscholastic League",
-      "source": "Igor Chernov",
-      "locality": "Pamunkey"
     },
     {
       "name": "Zion Hill",
