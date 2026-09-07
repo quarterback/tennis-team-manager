@@ -2657,6 +2657,32 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     (rebuild only the schools a changed record names), never keyed on the
     fingerprint. `set_jhsaa_transfer` reads ONE row (`get_jhsaa_transfer`), not
     the table. See `docs/AAR-jhsaa-transfer-page-ledger-scale.md`.
+- **‼️ THE ORDINARY COHORT'S INTERNATIONAL NAMES WERE A PRO-TOUR MIX, AND IT
+  SHOWED (owner rule 2026-09, `jhsaa.intl_era` / `_broad_intl_weights`,
+  `docs/AAR-jhsaa-exchange-students.md`).** `_draw_name`'s international slice
+  read `tennis_global` — professional tennis's geography, measured at **69.3%
+  Europe and 3.5% Africa** — and Canada held a SEPARATE 5% share against that
+  slice's 5%, so **half of every non-US name in Jefferson was Canadian**. The
+  slice exists to make the association diverse and did the opposite: "i don't
+  know why it only draws white people names that's not what i intended at all".
+  From `intl_era()` on, cohorts draw `_broad_intl_weights` (the owner's
+  `global_college` preset minus us/canada — 92 regions against 36, Europe 29 /
+  Africa 23 / Asia 22 / Americas 17 / Oceania 8) and Canada is `NAME_V3_CANADA`
+  1.5%, so ~85% of foreign names come from the world rather than 50%.
+  **‼️ THE US HEAD (90%) IS UNTOUCHED AND WAS NEVER THE PROBLEM** — it is
+  Census-frequency weighted, so its top surnames already run Martinez, Lopez,
+  Garcia, Hernandez, Lee, Perez, Rivera, Torres, Nguyen, Rodriguez. Raising the
+  foreign share overall is a separate decision nobody has asked for.
+  **‼️ IT NEEDED ITS OWN ERA GATE** (`intl_era`, the `name_era` idiom): a JHSAA
+  name is regenerated from seed on every roster build, so widening the mix
+  renames every already-archived cohort that draws from it — and
+  `world_jhsaa_dual.lines` archives NAMES, which `_jh_line_records` keys off.
+  `name_era` protects cohorts predating the 90/5/5 draw; this protects those
+  predating the WIDENING of its international slice. Both the mix AND the
+  Canada share are gated, since moving either changes the same roll.
+  ‼️ This is the ORDINARY cohort — immigrant families, four-year students born
+  here. It is NOT `_exchange_weights` (see below), which starts from the same
+  preset and re-cuts the Americas. Two populations, two mixes, one preset.
 - **‼️ EXCHANGE STUDENTS — a ONE-SEASON arrival, flag and nothing else (owner
   rule 2026-09, `jhsaa.exchange_student`,
   `docs/AAR-jhsaa-exchange-students.md`).** ~4% of programs gain one extra player

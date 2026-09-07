@@ -100,6 +100,46 @@ squad player. A flat lift with the class's own spread would make nearly every
 arrival a No. 1 and turn the mechanic into a championship lottery, which is the
 fall portal's curated-flow lesson in another costume.
 
+## ‼️ THE ORDINARY COHORT'S MIX WAS THE REAL DIVERSITY BUG
+
+Investigating the arrivals turned up something worse in the population beside
+them. `_draw_name`'s international slice read `tennis_global` — a **pro-tour**
+mix, and professional tennis is Europe-dominated: measured, **69.3% Europe and
+3.5% Africa**. Worse, Canada holds a SEPARATE 5% share against that slice's 5%,
+so **half of every non-US name in Jefferson was Canadian**, drawing Anglo/French.
+The slice exists to make the association diverse and produced the opposite —
+owner, 2026-09: *"i don't know why it only draws white people names that's not
+what i intended at all."*
+
+From `intl_era()` on:
+
+- cohorts draw **`_broad_intl_weights`** — the `global_college` preset minus the
+  two shares that draw separately. 92 regions against 36: Europe 29 / Africa 23 /
+  Asia 22 / Americas 17 / Oceania 8.
+- Canada is **`NAME_V3_CANADA` 1.5%**, so ~85% of foreign names come from the
+  broad pool rather than 50%.
+
+Measured after, over 200 programs: Japan, Britain, Indonesia, Mexico, Philippines,
+Italy, Korea, New Zealand, Australia, Brazil, Ethiopia, France, Nigeria, China,
+Hong Kong, Colombia, Spain, Argentina, Croatia — with Canada down from 52% of
+foreign names to 14%.
+
+‼️ **The 90% US head is untouched and was never the problem.** It is
+Census-frequency weighted, so its top 25 surnames already run Martinez, Lopez,
+Garcia, Hernandez, Lee, Perez, Rivera, Torres, Nguyen, Rodriguez. Raising the
+foreign share overall is a separate decision nobody has asked for.
+
+‼️ **It needed its own era gate** (`intl_era`), and both the mix AND the Canada
+share are behind it, since moving either changes the same roll. A JHSAA name is
+regenerated from seed on every roster build, so widening the mix renames every
+already-archived cohort that draws from it — and `world_jhsaa_dual.lines`
+archives NAMES, which `_jh_line_records` keys off.
+
+**The lesson:** a mix inherited from another part of the game carries that part's
+assumptions. `tennis_global` is right for a pro tour and wrong for a high-school
+association's immigrant families, and nothing errors — the names are all real
+names, so it reads as a slightly odd association rather than a bug.
+
 ## The nationality mix (owner, 2026-09)
 
 Built from the owner's own **`global_college`** preset — the widest one, whose
