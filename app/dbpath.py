@@ -38,13 +38,24 @@ def _jhsaa_lab_path_invariant(configured: str) -> str:
     """
     global _jhsaa_lab_checked
     configured = os.path.abspath(os.path.expanduser(configured))
-    if os.environ.get(JHSAA_LAB_DEV_OVERRIDE):
-        return configured
     if configured != JHSAA_LAB_CANONICAL_DB:
-        raise RuntimeError(
-            "JHSAA lab startup refused: TENNIS_DB_PATH resolves to "
-            f"{configured}, not the canonical database {JHSAA_LAB_CANONICAL_DB}. "
-            f"Scratch/test runs must explicitly set {JHSAA_LAB_DEV_OVERRIDE}=1.")
+        if not os.environ.get(JHSAA_LAB_DEV_OVERRIDE):
+            raise RuntimeError(
+                "JHSAA lab startup refused: TENNIS_DB_PATH resolves to "
+                f"{configured}, not the canonical database {JHSAA_LAB_CANONICAL_DB}. "
+                f"Scratch/test runs must explicitly set {JHSAA_LAB_DEV_OVERRIDE}=1.")
+        return configured        # a deliberate scratch/test universe — not ours to check
+    # ‼️ THE CANONICAL DATABASE IS ALWAYS PREFLIGHTED, OVERRIDE OR NOT. The
+    # override used to short-circuit this whole function, so an inherited
+    # `JHSAA_LAB_DEV_OVERRIDE=1` left in a developer's shell silently disabled the
+    # consistency, writability and stale-alternate checks on the REAL save — and a
+    # missing canonical file then resolved happily, ready to be created fresh while
+    # a stale universe sat elsewhere, which is precisely the fork this module
+    # exists to prevent. The override's job is to permit an ALTERNATE PATH (above);
+    # it was never meant to buy an unchecked canonical open, and there is no
+    # scratch-run reason to want one, since a scratch run is non-canonical by
+    # definition. `scripts/jhsaa_lab_server.sh` also clears an inherited override,
+    # but the guarantee must not depend on which launcher was used.
     if not _jhsaa_lab_checked:
         # Import lazily: startup owns SQLite inspection, while this leaf module
         # remains usable by the rest of the application without an import cycle.

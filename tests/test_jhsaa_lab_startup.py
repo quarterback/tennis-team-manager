@@ -228,3 +228,64 @@ def test_the_advisory_never_raises_on_an_unreadable_lab_database(tmp_path):
     broken.write_bytes(b"this is not a sqlite database")
     line = canonical_universe_elsewhere(str(broken), str(tmp_path / "tennis.db"))
     assert line is None or "unreadable" in line
+
+
+def test_the_dev_override_never_skips_the_preflight_on_the_canonical_db(tmp_path, monkeypatch):
+    """‼️ AN INHERITED OVERRIDE MUST NOT DISARM THE REAL SAVE'S CHECKS. The
+    override short-circuited the whole invariant, so a `JHSAA_LAB_DEV_OVERRIDE=1`
+    left exported in a shell from an earlier scratch run silently disabled the
+    stale-alternate report, the consistency check and the writability check on
+    the CANONICAL database — and a missing canonical file then resolved happily,
+    ready to be created fresh while a real universe sat in /tmp. That is exactly
+    the forked universe this module exists to prevent.
+
+    The override permits an ALTERNATE PATH; it never buys an unchecked canonical
+    open, and no scratch run needs one (a scratch run is non-canonical by
+    definition)."""
+    canonical = str(tmp_path / "home" / "jhsaa_lab.db")          # missing
+    stale = str(_lab_db(tmp_path / "tmp" / "jhsaa_lab.db", year=49))
+    monkeypatch.setattr(dbpath, "JHSAA_LAB_CANONICAL_DB", canonical)
+    monkeypatch.setattr("app.jhsaa_lab_startup.known_alternate_paths", lambda _: [stale])
+    monkeypatch.setenv("JHSAA_LAB_MODE", "1")
+    monkeypatch.setenv("TENNIS_DB_PATH", canonical)
+    monkeypatch.setenv(dbpath.JHSAA_LAB_DEV_OVERRIDE, "1")
+    dbpath._resolved.clear()
+    monkeypatch.setattr(dbpath, "_jhsaa_lab_checked", False)
+
+    with pytest.raises(JHSAALabStartupError, match="manually recover or migrate"):
+        dbpath.resolve_db_path()
+    assert not os.path.exists(canonical)     # and nothing was created
+
+
+def test_the_dev_override_still_permits_an_alternate_path(tmp_path, monkeypatch):
+    """The escape hatch it IS for must keep working — scratch and calibration
+    runs live on non-canonical paths and must not be preflighted."""
+    canonical = str(tmp_path / "canonical.db")
+    scratch = str(tmp_path / "scratch.db")
+    monkeypatch.setattr(dbpath, "JHSAA_LAB_CANONICAL_DB", canonical)
+    monkeypatch.setenv("JHSAA_LAB_MODE", "1")
+    monkeypatch.setenv("TENNIS_DB_PATH", scratch)
+    monkeypatch.setenv(dbpath.JHSAA_LAB_DEV_OVERRIDE, "1")
+    dbpath._resolved.clear()
+    assert dbpath.resolve_db_path() == scratch
+
+
+def test_the_launcher_clears_an_inherited_dev_override(tmp_path):
+    """The ordinary launcher never runs with the override — even when a shell
+    left one exported."""
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    capture = tmp_path / "capture"
+    fake_python = fake_bin / "python3"
+    fake_python.write_text(
+        "#!/bin/sh\nprintf '%s\\n' \"${JHSAA_LAB_DEV_OVERRIDE-UNSET}\" > \"$CAPTURE\"\n")
+    fake_python.chmod(0o755)
+    env = {**os.environ, "HOME": str(tmp_path / "home"),
+           "PATH": f"{fake_bin}:{os.environ['PATH']}", "CAPTURE": str(capture),
+           "JHSAA_LAB_DEV_OVERRIDE": "1"}
+    env.pop("TENNIS_DB_PATH", None)
+    script = Path(__file__).resolve().parents[1] / "scripts" / "jhsaa_lab_server.sh"
+    done = subprocess.run([str(script), "5098"], env=env, check=True,
+                          text=True, capture_output=True)
+    assert capture.read_text().strip() == "UNSET", "the override reached the app"
+    assert "ignoring inherited JHSAA_LAB_DEV_OVERRIDE" in done.stderr

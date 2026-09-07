@@ -34,6 +34,20 @@ if [[ -n "${TENNIS_DB_PATH:-}" ]]; then
   fi
 fi
 
+# ‼️ THE ORDINARY LAUNCHER NEVER RUNS WITH THE DEVELOPER OVERRIDE. Left exported
+# in a shell from an earlier scratch run, JHSAA_LAB_DEV_OVERRIDE is inherited by
+# this process and skips the startup preflight on the canonical database — no
+# stale-alternate report, no consistency check, no writability check — so a
+# missing canonical file would be created fresh while a real universe sat in
+# /tmp. Unset rather than refuse: unlike an inherited TENNIS_DB_PATH there is no
+# ambiguity about intent here, since this launcher always uses the canonical
+# database, and the override can only ever weaken it.
+if [[ -n "${JHSAA_LAB_DEV_OVERRIDE:-}" ]]; then
+  echo "NOTE: ignoring inherited JHSAA_LAB_DEV_OVERRIDE=${JHSAA_LAB_DEV_OVERRIDE} —" >&2
+  echo "      the canonical launcher always runs the full startup preflight." >&2
+  unset JHSAA_LAB_DEV_OVERRIDE
+fi
+
 echo "JHSAA Lab starting — db=$DEFAULT_DB port=$PORT"
 echo "Open http://localhost:$PORT/jhsaa-lab to generate a season."
 
