@@ -141,3 +141,19 @@ unaffected by injury state. `app.jhsaa`, `app.world`, `app.web.state`, and
 range (`tests/test_jhsaa_rest.py`) was updated in place. Recommend a full
 `python3 -m pytest -q` pass before merge — not run here per the user's
 direction mid-session.
+
+## 2026-09-07 roster-badge archive corrections
+
+The roster badge reader now reuses `jhsaa.known_names`, as the schedule reader
+already does, because `world_jhsaa_injury.school` stores the display name from
+the season in which the event was archived. This keeps a player's stable pid as
+the event identity while allowing a current program page to retrieve rows filed
+under any former program name; no schema migration or archive rewrite was added.
+
+Badge tooltips also use `dual_index` directly. The injury roll runs after the
+schedule row is appended, so the stored value is already a one-based ordinal.
+Finite injuries are now described as **Scheduled out for N duals**, not **Missed
+N duals**: `duals_out` records the rolled availability window and can exceed the
+number of team duals remaining late in a season. Deriving missed appearances was
+deliberately not added because the archive records team schedules, not a distinct
+counterfactual appearance plan for every player.

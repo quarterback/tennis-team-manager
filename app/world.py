@@ -6100,14 +6100,25 @@ def jhsaa_prior_meetings(world_id: int, gender: str, home: str, away: str,
 def jhsaa_school_injuries(world_id: int, year: int, gender: str,
                           school: str) -> list[dict]:
     """One VARSITY season's injury log for one school, in the order they
-    happened. JV never appears here — see `jhsaa.TeamSeason`."""
+    happened. JV never appears here — see `jhsaa.TeamSeason`.
+
+    Archived injuries predate a stable program-id column and therefore carry
+    the display name used in that season. Resolve every known name at this one
+    ingestion chokepoint so callers using today's name do not lose events from
+    before a rename (the same compatibility rule as `_schedule_rows`).
+    """
+    from . import jhsaa as _jh
+
+    names = _jh.known_names(school, gender)
     conn = _db()
     try:
+        qmarks = ",".join("?" * len(names))
         rows = conn.execute(
             "SELECT pid, name, dual_index, duals_out, season_ending"
             " FROM world_jhsaa_injury"
-            " WHERE world_id=? AND year=? AND gender=? AND school=?"
-            " ORDER BY dual_index", (world_id, year, gender, school)).fetchall()
+            " WHERE world_id=? AND year=? AND gender=?"
+            f" AND school IN ({qmarks})"
+            " ORDER BY dual_index", (world_id, year, gender, *names)).fetchall()
     finally:
         conn.close()
     return [dict(r) for r in rows]
