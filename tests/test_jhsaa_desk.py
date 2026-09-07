@@ -136,3 +136,36 @@ def test_every_detector_survives_an_empty_archive():
             "prev": {}, "one_flight": {"girls": {}}, "indiv": {"girls": {}}, "records": {}}
     page = desk.compile_desk(data)
     assert page["lead"] is None and page["feed"] == [] and page["players"] == []
+
+
+# ---------------------------------------------------------------------------
+# The front page must not fold the archive.
+# ---------------------------------------------------------------------------
+
+def test_the_front_page_never_folds_the_whole_archive(monkeypatch):
+    """‼️ THE HANG. `load_season` used to load record-book heads, which meant
+    `jhsaa_career_wins` — by its own docstring "the heaviest fold in the
+    section", one pass json-parsing every archived varsity line of every season —
+    plus the UNMEMOISED `jhsaa_individual_title_repeats`, for BOTH genders,
+    inline on the request thread. On a ~50-season save that held the single
+    gthread for minutes: `/jhsaa` hung while rankings, brackets and program pages
+    all stayed fine, which is exactly why it read as "the front page is broken"
+    rather than "the front page is folding the archive".
+
+    The panel is gone (owner rule 2026-09 — the boards on the History rail own
+    those records and defer them properly). These folds must never reappear on
+    this path, deferred or otherwise."""
+    from app import world as wd
+
+    def boom(*a, **k):                    # any call at all is the regression
+        raise AssertionError("the front page folded the career archive")
+
+    monkeypatch.setattr(wd, "jhsaa_career_wins", boom)
+    monkeypatch.setattr(wd, "jhsaa_individual_title_repeats", boom)
+    monkeypatch.setattr(wd, "get_jhsaa", lambda *a, **k: None)
+    assert desk.load_season(1, 0) is None
+
+
+def test_the_compiled_page_carries_no_record_book():
+    page = desk.compile_desk(_season())
+    assert "record_book" not in page

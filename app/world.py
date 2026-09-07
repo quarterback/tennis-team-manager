@@ -901,6 +901,33 @@ def is_primed(seed: int = DEFAULT_SEED) -> bool:
     return _primed.get(seed) == stamp and bool(_roster_cache)
 
 
+def is_jhsaa_only(seed: int = DEFAULT_SEED) -> bool:
+    """True when this save's world was built `skip_college=True`: the world row
+    exists, but no college rosters were ever written for its current year.
+
+    ‼️ Such a world can NEVER satisfy `is_primed()`, whose `bool(_roster_cache)`
+    term is only ever filled from `world_roster` rows. `prime()` succeeds and
+    leaves the cache empty, so "is the league warm yet?" is permanently False —
+    which is why the web layer must ask THIS question before it decides to wait.
+
+    Read-only and cheap: one indexed probe, no `get_or_create`, no roster build.
+    Deliberately NOT memoised — the answer flips the moment a college world is
+    built into the same save, and a stale True is exactly the plausible-looking
+    wrong answer this repo's world-resolution doctrine exists to prevent. The
+    web layer only asks it on the cold path, where it is about to spend orders
+    of magnitude more than this probe costs."""
+    w = load_world(seed)
+    if not w:
+        return False
+    conn = _db()
+    try:
+        row = conn.execute("SELECT 1 FROM world_roster WHERE world_id=? AND year=?"
+                           " LIMIT 1", (w["id"], w["year"])).fetchone()
+    finally:
+        conn.close()
+    return row is None
+
+
 def season_complete(seed: int = DEFAULT_SEED) -> bool:
     """True when every universe has finished its postseason — i.e. the season is
     ready for the awards phase and year rollover."""

@@ -289,10 +289,65 @@ RNG seeds. They are all plain ints — nothing stops you passing the wrong one.
   should-be-crash into plausible-looking wrong data — generated players have
   realistic names, so nobody notices. Fail loudly instead.
 See `docs/AAR-pro-grad-transfers.md` + the world-binding commit for history.
+- **‼️ NORMAL JHSAA GAMEPLAY HAS EXACTLY ONE CANONICAL LOCAL DATABASE:
+  `~/.tennis-team-manager/jhsaa_lab.db`.** The launcher does not accept a path,
+  does not inherit a different `TENNIS_DB_PATH`, and does not fall back. If the
+  canonical file cannot be used, startup stops. Known stale DBs are announced
+  but never copied, merged, deleted, migrated, or selected; a stale alternate
+  plus a missing canonical file fails closed for manual recovery. Explicit
+  scratch/test runs require `JHSAA_LAB_DEV_OVERRIDE=1`.
+- **‼️ A JHSAA-ONLY WORLD CAN NEVER SATISFY `is_primed()` — SO THE COLD-START LOADER
+  MUST NOT WAIT FOR IT.** `get_or_create_jhsaa_only` (`skip_college=True`) writes NO
+  `world_roster` rows, and `is_primed()`'s `bool(_roster_cache)` term is only ever
+  filled from those rows: `prime()` SUCCEEDS and leaves the cache empty, so "is the
+  league warm yet?" is permanently False. `/api/ready` answered off `is_primed()`
+  alone, so it returned `{"ready": false}` for the life of the process while
+  `_prime_world` (a `before_request` hook) served the "Warming up the league…" loader
+  on EVERY route — the page polled `/api/ready` every 1.5s forever and nothing, not
+  the JHSAA hub and not a program page, ever rendered. **A spinner is
+  indistinguishable from a slow warm**, which is why this reads as "the sim is
+  hanging" rather than "wrong database". Both surfaces had an escape hatch and both
+  keyed it on the `JHSAA_LAB_MODE` ENV FLAG when the real condition is a property of
+  the WORLD — open the same file without the flag and the guard evaporates. Ask
+  `world.is_jhsaa_only()` (one indexed probe, cold path only, deliberately NOT
+  memoised), and serve a LOUD diagnostic naming `scripts/jhsaa_lab_server.sh` and the
+  resolved path rather than spinning. `tests/test_jhsaa_only_launch.py`.
+  - **A JHSAA page never waits for the COLLEGE prime either** — it reads its own
+    archive and roster builders and touches no `_roster_cache`, so `_prime_world`
+    returns early for the whole `/jhsaa` NAMESPACE (never a list of endpoints: there
+    are dozens of program/player/history/tournament routes and a typed list quietly
+    sends the next new one back through the loader). ‼️ **ORDER IS LOAD-BEARING: that
+    bypass sits BELOW the JHSAA-only check.** Lifted above it, a lab save opened
+    through the college route renders the high-school pages happily and you browse
+    the wrong universe through the wrong door with no warning — the outcome the
+    diagnostic exists to prevent. Pinned by
+    `test_the_college_bypass_never_outranks_the_wrong_database_check`.
+- **‼️ THE CANONICAL-PATH GUARD IS FLAG-GATED, SO IT CANNOT COVER THE LAUNCH THAT
+  LOSES SAVES — an ADVISORY does.** `dbpath.resolve_db_path` only calls
+  `_jhsaa_lab_path_invariant` under `JHSAA_LAB_MODE`, but opening a lab save
+  "through the college route" is BY DEFINITION a launch without that flag: the guard
+  is inert in exactly the situation it exists for. Enforcing the canonical path on
+  every launch is NOT the fix — a plain launch onto `./tennis.db` is the ordinary,
+  correct college game. So `jhsaa_lab_startup.canonical_universe_elsewhere` names the
+  lab universe the process is NOT opening, on the `save[ MODE]:` boot line, loudest
+  ("‼️ ABOUT TO CREATE A NEW LEAGUE") when this file has no world — the launch that
+  FORKS a universe rather than merely reading one. It is advisory and must stay so:
+  `mode=ro`, never creates, never selects, and every failure swallowed (a college
+  boot must not die because a lab file it is not using is unreadable).
+- **‼️ AN ARCHIVE ONE YEAR AHEAD OF `world.year` IS THE DESIGNED CRASH STATE, NOT
+  CORRUPTION.** `advance_jhsaa_lab` commits the season's archive BEFORE moving the
+  year pointer, precisely so a crash mid-simulation leaves that year REPLAYABLE (the
+  next advance recomputes the same year instead of skipping a permanently
+  un-simulated season). The lab preflight first demanded `max == world.year`, which
+  made startup FATAL on the one outcome that ordering exists to produce: a sim that
+  died mid-advance did not just lose the season, it locked the owner out of the save
+  it died in. `_check_consistency` now warns and starts. Still fatal, and must stay
+  so: a HOLE in the archive, and a world claiming years it never archived (the
+  pointer ahead of the archive — the direction that means a season was skipped).
 - **‼️ A JHSAA LAB WORLD IS ITS OWN DATABASE FILE — the launch decides which
   universe you are in (owner incident 2026-09: the owner designed the split and
   still lost an evening to it).** The lab launcher (`scripts/jhsaa_lab_server.sh`)
-  binds `TENNIS_DB_PATH` to the lab's own file and sets `JHSAA_LAB_MODE`; a plain
+  binds `TENNIS_DB_PATH` to that canonical file and sets `JHSAA_LAB_MODE`; a plain
   launch reads `./tennis.db` and will CREATE a fresh league there if none exists.
   Opening a lab save "through the college route" therefore shows a brand-new
   world ("my 2073 save says 2027") while the real universe sits untouched in the
@@ -2218,6 +2273,21 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   `tests/test_jhsaa_desk.py`. NOT on the front page, by owner decision: a champions grid
   (Honors owns it), repeat runs, streaks, droughts, JV, rankings as content, and season
   PHASES (a JHSAA season is simulated whole at week 0 — there is no "in progress").
+  - **‼️ EVERY READ ON THIS PAGE IS SCOPED TO ONE SEASON — NEVER A CAREER FOLD (owner
+    rule 2026-09).** `load_season` also loaded a RECORD BOOK strip, which meant
+    `jhsaa_career_wins` — by its own docstring *"the heaviest fold in the section"*, one
+    pass json-parsing every archived varsity line of every season — plus the UNMEMOISED
+    `jhsaa_individual_title_repeats`, for BOTH genders, inline on the request thread. On
+    a ~50-season save that held the one gthread for MINUTES. ‼️ The tell was diagnostic
+    and nearly sent the hunt elsewhere: rankings, brackets, program pages and the class
+    hub all stayed fast, because only `/jhsaa` compiles the desk — so it read as "the
+    front page is broken", and (the section's front DOOR being the thing that hangs) as
+    the whole JHSAA section being unreachable. The panel is REMOVED, not deferred: the
+    career-wins and repeat-champions boards on the History rail already own those
+    records and defer them through `_jh_deferred`, so restating their top row here
+    bought a strip of wasted space at the price of the section's entrance. Pinned by
+    `test_the_front_page_never_folds_the_whole_archive`. **Before adding anything to
+    this page, ask what it costs on FIFTY seasons, not on one.**
 - **‼️ TRUNCATION: NUMBERS NEVER SHRINK, NAMES WRAP (owner rule 2026-09).** In a `nowrap`
   ledger every fixed column is a number sized to its widest value and the one unsized
   column is `td.nm`, which wraps — never `text-overflow: ellipsis` on a name, never a

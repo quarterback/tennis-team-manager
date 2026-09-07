@@ -179,16 +179,22 @@ own**, decoupled from the college/pro sim — useful for offline data analysis
 each time.
 
 ```bash
-scripts/jhsaa_lab_server.sh [db-path] [port]   # defaults: /tmp/jhsaa_lab.db, port 5050
+scripts/jhsaa_lab_server.sh [port]   # database is fixed; default port 5050
 ```
 
 Then open `http://localhost:<port>/jhsaa-lab`. It's always safe to run alongside
-your real app (default port 5000) — it's bound to its **own scratch database**
-(never your real save) and the `/jhsaa-lab*` routes only exist when
+your real app (default port 5000) — it is bound to the single persistent database
+`~/.tennis-team-manager/jhsaa_lab.db` and the `/jhsaa-lab*` routes only exist when
 `JHSAA_LAB_MODE=1`, which the launcher script sets for you.
 
+**Normal JHSAA gameplay has one canonical local database:
+`~/.tennis-team-manager/jhsaa_lab.db`. If that database cannot be used, the app
+stops. It never creates or falls back to another JHSAA database.** Alternate
+scratch databases require the explicit `JHSAA_LAB_DEV_OVERRIDE=1` developer/test
+path and are never accepted as a launcher argument.
+
 From the page:
-- **Generate new season** — wipes this scratch DB and starts a fresh multi-year
+- **Generate new season** — resets the canonical lab world and starts a fresh multi-year
   run with a new set of programs/cohorts (optional `salt` to vary the draw).
 - **Advance N years** — ages the *same* cohorts forward (1–50 years at a time),
   graduating and replacing them, to build a real multi-year history to browse.

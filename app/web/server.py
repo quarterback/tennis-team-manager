@@ -108,6 +108,46 @@ LOADING_HTML = """<!doctype html><html lang=en><head><meta charset=utf-8>
  </script>
 </body></html>"""
 
+# A JHSAA-only save (`world.get_or_create_jhsaa_only`, `skip_college=True`) holds
+# no college rosters at all, so `is_primed()`'s `bool(_roster_cache)` term can
+# never go true — `prime()` succeeds and fills nothing. Opened through the
+# ORDINARY college launch, every route therefore fell to the cold-start loader
+# above and polled /api/ready every 1.5s forever: no page ever rendered, and a
+# spinner is indistinguishable from a slow warm, so it reads as "the sim is
+# hanging" rather than "you opened the wrong database". The universe is fine —
+# it is the launch that is wrong. Say precisely that and name the launcher.
+# Doctrine (CLAUDE.md, ONE WORLD PER SAVE): never degrade onto a second
+# universe, and never let a should-be-crash render as plausible waiting.
+JHSAA_ONLY_HTML = """<!doctype html><html lang=en><head><meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<title>Play to Clinch — wrong database</title>
+<style>
+ html,body{height:100%;margin:0}
+ body{display:flex;align-items:center;justify-content:center;
+   font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+   background:#0f1720;color:#e8edf2;padding:24px}
+ .w{max-width:620px}
+ h1{font-size:19px;margin:0 0 14px;letter-spacing:.01em}
+ p{font-size:14px;line-height:1.62;color:#b9c6d2;margin:0 0 14px}
+ code{background:#1a2430;border:1px solid #26333f;border-radius:5px;
+   padding:2px 7px;font-size:13px;color:#8fd6de;word-break:break-all}
+ pre{background:#1a2430;border:1px solid #26333f;border-radius:7px;
+   padding:13px 15px;font-size:13px;color:#8fd6de;overflow-x:auto;margin:0 0 14px}
+ .n{font-size:12.5px;color:#7d8b99;line-height:1.6}
+</style></head><body><div class=w>
+ <h1>This is a JHSAA-only save, opened through the college launch.</h1>
+ <p>The database at <code>__PATH__</code> holds a high-school universe and no
+ college rosters, so the league can never finish warming up — which is why every
+ page sat on the loading spinner.</p>
+ <p><strong>Nothing is lost and nothing was changed.</strong> Start it with the
+ lab launcher instead, which binds the canonical database and sets
+ <code>JHSAA_LAB_MODE</code>:</p>
+ <pre>scripts/jhsaa_lab_server.sh</pre>
+ <p class=n>Then open <code>http://localhost:5050/jhsaa</code>. If you expected a
+ college save here, the path above is not the one you meant — check the
+ <code>save:</code> line printed at boot before looking for drift or corruption.</p>
+</div></body></html>"""
+
 # Grouped sidebar nav (Football-Manager style). Each item's href is resolved
 # per-request so the universe `u` carries through. "World" is the primary
 # season-to-season surface; the legacy per-universe season views sit under it.
@@ -437,6 +477,28 @@ def create_app() -> Flask:
         "expected an existing save (or a JHSAA lab world, which lives in its "
         "own database via scripts/jhsaa_lab_server.sh), stop and check the "
         "path above.")
+    # ‼️ AND NAME THE UNIVERSE YOU ARE *NOT* OPENING. The canonical-path guard in
+    # `dbpath` only fires under JHSAA_LAB_MODE, so it is inert on exactly the
+    # launch that loses a save: a plain start reads ./tennis.db while the real
+    # JHSAA universe sits untouched in the lab's own file, and both launches look
+    # identical until a page renders the wrong year. Advisory, never fatal — a
+    # plain launch IS the ordinary college game, so this must not refuse it; it
+    # just makes the fork impossible to miss at the one moment it is cheap to
+    # catch. Loudest when this file has no world at all, since that is the launch
+    # that CREATES a second universe rather than merely reading one.
+    if not os.environ.get("JHSAA_LAB_MODE"):
+        try:
+            from app.dbpath import JHSAA_LAB_CANONICAL_DB
+            from app.jhsaa_lab_startup import canonical_universe_elsewhere
+            other = canonical_universe_elsewhere(JHSAA_LAB_CANONICAL_DB, _rdp())
+        except Exception:                 # advisory only — never break a boot
+            other = None
+        if other:
+            logging.getLogger("baseline.server").warning(
+                "%s a JHSAA lab universe exists at %s. This process is NOT "
+                "using it; open it with scripts/jhsaa_lab_server.sh.",
+                "‼️ ABOUT TO CREATE A NEW LEAGUE —" if not _w
+                else "NOTE:", other)
 
     # Warm the expensive caches at BOOT, off the request path, in a daemon thread.
     # The first reload after a cold start or a Fly machine recycle otherwise pays
@@ -585,6 +647,27 @@ def create_app() -> Flask:
         # League exists and is warm → prime() is an instant no-op, carry on.
         if wd.is_primed():
             wd.prime()
+            return
+        # Cold — but a JHSAA-only save has no college rosters to warm, so waiting
+        # is waiting for something that can never happen (see JHSAA_ONLY_HTML).
+        # Asked only here, on the cold path, so a healthy college save never pays
+        # for the probe. 503: the save is real, this process just can't serve it.
+        if wd.is_jhsaa_only():
+            from markupsafe import escape
+            from app.dbpath import resolve_db_path
+            page = JHSAA_ONLY_HTML.replace("__PATH__", str(escape(resolve_db_path())))
+            return Response(page, status=503, mimetype="text/html")
+        # A JHSAA page reads its own archive, school data and high-school roster
+        # builders — it never consumes the college roster cache, so making it wait
+        # on a cold ~170MB college prime bought nothing but the warming shell.
+        # ‼️ ORDER: this sits BELOW the JHSAA-only check above, deliberately. Placed
+        # any higher it would render the high-school pages happily on a lab save
+        # opened through the college route — silently browsing the wrong universe
+        # through the wrong door, which is the outcome that diagnostic exists to
+        # prevent. It must also stay a NAMESPACE test, never a list of endpoints:
+        # there are dozens of program, player, history and tournament routes, and a
+        # typed list quietly sends the next new one back through the college loader.
+        if request.path.startswith("/jhsaa"):
             return
         # Cold. Decide loader vs inline by WORLD IDENTITY (the generation salt — a
         # fresh random per New League / takeover, stable within a league), NOT a
@@ -1905,7 +1988,17 @@ def create_app() -> Flask:
         # college cache to wait for in this mode, so it's always ready.
         if os.environ.get("JHSAA_LAB_MODE"):
             return {"ready": True}, 200
-        return {"ready": (not wd.exists()) or wd.is_primed()}, 200
+        if not wd.exists():
+            return {"ready": True}, 200
+        # ‼️ The same "no college cache to wait for" case, reached WITHOUT the
+        # env flag: a JHSAA-only save opened through the college launch. Keying
+        # this answer on the flag alone left the loader polling forever on a
+        # world that is simply not a college world. Report ready so the loader
+        # stops and reloads — into `_prime_world`'s diagnostic, which explains
+        # the wrong launch instead of spinning on it.
+        if wd.is_jhsaa_only():
+            return {"ready": True}, 200
+        return {"ready": wd.is_primed()}, 200
 
     @app.route("/methodology")
     def methodology():
@@ -3160,7 +3253,7 @@ def create_app() -> Flask:
     def _jhsaa_lab_mode() -> bool:
         """Gate for the standalone JHSAA lab surface (see
         docs/PLAN-jhsaa-standalone-lab-mode.md). Set ONLY on a process launched
-        against a dedicated scratch database (`scripts/jhsaa_lab_server.sh`) —
+        against the dedicated canonical database (`scripts/jhsaa_lab_server.sh`) —
         never on the real save's process. `/jhsaa-lab*` 404s unless this is set,
         so the destructive "generate" action can never reach a real save even if
         this code ships to every instance."""
@@ -3203,7 +3296,7 @@ def create_app() -> Flask:
     def jhsaa_lab():
         """A standalone JHSAA season generator, decoupled from the college/pro
         sim: click to produce a brand-new, full-fidelity, both-gender season in
-        THIS process's own (scratch) database, browsable at the ordinary /jhsaa
+        THIS process's canonical lab database, browsable at the ordinary /jhsaa
         pages and exportable via the ordinary /research/export page — neither
         needs any change, since this process's DEFAULT_SEED world IS the lab
         season once one exists."""
@@ -3226,7 +3319,7 @@ def create_app() -> Flask:
 
     @app.route("/jhsaa-lab/generate", methods=["POST"])
     def jhsaa_lab_generate():
-        """Wipe this (scratch) database's world and simulate a brand-new,
+        """Reset this canonical lab database's world and simulate a brand-new,
         independent JHSAA season for both genders — no college universe built
         (`skip_college=True`). `world.reset` + `get_or_create_jhsaa_only` never
         runs anywhere but a lab-mode process (gated above), and a lab process's
