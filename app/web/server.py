@@ -108,6 +108,46 @@ LOADING_HTML = """<!doctype html><html lang=en><head><meta charset=utf-8>
  </script>
 </body></html>"""
 
+# A JHSAA-only save (`world.get_or_create_jhsaa_only`, `skip_college=True`) holds
+# no college rosters at all, so `is_primed()`'s `bool(_roster_cache)` term can
+# never go true — `prime()` succeeds and fills nothing. Opened through the
+# ORDINARY college launch, every route therefore fell to the cold-start loader
+# above and polled /api/ready every 1.5s forever: no page ever rendered, and a
+# spinner is indistinguishable from a slow warm, so it reads as "the sim is
+# hanging" rather than "you opened the wrong database". The universe is fine —
+# it is the launch that is wrong. Say precisely that and name the launcher.
+# Doctrine (CLAUDE.md, ONE WORLD PER SAVE): never degrade onto a second
+# universe, and never let a should-be-crash render as plausible waiting.
+JHSAA_ONLY_HTML = """<!doctype html><html lang=en><head><meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<title>Play to Clinch — wrong database</title>
+<style>
+ html,body{height:100%;margin:0}
+ body{display:flex;align-items:center;justify-content:center;
+   font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+   background:#0f1720;color:#e8edf2;padding:24px}
+ .w{max-width:620px}
+ h1{font-size:19px;margin:0 0 14px;letter-spacing:.01em}
+ p{font-size:14px;line-height:1.62;color:#b9c6d2;margin:0 0 14px}
+ code{background:#1a2430;border:1px solid #26333f;border-radius:5px;
+   padding:2px 7px;font-size:13px;color:#8fd6de;word-break:break-all}
+ pre{background:#1a2430;border:1px solid #26333f;border-radius:7px;
+   padding:13px 15px;font-size:13px;color:#8fd6de;overflow-x:auto;margin:0 0 14px}
+ .n{font-size:12.5px;color:#7d8b99;line-height:1.6}
+</style></head><body><div class=w>
+ <h1>This is a JHSAA-only save, opened through the college launch.</h1>
+ <p>The database at <code>__PATH__</code> holds a high-school universe and no
+ college rosters, so the league can never finish warming up — which is why every
+ page sat on the loading spinner.</p>
+ <p><strong>Nothing is lost and nothing was changed.</strong> Start it with the
+ lab launcher instead, which binds the canonical database and sets
+ <code>JHSAA_LAB_MODE</code>:</p>
+ <pre>scripts/jhsaa_lab_server.sh</pre>
+ <p class=n>Then open <code>http://localhost:5050/jhsaa</code>. If you expected a
+ college save here, the path above is not the one you meant — check the
+ <code>save:</code> line printed at boot before looking for drift or corruption.</p>
+</div></body></html>"""
+
 # Grouped sidebar nav (Football-Manager style). Each item's href is resolved
 # per-request so the universe `u` carries through. "World" is the primary
 # season-to-season surface; the legacy per-universe season views sit under it.
@@ -586,6 +626,15 @@ def create_app() -> Flask:
         if wd.is_primed():
             wd.prime()
             return
+        # Cold — but a JHSAA-only save has no college rosters to warm, so waiting
+        # is waiting for something that can never happen (see JHSAA_ONLY_HTML).
+        # Asked only here, on the cold path, so a healthy college save never pays
+        # for the probe. 503: the save is real, this process just can't serve it.
+        if wd.is_jhsaa_only():
+            from markupsafe import escape
+            from app.dbpath import resolve_db_path
+            page = JHSAA_ONLY_HTML.replace("__PATH__", str(escape(resolve_db_path())))
+            return Response(page, status=503, mimetype="text/html")
         # Cold. Decide loader vs inline by WORLD IDENTITY (the generation salt — a
         # fresh random per New League / takeover, stable within a league), NOT a
         # process flag and NOT the world row id (SQLite reuses the rowid after
@@ -1905,7 +1954,17 @@ def create_app() -> Flask:
         # college cache to wait for in this mode, so it's always ready.
         if os.environ.get("JHSAA_LAB_MODE"):
             return {"ready": True}, 200
-        return {"ready": (not wd.exists()) or wd.is_primed()}, 200
+        if not wd.exists():
+            return {"ready": True}, 200
+        # ‼️ The same "no college cache to wait for" case, reached WITHOUT the
+        # env flag: a JHSAA-only save opened through the college launch. Keying
+        # this answer on the flag alone left the loader polling forever on a
+        # world that is simply not a college world. Report ready so the loader
+        # stops and reloads — into `_prime_world`'s diagnostic, which explains
+        # the wrong launch instead of spinning on it.
+        if wd.is_jhsaa_only():
+            return {"ready": True}, 200
+        return {"ready": wd.is_primed()}, 200
 
     @app.route("/methodology")
     def methodology():

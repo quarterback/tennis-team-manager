@@ -99,8 +99,19 @@ def _top_flight_champions(conn, world_id: int, year: int, gender: str) -> dict:
 
 def load_season(world_id: int, year: int) -> dict | None:
     """Everything the desk reads for one world-year, both genders: the two archive
-    blobs, the previous season's (for risers), one-flight records, the top-flight
-    individual champions, and the record-book heads. None if nothing is archived."""
+    blobs, the previous season's (for risers), one-flight records and the
+    top-flight individual champions. None if nothing is archived.
+
+    ‼️ EVERY READ HERE IS SCOPED TO ONE SEASON — never a career fold across the
+    whole archive. This once also loaded the record-book heads, which meant
+    `jhsaa_career_wins` ("the heaviest fold in the section": one pass json-parsing
+    every archived varsity line of every season) plus the unmemoised
+    `jhsaa_individual_title_repeats`, for BOTH genders, inline on the request
+    thread. On a ~50-season save that held the one gthread for minutes, so the
+    section's FRONT DOOR hung while every other JHSAA page stayed fine — which is
+    what made it read as "the front page is broken". The boards that own those
+    records defer them; the front page no longer shows them at all (owner rule
+    2026-09). Anything added here must stay season-scoped."""
     from . import world as wd
     arcs, prev = {}, {}
     for g in ("girls", "boys"):
@@ -118,20 +129,9 @@ def load_season(world_id: int, year: int) -> dict | None:
         indiv = {g: _top_flight_champions(conn, world_id, year, g) for g in arcs}
     finally:
         conn.close()
-    records = {}
-    for g in arcs:
-        try:
-            cw = wd.jhsaa_career_wins(world_id, g, limit=3)
-            records[g] = {"top": (cw.get("players") or {}).get("top") or [],
-                          # Repeat champions only (owner: a first season's leaders
-                          # "would just be a lot of 1s"); empty until someone repeats.
-                          "titles": wd.jhsaa_individual_title_repeats(world_id, g)[:3]}
-        except Exception:                       # a record board must never sink the page
-            records[g] = {"top": [], "titles": []}
     any_arc = next(iter(arcs.values()))
     return {"year": year, "season_year": any_arc.get("season_year"),
-            "arcs": arcs, "prev": prev, "one_flight": one, "indiv": indiv,
-            "records": records}
+            "arcs": arcs, "prev": prev, "one_flight": one, "indiv": indiv}
 
 
 # ---------------------------------------------------------- season folds ----
@@ -525,24 +525,6 @@ def chart(data: dict) -> dict:
             "n": {g: len(ds) for g, ds in duals.items()}}
 
 
-def record_book(data: dict) -> list[dict]:
-    """A strip of standing records — top-flight career wins and most individual
-    titles, per gender."""
-    out = []
-    for g, rec in (data.get("records") or {}).items():
-        for r in (rec.get("top") or [])[:1]:
-            out.append({"n": r.get("t_w", ""),
-                        "name": r.get("name", ""), "school": r.get("school", ""),
-                        "label": f"{GENDER_LABEL[g].lower()}' top-flight career wins",
-                        "gender": g, "pid": r.get("pid"), "ep": "jhsaa_career_wins"})
-        for r in (rec.get("titles") or [])[:1]:
-            out.append({"n": r.get("count", ""), "name": r.get("name", ""),
-                        "school": ", ".join(r.get("schools") or []) if isinstance(r.get("schools"), list) else r.get("schools", ""),
-                        "label": f"{GENDER_LABEL[g].lower()}' individual state titles",
-                        "gender": g, "pid": r.get("pid"), "ep": "jhsaa_repeat_champions"})
-    return out
-
-
 def compile_desk(data: dict, feed: int = 6) -> dict:
     """The whole front page, from a loaded season. Pure."""
     stories: list[dict] = []
@@ -571,7 +553,7 @@ def compile_desk(data: dict, feed: int = 6) -> dict:
             "facts": facts(data), "lead": lead, "feed": picked,
             "players": players_desk(data), "programs": programs,
             "freshmen": [s for s in stories if s["kind"] == "freshman_champ"][:4],
-            "chart": chart(data), "record_book": record_book(data),
+            "chart": chart(data),
             "all": stories}
 
 

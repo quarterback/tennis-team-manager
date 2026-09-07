@@ -111,22 +111,15 @@
       </div>
     </div>
 
-    {# ---- Record book ---- #}
-    {% if view.record_book %}
-    <div class="bl-panel jh-desk">
-      <div class="bl-panel-head"><span class="bl-panel-title">Record book</span>
-        <a class="bl-panel-meta" href="{{ url_for('jhsaa_career_wins', u=u, g=view.gender) }}">career wins →</a></div>
-      <div class="jh-records">
-        {% for r in view.record_book %}
-        <a class="jh-rec" href="{{ url_for(r.ep, u=u, g=r.gender) }}">
-          <span class="n">{{ r.n }}</span>
-          <span class="who">{{ r.name }}</span>
-          <span class="l">{{ r.label }}</span>
-        </a>
-        {% endfor %}
-      </div>
-    </div>
-    {% endif %}
+    {# ‼️ NO RECORD BOOK HERE (owner rule 2026-09): removed outright, not deferred.
+       It cost the front page the two heaviest folds in the section —
+       `jhsaa_career_wins` (one pass json-parsing every archived varsity line of
+       every season) and the unmemoised `jhsaa_individual_title_repeats` — for
+       BOTH genders, on the single gthread, so `/jhsaa` hung for minutes on a
+       ~50-season save while every other JHSAA page stayed fine. The career-wins
+       and repeat-champions BOARDS already own these records on the History rail
+       and defer them properly; restating their top row here bought a strip of
+       wasted space at the price of the section's front door. #}
   </div>
 </div>
 

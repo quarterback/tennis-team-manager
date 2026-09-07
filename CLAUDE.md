@@ -296,6 +296,28 @@ See `docs/AAR-pro-grad-transfers.md` + the world-binding commit for history.
   but never copied, merged, deleted, migrated, or selected; a stale alternate
   plus a missing canonical file fails closed for manual recovery. Explicit
   scratch/test runs require `JHSAA_LAB_DEV_OVERRIDE=1`.
+- **‼️ A JHSAA-ONLY WORLD CAN NEVER SATISFY `is_primed()` — SO THE COLD-START LOADER
+  MUST NOT WAIT FOR IT.** `get_or_create_jhsaa_only` (`skip_college=True`) writes NO
+  `world_roster` rows, and `is_primed()`'s `bool(_roster_cache)` term is only ever
+  filled from those rows: `prime()` SUCCEEDS and leaves the cache empty, so "is the
+  league warm yet?" is permanently False. `/api/ready` answered off `is_primed()`
+  alone, so it returned `{"ready": false}` for the life of the process while
+  `_prime_world` (a `before_request` hook) served the "Warming up the league…" loader
+  on EVERY route — the page polled `/api/ready` every 1.5s forever and nothing, not
+  the JHSAA hub and not a program page, ever rendered. **A spinner is
+  indistinguishable from a slow warm**, which is why this reads as "the sim is
+  hanging" rather than "wrong database". Both surfaces had an escape hatch and both
+  keyed it on the `JHSAA_LAB_MODE` ENV FLAG when the real condition is a property of
+  the WORLD — open the same file without the flag and the guard evaporates. Ask
+  `world.is_jhsaa_only()` (one indexed probe, cold path only, deliberately NOT
+  memoised), and serve a LOUD diagnostic naming `scripts/jhsaa_lab_server.sh` and the
+  resolved path rather than spinning. `tests/test_jhsaa_only_launch.py`.
+- **‼️ AND THE CANONICAL-PATH GUARD ABOVE IS ITSELF FLAG-GATED, so it does NOT cover
+  the launch that loses saves.** `dbpath.resolve_db_path` only calls
+  `_jhsaa_lab_path_invariant` when `JHSAA_LAB_MODE` is set — but opening a lab save
+  "through the college route" is BY DEFINITION a launch without that flag, so the
+  plain launch still silently reads `./tennis.db`. The `save[ MODE]:` boot line and
+  the JHSAA-only diagnostic are what actually catch it today; read them FIRST.
 - **‼️ A JHSAA LAB WORLD IS ITS OWN DATABASE FILE — the launch decides which
   universe you are in (owner incident 2026-09: the owner designed the split and
   still lost an evening to it).** The lab launcher (`scripts/jhsaa_lab_server.sh`)
@@ -2225,6 +2247,21 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   `tests/test_jhsaa_desk.py`. NOT on the front page, by owner decision: a champions grid
   (Honors owns it), repeat runs, streaks, droughts, JV, rankings as content, and season
   PHASES (a JHSAA season is simulated whole at week 0 — there is no "in progress").
+  - **‼️ EVERY READ ON THIS PAGE IS SCOPED TO ONE SEASON — NEVER A CAREER FOLD (owner
+    rule 2026-09).** `load_season` also loaded a RECORD BOOK strip, which meant
+    `jhsaa_career_wins` — by its own docstring *"the heaviest fold in the section"*, one
+    pass json-parsing every archived varsity line of every season — plus the UNMEMOISED
+    `jhsaa_individual_title_repeats`, for BOTH genders, inline on the request thread. On
+    a ~50-season save that held the one gthread for MINUTES. ‼️ The tell was diagnostic
+    and nearly sent the hunt elsewhere: rankings, brackets, program pages and the class
+    hub all stayed fast, because only `/jhsaa` compiles the desk — so it read as "the
+    front page is broken", and (the section's front DOOR being the thing that hangs) as
+    the whole JHSAA section being unreachable. The panel is REMOVED, not deferred: the
+    career-wins and repeat-champions boards on the History rail already own those
+    records and defer them through `_jh_deferred`, so restating their top row here
+    bought a strip of wasted space at the price of the section's entrance. Pinned by
+    `test_the_front_page_never_folds_the_whole_archive`. **Before adding anything to
+    this page, ask what it costs on FIFTY seasons, not on one.**
 - **‼️ TRUNCATION: NUMBERS NEVER SHRINK, NAMES WRAP (owner rule 2026-09).** In a `nowrap`
   ledger every fixed column is a number sized to its widest value and the one unsized
   column is `td.nm`, which wraps — never `text-overflow: ellipsis` on a name, never a
