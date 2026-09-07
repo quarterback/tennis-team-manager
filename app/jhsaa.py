@@ -161,14 +161,14 @@ DECIDER_TARGET = 10
 # logic is needed anywhere; high school has no clinch, so all nine are always played.
 WIDE_GROUPS = ("7A", "8A", "9A", "Group 1")  # groups whose road-to-State AND early window play 4S/5D
 
-# ‼️ THE PARASTATE GROUPS (owner spec 2026-09, resized 2026-09): the road still
-# qualifies exactly 32 by the existing ladder (UNTOUCHED — `STATE_FIELD` is 32 for
-# every one of them), and the at-large committee (`jhsaa_committee`) adds
-# `AT_LARGE_BIDS[group]` more, ALWAYS seeded below every road qualifier. The
-# Parastate is the opening round the at-larges play into: the `2 × bids` lowest
-# seeds pair high-low and the rest bye to the Round of 32, so the Parastate is
-# exactly the boundary between reaching the State structure and entering the
-# ordinary 32-team championship bracket, whatever the bid count.
+# ‼️ THE PARASTATE GROUPS (owner spec 2026-09, resized 2026-09, EXPANDED 2026-09):
+# the road is UNTOUCHED — it qualifies exactly `STATE_FIELD[group]` by the existing
+# ladder — and the at-large committee (`jhsaa_committee`) adds `AT_LARGE_BIDS[group]`
+# more, ALWAYS seeded below every road qualifier. The Parastate is the opening round
+# the at-larges play into: the `2 × bids` lowest seeds pair high-low and the rest bye
+# to the main draw, so the Parastate is exactly the boundary between reaching the
+# State structure and entering the ordinary championship bracket, whatever the bid
+# count.
 #
 #   8A / 9A / Group 1 — 48 = 32 road + 16 at-large; 16-dual Parastate (17-48),
 #                        seeds 1-16 bye.
@@ -179,12 +179,35 @@ WIDE_GROUPS = ("7A", "8A", "9A", "Group 1")  # groups whose road-to-State AND ea
 #                        without a committee "searching for reasons to fill
 #                        the back half". Same mechanism, field sized to the
 #                        depth of the class.
+#   6A / 5A / 4A       — 40 = 32 road + 8 at-large, 7A's shape exactly.
+#   3A / 2A            — likewise: JHSAA playoff expansion, 2026-09.
+#   1A                 — 40 = 24 road + 16 at-large; 16-dual Parastate (9-40),
+#                        seeds 1-8 bye. ‼️ THE ROAD IS THE THING THAT DOES NOT
+#                        MOVE: 1A crowns off the fixed `_recovery_24` wiring (a
+#                        TALENT decision, `STATE_FIELD["1A"] == 24` is what
+#                        routes it there), so reaching 40 is a BID count, never
+#                        a bigger road. Bids are `field − road` and nothing
+#                        else; the survivors plus the byes land on 1A's own 24
+#                        draw, which is the shape it has always played.
+#
+# ‼️ THE EXPANSION IS PLAYOFF SIZE ONLY — 6A down to 1A keep their dual formats
+# exactly as they are (owner rule 2026-09: "none of those classifications will
+# change their dual match format from status quo"). `WIDE_GROUPS` is a SEPARATE
+# axis and does NOT move with this: 7A/8A/9A/Group 1 play 4S/5D on the road
+# because they are in that tuple, and the seven classes added here are not, so
+# their Parastate plays whatever shape their road already played (1S/4D, or
+# Group 2's 3S/3D). Membership in one tuple has never implied the other; do not
+# "tidy" them into agreement.
 #
 # A district champion who missed the road CONSUMES one of the bids rather than
-# adding a berth (`jhsaa_committee.select`). All four are in `WIDE_GROUPS`, so
-# every State round including the Parastate plays 4S/5D. See
-# `run_state_parastate` and `docs/AAR-jhsaa-computer-ratings-and-at-large-committee.md`.
-AT_LARGE_BIDS: dict[str, int] = {"7A": 8, "8A": 16, "9A": 16, "Group 1": 16}
+# adding a berth (`jhsaa_committee.select`). See `run_state_parastate` and
+# `docs/AAR-jhsaa-computer-ratings-and-at-large-committee.md`.
+#
+# Ordered by classification (the committee page lists `ATLARGE_GROUPS` as its
+# group switcher and opens on the first).
+AT_LARGE_BIDS: dict[str, int] = {"9A": 16, "8A": 16, "7A": 8, "6A": 8, "5A": 8,
+                                 "4A": 8, "3A": 8, "2A": 8, "1A": 16,
+                                 "Group 1": 16}
 ATLARGE_GROUPS = tuple(AT_LARGE_BIDS)
 #: The opening round's name — the at-larges' round. Named in `round_names`, which
 #: is what makes `state._jh_split_state` render it as its own tree (no bracket
@@ -194,7 +217,7 @@ PARASTATE_NAME = "Parastate"
 
 
 def at_large_bids(group: str | None) -> int:
-    """How many committee at-larges `group` adds on top of its 32 road
+    """How many committee at-larges `group` adds on top of its road
     qualifiers — 0 for every class outside the Parastate groups."""
     return AT_LARGE_BIDS.get(group or "", 0)
 
@@ -908,10 +931,23 @@ QUALIFIER_NAME = "Qualifiers Round"
 
 
 def state_field_size(group: str) -> int:
-    """The classification's State field. There is no scaling: every class plays the
-    owner's table at full size, and a pool too small for it is a broken fixture, not
-    a format to accommodate."""
+    """The classification's State field — in a Parastate class (`ATLARGE_GROUPS`)
+    the ROAD's half of it, which the committee's `at_large_bids(group)` sit on top
+    of. There is no scaling: every class plays the owner's table at full size, and
+    a pool too small for it is a broken fixture, not a format to accommodate."""
     return STATE_FIELD.get(group, STATE_FIELD_DEFAULT)
+
+
+# ‼️ A PARASTATE CLASS'S BIDS MUST FIT INSIDE ITS ROAD. The Parastate is the
+# `2 × bids` lowest seeds paired high-low, so every at-large plays a ROAD
+# qualifier for its seat: `bids > road` would pair at-larges with each other and
+# hand one of them a berth nobody defended. ASSERTED rather than assumed —
+# `AT_LARGE_BIDS` and `STATE_FIELD` are two owner tables that have to agree, and
+# the 2026-09 expansion added both kinds of entry (a 40 as 32 + 8, and 1A's as
+# 24 + 16 off a road that must not move).
+assert all(b <= state_field_size(g) for g, b in AT_LARGE_BIDS.items()), \
+    "AT_LARGE_BIDS exceeds the road field: %r" % (
+        {g: b for g, b in AT_LARGE_BIDS.items() if b > state_field_size(g)},)
 
 
 def _even(n: int) -> int:
@@ -7576,24 +7612,29 @@ def run_state(field: list[TeamSeason], *, seed: int, champions: int = 8) -> dict
 
 
 def run_state_parastate(seeds: list[TeamSeason], *, byes: int, seed: int) -> dict:
-    """The Parastate State event for `ATLARGE_GROUPS` (owner spec 2026-09,
-    resized 2026-09 — 48 for 8A/9A/Group 1, 40 for 7A).
+    """The Parastate State event for `ATLARGE_GROUPS` (owner spec 2026-09;
+    resized 2026-09 — 48 for 8A/9A/Group 1 — and expanded 2026-09 to 40 for
+    7A/6A/5A/4A/3A/2A/1A).
 
-    `seeds` is the WHOLE field in seed order: the road's 32 first (1-8 the
+    `seeds` is the WHOLE field in seed order: the road's own first (1-8 the
     earned bye lines — Epiregional winners, Epiregional losers, then the best
     non-champion road qualifiers, all ordered by the seeding ATR — then the rest
     of the road by ATR), and the committee's at-larges after them by Borda. An
     at-large can NEVER be seeded above a road qualifier: the floor is structural
-    (they arrive after the 32 road seeds in this list), not a sort key.
+    (they arrive after every road seed in this list), not a sort key.
 
     `byes` is how many top seeds sit the Parastate out — `road − bids`, so the
-    Parastate is exactly the `2 × bids` lowest seeds: a 48 (16 bids) byes 1-16
-    and plays 17v48 … 32v33; a 40 (8 bids) byes 1-24 and plays 25v40 … 32v33.
-    Pairs are pinned high-low, the higher seed hosts. Winners RETAIN their
-    original seed; they and the byes enter a fresh 32 draw played by `run_state`
-    itself (`champions=byes` on a full 32 lands on the plain single-draw
-    branch), so the Round of 32 onward is the association's ordinary seeded
-    bracket. The Parastate is named in `round_names`, which is exactly what
+    Parastate is exactly the `2 × bids` lowest seeds: a 48 (32 road, 16 bids)
+    byes 1-16 and plays 17v48 … 32v33; a 40 off a 32 road (8 bids) byes 1-24 and
+    plays 25v40 … 32v33; 1A's 40 off its 24 road (16 bids) byes 1-8 and plays
+    9v40 … 24v25. Pairs are pinned high-low, the higher seed hosts. Winners
+    RETAIN their original seed; they and the byes enter a fresh draw the size of
+    the ROAD, played by `run_state` itself (`champions=byes`, which on a full 32
+    lands on the plain single-draw branch and on 1A's 24 gives its eight bye
+    lines the single bye that shape has always had), so from the Round of 32 —
+    the Octofinals in 1A — it is the association's ordinary seeded bracket at
+    the shape that class already played. The Parastate is named in
+    `round_names`, which is exactly what
     makes `state._jh_split_state` draw it as its own tree — there is no bracket
     path from a Parastate slot to a main-draw slot.
 

@@ -702,7 +702,10 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   store that exists to reproduce a decision.
   See `docs/BLOG-toss-in-a-third-format.md`.
 - **‼️ STATE QUALIFICATION IS EARNED ON COURT (owner rule 2027-08, expanded fields).**
-  State is **40 in EVERY classification** (`jhsaa.STATE_FIELD`; 9A and 8A were
+  ⚠️ The numbers in this bullet are the ROAD's (`jhsaa.STATE_FIELD`); since the
+  2026-09 expansion every class but Group 2/Group 3 adds committee at-larges on
+  top of it — see the PARASTATE bullet above for the field a class actually
+  crowns from. State is **40 in EVERY classification** (`jhsaa.STATE_FIELD`; 9A and 8A were
   raised in 2027-08 because the association's deepest classes were leaving plainly
   good teams home, and **7A followed in 2026-08** — it was simply the class that pass
   did not touch, never a special case). It stays a per-class TABLE because the field
@@ -823,21 +826,36 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   `docs/AAR-jhsaa-computer-ratings-and-at-large-committee.md`).** Nine
   independent systems + composite per (group, gender), archived on the season
   (`ratings` key, the `pi` rule — never refit on read), PARALLEL to TOSS/ATR
-  and feeding neither. **The PARASTATE classes (JHSAA rule 2026-09): 8A, 9A and
-  Group 1 play 48 = 32 road + 16 at-large; 7A plays 40 = 32 road + 8**
-  (`AT_LARGE_BIDS`, `ATLARGE_GROUPS` derived from it, `run_state_parastate(byes=
-  road − bids)`): the road qualifies its 32 untouched (`STATE_FIELD` is 32 for
-  all four — never 48/40); a five-member deterministic committee (`select(seats=)`)
-  picks the bids from EVERY non-road team (a district champion who missed the road
-  is automatic and CONSUMES a bid) — and **an at-large is ALWAYS seeded below
-  every road qualifier**, structurally. The Parastate is the `2 × bids` lowest
-  seeds high-low (17v48…32v33; 25v40…32v33 in 7A), winners keep their seed; it
-  renders via `_jh_split_state`'s named prelim split, and every surface reads
-  bye/seat counts OFF THE ARCHIVE so a 7A season selected at 16 still renders as
-  sixteen. `CHALLENGE_SLOTS` is empty — the 4-seat valve belongs to a 40 ROAD and
-  no class is on one. Margins in the margin systems are FORMAT-NORMALISED (a 5-0,
-  7-0 and 9-0 are all +1.0) — never feed raw margins across mixed formats.
-  All four groups are in `WIDE_GROUPS` (4S/5D everywhere on the road).
+  and feeding neither. **THE PARASTATE CLASSES — every class but Group 2 and
+  Group 3 (JHSAA rule 2026-09, EXPANDED 2026-09,
+  `docs/AAR-jhsaa-playoff-expansion-40.md`): 8A, 9A and Group 1 play 48 = 32 road
+  + 16 at-large; 7A, 6A, 5A, 4A, 3A and 2A play 40 = 32 road + 8; 1A plays
+  40 = 24 road + 16** (`AT_LARGE_BIDS`, `ATLARGE_GROUPS` derived from it,
+  `run_state_parastate(byes= road − bids)`): the road qualifies its own
+  `state_field_size` untouched — the TABLE never says 48/40 — and a five-member
+  deterministic committee (`select(seats=)`) picks the bids from EVERY non-road
+  team (a district champion who missed the road is automatic and CONSUMES a bid)
+  — and **an at-large is ALWAYS seeded below every road qualifier**,
+  structurally. The Parastate is the `2 × bids` lowest seeds high-low
+  (17v48…32v33; 25v40…32v33 at a 32 road; 9v40…24v25 in 1A), winners keep their
+  seed; it renders via `_jh_split_state`'s named prelim split, and every surface
+  reads bye/seat counts OFF THE ARCHIVE so a 7A season selected at 16 still
+  renders as sixteen. `CHALLENGE_SLOTS` is empty — the 4-seat valve belongs to a
+  40 ROAD and no class is on one. Margins in the margin systems are
+  FORMAT-NORMALISED (a 5-0, 7-0 and 9-0 are all +1.0) — never feed raw margins
+  across mixed formats.
+  **‼️ 1A REACHES 40 ON BIDS, NOT ON A BIGGER ROAD.** `state_field_size(group)
+  == 24` is what routes a class to the fixed `_recovery_24` wiring, and 1A sits
+  there on a TALENT decision — so the expansion is 16 bids over the 24 road it
+  keeps, and the Parastate's survivors land on the 24 draw it has always played.
+  Asserted at import: `bids <= state_field_size(group)`, since every at-large
+  must have a road qualifier to play for its seat.
+  **‼️ PLAYOFF SIZE AND DUAL FORMAT ARE SEPARATE AXES.** The expansion changed
+  no class's dual format (owner: "none of those classifications will change
+  their dual match format from status quo"). `WIDE_GROUPS` is its own tuple and
+  only 7A/8A/9A/Group 1 are in it; 6A-1A run the Parastate at whatever shape
+  their road already played. Every Parastate class used to be a WIDE one, which
+  is a coincidence a later pass must not "restore" as an invariant.
   **‼️ GROUP 2 PLAYS 3S/3D ON ITS ROAD (JHSAA rule 2026-09, `THREE_THREE_GROUPS`,
   `docs/AAR-jhsaa-group2-3s3d-postseason-deciders.md`) — the ONE even shape.** A
   3-3 postseason dual is decided by THREE CONCURRENT 10-point tiebreakers at S1,

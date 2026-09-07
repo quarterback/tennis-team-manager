@@ -191,15 +191,52 @@ def test_the_40_team_parastate_is_eight_bids_and_byes_1_to_24(monkeypatch):
                                   byes=16, seed=3)
 
 
+def test_1a_reaches_40_on_bids_because_its_road_never_moves(monkeypatch):
+    """The 2026-09 expansion takes 1A to 40 as well, and it is the one class
+    whose road is not 32: `STATE_FIELD["1A"] == 24` is what routes it to the
+    fixed `_recovery_24` wiring, so reaching 40 is 16 BIDS on top of that road,
+    never a bigger road. Seeds 1-8 bye — 1A's own eight bye lines — the
+    Parastate is 9v40 … 24v25, and the 24 survivors play the 24-team draw 1A has
+    always played (Octofinals down, seeds 1-8 carrying its single bye)."""
+    seeds = [_T(f"S{i:02d}") for i in range(1, 41)]
+    monkeypatch.setattr(jh, "play_dual", lambda a, b, *, seed, phase: _Res(0))
+    bids = jh.AT_LARGE_BIDS["1A"]
+    assert bids == 16 and jh.state_field_size("1A") == 24
+    arc = jh.run_state_parastate(seeds, byes=jh.state_field_size("1A") - bids,
+                                 seed=5)
+    para = arc["rounds"][0]
+    assert arc["round_names"][0] == jh.PARASTATE_NAME
+    assert [(g["home"], g["away"]) for g in para] == \
+        [(f"S{9 + k:02d}", f"S{40 - k:02d}") for k in range(16)]
+    # 16 Parastate duals, then the 24-team draw: 8 byes, so 8 duals, then 8/4/2/1.
+    assert [len(rd) for rd in arc["rounds"]] == [16, 8, 8, 4, 2, 1]
+    alive = {g["home"] for g in arc["rounds"][1]} | {g["away"] for g in arc["rounds"][1]}
+    assert alive == {f"S{i:02d}" for i in range(9, 25)}
+    assert len(arc["field"]) == 40 and arc["champion"] == "S01"
+
+
 def test_the_bid_table_and_the_committee_seat_count_agree():
-    """8A/9A/Group 1 at 16, 7A at 8 (owner rule 2026-09); every Parastate class
-    is a road-32 class and plays 4S/5D; the committee selects exactly the
-    group's seats and an automatic bid CONSUMES one of them."""
-    assert jh.AT_LARGE_BIDS == {"7A": 8, "8A": 16, "9A": 16, "Group 1": 16}
+    """8A/9A/Group 1 at 16, 7A at 8 (owner rule 2026-09); 6A down to 1A joined
+    with the 2026-09 playoff expansion — every class crowns from 40 but the
+    48-field three, and 1A gets there on 16 bids because its ROAD stays the 24
+    it has always played. The committee selects exactly the group's seats and an
+    automatic bid CONSUMES one of them."""
+    assert jh.AT_LARGE_BIDS == {"9A": 16, "8A": 16, "7A": 8, "6A": 8, "5A": 8,
+                                "4A": 8, "3A": 8, "2A": 8, "1A": 16,
+                                "Group 1": 16}
     for g in jh.ATLARGE_GROUPS:
-        assert jh.state_field_size(g) == 32, g
-        assert g in jh.WIDE_GROUPS, g
-    assert jh.at_large_bids("6A") == 0
+        road = jh.state_field_size(g)
+        bids = jh.at_large_bids(g)
+        # Every at-large plays a ROAD qualifier for its seat — the Parastate is
+        # the `2 × bids` lowest seeds, so the bids can never outnumber the road.
+        assert bids <= road, g
+        assert road + bids in (40, 48), (g, road, bids)
+    # ‼️ THE EXPANSION IS PLAYOFF SIZE ONLY: the dual format is a SEPARATE axis
+    # (`WIDE_GROUPS`) and did not move with it. Every class added in 2026-09
+    # plays the Parastate at whatever shape its road already played.
+    assert not (set(jh.ATLARGE_GROUPS) & set(jh.WIDE_GROUPS)) - {
+        "7A", "8A", "9A", "Group 1"}
+    assert jh.at_large_bids("Group 2") == 0 and jh.at_large_bids("Group 3") == 0
     sel = jc.select(_ratings(), ROAD, [], seats=8)
     assert len(sel["selected"]) == 8 == sel["seats"]
     assert set(sel["selected"]) == {f"T{i:02d}" for i in range(33, 41)}
