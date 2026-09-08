@@ -353,7 +353,22 @@ See `docs/AAR-pro-grad-transfers.md` + the world-binding commit for history.
   world ("my 2073 save says 2027") while the real universe sits untouched in the
   lab's file — nothing is lost, the wrong door was used. `create_app` announces
   `save[ MODE]: <path> — world year N` at every boot; read that line FIRST when
-  a save looks wrong, before any drift/corruption theory. Related fix, same
+  a save looks wrong, before any drift/corruption theory.
+  ‼️ **AND IT NAMES THE SEASON THE WORLD ACTUALLY PLAYS.** It printed
+  `2026 + year` for every world, but a JHSAA season is `jhsaa_season_year`
+  (`BASE_YEAR + year + 1` — the season's seniors ARE that recruiting class), so
+  a lab save at world year 49 announced "season 2075" while its archive, its
+  pages and its research export all said 2076. **An off-by-one in the line this
+  section tells you to read FIRST is worse than one anywhere else**: the
+  instrument for "am I in the right universe?" became evidence of a discrepancy
+  that does not exist, and it points at the one hypothesis — a forked
+  universe — that costs an evening to rule out. It forks on
+  `world.is_jhsaa_only()` (boot only, one indexed probe) rather than replacing
+  the college formula: a college world's own JHSAA rung legitimately runs a
+  year ahead of its season, so naming that year there would move the error
+  rather than fix it. Pinned both ways by
+  `test_the_boot_line_names_the_season_the_world_actually_plays` and
+  `test_the_boot_line_keeps_the_college_year_on_a_college_save`. Related fix, same
   episode: `dbpath.resolve_db_path` decides ONCE per process, with race-safe
   probes, and never abandons an existing save file for a fallback (see
   `docs/AAR-dbpath-probe-race-and-roster-drift-diagnostic.md`).

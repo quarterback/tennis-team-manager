@@ -140,3 +140,64 @@ def test_health_stays_instant_and_never_touches_the_world(save):
     wd.get_or_create_jhsaa_only()
     r = _client().get("/api/health")
     assert r.status_code == 200 and r.get_json() == {"status": "ok"}
+
+
+def test_the_boot_line_names_the_season_the_world_actually_plays(save, caplog):
+    """‼️ THE ONE LINE THIS REPO SAYS TO READ FIRST WHEN A SAVE LOOKS WRONG, so
+    it is the last place an off-by-one belongs. It printed `2026 + year` for
+    every world, but a JHSAA season is `BASE_YEAR + year + 1` (the season's
+    seniors ARE that recruiting class) — so a lab save at world year 49
+    announced "season 2075" while its archive, its pages and its research
+    export all said 2076. The diagnostic for "am I in the right universe?" was
+    itself the evidence of a discrepancy that does not exist.
+    """
+    import logging
+
+    from app import world as wd
+
+    wd.get_or_create_jhsaa_only()
+    w = wd.load_world(wd.DEFAULT_SEED)
+    conn = wd._db()
+    try:
+        conn.execute("UPDATE world SET year=49 WHERE id=?", (w["id"],))
+        conn.commit()
+    finally:
+        conn.close()
+    assert wd.is_jhsaa_only() is True
+
+    with caplog.at_level(logging.WARNING, logger="baseline.server"):
+        _client()
+    line = next(r.getMessage() for r in caplog.records
+                if r.getMessage().startswith("save"))
+    w = wd.load_world(wd.DEFAULT_SEED)
+    assert f"JHSAA season {wd.jhsaa_season_year(w)}" in line, line
+    assert "season 2075" not in line, line          # the college formula
+    assert "world year 49" in line, line            # the DB key still shown
+
+
+def test_the_boot_line_keeps_the_college_year_on_a_college_save(save, caplog):
+    """The fix is a fork, not a replacement: an ordinary college world still
+    announces `2026 + year`. Its JHSAA rung runs a year ahead of that by
+    design, and naming THAT year here would move the error rather than fix it.
+    """
+    import logging
+
+    from app import world as wd
+
+    w = wd.get_or_create(wd.DEFAULT_SEED)
+    conn = wd._db()
+    try:
+        conn.execute("UPDATE world SET year=49 WHERE id=?", (w["id"],))
+        conn.execute(
+            "INSERT INTO world_roster (world_id, year, division, gender, school, data)"
+            " VALUES (?,?,?,?,?,?)", (w["id"], 49, "D1", "men", "Stub", "[]"))
+        conn.commit()
+    finally:
+        conn.close()
+    assert wd.is_jhsaa_only() is False
+
+    with caplog.at_level(logging.WARNING, logger="baseline.server"):
+        _client()
+    line = next(r.getMessage() for r in caplog.records
+                if r.getMessage().startswith("save"))
+    assert "season 2075" in line and "JHSAA" not in line, line

@@ -470,9 +470,24 @@ def create_app() -> Flask:
     from app import world as _wd
     _w = _wd.load_world(_wd.DEFAULT_SEED)
     _mode = " [JHSAA LAB]" if os.environ.get("JHSAA_LAB_MODE") else ""
+    # ‼️ A JHSAA SEASON IS NOT THE COLLEGE YEAR — this line printed `2026 + year`
+    # for both, so a lab save at world year 49 announced "season 2075" while its
+    # archive, its pages and its research export all said 2076
+    # (`jhsaa_season_year` is BASE_YEAR + year + 1, because the season's seniors
+    # ARE that recruiting class). One off-by-one, and it landed on the ONE line
+    # this repo tells you to read FIRST when a save looks wrong — so the
+    # diagnostic for "am I in the right universe?" was itself evidence of a
+    # discrepancy that does not exist. A JHSAA-only world has no college season
+    # to name at all; ask which kind of world this is (one indexed probe, boot
+    # only) and name the season that world actually plays.
+    _season = ""
+    if _w:
+        _season = (f"JHSAA season {_wd.jhsaa_season_year(_w)}"
+                   if _wd.is_jhsaa_only(_wd.DEFAULT_SEED)
+                   else f"season {2026 + _w['year']}")
     logging.getLogger("baseline.server").warning(
         "save%s: %s — %s", _mode, _rdp(),
-        f"world year {_w['year']} (season {2026 + _w['year']})" if _w else
+        f"world year {_w['year']} ({_season})" if _w else
         "NO WORLD YET — a new league will be created on first load. If you "
         "expected an existing save (or a JHSAA lab world, which lives in its "
         "own database via scripts/jhsaa_lab_server.sh), stop and check the "
