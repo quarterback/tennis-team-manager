@@ -2442,6 +2442,27 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     relative to that row's school, so each side's `won` derives from it, never
     from a `home` flag). Per-school reads find their away duals through `opp`, in
     ONE extra query — never per row, which is the fingerprint-in-a-loop storm.
+    ‼️ **AND THAT EXTRA QUERY IS A SECOND QUERY, NEVER A SECOND ARM OF THE FIRST.**
+    `school=? OR opp=?` asks for both sides at once, reads beautifully, and can be
+    narrowed by NEITHER index — SQLite scans every dual of the season. That shape
+    shipped in `jhsaa.school_exposure`, which runs on every one of the ~1,600
+    roster builds a season advance makes, so the whole archive was re-scanned
+    ~1,600 times per year. `ix_jhsaa_dual_opp` mirrors `ix_jhsaa_dual` on `opp`
+    and both must exist; pinned by `test_school_exposure_is_scoped_to_the_world_
+    and_uses_the_index`, which checks BOTH arms because the slow shape is the one
+    that reads best. **Adding a column to a WHERE clause can change its cost class
+    while the query still looks right** — `EXPLAIN QUERY PLAN` both halves.
+  - **‼️ A HOME-ROW LOOKUP MATCHES ALL FIVE FIELDS OF `jh_match_key`, not the pair.**
+    `jhsaa_home_row_id` matched `(world_id, year, gender, level, school, opp)` and
+    left out `phase` and `district` — but the same two programs meet more than once
+    a season with the same host (a league meeting and a postseason rematch, a
+    league meeting and a town rivalry), so it returned whichever SQLite reached
+    first and the Match Center rendered one dual's box score under another's
+    heading. Both callers hold the row they came from; pass the whole identity.
+  - **‼️ `scripts/` READS THIS COLUMN TOO, and is where nothing renders to show it
+    broke.** `scripts/fix_name_era.py` parsed `lines` as text off its own rows —
+    which now raise on the home side and are NULL on the away side — and came
+    through an `app/`-only sweep clean. The sweep scans `scripts/` as well.
   - **‼️ `jh_match_key` CARRIES NO GENDER AND NO YEAR, so a home-lines map MUST be
     built per `(world_id, year, gender)`.** The same two schools meet in the boys'
     AND the girls' season, in the same phase, at the same venue — one key. A map

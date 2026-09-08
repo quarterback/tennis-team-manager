@@ -220,6 +220,12 @@ CREATE TABLE IF NOT EXISTS world_jhsaa_dual (
   tiebreak TEXT DEFAULT '[]'
 );
 CREATE INDEX IF NOT EXISTS ix_jhsaa_dual ON world_jhsaa_dual(world_id, year, gender, school);
+-- ‼️ THE MIRROR INDEX IS NOT OPTIONAL. Since the box score moved to the HOME row only,
+-- a program's AWAY duals are reached through `opp` — and a reader that asks for both
+-- sides at once (`school=? OR opp=?`) cannot be narrowed by either index, so it scans
+-- the whole season. `jhsaa.school_exposure` runs on every one of the ~1,600 roster
+-- builds a season advance makes, which is where that scan becomes hours.
+CREATE INDEX IF NOT EXISTS ix_jhsaa_dual_opp ON world_jhsaa_dual(world_id, year, gender, opp);
 -- The INDIVIDUAL state tournaments — one row per completed draw, so a page loads the
 -- flight it is showing and nothing else.
 --
@@ -6133,7 +6139,8 @@ def jhsaa_dual_row(dual_id: int) -> dict | None:
         # exactly what `jhsaa_home_row_id` exists for: it matches on the RAW
         # archived names, with our two sides swapped.
         hid = jhsaa_home_row_id(d["world_id"], d["year"], d["gender"],
-                                d["level"] or "v", d["opp_raw"], d["school_raw"])
+                                d["level"] or "v", d["opp_raw"], d["school_raw"],
+                                d.get("phase") or "", d.get("district"))
         if hid:
             c2 = _db()
             try:
@@ -6148,19 +6155,32 @@ def jhsaa_dual_row(dual_id: int) -> dict | None:
 
 
 def jhsaa_home_row_id(world_id: int, year: int, gender: str, level: str,
-                      school_raw: str, opp_raw: str) -> int | None:
+                      school_raw: str, opp_raw: str,
+                      phase: str = "", district=0) -> int | None:
     """The rowid of the HOME side's row for one specific dual, given the RAW
     (as-archived) names of both schools. `jhsaa_prior_meetings` only ever
     returns `home=1` rows, so excluding "the dual currently being viewed"
     from it needs that row's id — even when the page was opened from the
     AWAY school's schedule, whose own rowid is the `home=0` sibling and so
-    never appears in that result set at all."""
+    never appears in that result set at all.
+
+    ‼️ THE IDENTITY OF A DUAL IS `jh_match_key`, AND ALL FIVE FIELDS OF IT
+    MATTER. The same two programs meet more than once in one season with the
+    same host — a league meeting and a postseason rematch, or the league
+    meeting and a town rivalry — so a lookup on the pair and the level alone
+    returns whichever of them SQLite reaches first, and the Match Center then
+    renders one dual's box score under another's heading with nothing raised.
+    `phase` and `district` are the remaining two fields; both callers hold the
+    row they came from, so both can supply them."""
     conn = _db()
     try:
         r = conn.execute(
             "SELECT rowid AS id FROM world_jhsaa_dual WHERE world_id=? AND year=?"
-            " AND gender=? AND COALESCE(level,'v')=? AND home=1 AND school=? AND opp=?",
-            (world_id, year, gender, level, school_raw, opp_raw)).fetchone()
+            " AND gender=? AND COALESCE(level,'v')=? AND home=1 AND school=? AND opp=?"
+            " AND COALESCE(phase,'')=?"
+            " AND (CASE WHEN COALESCE(district,0)<>0 THEN 1 ELSE 0 END)=?",
+            (world_id, year, gender, level, school_raw, opp_raw,
+             phase or "", int(bool(district)))).fetchone()
     finally:
         conn.close()
     return r["id"] if r else None

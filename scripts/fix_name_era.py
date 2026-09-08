@@ -25,6 +25,7 @@ sys.path.insert(0, os.getcwd())
 from app import jhsaa as jh
 from app import world as wd
 from app.dbpath import resolve_db_path
+from app.world import unpack_lines
 
 LEGACY = 999999          # era so high every cohort is legacy
 NEWALL = 0               # era so low every cohort is new
@@ -42,13 +43,23 @@ def set_name_era(v):
     jh._season_cache.clear()
 
 def archived(year_ix, gender, school):
+    """Every name this program's archive says dressed that season.
+
+    ‼️ TWO INDEXED READS, and `world.unpack_lines` rather than a raw JSON parse.
+    The box score is stored COMPRESSED on the HOME row only
+    (`world._archive_lines`), so this program's away duals are reached through
+    `opp` — its own away rows hold nothing — and parsing the column as text
+    raises on the compressed bytes. Both are the app's rules; this is a
+    maintenance script and reads the archive the same way
+    `jhsaa.school_exposure` does."""
     got = set()
-    for r in conn.execute("SELECT home,lines,level FROM world_jhsaa_dual "
-                          "WHERE world_id=? AND year=? AND gender=? AND school=?",
-                          (w["id"], year_ix, gender, school)):
-        if (r["level"] or "v") != "v": continue
-        side = "home" if r["home"] else "away"
-        for ln in json.loads(r["lines"] or "[]"): got.update(ln.get(side) or ())
+    q = ("SELECT school,lines,level FROM world_jhsaa_dual"
+         " WHERE world_id=? AND year=? AND gender=? AND %s=?"
+         " AND home=1 AND COALESCE(level,'v')='v'")
+    for col in ("school", "opp"):
+        for r in conn.execute(q % col, (w["id"], year_ix, gender, school)):
+            side = "home" if r["school"] == school else "away"
+            for ln in unpack_lines(r["lines"]): got.update(ln.get(side) or ())
     return got
 
 rng = random.Random(7)
