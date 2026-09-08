@@ -122,7 +122,7 @@ def _load_archived_jhsaa_season(year: int, gender: str) -> dict:
         # from a varsity dual whose lines failed to record.
         d["level"] = d.get("level") or "v"
         d["tied"] = bool(d.get("tied"))
-        d["lines"] = json.loads(d.pop("lines") or "[]")
+        d["lines"] = wd.unpack_lines(d.pop("lines"))
         # The deciders of a level Group 2 postseason dual (JHSAA rule 2026-09) —
         # their own field, NEVER folded into `lines`: a 10-point tiebreaker is not
         # a match, and every line-count consumer downstream would count it as one.

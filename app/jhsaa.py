@@ -2849,7 +2849,10 @@ def school_exposure(gender: str, school_name: str, season_years) -> dict:
     got = _expo_cache.get(key, _EXPO_MISS)
     if got is not _EXPO_MISS:
         return got
-    from .world import BASE_YEAR
+    # `unpack_lines` because the box score is stored COMPRESSED from 2026-09 on
+    # and as plain JSON before that — it sniffs the storage class, so this reads
+    # a 50-season archive written under both encodings. See its note in `world`.
+    from .world import BASE_YEAR, unpack_lines as _world_unpack_lines
     wid = _expo_world_id(db)
     out = {y: None for y in years}
     idx_of = {y - BASE_YEAR - 1: y for y in years if y - BASE_YEAR - 1 >= 0}
@@ -2881,7 +2884,7 @@ def school_exposure(gender: str, school_name: str, season_years) -> dict:
             if (level or "v") == "v":
                 side = "home" if home else "away"
                 dressed = set()
-                for ln in json.loads(lines or "[]"):
+                for ln in _world_unpack_lines(lines):
                     dressed.update(ln.get(side) or ())
                 for nm in dressed:             # one unit per DUAL, not per line
                     units[nm] = units.get(nm, 0.0) + 1.0

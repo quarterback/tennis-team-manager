@@ -33,6 +33,7 @@ import random
 import secrets
 import sqlite3
 import threading
+import zlib
 from dataclasses import asdict, fields
 
 import app.seasonmode as sm
@@ -377,6 +378,44 @@ def _db() -> sqlite3.Connection:
     if _schema_ready_for != WORLD_DB:
         init_schema()
     return dbpath.connect(WORLD_DB)
+
+
+# --- the per-dual box score, on disk -----------------------------------------
+#
+# ‼️ THIS ONE COLUMN IS MOST OF THE DATABASE. Measured on a real 50-season lab
+# save: 2,976 MB of `world_jhsaa_dual.lines` in a 4,402 MB file — 68% of
+# everything the game has ever remembered, and it grows ~69 MB every season
+# (42,851 duals across both genders, varsity and JV). It is stored as JSON TEXT
+# and it is the most compressible shape in the app: the same slot names, the
+# same key names and the same player names repeat on every court of every dual.
+# Measured on the owner's 2075 export, zlib level 6 gets **2.31x**.
+#
+# ‼️ THE ENCODING IS SNIFFED, NEVER MIGRATED. Rows written before this are plain
+# JSON `str`; rows written after are compressed `bytes`. SQLite's dynamic typing
+# stores either in the same TEXT-declared column, and the storage CLASS is the
+# discriminator — so a 50-season archive keeps reading with no migration step, no
+# version column and no flag to drift, and a rewrite can happen later (or never)
+# without blocking the saving. Same idiom as `_relabel` and the transfer
+# `moves` history: derive on READ.
+#
+# ‼️ EVERY READER GOES THROUGH `unpack_lines`. There are eight, across two
+# modules, and a missed one does not fail loudly — `json.loads` on compressed
+# bytes raises, but two call sites already swallow ValueError to survive a
+# malformed row, so a missed reader reads as "this season has no box scores".
+# `grep -rn 'json.loads(.*lines' app/` before adding a ninth.
+def pack_lines(obj) -> bytes:
+    """Encode a box score for storage. Compact separators first — it shrinks the
+    text before zlib ever sees it, and costs nothing to read back."""
+    return zlib.compress(json.dumps(obj, separators=(",", ":")).encode(), 6)
+
+
+def unpack_lines(v) -> list:
+    """Decode a box score written by ANY version of the app (see above)."""
+    if not v:
+        return []
+    if isinstance(v, (bytes, bytearray, memoryview)):
+        return json.loads(zlib.decompress(bytes(v)).decode())
+    return json.loads(v)                       # legacy: plain JSON text
 
 
 def _retry_locked(fn, *, tries: int = 6, delay: float = 0.3):
@@ -4058,7 +4097,7 @@ def run_jhsaa(seed: int, world: dict) -> dict:
             # postseason dual (`jhsaa._deciding_tiebreaks`), empty everywhere else.
             rows = [(world["id"], year, gender, t.school.name, d["opp"], int(d["home"]),
                      d["phase"], d["pf"], d["pa"], int(d["won"]), int(d["district"]),
-                     json.dumps(d.get("lines", [])), d.get("level", "v"),
+                     pack_lines(d.get("lines", [])), d.get("level", "v"),
                      int(bool(d.get("tied"))), d.get("shape", ""), "[]",
                      json.dumps(d.get("tiebreak") or []))
                     for t in season["teams"].values() for d in t.schedule]
@@ -4067,7 +4106,7 @@ def run_jhsaa(seed: int, world: dict) -> dict:
             # parse court detail it does not show.
             rows += [(world["id"], year, gender, t.school.name, d["opp"], int(d["home"]),
                       d["phase"], d["pf"], d["pa"], int(d["won"]), int(d["district"]),
-                      json.dumps(d.get("lines", [])), d.get("level", "jv"),
+                      pack_lines(d.get("lines", [])), d.get("level", "jv"),
                       int(bool(d.get("tied"))),
                       d.get("shape", ""), json.dumps(d.get("played", [])), "[]")
                      for t in (season.get("jv") or {}).values() for d in t.schedule]
@@ -4736,7 +4775,7 @@ def jhsaa_underplayed(world_id: int, gender: str, salt: str = "",
                 (world_id, year, gender)):
             side = "home" if d["home"] else "away"
             school = alias.get(d["school"], d["school"])
-            for ln in json.loads(d["lines"] or "[]"):
+            for ln in unpack_lines(d["lines"]):
                 for nm in ln.get(side) or ():
                     played[school][nm] += 1
     finally:
@@ -4837,7 +4876,7 @@ def jhsaa_scoreline_realism(world_id: int, year: int, gender: str) -> dict:
     for phase, lines_json in rows:
         f = fam(phase)
         try:
-            lines = json.loads(lines_json or "[]")
+            lines = unpack_lines(lines_json)
         except ValueError:
             continue
         for ln in lines:
@@ -5052,7 +5091,7 @@ def jhsaa_gap_bands(world_id: int, year: int, gender: str, salt: str = "") -> di
     total = unresolved = 0
     for school, opp, lines_json in rows:
         try:
-            lines = json.loads(lines_json or "[]")
+            lines = unpack_lines(lines_json)
         except ValueError:
             continue
         hm = am = None
@@ -5210,7 +5249,7 @@ def jhsaa_program_wins(world_id: int, gender: str, school: str,
                 f" AND school IN ({qmarks})",
                 (world_id, gender, *names)):
             side = "home" if d["home"] else "away"
-            for ln in json.loads(d["lines"] or "[]"):
+            for ln in unpack_lines(d["lines"]):
                 slot = ln.get("slot") or ""
                 hw = ln.get("home_won")
                 if hw is None or not slot:
@@ -5327,7 +5366,7 @@ def jhsaa_career_wins(world_id: int, gender: str, salt: str = "",
                 (world_id, gender)):
             side = "home" if d["home"] else "away"
             school = alias.get(d["school"], d["school"])
-            for ln in json.loads(d["lines"] or "[]"):
+            for ln in unpack_lines(d["lines"]):
                 slot = ln.get("slot") or ""
                 hw = ln.get("home_won")
                 if hw is None or not slot:
@@ -6024,7 +6063,7 @@ def jhsaa_dual_row(dual_id: int) -> dict | None:
     d["opp_raw"] = d["opp"]
     d["school"] = alias.get(d["school"], d["school"])
     d["opp"] = alias.get(d["opp"], d["opp"])
-    d["lines"] = json.loads(d["lines"] or "[]")
+    d["lines"] = unpack_lines(d["lines"])
     d["tiebreak"] = json.loads(d.get("tiebreak") or "[]")
     return d
 
@@ -7097,7 +7136,7 @@ def jhsaa_history_rows(world_id: int, gender: str) -> dict[str, list[dict]]:
                 sched[_alias.get(d["school"], d["school"])].append(
                     {"home": bool(d["home"]), "level": d["level"] or "v",
                      "tied": bool(d["tied"]),
-                     "lines": json.loads(d["lines"] or "[]")})
+                     "lines": unpack_lines(d["lines"])})
             schools = {row["school"]
                        for dists in (arc.get("standings") or {}).values()
                        for rows_ in (dists or {}).values() for row in rows_}
