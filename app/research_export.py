@@ -109,6 +109,12 @@ def _load_archived_jhsaa_season(year: int, gender: str) -> dict:
     # dual, identical from both sides — world.jhsaa_match_dates). Resolved
     # ONCE here and threaded down, never per row.
     dates = wd.jhsaa_match_dates(world["id"], world_year, gender, season_year)
+    # ‼️ THE BOX SCORE IS ON THE HOME ROW ONLY (world `_archive_lines`). This
+    # query already fetches BOTH rows of every dual, so the counterpart is in
+    # hand — index the home rows once and let the away rows read across. Keyed on
+    # `jh_match_key`, the same tuple from either side. A pre-dedup archive keeps
+    # its own copy on both rows and never consults this.
+    home_lines = {wd.jh_match_key(dict(r)): r["lines"] for r in rows if r["home"]}
     schedule_by_school = {}
     for r in rows:
         d = dict(r)
@@ -122,7 +128,8 @@ def _load_archived_jhsaa_season(year: int, gender: str) -> dict:
         # from a varsity dual whose lines failed to record.
         d["level"] = d.get("level") or "v"
         d["tied"] = bool(d.get("tied"))
-        d["lines"] = wd.unpack_lines(d.pop("lines"))
+        d["lines"] = wd.unpack_lines(d.pop("lines")) or wd.unpack_lines(
+            home_lines.get(wd.jh_match_key(d)))
         # The deciders of a level Group 2 postseason dual (JHSAA rule 2026-09) —
         # their own field, NEVER folded into `lines`: a 10-point tiebreaker is not
         # a match, and every line-count consumer downstream would count it as one.

@@ -2862,19 +2862,28 @@ def school_exposure(gender: str, school_name: str, season_years) -> dict:
         try:
             conn = sqlite3.connect(db)
             try:
-                q = ("SELECT year, home, lines, level, played"
+                # ‼️ THE BOX SCORE IS ON THE HOME ROW ONLY (world `_archive_lines`),
+                # so this program's AWAY duals are reached through `opp`. Which side
+                # we are is read off the row's own `school` — every row here is a
+                # home row, so its `home` flag says nothing about us. The JV branch
+                # below still needs OUR row (it reads `played`), so JV rows are
+                # fetched from our side as before.
+                q = ("SELECT year, school, opp, lines, level, played"
                      " FROM world_jhsaa_dual"
-                     " WHERE world_id=? AND gender=? AND school=?"
+                     " WHERE world_id=? AND gender=?"
+                     " AND ((home=1 AND COALESCE(level,'v')='v'"
+                     "       AND (school=? OR opp=?))"
+                     "      OR (COALESCE(level,'v')<>'v' AND school=?))"
                      " AND year IN (%s)" % ",".join("?" * len(idx_of)))
-                rows = conn.execute(q, (wid, gender, school_name,
-                                        *idx_of.keys())).fetchall()
+                rows = conn.execute(q, (wid, gender, school_name, school_name,
+                                        school_name, *idx_of.keys())).fetchall()
             except sqlite3.Error:
                 rows = []                      # table not created yet
             finally:
                 conn.close()
         except sqlite3.Error:
             rows = []
-        for year_idx, home, lines, level, played in rows:
+        for year_idx, row_school, row_opp, lines, level, played in rows:
             season = idx_of.get(year_idx)
             if season is None:
                 continue
@@ -2882,7 +2891,7 @@ def school_exposure(gender: str, school_name: str, season_years) -> dict:
             if units is None:
                 units = out[season] = {}
             if (level or "v") == "v":
-                side = "home" if home else "away"
+                side = "home" if row_school == school_name else "away"
                 dressed = set()
                 for ln in _world_unpack_lines(lines):
                     dressed.update(ln.get(side) or ())

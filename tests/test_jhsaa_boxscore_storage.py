@@ -101,7 +101,62 @@ def test_the_archive_writes_through_the_packer():
     build = src[:src.index("INSERT INTO world_jhsaa_dual")]
     # both row builders (varsity and JV) sit just above the INSERT
     tail = build[-4000:]
-    assert tail.count("pack_lines(d.get(\"lines\", []))") == 2, (
-        "the varsity and JV row builders must both pack the box score")
+    assert tail.count("_archive_lines(d)") == 2, (
+        "the varsity and JV row builders must both go through _archive_lines")
     assert 'json.dumps(d.get("lines"' not in tail, "a raw json.dumps write survived"
     assert ins  # the statement still exists
+
+
+def test_the_away_row_stores_no_box_score():
+    """‼️ THE 2x. A dual is two rows and both used to carry the identical blob —
+    half of a 2,976 MB column, pure redundancy. Only the home side stores it."""
+    from app.world import _archive_lines
+    blob = {"lines": _blob()}
+    assert _archive_lines({**blob, "home": 1}) is not None
+    assert _archive_lines({**blob, "home": 0}) is None
+    assert wd.unpack_lines(_archive_lines({**blob, "home": 1})) == _blob()
+
+
+def test_the_two_rows_of_a_dual_share_one_identity():
+    """The away row resolves its box score through `jh_match_key`, so the key
+    MUST come out identical from either side or the lines attach to the wrong
+    dual — silently, with a plausible box score."""
+    home = {"home": 1, "school": "Abbey Prep", "opp": "Scheelite County",
+            "level": "v", "phase": "regular", "district": 1}
+    away = {"home": 0, "school": "Scheelite County", "opp": "Abbey Prep",
+            "level": "v", "phase": "regular", "district": 1}
+    assert wd.jh_match_key(home) == wd.jh_match_key(away)
+    # and the return meeting (venue reversed) stays a DIFFERENT dual
+    ret = {**home, "school": "Scheelite County", "opp": "Abbey Prep"}
+    assert wd.jh_match_key(ret) != wd.jh_match_key(home)
+
+
+def test_no_loop_decodes_the_column_as_one_key_among_several():
+    """‼️ THE MISS THAT ACTUALLY HAPPENED, and the exact shape of it.
+    `_schedule_rows` decoded through a loop —
+    `for k in ("lines", "played", "tiebreak"): d[k] = json.loads(...)` — so the
+    word `lines` never appeared on the `json.loads` line and a same-line sweep
+    read clean. It would have blanked every schedule box score, silently.
+
+    Flags a `json.loads` driven by a loop variable whose tuple includes the
+    box-score column. Deliberately narrow: a window-based heuristic flagged the
+    CORRECT `("played", "tiebreak")` loop next door, and a check that cries wolf
+    gets deleted by the next person."""
+    root = pathlib.Path(__file__).resolve().parents[1] / "app"
+    loop = re.compile(r"for\s+(\w+)\s+in\s+\(([^)]*)\)")
+    bad = []
+    for path in root.rglob("*.py"):
+        if path.name.startswith("gtt_"):
+            continue
+        src = path.read_text(errors="ignore").splitlines()
+        for n, line in enumerate(src):
+            if "json.loads" not in line or "lines_json" in line:
+                continue
+            for up in range(max(0, n - 6), n):
+                m = loop.search(src[up])
+                if m and '"lines"' in m.group(2) and m.group(1) in line:
+                    bad.append(f"{path.relative_to(root)}:{n + 1}: {line.strip()}")
+                    break
+    assert not bad, (
+        "a loop decodes the box-score column with json.loads — it must go "
+        "through unpack_lines:\n  " + "\n  ".join(bad))
