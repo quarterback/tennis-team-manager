@@ -75,20 +75,26 @@ def test_empty_and_missing_box_scores_read_as_no_lines():
 def test_every_reader_of_the_column_decodes_it(tmp_path):
     """‼️ THE SWEEP. Any `json.loads` still pointed at this column is a reader
     that will read a compressed row as no box score at all — silently. Catch a
-    ninth reader at the source, not in a season's worth of zeroed records."""
-    root = pathlib.Path(__file__).resolve().parents[1] / "app"
+    ninth reader at the source, not in a season's worth of zeroed records.
+
+    ‼️ `scripts/` COUNTS. A maintenance script reads the same column through the
+    same rules and is the one place nothing renders to show it broke — the
+    sweep started at `app/` alone and `scripts/fix_name_era.py` came through it
+    clean while raising on every compressed row it touched."""
+    repo = pathlib.Path(__file__).resolve().parents[1]
     bad = []
-    for path in root.rglob("*.py"):
-        for n, line in enumerate(path.read_text(errors="ignore").splitlines(), 1):
-            if "json.loads" not in line or "lines" not in line:
-                continue
-            # `lines_json` is the COLLEGE duals table (seasonmode/gtt) — a
-            # different column, deliberately untouched by this change.
-            if "lines_json" in line or path.name.startswith("gtt_"):
-                continue
-            if line.lstrip().startswith("#"):
-                continue
-            bad.append(f"{path.relative_to(root)}:{n}: {line.strip()}")
+    for root in (repo / "app", repo / "scripts"):
+        for path in root.rglob("*.py"):
+            for n, line in enumerate(path.read_text(errors="ignore").splitlines(), 1):
+                if "json.loads" not in line or "lines" not in line:
+                    continue
+                # `lines_json` is the COLLEGE duals table (seasonmode/gtt) — a
+                # different column, deliberately untouched by this change.
+                if "lines_json" in line or path.name.startswith("gtt_"):
+                    continue
+                if line.lstrip().startswith("#"):
+                    continue
+                bad.append(f"{path.relative_to(repo)}:{n}: {line.strip()}")
     assert not bad, (
         "these still json.loads the JHSAA box-score column — use "
         "world.unpack_lines:\n  " + "\n  ".join(bad))

@@ -2864,26 +2864,40 @@ def school_exposure(gender: str, school_name: str, season_years) -> dict:
             try:
                 # ‼️ THE BOX SCORE IS ON THE HOME ROW ONLY (world `_archive_lines`),
                 # so this program's AWAY duals are reached through `opp`. Which side
-                # we are is read off the row's own `school` — every row here is a
-                # home row, so its `home` flag says nothing about us. The JV branch
-                # below still needs OUR row (it reads `played`), so JV rows are
-                # fetched from our side as before.
-                q = ("SELECT year, school, opp, lines, level, played"
-                     " FROM world_jhsaa_dual"
-                     " WHERE world_id=? AND gender=?"
-                     " AND ((home=1 AND COALESCE(level,'v')='v'"
-                     "       AND (school=? OR opp=?))"
-                     "      OR (COALESCE(level,'v')<>'v' AND school=?))"
-                     " AND year IN (%s)" % ",".join("?" * len(idx_of)))
-                rows = conn.execute(q, (wid, gender, school_name, school_name,
-                                        school_name, *idx_of.keys())).fetchall()
+                # we are is read off the row's own `school` — a row found through
+                # `opp` is somebody else's, so its `home` flag says nothing about us.
+                # The JV branch below still needs OUR row (it reads `played`).
+                #
+                # ‼️ TWO INDEXED QUERIES, NEVER ONE ASKING FOR BOTH SIDES AT ONCE.
+                # An OR over the two name columns is one query and reads beautifully,
+                # and SQLite can narrow it by neither index — so it scanned every
+                # dual of every requested season, on EVERY one of the ~1,600 roster
+                # builds a JHSAA season advance makes. `ix_jhsaa_dual` covers the
+                # first arm and `ix_jhsaa_dual_opp` the second; both must exist.
+                yr = ",".join("?" * len(idx_of))
+                mine = ("SELECT year, school, opp, lines, level, played, home"
+                        " FROM world_jhsaa_dual"
+                        " WHERE world_id=? AND year IN (%s) AND gender=? AND school=?"
+                        % yr)
+                theirs = ("SELECT year, school, opp, lines, level, played, home"
+                          " FROM world_jhsaa_dual"
+                          " WHERE world_id=? AND year IN (%s) AND gender=? AND opp=?"
+                          " AND home=1 AND COALESCE(level,'v')='v'" % yr)
+                keys = tuple(idx_of.keys())
+                rows = conn.execute(mine, (wid, *keys, gender, school_name)).fetchall()
+                # Our own rows carry the JV `played` list and, when we hosted, the
+                # varsity box score; an away row of ours holds nothing (or, on an
+                # un-migrated save, a duplicate the home row already supplies).
+                rows = [r for r in rows if (r[4] or "v") != "v" or r[6]]
+                rows += conn.execute(theirs,
+                                     (wid, *keys, gender, school_name)).fetchall()
             except sqlite3.Error:
                 rows = []                      # table not created yet
             finally:
                 conn.close()
         except sqlite3.Error:
             rows = []
-        for year_idx, row_school, row_opp, lines, level, played in rows:
+        for year_idx, row_school, row_opp, lines, level, played, _home in rows:
             season = idx_of.get(year_idx)
             if season is None:
                 continue

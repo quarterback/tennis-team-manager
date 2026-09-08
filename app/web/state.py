@@ -3697,7 +3697,8 @@ def jhsaa_dual_view(dual_id: int) -> dict | None:
         # RAW archived names, since that is what's actually stored on it —
         # so exclusion works from either side.
         home_row_id = world.jhsaa_home_row_id(row["world_id"], row["year"], row["gender"],
-                                              level, row["opp_raw"], row["school_raw"])
+                                              level, row["opp_raw"], row["school_raw"],
+                                              row.get("phase") or "", row.get("district"))
     if home_pts != away_pts:
         winner = 0 if home_pts > away_pts else 1
     elif row.get("tied"):

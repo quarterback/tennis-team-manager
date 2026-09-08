@@ -264,30 +264,48 @@ def test_school_exposure_reads_the_archive_by_level():
     assert units["Cal"] == jh.EXPO_JV_UNIT
     assert "Opp One" not in units                  # opponents credit their own row
     assert got[empty] is None                      # unarchived -> full realisation
-    # another school's rows never leak in
-    assert jh.school_exposure("girls", "Beta", (played,))[played] is None
+    # ‼️ THE VISITOR IS CREDITED OFF THE HOME ROW. Since the box score is stored
+    # on the home side only, Beta has no row of its own carrying this dual — it
+    # is reached through `opp`, and reads the `away` half of the same lines.
+    beta = jh.school_exposure("girls", "Beta", (played,))[played]
+    assert beta == {"Opp One": 1.0, "Opp Two": 1.0, "Opp Three": 1.0}
+    assert "Ada" not in beta                       # never the host's half
+    # a school in neither column still reads as unarchived
+    assert jh.school_exposure("girls", "Delta", (played,))[played] is None
     jh._expo_cache.clear(); jh._expo_world.clear()
 
 
 def test_school_exposure_is_scoped_to_the_world_and_uses_the_index():
-    """‼️ REGRESSION GUARD. The read must constrain every column of
+    """‼️ REGRESSION GUARD, TWICE OVER. The read must constrain every column of
     `ix_jhsaa_dual` (world_id, year, gender, school) in order. A first version
     selected a whole gender-season with no `world_id`, which could use no index
     at all and full-scanned the largest table in the save three times per roster
     build — 1.19s a build on a 20-season archive, and wrong besides, since it
-    read every world's rows at once."""
+    read every world's rows at once.
+
+    ‼️ AND THE OPPONENT ARM NEEDS ITS OWN INDEX. Once the box score moved to the
+    home row, a program's away duals had to be reached through `opp` — written
+    as one query (`school=? OR opp=?`) that is a whole-season SCAN again, since
+    no single index spans two columns. Both arms are checked here because the
+    slow shape is the one that reads best."""
     import app.world as world
     conn = world._db()
     try:
-        plan = conn.execute(
-            "EXPLAIN QUERY PLAN SELECT year, home, lines, level, played"
-            " FROM world_jhsaa_dual WHERE world_id=? AND gender=? AND school=?"
-            " AND year IN (?)", (1, "girls", "Alpha", 3)).fetchall()
+        plans = [conn.execute(
+            "EXPLAIN QUERY PLAN SELECT year, school, opp, lines, level, played, home"
+            " FROM world_jhsaa_dual WHERE world_id=? AND year IN (?) AND gender=?"
+            " AND %s=?" % col, (1, 3, "girls", "Alpha")).fetchall()
+            for col in ("school", "opp")]
     finally:
         conn.close()
-    detail = " ".join(str(r[-1]) for r in plan)
-    assert "ix_jhsaa_dual" in detail, detail
-    assert "SCAN" not in detail.upper() or "SEARCH" in detail.upper(), detail
+    for want, plan in zip(("ix_jhsaa_dual", "ix_jhsaa_dual_opp"), plans):
+        detail = " ".join(str(r[-1]) for r in plan)
+        assert want in detail, detail
+        assert "SEARCH" in detail.upper(), detail
+    # ...and the shipped reader must not be asking for both sides at once.
+    import inspect
+    src = inspect.getsource(jh.school_exposure)
+    assert "school=? OR opp=?" not in src, "the un-indexable OR is back"
 
 
 # --- the graduation record (§24.3) --------------------------------------------
