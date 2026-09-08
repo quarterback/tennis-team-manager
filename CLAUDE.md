@@ -2413,6 +2413,46 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
 - **The rung runs at week 0, BEFORE anything college**, marked done by the `world_jhsaa`
   rows it writes (the cups' pattern, not a flag). It must simulate the SAME season the
   recruit hand-off does — `world.jhsaa_season_year()` and seed 0, never the world index.
+- **‼️ THE BOX SCORE IS THE DATABASE — one column, compressed, on the HOME ROW ONLY
+  (owner rule 2026-09, `world.pack_lines` / `unpack_lines` / `_archive_lines`).**
+  Measured on the owner's real 50-season lab save: `world_jhsaa_dual.lines` was
+  **2,976 MB of a 4,402 MB file — 68% of everything the game has ever remembered**,
+  growing ~69 MB a season (42,851 duals across both genders, varsity and JV), with
+  `freelist_count` 0, so none of it was reclaimable slack. Two things were wrong and
+  both are fixed:
+  - **It was stored TWICE.** A dual is two rows and `play_dual` appends the SAME
+    `lines` list to both teams, so every court was written verbatim on both. The
+    away row now stores NULL and resolves through **`jh_match_key`** — the same
+    tuple from either side, and already the identity the display calendar dates a
+    dual by, so this introduces no new identity. `jhsaa_prior_meetings` had said so
+    for years ("the two rows of one dual duplicate each other").
+  - **It was uncompressed JSON.** The slot names, key names and player names repeat
+    on every court; zlib gets **2.31x** measured on the 2075 export. Together:
+    2,976 MB → ~645 MB, and a season costs **15 MB instead of 69**.
+  - **‼️ THE ENCODING IS SNIFFED, NEVER MIGRATED.** Legacy rows are plain JSON
+    `str`, new rows are `bytes`; SQLite's dynamic typing keeps both in one
+    TEXT-declared column and the storage CLASS is the discriminator. So a
+    50-season archive keeps reading with no migration, no version column and no
+    flag to drift — the `_relabel` idiom, derive on READ — and adopting this never
+    required rewriting a 4.4 GB file first. **Every reader prefers its OWN lines
+    and only then the counterpart**, so a pre-dedup archive never depends on the
+    lookup resolving.
+  - **‼️ READ SHAPES, NOT SITES.** Whole-season scans read `home=1` and credit
+    BOTH sides off the one row (half the rows, identical counts — `home_won` is
+    relative to that row's school, so each side's `won` derives from it, never
+    from a `home` flag). Per-school reads find their away duals through `opp`, in
+    ONE extra query — never per row, which is the fingerprint-in-a-loop storm.
+  - **‼️ A MISSED READER DOES NOT FAIL LOUDLY.** `json.loads` on compressed bytes
+    raises, but two call sites deliberately swallow ValueError to survive a
+    malformed row, so a forgotten reader reads as "this season has no box scores" —
+    every record, court total and award résumé silently zeroed. It already
+    happened once inside this very change: `_schedule_rows` decoded through a loop
+    (`for k in ("lines", "played", "tiebreak")`), so the column name never appeared
+    on the `json.loads` line and a same-line sweep read clean.
+    `tests/test_jhsaa_boxscore_storage.py` therefore sweeps for a loop variable
+    whose tuple names the column — and stays NARROW on purpose, because a
+    window-based version flagged the correct `("played", "tiebreak")` loop next
+    door, and a check that cries wolf gets deleted by the next person.
 - **‼️ THE JV SEASON AND VARSITY SHARE `world_jhsaa_dual`, so EVERY READER OF THAT
   TABLE MUST FILTER ON `level` — the research export did not, and shipped corrupt
   zips.** `research_export._load_archived_jhsaa_season` SELECTed `level` and never
