@@ -2442,6 +2442,24 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     relative to that row's school, so each side's `won` derives from it, never
     from a `home` flag). Per-school reads find their away duals through `opp`, in
     ONE extra query — never per row, which is the fingerprint-in-a-loop storm.
+  - **‼️ `jh_match_key` CARRIES NO GENDER AND NO YEAR, so a home-lines map MUST be
+    built per `(world_id, year, gender)`.** The same two schools meet in the boys'
+    AND the girls' season, in the same phase, at the same venue — one key. A map
+    built across genders attaches the boys' box score to the girls' dual, with a
+    perfectly plausible result and nothing raised. All four resolvers scope their
+    query (`_schedule_rows`, the season fold, the research export,
+    `jhsaa_home_row_id`); a global one was written in a VERIFICATION harness and
+    reported 9,627 false differences, which is how this was found. Pinned by
+    `test_the_dual_identity_is_only_unique_within_one_world_year_gender`.
+  - **The one-time rewrite of an existing archive is
+    `scripts/migrate_jhsaa_boxscores.py`** — READ-ONLY without `--apply`,
+    per-season transactions that digest every box score before and re-read it
+    through the real resolution path after (a mismatch rolls that season back and
+    stops), idempotent, and an away row is nulled ONLY against a home row that
+    compares EQUAL — a missing or disagreeing counterpart KEEPS its own copy.
+    `--vacuum` is what returns the freed pages to the OS and needs free space
+    about the size of the finished file. Measured on a real season-pair:
+    **82.7 MB → 22.3 MB**, 532,436 flights identical.
   - **‼️ A MISSED READER DOES NOT FAIL LOUDLY.** `json.loads` on compressed bytes
     raises, but two call sites deliberately swallow ValueError to survive a
     malformed row, so a forgotten reader reads as "this season has no box scores" —

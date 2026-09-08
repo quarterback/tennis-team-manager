@@ -25,6 +25,7 @@ import json
 import pathlib
 import re
 import sqlite3
+import sys
 
 from app import world as wd
 
@@ -160,3 +161,127 @@ def test_no_loop_decodes_the_column_as_one_key_among_several():
     assert not bad, (
         "a loop decodes the box-score column with json.loads — it must go "
         "through unpack_lines:\n  " + "\n  ".join(bad))
+
+
+# --- the one-time migration of an existing archive ---------------------------
+
+def _legacy_db(path, duals):
+    """An archive in the PRE-migration layout: the identical blob on both rows."""
+    conn = sqlite3.connect(path)
+    conn.execute("""CREATE TABLE world_jhsaa_dual (world_id INTEGER, year INTEGER,
+        gender TEXT, school TEXT, opp TEXT, home INTEGER, phase TEXT, pf REAL,
+        pa REAL, won INTEGER, district INTEGER, lines TEXT DEFAULT '[]',
+        level TEXT DEFAULT 'v', tied INTEGER DEFAULT 0, shape TEXT DEFAULT '',
+        played TEXT DEFAULT '[]', tiebreak TEXT DEFAULT '[]')""")
+    for gender, home, away, blob in duals:
+        for side, (a, b) in ((1, (home, away)), (0, (away, home))):
+            conn.execute(
+                "INSERT INTO world_jhsaa_dual (world_id,year,gender,school,opp,home,"
+                "phase,pf,pa,won,district,lines,level)"
+                " VALUES (1,49,?,?,?,?,'regular',0,0,0,1,?,'v')",
+                (gender, a, b, side, json.dumps(blob)))
+    conn.commit()
+    conn.close()
+
+
+def _resolve(path):
+    """Every dual's box score, resolved the way the app does — per (world, year,
+    gender), which is the scope `jh_match_key` is unique within."""
+    conn = sqlite3.connect(path)
+    conn.row_factory = sqlite3.Row
+    out = {}
+    for k in conn.execute("SELECT DISTINCT world_id, year, gender"
+                          " FROM world_jhsaa_dual").fetchall():
+        rows = conn.execute(
+            "SELECT rowid AS id, school, opp, home, phase, district, level, lines"
+            " FROM world_jhsaa_dual WHERE world_id=? AND year=? AND gender=?",
+            (k["world_id"], k["year"], k["gender"])).fetchall()
+        got = {r["id"]: wd.unpack_lines(r["lines"]) for r in rows}
+        hmap = {wd.jh_match_key(dict(r)): r["id"] for r in rows if r["home"]}
+        for r in rows:
+            out[r["id"]] = got[r["id"]] or got.get(
+                hmap.get(wd.jh_match_key(dict(r))), [])
+    conn.close()
+    return out
+
+
+def _migrate(path, *args):
+    import subprocess
+    script = (pathlib.Path(__file__).resolve().parents[1]
+              / "scripts" / "migrate_jhsaa_boxscores.py")
+    return subprocess.run([sys.executable, str(script), "--db", str(path), *args],
+                          text=True, capture_output=True, check=True)
+
+
+def test_the_migration_keeps_every_box_score(tmp_path):
+    """Rewriting a real archive must not move a single flight."""
+    db = tmp_path / "a.db"
+    _legacy_db(db, [("boys", "Abbey Prep", "Scheelite County", _blob()),
+                    ("boys", "Foxboro", "Eastmont", _blob() * 3),
+                    ("girls", "Abbey Prep", "Scheelite County", _blob() * 2)])
+    before = _resolve(db)
+    _migrate(db, "--apply")
+    assert _resolve(db) == before
+
+
+def test_the_default_run_writes_nothing(tmp_path):
+    """It reports unless told to --apply: a 4 GB save is not a dry run."""
+    db = tmp_path / "a.db"
+    _legacy_db(db, [("boys", "Abbey Prep", "Scheelite County", _blob())])
+    raw = sqlite3.connect(db).execute(
+        "SELECT lines FROM world_jhsaa_dual ORDER BY rowid").fetchall()
+    out = _migrate(db)
+    assert "READ ONLY" in out.stdout
+    assert sqlite3.connect(db).execute(
+        "SELECT lines FROM world_jhsaa_dual ORDER BY rowid").fetchall() == raw
+
+
+def test_it_is_idempotent(tmp_path):
+    """A run interrupted part-way is safe to resume."""
+    db = tmp_path / "a.db"
+    _legacy_db(db, [("boys", "Abbey Prep", "Scheelite County", _blob())])
+    _migrate(db, "--apply")
+    once = _resolve(db)
+    out = _migrate(db, "--apply")
+    assert _resolve(db) == once
+    assert "away rows cleared 0" in out.stdout
+
+
+def test_an_away_row_that_disagrees_is_kept_not_dropped(tmp_path):
+    """‼️ THE SAFETY PROPERTY. The away copy is discarded only against a home row
+    that COMPARES EQUAL. Anything else — a missing counterpart, a disagreement —
+    keeps its own copy. A migration that guesses here loses a real box score and
+    nothing ever says so."""
+    db = tmp_path / "a.db"
+    _legacy_db(db, [("boys", "Abbey Prep", "Scheelite County", _blob())])
+    conn = sqlite3.connect(db)
+    odd = [{"slot": "S1", "home": ["Someone Else"], "away": ["Nobody"],
+            "score": "6-0, 6-0", "home_won": True}]
+    conn.execute("UPDATE world_jhsaa_dual SET lines=? WHERE home=0", (json.dumps(odd),))
+    conn.commit()
+    conn.close()
+    out = _migrate(db, "--apply")
+    assert "kept (no match) 1" in out.stdout
+    kept = _resolve(db)
+    assert odd in kept.values(), "the disagreeing away box score was dropped"
+
+
+def test_the_dual_identity_is_only_unique_within_one_world_year_gender(tmp_path):
+    """‼️ `jh_match_key` carries NO gender and NO year — the same two schools meet
+    in the boys' and the girls' season, in the same phase, at the same venue, and
+    hash to ONE key. So every home-lines map must be built per (world, year,
+    gender); a global one silently attaches the boys' box score to the girls'
+    dual. Caught exactly that way while verifying the migration."""
+    boys = {"home": 1, "school": "Abbey Prep", "opp": "Scheelite County",
+            "level": "v", "phase": "regular", "district": 1}
+    assert wd.jh_match_key(boys) == wd.jh_match_key(dict(boys))   # gender-blind
+
+    db = tmp_path / "a.db"
+    _legacy_db(db, [("boys", "Abbey Prep", "Scheelite County", _blob()),
+                    ("girls", "Abbey Prep", "Scheelite County", _blob() * 4)])
+    before = _resolve(db)
+    _migrate(db, "--apply")
+    after = _resolve(db)
+    assert after == before
+    # the two genders' box scores stayed different lengths — no cross-wiring
+    assert sorted(len(v) for v in after.values()) == [2, 2, 8, 8]
