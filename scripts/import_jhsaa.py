@@ -297,6 +297,11 @@ OWNER_EDICTS = frozenset({
     # Tamarack County — dictated by name after the "Ransom City Union" source
     # name collided with a former name of Ransom Pass.
     "Reverend City",
+    # The composer renames (owner, 2026-09) — dictated by name to replace five
+    # programs whose leading word duplicated a neighbour's (see
+    # scripts/jhsaa_composer_renames.py and docs/AAR-jhsaa-composer-renames-and-
+    # captain-export.md).
+    "Gershwin", "Monk", "Mendelssohn", "Coltrane", "Miles Davis",
     # towns
     "Cape Angeles", "Fort Tabor", "New Penzance Island", "Bay Oregon",
     "Carolina Island", "North San Francisco", "California Canyons", "Vonjo City",

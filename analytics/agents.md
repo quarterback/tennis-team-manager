@@ -56,7 +56,8 @@ renamed across the archive, and an id often matches neither the old name nor the
 
 **Captains are on `players.csv`** (`captain` 1/0, `captain_order` 1 = the lead captain,
 best-known first; 1-3 per program, named preseason). Exports taken before the column
-existed have no column — treat a missing column as "unknown", not as "no captains".
+existed have no column, and a season archived before captains existed exports BOTH
+columns blank — treat a missing column or a blank cell as "unknown", never as 0.
 Captaincy moves no rating; it only forces the player into every lineup from the naming
 point on.
 

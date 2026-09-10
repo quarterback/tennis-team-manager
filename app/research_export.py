@@ -115,7 +115,15 @@ def _load_archived_jhsaa_season(year: int, gender: str) -> dict:
     # and a rebuilt roster cannot reproduce that. Keyed by the school's display
     # name at archive time, exactly as the program page reads it. Empty for a
     # season archived before captains existed.
-    captains = wd.jhsaa_captains(world["id"], world_year, gender)
+    # ‼️ KEYED BY THE NAME AT ARCHIVE TIME, so it is relabelled into today's names
+    # here (`jhsaa.current_name`, the `_relabel` rule) — read raw, every program
+    # renamed since that season exports its captains as nobody. And a season
+    # archived BEFORE captains existed yields an EMPTY map: that is "unknown",
+    # not "no captains", so `captains` stays None on every team and the column
+    # is left blank rather than written as 0.
+    raw_caps = wd.jhsaa_captains(world["id"], world_year, gender)
+    captains = ({jhsaa.current_name(k, gender): v for k, v in raw_caps.items()}
+                if raw_caps else None)
     # ‼️ THE BOX SCORE IS ON THE HOME ROW ONLY (world `_archive_lines`). This
     # query already fetches BOTH rows of every dual, so the counterpart is in
     # hand — index the home rows once and let the away rows read across. Keyed on
@@ -170,7 +178,8 @@ def _load_archived_jhsaa_season(year: int, gender: str) -> dict:
             district_place=st["place"] if st else None,
             points_for=st["pf"] if st else 0, points_against=st["pa"] if st else 0,
             power=st["pi"] if st else 0.0,
-            captains=list(captains.get(school.name) or ()),
+            captains=(None if captains is None
+                      else list(captains.get(school.name) or ())),
             schedule=schedule_by_school.get(school.name, []))
     return {"teams": teams, "groups": {g: {"state": data.get("brackets", {}).get(g, {})}
                                        for g in jhsaa.GROUPS},
@@ -232,7 +241,12 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
         # standing row on the archive path (both are pids, best-known first).
         # Until now this lived only on the program page's roster chip, so an
         # analyst reading the zip could not tell a captain from anybody else.
-        caps = list(getattr(team, "captains", None) or ())
+        # None means the season carries no captain data at all (archived before
+        # captains existed): both columns stay blank. A list — even an empty one —
+        # is a known answer and writes 0/1.
+        caps = getattr(team, "captains", None)
+        known = caps is not None
+        caps = list(caps or ())
         for p in team.roster:
             pid = p.pid or _player_id(s.name, p.name, {})
             player_lookup[(s.name, p.name)] = pid
@@ -242,7 +256,7 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                 "country": p.country, "current_grade": p.current_overall(),
                 "potential_grade": p.ceiling_overall(), "academic_rating": p.academic_rating,
                 "style": p.traits.get("play_style", ""),
-                "captain": int(pid in caps),
+                "captain": int(pid in caps) if known else "",
                 "captain_order": caps.index(pid) + 1 if pid in caps else "",
             })
 
@@ -429,11 +443,11 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "potential_grade": "Hidden ceiling on the same 20-80 scale; included for unrestricted research.",
             "toss_power_raw": "JHSAA opponent-adjusted team power used for selection/seeding; compare only within this season and gender.",
             "captain": "players.csv: 1 if the player was one of the program's team captains "
-                       "this season (named preseason; 1-3 per program), else 0. "
+                       "this season (named preseason; 1-3 per program), 0 if not. "
                        "captain_order ranks them best-known first (1 = the lead captain) and "
                        "is empty for non-captains. Captaincy changes no rating; a captain dresses "
-                       "for every dual from the naming point on. Empty for seasons archived "
-                       "before captains existed.",
+                       "for every dual from the naming point on. BOTH columns are empty (not 0) "
+                       "for a season archived before captains existed — unknown, not absent.",
         },
         "domain_rules": ["JHSAA gender values are girls/boys (college uses women/men).",
             "jhsaa_individuals.json contains the archived Individual State brackets "

@@ -1067,6 +1067,7 @@ def test_the_research_export_carries_the_jv_events(archived):
         assert flagged <= {pid for pids in caps.values() for pid in pids}
         assert all(r["captain_order"] for r in players if r["captain"] == "1")
         assert all(not r["captain_order"] for r in players if r["captain"] == "0")
+        assert all(r["captain"] in ("0", "1") for r in players)
     # the classless JV individual draws survive a class-scoped export
     for scope in ("all", "7A"):
         indiv = _json.loads(build_jhsaa(y, "girls", scope)["jhsaa_individuals.json"])
