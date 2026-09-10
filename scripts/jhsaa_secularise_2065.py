@@ -88,7 +88,7 @@ RENAMES: dict[str, str] = {
     "Our Lady of the Coast": "Windward",
     # Selquah
     "Faith Academy": "Michaela East",
-    "Port Veles Lutheran": "Veles Union",
+    "Port Veles Lutheran": "Miles Davis",
     "Saint Francis": "Kingsley",
     "Seminary": "Veles Park",
     "St. Elias Academy": "Port Ainsley",

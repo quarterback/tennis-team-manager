@@ -397,7 +397,7 @@ FORMER_NAMES = {
     "Anya Belov North":                            "Preston Hollow",
     "Anya Orlov":                                  "Riviere Salee",
     "Archbishop Doyle Prep":                       "Doyle",
-    "Archbishop Doyle Prep North":                 "Doyle Ridge",
+    "Archbishop Doyle Prep North":                 "Monk",
     "Archbishop Quinlan":                          "Quaking Aspen",
     "Archbishop Valois":                           "Verrettes",
     "Arrieta Treasure Valley":                     "Canyonlands",
@@ -771,7 +771,7 @@ FORMER_NAMES = {
     "Naomi Price":                                 "Crown Paper",
     "Naomi Ward":                                  "Golden State",
     "Nathaniel Cross":                             "Veles Harbor",
-    "Nathaniel Cross North":                       "Veles Union",
+    "Nathaniel Cross North":                       "Miles Davis",
     "Nathaniel Gaines":                            "St. Catherine Academy",
     "Nathaniel Ward":                              "Juniper Agricultural",
     "Nerea Mendizabal":                            "Sparrowhawk",
@@ -795,7 +795,7 @@ FORMER_NAMES = {
     "Octavia Butler":                              "Butler",
     "Oksana Petrov":                               "Oak Forest",
     "Oksana Romanov":                              "Archbishop Gregory",
-    "Olive Reach":                                 "Olive",
+    "Olive Reach":                                 "Mendelssohn",
     "Olive Reach Baptist":                         "Olive Baptist",
     "Olive Reach North":                           "Buckeye Ridge",
     "Opal Avery":                                  "Ford",
@@ -831,7 +831,7 @@ FORMER_NAMES = {
     "Pomar Union":                                 "South Pomar",
     "Port Meridian Polytechnic":                   "Port Meridian North",
     "Port Meridian West":                          "Port Meridian Central",
-    "Port Veles":                                  "Veles Central",
+    "Port Veles":                                  "Coltrane",
     "Port Veles Agricultural Sciences Academy":    "Biden",
     "Port Veles Civic Academy":                    "Henson Prep",
     "Port Veles Civic Leadership Academy":         "Severn",
@@ -1001,7 +1001,7 @@ FORMER_NAMES = {
     "Thomas Ekström":                              "Lago Vista",
     "Thomas Halvorsen":                            "Hollywood",
     "Thomas Jansen":                               "Lone Pine",
-    "Thomas Jansen North":                         "Esperanza Basin",
+    "Thomas Jansen North":                         "Gershwin",
     "Thomas Moreau":                               "Elkhorn",
     "Thornford":                                   "Thorn Summit",
     "Thurgood Marshall":                           "Marshall",
@@ -1097,7 +1097,7 @@ RENAMES = {
     "Mae Jemison": "Jemison",
     "Mirage Siding Regional": "Mirage Regional",
     "Octavia Butler": "Butler",
-    "Olive Reach": "Olive",
+    "Olive Reach": "Mendelssohn",
     "Olive Reach Baptist": "Olive Baptist",
     "Oscar Michaeux": "Michaeux",
     "Paul Robeson": "Robeson",
@@ -1354,7 +1354,7 @@ RENAMES = {
     "Manuel Cordero": "Sotomayor",
     "Marian Cross": "Quail Hollow",
     "Nathaniel Cross": "Veles Harbor",
-    "Nathaniel Cross North": "Veles Union",
+    "Nathaniel Cross North": "Miles Davis",
     "Nicolás Cordero": "Ginsburg",
     "Pauli Booker": "Nightfall",
     "Ralph Booker": "Obama",
@@ -1550,7 +1550,7 @@ RENAMES = {
     # actually stands on. Keyed on the SOURCE name; where a school already had a
     # RENAMES entry its target was rewritten in place, never chained.
     "Annie Springs Crater View": "Crater View",                # 3A Annie Springs
-    "Archbishop Doyle Prep North": "Doyle Ridge",              # 6A Halbrook
+    "Archbishop Doyle Prep North": "Monk",                     # 6A Halbrook
     "Arrieta Treasure Valley": "Canyonlands",                  # 7A Arrieta
     "Ashbury East": "Alameda",                                 # 7A Ashbury
     "Ashbury West": "Laurel Park",                             # 9A Ashbury
@@ -1594,7 +1594,7 @@ RENAMES = {
     "Orellana": "Orellana Central",                            # 8A Orellana
     "Orellana Canal View": "Canal View",                       # 9A Orellana
     "Orellana Treasure Valley": "Treasure Valley",             # 9A Orellana
-    "Port Veles": "Veles Central",                             # 5A Port Veles
+    "Port Veles": "Coltrane",                                  # 5A Port Veles
     "Providence Academy Valley": "Meridian Valley",          # 9A Port Meridian
     "San Borondón East": "Borondón Mesa",                      # 4A San Borondón
     "San Cordero": "San Cordero Central",                      # 4A San Cordero
@@ -1774,7 +1774,7 @@ RENAMES = {
     "Winifred Booker North":     "Carden Pass",       # 6A Fort Carden
     "Beatrice Davenport":        "Fort Halloran",           # 4A Fort Halloran
     "Katya Moroz North":         "Pinyon Ridge",           # 8A Harriman
-    "Thomas Jansen North":       "Esperanza Basin",     # 5A Lake Esperanza
+    "Thomas Jansen North":       "Gershwin",            # 5A Lake Esperanza
     "Gabriel Montoya":           "Marlow",                  # 4A Marlow County
     "Matteo Dahl":               "Bywater",               # 7A Montelago
     "Petra Bianchi":             "Perryville",              # 6A Perryville
@@ -3077,7 +3077,7 @@ MASCOTS = {
     # ── Selquah: the working coast ────────────────────────────────────────
     "Port Ainsley": "Cormorants",          # Port Ainsley
     "Port Meridian South": "Mariners",
-    "Veles Central": "Chinook",                    # the port itself
+    "Coltrane": "Chinook",                         # the port itself
     "Port Veles North": "Whalers",
     "Washington": "Sockeye",
     "Roscoe Bennett": "Cutthroat",

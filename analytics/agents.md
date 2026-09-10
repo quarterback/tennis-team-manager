@@ -54,6 +54,12 @@ renamed across the archive, and an id often matches neither the old name nor the
 
 **Join players on `player_id`.** Names are not unique across the association.
 
+**Captains are on `players.csv`** (`captain` 1/0, `captain_order` 1 = the lead captain,
+best-known first; 1-3 per program, named preseason). Exports taken before the column
+existed have no column — treat a missing column as "unknown", not as "no captains".
+Captaincy moves no rating; it only forces the player into every lineup from the naming
+point on.
+
 **`classification` is enrollment; `championship_group` is who they play.** Six programs
 differ, two of them by four classes. Every competitive comparison keys on the group
 (`aggregate.program_class`).
