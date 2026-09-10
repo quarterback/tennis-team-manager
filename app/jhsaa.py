@@ -1215,6 +1215,16 @@ _TALENT = {
 #                useful in the small classifications; see `turnout_extra()`
 #   neglect      generates normal CEILING but develops it SLOWER — the same governor,
 #                run in reverse; see `neglect_severity()`
+#   feeder       generates the same players with the same ceilings, but its freshmen
+#                ARRIVE further along — a junior club or a middle-school feeder
+#                sends kids who can play on day one; see `feeder_start()`. A fifth
+#                lever: `blue_blood` moves the DRAW, `coaching`/`neglect` the RATE,
+#                `turnout` the COUNT, this the START.
+#   doubles_culture  generates NOTHING extra and touches no rating: the program
+#                practises doubles, so its PAIRS settle sooner and stay together —
+#                an ARRANGER effect only (`partner_chemistry` ramps faster, a pair
+#                is "established" on fewer lines); see `doubles_culture()`. This is
+#                what the retired `doubles` tag should have been.
 #   upstart      a TEMPORARY multi-year run, rolled per world — see `upstarts()`
 #   (untagged)   normal
 #
@@ -1310,6 +1320,22 @@ ARCHETYPES = {
     # per-program, not one constant every tagged school shares equally).
     "neglect":     {"mean":  0.0, "spread": 1.00, "pot": 0.0, "mature": 0.00,
                     "label": "Neglected program"},
+    # FEEDER (owner rule 2026-09) — a program with a junior club or a middle-school
+    # feeder behind it. Same draw, same ceilings, same development rate: the ONE thing
+    # that moves is how far along a freshman is when they walk in (`feeder_start`,
+    # applied to the career model's STARTING ability). Every other row is 0.0 here and
+    # the real per-school number is drawn, the `coaching`/`turnout` idiom.
+    "feeder":      {"mean":  0.0, "spread": 1.00, "pot": 0.0, "mature": 0.00,
+                    "label": "Feeder pipeline"},
+    # DOUBLES CULTURE (owner rule 2026-09) — the replacement for the retired `doubles`,
+    # and defined like `coaching` by what it does NOT do: no draw, no ceiling, no
+    # per-match lift, nothing the match engine can see. It lives entirely in the
+    # ARRANGERS: a tagged program's pairs earn continuity faster and lock as a unit on
+    # fewer lines together (`doubles_culture()`), so its doubles lineup is the one that
+    # has been playing together rather than the one the ladder happens to produce that
+    # afternoon. `_program_mod` reads nothing off this row.
+    "doubles_culture": {"mean": 0.0, "spread": 1.00, "pot": 0.0, "mature": 0.00,
+                        "label": "Doubles culture"},
     "upstart":     {"mean":  0.0, "spread": 1.00, "pot": 0.0, "mature": 0.00,
                     "label": "Upstart"},
 }
@@ -1417,6 +1443,46 @@ def coaching_quality(school_name: str, salt: str = "") -> float:
     development culture are durable program traits, so this must not reshuffle on
     read or drift season to season. The exact `neglect_severity` idiom, one sign over."""
     return random.Random(f"{salt}|jhsaa-coaching|{school_name}").uniform(*COACHING_MATURE)
+
+
+# FEEDER — how much further along a feeder program's freshmen arrive, as a LIFT on the
+# career model's starting ability (`CAREER_START_BAND` draws start as a share of career
+# peak; this multiplies that share and `_career_plan` clamps at the peak). A band, per
+# school, for the reason coaching's is: a feeder is not one fixed size. Sized against
+# the start band itself — its width is 0.55 of peak, so +0.04 is a modest head start and
+# +0.15 puts a freshman most of a grade ahead. Ceilings, rate and count are untouched.
+#
+# ‼️ THE HEAD START FADES. The career model is additive (start + four yearly gains), so
+# an un-faded lift would carry whole to senior year and read as a strength tag rather
+# than an arrival one. `FEEDER_FADE` of the head start is given back evenly across the
+# four years (floored so no year goes negative), so the field catches up part of the way.
+# Measured, 20 5A programs: freshmen +4.8, seniors +2.4 (was +3.5 un-faded), ceilings
+# +0.2 — the same display residual coaching carries.
+FEEDER_START = (0.04, 0.15)
+FEEDER_FADE = 0.5
+
+# DOUBLES CULTURE — the multiplier on how fast a program's pairs earn continuity. At 1.0
+# (untagged) `partner_chemistry` halves at `PARTNER_PRIOR` lines and a pair is
+# established at `PARTNER_ESTABLISHED_MIN`; at 3.0 both come three times sooner (two
+# lines instead of six). It never scales the SIZE of the bonus — `PARTNER_CHEMISTRY`
+# stays a tiebreak, so no lineup this produces overrides a real ability difference.
+DOUBLES_CULTURE = (1.5, 3.0)
+
+
+def feeder_start(school_name: str, salt: str = "") -> float:
+    """This feeder program's stable freshman head start, drawn once from
+    `FEEDER_START` — the `coaching_quality` idiom: a feeder club is a durable
+    community fact, seeded on the school alone."""
+    return random.Random(f"{salt}|jhsaa-feeder|{school_name}").uniform(*FEEDER_START)
+
+
+def doubles_culture(school_name: str, salt: str = "") -> float:
+    """This program's pair-continuity multiplier — 1.0 for an untagged program, so
+    the whole association is unchanged by this existing; a stable draw from
+    `DOUBLES_CULTURE` for one tagged `doubles_culture`."""
+    if archetype(school_name) != "doubles_culture":
+        return 1.0
+    return random.Random(f"{salt}|jhsaa-doubles-culture|{school_name}").uniform(*DOUBLES_CULTURE)
 
 
 def neglect_severity(school_name: str, salt: str = "") -> float:
@@ -1564,8 +1630,13 @@ def _program_mod(school: School, year: int, salt: str) -> dict:
            "pot": a.get("pot", 0.0), "mature": a.get("mature", 0.0),
            # Extra roster SPOTS, not a change to who fills them — the one lever here
            # that moves a count rather than a player. See `turnout_extra`.
-           "roster": 0, "kind": kind}
-    if kind == "neglect":
+           "roster": 0, "kind": kind,
+           # A LIFT on the career model's starting ability — the one lever a
+           # `feeder` program moves. See `feeder_start`.
+           "start": 0.0}
+    if kind == "feeder":
+        mod["start"] += feeder_start(school.name, salt)
+    elif kind == "neglect":
         # The table row is a 0.0 placeholder (see ARCHETYPES) — the real, per-school
         # number lives here, same reason `upstart`'s lift is layered on below rather
         # than read off the table.
@@ -1849,6 +1920,10 @@ class TeamSeason:
     # `_established_units` / `partner_chemistry`. Season-scoped by construction
     # (a TeamSeason lives one season), so nothing persists across years.
     pair_counts: dict = field(default_factory=dict)
+    # How fast this program's pairs earn continuity — 1.0 for everyone but a
+    # `doubles_culture` program (`doubles_culture()`), resolved once per team here
+    # for the `sibling_ids` reason: `archetype()` resolves a table fingerprint.
+    culture: float = 1.0
     # ‼️ INJURIES (owner rule 2026-08, ported off the college model — see
     # `app/injuries.py`). VARSITY ONLY: `play_dual` rolls these, `play_jv_dual`
     # never touches this dict — JV is deliberately injury-blind (`jv_pool`),
@@ -2162,6 +2237,7 @@ def reset_schools() -> None:
     _dev_era_cache.clear()
     _talent_era_cache.clear()
     _career_era_cache.clear()
+    _feeder_era_cache.clear()
     _exchange_era_cache.clear()
     _intl_era_cache.clear()
     _expo_cache.clear()
@@ -2584,6 +2660,15 @@ def _compresses(entry: int) -> bool:
 
 
 _career_era_cache: dict = {}
+_feeder_era_cache: dict = {}
+
+
+def feeder_era() -> int:
+    """The first entry year a `feeder` tag reaches (owner rule 2026-09) — the
+    `dev_era()` idiom, and load-bearing for the same reason: players are rebuilt
+    from seed, so an ungated head start re-rates every archived roster's freshmen
+    the moment a program is tagged. Cohorts before it generate as if untagged."""
+    return _resolve_era("jhsaa_feeder_era", _feeder_era_cache)
 
 
 def career_era() -> int:
@@ -2642,7 +2727,7 @@ CAREER_OVERFLOW = 0.20              # share of a gain that lands PAST career pea
 
 
 def _career_plan(school_key: str, entry: int, seat: int, salt: str,
-                 ceiling: float) -> tuple[float, float, list[float]]:
+                 ceiling: float, start_lift: float = 0.0) -> tuple[float, float, list[float]]:
     """(starting ability, career peak, four yearly capacities) for one player.
 
     Deterministic from the same identity the pid is built from, so the whole
@@ -2652,7 +2737,10 @@ def _career_plan(school_key: str, entry: int, seat: int, salt: str,
     regenerate everyone."""
     r = random.Random(f"{salt}|jhsaa-career|{school_key}|{entry}|{seat}")
     peak = ceiling * r.uniform(*CAREER_PEAK_BAND)
-    start = peak * r.uniform(*CAREER_START_BAND)
+    # `start_lift` (a `feeder` program) is applied AFTER the draw, so the rng
+    # stream is identical either way and nobody else moves; clamped at the peak,
+    # so a head start never becomes a higher career.
+    start = min(peak, peak * (r.uniform(*CAREER_START_BAND) + start_lift))
     caps = [r.uniform(*CAREER_BIG_BAND) if r.random() < CAREER_BIG_RATE
             else r.uniform(*CAREER_STEP_BAND) for _ in range(4)]
     return start, peak, caps
@@ -2724,7 +2812,8 @@ def coach_factor(mature: float) -> float:
 
 def career_ability(school_key: str, entry: int, seat: int, grade: int,
                    salt: str, ceiling: float,
-                   exposure: dict | None = None, coach: float = 1.0) -> float:
+                   exposure: dict | None = None, coach: float = 1.0,
+                   start_lift: float = 0.0) -> float:
     """This player's ability at `grade` under the career model.
 
     `exposure` maps a GRADE to how much of that year's capacity the player
@@ -2736,10 +2825,14 @@ def career_ability(school_key: str, entry: int, seat: int, grade: int,
     untagged program. It scales the same yearly capacity `exposure` does, because
     they are the same kind of thing: how much of a year's available development a
     player actually banked."""
-    start, peak, caps = _career_plan(school_key, entry, seat, salt, ceiling)
+    start, peak, caps = _career_plan(school_key, entry, seat, salt, ceiling,
+                                     start_lift)
+    # A `feeder` head start is partly given back over the four years (see
+    # `FEEDER_FADE`): zero for everyone else, so nothing below changes for them.
+    fade = start_lift * peak * FEEDER_FADE / 4.0
     v = start
     for i, g in enumerate(range(10, grade + 1)):
-        base = caps[i] * ((exposure or {}).get(g - 1, 1.0))
+        base = max(0.0, caps[i] * ((exposure or {}).get(g - 1, 1.0)) - fade)
         # ‼️ COACHING ACCELERATES TOWARD THE PEAK AND NEVER PAST IT. The multiplier
         # is applied to the run UP to `peak`; the overflow a year earns beyond it is
         # the UNCOACHED amount. Applied to the whole gain instead, a coaching program
@@ -3692,7 +3785,8 @@ def _build_reserve_cohorts(gender: str, year: int, salt: str,
 #: still holding one as an override keeps generating the roster it has — this list is
 #: what can be newly applied, not what can be read. `upstart` is excluded for its own
 #: older reason: it is a rolled, expiring run, and storing one would make it permanent.
-EDITABLE_ARCHETYPES = ("blue_blood", "coaching", "turnout", "neglect")
+EDITABLE_ARCHETYPES = ("blue_blood", "coaching", "turnout", "neglect",
+                       "feeder", "doubles_culture")
 
 
 def archetype_board() -> dict:
@@ -4177,7 +4271,7 @@ def _ceiling(rng: random.Random, group: str, gender: str,
 
 def _apply_career(p: Prospect, school_key: str, entry: int, seat: int,
                   grade: int, salt: str, exposure: dict | None = None,
-                  coach: float = 1.0) -> Prospect:
+                  coach: float = 1.0, start_lift: float = 0.0) -> Prospect:
     """Set a career-era player's CURRENT ability from their career plan.
 
     The prospect arrives generated AT its ceiling (maturity 1.0), so this scales
@@ -4195,7 +4289,7 @@ def _apply_career(p: Prospect, school_key: str, entry: int, seat: int,
     if ceiling <= 0:
         return p
     target = career_ability(school_key, entry, seat, grade, salt, ceiling,
-                            exposure, coach)
+                            exposure, coach, start_lift)
     factor = target / ceiling
     for a, ceil_v in p.potential.items():
         p.current[a] = clamp_grade(ceil_v * factor)
@@ -4338,7 +4432,10 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
         # and `neglect` alike — is silently inert for every cohort in a fresh
         # save, which is exactly the state this was found in.
         _apply_career(p, school.key, entry, seat, grade, salt,
-                      exposure or None, coach_factor(mod.get("mature", 0.0)))
+                      exposure or None, coach_factor(mod.get("mature", 0.0)),
+                      # A `feeder` head start reaches cohorts from `feeder_era()`
+                      # on only — an ungated one rewrites every archived freshman.
+                      mod.get("start", 0.0) if entry >= feeder_era() else 0.0)
     elif compress:
         # The guarantee half: attribute noise lifts displayed ceilings past the
         # squashed centre, so the visible number is trimmed after generation.
@@ -5290,7 +5387,8 @@ def _pair_partitions(pool: list):
 
 
 def _arrange_state(nine: list, sibling_ids: dict | None = None,
-                   pair_counts: dict | None = None) -> list:
+                   pair_counts: dict | None = None,
+                   culture: float = 1.0) -> list:
     """Arrange a frozen-order top nine into SLOT ORDER for the 1S/4D card:
     [S1, D1a, D1b, D2a, D2b, D3a, D3b, D4a, D4b]. `_squad` dresses by position
     and `_slot_players` reads it back the same way, so this list IS the lineup.
@@ -5314,7 +5412,7 @@ def _arrange_state(nine: list, sibling_ids: dict | None = None,
         # Partner continuity (owner rule 2026-09): a near-tie settles toward the
         # pair that has been playing together this season. Same scale as the
         # sibling nudge; `_order_pairs`'s boundary still binds afterwards.
-        return r + partner_chemistry(pair_counts, a.pid, b.pid)
+        return r + partner_chemistry(pair_counts, a.pid, b.pid, culture)
 
     # S1 + D1 consume ranks #1-#3: the coach picks which of the three plays
     # singles by what it does for the two points those players cover.
@@ -5356,7 +5454,8 @@ def _arrange_state(nine: list, sibling_ids: dict | None = None,
 
 def _arrange_wide(players: list, n_singles: int,
                   sibling_ids: dict | None = None,
-                  pair_counts: dict | None = None) -> list:
+                  pair_counts: dict | None = None,
+                   culture: float = 1.0) -> list:
     """`_arrange_state`'s mechanism at ANY singles width — the general form of the
     postseason arrangement, used by 1A's 2S/3D pilot and 8A/9A's 4S/5D one.
 
@@ -5401,7 +5500,7 @@ def _arrange_wide(players: list, n_singles: int,
             if b.pid in sibs.get(a.pid, ()):     # the map is symmetric by construction
                 r += FAMILY_CHEMISTRY
             # Partner continuity — see `_arrange_state`'s note.
-            _pr[key] = r + partner_chemistry(pair_counts, a.pid, b.pid)
+            _pr[key] = r + partner_chemistry(pair_counts, a.pid, b.pid, culture)
         return _pr[key]
 
     # The singles seats + D1 consume the top `n_singles + 2`: every way to pick
@@ -5445,7 +5544,8 @@ def _arrange_wide(players: list, n_singles: int,
 
 
 def _arrange_1a_postseason(eight: list, sibling_ids: dict | None = None,
-                           pair_counts: dict | None = None) -> list:
+                           pair_counts: dict | None = None,
+                   culture: float = 1.0) -> list:
     """1A's PILOT road-to-State shape (owner rule 2026-08): arrange a frozen-order
     top EIGHT into SLOT ORDER for the 2S/3D card: [S1, S2, D1a, D1b, D2a, D2b,
     D3a, D3b]. Same contract as `_arrange_state`: `_squad` dresses by position,
@@ -5463,7 +5563,7 @@ def _arrange_1a_postseason(eight: list, sibling_ids: dict | None = None,
     own logic on the remaining four (#5-#8): a search over the three ways to pair
     them, best total doubles ability wins, then `_order_pairs`'s rank-sum
     boundary. Anything short of eight (a degraded side) plays the plain order."""
-    return _arrange_wide(eight, 2, sibling_ids, pair_counts)
+    return _arrange_wide(eight, 2, sibling_ids, pair_counts, culture)
 
 
 def _order_pairs(pairs: list, rank_sum: dict, rating: dict) -> list:
@@ -5566,25 +5666,33 @@ PARTNER_ESTABLISHED_MIN = 6   # lines together before a pair is "established" �
 PARTNER_PRIOR = 6             # evidence weighting: 6 lines → half the bonus
 
 
-def partner_chemistry(pair_counts: dict, a_pid: str, b_pid: str) -> float:
+def partner_chemistry(pair_counts: dict, a_pid: str, b_pid: str,
+                      culture: float = 1.0) -> float:
     """The continuity bonus for a candidate pair — 0.0 for two players who have
     never partnered, ramping toward `PARTNER_CHEMISTRY` with lines played together
-    (`n/(n+PARTNER_PRIOR)`, the `coach_eval` evidence-weighting idiom)."""
+    (`n/(n+PARTNER_PRIOR)`, the `coach_eval` evidence-weighting idiom).
+
+    `culture` (a `doubles_culture` program, else 1.0) shortens the RAMP, never the
+    cap: the bonus stays the same tiebreak, it just arrives on fewer lines."""
     n = (pair_counts or {}).get(tuple(sorted((a_pid, b_pid))), (0, 0))[0]
-    return PARTNER_CHEMISTRY * n / (n + PARTNER_PRIOR)
+    return PARTNER_CHEMISTRY * n / (n + PARTNER_PRIOR / max(culture, 1.0))
 
 
-def _established_units(players: list, pair_counts: dict, forced: list) -> list[tuple]:
+def _established_units(players: list, pair_counts: dict, forced: list,
+                       culture: float = 1.0) -> list[tuple]:
     """The disjoint ESTABLISHED pairs inside `players` — most lines together first,
     ties on the pid key (deterministic) — skipping anyone a `forced` (sibling) unit
     already claims: siblings outrank continuity. A pair qualifies on
     `PARTNER_ESTABLISHED_MIN` lines together AND a non-losing record together."""
     if not pair_counts:
         return []
+    # A doubles-culture program locks a pair on fewer lines (never under two — one
+    # line together is not a partnership). The non-losing bar is untouched.
+    need = max(2, int(-(-PARTNER_ESTABLISHED_MIN // max(culture, 1.0))))
     used = {p.pid for pr in forced for p in pr}
     by_pid = {p.pid: p for p in players}
     cands = [(rec[0], key) for key, rec in pair_counts.items()
-             if rec[0] >= PARTNER_ESTABLISHED_MIN and 2 * rec[1] >= rec[0]
+             if rec[0] >= need and 2 * rec[1] >= rec[0]
              and key[0] in by_pid and key[1] in by_pid]
     out = []
     for _, (a, b) in sorted(cands, key=lambda t: (-t[0], t[1])):
@@ -5674,7 +5782,8 @@ def _flip_strategy(strategy: str) -> str:
 
 def _arrange_regular(eleven: list, strategy: str,
                      sibling_ids: dict | None = None,
-                     pair_counts: dict | None = None) -> list:
+                     pair_counts: dict | None = None,
+                   culture: float = 1.0) -> list:
     """The 3S/4D card under `strategy`, in SLOT ORDER
     [S1, S2, S3, D1a, D1b, D2a, D2b, D3a, D3b, D4a, D4b] — same contract as
     `_arrange_state`: `_squad` dresses by position, `_slot_players` reads it
@@ -5711,7 +5820,7 @@ def _arrange_regular(eleven: list, strategy: str,
     forced = _sibling_units(pool, sibling_ids or {})
     # Partner continuity (owner rule 2026-09): an established pair rides the same
     # swap machinery the sibling rule uses, after siblings have claimed their seats.
-    forced = forced + _established_units(pool, pair_counts or {}, forced)
+    forced = forced + _established_units(pool, pair_counts or {}, forced, culture)
     if strategy == "traditional":
         pairs = [(pool[0], pool[1]), (pool[2], pool[3]),
                  (pool[4], pool[5]), (pool[6], pool[7])]
@@ -5726,7 +5835,7 @@ def _arrange_regular(eleven: list, strategy: str,
             r = doubles_rating(eng[a.pid], eng[b.pid])
             if b.pid in sibs.get(a.pid, ()):
                 r += FAMILY_CHEMISTRY      # see `_arrange_state` — a tiebreak only
-            return r + partner_chemistry(pair_counts, a.pid, b.pid)
+            return r + partner_chemistry(pair_counts, a.pid, b.pid, culture)
 
         if strategy == "balanced":
             # Snake-pair strongest with weakest, next-strongest with
@@ -5753,7 +5862,8 @@ def _arrange_regular(eleven: list, strategy: str,
 
 def _arrange_early(nine: list, sibling_ids: dict | None = None,
                    group: str | None = None,
-                   pair_counts: dict | None = None) -> list:
+                   pair_counts: dict | None = None,
+                   culture: float = 1.0) -> list:
     """The early window's 5S/2D card in SLOT ORDER [S1-S5, D1a, D1b, D2a, D2b] —
     or 8A/9A's 4S/5D one, [S1-S4, D1a, D1b, … D5a, D5b] (owner rule 2070), which is
     the same plain-order allocation at a different width: pass the dual's `group`.
@@ -5778,7 +5888,7 @@ def _arrange_early(nine: list, sibling_ids: dict | None = None,
     # practice the early window is the season's FIRST block, so pairs are rarely
     # established yet and this is usually empty; it matters when the window is
     # revisited by a degraded schedule or a test.
-    forced = forced + _established_units(pool, pair_counts or {}, forced)
+    forced = forced + _established_units(pool, pair_counts or {}, forced, culture)
     if not forced:
         return nine                          # byte-identical to the pre-rule lineup
     # Swapped in place, so D1 is still the higher pair of the pool and nothing but the
@@ -5830,13 +5940,14 @@ def _postseason_nine(ts: TeamSeason, phase: str = "state", group=_OWN_GROUP) -> 
 
 
 def _arrange_postseason(pool: list, fmt: DualFormat, sibling_ids: dict | None,
-                        pair_counts: dict | None = None) -> list:
+                        pair_counts: dict | None = None,
+                   culture: float = 1.0) -> list:
     """Arrange a frozen-order pool onto `fmt`'s card. Keyed on the SHAPE, never on
     the group: the shape is what the arrangement is about, and one dual has one
     shape however its two sides are classified (see `shape_group`)."""
     if fmt.n_singles == 1:
-        return _arrange_state(pool, sibling_ids, pair_counts)
-    return _arrange_wide(pool, fmt.n_singles, sibling_ids, pair_counts)
+        return _arrange_state(pool, sibling_ids, pair_counts, culture)
+    return _arrange_wide(pool, fmt.n_singles, sibling_ids, pair_counts, culture)
 
 
 def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None,
@@ -5853,7 +5964,7 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None,
         pool = _postseason_nine(ts, phase, group)
         g = ts.school.group if group is _OWN_GROUP else group
         return _arrange_postseason(pool, dual_format(phase, g), ts.sibling_ids,
-                                   ts.pair_counts)
+                                   ts.pair_counts, ts.culture)
     if phase in SHOWCASE:
         # ‼️ A SHOWCASE MUST NOT FREEZE THE ORDER OF ABILITY. The freeze is the
         # association's anti-stacking rule and it binds from a program's first
@@ -5875,7 +5986,7 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None,
         # costs a captain his place (owner rule 2026-09).
         nine = _seat_captains(ts, nine, order)
         return _arrange_postseason(nine, dual_format(phase, g), ts.sibling_ids,
-                                   ts.pair_counts)
+                                   ts.pair_counts, ts.culture)
     order = _healthy(ts, _order(ts))
     g = ts.school.group if group is _OWN_GROUP else group
     need = lineup_need(phase, g)
@@ -5918,9 +6029,10 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None,
         strategy = _coach_strategy(ts.school.key)
         if flip:
             strategy = _flip_strategy(strategy)
-        return _arrange_regular(nine, strategy, ts.sibling_ids, ts.pair_counts)
+        return _arrange_regular(nine, strategy, ts.sibling_ids, ts.pair_counts,
+                                ts.culture)
     if phase == EARLY_FORMAT_PHASE:
-        return _arrange_early(nine, ts.sibling_ids, g, ts.pair_counts)
+        return _arrange_early(nine, ts.sibling_ids, g, ts.pair_counts, ts.culture)
     return nine
 
 
@@ -6385,6 +6497,7 @@ def district_teams(schools: list[School], year: int, salt: str = "",
         lens = coach_lens(s.name, salt)
         ts = TeamSeason(
             school=s, roster=roster, sibling_ids=sibs, lens=lens,
+            culture=doubles_culture(s.name, salt),
             # Only this roster's own evidence — `_order` looks up by pid so a
             # gender-wide dict would work, but a team should carry its own memory
             # and nothing else's.
