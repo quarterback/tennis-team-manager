@@ -68,6 +68,36 @@ def test_jhsaa_bundle_is_self_describing_and_normalized():
     assert players[0]["potential_grade"] == "55"
 
 
+def test_jhsaa_bundle_marks_the_team_captains():
+    """Captains were UI-only (the roster chip on the program page); the export
+    now carries them so an analyst can read them off players.csv."""
+    from app.jhsaa import GROUPS
+
+    a, b = _team("Ace High", "7A", True), _team("Ball High", "7A", False)
+    a.roster.append(_prospect("cat", "Cat Court", 11))
+    a.captains = ["cat", "ana"]          # best-known first
+    b.captains = []                      # known: nobody wore the C
+    groups = {g: {"state": {}} for g in GROUPS}
+    files = build_jhsaa(2027, "girls", "7A",
+                        season={"teams": {"a": a, "b": b}, "groups": groups,
+                                "awards": {}, "individuals": {}})
+    rows = {r["player_id"]: r for r in csv.DictReader(io.StringIO(files["players.csv"].decode()))}
+    assert rows["cat"]["captain"] == "1" and rows["cat"]["captain_order"] == "1"
+    assert rows["ana"]["captain"] == "1" and rows["ana"]["captain_order"] == "2"
+    assert rows["bea"]["captain"] == "0" and rows["bea"]["captain_order"] == ""
+    manifest = json.loads(files["manifest.json"])
+    assert "captain" in manifest["rating_semantics"]
+    # a team with NO captain data (a pre-captain archive) leaves both columns
+    # blank — unknown is not the same answer as 0
+    del b.captains
+    files = build_jhsaa(2027, "girls", "7A",
+                        season={"teams": {"a": a, "b": b}, "groups": groups,
+                                "awards": {}, "individuals": {}})
+    rows = {r["player_id"]: r for r in csv.DictReader(io.StringIO(files["players.csv"].decode()))}
+    assert rows["bea"]["captain"] == "" and rows["bea"]["captain_order"] == ""
+    assert rows["cat"]["captain"] == "1"
+
+
 def test_jhsaa_bundle_preserves_a_varsity_tie_in_rendered_standings():
     """Group 2 showcases can produce the archive's three-part W-L-T record."""
     from app.jhsaa import GROUPS

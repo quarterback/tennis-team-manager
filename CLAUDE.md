@@ -2644,6 +2644,27 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     **unchanged** (38.6 → 38.4), squads roughly **+45% deeper**; the only strength
     effect is order statistics (more draws from one distribution → a slightly better
     best player and a much deeper bench), which is what depth IS.
+  - **feeder** (owner rule 2026-09) moves the START — the fifth lever after draw,
+    rate and count. Same players, same ceilings, same yearly capacities; a
+    freshman just walks in further along (`feeder_start()`, a per-school draw from
+    `FEEDER_START` applied to the career model's starting ability, clamped at the
+    peak). `FEEDER_FADE` gives half of it back across the four years so it reads as
+    an arrival tag, not a strength tag — measured: freshmen +4.8, seniors +2.3,
+    ceilings +0.2 (coaching's display residual). ‼️ ERA-GATED (`feeder_era()`, the
+    `dev_era` idiom): players are rebuilt from seed, so an ungated head start
+    rewrites every archived freshman the moment a program is tagged. Career model
+    only — the legacy `_dev_maturity` path is untouched.
+  - **doubles_culture** (owner rule 2026-09) is what the retired `doubles` should have
+    been: ARRANGER-ONLY. No draw, no ceiling, no per-match lift, nothing the match
+    engine sees — `_program_mod` reads nothing off its row. `doubles_culture()` (1.0
+    untagged, a per-school draw from `DOUBLES_CULTURE` when tagged) rides
+    `TeamSeason.culture`, resolved once per team like `sibling_ids`, and shortens
+    two things: `partner_chemistry`'s RAMP (`PARTNER_PRIOR / culture`) and the
+    lines a pair needs to lock as an `_established_units` unit (never under two).
+    ‼️ IT NEVER SCALES THE BONUS ITSELF — `PARTNER_CHEMISTRY` stays a tiebreak, so
+    the postseason search still cannot override a real ability difference, and
+    `doubles_rating`'s synergy term is engine code that must not be touched from
+    here. Roster byte-identical with or without the tag (pinned).
   - **upstart** is a TEMPORARY multi-year run (~10 live statewide, 15–30% over the
     program's OWN baseline, so an upstart 1A is a strong 1A), rolled per world from the
     salt and expiring by itself — deliberately NOT storable, since a stored tag would make

@@ -1057,6 +1057,17 @@ def test_the_research_export_carries_the_jv_events(archived):
                           "girls"):
         assert jvs.get("champion") and jvs.get("regions")
         assert any(r["phase"] == "jv_state" for r in jv)
+    # CAPTAINS ride on players.csv, read off the archived standing rows (the
+    # program page's roster chip was the only surface that showed them).
+    players = list(_csv.DictReader(_io.TextIOWrapper(_io.BytesIO(files["players.csv"]))))
+    caps = wd2.jhsaa_captains(archived["world"]["id"], archived["world"]["year"], "girls")
+    if caps:
+        flagged = {r["player_id"] for r in players if r["captain"] == "1"}
+        assert flagged, "captains archived but none reached players.csv"
+        assert flagged <= {pid for pids in caps.values() for pid in pids}
+        assert all(r["captain_order"] for r in players if r["captain"] == "1")
+        assert all(not r["captain_order"] for r in players if r["captain"] == "0")
+        assert all(r["captain"] in ("0", "1") for r in players)
     # the classless JV individual draws survive a class-scoped export
     for scope in ("all", "7A"):
         indiv = _json.loads(build_jhsaa(y, "girls", scope)["jhsaa_individuals.json"])

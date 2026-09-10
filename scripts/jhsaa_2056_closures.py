@@ -66,7 +66,7 @@ SUNSET = [
     "Fair Park",                        # 4A  Valle Vista League
     "Hayes Valley",                     # 9A  Ironwood League
     "Sluice Gate",                      # Group 1  Ostrobothnia League
-    "Doyle Ridge",                      # 6A  Placer League
+    "Monk",                             # 6A  Placer League
     "Stone Ridge",                      # 6A  Black Canyon League
     "Windmill Ridge",                   # 6A  Mission League (girls-only)
     "Nixyaawii",                        # 2A  Columbia Range League (2052 affiliate)

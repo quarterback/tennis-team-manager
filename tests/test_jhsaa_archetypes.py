@@ -298,3 +298,64 @@ def test_an_override_promotes_demotes_and_reverts():
     ov.clear_jhsaa_archetype(seeded)
     jhsaa._arch_cache.clear()
     assert jhsaa.archetype(seeded) == base        # reverted to the file
+
+
+def test_a_feeder_program_arrives_further_along_with_the_same_ceilings():
+    """`feeder` (owner rule 2026-09) moves the START and nothing else: freshmen are
+    better on day one, ceilings are identical, and the tag reaches only cohorts from
+    `feeder_era()` on (a fresh save: everyone)."""
+    peers = _peers(n=8)
+    mod = jhsaa.ARCHETYPES["feeder"]
+    assert (mod["mean"], mod["spread"], mod["pot"], mod["mature"]) == (0.0, 1.0, 0.0, 0.0)
+
+    def ceilings(tag):
+        out = {}
+        for sc in peers:
+            ov.clear_jhsaa_archetype(sc.name)
+            if tag:
+                ov.set_jhsaa_archetype(sc.name, tag)
+        jhsaa._arch_cache.clear()
+        for sc in peers:
+            for p in jhsaa.build_roster(sc, 2029):
+                out[p.pid] = round(p.ceiling_overall(), 4)
+        return out
+
+    base = _profile(peers)
+    tagged = _profile(peers, "feeder")
+    assert tagged[9] > base[9] + 1.0, (base, tagged)
+    # Ceilings are never LOWERED and barely move: the only drift is the display
+    # rule that keeps POT at or above OVR when a head start lands a freshman
+    # above his drawn ceiling — coaching's documented residual, explicitly fine.
+    c0, c1 = ceilings(""), ceilings("feeder")
+    assert all(c1[k] >= c0[k] for k in c0)
+    assert stat.mean(c1[k] - c0[k] for k in c0) < 1.0
+    assert jhsaa.feeder_start(peers[0].name) == jhsaa.feeder_start(peers[0].name)
+    assert jhsaa.FEEDER_START[0] <= jhsaa.feeder_start(peers[0].name) <= jhsaa.FEEDER_START[1]
+
+
+def test_a_doubles_culture_program_generates_identically_and_pairs_sooner():
+    """`doubles_culture` (owner rule 2026-09) is arranger-only: the roster is
+    byte-identical, no rating moves, and the only thing that changes is how few
+    lines together it takes for a pair to earn continuity and lock as a unit."""
+    sc = _peers(n=1)[0]
+    before = [(p.pid, round(p.current_overall(), 6)) for p in jhsaa.build_roster(sc, 2029)]
+    ov.set_jhsaa_archetype(sc.name, "doubles_culture")
+    jhsaa._arch_cache.clear()
+    after = [(p.pid, round(p.current_overall(), 6)) for p in jhsaa.build_roster(sc, 2029)]
+    assert before == after
+    c = jhsaa.doubles_culture(sc.name)
+    assert jhsaa.DOUBLES_CULTURE[0] <= c <= jhsaa.DOUBLES_CULTURE[1]
+    ov.clear_jhsaa_archetype(sc.name)
+    jhsaa._arch_cache.clear()
+    assert jhsaa.doubles_culture(sc.name) == 1.0
+    # the ramp shortens, the cap does not
+    counts = {("a", "b"): (2, 2)}
+    assert jhsaa.partner_chemistry(counts, "a", "b", c) > jhsaa.partner_chemistry(counts, "a", "b")
+    assert jhsaa.partner_chemistry({("a", "b"): (10 ** 6, 10 ** 6)}, "a", "b", c) == pytest.approx(
+        jhsaa.PARTNER_CHEMISTRY, abs=1e-6)
+    # a pair locks as a unit on fewer lines, never on one
+    roster = jhsaa.build_roster(sc, 2029)[:2]
+    two = {tuple(sorted((roster[0].pid, roster[1].pid))): (2, 2)}
+    assert jhsaa._established_units(roster, two, []) == []
+    assert jhsaa._established_units(roster, two, [], 3.0) == [(roster[0], roster[1])]
+    assert jhsaa._established_units(roster, {next(iter(two)): (1, 1)}, [], 3.0) == []
