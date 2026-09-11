@@ -1,0 +1,79 @@
+analysis,gender,entity,metric,value,comparison,notes
+6a_counterfactual,boys,6A,close_match_share_40_60_1S4D,0.256,,2079 field matchup model calibrated from 2079 flight outcomes
+6a_counterfactual,boys,6A,close_match_share_40_60_2S3D,0.246,-0.010 vs 1S4D,Five-flight shape remains similarly close
+6a_counterfactual,girls,6A,close_match_share_40_60_1S4D,0.327,,2079 field matchup model calibrated from 2079 flight outcomes
+6a_counterfactual,girls,6A,close_match_share_40_60_2S3D,0.318,-0.009 vs 1S4D,Five-flight shape remains similarly close
+6a_counterfactual,boys,6A,close_match_share_30_70_1S4D,0.488,,
+6a_counterfactual,boys,6A,close_match_share_30_70_2S3D,0.479,-0.009 vs 1S4D,
+6a_counterfactual,girls,6A,close_match_share_30_70_1S4D,0.606,,
+6a_counterfactual,girls,6A,close_match_share_30_70_2S3D,0.596,-0.010 vs 1S4D,
+6a_counterfactual,boys,Tidewater,champion_probability_1S4D,0.182,,30k modeled brackets
+6a_counterfactual,boys,Tidewater,champion_probability_2S3D,0.254,+0.072,2S3D rewards stronger second singles profile
+6a_counterfactual,boys,Dusty Spur,champion_probability_1S4D,0.137,,30k modeled brackets
+6a_counterfactual,boys,Dusty Spur,champion_probability_2S3D,0.195,+0.058,
+6a_counterfactual,boys,Valley Christian,champion_probability_1S4D,0.207,,30k modeled brackets
+6a_counterfactual,boys,Valley Christian,champion_probability_2S3D,0.159,-0.048,
+6a_counterfactual,boys,Chaminade,champion_probability_1S4D,0.171,,30k modeled brackets
+6a_counterfactual,boys,Chaminade,champion_probability_2S3D,0.125,-0.046,
+6a_counterfactual,boys,Severn,champion_probability_1S4D,0.053,,Actual 2079 champion
+6a_counterfactual,boys,Severn,champion_probability_2S3D,0.036,-0.017,Actual champion becomes less likely under 2S3D
+6a_counterfactual,boys,6A,top4_champion_probability_1S4D,0.569,,
+6a_counterfactual,boys,6A,top4_champion_probability_2S3D,0.527,-0.042,
+6a_counterfactual,boys,6A,top8_champion_probability_1S4D,0.669,,
+6a_counterfactual,boys,6A,top8_champion_probability_2S3D,0.608,-0.061,
+6a_counterfactual,boys,6A,expected_champion_seed_1S4D,5.53,,
+6a_counterfactual,boys,6A,expected_champion_seed_2S3D,6.24,+0.71,2S3D slightly less chalky in boys model
+6a_counterfactual,girls,6A,no1_champion_probability_1S4D,0.303,,
+6a_counterfactual,girls,6A,no1_champion_probability_2S3D,0.312,+0.009,
+6a_counterfactual,girls,6A,top4_champion_probability_1S4D,0.361,,
+6a_counterfactual,girls,6A,top4_champion_probability_2S3D,0.358,-0.003,
+6a_counterfactual,girls,6A,top8_champion_probability_1S4D,0.690,,
+6a_counterfactual,girls,6A,top8_champion_probability_2S3D,0.700,+0.010,
+6a_counterfactual,girls,6A,expected_champion_seed_1S4D,7.18,,
+6a_counterfactual,girls,6A,expected_champion_seed_2S3D,6.96,-0.22,
+at_large_seeding,both,all_committee_classes,total_at_large_selections,216,,2079
+at_large_seeding,both,all_committee_classes,would_earn_bye_under_strength_seeding,8,3.7%,Road-first seeding rarely hides a true bye-level at-large
+at_large_seeding,both,all_committee_classes,improve_5plus_seeds,43,19.9%,
+at_large_seeding,both,all_committee_classes,improve_10plus_seeds,7,3.2%,
+at_large_seeding,boys,Draybrook Union 2A,current_seed,33,,
+at_large_seeding,boys,Draybrook Union 2A,strength_seed,16,+17 positions,Would earn bye under integrated strength seeding
+at_large_seeding,boys,Cabo Esperanza Tech 3A,current_seed,33,,
+at_large_seeding,boys,Cabo Esperanza Tech 3A,strength_seed,24,+9 positions,Would earn bye
+at_large_seeding,boys,Calderwood 3A,current_seed,34,,
+at_large_seeding,boys,Calderwood 3A,strength_seed,22,+12 positions,Would earn bye
+at_large_seeding,girls,River North 3A,current_seed,33,,
+at_large_seeding,girls,River North 3A,strength_seed,18,+15 positions,Would earn bye
+at_large_seeding,girls,Sotomayor 4A,current_seed,33,,
+at_large_seeding,girls,Sotomayor 4A,strength_seed,15,+18 positions,Would earn bye
+at_large_seeding,girls,Hackensack 5A,current_seed,33,,
+at_large_seeding,girls,Hackensack 5A,strength_seed,22,+11 positions,Would earn bye
+at_large_seeding,boys,Oakhaven 6A,current_seed,33,,
+at_large_seeding,boys,Oakhaven 6A,strength_seed,22,+11 positions,Would earn bye
+at_large_seeding,girls,Quincy Group 3,current_seed,25,,
+at_large_seeding,girls,Quincy Group 3,strength_seed,19,+6 positions,Would earn bye
+TOC_sensitivity,boys,all_12_champions,rank_correlation_1S4D_vs_2S3D,0.993,,Champion ordering nearly invariant
+TOC_sensitivity,boys,all_12_champions,rank_correlation_1S4D_vs_3S3D,0.993,,
+TOC_sensitivity,boys,all_12_champions,rank_correlation_1S4D_vs_4S5D,0.979,,
+TOC_sensitivity,boys,all_12_champions,max_rank_change_across_cards,2,,
+TOC_sensitivity,girls,all_12_champions,rank_correlation_1S4D_vs_2S3D,0.986,,
+TOC_sensitivity,girls,all_12_champions,rank_correlation_1S4D_vs_3S3D,0.993,,
+TOC_sensitivity,girls,all_12_champions,rank_correlation_1S4D_vs_4S5D,0.993,,
+TOC_sensitivity,girls,all_12_champions,max_rank_change_across_cards,1,,
+selection_layer,boys,association,xwin_pythagorean_exponent,1.815,,Fit from pre-State varsity dual flight points for/against
+selection_layer,girls,association,xwin_pythagorean_exponent,1.850,,Fit from pre-State varsity dual flight points for/against
+selection_layer,boys,association,actual_vs_expected_winpct_correlation,0.952,,
+selection_layer,girls,association,actual_vs_expected_winpct_correlation,0.951,,
+selection_layer,boys,Kokomo Group 1,actual_winpct,0.792,,15-1 in one-flight-margin duals
+selection_layer,boys,Kokomo Group 1,expected_winpct,0.582,-0.210 vs actual,Record materially exceeds underlying flight share
+selection_layer,boys,Tidewater 6A,actual_winpct,0.833,,
+selection_layer,boys,Tidewater 6A,expected_winpct,0.674,-0.159 vs actual,
+selection_layer,boys,Yarrowfield 3A,actual_winpct,0.640,,
+selection_layer,boys,Yarrowfield 3A,expected_winpct,0.806,+0.166 vs actual,Underlying flight performance materially stronger than record
+selection_layer,boys,Swiss Hills Prep 7A,actual_winpct,0.429,,
+selection_layer,boys,Swiss Hills Prep 7A,expected_winpct,0.577,+0.148 vs actual,
+selection_layer,boys,Llerena 6A,actual_winpct,0.286,,Selected at-large
+selection_layer,boys,Llerena 6A,expected_winpct,0.432,+0.146 vs actual,Committee already identified an underlying-performance outlier
+selection_layer,girls,Canal View 9A,actual_winpct,0.500,,Selected at-large
+selection_layer,girls,Canal View 9A,expected_winpct,0.641,+0.141 vs actual,Committee already identified an underlying-performance outlier
+selection_layer,girls,Christian Brothers 7A,actual_winpct,0.208,,Missed field
+selection_layer,girls,Christian Brothers 7A,expected_winpct,0.402,+0.194 vs actual,Still below State-quality expectation despite record underperformance
