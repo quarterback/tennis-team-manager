@@ -3648,7 +3648,7 @@ def clearing_proposals(gender: str, year: int, salt: str = "",
 #: How many reserves make a cohort by default — the brief's 7-10 band.
 RESERVE_COHORT_SIZE = 8
 #: A team's strength for comparisons is its best-nine mean (the `REST_GAP`
-#: basis), not the full 11 — S2/S3 seat ranks #10-#11 by construction.
+#: basis), not the full 11 — the last two seats are the bottom of the pool.
 VARSITY_CORE = 9
 
 
@@ -5748,10 +5748,10 @@ def _pk(pair) -> tuple:
 # League play is free — "regular season can do what it wants" — and the regular
 # season plays the doubles-forward 3S/4D card (owner rule 2027-08, swapped with
 # the early non-district window's 5S/2D — see `EARLY_FORMAT_PHASE`). The LINEUP
-# ALLOCATION for that card is fixed, never a coaching choice: S1 is always the
-# top seed, the doubles pool is always exactly #2-#9, and S2/S3 are always
-# exactly #10-#11 (see `_arrange_regular`). What a program's strategy actually
-# decides is how the fixed 8-player pool pairs up into D1-D4:
+# ALLOCATION for that card is fixed, never a coaching choice: S1-S3 are always
+# exactly #1-#3 and the doubles pool is always exactly #4-#11 (owner rule
+# 2026-09 — see `_arrange_regular`). What a program's strategy actually decides
+# is how the fixed 8-player pool pairs up into D1-D4:
 #
 #   maximize      snake-pair the pool by serve-vs-return skew (best server with
 #                 best returner, and so on) — a cheap stand-in for the engine's
@@ -5804,12 +5804,16 @@ def _arrange_regular(eleven: list, strategy: str,
     `_arrange_state`: `_squad` dresses by position, `_slot_players` reads it
     back identically. Short sides play the plain order.
 
-    ‼️ THE ALLOCATION IS FIXED, NEVER SEARCHED (owner rule 2027-08): S1 is
-    always the top seed, the doubles pool is always exactly #2-#9, and S2/S3
-    are always exactly #10-#11. A coach does not get to decide whether the
-    team's 2nd-9th best players play singles or doubles — that's already
-    settled by the format. The only real decision, and the only thing
-    `strategy` affects, is how the fixed 8-player pool pairs up into D1-D4.
+    ‼️ THE ALLOCATION IS FIXED, NEVER SEARCHED, AND IT IS THE LADDER (owner rule
+    2026-09, reversing the doubles-forward 2027-08 seating): S1-S3 are exactly
+    #1-#3 — "the next best kid" at each singles seat — and the doubles pool is
+    exactly #4-#11. It used to seat #10-#11 at S2/S3 with #2-#9 in doubles, which
+    made a league No. 2 singles the team's TENTH-best player and needed an
+    awards-side deflation (`jhsaa_awards.FLIGHT_S2S3_REGULAR`, now retired) to
+    stop All-State overrating the two weakest starters. A coach does not get to
+    decide who plays singles — that's settled by the format and the order of
+    ability. The only real decision, and the only thing `strategy` affects, is
+    how the fixed 8-player pool pairs up into D1-D4.
 
     ‼️ THE PAIRING ITSELF IS A CHEAP, DIRECT CALL — NOT A SEARCH (owner
     correction 2027-08, after the first cut exhaustively enumerated all 105
@@ -5826,7 +5830,7 @@ def _arrange_regular(eleven: list, strategy: str,
     calls, not 420."""
     if len(eleven) < 11:
         return eleven
-    s1, pool, s23 = eleven[0], eleven[1:9], eleven[9:11]
+    singles, pool = eleven[:3], eleven[3:11]
     # Siblings inside the doubles pool partner whatever the strategy would have done
     # (owner rule 2026-09) — applied as a partner SWAP after the strategy has paired
     # the pool, so `traditional` stays a ladder pairing and `balanced`/`maximize` keep
@@ -5869,7 +5873,7 @@ def _arrange_regular(eleven: list, strategy: str,
         pairs = _force_pairs([(ranked[0], ranked[7]), (ranked[1], ranked[6]),
                               (ranked[2], ranked[5]), (ranked[3], ranked[4])], forced)
         pairs = sorted(pairs, key=lambda pr: -dr(*pr))  # strongest pair plays D1
-    out = [s1] + s23
+    out = list(singles)
     for a, b in pairs:
         out += [a, b]
     return out

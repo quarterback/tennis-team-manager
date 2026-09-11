@@ -1353,10 +1353,15 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   `FORMATS['regular']`/`['early']` were swapped so the whole league year trains
   the postseason's doubles-forward shape, not just the early non-district
   window (which now plays the OLD 5S/2D card instead). The 3S/4D lineup
-  ALLOCATION is fixed, never searched: S1 = top seed, doubles pool = exactly
-  #2-#9, S2/S3 = exactly #10-#11 — a coach's `maximize`/`balanced`/`traditional`
-  strategy only decides how the fixed 8-player pool pairs into D1-D4, never who
-  plays singles vs. doubles. `doubles_rating` needed a real pair-synergy term
+  ALLOCATION is fixed, never searched, **and it is the ladder (owner rule 2026-09):
+  S1-S3 = exactly #1-#3, doubles pool = exactly #4-#11** — a coach's
+  `maximize`/`balanced`/`traditional` strategy only decides how the fixed 8-player
+  pool pairs into D1-D4, never who plays singles vs. doubles. ‼️ This REVERSED the
+  2027-08 doubles-forward seating (S2/S3 = #10-#11, pool #2-#9), which made a league
+  No. 2 singles the tenth-best player and forced an awards-only deflation
+  (`jhsaa_awards.FLIGHT_S2S3_REGULAR`, now an EMPTY dict kept for its history) to
+  stop All-State overrating the two weakest starters. Do not put #10-#11 back at
+  S2/S3 without putting that deflation back with it. `doubles_rating` needed a real pair-synergy term
   (`engine.doubles._pair_synergy`) for the pairing choice to mean anything — the
   bare `(idx(a)+idx(b))/2` base is invariant across every partition of a fixed
   pool, so "best pairing" was previously undefined. ‼️ A COMPLEMENTARITY TERM

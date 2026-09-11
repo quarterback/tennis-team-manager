@@ -227,7 +227,14 @@ FLIGHT_ALPHA = {"state": 1.0, "region": 0.90, "district": 0.70}
 # eligibility one.
 FLIGHT_FLOOR = {"state": 2, "region": 3, "district": 0}    # 0 = no floor
 
-# ‼️ S2/S3 IN THE REGULAR SEASON ARE THE TEAM'S WORST TWO STARTERS, NOT ITS
+# ‼️ RETIRED (owner rule 2026-09): the league 3S/4D format now seats #1-#3 at
+# S1-S3 ("the next best kid" at each singles seat) and #4-#11 in doubles, so a
+# regular-season S2/S3 IS the team's 2nd/3rd-best and the table's own weights are
+# right. The override below is EMPTY and the branch that read it is inert; the
+# history is kept because the trap it fixed is the one to remember if the
+# allocation ever moves again. What follows describes the 2027-08 seating.
+#
+# S2/S3 IN THE REGULAR SEASON WERE THE TEAM'S WORST TWO STARTERS, NOT ITS
 # 2nd/3rd-BEST (owner rule 2027-08, the doubles-lineup/format swap). The fixed 3S/4D
 # lineup allocation (`jhsaa._arrange_regular`/`_arrange_state`) is S1 = the team's
 # #1 seed, the DOUBLES pool = exactly seeds #2-#9, and S2/S3 = exactly seeds #10/
@@ -265,7 +272,7 @@ FLIGHT_FLOOR = {"state": 2, "region": 3, "district": 0}    # 0 = no floor
 # their score distribution into that degenerate mass. Revisit if All-District/
 # Region/State honorees start reading as implausibly light on S2/S3 names, or if
 # HM sizes drift back toward the guard — both would mean this still needs a pass.
-FLIGHT_S2S3_REGULAR = {"S2": 0.15, "S3": 0.10}
+FLIGHT_S2S3_REGULAR: dict = {}   # was {"S2": 0.15, "S3": 0.10} under the 2027-08 seating
 EXTRAORDINARY_PCT = 0.88       # a below-floor singles résumé must be near-perfect…
 # …and must contain a win over somebody who played at or above the floor.
 

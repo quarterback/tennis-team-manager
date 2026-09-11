@@ -38,3 +38,20 @@ study-2079.md`, `docs/reports/REPORT-jhsaa-2079-format-selection-companion.md`).
 - **Calibration is a tool, not a season step.** `fit_xw_exponent` (golden-section least
   squares on W%) exists for the scripts; the 2079 fit was boys 1.815 / girls 1.850.
 - **Vocabulary:** flights, never courts.
+
+## 3. The league 3S/4D seats the ladder at S1-S3 (owner rule 2026-09)
+
+- **Reversed:** the 2027-08 doubles-forward allocation (S1 = #1, pool #2-#9, S2/S3 =
+  #10-#11). Now S1-S3 = #1-#3, "the next best kid" at each singles seat, and the
+  doubles pool is #4-#11. `_arrange_regular` is the one place the allocation lives;
+  the three pairing strategies are untouched and still only decide how the pool pairs.
+- **The awards deflation is retired with it.** `jhsaa_awards.FLIGHT_S2S3_REGULAR`
+  existed only because a league S2 was the tenth-best player; it is now an empty dict
+  (the branch that reads it is inert) and its comment block keeps the history. A
+  regular-season S2/S3 is priced at the table like the individual event's. If the
+  seating ever moves back, the deflation must move back with it.
+- **Tests repointed:** the sibling and established-pair fixtures used #2 and #9 as
+  "the two ends of the doubles pool"; the pool's ends are now #4 and #11.
+- **6A's postseason 3S/4D** (`_arrange_wide`, top five pooled for three singles seats
+  + D1) and the league seating now agree on who plays singles in the common case; the
+  postseason keeps the anti-stacking pool rule so a coach may still pair #2 into D1.
