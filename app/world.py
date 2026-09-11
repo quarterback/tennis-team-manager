@@ -682,6 +682,7 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     # reuses world_id=1 after this reset, so the next save's year 0 would read the
     # prior save's histogram. The archive rows it folds were deleted above.
     _scoreline_cache.clear()
+    _context_cache.clear()
     _gapband_cache.clear()
     _dev_cache.clear()
     _primed.clear()
@@ -4841,6 +4842,53 @@ def jhsaa_underplayed(world_id: int, gender: str, salt: str = "",
 #: Published local-first (`.get()` read, compute into a local, return the
 #: local) per the module-global cache rules.
 _scoreline_cache: dict = {}
+_context_cache: dict = {}
+
+
+def jhsaa_record_context(world_id: int, year: int, gender: str) -> dict:
+    """Record Over Expected for EVERY program of one archived season, folded from
+    the dual table — `{school: jhsaa_committee.record_context row}`.
+
+    The committee archives this panel beside its selection from 2080 on
+    (`sel["context"]`). Seasons archived before that carry none, and the owner
+    wants the board to show it for them too ("visible from the committee
+    dashboard, not calc and thrown away"), so this is the READ-SIDE fold for a
+    pre-context season: a deterministic function of archived duals (flights won
+    and lost, pre-State), the `jhsaa_group_ranking` win%-fallback idiom — never a
+    re-deliberation. Home rows only, credited to both sides; varsity only; the
+    State phases excluded exactly as the live calculation excludes them.
+    Memoised per season (an archive is immutable); cleared by `reset()`."""
+    from . import jhsaa_committee as _jc
+    ck = (world_id, year, gender)
+    got = _context_cache.get(ck)
+    if got is not None:
+        return got
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT school, opp, phase, pf, pa, won, tied, lines FROM world_jhsaa_dual"
+            " WHERE world_id=? AND year=? AND gender=? AND home=1"
+            " AND COALESCE(level,'v')='v'",
+            (world_id, year, gender)).fetchall()
+    finally:
+        conn.close()
+    sched: dict[str, list] = {}
+    for r in rows:
+        lines = unpack_lines(r["lines"]) or []
+        home_won = bool(r["won"]); tied = bool(r["tied"])
+        base = {"phase": r["phase"], "level": "v", "tied": tied}
+        sched.setdefault(r["school"], []).append(
+            {**base, "home": True, "won": home_won, "pf": r["pf"], "pa": r["pa"],
+             "lines": lines})
+        sched.setdefault(r["opp"], []).append(
+            {**base, "home": False, "won": (not home_won) and not tied,
+             "pf": r["pa"], "pa": r["pf"], "lines": lines})
+    from types import SimpleNamespace
+    teams = [SimpleNamespace(school=SimpleNamespace(name=n), schedule=v)
+             for n, v in sched.items()]
+    out = {_relabel(n): row for n, row in _jc.record_context(teams).items()}
+    _context_cache[ck] = out
+    return out
 
 
 def jhsaa_scoreline_realism(world_id: int, year: int, gender: str) -> dict:

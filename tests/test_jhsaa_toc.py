@@ -1099,3 +1099,23 @@ def test_the_jv_regional_bracket_renders_and_switches(archived):
     champ = ev["regions"][rn].get("champion")
     assert champ and champ in html2
     assert f"{rn} Regional" in html2
+
+
+def test_record_over_expected_shows_for_a_season_archived_without_it(archived):
+    """The committee board must show the ROE panel for EVERY season, not only
+    those whose committee archived one (owner: "visible from the committee
+    dashboard, not calc and thrown away"). A pre-context season is folded on
+    read from its duals; the fold agrees with the live calculation's shape."""
+    from app import world as wd2, jhsaa as jh2
+    from app.web.state import jhsaa_committee_view
+    wid, yr = archived["world"]["id"], archived["world"]["year"]
+    ctx = wd2.jhsaa_record_context(wid, yr, "girls")
+    assert ctx, "no context folded from the archive"
+    row = next(iter(ctx.values()))
+    assert {"flight_share", "xwin_pct", "record_over_expected", "close_wins"} <= set(row)
+    assert all(0.0 <= r["flight_share"] <= 1.0 for r in ctx.values() if r["flight_share"] is not None)
+    grp = jh2.ATLARGE_GROUPS[0]
+    view = jhsaa_committee_view(wd2.DEFAULT_SEED, "girls", grp, yr)
+    if view["ready"]:
+        assert view["has_context"]
+        assert any(r["flight_share"] is not None for r in view["rows"])
