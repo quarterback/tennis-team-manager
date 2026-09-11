@@ -252,8 +252,8 @@ def test_the_regular_season_still_runs_on_the_live_ladder():
 # --- regular-season strategy (owner rule 2027-08) ----------------------------------
 #
 # League play is free: a program runs one of three explicit coaching strategies for
-# the 3S/4D card. The ALLOCATION is fixed (S1 = #1, doubles pool = #2-#9, S2/S3 =
-# #10-#11) — strategy only decides how the 8-player pool pairs into D1-D4: maximize
+# the 3S/4D card. The ALLOCATION is fixed (S1-S3 = #1-#3, doubles pool = #4-#11 —
+# owner rule 2026-09) — strategy only decides how the 8-player pool pairs into D1-D4: maximize
 # (best total doubles_rating over all 105 splits), balanced (same search, penalised
 # for a lopsided spread across the four pairs), or traditional (adjacent-ladder
 # pairing: D1=#2+#3, D2=#4+#5, D3=#6+#7, D4=#8+#9). The strategy is a durable
@@ -270,11 +270,10 @@ def test_traditional_strategy_is_adjacent_ladder_pairing_with_fixed_allocation()
     rank = {p.pid: k + 1 for k, p in enumerate(order)}
     lu = jh._arrange_regular(order, "traditional")
     assert len(lu) == 11
-    assert rank[lu[0].pid] == 1                                 # S1 = top seed
-    assert {rank[lu[1].pid], rank[lu[2].pid]} == {10, 11}       # S2/S3 = #10-#11
-    # D1-D4 = adjacent pairs of the #2-#9 pool, in ladder order
+    assert [rank[p.pid] for p in lu[:3]] == [1, 2, 3]            # S1-S3 = the ladder
+    # D1-D4 = adjacent pairs of the #4-#11 pool, in ladder order
     doubles_ranks = [rank[p.pid] for p in lu[3:11]]
-    assert doubles_ranks == [2, 3, 4, 5, 6, 7, 8, 9]
+    assert doubles_ranks == [4, 5, 6, 7, 8, 9, 10, 11]
 
 
 def test_maximize_and_balanced_produce_a_legal_permutation_with_the_fixed_allocation():
@@ -285,10 +284,9 @@ def test_maximize_and_balanced_produce_a_legal_permutation_with_the_fixed_alloca
         lu = jh._arrange_regular(order, strategy)
         assert {p.pid for p in lu} == ids
         assert len(lu) == 11
-        assert lu[0].pid == order[0].pid                        # S1 always the top seed
-        assert {rank[lu[1].pid], rank[lu[2].pid]} == {10, 11}   # S2/S3 always #10-#11
+        assert [rank[p.pid] for p in lu[:3]] == [1, 2, 3]        # S1-S3 always the ladder
         doubles_ranks = {rank[p.pid] for p in lu[3:11]}
-        assert doubles_ranks == {2, 3, 4, 5, 6, 7, 8, 9}        # pool is always #2-#9
+        assert doubles_ranks == {4, 5, 6, 7, 8, 9, 10, 11}      # pool is always #4-#11
 
 
 def test_maximize_never_scores_worse_than_traditional():
@@ -429,19 +427,17 @@ def _partners(lineup, first):
 def test_siblings_partner_in_every_regular_season_strategy():
     """All three, including `traditional` — the swap is applied after the strategy has
     paired the pool, so each keeps its own one decision and none of them can split a
-    pair. #2 and #9 are the two ends of the doubles pool: no strategy pairs them by
+    pair. #4 and #11 are the two ends of the doubles pool: no strategy pairs them by
     accident, so this cannot pass for the wrong reason."""
     ts = _real_ts(5)
     order = jh._order(ts)[:11]
     assert len(order) == 11
     for strategy in jh._STRATEGIES:
-        lu = jh._arrange_regular(order, strategy, _sibs(order, 1, 8))
+        lu = jh._arrange_regular(order, strategy, _sibs(order, 3, 10))
         assert len(lu) == 11 and len({p.pid for p in lu}) == 11, strategy
-        assert frozenset((order[1].pid, order[8].pid)) in _partners(lu, 3), strategy
-        # ...and the fixed allocation is untouched: S1 is still the top seed and the
-        # S2/S3 seats are still #10-#11.
-        assert lu[0].pid == order[0].pid
-        assert {lu[1].pid, lu[2].pid} == {order[9].pid, order[10].pid}
+        assert frozenset((order[3].pid, order[10].pid)) in _partners(lu, 3), strategy
+        # ...and the fixed allocation is untouched: S1-S3 are still #1-#3.
+        assert [p.pid for p in lu[:3]] == [q.pid for q in order[:3]]
 
 
 def test_siblings_are_never_forced_across_a_boundary_the_format_fixes():
@@ -820,18 +816,18 @@ def _pc(order, i, j, n=8, w=5):
 
 
 def test_an_established_pair_stays_together_in_every_regular_season_strategy():
-    """#2 and #9 are the two ends of the doubles pool: no strategy pairs them by
+    """#4 and #11 are the two ends of the doubles pool: no strategy pairs them by
     accident, so this cannot pass for the wrong reason."""
     ts = _real_ts(5)
     order = jh._order(ts)[:11]
     assert len(order) == 11
     for strategy in jh._STRATEGIES:
-        lu = jh._arrange_regular(order, strategy, {}, _pc(order, 1, 8))
+        lu = jh._arrange_regular(order, strategy, {}, _pc(order, 3, 10))
         assert len(lu) == 11 and len({p.pid for p in lu}) == 11, strategy
-        assert frozenset((order[1].pid, order[8].pid)) in _partners(lu, 3), strategy
+        assert frozenset((order[3].pid, order[10].pid)) in _partners(lu, 3), strategy
         # the fixed allocation is untouched
         assert lu[0].pid == order[0].pid
-        assert {lu[1].pid, lu[2].pid} == {order[9].pid, order[10].pid}
+        assert [p.pid for p in lu[:3]] == [q.pid for q in order[:3]]
 
 
 def test_a_pair_losing_together_is_not_protected():
@@ -839,16 +835,16 @@ def test_a_pair_losing_together_is_not_protected():
     the mandate from costing the team. 2-6 together is not an established pair."""
     ts = _real_ts(5)
     order = jh._order(ts)[:11]
-    lu = jh._arrange_regular(order, "traditional", {}, _pc(order, 1, 8, n=8, w=2))
-    assert frozenset((order[1].pid, order[8].pid)) not in _partners(lu, 3)
+    lu = jh._arrange_regular(order, "traditional", {}, _pc(order, 3, 10, n=8, w=2))
+    assert frozenset((order[3].pid, order[10].pid)) not in _partners(lu, 3)
 
 
 def test_a_short_history_is_not_an_established_pair():
     ts = _real_ts(5)
     order = jh._order(ts)[:11]
     lu = jh._arrange_regular(order, "traditional", {},
-                             _pc(order, 1, 8, n=jh.PARTNER_ESTABLISHED_MIN - 1, w=5))
-    assert frozenset((order[1].pid, order[8].pid)) not in _partners(lu, 3)
+                             _pc(order, 3, 10, n=jh.PARTNER_ESTABLISHED_MIN - 1, w=5))
+    assert frozenset((order[3].pid, order[10].pid)) not in _partners(lu, 3)
 
 
 def test_siblings_outrank_partner_continuity():
@@ -856,9 +852,9 @@ def test_siblings_outrank_partner_continuity():
     yields — and the lineup stays a legal permutation."""
     ts = _real_ts(5)
     order = jh._order(ts)[:11]
-    lu = jh._arrange_regular(order, "traditional", _sibs(order, 1, 8),
-                             _pc(order, 1, 6, n=20, w=15))
-    assert frozenset((order[1].pid, order[8].pid)) in _partners(lu, 3)
+    lu = jh._arrange_regular(order, "traditional", _sibs(order, 3, 10),
+                             _pc(order, 3, 8, n=20, w=15))
+    assert frozenset((order[3].pid, order[10].pid)) in _partners(lu, 3)
     assert len({p.pid for p in lu}) == 11
 
 

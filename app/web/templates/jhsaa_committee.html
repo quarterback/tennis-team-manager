@@ -44,6 +44,12 @@ the season each class's expanded field began.</div></div>
       <tr>
         <th style="width:40px">#</th><th>Team</th>
         <th style="width:56px">Rec</th>
+        {% if view.has_context %}
+        <th style="width:52px" title="Flight share — varsity flights won / flights played, pre-State">Flt%</th>
+        <th style="width:52px" title="Expected win % from flights won and lost (Pythagorean, exponent 1.83)">xW%</th>
+        <th style="width:56px" title="Record Over Expected — actual W% minus expected W%. Negative: the record may underrate the team; positive: it may overstate it. Context only, never a ballot">ROE</th>
+        <th style="width:48px" title="Record in duals decided by one flight">1-flt</th>
+        {% endif %}
         <th style="width:52px" title="Mean rank across the nine systems">Mean</th>
         <th style="width:44px" title="Median rank">Med</th>
         <th style="width:44px" title="Rank disagreement — the controversy measure">σ</th>
@@ -60,6 +66,12 @@ the season each class's expanded field began.</div></div>
           {% if r.auto %}<span class="jh-chip" title="District champion who missed the road — automatic at-large berth">AUTO</span>{% endif %}
         </span></td>
         <td><b>{{ r.record }}</b></td>
+        {% if view.has_context %}
+        <td>{{ '%.1f'|format(r.flight_share * 100) if r.flight_share is not none else '—' }}</td>
+        <td>{{ ('%.3f'|format(r.xwin_pct)).lstrip('0') if r.xwin_pct is not none else '—' }}</td>
+        <td class="num"{% if r.flag == 'underrated' %} title="Record may underrate the team" style="color:var(--pos)"{% elif r.flag == 'overstated' %} title="Record may overstate the team" style="color:var(--neg)"{% endif %}>{{ ('%+.3f'|format(r.roe)).replace('0.', '.') if r.roe is not none else '—' }}</td>
+        <td>{{ r.close or '—' }}</td>
+        {% endif %}
         <td>{{ '%.1f'|format(r.mean) }}</td>
         <td>{{ '%.1f'|format(r.median) }}</td>
         <td>{{ '%.1f'|format(r.sigma) }}</td>

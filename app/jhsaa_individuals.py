@@ -40,12 +40,13 @@ It is an individual tournament and has NOTHING to do with any dual format — th
 here, and no branch in this module reads a group's dual shape. 1A crowns the same
 six individual titles as 9A.
 
-‼️ FLIGHT ENTRIES COME OFF THE ABILITY LADDER, NOT `_arrange_regular`. The league
-3S/4D format is doubles-forward and allocates S1 = rank #1, the doubles pool =
-ranks #2-#9, and S2/S3 = ranks #10-#11 — so "#2 singles" in a league dual is the
-program's TENTH-best player. That mapping is right for a league dual and wrong
-here. Preseason there are no results, no `order_of_ability` freeze (it binds from
-the first POSTSEASON dual) and no lineup to protect, so entries are simply:
+‼️ FLIGHT ENTRIES COME OFF THE ABILITY LADDER, NOT `_arrange_regular`. (Under the
+2027-08 doubles-forward league seating a league "#2 singles" was the program's
+TENTH-best player; since 2026-09 the league seats #1-#3 at S1-S3, so the two now
+agree on singles — but the entry sheet still reads the ladder directly, because a
+lineup is a per-dual decision and an entry is not.) Preseason there are no results,
+no `order_of_ability` freeze (it binds from the first POSTSEASON dual) and no
+lineup to protect, so entries are simply:
 
     S1 = #1   S2 = #2   S3 = #3   D1 = #4+#5   D2 = #6+#7   D3 = #8+#9
 

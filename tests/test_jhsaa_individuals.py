@@ -239,23 +239,19 @@ def test_the_phase_is_not_postseason_so_awards_price_it_as_ordinary():
            jaw._weight("S1", "regular", jh.POSTSEASON) == jh.FLIGHT_WEIGHTS["S1"]
 
 
-def test_individual_s2_s3_escape_the_LEAGUE_s2_s3_deflation():
-    """‼️ AN INDIVIDUAL No. 2 SINGLES TITLE IS A REAL No. 2 SINGLES RESULT, and the
-    event's own phase is the only thing that makes that true.
-
-    `jhsaa_awards.FLIGHT_S2S3_REGULAR` deflates S2/S3 to roughly D4's weight — but
-    ONLY when `phase == "regular"`, because the league's 3S/4D format puts ranks
-    #10-#11 in those seats. This event's S2 and S3 are the program's genuine #2 and
-    #3 off the ability ladder, so they must be priced at the table's real S2/S3.
-
-    Written as a phase name, that is invisible: had this event been archived as
-    `phase="regular"` to get "ordinary weight", every individual No. 2 singles
-    champion in Jefferson would have been scored as if they were a tenth-best
-    player, silently, and the résumés would still have looked fine."""
+def test_individual_s2_s3_are_priced_at_the_table_and_so_is_the_league_now():
+    """An individual No. 2 singles title is a real No. 2 singles result and is
+    priced at the table's S2. Under the 2027-08 doubles-forward league seating the
+    awards deflated a REGULAR-season S2/S3 (ranks #10-#11 sat there) and this
+    event's own phase was what kept it clear of that; since the league seats
+    #1-#3 at S1-S3 (owner rule 2026-09) the deflation is retired and the two
+    phases price S2/S3 identically. Both halves pinned: the override is empty, and
+    a regular-season S2 is no longer scored as a tenth-best player."""
     from app import jhsaa_awards as jaw
+    assert jaw.FLIGHT_S2S3_REGULAR == {}
     for slot in ("S2", "S3"):
         assert jaw._weight(slot, ji.PHASE, jh.POSTSEASON) == jh.FLIGHT_WEIGHTS[slot]
-        assert jaw._weight(slot, "regular", jh.POSTSEASON) < \
+        assert jaw._weight(slot, "regular", jh.POSTSEASON) == \
                jaw._weight(slot, ji.PHASE, jh.POSTSEASON)
 
 

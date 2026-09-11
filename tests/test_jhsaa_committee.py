@@ -309,3 +309,35 @@ def test_a_parastate_exit_reads_as_the_parastate(monkeypatch):
     r32 = arc["rounds"][1][0]
     r32_loser = r32["away"] if r32["winner"] == r32["home"] else r32["home"]
     assert world.jhsaa_state_result(arc, r32_loser)["finish"] != jh.PARASTATE_NAME
+
+
+def test_record_over_expected_is_flights_only_pre_state_and_never_selects():
+    """Record Over Expected (owner rule 2026-09): flights, not duals, decide xW%;
+    State-phase and JV rows are ignored; a tie contributes flights but no dual;
+    the flag fires only past ROE_FLAG."""
+    from types import SimpleNamespace
+    def dual(won, pf, pa, lines_won, lines_lost, phase="regular", level="v", tied=False):
+        lines = [{"home_won": True}] * lines_won + [{"home_won": False}] * lines_lost
+        return {"home": True, "won": won, "tied": tied, "pf": pf, "pa": pa,
+                "phase": phase, "level": level, "lines": lines}
+    sched = [dual(True, 4, 3, 4, 3), dual(True, 4, 3, 4, 3), dual(False, 2, 5, 2, 5),
+             dual(True, 7, 0, 7, 0, phase="state"),           # not yet played when the committee sits
+             dual(True, 3, 1, 3, 1, level="jv"),               # JV never reaches the record
+             dual(False, 3, 3, 3, 3, tied=True)]               # a tie: flights, no dual
+    fr = jc.flight_record(sched)
+    assert (fr["flights_won"], fr["flights_lost"]) == (13, 14)
+    assert (fr["wins"], fr["losses"]) == (2, 1)
+    assert (fr["close_wins"], fr["close_losses"]) == (2, 0)
+    xw = jc.expected_win_pct(13, 14)
+    assert 0.45 < xw < 0.5
+    team = SimpleNamespace(school=SimpleNamespace(name="Kokomo"), schedule=sched)
+    cx = jc.record_context([team])["Kokomo"]
+    assert cx["win_pct"] == 2 / 3 and abs(cx["xwin_pct"] - xw) < 1e-9
+    assert cx["record_over_expected"] == 2 / 3 - xw and cx["flag"] == "overstated"
+    assert cx["flight_share"] == 13 / 27
+    # the exponent fits back to itself on synthetic data, and select() knows nothing of it
+    rows = [(fw, 30 - fw, round(30 * jc.expected_win_pct(fw, 30 - fw, 1.83)), 0)
+            for fw in range(5, 26)]
+    rows = [(fw, fl, w, 30 - w) for fw, fl, w, _ in rows]
+    assert abs(jc.fit_xw_exponent(rows) - 1.83) < 0.15
+    assert "context" not in jc.select(_ratings(), ROAD, [])

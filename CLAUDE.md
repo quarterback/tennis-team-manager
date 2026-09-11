@@ -915,6 +915,16 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   40 ROAD and no class is on one. Margins in the margin systems are
   FORMAT-NORMALISED (a 5-0, 7-0 and 9-0 are all +1.0) — never feed raw margins
   across mixed formats.
+  **‼️ RECORD OVER EXPECTED IS CONTEXT, NEVER A BALLOT (owner rule 2026-09,
+  `jhsaa_committee.record_context` / `XW_EXPONENT` 1.83).** For every team, from the
+  pre-State varsity duals, counted in FLIGHTS (never sets, games or appearances):
+  flight share, Pythagorean expected W% and ROE = actual W% − expected, plus the
+  one-flight-margin record — archived under the selection's `context` key and read
+  back on `/jhsaa/committee` beside record/TOSS. `select()` never reads it; the flag
+  (`ROE_FLAG` 0.10) is descriptive. The exponent was fitted once on 2079 (boys 1.815,
+  girls 1.850, r≈.95) — `fit_xw_exponent` is a calibration tool, recalibrate after
+  several seasons or a format change, never yearly. A season archived before the key
+  shows no columns.
   **‼️ GROUP 3 IS THE ONE FOUR-BID CLASS (owner decision 2026-09), deliberately
   NOT 1A's eight though the two classes look alike.** MEASURED on the 2071-2075
   exports, both genders: its road left the class's best omission at rank
@@ -1240,6 +1250,20 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     matter). The JV INDIVIDUAL events are preseason and needed nothing. Consequence,
     accepted: cut at #15 the thinnest 8A/9A rosters cannot field the JV state
     tournament's seven, and the event drops a program rather than degrading a dual.
+- **‼️ 6A KEEPS ITS LEAGUE 3S/4D THROUGH THE POSTSEASON (owner rule 2026-09,
+  `jhsaa.LEAGUE_SHAPE_GROUPS`, the format-continuity pilot —
+  `docs/reports/REPORT-jhsaa-6a-state-format-study-2079.md`, the 2079 companion
+  report and `docs/AAR-jhsaa-6a-format-continuity-and-record-over-expected.md`).**
+  The road, State and a 6A-hosted showcase play `FORMATS["regular"]` (eleven on
+  court all year); the TOC stays 1S/4D like every pilot's entrant. Membership is the
+  whole change. ‼️ The postseason ARRANGEMENT is `_arrange_wide` (top five pooled for
+  three singles seats + D1), NOT the league's doubles-forward fixed allocation: the
+  Order of Ability binds in the postseason, and `jhsaa_awards.FLIGHT_S2S3_REGULAR`
+  deflates S2/S3 only under `phase == "regular"`, so a #10 seated at postseason S2
+  would be credited as a genuine No. 2. Measured before deciding: 3S/4D at State runs
+  60-63% one-point in even duals against 1S/4D's 68-70% — the seven-court band —
+  which the owner accepted for the continuity test. Pinned by
+  `test_6a_keeps_its_league_format_through_the_postseason_but_not_the_toc`.
 - **‼️ 1A'S ROAD TO STATE PLAYS 2S/3D — a PILOT, scoped three ways (owner rule
   2026-08, `docs/AAR-jhsaa-1a-2s3d-postseason-pilot.md`).** `dual_format(phase,
   group)` / `lineup_need(phase, group)` / `_arrange_1a_postseason`. 1A alone, its
@@ -1329,10 +1353,15 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   `FORMATS['regular']`/`['early']` were swapped so the whole league year trains
   the postseason's doubles-forward shape, not just the early non-district
   window (which now plays the OLD 5S/2D card instead). The 3S/4D lineup
-  ALLOCATION is fixed, never searched: S1 = top seed, doubles pool = exactly
-  #2-#9, S2/S3 = exactly #10-#11 — a coach's `maximize`/`balanced`/`traditional`
-  strategy only decides how the fixed 8-player pool pairs into D1-D4, never who
-  plays singles vs. doubles. `doubles_rating` needed a real pair-synergy term
+  ALLOCATION is fixed, never searched, **and it is the ladder (owner rule 2026-09):
+  S1-S3 = exactly #1-#3, doubles pool = exactly #4-#11** — a coach's
+  `maximize`/`balanced`/`traditional` strategy only decides how the fixed 8-player
+  pool pairs into D1-D4, never who plays singles vs. doubles. ‼️ This REVERSED the
+  2027-08 doubles-forward seating (S2/S3 = #10-#11, pool #2-#9), which made a league
+  No. 2 singles the tenth-best player and forced an awards-only deflation
+  (`jhsaa_awards.FLIGHT_S2S3_REGULAR`, now an EMPTY dict kept for its history) to
+  stop All-State overrating the two weakest starters. Do not put #10-#11 back at
+  S2/S3 without putting that deflation back with it. `doubles_rating` needed a real pair-synergy term
   (`engine.doubles._pair_synergy`) for the pairing choice to mean anything — the
   bare `(idx(a)+idx(b))/2` base is invariant across every partition of a fixed
   pool, so "best pairing" was previously undefined. ‼️ A COMPLEMENTARITY TERM
