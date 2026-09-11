@@ -923,8 +923,11 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   back on `/jhsaa/committee` beside record/TOSS. `select()` never reads it; the flag
   (`ROE_FLAG` 0.10) is descriptive. The exponent was fitted once on 2079 (boys 1.815,
   girls 1.850, r≈.95) — `fit_xw_exponent` is a calibration tool, recalibrate after
-  several seasons or a format change, never yearly. A season archived before the key
-  shows no columns.
+  several seasons or a format change, never yearly. ‼️ A season archived before the
+  key is FOLDED ON READ from its duals (`world.jhsaa_record_context`, memoised per
+  season, cleared by `reset()`) so the board shows the panel for every season — the
+  `jhsaa_group_ranking` win%-fallback idiom: a deterministic fold over an immutable
+  archive, never a re-deliberation.
   **‼️ GROUP 3 IS THE ONE FOUR-BID CLASS (owner decision 2026-09), deliberately
   NOT 1A's eight though the two classes look alike.** MEASURED on the 2071-2075
   exports, both genders: its road left the class's best omission at rank

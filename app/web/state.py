@@ -7172,9 +7172,10 @@ def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
                  for m in MEMBERS}
     seed_borda = sel.get("seed_borda") or {}
     # Record Over Expected (owner rule 2026-09) — read off the archived
-    # selection (`context`, written beside it), never recomputed; a season
-    # archived before it carries no panel and the columns stay blank.
-    context = sel.get("context") or {}
+    # selection (`context`, written beside it from 2080 on); a season archived
+    # before that is folded on read from its duals (`world.jhsaa_record_context`,
+    # deterministic, memoised) so the board shows it for every season.
+    context = sel.get("context") or world.jhsaa_record_context(w["id"], yr, g)
     rows = []
     for name, t in ratings["teams"].items():
         borda = seed_borda.get(name, sel["borda"].get(name))
