@@ -50,3 +50,29 @@ def test_college_doubles_defaults_are_unchanged():
     assert sig.parameters["singles_fmt"].default is None
     assert sig.parameters["doubles_fmt"].default is None
     assert PRESETS["pro_set_8"].pro_set and PRESETS["pro_set_8"].pro_set_games == 8
+
+
+def test_6a_keeps_its_league_format_through_the_postseason_but_not_the_toc():
+    """6A's format-continuity pilot (owner rule 2026-09): the road, State and a
+    6A-hosted showcase play the league's 3S/4D; the TOC stays 1S/4D; the league
+    season and early window are untouched; no other class moved."""
+    f = jhsaa.dual_format
+    for phase in ("sectional", "zonal", "semi_state", "state_special", "state"):
+        assert (f(phase, "6A").n_singles, f(phase, "6A").n_doubles) == (3, 4), phase
+        assert jhsaa.lineup_need(phase, "6A") == 11
+    assert (f("toc", "6A").n_singles, f("toc", "6A").n_doubles) == (1, 4)
+    assert (f("showcase_pod", "6A").n_singles, f("showcase_pod", "6A").n_doubles) == (3, 4)
+    assert (f("regular", "6A").n_singles, f("regular", "6A").n_doubles) == (3, 4)
+    assert (f("early", "6A").n_singles, f("early", "6A").n_doubles) == (5, 2)
+    for other in ("5A", "7A", "4A"):
+        assert f("state", other).n_singles != 3 or f("state", other).n_doubles != 4
+    # the postseason arrangement is the anti-stacking wide arranger, not the
+    # league's doubles-forward allocation: the three singles seats come from the
+    # top five of the frozen order
+    from app import jhsaa as jh
+    sc = next(s for s in jh.load_schools("boys") if s.group == "6A")
+    ts = jh.TeamSeason(school=sc, roster=jh.build_roster(sc, 2029))
+    lineup = jh._lineup(ts, "state", __import__("random").Random(1))
+    assert len(lineup) == 11
+    order = [p.pid for p in jh._order(ts)]
+    assert all(order.index(p.pid) < 5 for p in lineup[:3])

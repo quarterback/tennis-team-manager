@@ -7171,11 +7171,22 @@ def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
     positions = {m: {n: i + 1 for i, n in enumerate(sel["ballots"].get(m) or ())}
                  for m in MEMBERS}
     seed_borda = sel.get("seed_borda") or {}
+    # Record Over Expected (owner rule 2026-09) — read off the archived
+    # selection (`context`, written beside it), never recomputed; a season
+    # archived before it carries no panel and the columns stay blank.
+    context = sel.get("context") or {}
     rows = []
     for name, t in ratings["teams"].items():
         borda = seed_borda.get(name, sel["borda"].get(name))
+        cx = context.get(name) or {}
         rows.append({**_jh_deco(schools, name, 24), "school": name,
                      "record": t["record"], "mean": t["mean"],
+                     "flight_share": cx.get("flight_share"),
+                     "xwin_pct": cx.get("xwin_pct"),
+                     "roe": cx.get("record_over_expected"),
+                     "close": (f"{cx['close_wins']}-{cx['close_losses']}"
+                               if "close_wins" in cx else None),
+                     "flag": cx.get("flag") or "",
                      "median": t["median"], "sigma": t["sigma"],
                      "ranks": t["ranks"],
                      "borda": borda,
@@ -7198,5 +7209,6 @@ def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
                                  "status": sel["status"].get(n, "Out")}
                                 for n in top]})
     return {**base, "ready": True, "rows": rows, "ballots": ballots,
+            "has_context": bool(context),
             "selected": sel.get("selected") or [],
             "auto": sel.get("auto") or [], "locks": sel.get("locks") or []}

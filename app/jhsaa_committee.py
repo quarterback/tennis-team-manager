@@ -197,3 +197,99 @@ def select(ratings: dict, road: set[str], district_champions: list[str],
             "ballots": cand_ballots, "ranges": ranges, "status": status,
             "seats": seats,
             "weights": {m: dict(w) for m, w in MEMBERS.items()}}
+
+
+# --- RECORD OVER EXPECTED (owner rule 2026-09) ---------------------------------
+#
+# Context beside the record and TOSS, never a ballot. "Show the committee when a
+# team's record and its underlying flight performance tell different stories"
+# (docs/reports/REPORT-jhsaa-2079-format-selection-companion.md §6). Counted in
+# FLIGHTS — never sets, games or appearances — over the pre-State varsity duals.
+#
+# ‼️ THE EXPONENT IS A NAMED CONSTANT, CALIBRATED ONCE. Fitted on the 2079
+# pre-State duals: boys 1.815, girls 1.850, correlation with actual W% .95 in
+# both. 1.83 association-wide; recalibrate after several seasons or a material
+# format change (`fit_xw_exponent`), never every year.
+XW_EXPONENT = 1.83
+#: |ROE| at which the page shows a flag. Descriptive only — no committee points.
+ROE_FLAG = 0.10
+#: Phases NOT yet played when the committee sits.
+_STATE_PHASES = ("state", "toc")
+
+
+def flight_record(schedule: list) -> dict:
+    """Flights won/lost, duals won/lost and one-flight-margin duals won/lost from
+    a program's pre-State VARSITY schedule (`TeamSeason.schedule` rows — JV rows
+    carry `level='jv'` and are skipped; a tie counts as neither a win nor a loss
+    but its flights count)."""
+    fw = fl = w = l = cw = cl = 0
+    for d in schedule:
+        if d.get("level") == "jv" or d.get("phase") in _STATE_PHASES:
+            continue
+        home = bool(d.get("home"))
+        for ln in d.get("lines") or ():
+            if bool(ln.get("home_won")) == home:
+                fw += 1
+            else:
+                fl += 1
+        if d.get("tied"):
+            continue
+        won = d.get("won") if "won" in d else (d.get("pf", 0) > d.get("pa", 0))
+        w += won; l += not won
+        if abs(d.get("pf", 0) - d.get("pa", 0)) <= 1:
+            cw += won; cl += not won
+    return {"flights_won": fw, "flights_lost": fl, "wins": w, "losses": l,
+            "close_wins": cw, "close_losses": cl}
+
+
+def expected_win_pct(flights_won: int, flights_lost: int,
+                     k: float = XW_EXPONENT) -> float | None:
+    """Pythagorean expectation over flights. None with nothing played."""
+    if flights_won + flights_lost == 0:
+        return None
+    a, b = flights_won ** k, flights_lost ** k
+    return a / (a + b) if a + b else None
+
+
+def record_context(teams) -> dict:
+    """`{school: {...}}` for every TeamSeason passed — the archived context panel.
+
+    `flag` is "underrated" when the record trails the flights by `ROE_FLAG` or
+    more, "overstated" when it leads by as much, else "". Nothing here selects."""
+    out = {}
+    for t in teams:
+        fr = flight_record(t.schedule)
+        played = fr["wins"] + fr["losses"]
+        pct = fr["wins"] / played if played else None
+        xw = expected_win_pct(fr["flights_won"], fr["flights_lost"])
+        share = (fr["flights_won"] / (fr["flights_won"] + fr["flights_lost"])
+                 if fr["flights_won"] + fr["flights_lost"] else None)
+        roe = (pct - xw) if pct is not None and xw is not None else None
+        flag = ""
+        if roe is not None and roe <= -ROE_FLAG:
+            flag = "underrated"
+        elif roe is not None and roe >= ROE_FLAG:
+            flag = "overstated"
+        out[t.school.name] = {**fr, "win_pct": pct, "flight_share": share,
+                              "xwin_pct": xw, "record_over_expected": roe,
+                              "flag": flag}
+    return out
+
+
+def fit_xw_exponent(rows, lo: float = 0.5, hi: float = 4.0) -> float:
+    """The Pythagorean exponent that best fits `rows` of (flights_won,
+    flights_lost, wins, losses) — least squares on W%, golden-section over
+    [lo, hi]. A CALIBRATION tool (scripts), never called per season."""
+    rows = [r for r in rows if r[0] + r[1] and r[2] + r[3]]
+    def sse(k):
+        return sum((expected_win_pct(fw, fl, k) - w / (w + l)) ** 2
+                   for fw, fl, w, l in rows)
+    g = (5 ** 0.5 - 1) / 2
+    a, b = lo, hi
+    c, d = b - g * (b - a), a + g * (b - a)
+    while b - a > 1e-4:
+        if sse(c) < sse(d):
+            b, d = d, c; c = b - g * (b - a)
+        else:
+            a, c = c, d; d = a + g * (b - a)
+    return round((a + b) / 2, 3)

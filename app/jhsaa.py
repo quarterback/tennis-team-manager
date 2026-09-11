@@ -134,6 +134,17 @@ FORMATS = {
     "state_3s3d": DualFormat(n_singles=3, n_doubles=3, doubles_team_point=False),
 }
 PILOT_GROUPS = ("1A",)          # groups whose road-to-State plays `state_1a`
+#: ‼️ 6A KEEPS ITS LEAGUE FORMAT THROUGH THE POSTSEASON (owner rule 2026-09, the
+#: format-continuity pilot — docs/reports/REPORT-jhsaa-6a-state-format-study-2079.md
+#: and the 2079 companion report). The road to State, the State draw and a 6A-hosted
+#: showcase all play the regular season's 3S/4D; the TOC stays 1S/4D like every other
+#: pilot's entrant (`dual_format`'s `road` excludes it). Eleven on court all year, no
+#: 3S/4D -> 1S/4D compression. The postseason ARRANGEMENT is the anti-stacking
+#: `_arrange_wide` (top five pooled for three singles seats + D1), NOT the league's
+#: doubles-forward fixed allocation: the Order of Ability binds in the postseason and
+#: the awards deflate S2/S3 only under `phase == "regular"`, so a #10 at postseason
+#: S2 would be credited as a genuine No. 2. Membership is the whole change.
+LEAGUE_SHAPE_GROUPS = ("6A",)
 #: Groups whose road-to-State plays `state_3s3d` (JHSAA rule 2026-09). Scoped like
 #: the 1A pilot: the road only (never the TOC, which fields every champion at one
 #: shape), never the league season, the early window or the showcases.
@@ -377,6 +388,10 @@ def dual_format(phase: str, group: str | None = None) -> DualFormat:
     # excepted. The one EVEN shape; `play_dual` settles a postseason 3-3.
     if group in THREE_THREE_GROUPS and rehearsal:
         return FORMATS["state_3s3d"]
+    # 6A's format-continuity pilot (owner rule 2026-09): the league's 3S/4D carried
+    # through the road, State and a 6A-hosted showcase; the TOC excepted.
+    if group in LEAGUE_SHAPE_GROUPS and rehearsal:
+        return FORMATS["regular"]
     if phase in POSTSEASON or phase in SHOWCASE:
         return FORMATS["state"]
     if phase == EARLY_FORMAT_PHASE:
@@ -10145,6 +10160,12 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
             atr_map = {t.school.name: atr(t, final_power) for t in g_teams}
             sel = _jc.select(ratings_by_group[group], road_names,
                              district_champs[group], atr=atr_map, seats=bids)
+            # RECORD OVER EXPECTED (owner rule 2026-09, the 2079 companion
+            # report): flight share, Pythagorean expected W% and the gap to the
+            # actual record, for EVERY team, computed from the pre-State duals and
+            # ARCHIVED beside the selection so the page reads what the committee
+            # saw. Context only — `select` never reads it.
+            sel["context"] = _jc.record_context(g_teams)
             committee_by_group[group] = sel
             by_name_g = {t.school.name: t
                          for ts in by_group[group].values() for t in ts}
