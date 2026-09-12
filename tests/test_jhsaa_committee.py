@@ -241,10 +241,10 @@ def test_the_committee_blurb_is_derived_from_the_tables():
     by_class = {g: (r, b) for _l, gs, r, b in shapes for g in gs}
     assert by_class["1A"] == (24, 8) and by_class["7A"] == (32, 8)
     assert by_class["9A"] == (32, 16)
+    assert by_class["Group 2"] == (32, 8) and by_class["Group 3"] == (24, 8)
     blurb = jh.parastate_blurb()
     for g in jh.ATLARGE_GROUPS:
         assert g in blurb, g
-    assert "Group 2" not in blurb
 
 
 def test_the_bid_table_and_the_committee_seat_count_agree():
@@ -256,33 +256,35 @@ def test_the_bid_table_and_the_committee_seat_count_agree():
     CONSUMES one of them."""
     assert jh.AT_LARGE_BIDS == {"9A": 16, "8A": 16, "7A": 8, "6A": 8, "5A": 8,
                                 "4A": 8, "3A": 8, "2A": 8, "1A": 8,
-                                "Group 1": 16, "Group 3": 4}
+                                "Group 1": 16, "Group 2": 8, "Group 3": 8}
     for g in jh.ATLARGE_GROUPS:
         road = jh.state_field_size(g)
         bids = jh.at_large_bids(g)
         # Every at-large plays a ROAD qualifier for its seat — the Parastate is
         # the `2 × bids` lowest seeds, so the bids can never outnumber the road.
         assert bids <= road, g
-        assert bids in (4, 8, 16), g
+        assert bids in (8, 16), g
     # The consequence, spelled out so a "tidy 1A onto a 40" edit fails here:
     # eight bids is a 40 off a 32 road and a 32 off 1A's 24.
     assert jh.state_field_size("1A") + jh.at_large_bids("1A") == 32
     assert jh.state_field_size("7A") + jh.at_large_bids("7A") == 40
     assert jh.state_field_size("9A") + jh.at_large_bids("9A") == 48
-    # ‼️ Group 3 is the ONE four-bid class and is deliberately not 1A's eight
-    # though the classes look alike — measured, four bids clear 97% of its
-    # omissions and eight would reach to #32 of ~68. Group 2 alone has no
-    # committee at all.
-    assert jh.state_field_size("Group 3") + jh.at_large_bids("Group 3") == 28
-    assert jh.at_large_bids("Group 2") == 0
+    # ‼️ THE 2080 EXPANSION (owner rule 2026-09): Group 3 joins 1A on the
+    # 24-road/8-bid 32 (its four-bid comparison run of 2076-2079 is closed) and
+    # Group 2 — the last class with no committee — joins 7A-2A on the
+    # 32-road/8-bid 40. Every class is a Parastate class now, and 8A/9A/Group 1
+    # are the only ones at sixteen.
+    assert jh.state_field_size("Group 3") + jh.at_large_bids("Group 3") == 32
+    assert jh.state_field_size("Group 2") + jh.at_large_bids("Group 2") == 40
+    assert set(jh.ATLARGE_GROUPS) == set(jh.GROUPS)
+    # Group 2's Parastate plays the class's own 3S/3D road shape — the field
+    # axis moved, the format axis did not.
+    assert jh.dual_format("state", "Group 2") == jh.FORMATS["state_3s3d"]
     # ‼️ THE EXPANSION IS PLAYOFF SIZE ONLY: the dual format is a SEPARATE axis
     # (`WIDE_GROUPS`) and did not move with it. Every class added in 2026-09
     # plays the Parastate at whatever shape its road already played.
     assert not (set(jh.ATLARGE_GROUPS) & set(jh.WIDE_GROUPS)) - {
         "7A", "8A", "9A", "Group 1"}
-    # Group 2 is the one class with no committee at all (its road already
-    # qualifies 32 of ~65 programs).
-    assert jh.at_large_bids("Group 2") == 0
     sel = jc.select(_ratings(), ROAD, [], seats=8)
     assert len(sel["selected"]) == 8 == sel["seats"]
     assert set(sel["selected"]) == {f"T{i:02d}" for i in range(33, 41)}

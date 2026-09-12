@@ -7127,8 +7127,8 @@ def jhsaa_computer_ratings_view(seed: int, gender: str, group: str | None = None
 def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
                          year: int | None = None) -> dict:
     """The at-large tracking page for the Parastate groups (`ATLARGE_GROUPS` —
-    every class but Group 2/Group 3, at whatever field its road plus its bids
-    comes to): the composite table
+    every class since the 2080 expansion, at whatever field its road plus its
+    bids comes to): the composite table
     with Borda and Status, plus the five members' ballots side by side — the
     feature that makes the committee legible rather than a black box. Archived
     with the season (`committee` key), read back, never re-deliberated."""
