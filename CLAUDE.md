@@ -896,12 +896,16 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   `docs/AAR-jhsaa-computer-ratings-and-at-large-committee.md`).** Nine
   independent systems + composite per (group, gender), archived on the season
   (`ratings` key, the `pi` rule — never refit on read), PARALLEL to TOSS/ATR
-  and feeding neither. **THE PARASTATE CLASSES — every class but Group 2 and
-  Group 3 (JHSAA rule 2026-09, EXPANDED 2026-09,
-  `docs/AAR-jhsaa-playoff-expansion-parastate.md`): 8A, 9A and Group 1 play 48 = 32 road
-  + 16 at-large; 7A, 6A, 5A, 4A, 3A and 2A play 40 = 32 road + 8; 1A plays
-  32 = 24 road + 8; Group 3 plays 28 = 24 road + 4** (Group 2 alone has no
-  committee) (`AT_LARGE_BIDS`, `ATLARGE_GROUPS` derived from it,
+  and feeding neither. **THE PARASTATE CLASSES — EVERY class since the 2080
+  expansion (JHSAA rule 2026-09, EXPANDED 2026-09, EXPANDED AGAIN for 2080,
+  `docs/AAR-jhsaa-playoff-expansion-parastate.md` +
+  `docs/AAR-jhsaa-2080-group2-group3-playoff-expansion.md`): 8A, 9A and Group 1
+  play 48 = 32 road + 16 at-large; 7A, 6A, 5A, 4A, 3A, 2A and **Group 2** play
+  40 = 32 road + 8; 1A and **Group 3** play 32 = 24 road + 8** (Group 2 was the
+  last class with no committee and Group 3 ran FOUR bids for 2076-2079 as a live
+  comparison against 1A — both closed by the owner heading into 2080; Group 2's
+  Parastate plays its own 3S/3D and a level dual is settled by the deciders like
+  any other Group 2 postseason dual) (`AT_LARGE_BIDS`, `ATLARGE_GROUPS` derived from it,
   `run_state_parastate(byes= road − bids)`): the road qualifies its own
   `state_field_size` untouched — the TABLE never says 48/40 — and a five-member
   deterministic committee (`select(seats=)`) picks the bids from EVERY non-road
@@ -928,19 +932,24 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   season, cleared by `reset()`) so the board shows the panel for every season — the
   `jhsaa_group_ranking` win%-fallback idiom: a deterministic fold over an immutable
   archive, never a re-deliberation.
-  **‼️ GROUP 3 IS THE ONE FOUR-BID CLASS (owner decision 2026-09), deliberately
-  NOT 1A's eight though the two classes look alike.** MEASURED on the 2071-2075
-  exports, both genders: its road left the class's best omission at rank
-  **#14.3**, the worst in the association (an 8th-ranked 16-12 team home), and
-  FOUR bids clears 97% of that (3.00 top-24 omissions a class-season → 0.10)
-  where eight would reach #32 of ~68 — the back-half filling the association
-  rejected when it cut 7A to 8. The owner wants 4 and 8 running side by side in
-  two comparable classes. ‼️ TWO JUSTIFICATIONS WERE TESTED AND FAILED — never
-  restore either: "a shallow class's middle wins as often as its top" (FALSE —
-  the better-ranked team wins 73.9% in Group 3 against a 73.9-77.9% band across
-  every class, over ~85k duals) and "Group 3 travels furthest" (FALSE — 47/43 mi
+  **‼️ GROUP 3'S FOUR-BID RUN IS CLOSED (owner decision 2026-09, for the 2080
+  season) — it takes 1A's eight now.** For 2076-2079 it was deliberately the ONE
+  four-bid class: MEASURED on the 2071-2075 exports, its road left the class's
+  best omission at rank **#14.3**, the worst in the association, and FOUR bids
+  cleared 97% of that where eight would reach #32 of ~68 — the owner ran 4 and 8
+  side by side in two comparable classes to see which reached too deep, and then
+  put Group 3 on the 24-road/8-bid 32 that 1A plays, in the same decision that
+  gave Group 2 its first committee (32 road + 8 = 40, the 7A-2A shape). It is a
+  TABLE change and nothing else (`AT_LARGE_BIDS`), the same way every earlier
+  expansion was; seasons archived at 28 keep rendering because every bracket
+  surface reads bye/seat counts OFF THE ARCHIVE. ‼️ TWO JUSTIFICATIONS WERE
+  TESTED AND FAILED under the four-bid study and are STILL FALSE — never cite
+  either as the reason it moved: "a shallow class's middle wins as often as its
+  top" (the better-ranked team wins 73.9% in Group 3 against a 73.9-77.9% band
+  across every class, over ~85k duals) and "Group 3 travels furthest" (47/43 mi
   mean league spread, mid-pack; Group 2 is worst at 65/64). See
-  `docs/AAR-jhsaa-playoff-expansion-parastate.md`.
+  `docs/AAR-jhsaa-playoff-expansion-parastate.md` and
+  `docs/AAR-jhsaa-2080-group2-group3-playoff-expansion.md`.
   **‼️ THE BID COUNT IS THE DECISION; THE FIELD SIZE IS THE CONSEQUENCE.** Eight
   bids is a 40 off a 32 road and a **32 off 1A's 24** — so "every class crowns
   from 40" is NOT the rule and 1A must not be "tidied" onto one. **1A IS NOT ON A

@@ -390,7 +390,8 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
         # full archived selection per Parastate group — ballots, ranges, Borda
         # (bubble and seeding), locks, automatic bids, statuses and the
         # published member weights. Absent for the groups without a committee
-        # (Group 2 and Group 3) and for seasons archived before it existed.
+        # (none since the 2080 expansion put Group 2 and Group 3 on a committee
+        # too) and for seasons archived before it existed.
         "jhsaa_committee.json": {
             g: sel for g, sel in (season.get("committee") or {}).items()
             if sel and (classification == "all" or g == classification)

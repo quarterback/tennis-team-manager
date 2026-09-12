@@ -29,6 +29,11 @@ ARCHIVE. So six new entries is the feature:
 | **Group 3** | **24** | **4** | **28** |
 | Group 2 | 32 | 0 | road only |
 
+> **Superseded for 2080** (owner rule 2026-09): Group 2 joined the 32-road/8-bid
+> 40 and Group 3 moved from 4 bids to 1A's 8 (24 road + 8 = 32). The table above
+> is the 2076-2079 shape; see
+> `docs/AAR-jhsaa-2080-group2-group3-playoff-expansion.md`.
+
 ‼️ **THE BID COUNT IS THE DECISION; THE FIELD SIZE IS THE CONSEQUENCE.** Eight
 bids is a 40 off a 32 road and a 32 off 1A's 24. Read the table that way round —
 "every class crowns from 40" is not the rule and never was.

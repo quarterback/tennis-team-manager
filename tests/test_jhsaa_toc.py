@@ -692,25 +692,24 @@ def test_an_expanded_bracket_page_renders_two_draws(archived):
     tree would draw links that do not exist (`_bracket_canvas` halves 2k/2k+1).
     Rendered, not just viewed: a template resolves a wrong shape to an empty box
     with no error anywhere, which is how the TOC page shipped as a toolbar over
-    nothing. The fixture's smaller classes scale the 40-field down
-    so any group whose archived bracket carries `round_names`
-    exercises the split; a 24-shape group keeps the single tree and no tab."""
+    nothing. Since the 2080 expansion EVERY class is a Parastate class, so every
+    archived bracket carries `round_names` and exercises the split; the
+    single-tree shape (a road-only field, or a season archived before its class
+    had a committee) is pinned by `tests/test_jhsaa_state_draw_shapes.py`
+    through the same pipeline."""
     arc = archived["arc"]
     expanded = [g for g in jh.GROUPS
                 if (arc["brackets"][g] or {}).get("round_names")]
-    plain = [g for g in jh.GROUPS
-             if not (arc["brackets"][g] or {}).get("round_names")]
-    assert expanded, "no expanded bracket in the fixture — the split is untested"
-    assert plain, "no 24-shape bracket in the fixture — the old shape is untested"
-    html = archived["client"].get(
-        f"/jhsaa/bracket?g=girls&group={expanded[0]}").get_data(as_text=True)
-    assert 'data-view="qual"' in html and ">Qualifying<" in html
-    # both sections carry real cards: the champion is in the main tree, and the
-    # Qualifiers Round chip names the qualifying one
-    assert arc["brackets"][expanded[0]]["champion"] in html
-    html24 = archived["client"].get(
-        f"/jhsaa/bracket?g=girls&group={plain[0]}").get_data(as_text=True)
-    assert 'data-view="qual"' not in html24
+    assert set(expanded) == set(jh.GROUPS), \
+        "a class archived without its Parastate: %r" % (
+            sorted(set(jh.GROUPS) - set(expanded)),)
+    for grp in expanded:
+        html = archived["client"].get(
+            f"/jhsaa/bracket?g=girls&group={grp}").get_data(as_text=True)
+        assert 'data-view="qual"' in html and ">Qualifying<" in html, grp
+        # both sections carry real cards: the champion is in the main tree, and
+        # the prelim chip names the qualifying one
+        assert arc["brackets"][grp]["champion"] in html, grp
 
 
 # --- the title board -----------------------------------------------------------
