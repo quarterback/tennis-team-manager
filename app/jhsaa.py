@@ -1594,6 +1594,592 @@ def _arch_map(version: str) -> dict:
     return out
 
 
+# --- PROGRAM TALENT TIERS (owner rule 2026-09) --------------------------------
+#
+# "There should be genuinely abysmal teams, on a gradient." The association used
+# to draw every program's players from ONE distribution per classification, so a
+# bad school and a good school in the same class were the same 35-point ladder
+# shifted a few points: the weakest boys program in the whole state averaged 33,
+# 71% of programs sat between 40 and 60, and the median team gap in a dual was 4
+# points. Real high-school tennis is mostly blowouts; that association could not
+# produce them, because nobody was ever bad enough.
+#
+# THE THREE LAYERS (owner spec, 2026-09):
+#
+#   classification   the STRUCTURAL environment — roster SIZE and depth
+#                    (`roster_size`), and nothing about ability. A 9A program can
+#                    be terrible and a 1A can be elite; schools move up and down
+#                    the classes all the time, so talent cannot key on the class.
+#   program tier     where THIS school tends to sit, on ONE scale shared by every
+#                    program in the association. Durable: it is a property of the
+#                    school, editable on `/jhsaa/programs`, and it persists across
+#                    seasons — a tier that re-rolled annually would make a
+#                    school's identity flip year to year and destroy the thing it
+#                    is for.
+#   cohort roll      year-to-year variation AROUND that identity. Every freshman
+#                    class jitters a few points around the program's stable
+#                    centre (`BAND_COHORT_JITTER`); a WIDE ("volatile") tier
+#                    instead re-rolls its centre across the whole range per
+#                    cohort, so a 24-50 school swings between bad years and
+#                    decent ones as classes cycle through.
+#
+# ‼️ TIER RANGES ARE IN TEAM TERMS — the mean current OVR of the top eleven, the
+# number the owner reads off a program page — NOT the ceiling a player is drawn
+# at. The two are far apart (the career model shows a fraction of the ceiling,
+# order statistics lift the best of twelve draws, `GRADE_FLOOR` and the attribute
+# floor of 20 bind at the bottom), and they were calibrated empirically:
+# a ceiling centre of 20 produces a 29.5 team, 40 → 43.4, 60 → 58.8, 80 → 73.3, near
+# enough linear. `_band_ceiling_centre` inverts that line so a "20-31" tier
+# actually produces 20-31 teams (down to the ~23 the attribute floor allows),
+# rather than the owner having to think in a unit nothing on screen shows.
+#
+# ‼️ THE TIER TABLE IS DATA, NOT CODE. `data/jhsaa/talent_bands.json` holds the
+# tiers (key, label, lo, hi, wide, weight) AND the per-program assignment, and both
+# are edited from `/jhsaa/programs` — retuning a range, adding a tier or moving a
+# school never needs a code change. `DEFAULT_TIERS` is only the fallback for a
+# missing file. The per-save override table (`overrides.set_jhsaa_band`) layers on
+# top exactly as archetypes do: an override wins, "none" reverts a seeded program to
+# its ROLLED default, and clearing the override reverts to the seed file.
+#
+# ‼️ ERA-GATED like every other draw change (`band_era`): cohorts entering before
+# the era keep the classification draw byte for byte, so an existing save's
+# archived rosters, awards and ladders do not rewrite; a fresh save is all new.
+# The association converges over one four-year graduating cycle.
+#
+# A tier is a DIFFERENT lever from an archetype and stacks with them: `blue_blood`
+# still shifts and clusters the draw, `coaching`/`neglect` still govern the rate,
+# `turnout` the count. The tier is the distribution those modifiers act on.
+_BAND_SEED_PATH = os.path.join(os.path.dirname(_DATA), "talent_bands.json")
+_band_doc_cache: dict = {}
+_band_cache: dict = {}
+_band_era_cache: dict = {}
+
+#: Per-player spread around the cohort's ceiling centre. One number for everybody:
+#: the classification no longer widens or narrows the draw, and the calibration
+#: line above was measured at this spread.
+BAND_PLAYER_SPREAD = 10.0
+#: A narrow tier's per-cohort jitter, in team points, uniform either side of the
+#: program's stable centre. Small on purpose — a program stays recognisable, no
+#: two years are copies.
+BAND_COHORT_JITTER = 3.0
+#: team_top11 ≈ intercept + slope * ceiling_centre (measured, see above).
+_BAND_TEAM_SLOPE = 0.722
+_BAND_TEAM_INTERCEPT = 14.85
+
+#: Fallback tier table when `data/jhsaa/talent_bands.json` is missing — the
+#: owner's own ladder (2026-09). `weight` is the share of the INITIAL roll
+#: (`rolled_band`), not a cap: the editor can put as many programs in a tier as it
+#: likes. Wide tiers are the volatile ones.
+DEFAULT_TIERS = [
+    {"key": "abysmal",     "label": "Abysmal",            "lo": 20, "hi": 31, "wide": False, "weight": 4},
+    {"key": "poor",        "label": "Poor",               "lo": 24, "hi": 33, "wide": False, "weight": 5},
+    {"key": "weak",        "label": "Weak",               "lo": 29, "hi": 41, "wide": False, "weight": 7},
+    {"key": "developing",  "label": "Developing",         "lo": 33, "hi": 48, "wide": False, "weight": 9},
+    {"key": "below_avg",   "label": "Below average",      "lo": 37, "hi": 51, "wide": False, "weight": 10},
+    {"key": "average",     "label": "Average",            "lo": 42, "hi": 55, "wide": False, "weight": 13},
+    {"key": "solid",       "label": "Solid",              "lo": 46, "hi": 59, "wide": False, "weight": 12},
+    {"key": "good",        "label": "Good",               "lo": 50, "hi": 63, "wide": False, "weight": 10},
+    {"key": "strong",      "label": "Strong",             "lo": 54, "hi": 68, "wide": False, "weight": 7},
+    {"key": "very_strong", "label": "Very strong",        "lo": 58, "hi": 71, "wide": False, "weight": 5},
+    {"key": "power",       "label": "Power",              "lo": 59, "hi": 73, "wide": False, "weight": 4},
+    {"key": "elite",       "label": "Elite",              "lo": 60, "hi": 76, "wide": False, "weight": 3},
+    {"key": "dynasty",     "label": "Dynasty",            "lo": 62, "hi": 79, "wide": False, "weight": 2},
+    {"key": "volatile_low",  "label": "Volatile · low",   "lo": 24, "hi": 50, "wide": True,  "weight": 3},
+    {"key": "volatile_mid",  "label": "Volatile · mid",   "lo": 39, "hi": 60, "wide": True,  "weight": 3},
+    {"key": "volatile_wide", "label": "Volatile · wide",  "lo": 30, "hi": 66, "wide": True,  "weight": 3},
+]
+#: Where a `blue_blood` lands on the INITIAL roll (owner: blue bloods forced to a
+#: top tier). Editable afterwards like any other program.
+BLUE_BLOOD_ROLL_TIERS = ("elite", "dynasty")
+
+
+def _band_doc() -> dict:
+    """The seed document, memoised until a write clears it."""
+    hit = _band_doc_cache.get("doc")
+    if hit is not None:
+        return hit
+    try:
+        with open(_BAND_SEED_PATH, encoding="utf-8") as fh:
+            doc = json.load(fh)
+    except (FileNotFoundError, ValueError):
+        doc = {}
+    tiers = []
+    for t in doc.get("tiers") or []:
+        try:
+            tiers.append({"key": str(t["key"]), "label": str(t.get("label") or t["key"]),
+                          "lo": float(t["lo"]), "hi": float(t["hi"]),
+                          "wide": bool(t.get("wide", False)),
+                          "weight": max(0.0, float(t.get("weight", 1)))})
+        except (KeyError, TypeError, ValueError):
+            continue
+    if not tiers:
+        tiers = [dict(t) for t in DEFAULT_TIERS]
+    out = {"tiers": tiers,
+           "programs": {k: v for k, v in (doc.get("programs") or {}).items() if v}}
+    _band_doc_cache.clear()
+    _band_doc_cache["doc"] = out
+    return out
+
+
+def band_tiers() -> list[dict]:
+    """The tier table, in file order — bottom to top, then the volatile ones."""
+    return _band_doc()["tiers"]
+
+
+def band_tier(key: str) -> dict | None:
+    for t in band_tiers():
+        if t["key"] == key:
+            return t
+    return None
+
+
+def _band_seed() -> dict:
+    """{ident: tier key} as the seed file has it — keyed on the program's STABLE
+    identity (`School.ident`), never the display name."""
+    return _band_doc()["programs"]
+
+
+_band_ident_cache: dict = {}
+
+
+def _ident_maps() -> tuple[dict, dict]:
+    """(display name -> ident, ident -> display name) over the raw rows, built
+    once. A curated rename moves the display name and stamps `source`, so the
+    ident is the only key that survives one (the `School.source` rule)."""
+    hit = _band_ident_cache.get("maps")
+    if hit is not None:
+        return hit
+    by_name, by_ident = {}, {}
+    for r in _rows():
+        ident = r.get("source") or r["name"]
+        by_name[r["name"]] = ident
+        by_ident[ident] = r["name"]
+    out = (by_name, by_ident)
+    _band_ident_cache.clear()
+    _band_ident_cache["maps"] = out
+    return out
+
+
+def band_ident(school) -> str:
+    """The tier key for a school: its `ident` — accepts a `School`, an ident or a
+    display name. ‼️ A string that is a known IDENT is taken as one first: six
+    display names are also another program's ident (Treasure Valley is Caney's),
+    so a typed DISPLAY name goes through `ident_of_name` instead. An unknown
+    string is taken as an ident so a test's synthetic school still works."""
+    if isinstance(school, School):
+        return school.ident
+    by_name, by_ident = _ident_maps()
+    if school in by_ident:
+        return school
+    return by_name.get(school, school)
+
+
+def ident_of_name(name: str) -> str:
+    """A DISPLAY name (what the owner types) to its ident — display-name priority,
+    the opposite of `band_ident`'s string rule; unknown names pass through."""
+    return _ident_maps()[0].get(name, name)
+
+
+def _display_of(ident: str) -> str:
+    return _ident_maps()[1].get(ident, ident)
+
+
+def _write_band_doc(tiers: list[dict] | None = None,
+                    programs: dict | None = None) -> None:
+    doc = _band_doc()
+    out = {"_note": ("JHSAA program talent tiers — the SEED. `tiers` is the ladder "
+                     "(ranges in TEAM terms: mean current OVR of the top eleven; "
+                     "`wide` tiers re-roll their centre per freshman class; `weight` "
+                     "is the initial-roll share). `programs` is the per-school "
+                     "assignment keyed on the program's stable identity "
+                     "(`School.ident` — `source or name`), so a rename keeps it; a "
+                     "school missing here rolls one deterministically "
+                     "(`jhsaa.rolled_band`). Edited from /jhsaa/programs. The "
+                     "per-save override table layers on top."),
+           "tiers": [{"key": t["key"], "label": t["label"], "lo": t["lo"], "hi": t["hi"],
+                      "wide": t["wide"], "weight": t["weight"]}
+                     for t in (tiers if tiers is not None else doc["tiers"])],
+           "programs": dict(sorted((programs if programs is not None
+                                    else doc["programs"]).items()))}
+    with open(_BAND_SEED_PATH, "w", encoding="utf-8") as fh:
+        json.dump(out, fh, indent=2, ensure_ascii=False)
+        fh.write("\n")
+    _band_doc_cache.clear()
+    _band_cache.clear()
+
+
+# --- edits reach the NEXT cohort, never the building --------------------------------
+# Rosters are regenerated from seed, so a tier edit that simply changed the answer
+# would rewrite every cohort from `band_era()` on — the sophomores through seniors
+# already on the roster and every reconstructed historical roster. So an edit is
+# recorded as HISTORY with a cutover: the per-program assignment is a list of
+# `{"tier", "from"}` rows (in the per-save override table, `overrides.set_jhsaa_band`)
+# and the tier TABLE's ranges are a list of `{"from", "tiers"}` snapshots
+# (`overrides.set_jhsaa_band_tiers_history`); a cohort reads the row/snapshot in
+# force for its entry year. The seed FILE always holds the NEWEST answer (a fresh
+# save reads it for everyone), and a save with nothing archived writes no history
+# at all — there is no building to protect.
+
+def _next_cohort_year() -> int:
+    """The first entry year an edit made now can reach: the season after the
+    newest archived one (the `_resolve_era` arithmetic), or 0 with no archive."""
+    from .dbpath import resolve_db_path
+    import sqlite3
+    try:
+        conn = sqlite3.connect(resolve_db_path())
+        try:
+            r = conn.execute("SELECT MAX(year) FROM world_jhsaa").fetchone()
+        finally:
+            conn.close()
+    except sqlite3.Error:
+        return 0
+    if r and r[0] is not None:
+        from .world import BASE_YEAR
+        return BASE_YEAR + int(r[0]) + 2
+    return 0
+
+
+def _parse_hist(raw) -> list[dict]:
+    """An override value as a history list. A bare string (a tier key or "none")
+    is one row from year 0 — the shape the first release wrote."""
+    if not raw:
+        return []
+    if isinstance(raw, list):
+        hist = raw
+    else:
+        try:
+            hist = json.loads(raw)
+        except (TypeError, ValueError):
+            hist = None
+        if not isinstance(hist, list):
+            return [{"tier": str(raw), "from": 0}]
+    out = []
+    for e in hist:
+        if isinstance(e, dict):
+            try:
+                out.append({"tier": str(e.get("tier", "") or ""),
+                            "from": int(e.get("from", 0) or 0)})
+            except (TypeError, ValueError):
+                continue
+    out.sort(key=lambda e: e["from"])
+    return out
+
+
+def _hist_at(hist: list[dict], entry: int | None) -> str | None:
+    """The value in force for a cohort entering in `entry` (None = the newest);
+    None when the history has nothing that early."""
+    val = None
+    for e in hist:
+        if entry is None or e["from"] <= entry:
+            val = e["tier"]
+    return val
+
+
+def _with_cutover(hist: list[dict], value: str, year: int, current: str) -> list[dict]:
+    """Append `value` from `year`, keeping everything before it. A first edit on a
+    program with no history pins its CURRENT concrete answer at year 0 first, so
+    the cohorts already drawn keep drawing it whatever the seed file says next.
+    Editing again inside the same year replaces that year's row — one decision
+    changed, not two."""
+    if year <= 0:
+        return [{"tier": value, "from": 0}]
+    if not hist:
+        hist = [{"tier": current, "from": 0}]
+    return [e for e in hist if e["from"] < year] + [{"tier": value, "from": year}]
+
+
+def set_program_band(school, value: str) -> None:
+    """The editor's per-program write: `value` is a tier key, "none" (pin the
+    rolled default) or "clear" (follow the seed file). Recorded with a cutover
+    at `_next_cohort_year()` — players already in the building keep their tier."""
+    from app import overrides as ov
+    ident = band_ident(school)
+    kind = archetype(_display_of(ident))
+    bmap = _band_map(ov.jhsaa_band_version())
+    current = _effective_band(ident, bmap, kind)
+    new = "" if value == "clear" else value
+    year = _next_cohort_year()
+    if year <= 0 and new == "":
+        ov.clear_jhsaa_band(ident)
+        return
+    hist = _with_cutover(_parse_hist(ov.get_jhsaa_bands().get(ident)), new, year, current)
+    ov.set_jhsaa_band(ident, json.dumps(hist))
+
+
+def set_band_tiers(tiers: list[dict]) -> list[dict]:
+    """Replace the tier table (the editor's tier form). Each entry needs key, lo, hi;
+    label/wide/weight are optional. Programs assigned to a tier that no longer exists
+    fall back to the roll on read — never an error. On a save with an archive the
+    OLD table is snapshotted first, so cohorts already drawn keep their ranges and
+    the new ones bind from the next season."""
+    clean = []
+    for t in tiers:
+        key = str(t.get("key", "")).strip()
+        if not key:
+            continue
+        lo, hi = float(t["lo"]), float(t["hi"])
+        if hi < lo:
+            lo, hi = hi, lo
+        clean.append({"key": key, "label": str(t.get("label") or key).strip() or key,
+                      "lo": lo, "hi": hi, "wide": bool(t.get("wide", False)),
+                      "weight": max(0.0, float(t.get("weight", 1) or 0))})
+    if not clean:
+        raise ValueError("a tier table needs at least one tier")
+    year = _next_cohort_year()
+    if year > 0:
+        from app import overrides as ov
+        hist = _tiers_hist(ov.get_jhsaa_band_tiers_history())
+        if not hist:
+            hist = [{"from": 0, "tiers": [dict(t) for t in band_tiers()]}]
+        hist = [e for e in hist if e["from"] < year] + [{"from": year, "tiers": clean}]
+        ov.set_jhsaa_band_tiers_history(json.dumps(hist))
+    _write_band_doc(tiers=clean)
+    return band_tiers()
+
+
+def _tiers_hist(raw: str) -> list[dict]:
+    """The tier-table snapshots, oldest first; [] when none were recorded."""
+    if not raw:
+        return []
+    try:
+        hist = json.loads(raw)
+    except (TypeError, ValueError):
+        return []
+    out = []
+    for e in hist if isinstance(hist, list) else []:
+        try:
+            tiers = [{"key": str(t["key"]), "label": str(t.get("label") or t["key"]),
+                      "lo": float(t["lo"]), "hi": float(t["hi"]),
+                      "wide": bool(t.get("wide", False)),
+                      "weight": max(0.0, float(t.get("weight", 1)))}
+                     for t in e.get("tiers") or []]
+            if tiers:
+                out.append({"from": int(e.get("from", 0) or 0), "tiers": tiers})
+        except (KeyError, TypeError, ValueError, AttributeError):
+            continue
+    out.sort(key=lambda e: e["from"])
+    return out
+
+
+def _tiers_for(snapshots: list[dict], entry: int | None) -> list[dict]:
+    """The tier table a cohort entering in `entry` reads: the newest snapshot at
+    or before it, else the seed file's (the newest of all)."""
+    if entry is not None:
+        chosen = None
+        for e in snapshots:
+            if e["from"] <= entry:
+                chosen = e["tiers"]
+        if chosen is not None:
+            return chosen
+    return band_tiers()
+
+
+def bulk_edit_band_seed(tier: str | None, names: list[str], remove: bool = False) -> dict:
+    """Assign MANY schools a tier in one pass, writing the SEED FILE — the
+    `bulk_edit_archetype_seed` idiom, for the same reason (the owner starts fresh
+    databases; a per-save override cannot survive that). Removing a school from the
+    file sends it back to its rolled default. Unknown names are skipped and reported.
+    Names are display names (what the owner types); the file is keyed on ident.
+    In THIS save each changed program also gets a cutover row, so the edit reaches
+    only cohorts entering from the next season."""
+    from app import overrides as ov
+    valid_names = {r["name"] for r in playup_rows()}
+    if not remove and (tier is None or band_tier(tier) is None):
+        return {"applied": [], "unknown": [n.strip() for n in names if n.strip()]}
+    programs = dict(_band_seed())
+    bmap = _band_map(ov.jhsaa_band_version())
+    amap = _arch_map(ov.jhsaa_archetype_version())
+    raw_ov = ov.get_jhsaa_bands()
+    year = _next_cohort_year()
+    applied, unknown = [], []
+    for name in names:
+        name = name.strip()
+        if not name:
+            continue
+        if name not in valid_names:
+            unknown.append(name)
+            continue
+        ident = ident_of_name(name)
+        current = _effective_band(ident, bmap, amap.get(name, ""))
+        if remove:
+            programs.pop(ident, None)
+        else:
+            programs[ident] = tier
+        if year > 0:
+            # "" = follow the seed, which now says what this pass wrote.
+            hist = _with_cutover(_parse_hist(raw_ov.get(ident, raw_ov.get(name))),
+                                 "", year, current)
+            ov.set_jhsaa_band(ident, json.dumps(hist))
+            if name != ident and name in raw_ov:
+                ov.clear_jhsaa_band(name)
+        applied.append(name)
+    _write_band_doc(programs=programs)
+    return {"applied": applied, "unknown": unknown}
+
+
+def rolled_band(school, kind: str | None = None) -> str:
+    """The tier a program gets when nobody has assigned one — rolled ONCE, on the
+    school's stable IDENTITY and nothing else (no salt, no year), so every save
+    agrees on it, a rename does not re-roll it, and the editor can show it as the
+    school's default. Weighted by each tier's `weight`, so the middle is thick and
+    the ends thin; a `blue_blood` rolls from `BLUE_BLOOD_ROLL_TIERS` because a blue
+    blood is by definition not an abysmal program (owner). `kind` is the archetype
+    when the caller already has it (a board resolving 900 schools must not resolve
+    the fingerprint 900 times)."""
+    ident = band_ident(school)
+    tiers = band_tiers()
+    rng = random.Random(f"jhsaa-band-roll|{ident}")
+    if (archetype(_display_of(ident)) if kind is None else kind) == "blue_blood":
+        top = [t for t in tiers if t["key"] in BLUE_BLOOD_ROLL_TIERS] or tiers[-1:]
+        return top[rng.randrange(len(top))]["key"]
+    weights = [t["weight"] for t in tiers]
+    if sum(weights) <= 0:
+        weights = [1.0] * len(tiers)
+    return rng.choices(tiers, weights=weights, k=1)[0]["key"]
+
+
+def _band_map(version: str) -> dict:
+    """{ident: history} for every program with an EXPLICIT assignment — the seed
+    file (one row from year 0) with the override table's histories on top,
+    memoised on the table's fingerprint (the `_arch_map` idiom). Schools absent
+    here roll (`rolled_band`). Override keys written as display names resolve to
+    the ident, so nothing an older row named is lost."""
+    hit = _band_cache.get(version)
+    if hit is not None:
+        return hit
+    from app import overrides as ov
+    out = {ident: [{"tier": key, "from": 0}] for ident, key in _band_seed().items()}
+    for school, raw in ov.get_jhsaa_bands().items():
+        hist = _parse_hist(raw)
+        if hist:
+            out[band_ident(school)] = hist
+    _band_cache.clear()
+    _band_cache[version] = out
+    return out
+
+
+def _band_key_at(ident: str, bmap: dict, entry: int | None) -> str:
+    """The assignment in force for `entry` (None = newest): a tier key, "none"
+    (the roll) or "" (nothing explicit / follow the seed)."""
+    val = _hist_at(bmap.get(ident) or [], entry)
+    if val is None or val == "":
+        return _band_seed().get(ident, "")
+    return val
+
+
+def _effective_band(school, bmap: dict, kind: str | None = None,
+                    entry: int | None = None, tiers: list[dict] | None = None) -> str:
+    """Override/seed assignment if it names a live tier, else the roll."""
+    ident = band_ident(school)
+    key = _band_key_at(ident, bmap, entry)
+    live = {t["key"] for t in (tiers if tiers is not None else band_tiers())}
+    if key and key != "none" and key in live:
+        return key
+    return rolled_band(ident, kind)
+
+
+def program_band(school, entry: int | None = None) -> str:
+    """The tier key this program generates from: override, else seed, else roll —
+    for the cohort entering in `entry`, or the newest answer. An assignment naming
+    a tier that is no longer in the table reads as unassigned.
+
+    ‼️ Resolves the override fingerprint (a SQLite query) — call it once per
+    roster build (`_program_mod`) or per editor card, never per seat."""
+    from app import overrides as ov
+    return _effective_band(school, _band_map(ov.jhsaa_band_version()), entry=entry)
+
+
+def band_is_assigned(school) -> bool:
+    """Whether the newest tier is an explicit assignment (seed or override) rather
+    than the roll — for the editor's "rolled" marker only."""
+    from app import overrides as ov
+    key = _band_key_at(band_ident(school), _band_map(ov.jhsaa_band_version()), None)
+    return bool(key) and key != "none" and band_tier(key) is not None
+
+
+def band_plan(school, kind: str | None = None) -> dict:
+    """Everything `band_centre` needs to place ANY cohort of one program, resolved
+    ONCE (both fingerprints, one SQLite read each) — `_program_mod` stashes it in
+    `mod["band"]` so `_gen_seat` never touches a fingerprint per seat."""
+    from app import overrides as ov
+    ident = band_ident(school)
+    if kind is None:
+        kind = archetype(_display_of(ident))
+    return {"ident": ident, "kind": kind,
+            "bmap": _band_map(ov.jhsaa_band_version()),
+            "snapshots": _tiers_hist(ov.get_jhsaa_band_tiers_history())}
+
+
+def band_tier_for(plan: dict, entry: int) -> dict:
+    """The tier dict the cohort entering in `entry` draws from."""
+    tiers = _tiers_for(plan["snapshots"], entry)
+    key = _effective_band(plan["ident"], plan["bmap"], plan["kind"], entry, tiers)
+    for t in tiers:
+        if t["key"] == key:
+            return t
+    return tiers[0]
+
+
+def band_centre(school: School, entry: int, salt: str = "",
+                tier: dict | None = None) -> float:
+    """The TEAM-scale centre the cohort entering in `entry` is drawn around.
+
+    A narrow tier: the program's stable point in its range (seeded on the school's
+    identity alone, never the year) plus a small per-cohort jitter. A wide tier: a
+    fresh point across the whole range per cohort — the volatility IS the identity.
+    Seeded on `school.ident`, not the display name, so a rename does not move a
+    program's talent (the `School.source` rule).
+
+    `tier` is a `band_plan` (the resolved histories, from `_program_mod`) or a bare
+    tier dict; with neither, the plan is resolved here (editor/test use only)."""
+    if tier is None or "bmap" in tier:
+        t = band_tier_for(tier if tier is not None else band_plan(school), entry)
+    else:
+        t = tier
+    lo, hi = t["lo"], t["hi"]
+    if t["wide"]:
+        return random.Random(f"{salt}|jhsaa-band|{school.ident}|{entry}").uniform(lo, hi)
+    stable = random.Random(f"{salt}|jhsaa-band|{school.ident}").uniform(lo, hi)
+    jit = random.Random(f"{salt}|jhsaa-band|{school.ident}|{entry}").uniform(
+        -BAND_COHORT_JITTER, BAND_COHORT_JITTER)
+    return max(lo, min(hi, stable + jit))
+
+
+def _band_ceiling_centre(team_centre: float) -> float:
+    """Invert the measured team-vs-ceiling line (see the section note)."""
+    return (team_centre - _BAND_TEAM_INTERCEPT) / _BAND_TEAM_SLOPE
+
+
+def band_era() -> int:
+    """The first entry year drawn from the program's TIER rather than its
+    classification (`_ceiling`). The `dev_era()` idiom, for the same reason:
+    players are rebuilt from seed, so an ungated change rewrites every archived
+    roster. Fresh save: 0, everything new."""
+    return _resolve_era("jhsaa_band_era", _band_era_cache)
+
+
+def band_board() -> dict:
+    """The tier EDITOR's view: the tier table with member counts, every program
+    grouped by its effective tier, and which of those are explicit assignments."""
+    from app import overrides as ov
+    amap = _band_map(ov.jhsaa_band_version())
+    arch = _arch_map(ov.jhsaa_archetype_version())
+    seed = _band_seed()
+    rows = _rows()
+    by_key: dict[str, list] = {t["key"]: [] for t in band_tiers()}
+    for r in rows:
+        ident = r.get("source") or r["name"]
+        k = _effective_band(ident, amap, arch.get(r["name"], ""))
+        by_key.setdefault(k, []).append({"name": r["name"], "classification": r["classification"],
+                                         "assigned": ident in amap,
+                                         "seeded": ident in seed})
+    for v in by_key.values():
+        v.sort(key=lambda x: x["name"])
+    return {"tiers": band_tiers(), "by_key": by_key,
+            "counts": {k: len(v) for k, v in by_key.items()},
+            "overridden": sorted(_display_of(band_ident(k)) for k in ov.get_jhsaa_bands())}
+
+
 def upstarts(year: int, salt: str = "") -> dict[str, float]:
     """{school: lift} for the programs currently on an upstart run.
 
@@ -1650,7 +2236,10 @@ def _program_mod(school: School, year: int, salt: str) -> dict:
            "roster": 0, "kind": kind,
            # A LIFT on the career model's starting ability — the one lever a
            # `feeder` program moves. See `feeder_start`.
-           "start": 0.0}
+           "start": 0.0,
+           # The program's TALENT TIER (owner rule 2026-09), resolved ONCE here
+           # — `band_centre` reads it per seat without touching a fingerprint.
+           "band": band_plan(school, kind)}
     if kind == "feeder":
         mod["start"] += feeder_start(school.name, salt)
     elif kind == "neglect":
@@ -2255,6 +2844,10 @@ def reset_schools() -> None:
     _talent_era_cache.clear()
     _career_era_cache.clear()
     _feeder_era_cache.clear()
+    _band_era_cache.clear()
+    _band_cache.clear()
+    _band_doc_cache.clear()
+    _band_ident_cache.clear()
     _exchange_era_cache.clear()
     _intl_era_cache.clear()
     _expo_cache.clear()
@@ -2575,7 +3168,8 @@ def exchange_student(school: School, year: int, salt: str,
 #: `jhsaa_talent_era` and `jhsaa_career_era` since those were added; a list the
 #: resetter reads is what stops the sixth being forgotten too.
 ERA_SETTINGS = ("jhsaa_name_era", "jhsaa_dev_era", "jhsaa_talent_era",
-                "jhsaa_career_era", "jhsaa_exchange_era", "jhsaa_intl_era")
+                "jhsaa_career_era", "jhsaa_exchange_era", "jhsaa_intl_era",
+                "jhsaa_band_era")
 
 
 def reset_eras() -> None:
@@ -2584,6 +3178,9 @@ def reset_eras() -> None:
     from . import worldconfig
     for setting in ERA_SETTINGS:
         worldconfig.set(setting, "")
+    # A tier HISTORY's `from` years are the old world's calendar too.
+    from app import overrides as ov
+    ov.collapse_jhsaa_band_history()
     reset_schools()
 
 
@@ -3764,7 +4361,7 @@ def reserve_cohorts(gender: str, year: int, salt: str = "",
     from .dbpath import resolve_db_path
     key = (resolve_db_path(), gender, year, salt, cohort_size,
            ov.jhsaa_transfer_version(), ov.jhsaa_archetype_version(),
-           ov.jhsaa_playup_version())
+           ov.jhsaa_playup_version(), ov.jhsaa_band_version())
     got = _cohort_cache.get(key)
     if got is not None:
         return got
@@ -3885,6 +4482,10 @@ def program_editor(selected: str = "", board: str = "", cat: str = "",
     moved = _playup_league(version, rows, pmap)
     amap = _arch_map(ov.jhsaa_archetype_version())
     arch_ov, play_ov = ov.get_jhsaa_archetypes(), ov.get_jhsaa_playups()
+    band_ov = {_display_of(band_ident(k)) for k in ov.get_jhsaa_bands()}
+    bmap = _band_map(ov.jhsaa_band_version())
+    tiers = band_tiers()
+    tier_label = {t["key"]: t["label"] for t in tiers}
     by_name = {r["name"]: r for r in rows}
 
     def card(name):
@@ -3900,7 +4501,10 @@ def program_editor(selected: str = "", board: str = "", cat: str = "",
         targets = ([g for g in LADDER_GROUPS[:LADDER_GROUPS.index(champ_group(cls))]]
                   if can_play_up(cls) else [])
         district = moved.get(name) if target else _row_league(r)
-        return {"name": name, "classification": cls, "city": r["city"],
+        ident = r.get("source") or name
+        band_key = _effective_band(ident, bmap, amap.get(name, ""))
+        band_now = _band_key_at(ident, bmap, None)
+        return {"name": name, "ident": ident, "classification": cls, "city": r["city"],
                 "district": district or "",
                 "archetype": amap.get(name, ""),
                 # `plays_up` truthy = the string of the group they're IN; None = not.
@@ -3910,16 +4514,29 @@ def program_editor(selected: str = "", board: str = "", cat: str = "",
                 # one is set, else the seed-list one-step default.
                 "competes": target or play_up_group(cls),
                 "targets": targets,
-                "arch_edited": name in arch_ov, "play_edited": name in play_ov}
+                "arch_edited": name in arch_ov, "play_edited": name in play_ov,
+                # The talent tier (owner rule 2026-09): the effective key, whether
+                # it is an explicit assignment or the roll, and whether a per-save
+                # override is what set it.
+                "band": band_key,
+                "band_label": tier_label.get(band_key, band_key),
+                "band_assigned": (bool(band_now) and band_now != "none"
+                                  and band_now in tier_label),
+                "band_edited": name in band_ov}
 
     up = {r["name"] for r in rows
           if plays_up(r["name"], bool(r.get("play_up")), pmap, r["classification"])}
     held = {n for n, v in pmap.items() if v == "no"}
 
-    BOARDS = [("archetype", "Archetypes"), ("playup", "Play-up")]
+    BOARDS = [("archetype", "Archetypes"), ("playup", "Play-up"),
+              ("band", "Talent tiers")]
     if board == "playup":
         cats = [("up", "Playing up", len(up)), ("held", "Held in own class", len(held))]
         members = {"up": sorted(up), "held": sorted(held)}
+    elif board == "band":
+        bb = band_board()
+        cats = [(t["key"], t["label"], bb["counts"].get(t["key"], 0)) for t in tiers]
+        members = {k: [x["name"] for x in v] for k, v in bb["by_key"].items()}
     else:
         board = "archetype"
         cats = [(k, k.replace("_", " ").title(),
@@ -3936,9 +4553,11 @@ def program_editor(selected: str = "", board: str = "", cat: str = "",
     return {"selected": card(selected) if selected else None,
             "board": board, "boards": BOARDS, "cat": cat, "cats": cats,
             "programs": programs,
-            "edited": [c for c in (card(n) for n in sorted({*arch_ov, *play_ov})) if c],
+            "edited": [c for c in (card(n) for n in sorted({*arch_ov, *play_ov, *band_ov}))
+                       if c],
             "recent": [c for c in (card(n) for n in (recent or [])) if c],
             "counts": counts, "kinds": EDITABLE_ARCHETYPES,
+            "tiers": tiers, "tier_counts": band_board()["counts"],
             "names": sorted(by_name), "all": everything}
 
 
@@ -4260,7 +4879,8 @@ def districts(gender: str, group: str) -> dict[str, list[School]]:
 # --- rosters -----------------------------------------------------------------
 
 def _ceiling(rng: random.Random, group: str, gender: str,
-             mod: dict | None = None, cap: float = 80.0) -> float:
+             mod: dict | None = None, cap: float = 80.0,
+             centre: float | None = None) -> float:
     """A player's CEILING, drawn independently per player. The ladder is not assigned —
     it emerges from who is actually best, so a great freshman can play number one over a
     senior, which is how high school works.
@@ -4272,8 +4892,18 @@ def _ceiling(rng: random.Random, group: str, gender: str,
     `cap` is the top of the scale this cohort is drawn on. It is 80 (the college
     reference) for pre-`career_era` cohorts and `GRADE_CEIL` for the free
     high-school scale — see §24: high school stops being held down to fit a
-    scale it does not play on, and graduation translates instead."""
-    mean, spread = _TALENT[(group, gender)]
+    scale it does not play on, and graduation translates instead.
+
+    `centre` is the cohort's TEAM-scale centre from the program's talent tier
+    (`band_centre`), for cohorts from `band_era()` on: it REPLACES the
+    classification's (mean, spread) with (`_band_ceiling_centre(centre)`,
+    `BAND_PLAYER_SPREAD`) — the class sets roster size and nothing about ability
+    (owner rule 2026-09). The archetype modifier still shifts and scales whatever
+    base is in play, and the draw consumes the rng identically either way."""
+    if centre is None:
+        mean, spread = _TALENT[(group, gender)]
+    else:
+        mean, spread = _band_ceiling_centre(centre), BAND_PLAYER_SPREAD
     if mod:
         mean += mod.get("mean", 0.0)
         spread *= mod.get("spread", 1.0)
@@ -4405,8 +5035,13 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
     # nothing downstream reads these numbers on the college scale.
     free = entry >= career_era()
     cap = float(GRADE_CEIL) if free else 80.0
+    # ‼️ THE PROGRAM TIER, from `band_era()` on (owner rule 2026-09): the cohort
+    # draws around its school's own centre, not its classification's. Its rng
+    # is separate from the seat rng, so pre-era cohorts are byte-identical.
+    centre = (band_centre(school, entry, salt, mod.get("band"))
+              if entry >= band_era() else None)
     talent = min(cap, _ceiling(rng, school.talent_group, school.gender, mod,
-                               cap=cap) + mod.get("pot", 0.0))
+                               cap=cap, centre=centre) + mod.get("pot", 0.0))
     compress = _compresses(entry)
     elite_key = ("jhsaa-elite", school.ident, school.gender, entry, seat)
     if compress:
@@ -9151,16 +9786,27 @@ def _nondistrict_pairs(teams: list[TeamSeason], rng: random.Random,
     fills each of those windows, so it has to be able to hand back pairs and let the
     caller decide when they happen.
 
-    Opponents are drawn on the three things that actually decide a real non-league card:
+    Opponents are drawn on the two things that actually decide a real non-league card:
       1. GEOGRAPHY  — same county, then same area, then anywhere (`GEO_WEIGHT`).
-      2. TALENT     — nearest team strength, so the draw is competitive both ways.
-      3. AVAILABILITY — both schools still owe duals this window, and haven't met.
+      2. AVAILABILITY — both schools still owe duals this window, and haven't met.
     Classification is a gate on top: same level or ONE level apart, never further, so a
     7A card mixes 7A and 6A and never lands on 1A.
 
+    ‼️ TALENT IS DELIBERATELY NOT A CRITERION (owner rule 2026-09). The draw used
+    to add |strength gap| to the score, so a strong program's card was other strong
+    programs and a weak one's was other weak ones — every non-district dual was a
+    near-peer dual by construction. With program talent tiers making the
+    association genuinely unequal, a strength-matched draw would schedule that
+    inequality straight back out: the elite and the abysmal would exist and never
+    meet, and the scoreline mix would not move. A school plays its NEIGHBOURS,
+    whoever they are — top vs top is elite tennis, bad vs bad is competitive
+    tennis at a low level, elite vs bad is the 6-0 that was missing — and a 25-5
+    record then says something about who was played, not just how hard the
+    schedule was normalised to be. Peer-matched play is what the league and the
+    mid-season challenge are for.
+
     `owed` and `played` are the CALLER'S dicts and are mutated in place, so quotas and
     the no-rematch rule carry across windows instead of each window rediscovering them."""
-    strength = {id(t): _strength(t) for t in teams}
     short = lambda: [t for t in teams if owed.get(id(t), 0) > 0]          # noqa: E731
     pairs: list[tuple] = []
     need = short()
@@ -9168,7 +9814,7 @@ def _nondistrict_pairs(teams: list[TeamSeason], rng: random.Random,
     while len(need) > 1 and guard < 200000:
         guard += 1
         a = need[rng.randrange(len(need))]
-        ga, sa = _GROUP_IX[a.school.group], strength[id(a)]
+        ga = _GROUP_IX[a.school.group]
         cands = [t for t in need if t is not a
                  and (t.school.group, t.school.district)
                  != (a.school.group, a.school.district)
@@ -9178,8 +9824,8 @@ def _nondistrict_pairs(teams: list[TeamSeason], rng: random.Random,
             owed[id(a)] = 0            # can't be topped up; drop it, don't stall the run
             need = short()
             continue
-        cands.sort(key=lambda t: (GEO_WEIGHT * _geo_gap(a.school, t.school)
-                                  + abs(strength[id(t)] - sa), t.school.name))
+        cands.sort(key=lambda t: (GEO_WEIGHT * _geo_gap(a.school, t.school),
+                                  t.school.name))
         b = cands[rng.randrange(min(SHORTLIST, len(cands)))]
         pairs.append((a, b))
         for x, y in ((a, b), (b, a)):
@@ -9821,7 +10467,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     # call (which plays ~10,000 duals), never anything resolved in a loop.
     ck = (salt, gender, year, seed,
           _ov.jhsaa_archetype_version(), _ov.jhsaa_playup_version(),
-          _prior_fingerprint(prior))
+          _ov.jhsaa_band_version(), _prior_fingerprint(prior))
     hit = _season_cache.get(ck)
     if hit is not None:
         return hit

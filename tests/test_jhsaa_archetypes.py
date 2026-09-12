@@ -76,10 +76,14 @@ def test_a_tag_is_read_from_the_table_not_from_the_school_name():
     assert _profile([sc])["top9"] == pytest.approx(before["top9"])
 
 
-def test_the_modifier_does_not_flatten_the_classification_model():
+def test_the_modifier_does_not_flatten_the_classification_model(legacy_talent_draw):
     """Additive, not a replacement — so the classification ladder must survive INSIDE
     each tag: a blue-blood small school is a strong SMALL-school program and still sits
     under a blue-blood big one.
+
+    ‼️ PRE-TIER cohorts only (`legacy_talent_draw`): from `jhsaa.band_era()` on the
+    classification sets roster size and nothing about ability (owner rule 2026-09),
+    so there is no class ladder to survive — the tier is the base the tag acts on.
 
     What it must NOT assert is that a blue-blood 3A-1A stays under an ORDINARY 7A. A
     powerhouse small school beating an average big one is the whole thesis of the talent

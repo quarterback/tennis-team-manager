@@ -4008,6 +4008,85 @@ def create_app() -> Flask:
                         max_age=30, samesite="Lax")
         return resp
 
+    @app.route("/editor/jhsaa-band", methods=["POST"])
+    def editor_jhsaa_band():
+        """Set one JHSAA program's talent tier (owner rule 2026-09) — a per-save
+        override over the seed file, the archetype route's shape. A tier key sets
+        it, "none" pins the ROLLED default over a seeded assignment, "clear" drops
+        the override and reverts to the seed. Every choice binds from the NEXT
+        cohort (`jhsaa.set_program_band`) — never the players already rostered."""
+        from app import jhsaa as _jh
+        # The card posts the program's IDENT (`jh_ident`); a typed display name
+        # resolves through `ident_of_name` — six display names are also another
+        # program's ident, so the two must not share one resolver.
+        school = (request.form.get("jh_ident")
+                  or _jh.ident_of_name(request.form.get("jh_school")
+                                       or request.form.get("school", "")))
+        tier = request.form.get("band", "")
+        if school:
+            if tier != "none" and _jh.band_tier(tier) is None:
+                tier = "clear"
+            # Keyed on the program's stable identity and recorded with a cutover.
+            _jh.set_program_band(school, tier)
+            reset_all()
+            _jh.reset_schools()
+        return _editor_redirect()
+
+    @app.route("/editor/jhsaa-band-bulk", methods=["POST"])
+    def editor_jhsaa_band_bulk():
+        """Assign MANY schools a tier at once, writing the SEED FILE
+        (`data/jhsaa/talent_bands.json`) — `jhsaa.bulk_edit_band_seed`. One name
+        per line; "remove" sends the schools back to their rolled default."""
+        from app import jhsaa as _jh
+        tier = request.form.get("band", "")
+        action = request.form.get("action", "add")
+        names = (request.form.get("names") or "").splitlines()
+        if action == "remove":
+            result = _jh.bulk_edit_band_seed(None, names, remove=True)
+        else:
+            result = _jh.bulk_edit_band_seed(tier, names, remove=False)
+        reset_all()
+        _jh.reset_schools()
+        resp = redirect(url_for("jhsaa_programs", u=request.form.get("u", "D1-men"),
+                                board="band"))
+        resp.set_cookie("jh_bulk_result",
+                        f"{len(result['applied'])} applied"
+                        + (f", {len(result['unknown'])} unrecognized" if result["unknown"] else ""),
+                        max_age=30, samesite="Lax")
+        return resp
+
+    @app.route("/editor/jhsaa-band-tiers", methods=["POST"])
+    def editor_jhsaa_band_tiers():
+        """Rewrite the TIER TABLE itself — ranges, labels, wide flag, roll weight,
+        and new rows — so retuning the ladder never needs a code change. Rows
+        arrive as parallel `key[]`/`label[]`/`lo[]`/`hi[]`/`weight[]` lists plus
+        `wide_<key>` checkboxes; a row with an empty key is dropped."""
+        from app import jhsaa as _jh
+        keys = request.form.getlist("key")
+        labels = request.form.getlist("label")
+        los = request.form.getlist("lo")
+        his = request.form.getlist("hi")
+        weights = request.form.getlist("weight")
+        tiers = []
+        for i, key in enumerate(keys):
+            key = (key or "").strip().lower().replace(" ", "_")
+            if not key:
+                continue
+            try:
+                tiers.append({"key": key,
+                              "label": labels[i] if i < len(labels) else key,
+                              "lo": float(los[i]), "hi": float(his[i]),
+                              "weight": float(weights[i] or 0) if i < len(weights) else 1,
+                              "wide": bool(request.form.get(f"wide_{i}"))})
+            except (ValueError, IndexError):
+                continue
+        if tiers:
+            _jh.set_band_tiers(tiers)
+            reset_all()
+            _jh.reset_schools()
+        return redirect(url_for("jhsaa_programs", u=request.form.get("u", "D1-men"),
+                                board="band"))
+
     @app.route("/editor/jhsaa-playup", methods=["POST"])
     def editor_jhsaa_playup():
         """Rule on whether — and to WHICH classification — a JHSAA program plays up.

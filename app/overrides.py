@@ -297,6 +297,117 @@ def jhsaa_archetype_version() -> str:
     return h.hexdigest()
 
 
+# --- PROGRAM TALENT TIERS (owner rule 2026-09) --------------------------------
+# Stored like an archetype — the seed file `data/jhsaa/talent_bands.json` with
+# this editable table on top — with two differences `jhsaa` owns and this layer
+# only stores. (1) The key is the program's STABLE identity (`School.ident`,
+# `source or name`), never the display name, so a curated rename cannot orphan
+# an assignment. (2) A value is a per-cohort HISTORY, JSON `[{"tier", "from"}, …]`
+# — `from` is the first entry year the tier applies to — because rosters are
+# regenerated from seed and an edit that applied to every cohort would rewrite
+# the sophomores through seniors already in the building. A bare string (a
+# tier key or "none") is read as a history with one row from year 0.
+# `jhsaa.set_program_band` writes these; `jhsaa.program_band` resolves them.
+
+def get_jhsaa_bands() -> dict:
+    """{school: tier key} for every program with a per-save tier override."""
+    conn = _db()
+    rows = conn.execute(
+        "SELECT key, value FROM roster_overrides WHERE kind='jhsaa_band'").fetchall()
+    conn.close()
+    return {k: v for k, v in rows if v}
+
+
+def set_jhsaa_band(school: str, tier: str) -> None:
+    conn = _db()
+    conn.execute("INSERT OR REPLACE INTO roster_overrides (kind, key, value)"
+                 " VALUES ('jhsaa_band',?,?)", (school, tier))
+    conn.commit(); conn.close()
+
+
+def clear_jhsaa_band(school: str) -> None:
+    conn = _db()
+    conn.execute("DELETE FROM roster_overrides WHERE kind='jhsaa_band' AND key=?", (school,))
+    conn.commit(); conn.close()
+
+
+def get_jhsaa_band_tiers_history() -> str:
+    """The per-save TIER-TABLE history (JSON `[{"from", "tiers"}, …]`), or "".
+    Written by `jhsaa.set_band_tiers` so a range edit reaches only cohorts
+    entering from the next season; the seed file holds the newest table."""
+    conn = _db()
+    row = conn.execute("SELECT value FROM roster_overrides WHERE kind='jhsaa_band_tiers'"
+                       " AND key='history'").fetchone()
+    conn.close()
+    return row[0] if row and row[0] else ""
+
+
+def set_jhsaa_band_tiers_history(value: str) -> None:
+    conn = _db()
+    conn.execute("INSERT OR REPLACE INTO roster_overrides (kind, key, value)"
+                 " VALUES ('jhsaa_band_tiers','history',?)", (value,))
+    conn.commit(); conn.close()
+
+
+def clear_jhsaa_band_tiers_history() -> None:
+    conn = _db()
+    conn.execute("DELETE FROM roster_overrides WHERE kind='jhsaa_band_tiers'")
+    conn.commit(); conn.close()
+
+
+def collapse_jhsaa_band_history() -> None:
+    """For `world.reset()`: a new league on a database that keeps this table.
+    Every `from` year here is the OLD world's calendar, so each program's history
+    collapses to its newest row at year 0 (the new world starts on the current
+    assignment for everyone) and the tier-table history is dropped (the seed file
+    already holds the newest table)."""
+    import json
+    conn = _db()
+    rows = conn.execute(
+        "SELECT key, value FROM roster_overrides WHERE kind='jhsaa_band'").fetchall()
+    for key, value in rows:
+        try:
+            hist = json.loads(value)
+        except (TypeError, ValueError):
+            continue
+        if not isinstance(hist, list) or not hist:
+            continue
+        last = max(hist, key=lambda e: int(e.get("from", 0) or 0))
+        tier = str(last.get("tier", "") or "")
+        if tier:
+            conn.execute("UPDATE roster_overrides SET value=? WHERE kind='jhsaa_band'"
+                         " AND key=?", (json.dumps([{"tier": tier, "from": 0}]), key))
+        else:
+            conn.execute("DELETE FROM roster_overrides WHERE kind='jhsaa_band' AND key=?",
+                         (key,))
+    conn.execute("DELETE FROM roster_overrides WHERE kind='jhsaa_band_tiers'")
+    conn.commit(); conn.close()
+
+
+def jhsaa_band_version() -> str:
+    """Fingerprint of the tier table PLUS the seed file — rosters generate from
+    both, so every cache keyed on the archetype fingerprint keys on this too.
+    The seed file's mtime is in the digest so an editor write to the file (the
+    tier ranges, a bulk assignment) falls the caches without a schema."""
+    import hashlib
+    import os
+    from . import jhsaa as _jh
+    conn = _db()
+    rows = conn.execute("SELECT kind, key, value FROM roster_overrides"
+                        " WHERE kind IN ('jhsaa_band','jhsaa_band_tiers')"
+                        " ORDER BY kind, key").fetchall()
+    conn.close()
+    h = hashlib.md5()
+    for r in rows:
+        h.update(repr(tuple(r)).encode())
+    try:
+        st = os.stat(_jh._BAND_SEED_PATH)
+        h.update(f"{st.st_mtime_ns}|{st.st_size}".encode())
+    except OSError:
+        h.update(b"no-seed")
+    return h.hexdigest()
+
+
 # --- PLAYING UP (owner rule 2027-08, multi-step 2027-09) ----------------------
 # A school competing a classification ABOVE its enrollment class, the way real
 # associations let a strong program do. Stored exactly like an archetype — a seed
