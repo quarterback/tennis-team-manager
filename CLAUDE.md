@@ -2609,6 +2609,31 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     and playing at home made them eight points worse. A lift that can reverse the
     advantage it exists to give shows up only as the occasional strange home loss.
     Applies to any per-match lift here, `_doubles_lift` included.
+- **‼️ PROGRAM TALENT TIERS (owner rule 2026-09, `jhsaa.band_tiers` /
+  `data/jhsaa/talent_bands.json`, `docs/AAR-jhsaa-program-talent-tiers.md`).** From
+  `jhsaa.band_era()` on, a cohort's ceilings are drawn around its PROGRAM'S TIER on one
+  association-wide scale — the CLASSIFICATION sets roster size and NOTHING about ability
+  (a 9A can be abysmal, a 1A a dynasty; schools play up and down all the time, so talent
+  cannot key on the class). `_TALENT` is the pre-era path only. Three layers: class =
+  structural depth, tier = where this school sits (durable, per program, persists across
+  seasons), cohort roll = ±`BAND_COHORT_JITTER` per freshman class (a `wide` tier
+  re-rolls across its whole range). ‼️ Tier ranges are in TEAM terms (top-11 mean
+  current OVR) and `_band_ceiling_centre` inverts a MEASURED line to the ceiling
+  centre — re-measure before retuning `BAND_PLAYER_SPREAD` or the career model. The
+  tier table AND the per-program assignment are DATA, edited on `/jhsaa/programs` (tier
+  selector on the card, bulk assign, the tier-table form); never hardcode a school's
+  tier and never add a tier in code — `DEFAULT_TIERS` is the missing-file fallback.
+  `overrides.jhsaa_band_version()` sits beside the archetype fingerprint in every cache
+  key; resolve the tier ONCE per build (`_program_mod` → `mod["band"]`), never per seat.
+  `scripts/roll_talent_bands.py` writes rolled defaults for unassigned schools.
+  - **‼️ THE NON-DISTRICT DRAW NO LONGER MATCHES ON STRENGTH** (`_nondistrict_pairs`:
+    geography + availability + the ±1 class gate). It used to add `|strength gap|`,
+    which scheduled the association's inequality straight back out (2080: early
+    non-district strength correlation .84, median gap 2.3 OVR; a 50-55 team was .312 in
+    9A and .747 in 1A). Do not put it back. District, rivalries, the challenge and the
+    showcase keep their own structure.
+  Pinned by `tests/test_jhsaa_talent_bands.py`; the class-ladder tests
+  (`test_jhsaa_talent_shape.py`) pin the PRE-era path via `legacy_talent_draw`.
 - **‼️ PROGRAM ARCHETYPES are a SCHOOL-level modifier on top of that (owner rule 2027-08,
   `jhsaa.ARCHETYPES`).** Durable program conditions — facilities, feeder networks,
   community participation, coaching tradition, reputation — NOT current strength, and

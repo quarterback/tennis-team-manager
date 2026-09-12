@@ -5126,7 +5126,7 @@ def jhsaa_gap_bands(world_id: int, year: int, gender: str, salt: str = "") -> di
     from . import overrides as ov
     # Both fingerprints resolved ONCE per fold, never per school or per row.
     ck = (world_id, year, gender, salt, ov.jhsaa_transfer_version(),
-          ov.jhsaa_archetype_version())
+          ov.jhsaa_archetype_version(), ov.jhsaa_band_version())
     got = _gapband_cache.get(ck)
     if got is not None:
         return got

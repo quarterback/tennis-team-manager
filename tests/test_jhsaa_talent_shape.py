@@ -20,6 +20,22 @@ import pytest
 from app import jhsaa
 
 
+@pytest.fixture(scope="module", autouse=True)
+def _legacy_draw():
+    """‼️ These pin the PRE-TIER draw. From `jhsaa.band_era()` on (owner rule
+    2026-09, `tests/test_jhsaa_talent_bands.py`) a program's TIER sets its talent
+    and the classification sets roster size only, so none of the relations below
+    hold for tiered cohorts — by design. Cohorts entering before the era still
+    generate on `_TALENT`, which is the path measured here."""
+    from app import worldconfig as wc
+    prev = wc.get("jhsaa_band_era")
+    wc.set("jhsaa_band_era", "9999")
+    jhsaa.reset_schools()
+    yield
+    wc.set("jhsaa_band_era", prev if prev is not None else "")
+    jhsaa.reset_schools()
+
+
 @pytest.fixture(scope="module")
 def ladder():
     """{gender: {group: {position: mean current OVR}}} over a sample of each class."""

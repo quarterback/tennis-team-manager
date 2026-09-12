@@ -6418,7 +6418,7 @@ def _jhsaa_census_key(seed: int, g: str) -> tuple:
     salt = world.active_salt(seed)
     return (seed, g, w["id"], w["year"], salt,
             ov.jhsaa_archetype_version(), ov.jhsaa_playup_version(),
-            ov.jhsaa_transfer_version())
+            ov.jhsaa_transfer_version(), ov.jhsaa_band_version())
 
 
 def _jhsaa_build_census(seed: int, g: str) -> list[dict]:

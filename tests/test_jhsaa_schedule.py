@@ -236,10 +236,14 @@ def test_non_district_opponents_are_never_from_your_own_district(played):
                 != (t.school.group, t.school.district), (t.school.name, x["opp"])
 
 
-def test_non_district_draw_prefers_near_opponents_on_geography_and_talent(played):
-    """Not a golden value — a directional check that the draw is scored, not uniform.
-    Compare each actual non-district opponent against the classification-eligible field:
-    the picks must sit well inside it on both geography and talent."""
+def test_non_district_draw_prefers_near_opponents_on_geography_not_talent(played):
+    """Not a golden value — a directional check that the draw is scored on GEOGRAPHY
+    and NOT on talent (owner rule 2026-09). Compare each actual non-district opponent
+    against the classification-eligible field: the picks sit well inside it on
+    geography, and their talent gap is NOT materially smaller than the field's —
+    a strength-matched draw scheduled the association's inequality straight back
+    out (every non-district dual a near-peer dual), which is exactly what the
+    program-tier change needs it to stop doing."""
     by = {t.school.name: t for t in played}
     geo_pick, geo_all, tal_pick, tal_all = [], [], [], []
     for t in played:
@@ -262,7 +266,9 @@ def test_non_district_draw_prefers_near_opponents_on_geography_and_talent(played
     assert geo_pick and tal_pick
     mean = lambda v: sum(v) / len(v)                          # noqa: E731
     assert mean(geo_pick) < mean(geo_all), "draw ignores geography"
-    assert mean(tal_pick) < mean(tal_all), "draw ignores talent"
+    # Geography correlates weakly with talent, so allow a little; a strength-matched
+    # draw sat far below this (the picks' gap was under half the field's).
+    assert mean(tal_pick) > 0.75 * mean(tal_all), "draw is matching on talent again"
 
 
 # --- the mid-season challenge -------------------------------------------------

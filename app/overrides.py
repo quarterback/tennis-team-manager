@@ -297,6 +297,57 @@ def jhsaa_archetype_version() -> str:
     return h.hexdigest()
 
 
+# --- PROGRAM TALENT TIERS (owner rule 2026-09) --------------------------------
+# Stored exactly like an archetype: the seed file `data/jhsaa/talent_bands.json`
+# with this editable table on top. A value is a tier KEY, or "none" (an explicit
+# "use the rolled default", demoting a seeded assignment); clearing the row
+# reverts to the seed. `jhsaa.program_band` resolves the layers.
+
+def get_jhsaa_bands() -> dict:
+    """{school: tier key} for every program with a per-save tier override."""
+    conn = _db()
+    rows = conn.execute(
+        "SELECT key, value FROM roster_overrides WHERE kind='jhsaa_band'").fetchall()
+    conn.close()
+    return {k: v for k, v in rows if v}
+
+
+def set_jhsaa_band(school: str, tier: str) -> None:
+    conn = _db()
+    conn.execute("INSERT OR REPLACE INTO roster_overrides (kind, key, value)"
+                 " VALUES ('jhsaa_band',?,?)", (school, tier))
+    conn.commit(); conn.close()
+
+
+def clear_jhsaa_band(school: str) -> None:
+    conn = _db()
+    conn.execute("DELETE FROM roster_overrides WHERE kind='jhsaa_band' AND key=?", (school,))
+    conn.commit(); conn.close()
+
+
+def jhsaa_band_version() -> str:
+    """Fingerprint of the tier table PLUS the seed file — rosters generate from
+    both, so every cache keyed on the archetype fingerprint keys on this too.
+    The seed file's mtime is in the digest so an editor write to the file (the
+    tier ranges, a bulk assignment) falls the caches without a schema."""
+    import hashlib
+    import os
+    from . import jhsaa as _jh
+    conn = _db()
+    rows = conn.execute("SELECT key, value FROM roster_overrides WHERE kind='jhsaa_band'"
+                        " ORDER BY key").fetchall()
+    conn.close()
+    h = hashlib.md5()
+    for r in rows:
+        h.update(repr(tuple(r)).encode())
+    try:
+        st = os.stat(_jh._BAND_SEED_PATH)
+        h.update(f"{st.st_mtime_ns}|{st.st_size}".encode())
+    except OSError:
+        h.update(b"no-seed")
+    return h.hexdigest()
+
+
 # --- PLAYING UP (owner rule 2027-08, multi-step 2027-09) ----------------------
 # A school competing a classification ABOVE its enrollment class, the way real
 # associations let a strong program do. Stored exactly like an archetype — a seed
