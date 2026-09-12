@@ -4013,15 +4013,21 @@ def create_app() -> Flask:
         """Set one JHSAA program's talent tier (owner rule 2026-09) — a per-save
         override over the seed file, the archetype route's shape. A tier key sets
         it, "none" pins the ROLLED default over a seeded assignment, "clear" drops
-        the override and reverts to the seed."""
+        the override and reverts to the seed. Every choice binds from the NEXT
+        cohort (`jhsaa.set_program_band`) — never the players already rostered."""
         from app import jhsaa as _jh
-        school = request.form.get("jh_school") or request.form.get("school", "")
+        # The card posts the program's IDENT (`jh_ident`); a typed display name
+        # resolves through `ident_of_name` — six display names are also another
+        # program's ident, so the two must not share one resolver.
+        school = (request.form.get("jh_ident")
+                  or _jh.ident_of_name(request.form.get("jh_school")
+                                       or request.form.get("school", "")))
         tier = request.form.get("band", "")
         if school:
-            if tier == "none" or _jh.band_tier(tier) is not None:
-                ov.set_jhsaa_band(school, tier)
-            else:
-                ov.clear_jhsaa_band(school)
+            if tier != "none" and _jh.band_tier(tier) is None:
+                tier = "clear"
+            # Keyed on the program's stable identity and recorded with a cutover.
+            _jh.set_program_band(school, tier)
             reset_all()
             _jh.reset_schools()
         return _editor_redirect()

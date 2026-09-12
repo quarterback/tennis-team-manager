@@ -29,10 +29,12 @@ def _clean():
     wc.set("jhsaa_band_era", "0")
     for n in list(ov.get_jhsaa_bands()):
         ov.clear_jhsaa_band(n)
+    ov.clear_jhsaa_band_tiers_history()
     jhsaa.reset_schools()
     yield
     for n in list(ov.get_jhsaa_bands()):
         ov.clear_jhsaa_band(n)
+    ov.clear_jhsaa_band_tiers_history()
     wc.set("jhsaa_band_era", prev if prev is not None else "")
     jhsaa.reset_schools()
 
@@ -51,7 +53,7 @@ def _sample(n=6, gender="boys"):
 
 def _set(schools, tier):
     for s in schools:
-        ov.set_jhsaa_band(s.name, tier)
+        ov.set_jhsaa_band(s.ident, tier)
     jhsaa.reset_schools()
 
 
@@ -72,14 +74,18 @@ def test_the_tier_table_is_data_and_bottom_to_top():
 
 def test_every_program_has_a_seeded_tier_and_the_roll_agrees_with_it():
     """The seed file is the RECORD (`scripts/roll_talent_bands.py`), and the roll it
-    was written from is deterministic on the name — so a school missing from the
-    file would generate exactly what the file says."""
+    was written from is deterministic on the program's stable IDENTITY — so a school
+    missing from the file would generate exactly what the file says, and a rename
+    neither re-rolls it nor reads as a new program."""
     seed = jhsaa._band_seed()
     names = {r["name"] for r in jhsaa.playup_rows()}
-    assert names <= set(seed), sorted(names - set(seed))[:5]
+    idents = {jhsaa.ident_of_name(n) for n in names}
+    assert idents <= set(seed), sorted(idents - set(seed))[:5]
+    assert any(jhsaa.ident_of_name(n) != n for n in names), "renamed programs exist"
     amap = jhsaa._arch_map(ov.jhsaa_archetype_version())
     for n in sorted(names)[:200]:
-        assert seed[n] == jhsaa.rolled_band(n, amap.get(n, ""))
+        ident = jhsaa.ident_of_name(n)
+        assert seed[ident] == jhsaa.rolled_band(ident, amap.get(n, ""))
 
 
 def test_the_initial_roll_is_thick_in_the_middle_and_thin_at_the_ends():
@@ -95,28 +101,28 @@ def test_the_initial_roll_is_thick_in_the_middle_and_thin_at_the_ends():
 
 def test_an_override_wins_a_none_reverts_to_the_roll_and_a_clear_reverts_to_the_seed():
     s = _sample(1)[0]
-    seeded = jhsaa._band_seed()[s.name]
-    assert jhsaa.program_band(s.name) == seeded
+    seeded = jhsaa._band_seed()[s.ident]
+    assert jhsaa.program_band(s) == seeded == jhsaa.program_band(s.ident)
     other = next(t["key"] for t in jhsaa.band_tiers() if t["key"] != seeded)
-    ov.set_jhsaa_band(s.name, other); jhsaa.reset_schools()
-    assert jhsaa.program_band(s.name) == other
-    ov.set_jhsaa_band(s.name, "none"); jhsaa.reset_schools()
-    assert jhsaa.program_band(s.name) == jhsaa.rolled_band(s.name)
-    ov.clear_jhsaa_band(s.name); jhsaa.reset_schools()
-    assert jhsaa.program_band(s.name) == seeded
+    ov.set_jhsaa_band(s.ident, other); jhsaa.reset_schools()
+    assert jhsaa.program_band(s) == other
+    ov.set_jhsaa_band(s.ident, "none"); jhsaa.reset_schools()
+    assert jhsaa.program_band(s) == jhsaa.rolled_band(s)
+    ov.clear_jhsaa_band(s.ident); jhsaa.reset_schools()
+    assert jhsaa.program_band(s) == seeded
 
 
 def test_an_assignment_to_a_retired_tier_reads_as_the_roll():
     s = _sample(1)[0]
-    ov.set_jhsaa_band(s.name, "no_such_tier"); jhsaa.reset_schools()
-    assert jhsaa.program_band(s.name) == jhsaa.rolled_band(s.name)
-    assert not jhsaa.band_is_assigned(s.name)
+    ov.set_jhsaa_band(s.ident, "no_such_tier"); jhsaa.reset_schools()
+    assert jhsaa.program_band(s) == jhsaa.rolled_band(s)
+    assert not jhsaa.band_is_assigned(s)
 
 
 def test_the_fingerprint_moves_when_the_table_does():
     s = _sample(1)[0]
     before = ov.jhsaa_band_version()
-    ov.set_jhsaa_band(s.name, "abysmal")
+    ov.set_jhsaa_band(s.ident, "abysmal")
     assert ov.jhsaa_band_version() != before
 
 
@@ -139,7 +145,7 @@ def test_editing_the_tier_table_is_a_file_write_and_survives_a_reload(tmp_path, 
     s = _sample(1)[0]
     res = jhsaa.bulk_edit_band_seed("test_tier", [s.name, "No Such School"])
     assert res == {"applied": [s.name], "unknown": ["No Such School"]}
-    assert jhsaa.program_band(s.name) == "test_tier"
+    assert jhsaa.program_band(s) == "test_tier"
 
 
 # --- the cohort centre ----------------------------------------------------------------
@@ -169,8 +175,8 @@ def test_the_centre_is_seeded_on_identity_not_display_name():
     _set([s], "average")
     import dataclasses
     renamed = dataclasses.replace(s, name="Renamed Academy", source=s.ident)
-    ov.set_jhsaa_band("Renamed Academy", "average"); jhsaa.reset_schools()
     assert jhsaa.band_centre(renamed, 2030) == jhsaa.band_centre(s, 2030)
+    assert jhsaa.program_band(renamed.ident) == "average", "the assignment follows the ident"
 
 
 # --- generation --------------------------------------------------------------------------
@@ -269,12 +275,106 @@ def test_the_association_is_genuinely_unequal_now():
 def test_the_program_editor_carries_the_tier_and_a_tier_board():
     s = _sample(1)[0]
     ed = jhsaa.program_editor(s.name, board="band")
-    assert ed["selected"]["band"] == jhsaa.program_band(s.name)
+    assert ed["selected"]["band"] == jhsaa.program_band(s)
     assert ed["selected"]["band_assigned"] is True
     assert [k for k, _ in ed["boards"]].count("band") == 1
     assert {c[0] for c in ed["cats"]} == {t["key"] for t in jhsaa.band_tiers()}
     assert sum(c[2] for c in ed["cats"]) == len(jhsaa.playup_rows())
-    ov.set_jhsaa_band(s.name, "abysmal"); jhsaa.reset_schools()
+    ov.set_jhsaa_band(s.ident, "abysmal"); jhsaa.reset_schools()
     ed = jhsaa.program_editor(s.name)
     assert ed["selected"]["band"] == "abysmal" and ed["selected"]["band_edited"]
     assert any(c["name"] == s.name for c in ed["edited"])
+
+
+# --- an edit reaches the next cohort, never the building ----------------------------
+
+def _with_archive(year_index: int):
+    """Pretend the newest archived JHSAA season is world-year `year_index`."""
+    import sqlite3
+    from app.dbpath import resolve_db_path
+    from app.world import BASE_YEAR
+    conn = sqlite3.connect(resolve_db_path())
+    conn.execute("CREATE TABLE IF NOT EXISTS world_jhsaa (world_id INTEGER, year INTEGER,"
+                 " gender TEXT, data TEXT)")
+    conn.execute("INSERT INTO world_jhsaa (world_id, year, gender, data) VALUES (-999,?,?,?)",
+                 (year_index, "girls", "{}"))
+    conn.commit(); conn.close()
+    return BASE_YEAR + year_index + 2
+
+
+def _drop_archive():
+    import sqlite3
+    from app.dbpath import resolve_db_path
+    conn = sqlite3.connect(resolve_db_path())
+    conn.execute("DELETE FROM world_jhsaa WHERE world_id=-999")
+    conn.commit(); conn.close()
+
+
+def test_a_tier_edit_binds_from_the_next_cohort_and_earlier_cohorts_keep_theirs():
+    s = _sample(1)[0]
+    _set([s], "average")
+    before = {p.pid: (p.current_overall(), p.ceiling_overall(), p.entry_year)
+              for p in jhsaa.build_roster(s, 2040)}
+    try:
+        cut = _with_archive(2040 - 2027)          # newest archived season is 2040
+        assert cut == 2041 and jhsaa._next_cohort_year() == cut
+        jhsaa.set_program_band(s, "dynasty"); jhsaa.reset_schools()
+        assert jhsaa.program_band(s) == "dynasty", "the newest answer"
+        assert jhsaa.program_band(s, entry=2040) == "average", "the cohort in the building"
+        assert jhsaa.program_band(s, entry=2041) == "dynasty"
+        after = {p.pid: (p.current_overall(), p.ceiling_overall(), p.entry_year)
+                 for p in jhsaa.build_roster(s, 2040)}
+        assert after == before, "nobody already rostered moved"
+        # A "clear" is a cutover too, never a rewrite.
+        jhsaa.set_program_band(s, "clear"); jhsaa.reset_schools()
+        assert jhsaa.program_band(s, entry=2040) == "average"
+        assert {p.pid: (p.current_overall(), p.ceiling_overall(), p.entry_year)
+                for p in jhsaa.build_roster(s, 2040)} == before
+    finally:
+        _drop_archive()
+        jhsaa.reset_schools()
+
+
+def test_a_range_edit_binds_from_the_next_cohort(tmp_path, monkeypatch):
+    import shutil
+    scratch = tmp_path / "talent_bands.json"
+    shutil.copy(jhsaa._BAND_SEED_PATH, scratch)
+    monkeypatch.setattr(jhsaa, "_BAND_SEED_PATH", str(scratch))
+    jhsaa.reset_schools()
+    s = _sample(1)[0]
+    _set([s], "average")
+    old = jhsaa.band_tier("average")
+    c_old = jhsaa.band_centre(s, 2040)
+    try:
+        _with_archive(2040 - 2027)
+        tiers = [dict(t) for t in jhsaa.band_tiers()]
+        for t in tiers:
+            if t["key"] == "average":
+                t["lo"], t["hi"] = 70, 79
+        jhsaa.set_band_tiers(tiers); jhsaa.reset_schools()
+        assert jhsaa.band_tier("average")["lo"] == 70, "the seed file holds the newest table"
+        plan = jhsaa.band_plan(s)
+        assert jhsaa.band_tier_for(plan, 2040)["lo"] == old["lo"]
+        assert jhsaa.band_tier_for(plan, 2041)["lo"] == 70
+        assert jhsaa.band_centre(s, 2040) == c_old
+        assert 70 <= jhsaa.band_centre(s, 2041) <= 79
+    finally:
+        _drop_archive()
+        jhsaa.reset_schools()
+
+
+def test_a_world_reset_collapses_the_histories_and_clears_the_era():
+    s = _sample(1)[0]
+    try:
+        _with_archive(5)
+        jhsaa.set_program_band(s, "poor"); jhsaa.reset_schools()
+        assert len(jhsaa._parse_hist(ov.get_jhsaa_bands()[s.ident])) == 2
+        wc.set("jhsaa_band_era", "2033")
+        jhsaa.reset_eras()
+        assert "jhsaa_band_era" in jhsaa.ERA_SETTINGS
+        assert not str(wc.get("jhsaa_band_era") or "").strip()
+        hist = jhsaa._parse_hist(ov.get_jhsaa_bands()[s.ident])
+        assert hist == [{"tier": "poor", "from": 0}]
+    finally:
+        _drop_archive()
+        jhsaa.reset_schools()

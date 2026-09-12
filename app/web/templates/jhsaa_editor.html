@@ -146,10 +146,11 @@
         <input type="hidden" name="u" value="{{ u }}">
         <input type="hidden" name="back" value="jhsaa">
         <input type="hidden" name="jh_school" value="{{ s.name }}">
+        <input type="hidden" name="jh_ident" value="{{ s.ident }}">
         <label class="bl-schol-f" style="max-width:220px">Talent tier{% if s.band_edited %} · <b style="color:var(--brand-strong)">edited</b>{% elif not s.band_assigned %} · <span style="color:var(--text-muted)">rolled</span>{% endif %}
           <span class="bl-select-wrap"><select class="bl-select" name="band" style="min-width:190px">
             {% for t in ed.tiers %}
-            <option value="{{ t.key }}"{% if t.key == s.band %} selected{% endif %}>{{ t.label }} ({{ t.lo|int }}–{{ t.hi|int }}{% if t.wide %}, volatile{% endif %})</option>
+            <option value="{{ t.key }}"{% if t.key == s.band %} selected{% endif %}>{{ t.label }}{% if t.wide %} · volatile{% endif %}</option>
             {% endfor %}
           </select></span></label>
         <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:16px">Save</button>
@@ -213,14 +214,6 @@
 <div class="bl-panel">
   <div class="bl-panel-head"><span class="bl-panel-title">Talent tiers</span></div>
   <div style="padding:12px 16px">
-    <p class="bit" style="margin-bottom:10px">
-      Every program sits in a tier on ONE scale — its classification sets roster size
-      and nothing about ability. Ranges are in team terms (the average of the top eleven).
-      A program rolls a stable point inside its tier and each freshman class jitters a
-      few points around it; a <b>volatile</b> tier re-rolls across its whole range every
-      class. Edits here rewrite the seed file and reach freshmen entering from now on —
-      players already in the building keep their ratings.
-    </p>
     <form method="post" action="{{ url_for('editor_jhsaa_band_tiers') }}">
       <input type="hidden" name="u" value="{{ u }}">
       <div class="tbl-scroll">

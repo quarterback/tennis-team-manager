@@ -78,10 +78,18 @@ roll weight, or adds a row. "If I want to change a trajectory it doesn't require
 code changes" — nothing here does.
 
 `scripts/roll_talent_bands.py` wrote every program's initial tier into the file
-(`rolled_band`: seeded on the school name only, weighted by each tier's `weight` so
-the middle is thick, blue bloods forced to elite/dynasty). The roll is deterministic,
-so a school missing from the file generates exactly what the script would have
-written — the file is the record, not a different answer.
+(`rolled_band`: seeded on the program's STABLE IDENTITY only, weighted by each
+tier's `weight` so the middle is thick, blue bloods forced to elite/dynasty). The roll
+is deterministic, so a school missing from the file generates exactly what the script
+would have written — the file is the record, not a different answer.
+
+**Keyed on `School.ident` (`source or name`), never the display name** — the seed
+file, the override table and the roll alike (`band_ident` resolves a `School`, an
+ident or a typed display name). 683 of 1,023 programs carry a `source` that differs
+from their display name, and a curated rename moves the display name: keyed on the
+name, the renamed program silently lost its explicit tier, re-rolled a different one
+off the new string, and the roll script read it as a new school. Review finding on
+the first draft; the file's keys were migrated in place.
 
 `overrides.jhsaa_band_version()` fingerprints the override table AND the seed file's
 mtime, and is in every cache key the archetype fingerprint is in (the season cache, the
@@ -96,6 +104,37 @@ byte for byte; a fresh save is all new; an existing save converges over one four
 cycle. `tests/test_jhsaa_talent_shape.py` and the archetype class-ladder test pin the
 PRE-era path through `legacy_talent_draw` — that model still generates legacy cohorts,
 so its shape is still worth pinning.
+
+### 3b. An edit reaches the NEXT cohort, never the building (`set_program_band`)
+
+The era gate protects the archive from the FEATURE arriving; it does nothing for an
+EDIT made afterwards. Rosters are regenerated from seed, so a tier change that simply
+changed the answer for a program would redraw every cohort from `band_era()` on — the
+sophomores through seniors on the roster and every reconstructed historical roster —
+while the page promised only incoming freshmen move. So every edit is recorded as
+HISTORY with a cutover at `_next_cohort_year()` (the season after the newest archived
+one — the `_resolve_era` arithmetic; 0 with no archive, where there is nothing to
+protect and the write is plain):
+
+- a per-program choice (a key, "none", "clear") is a per-save override row holding
+  `[{"tier", "from"}, …]`; the first edit on a program pins its CURRENT concrete tier
+  at year 0 before appending, so what the cohorts already drawn read cannot change
+  whatever the seed file says next. A bare string in that column (the first release's
+  shape) reads as one row from year 0. Editing again in the same year replaces that
+  year's row — one decision changed.
+- a tier-TABLE edit (ranges, labels, wide, weight) snapshots the OLD table into
+  `overrides.set_jhsaa_band_tiers_history` (`[{"from", "tiers"}, …]`) before the seed
+  file takes the new one; a cohort reads the snapshot in force for its entry year.
+- the bulk seed assignment writes the file (the newest answer, what a fresh save reads
+  for everyone) AND a cutover row per changed program in this save.
+
+`band_plan` resolves both histories once per roster build (`mod["band"]`) and
+`band_tier_for(plan, entry)` is a pure list walk per cohort. `world.reset()` collapses
+every history to its newest row at year 0 and drops the table snapshots
+(`overrides.collapse_jhsaa_band_history`, from `reset_eras`) — the `from` years were
+the old world's calendar, exactly why `jhsaa_band_era` is in `ERA_SETTINGS` (the first
+draft left it out, so a reset world inherited the previous world's cutover year and
+could have drawn the legacy classification model for decades).
 
 ### 4. The non-district draw scores on geography, not strength
 

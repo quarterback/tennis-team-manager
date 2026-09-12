@@ -2624,8 +2624,19 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   selector on the card, bulk assign, the tier-table form); never hardcode a school's
   tier and never add a tier in code — `DEFAULT_TIERS` is the missing-file fallback.
   `overrides.jhsaa_band_version()` sits beside the archetype fingerprint in every cache
-  key; resolve the tier ONCE per build (`_program_mod` → `mod["band"]`), never per seat.
-  `scripts/roll_talent_bands.py` writes rolled defaults for unassigned schools.
+  key; resolve the tier ONCE per build (`_program_mod` → `mod["band"]`, a `band_plan`),
+  never per seat. `scripts/roll_talent_bands.py` writes rolled defaults for unassigned
+  schools. ‼️ **Keyed on `School.ident`, NEVER the display name** (seed file, override
+  table, roll — `band_ident` resolves either): 683 programs carry a `source`, and a
+  rename keyed on the name lost the assignment and re-rolled. ‼️ **AN EDIT BINDS FROM
+  THE NEXT COHORT** (`set_program_band` / `set_band_tiers` / `bulk_edit_band_seed`):
+  rosters regenerate from seed, so a change applied to every cohort redraws the
+  sophomores through seniors already rostered. Every edit is a HISTORY with a cutover at
+  `_next_cohort_year()` (per-program `[{tier, from}]` in the override row, tier-table
+  snapshots in `jhsaa_band_tiers`); the seed file holds only the newest answer. Never
+  write `ov.set_jhsaa_band` with a bare key from app code. `jhsaa_band_era` is in
+  `ERA_SETTINGS` and `reset_eras` collapses the histories — a `from` year is the old
+  world's calendar. The page shows tier LABELS only: ranges are the rating calibration.
   - **‼️ THE NON-DISTRICT DRAW NO LONGER MATCHES ON STRENGTH** (`_nondistrict_pairs`:
     geography + availability + the ±1 class gate). It used to add `|strength gap|`,
     which scheduled the association's inequality straight back out (2080: early
