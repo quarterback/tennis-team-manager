@@ -4525,7 +4525,7 @@ def program_explorer() -> dict:
     # "" where the save has no coefficient for the program yet.
     sugg = suggested_bands()
     for x in out:
-        x["suggested"] = sugg.get(x["name"], "")
+        x["suggested"] = sugg.get(x["ident"], "")
         x["suggested_label"] = tier_label.get(x["suggested"], "")
         x["differs"] = bool(x["suggested"]) and x["suggested"] != x["band"]
     counts = {k: sum(1 for v in amap.values() if v == k) for k in EDITABLE_ARCHETYPES}
@@ -4542,8 +4542,9 @@ def program_explorer() -> dict:
 
 
 def suggested_bands(rows: list[dict] | None = None) -> dict[str, str]:
-    """`{school name: tier key}` — a results-driven tier for every program with a
+    """`{program ident: tier key}` — a results-driven tier for every program with a
     coefficient (owner rule 2026-09, `docs/AAR-jhsaa-program-coefficient.md`).
+    Keyed on the stable roster identity, the key the coefficient runs on.
 
     The Program Coefficient ranks WITHIN a class and per gender, and a tier is one
     property of a SCHOOL on an association-wide ladder — so the bridge is the

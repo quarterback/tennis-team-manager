@@ -41,7 +41,7 @@
       <tr>
         <td style="color:var(--text-faint);font-weight:800">{{ r.rank }}</td>
         <td style="font-variant-numeric:normal"><span class="jh-schoolcell">
-          <a href="{{ url_for('jhsaa_school', school=r.school, u=u, g=view.gender, year=view.scope.pin) }}">{{ r.school }}</a>
+          <a href="{{ url_for('jhsaa_school', school=r.name, u=u, g=view.gender, year=view.scope.pin) }}">{{ r.name }}</a>
           {% if r.bootstrap %}<span class="jhx-muted" title="Fewer than {{ view.min_history }} seasons of history: seeded at the class Q1">seeded</span>{% endif %}</span></td>
         <td><b>{{ '%.1f'|format(r.coefficient) }}</b></td>
         <td style="color:{{ 'var(--pos)' if r.trend > 0 else ('var(--neg)' if r.trend < 0 else 'var(--text-muted)') }}">

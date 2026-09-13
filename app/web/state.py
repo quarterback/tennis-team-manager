@@ -7142,7 +7142,9 @@ def jhsaa_coefficient_view(seed: int, gender: str, group: str | None = None,
     grp = group if group in jh.GROUPS else jh.GROUPS[0]
     scope = _jh_scope(g, grp, list(jh.GROUPS), yr, years,
                       (arc or {}).get("season_year"), arc)
-    data = coef.ranked(w["id"], g)
+    # The picked season is the coefficient's boundary: window, ranking and trend
+    # all end at `yr`, so browsing 2071 shows 2071's board, not today's.
+    data = coef.ranked(w["id"], g, as_of=yr)
     rows = data["groups"].get(grp, [])
     season_of = {}
     for y in data["years"]:

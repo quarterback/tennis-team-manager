@@ -110,3 +110,47 @@ def test_the_explorer_suggestion_deals_the_ladder_by_roll_weight(monkeypatch):
     for t in ladder:
         assert abs(counts.get(t["key"], 0) - 200 * t["weight"] / total) <= 1.5
     assert got["S0"] == ladder[0]["key"] and got["S199"] == ladder[-1]["key"]
+
+
+def test_history_is_keyed_on_the_roster_identity_not_the_display_string():
+    """The reissued-name trap: X was archived as "Treasure Valley", renamed to
+    "Treasure Peak" (source keeps the old string), and a DIFFERENT program Y is
+    live today AS "Treasure Valley". `_relabel` cannot alias that string. Per
+    season: X present under its new name → the string is Y's; X absent under its
+    new name → the string is X's own pre-rename season."""
+    # Y carries its OWN source — the data's shape (every live holder of a reissued
+    # name does), which is what keeps the two roster identities distinct.
+    rows = [{"name": "Treasure Peak", "source": "Treasure Valley"},
+            {"name": "Treasure Valley", "source": "Orellana Treasure Valley"},
+            {"name": "Plain", "source": "Old Plain"}]
+    # A pre-rename season: only "Treasure Valley" (X) played.
+    m = coef.identity_map({"Treasure Valley", "Old Plain"}, rows)
+    assert m["Treasure Valley"] == "Treasure Valley" and m["Old Plain"] == "Old Plain"
+    # A post-rename season: X plays as Treasure Peak, so "Treasure Valley" is Y.
+    m = coef.identity_map({"Treasure Peak", "Treasure Valley"}, rows)
+    assert m["Treasure Peak"] == "Treasure Valley"      # X's ident is its source
+    assert m["Treasure Valley"] == "Orellana Treasure Valley"   # the string is Y's
+    # Through season_points: the same arc credits X or Y by who else is in it.
+    arc = _season(1)
+    arc["standings"]["9A"]["League"].append({"school": "Treasure Valley"})
+    pts = coef.season_points(arc, rows + [{"name": n} for n in "ABCDE"])
+    assert "Treasure Valley" in pts                     # X, pre-rename
+    arc["standings"]["9A"]["League"].append({"school": "Treasure Peak"})
+    pts = coef.season_points(arc, rows + [{"name": n} for n in "ABCDE"])
+    assert {"Treasure Valley", "Orellana Treasure Valley"} <= set(pts)
+    assert pts["Treasure Valley"]["name"] == "Treasure Peak"
+
+
+def test_suggestions_read_only_current_sponsors(monkeypatch):
+    """A program that dropped the gender keeps its archive but gets no standing,
+    and takes no seat in the roll-weight deal."""
+    class S:
+        def __init__(self, ident): self.ident = ident
+    monkeypatch.setattr(jh, "load_schools", lambda g: [S("A"), S("C")])
+    rows = [{"school": "A", "rank": 1, "bootstrap": False},
+            {"school": "B", "rank": 2, "bootstrap": False},     # former program
+            {"school": "C", "rank": 3, "bootstrap": False}]
+    monkeypatch.setattr(coef, "coefficient",
+                        lambda wid, g, as_of=None: {"groups": {"9A": rows}})
+    got = coef.percentiles(1, "boys")
+    assert got == {"A": 1.0, "C": 0.0}

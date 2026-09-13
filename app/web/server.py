@@ -4046,12 +4046,13 @@ def create_app() -> Flask:
         if field == "band" and value == "suggested":
             # Each selected program takes ITS OWN results-driven suggestion
             # (`jhsaa.suggested_bands`), one seed write per tier.
-            sugg = _jh.suggested_bands()
+            sugg = _jh.suggested_bands()          # keyed on the roster identity
             by_tier: dict = {}
             for n in names:
                 n = n.strip()
-                if n in sugg:
-                    by_tier.setdefault(sugg[n], []).append(n)
+                tier = sugg.get(_jh.ident_of_name(n)) if n else None
+                if tier:
+                    by_tier.setdefault(tier, []).append(n)
                 elif n:
                     result["unknown"].append(n)
             for tier, group_names in by_tier.items():

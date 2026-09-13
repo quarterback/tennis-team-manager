@@ -86,20 +86,67 @@ def state_points(place: int, parastate: bool = False) -> float:
     return STATE_ENTRY
 
 
-def season_points(arc: dict) -> dict[str, dict]:
-    """ONE archived season → `{school: {"points", "road", "state", "toc", "group"}}`
-    for every program the season names. A pure fold over the archive dict, so a
-    test can hand-build a season and assert the arithmetic without a database."""
+def identity_map(season_names, rows: list[dict]) -> dict[str, str]:
+    """`{archived display name: stable program identity}` for ONE season.
+
+    ‼️ HISTORY IS KEYED ON THE ROSTER IDENTITY (`source or name`), NEVER THE DISPLAY
+    STRING. `world._relabel` rewrites every unambiguous rename on read, but it
+    deliberately cannot touch a retired name that a DIFFERENT program now uses as
+    its live name (`jhsaa.former_names` drops those six — Treasure Valley, Goodman,
+    River Plain, …). Keyed on the string, the older program's seasons would be
+    credited to the current holder of its former name and drive both its ranking
+    and its tier suggestion.
+
+    The archive has no year on a rename, but it has a structural fact: two
+    programs never share a display name in one season (pinned by
+    `test_display_names_are_unique_identities`). So an ambiguous name resolves, per
+    season, to the program whose CURRENT name is absent from that season — if the
+    renamed program appears under its new name, the old string is its neighbour's;
+    if it does not, the string is the renamed program's own pre-rename season.
+    Pure over the season's name set and the school rows, so it is pinned as
+    arithmetic."""
+    names = set(season_names)
+    live = {r["name"]: (r.get("source") or r["name"]) for r in rows}
+    out = dict(live)
+    for r in rows:
+        src = r.get("source")
+        if not src or src == r["name"]:
+            continue
+        if src in live:
+            # Ambiguous: `src` is also some other program's live name. It is the
+            # renamed program's own season only if that program is absent under
+            # its current name.
+            if r["name"] not in names:
+                out[src] = src            # the renamed program's ident IS its source
+        else:
+            out[src] = src
+    return out
+
+
+def season_points(arc: dict, rows: list[dict] | None = None) -> dict[str, dict]:
+    """ONE archived season → `{ident: {"points", "road", "state", "toc", "group",
+    "name"}}` for every program the season names, keyed on the stable roster
+    identity (`identity_map`; without `rows` the display name is the identity, the
+    hand-built-archive case). A pure fold over the archive dict, so a test can
+    hand-build a season and assert the arithmetic without a database."""
     from app.world import jhsaa_state_result
     import app.jhsaa as jh
     prices = road_points()
     out: dict[str, dict] = {}
+    named: set[str] = set()
+    for dists in (arc.get("standings") or {}).values():
+        for teams in (dists or {}).values():
+            for t in teams or ():
+                if t.get("school"):
+                    named.add(t["school"])
+    ident = identity_map(named, rows) if rows is not None else {}
 
     def row(school: str) -> dict:
-        r = out.get(school)
+        k = ident.get(school, school)
+        r = out.get(k)
         if r is None:
-            r = out[school] = {"points": 0.0, "road": 0.0, "state": 0.0, "toc": 0.0,
-                               "group": ""}
+            r = out[k] = {"points": 0.0, "road": 0.0, "state": 0.0, "toc": 0.0,
+                          "group": "", "name": school}
         return r
 
     # Who played, and in which class THAT season (the archive's own group).
@@ -164,6 +211,7 @@ def fold(seasons: list[tuple[int, dict]], current_group: dict[str, str],
     breakdown: dict[str, list] = {}
     last_group: dict[str, str] = {}
     counted: dict[str, int] = {}
+    last_name: dict[str, str] = {}
     for back, (year, pts) in enumerate(seasons[:WINDOW]):
         w = WEIGHTS[back]
         for school, r in pts.items():
@@ -172,12 +220,18 @@ def fold(seasons: list[tuple[int, dict]], current_group: dict[str, str],
             counted[school] = counted.get(school, 0) + 1
             if r.get("group") and school not in last_group:
                 last_group[school] = r["group"]
+            if r.get("name") and school not in last_name:
+                last_name[school] = r["name"]
     hist = history_counts if history_counts is not None else counted
     groups: dict[str, list[dict]] = {}
     for school, total in totals.items():
         grp = current_group.get(school) or last_group.get(school, "")
         groups.setdefault(grp, []).append({
-            "school": school, "group": grp, "coefficient": total,
+            # `school` is the identity the fold ran on; `name` the newest display
+            # name it was archived under (the page shows today's name for a live
+            # program, resolved by the caller).
+            "school": school, "name": last_name.get(school, school),
+            "group": grp, "coefficient": total,
             "seasons": hist.get(school, 0),
             "bootstrap": hist.get(school, 0) < MIN_HISTORY,
             "points": breakdown[school][0][1] if breakdown[school]
@@ -202,12 +256,13 @@ _coef_cache: dict = {}        # (world_id, gender, as_of, playup version) -> res
 
 def _season(world_id: int, year: int, gender: str) -> dict:
     from app import world
+    import app.jhsaa as jh
     ck = (world_id, year, gender)
     hit = _season_cache.get(ck)
     if hit is not None:
         return hit
     arc = world.get_jhsaa(world_id, year, gender)
-    got = season_points(arc) if arc else {}
+    got = season_points(arc, jh._rows()) if arc else {}
     _season_cache[ck] = got
     return got
 
@@ -241,18 +296,25 @@ def coefficient(world_id: int, gender: str, as_of: int | None = None) -> dict:
     for y in years:
         for school in _season(world_id, y, gender):
             hist[school] = hist.get(school, 0) + 1
-    current = {s.name: s.group for s in jh.load_schools(gender)}
+    schools = jh.load_schools(gender)
+    current = {s.ident: s.group for s in schools}
     groups = fold(seasons, current, hist)
+    # A live program reads under TODAY's name; a former one under the last it played.
+    today = {s.ident: s.name for s in schools}
+    for rows in groups.values():
+        for r in rows:
+            r["name"] = today.get(r["school"], r["name"])
     out = {"as_of": years[0], "years": window, "groups": groups}
     _coef_cache[ck] = out
     return out
 
 
-def ranked(world_id: int, gender: str) -> dict:
+def ranked(world_id: int, gender: str, as_of: int | None = None) -> dict:
     """`coefficient()` with `trend` on every row — this coefficient minus the same
     program's coefficient as of the previous archived season (0 when there is no
-    prior season, or the program was not in it)."""
-    now = coefficient(world_id, gender)
+    prior season, or the program was not in it). `as_of` is the season the reader
+    picked: the window, the ranking and the trend all end there."""
+    now = coefficient(world_id, gender, as_of=as_of)
     if not now["years"]:
         return now
     prior = {}
@@ -273,6 +335,12 @@ def percentiles(world_id: int, gender: str) -> dict[str, float]:
     may legitimately hand to an association-wide consumer (the explorer's tier
     suggestion): a percentile within a class is class-blind by construction, so
     no cross-class ordering is ever formed."""
+    import app.jhsaa as jh
+    # ‼️ CURRENT SPONSORS ONLY. A program that dropped this gender, or stopped
+    # sponsoring altogether, still carries up to nine seasons of archive — ranked
+    # here it would keep an obsolete standing in the school's tier suggestion and
+    # take a seat in the roll-weight deal, shifting every live program's cut.
+    members = {s.ident for s in jh.load_schools(gender)}
     out: dict[str, float] = {}
     for rows in coefficient(world_id, gender)["groups"].values():
         # A class with NO established program (a save younger than MIN_HISTORY
@@ -280,7 +348,8 @@ def percentiles(world_id: int, gender: str) -> dict[str, float]:
         # ordering that says nothing, so it hands out no standing at all.
         if not any(not r["bootstrap"] for r in rows):
             continue
-        n = len(rows)
-        for r in rows:
-            out[r["school"]] = 1.0 if n <= 1 else 1.0 - (r["rank"] - 1) / (n - 1)
+        live = [r for r in rows if r["school"] in members]     # already ranked
+        n = len(live)
+        for i, r in enumerate(live):
+            out[r["school"]] = 1.0 if n <= 1 else 1.0 - i / (n - 1)
     return out
