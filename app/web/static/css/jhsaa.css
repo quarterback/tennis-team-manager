@@ -863,7 +863,10 @@ a.jh-eyebrow:hover { color: var(--brand-strong); }
 /* Most ledgers never mark the name cell `nm` — the committee, district and
    class tables just drop a `.jh-schoolcell` in a plain <td> — so the cell that
    HOLDS a school cell is the name cell, whatever class it carries. */
-.jh-ledger td.nm .jh-schoolcell a, .jh-ledger td .jh-schoolcell a { white-space: normal; overflow: visible; text-overflow: clip; }
+.jh-ledger td.nm .jh-schoolcell a, .jh-ledger td .jh-schoolcell a {
+  white-space: normal; overflow: visible; text-overflow: clip;
+  overflow-wrap: break-word; min-width: min-content;   /* words, never letters — see the grid rule */
+}
 .jh-ledger td.nm .jh-schoolcell, .jh-ledger td .jh-schoolcell { align-items: flex-start; }
 .jh-ledger td.nm .jh-schoolcell .mk, .jh-ledger td .jh-schoolcell .mk { margin-top: 2px; }
 /* A `width:100%` fixed-layout table is never wider than its container, so its
@@ -1210,7 +1213,12 @@ html[data-jh-scout="on"] .jh-scout { visibility: visible; }
    at spaces keeps "Natchitoches" whole and lets "North Coast Packing" take two
    lines, which is what a reader wants. */
 .jh-champgrid td { padding: 10px 10px; }
-.jh-champgrid .jh-schoolcell a { overflow-wrap: break-word; word-break: normal; }
+/* ‼️ AND THE LINK MUST NOT SHRINK BELOW ITS LONGEST WORD. `.jh-schoolcell a` is a
+   flex child with `min-width: 0`, so `break-word` alone still broke "Natchitoches"
+   mid-word: the item could shrink to nothing, the cell's min-content was nothing,
+   and the column never grew. `min-content` makes the longest word the floor, the
+   cell inherits it, and the auto-layout column widens to fit. */
+.jh-champgrid .jh-schoolcell a { overflow-wrap: break-word; word-break: normal; min-width: min-content; }
 
 /* ---- Layout switcher (By year · Grid) ---- */
 .jh-laypick { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; }
