@@ -209,6 +209,7 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
     valid_classes = {"all", *jhsaa.GROUPS}
     if classification not in valid_classes:
         raise ExportError("Unknown JHSAA classification.")
+    injected = season is not None
     season = season or _load_archived_jhsaa_season(year, gender)
     all_teams = list(season["teams"].values())
     selected = [t for t in all_teams if classification == "all" or t.school.group == classification]
@@ -429,23 +430,33 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
     # standing as of THIS export's season — road-round wins and the State finish
     # only, ranked within the championship_group the program plays in today.
     # Read off the same memo the /jhsaa/coefficient page uses (a pure fold over
-    # the archive, never resimulated); empty when there is no world to fold
-    # (injected seasons/tests). The export's `year` is the SEASON year, so it is
-    # mapped back to the archive's world-year exactly as the season loader does.
+    # the archive, never resimulated). ‼️ ARCHIVE PATH ONLY: an injected season
+    # is not in the archive the fold reads, so the table is empty for it — keyed
+    # on `injected`, never on "a world exists", or a fixture run beside a real
+    # save would package coefficient data from an unrelated persisted archive.
+    # The export's `year` is the SEASON year, so it is mapped back to the
+    # archive's world-year exactly as the season loader does.
     from app import jhsaa_coefficient as _coef
     coefficient_rows = []
-    if w:
+    if not injected and w:
+        # ‼️ ONLY PROGRAMS WITH A programs.csv ROW. `ranked()` keeps a program that
+        # has since stopped sponsoring this gender (its archive is still real), but
+        # programs.csv is `all_teams` — current sponsors — so its id would have no
+        # entity row to join. Filter to the entity table and RE-RANK within the
+        # group among those, the `percentiles()` rule (the page still lists the
+        # former program; a normalised consumer must not have a dangling id).
         ident_to_id = {t.school.ident: t.school.key for t in all_teams}
         world_year = year - wd.BASE_YEAR - 1        # inverse of wd.jhsaa_season_year
         standing = _coef.ranked(w["id"], gender, as_of=world_year)
         for group, rows_ in sorted(standing["groups"].items()):
             if classification != "all" and group != classification:
                 continue
-            for r in rows_:
+            live = [r for r in rows_ if r["school"] in ident_to_id]   # already ranked
+            for rank, r in enumerate(live, start=1):
                 coefficient_rows.append({
-                    "program_id": ident_to_id.get(r["school"], f"{r['school']}|{gender}"),
+                    "program_id": ident_to_id[r["school"]],
                     "program_name": r["name"], "gender": gender,
-                    "championship_group": group, "rank": r["rank"],
+                    "championship_group": group, "rank": rank,
                     "coefficient": r["coefficient"],
                     "trend": r.get("trend", 0.0),
                     "season_points": r["points"],
@@ -543,8 +554,10 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "points, weight] triples for the window, newest first; as_of_world_year and "
             "window_world_years are the archive's zero-based world-years (season_year = "
             f"{wd.BASE_YEAR} + world_year + 1). program_id keys on the roster identity, so "
-            "a renamed program keeps one row across its history. Empty when the save has "
-            "no archive.",
+            "a renamed program keeps one row across its history, and every row joins "
+            "programs.csv: a program that has since stopped sponsoring this gender is "
+            "omitted and rank counts current sponsors only (the app's page still lists "
+            "it). Empty on an injected season or when the save has no archive.",
             # ‼️ DERIVED from `AT_LARGE_BIDS`/`STATE_FIELD`, never retyped: this
             # sentence claimed "the 48-team groups (7A and Group 1)" and "sixteen
             # selections in seed order 33-48" after both had stopped being true,

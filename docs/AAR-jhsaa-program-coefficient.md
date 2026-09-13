@@ -70,5 +70,11 @@ road-to-state and State-bracket results and nothing else.
   the season year straight through and the window silently ends one world-year
   short of nothing, since no archive sits at 2082. The manifest's `domain_rules`
   sentence DERIVES every price from the module's constants; a retyped price list
-  is the committee sentence's mistake again. Empty on an injected season (no
-  world to fold). Pinned through the archive path in `tests/test_jhsaa_toc.py`.
+  is the committee sentence's mistake again. Two review findings shaped it:
+  the table is keyed on the ARCHIVE PATH (`injected`), never on "a world
+  exists" — an injected season beside a live save would otherwise package
+  another archive's standing under that season's manifest; and it emits ONLY
+  programs with a `programs.csv` row, re-ranked within the group among them
+  (the `percentiles()` rule), because `ranked()` keeps a program that stopped
+  sponsoring the gender and its id would have no entity row to join. Pinned
+  through the archive path in `tests/test_jhsaa_toc.py`.

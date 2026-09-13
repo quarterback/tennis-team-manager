@@ -1044,6 +1044,12 @@ def test_the_research_export_carries_the_program_coefficient(archived):
     ids = {p["program_id"] for p in programs}
     assert all(r["program_id"].endswith("|girls") for r in rows)
     assert {r["program_id"] for r in rows} <= ids, "an id the programs table cannot join"
+    # An injected season is NOT in the archive the fold reads: with a real save
+    # present the table must still be empty, never another save's standing.
+    from app.research_export import _load_archived_jhsaa_season
+    injected = build_jhsaa(y, "girls", season=_load_archived_jhsaa_season(y, "girls"))
+    assert not list(_csv.DictReader(_io.TextIOWrapper(
+        _io.BytesIO(injected["jhsaa_coefficient.csv"]))))
     # ranked 1..n within each group, no cross-class board
     by_group = {}
     for r in rows:

@@ -3521,6 +3521,9 @@ was a school marker, shipped "Baptist HS High School".
     same memo as the page, `program_id` on the roster identity, the export's SEASON
     year mapped to the archive world-year before it becomes `as_of`, and the
     manifest sentence derives its prices from the module — never retype them.
+    Archive path ONLY (an injected season beside a live save must not package
+    another archive's standing), and only programs with a `programs.csv` row,
+    re-ranked among them — a former sponsor's id would join nothing.
   - **`jh_school`, not `school`**, on every JHSAA POST — `school` is the COLLEGE program
     `_editor_redirect` reads to come back, so a JHSAA name in it sends the editor to a
     school its division has never heard of. The POST routes keep their `/editor/jhsaa-*`
