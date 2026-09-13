@@ -64,6 +64,7 @@
     <div class="jhx-chips" data-facet="flags">
       <button type="button" class="jhx-chip" data-v="edited">edited in this save <i>{{ ed.counts.edited }}</i></button>
       <button type="button" class="jhx-chip" data-v="former">former programs <i>{{ ed.counts.former }}</i></button>
+      <button type="button" class="jhx-chip" data-v="differs">suggestion differs <i>{{ ed.counts.differs }}</i></button>
     </div></div>
 </div>
 
@@ -76,6 +77,7 @@
         <th data-sort="classification" class="jhx-sort" style="width:90px">Class</th>
         <th data-sort="archetype" class="jhx-sort" style="width:160px">Archetype</th>
         <th data-sort="band_rank" class="jhx-sort" style="width:170px">Talent tier</th>
+        <th data-sort="suggested_rank" class="jhx-sort" style="width:170px" title="From the Program Coefficient: the program's standing within its class, laid onto the tier ladder by roll weight">Suggested</th>
         <th data-sort="plays_up" class="jhx-sort" style="width:150px">Plays up</th>
       </tr></thead>
       <tbody id="jhx-body"></tbody>
@@ -95,6 +97,7 @@
       <input type="hidden" name="field" value="band"><input type="hidden" name="names" value="">
       <span class="bl-select-wrap"><select class="bl-select" name="value">
         <option value="" disabled selected>Set tier…</option>
+        <option value="suggested">each program's suggested tier</option>
         {% for t in ed.tiers %}<option value="{{ t.key }}">{{ t.label }}{% if t.wide %} · volatile{% endif %}</option>{% endfor %}
         <option value="clear">back to the rolled default</option>
       </select></span>
@@ -176,7 +179,7 @@
   var ROWS = JSON.parse(document.getElementById('jhx-data').textContent);
   var byName = {}; ROWS.forEach(function (r) { byName[r.name] = r; });
   var GROUP_ORDER = {{ ed.groups|tojson }};
-  var TIER_LABEL = {}; {{ ed.tiers|tojson }}.forEach(function (t) { TIER_LABEL[t.key] = t.label; });
+  var TIER_LABEL = {}, TIER_RANK = {}; {{ ed.tiers|tojson }}.forEach(function (t, i) { TIER_LABEL[t.key] = t.label; TIER_RANK[t.key] = i; });
   var KEY = 'jhx-state';
   // ‼️ Selection, filters, sort and the open panel all live in localStorage, so a
   // POST → redirect (every save is one) lands back exactly where you were, and a
@@ -204,6 +207,7 @@
     if (f.archetype && f.archetype.length && f.archetype.indexOf(r.archetype) < 0) return false;
     if (f.plays_up && f.plays_up.length && f.plays_up.indexOf(r.plays_up ? '1' : '0') < 0) return false;
     if (facetOn('flags', 'edited') && !r.edited) return false;
+    if (facetOn('flags', 'differs') && !r.differs) return false;
     if (!facetOn('flags', 'former') && !r.sponsors) return false;
     if (S.q && r.name.toLowerCase().indexOf(S.q.toLowerCase()) < 0) return false;
     return true;
@@ -235,6 +239,7 @@
     var k = S.sort, x = a[k], y = b[k];
     if (k === 'classification') { x = GROUP_ORDER.indexOf(x); y = GROUP_ORDER.indexOf(y); }
     if (k === 'plays_up') { x = x ? 1 : 0; y = y ? 1 : 0; }
+    if (k === 'suggested_rank') { x = TIER_RANK[a.suggested] ?? 99; y = TIER_RANK[b.suggested] ?? 99; }
     if (x === y) return a.name < b.name ? -1 : 1;
     return (x < y ? -1 : 1) * S.dir;
   }
@@ -250,6 +255,7 @@
       '<td>' + chip(r) + '</td>' +
       '<td>' + (r.archetype ? esc(r.archetype.replace(/_/g, ' ')) : '<span class="jhx-muted">—</span>') + '</td>' +
       '<td>' + esc(r.band_label) + (r.band_assigned ? '' : ' <span class="jhx-muted">rolled</span>') + '</td>' +
+      '<td>' + (r.suggested ? (r.differs ? '<b>' + esc(r.suggested_label) + '</b>' : esc(r.suggested_label)) : '<span class="jhx-muted">—</span>') + '</td>' +
       '<td>' + (r.plays_up ? 'yes — ' + esc(r.competes) : '<span class="jhx-muted">—</span>') + '</td></tr>';
   }
   var shown = [];
@@ -262,11 +268,11 @@
       Object.keys(groups).sort(groupSort).forEach(function (k) {
         var rows = groups[k], allOn = rows.every(function (r) { return SEL.has(r.name); });
         html += '<tr class="jhx-gh"><td class="jhx-ck"><input type="checkbox" data-gck="' + esc(k) + '"' + (allOn ? ' checked' : '') + '></td>' +
-          '<td colspan="5"><b>' + esc(groupLabel(k)) + '</b> <i>' + rows.length + '</i></td></tr>';
+          '<td colspan="6"><b>' + esc(groupLabel(k)) + '</b> <i>' + rows.length + '</i></td></tr>';
         rows.forEach(function (r) { html += rowHtml(r); });
       });
     } else shown.forEach(function (r) { html += rowHtml(r); });
-    body.innerHTML = html || '<tr><td colspan="6" class="jhx-empty">No programs match these filters.</td></tr>';
+    body.innerHTML = html || '<tr><td colspan="7" class="jhx-empty">No programs match these filters.</td></tr>';
     $('jhx-n').textContent = shown.length;
     $('jhx-all').checked = shown.length > 0 && shown.every(function (r) { return SEL.has(r.name); });
     document.querySelectorAll('.jhx-chip').forEach(function (b) {

@@ -3503,6 +3503,20 @@ was a school marker, shipped "Baptist HS High School".
     (non-sponsoring) programs are behind a "show" switch, not in the default view.
     `archetype_board` / `playup_board` survive as the old boards' read models
     (tests use them) but no page renders them.
+  - **‼️ THE PROGRAM COEFFICIENT (owner spec 2026-09, `app/jhsaa_coefficient.py`,
+    `/jhsaa/coefficient` on the Rankings sub-rail, `docs/AAR-jhsaa-program-coefficient.md`).**
+    A UEFA-style nine-season strength score from ROAD and STATE results only (the
+    regular season is never an input), weighted 1.0/0.6/0.3 by recency, **ranked
+    within one classification and never across classes** — no "overall" board may
+    exist. Fewer than 3 archived seasons in the whole save → seeded at the class Q1
+    (a class change is never a bootstrap trigger). ONE pass per season, pure over
+    the archive dict, road wins priced by the round's ARCHIVED NAME via `jhsaa`'s
+    constants. **It feeds the explorer's Suggested tier** (`jhsaa.suggested_bands`):
+    within-class percentile averaged over the sponsored genders, dealt onto the
+    non-volatile tiers by ROLL WEIGHT; volatile tiers are never suggested; a class
+    with no established program suggests nothing. The tier is still the owner's to
+    set — the suggestion is a column and a facet, applied through the ordinary
+    selection.
   - **`jh_school`, not `school`**, on every JHSAA POST — `school` is the COLLEGE program
     `_editor_redirect` reads to come back, so a JHSAA name in it sends the editor to a
     school its division has never heard of. The POST routes keep their `/editor/jhsaa-*`

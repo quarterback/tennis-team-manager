@@ -44,7 +44,7 @@ from .state import (jhsaa_view, jhsaa_scope_view, jhsaa_school_view, jhsaa_past_
                     jhsaa_bracket_view, jhsaa_toc_view, jhsaa_district_view, jhsaa_districts_view,
                     jhsaa_honors_view,
                     jhsaa_rankings_view, jhsaa_player_view, jhsaa_players_search,
-                    jhsaa_computer_ratings_view, jhsaa_committee_view,
+                    jhsaa_computer_ratings_view, jhsaa_committee_view, jhsaa_coefficient_view,
                     jhsaa_misapplied_players, jhsaa_lineup_lab, jhsaa_schools_view,
                     jhsaa_titles_view, jhsaa_individual_view, jhsaa_realism_view,
                     jhsaa_jv_state_view,
@@ -3427,6 +3427,15 @@ def create_app() -> Flask:
         return render_template("jhsaa_committee.html", active="High School",
                                view=view, gender=gender, u=u, uni_label=label)
 
+    @app.route("/jhsaa/coefficient")
+    def jhsaa_coefficient():
+        """The Program Coefficient — a class-scoped, nine-season strength ranking
+        built from road and State results only (`app/jhsaa_coefficient.py`)."""
+        gender, label, u, g, group, year = _jh_scope_args()
+        view = jhsaa_coefficient_view(DEFAULT_SEED, g, group, year)
+        return render_template("jhsaa_coefficient.html", active="High School",
+                               view=view, gender=gender, u=u, uni_label=label)
+
     @app.route("/jhsaa/honors")
     def jhsaa_honors():
         """The classification's postseason awards — POY, the All-State teams and
@@ -4034,7 +4043,22 @@ def create_app() -> Flask:
         value = (request.form.get("value") or "").strip()
         names = (request.form.get("names") or "").splitlines()
         result = {"applied": [], "unknown": []}
-        if field == "band":
+        if field == "band" and value == "suggested":
+            # Each selected program takes ITS OWN results-driven suggestion
+            # (`jhsaa.suggested_bands`), one seed write per tier.
+            sugg = _jh.suggested_bands()
+            by_tier: dict = {}
+            for n in names:
+                n = n.strip()
+                if n in sugg:
+                    by_tier.setdefault(sugg[n], []).append(n)
+                elif n:
+                    result["unknown"].append(n)
+            for tier, group_names in by_tier.items():
+                got = _jh.bulk_edit_band_seed(tier, group_names, remove=False)
+                result["applied"] += got["applied"]
+                result["unknown"] += got["unknown"]
+        elif field == "band":
             result = _jh.bulk_edit_band_seed(None if value == "clear" else value,
                                              names, remove=(value == "clear"))
         elif field == "archetype":
