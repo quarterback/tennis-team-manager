@@ -2658,6 +2658,11 @@ def create_app() -> Flask:
             "jhsaa_editor.html", active="HS Programs",
             view=jhsaa_scope_view(DEFAULT_SEED, g, group, year),
             ed=_jh.program_explorer(),
+            # The scope rail's class switch lands here with `group` in the URL; the
+            # page seeds its Class facet from it so the rail filters the table
+            # (the chips can still widen to several classes after). Absent, the
+            # browser's remembered facets stand.
+            rail_group=group or "",
             flash=request.cookies.get("jh_bulk_result", ""),
             gender=gender, u=u, uni_label=label))
         if request.cookies.get("jh_bulk_result"):
@@ -4042,7 +4047,13 @@ def create_app() -> Flask:
             for n in result["applied"]:
                 ov.clear_jhsaa_archetype(n)
         elif field == "playup":
-            result = _jh.bulk_edit_playup_seed("up" if value == "up" else None, names)
+            # Explicit: "up" plays the selection up, "hold" drops the seed flag.
+            # Anything else — a stale client, a malformed post — is a NO-OP, never
+            # read as the destructive "hold".
+            if value == "up":
+                result = _jh.bulk_edit_playup_seed("up", names)
+            elif value == "hold":
+                result = _jh.bulk_edit_playup_seed(None, names)
         reset_all()
         _jh.reset_schools()
         resp = redirect(url_for("jhsaa_programs", u=request.form.get("u", "D1-men"),

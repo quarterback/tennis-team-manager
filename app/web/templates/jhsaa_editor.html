@@ -183,6 +183,10 @@
   // filter change never drops what you had checked. Wrapped: storage can throw.
   var S = { sel: [], f: {}, q: '', group: '', sort: 'name', dir: 1, panel: '', only: false };
   try { var raw = localStorage.getItem(KEY); if (raw) S = Object.assign(S, JSON.parse(raw)); } catch (e) {}
+  // The scope rail's class switch: an explicit `group` in the URL seeds the Class
+  // facet, so the rail filters the table the way it scopes every other JHSAA page.
+  var RAIL = {{ rail_group|tojson }};
+  if (RAIL) { S.f = S.f || {}; S.f.classification = [RAIL]; S.only = false; }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
   var SEL = new Set(S.sel);
 

@@ -1437,8 +1437,8 @@ a.jh-poyrow:hover { background: var(--surface-hover); }
   cursor: pointer; border: 1px solid var(--border-default); background: var(--surface-card); color: var(--text-secondary); }
 .jhx-chip i { font-style: normal; color: var(--text-faint); font-weight: 500; margin-left: 2px; }
 .jhx-chip:hover { border-color: var(--brand); }
-.jhx-chip.on { background: var(--brand); border-color: var(--brand); color: #fff; }
-.jhx-chip.on i { color: #fff; opacity: .8; }
+.jhx-chip.on { background: var(--brand); border-color: var(--brand); color: var(--brand-contrast); }
+.jhx-chip.on i { color: var(--brand-contrast); opacity: .8; }
 
 .jhx-tbl th.jhx-sort { cursor: pointer; user-select: none; white-space: nowrap; }
 .jhx-tbl th.jhx-sort.asc::after { content: " ▲"; font-size: 10px; }
@@ -1454,12 +1454,12 @@ a.jh-poyrow:hover { background: var(--surface-hover); }
 .jhx-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--brand); vertical-align: middle; }
 
 /* The action bar: fixed to the bottom of the viewport, only while a selection exists. */
-.jhx-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: var(--gray-800); color: #fff;
+.jhx-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: var(--gray-800); color: var(--text-inverse);
   box-shadow: 0 -2px 12px rgba(0,0,0,.18); }
 .jhx-bar-inner { max-width: var(--jh-measure); margin: 0 auto; padding: 10px 20px; display: flex; gap: 14px;
   align-items: center; flex-wrap: wrap; }
 .jhx-bar-n { font-size: var(--fs-body-m); font-weight: 700; margin-right: 6px; }
-.jhx-link { background: none; border: 0; color: #fff; opacity: .75; text-decoration: underline; cursor: pointer;
+.jhx-link { background: none; border: 0; color: var(--text-inverse); opacity: .75; text-decoration: underline; cursor: pointer;
   font-size: var(--fs-caption); margin-left: 8px; }
 .jhx-link.on { opacity: 1; font-weight: 700; }
 .jhx-act { display: flex; gap: 6px; align-items: center; }
