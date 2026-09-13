@@ -2646,32 +2646,37 @@ def create_app() -> Flask:
 
     @app.route("/jhsaa/programs")
     def jhsaa_programs():
-        """The JHSAA's own editing surface — archetypes and play-up.
-
-        These lived on `/editor` (the COLLEGE roster editor) because that is where the
-        POST routes already were. They are JHSAA properties, so they belong under the
-        JHSAA where somebody would look for them."""
+        """The JHSAA program explorer (owner rule 2026-09) — every program as one
+        row; grouping, facets, search, a persistent multi-selection and a sticky
+        action bar all live in the browser over one JSON payload. The single-
+        program editor is a side panel off a row, not the page. Tier DEFINITIONS
+        live on their own sub-page (`jhsaa_program_tiers`): they are not a slice
+        of this table."""
         gender, label, u, g, group, year = _jh_scope_args()
         from app import jhsaa as _jh
-        sel = (request.args.get("school") or "").strip()
-        # Recently viewed, in a cookie — no schema for a convenience, and it is per
-        # browser rather than per save, which is what "where was I" actually means.
-        recent = [x for x in (request.cookies.get("jh_recent") or "").split("|") if x]
-        if sel:
-            recent = [sel] + [x for x in recent if x != sel]
-        recent = recent[:6]
         resp = make_response(render_template(
             "jhsaa_editor.html", active="HS Programs",
             view=jhsaa_scope_view(DEFAULT_SEED, g, group, year),
-            ed=_jh.program_editor(sel, request.args.get("board", ""),
-                                  request.args.get("cat", ""),
-                                  bool(request.args.get("all")),
-                                  [x for x in recent if x != sel]),
+            ed=_jh.program_explorer(),
+            flash=request.cookies.get("jh_bulk_result", ""),
             gender=gender, u=u, uni_label=label))
-        if sel:
-            resp.set_cookie("jh_recent", "|".join(recent), max_age=60 * 60 * 24 * 90,
-                            samesite="Lax")
+        if request.cookies.get("jh_bulk_result"):
+            resp.delete_cookie("jh_bulk_result")
         return resp
+
+    @app.route("/jhsaa/programs/tiers")
+    def jhsaa_program_tiers():
+        """The talent-tier TABLE — keys, labels, ranges, roll weights. Its own
+        page because it defines the ladder every program is placed on; it is
+        not a way of slicing the program table, and sat under it as one more
+        panel on a page already doing four jobs."""
+        gender, label, u, g, group, year = _jh_scope_args()
+        from app import jhsaa as _jh
+        return render_template(
+            "jhsaa_tiers.html", active="HS Programs",
+            view=jhsaa_scope_view(DEFAULT_SEED, g, group, year),
+            tiers=_jh.band_tiers(), tier_counts=_jh.band_board()["counts"],
+            gender=gender, u=u, uni_label=label)
 
     # ---- deferred heavy builds (owner rule 2026-08) --------------------------
     # The scouting tools (census searches, the cohort finder, propose, the
@@ -3932,7 +3937,8 @@ def create_app() -> Flask:
     def _editor_redirect():
         # An edit made on the JHSAA's own page returns there, not to the college editor.
         if request.form.get("back") == "jhsaa":
-            return redirect(url_for("jhsaa_programs", u=request.form.get("u", "D1-men")))
+            return redirect(url_for("jhsaa_programs", u=request.form.get("u", "D1-men"),
+                                    g=request.form.get("g", "")))
         return redirect(url_for("editor", u=request.form.get("u", "D1-men"),
                                 school=request.form.get("school", ""),
                                 conf=request.form.get("conf", "All")))
@@ -3981,33 +3987,6 @@ def create_app() -> Flask:
             reset_all()
         return _editor_redirect()
 
-    @app.route("/editor/jhsaa-archetype-bulk", methods=["POST"])
-    def editor_jhsaa_archetype_bulk():
-        """Add or remove MANY schools' archetype tag at once, writing the SEED FILE
-        (`data/jhsaa/archetypes.json`) so the list survives a brand-new database
-        file, not just a reset of the current one — see
-        `jhsaa.bulk_edit_archetype_seed`. One name per line (blank lines ignored)."""
-        from app import jhsaa as _jh
-        kind = request.form.get("archetype", "")
-        action = request.form.get("action", "add")
-        names = (request.form.get("names") or "").splitlines()
-        result = {"applied": [], "unknown": []}
-        if action == "remove":
-            result = _jh.bulk_edit_archetype_seed(None, names, remove=True)
-        elif kind in _jh.EDITABLE_ARCHETYPES:
-            result = _jh.bulk_edit_archetype_seed(kind, names, remove=False)
-        reset_all()
-        resp = redirect(url_for("jhsaa_programs", u=request.form.get("u", "D1-men"),
-                                board="archetype"))
-        # A quick confirmation of what stuck, in a cookie flash rather than a query
-        # string — a bulk paste can be dozens of names and would blow past a URL's
-        # practical length.
-        resp.set_cookie("jh_bulk_result",
-                        f"{len(result['applied'])} applied"
-                        + (f", {len(result['unknown'])} unrecognized" if result["unknown"] else ""),
-                        max_age=30, samesite="Lax")
-        return resp
-
     @app.route("/editor/jhsaa-band", methods=["POST"])
     def editor_jhsaa_band():
         """Set one JHSAA program's talent tier (owner rule 2026-09) — a per-save
@@ -4032,27 +4011,50 @@ def create_app() -> Flask:
             _jh.reset_schools()
         return _editor_redirect()
 
-    @app.route("/editor/jhsaa-band-bulk", methods=["POST"])
-    def editor_jhsaa_band_bulk():
-        """Assign MANY schools a tier at once, writing the SEED FILE
-        (`data/jhsaa/talent_bands.json`) — `jhsaa.bulk_edit_band_seed`. One name
-        per line; "remove" sends the schools back to their rolled default."""
+    @app.route("/editor/jhsaa-programs-bulk", methods=["POST"])
+    def editor_jhsaa_programs_bulk():
+        """The explorer's ACTION BAR: apply one change to every selected program.
+        `field` is `band`, `archetype` or `playup`; `value` is a tier key, an
+        archetype kind, a play-up choice (`up` / `hold`) or `clear` (back to the
+        rolled default / untagged); `names` is one display name per line.
+
+        Every branch writes the SEED FILE (owner decision 2026-09), the reason
+        the retired paste-names forms did: the owner starts fresh databases and
+        a per-save override cannot survive that. The per-school panel keeps the
+        reversible per-save override for a one-off. Unknown names are skipped
+        and reported, never invented; a program that cannot play up is reported,
+        not written."""
         from app import jhsaa as _jh
-        tier = request.form.get("band", "")
-        action = request.form.get("action", "add")
+        field = request.form.get("field", "")
+        value = (request.form.get("value") or "").strip()
         names = (request.form.get("names") or "").splitlines()
-        if action == "remove":
-            result = _jh.bulk_edit_band_seed(None, names, remove=True)
-        else:
-            result = _jh.bulk_edit_band_seed(tier, names, remove=False)
+        result = {"applied": [], "unknown": []}
+        if field == "band":
+            result = _jh.bulk_edit_band_seed(None if value == "clear" else value,
+                                             names, remove=(value == "clear"))
+        elif field == "archetype":
+            if value == "clear":
+                result = _jh.bulk_edit_archetype_seed(None, names, remove=True)
+            elif value in _jh.EDITABLE_ARCHETYPES:
+                result = _jh.bulk_edit_archetype_seed(value, names, remove=False)
+            # The seed now says what the pass asked for; an older per-save
+            # override on a touched school would silently outrank it on read.
+            for n in result["applied"]:
+                ov.clear_jhsaa_archetype(n)
+        elif field == "playup":
+            result = _jh.bulk_edit_playup_seed("up" if value == "up" else None, names)
         reset_all()
         _jh.reset_schools()
         resp = redirect(url_for("jhsaa_programs", u=request.form.get("u", "D1-men"),
-                                board="band"))
-        resp.set_cookie("jh_bulk_result",
-                        f"{len(result['applied'])} applied"
-                        + (f", {len(result['unknown'])} unrecognized" if result["unknown"] else ""),
-                        max_age=30, samesite="Lax")
+                                g=request.form.get("g", "")))
+        msg = f"{len(result['applied'])} applied"
+        if result.get("ineligible"):
+            msg += f", {len(result['ineligible'])} too big to play up"
+        if result.get("unknown"):
+            msg += f", {len(result['unknown'])} unrecognized"
+        # A cookie flash rather than a query string — a selection can be dozens
+        # of names and the page restores its own state from the browser anyway.
+        resp.set_cookie("jh_bulk_result", msg, max_age=30, samesite="Lax")
         return resp
 
     @app.route("/editor/jhsaa-band-tiers", methods=["POST"])
@@ -4084,8 +4086,7 @@ def create_app() -> Flask:
             _jh.set_band_tiers(tiers)
             reset_all()
             _jh.reset_schools()
-        return redirect(url_for("jhsaa_programs", u=request.form.get("u", "D1-men"),
-                                board="band"))
+        return redirect(url_for("jhsaa_program_tiers", u=request.form.get("u", "D1-men")))
 
     @app.route("/editor/jhsaa-playup", methods=["POST"])
     def editor_jhsaa_playup():

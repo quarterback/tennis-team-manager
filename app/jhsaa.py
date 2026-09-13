@@ -4455,110 +4455,126 @@ def district_short(name: str) -> str:
     return out
 
 
-def program_editor(selected: str = "", board: str = "", cat: str = "",
-                   show_all: bool = False, recent: list | None = None) -> dict:
-    """The JHSAA program editor — a DIRECTORY, not a dataset.
+def program_explorer() -> dict:
+    """The JHSAA program EXPLORER (owner rule 2026-09): every program as ONE row —
+    name, class, archetype, talent tier, play-up — and nothing else; the page
+    slices it (group, facet, search) and edits a SELECTION in the browser.
 
-    ‼️ NARROW BEFORE YOU SHOW (owner rule 2026-08). The first version listed all ~91
-    archetyped programs and all ~13 play-ups as editable rows — 195 of them. Sorting or
-    searching that table does not fix it: the problem is not organisation, it is
-    EXPOSURE. Even a perfect table makes somebody confront a whole dataset to change one
-    school.
+    This replaced the board → type → program directory. That directory obeyed
+    "narrow before you show" and was still tedious, because it asked the reader to
+    know what they were looking for: you cannot ask it for "every 8A/9A program
+    below Poor" or "Group 2's coaching and turnout programs", which is exactly how
+    the owner thinks about the association. A dense table with faceted filters
+    answers those in one screen, and a persistent multi-selection with an action
+    bar is what makes "twelve here, eight more after a filter change, set them all
+    to Strong" a single gesture rather than twenty form posts.
 
-    So the page is: pick a board, pick a type, pick the program — then only that program.
-    A search box for anyone who already knows the name, recently-viewed for anyone
-    coming back, and the full table kept as an escape hatch for the rare reader who
-    genuinely wants the reference view. Find what I need, see only that, optionally
-    browse everything."""
+    ‼️ NO GEOGRAPHY (owner, 2026-09): league, county and area are not properties
+    the owner assesses a program on here, so the row does not carry them. Class
+    is the one structural column, because play-up and the talent bands read it.
+
+    Every row is cheap — the four maps are resolved ONCE up here and every school
+    reads them — so the whole association (~860 rows) is a few hundred KB of JSON
+    and slicing costs nothing on the request thread."""
     from app import overrides as ov
     rows = _rows()
     version = ov.jhsaa_playup_version()
     pmap = _playup_map(version)
-    # The league a played-up program actually competes in — LIVE, via the same
-    # cached mapping `load_schools` uses, never the raw stored field. The stored
-    # `girls_district`/`boys_district` names the program's OLD class's league;
-    # reading it here is what made this card disagree with the district page for
-    # every played-up program on the board.
-    moved = _playup_league(version, rows, pmap)
     amap = _arch_map(ov.jhsaa_archetype_version())
     arch_ov, play_ov = ov.get_jhsaa_archetypes(), ov.get_jhsaa_playups()
     band_ov = {_display_of(band_ident(k)) for k in ov.get_jhsaa_bands()}
     bmap = _band_map(ov.jhsaa_band_version())
     tiers = band_tiers()
     tier_label = {t["key"]: t["label"] for t in tiers}
-    by_name = {r["name"]: r for r in rows}
+    tier_rank = {t["key"]: i for i, t in enumerate(tiers)}
 
-    def card(name):
-        r = by_name.get(name)
-        if not r:
-            return None
-        target = plays_up(name, bool(r.get("play_up")), pmap, r["classification"])
-        cls = r["classification"]
+    out = []
+    for r in rows:
+        name, cls = r["name"], r["classification"]
+        target = plays_up(name, bool(r.get("play_up")), pmap, cls)
         # Every group strictly above the program's own class — the picker's real
-        # menu (owner rule 2027-09, multi-step play-up), not just a one-step toggle.
-        # Ladder only: Group 1/2 are not "above" anything (can_play_up is
-        # False there, and the slice must never hand a Group as a target).
+        # menu (owner rule 2027-09, multi-step play-up). Ladder only: Group 1/2
+        # are not "above" anything (can_play_up is False there).
         targets = ([g for g in LADDER_GROUPS[:LADDER_GROUPS.index(champ_group(cls))]]
-                  if can_play_up(cls) else [])
-        district = moved.get(name) if target else _row_league(r)
+                   if can_play_up(cls) else [])
         ident = r.get("source") or name
         band_key = _effective_band(ident, bmap, amap.get(name, ""))
         band_now = _band_key_at(ident, bmap, None)
-        return {"name": name, "ident": ident, "classification": cls, "city": r["city"],
-                "district": district or "",
-                "archetype": amap.get(name, ""),
-                # `plays_up` truthy = the string of the group they're IN; None = not.
-                "plays_up": bool(target),
-                "can_play_up": can_play_up(cls),
-                # The group actually competed in — an explicit override target if
-                # one is set, else the seed-list one-step default.
-                "competes": target or play_up_group(cls),
-                "targets": targets,
-                "arch_edited": name in arch_ov, "play_edited": name in play_ov,
-                # The talent tier (owner rule 2026-09): the effective key, whether
-                # it is an explicit assignment or the roll, and whether a per-save
-                # override is what set it.
-                "band": band_key,
-                "band_label": tier_label.get(band_key, band_key),
-                "band_assigned": (bool(band_now) and band_now != "none"
-                                  and band_now in tier_label),
-                "band_edited": name in band_ov}
-
-    up = {r["name"] for r in rows
-          if plays_up(r["name"], bool(r.get("play_up")), pmap, r["classification"])}
-    held = {n for n, v in pmap.items() if v == "no"}
-
-    BOARDS = [("archetype", "Archetypes"), ("playup", "Play-up"),
-              ("band", "Talent tiers")]
-    if board == "playup":
-        cats = [("up", "Playing up", len(up)), ("held", "Held in own class", len(held))]
-        members = {"up": sorted(up), "held": sorted(held)}
-    elif board == "band":
-        bb = band_board()
-        cats = [(t["key"], t["label"], bb["counts"].get(t["key"], 0)) for t in tiers]
-        members = {k: [x["name"] for x in v] for k, v in bb["by_key"].items()}
-    else:
-        board = "archetype"
-        cats = [(k, k.replace("_", " ").title(),
-                 sum(1 for v in amap.values() if v == k)) for k in EDITABLE_ARCHETYPES]
-        members = {k: sorted(n for n, v in amap.items() if v == k)
-                   for k in EDITABLE_ARCHETYPES}
-    programs = members.get(cat, [])
-
+        out.append({
+            "name": name, "ident": ident, "classification": cls,
+            "archetype": amap.get(name, ""),
+            "plays_up": bool(target),
+            "can_play_up": can_play_up(cls),
+            "competes": target or play_up_group(cls),
+            "targets": targets,
+            "band": band_key,
+            "band_label": tier_label.get(band_key, band_key),
+            "band_rank": tier_rank.get(band_key, len(tiers)),
+            "band_assigned": (bool(band_now) and band_now != "none"
+                              and band_now in tier_label),
+            "arch_edited": name in arch_ov, "play_edited": name in play_ov,
+            "band_edited": name in band_ov,
+            "edited": name in arch_ov or name in play_ov or name in band_ov,
+            # A row that has stopped sponsoring keeps its page (`former_school`)
+            # and its tier, but it is not a program anyone is assessing this
+            # season, so the page hides it by default and offers a switch.
+            "sponsors": _sponsors_any(r),
+        })
+    out.sort(key=lambda x: x["name"])
     counts = {k: sum(1 for v in amap.values() if v == k) for k in EDITABLE_ARCHETYPES}
-    counts["play_up"] = len(up)
-    everything = None
-    if show_all:
-        everything = [c for c in (card(n) for n in sorted(set(amap) | up | held)) if c]
-    return {"selected": card(selected) if selected else None,
-            "board": board, "boards": BOARDS, "cat": cat, "cats": cats,
-            "programs": programs,
-            "edited": [c for c in (card(n) for n in sorted({*arch_ov, *play_ov, *band_ov}))
-                       if c],
-            "recent": [c for c in (card(n) for n in (recent or [])) if c],
-            "counts": counts, "kinds": EDITABLE_ARCHETYPES,
-            "tiers": tiers, "tier_counts": band_board()["counts"],
-            "names": sorted(by_name), "all": everything}
+    counts["play_up"] = sum(1 for x in out if x["plays_up"])
+    counts["edited"] = sum(1 for x in out if x["edited"])
+    counts["former"] = sum(1 for x in out if not x["sponsors"])
+    tier_counts = {t["key"]: 0 for t in tiers}
+    for x in out:
+        tier_counts[x["band"]] = tier_counts.get(x["band"], 0) + 1
+    return {"rows": out, "tiers": tiers, "kinds": list(EDITABLE_ARCHETYPES),
+            "groups": [g for g in GROUPS], "counts": counts,
+            "tier_counts": tier_counts}
+
+
+def bulk_edit_playup_seed(target: str | None, names: list[str]) -> dict:
+    """Play MANY schools up — or hold them in their own class — in one pass,
+    writing the SEED LIST (`play_up` on the school's row in `schools.json`), the
+    `bulk_edit_archetype_seed` idiom and for its reason: the owner starts fresh
+    databases and a per-save override cannot survive that.
+
+    `target` "up" sets the one-step flag; None removes it. A school that cannot
+    play up (`can_play_up` — 4A and below only) is SKIPPED and reported under
+    `ineligible`, never written: the rule lives at runtime too (`plays_up`), so
+    a written flag would simply be ignored, but reporting it is what tells the
+    reader why the row did not move. A touched school's PER-SAVE override is
+    cleared, so the row shows what the pass just asked for rather than an older
+    "no" from the editor winning over it silently."""
+    from app import overrides as ov
+    by_name = {r["name"]: r for r in _rows()}
+    applied, unknown, ineligible = [], [], []
+    with open(_DATA, encoding="utf-8") as fh:
+        doc = json.load(fh)
+    for name in names:
+        name = name.strip()
+        if not name:
+            continue
+        r = by_name.get(name)
+        if r is None:
+            unknown.append(name)
+            continue
+        if target and not can_play_up(r["classification"]):
+            ineligible.append(name)
+            continue
+        for row in doc["schools"]:
+            if row["name"] == name:
+                if target:
+                    row["play_up"] = True
+                else:
+                    row.pop("play_up", None)     # absent reads as False
+        ov.clear_jhsaa_playup(name)
+        applied.append(name)
+    with open(_DATA, "w", encoding="utf-8") as fh:
+        json.dump(doc, fh, indent=2, ensure_ascii=False)
+        fh.write("\n")
+    reset_schools()
+    return {"applied": applied, "unknown": unknown, "ineligible": ineligible}
 
 
 def playup_rows() -> list[dict]:

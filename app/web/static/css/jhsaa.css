@@ -1388,3 +1388,73 @@ a.jh-poyrow:hover { background: var(--surface-hover); }
   .jh-fact .n { font-size: 32px; }
   .jh-seedgrid { grid-template-columns: repeat(4, 1fr); }
 }
+
+/* ---- The program explorer (owner rule 2026-09): one table, sliced ----
+   Toolbar of facet chips, a dense table with group header rows, a sticky action
+   bar that exists only while something is selected, and a side panel for one
+   program. Everything reads tokens; the classification pill is `.jh-chip`. */
+.jhx-flash { margin: 0 0 12px; padding: 8px 14px; border-radius: 7px; background: var(--surface-th);
+  border: 1px solid var(--border-subtle); color: var(--brand-strong); font-size: var(--fs-caption); font-weight: 700; }
+.jhx-tools { padding: 10px 16px 12px; margin-bottom: 12px; }
+.jhx-toolrow { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 8px; }
+.jhx-field { display: flex; flex-direction: column; gap: 3px; font-size: var(--fs-micro); font-weight: 700;
+  letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-muted); }
+.jhx-field em { font-style: normal; color: var(--brand-strong); }
+.jhx-grow { flex: 1 1 220px; }
+.jhx-grow .bl-input { width: 100%; }
+.jhx-count { font-size: var(--fs-body-m); color: var(--text-secondary); padding-bottom: 5px; white-space: nowrap; }
+.jhx-count b { color: var(--text-primary); }
+.jhx-facet { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 4px 0; }
+.jhx-facet-k { font-size: var(--fs-micro); font-weight: 700; letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase; color: var(--text-faint); min-width: 74px; }
+.jhx-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+.jhx-chip { height: 26px; padding: 0 10px; border-radius: 999px; font-size: var(--fs-caption); font-weight: 600;
+  cursor: pointer; border: 1px solid var(--border-default); background: var(--surface-card); color: var(--text-secondary); }
+.jhx-chip i { font-style: normal; color: var(--text-faint); font-weight: 500; margin-left: 2px; }
+.jhx-chip:hover { border-color: var(--brand); }
+.jhx-chip.on { background: var(--brand); border-color: var(--brand); color: #fff; }
+.jhx-chip.on i { color: #fff; opacity: .8; }
+
+.jhx-tbl th.jhx-sort { cursor: pointer; user-select: none; white-space: nowrap; }
+.jhx-tbl th.jhx-sort.asc::after { content: " ▲"; font-size: 10px; }
+.jhx-tbl th.jhx-sort.desc::after { content: " ▼"; font-size: 10px; }
+.jhx-tbl .jhx-ck { width: 34px; text-align: center; }
+.jhx-tbl td.nm { white-space: normal; }
+.jhx-tbl tr.jhx-on td { background: var(--surface-hover); }
+.jhx-tbl tr.jhx-former td { color: var(--text-muted); }
+.jhx-tbl tr.jhx-gh td { background: var(--surface-th); font-size: var(--fs-caption); padding-top: 6px; padding-bottom: 6px; }
+.jhx-tbl tr.jhx-gh i { font-style: normal; color: var(--text-muted); margin-left: 4px; }
+.jhx-tbl .jhx-empty { text-align: center; color: var(--text-muted); padding: 24px; }
+.jhx-muted { color: var(--text-muted); font-size: var(--fs-caption); }
+.jhx-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--brand); vertical-align: middle; }
+
+/* The action bar: fixed to the bottom of the viewport, only while a selection exists. */
+.jhx-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: var(--gray-800); color: #fff;
+  box-shadow: 0 -2px 12px rgba(0,0,0,.18); }
+.jhx-bar-inner { max-width: var(--jh-measure); margin: 0 auto; padding: 10px 20px; display: flex; gap: 14px;
+  align-items: center; flex-wrap: wrap; }
+.jhx-bar-n { font-size: var(--fs-body-m); font-weight: 700; margin-right: 6px; }
+.jhx-link { background: none; border: 0; color: #fff; opacity: .75; text-decoration: underline; cursor: pointer;
+  font-size: var(--fs-caption); margin-left: 8px; }
+.jhx-link.on { opacity: 1; font-weight: 700; }
+.jhx-act { display: flex; gap: 6px; align-items: center; }
+.jhx-bar .bl-pill { height: 30px; }
+body:has(.jhx-bar:not([hidden])) .jh-shell { padding-bottom: 110px; }
+/* With the panel open the bar keeps clear of it rather than running underneath. */
+body.jhx-panel-open .jhx-bar-inner { padding-right: min(400px, 100vw); }
+
+/* The side panel: one program's reversible controls, beside the table. */
+.jhx-panel { position: fixed; top: 0; right: 0; bottom: 0; width: min(380px, 100vw); z-index: 45; overflow-y: auto;
+  background: var(--surface-card); border-left: 1px solid var(--border-default); box-shadow: -4px 0 18px rgba(0,0,0,.14);
+  padding: 18px 20px 24px; }
+.jhx-panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.jhx-panel-name { font-family: var(--font-display); font-size: var(--fs-display-s); line-height: 1.1; color: var(--text-primary); }
+.jhx-panel-sub { font-size: var(--fs-caption); color: var(--text-muted); margin-top: 3px; }
+.jhx-x { background: none; border: 0; font-size: 26px; line-height: 1; cursor: pointer; color: var(--text-muted); padding: 0 4px; }
+.jhx-x:hover { color: var(--text-primary); }
+.jhx-panel-note { font-size: var(--fs-caption); color: var(--text-muted); margin: 10px 0 16px; }
+.jhx-pform { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; padding: 12px 0; border-top: 1px solid var(--border-subtle); }
+.jhx-pform .jhx-field { flex: 1 1 100%; }
+.jhx-pform .bl-select { width: 100%; }
+.jhx-pform .bl-pill { height: 30px; }
+@media (max-width: 720px) { .jhx-facet-k { min-width: 0; } }

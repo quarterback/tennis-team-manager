@@ -272,18 +272,21 @@ def test_the_association_is_genuinely_unequal_now():
 
 # --- the editor -------------------------------------------------------------------------
 
-def test_the_program_editor_carries_the_tier_and_a_tier_board():
+def test_the_program_explorer_carries_every_program_with_its_tier():
+    """The explorer (owner rule 2026-09) is ONE row per program: the effective
+    tier, whether it is an assignment or the roll, and whether a per-save edit
+    set it — the page slices and edits that in the browser."""
     s = _sample(1)[0]
-    ed = jhsaa.program_editor(s.name, board="band")
-    assert ed["selected"]["band"] == jhsaa.program_band(s)
-    assert ed["selected"]["band_assigned"] is True
-    assert [k for k, _ in ed["boards"]].count("band") == 1
-    assert {c[0] for c in ed["cats"]} == {t["key"] for t in jhsaa.band_tiers()}
-    assert sum(c[2] for c in ed["cats"]) == len(jhsaa.playup_rows())
+    ed = jhsaa.program_explorer()
+    row = next(r for r in ed["rows"] if r["name"] == s.name)
+    assert row["band"] == jhsaa.program_band(s)
+    assert row["band_assigned"] is True and not row["edited"]
+    assert len(ed["rows"]) == len(jhsaa.playup_rows())
+    assert sum(ed["tier_counts"].values()) == len(ed["rows"])
+    assert {t["key"] for t in ed["tiers"]} <= set(ed["tier_counts"])
     ov.set_jhsaa_band(s.ident, "abysmal"); jhsaa.reset_schools()
-    ed = jhsaa.program_editor(s.name)
-    assert ed["selected"]["band"] == "abysmal" and ed["selected"]["band_edited"]
-    assert any(c["name"] == s.name for c in ed["edited"])
+    row = next(r for r in jhsaa.program_explorer()["rows"] if r["name"] == s.name)
+    assert row["band"] == "abysmal" and row["band_edited"] and row["edited"]
 
 
 # --- an edit reaches the next cohort, never the building ----------------------------
