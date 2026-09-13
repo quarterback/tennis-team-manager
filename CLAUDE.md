@@ -2620,9 +2620,10 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   re-rolls across its whole range). ‼️ Tier ranges are in TEAM terms (top-11 mean
   current OVR) and `_band_ceiling_centre` inverts a MEASURED line to the ceiling
   centre — re-measure before retuning `BAND_PLAYER_SPREAD` or the career model. The
-  tier table AND the per-program assignment are DATA, edited on `/jhsaa/programs` (tier
-  selector on the card, bulk assign, the tier-table form); never hardcode a school's
-  tier and never add a tier in code — `DEFAULT_TIERS` is the missing-file fallback.
+  tier table AND the per-program assignment are DATA, edited on `/jhsaa/programs` (the
+  explorer's action bar / side panel) and `/jhsaa/programs/tiers` (the tier-table form);
+  never hardcode a school's tier and never add a tier in code — `DEFAULT_TIERS` is the
+  missing-file fallback.
   `overrides.jhsaa_band_version()` sits beside the archetype fingerprint in every cache
   key; resolve the tier ONCE per build (`_program_mod` → `mod["band"]`, a `band_plan`),
   never per seat. `scripts/roll_talent_bands.py` writes rolled defaults for unassigned
@@ -3476,24 +3477,37 @@ was a school marker, shipped "Baptist HS High School".
   2027-08).** 13 blue-bloods, seeded by `scripts/jhsaa_playup.py` from the archetype
   list with `overrides.set_jhsaa_playup` / `/editor/jhsaa-playup` layered on top, the
   archetype pattern exactly ("yes" promotes, "no" holds, clearing reverts to the file).
-  - **Archetypes have the same board** (`jhsaa.archetype_board`, `/editor`): the ~91
-    tagged programs grouped by kind, each row's `<select>` changing kind in place, add by
-    type-ahead, Remove demoting a seeded program and clearing an added one, demotions
-    shown as restorable chips. `EDITABLE_ARCHETYPES` excludes `upstart` — it is a rolled
-    run and storing one would make it permanent.
-  - **‼️ BOTH BOARDS LIVE AT `/jhsaa/programs`** (the section's "Programs" tab), NOT on
-    `/editor`. They were panels three and four down the COLLEGE roster editor — whose
-    toolbar is Division / Conference / Team — where the owner could not find them. A
-    JHSAA property belongs under the JHSAA. The POST routes keep their `/editor/jhsaa-*`
-    paths (they are the same writes) and carry `back=jhsaa` so `_editor_redirect` returns
-    to the JHSAA page instead of the college one.
-  - **The BOARD** (`jhsaa.playup_board`) shows ONLY the ~13
-    programs that play up: add is a type-ahead over the names, remove is a button on the
-    row, and a removed default shows as "held" so it can be restored. ‼️ Never render the
-    association as a list to scroll (owner, 2026-08: "I don't want a list with 100s of
-    schools I have to scroll"). The add field is **`jh_school`**, not `school` — `school`
-    on that page is the COLLEGE program `_editor_redirect` reads to come back, so a JHSAA
-    name in it sends the editor to a school its division has never heard of.
+  - **‼️ `/jhsaa/programs` IS ONE TABLE, SLICED — the PROGRAM EXPLORER (owner rule
+    2026-09, `jhsaa.program_explorer`, `docs/AAR-jhsaa-program-explorer.md`).** Every
+    program is ONE ROW — School · Class · Archetype · Talent tier · Plays up — and
+    everything else is a way of slicing the rows in the browser: group by (class, tier,
+    archetype, play-up), faceted filters that COMBINE (8A+9A × Abysmal/Poor × any
+    archetype), a search, and a PERSISTENT multi-selection (localStorage, per browser,
+    survives filter changes and every save's redirect) with a sticky action bar — Set
+    tier · Set archetype · Plays up · Clear. The single-program editor is a SIDE PANEL
+    off a row (the reversible per-save overrides); the tier TABLE is its own page,
+    `/jhsaa/programs/tiers` (it defines the ladder, it is not a slice of it).
+    ‼️ **NO GEOGRAPHY COLUMNS** (owner: league/county/area are "not relevant
+    information" here — class was only ever named to assess play-up and the bands).
+    ‼️ **THE ACTION BAR WRITES THE SEED FILES** (`bulk_edit_band_seed`,
+    `bulk_edit_archetype_seed`, `bulk_edit_playup_seed` via `/editor/jhsaa-programs-bulk`)
+    — the owner starts fresh databases and a per-save override cannot survive that; a
+    touched school's per-save override is CLEARED so the row shows what the pass asked
+    for rather than an older override winning on read. The panel keeps the per-save
+    override for a one-off. This RETIRED the board → type → program directory (which
+    obeyed "narrow before you show" and was still tedious: it needed you to know what
+    you were looking for) and the paste-school-names forms (a selection is the list).
+    ‼️ "Never render the association as a list to scroll" (owner, 2026-08) is NOT
+    contradicted: that rule was about a board of ~13 editable ROWS OF FORMS; a
+    filterable table you slice to 17 is the opposite of scrolling 860. Former
+    (non-sponsoring) programs are behind a "show" switch, not in the default view.
+    `archetype_board` / `playup_board` survive as the old boards' read models
+    (tests use them) but no page renders them.
+  - **`jh_school`, not `school`**, on every JHSAA POST — `school` is the COLLEGE program
+    `_editor_redirect` reads to come back, so a JHSAA name in it sends the editor to a
+    school its division has never heard of. The POST routes keep their `/editor/jhsaa-*`
+    paths (they are the same writes) and carry `back=jhsaa` (+ `g`) so
+    `_editor_redirect` returns to the JHSAA page instead of the college one.
   - **‼️ SMALL SCHOOLS ONLY — `PLAY_UP_MAX_GROUP` 4A and below, enforced at RUNTIME
     (`jhsaa.can_play_up`), not just at import.** The constant lived only in
     `scripts/import_jhsaa.py`, so the rule bound the SEED LIST and nothing else — the

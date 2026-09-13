@@ -3,321 +3,380 @@
 {% block title %}JHSAA Programs{% endblock %}
 {% block content %}
 
-{# ‼️ NARROW BEFORE YOU SHOW (owner rule 2026-08). This page listed all ~91 archetyped
-   programs and all ~13 play-ups as editable rows — 195 of them. Sorting or searching
-   that table does not fix it: the problem is not organisation, it is EXPOSURE. Even a
-   perfect table makes somebody confront a whole dataset to change one school.
-
-   So: board → type → program, and then only that program. A search for anyone who
-   already knows the name, recently-viewed for anyone coming back, and the full table
-   kept as an escape hatch rather than the default. #}
+{# ‼️ ONE TABLE, SLICED (owner rule 2026-09). The page used to be five jobs in a
+   column — a board→type→program directory, a paste-names bulk form, the one-school
+   editor, a log of edits, the tier table — and none of them answered "show me every
+   8A/9A program below Poor". Now every program is ONE ROW and everything else is a
+   way of slicing the rows: group by, faceted filters that combine, a search, and a
+   PERSISTENT multi-selection (localStorage, per browser) with a sticky action bar.
+   The single-program editor is a side panel off a row. Tier DEFINITIONS are on
+   their own page — they are not a slice of this table. No geography columns: the
+   owner does not assess a program on its league or county here. #}
 {{ jh_header(view.scope, u, 'programs', 'Programs', '') }}
 
 <div class="jh-shell">
 
-<div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">Find a program</span></div>
-
-  {# The directory: three steps, each submitting as you pick. #}
-  <form method="get" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;padding:12px 16px">
-    <input type="hidden" name="u" value="{{ u }}">
-    <input type="hidden" name="g" value="{{ view.scope.gender }}">
-    <label class="bl-schol-f" style="max-width:170px">Board
-      <span class="bl-select-wrap"><select class="bl-select" name="board"
-             onchange="this.form.cat.value=''; this.form.submit()" style="min-width:140px">
-        {% for key, label in ed.boards %}
-        <option value="{{ key }}"{% if key == ed.board %} selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select></span></label>
-
-    <label class="bl-schol-f" style="max-width:220px">Type
-      <span class="bl-select-wrap"><select class="bl-select" name="cat"
-             onchange="this.form.submit()" style="min-width:190px">
-        <option value="">— choose —</option>
-        {% for key, label, n in ed.cats %}
-        <option value="{{ key }}"{% if key == ed.cat %} selected{% endif %}>{{ label }} ({{ n }})</option>
-        {% endfor %}
-      </select></span></label>
-
-    {% if ed.programs %}
-    <label class="bl-schol-f" style="max-width:300px">Program
-      <span class="bl-select-wrap"><select class="bl-select" name="school"
-             onchange="this.form.submit()" style="min-width:260px">
-        <option value="">— choose —</option>
-        {% for n in ed.programs %}
-        <option value="{{ n }}"{% if ed.selected and n == ed.selected.name %} selected{% endif %}>{{ n }}</option>
-        {% endfor %}
-      </select></span></label>
-    {% endif %}
-  </form>
-
-  {# For anyone who already knows the name — no menus needed. #}
-  <form method="get" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;
-             padding:0 16px 12px;border-top:1px solid var(--border-subtle);padding-top:12px">
-    <input type="hidden" name="u" value="{{ u }}">
-    <input type="hidden" name="g" value="{{ view.scope.gender }}">
-    <label class="bl-schol-f" style="max-width:340px">Or search by name
-      <input class="bl-input" type="text" name="school" list="jh-names" autocomplete="off"
-             placeholder="start typing a name…"></label>
-    <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:16px">Find</button>
-  </form>
-  <datalist id="jh-names">{% for n in ed.names %}<option value="{{ n }}">{% endfor %}</datalist>
-
-  {% if ed.recent %}
-  <div style="padding:0 16px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-    <span style="font-size:15px;color:var(--text-muted)">Recently viewed:</span>
-    {% for s in ed.recent %}
-    <a class="bl-pill" href="{{ url_for('jhsaa_programs', u=u, g=view.scope.gender, school=s.name) }}">{{ s.name }}</a>
-    {% endfor %}
-  </div>
-  {% endif %}
+<div class="jh-subrail">
+  <a class="on" href="{{ url_for('jhsaa_programs', u=u, g=view.scope.gender) }}">Programs</a>
+  <a href="{{ url_for('jhsaa_program_tiers', u=u, g=view.scope.gender) }}">Tier settings</a>
 </div>
 
-<div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">Bulk edit archetypes</span></div>
-  <div style="padding:12px 16px">
-    <p class="bit" style="margin-bottom:10px">
-      Paste many school names at once (one per line) instead of one-by-one.
-      This writes the SEED FILE, not a per-save override — it sticks even if
-      you start over with a brand-new save/database, so you never have to
-      redo it. Unrecognized names are skipped and reported, never invented.
-    </p>
-    <div style="display:flex;gap:20px;flex-wrap:wrap">
-      <form method="post" action="{{ url_for('editor_jhsaa_archetype_bulk') }}"
-            style="display:flex;flex-direction:column;gap:8px;min-width:280px">
-        <input type="hidden" name="u" value="{{ u }}">
-        <input type="hidden" name="action" value="add">
-        <label class="bl-schol-f">Add to
-          <span class="bl-select-wrap"><select class="bl-select" name="archetype">
-            {% for k in ed.kinds %}
-            <option value="{{ k }}">{{ k|replace('_', ' ') }}</option>
-            {% endfor %}
-          </select></span></label>
-        <textarea class="bl-input" name="names" rows="8" placeholder="One school name per line"
-                  style="font-family:inherit;resize:vertical"></textarea>
-        <button class="bl-run-big" style="width:auto;height:32px;padding:0 14px;font-size:16px;align-self:flex-start">
-          Add all
-        </button>
-      </form>
-      <form method="post" action="{{ url_for('editor_jhsaa_archetype_bulk') }}"
-            style="display:flex;flex-direction:column;gap:8px;min-width:280px">
-        <input type="hidden" name="u" value="{{ u }}">
-        <input type="hidden" name="action" value="remove">
-        <label class="bl-schol-f" style="color:var(--text-muted)">Remove from the seed list (any kind)</label>
-        <textarea class="bl-input" name="names" rows="8" placeholder="One school name per line"
-                  style="font-family:inherit;resize:vertical"></textarea>
-        <button class="bl-pill" style="align-self:flex-start;cursor:pointer">Remove all</button>
-      </form>
+{% if flash %}<div class="jhx-flash">{{ flash }}</div>{% endif %}
+
+<div class="bl-panel jhx-tools">
+  <div class="jhx-toolrow">
+    <label class="jhx-field">Group by
+      <span class="bl-select-wrap"><select class="bl-select" id="jhx-group">
+        <option value="">— none —</option>
+        <option value="classification">Classification</option>
+        <option value="band">Talent tier</option>
+        <option value="archetype">Archetype</option>
+        <option value="plays_up">Plays up</option>
+      </select></span></label>
+    <label class="jhx-field jhx-grow">Search
+      <input class="bl-input" id="jhx-q" type="search" autocomplete="off" placeholder="school name…"></label>
+    <div class="jhx-count"><b id="jhx-n">0</b> programs</div>
+    <button class="bl-pill" type="button" id="jhx-reset">Clear filters</button>
+  </div>
+
+  <div class="jhx-facet"><span class="jhx-facet-k">Class</span>
+    <div class="jhx-chips" data-facet="classification">
+      {% for gp in ed.groups %}<button type="button" class="jhx-chip" data-v="{{ gp }}">{{ gp }}</button>{% endfor %}
+    </div></div>
+
+  <div class="jhx-facet"><span class="jhx-facet-k">Tier</span>
+    <div class="jhx-chips" data-facet="band">
+      {% for t in ed.tiers %}<button type="button" class="jhx-chip" data-v="{{ t.key }}">{{ t.label }} <i>{{ ed.tier_counts.get(t.key, 0) }}</i></button>{% endfor %}
+    </div></div>
+
+  <div class="jhx-facet"><span class="jhx-facet-k">Archetype</span>
+    <div class="jhx-chips" data-facet="archetype">
+      {% for k in ed.kinds %}<button type="button" class="jhx-chip" data-v="{{ k }}">{{ k|replace('_', ' ') }} <i>{{ ed.counts[k] }}</i></button>{% endfor %}
+      <button type="button" class="jhx-chip" data-v="">untagged</button>
+    </div></div>
+
+  <div class="jhx-facet"><span class="jhx-facet-k">Plays up</span>
+    <div class="jhx-chips" data-facet="plays_up">
+      <button type="button" class="jhx-chip" data-v="1">yes <i>{{ ed.counts.play_up }}</i></button>
+      <button type="button" class="jhx-chip" data-v="0">no</button>
     </div>
-    {% if request.cookies.get('jh_bulk_result') %}
-    <p class="bit" style="margin-top:10px;color:var(--brand-strong)">{{ request.cookies.get('jh_bulk_result') }}</p>
-    {% endif %}
-  </div>
+    <span class="jhx-facet-k" style="margin-left:14px">Show</span>
+    <div class="jhx-chips" data-facet="flags">
+      <button type="button" class="jhx-chip" data-v="edited">edited in this save <i>{{ ed.counts.edited }}</i></button>
+      <button type="button" class="jhx-chip" data-v="former">former programs <i>{{ ed.counts.former }}</i></button>
+    </div></div>
 </div>
 
-{% if ed.selected %}
-{% set s = ed.selected %}
 <div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">{{ s.name }}</span></div>
-  <div style="padding:12px 16px">
-    <div style="color:var(--text-muted);font-size:15px;margin-bottom:12px">
-      {{ s.classification }} · {{ s.city }}{% if s.district %} · {{ s.district }}{% endif %}</div>
-    <div style="display:flex;gap:24px;flex-wrap:wrap">
-      <form method="post" action="{{ url_for('editor_jhsaa_archetype') }}"
-            style="display:flex;align-items:flex-end;gap:8px">
-        <input type="hidden" name="u" value="{{ u }}">
-        <input type="hidden" name="back" value="jhsaa">
-        <input type="hidden" name="jh_school" value="{{ s.name }}">
-        <label class="bl-schol-f" style="max-width:180px">Archetype{% if s.arch_edited %} · <b style="color:var(--brand-strong)">edited</b>{% endif %}
-          <span class="bl-select-wrap"><select class="bl-select" name="archetype" style="min-width:150px">
-            <option value="none"{% if not s.archetype %} selected{% endif %}>— none —</option>
-            {% for k in ed.kinds %}
-            <option value="{{ k }}"{% if k == s.archetype %} selected{% endif %}>{{ k|replace('_', ' ') }}</option>
-            {% endfor %}
-          </select></span></label>
-        <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:16px">Save</button>
-        {% if s.arch_edited %}
-        <button class="bl-pill" name="archetype" value="clear" style="cursor:pointer">Reset</button>
-        {% endif %}
-      </form>
-
-      <form method="post" action="{{ url_for('editor_jhsaa_band') }}"
-            style="display:flex;align-items:flex-end;gap:8px">
-        <input type="hidden" name="u" value="{{ u }}">
-        <input type="hidden" name="back" value="jhsaa">
-        <input type="hidden" name="jh_school" value="{{ s.name }}">
-        <input type="hidden" name="jh_ident" value="{{ s.ident }}">
-        <label class="bl-schol-f" style="max-width:220px">Talent tier{% if s.band_edited %} · <b style="color:var(--brand-strong)">edited</b>{% elif not s.band_assigned %} · <span style="color:var(--text-muted)">rolled</span>{% endif %}
-          <span class="bl-select-wrap"><select class="bl-select" name="band" style="min-width:190px">
-            {% for t in ed.tiers %}
-            <option value="{{ t.key }}"{% if t.key == s.band %} selected{% endif %}>{{ t.label }}{% if t.wide %} · volatile{% endif %}</option>
-            {% endfor %}
-          </select></span></label>
-        <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:16px">Save</button>
-        {% if s.band_edited %}
-        <button class="bl-pill" name="band" value="clear" style="cursor:pointer">Reset</button>
-        {% endif %}
-      </form>
-
-      {# Playing up is a 4A-and-below mechanism, so a bigger school has no control
-         rather than a control that silently refuses. #}
-      <form method="post" action="{{ url_for('editor_jhsaa_playup') }}"
-            style="display:flex;align-items:flex-end;gap:8px">
-        <input type="hidden" name="u" value="{{ u }}">
-        <input type="hidden" name="back" value="jhsaa">
-        <input type="hidden" name="jh_school" value="{{ s.name }}">
-        <label class="bl-schol-f" style="max-width:240px">Plays up{% if s.play_edited %} · <b style="color:var(--brand-strong)">edited</b>{% endif %}
-          {% if s.can_play_up %}
-          <span class="bl-select-wrap"><select class="bl-select" name="play_up" style="min-width:200px">
-            <option value="no"{% if not s.plays_up %} selected{% endif %}>no — stays in {{ s.classification }}</option>
-            {% for g in s.targets %}
-            <option value="{{ g }}"{% if s.plays_up and s.competes == g %} selected{% endif %}>competes in {{ g }}</option>
-            {% endfor %}
-          </select></span>
-          {% else %}
-          <span style="display:block;color:var(--text-muted);font-size:15px;padding-top:6px">
-            {{ s.classification }} is too big — 4A and below only</span>
-          {% endif %}</label>
-        {% if s.can_play_up %}
-        <button class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:16px">Save</button>
-        {% endif %}
-        {% if s.play_edited %}
-        <button class="bl-pill" name="play_up" value="clear" style="cursor:pointer">Reset</button>
-        {% endif %}
-      </form>
-    </div>
-  </div>
-</div>
-{% endif %}
-
-{% if ed.edited %}
-<div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">Your edits</span></div>
   <div class="tbl-scroll">
-    <table class="bl-tbl">
-      <tr><th>School</th><th style="width:70px">Class</th><th style="width:150px">Archetype</th>
-        <th style="width:150px">Tier</th><th style="width:170px">Plays up</th></tr>
-      {% for s in ed.edited %}
-      <tr>
-        <td><a href="{{ url_for('jhsaa_programs', u=u, g=view.scope.gender, school=s.name) }}">{{ s.name }}</a></td>
-        <td>{{ s.classification }}</td>
-        <td>{{ s.archetype|replace('_', ' ') if s.archetype else '—' }}</td>
-        <td>{{ s.band_label }}</td>
-        <td>{{ ('yes — ' ~ s.competes) if s.plays_up else 'no' }}</td>
-      </tr>
-      {% endfor %}
+    <table class="bl-tbl jhx-tbl" id="jhx-tbl">
+      <thead><tr>
+        <th class="jhx-ck"><input type="checkbox" id="jhx-all" title="Select every program shown"></th>
+        <th data-sort="name" class="jhx-sort">School</th>
+        <th data-sort="classification" class="jhx-sort" style="width:90px">Class</th>
+        <th data-sort="archetype" class="jhx-sort" style="width:160px">Archetype</th>
+        <th data-sort="band_rank" class="jhx-sort" style="width:170px">Talent tier</th>
+        <th data-sort="plays_up" class="jhx-sort" style="width:150px">Plays up</th>
+      </tr></thead>
+      <tbody id="jhx-body"></tbody>
     </table>
   </div>
 </div>
-{% endif %}
 
-<div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">Talent tiers</span></div>
-  <div style="padding:12px 16px">
-    <form method="post" action="{{ url_for('editor_jhsaa_band_tiers') }}">
-      <input type="hidden" name="u" value="{{ u }}">
-      <div class="tbl-scroll">
-        <table class="bl-tbl">
-          <tr><th style="width:130px">Key</th><th>Label</th><th style="width:70px">Low</th>
-            <th style="width:70px">High</th><th style="width:80px">Volatile</th>
-            <th style="width:80px">Roll weight</th><th style="width:80px">Programs</th></tr>
-          {% for t in ed.tiers %}
-          <tr>
-            <td><input class="bl-input" name="key" value="{{ t.key }}" style="width:120px"></td>
-            <td><input class="bl-input" name="label" value="{{ t.label }}" style="width:100%"></td>
-            <td><input class="bl-input" name="lo" type="number" step="1" value="{{ t.lo|int }}" style="width:60px"></td>
-            <td><input class="bl-input" name="hi" type="number" step="1" value="{{ t.hi|int }}" style="width:60px"></td>
-            <td><input type="checkbox" name="wide_{{ loop.index0 }}"{% if t.wide %} checked{% endif %}></td>
-            <td><input class="bl-input" name="weight" type="number" step="0.5" min="0" value="{{ t.weight }}" style="width:60px"></td>
-            <td>{{ ed.tier_counts.get(t.key, 0) }}</td>
-          </tr>
-          {% endfor %}
-          {% set nt = ed.tiers|length %}
-          <tr>
-            <td><input class="bl-input" name="key" placeholder="new key" style="width:120px"></td>
-            <td><input class="bl-input" name="label" placeholder="new tier" style="width:100%"></td>
-            <td><input class="bl-input" name="lo" type="number" step="1" style="width:60px"></td>
-            <td><input class="bl-input" name="hi" type="number" step="1" style="width:60px"></td>
-            <td><input type="checkbox" name="wide_{{ nt }}"></td>
-            <td><input class="bl-input" name="weight" type="number" step="0.5" min="0" value="1" style="width:60px"></td>
-            <td>—</td>
-          </tr>
-        </table>
-      </div>
-      <button class="bl-run-big" style="width:auto;height:32px;margin-top:10px;padding:0 14px;font-size:16px">Save tiers</button>
+</div>
+
+{# ---- The action bar: only exists while something is selected ---- #}
+<div class="jhx-bar" id="jhx-bar" hidden>
+  <div class="jhx-bar-inner">
+    <div class="jhx-bar-n"><b id="jhx-seln">0</b> programs selected
+      <button type="button" class="jhx-link" id="jhx-selshow">show only these</button></div>
+    <form method="post" action="{{ url_for('editor_jhsaa_programs_bulk') }}" class="jhx-act" data-field="band">
+      <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="g" value="{{ view.scope.gender }}">
+      <input type="hidden" name="field" value="band"><input type="hidden" name="names" value="">
+      <span class="bl-select-wrap"><select class="bl-select" name="value">
+        <option value="" disabled selected>Set tier…</option>
+        {% for t in ed.tiers %}<option value="{{ t.key }}">{{ t.label }}{% if t.wide %} · volatile{% endif %}</option>{% endfor %}
+        <option value="clear">back to the rolled default</option>
+      </select></span>
+      <button class="bl-pill active" type="submit">Apply</button>
     </form>
-    <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:16px">
-      <form method="post" action="{{ url_for('editor_jhsaa_band_bulk') }}"
-            style="display:flex;flex-direction:column;gap:8px;min-width:280px">
-        <input type="hidden" name="u" value="{{ u }}">
-        <input type="hidden" name="action" value="add">
-        <label class="bl-schol-f">Assign many schools to
-          <span class="bl-select-wrap"><select class="bl-select" name="band">
-            {% for t in ed.tiers %}
-            <option value="{{ t.key }}">{{ t.label }}</option>
-            {% endfor %}
-          </select></span></label>
-        <textarea class="bl-input" name="names" rows="6" placeholder="One school name per line"
-                  style="font-family:inherit;resize:vertical"></textarea>
-        <button class="bl-run-big" style="width:auto;height:32px;padding:0 14px;font-size:16px;align-self:flex-start">
-          Assign all
-        </button>
-      </form>
-      <form method="post" action="{{ url_for('editor_jhsaa_band_bulk') }}"
-            style="display:flex;flex-direction:column;gap:8px;min-width:280px">
-        <input type="hidden" name="u" value="{{ u }}">
-        <input type="hidden" name="action" value="remove">
-        <label class="bl-schol-f" style="color:var(--text-muted)">Send back to the rolled default</label>
-        <textarea class="bl-input" name="names" rows="6" placeholder="One school name per line"
-                  style="font-family:inherit;resize:vertical"></textarea>
-        <button class="bl-pill" style="align-self:flex-start;cursor:pointer">Remove all</button>
-      </form>
-    </div>
+    <form method="post" action="{{ url_for('editor_jhsaa_programs_bulk') }}" class="jhx-act" data-field="archetype">
+      <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="g" value="{{ view.scope.gender }}">
+      <input type="hidden" name="field" value="archetype"><input type="hidden" name="names" value="">
+      <span class="bl-select-wrap"><select class="bl-select" name="value">
+        <option value="" disabled selected>Set archetype…</option>
+        {% for k in ed.kinds %}<option value="{{ k }}">{{ k|replace('_', ' ') }}</option>{% endfor %}
+        <option value="clear">untagged</option>
+      </select></span>
+      <button class="bl-pill active" type="submit">Apply</button>
+    </form>
+    <form method="post" action="{{ url_for('editor_jhsaa_programs_bulk') }}" class="jhx-act" data-field="playup">
+      <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="g" value="{{ view.scope.gender }}">
+      <input type="hidden" name="field" value="playup"><input type="hidden" name="names" value="">
+      <span class="bl-select-wrap"><select class="bl-select" name="value">
+        <option value="" disabled selected>Plays up…</option>
+        <option value="up">play up one class</option>
+        <option value="hold">hold in own class</option>
+      </select></span>
+      <button class="bl-pill active" type="submit">Apply</button>
+    </form>
+    <button type="button" class="bl-pill" id="jhx-clear">Clear selection</button>
   </div>
 </div>
 
-<div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">What the association ships with</span></div>
-  <div style="padding:12px 16px;display:flex;gap:20px;flex-wrap:wrap">
-    {% for k in ed.kinds %}
-    <div><div class="t-eyebrow">{{ k|replace('_', ' ') }}</div>
-      <div style="font-size:24px;font-weight:800">{{ ed.counts[k] }}</div></div>
-    {% endfor %}
-    <div><div class="t-eyebrow">playing up</div>
-      <div style="font-size:24px;font-weight:800">{{ ed.counts.play_up }}</div></div>
+{# ---- The side panel: one program, the reversible per-save controls ---- #}
+<aside class="jhx-panel" id="jhx-panel" hidden>
+  <div class="jhx-panel-head">
+    <div><div class="jhx-panel-name" id="jhx-p-name"></div>
+      <div class="jhx-panel-sub" id="jhx-p-sub"></div></div>
+    <button type="button" class="jhx-x" id="jhx-close" aria-label="Close">×</button>
   </div>
-  <div style="padding:0 16px 12px;font-size:15px;color:var(--text-muted)">
-    Archetypes are durable program conditions — a <b>blue blood</b> generates better and
-    clusters, a <b>development</b> program has ordinary freshmen and the best seniors, a
-    <b>doubles</b> program lifts its doubles courts only. Playing up moves a small school
-    into the classification above: a harder league, ladder and State field, same players.
-  </div>
-  {# The escape hatch: the whole set, for the rare reader who wants the reference view
-     rather than to change one school. Not the default, and deliberately not editable —
-     every row links back to the one-program view. #}
-  <div style="padding:0 16px 14px">
-    {% if ed.all %}
-    <a class="bl-pill" href="{{ url_for('jhsaa_programs', u=u, g=view.scope.gender) }}">Hide the full list</a>
-    <div class="tbl-scroll" style="margin-top:10px">
-      <table class="bl-tbl">
-        <tr><th>School</th><th style="width:70px">Class</th><th style="width:150px">Archetype</th>
-          <th style="width:150px">Tier</th><th style="width:170px">Plays up</th></tr>
-        {% for s in ed.all %}
-        <tr>
-          <td><a href="{{ url_for('jhsaa_programs', u=u, g=view.scope.gender, school=s.name) }}">{{ s.name }}</a></td>
-          <td>{{ s.classification }}</td>
-          <td>{{ s.archetype|replace('_', ' ') if s.archetype else '—' }}</td>
-          <td>{{ s.band_label }}</td>
-          <td>{{ ('yes — ' ~ s.competes) if s.plays_up else 'no' }}</td>
-        </tr>
-        {% endfor %}
-      </table>
-    </div>
-    {% else %}
-    <a class="bl-pill" href="{{ url_for('jhsaa_programs', u=u, g=view.scope.gender, all=1) }}">View all programs</a>
-    {% endif %}
-  </div>
-</div>
+  <p class="jhx-panel-note">These are per-save overrides — reversible with Reset, and
+    binding from the next cohort. The action bar below the table writes the seed
+    file instead, so it sticks across new saves.</p>
 
-</div>
+  <form method="post" action="{{ url_for('editor_jhsaa_archetype') }}" class="jhx-pform">
+    <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="g" value="{{ view.scope.gender }}">
+    <input type="hidden" name="back" value="jhsaa"><input type="hidden" name="jh_school" value="">
+    <label class="jhx-field">Archetype <em id="jhx-p-arch-flag"></em>
+      <span class="bl-select-wrap"><select class="bl-select" name="archetype" id="jhx-p-arch">
+        <option value="none">— none —</option>
+        {% for k in ed.kinds %}<option value="{{ k }}">{{ k|replace('_', ' ') }}</option>{% endfor %}
+      </select></span></label>
+    <button class="bl-pill active" type="submit">Save</button>
+    <button class="bl-pill" type="submit" name="archetype" value="clear" data-reset hidden>Reset</button>
+  </form>
+
+  <form method="post" action="{{ url_for('editor_jhsaa_band') }}" class="jhx-pform">
+    <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="g" value="{{ view.scope.gender }}">
+    <input type="hidden" name="back" value="jhsaa"><input type="hidden" name="jh_school" value="">
+    <input type="hidden" name="jh_ident" value="">
+    <label class="jhx-field">Talent tier <em id="jhx-p-band-flag"></em>
+      <span class="bl-select-wrap"><select class="bl-select" name="band" id="jhx-p-band">
+        {% for t in ed.tiers %}<option value="{{ t.key }}">{{ t.label }}{% if t.wide %} · volatile{% endif %}</option>{% endfor %}
+      </select></span></label>
+    <button class="bl-pill active" type="submit">Save</button>
+    <button class="bl-pill" type="submit" name="band" value="clear" data-reset hidden>Reset</button>
+  </form>
+
+  <form method="post" action="{{ url_for('editor_jhsaa_playup') }}" class="jhx-pform" id="jhx-p-playform">
+    <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="g" value="{{ view.scope.gender }}">
+    <input type="hidden" name="back" value="jhsaa"><input type="hidden" name="jh_school" value="">
+    <label class="jhx-field">Plays up <em id="jhx-p-play-flag"></em>
+      <span class="bl-select-wrap" id="jhx-p-play-wrap"><select class="bl-select" name="play_up" id="jhx-p-play"></select></span></label>
+    <span class="jhx-muted" id="jhx-p-play-no" hidden></span>
+    <button class="bl-pill active" type="submit" id="jhx-p-play-save">Save</button>
+    <button class="bl-pill" type="submit" name="play_up" value="clear" data-reset hidden>Reset</button>
+  </form>
+</aside>
+
+<script id="jhx-data" type="application/json">{{ ed.rows|tojson }}</script>
+<script>
+(function () {
+  var ROWS = JSON.parse(document.getElementById('jhx-data').textContent);
+  var byName = {}; ROWS.forEach(function (r) { byName[r.name] = r; });
+  var GROUP_ORDER = {{ ed.groups|tojson }};
+  var TIER_LABEL = {}; {{ ed.tiers|tojson }}.forEach(function (t) { TIER_LABEL[t.key] = t.label; });
+  var KEY = 'jhx-state';
+  // ‼️ Selection, filters, sort and the open panel all live in localStorage, so a
+  // POST → redirect (every save is one) lands back exactly where you were, and a
+  // filter change never drops what you had checked. Wrapped: storage can throw.
+  var S = { sel: [], f: {}, q: '', group: '', sort: 'name', dir: 1, panel: '', only: false };
+  try { var raw = localStorage.getItem(KEY); if (raw) S = Object.assign(S, JSON.parse(raw)); } catch (e) {}
+  // The scope rail's class switch: an explicit `group` in the URL seeds the Class
+  // facet, so the rail filters the table the way it scopes every other JHSAA page.
+  var RAIL = {{ rail_group|tojson }};
+  if (RAIL) { S.f = S.f || {}; S.f.classification = [RAIL]; S.only = false; }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+  var SEL = new Set(S.sel);
+
+  var $ = function (id) { return document.getElementById(id); };
+  var body = $('jhx-body'), bar = $('jhx-bar'), panel = $('jhx-panel');
+
+  function facetOn(f, v) { return (S.f[f] || []).indexOf(v) >= 0; }
+  function match(r) {
+    var f = S.f;
+    // "Show only these" IS the filter: the selection was gathered across several
+    // filter states, so the facets would hide most of it.
+    if (S.only) return SEL.has(r.name);
+    if (f.classification && f.classification.length && f.classification.indexOf(r.classification) < 0) return false;
+    if (f.band && f.band.length && f.band.indexOf(r.band) < 0) return false;
+    if (f.archetype && f.archetype.length && f.archetype.indexOf(r.archetype) < 0) return false;
+    if (f.plays_up && f.plays_up.length && f.plays_up.indexOf(r.plays_up ? '1' : '0') < 0) return false;
+    if (facetOn('flags', 'edited') && !r.edited) return false;
+    if (!facetOn('flags', 'former') && !r.sponsors) return false;
+    if (S.q && r.name.toLowerCase().indexOf(S.q.toLowerCase()) < 0) return false;
+    return true;
+  }
+  function groupKey(r) {
+    switch (S.group) {
+      case 'classification': return r.classification;
+      case 'band': return r.band;
+      case 'archetype': return r.archetype || '';
+      case 'plays_up': return r.plays_up ? 'yes' : 'no';
+      default: return '';
+    }
+  }
+  function groupLabel(k) {
+    switch (S.group) {
+      case 'band': return TIER_LABEL[k] || k;
+      case 'archetype': return k ? k.replace(/_/g, ' ') : 'untagged';
+      case 'plays_up': return k === 'yes' ? 'Playing up' : 'In own class';
+      default: return k;
+    }
+  }
+  function groupSort(a, b) {
+    if (S.group === 'classification') return GROUP_ORDER.indexOf(a) - GROUP_ORDER.indexOf(b);
+    if (S.group === 'band') return (byRank[a] || 0) - (byRank[b] || 0);
+    return a < b ? -1 : a > b ? 1 : 0;
+  }
+  var byRank = {}; ROWS.forEach(function (r) { byRank[r.band] = r.band_rank; });
+  function cmp(a, b) {
+    var k = S.sort, x = a[k], y = b[k];
+    if (k === 'classification') { x = GROUP_ORDER.indexOf(x); y = GROUP_ORDER.indexOf(y); }
+    if (k === 'plays_up') { x = x ? 1 : 0; y = y ? 1 : 0; }
+    if (x === y) return a.name < b.name ? -1 : 1;
+    return (x < y ? -1 : 1) * S.dir;
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function chip(r) { return '<span class="jh-chip c-' + esc(r.classification.replace(/ /g, '')) + '">' + esc(r.classification) + '</span>'; }
+  function rowHtml(r) {
+    var on = SEL.has(r.name);
+    return '<tr class="' + (on ? 'jhx-on' : '') + (r.sponsors ? '' : ' jhx-former') + '" data-n="' + esc(r.name) + '">' +
+      '<td class="jhx-ck"><input type="checkbox" data-ck="' + esc(r.name) + '"' + (on ? ' checked' : '') + '></td>' +
+      '<td class="nm"><a href="#" data-open="' + esc(r.name) + '">' + esc(r.name) + '</a>' +
+        (r.edited ? ' <span class="jhx-dot" title="edited in this save"></span>' : '') +
+        (r.sponsors ? '' : ' <span class="jhx-muted">former</span>') + '</td>' +
+      '<td>' + chip(r) + '</td>' +
+      '<td>' + (r.archetype ? esc(r.archetype.replace(/_/g, ' ')) : '<span class="jhx-muted">—</span>') + '</td>' +
+      '<td>' + esc(r.band_label) + (r.band_assigned ? '' : ' <span class="jhx-muted">rolled</span>') + '</td>' +
+      '<td>' + (r.plays_up ? 'yes — ' + esc(r.competes) : '<span class="jhx-muted">—</span>') + '</td></tr>';
+  }
+  var shown = [];
+  function render() {
+    shown = ROWS.filter(match).sort(cmp);
+    var html = '';
+    if (S.group) {
+      var groups = {};
+      shown.forEach(function (r) { var k = groupKey(r); (groups[k] = groups[k] || []).push(r); });
+      Object.keys(groups).sort(groupSort).forEach(function (k) {
+        var rows = groups[k], allOn = rows.every(function (r) { return SEL.has(r.name); });
+        html += '<tr class="jhx-gh"><td class="jhx-ck"><input type="checkbox" data-gck="' + esc(k) + '"' + (allOn ? ' checked' : '') + '></td>' +
+          '<td colspan="5"><b>' + esc(groupLabel(k)) + '</b> <i>' + rows.length + '</i></td></tr>';
+        rows.forEach(function (r) { html += rowHtml(r); });
+      });
+    } else shown.forEach(function (r) { html += rowHtml(r); });
+    body.innerHTML = html || '<tr><td colspan="6" class="jhx-empty">No programs match these filters.</td></tr>';
+    $('jhx-n').textContent = shown.length;
+    $('jhx-all').checked = shown.length > 0 && shown.every(function (r) { return SEL.has(r.name); });
+    document.querySelectorAll('.jhx-chip').forEach(function (b) {
+      b.classList.toggle('on', facetOn(b.parentNode.dataset.facet, b.dataset.v));
+    });
+    document.querySelectorAll('th.jhx-sort').forEach(function (th) {
+      th.classList.toggle('asc', th.dataset.sort === S.sort && S.dir > 0);
+      th.classList.toggle('desc', th.dataset.sort === S.sort && S.dir < 0);
+    });
+    $('jhx-selshow').classList.toggle('on', S.only);
+    renderBar();
+  }
+  function renderBar() {
+    var names = Array.from(SEL).filter(function (n) { return byName[n]; });
+    SEL = new Set(names); S.sel = names; save();
+    bar.hidden = names.length === 0;
+    $('jhx-seln').textContent = names.length;
+    document.querySelectorAll('.jhx-act input[name=names]').forEach(function (i) { i.value = names.join('\n'); });
+  }
+  function toggle(name, on) { if (on) SEL.add(name); else SEL.delete(name); }
+
+  // ---- table events ----
+  body.addEventListener('change', function (e) {
+    var t = e.target;
+    if (t.dataset.ck) { toggle(t.dataset.ck, t.checked); t.closest('tr').classList.toggle('jhx-on', t.checked); renderBar(); if (S.group) syncGroupChecks(); }
+    else if (t.dataset.gck !== undefined) {
+      shown.forEach(function (r) { if (groupKey(r) === t.dataset.gck) toggle(r.name, t.checked); });
+      render();
+    }
+  });
+  function syncGroupChecks() {
+    document.querySelectorAll('[data-gck]').forEach(function (g) {
+      g.checked = shown.filter(function (r) { return groupKey(r) === g.dataset.gck; }).every(function (r) { return SEL.has(r.name); });
+    });
+    $('jhx-all').checked = shown.length > 0 && shown.every(function (r) { return SEL.has(r.name); });
+  }
+  body.addEventListener('click', function (e) {
+    var a = e.target.closest('[data-open]');
+    if (a) { e.preventDefault(); openPanel(a.dataset.open); }
+  });
+  $('jhx-all').addEventListener('change', function () { var on = this.checked; shown.forEach(function (r) { toggle(r.name, on); }); render(); });
+  $('jhx-clear').addEventListener('click', function () { SEL.clear(); S.only = false; render(); });
+  $('jhx-selshow').addEventListener('click', function () { S.only = !S.only; render(); });
+  document.querySelectorAll('th.jhx-sort').forEach(function (th) {
+    th.addEventListener('click', function () {
+      if (S.sort === th.dataset.sort) S.dir = -S.dir; else { S.sort = th.dataset.sort; S.dir = 1; }
+      save(); render();
+    });
+  });
+
+  // ---- filter events ----
+  document.querySelectorAll('.jhx-chips').forEach(function (box) {
+    box.addEventListener('click', function (e) {
+      var b = e.target.closest('.jhx-chip'); if (!b) return;
+      var f = box.dataset.facet, list = S.f[f] = S.f[f] || [], i = list.indexOf(b.dataset.v);
+      if (i >= 0) list.splice(i, 1); else list.push(b.dataset.v);
+      save(); render();
+    });
+  });
+  $('jhx-group').value = S.group;
+  $('jhx-group').addEventListener('change', function () { S.group = this.value; save(); render(); });
+  $('jhx-q').value = S.q;
+  $('jhx-q').addEventListener('input', function () { S.q = this.value; save(); render(); });
+  $('jhx-reset').addEventListener('click', function () { S.f = {}; S.q = ''; S.group = ''; S.only = false; $('jhx-q').value = ''; $('jhx-group').value = ''; save(); render(); });
+
+  // ---- action bar: refuse an empty choice, confirm the count ----
+  document.querySelectorAll('.jhx-act').forEach(function (form) {
+    form.addEventListener('submit', function (e) {
+      var v = form.querySelector('select').value;
+      if (!v || !SEL.size) { e.preventDefault(); return; }
+      if (!confirm('Apply to ' + SEL.size + ' program' + (SEL.size === 1 ? '' : 's') + '? This writes the seed file, so it sticks across new saves.')) e.preventDefault();
+    });
+  });
+
+  // ---- side panel ----
+  function openPanel(name) {
+    var r = byName[name]; if (!r) return;
+    S.panel = name; save();
+    $('jhx-p-name').textContent = r.name;
+    $('jhx-p-sub').textContent = r.classification + (r.sponsors ? '' : ' · no longer sponsors tennis');
+    panel.querySelectorAll('input[name=jh_school]').forEach(function (i) { i.value = r.name; });
+    panel.querySelector('input[name=jh_ident]').value = r.ident;
+    $('jhx-p-arch').value = r.archetype || 'none';
+    $('jhx-p-arch-flag').textContent = r.arch_edited ? '· edited' : '';
+    $('jhx-p-band').value = r.band;
+    $('jhx-p-band-flag').textContent = r.band_edited ? '· edited' : (r.band_assigned ? '' : '· rolled');
+    var ps = $('jhx-p-play'), no = $('jhx-p-play-no');
+    ps.innerHTML = '';
+    if (r.can_play_up) {
+      $('jhx-p-play-wrap').style.display = ''; no.hidden = true; $('jhx-p-play-save').hidden = false;
+      ps.appendChild(new Option('no — stays in ' + r.classification, 'no', !r.plays_up, !r.plays_up));
+      r.targets.forEach(function (g) { ps.appendChild(new Option('competes in ' + g, g, false, r.plays_up && r.competes === g)); });
+    } else { $('jhx-p-play-wrap').style.display = 'none'; no.hidden = false; $('jhx-p-play-save').hidden = true; no.textContent = r.classification + ' is too big — 4A and below only'; }
+    $('jhx-p-play-flag').textContent = r.play_edited ? '· edited' : '';
+    var flags = [r.arch_edited, r.band_edited, r.play_edited];
+    panel.querySelectorAll('[data-reset]').forEach(function (b, i) { b.hidden = !flags[i]; });
+    panel.hidden = false;
+    document.body.classList.add('jhx-panel-open');
+  }
+  function closePanel() { S.panel = ''; save(); panel.hidden = true; document.body.classList.remove('jhx-panel-open'); }
+  $('jhx-close').addEventListener('click', closePanel);
+  // A Reset posts the button's own `clear` — the select in the same form carries
+  // the SAME field name and would be read first, so it is disabled for the post.
+  panel.querySelectorAll('[data-reset]').forEach(function (b) {
+    b.addEventListener('click', function () { b.form.querySelector('select').disabled = true; });
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !panel.hidden) closePanel(); });
+
+  render();
+  if (S.panel && byName[S.panel]) openPanel(S.panel);
+})();
+</script>
 {% endblock %}

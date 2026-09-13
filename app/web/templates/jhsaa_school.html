@@ -583,9 +583,10 @@
       <tr class="{{ 'title' if s.champion }}{{ ' has-lines' if n_honors }}"
           {% if n_honors %}data-lines="{{ loop.index }}" title="this season's honours"{% endif %}>
         <td class="yr"><a href="{{ url_for('jhsaa_school', school=view.school, year=s.year, u=u, g=view.gender) }}">{{ s.season_year }}</a></td>
-        {# ‼️ SHORT FORM — this column is a fixed 46px in a `nowrap` ledger, sized for
-           the ladder's 9A..1A (<=2 chars); "Group 1" ran past it and clipped to
-           "Group" (`.jh-ledger td { overflow: hidden }`, no ellipsis). #}
+        {# SHORT FORM — the ladder's 9A..1A are two characters and the column is
+           sized for them; "Group 1" reads as its short form so the row stays one
+           line (the ledger no longer clips a cell — it grows — so this is width
+           discipline, not a guard against truncation). #}
         <td>{{ s.group|jh_group_short }}</td>
         <td><b>{{ s.record }}</b></td>
         <td>{{ s.district_record or '—' }}</td>

@@ -420,3 +420,34 @@ def test_two_play_ups_cannot_both_fill_the_same_last_seat():
              for i in range(jh.PLAY_UP_LEAGUE_MIN)]
     out = jh._compute_playup_league(rows, {"Mover A": "4A", "Mover B": "4A"})
     assert out == {"Mover A": "Big League", "Mover B": "Big League"}, out
+
+
+def test_the_action_bar_plays_a_selection_up_off_the_seed_list(tmp_path, monkeypatch, clean):
+    """The explorer's action bar (owner rule 2026-09) writes the SEED LIST, the
+    paste-names idiom: a program that cannot play up is reported, never
+    written; an eligible one gains the flag, a "hold" drops it; and a per-save
+    override on a touched school is cleared so the row shows what the pass
+    asked for. On a scratch copy of the data file — the real one is the map."""
+    import json
+    import shutil
+    scratch = tmp_path / "schools.json"
+    shutil.copy(jh._DATA, scratch)
+    monkeypatch.setattr(jh, "_DATA", str(scratch))
+    jh.reset_schools()
+    rows = jh.playup_rows()
+    small = [r["name"] for r in rows if jh.can_play_up(r["classification"])][:2]
+    big = next(r["name"] for r in rows if not jh.can_play_up(r["classification"]))
+    ov.set_jhsaa_playup(small[0], "no")
+    res = jh.bulk_edit_playup_seed("up", small + [big, "No Such School"])
+    assert res == {"applied": small, "unknown": ["No Such School"], "ineligible": [big]}
+    assert small[0] not in ov.get_jhsaa_playups(), "the older per-save 'no' is cleared"
+    doc = {r["name"]: r for r in json.load(open(scratch))["schools"]}
+    assert all(doc[n].get("play_up") is True for n in small)
+    assert "play_up" not in doc[big]
+    explorer = {r["name"]: r for r in jh.program_explorer()["rows"]}
+    assert all(explorer[n]["plays_up"] for n in small) and not explorer[big]["plays_up"]
+    res = jh.bulk_edit_playup_seed(None, small)
+    assert res["applied"] == small
+    doc = {r["name"]: r for r in json.load(open(scratch))["schools"]}
+    assert all("play_up" not in doc[n] for n in small)
+    jh.reset_schools()

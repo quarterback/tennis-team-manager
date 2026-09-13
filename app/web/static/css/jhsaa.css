@@ -824,20 +824,28 @@ a.jh-eyebrow:hover { color: var(--brand-strong); }
 .jh-line .st { color: var(--text-muted); font-variant-numeric: tabular-nums; text-align: right; }
 
 /* ---- Season ledger (program history) ----
-   `table-layout: fixed` is load-bearing, not a tidy-up: without it a long school
-   name sets its column's width from content and the neighbouring numeric columns
-   are pushed into each other. The <th> widths below are then the real widths. */
-.jh-ledger { width: 100%; border-collapse: collapse; font-size: var(--fs-body-m); table-layout: fixed; }
+   ‼️ AUTO LAYOUT, NOT FIXED (owner report 2026-09: "lots of columns in the app
+   are like this one that doesn't fully let me view them or are off"). The ledger
+   was `table-layout: fixed` with hand-typed pixel widths per <th> and
+   `overflow: hidden` on every cell, so a label or chip wider than its typed width
+   was CLIPPED ("COLLE", "MASSI", "Qualifie") and the table never grew past its
+   container, so its `.tbl-scroll` wrapper never scrolled either — measured on the
+   committee, computer-ratings, rankings, district and class ledgers at 1440px.
+   Fixed layout was there so a long school name could not squeeze the numeric
+   columns; auto layout with every numeric column `nowrap` gives the same
+   guarantee the other way round: a nowrap column is never narrower than its
+   widest content (the typed width becomes a MINIMUM, not a cap), the one column
+   without a typed width — the name — takes whatever is left and wraps, and when
+   the columns add up to more than the container the table overflows into the
+   scroll wrapper instead of compressing. NUMBERS NEVER SHRINK, NAMES WRAP. */
+.jh-ledger { width: 100%; border-collapse: collapse; font-size: var(--fs-body-m); table-layout: auto; }
 .jh-ledger th {
   text-align: left; padding: 9px 12px; font-size: var(--fs-micro); font-weight: 700;
   letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-muted);
   background: var(--surface-th); border-bottom: 1px solid var(--border-default); white-space: nowrap;
 }
-.jh-ledger td { padding: 9px 12px; border-bottom: 1px solid var(--border-subtle); font-variant-numeric: tabular-nums; overflow: hidden; }
+.jh-ledger td { padding: 9px 12px; border-bottom: 1px solid var(--border-subtle); font-variant-numeric: tabular-nums; }
 .jh-ledger tr:hover td { background: var(--surface-hover); }
-/* `table-layout: fixed` honours the column widths but does NOT clip a header, so a
-   long <th> label overruns its neighbour. Both have to be told. */
-.jh-ledger th { overflow: hidden; }
 .jh-ledger.nowrap td, .jh-ledger.nowrap th { white-space: nowrap; }
 /* ‼️ NUMBERS NEVER SHRINK, NAMES WRAP (owner rule 2026-09). Every fixed column in a
    `nowrap` ledger is a NUMBER sized to its widest value; the one unsized column is
@@ -845,10 +853,22 @@ a.jh-eyebrow:hover { color: var(--brand-strong); }
    record cut to "18-1(" or a league cut to "Timber Valle" is what the owner kept
    seeing, and the name is the one cell a reader can still parse across two lines.
    Selector weight matches `.jh-ledger.nowrap td` (0,2,1), so it wins by order. */
-.jh-ledger.nowrap td.nm, .jh-ledger td.nm { white-space: normal; overflow-wrap: anywhere; }
-.jh-ledger td.nm .jh-schoolcell a { white-space: normal; overflow: visible; text-overflow: clip; }
-.jh-ledger td.nm .jh-schoolcell { align-items: flex-start; }
-.jh-ledger td.nm .jh-schoolcell .mk { margin-top: 2px; }
+.jh-ledger.nowrap td.nm, .jh-ledger td.nm,
+.jh-ledger.nowrap td:has(> .jh-schoolcell), .jh-ledger td:has(> .jh-schoolcell) { white-space: normal; overflow-wrap: break-word; }
+/* `break-word`, never `anywhere`: under auto layout `anywhere` makes the column's
+   MINIMUM one character, so an overflowing ledger starved the name to "Ca/nal/Vie/w"
+   while every numeric column kept its width. `break-word` keeps the longest word
+   as the floor and the school cell sets a usable one below that. */
+.jh-ledger:not(.jh-champgrid) td .jh-schoolcell { min-width: 150px; }   /* the champions grid sets its own width per column */
+/* Most ledgers never mark the name cell `nm` — the committee, district and
+   class tables just drop a `.jh-schoolcell` in a plain <td> — so the cell that
+   HOLDS a school cell is the name cell, whatever class it carries. */
+.jh-ledger td.nm .jh-schoolcell a, .jh-ledger td .jh-schoolcell a {
+  white-space: normal; overflow: visible; text-overflow: clip;
+  overflow-wrap: break-word; min-width: min-content;   /* words, never letters — see the grid rule */
+}
+.jh-ledger td.nm .jh-schoolcell, .jh-ledger td .jh-schoolcell { align-items: flex-start; }
+.jh-ledger td.nm .jh-schoolcell .mk, .jh-ledger td .jh-schoolcell .mk { margin-top: 2px; }
 /* A `width:100%` fixed-layout table is never wider than its container, so its
    `.tbl-scroll` wrapper never scrolls — on a narrow viewport the columns compress
    and the honours chips clip instead. A min-width (the fixed column widths plus a
@@ -857,8 +877,8 @@ a.jh-eyebrow:hover { color: var(--brand-strong); }
 .jh-ledger.minw { min-width: 900px; }
 .jh-sched td:last-child { white-space: nowrap; }
 /* The finish cell can carry TWO chips — a classification title and a TOC finish — and
-   the table is `table-layout: fixed; overflow: hidden`, so nowrap here doesn't shrink
-   the column, it CLIPS the second chip mid-word. Let it wrap onto a second line.
+   in a `nowrap` ledger both would sit on one line and widen the column. Let it wrap
+   onto a second line.
    Note the selector: `.jh-ledger.nowrap td` is (0,2,1), so a plain `.jh-ledger .fin`
    (0,2,0) loses to it however far down the file it sits. */
 .jh-ledger td.fin, .jh-ledger.nowrap td.fin { white-space: normal; }
@@ -1193,7 +1213,12 @@ html[data-jh-scout="on"] .jh-scout { visibility: visible; }
    at spaces keeps "Natchitoches" whole and lets "North Coast Packing" take two
    lines, which is what a reader wants. */
 .jh-champgrid td { padding: 10px 10px; }
-.jh-champgrid .jh-schoolcell a { overflow-wrap: break-word; word-break: normal; }
+/* ‼️ AND THE LINK MUST NOT SHRINK BELOW ITS LONGEST WORD. `.jh-schoolcell a` is a
+   flex child with `min-width: 0`, so `break-word` alone still broke "Natchitoches"
+   mid-word: the item could shrink to nothing, the cell's min-content was nothing,
+   and the column never grew. `min-content` makes the longest word the floor, the
+   cell inherits it, and the auto-layout column widens to fit. */
+.jh-champgrid .jh-schoolcell a { overflow-wrap: break-word; word-break: normal; min-width: min-content; }
 
 /* ---- Layout switcher (By year · Grid) ---- */
 .jh-laypick { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; }
@@ -1388,3 +1413,73 @@ a.jh-poyrow:hover { background: var(--surface-hover); }
   .jh-fact .n { font-size: 32px; }
   .jh-seedgrid { grid-template-columns: repeat(4, 1fr); }
 }
+
+/* ---- The program explorer (owner rule 2026-09): one table, sliced ----
+   Toolbar of facet chips, a dense table with group header rows, a sticky action
+   bar that exists only while something is selected, and a side panel for one
+   program. Everything reads tokens; the classification pill is `.jh-chip`. */
+.jhx-flash { margin: 0 0 12px; padding: 8px 14px; border-radius: 7px; background: var(--surface-th);
+  border: 1px solid var(--border-subtle); color: var(--brand-strong); font-size: var(--fs-caption); font-weight: 700; }
+.jhx-tools { padding: 10px 16px 12px; margin-bottom: 12px; }
+.jhx-toolrow { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 8px; }
+.jhx-field { display: flex; flex-direction: column; gap: 3px; font-size: var(--fs-micro); font-weight: 700;
+  letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-muted); }
+.jhx-field em { font-style: normal; color: var(--brand-strong); }
+.jhx-grow { flex: 1 1 220px; }
+.jhx-grow .bl-input { width: 100%; }
+.jhx-count { font-size: var(--fs-body-m); color: var(--text-secondary); padding-bottom: 5px; white-space: nowrap; }
+.jhx-count b { color: var(--text-primary); }
+.jhx-facet { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 4px 0; }
+.jhx-facet-k { font-size: var(--fs-micro); font-weight: 700; letter-spacing: var(--ls-eyebrow);
+  text-transform: uppercase; color: var(--text-faint); min-width: 74px; }
+.jhx-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+.jhx-chip { height: 26px; padding: 0 10px; border-radius: 999px; font-size: var(--fs-caption); font-weight: 600;
+  cursor: pointer; border: 1px solid var(--border-default); background: var(--surface-card); color: var(--text-secondary); }
+.jhx-chip i { font-style: normal; color: var(--text-faint); font-weight: 500; margin-left: 2px; }
+.jhx-chip:hover { border-color: var(--brand); }
+.jhx-chip.on { background: var(--brand); border-color: var(--brand); color: var(--brand-contrast); }
+.jhx-chip.on i { color: var(--brand-contrast); opacity: .8; }
+
+.jhx-tbl th.jhx-sort { cursor: pointer; user-select: none; white-space: nowrap; }
+.jhx-tbl th.jhx-sort.asc::after { content: " ▲"; font-size: 10px; }
+.jhx-tbl th.jhx-sort.desc::after { content: " ▼"; font-size: 10px; }
+.jhx-tbl .jhx-ck { width: 34px; text-align: center; }
+.jhx-tbl td.nm { white-space: normal; }
+.jhx-tbl tr.jhx-on td { background: var(--surface-hover); }
+.jhx-tbl tr.jhx-former td { color: var(--text-muted); }
+.jhx-tbl tr.jhx-gh td { background: var(--surface-th); font-size: var(--fs-caption); padding-top: 6px; padding-bottom: 6px; }
+.jhx-tbl tr.jhx-gh i { font-style: normal; color: var(--text-muted); margin-left: 4px; }
+.jhx-tbl .jhx-empty { text-align: center; color: var(--text-muted); padding: 24px; }
+.jhx-muted { color: var(--text-muted); font-size: var(--fs-caption); }
+.jhx-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--brand); vertical-align: middle; }
+
+/* The action bar: fixed to the bottom of the viewport, only while a selection exists. */
+.jhx-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: var(--gray-800); color: var(--text-inverse);
+  box-shadow: 0 -2px 12px rgba(0,0,0,.18); }
+.jhx-bar-inner { max-width: var(--jh-measure); margin: 0 auto; padding: 10px 20px; display: flex; gap: 14px;
+  align-items: center; flex-wrap: wrap; }
+.jhx-bar-n { font-size: var(--fs-body-m); font-weight: 700; margin-right: 6px; }
+.jhx-link { background: none; border: 0; color: var(--text-inverse); opacity: .75; text-decoration: underline; cursor: pointer;
+  font-size: var(--fs-caption); margin-left: 8px; }
+.jhx-link.on { opacity: 1; font-weight: 700; }
+.jhx-act { display: flex; gap: 6px; align-items: center; }
+.jhx-bar .bl-pill { height: 30px; }
+body:has(.jhx-bar:not([hidden])) .jh-shell { padding-bottom: 110px; }
+/* With the panel open the bar keeps clear of it rather than running underneath. */
+body.jhx-panel-open .jhx-bar-inner { padding-right: min(400px, 100vw); }
+
+/* The side panel: one program's reversible controls, beside the table. */
+.jhx-panel { position: fixed; top: 0; right: 0; bottom: 0; width: min(380px, 100vw); z-index: 45; overflow-y: auto;
+  background: var(--surface-card); border-left: 1px solid var(--border-default); box-shadow: -4px 0 18px rgba(0,0,0,.14);
+  padding: 18px 20px 24px; }
+.jhx-panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.jhx-panel-name { font-family: var(--font-display); font-size: var(--fs-display-s); line-height: 1.1; color: var(--text-primary); }
+.jhx-panel-sub { font-size: var(--fs-caption); color: var(--text-muted); margin-top: 3px; }
+.jhx-x { background: none; border: 0; font-size: 26px; line-height: 1; cursor: pointer; color: var(--text-muted); padding: 0 4px; }
+.jhx-x:hover { color: var(--text-primary); }
+.jhx-panel-note { font-size: var(--fs-caption); color: var(--text-muted); margin: 10px 0 16px; }
+.jhx-pform { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; padding: 12px 0; border-top: 1px solid var(--border-subtle); }
+.jhx-pform .jhx-field { flex: 1 1 100%; }
+.jhx-pform .bl-select { width: 100%; }
+.jhx-pform .bl-pill { height: 30px; }
+@media (max-width: 720px) { .jhx-facet-k { min-width: 0; } }

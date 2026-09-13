@@ -82,7 +82,7 @@ def test_every_raw_row_reader_works_from_a_cold_cache():
     for call in (lambda: jh.playup_rows(),
                  lambda: jh.playup_board(),
                  lambda: jh.archetype_board(),
-                 lambda: jh.program_editor("", "", "", False, [])):
+                 lambda: jh.program_explorer()):
         jh.reset_schools()
         got = call()
         assert got, call
