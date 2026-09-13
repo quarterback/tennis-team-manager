@@ -682,6 +682,8 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     # reuses world_id=1 after this reset, so the next save's year 0 would read the
     # prior save's histogram. The archive rows it folds were deleted above.
     _scoreline_cache.clear()
+    from app import jhsaa_coefficient as _coef
+    _coef.reset()
     _context_cache.clear()
     _gapband_cache.clear()
     _dev_cache.clear()

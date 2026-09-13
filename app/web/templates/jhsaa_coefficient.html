@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header %}
+{% block title %}JHSAA {{ view.group }} Program Coefficient{% endblock %}
+{% block content %}
+{# ‼️ ONE CLASSIFICATION PER TABLE, NEVER A CROSS-CLASS BOARD (owner spec 2026-09).
+   Programs in different classes do not compete for the same thing, so the rail's
+   class is the whole scope; there is no "overall" view and none may be added. #}
+{{ jh_header(view.scope, u, 'coefficient', view.group ~ ' Program Coefficient',
+             'Nine seasons of road-to-state and State results, weighted to the recent — the '
+             ~ 'regular season is not an input. Ranked within ' ~ view.group ~ ' only.') }}
+
+<div class="jh-shell">
+
+<div class="jh-laypick" style="margin-bottom:14px">
+  <span class="jhx-facet-k">Class</span>
+  <span class="bl-select-wrap"><select class="bl-select" onchange="location.href=this.value">
+    {% for gp in view.groups %}
+    <option value="{{ url_for('jhsaa_coefficient', u=u, g=view.gender, group=gp, year=view.scope.pin) }}"
+            {% if gp == view.group %}selected{% endif %}>{{ gp }}</option>
+    {% endfor %}
+  </select></span>
+  <span class="jhx-muted" style="margin-left:10px">
+    {{ view.window|length }} of {{ view.window_n }} seasons in the window ·
+    {{ view.established }} established · {{ view.bootstrapped }} seeded at the class Q1
+    (fewer than {{ view.min_history }} seasons of history)</span>
+</div>
+
+<div class="bl-panel">
+  <div class="tbl-scroll">
+    <table class="jh-ledger nowrap">
+      <tr><th style="width:40px">#</th><th>Program</th>
+        <th style="width:110px" title="Σ season points × recency weight over the nine-season window">Coefficient</th>
+        <th style="width:90px" title="This coefficient minus the same program's coefficient as of last season">Trend</th>
+        <th style="width:80px" title="Archived seasons of history, whole save">Seasons</th>
+        {% for y, sy, w in view.window %}
+        <th style="width:60px" title="Season points × {{ w }}">{{ sy }}<br><span class="jhx-muted">×{{ w }}</span></th>
+        {% endfor %}
+      </tr>
+      {% for r in view.rows %}
+      {% set pts = {} %}{% for y, p, w in r.breakdown %}{% set _ = pts.update({y: p}) %}{% endfor %}
+      <tr>
+        <td style="color:var(--text-faint);font-weight:800">{{ r.rank }}</td>
+        <td style="font-variant-numeric:normal"><span class="jh-schoolcell">
+          <a href="{{ url_for('jhsaa_school', school=r.name, u=u, g=view.gender, year=view.scope.pin) }}">{{ r.name }}</a>
+          {% if r.bootstrap %}<span class="jhx-muted" title="Fewer than {{ view.min_history }} seasons of history: seeded at the class Q1">seeded</span>{% endif %}</span></td>
+        <td><b>{{ '%.1f'|format(r.coefficient) }}</b></td>
+        <td style="color:{{ 'var(--pos)' if r.trend > 0 else ('var(--neg)' if r.trend < 0 else 'var(--text-muted)') }}">
+          {% if r.trend > 0 %}+{% endif %}{{ '%.1f'|format(r.trend) if r.trend else '—' }}</td>
+        <td>{{ r.seasons }}</td>
+        {% for y, sy, w in view.window %}
+        <td>{{ pts.get(y, 0)|int if pts.get(y) is not none else '—' }}</td>
+        {% endfor %}
+      </tr>
+      {% else %}
+      <tr><td colspan="{{ 5 + view.window|length }}" class="jhx-empty">No archived season yet.</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+
+</div>
+{% endblock %}

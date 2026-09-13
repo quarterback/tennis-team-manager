@@ -217,7 +217,7 @@
      computer-ratings layer beside it, and the at-large committee the Parastate
      classes select from. A sub-rail rather than three tabs, the Championship
      rail's rule exactly. #}
-  {% if tab in ('rankings', 'computer', 'committee') %}
+  {% if tab in ('rankings', 'computer', 'committee', 'coefficient') %}
   <div class="jh-subrail">
     <a class="{{ 'on' if tab == 'rankings' }}"
        href="{{ url_for('jhsaa_rankings', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">TOSS Rankings</a>
@@ -229,6 +229,10 @@
        four classes for a while after the expansion made it ten. #}
     <a class="{{ 'on' if tab == 'committee' }}" title="The at-large selection committee — the Parastate classes ({{ jh_parastate_blurb() }})"
        href="{{ url_for('jhsaa_committee', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">At-Large Committee</a>
+    {# The Program Coefficient (owner spec 2026-09): nine seasons of road and
+       State results, ranked within one class — never across classes. #}
+    <a class="{{ 'on' if tab == 'coefficient' }}" title="Nine-season strength coefficient from road-to-state and State results, ranked within the class"
+       href="{{ url_for('jhsaa_coefficient', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Program Coefficient</a>
   </div>
   {% endif %}
 

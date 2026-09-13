@@ -4521,16 +4521,73 @@ def program_explorer() -> dict:
             "sponsors": _sponsors_any(r),
         })
     out.sort(key=lambda x: x["name"])
+    # The results-driven suggestion beside the current tier (owner rule 2026-09);
+    # "" where the save has no coefficient for the program yet.
+    sugg = suggested_bands()
+    for x in out:
+        x["suggested"] = sugg.get(x["ident"], "")
+        x["suggested_label"] = tier_label.get(x["suggested"], "")
+        x["differs"] = bool(x["suggested"]) and x["suggested"] != x["band"]
     counts = {k: sum(1 for v in amap.values() if v == k) for k in EDITABLE_ARCHETYPES}
     counts["play_up"] = sum(1 for x in out if x["plays_up"])
     counts["edited"] = sum(1 for x in out if x["edited"])
     counts["former"] = sum(1 for x in out if not x["sponsors"])
+    counts["differs"] = sum(1 for x in out if x["differs"])
     tier_counts = {t["key"]: 0 for t in tiers}
     for x in out:
         tier_counts[x["band"]] = tier_counts.get(x["band"], 0) + 1
     return {"rows": out, "tiers": tiers, "kinds": list(EDITABLE_ARCHETYPES),
             "groups": [g for g in GROUPS], "counts": counts,
             "tier_counts": tier_counts}
+
+
+def suggested_bands(rows: list[dict] | None = None) -> dict[str, str]:
+    """`{program ident: tier key}` — a results-driven tier for every program with a
+    coefficient (owner rule 2026-09, `docs/AAR-jhsaa-program-coefficient.md`).
+    Keyed on the stable roster identity, the key the coefficient runs on.
+
+    The Program Coefficient ranks WITHIN a class and per gender, and a tier is one
+    property of a SCHOOL on an association-wide ladder — so the bridge is the
+    program's PERCENTILE inside its class (class-blind by construction; no
+    cross-class ordering is ever formed), averaged over the genders it sponsors,
+    then laid onto the tier ladder by the tiers' ROLL WEIGHTS: each non-volatile
+    tier takes the share of the association its weight implies, so the suggested
+    distribution is exactly what the tier table says it should be. Volatile tiers
+    are never suggested — those are a hand-set preference, not a reading of
+    results. A program with no coefficient in either gender gets no suggestion."""
+    from app import world
+    from app import jhsaa_coefficient as coef
+    # READ the world, never get-or-create it (the one-world rule): an explorer
+    # opened with no save yet simply has no suggestions.
+    w = world.load_world(world.DEFAULT_SEED)
+    if not w:
+        return {}
+    pct: dict[str, list[float]] = {}
+    for g in ("boys", "girls"):
+        for school, p in coef.percentiles(w["id"], g).items():
+            pct.setdefault(school, []).append(p)
+    if not pct:
+        return {}
+    ladder = [t for t in band_tiers() if not t.get("wide")]      # abysmal … dynasty
+    total = sum(float(t.get("weight") or 0) for t in ladder) or 1.0
+    cuts, acc = [], 0.0
+    for t in ladder:
+        acc += float(t.get("weight") or 0) / total
+        cuts.append((acc, t["key"]))
+    # Rank the association on the averaged percentile and deal the ladder by share,
+    # so ties and clumps in the percentiles cannot over-fill a tier.
+    order = sorted(pct, key=lambda n: (sum(pct[n]) / len(pct[n]), n))
+    n = len(order)
+    out: dict[str, str] = {}
+    for i, school in enumerate(order):
+        q = (i + 0.5) / n
+        for edge, key in cuts:
+            if q <= edge:
+                out[school] = key
+                break
+        else:
+            out[school] = cuts[-1][1]
+    return out
 
 
 def bulk_edit_playup_seed(target: str | None, names: list[str]) -> dict:

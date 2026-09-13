@@ -7124,6 +7124,41 @@ def jhsaa_computer_ratings_view(seed: int, gender: str, group: str | None = None
             "disconnected": ratings.get("disconnected", False)}
 
 
+def jhsaa_coefficient_view(seed: int, gender: str, group: str | None = None,
+                           year: int | None = None) -> dict:
+    """The Program Coefficient page (owner spec 2026-09) — ONE classification's
+    ranking, never a cross-class board (`jhsaa_coefficient`). The rail's class
+    picks the group; the table is the class's programs ranked on the nine-season
+    weighted total, with the newest season's points, the trend against last
+    season's coefficient, and the seasons of history behind it."""
+    import app.jhsaa as jh
+    import app.world as world
+    from app import jhsaa_coefficient as coef
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    years = world.jhsaa_years(w["id"], g)
+    yr = (years[0] if years else w["year"]) if year is None else year
+    arc = world.get_jhsaa(w["id"], yr, g) if years else None
+    grp = group if group in jh.GROUPS else jh.GROUPS[0]
+    scope = _jh_scope(g, grp, list(jh.GROUPS), yr, years,
+                      (arc or {}).get("season_year"), arc)
+    # The picked season is the coefficient's boundary: window, ranking and trend
+    # all end at `yr`, so browsing 2071 shows 2071's board, not today's.
+    data = coef.ranked(w["id"], g, as_of=yr)
+    rows = data["groups"].get(grp, [])
+    season_of = {}
+    for y in data["years"]:
+        a = world.get_jhsaa(w["id"], y, g)
+        season_of[y] = (a or {}).get("season_year") or y
+    return {"gender": g, "year": yr, "years": years, "group": grp,
+            "groups": list(jh.GROUPS), "scope": scope, "rows": rows,
+            "window": [(y, season_of.get(y, y), coef.WEIGHTS[i])
+                       for i, y in enumerate(data["years"])],
+            "established": sum(1 for r in rows if not r["bootstrap"]),
+            "bootstrapped": sum(1 for r in rows if r["bootstrap"]),
+            "min_history": coef.MIN_HISTORY, "window_n": coef.WINDOW}
+
+
 def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
                          year: int | None = None) -> dict:
     """The at-large tracking page for the Parastate groups (`ATLARGE_GROUPS` —
