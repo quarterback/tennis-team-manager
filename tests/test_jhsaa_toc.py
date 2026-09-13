@@ -1025,6 +1025,53 @@ def test_the_epiregional_panel_and_match_center_label(archived):
     assert "Epiregional" in html and "Invitational" not in html
 
 
+def test_the_research_export_carries_the_program_coefficient(archived):
+    """The Program Coefficient rides in the export as jhsaa_coefficient.csv — one
+    row per program per championship_group as of the export's season, ranked
+    within the group, keyed on the roster identity like every other table, and
+    its manifest sentence derives its prices from the module (never retyped).
+    Through the ARCHIVE path, the only one a real export uses."""
+    import csv as _csv
+    import io as _io
+    import json as _json
+    from app.research_export import build_jhsaa
+    from app import jhsaa_coefficient as coef
+    y = archived["arc"]["season_year"]
+    files = build_jhsaa(y, "girls")
+    rows = list(_csv.DictReader(_io.TextIOWrapper(_io.BytesIO(files["jhsaa_coefficient.csv"]))))
+    assert rows, "no coefficient rows reached the export"
+    programs = list(_csv.DictReader(_io.TextIOWrapper(_io.BytesIO(files["programs.csv"]))))
+    ids = {p["program_id"] for p in programs}
+    assert all(r["program_id"].endswith("|girls") for r in rows)
+    assert {r["program_id"] for r in rows} <= ids, "an id the programs table cannot join"
+    # An injected season is NOT in the archive the fold reads: with a real save
+    # present the table must still be empty, never another save's standing.
+    from app.research_export import _load_archived_jhsaa_season
+    injected = build_jhsaa(y, "girls", season=_load_archived_jhsaa_season(y, "girls"))
+    assert not list(_csv.DictReader(_io.TextIOWrapper(
+        _io.BytesIO(injected["jhsaa_coefficient.csv"]))))
+    # ranked 1..n within each group, no cross-class board
+    by_group = {}
+    for r in rows:
+        by_group.setdefault(r["championship_group"], []).append(int(r["rank"]))
+    for g, ranks in by_group.items():
+        assert sorted(ranks) == list(range(1, len(ranks) + 1)), g
+    # a one-season scratch archive: every program bootstrapped, window of one
+    assert all(r["bootstrap"] == "1" for r in rows)
+    assert all(int(r["seasons_of_history"]) == 1 for r in rows)
+    world_year = y - wd.BASE_YEAR - 1
+    assert all(int(r["as_of_world_year"]) == world_year for r in rows)
+    bd = _json.loads(rows[0]["breakdown_json"])
+    assert bd and bd[0][0] == world_year and bd[0][2] == coef.WEIGHTS[0]
+    # the manifest names the file and states the prices the module actually uses
+    manifest = _json.loads(files["manifest.json"])
+    assert manifest["files"]["jhsaa_coefficient.csv"]["rows"] == len(rows)
+    rule = next(d for d in manifest["domain_rules"] if d.startswith("jhsaa_coefficient.csv"))
+    assert f"champion {coef.STATE_CHAMPION}" in rule and str(coef.WINDOW) in rule
+    for name, pts in coef.road_points().items():
+        assert f"{name} {pts:g}" in rule
+
+
 def test_the_research_export_carries_the_jv_events(archived):
     """‼️ THE JV EVENTS ARE IN THE EXPORT (owner rule 2070, reversing the 2026-08
     varsity-only decision): the JV season's duals ride in duals.csv labelled

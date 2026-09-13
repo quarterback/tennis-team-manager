@@ -58,3 +58,23 @@ road-to-state and State-bracket results and nothing else.
 - A class with NO established program (a save younger than three seasons) yields
   no suggestion: every row there sits at one seeded value ordered by name, which
   says nothing.
+- **The research export carries it** (`jhsaa_coefficient.csv` in every JHSAA
+  bundle, `research_export.build_jhsaa`): one row per program per
+  championship_group AS OF the export's season, with rank, coefficient, trend,
+  this season's points, seasons of history, the bootstrap flag, the window and a
+  `[world_year, points, weight]` breakdown. It reads the same memo the page does
+  (a fold, never a resimulation) and keys `program_id` on the roster identity so
+  a renamed program is one row across its history. The export's `year` is the
+  SEASON year and is mapped back to the archive's world-year exactly as the
+  season loader does (`year - BASE_YEAR - 1`) before it becomes `as_of` — pass
+  the season year straight through and the window silently ends one world-year
+  short of nothing, since no archive sits at 2082. The manifest's `domain_rules`
+  sentence DERIVES every price from the module's constants; a retyped price list
+  is the committee sentence's mistake again. Two review findings shaped it:
+  the table is keyed on the ARCHIVE PATH (`injected`), never on "a world
+  exists" — an injected season beside a live save would otherwise package
+  another archive's standing under that season's manifest; and it emits ONLY
+  programs with a `programs.csv` row, re-ranked within the group among them
+  (the `percentiles()` rule), because `ranked()` keeps a program that stopped
+  sponsoring the gender and its id would have no entity row to join. Pinned
+  through the archive path in `tests/test_jhsaa_toc.py`.

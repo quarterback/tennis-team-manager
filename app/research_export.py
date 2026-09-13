@@ -209,6 +209,7 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
     valid_classes = {"all", *jhsaa.GROUPS}
     if classification not in valid_classes:
         raise ExportError("Unknown JHSAA classification.")
+    injected = season is not None
     season = season or _load_archived_jhsaa_season(year, gender)
     all_teams = list(season["teams"].values())
     selected = [t for t in all_teams if classification == "all" or t.school.group == classification]
@@ -425,10 +426,53 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                 row[f"value_{s}"] = (t.get("values") or {}).get(s, "")
             computer_ratings.append(row)
 
+    # THE PROGRAM COEFFICIENT (owner spec 2026-09): the nine-season UEFA-style
+    # standing as of THIS export's season — road-round wins and the State finish
+    # only, ranked within the championship_group the program plays in today.
+    # Read off the same memo the /jhsaa/coefficient page uses (a pure fold over
+    # the archive, never resimulated). ‼️ ARCHIVE PATH ONLY: an injected season
+    # is not in the archive the fold reads, so the table is empty for it — keyed
+    # on `injected`, never on "a world exists", or a fixture run beside a real
+    # save would package coefficient data from an unrelated persisted archive.
+    # The export's `year` is the SEASON year, so it is mapped back to the
+    # archive's world-year exactly as the season loader does.
+    from app import jhsaa_coefficient as _coef
+    coefficient_rows = []
+    if not injected and w:
+        # ‼️ ONLY PROGRAMS WITH A programs.csv ROW. `ranked()` keeps a program that
+        # has since stopped sponsoring this gender (its archive is still real), but
+        # programs.csv is `all_teams` — current sponsors — so its id would have no
+        # entity row to join. Filter to the entity table and RE-RANK within the
+        # group among those, the `percentiles()` rule (the page still lists the
+        # former program; a normalised consumer must not have a dangling id).
+        ident_to_id = {t.school.ident: t.school.key for t in all_teams}
+        world_year = year - wd.BASE_YEAR - 1        # inverse of wd.jhsaa_season_year
+        standing = _coef.ranked(w["id"], gender, as_of=world_year)
+        for group, rows_ in sorted(standing["groups"].items()):
+            if classification != "all" and group != classification:
+                continue
+            live = [r for r in rows_ if r["school"] in ident_to_id]   # already ranked
+            for rank, r in enumerate(live, start=1):
+                coefficient_rows.append({
+                    "program_id": ident_to_id[r["school"]],
+                    "program_name": r["name"], "gender": gender,
+                    "championship_group": group, "rank": rank,
+                    "coefficient": r["coefficient"],
+                    "trend": r.get("trend", 0.0),
+                    "season_points": r["points"],
+                    "seasons_of_history": r["seasons"],
+                    "bootstrap": int(bool(r["bootstrap"])),
+                    "as_of_world_year": standing["as_of"],
+                    "window_world_years": " ".join(str(y) for y in standing["years"]),
+                    "breakdown_json": json.dumps(
+                        [[y, pts, wt] for y, pts, wt in r["breakdown"]]),
+                })
+
     tables = {"programs.csv": programs, "players.csv": players, "duals.csv": duals,
               "lines.csv": lines, "line_players.csv": line_players,
               "jhsaa_standings.csv": standings,
               "jhsaa_computer_ratings.csv": computer_ratings,
+              "jhsaa_coefficient.csv": coefficient_rows,
               "jhsaa_program_history.csv": history}
     files = {name: _csv(rows) for name, rows in tables.items()}
     files.update({name: json.dumps(value, indent=2, ensure_ascii=False, default=str).encode()
@@ -488,6 +532,32 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "component and the least-squares systems (Massey dual/game, SRS) were withheld. "
             "Parallel to TOSS/ATR — it feeds neither. Empty on seasons archived before the "
             "layer existed.",
+            # ‼️ Prices DERIVED from `jhsaa_coefficient`, never retyped — the
+            # committee sentence above learned this the hard way.
+            "jhsaa_coefficient.csv is the Program Coefficient (UEFA-style): one row per "
+            "program per championship_group, ranked WITHIN that group only — never across "
+            "classes — as of this export's season. coefficient sums the last "
+            f"{_coef.WINDOW} archived seasons' points weighted "
+            f"{'/'.join(str(x) for x in _coef.WEIGHTS)} newest to oldest; a season's "
+            "points are road-round wins (" + ", ".join(
+                f"{k} {v:g}" for k, v in _coef.road_points().items()) + ") plus ONE "
+            f"State finish (champion {_coef.STATE_CHAMPION}, runner-up {_coef.STATE_FINAL}, "
+            f"semifinalist {_coef.STATE_SEMI}, quarterfinalist {_coef.STATE_QUARTER}, "
+            f"octofinalist {_coef.STATE_OCTO}, any other main-draw entry {_coef.STATE_ENTRY}, "
+            f"a Parastate exit 0) plus {_coef.TOC_BONUS} for a TOC entry; the regular season "
+            "is NEVER an input. season_points is this season's own points; trend is the "
+            "coefficient minus the same program's coefficient as of the previous archived "
+            "season (0 with no prior season); seasons_of_history counts every archived "
+            f"season the program appears in; bootstrap=1 marks fewer than {_coef.MIN_HISTORY}, "
+            "whose coefficient is SEEDED at the first quartile of its group's established "
+            "programs (its own points do not rank it). breakdown_json lists [world_year, "
+            "points, weight] triples for the window, newest first; as_of_world_year and "
+            "window_world_years are the archive's zero-based world-years (season_year = "
+            f"{wd.BASE_YEAR} + world_year + 1). program_id keys on the roster identity, so "
+            "a renamed program keeps one row across its history, and every row joins "
+            "programs.csv: a program that has since stopped sponsoring this gender is "
+            "omitted and rank counts current sponsors only (the app's page still lists "
+            "it). Empty on an injected season or when the save has no archive.",
             # ‼️ DERIVED from `AT_LARGE_BIDS`/`STATE_FIELD`, never retyped: this
             # sentence claimed "the 48-team groups (7A and Group 1)" and "sixteen
             # selections in seed order 33-48" after both had stopped being true,
