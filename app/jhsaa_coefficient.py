@@ -250,26 +250,57 @@ def fold(seasons: list[tuple[int, dict]], current_group: dict[str, str],
 
 # ---- the world-facing entry point ----------------------------------------------
 
-_season_cache: dict = {}      # (world_id, year, gender) -> season_points — immutable
-_coef_cache: dict = {}        # (world_id, gender, as_of, playup version) -> result
+# ‼️ MEMOS UNDER THE THREADED WORKER, SYNCHRONISED BY GENERATION. `world.reset()`
+# clears these — but a request that had already begun loading an OLD archive can
+# finish after the clear and publish the old save's rows, and SQLite reuses the
+# world id and the years, so the NEW save would then be served the previous
+# universe's coefficients under an identical key. So every publish is stamped:
+# a computation captures the generation it started in and publishes ONLY while
+# that generation is still current, under the same lock `reset()` bumps it with.
+# Reads use `.get()` and compute into a local (the gthread rule); the generation
+# is also part of every key, so nothing from a past save can ever be a hit.
+import threading
+
+_lock = threading.Lock()
+_gen = 0
+_season_cache: dict = {}      # (gen, world_id, year, gender) -> season_points
+_coef_cache: dict = {}        # (gen, world_id, gender, as_of, playup version) -> result
+
+
+def _generation() -> int:
+    with _lock:
+        return _gen
+
+
+def _publish(cache: dict, key: tuple, value, gen: int) -> None:
+    """Store `value` only if no reset intervened since `gen` was read."""
+    with _lock:
+        if _gen == gen:
+            cache[key] = value
 
 
 def _season(world_id: int, year: int, gender: str) -> dict:
     from app import world
     import app.jhsaa as jh
-    ck = (world_id, year, gender)
+    gen = _generation()
+    ck = (gen, world_id, year, gender)
     hit = _season_cache.get(ck)
     if hit is not None:
         return hit
     arc = world.get_jhsaa(world_id, year, gender)
     got = season_points(arc, jh._rows()) if arc else {}
-    _season_cache[ck] = got
+    _publish(_season_cache, ck, got, gen)
     return got
 
 
 def reset() -> None:
-    _season_cache.clear()
-    _coef_cache.clear()
+    """Invalidate every memo: bump the generation (so an in-flight computation
+    from the old save can no longer publish) and drop the stored rows."""
+    global _gen
+    with _lock:
+        _gen += 1
+        _season_cache.clear()
+        _coef_cache.clear()
 
 
 def coefficient(world_id: int, gender: str, as_of: int | None = None) -> dict:
@@ -284,7 +315,8 @@ def coefficient(world_id: int, gender: str, as_of: int | None = None) -> dict:
         years = [y for y in years if y <= as_of]
     if not years:
         return {"as_of": None, "years": [], "groups": {}}
-    ck = (world_id, gender, years[0], ov.jhsaa_playup_version())
+    gen = _generation()
+    ck = (gen, world_id, gender, years[0], ov.jhsaa_playup_version())
     hit = _coef_cache.get(ck)
     if hit is not None:
         return hit
@@ -305,7 +337,7 @@ def coefficient(world_id: int, gender: str, as_of: int | None = None) -> dict:
         for r in rows:
             r["name"] = today.get(r["school"], r["name"])
     out = {"as_of": years[0], "years": window, "groups": groups}
-    _coef_cache[ck] = out
+    _publish(_coef_cache, ck, out, gen)
     return out
 
 

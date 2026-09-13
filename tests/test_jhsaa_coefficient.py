@@ -154,3 +154,28 @@ def test_suggestions_read_only_current_sponsors(monkeypatch):
                         lambda wid, g, as_of=None: {"groups": {"9A": rows}})
     got = coef.percentiles(1, "boys")
     assert got == {"A": 1.0, "C": 0.0}
+
+
+def test_a_reset_during_a_load_stops_the_old_save_publishing(monkeypatch):
+    """The threaded-worker race: a request that began loading the OLD archive
+    finishes after `world.reset()` and would repopulate the memo under a key the
+    NEW save reuses (SQLite hands out the same world id and years). The
+    generation stamp taken at the start of the load must refuse the publish."""
+    import app.world as world
+    coef.reset()
+    calls = {"n": 0}
+
+    def slow_archive(world_id, year, gender):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            coef.reset()            # the new save arrives mid-load
+        return _season(year)
+    monkeypatch.setattr(world, "get_jhsaa", slow_archive)
+    monkeypatch.setattr(jh, "_rows", lambda: [{"name": n} for n in "ABCDE"])
+    first = coef._season(1, 5, "girls")
+    assert first["A"]["points"] == 40                    # the caller still gets its answer
+    assert not coef._season_cache, "a stale load must not be published after a reset"
+    second = coef._season(1, 5, "girls")                # the new save computes afresh
+    assert calls["n"] == 2 and second["A"]["points"] == 40
+    assert len(coef._season_cache) == 1                  # and this one IS published
+    coef.reset()
