@@ -54,7 +54,7 @@ the season each class's expanded field began.</div></div>
         <th style="width:44px" title="Median rank">Med</th>
         <th style="width:44px" title="Rank disagreement — the controversy measure">σ</th>
         {% for s in view.systems %}<th style="width:60px">{{ LABELS[s] }}</th>{% endfor %}
-        {% for m in view.members %}<th style="width:52px" title="{{ m }} — this member's ballot position among at-large candidates">{{ m.replace('The ', '')[:5] }}</th>{% endfor %}
+        {% for m in view.members %}<th style="width:52px" title="{{ m }} — this member's ballot position among at-large candidates">{{ m.replace('The ', '') }}</th>{% endfor %}
         <th style="width:56px" title="Borda count across the five ballots (seed Borda for the selected at-larges, bubble Borda otherwise)">Borda</th>
         <th style="width:76px">Status</th>
       </tr>

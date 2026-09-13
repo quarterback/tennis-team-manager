@@ -824,20 +824,28 @@ a.jh-eyebrow:hover { color: var(--brand-strong); }
 .jh-line .st { color: var(--text-muted); font-variant-numeric: tabular-nums; text-align: right; }
 
 /* ---- Season ledger (program history) ----
-   `table-layout: fixed` is load-bearing, not a tidy-up: without it a long school
-   name sets its column's width from content and the neighbouring numeric columns
-   are pushed into each other. The <th> widths below are then the real widths. */
-.jh-ledger { width: 100%; border-collapse: collapse; font-size: var(--fs-body-m); table-layout: fixed; }
+   ‼️ AUTO LAYOUT, NOT FIXED (owner report 2026-09: "lots of columns in the app
+   are like this one that doesn't fully let me view them or are off"). The ledger
+   was `table-layout: fixed` with hand-typed pixel widths per <th> and
+   `overflow: hidden` on every cell, so a label or chip wider than its typed width
+   was CLIPPED ("COLLE", "MASSI", "Qualifie") and the table never grew past its
+   container, so its `.tbl-scroll` wrapper never scrolled either — measured on the
+   committee, computer-ratings, rankings, district and class ledgers at 1440px.
+   Fixed layout was there so a long school name could not squeeze the numeric
+   columns; auto layout with every numeric column `nowrap` gives the same
+   guarantee the other way round: a nowrap column is never narrower than its
+   widest content (the typed width becomes a MINIMUM, not a cap), the one column
+   without a typed width — the name — takes whatever is left and wraps, and when
+   the columns add up to more than the container the table overflows into the
+   scroll wrapper instead of compressing. NUMBERS NEVER SHRINK, NAMES WRAP. */
+.jh-ledger { width: 100%; border-collapse: collapse; font-size: var(--fs-body-m); table-layout: auto; }
 .jh-ledger th {
   text-align: left; padding: 9px 12px; font-size: var(--fs-micro); font-weight: 700;
   letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-muted);
   background: var(--surface-th); border-bottom: 1px solid var(--border-default); white-space: nowrap;
 }
-.jh-ledger td { padding: 9px 12px; border-bottom: 1px solid var(--border-subtle); font-variant-numeric: tabular-nums; overflow: hidden; }
+.jh-ledger td { padding: 9px 12px; border-bottom: 1px solid var(--border-subtle); font-variant-numeric: tabular-nums; }
 .jh-ledger tr:hover td { background: var(--surface-hover); }
-/* `table-layout: fixed` honours the column widths but does NOT clip a header, so a
-   long <th> label overruns its neighbour. Both have to be told. */
-.jh-ledger th { overflow: hidden; }
 .jh-ledger.nowrap td, .jh-ledger.nowrap th { white-space: nowrap; }
 /* ‼️ NUMBERS NEVER SHRINK, NAMES WRAP (owner rule 2026-09). Every fixed column in a
    `nowrap` ledger is a NUMBER sized to its widest value; the one unsized column is
@@ -845,10 +853,19 @@ a.jh-eyebrow:hover { color: var(--brand-strong); }
    record cut to "18-1(" or a league cut to "Timber Valle" is what the owner kept
    seeing, and the name is the one cell a reader can still parse across two lines.
    Selector weight matches `.jh-ledger.nowrap td` (0,2,1), so it wins by order. */
-.jh-ledger.nowrap td.nm, .jh-ledger td.nm { white-space: normal; overflow-wrap: anywhere; }
-.jh-ledger td.nm .jh-schoolcell a { white-space: normal; overflow: visible; text-overflow: clip; }
-.jh-ledger td.nm .jh-schoolcell { align-items: flex-start; }
-.jh-ledger td.nm .jh-schoolcell .mk { margin-top: 2px; }
+.jh-ledger.nowrap td.nm, .jh-ledger td.nm,
+.jh-ledger.nowrap td:has(> .jh-schoolcell), .jh-ledger td:has(> .jh-schoolcell) { white-space: normal; overflow-wrap: break-word; }
+/* `break-word`, never `anywhere`: under auto layout `anywhere` makes the column's
+   MINIMUM one character, so an overflowing ledger starved the name to "Ca/nal/Vie/w"
+   while every numeric column kept its width. `break-word` keeps the longest word
+   as the floor and the school cell sets a usable one below that. */
+.jh-ledger:not(.jh-champgrid) td .jh-schoolcell { min-width: 150px; }   /* the champions grid sets its own width per column */
+/* Most ledgers never mark the name cell `nm` — the committee, district and
+   class tables just drop a `.jh-schoolcell` in a plain <td> — so the cell that
+   HOLDS a school cell is the name cell, whatever class it carries. */
+.jh-ledger td.nm .jh-schoolcell a, .jh-ledger td .jh-schoolcell a { white-space: normal; overflow: visible; text-overflow: clip; }
+.jh-ledger td.nm .jh-schoolcell, .jh-ledger td .jh-schoolcell { align-items: flex-start; }
+.jh-ledger td.nm .jh-schoolcell .mk, .jh-ledger td .jh-schoolcell .mk { margin-top: 2px; }
 /* A `width:100%` fixed-layout table is never wider than its container, so its
    `.tbl-scroll` wrapper never scrolls — on a narrow viewport the columns compress
    and the honours chips clip instead. A min-width (the fixed column widths plus a
@@ -857,8 +874,8 @@ a.jh-eyebrow:hover { color: var(--brand-strong); }
 .jh-ledger.minw { min-width: 900px; }
 .jh-sched td:last-child { white-space: nowrap; }
 /* The finish cell can carry TWO chips — a classification title and a TOC finish — and
-   the table is `table-layout: fixed; overflow: hidden`, so nowrap here doesn't shrink
-   the column, it CLIPS the second chip mid-word. Let it wrap onto a second line.
+   in a `nowrap` ledger both would sit on one line and widen the column. Let it wrap
+   onto a second line.
    Note the selector: `.jh-ledger.nowrap td` is (0,2,1), so a plain `.jh-ledger .fin`
    (0,2,0) loses to it however far down the file it sits. */
 .jh-ledger td.fin, .jh-ledger.nowrap td.fin { white-space: normal; }
