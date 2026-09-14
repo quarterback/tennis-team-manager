@@ -360,16 +360,20 @@ their angles (serve_and_volley > counterpuncher 59-65, pusher > aggressive_
 baseliner 55-63, all_court > pusher 58-69, junkballer > counterpuncher 54-61,
 serve_first > junkballer 52-59).
 
-**Residual, documented and dialled:** with the cross term OFF the point engine
+**Style strength differences are INTENDED (owner rule, 2026-09: "imbalances
+are good, that is realistic — stop trying to optimize against some play styles
+working better than others; the attributes of the player should be able to
+mitigate those, ceteris paribus, and that's it").** With the cross term OFF the
+point engine
 still prices net- and serve-built shapes ~5 points above defensive ones
 (all_court/serve_and_volley 55-56, counterpuncher/pusher/aggressive_baseliner
 46-47) — net play is priced in singles now and net-built shapes convert
 slightly better there; the fast model is even to ±1.5. That is why the point
 engine's all_court > counterpuncher runs hot (68) and aggressive_baseliner >
 serve_first cool (56). `net_slope` (0.35) and `serve_plus_swing` (0.4) are the
-two dials; both were swept (1.1 → 65/37, 0.5 → 55/46) and left here rather than
-zeroed, because zeroing them is what made net play dead weight in the first
-place.
+two dials; both were swept (1.1 → 65/37, 0.5 → 55/46). The sweep stopped here
+by owner decision, not because the line reached 50 — it is a readout, not a
+target.
 
 **Favourite-rate curve, point engine (favourite win % by OVR gap band 0-3 /
 3-6 / 6-9 / 9-12 / 12-15 / 15-18):** before any of this 55.1 / 67.7 / 79.3 /
