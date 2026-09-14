@@ -338,3 +338,48 @@ Pinned by `tests/test_style_matchups.py`: traits are weighted in v2 and absent
 in v1; every emitted tendency is one the engine reads; a net rusher approaches
 >1.4× a balanced player, a first-striker's winners and errors both rise, a
 grinder's both fall; return_specialist beats big_server at equal grade.
+
+
+## Measured, final dials (equal grade, row beats column, both ways)
+
+Dials: fast `style_k` 1.5 (HS 2.4), `d_style_k` 0.6 (HS 0.75); point engine
+`rally.style_k` 1.6, `doubles.style_k` 0.5; `style_fade` 0.15; `net_slope` 0.35,
+`approach_base` 0.14, `serve_plus_swing` 0.4, `tend_return_cross` 0.35.
+
+| cardinal edge | fast / college | fast / HS | point engine |
+|---|---:|---:|---:|
+| counterpuncher > aggressive_baseliner | 58.3 | 58.4 | 59.7 |
+| aggressive_baseliner > serve_first | 58.4 | 58.9 | 55.7 |
+| serve_first > all_court | 62.8 | 60.1 | 58.6 |
+| all_court > counterpuncher | 61.5 | 59.5 | 67.9 |
+| every style vs the field (spread) | 48-52 | 49-52 | 45-56 |
+| same vs the field at ZERO cross term | 49-51 | 49-51 | 46-56 |
+
+Fast: 1,800 matches a cell; point engine 600. The added styles' edges follow
+their angles (serve_and_volley > counterpuncher 59-65, pusher > aggressive_
+baseliner 55-63, all_court > pusher 58-69, junkballer > counterpuncher 54-61,
+serve_first > junkballer 52-59).
+
+**Residual, documented and dialled:** with the cross term OFF the point engine
+still prices net- and serve-built shapes ~5 points above defensive ones
+(all_court/serve_and_volley 55-56, counterpuncher/pusher/aggressive_baseliner
+46-47) — net play is priced in singles now and net-built shapes convert
+slightly better there; the fast model is even to ±1.5. That is why the point
+engine's all_court > counterpuncher runs hot (68) and aggressive_baseliner >
+serve_first cool (56). `net_slope` (0.35) and `serve_plus_swing` (0.4) are the
+two dials; both were swept (1.1 → 65/37, 0.5 → 55/46) and left here rather than
+zeroed, because zeroing them is what made net play dead weight in the first
+place.
+
+**Favourite-rate curve, point engine (favourite win % by OVR gap band 0-3 /
+3-6 / 6-9 / 9-12 / 12-15 / 15-18):** before any of this 55.1 / 67.7 / 79.3 /
+88.6 / 94.9 / 97.8; after, net play on, 56.9 / 69.7 / 77.0 / 88.1 / 93.7 /
+98.2 — unchanged within a point or two, which is the constraint every term here
+was written as a deviation to satisfy.
+
+**Behaviour, point engine, equal grade vs balanced opponents (net points % /
+winners per point % / unforced errors per point %):** none 14.3 / 13.7 / 13.8;
+net_rusher 25.4 / 13.9 / 13.9; chip_and_charge 21.0; first_strike 14.1 / 16.4 /
+15.8; grinder 14.1 / 11.1 / 11.9; retriever 11.8 winners; slice_specialist 17.7
+net; serve_and_volley (primary) 25.9 net. return_specialist vs big_server 56.6%,
+vs serve_and_volley 53.8%.

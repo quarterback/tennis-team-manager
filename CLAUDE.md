@@ -3944,8 +3944,13 @@ was a school marker, shipped "Baptist HS High School".
     with their own dials: `fast.TUNE["style_k"]`/`d_style_k` (+ the HS profile's),
     `rally.TUNE["style_k"]`, `doubles.TUNE["style_k"]`. Calibrate with
     `scripts/style_matchup_calibration.py` (`--fidelity full`, `--doubles`, `--k 0` for
-    the "strength vs field" line, which must read ~50 for every style before a row
-    moves — the cross term is meant to be the ONLY style effect).
+    the "strength vs field" line). ‼️ **THAT LINE IS A READOUT, NOT A TARGET (owner rule
+    2026-09): "imbalances are good, that is REALISTIC — stop trying to optimize against
+    some play styles working better than others."** Net- and serve-built shapes convert
+    a few points better in the point engine (all_court/serve_and_volley ~55, the
+    defensive styles ~46 at zero cross term) and that stands; a player's ATTRIBUTES are
+    what mitigate it, ceteris paribus, and nothing else should. Do not retune
+    `net_slope` / `serve_plus_swing` / the shift rows to flatten it.
   - Synthetic `random_player`s have no rich table, sit at the origin and are net-neutral
     — every pre-existing engine test is byte-identical.
   - **‼️ STYLE IS COMPOSITIONAL: PRIMARY + SECONDARY TRAIT (owner rule 2026-09).** A
