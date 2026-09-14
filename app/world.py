@@ -5085,6 +5085,7 @@ OVR_GAP_BANDS = (("0-6", "Peers", 0.0, 7.0),
 #: Cleared by `reset()`; pruned per (world, year, gender) before publishing.
 _gapband_cache: dict = {}
 _flighteff_cache: dict = {}
+_flighteff_lock = __import__('threading').Lock()
 
 
 def _gap_band(gap: float) -> str:
@@ -7830,7 +7831,8 @@ def jhsaa_flight_efficiency(world_id: int, year: int, gender: str, salt: str = "
     from . import overrides as ov
     ck = (world_id, year, gender, salt, ov.jhsaa_transfer_version(),
           ov.jhsaa_archetype_version(), ov.jhsaa_band_version())
-    got = _flighteff_cache.get(ck)
+    with _flighteff_lock:
+        got = _flighteff_cache.get(ck)
     if got is not None:
         return got
     season_year = BASE_YEAR + year + 1
@@ -7897,7 +7899,9 @@ def jhsaa_flight_efficiency(world_id: int, year: int, gender: str, salt: str = "
     acc: dict[tuple[str, str], dict] = {}
     for school, slot, gap, is_home, won, names in per_side:
         c = acc.setdefault((school, slot), {"n": 0, "wins": 0, "xw": 0.0, "who": Counter()})
-        z = max(-30.0, min(30.0, beta * gap + home * (1 if is_home else -1) * 0.5))
+        # the fit is σ(β·gap + h) on HOME rows; the away mirror is 1 − that,
+        # i.e. σ(−β·gap − h) with the gap already signed from the away side
+        z = max(-30.0, min(30.0, beta * gap + home * (1 if is_home else -1)))
         c["n"] += 1
         c["wins"] += won
         c["xw"] += 1.0 / (1.0 + math.exp(-z))
@@ -7912,7 +7916,8 @@ def jhsaa_flight_efficiency(world_id: int, year: int, gender: str, salt: str = "
                          "top": " / ".join(top), "top_n": top_n})
     out = {"year": year, "season_year": season_year, "beta": beta, "home": home,
            "lines": total, "unresolved": unresolved, "rows": out_rows}
-    for k in [k for k in _flighteff_cache if k[:3] == ck[:3]]:
-        _flighteff_cache.pop(k, None)
-    _flighteff_cache[ck] = out
+    with _flighteff_lock:             # cold pages for other years/genders run concurrently
+        for k in [k for k in _flighteff_cache if k[:3] == ck[:3]]:
+            _flighteff_cache.pop(k, None)
+        _flighteff_cache[ck] = out
     return out

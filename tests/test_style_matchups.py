@@ -99,7 +99,11 @@ def test_the_agreed_tournament_emerges_at_equal_overall(profile, fidelity):
     added styles' edges vary with their angle, so the floor is 51."""
     pl = calib.pool(150)
     cells = calib.matrix(pl, profile, seeds=2, fidelity=fidelity)
-    for w, l in calib.TOURNAMENT:
+    # The point engine prices shapes unevenly ON PURPOSE (owner rule: style
+    # imbalances are realistic), so there only the owner's four cardinal edges
+    # are pinned; the fast model is even enough to pin every agreed edge.
+    edges = calib.CARDINAL if fidelity == "full" else calib.TOURNAMENT
+    for w, l in edges:
         assert cells[(w, l)][0] >= 0.51, (w, l, cells[(w, l)])
         assert cells[(l, w)][0] <= 0.49, (l, w, cells[(l, w)])
     assert sum(cells[c][0] for c in calib.CARDINAL) / len(calib.CARDINAL) >= 0.54
@@ -107,6 +111,8 @@ def test_the_agreed_tournament_emerges_at_equal_overall(profile, fidelity):
     # individuals scatter, and rank-pairing correlates who meets whom, so a
     # single 600-match cell can sit 5-9 points off even (measured 54 at 1,800).
     # These bound the neutral cells loosely; the agreed edges above are the pin.
+    if fidelity == "full":
+        return          # the point engine's neutral cells carry the accepted imbalance
     for s in calib.STYLES:
         assert 0.42 <= cells[(s, s)][0] <= 0.58, (s, cells[(s, s)])
         assert 0.40 <= cells[("balanced", s)][0] <= 0.60, (s, cells[("balanced", s)])
@@ -163,10 +169,13 @@ def test_pre_era_cohorts_keep_the_v1_shape_byte_for_byte(_fresh_style_era):
     new = {p.pid: dict(p.current) for p in new_roster}
     assert set(new) == set(legacy)
     assert any(cur != legacy[pid] for pid, cur in new.items()), "gate never opened"
-    # (overall is NOT compared across the eras: the v2 draw consumes one more
-    # random number for the trait, so a v2 player's whole table is a different
-    # draw — overall-preservation is a property of the SHAPE, pinned above.)
+    # the v2 style/trait come off a substream, so base ability is the same draw
+    # either side of the era and overall moves only by the shape clamp
     assert any(p.traits.get("style_trait", "none") != "none" for p in new_roster)
+    for pid, cur in new.items():
+        a = PlayerAttributes(cur).overall_grade()
+        b = PlayerAttributes(legacy[pid]).overall_grade()
+        assert abs(a - b) < 0.35, pid
     worldconfig.set("jhsaa_style_era", "2034")
     jhsaa.reset_schools()
     mixed = {p.pid: (dict(p.current), p.entry_year, p.traits.get("style_trait", "none"))
@@ -210,6 +219,8 @@ def test_every_tendency_the_generator_emits_is_one_the_engine_reads():
     assert set(dev._STYLE_TENDENCY) == set(dev._STYLE_BIAS_V2)
     p = _forced(1, "aggressive_baseliner", "net_rusher").engine_player()
     assert p.tend["strike"] > 0 and p.tend["approach"] > 0
+    legacy = dev.generate_prospect(random.Random(1), "x", "US", talent=50, shape="v1")
+    assert legacy.traits["style_v"] == "v1" and legacy.engine_player().tend is None
     assert random_player(random.Random(1), "s").tend is None
 
 

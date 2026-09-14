@@ -158,6 +158,8 @@ def tendencies(traits: dict) -> dict:
     """The engine tendencies a player carries: primary style + secondary trait
     summed (v1 cohorts — no `style_trait` and a v1 style — carry none)."""
     out: dict = {}
+    if traits.get("style_v", "v1") != "v2":
+        return out                      # legacy / persisted players: no tendencies
     for tbl, key in ((_STYLE_TENDENCY, traits.get("play_style", "")),
                      (_TRAIT_TENDENCY, traits.get("style_trait", "none"))):
         for k, v in tbl.get(key, {}).items():
@@ -182,7 +184,8 @@ _NET_SPECIALIST_BIAS = {"net": 11, "movement": 3, "baseline": -7, "serve": -2}
 
 
 def _apply_style_profile(potential: dict, style: str, rng: random.Random,
-                         table: dict | None = None, trait: str = "none") -> None:
+                         table: dict | None = None, trait: str = "none",
+                         legacy: tuple | None = None) -> None:
     """Shift correlated attribute clusters by play-style + a net-specialist roll,
     in place on `potential` (ceilings, so the profile persists through growth).
     Weight-normalized: a uniform offset is removed so the OVERALL grade is
@@ -192,13 +195,28 @@ def _apply_style_profile(potential: dict, style: str, rng: random.Random,
     shifts = dict((table if table is not None else _STYLE_BIAS).get(style, {}))
     for cl, v in _TRAIT_BIAS.get(trait or "none", {}).items():
         shifts[cl] = shifts.get(cl, 0) + v
-    if rng.random() < NET_SPECIALIST_RATE:
+    specialist = rng.random() < NET_SPECIALIST_RATE
+    jitter_rng = rng
+    if legacy is not None:
+        # v2: consume EXACTLY the jitter draws the v1 profile would have taken
+        # off the main rng (one gauss per shifted cluster, only when v1 had
+        # shifts at all), so the maturity/interest/academic draws that follow
+        # are the same numbers as a v1 generation; v2's own jitter comes off
+        # the substream.
+        legacy_style, jitter_rng = legacy
+        v1_shifts = dict(_STYLE_BIAS.get(legacy_style, {}))
+        if specialist:
+            for cl in _NET_SPECIALIST_BIAS:
+                v1_shifts.setdefault(cl, 0)
+        for _ in v1_shifts:
+            rng.gauss(0, 1.2)
+    if specialist:
         for cl, d in _NET_SPECIALIST_BIAS.items():
             shifts[cl] = shifts.get(cl, 0) + d
     if not shifts:
         return
     # per-player jitter so same-style players aren't identical
-    shifts = {cl: v + rng.gauss(0, 1.2) for cl, v in shifts.items()}
+    shifts = {cl: v + jitter_rng.gauss(0, 1.2) for cl, v in shifts.items()}
     delta = {a: 0.0 for a in RICH_ATTRS}
     for cl, v in shifts.items():
         for a in _STYLE_CLUSTERS[cl]:
@@ -398,20 +416,43 @@ def _draw_interest(rng: random.Random) -> tuple[int, float, float]:
 
 
 def _draw_traits(rng: random.Random, shape: str = "v1") -> dict[str, str]:
+    """Legacy order, byte-for-byte: handedness, backhand, style, temperament —
+    every draw off the main rng exactly as v1 made it, so the attribute
+    gaussians that follow are the same numbers either side of the style era.
+
+    v2 keeps that stream untouched and re-draws the PRIMARY style and the
+    secondary trait from a SUBSTREAM seeded off the main rng's state (a
+    digest of `getstate()`, which consumes nothing): a v2 player therefore
+    has exactly the base ability the v1 draw would have given them, and only
+    their SHAPE differs. `style_v` marks the version — `tendencies()` reads
+    it, so a v1 (or pre-existing persisted) player carries no tendencies."""
     handedness = "left" if rng.random() < 0.12 else "right"
-    trait = "none"
-    if shape == "v1":
-        style = rng.choice(STYLES_V1)
-    else:
-        style = rng.choices(list(STYLE_DRAW_V2), weights=list(STYLE_DRAW_V2.values()))[0]
-        trait = rng.choices(list(TRAIT_DRAW_V2), weights=list(TRAIT_DRAW_V2.values()))[0]
-    return {
+    backhand = rng.choice(("two_handed", "one_handed"))
+    style = legacy_style = rng.choice(STYLES_V1)
+    temperament = rng.choice(("steady", "fiery", "analytical", "fearless", "volatile"))
+    trait, version = "none", "v1"
+    sub = None
+    if shape != "v1":
+        import hashlib
+        sub = random.Random(int(hashlib.blake2s(repr(rng.getstate()).encode(),
+                                                digest_size=8).hexdigest(), 16))
+        style = sub.choices(list(STYLE_DRAW_V2), weights=list(STYLE_DRAW_V2.values()))[0]
+        trait = sub.choices(list(TRAIT_DRAW_V2), weights=list(TRAIT_DRAW_V2.values()))[0]
+        version = "v2"
+    out = {
         "handedness": handedness,
-        "backhand_style": rng.choice(("two_handed", "one_handed")),
+        "backhand_style": backhand,
         "play_style": style,
         "style_trait": trait,
-        "temperament": rng.choice(("steady", "fiery", "analytical", "fearless", "volatile")),
+        "style_v": version,
+        "temperament": temperament,
     }
+    if shape != "v1":
+        # what the v1 stream drew and the substream — popped by generate_prospect
+        # so `_apply_style_profile` can consume the v1 jitter draws off the main
+        # rng (keeping every later draw identical) and take v2's from `sub`
+        out["_legacy"] = (legacy_style, sub)
+    return out
 
 
 def _draw_academic_rating(rng: random.Random, country: str) -> int:
@@ -699,11 +740,12 @@ def generate_prospect(rng: random.Random, name: str, country: str = "",
     top = float(GRADE_MAX if ceiling_max is None else ceiling_max)
     talent = _clamp(talent + nation_talent.talent_shift(country), 24.0, top)
     traits = _draw_traits(rng, shape)
+    legacy = traits.pop("_legacy", None)
     potential = {a: _clamp(rng.gauss(talent, 6), GRADE_MIN, top) for a in RICH_ATTRS}
     # Give the player a real SHAPE (net specialist / baseliner / server) instead of
     # a flat draw around one mean — weight-normalized so overall/STR is unchanged.
     _apply_style_profile(potential, traits["play_style"], rng, STYLE_TABLES[shape],
-                         traits.get("style_trait", "none"))
+                         traits.get("style_trait", "none"), legacy)
 
     # Elite spike: a small, investment-scaled chance the nation produced a
     # blue-chip. Floors the ceiling bands so the player reads world-class at

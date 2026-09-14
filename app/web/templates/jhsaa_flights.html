@@ -15,10 +15,10 @@
 {% endmacro %}
 
 {{ jh_header(view.scope, u, 'flights', view.group ~ ' Flight Efficiency',
-             'Every program\'s win rate at every flight beside the rate the two sides\' grades predicted — where a program is
-              getting more, or less, out of a position than its players\' grades say it should. The expectation is fitted on this
-              season\'s own varsity flights (grade gap plus home court), so a flight is judged against how the association actually
-              converted gaps this year.',
+             'Every program\'s win rate at every flight beside what that flight\'s matchups were expected to return — where a
+              program is getting more, or less, out of a position than its opponents and results say it should. The expectation
+              is fitted on this season\'s own varsity flights, home court included, so a flight is judged against how the
+              association actually converted its matchups this year.',
              [('Season', view.season_year), ('Flights priced', view.lines - view.unresolved),
               ('Rows', view.rows|length)] if view.ready else []) }}
 
@@ -63,7 +63,7 @@
         {{ th('n', 'N', 44, 'Matches at this flight') }}
         <th style="width:50px" title="Matches won">W</th>
         {{ th('actual', 'Won %', 64, 'Actual win rate at this flight') }}
-        {{ th('expected', 'Exp %', 64, 'Win rate the grade gap (plus home court) predicted, fitted on this season') }}
+        {{ th('expected', 'Exp %', 64, 'Win rate the flight\'s matchups were expected to return, fitted on this season (home court included)') }}
         {{ th('delta', '+/-', 60, 'Actual minus expected, in points. A row of 25-35 matches swings about 9 points by chance alone.') }}
         <th>Held most by</th>
       </tr>
@@ -86,7 +86,7 @@
     </table>
   </div>
 </div>
-<p class="jh-note">Expected win rate is a logistic fit on the grade gap (slope {{ '%.3f'|format(view.beta) }} per OVR point, home court {{ '%+.2f'|format(view.home) }} logit) over {{ view.lines - view.unresolved }} priced flights this season. A single flight of 25-35 matches swings about nine points by luck; the credible cases are a program moving the same way across several flights.</p>
+<p class="jh-note">Expected win rate is fitted on this season's {{ view.lines - view.unresolved }} varsity flights, home court included. A single flight of 25-35 matches swings about nine points by luck; the credible cases are a program moving the same way across several flights.</p>
 {% endif %}
 </div>
 {% endblock %}
