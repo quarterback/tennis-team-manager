@@ -93,8 +93,8 @@ _STYLE_BIAS_V2 = {
     "all_court":            {"serve": 3, "return": 1, "baseline": -6, "net": 9, "movement": 1, "touch": 2},
     "serve_and_volley":     {"serve": 10, "return": -6, "baseline": -4, "net": 3, "movement": -3, "touch": 0},
     "serve_first":          {"serve": 10, "return": -5, "baseline": 5, "net": -5, "movement": -5, "touch": -1},
-    "aggressive_baseliner": {"serve": 2, "return": -2, "baseline": 11, "net": -8, "movement": -2, "touch": -2},
-    "pusher":               {"serve": -4, "return": 6, "baseline": 6, "net": -8, "movement": 5, "touch": 3},
+    "aggressive_baseliner": {"serve": 3, "return": 0, "baseline": 11, "net": -8, "movement": -2, "touch": -2},
+    "pusher":               {"serve": -2, "return": 6, "baseline": 6, "net": -6, "movement": 5, "touch": 3},
 }
 # SECONDARY TRAITS (owner rule 2026-09, compositional styles). A player is a
 # PRIMARY style plus, ~60% of the time, one secondary trait — "aggressive

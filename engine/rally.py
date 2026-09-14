@@ -69,9 +69,13 @@ TUNE = {
     # net. Serve-and-volley: a first serve in is followed by an approach at
     # `sv_base`, again moved by the server's approach deviation.
     "approach_base": 0.14,
-    "approach_swing": 0.60,
+    "approach_swing": 0.40,
     "sv_base": 0.05,
-    "net_slope": 1.1,
+    # ‼️ 0.5, not more: at 1.1 the net exchange out-priced the rally lane and a
+    # net-built style measured 60-65% against the field at ZERO cross term
+    # (all_court 65, aggressive_baseliner 37); 0.5 lands every style within
+    # ±5 (scripts/style_matchup_calibration.py --fidelity full --k 0).
+    "net_slope": 0.5,
     # RETURN PRICING (owner rule 2026-09). Before this the return reached a
     # singles point only through the ace offset, so a return-built player
     # (counterpuncher, return specialist) measured ~44% against the field at
@@ -80,7 +84,7 @@ TUNE = {
     # server's serve deviation from their rally level) minus (the returner's
     # return deviation from theirs), times `serve_plus_swing`. Deviations, so
     # two flat players reproduce the calibrated curve exactly.
-    "serve_plus_swing": 0.5,
+    "serve_plus_swing": 0.3,
     # COMPOSITIONAL STYLE TENDENCIES (owner rule 2026-09) — behaviour, read off
     # `Player.tend` (engine.state.Player.tendency). Each is a small, bounded
     # term and every one is a DEVIATION or a matchup, never a level bonus:
