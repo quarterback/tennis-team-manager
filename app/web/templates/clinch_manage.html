@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Play to Clinch — Clinch Report{% endblock %}
+{% block content %}
+<div class="bl-container research-export-page">
+  <div class="research-export-kicker"><i class="fa-solid fa-newspaper" aria-hidden="true"></i> Tools</div>
+  <h1>Clinch Report</h1>
+  <p class="research-export-intro">The analytics almanac, built and served here. Pick a window — the latest season by default, up to {{ max_seasons }} when a comparison needs a prior year — and the game exports, ingests and renders it in the background, then opens it at <a href="{{ url_for('clinch_home') }}">/clinch/</a>.</p>
+
+  {% if error %}<div class="bl-panel" style="padding:14px 18px;border-color:var(--neg)"><strong>Last build failed:</strong> {{ error }}</div>{% endif %}
+  {% if building %}<div class="bl-panel" style="padding:14px 18px"><strong>Building now.</strong> <a href="{{ url_for('clinch_home') }}">Open the report</a> — it refreshes itself until the build lands.</div>{% endif %}
+
+  <section class="bl-panel research-export-card">
+    <div class="bl-panel-head"><span class="bl-panel-title">Build the report</span><span class="bl-panel-meta">{% if info %}Current: {{ info.rendered|join(', ') }} · {{ info.size }} · {{ info.built_at }}{% else %}Not built yet{% endif %}</span></div>
+    <form method="post" action="{{ url_for('clinch_build') }}" class="research-export-form">
+      <label><span>Season year</span><input name="year" type="number" min="2020" max="2200" value="{{ default_year }}" required><small>The newest season in the window.</small></label>
+      <label><span>Seasons</span><select name="seasons">{% for n in range(1, max_seasons + 1) %}<option value="{{ n }}" {% if info and info.years|length == n %}selected{% endif %}>{{ n }}{% if n == 1 %} — latest only{% elif n == 2 %} — with a prior year (movement, development){% endif %}</option>{% endfor %}</select><small>Ending at the season year. Two or more is what makes transfer and growth numbers non-blank.</small></label>
+      <label><span>Classification</span><select name="classification"><option value="all">All classifications</option>{% for c in ['9A','8A','7A','6A','5A','4A','3A','2A','1A'] %}<option value="{{ c }}">{{ c }}</option>{% endfor %}</select></label>
+      <div>
+        <label class="research-export-checkbox"><input type="checkbox" name="g_girls" checked><span>Girls</span></label>
+        <label class="research-export-checkbox"><input type="checkbox" name="g_boys" checked><span>Boys</span></label>
+        <label class="research-export-checkbox"><input type="checkbox" name="player_pages"><span>Player career pages (≈220 MB a season-gender)</span></label>
+        <label class="research-export-checkbox"><input type="checkbox" name="refresh"><span>Re-export seasons already cached</span></label>
+      </div>
+      <div class="research-export-submit"><button type="submit"><i class="fa-solid fa-hammer" aria-hidden="true"></i> Build &amp; open</button></div>
+    </form>
+  </section>
+
+  <section class="bl-panel" style="margin-top:18px">
+    <div class="bl-panel-head"><span class="bl-panel-title">Seasons in the cache</span><span class="bl-panel-meta">{{ cached|length }} · kept whatever is rendered</span></div>
+    <div style="padding:12px 18px;color:var(--text-muted)">
+      {% if cached %}{% for c in cached %}<span style="display:inline-block;margin:2px 10px 2px 0">{{ c.year }} {{ c.gender }}{% if c.classification != 'all' %} ({{ c.classification }}){% endif %}</span>{% endfor %}{% else %}Nothing ingested yet — the first build exports the seasons it needs.{% endif %}
+    </div>
+  </section>
+</div>
+<style>
+.research-export-page{max-width:980px;padding-top:42px;padding-bottom:60px}
+.research-export-kicker{color:var(--brand-strong);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+.research-export-page h1{font-size:34px;margin:8px 0 10px}.research-export-intro{max-width:720px;color:var(--text-muted);font-size:18px;line-height:1.55;margin-bottom:26px}
+.research-export-form{display:grid;grid-template-columns:1fr 1fr;gap:20px;padding:24px}
+.research-export-form label>span{display:block;margin-bottom:6px;color:var(--text-secondary);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.research-export-form select,.research-export-form input{box-sizing:border-box;width:100%;height:43px;padding:0 12px;border:1px solid var(--border-default);border-radius:7px;background:var(--surface-card);color:var(--text-primary);font:inherit}
+.research-export-form small{display:block;margin-top:6px;color:var(--text-muted)}.research-export-submit{grid-column:1/-1;display:flex;justify-content:flex-end}
+.research-export-checkbox{display:flex;flex-direction:row;align-items:center;gap:8px;margin-bottom:8px}.research-export-checkbox input{width:auto;height:auto}.research-export-checkbox span{margin:0;text-transform:none;font-size:15px;font-weight:600;letter-spacing:normal;color:var(--text-primary)}
+.research-export-submit button{border:0;border-radius:8px;padding:12px 18px;background:var(--brand-strong);color:white;font:inherit;font-weight:800;cursor:pointer}
+@media(max-width:700px){.research-export-form{grid-template-columns:1fr}.research-export-submit{grid-column:auto}}
+</style>
+{% endblock %}
