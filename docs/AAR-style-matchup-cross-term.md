@@ -141,3 +141,75 @@ point, so the two fidelities sit either side of the singles figure.
 season under this build. Expect the asymmetric, non-transitive structure above
 (rows and columns complementary, edges of DIFFERENT sizes), diluted by the
 rating gaps a real season carries and by the fade — not a uniform band.
+
+## Before / after: the owner's 2083 export as the baseline
+
+The owner's agent audited the 2083 boys+girls research bundle (played on the
+PRE-change build) with rating control — expected win probability from the
+grade differential, home/away, gender and flight — so the residuals below are
+what style did AFTER ability is accounted for. Keep this as the "before" so
+the same audit on the first season played under this build is the proof.
+
+**Singles, before** (78,071 varsity matches): the largest controlled style edge
+in the whole 5×5 was counterpuncher over all_court at **+1.6 points**; every
+other cell was under one point. That is the flat matrix this AAR opens with,
+confirmed on the owner's own data.
+
+**Singles, after — what to expect:** a CYCLE, not a ranking. At equal grade
+(the calibration above) the four 60-90° edges land ~57-64 and the two 150°
+edges ~53-55; on a real season those shrink, because most matches carry a
+grade gap and the term fades with it, and because the export mixes v1 and v2
+cohorts for four years (only players entering from `style_era()` on carry the
+v2 shapes; older cohorts sit closer to the origin). Expect the strong edges at
+roughly +4 to +8 points controlled, the weak ones +2 to +4, rows and columns
+complementary. If every off-diagonal cell shows the SAME size, the geometry
+has collapsed toward a line — that is the failure signature.
+
+**Doubles, before** (99,746 matches): a real and coherent PAIR-COMPOSITION
+signal — all_court+all_court +3.1, all_court+serve_first +2.9,
+serve_first+serve_first +2.9 … aggressive_baseliner+counterpuncher −3.4 — the
+same in both genders. ‼️ This is NOT a matchup effect and it predates this
+change: `doubles_rating` weights serve and net play, the audit's expectation
+uses the overall grade, so net- and serve-heavy players carry more doubles
+strength than their grade shows and ground-heavy players less. It is a
+straight ranking of pair types ("these pairs are better"), and the big
+pair-vs-pair cells (+6 to +7) are that ranking stacked, a good pair type
+against a bad one. It is realistic (net players ARE better at doubles) and
+untouched here. After the update it stays, and the new antisymmetric term
+sits ON TOP of it: expect the composition ranking to persist and, within it, a
+pair-vs-pair asymmetry that reverses when the sides swap.
+
+**Program/flight residual tables:** rows of 25-35 matches have a standard
+error of ~9 points, and ~900 programs × 7 flights is 6,000+ rows, so a handful
+of ±25-30 outliers arise by chance. Multi-flight, same-direction cases
+(Robledo 7A boys, three doubles flights +16) are the credible ones;
+single-flight anomalies need a second season. The "flight | actual | expected
+from grade | ± | N" table the agent proposes is worth adding to the analytics
+UI — a separate change, not started.
+
+## Open decisions (what to revisit against "does it feel like tennis")
+
+1. **The flipped edge.** The owner set counterpuncher > serve_first and closed
+   the cycle; that puts the two natural opposite pairs (return-vs-serve,
+   ground-vs-net) head to head, which is why the axes had to be FITTED and why
+   the six edges come out uneven. The alternative that the attributes express
+   on their own — a rotation where opposites are neutral (counterpuncher >
+   aggressive_baseliner, aggressive_baseliner > serve_first, serve_first >
+   all_court, all_court > counterpuncher, with CP–SF and AB–AC even) — gives
+   six equal-sized edges and semantic axes. Either is a one-table change plus
+   a re-solve; the owner's call.
+2. **Edge size.** 57-64 at equal grade on the strong edges is the top of
+   "small relative to the rating gap". Each fidelity has one dial
+   (`fast.STYLE_K`/HS `style_k`, `rally.TUNE["style_k"]`) if the season-level
+   audit reads too loud.
+3. **Net play is dead weight in singles under the point engine.** Seven of
+   the 49 attributes count toward overall and decide nothing in a singles
+   point; an all-court player's approach/transition game never wins a point.
+   This is what forced the small net trade in the v2 table. Pricing net play
+   in the singles rally model (approach → net exchange) is the realism fix,
+   and a separate, engine-calibration change.
+4. **Doubles composition vs pair shape.** The existing serve/net weighting in
+   `doubles_rating` already makes "pair two all-courters" the right
+   doubles-construction rule; the new term adds who a pair TROUBLES. If the
+   owner wants doubles pairing advice surfaced in the lineup editor, the
+   composition ranking is the stronger, simpler signal to show.
