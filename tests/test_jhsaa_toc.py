@@ -1103,6 +1103,19 @@ def test_the_research_export_carries_the_jv_events(archived):
                           "girls"):
         assert jvs.get("champion") and jvs.get("regions")
         assert any(r["phase"] == "jv_state" for r in jv)
+        # ‼️ AND THE FIELD FLAT, FOR ANALYSIS (owner rule 2026-09): one row per
+        # team in the State field, seeded, with how it entered and how far it
+        # went — the finish read off the same bracket the JSON carries.
+        flat = list(_csv.DictReader(_io.TextIOWrapper(_io.BytesIO(files["jhsaa_jv_state.csv"]))))
+        assert [r["program_name"] for r in flat] == list(jvs["state"]["field"])
+        assert all(r["entry"] in ("champion", "at_large") for r in flat)
+        assert sum(int(r["champion"]) for r in flat) == 1
+        assert all(r["program_id"] for r in flat)
+        if jvs.get("at_large"):
+            assert sum(r["entry"] == "at_large" for r in flat) == len(jvs["at_large"])
+            assert sum(int(r["made_main_draw"]) for r in flat) == \
+                len(jvs["region_champions"]) + 8
+            assert all(r["selection_index"] for r in flat)
     # CAPTAINS ride on players.csv, read off the archived standing rows (the
     # program page's roster chip was the only surface that showed them).
     players = list(_csv.DictReader(_io.TextIOWrapper(_io.BytesIO(files["players.csv"]))))

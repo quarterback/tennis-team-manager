@@ -469,11 +469,50 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                         [[y, pts, wt] for y, pts, wt in r["breakdown"]]),
                 })
 
+    # THE JV TEAM STATE TOURNAMENT, FLAT (owner rule 2026-09 — "make sure the
+    # data gets exported … as well as analytic for future analysis"): one row
+    # per team in the State field, in seed order, with how it entered
+    # (regional champion / at-large), the JV and varsity regular-season records
+    # and the 30/70 selection index the at-larges were picked on, and how far
+    # it went — read off the SAME archived bracket the JSON carries, through
+    # the shared `jhsaa_state_result`, so the two files cannot disagree. A
+    # season archived at twenty (before `jhsaa.jv_parastate_era`) has no
+    # `selection` table; its champions are still listed off `ranked`, with the
+    # index columns empty, so the file exists for every JV State season and an
+    # analysis across the expansion joins on one shape. Classless and
+    # statewide, so classification scope does not cut it.
+    from app import jhsaa as _jh
+    jv_state_rows = []
+    jv_ev = season.get("jv_state") or {}
+    if jv_ev.get("state"):
+        st_ = jv_ev["state"]
+        key_by_name = {t.school.name: t.school.key for t in all_teams}
+        region_of_ = {v: k for k, v in (jv_ev.get("region_champions") or {}).items()}
+        sel_ = jv_ev.get("selection") or [
+            {"school": nm, "entry": "champion", "region": region_of_.get(nm, "")}
+            for nm in (jv_ev.get("ranked") or st_.get("field") or ())]
+        for seed_, r in enumerate(sel_, start=1):
+            nm = r["school"]
+            res = wd.jhsaa_state_result(st_, nm)
+            jv_state_rows.append({
+                "program_id": key_by_name.get(nm, nm), "program_name": nm,
+                "gender": gender, "seed": seed_, "entry": r.get("entry", ""),
+                "region": r.get("region", ""),
+                "jv_wins": r.get("jv_wins", ""), "jv_losses": r.get("jv_losses", ""),
+                "jv_ties": r.get("jv_ties", ""), "jv_pct": r.get("jv_pct", ""),
+                "varsity_reg_wins": r.get("v_wins", ""),
+                "varsity_reg_losses": r.get("v_losses", ""),
+                "varsity_reg_pct": r.get("v_pct", ""),
+                "selection_index": r.get("index", ""),
+                "made_main_draw": int(res["finish"] != _jh.PARASTATE_NAME),
+                "state_place": res["place"], "state_finish": res["finish"],
+                "champion": int(bool(res["champion"]))})
     tables = {"programs.csv": programs, "players.csv": players, "duals.csv": duals,
               "lines.csv": lines, "line_players.csv": line_players,
               "jhsaa_standings.csv": standings,
               "jhsaa_computer_ratings.csv": computer_ratings,
               "jhsaa_coefficient.csv": coefficient_rows,
+              "jhsaa_jv_state.csv": jv_state_rows,
               "jhsaa_program_history.csv": history}
     files = {name: _csv(rows) for name, rows in tables.items()}
     files.update({name: json.dumps(value, indent=2, ensure_ascii=False, default=str).encode()
@@ -520,6 +559,15 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "concurrent 10-point tiebreakers — its points are level and it is NOT a tie.",
             "jhsaa_jv_state.json is the JV Team State Tournament: the twenty geographic-area "
             "regional championships and the statewide classless bracket their champions play. "
+            "From the 36-team seasons its bracket's first round is named 'Parastate' in "
+            "round_names: sixteen at-large selections (at_large / selection, an index of 30% JV "
+            "record + 70% varsity regular-season record) played high-low for eight seats in "
+            "the 28-team main draw, where seeds 1-4 bye. jhsaa_jv_state.csv is that field "
+            "FLAT for analysis: one row per team in seed order — entry (champion/at_large), "
+            "region, jv_* and varsity_reg_* records and percentages, selection_index, "
+            "made_main_draw, state_place (teams alive when eliminated, 1 = champion) and "
+            "state_finish — read off the same archived bracket. Seasons played at twenty "
+            "list their champions with the index columns empty. "
             "jhsaa_individuals.json carries the JV Singles/JV Doubles state draws (flights "
             "JVS/JVD, qualifying QJVS/QJVD) under classification key 'ALL' — statewide and "
             "classless, kept in every classification scope.",

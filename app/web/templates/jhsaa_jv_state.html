@@ -17,10 +17,12 @@
    two draws is on screen. "State" is implied here as on every championship page. #}
 {{ jh_header(view.scope, u, 'jv_state', 'JV Team State Tournament',
              'The JV team championship — statewide, no classifications. Districts earn
-              berths on their JV record, twenty regions crown champions, and all
-              twenty are the State field.',
-             [('Season', view.season_year), ('Entered', view.field_n),
-              ('Regions', view.region_n), ('Draw', view.state_field_n)]
+              berths on their JV record, twenty regions crown champions, and sixteen
+              at-large selections play a Parastate round to join them.',
+             ([('Season', view.season_year), ('Entered', view.field_n),
+               ('Regions', view.region_n)]
+              + ([('At-large', view.at_large_n)] if view.at_large_n else [])
+              + [('Draw', view.state_field_n)])
              if view.ready else []) }}
 
 <div class="jh-shell">
@@ -47,26 +49,66 @@
 </div>
 {% endif %}
 
-{# ‼️ ONE TREE, AND WINNING YOUR REGION IS QUALIFYING. All twenty champions are in
-   this draw: twelve are seeded through and eight open in the Round of 20 (13v20,
-   14v19, 15v18, 16v17, on the TOC's strict seed lines). Nothing in front of it is a
-   qualifier — the TOC's own shape, where twelve champions in a 16 draw open in a
-   Round of 12 and nobody calls that qualifying either. #}
+{# ‼️ WINNING YOUR REGION IS QUALIFYING. All twenty champions enter the main draw
+   directly, seeded 1-20 on the JV record. From the 36-team season on, sixteen
+   at-large selections (seeded 21-36 on the index) play a PARASTATE round — its own
+   tree, since a fresh draw sits between it and the main field (`_jh_split_state`,
+   the varsity committee classes' presentation exactly) — and its eight winners
+   join them in a 28-team main draw: seeds 1-4 bye, 5v28 … 16v17 play, on the TOC's
+   strict seed lines. A twenty-team season has no second tab and renders as it
+   always did. #}
 <div class="jh-brk-desktop">
-  {{ brk_toolbar([('all', 'JV Team State')]) }}
+  {{ brk_toolbar([('all', 'JV Team State')] + ([('qual', 'Parastate')] if view.qual_canvas else [])) }}
   <div class="brk-stage" id="brkstage">
     <section class="brk-region" data-view="all">
       <div class="brk-region-head">
-        <h2>{{ view.season_year }} JV Team State · {{ view.state_field_n }}-team field</h2>
+        <h2>{{ view.season_year }} JV Team State · {{ view.main_field_n or view.state_field_n }}-team main draw</h2>
         <span class="brk-region-champ">
           {% if view.champion %}{{ view.champion.name }} def. {{ view.runner_up.name }}{% else %}in progress{% endif %}</span>
       </div>
       {{ brk_canvas(view.canvas, u, false, 'jhsaa_school', {'g': view.gender, 'year': view.scope.pin}) }}
     </section>
+    {% if view.qual_canvas %}
+    <section class="brk-region" data-view="qual" hidden>
+      <div class="brk-region-head">
+        <h2>{{ view.season_year }} JV Team State · Parastate · {{ view.at_large_n }} at-large</h2>
+      </div>
+      {{ brk_canvas(view.qual_canvas, u, false, 'jhsaa_school', {'g': view.gender, 'year': view.scope.pin}) }}
+    </section>
+    {% endif %}
   </div>
 </div>
 
 <div style="margin-top:6px">{{ jh_round_tabs(view.rounds, u, view.gender, 'jhjvsrd', view.scope.pin) }}</div>
+
+{% if view.selection %}
+{# The at-large selection, audited — the committee page's posture: what the index
+   read for each of the sixteen and how far they went. Seeds 21-36 by construction;
+   an at-large is never seeded above a regional champion. #}
+<div class="bl-panel" style="margin-top:14px">
+  <div class="bl-panel-head"><span class="bl-panel-title">At-large selection · Parastate</span>
+    <span class="bl-panel-note">index = {{ view.index_jv }}% JV record + {{ view.index_varsity }}% varsity regular-season record · {{ view.at_large_n }} selected, 8 advance</span></div>
+  <div class="bl-tablescroll">
+  <table class="bl-table">
+    <thead><tr><th class="bl-cell-num">Seed</th><th>Program</th><th class="bl-cell-num">JV</th><th class="bl-cell-num">JV %</th><th class="bl-cell-num">Varsity</th><th class="bl-cell-num">Var %</th><th class="bl-cell-num">Index</th><th>Finish</th></tr></thead>
+    <tbody>
+    {% for r in view.selection %}
+    <tr>
+      <td class="bl-cell-num">{{ r.seed }}</td>
+      <td class="nm">{{ r.deco.mark|safe }} <a href="{{ url_for('jhsaa_school', school=r.school, u=u, g=view.gender, year=view.scope.pin) }}">{{ r.school }}</a></td>
+      <td class="bl-cell-num">{{ r.jv_wins }}-{{ r.jv_losses }}{% if r.jv_ties %}-{{ r.jv_ties }}{% endif %}</td>
+      <td class="bl-cell-num">{{ '%.3f'|format(r.jv_pct) }}</td>
+      <td class="bl-cell-num">{{ r.v_wins }}-{{ r.v_losses }}</td>
+      <td class="bl-cell-num">{{ '%.3f'|format(r.v_pct) }}</td>
+      <td class="bl-cell-num">{{ '%.3f'|format(r.index) }}</td>
+      <td>{{ r.finish }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endif %}
 
 {# ‼️ NO "RESULTS BY ROUND" PANEL. It restated the tree card for card — and the
    tree already carries all twenty, since `_jh_bracket_cols` materialises each bye as

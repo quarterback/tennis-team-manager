@@ -4716,7 +4716,11 @@ def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
     # Seeds are the STATEWIDE ranking of region champions, read off the archive — the
     # order the draw was actually cut from. Never recomputed from a live record: a
     # ranking that drifts from the seeds it produced is the NCAA region-drift bug.
+    # ‼️ `ranked` IS THE FULL SEED ORDER: the twenty champions, then — from
+    # `jhsaa.jv_parastate_era()` — the sixteen at-larges seeded 21-36 on the
+    # selection index, which is also the archived bracket's `field`.
     seeds = {n: i + 1 for i, n in enumerate(ev.get("ranked") or ())}
+    at_large = set(ev.get("at_large") or ())
     region_of = {}
     for region, champ in (ev.get("region_champions") or {}).items():
         region_of[champ] = region
@@ -4830,18 +4834,48 @@ def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
                 card_w=232, card_h=60, gutter=56, leaf_gap=18)
                 if r_rounds else None),
         }
+    # ‼️ THE 36-TEAM SHAPE RENDERS THROUGH THE VARSITY STATE MACHINERY. The at-large
+    # Parastate is the bracket's first round, NAMED in `round_names`, and
+    # `_jh_split_state` therefore draws it as its own tree feeding a fresh 28-team
+    # main draw — the same two canvases `jhsaa_bracket_view` shows a committee class.
+    # A twenty-team season (before the era, or a legacy play-in archive) splits to
+    # `(br, None)` and renders the one tree it always did.
+    main_br, qual_br = _jh_split_state({**render_st, "seed_map": seeds})
+    # The at-large selection, audited: who the index picked, on what, and how far
+    # each went — the committee page's posture for the varsity bids.
+    selection = []
+    for row in ev.get("selection") or ():
+        if row.get("entry", "at_large") != "at_large":   # the table is the bids
+            continue
+        res = world.jhsaa_state_result(render_st, row["school"])
+        selection.append({**row, "seed": seeds.get(row["school"], 0),
+                          "deco": _jh_deco(schools, row["school"], 22),
+                          "finish": res.get("finish", ""),
+                          "advanced": res.get("finish", "") != jh.PARASTATE_NAME})
     return {
         **base, "ready": True,
         "field_n": len(ev.get("field") or ()),
         "qualifier_n": len(ev.get("qualifiers") or ()),
         "state_field_n": len(st.get("field") or ()),
+        "at_large_n": len(at_large),
+        "main_field_n": len((main_br or {}).get("field") or ()),
+        "selection": selection,
+        "index_jv": int(round(jvs.INDEX_JV_WEIGHT * 100)),
+        "index_varsity": int(round(jvs.INDEX_VARSITY_WEIGHT * 100)),
         "regions": regions, "region_n": len(regions),
         # Legacy opening games are merged back into their State bracket above, so
         # desktop's tree and the mobile round tabs render the same complete event.
+        # ‼️ EVERY ROUND, off the FULL bracket — the Parastate included, so the
+        # mobile tabs and the fold list read it whether or not a canvas drew it.
         "rounds": _rounds(render_st),
+        "prelim_n": max(0, len(render_st.get("rounds") or ())
+                        - len((main_br or {}).get("rounds") or ())),
         "canvas": _bracket_canvas(
-            _jh_bracket_cols({**render_st, "seed_map": seeds}, schools),
+            _jh_bracket_cols(main_br, schools),
             card_w=232, card_h=60, gutter=56, leaf_gap=18),
+        "qual_canvas": (_bracket_canvas(_jh_bracket_cols(qual_br, schools),
+                                        card_w=232, card_h=60, gutter=56,
+                                        leaf_gap=18) if qual_br else None),
         **_jh_final_four(st, schools),
         "champion_region": region_of.get(st.get("champion"), ""),
         "region_brk": region_brk,

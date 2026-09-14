@@ -2851,6 +2851,7 @@ def reset_schools() -> None:
     _band_ident_cache.clear()
     _exchange_era_cache.clear()
     _intl_era_cache.clear()
+    _jv_parastate_era_cache.clear()
     _expo_cache.clear()
     _expo_world.clear()
     _transfer_name_cache.clear()
@@ -3089,6 +3090,25 @@ def _exchange_weights() -> dict:
 _exchange_era_cache: dict = {}
 
 
+_jv_parastate_era_cache: dict = {}
+
+
+def jv_parastate_era() -> int:
+    """The first SEASON the JV Team State Tournament crowns from its 36-team
+    field (owner rule 2026-09: 20 regional champions + 16 at-large selections,
+    the at-larges playing a Parastate round into a 28-team main draw) — the
+    `exchange_era` idiom, gating on the SEASON.
+
+    A year gate rather than a flag for the reason `JV_STATE_FROM` is one: the
+    event is ARCHIVED, and a save that already holds seasons played at twenty
+    must keep reading them as the years they were. `_resolve_era` resolves to
+    the first season the save has not archived, so the expansion applies from
+    the next unplayed season and never behind it; a fresh save gets 0 and plays
+    the 36 from the first JV State it stages. An explicit `worldconfig` value
+    pins it, like every other era. See `jhsaa_jv_state`."""
+    return _resolve_era("jhsaa_jv_parastate_era", _jv_parastate_era_cache)
+
+
 def exchange_era() -> int:
     """The first SEASON that has exchange students in this save — the `name_era`
     idiom (`_resolve_era`), and load-bearing for the same reason.
@@ -3170,7 +3190,7 @@ def exchange_student(school: School, year: int, salt: str,
 #: resetter reads is what stops the sixth being forgotten too.
 ERA_SETTINGS = ("jhsaa_name_era", "jhsaa_dev_era", "jhsaa_talent_era",
                 "jhsaa_career_era", "jhsaa_exchange_era", "jhsaa_intl_era",
-                "jhsaa_band_era", "jhsaa_style_era")
+                "jhsaa_band_era", "jhsaa_style_era", "jhsaa_jv_parastate_era")
 
 
 def reset_eras() -> None:

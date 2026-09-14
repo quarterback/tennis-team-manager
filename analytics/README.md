@@ -557,3 +557,16 @@ component CSS, same as the game does. Component classes (`.pt-panel`,
 `.bl-protable`/`.bl-crest` patterns rather than reusing them directly, since
 this is a standalone static site with no server and no access to the game's
 font files.
+
+## The JV Team State Tournament is flat in `jhsaa_jv_state.csv`
+
+From the 36-team seasons (`jhsaa.jv_parastate_era`) the JV State field is twenty
+regional champions plus sixteen at-large selections picked on a 30% JV record /
+70% varsity regular-season record index; the at-larges play a Parastate round
+(the bracket's first round, named `Parastate` in `round_names` of
+`jhsaa_jv_state.json`) and eight join a 28-team main draw. `jhsaa_jv_state.csv`
+is that field, one row per team in seed order — `entry`, `region`, the `jv_*`
+and `varsity_reg_*` records, `selection_index`, `made_main_draw`,
+`state_place`, `state_finish` — joined on `program_id`. Seasons played at twenty
+list their champions with the index columns empty, so an analysis across the
+expansion joins on one shape. JV never enters a rating or a varsity record.
