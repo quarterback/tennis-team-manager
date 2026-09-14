@@ -57,6 +57,8 @@ TRAIT_DEFAULTS = {
     "handedness": "right",
     "backhand_style": "two_handed",
     "play_style": "balanced",
+    "style_trait": "none",
+    "style_v": "v1",
     "temperament": "steady",
 }
 
@@ -193,6 +195,8 @@ class PlayerAttributes:
     handedness: str = TRAIT_DEFAULTS["handedness"]
     backhand_style: str = TRAIT_DEFAULTS["backhand_style"]
     play_style: str = TRAIT_DEFAULTS["play_style"]
+    style_trait: str = TRAIT_DEFAULTS["style_trait"]
+    style_v: str = TRAIT_DEFAULTS["style_v"]
     temperament: str = TRAIT_DEFAULTS["temperament"]
 
     def __post_init__(self) -> None:

@@ -378,6 +378,11 @@ def build_site(raw_bundles: list[dict], player_pages: bool = True) -> None:
         stat_scopes.append({"scope_id": b.scope_id, "label": b.label,
                              "classes": classes, "leagues": leagues})
     w("metrics_index.html", SITE / "metrics" / "index.html", rel="../")
+    # Flight efficiency (owner request 2026-09): every (team, flight) against
+    # what the OVR gaps priced — the Talent view kept at the flight.
+    flight_rows = ability_mod.flight_table(ability, bundles)
+    w("metrics_flights.html", SITE / "metrics" / "flights.html", rel="../",
+      rows=flight_rows, scopes=stat_scopes)
     w("metrics_teams.html", SITE / "metrics" / "teams.html", rel="../",
       rows=stat_rows, scopes=stat_scopes)
 

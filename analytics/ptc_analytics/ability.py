@@ -28,6 +28,8 @@ line. "Courts played" is wrong; a court is the physical surface.
 """
 from __future__ import annotations
 
+from .aggregate import program_class, program_league
+
 import math
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
@@ -398,3 +400,49 @@ def build(bundles) -> AbilityIndex:
         row["avg_gap"] = row["gap_sum"] / n if n else None
         row["luck"] = (row["won"] - row["x_won"]) if row["priced"] == n and n else None
     return idx
+
+
+def flight_table(idx: "AbilityIndex", bundles) -> list[dict]:
+    """FLIGHT EFFICIENCY (owner request 2026-09): one row per (season, program,
+    flight) — matches, wins, actual win %, expected win % off the fitted
+    curve, and the difference in points, with the player (or pair) who held
+    the flight most. The same per-flight pricing the team Talent view uses,
+    kept at the flight instead of summed to the program, which is what
+    surfaces a program winning D1-D3 far above its grades or a single flight
+    collapsing below them. Rows with no priced matches are omitted.
+
+    ‼️ A row of 25-35 matches has a standard error of ~9 points and a season
+    is thousands of rows; a handful of ±25-30 outliers is chance. The page
+    carries N and says so."""
+    from collections import Counter
+    acc: dict[tuple, dict] = {}
+    for b in bundles:
+        sa = idx.abilities.get(b.scope_id)
+        if sa is None:
+            continue
+        for mu in line_matchups(b, sa):
+            curve = idx.curve_for(b.family, mu["singles"])
+            p = curve.p(mu["gap"]) if curve else None
+            if p is None:
+                continue
+            c = acc.setdefault((b.scope_id, mu["program_id"], mu["slot"]), {
+                "n": 0, "w": 0, "xw": 0.0, "who": Counter(), "bundle": b})
+            c["n"] += 1
+            c["w"] += 1 if mu["won"] else 0
+            c["xw"] += p
+            c["who"][tuple(e.get("player_name") or e.get("player_id") or "" for e in mu["players"])] += 1
+    rows = []
+    for (scope_id, pid, slot), c in acc.items():
+        b = c["bundle"]
+        prog = b.programs.get(pid, {})
+        top, top_n = c["who"].most_common(1)[0] if c["who"] else ((), 0)
+        rows.append({
+            "scope_id": scope_id, "scope_label": b.label, "program_id": pid,
+            "name": b.program_name(pid), "classification": program_class(prog),
+            "league": program_league(prog), "slot": slot, "n": c["n"], "w": c["w"],
+            "actual": 100.0 * c["w"] / c["n"], "expected": 100.0 * c["xw"] / c["n"],
+            "delta": 100.0 * (c["w"] - c["xw"]) / c["n"],
+            "top": " / ".join(top), "top_n": top_n,
+        })
+    rows.sort(key=lambda r: (r["scope_label"], r["classification"], r["name"], r["slot"]))
+    return rows

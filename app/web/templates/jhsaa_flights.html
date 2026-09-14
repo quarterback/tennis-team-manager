@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header %}
+{% block title %}JHSAA {{ view.group }} Flight Efficiency{% endblock %}
+{% block content %}
+
+{# Sortable header — the rankings page's `th()`, pointed at this route and
+   carrying the page's own filters (min matches, one flight). #}
+{% macro th(key, label, width=none, title=none) %}
+  {% set active = (view.sort == key) %}
+  {% set newdir = 'asc' if (active and view.dir == 'desc') else 'desc' %}
+  <th{% if width %} style="width:{{ width }}px"{% endif %}{% if title %} title="{{ title }}"{% endif %}>
+    <a class="jh-sortth{{ ' on' if active }}"
+       href="{{ url_for('jhsaa_flights', u=u, g=view.gender, group=view.group, year=view.scope.pin, sort=key, dir=newdir, min=view.min_n, slot=view.slot) }}">{{ label }}{% if active %}<span class="jh-sortarr">{{ '▾' if view.dir == 'desc' else '▴' }}</span>{% endif %}</a>
+  </th>
+{% endmacro %}
+
+{{ jh_header(view.scope, u, 'flights', view.group ~ ' Flight Efficiency',
+             'Every program\'s win rate at every flight beside what that flight\'s matchups were expected to return — where a
+              program is getting more, or less, out of a position than its opponents and results say it should. The expectation
+              is fitted on this season\'s own varsity flights, home court included, so a flight is judged against how the
+              association actually converted its matchups this year.',
+             [('Season', view.season_year), ('Flights priced', view.lines - view.unresolved),
+              ('Rows', view.rows|length)] if view.ready else []) }}
+
+<div class="jh-shell">
+{% if not view.ready %}
+<div class="bl-panel"><div class="jh-empty">No season archived yet.</div></div>
+{% else %}
+
+<div class="jh-jump">
+  <label><span class="k">Classification</span>
+    <select onchange="if(this.value)window.location=this.value">
+      {% for gp in view.groups %}
+      <option value="{{ url_for('jhsaa_flights', u=u, g=view.gender, group=gp, year=view.scope.pin, min=view.min_n, slot=view.slot) }}"
+              {{ 'selected' if gp == view.group }}>{{ gp }}</option>
+      {% endfor %}
+    </select></label>
+  <label><span class="k">Flight</span>
+    <select onchange="if(this.value)window.location=this.value">
+      <option value="{{ url_for('jhsaa_flights', u=u, g=view.gender, group=view.group, year=view.scope.pin, min=view.min_n) }}" {{ 'selected' if not view.slot }}>All</option>
+      {% for sl in view.slots %}
+      <option value="{{ url_for('jhsaa_flights', u=u, g=view.gender, group=view.group, year=view.scope.pin, min=view.min_n, slot=sl) }}"
+              {{ 'selected' if sl == view.slot }}>{{ sl }}</option>
+      {% endfor %}
+    </select></label>
+  <label><span class="k">Min matches</span>
+    <select onchange="if(this.value)window.location=this.value">
+      {% for m in (5, 10, 15, 20) %}
+      <option value="{{ url_for('jhsaa_flights', u=u, g=view.gender, group=view.group, year=view.scope.pin, min=m, slot=view.slot) }}"
+              {{ 'selected' if m == view.min_n }}>{{ m }}</option>
+      {% endfor %}
+    </select></label>
+</div>
+
+<div class="bl-panel">
+  <div class="bl-panel-head">
+    <span class="bl-panel-title">{{ view.season_year }} {{ view.group }} — actual vs expected, by flight</span></div>
+  <div class="tbl-scroll">
+    <table class="jh-ledger nowrap">
+      <tr>
+        {{ th('school', 'School') }}
+        {{ th('slot', 'Flight', 56) }}
+        {{ th('n', 'N', 44, 'Matches at this flight') }}
+        <th style="width:50px" title="Matches won">W</th>
+        {{ th('actual', 'Won %', 64, 'Actual win rate at this flight') }}
+        {{ th('expected', 'Exp %', 64, 'Win rate the flight\'s matchups were expected to return, fitted on this season (home court included)') }}
+        {{ th('delta', '+/-', 60, 'Actual minus expected, in points. A row of 25-35 matches swings about 9 points by chance alone.') }}
+        <th>Held most by</th>
+      </tr>
+      {% for r in view.rows %}
+      <tr>
+        <td class="nm"><span class="jh-schoolcell">{{ r.mark|safe }}
+          <a href="{{ url_for('jhsaa_school', school=r.school, u=u, g=view.gender, year=view.scope.pin) }}">{{ r.school }}</a></span></td>
+        <td><b>{{ r.slot }}</b></td>
+        <td class="num">{{ r.n }}</td>
+        <td class="num">{{ r.wins }}</td>
+        <td class="num"><b>{{ '%.1f'|format(r.actual) }}</b></td>
+        <td class="num">{{ '%.1f'|format(r.expected) }}</td>
+        <td class="num"><span class="jh-plus {{ 'jh-up' if r.delta > 2 else 'jh-down' if r.delta < -2 }}">{{ '%+.1f'|format(r.delta) }}</span></td>
+        <td class="nm" title="{{ r.top_n }} of {{ r.n }} matches">{{ r.top }} <span style="color:var(--text-faint)">({{ r.top_n }})</span></td>
+      </tr>
+      {% endfor %}
+      {% if not view.rows %}
+      <tr><td colspan="8" class="jh-empty">No flight in this class reached {{ view.min_n }} matches.</td></tr>
+      {% endif %}
+    </table>
+  </div>
+</div>
+<p class="jh-note">Expected win rate is fitted on this season's {{ view.lines - view.unresolved }} varsity flights, home court included. A single flight of 25-35 matches swings about nine points by luck; the credible cases are a program moving the same way across several flights.</p>
+{% endif %}
+</div>
+{% endblock %}

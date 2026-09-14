@@ -686,6 +686,7 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     _coef.reset()
     _context_cache.clear()
     _gapband_cache.clear()
+    _flighteff_cache.clear()
     _dev_cache.clear()
     _primed.clear()
     _class_cache.clear()
@@ -5083,6 +5084,8 @@ OVR_GAP_BANDS = (("0-6", "Peers", 0.0, 7.0),
 #: `tests/test_jhsaa_playup.py`), so it changes no OVR this fold reads.
 #: Cleared by `reset()`; pruned per (world, year, gender) before publishing.
 _gapband_cache: dict = {}
+_flighteff_cache: dict = {}
+_flighteff_lock = __import__('threading').Lock()
 
 
 def _gap_band(gap: float) -> str:
@@ -7768,3 +7771,153 @@ def _finalize_year(seed: int, w: dict) -> dict:
     # happen rather than a silent tail of the college rollover.
     summary.update(event="finalize", year=new_year, week=0)
     return summary
+
+
+def _fit_line_logistic(rows: list[tuple[float, int, int]]) -> tuple[float, float]:
+    """Fit P(win) = σ(β·gap + h·home) by Newton's method over one season's
+    contested flights — (gap in OVR, home 0/1, won 0/1). Two parameters, six
+    steps, no library. The curve is FITTED from the archive, never copied from
+    the engine (the analytics sidecar's rule): the gap response has been
+    retuned before and a typed table goes stale silently."""
+    import math
+    beta, h = 0.15, 0.0
+    for _ in range(6):
+        g_b = g_h = 0.0
+        H = [[1e-6, 0.0], [0.0, 1e-6]]
+        for gap, home, won in rows:
+            z = beta * gap + h * home
+            z = max(-30.0, min(30.0, z))
+            pr = 1.0 / (1.0 + math.exp(-z))
+            r = won - pr
+            g_b += r * gap
+            g_h += r * home
+            w = pr * (1.0 - pr)
+            H[0][0] += w * gap * gap
+            H[0][1] += w * gap * home
+            H[1][0] += w * gap * home
+            H[1][1] += w * home * home
+        det = H[0][0] * H[1][1] - H[0][1] * H[1][0]
+        if det <= 0:
+            break
+        beta += (H[1][1] * g_b - H[0][1] * g_h) / det
+        h += (H[0][0] * g_h - H[1][0] * g_b) / det
+    return beta, h
+
+
+def jhsaa_flight_efficiency(world_id: int, year: int, gender: str, salt: str = "") -> dict:
+    """FLIGHT EFFICIENCY (owner request 2026-09): for every program and every
+    flight it fielded, the flight's actual win rate against what the two
+    sides' grades predicted — "is this program getting more or less out of
+    this position than its players' grades say it should".
+
+    The expectation is a logistic on the OVR gap (a doubles pair averages its
+    two) plus a home-court term, FITTED on this season's own varsity flights
+    (`_fit_line_logistic`), so a flight is judged against how this association
+    actually converted gaps this year. Rosters are rebuilt to resolve the
+    archive's names to OVRs exactly as `jhsaa_gap_bands` does (~20 s cold) —
+    run it through the route's deferred job, never on the request thread;
+    memoised in `_flighteff_cache` (an archived season is immutable).
+
+    ‼️ A row of 25-35 matches has a standard error of ~9 points and a season
+    has thousands of rows, so a handful of ±25-30 outliers arise by chance.
+    The page says so and shows N; multi-flight, same-direction cases are the
+    credible ones. `top` names the player (or pair) who held the flight most.
+
+    Returns {"year", "season_year", "beta", "home", "lines", "unresolved",
+    "rows": [{school, slot, n, wins, actual, expected, delta, top, top_n}]}
+    with actual/expected/delta as percentages of that flight's matches."""
+    from collections import Counter
+    from . import jhsaa as _jh
+    from . import overrides as ov
+    ck = (world_id, year, gender, salt, ov.jhsaa_transfer_version(),
+          ov.jhsaa_archetype_version(), ov.jhsaa_band_version())
+    with _flighteff_lock:
+        got = _flighteff_cache.get(ck)
+    if got is not None:
+        return got
+    season_year = BASE_YEAR + year + 1
+    alias = _jh.former_names()
+    schools = {s.name: s for s in _jh.load_schools(gender)}
+    rosters: dict[str, dict | None] = {}
+
+    def ovr_map(name: str) -> dict | None:
+        name = alias.get(name, name)
+        if name in rosters:
+            return rosters[name]
+        sch = schools.get(name)
+        m = ({pl.name: pl.current_overall()
+              for pl in _jh.build_roster(sch, season_year, salt)}
+             if sch is not None else None)
+        rosters[name] = m
+        return m
+
+    def side_ovr(m: dict, names) -> float | None:
+        vals = [m.get(n) for n in (names or ())]
+        if not vals or any(v is None for v in vals):
+            return None
+        return sum(vals) / len(vals)
+
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT school, opp, lines FROM world_jhsaa_dual"
+            " WHERE world_id=? AND year=? AND gender=? AND home=1"
+            " AND COALESCE(level,'v')='v'",
+            (world_id, year, gender)).fetchall()
+    finally:
+        conn.close()
+
+    fit_rows: list[tuple[float, int, int]] = []
+    # (school, slot) -> [gap, home, won, names]
+    per_side: list[tuple[str, str, float, int, int, tuple]] = []
+    total = unresolved = 0
+    for school, opp, lines_json in rows:
+        try:
+            lines = unpack_lines(lines_json)
+        except ValueError:
+            continue
+        hm = am = None
+        for ln in lines:
+            slot = str(ln.get("slot", "")).upper()
+            if not slot or not (ln.get("home") and ln.get("away")):
+                continue
+            total += 1
+            if hm is None:
+                hm, am = ovr_map(alias.get(school, school)), ovr_map(alias.get(opp, opp))
+            h = side_ovr(hm, ln.get("home")) if hm else None
+            a_ = side_ovr(am, ln.get("away")) if am else None
+            if h is None or a_ is None:
+                unresolved += 1
+                continue
+            hw = 1 if ln.get("home_won") else 0
+            fit_rows.append((h - a_, 1, hw))
+            per_side.append((alias.get(school, school), slot, h - a_, 1, hw, tuple(ln.get("home"))))
+            per_side.append((alias.get(opp, opp), slot, a_ - h, 0, 1 - hw, tuple(ln.get("away"))))
+
+    beta, home = _fit_line_logistic(fit_rows) if fit_rows else (0.0, 0.0)
+    import math
+    acc: dict[tuple[str, str], dict] = {}
+    for school, slot, gap, is_home, won, names in per_side:
+        c = acc.setdefault((school, slot), {"n": 0, "wins": 0, "xw": 0.0, "who": Counter()})
+        # the fit is σ(β·gap + h) on HOME rows; the away mirror is 1 − that,
+        # i.e. σ(−β·gap − h) with the gap already signed from the away side
+        z = max(-30.0, min(30.0, beta * gap + home * (1 if is_home else -1)))
+        c["n"] += 1
+        c["wins"] += won
+        c["xw"] += 1.0 / (1.0 + math.exp(-z))
+        c["who"][names] += 1
+    out_rows = []
+    for (school, slot), c in acc.items():
+        n = c["n"]
+        top, top_n = (c["who"].most_common(1)[0] if c["who"] else ((), 0))
+        out_rows.append({"school": school, "slot": slot, "n": n, "wins": c["wins"],
+                         "actual": 100.0 * c["wins"] / n, "expected": 100.0 * c["xw"] / n,
+                         "delta": 100.0 * (c["wins"] - c["xw"]) / n,
+                         "top": " / ".join(top), "top_n": top_n})
+    out = {"year": year, "season_year": season_year, "beta": beta, "home": home,
+           "lines": total, "unresolved": unresolved, "rows": out_rows}
+    with _flighteff_lock:             # cold pages for other years/genders run concurrently
+        for k in [k for k in _flighteff_cache if k[:3] == ck[:3]]:
+            _flighteff_cache.pop(k, None)
+        _flighteff_cache[ck] = out
+    return out

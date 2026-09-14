@@ -529,3 +529,14 @@ def test_the_export_marks_a_duals_level(site):
     assert "level" in rows[0], "duals.csv must mark a dual's level"
     assert sum(1 for r in rows if r["level"] == "jv") == 1
     assert all(r["level"] in ("v", "jv") for r in rows)
+
+
+def test_flight_efficiency_page_prices_every_flight(site):
+    """Flight efficiency (owner request 2026-09): one row per team and flight,
+    actual beside expected, on its own analytics page and linked from the
+    analytics index."""
+    html = read(site, "metrics/flights.html")
+    assert "Flight Efficiency" in html
+    assert 'data-slot="S1"' in html and 'data-slot="D1"' in html
+    assert "Exp %" in html and "Held most by" in html
+    assert "flights.html" in read(site, "metrics/index.html")

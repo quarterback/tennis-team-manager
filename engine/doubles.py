@@ -47,7 +47,7 @@ from .rally import (
     _first_serve_in_prob, _second_serve_in_prob, _ace_prob,
     _rally_condition_bonus, _logistic, _clamp01, TUNE as RALLY_TUNE,
 )
-from .fast import effective_gap, _mtb_score
+from .fast import effective_gap, _mtb_score, style_vector, style_edge, TUNE as FAST_TUNE
 
 # Tunables for the doubles point model — talent shifts these distributions, it
 # does not script outcomes. Kept in one table so the model retunes without
@@ -58,6 +58,10 @@ TUNE = {
     # reads the rich serve/return attributes) is scaled DOWN by this factor. One
     # source of truth for ace calibration; doubles just damps it.
     "ace_scale": 0.60,
+    # The style cross term on the doubles point model's net-exchange logit —
+    # the pair's mean point on the plane (engine.fast.style_vector) against the
+    # other pair's; see engine.rally.TUNE["style_k"].
+    "style_k": 0.5,
     # Return must clear the net man. Most returns come back (high base); the
     # talent term and the poacher's pressure swing it, with an easier-return
     # bump on second serves. Calibrated so ~82% of returns are in play at parity.
@@ -292,6 +296,9 @@ class _DState:
     sets: list[int] = field(default_factory=lambda: [0, 0])
     set_scores: list[tuple[int, int]] = field(default_factory=list)
     profile: dict | None = None           # fast-model overlay (HS scorelines)
+    # Each side's point on the style plane (engine.fast.style_vector, averaged
+    # over the pair) — resolved once per match by `_fast_style`, read per game.
+    style: tuple | None = None
     # serve_order[side] = [p, q]: that side's two partners serve in this order.
     serve_order: list[list[int]] = field(default_factory=lambda: [[0, 1], [0, 1]])
     # recv_order[side] = [deuce_player, ad_player]: who returns each court.
@@ -425,7 +432,8 @@ def _play_point(state: _DState) -> tuple[int, str]:
                               - _net_presence(state, r_side, rnet_slot, ret_slot))
             + t["serve_plus"]
             + t["clutch_logit"] * clutch
-            + _rally_condition_bonus(state, server, returner))
+            + _rally_condition_bonus(state, server, returner)
+            + _style_point_edge(state, s_side, r_side))
     if rng.random() < _logistic(edge):
         win_side, win_slot = s_side, (snet_slot if rng.random() < t["poach_share"] else srv_slot)
         loser = r_side
@@ -618,8 +626,39 @@ def _fast_gap(state: _DState, s: int, r: int) -> float:
     model."""
     pr = state.profile or {}
     gap = state.teams[s].rating - state.teams[r].rating
+    # Style matchup (engine.fast.style_edge): the pair's mean point on the
+    # style plane against the other pair's — the same antisymmetric cross term
+    # the singles fast model plays, faded on the pair-rating gap, so a
+    # counterpunching pair troubles a pair of baseliners the way one player
+    # troubles one player. Zero for synthetic pairs (no rich table).
+    xs, ys = _fast_style(state)[s]
+    xr, yr = _fast_style(state)[r]
+    tune = {**FAST_TUNE, **pr}
+    tune["style_k"] = tune.get("d_style_k", tune["style_k"])
+    gap += style_edge(xs, ys, xr, yr, gap, tune)
     return effective_gap(gap, pr.get("gap_knee"), pr.get("gap_accel"),
                          pr.get("gap_bands", False))
+
+
+def _style_point_edge(state: _DState, s: int, r: int) -> float:
+    """The serving pair's style edge on one point (full fidelity)."""
+    k = TUNE["style_k"]
+    if not k:
+        return 0.0
+    xs, ys = _fast_style(state)[s]
+    xr, yr = _fast_style(state)[r]
+    return style_edge(xs, ys, xr, yr, state.teams[s].rating - state.teams[r].rating,
+                      {"style_k": k, "style_fade": FAST_TUNE["style_fade"]})
+
+
+def _fast_style(state: _DState) -> tuple:
+    if state.style is None:
+        out = []
+        for t in state.teams:
+            va, vb = style_vector(t.players[0]), style_vector(t.players[1])
+            out.append(((va[0] + vb[0]) / 2.0, (va[1] + vb[1]) / 2.0))
+        state.style = tuple(out)
+    return state.style
 
 
 def _fast_hold(state: _DState) -> float:

@@ -75,6 +75,20 @@ class Player:
     # point engine reads these directly so each stat carries a specific, textured
     # talent signal instead of a collapsed driver average.
     rich: dict | None = None
+    # engine.fast.style_vector's memo — a Player is built fresh per roster read
+    # and the point engine asks per point, so the plane is resolved once here.
+    style_xy: tuple | None = field(default=None, repr=False, compare=False)
+    # BEHAVIOURAL tendencies (owner rule 2026-09, compositional styles): what a
+    # player tries to DO, as distinct from what they can do. Summed from the
+    # primary play style and the secondary trait at Prospect.engine_player();
+    # None (synthetic players) reads as all zeros, so nothing pre-existing
+    # moves. Keys: approach, sv, chip, strike, grind, cover, slice, retspec,
+    # bigserve, topspin — read by engine.rally (see TENDENCY_KEYS there).
+    tend: dict | None = field(default=None, repr=False, compare=False)
+
+    def tendency(self, key: str) -> float:
+        t = self.tend
+        return t.get(key, 0.0) if t else 0.0
 
     @property
     def serve_skill(self) -> float:
@@ -152,6 +166,33 @@ class Player:
         """Willingness to pull the trigger on a winner."""
         return self._basket(("competitiveness", "clutch"), self.mental)
 
+    # --- net play in SINGLES (owner rule 2026-09) ---------------------------
+    # Seven of the 49 attributes (net_play, volley_touch, overhead, approach_shot,
+    # transition_game, poaching, doubles_chemistry) counted toward a player's
+    # grade and decided nothing in a singles point: an all-court player's
+    # approach game could never win one. These three baskets are what
+    # engine.rally's net exchange reads. Every fallback is `rally_skill`, so a
+    # synthetic player (no rich table) is net-NEUTRAL: their net game equals
+    # their rally game and the exchange collapses to the baseline rally.
+    @property
+    def net_game(self) -> float:
+        """Finishing at the net: volleys, overheads, positioning."""
+        return self._basket(("net_play", "volley_touch", "overhead", "transition_game"),
+                            self.rally_skill)
+
+    @property
+    def approach_game(self) -> float:
+        """How often, and how well, a player comes forward off the ground."""
+        return self._basket(("approach_shot", "transition_game", "net_play"),
+                            self.rally_skill)
+
+    @property
+    def passing_game(self) -> float:
+        """Beating a net player: passes, lobs, seeing the gap."""
+        return self._basket(("passing_precision", "lob_touch", "court_vision",
+                             "forehand_control", "backhand_control"),
+                            self.rally_skill)
+
 
 def random_player(
     rng: random.Random,
@@ -200,6 +241,10 @@ class PlayerStats:
     winners: int = 0
     unforced_errors: int = 0
     forced_errors: int = 0
+    # Net approaches (singles point engine): points this player came forward on,
+    # and how many of those they won.
+    net_points: int = 0
+    net_points_won: int = 0
     # Totals
     points_won: int = 0
 
@@ -243,6 +288,7 @@ STAT_KEYS: tuple[tuple[str, str], ...] = (
     ("bpf", "break_points_faced"), ("bps", "break_points_saved"),
     ("bpc", "break_points_converted"),
     ("win", "winners"), ("ue", "unforced_errors"), ("fe", "forced_errors"),
+    ("npt", "net_points"), ("npw", "net_points_won"),
     ("pts", "points_won"),
 )
 

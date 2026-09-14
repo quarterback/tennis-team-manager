@@ -48,6 +48,66 @@ TUNE = {
     "serve_plus_first": 0.36,
     "serve_plus_second": 0.10,
     "rally_slope": 0.9,
+    # STYLE MATCHUPS (owner rule 2026-09) — the point engine reads the SAME
+    # style plane as the fast model (engine.fast.style_edge: an antisymmetric
+    # cross term on attribute-cluster deviations, faded to zero as the overall
+    # gap widens). Added to the neutral-rally logit as an edge for the server,
+    # so over a match it is zero-sum and the rating gap is untouched; sized on
+    # its own dial because a per-POINT edge compounds ~4-6 times a game where
+    # the fast model's is per game. Calibrated with
+    # scripts/style_matchup_calibration.py --fidelity full.
+    "style_k": 1.6,
+    # NET PLAY IN SINGLES (owner rule 2026-09). A neutral rally can now go to
+    # the net: each player comes forward at `approach_base` per rally, moved by
+    # their approach game RELATIVE TO THEIR OWN rally level (`approach_swing` x
+    # (approach_game - rally_skill) — a deviation, so a flat player approaches
+    # at the base rate whatever their level and a serve-and-volleyer far more).
+    # The point is then the baseline rally logit PLUS `net_slope` x (the
+    # netter's net game - the passer's passing game), signed for whoever came
+    # in. Zero for two flat players, so the calibrated favourite rate is
+    # untouched on average; what changes is WHO wins the points that reach the
+    # net. Serve-and-volley: a first serve in is followed by an approach at
+    # `sv_base`, again moved by the server's approach deviation.
+    "approach_base": 0.14,
+    "approach_swing": 0.40,
+    "sv_base": 0.05,
+    # ‼️ 0.35, not more: at 1.1 the net exchange out-priced the rally lane and a
+    # net-built style measured 60-65% against the field at ZERO cross term
+    # (all_court 65, aggressive_baseliner 37); at 0.5 still +6 for all_court and
+    # serve_and_volley (scripts/style_matchup_calibration.py --fidelity full --k 0).
+    "net_slope": 0.35,
+    # RETURN PRICING (owner rule 2026-09). Before this the return reached a
+    # singles point only through the ace offset, so a return-built player
+    # (counterpuncher, return specialist) measured ~44% against the field at
+    # equal grade while a serve-built one ran hot. The server's rally edge
+    # after the serve lands now flexes with the serve-vs-return SHAPE: (the
+    # server's serve deviation from their rally level) minus (the returner's
+    # return deviation from theirs), times `serve_plus_swing`. Deviations, so
+    # two flat players reproduce the calibrated curve exactly.
+    "serve_plus_swing": 0.4,
+    # COMPOSITIONAL STYLE TENDENCIES (owner rule 2026-09) — behaviour, read off
+    # `Player.tend` (engine.state.Player.tendency). Each is a small, bounded
+    # term and every one is a DEVIATION or a matchup, never a level bonus:
+    #   approach  adds to the per-rally approach rate (net rusher, all-court)
+    #   sv        adds to the serve-and-volley rate behind a first serve
+    #   chip      adds to the RETURNER's approach rate (chip-and-charge)
+    #   strike    first-strike: rally logit += strike * (own attack deviation -
+    #             opponent's steadiness deviation); winners AND errors up
+    #   grind     the mirror: steadiness deviation vs the opponent's attack
+    #             deviation; winners and errors down (longer points)
+    #   cover     retriever: court-cover deviation vs the opponent's attack
+    #   slice     blunts the OPPONENT's strike term (a low ball is hard to hit
+    #             through) and adds a little approach
+    #   retspec   return specialist: the return side of serve_plus_swing and
+    #             the ace offset both count more for this player
+    #   bigserve  the ace swing counts more for this server
+    #   topspin   heavy ball: pushes the opponent back — their approach rate
+    #             drops — and a small grind
+    "tend_strike_slope": 0.8,
+    "tend_grind_slope": 0.8,
+    "tend_cover_slope": 0.8,
+    "tend_share": 0.10,         # end-share tilt per unit of strike (up) / grind (down)
+    "tend_return_cross": 0.35,  # returner retspec x server bigserve/sv, per service point
     # Reference talent level the winner/error/ace swings are measured against.
     # Real rosters center well above 0.5 (D1 ≈ 0.68, D2 ≈ 0.49, D3 ≈ 0.42), so the
     # swings anchor here: a player AT the reference gets the baseline rate, a
@@ -149,19 +209,110 @@ def _ace_prob(server: Player, returner: Player, first: bool) -> float:
     # true cannon reads as an ace machine regardless of who's across the net.
     ref = t["swing_ref"]
     power = server.ace_power_first if first else server.ace_power_second
-    edge = (power - ref) - t["ace_return_weight"] * (returner.return_solidity - ref)
+    # bigserve / retspec scale each player's OWN deviation (serve above their
+    # rally level, return above theirs) — never the level term, so a big
+    # server below the reference is not punished for the label.
+    # A return specialist is DISPROPORTIONATELY good against a big serve: their
+    # `retspec` also discounts the server's serve deviation itself (a cross
+    # term — the whole point of the trait, per the owner).
+    s_dev = power - server.rally_skill
+    retspec = returner.tendency("retspec")
+    edge = ((power - ref) + server.tendency("bigserve") * s_dev - 0.6 * retspec * max(0.0, s_dev)
+            - t["ace_return_weight"] * ((returner.return_solidity - ref)
+                                        + retspec * (returner.return_solidity - returner.rally_skill)))
     return _clamp01(base + t["ace_swing"] * edge)
 
 
 def _server_rally_win_prob(server: Player, returner: Player, first: bool,
-                           bonus: float = 0.0) -> float:
+                           bonus: float = 0.0, net: float = 0.0) -> float:
     """Probability the server wins a rally that reached neutral play.
-    `bonus` is an additive logit term (clutch/context swing on big points).
+    `bonus` is an additive logit term (clutch/context swing on big points);
+    `net` is the signed net-exchange term (`_net_term`) when the rally went
+    to the net, zero for a baseline rally.
     """
     t = TUNE
     serve_plus = t["serve_plus_first"] if first else t["serve_plus_second"]
     diff = (server.rally_skill - returner.rally_skill)
-    return _logistic(t["rally_slope"] * diff + serve_plus + bonus)
+    style = _style_edge(server, returner, t["style_k"])
+    # serve-vs-return shape on the serve+1 edge (deviations, see TUNE)
+    retspec = returner.tendency("retspec")
+    s_dev = server.serve_skill - server.rally_skill
+    shape = t["serve_plus_swing"] * (
+        s_dev * (1.0 - 0.6 * retspec * (1.0 if s_dev > 0 else 0.0))
+        - (returner.return_game - returner.rally_skill) * (1.0 + retspec))
+    # The serve edge itself is small in this engine (aces ~7% of points, the
+    # serve+1 edge a constant), so the return specialist's whole reason to
+    # exist — being the player a big server cannot serve past — needs a
+    # behaviour-vs-behaviour term: the more the server plays through the serve
+    # (`bigserve`, and the serve-and-volleyer's `sv`) and the more the returner
+    # is built to take it (`retspec`), the more the server's edge is blunted.
+    shape -= t["tend_return_cross"] * retspec * (server.tendency("bigserve") + server.tendency("sv"))
+    return _logistic(t["rally_slope"] * diff + serve_plus + bonus + style + net + shape
+                     + _tendency_terms(server, returner))
+
+
+def _tendency_terms(a: Player, b: Player) -> float:
+    """The behavioural matchup terms, as a logit edge for `a` over `b` —
+    strike / grind / cover, each `a`'s own tendency against `b`'s shape and
+    `b`'s tendency against `a`'s, all on attribute DEVIATIONS from the
+    player's rally level (a flat player contributes nothing and a level gap
+    never leaks in). `slice` blunts the opponent's strike."""
+    t = TUNE
+    out = 0.0
+    for me, you, sign in ((a, b, 1.0), (b, a, -1.0)):
+        # ‼️ OPPONENT terms only. `me`'s own attack/steadiness deviation is
+        # already priced (it IS the shape the shifts bought); multiplying the
+        # tendency by it made every trait a strength bonus against a balanced
+        # field (first_strike measured 56.7%). What a tendency changes is how
+        # the player fares against a PARTICULAR opponent: an attacker profits
+        # against an unsteady one and pays against a wall; a grinder or a
+        # retriever profits against an erratic hitter and pays against a clean
+        # one. Zero-mean over a field by construction.
+        y_atk = you.attack - you.rally_skill
+        y_std = you.steadiness - you.rally_skill
+        strike = me.tendency("strike") * (1.0 - min(0.6, you.tendency("slice")))
+        out += sign * (-t["tend_strike_slope"] * strike * y_std
+                       - t["tend_grind_slope"] * (me.tendency("grind") + 0.3 * me.tendency("topspin")) * y_atk
+                       - t["tend_cover_slope"] * me.tendency("cover") * y_atk)
+    return out
+
+
+def _approach_prob(p: Player, base: float) -> float:
+    """How often `p` comes forward in a neutral rally — the base rate moved by
+    their approach game relative to their own rally level."""
+    return _clamp01(base + TUNE["approach_swing"] * (p.approach_game - p.rally_skill))
+
+
+def _net_term(netter: Player, passer: Player) -> float:
+    """The net exchange, as a logit edge for the NETTER: their net game
+    against the passer's passing game — each as a DEVIATION from that
+    player's own rally level. The level gap already rides on `rally_slope`;
+    read raw, the net term was a second copy of it and lifted the favourite's
+    win rate ~4 points across the 3-12 OVR bands (measured). As deviations,
+    two flat players cancel exactly and only SHAPE decides who wins the
+    points that reach the net."""
+    return TUNE["net_slope"] * ((netter.net_game - netter.rally_skill)
+                                - (passer.passing_game - passer.rally_skill))
+
+
+def _style_edge(a: Player, b: Player, k: float) -> float:
+    """`a`'s style-plane edge over `b` (engine.fast.style_edge), on this
+    module's dial. Imported lazily: engine.fast imports engine.match."""
+    if not k:
+        return 0.0
+    from .fast import style_vector, style_edge
+    xa, ya = style_vector(a)
+    xb, yb = style_vector(b)
+    return style_edge(xa, ya, xb, yb, a.overall - b.overall,
+                      {"style_k": k, "style_fade": _STYLE_FADE})
+
+
+_STYLE_FADE = 0.15      # mirrors engine.fast.TUNE["style_fade"]; pinned by a test
+
+#: The tendency keys engine.rally reads off Player.tend (a test pins that the
+#: generator emits no other).
+TENDENCY_KEYS = ("approach", "sv", "chip", "strike", "grind", "cover", "slice",
+                 "retspec", "bigserve", "topspin")
 
 
 def _end_shares(state: MatchState, hitter: Player, misser: Player) -> tuple[float, float]:
@@ -184,8 +335,13 @@ def _end_shares(state: MatchState, hitter: Player, misser: Player) -> tuple[floa
 
     def clamp(x: float) -> float:
         return max(f, min(1.0 - f, x))
-    winner_frac = clamp(t["end_winner_base"] + t["end_winner_gap"] * gap)
-    forced_frac = clamp(t["end_forced_base"] + t["end_forced_gap"] * gap - wind)
+    # first-strikers end points on winners and errors, grinders on neither —
+    # a tilt on how a won point is LABELLED (points already decided above).
+    tilt = t["tend_share"] * (hitter.tendency("strike") - hitter.tendency("grind")
+                              - 0.5 * hitter.tendency("cover"))
+    winner_frac = clamp(t["end_winner_base"] + t["end_winner_gap"] * gap + tilt)
+    forced_frac = clamp(t["end_forced_base"] + t["end_forced_gap"] * gap - wind
+                        + t["tend_share"] * (misser.tendency("grind") - misser.tendency("strike")))
     return winner_frac, forced_frac
 
 
@@ -245,11 +401,33 @@ def play_point(state: MatchState) -> tuple[int, str]:
 
     # --- Rally (clutch + hardcourt context swing the big points) ---
     ctx_bonus = _rally_condition_bonus(state, server, returner)
-    # One draw labels the end (winner / forced / unforced) whichever side won —
-    # the SAME single rng.random() the old two-way split consumed, so the stream,
-    # and with it every outcome, is bit-identical to before this model existed.
+    # --- Who comes to the net, if anyone (owner rule 2026-09) ---
+    # One draw: the server's approach band first (serve-and-volley behind a
+    # first serve, an approach off the ground otherwise), then the returner's.
+    t = TUNE
+    sv = (t["sv_base"] + server.tendency("sv")) if first else 0.0
+    p_s = _approach_prob(server, t["approach_base"] + sv + server.tendency("approach")
+                         - returner.tendency("topspin") * 0.05)
+    p_r = _approach_prob(returner, t["approach_base"] + returner.tendency("approach")
+                         + returner.tendency("chip") - server.tendency("topspin") * 0.05)
+    roll = rng.random()
+    net = 0.0
+    if roll < p_s:
+        net = _net_term(server, returner)
+        s_stat.net_points += 1
+        netter = s_idx
+    elif roll < p_s + p_r:
+        net = -_net_term(returner, server)
+        r_stat.net_points += 1
+        netter = r_idx
+    else:
+        netter = None
+    # One draw labels the end (winner / forced / unforced) whichever side won.
     if rng.random() < _server_rally_win_prob(server, returner, first,
-                                             bonus=TUNE["clutch_logit"] * clutch + ctx_bonus):
+                                             bonus=TUNE["clutch_logit"] * clutch + ctx_bonus,
+                                             net=net):
+        if netter == s_idx:
+            s_stat.net_points_won += 1
         w_frac, f_frac = _end_shares(state, server, returner)
         roll = rng.random()
         if roll < w_frac:
@@ -261,6 +439,8 @@ def play_point(state: MatchState) -> tuple[int, str]:
         r_stat.unforced_errors += 1
         return award(s_idx, "unforced_error")
     else:
+        if netter == r_idx:
+            r_stat.net_points_won += 1
         w_frac, f_frac = _end_shares(state, returner, server)
         roll = rng.random()
         if roll < w_frac:

@@ -94,6 +94,29 @@ TUNE = {
     # clutch/fitness quietly become the best stats in the game.
     "edge_clutch": 0.35,        # mental deviation on tiebreak points
     "edge_stamina": 0.25,       # stamina deviation once the match goes the distance
+    # STYLE MATCHUPS — a CROSS term (owner rule 2026-09). The lanes above are
+    # linear, so averaged over the two players' service games A's edge over B
+    # is a per-player scalar minus the same scalar for B: a transitive ranking
+    # that can never make style A beat B, B beat C and C beat A. Measured at
+    # equal overall every style-vs-style cell sat at 47-52% (both profiles),
+    # whatever the cluster shifts — the same fault engine.doubles._pair_synergy
+    # documents: a complementarity effect must be a cross term, never two
+    # per-player spreads summed. `style_edge` is that cross term: each player
+    # is a point on a 2-D STYLE PLANE derived from attribute-cluster
+    # deviations (`style_vector`), and the edge is the antisymmetric product
+    # x_a*y_b - y_a*x_b, so it is zero-sum inside a match, zero-mean over a
+    # league, and rock-paper-scissors by construction. It is scaled by the
+    # players' overall gap (linear fade to zero at `style_fade` units), so it
+    # decides matches between near-equals and never lets a 40 beat a 95.
+    # Calibrated with scripts/style_matchup_calibration.py to ~56/44 on the
+    # strong edges at equal overall; see docs/AAR-style-matchup-cross-term.md.
+    "style_k": 0.0,             # set below once STYLE_K is derived
+    "style_fade": 0.15,         # overall gap (units, ~9 OVR) at which the edge is gone
+    # The doubles fast model reads the SAME plane (pair = mean of its two
+    # players) through its own dial: its gap slope is 1.6x the singles one
+    # (2.4 vs 1.5; 1.44 vs 0.9 under HS), so the same edge lands hotter there —
+    # measured 61-63% where singles gave 56-58 at one dial.
+    "d_style_k": 0.6,
 }
 
 
@@ -172,6 +195,11 @@ HS_PROFILE = {
     # keeping a curve 6.7x steeper than the singles one beside it.
     "d_skill_slope": 1.44,
     "d_tb_slope": 1.08,
+    # The style cross term (engine.fast.style_edge) at this profile's scale:
+    # the HS per-point curve bites more softly than the college hinge at small
+    # gaps, so the same edge needs a larger dial to land the same ~56/44.
+    "style_k": 2.4,
+    "d_style_k": 0.75,
 }
 
 
@@ -284,6 +312,76 @@ def _logistic(x: float) -> float:
     return 1.0 / (1.0 + math.exp(-x))
 
 
+# --- THE STYLE PLANE (owner rule 2026-09) -----------------------------------
+#: Attribute clusters, mirroring app.development._STYLE_CLUSTERS (the engine
+#: cannot import app/, so the names are repeated here; a test pins the two).
+STYLE_CLUSTERS = {
+    "serve":    ("first_serve_power", "first_serve_accuracy", "second_serve_quality", "serve_variety"),
+    "return":   ("return_quality", "return_aggression", "return_depth"),
+    "baseline": ("forehand_power", "forehand_control", "backhand_power", "backhand_control",
+                 "groundstroke_consistency", "shot_tolerance", "rally_patience", "pattern_execution"),
+    "net":      ("net_play", "volley_touch", "overhead", "poaching", "doubles_chemistry",
+                 "approach_shot", "transition_game"),
+    "movement": ("footwork", "speed", "agility", "balance"),
+    "touch":    ("drop_touch", "lob_touch", "slice_control", "court_vision", "passing_precision"),
+}
+#: THE STYLE PLANE, two SEMANTIC axes over the cluster deviations (cluster mean
+#: minus the mean of all six). X is DEFENCE vs FIRST STRIKE — return and
+#: movement against serve; Y is NET vs BASELINE. A style beats every style
+#: within a half-turn BEHIND it (edge = y_a·x_b − x_a·y_b), which puts the
+#: eight styles in one rotation (owner rule 2026-09, replacing the fitted
+#: axes of the first cut):
+#:   counterpuncher 0° · junkballer ~51° · all_court ~103° · serve_and_volley
+#:   ~154° · serve_first ~206° · aggressive_baseliner ~257° · pusher ~309°
+#: — seven shaped styles evenly spaced, so counterpuncher > aggressive_baseliner
+#: > serve_first > all_court > counterpuncher on the four cardinal styles
+#: (opposites even) and every style has three behind it and three ahead. A balanced (flat) player sits at the origin.
+STYLE_AXIS_X = {"serve": -1.0, "return": 0.5, "baseline": 0.0, "net": 0.0, "movement": 0.5, "touch": 0.0}
+STYLE_AXIS_Y = {"serve": 0.0, "return": 0.0, "baseline": -1.0, "net": 1.0, "movement": 0.0, "touch": 0.0}
+#: Edge scale: unit-gap per unit of x*y product. Calibrated so the cardinal
+#: edges land ~56-58 at equal overall under BOTH profiles.
+STYLE_K = 1.5
+TUNE["style_k"] = STYLE_K
+
+
+def style_vector(p: Player) -> tuple[float, float]:
+    """A player's point on the style plane, from the rich table. Synthetic
+    players (`rich` None — random_player, every pre-shape test) sit at the
+    origin, so nothing they play is touched."""
+    if p.style_xy is not None:
+        return p.style_xy
+    r = p.rich
+    xy = (0.0, 0.0)
+    if r:
+        means = {}
+        for cl, names in STYLE_CLUSTERS.items():
+            vals = [r[n] for n in names if n in r]
+            if not vals:
+                break
+            means[cl] = sum(vals) / len(vals)
+        else:
+            centre = sum(means.values()) / len(means)
+            xy = (sum(STYLE_AXIS_X[cl] * (m - centre) for cl, m in means.items()),
+                  sum(STYLE_AXIS_Y[cl] * (m - centre) for cl, m in means.items()))
+    p.style_xy = xy
+    return xy
+
+
+def style_edge(xa: float, ya: float, xb: float, yb: float,
+               overall_gap: float, tune: dict = TUNE) -> float:
+    """A's edge over B on the style plane, in unit-gap: the antisymmetric
+    cross product (so edge(a, b) == -edge(b, a) exactly), faded linearly to
+    zero as |overall gap| reaches `style_fade`. Zero for a flat player."""
+    k = tune.get("style_k", 0.0)
+    if not k:
+        return 0.0
+    fade = tune.get("style_fade", 0.15)
+    w = 1.0 - abs(overall_gap) / fade if fade > 0 else 1.0
+    if w <= 0.0:
+        return 0.0
+    return k * w * (ya * xb - xa * yb)
+
+
 def _context_edge(server: Player, returner: Player, context: MatchContext) -> float:
     venue = (server.indoor_comfort - returner.indoor_comfort) if context.indoor else (server.outdoor_comfort - returner.outdoor_comfort)
     wind = context.wind * (server.wind_tolerance - returner.wind_tolerance)
@@ -301,13 +399,20 @@ def _edges(p: Player) -> dict:
     return {
         "serve": 0.5 * p.serve_power + 0.5 * p.serve_placement,
         "ret": 0.5 * p.return_game + 0.25 * p.movement + 0.25 * p.consistency,
-        "rally": 0.35 * p.forehand + 0.35 * p.backhand
-                 + 0.15 * p.movement + 0.15 * p.consistency,
+        # Net game is part of the rally lane (owner rule 2026-09): the point
+        # engine now finishes points at the net, and the fast model's rally
+        # composite reads the same basket so a net player is not dead weight
+        # here either. `net_game` falls back to rally_skill for synthetic
+        # players, so the flat-player equivalence holds.
+        "rally": 0.30 * p.forehand + 0.30 * p.backhand
+                 + 0.15 * p.movement + 0.15 * p.consistency
+                 + 0.10 * p.net_game,
         "mental": p.mental,
         "stamina": p.stamina,
         "overall": o,
         "m_dev": p.mental - o,
         "s_dev": p.stamina - o,
+        "style": style_vector(p),
     }
 
 
@@ -324,6 +429,8 @@ def _hold_prob(server: Player, returner: Player, context: MatchContext,
            + tune["hold_stamina"] * (es["stamina"] - er["stamina"]))
     if decider:
         gap += tune["edge_stamina"] * (es["s_dev"] - er["s_dev"])
+    gap += style_edge(*es["style"], *er["style"],
+                      es["overall"] - er["overall"], tune)
     return _logistic(
         tune["hold_base_logit"]
         + tune["skill_slope"] * effective_gap(gap, tune["gap_knee"],
@@ -342,6 +449,8 @@ def _tb_prob(p0: Player, p1: Player, context: MatchContext,
            + tune["edge_clutch"] * (e0["m_dev"] - e1["m_dev"]))
     if decider:
         gap += tune["edge_stamina"] * (e0["s_dev"] - e1["s_dev"])
+    gap += style_edge(*e0["style"], *e1["style"],
+                      e0["overall"] - e1["overall"], tune)
     return _logistic(
         tune["tb_slope"] * effective_gap(gap, tune["gap_knee"],
                                          tune["gap_accel"],

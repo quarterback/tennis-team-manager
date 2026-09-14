@@ -2844,6 +2844,7 @@ def reset_schools() -> None:
     _talent_era_cache.clear()
     _career_era_cache.clear()
     _feeder_era_cache.clear()
+    _style_era_cache.clear()
     _band_era_cache.clear()
     _band_cache.clear()
     _band_doc_cache.clear()
@@ -3169,7 +3170,7 @@ def exchange_student(school: School, year: int, salt: str,
 #: resetter reads is what stops the sixth being forgotten too.
 ERA_SETTINGS = ("jhsaa_name_era", "jhsaa_dev_era", "jhsaa_talent_era",
                 "jhsaa_career_era", "jhsaa_exchange_era", "jhsaa_intl_era",
-                "jhsaa_band_era")
+                "jhsaa_band_era", "jhsaa_style_era")
 
 
 def reset_eras() -> None:
@@ -3275,6 +3276,18 @@ def _compresses(entry: int) -> bool:
 
 _career_era_cache: dict = {}
 _feeder_era_cache: dict = {}
+_style_era_cache: dict = {}
+
+
+def style_era() -> int:
+    """The first entry year drawn on the v2 play-style profile
+    (`development._STYLE_BIAS_V2`, the engine's style plane — owner rule
+    2026-09). The `dev_era()` idiom, for its reason: the shift table changes
+    every attribute a cohort regenerates with, so ungated it re-shapes every
+    archived roster's players (overall is preserved, but doubles pairings and
+    the box-score attributes are not). Pre-era cohorts keep the legacy v1
+    profile byte-for-byte."""
+    return _resolve_era("jhsaa_style_era", _style_era_cache)
 
 
 def feeder_era() -> int:
@@ -5136,7 +5149,10 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
                           # rename or every archived award points at nobody.
                           pid=make_pid("jhsaa", school.ident, school.gender,
                                        entry, seat),
-                          ceiling_max=cap)
+                          ceiling_max=cap,
+                          # The style-plane profile from `style_era()` on;
+                          # earlier cohorts keep the v1 shape they were archived with.
+                          shape="v2" if entry >= style_era() else "v1")
     if free:
         # The odometer: each PRIOR grade's realisation factor, looked up in that
         # season's archive by (school, name) — the name exists only now, which

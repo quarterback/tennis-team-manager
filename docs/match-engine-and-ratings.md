@@ -56,6 +56,30 @@ Tiebreaks use `tb_slope` (2.7). That's the whole model — `overall` + environme
 + the residual coin-flip. No stamina/grit/form terms; those attributes act only
 through `overall`.
 
+**Net play in singles (owner rule 2026-09)** — a neutral rally goes to the net at
+a per-player rate (`rally.TUNE["approach_base"]`, moved by the player's approach
+game relative to their own rally level; serve-and-volley behind a first serve at
+`sv_base`), and the point is the baseline logit plus `net_slope` × (netter's net
+game − passer's passing game), both as deviations from each player's rally level
+so two flat players cancel and the favourite-rate curve is untouched. Before this,
+seven of the 49 attributes decided nothing in a singles point.
+
+**Style matchups (owner rule 2026-09)** — the one deliberate cross term, in BOTH
+fidelities. Every lane above is linear in per-player composites, so no amount of
+attribute shape could make style A beat B, B beat C and C beat A: at equal
+overall every style-vs-style cell measured 47-52%. `engine.fast.style_vector`
+maps a player's attribute-cluster deviations onto a 2-D style plane (X = return +
+movement vs serve, Y = net vs baseline; eight styles sit on it as one rotation) and
+`style_edge` adds the antisymmetric cross product `y_a·x_b − x_a·y_b` (zero-sum
+inside a match, zero-mean over a league, rock-paper-scissors by construction),
+faded linearly to zero as the overall gap reaches `style_fade` (0.15 ≈ 9 OVR) so
+it decides near-equal matches and never a mismatch. The fast model adds it to the
+hold and tiebreak gaps (`style_k` / `d_style_k`, per profile); the point engine
+adds it to the neutral-rally logit (`rally.TUNE["style_k"]`) and the doubles net
+exchange (`doubles.TUNE["style_k"]`). Calibrated to ~56/44 on the agreed
+tournament's strong edges at equal overall with
+`scripts/style_matchup_calibration.py`; see `docs/AAR-style-matchup-cross-term.md`.
+
 Dual format (`engine/dual.py`): 3 doubles (8-game pro sets, 2/3 → **1 team
 point**) then 6 singles (best-of-3, no-ad), first to **4 of 7** clinches; courts
 abandoned after the clinch are DNF (real college convention). No-ad is the
