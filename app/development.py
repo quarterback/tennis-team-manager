@@ -88,7 +88,7 @@ _STYLE_BIAS = {
 # rosters are persisted, so there only players generated from now on carry it.
 _STYLE_BIAS_V2 = {
     "balanced":             {},
-    "counterpuncher":       {"serve": -5, "return": 8, "baseline": 1, "net": -1, "movement": 7, "touch": 2},
+    "counterpuncher":       {"serve": -3, "return": 8, "baseline": 1, "net": -1, "movement": 7, "touch": 2},
     "junkballer":           {"serve": -3, "return": 4, "baseline": -3, "net": 3, "movement": 4, "touch": 9},
     "all_court":            {"serve": 3, "return": 1, "baseline": -6, "net": 9, "movement": 1, "touch": 2},
     "serve_and_volley":     {"serve": 10, "return": -6, "baseline": -4, "net": 3, "movement": -3, "touch": 0},

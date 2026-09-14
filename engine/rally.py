@@ -56,7 +56,7 @@ TUNE = {
     # its own dial because a per-POINT edge compounds ~4-6 times a game where
     # the fast model's is per game. Calibrated with
     # scripts/style_matchup_calibration.py --fidelity full.
-    "style_k": 1.2,
+    "style_k": 1.6,
     # NET PLAY IN SINGLES (owner rule 2026-09). A neutral rally can now go to
     # the net: each player comes forward at `approach_base` per rally, moved by
     # their approach game RELATIVE TO THEIR OWN rally level (`approach_swing` x
@@ -71,11 +71,11 @@ TUNE = {
     "approach_base": 0.14,
     "approach_swing": 0.40,
     "sv_base": 0.05,
-    # ‼️ 0.5, not more: at 1.1 the net exchange out-priced the rally lane and a
+    # ‼️ 0.35, not more: at 1.1 the net exchange out-priced the rally lane and a
     # net-built style measured 60-65% against the field at ZERO cross term
-    # (all_court 65, aggressive_baseliner 37); 0.5 lands every style within
-    # ±5 (scripts/style_matchup_calibration.py --fidelity full --k 0).
-    "net_slope": 0.5,
+    # (all_court 65, aggressive_baseliner 37); at 0.5 still +6 for all_court and
+    # serve_and_volley (scripts/style_matchup_calibration.py --fidelity full --k 0).
+    "net_slope": 0.35,
     # RETURN PRICING (owner rule 2026-09). Before this the return reached a
     # singles point only through the ace offset, so a return-built player
     # (counterpuncher, return specialist) measured ~44% against the field at
@@ -84,7 +84,7 @@ TUNE = {
     # server's serve deviation from their rally level) minus (the returner's
     # return deviation from theirs), times `serve_plus_swing`. Deviations, so
     # two flat players reproduce the calibrated curve exactly.
-    "serve_plus_swing": 0.3,
+    "serve_plus_swing": 0.4,
     # COMPOSITIONAL STYLE TENDENCIES (owner rule 2026-09) — behaviour, read off
     # `Player.tend` (engine.state.Player.tendency). Each is a small, bounded
     # term and every one is a DEVIATION or a matchup, never a level bonus:
@@ -107,6 +107,7 @@ TUNE = {
     "tend_grind_slope": 0.8,
     "tend_cover_slope": 0.8,
     "tend_share": 0.10,         # end-share tilt per unit of strike (up) / grind (down)
+    "tend_return_cross": 0.35,  # returner retspec x server bigserve/sv, per service point
     # Reference talent level the winner/error/ace swings are measured against.
     # Real rosters center well above 0.5 (D1 ≈ 0.68, D2 ≈ 0.49, D3 ≈ 0.42), so the
     # swings anchor here: a player AT the reference gets the baseline rate, a
@@ -211,10 +212,14 @@ def _ace_prob(server: Player, returner: Player, first: bool) -> float:
     # bigserve / retspec scale each player's OWN deviation (serve above their
     # rally level, return above theirs) — never the level term, so a big
     # server below the reference is not punished for the label.
-    edge = ((power - ref) + server.tendency("bigserve") * (power - server.rally_skill)
+    # A return specialist is DISPROPORTIONATELY good against a big serve: their
+    # `retspec` also discounts the server's serve deviation itself (a cross
+    # term — the whole point of the trait, per the owner).
+    s_dev = power - server.rally_skill
+    retspec = returner.tendency("retspec")
+    edge = ((power - ref) + server.tendency("bigserve") * s_dev - 0.6 * retspec * max(0.0, s_dev)
             - t["ace_return_weight"] * ((returner.return_solidity - ref)
-                                        + returner.tendency("retspec")
-                                        * (returner.return_solidity - returner.rally_skill)))
+                                        + retspec * (returner.return_solidity - returner.rally_skill)))
     return _clamp01(base + t["ace_swing"] * edge)
 
 
@@ -230,9 +235,18 @@ def _server_rally_win_prob(server: Player, returner: Player, first: bool,
     diff = (server.rally_skill - returner.rally_skill)
     style = _style_edge(server, returner, t["style_k"])
     # serve-vs-return shape on the serve+1 edge (deviations, see TUNE)
+    retspec = returner.tendency("retspec")
+    s_dev = server.serve_skill - server.rally_skill
     shape = t["serve_plus_swing"] * (
-        (server.serve_skill - server.rally_skill)
-        - (returner.return_game - returner.rally_skill) * (1.0 + returner.tendency("retspec")))
+        s_dev * (1.0 - 0.6 * retspec * (1.0 if s_dev > 0 else 0.0))
+        - (returner.return_game - returner.rally_skill) * (1.0 + retspec))
+    # The serve edge itself is small in this engine (aces ~7% of points, the
+    # serve+1 edge a constant), so the return specialist's whole reason to
+    # exist — being the player a big server cannot serve past — needs a
+    # behaviour-vs-behaviour term: the more the server plays through the serve
+    # (`bigserve`, and the serve-and-volleyer's `sv`) and the more the returner
+    # is built to take it (`retspec`), the more the server's edge is blunted.
+    shape -= t["tend_return_cross"] * retspec * (server.tendency("bigserve") + server.tendency("sv"))
     return _logistic(t["rally_slope"] * diff + serve_plus + bonus + style + net + shape
                      + _tendency_terms(server, returner))
 

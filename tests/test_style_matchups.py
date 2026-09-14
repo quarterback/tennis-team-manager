@@ -151,34 +151,36 @@ def test_style_era_is_in_the_reset_list():
     assert "jhsaa_style_era" in jhsaa.ERA_SETTINGS
 
 
-def test_pre_era_cohorts_keep_the_v1_shape_byte_for_byte(_fresh_style_era, monkeypatch):
-    """Era past everyone: the roster equals a build where BOTH tables are the
-    legacy v1 — i.e. the pre-era path takes the v1 table — and the gate splits
-    cohorts, not seasons (the dev_era test's shape)."""
+def test_pre_era_cohorts_keep_the_v1_shape_byte_for_byte(_fresh_style_era):
+    """Era past everyone: every player is a flat-drawn v1 style with no
+    trait; era at zero: the v2 draw (traits present) and different attributes;
+    era mid-roster: the cohorts before it are byte-identical to the all-legacy
+    build (the dev_era test's shape) and overall never moves either way."""
     s = jhsaa.load_schools("boys")[0]
     worldconfig.set("jhsaa_style_era", "9999")
     jhsaa.reset_schools()
-    legacy = {p.pid: dict(p.current) for p in jhsaa.build_roster(s, 2035)}
+    legacy_roster = jhsaa.build_roster(s, 2035)
+    legacy = {p.pid: dict(p.current) for p in legacy_roster}
+    assert {p.traits.get("style_trait", "none") for p in legacy_roster} == {"none"}
+    assert {p.traits["play_style"] for p in legacy_roster} <= set(dev.STYLES_V1)
     worldconfig.set("jhsaa_style_era", "0")
     jhsaa.reset_schools()
-    monkeypatch.setattr(dev, "STYLE_TABLES", {"v1": dev._STYLE_BIAS, "v2": dev._STYLE_BIAS})
-    both_v1 = {p.pid: dict(p.current) for p in jhsaa.build_roster(s, 2035)}
-    assert legacy == both_v1
-    monkeypatch.undo()
-    jhsaa.reset_schools()
-    new = {p.pid: (dict(p.current), p.entry_year) for p in jhsaa.build_roster(s, 2035)}
+    new_roster = jhsaa.build_roster(s, 2035)
+    new = {p.pid: dict(p.current) for p in new_roster}
     assert set(new) == set(legacy)
-    assert any(cur != legacy[pid] for pid, (cur, _) in new.items()), "gate never opened"
-    for pid, (cur, _) in new.items():          # and overall is untouched either way
+    assert any(cur != legacy[pid] for pid, cur in new.items()), "gate never opened"
+    for pid, cur in new.items():          # and overall is untouched either way
         a = PlayerAttributes(cur).overall_grade()
         b = PlayerAttributes(legacy[pid]).overall_grade()
         assert abs(a - b) < 0.35, pid
     worldconfig.set("jhsaa_style_era", "2034")
     jhsaa.reset_schools()
-    mixed = {p.pid: (dict(p.current), p.entry_year) for p in jhsaa.build_roster(s, 2035)}
-    for pid, (cur, entry) in mixed.items():
+    mixed = {p.pid: (dict(p.current), p.entry_year, p.traits.get("style_trait", "none"))
+             for p in jhsaa.build_roster(s, 2035)}
+    for pid, (cur, entry, trait) in mixed.items():
         if entry < 2034:
             assert cur == legacy[pid], "pre-era cohort re-shaped"
+            assert trait == "none"
 
 
 # --- compositional styles: secondary traits and engine tendencies -------------
