@@ -36,17 +36,25 @@ from engine import fast                                # noqa: E402
 from engine.match import simulate_match                # noqa: E402
 from engine.doubles import DoublesTeam, simulate_doubles  # noqa: E402
 
-STYLES = ("counterpuncher", "all_court", "aggressive_baseliner", "serve_first", "balanced")
-#: The agreed tournament: (winner, loser) at equal overall. Everything else ~50.
-TOURNAMENT = (("counterpuncher", "aggressive_baseliner"),
-              ("counterpuncher", "serve_first"),
-              ("serve_first", "aggressive_baseliner"),
-              ("aggressive_baseliner", "all_court"),
-              ("all_court", "serve_first"),
-              ("all_court", "counterpuncher"))
-#: Target angles on the style plane (degrees) — a style beats every style
-#: within a half-turn behind it, which is exactly TOURNAMENT.
-ANGLES = {"counterpuncher": 0, "all_court": 90, "aggressive_baseliner": 240, "serve_first": 300}
+STYLES = ("counterpuncher", "junkballer", "all_court", "serve_and_volley", "serve_first",
+          "aggressive_baseliner", "pusher", "balanced")
+#: Target angles on the semantic style plane (degrees): a style beats every
+#: style within a half-turn BEHIND it. The four cardinal styles are the
+#: owner's rotation; the three added styles sit between them.
+ANGLES = {"counterpuncher": 0, "junkballer": 51, "all_court": 103, "serve_and_volley": 154,
+          "serve_first": 206, "aggressive_baseliner": 257, "pusher": 309}
+#: The agreed edges, (winner, loser) at equal overall. CARDINAL is the owner's
+#: rotation (four equal 90° edges); ADDED are the new styles' clearest edges.
+CARDINAL = (("counterpuncher", "aggressive_baseliner"),
+            ("aggressive_baseliner", "serve_first"),
+            ("serve_first", "all_court"),
+            ("all_court", "counterpuncher"))
+ADDED = (("serve_and_volley", "counterpuncher"),      # 154° ahead of 0°
+         ("pusher", "aggressive_baseliner"),          # 309° ahead of 257°
+         ("all_court", "pusher"),                     # 103° ahead of 309° (154° gap)
+         ("junkballer", "counterpuncher"),            # 51° ahead of 0°
+         ("serve_first", "junkballer"))               # 206° ahead of 51° (155° gap)
+TOURNAMENT = CARDINAL + ADDED
 
 
 def pool(n: int, talent: float = 48.0, maturity: float = 0.85, shape: str = "v2",
@@ -127,7 +135,7 @@ def show(title: str, cells: dict) -> None:
     # for every style — the cross term is meant to be the ONLY style effect.
     strength = {a: 100 * sum(cells[(a, b)][0] for b in STYLES if b != a) / (len(STYLES) - 1)
                 for a in STYLES}
-    print("  strength vs field: " + "  ".join(f"{a[:11]} {v:.1f}" for a, v in strength.items()))
+    print("  strength vs field: " + "  ".join(f"{a[:9]} {v:.1f}" for a, v in strength.items()))
 
 
 def angles(pl: dict) -> None:
@@ -152,7 +160,8 @@ def _cluster_devs(p) -> list[float]:
 
 
 def solve(n: int = 200, ridge: float = 1e-3) -> None:
-    """Re-fit STYLE_AXIS_X/Y (pure Python least squares) on the REALISED mean
+    """DIAGNOSTIC — the axes shipped are SEMANTIC now (engine.fast); this re-fits
+    them by least squares on the REALISED mean
     cluster deviations of generated v2 players per style — not on the raw
     shift table: the per-attribute talent noise, the weight normalisation and
     the 18% net-specialist roll all move where a label's players actually land,
@@ -163,7 +172,7 @@ def solve(n: int = 200, ridge: float = 1e-3) -> None:
     d = {}
     for s in ANGLES:
         vs = [_cluster_devs(p) for p in pl[s]]
-        d[s] = [sum(v[i] for v in vs) / len(vs) for i in range(5)]
+        d[s] = [sum(v[i] for v in vs) / len(vs) for i in range(len(cl))]
     R = 0.15                                   # target radius, unit scale
 
     def lin(m, v):
@@ -181,9 +190,10 @@ def solve(n: int = 200, ridge: float = 1e-3) -> None:
     lam = ridge                                # ridge: bounds the weights (a flipped
                                                # edge wants huge ones, which only
                                                # amplify per-player noise)
-    ata = [[sum(r[i] * r[j] for r in rows) + (lam if i == j else 0) for j in range(5)] for i in range(5)]
-    a = lin(ata, [sum(r[i] * t for r, t in zip(rows, tx)) for i in range(5)])
-    b = lin(ata, [sum(r[i] * t for r, t in zip(rows, ty)) for i in range(5)])
+    k = len(cl)
+    ata = [[sum(r[i] * r[j] for r in rows) + (lam if i == j else 0) for j in range(k)] for i in range(k)]
+    a = lin(ata, [sum(r[i] * t for r, t in zip(rows, tx)) for i in range(k)])
+    b = lin(ata, [sum(r[i] * t for r, t in zip(rows, ty)) for i in range(k)])
     print("STYLE_AXIS_X =", {c: round(w, 3) for c, w in zip(cl, a)})
     print("STYLE_AXIS_Y =", {c: round(w, 3) for c, w in zip(cl, b)})
     for s in ANGLES:
@@ -200,6 +210,7 @@ def main() -> None:
     ap.add_argument("--solve", action="store_true")
     ap.add_argument("--ridge", type=float, default=1e-3)
     ap.add_argument("--profile", choices=("hs", "college", "both"), default="both")
+    ap.add_argument("--angles-only", action="store_true", help="print where the styles land and stop")
     ap.add_argument("--shape", choices=("v1", "v2"), default="v2",
                     help="which play-style shift table the pool is generated with")
     ap.add_argument("--fidelity", choices=("fast", "full"), default="fast",
@@ -215,11 +226,13 @@ def main() -> None:
         else:
             fast.TUNE["style_k"] = args.k
     from engine import rally as _rally
-    print(f"fidelity={args.fidelity}  fast STYLE_K={fast.TUNE['style_k']} (hs {fast.HS_PROFILE['style_k']})"
+    print(f"fidelity={args.fidelity}  fast style_k={fast.TUNE['style_k']} (hs {fast.HS_PROFILE['style_k']})"
           f"  point-engine style_k={_rally.TUNE['style_k']}  style_fade={fast.TUNE['style_fade']}")
     pl = pool(args.n, shape=args.shape)
     print(f"\nwhere generated {args.shape} players land on the plane:")
     angles(pl)
+    if args.angles_only:
+        return
     profiles = {"hs": fast.HS_PROFILE, "college": None}
     names = ("hs", "college") if args.profile == "both" else (args.profile,)
     if args.fidelity == "full":

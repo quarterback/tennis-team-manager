@@ -213,3 +213,128 @@ UI — a separate change, not started.
    doubles-construction rule; the new term adds who a pair TROUBLES. If the
    owner wants doubles pairing advice surfaced in the lineup editor, the
    composition ranking is the stronger, simpler signal to show.
+
+## Second cut (owner rules 2026-09, same week): the rotation, eight styles, net play, and the flight pages
+
+The owner took the alternative offered above — the rotation the attributes
+express on their own — and widened the brief: the classic styles real tennis
+has always had, the singles net-play gap fixed in the engine, and the
+flight-efficiency table as a page in the game and in the analytics sidecar.
+
+**The plane is SEMANTIC now.** X = defence (return + movement) vs serve, Y = net
+vs baseline, both over attribute-cluster deviations (a sixth `touch` cluster —
+drops, lobs, slice, court vision, passing — carries the junkballer's tools and
+has zero axis weight). The fitted axes of the first cut are gone with the
+flipped edge that forced them. Every style is one point and the whole set is one
+rotation, a style beating everything within a half-turn behind it:
+
+| style | angle | what the shifts say |
+|---|---:|---|
+| counterpuncher | 0° | return +8, movement +7, serve −5 |
+| junkballer | ~51° | touch +9, net +3, return/movement +4, baseline −3 |
+| all_court | ~103° | net +9, baseline −6, serve +3 |
+| serve_and_volley | ~154° | serve +10, net +3, return −6, baseline −4 |
+| serve_first | ~206° | serve +10, baseline +5, return/movement −5, net −5 |
+| aggressive_baseliner | ~257° | baseline +11, net −8 |
+| pusher | ~309° | return +6, movement +5, baseline +6, net −8 |
+| balanced | origin | flat — neutral against everyone |
+
+On the four cardinals that is the owner's rotation: counterpuncher >
+aggressive_baseliner > serve_first > all_court > counterpuncher, opposites even.
+
+**‼️ The seven shaped styles are EVENLY spaced (51.4°), and that is a fairness
+requirement, not tidiness.** The first placement kept the four cardinals at 90°
+and squeezed the three new styles between two of them; measured, serve_and_volley
+and serve_first sat at 59-61% against the field and counterpuncher and pusher at
+40% — a style with five styles behind it and one ahead is simply stronger. Even
+spacing gives every style three behind and three ahead. The realised angle drifts
++5-10° in Y from the 18% net-specialist roll and the weight normalisation, so
+`--angles-only` is the check after any table edit.
+
+**The draw is weighted** (`STYLE_DRAW_V2`: balanced 18 · aggressive_baseliner 20 ·
+counterpuncher 16 · all_court 14 · serve_first 12 · serve_and_volley 8 · pusher 7 ·
+junkballer 5) — the added styles are real but rarer, as in any field. `rng.choices`
+is one draw like `rng.choice`, so the seed stream is unchanged; the v1 five-way
+flat draw stays behind the same `style_era()` gate as the v1 table.
+
+**Net play in singles is priced now.** Seven of the 49 attributes (net_play,
+volley_touch, overhead, approach_shot, transition_game, poaching,
+doubles_chemistry) counted toward a player's grade and decided nothing in a
+singles point, which is what made the first cut's net trade a free upgrade for
+the net− styles. `engine.rally` now sends a neutral rally to the net at a
+per-player rate (`approach_base` 0.14, plus `sv_base` behind a first serve, moved
+by `approach_game − rally_skill`), and the exchange adds `net_slope × (netter's
+net_game − passer's passing_game)` to the rally logit. ‼️ Both as DEVIATIONS from
+each player's own rally level: read raw the net term was a second copy of the
+level gap and lifted the favourite ~4 points across the 3-12 OVR bands (measured
+67.7 → 72.4 at 3-6, 79.3 → 83.6 at 6-9); as deviations the curve is unchanged to
+the point (55.1/67.7/79.3/88.6/94.9/97.8 off vs 53.8/67.3/80.3/87.5/94.9/97.5 on).
+`PlayerStats.net_points` / `net_points_won` (`npt`/`npw`) record the approaches.
+The fast model's rally composite carries 10% net game so a net player is not dead
+weight there either; synthetic players fall back to `rally_skill` and are
+net-neutral, so nothing pre-existing moves.
+
+**Flight efficiency shipped twice.** `/jhsaa/flights` (Rankings sub-rail): every
+program and flight in the class — N, wins, actual %, expected % (a logistic on
+the OVR gap plus home court, FITTED on the season's own varsity flights by
+Newton's method), the difference, and who held the flight most; class, flight and
+min-matches filters, sortable. Rosters are rebuilt to resolve the archive's names
+the way `jhsaa_gap_bands` does, so it runs behind the deferred job and memoises in
+`_flighteff_cache`. The sidecar's `metrics/flights.html` is the same table off
+`ability.flight_table`, priced by the `WinCurve` the Talent view already fits.
+Both say what the 2083 audit found out the hard way: a row of 25-35 matches
+swings ~9 points by chance, so read N and trust programs that move the same way
+across several flights.
+
+
+## Third cut (owner rule 2026-09): compositional styles — primary + secondary trait
+
+The owner's brief: expand only with styles that change what the engine DOES —
+rally geometry, point length, net frequency, variance — and make style partly
+compositional rather than 25 exclusive buckets. So a player is a PRIMARY (the
+eight above) plus, about 60% of the time, one SECONDARY trait:
+
+| trait | shifts (half a primary's size) | tendencies |
+|---|---|---|
+| net_rusher | net +5, movement +2, baseline −3 | approach +0.12 |
+| chip_and_charge | return +4, net +4, baseline −4 | chip +0.15 (approach off the return), retspec 0.2 |
+| first_strike | baseline +4, serve +3, movement −3, touch −2 | strike 0.6 |
+| grinder | baseline +3, movement +3, serve −3, net −3 | grind 0.6 |
+| retriever | movement +6, return +2, net −3, serve −3 | cover 0.6, grind 0.15 |
+| heavy_topspin | baseline +4, net −2 | topspin 0.5 (opponent approaches less), grind 0.15 |
+| flat_hitter | baseline +3, serve +2, movement −2, touch −2 | strike 0.4 |
+| slice_specialist | touch +6, baseline −3 | slice 0.6 (blunts the opponent's strike), approach 0.04 |
+| return_specialist | return +7, movement +2, serve −5 | retspec 0.6 |
+| big_server | serve +8, return −3, movement −3 | bigserve 0.5, sv 0.05 |
+
+Primaries carry tendencies too (counterpuncher grind 0.25, aggressive_baseliner
+strike 0.3, all_court approach 0.06, serve_and_volley sv 0.30, serve_first
+bigserve 0.15, pusher grind 0.35 / cover 0.15 / topspin 0.2, junkballer slice
+0.4), so the pairs the owner named apart really are apart: counterpuncher +
+grinder refuses to miss AND redirects, aggressive_baseliner + first_strike wants
+it over now, all_court + net_rusher lives at the net, serve_first + big_server's
+serve wins the point outright.
+
+**What a tendency does in the engine** (`engine.rally`, point engine only — the
+fast model sees a trait through the plane position it moves):
+- `approach` / `sv` / `chip` add to the per-rally approach rates (server, behind
+  a first serve, returner).
+- `strike`, `grind`, `cover` are rally-logit MATCHUPS on attribute deviations:
+  a first-striker's attack deviation against the opponent's steadiness
+  deviation, a grinder's steadiness against the opponent's attack, a
+  retriever's court cover against the opponent's attack. `slice` blunts the
+  opponent's strike term. Deviations, never levels — the favourite-rate curve
+  is unchanged.
+- `retspec` and `bigserve` scale the return's and the serve's share of the ace
+  model and of `serve_plus_swing` — the new RETURN PRICING: the server's serve+1
+  edge flexes with (serve deviation − return deviation), which is what lets a
+  return-built player beat a serve-built one at equal grade (before it, the
+  return reached a singles point only through the ace offset and the
+  counterpuncher measured ~44% against the field).
+- `tend_share` tilts how a won point is labelled: first-strikers post more
+  winners AND more errors, grinders fewer of both.
+
+Pinned by `tests/test_style_matchups.py`: traits are weighted in v2 and absent
+in v1; every emitted tendency is one the engine reads; a net rusher approaches
+>1.4× a balanced player, a first-striker's winners and errors both rise, a
+grinder's both fall; return_specialist beats big_server at equal grade.

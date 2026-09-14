@@ -46,6 +46,9 @@ _STYLE_CLUSTERS = {
     "net":      ("net_play", "volley_touch", "overhead", "poaching", "doubles_chemistry",
                  "approach_shot", "transition_game"),
     "movement": ("footwork", "speed", "agility", "balance"),
+    # Touch and variety (owner rule 2026-09) — the junkballer's and the pusher's
+    # tools. In the v2 table only; v1 never shifts it.
+    "touch":    ("drop_touch", "lob_touch", "slice_control", "court_vision", "passing_precision"),
 }
 # Pre-normalization cluster shifts in grade points (20-80 scale).
 _STYLE_BIAS = {
@@ -55,35 +58,121 @@ _STYLE_BIAS = {
     "all_court":            {"net": 5, "movement": 2, "return": 1, "baseline": -2},
     "serve_first":          {"serve": 6, "net": 2, "return": -3, "movement": -2},
 }
-# V2 (owner rule 2026-09 — the style-matchup cross term, engine.fast.style_edge):
-# the same five clusters, shifted roughly twice as far, and every style touches
-# all five so the per-cluster jitter draws the same count for each. Bigger shifts
-# do NOT make a style stronger (still weight-normalised: overall is preserved to
-# the clamp) — they make the LABEL predictive of where a player lands on the
-# engine's style plane, against the ±1.2 jitter and the 18% net-specialist roll.
-# ‼️ THE NET TRADE STAYS SMALL (±2). Overall-preservation is a statement about
-# the GRADE; the point engine prices net play only in doubles, so a big net+ /
-# net- trade is a free singles upgrade for the net- styles: a draft with net -9
-# on the baseliner and +9 on the all-courter measured, at ZERO cross term and
-# equal overall, all_court 39-47% and aggressive_baseliner 55-65% against the
-# field under full fidelity. Check `scripts/style_matchup_calibration.py
-# --fidelity full --k 0` (the "strength" line) before moving a row.
-# The four shaped styles are placed so the fitted axes (engine.fast.STYLE_AXIS_X /
-# _Y) put them at 0 / 90 / 240 / 300 degrees — the agreed tournament:
-# counterpuncher > aggressive_baseliner and serve_first; serve_first >
-# aggressive_baseliner; aggressive_baseliner > all_court; all_court > serve_first
-# and counterpuncher; balanced neutral. Move a row here and re-solve the axes
-# (scripts/style_matchup_calibration.py --solve). Which cohorts draw it is the
-# CALLER's decision (`generate_prospect(shape=)`): the JHSAA regenerates players
-# from seed and gates on `jhsaa.style_era()`; college/pro rosters are persisted,
-# so there only players generated from now on carry it.
+# V2 (owner rule 2026-09 — the style-matchup cross term, engine.fast.style_edge,
+# and the widened style set). EIGHT styles: the five originals plus the ones
+# real tennis has always had — serve_and_volley (the classic attacking game),
+# pusher (the heavy-defensive moonballer who gives nothing away) and junkballer
+# (slice, drops, lobs, no rhythm). Shifts are roughly twice v1's and every row
+# touches all six clusters, so the per-cluster jitter draws the same count for
+# each. Still weight-normalised: overall is preserved to the clamp. Bigger
+# shifts do NOT make a style stronger — they make the LABEL predictive of where
+# a player lands on the engine's SEMANTIC style plane (engine.fast.STYLE_AXIS_X:
+# return+movement vs serve; _Y: net vs baseline), against the ±1.2 jitter and
+# the 18% net-specialist roll:
+#   counterpuncher 0° · junkballer ~51° · all_court ~103° · serve_and_volley
+#   ~154° · serve_first ~206° · aggressive_baseliner ~257° · pusher ~309°
+# — the seven shaped styles EVENLY spaced (51.4° apart), so every style has
+# three styles behind it and three ahead and no style is stronger against the
+# field than another (measured: with the four cardinals at 90° and the three
+# added ones squeezed between, serve_and_volley/serve_first sat at 59-61%
+# against the field and counterpuncher/pusher at 40%). A style beats every
+# style within a half-turn behind it (the rotation the owner chose:
+# counterpuncher > aggressive_baseliner > serve_first > all_court >
+# counterpuncher, opposites even). Net play is priced in singles points
+# since the same rule (engine.rally's net exchange), so a net trade is no
+# longer a free singles upgrade for the net- styles — still check
+# `scripts/style_matchup_calibration.py --fidelity full --k 0` (the "strength
+# vs field" line, ~50 for every style) before moving a row. Which cohorts draw
+# it is the CALLER's decision (`generate_prospect(shape=)`): the JHSAA
+# regenerates players from seed and gates on `jhsaa.style_era()`; college/pro
+# rosters are persisted, so there only players generated from now on carry it.
 _STYLE_BIAS_V2 = {
     "balanced":             {},
-    "counterpuncher":       {"serve": -7, "return": 8, "baseline": 3, "net": -1, "movement": 4},
-    "all_court":            {"serve": 5, "return": 4, "baseline": -6, "net": 2, "movement": 5},
-    "aggressive_baseliner": {"serve": -2, "return": -4, "baseline": 8, "net": -1, "movement": -2},
-    "serve_first":          {"serve": 10, "return": -2, "baseline": -3, "net": 1, "movement": -6},
+    "counterpuncher":       {"serve": -5, "return": 8, "baseline": 1, "net": -1, "movement": 7, "touch": 2},
+    "junkballer":           {"serve": -3, "return": 4, "baseline": -3, "net": 3, "movement": 4, "touch": 9},
+    "all_court":            {"serve": 3, "return": 1, "baseline": -6, "net": 9, "movement": 1, "touch": 2},
+    "serve_and_volley":     {"serve": 10, "return": -6, "baseline": -4, "net": 3, "movement": -3, "touch": 0},
+    "serve_first":          {"serve": 10, "return": -5, "baseline": 5, "net": -5, "movement": -5, "touch": -1},
+    "aggressive_baseliner": {"serve": 2, "return": -2, "baseline": 11, "net": -8, "movement": -2, "touch": -2},
+    "pusher":               {"serve": -4, "return": 6, "baseline": 6, "net": -8, "movement": 5, "touch": 3},
 }
+# SECONDARY TRAITS (owner rule 2026-09, compositional styles). A player is a
+# PRIMARY style plus, ~60% of the time, one secondary trait — "aggressive
+# baseliner + net rusher", "counterpuncher + slice specialist" — rather than
+# one of 25 exclusive buckets. Each trait does two things: it SHIFTS the
+# attribute clusters (about half a primary's magnitude, summed with the
+# primary's before the one weight-normalisation, so it moves the player on the
+# style plane), and it sets engine TENDENCIES (`_TRAIT_TENDENCY` /
+# `_STYLE_TENDENCY`, summed onto `Player.tend`) — the behaviour engine.rally
+# reads: how often they come in, whether they end points fast or drag them
+# out, what the serve or the return is for. v2 only; v1 cohorts carry no trait.
+#
+# Pairs that sound alike and must not play alike (owner): counterpuncher
+# redirects pace, GRINDER refuses to miss; aggressive_baseliner sustains an
+# attacking rally, FIRST_STRIKE wants it over in 1-4 shots; all_court adapts,
+# NET_RUSHER seeks the forecourt; serve_first's serve creates an edge,
+# BIG_SERVER's serve wins the point, serve_and_volley's serve is the way in.
+_TRAIT_BIAS = {
+    "none":              {},
+    "net_rusher":        {"net": 5, "movement": 2, "baseline": -3, "touch": 1, "serve": 0, "return": 0},
+    "chip_and_charge":   {"return": 4, "net": 4, "baseline": -4, "serve": -1, "movement": 0, "touch": 1},
+    "first_strike":      {"baseline": 4, "serve": 3, "movement": -3, "touch": -2, "return": -1, "net": 0},
+    "grinder":           {"baseline": 3, "movement": 3, "serve": -3, "net": -3, "return": 1, "touch": 0},
+    "retriever":         {"movement": 6, "return": 2, "baseline": -2, "net": -3, "serve": -3, "touch": 0},
+    "heavy_topspin":     {"baseline": 4, "movement": 1, "net": -2, "serve": -1, "touch": -1, "return": 0},
+    "flat_hitter":       {"baseline": 3, "serve": 2, "net": -1, "movement": -2, "touch": -2, "return": 0},
+    "slice_specialist":  {"touch": 6, "net": 1, "return": 1, "baseline": -3, "serve": -1, "movement": 0},
+    "return_specialist": {"return": 7, "movement": 2, "serve": -5, "net": -2, "baseline": 0, "touch": 0},
+    "big_server":        {"serve": 8, "return": -3, "movement": -3, "baseline": -1, "net": 0, "touch": 0},
+}
+TRAIT_DRAW_V2 = {"none": 40, "net_rusher": 6, "chip_and_charge": 4, "first_strike": 7,
+                 "grinder": 8, "retriever": 6, "heavy_topspin": 8, "flat_hitter": 7,
+                 "slice_specialist": 5, "return_specialist": 5, "big_server": 4}
+#: Engine tendencies (engine.rally.TENDENCY_KEYS) per primary and per trait.
+_STYLE_TENDENCY = {
+    "balanced":             {},
+    "counterpuncher":       {"grind": 0.25},
+    "junkballer":           {"slice": 0.4, "approach": 0.03},
+    "all_court":            {"approach": 0.06},
+    "serve_and_volley":     {"sv": 0.30, "approach": 0.04},
+    "serve_first":          {"bigserve": 0.15},
+    "aggressive_baseliner": {"strike": 0.30},
+    "pusher":               {"grind": 0.35, "cover": 0.15, "topspin": 0.2},
+}
+_TRAIT_TENDENCY = {
+    "none":              {},
+    "net_rusher":        {"approach": 0.12},
+    "chip_and_charge":   {"chip": 0.15, "retspec": 0.2},
+    "first_strike":      {"strike": 0.6},
+    "grinder":           {"grind": 0.6},
+    "retriever":         {"cover": 0.6, "grind": 0.15},
+    "heavy_topspin":     {"topspin": 0.5, "grind": 0.15},
+    "flat_hitter":       {"strike": 0.4},
+    "slice_specialist":  {"slice": 0.6, "approach": 0.04},
+    "return_specialist": {"retspec": 0.6},
+    "big_server":        {"bigserve": 0.5, "sv": 0.05},
+}
+
+
+def tendencies(traits: dict) -> dict:
+    """The engine tendencies a player carries: primary style + secondary trait
+    summed (v1 cohorts — no `style_trait` and a v1 style — carry none)."""
+    out: dict = {}
+    for tbl, key in ((_STYLE_TENDENCY, traits.get("play_style", "")),
+                     (_TRAIT_TENDENCY, traits.get("style_trait", "none"))):
+        for k, v in tbl.get(key, {}).items():
+            out[k] = out.get(k, 0.0) + v
+    return out
+
+
+#: The five legacy labels, drawn flat — what v1 cohorts (and every archived
+#: JHSAA roster) carry.
+STYLES_V1 = ("balanced", "aggressive_baseliner", "counterpuncher", "all_court", "serve_first")
+#: The v2 draw: weighted the way a real field is — the three added styles are
+#: real but rarer. `rng.choices` consumes ONE draw, like `rng.choice` did.
+STYLE_DRAW_V2 = {"balanced": 18, "aggressive_baseliner": 20, "counterpuncher": 16,
+                 "all_court": 14, "serve_first": 12, "serve_and_volley": 8,
+                 "pusher": 7, "junkballer": 5}
 STYLE_TABLES = {"v1": _STYLE_BIAS, "v2": _STYLE_BIAS_V2}
 # A minority are pronounced net/doubles specialists regardless of style label —
 # big at the net, ordinary off the ground. This is the main source of doubles-vs-
@@ -93,7 +182,7 @@ _NET_SPECIALIST_BIAS = {"net": 11, "movement": 3, "baseline": -7, "serve": -2}
 
 
 def _apply_style_profile(potential: dict, style: str, rng: random.Random,
-                         table: dict | None = None) -> None:
+                         table: dict | None = None, trait: str = "none") -> None:
     """Shift correlated attribute clusters by play-style + a net-specialist roll,
     in place on `potential` (ceilings, so the profile persists through growth).
     Weight-normalized: a uniform offset is removed so the OVERALL grade is
@@ -101,6 +190,8 @@ def _apply_style_profile(potential: dict, style: str, rng: random.Random,
     keeps the STR/talent distribution intact. `table` picks the shift table
     (`STYLE_TABLES`; the legacy v1 by default)."""
     shifts = dict((table if table is not None else _STYLE_BIAS).get(style, {}))
+    for cl, v in _TRAIT_BIAS.get(trait or "none", {}).items():
+        shifts[cl] = shifts.get(cl, 0) + v
     if rng.random() < NET_SPECIALIST_RATE:
         for cl, d in _NET_SPECIALIST_BIAS.items():
             shifts[cl] = shifts.get(cl, 0) + d
@@ -306,12 +397,19 @@ def _draw_interest(rng: random.Random) -> tuple[int, float, float]:
     return 1, rng.uniform(0.05, 0.50), 1.0
 
 
-def _draw_traits(rng: random.Random) -> dict[str, str]:
+def _draw_traits(rng: random.Random, shape: str = "v1") -> dict[str, str]:
     handedness = "left" if rng.random() < 0.12 else "right"
+    trait = "none"
+    if shape == "v1":
+        style = rng.choice(STYLES_V1)
+    else:
+        style = rng.choices(list(STYLE_DRAW_V2), weights=list(STYLE_DRAW_V2.values()))[0]
+        trait = rng.choices(list(TRAIT_DRAW_V2), weights=list(TRAIT_DRAW_V2.values()))[0]
     return {
         "handedness": handedness,
         "backhand_style": rng.choice(("two_handed", "one_handed")),
-        "play_style": rng.choice(("balanced", "aggressive_baseliner", "counterpuncher", "all_court", "serve_first")),
+        "play_style": style,
+        "style_trait": trait,
         "temperament": rng.choice(("steady", "fiery", "analytical", "fearless", "volatile")),
     }
 
@@ -455,7 +553,8 @@ class Prospect:
         # Carry the full rich table (as [0,1] units) so the point engine can read
         # specific attributes, not just the 9 collapsed drivers.
         rich = {a: grade_to_unit(attrs.grades[a]) for a in RICH_ATTRS}
-        return Player(name=self.name, country=self.country, rich=rich, **drivers)
+        return Player(name=self.name, country=self.country, rich=rich,
+                      tend=tendencies(self.traits or {}) or None, **drivers)
 
     # ---- development: deterministically close the gap to the ceiling ----
     def develop(self, scale: float = 1.0) -> None:
@@ -599,11 +698,12 @@ def generate_prospect(rng: random.Random, name: str, country: str = "",
     # never penalised — they generate at tour-average with full variance.
     top = float(GRADE_MAX if ceiling_max is None else ceiling_max)
     talent = _clamp(talent + nation_talent.talent_shift(country), 24.0, top)
-    traits = _draw_traits(rng)
+    traits = _draw_traits(rng, shape)
     potential = {a: _clamp(rng.gauss(talent, 6), GRADE_MIN, top) for a in RICH_ATTRS}
     # Give the player a real SHAPE (net specialist / baseliner / server) instead of
     # a flat draw around one mean — weight-normalized so overall/STR is unchanged.
-    _apply_style_profile(potential, traits["play_style"], rng, STYLE_TABLES[shape])
+    _apply_style_profile(potential, traits["play_style"], rng, STYLE_TABLES[shape],
+                         traits.get("style_trait", "none"))
 
     # Elite spike: a small, investment-scaled chance the nation produced a
     # blue-chip. Floors the ceiling bands so the player reads world-class at

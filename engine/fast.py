@@ -116,7 +116,7 @@ TUNE = {
     # players) through its own dial: its gap slope is 1.6x the singles one
     # (2.4 vs 1.5; 1.44 vs 0.9 under HS), so the same edge lands hotter there —
     # measured 61-63% where singles gave 56-58 at one dial.
-    "d_style_k": 1.5,
+    "d_style_k": 0.6,
 }
 
 
@@ -198,8 +198,8 @@ HS_PROFILE = {
     # The style cross term (engine.fast.style_edge) at this profile's scale:
     # the HS per-point curve bites more softly than the college hinge at small
     # gaps, so the same edge needs a larger dial to land the same ~56/44.
-    "style_k": 5.5,
-    "d_style_k": 1.8,
+    "style_k": 2.4,
+    "d_style_k": 0.75,
 }
 
 
@@ -323,22 +323,24 @@ STYLE_CLUSTERS = {
     "net":      ("net_play", "volley_touch", "overhead", "poaching", "doubles_chemistry",
                  "approach_shot", "transition_game"),
     "movement": ("footwork", "speed", "agility", "balance"),
+    "touch":    ("drop_touch", "lob_touch", "slice_control", "court_vision", "passing_precision"),
 }
-#: The two axes, as weights over the cluster DEVIATIONS (cluster mean minus the
-#: mean of all five). They are FITTED, not semantic: solved (least squares,
-#: scripts/style_matchup_calibration.py --solve) on the REALISED mean position
-#: of generated players per style (talent noise, weight normalisation and the
-#: net-specialist roll all move a label off its raw shift table) so the four
-#: shaped styles land at the angles that realise the agreed tournament —
-#: counterpuncher 0 deg, all_court 90, aggressive_baseliner 240, serve_first
-#: 300 — where on this plane a style beats every style within a half-turn
-#: behind it. A balanced (flat) player sits at the origin and has no edge
-#: against anybody. Re-solve if the v2 shifts move.
-STYLE_AXIS_X = {"serve": -0.445, "return": 1.830, "baseline": -0.351, "net": 0.760, "movement": -1.794}
-STYLE_AXIS_Y = {"serve": 0.478, "return": -0.137, "baseline": -0.544, "net": -1.808, "movement": 2.010}
-#: Edge scale: unit-gap per unit of x*y product. Calibrated so the strong edges
-#: of the tournament land ~56/44 at equal overall under BOTH profiles.
-STYLE_K = 4.0
+#: THE STYLE PLANE, two SEMANTIC axes over the cluster deviations (cluster mean
+#: minus the mean of all six). X is DEFENCE vs FIRST STRIKE — return and
+#: movement against serve; Y is NET vs BASELINE. A style beats every style
+#: within a half-turn BEHIND it (edge = y_a·x_b − x_a·y_b), which puts the
+#: eight styles in one rotation (owner rule 2026-09, replacing the fitted
+#: axes of the first cut):
+#:   counterpuncher 0° · junkballer ~51° · all_court ~103° · serve_and_volley
+#:   ~154° · serve_first ~206° · aggressive_baseliner ~257° · pusher ~309°
+#: — seven shaped styles evenly spaced, so counterpuncher > aggressive_baseliner
+#: > serve_first > all_court > counterpuncher on the four cardinal styles
+#: (opposites even) and every style has three behind it and three ahead. A balanced (flat) player sits at the origin.
+STYLE_AXIS_X = {"serve": -1.0, "return": 0.5, "baseline": 0.0, "net": 0.0, "movement": 0.5, "touch": 0.0}
+STYLE_AXIS_Y = {"serve": 0.0, "return": 0.0, "baseline": -1.0, "net": 1.0, "movement": 0.0, "touch": 0.0}
+#: Edge scale: unit-gap per unit of x*y product. Calibrated so the cardinal
+#: edges land ~56-58 at equal overall under BOTH profiles.
+STYLE_K = 1.5
 TUNE["style_k"] = STYLE_K
 
 
@@ -397,8 +399,14 @@ def _edges(p: Player) -> dict:
     return {
         "serve": 0.5 * p.serve_power + 0.5 * p.serve_placement,
         "ret": 0.5 * p.return_game + 0.25 * p.movement + 0.25 * p.consistency,
-        "rally": 0.35 * p.forehand + 0.35 * p.backhand
-                 + 0.15 * p.movement + 0.15 * p.consistency,
+        # Net game is part of the rally lane (owner rule 2026-09): the point
+        # engine now finishes points at the net, and the fast model's rally
+        # composite reads the same basket so a net player is not dead weight
+        # here either. `net_game` falls back to rally_skill for synthetic
+        # players, so the flat-player equivalence holds.
+        "rally": 0.30 * p.forehand + 0.30 * p.backhand
+                 + 0.15 * p.movement + 0.15 * p.consistency
+                 + 0.10 * p.net_game,
         "mental": p.mental,
         "stamina": p.stamina,
         "overall": o,

@@ -3900,37 +3900,87 @@ was a school marker, shipped "Baptist HS High School".
 - `flavor._HS_SUFFIX` (the no-list fallback) says "Day", never "Day School".
 
 ## Other notes
-- **‼️ STYLE MATCHUPS ARE A CROSS TERM, IN BOTH FIDELITIES (owner rule 2026-09,
-  `engine.fast.style_vector` / `style_edge`, `docs/AAR-style-matchup-cross-term.md`).**
-  `play_style` was a label the engine never read as a matchup: the fast model's
-  serve/return/rally lanes are LINEAR, so at equal overall every style-vs-style cell
-  measured 47-52% — and no cluster shift could fix that (a transitive ranking cannot
-  make A > B > C > A; the `_pair_synergy` lesson). Now each player is a point on a 2-D
-  style plane derived from attribute-cluster deviations and the edge is the
+- **‼️ STYLE MATCHUPS ARE A CROSS TERM ON A SEMANTIC STYLE PLANE, IN BOTH FIDELITIES
+  (owner rule 2026-09, `engine.fast.style_vector` / `style_edge`,
+  `docs/AAR-style-matchup-cross-term.md`).** `play_style` was a label the engine never
+  read as a matchup: the fast model's serve/return/rally lanes are LINEAR, so at equal
+  overall every style-vs-style cell measured 47-52% — and no cluster shift could fix
+  that (a transitive ranking cannot make A > B > C > A; the `_pair_synergy` lesson).
+  Now each player is a point on a plane — X = defence (return + movement) vs serve,
+  Y = net vs baseline, over attribute-cluster deviations — and the edge is the
   antisymmetric product `y_a·x_b − x_a·y_b`: zero-sum in a match, zero-mean over a
-  league, faded to zero as the overall gap reaches `style_fade` (~9 OVR). Agreed
-  tournament: counterpuncher > aggressive_baseliner and serve_first; serve_first >
-  aggressive_baseliner; aggressive_baseliner > all_court; all_court > serve_first and
-  counterpuncher; balanced neutral — realised by the four shaped styles sitting at
-  0/90/240/300° (a style beats everything within a half-turn behind it).
-  - **The axes are FITTED, not semantic** (`STYLE_AXIS_X/Y`; `scripts/
-    style_matchup_calibration.py --solve`, on the REALISED positions of generated
-    players) — the owner's tournament pits the two natural opposite pairs head to
-    head, which no semantic plane can express. Move a row of `development.
-    _STYLE_BIAS_V2` and re-solve.
-  - **‼️ THE COLLEGE SEASON RUNS THE POINT ENGINE**, so the term is wired THREE
-    places with their own dials: `fast.TUNE["style_k"]`/`d_style_k` (+ the HS
-    profile's), `rally.TUNE["style_k"]`, `doubles.TUNE["style_k"]`. A dial change in
-    one fidelity is not a change in the other.
-  - **‼️ "OVERALL IS PRESERVED" IS ABOUT THE GRADE, NOT STRENGTH.** The point engine
-    prices net play only in doubles, so a big net+/net− trade in the v2 table made
-    all_court the weakest singles style (39-47%) at ZERO cross term. The net trade
-    stays ±2; the calibration's `--fidelity full --k 0` "strength vs field" line must
-    read ~50 for every style before a row moves.
-  - JHSAA cohorts regenerate from seed → `jhsaa.style_era()` gates the v2 table
-    (`generate_prospect(shape=)`, in `ERA_SETTINGS`); college/pro rosters are
-    persisted, so no gate there. Synthetic `random_player`s have no rich table and sit
-    at the origin — every pre-existing engine test is byte-identical.
+  league, faded to zero as the overall gap reaches `style_fade` (~9 OVR). A style
+  beats every style within a half-turn BEHIND it, so the whole set is ONE rotation:
+  counterpuncher 0° · junkballer ~51° · all_court ~103° · serve_and_volley ~154° ·
+  serve_first ~206° · aggressive_baseliner ~257° · pusher ~309° (seven shaped styles
+  evenly spaced; `balanced` at the origin, neutral). On the four cardinals that is the
+  owner's rotation — counterpuncher > aggressive_baseliner > serve_first > all_court >
+  counterpuncher — with opposites even.
+  - **‼️ EIGHT STYLES, WEIGHTED DRAW, ERA-GATED.** `development.STYLE_DRAW_V2` adds the
+    styles real tennis has always had — serve_and_volley, pusher (the heavy-defensive
+    moonballer), junkballer (slice, drops, lobs) — drawn weighted (`rng.choices`, ONE
+    draw like `rng.choice`); `STYLES_V1` is the flat five every archived JHSAA roster
+    carries. `_STYLE_BIAS_V2` places each style at its angle (a sixth `touch` cluster
+    for the junkballer's tools). JHSAA cohorts regenerate from seed → `jhsaa.style_era()`
+    gates the whole v2 draw+table (`generate_prospect(shape=)`, in `ERA_SETTINGS`);
+    college/pro rosters are persisted, so no gate there. Nothing in the UI names a
+    style; the research export's `style` column carries the new labels.
+  - **‼️ THE STYLES MUST STAY EVENLY SPACED.** With four cardinals at 90° and the three
+    added styles squeezed between two of them, serve_and_volley/serve_first sat at
+    59-61% against the field and counterpuncher/pusher at 40% — a rotation is only
+    fair when every style has the same number behind it as ahead. Check
+    `scripts/style_matchup_calibration.py --angles-only` after any table edit; the
+    realised angle drifts +5-10° in Y from the net-specialist roll, so aim low.
+  - **‼️ NET PLAY IS PRICED IN SINGLES POINTS NOW** (`engine.rally` `approach_base` /
+    `net_slope`, `Player.net_game` / `approach_game` / `passing_game`). Seven of the
+    49 attributes counted toward the grade and decided nothing in a singles point, so
+    any net trade was a free singles upgrade for the net− styles (all_court measured
+    39-47% at ZERO cross term). A rally now goes to the net at a per-player rate and the
+    exchange is `net_game − passing_game` as DEVIATIONS from each player's own rally
+    level — read raw it lifted the favourite ~4 points across the 3-12 OVR bands and
+    re-steepened the calibrated curve. Approach counts land in `PlayerStats.net_points`
+    / `net_points_won` (`npt`/`npw`). The fast model's rally composite carries 10% net.
+  - **‼️ THE COLLEGE SEASON RUNS THE POINT ENGINE**, so the term is wired FOUR places
+    with their own dials: `fast.TUNE["style_k"]`/`d_style_k` (+ the HS profile's),
+    `rally.TUNE["style_k"]`, `doubles.TUNE["style_k"]`. Calibrate with
+    `scripts/style_matchup_calibration.py` (`--fidelity full`, `--doubles`, `--k 0` for
+    the "strength vs field" line, which must read ~50 for every style before a row
+    moves — the cross term is meant to be the ONLY style effect).
+  - Synthetic `random_player`s have no rich table, sit at the origin and are net-neutral
+    — every pre-existing engine test is byte-identical.
+  - **‼️ STYLE IS COMPOSITIONAL: PRIMARY + SECONDARY TRAIT (owner rule 2026-09).** A
+    player is one of the eight primaries plus, ~60% of the time, one `style_trait`
+    (`development.TRAIT_DRAW_V2`: net_rusher · chip_and_charge · first_strike · grinder ·
+    retriever · heavy_topspin · flat_hitter · slice_specialist · return_specialist ·
+    big_server; else `none`) — "aggressive baseliner + net rusher", never a 25-bucket
+    label. A trait does TWO things: `_TRAIT_BIAS` shifts the clusters (half a primary's
+    size, summed with the primary's before the one normalisation, so it MOVES the
+    player on the plane), and `_TRAIT_TENDENCY` / `_STYLE_TENDENCY` set engine
+    TENDENCIES summed onto `Player.tend` (`development.tendencies`) — behaviour, read by
+    `engine.rally` only (`TENDENCY_KEYS`: approach · sv · chip · strike · grind · cover ·
+    slice · retspec · bigserve · topspin). Every tendency term is a DEVIATION or a
+    matchup, never a level bonus, so the favourite-rate curve holds; `tend_share` only
+    tilts how a won point is LABELLED (winners/errors). The pairs the owner named apart
+    behave apart: counterpuncher redirects (grind 0.25), grinder refuses to miss (0.6);
+    aggressive_baseliner sustains (strike 0.3), first_strike ends it (0.6); all_court
+    adapts (approach 0.06), net_rusher seeks the net (0.12); serve_first's serve creates
+    an edge (bigserve 0.15), big_server's wins the point (0.5), serve_and_volley's is the
+    way in (sv 0.30). `serve_plus_swing` prices the RETURN in the rally (deviations) —
+    without it a return-built player measured ~44% against the field. The fast model
+    reads the trait only through the plane. v1 cohorts carry `none` (gated with the
+    table); the research export carries `style_trait` beside `style`.
+- **‼️ FLIGHT EFFICIENCY — `/jhsaa/flights` and the sidecar's `metrics/flights.html`
+  (owner request 2026-09, from the 2083 export audit).** One row per program and
+  flight: actual win rate beside the rate the two sides' grades predicted, and the
+  difference, with who held the flight most. In the game (`world.jhsaa_flight_
+  efficiency`) the expectation is a logistic on the OVR gap plus home court FITTED on
+  the season's own varsity flights, rosters rebuilt to resolve the archive's names (the
+  `jhsaa_gap_bands` idiom: ~20 s cold, behind `_jh_deferred`, memoised in
+  `_flighteff_cache`, never on the request thread). In the sidecar
+  (`ability.flight_table`) it is the same fitted `WinCurve` the Talent view uses, kept
+  at the flight. ‼️ A row of 25-35 matches has a ~9-point standard error and a season
+  is thousands of rows — the pages say so, show N, and default to a 10-match floor;
+  a program moving the same way across several flights is the credible case.
 - **⚠️ TOSS flight weights are PER-DIVISION, and there is NO fallback (`app/rating.py`)** —
   the dual is per-division, so the weight table is too: `rating.DIVISION_WEIGHTS` has one
   per format and `weights_for(division)` raises on a division nobody has weighted. The

@@ -7248,3 +7248,59 @@ def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
             "has_context": bool(context),
             "selected": sel.get("selected") or [],
             "auto": sel.get("auto") or [], "locks": sel.get("locks") or []}
+
+
+_FLIGHT_ORDER = ("S1", "S2", "S3", "S4", "S5", "D1", "D2", "D3", "D4", "D5")
+
+
+def jhsaa_flights_view(seed: int, gender: str, group: str | None = None,
+                       year: int | None = None, sort: str = "delta", dir: str = "desc",
+                       min_n: int = 10, slot: str | None = None) -> dict:
+    """FLIGHT EFFICIENCY — one row per program and flight in the classification:
+    actual win rate, the win rate the two sides' grades predicted, and the
+    difference (owner request 2026-09, from the 2083 export audit). The fold is
+    `world.jhsaa_flight_efficiency`, which rebuilds every roster of the season
+    to resolve the archive's names (~20 s cold), so the ROUTE runs it through a
+    deferred job first and this view only reads the memo back.
+
+    Class-scoped like the rankings (a flight's expectation already prices the
+    opponent, so cross-class rows would compare fine, but the page is read one
+    class at a time). `min_n` hides the rows too thin to say anything —
+    default ten matches; `slot` narrows to one flight."""
+    import app.jhsaa as jh
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    years = world.jhsaa_years(w["id"], g)
+    yr = (years[0] if years else w["year"]) if year is None else year
+    arc = world.get_jhsaa(w["id"], yr, g)
+    grp = group if group in jh.GROUPS else jh.GROUPS[0]
+    scope = _jh_scope(g, grp, list(jh.GROUPS), yr, years,
+                      (arc or {}).get("season_year"), arc)
+    base = {"ready": False, "gender": g, "year": yr, "years": years, "group": grp,
+            "groups": list(jh.GROUPS), "scope": scope, "sort": sort, "dir": dir,
+            "min_n": min_n, "slot": slot, "slots": list(_FLIGHT_ORDER)}
+    if not arc:
+        return base
+    data = world.jhsaa_flight_efficiency(w["id"], yr, g, world.active_salt(seed))
+    schools = _jh_schools(g)
+    # the class a school was ARCHIVED in (reclassification and play-up move a program)
+    in_class = {name for gp, ds in (arc.get("standings") or {}).items() if gp == grp
+                for rows in ds.values() for r in rows for name in [r.get("school")]}
+    rows = []
+    for r in data["rows"]:
+        if r["school"] not in in_class or r["n"] < min_n:
+            continue
+        if slot and r["slot"] != slot:
+            continue
+        rows.append({**_jh_deco(schools, r["school"], 24), **r,
+                     "slot_order": (_FLIGHT_ORDER.index(r["slot"])
+                                    if r["slot"] in _FLIGHT_ORDER else 99)})
+    keys = {"delta": lambda r: r["delta"], "actual": lambda r: r["actual"],
+            "expected": lambda r: r["expected"], "n": lambda r: r["n"],
+            "school": lambda r: r["school"].lower(), "slot": lambda r: r["slot_order"]}
+    key = keys.get(sort, keys["delta"])
+    rows.sort(key=key, reverse=(dir != "asc") if sort not in ("school", "slot") else (dir == "desc"))
+    return {**base, "ready": True, "rows": rows, "season_year": data["season_year"],
+            "beta": data["beta"], "home": data["home"], "lines": data["lines"],
+            "unresolved": data["unresolved"]}

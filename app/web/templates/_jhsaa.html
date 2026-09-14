@@ -148,7 +148,7 @@
       <a class="{{ 'on' if tab in ('state', 'bracket', 'toc') }}"
          title="State tournament, the full draw and the Tournament of Champions"
          href="{{ url_for('jhsaa_page', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Championship</a>
-      <a class="{{ 'on' if tab in ('rankings', 'computer', 'committee') }}"
+      <a class="{{ 'on' if tab in ('rankings', 'computer', 'committee', 'coefficient', 'flights') }}"
          href="{{ url_for('jhsaa_rankings', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Rankings</a>
       <a class="{{ 'on' if tab == 'honors' }}" title="Player of the Year, All-State, All-District"
          href="{{ url_for('jhsaa_honors', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Honors</a>
@@ -217,7 +217,7 @@
      computer-ratings layer beside it, and the at-large committee the Parastate
      classes select from. A sub-rail rather than three tabs, the Championship
      rail's rule exactly. #}
-  {% if tab in ('rankings', 'computer', 'committee', 'coefficient') %}
+  {% if tab in ('rankings', 'computer', 'committee', 'coefficient', 'flights') %}
   <div class="jh-subrail">
     <a class="{{ 'on' if tab == 'rankings' }}"
        href="{{ url_for('jhsaa_rankings', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">TOSS Rankings</a>
@@ -233,6 +233,10 @@
        State results, ranked within one class — never across classes. #}
     <a class="{{ 'on' if tab == 'coefficient' }}" title="Nine-season strength coefficient from road-to-state and State results, ranked within the class"
        href="{{ url_for('jhsaa_coefficient', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Program Coefficient</a>
+    {# Flight efficiency (owner request 2026-09): every program's win rate at
+       every flight against what the grades predicted. #}
+    <a class="{{ 'on' if tab == 'flights' }}" title="Every program's win rate at every flight, against the rate the two sides' grades predicted"
+       href="{{ url_for('jhsaa_flights', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Flight Efficiency</a>
   </div>
   {% endif %}
 

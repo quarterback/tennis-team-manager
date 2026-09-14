@@ -257,6 +257,7 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                 "country": p.country, "current_grade": p.current_overall(),
                 "potential_grade": p.ceiling_overall(), "academic_rating": p.academic_rating,
                 "style": p.traits.get("play_style", ""),
+                "style_trait": p.traits.get("style_trait", "none"),
                 "captain": int(pid in caps) if known else "",
                 "captain_order": caps.index(pid) + 1 if pid in caps else "",
             })
@@ -485,6 +486,8 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                           "rows": len(tables[name]) if name in tables else None} for name in files},
         "rating_semantics": {
             "current_grade": "Current visible tennis ability on the game's 20-80 scouting scale.",
+            "style": "Primary play style (counterpuncher, junkballer, all_court, serve_and_volley, serve_first, aggressive_baseliner, pusher, balanced).",
+            "style_trait": "Secondary tactical trait, or none (net_rusher, chip_and_charge, first_strike, grinder, retriever, heavy_topspin, flat_hitter, slice_specialist, return_specialist, big_server).",
             "potential_grade": "Hidden ceiling on the same 20-80 scale; included for unrestricted research.",
             "toss_power_raw": "JHSAA opponent-adjusted team power used for selection/seeding; compare only within this season and gender.",
             "captain": "players.csv: 1 if the player was one of the program's team captains "

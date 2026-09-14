@@ -47,6 +47,7 @@ from .state import (jhsaa_view, jhsaa_scope_view, jhsaa_school_view, jhsaa_past_
                     jhsaa_computer_ratings_view, jhsaa_committee_view, jhsaa_coefficient_view,
                     jhsaa_misapplied_players, jhsaa_lineup_lab, jhsaa_schools_view,
                     jhsaa_titles_view, jhsaa_individual_view, jhsaa_realism_view,
+                    jhsaa_flights_view,
                     jhsaa_jv_state_view,
                     jhsaa_district_jv_view,
                     jhsaa_individual_winners, jhsaa_retired_view,
@@ -2995,6 +2996,35 @@ def create_app() -> Flask:
                 _jh_job_pop(ckey)
         view = jhsaa_realism_view(DEFAULT_SEED, g, group, year, bands=bands)
         return render_template("jhsaa_realism.html", active="High School",
+                               view=view, gender=gender, u=u, uni_label=label)
+
+    @app.route("/jhsaa/flights")
+    def jhsaa_flights():
+        """Flight efficiency — every program's win rate at every flight against
+        the rate the two sides' grades predicted (owner request 2026-09). The
+        fold rebuilds the season's rosters to resolve names (~20 s cold), so it
+        runs behind the deferred job like the gap-band comparison; the view
+        only reads the memo."""
+        gender, label, u, g, group, year = _jh_scope_args()
+        import app.world as wd
+        w = wd.load_world(DEFAULT_SEED)
+        if w:
+            years = wd.jhsaa_years(w["id"], g)
+            yr = year if year is not None else (years[0] if years else None)
+            if yr in years:
+                wid, salt = w["id"], wd.active_salt(DEFAULT_SEED)
+                ckey = ("flighteff", g, yr)
+                job = _jh_deferred(ckey, lambda: wd.jhsaa_flight_efficiency(wid, yr, g, salt))
+                if job is None:
+                    return _jh_building("the flight table")
+                _jh_job_pop(ckey)
+        sort = request.args.get("sort") or "delta"
+        dir_ = "asc" if request.args.get("dir") == "asc" else "desc"
+        min_n = request.args.get("min", type=int)
+        view = jhsaa_flights_view(DEFAULT_SEED, g, group, year, sort=sort, dir=dir_,
+                                  min_n=min_n if min_n is not None else 10,
+                                  slot=(request.args.get("slot") or None))
+        return render_template("jhsaa_flights.html", active="High School",
                                view=view, gender=gender, u=u, uni_label=label)
 
     @app.route("/jhsaa/transfers")

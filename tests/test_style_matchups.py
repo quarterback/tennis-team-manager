@@ -32,7 +32,9 @@ def test_engine_clusters_mirror_the_generator_clusters():
     plane is fitted on the generator's shifts, so the two must agree."""
     assert fast.STYLE_CLUSTERS == dev._STYLE_CLUSTERS
     assert set(fast.STYLE_AXIS_X) == set(fast.STYLE_AXIS_Y) == set(fast.STYLE_CLUSTERS)
-    assert set(dev._STYLE_BIAS_V2) == set(dev._STYLE_BIAS)
+    assert set(dev._STYLE_BIAS) < set(dev._STYLE_BIAS_V2)
+    assert set(dev.STYLE_DRAW_V2) == set(dev._STYLE_BIAS_V2)
+    assert set(dev.STYLES_V1) == set(dev._STYLE_BIAS)
 
 
 def test_synthetic_players_sit_at_the_origin_and_play_untouched():
@@ -94,16 +96,13 @@ def test_the_agreed_tournament_emerges_at_equal_overall(profile, fidelity):
     model under both profiles AND in the point engine the college season
     actually runs; same-style and balanced cells stay near even. ~600 matches
     a cell (CI ~±4): the strong edges are calibrated to ~58-60, the two
-    half-turn-and-a-half edges (aggressive_baseliner > all_court, all_court >
-    serve_first) sit ~54-56 by the plane's geometry, so the floor is 51."""
+    added styles' edges vary with their angle, so the floor is 51."""
     pl = calib.pool(150)
     cells = calib.matrix(pl, profile, seeds=2, fidelity=fidelity)
     for w, l in calib.TOURNAMENT:
         assert cells[(w, l)][0] >= 0.51, (w, l, cells[(w, l)])
         assert cells[(l, w)][0] <= 0.49, (l, w, cells[(l, w)])
-    strong = [("counterpuncher", "aggressive_baseliner"), ("counterpuncher", "serve_first"),
-              ("serve_first", "aggressive_baseliner"), ("all_court", "counterpuncher")]
-    assert sum(cells[c][0] for c in strong) / 4 >= 0.54
+    assert sum(cells[c][0] for c in calib.CARDINAL) / len(calib.CARDINAL) >= 0.54
     # Neutral cells: a balanced player is near the origin on AVERAGE but
     # individuals scatter, and rank-pairing correlates who meets whom, so a
     # single 600-match cell can sit 5-9 points off even (measured 54 at 1,800).
@@ -180,3 +179,86 @@ def test_pre_era_cohorts_keep_the_v1_shape_byte_for_byte(_fresh_style_era, monke
     for pid, (cur, entry) in mixed.items():
         if entry < 2034:
             assert cur == legacy[pid], "pre-era cohort re-shaped"
+
+
+# --- compositional styles: secondary traits and engine tendencies -------------
+
+def _forced(i, style, trait, talent=50.0):
+    p = dev.generate_prospect(random.Random(i), f"p{i}", "US", talent=talent,
+                              maturity_range=(0.85, 0.85))
+    p.traits["play_style"] = style
+    p.traits["style_trait"] = trait
+    return p
+
+
+def test_traits_are_drawn_weighted_in_v2_and_absent_in_v1():
+    from collections import Counter
+    v2 = Counter(dev.generate_prospect(random.Random(i), "x", "US", talent=50).traits["style_trait"]
+                 for i in range(600))
+    assert set(v2) <= set(dev.TRAIT_DRAW_V2) and len(v2) >= 8
+    assert 0.30 <= v2["none"] / 600 <= 0.50
+    v1 = {dev.generate_prospect(random.Random(i), "x", "US", talent=50, shape="v1").traits["style_trait"]
+          for i in range(100)}
+    assert v1 == {"none"}
+    styles_v1 = {dev.generate_prospect(random.Random(i), "x", "US", talent=50, shape="v1").traits["play_style"]
+                 for i in range(200)}
+    assert styles_v1 <= set(dev.STYLES_V1)
+
+
+def test_every_tendency_the_generator_emits_is_one_the_engine_reads():
+    from engine import rally
+    for tbl in (dev._STYLE_TENDENCY, dev._TRAIT_TENDENCY):
+        for key, tend in tbl.items():
+            assert set(tend) <= set(rally.TENDENCY_KEYS), key
+    assert set(dev._TRAIT_BIAS) == set(dev.TRAIT_DRAW_V2) == set(dev._TRAIT_TENDENCY)
+    assert set(dev._STYLE_TENDENCY) == set(dev._STYLE_BIAS_V2)
+    p = _forced(1, "aggressive_baseliner", "net_rusher").engine_player()
+    assert p.tend["strike"] > 0 and p.tend["approach"] > 0
+    assert random_player(random.Random(1), "s").tend is None
+
+
+def test_traits_change_behaviour_not_just_labels():
+    """A net rusher comes in more, a first-striker ends points on winners and
+    errors more, a grinder less — measured through the shipped point engine
+    against the same balanced opponents."""
+    base = [_forced(i, "balanced", "none") for i in range(40)]
+
+    def profile(trait, style="balanced"):
+        net = pts = win = ue = 0
+        for i in range(40):
+            x = _forced(500 + i, style, trait).engine_player()
+            for j in (0, 1):
+                r = simulate_match(x, base[(i + j) % 40].engine_player(), seed=i * 3 + j)
+                s = r.stats[0]
+                net += s.net_points; pts += s.serve_points_total + s.return_points_total
+                win += s.winners; ue += s.unforced_errors
+        return net / pts, win / pts, ue / pts
+
+    none = profile("none")
+    rusher = profile("net_rusher")
+    striker = profile("first_strike")
+    grinder = profile("grinder")
+    sv = profile("none", "serve_and_volley")
+    assert rusher[0] > none[0] * 1.4, (rusher, none)
+    assert sv[0] > none[0] * 1.3, (sv, none)
+    assert striker[1] > none[1] and striker[2] > none[2], (striker, none)
+    assert grinder[1] < none[1] and grinder[2] < none[2], (grinder, none)
+
+
+def test_return_specialist_troubles_a_big_server_at_equal_grade():
+    rs = [_forced(2000 + i, "balanced", "return_specialist").engine_player() for i in range(40)]
+    bs = [_forced(3000 + i, "balanced", "big_server").engine_player() for i in range(40)]
+    w = m = 0
+    for i in range(40):
+        for j in range(2):
+            r = simulate_match(rs[i], bs[(i + j) % 40], seed=i * 7 + j); w += r.winner == 0; m += 1
+            r = simulate_match(bs[(i + j) % 40], rs[i], seed=i * 7 + j + 99); w += r.winner == 1; m += 1
+    assert w / m >= 0.52, w / m
+
+
+def test_the_export_names_the_trait_column():
+    import inspect
+    from app import research_export
+    src = inspect.getsource(research_export)
+    assert '"style_trait": p.traits.get("style_trait", "none")' in src
+    assert "Secondary tactical trait" in src

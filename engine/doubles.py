@@ -61,7 +61,7 @@ TUNE = {
     # The style cross term on the doubles point model's net-exchange logit —
     # the pair's mean point on the plane (engine.fast.style_vector) against the
     # other pair's; see engine.rally.TUNE["style_k"].
-    "style_k": 1.2,
+    "style_k": 0.5,
     # Return must clear the net man. Most returns come back (high base); the
     # talent term and the poacher's pressure swing it, with an easier-return
     # bump on second serves. Calibrated so ~82% of returns are in play at parity.

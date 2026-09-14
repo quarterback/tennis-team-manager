@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Flight Efficiency{% endblock %}
+{% block content %}
+<div class="pt-crumbs"><a href="../index.html">Home</a> / <a href="index.html">Analytics</a> / Flight Efficiency</div>
+<h1 class="pt-h1">Flight Efficiency</h1>
+<p class="pt-note">Every team at every flight: matches, wins, the actual win rate, the rate the OVR gaps priced
+  (the same fitted curve the Talent view uses), and the difference in points. A row of 25-35 matches swings about
+  nine points by chance alone, so read N, and trust a program moving the same way across several flights over a
+  single outlier.</p>
+
+<div class="pt-filterbar">
+  <label>Season
+    <select id="f-scope" onchange="applyFilters()">
+      <option value="">All seasons</option>
+      {% for s in scopes %}<option value="{{ s.scope_id }}">{{ s.label }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Classification
+    <select id="f-class" onchange="applyFilters()"><option value="">All</option>
+      {% for c in rows|map(attribute='classification')|unique|list %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Flight
+    <select id="f-slot" onchange="applyFilters()"><option value="">All</option>
+      {% for sl in rows|map(attribute='slot')|unique|sort %}<option value="{{ sl }}">{{ sl }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Min matches <input type="number" id="f-min" value="10" min="1" style="width:5em" oninput="applyFilters()"></label>
+  <label class="pt-filterbar-search">Search <input class="pt-searchbox" type="search" id="q" placeholder="School name…" oninput="applyFilters()"></label>
+</div>
+
+<table class="pt-table pt-sortable" id="flights">
+  <thead><tr>
+    <th data-sort="text">Season</th><th data-sort="text">Class</th><th data-sort="text">School</th>
+    <th data-sort="text">Flight</th><th data-sort="num">N</th><th data-sort="num">W</th>
+    <th data-sort="num">Won %</th><th data-sort="num">Exp %</th><th data-sort="num">+/-</th><th>Held most by</th>
+  </tr></thead>
+  <tbody>
+  {% for r in rows %}
+  <tr data-scope="{{ r.scope_id }}" data-class="{{ r.classification }}" data-slot="{{ r.slot }}" data-n="{{ r.n }}" data-name="{{ r.name|lower }}">
+    <td>{{ r.scope_label }}</td><td>{{ r.classification }}</td>
+    <td><a href="{{ team_href(r.program_id, r.scope_id) }}">{{ r.name }}</a></td>
+    <td><b>{{ r.slot }}</b></td>
+    <td class="num" data-sort="{{ r.n }}">{{ r.n }}</td><td class="num" data-sort="{{ r.w }}">{{ r.w }}</td>
+    <td class="num" data-sort="{{ r.actual }}">{{ '%.1f'|format(r.actual) }}</td>
+    <td class="num" data-sort="{{ r.expected }}">{{ '%.1f'|format(r.expected) }}</td>
+    <td class="num {{ 'pos' if r.delta > 2 else 'neg' if r.delta < -2 }}" data-sort="{{ r.delta }}">{{ '%+.1f'|format(r.delta) }}</td>
+    <td>{{ r.top }} <span class="muted">({{ r.top_n }})</span></td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<script>
+function applyFilters(){
+  var sc=document.getElementById('f-scope').value, cl=document.getElementById('f-class').value,
+      sl=document.getElementById('f-slot').value, mn=parseInt(document.getElementById('f-min').value||'0',10),
+      q=(document.getElementById('q').value||'').toLowerCase();
+  document.querySelectorAll('#flights tbody tr').forEach(function(tr){
+    var ok=(!sc||tr.dataset.scope===sc)&&(!cl||tr.dataset['class']===cl)&&(!sl||tr.dataset.slot===sl)
+      &&(parseInt(tr.dataset.n,10)>=mn)&&(!q||tr.dataset.name.indexOf(q)>=0);
+    tr.style.display=ok?'':'none';
+  });
+}
+applyFilters();
+</script>
+{% endblock %}
