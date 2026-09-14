@@ -55,6 +55,36 @@ _STYLE_BIAS = {
     "all_court":            {"net": 5, "movement": 2, "return": 1, "baseline": -2},
     "serve_first":          {"serve": 6, "net": 2, "return": -3, "movement": -2},
 }
+# V2 (owner rule 2026-09 — the style-matchup cross term, engine.fast.style_edge):
+# the same five clusters, shifted roughly twice as far, and every style touches
+# all five so the per-cluster jitter draws the same count for each. Bigger shifts
+# do NOT make a style stronger (still weight-normalised: overall is preserved to
+# the clamp) — they make the LABEL predictive of where a player lands on the
+# engine's style plane, against the ±1.2 jitter and the 18% net-specialist roll.
+# ‼️ THE NET TRADE STAYS SMALL (±2). Overall-preservation is a statement about
+# the GRADE; the point engine prices net play only in doubles, so a big net+ /
+# net- trade is a free singles upgrade for the net- styles: a draft with net -9
+# on the baseliner and +9 on the all-courter measured, at ZERO cross term and
+# equal overall, all_court 39-47% and aggressive_baseliner 55-65% against the
+# field under full fidelity. Check `scripts/style_matchup_calibration.py
+# --fidelity full --k 0` (the "strength" line) before moving a row.
+# The four shaped styles are placed so the fitted axes (engine.fast.STYLE_AXIS_X /
+# _Y) put them at 0 / 90 / 240 / 300 degrees — the agreed tournament:
+# counterpuncher > aggressive_baseliner and serve_first; serve_first >
+# aggressive_baseliner; aggressive_baseliner > all_court; all_court > serve_first
+# and counterpuncher; balanced neutral. Move a row here and re-solve the axes
+# (scripts/style_matchup_calibration.py --solve). Which cohorts draw it is the
+# CALLER's decision (`generate_prospect(shape=)`): the JHSAA regenerates players
+# from seed and gates on `jhsaa.style_era()`; college/pro rosters are persisted,
+# so there only players generated from now on carry it.
+_STYLE_BIAS_V2 = {
+    "balanced":             {},
+    "counterpuncher":       {"serve": -7, "return": 8, "baseline": 3, "net": -1, "movement": 4},
+    "all_court":            {"serve": 5, "return": 4, "baseline": -6, "net": 2, "movement": 5},
+    "aggressive_baseliner": {"serve": -2, "return": -4, "baseline": 8, "net": -1, "movement": -2},
+    "serve_first":          {"serve": 10, "return": -2, "baseline": -3, "net": 1, "movement": -6},
+}
+STYLE_TABLES = {"v1": _STYLE_BIAS, "v2": _STYLE_BIAS_V2}
 # A minority are pronounced net/doubles specialists regardless of style label —
 # big at the net, ordinary off the ground. This is the main source of doubles-vs-
 # singles divergence (real "doubles specialists").
@@ -62,13 +92,15 @@ NET_SPECIALIST_RATE = 0.18
 _NET_SPECIALIST_BIAS = {"net": 11, "movement": 3, "baseline": -7, "serve": -2}
 
 
-def _apply_style_profile(potential: dict, style: str, rng: random.Random) -> None:
+def _apply_style_profile(potential: dict, style: str, rng: random.Random,
+                         table: dict | None = None) -> None:
     """Shift correlated attribute clusters by play-style + a net-specialist roll,
     in place on `potential` (ceilings, so the profile persists through growth).
     Weight-normalized: a uniform offset is removed so the OVERALL grade is
     unchanged — specialists TRADE strengths, they don't gain overall level, which
-    keeps the STR/talent distribution intact."""
-    shifts = dict(_STYLE_BIAS.get(style, {}))
+    keeps the STR/talent distribution intact. `table` picks the shift table
+    (`STYLE_TABLES`; the legacy v1 by default)."""
+    shifts = dict((table if table is not None else _STYLE_BIAS).get(style, {}))
     if rng.random() < NET_SPECIALIST_RATE:
         for cl, d in _NET_SPECIALIST_BIAS.items():
             shifts[cl] = shifts.get(cl, 0) + d
@@ -529,13 +561,20 @@ def generate_prospect(rng: random.Random, name: str, country: str = "",
                       gender: str = "male", talent: float | None = None,
                       pid: str = "", maturity_range: tuple | None = None,
                       town_pool: list | None = None,
-                      ceiling_max: float | None = None) -> Prospect:
+                      ceiling_max: float | None = None,
+                      shape: str = "v2") -> Prospect:
     """Create an incoming prospect with reproducible rich attributes.
 
     Ceilings cluster around ``talent``; maturity determines how much is visible
     today; the interest tier determines how fast the remaining gap closes.
     `pid` lets callers (roster/juniors builders) assign a stable id; if omitted
     a deterministic one is derived.
+
+    `shape` names the play-style shift table (`STYLE_TABLES`): "v2" — the
+    default, every player generated from 2026-09 on — places the four shaped
+    styles on the engine's style plane; "v1" is the legacy profile, which the
+    JHSAA passes for cohorts entering before `jhsaa.style_era()` so archived
+    rosters regenerate byte-for-byte.
 
     `ceiling_max` is the top of the scale ceilings are drawn on. It defaults to
     `GRADE_MAX` (80), the college NORMALISATION reference, so every existing
@@ -564,7 +603,7 @@ def generate_prospect(rng: random.Random, name: str, country: str = "",
     potential = {a: _clamp(rng.gauss(talent, 6), GRADE_MIN, top) for a in RICH_ATTRS}
     # Give the player a real SHAPE (net specialist / baseliner / server) instead of
     # a flat draw around one mean — weight-normalized so overall/STR is unchanged.
-    _apply_style_profile(potential, traits["play_style"], rng)
+    _apply_style_profile(potential, traits["play_style"], rng, STYLE_TABLES[shape])
 
     # Elite spike: a small, investment-scaled chance the nation produced a
     # blue-chip. Floors the ceiling bands so the player reads world-class at

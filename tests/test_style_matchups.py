@@ -1,0 +1,182 @@
+"""The style-matchup cross term (owner rule 2026-09,
+docs/AAR-style-matchup-cross-term.md).
+
+`play_style` used to be a label the engine never read as a matchup: the
+attribute-shape lanes are linear, so at equal overall every style-vs-style
+cell sat at 47-52%. `engine.fast.style_edge` is an antisymmetric cross term on
+a 2-D style plane derived from a player's attribute clusters, so styles now
+beat each other in a cycle — and it fades with the overall gap, so it decides
+near-equal matches and never overrides a rating.
+"""
+import importlib.util
+import math
+import random
+from pathlib import Path
+
+import pytest
+
+from app import development as dev, jhsaa, worldconfig
+from app.player_attributes import PlayerAttributes, RICH_ATTRS
+from engine import fast
+from engine.match import simulate_match
+from engine.state import random_player
+
+_spec = importlib.util.spec_from_file_location(
+    "style_calib", Path(__file__).resolve().parent.parent / "scripts" / "style_matchup_calibration.py")
+calib = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(calib)
+
+
+def test_engine_clusters_mirror_the_generator_clusters():
+    """The engine cannot import app/, so the cluster table is repeated; the
+    plane is fitted on the generator's shifts, so the two must agree."""
+    assert fast.STYLE_CLUSTERS == dev._STYLE_CLUSTERS
+    assert set(fast.STYLE_AXIS_X) == set(fast.STYLE_AXIS_Y) == set(fast.STYLE_CLUSTERS)
+    assert set(dev._STYLE_BIAS_V2) == set(dev._STYLE_BIAS)
+
+
+def test_synthetic_players_sit_at_the_origin_and_play_untouched():
+    """random_player carries no rich table: no vector, no edge — every
+    pre-existing engine test and calibration is byte-identical."""
+    rng = random.Random(3)
+    a, b = random_player(rng, "A"), random_player(rng, "B")
+    assert fast.style_vector(a) == (0.0, 0.0)
+    on = [simulate_match(a, b, seed=s, fidelity="fast").set_scores for s in range(20)]
+    off = [simulate_match(a, b, seed=s, fidelity="fast", profile={"style_k": 0.0}).set_scores
+           for s in range(20)]
+    assert on == off
+
+
+def test_edge_is_antisymmetric_and_fades_with_the_rating_gap():
+    e = fast.style_edge(0.1, 0.02, -0.05, 0.08, 0.0)
+    assert e != 0.0
+    assert fast.style_edge(-0.05, 0.08, 0.1, 0.02, 0.0) == pytest.approx(-e)
+    # same players, growing overall gap: linear fade to zero at style_fade
+    half = fast.style_edge(0.1, 0.02, -0.05, 0.08, fast.TUNE["style_fade"] / 2)
+    assert half == pytest.approx(e / 2)
+    assert fast.style_edge(0.1, 0.02, -0.05, 0.08, fast.TUNE["style_fade"]) == 0.0
+    assert fast.style_edge(0.1, 0.02, -0.05, 0.08, -0.5) == 0.0
+    # a flat player has no edge against anybody
+    assert fast.style_edge(0.0, 0.0, 0.3, -0.2, 0.0) == 0.0
+
+
+def test_v2_profile_preserves_the_overall_grade():
+    """Bigger shifts do not make a style stronger: weight-normalised, the
+    overall grade is unchanged to the clamp for every style."""
+    for style in dev._STYLE_BIAS_V2:
+        rng = random.Random(11)
+        pot = {a: 50.0 + rng.gauss(0, 3) for a in RICH_ATTRS}
+        before = PlayerAttributes(pot).overall_grade()
+        dev._apply_style_profile(pot, style, random.Random(5), dev._STYLE_BIAS_V2)
+        assert PlayerAttributes(pot).overall_grade() == pytest.approx(before, abs=0.02), style
+
+
+def test_generated_styles_land_at_their_angles():
+    """Mean vector per style points where the tournament needs it (within a
+    quarter turn — per-attribute noise and the net-specialist roll scatter
+    individuals, the LABEL's mean is what the fit places)."""
+    pl = calib.pool(80)
+    for style, target in calib.ANGLES.items():
+        xs, ys = zip(*(fast.style_vector(p.engine_player()) for p in pl[style]))
+        mx, my = sum(xs) / len(xs), sum(ys) / len(ys)
+        ang = math.degrees(math.atan2(my, mx)) % 360
+        diff = min(abs(ang - target), 360 - abs(ang - target))
+        assert diff < 45, (style, ang, target)
+        assert math.hypot(mx, my) > 0.05, style
+    bx, by = zip(*(fast.style_vector(p.engine_player()) for p in pl["balanced"]))
+    assert math.hypot(sum(bx) / len(bx), sum(by) / len(by)) < 0.06
+
+
+@pytest.mark.parametrize("profile,fidelity", [(None, "fast"), (fast.HS_PROFILE, "fast"), (None, "full")],
+                         ids=["college-fast", "hs-fast", "college-full"])
+def test_the_agreed_tournament_emerges_at_equal_overall(profile, fidelity):
+    """Every agreed edge clears the noise floor at equal overall, in the fast
+    model under both profiles AND in the point engine the college season
+    actually runs; same-style and balanced cells stay near even. ~600 matches
+    a cell (CI ~±4): the strong edges are calibrated to ~58-60, the two
+    half-turn-and-a-half edges (aggressive_baseliner > all_court, all_court >
+    serve_first) sit ~54-56 by the plane's geometry, so the floor is 51."""
+    pl = calib.pool(150)
+    cells = calib.matrix(pl, profile, seeds=2, fidelity=fidelity)
+    for w, l in calib.TOURNAMENT:
+        assert cells[(w, l)][0] >= 0.51, (w, l, cells[(w, l)])
+        assert cells[(l, w)][0] <= 0.49, (l, w, cells[(l, w)])
+    strong = [("counterpuncher", "aggressive_baseliner"), ("counterpuncher", "serve_first"),
+              ("serve_first", "aggressive_baseliner"), ("all_court", "counterpuncher")]
+    assert sum(cells[c][0] for c in strong) / 4 >= 0.54
+    # Neutral cells: a balanced player is near the origin on AVERAGE but
+    # individuals scatter, and rank-pairing correlates who meets whom, so a
+    # single 600-match cell can sit 5-9 points off even (measured 54 at 1,800).
+    # These bound the neutral cells loosely; the agreed edges above are the pin.
+    for s in calib.STYLES:
+        assert 0.42 <= cells[(s, s)][0] <= 0.58, (s, cells[(s, s)])
+        assert 0.40 <= cells[("balanced", s)][0] <= 0.60, (s, cells[("balanced", s)])
+
+
+def test_the_point_engine_shares_the_fade():
+    """rally.py mirrors fast.TUNE's fade rather than importing it (the import
+    would be circular); the two must agree or the edge fades at different
+    gaps in the two fidelities."""
+    from engine import rally
+    assert rally._STYLE_FADE == fast.TUNE["style_fade"]
+
+
+def test_doubles_reads_the_same_plane():
+    """A counterpunching pair troubles a pair of baseliners at equal pair
+    rating, and the reverse cell is its complement."""
+    pl = calib.pool(150)
+    cells = calib.doubles_matrix(pl, None, seeds=2)
+    assert cells[("counterpuncher", "aggressive_baseliner")][0] >= 0.53
+    assert cells[("aggressive_baseliner", "counterpuncher")][0] <= 0.47
+    # and it is switched off with the dial, like singles
+    from engine.doubles import DoublesTeam, simulate_doubles
+    a = [p.engine_player() for p in pl["counterpuncher"][:2]]
+    b = [p.engine_player() for p in pl["aggressive_baseliner"][:2]]
+    ta, tb = DoublesTeam(tuple(a)), DoublesTeam(tuple(b))
+    on = [simulate_doubles(ta, tb, seed=s, fidelity="fast").set_scores for s in range(15)]
+    off = [simulate_doubles(ta, tb, seed=s, fidelity="fast", profile={"d_style_k": 0.0}).set_scores
+           for s in range(15)]
+    assert on != off
+
+
+# --- the JHSAA era gate ---------------------------------------------------------
+
+@pytest.fixture
+def _fresh_style_era():
+    yield
+    worldconfig.set("jhsaa_style_era", "")
+    jhsaa.reset_schools()
+
+
+def test_style_era_is_in_the_reset_list():
+    assert "jhsaa_style_era" in jhsaa.ERA_SETTINGS
+
+
+def test_pre_era_cohorts_keep_the_v1_shape_byte_for_byte(_fresh_style_era, monkeypatch):
+    """Era past everyone: the roster equals a build where BOTH tables are the
+    legacy v1 — i.e. the pre-era path takes the v1 table — and the gate splits
+    cohorts, not seasons (the dev_era test's shape)."""
+    s = jhsaa.load_schools("boys")[0]
+    worldconfig.set("jhsaa_style_era", "9999")
+    jhsaa.reset_schools()
+    legacy = {p.pid: dict(p.current) for p in jhsaa.build_roster(s, 2035)}
+    worldconfig.set("jhsaa_style_era", "0")
+    jhsaa.reset_schools()
+    monkeypatch.setattr(dev, "STYLE_TABLES", {"v1": dev._STYLE_BIAS, "v2": dev._STYLE_BIAS})
+    both_v1 = {p.pid: dict(p.current) for p in jhsaa.build_roster(s, 2035)}
+    assert legacy == both_v1
+    monkeypatch.undo()
+    jhsaa.reset_schools()
+    new = {p.pid: (dict(p.current), p.entry_year) for p in jhsaa.build_roster(s, 2035)}
+    assert set(new) == set(legacy)
+    assert any(cur != legacy[pid] for pid, (cur, _) in new.items()), "gate never opened"
+    for pid, (cur, _) in new.items():          # and overall is untouched either way
+        a = PlayerAttributes(cur).overall_grade()
+        b = PlayerAttributes(legacy[pid]).overall_grade()
+        assert abs(a - b) < 0.35, pid
+    worldconfig.set("jhsaa_style_era", "2034")
+    jhsaa.reset_schools()
+    mixed = {p.pid: (dict(p.current), p.entry_year) for p in jhsaa.build_roster(s, 2035)}
+    for pid, (cur, entry) in mixed.items():
+        if entry < 2034:
+            assert cur == legacy[pid], "pre-era cohort re-shaped"

@@ -48,6 +48,15 @@ TUNE = {
     "serve_plus_first": 0.36,
     "serve_plus_second": 0.10,
     "rally_slope": 0.9,
+    # STYLE MATCHUPS (owner rule 2026-09) — the point engine reads the SAME
+    # style plane as the fast model (engine.fast.style_edge: an antisymmetric
+    # cross term on attribute-cluster deviations, faded to zero as the overall
+    # gap widens). Added to the neutral-rally logit as an edge for the server,
+    # so over a match it is zero-sum and the rating gap is untouched; sized on
+    # its own dial because a per-POINT edge compounds ~4-6 times a game where
+    # the fast model's is per game. Calibrated with
+    # scripts/style_matchup_calibration.py --fidelity full.
+    "style_k": 3.0,
     # Reference talent level the winner/error/ace swings are measured against.
     # Real rosters center well above 0.5 (D1 ≈ 0.68, D2 ≈ 0.49, D3 ≈ 0.42), so the
     # swings anchor here: a player AT the reference gets the baseline rate, a
@@ -161,7 +170,23 @@ def _server_rally_win_prob(server: Player, returner: Player, first: bool,
     t = TUNE
     serve_plus = t["serve_plus_first"] if first else t["serve_plus_second"]
     diff = (server.rally_skill - returner.rally_skill)
-    return _logistic(t["rally_slope"] * diff + serve_plus + bonus)
+    style = _style_edge(server, returner, t["style_k"])
+    return _logistic(t["rally_slope"] * diff + serve_plus + bonus + style)
+
+
+def _style_edge(a: Player, b: Player, k: float) -> float:
+    """`a`'s style-plane edge over `b` (engine.fast.style_edge), on this
+    module's dial. Imported lazily: engine.fast imports engine.match."""
+    if not k:
+        return 0.0
+    from .fast import style_vector, style_edge
+    xa, ya = style_vector(a)
+    xb, yb = style_vector(b)
+    return style_edge(xa, ya, xb, yb, a.overall - b.overall,
+                      {"style_k": k, "style_fade": _STYLE_FADE})
+
+
+_STYLE_FADE = 0.15      # mirrors engine.fast.TUNE["style_fade"]; pinned by a test
 
 
 def _end_shares(state: MatchState, hitter: Player, misser: Player) -> tuple[float, float]:

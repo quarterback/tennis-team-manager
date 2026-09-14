@@ -75,6 +75,9 @@ class Player:
     # point engine reads these directly so each stat carries a specific, textured
     # talent signal instead of a collapsed driver average.
     rich: dict | None = None
+    # engine.fast.style_vector's memo — a Player is built fresh per roster read
+    # and the point engine asks per point, so the plane is resolved once here.
+    style_xy: tuple | None = field(default=None, repr=False, compare=False)
 
     @property
     def serve_skill(self) -> float:

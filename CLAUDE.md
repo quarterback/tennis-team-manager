@@ -3900,6 +3900,37 @@ was a school marker, shipped "Baptist HS High School".
 - `flavor._HS_SUFFIX` (the no-list fallback) says "Day", never "Day School".
 
 ## Other notes
+- **‼️ STYLE MATCHUPS ARE A CROSS TERM, IN BOTH FIDELITIES (owner rule 2026-09,
+  `engine.fast.style_vector` / `style_edge`, `docs/AAR-style-matchup-cross-term.md`).**
+  `play_style` was a label the engine never read as a matchup: the fast model's
+  serve/return/rally lanes are LINEAR, so at equal overall every style-vs-style cell
+  measured 47-52% — and no cluster shift could fix that (a transitive ranking cannot
+  make A > B > C > A; the `_pair_synergy` lesson). Now each player is a point on a 2-D
+  style plane derived from attribute-cluster deviations and the edge is the
+  antisymmetric product `y_a·x_b − x_a·y_b`: zero-sum in a match, zero-mean over a
+  league, faded to zero as the overall gap reaches `style_fade` (~9 OVR). Agreed
+  tournament: counterpuncher > aggressive_baseliner and serve_first; serve_first >
+  aggressive_baseliner; aggressive_baseliner > all_court; all_court > serve_first and
+  counterpuncher; balanced neutral — realised by the four shaped styles sitting at
+  0/90/240/300° (a style beats everything within a half-turn behind it).
+  - **The axes are FITTED, not semantic** (`STYLE_AXIS_X/Y`; `scripts/
+    style_matchup_calibration.py --solve`, on the REALISED positions of generated
+    players) — the owner's tournament pits the two natural opposite pairs head to
+    head, which no semantic plane can express. Move a row of `development.
+    _STYLE_BIAS_V2` and re-solve.
+  - **‼️ THE COLLEGE SEASON RUNS THE POINT ENGINE**, so the term is wired THREE
+    places with their own dials: `fast.TUNE["style_k"]`/`d_style_k` (+ the HS
+    profile's), `rally.TUNE["style_k"]`, `doubles.TUNE["style_k"]`. A dial change in
+    one fidelity is not a change in the other.
+  - **‼️ "OVERALL IS PRESERVED" IS ABOUT THE GRADE, NOT STRENGTH.** The point engine
+    prices net play only in doubles, so a big net+/net− trade in the v2 table made
+    all_court the weakest singles style (39-47%) at ZERO cross term. The net trade
+    stays ±2; the calibration's `--fidelity full --k 0` "strength vs field" line must
+    read ~50 for every style before a row moves.
+  - JHSAA cohorts regenerate from seed → `jhsaa.style_era()` gates the v2 table
+    (`generate_prospect(shape=)`, in `ERA_SETTINGS`); college/pro rosters are
+    persisted, so no gate there. Synthetic `random_player`s have no rich table and sit
+    at the origin — every pre-existing engine test is byte-identical.
 - **⚠️ TOSS flight weights are PER-DIVISION, and there is NO fallback (`app/rating.py`)** —
   the dual is per-division, so the weight table is too: `rating.DIVISION_WEIGHTS` has one
   per format and `weights_for(division)` raises on a division nobody has weighted. The
