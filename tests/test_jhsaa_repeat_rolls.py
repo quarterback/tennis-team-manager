@@ -324,3 +324,28 @@ def test_a_program_still_gets_its_own_flighted_titles(archive):
     boys = wd.jhsaa_school_individual_champions(
         archive["id"], "boys", "Mater Dei", seasons)
     assert boys == []
+
+
+def test_the_individual_record_book_reads_a_career_by_pid(archive):
+    """The research export's `jhsaa_individual_history.csv` (owner request 2026-09):
+    one row per champion PLAYER per archived title, so a review groups by pid and
+    sees a career — the four-straight S1 run two comprehensive reviews missed
+    could only be reconstructed from dozens of archived brackets before."""
+    rows = wd.jhsaa_individual_history_rows(archive["id"], "girls")
+    by_pid = {}
+    for r in rows:
+        by_pid.setdefault(r["champion_pid"], []).append(r)
+    ada = by_pid["aaaa"]
+    assert [(r["world_year"], r["flight"], r["classification"], r["school"])
+            for r in ada] == [(0, "S1", "9A", "Coles Creek"), (2, "S1", "6A", "Mater Dei")]
+    assert all(r["season_year"] == wd.BASE_YEAR + r["world_year"] + 1 for r in rows)
+    # A doubles title is one row per partner, partner as context, never a pair row.
+    bo = by_pid["bbbb"]
+    assert sorted(r["partner_name"] for r in bo if r["flight"] == "D2") == ["Cy Odom", "Dee Fox"]
+    assert by_pid["cccc"][0]["partner_pid"] == "bbbb"
+    # The runner-up rides on the row, resolved by index like the champion.
+    assert all(r["runner_up_school"] == "Somebody Else" for r in rows)
+    # Every row carries the columns a record-book scan groups and sorts on.
+    need = {"season_year", "gender", "classification", "flight", "champion_pid",
+            "champion_name", "school", "grade", "runner_up", "seed"}
+    assert all(need <= set(r) for r in rows)
