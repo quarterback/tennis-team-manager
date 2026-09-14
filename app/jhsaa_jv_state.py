@@ -26,6 +26,14 @@ most programs have.
 
 The road, per the spec: district qualification -> regional championship -> State.
 
+‼️ THE 36-TEAM FIELD (owner rule 2026-09, from `jhsaa.jv_parastate_era()`): the
+twenty regional champions plus SIXTEEN AT-LARGE selections, picked on an index of
+30% JV record + 70% varsity regular-season record. The at-larges play a Parastate
+round (the varsity committee classes' own device) and its eight winners join the
+champions in a 28-team main draw: seeds 1-4 bye, twelve preliminary duals, then
+16 → QF → SF → Final. See `AT_LARGE` below. Seasons before the era keep the
+twenty-team shape that follows.
+
 ‼️ WINNING YOUR REGION IS QUALIFYING. All twenty champions ARE the State field —
 there is no qualifying round in front of it and nothing to survive to "reach"
 State (owner, 2026-09: "the qualifiers who get in, all 20, are already at State;
@@ -98,6 +106,38 @@ REGIONS = 20
 #: The string survives ONLY to read archives written by that build, which stored it
 #: as a round name. Nothing writes it.
 LEGACY_QUALIFYING_NAME = "State Qualifying"
+
+#: ‼️ THE 36-TEAM FIELD (owner rule 2026-09, from `jhsaa.jv_parastate_era()`):
+#: the twenty regional champions PLUS sixteen at-large selections. The at-larges
+#: play a PARASTATE round — the varsity committee event's own device
+#: (`jhsaa.run_state_parastate`): the `2 × bids` lowest seeds paired high-low,
+#: winners keep their seed — and its eight survivors join the champions in a
+#: 28-team main draw. Twenty-eight in 32 slots on the TOC's strict seed lines is
+#: four byes to seeds 1-4 and twelve preliminary duals (5v28 … 16v17), which is
+#: the spec's shape exactly: 36 → 16 in the Parastate → 8 advance → 28 → 4 byes
+#: + 12 duals → 16 → QF → SF → Final.
+#:
+#: ‼️ IT IS THE STATE MACHINERY, NOT A SECOND BRACKET. The archive is ONE `state`
+#: dict whose first round is NAMED `jhsaa.PARASTATE_NAME` in `round_names`, which
+#: is exactly what makes `state._jh_split_state` draw the Parastate as its own tree
+#: (there is no bracket path from a Parastate slot to a main-draw slot),
+#: `world.jhsaa_state_result` file an at-large's exit as "Parastate", and the
+#: round list read it back at any size — every reader the varsity Parastate
+#: already has. A champion's route is unchanged: the twenty still enter the main
+#: field directly and are still seeded 1-20 on the JV record.
+AT_LARGE = 16
+MAIN_BYES = 4
+
+#: ‼️ THE SELECTION INDEX — 30% JV record, 70% VARSITY record (owner rule 2026-09).
+#: An at-large is a program whose JV team did not win its region, so the JV
+#: record alone cannot tell the sixteen best of them apart from a soft-league
+#: 12-2; the varsity side is the program's strength and weighs more. Both terms
+#: are win percentages. ‼️ THE VARSITY TERM IS THE REGULAR SEASON ONLY —
+#: `jhsaa._reg_season_record`, the State Specials' own rule: the varsity road
+#: has been played by the time the JV postseason runs, and a deep bracket run is
+#: how far the draw carried a program, not what it did across the season.
+INDEX_JV_WEIGHT = 0.30
+INDEX_VARSITY_WEIGHT = 0.70
 
 
 def district_berths(n_teams: int) -> int:
@@ -202,6 +242,74 @@ def seed_key(e: JVEntry) -> float:
         return 0.0
     diff = (e.jv.points_for - e.jv.points_against) / n
     return e.jv.win_pct + diff / 1000.0
+
+
+def varsity_record(e: JVEntry) -> tuple[int, int]:
+    """The program's VARSITY regular-season W-L, off the `TeamSeason` the JV team
+    hangs from — `jhsaa._reg_season_record`, so the postseason never reaches the
+    index."""
+    return jh._reg_season_record(e.jv.team)
+
+
+def selection_index(e: JVEntry) -> float:
+    """`INDEX_JV_WEIGHT` × JV win% + `INDEX_VARSITY_WEIGHT` × varsity regular-season
+    win%. A program with no varsity duals scores 0 on that term — a real answer,
+    never a default that quietly hands it the JV share twice."""
+    w, l = varsity_record(e)
+    var = w / (w + l) if w + l else 0.0
+    return INDEX_JV_WEIGHT * e.jv.win_pct + INDEX_VARSITY_WEIGHT * var
+
+
+def select_at_large(pool: list[JVEntry], n: int = AT_LARGE) -> list[JVEntry]:
+    """The at-large field, best first, from every entrant that did not win its
+    region: ranked on `selection_index`, the JV seeding key breaking ties, the name
+    last so the cut is reproducible. Fewer than `n` when the pool is short (a tiny
+    world) — the Parastate then degrades exactly as the varsity one does."""
+    ranked = sorted(pool, key=lambda e: (-selection_index(e), -seed_key(e), e.name))
+    return ranked[:n]
+
+
+def selection_rows(field: list[JVEntry], champions: set[str],
+                   region_of: dict[str, str]) -> list[dict]:
+    """The State field as an auditable table, in SEED ORDER — the committee's own
+    posture (`jhsaa_committee.select` archives what it read): every team's entry
+    (`champion` / `at_large`), region, JV and varsity regular-season records, the
+    two percentages and the index. ‼️ THE WHOLE FIELD, not the at-larges alone: a
+    later analysis of whether the index picks well needs the champions' numbers
+    on the same table, and the champions' JV record is what seeded them. The
+    research export flattens this to `jhsaa_jv_state.csv`."""
+    out = []
+    for e in field:
+        vw, vl = varsity_record(e)
+        out.append({"school": e.name,
+                    "entry": "champion" if e.name in champions else "at_large",
+                    "region": region_of.get(e.name, e.region),
+                    "jv_wins": e.jv.wins, "jv_losses": e.jv.losses,
+                    "jv_ties": e.jv.ties, "jv_pct": round(e.jv.win_pct, 4),
+                    "v_wins": vw, "v_losses": vl,
+                    "v_pct": round(vw / (vw + vl), 4) if vw + vl else 0.0,
+                    "index": round(selection_index(e), 4)})
+    return out
+
+
+def run_parastate(bids: list[JVEntry], *, seed: int) -> tuple[list[JVEntry], list]:
+    """The Parastate round over the at-large field: pairs pinned HIGH-LOW (1v16 …
+    8v9), the higher seed on the home side — orientation only, since every dual of
+    this event is played at a neutral site exactly as the varsity Parastate is
+    (`phase="state"` is in `NEUTRAL_PHASES`). Returns the winners IN SEED ORDER —
+    winners retain their seed, the varsity rule — and the archived games. An odd
+    field (a short world) advances its middle seed unplayed, `run_state_parastate`'s
+    own degradation."""
+    rng = random.Random(seed)
+    games, alive = [], set()
+    for i in range(len(bids) // 2):
+        a, b = bids[i], bids[len(bids) - 1 - i]
+        win, game = play_dual(a, b, seed=rng.randrange(1 << 30))
+        games.append(game)
+        alive.add(win.name)
+    if len(bids) % 2:
+        alive.add(bids[len(bids) // 2].name)
+    return [e for e in bids if e.name in alive], games
 
 
 def _dress(e: JVEntry, rng_seed: int) -> list:
@@ -370,13 +478,19 @@ def run_regionals(quals: list[JVEntry], *, seed: int) -> tuple:
     return champs, out
 
 
-def run_jv_state(jv: dict, *, gender: str, year: int, seed: int = 0) -> dict:
+def run_jv_state(jv: dict, *, gender: str, year: int, seed: int = 0,
+                 expanded: bool | None = None) -> dict:
     """The whole JV team postseason for one gender.
 
-    Returns the archive `world.run_jhsaa` stores: the field, every region's draw, the
-    play-in and the State bracket, each in the shape the bracket renderer already
-    reads. `{}` when nothing can be staged — a world whose programs never played a JV
-    season has no event, which is a real answer and not an error.
+    Returns the archive `world.run_jhsaa` stores: the field, every region's draw,
+    the at-large selection and the State bracket, each in the shape the bracket
+    renderer already reads. `{}` when nothing can be staged — a world whose
+    programs never played a JV season has no event, which is a real answer and not
+    an error.
+
+    `expanded` is the 36-team shape (`AT_LARGE` at-larges through a Parastate into
+    a 28-team main draw); by default it is decided by the season against
+    `jhsaa.jv_parastate_era()`, and a test passes it explicitly.
     """
     field = entries(jv)
     if not field:
@@ -384,17 +498,44 @@ def run_jv_state(jv: dict, *, gender: str, year: int, seed: int = 0) -> dict:
     quals = district_qualifiers(field)
     champs, regions = run_regionals(quals, seed=seed + 7919 * (gender == "boys"))
     ranked = sorted(champs.values(), key=lambda e: (-seed_key(e), e.name))
+    if expanded is None:
+        expanded = year >= jh.jv_parastate_era()
 
-    # ‼️ ONE DRAW OVER EVERY REGION CHAMPION — all twenty ARE the field. Twenty in a
-    # 32-slot bracket seeds twelve through and opens eight in the Round of 20; nothing
-    # is cut beforehand, nothing is qualified into, and no second bracket exists.
-    champ, state = _run_bracket(ranked, seed=seed + 5701)
-    return {
+    out = {
         "field": [e.name for e in field],
         "qualifiers": [e.name for e in quals],
         "regions": regions,
         "region_champions": {k: v.name for k, v in champs.items()},
-        "ranked": [e.name for e in ranked],
-        "state": state,
-        "champion": champ.name if champ else "",
     }
+    if not expanded:
+        # ‼️ ONE DRAW OVER EVERY REGION CHAMPION — all twenty ARE the field. Twenty
+        # in a 32-slot bracket seeds twelve through and opens eight in the Round of
+        # 20; nothing is cut beforehand, nothing is qualified into, and no second
+        # bracket exists. The shape every season before `jv_parastate_era` played.
+        champ, state = _run_bracket(ranked, seed=seed + 5701)
+        return {**out, "ranked": [e.name for e in ranked], "state": state,
+                "champion": champ.name if champ else ""}
+
+    # ‼️ THE 36: champions seeded 1-20 on the JV record, then the sixteen at-larges
+    # seeded 21-36 on the selection index — an at-large is NEVER seeded above a
+    # champion, structurally (they arrive after every champion in this list), the
+    # varsity Parastate's own floor. The Parastate is played over the at-larges
+    # alone; its winners keep their seed and join the champions in a fresh 28-team
+    # draw, where the TOC's strict seed lines give seeds 1-4 the byes.
+    taken = {e.name for e in ranked}
+    bids = select_at_large([e for e in field if e.name not in taken])
+    winners, para = run_parastate(bids, seed=seed + 3301)
+    main = ranked + winners
+    champ, state = _run_bracket(main, seed=seed + 5701)
+    if para:
+        state = {**state,
+                 "rounds": [para] + list(state["rounds"]),
+                 "round_names": [jh.PARASTATE_NAME],
+                 "field": [e.name for e in ranked] + [e.name for e in bids]}
+    region_of = {v.name: k for k, v in champs.items()}
+    return {**out,
+            "ranked": list(state["field"]),
+            "at_large": [e.name for e in bids],
+            "selection": selection_rows(ranked + bids, set(region_of), region_of),
+            "state": state,
+            "champion": champ.name if champ else ""}

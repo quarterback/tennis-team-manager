@@ -23,7 +23,9 @@ def jv():
 
 @pytest.fixture(scope="module")
 def arc(jv):
-    return jvs.run_jv_state(jv, gender="boys", year=2068)
+    # ‼️ THE TWENTY-TEAM SHAPE, EXPLICITLY — the season the pilot began at; the
+    # 36-team expansion is `big36` below.
+    return jvs.run_jv_state(jv, gender="boys", year=2068, expanded=False)
 
 
 @pytest.fixture(scope="module")
@@ -41,7 +43,132 @@ def big():
                     for n, ss in sorted(jh.districts(gender, g).items())[:8]}
                 for g in ("9A", "7A", "5A", "3A", "2A", "Group 2")}
     jv = jh.play_jv_season(by_group, 2068, gender, salt)
-    return jvs.run_jv_state(jv, gender=gender, year=2068, seed=11)
+    return jvs.run_jv_state(jv, gender=gender, year=2068, seed=11, expanded=False)
+
+
+@pytest.fixture(scope="module")
+def big36():
+    """The same big season at the 36-team shape (owner rule 2026-09): at-larges,
+    the Parastate and the 28-team main draw. Sized so the at-large pool is deep
+    and the Parastate actually plays."""
+    gender, salt = "boys", ""
+    by_group = {g: {n: jh.district_teams(ss, 0, salt)
+                    for n, ss in sorted(jh.districts(gender, g).items())[:8]}
+                for g in ("9A", "7A", "5A", "3A", "2A", "Group 2")}
+    jv = jh.play_jv_season(by_group, 2068, gender, salt)
+    return jvs.run_jv_state(jv, gender=gender, year=2068, seed=11, expanded=True)
+
+
+def test_the_36_is_champions_plus_sixteen_at_large_through_a_parastate(big36):
+    """‼️ THE OWNER'S SHAPE, END TO END: 36 selected → 16 at-large in the Parastate →
+    8 advance → 28-team main draw → 4 byes + 12 preliminary duals → 16 → QF → SF →
+    Final. The Parastate is the bracket's FIRST ROUND, named `jhsaa.PARASTATE_NAME`
+    in `round_names` — the varsity state machinery, so `_jh_split_state`,
+    `jhsaa_state_result` and the round list all read it with nothing added."""
+    import app.world as world
+    st = big36["state"]
+    champs = set(big36["region_champions"].values())
+    bids = list(big36["at_large"])
+    assert len(bids) == jvs.AT_LARGE and not (set(bids) & champs)
+    # The field is champions then at-larges — an at-large is NEVER seeded above a
+    # champion, structurally.
+    assert st["field"] == big36["ranked"]
+    assert st["field"][:len(champs)] and set(st["field"][:len(champs)]) == champs
+    assert st["field"][len(champs):] == bids
+    assert st["round_names"] == [jh.PARASTATE_NAME]
+    rounds = world.jhsaa_state_rounds(st)
+    seeds = {n: i + 1 for i, n in enumerate(st["field"])}
+    n = len(st["field"])
+    # PARASTATE: the sixteen at-larges alone, paired high-low (21v36 … 28v29 at
+    # full size), higher seed on the home side.
+    para = rounds[0]
+    assert para["name"] == jh.PARASTATE_NAME and len(para["games"]) == 8
+    pairs = sorted((seeds[g["home"]], seeds[g["away"]]) for g in para["games"])
+    assert pairs == [(n - 15 + i, n - i) for i in range(8)], pairs
+    assert all(seeds[g["home"]] < seeds[g["away"]] for g in para["games"])
+    assert {t for g in para["games"] for t in (g["home"], g["away"])} == set(bids)
+    # MAIN DRAW: champions + the eight winners in a 32-slot draw on strict seed
+    # lines, so the byes are the TOP seeds and their number is the slack — four at
+    # full size (20 + 8 = 28), the fixture's fewer regions giving a few more. The
+    # other teams play the preliminary duals into the Octofinals.
+    survivors = {g["winner"] for g in para["games"]}
+    r1 = rounds[1]
+    assert r1["alive"] == len(champs) + 8
+    byes = 32 - r1["alive"]
+    assert byes == jvs.MAIN_BYES + (jvs.REGIONS - len(champs))
+    assert len(r1["games"]) == (r1["alive"] - byes) // 2
+    playing = {t for g in r1["games"] for t in (g["home"], g["away"])}
+    assert playing == (champs | survivors) - set(st["field"][:byes])
+    assert 32 - (jvs.REGIONS + 8) == jvs.MAIN_BYES        # the spec's 28: 4 byes
+    assert [r["alive"] for r in rounds[2:]] == [16, 8, 4, 2]
+    # An at-large that lost the Parastate finishes AT the Parastate, an at-large
+    # that won it is in the main field — read back through the shared reader.
+    lost = next(b for b in bids if b not in survivors)
+    assert world.jhsaa_state_result(st, lost)["finish"] == jh.PARASTATE_NAME
+    won = next(b for b in bids if b in survivors)
+    assert world.jhsaa_state_result(st, won)["finish"] != jh.PARASTATE_NAME
+    # The selection is archived, audited, over the WHOLE field in seed order —
+    # champions first (their entry says so), then the at-larges by index.
+    sel = big36["selection"]
+    assert [r["school"] for r in sel] == st["field"]
+    assert [r["school"] for r in sel if r["entry"] == "at_large"] == bids
+    assert all(r["entry"] == "champion" and r["region"] for r in sel[:len(champs)])
+    at = [r for r in sel if r["entry"] == "at_large"]
+    assert all(r["index"] >= s["index"] for r, s in zip(at, at[1:]))
+
+
+def test_the_index_is_30_jv_70_varsity_regular_season_only():
+    """‼️ 30/70, AND THE VARSITY TERM NEVER SEES THE POSTSEASON — `jhsaa.
+    _reg_season_record`, the State Specials' rule. Constructed: a JV team on a
+    varsity schedule whose postseason rows would move the percentage if counted."""
+    import types
+    team = types.SimpleNamespace(schedule=[
+        {"phase": "regular", "won": True}, {"phase": "regular", "won": True},
+        {"phase": "regular", "won": False}, {"phase": "early", "won": True},
+        {"phase": "state", "won": False}, {"phase": "zonal", "won": False},
+        {"phase": "sectional", "won": False}])
+    jvt = types.SimpleNamespace(team=team, wins=1, losses=3, ties=0,
+                                win_pct=0.25, points_for=0, points_against=0,
+                                school=types.SimpleNamespace(name="X"))
+    e = jvs.JVEntry(jv=jvt)
+    assert jvs.varsity_record(e) == (3, 1)
+    assert abs(jvs.selection_index(e) - (0.30 * 0.25 + 0.70 * 0.75)) < 1e-9
+    assert jvs.INDEX_JV_WEIGHT + jvs.INDEX_VARSITY_WEIGHT == 1.0
+
+
+def test_the_at_large_cut_ranks_on_the_index(jv):
+    """The sixteen are the sixteen best indices of every entrant that did not win
+    its region — never a champion, never anyone below a stronger index."""
+    field = jvs.entries(jv)
+    pool = field[:30]
+    bids = jvs.select_at_large(pool)
+    assert len(bids) == min(jvs.AT_LARGE, len(pool))
+    worst = min(jvs.selection_index(b) for b in bids)
+    assert all(jvs.selection_index(e) <= worst for e in pool if e not in bids)
+
+
+def test_the_36_is_a_year_gate_not_a_flag(jv, monkeypatch):
+    """‼️ THE `exchange_era` IDIOM: the expansion applies from a SEASON, resolved
+    once per save (the first season the save has not archived; a fresh save gets 0)
+    and pinnable through `worldconfig`. `run_jv_state` reads it when nothing is
+    passed: a season before the era plays the twenty-team draw it always did — an
+    archived season must keep reading as the year it was — and one at or after it
+    plays the 36. Pinned through the setting rather than the archive arithmetic,
+    which `_resolve_era` already owns for eight other gates."""
+    from app import worldconfig
+    assert "jhsaa_jv_parastate_era" in jh.ERA_SETTINGS
+    worldconfig.set("jhsaa_jv_parastate_era", "2070")
+    jh._jv_parastate_era_cache.clear()
+    try:
+        assert jh.jv_parastate_era() == 2070
+        before = jvs.run_jv_state(jv, gender="boys", year=2069, seed=3)
+        after = jvs.run_jv_state(jv, gender="boys", year=2070, seed=3)
+    finally:
+        worldconfig.set("jhsaa_jv_parastate_era", "")
+        jh._jv_parastate_era_cache.clear()
+    assert "at_large" not in before and not before["state"]["round_names"]
+    assert set(before["state"]["field"]) == set(before["region_champions"].values())
+    assert after["at_large"] and after["state"]["round_names"] == [jh.PARASTATE_NAME]
 
 
 def test_every_region_champion_is_in_the_state_draw(big):
@@ -463,3 +590,41 @@ def test_the_regional_bracket_is_on_the_page_one_region_at_a_time(arc, monkeypat
         assert rb4["name"] == lone and rb4["canvas"] is None
         assert rb4["rounds"] == [] and rb4["field_n"] == 1
         assert rb4["champion"] == ev["regions"][lone]["champion"]
+
+
+def test_the_36_renders_two_trees_and_the_selection_table(big36, monkeypatch,
+                                                          tmp_path):
+    """‼️ THE VARSITY PRESENTATION, REUSED: the Parastate is its own tree (a fresh
+    draw sits between it and the main field, so one positional tree would invent
+    links — `_jh_split_state`), the main canvas is the 28-team draw, every round is
+    on the tabs, and the at-large selection is audited on the page. Rendered
+    through the real route, since a template dereferences a canvas by attribute and
+    Jinja prints a wrong type as an empty box rather than raising."""
+    import json
+    import app.world as world
+    from app.web.state import DEFAULT_SEED, jhsaa_jv_state_view
+    monkeypatch.setenv("TENNIS_DB_PATH", str(tmp_path / "para.db"))
+    monkeypatch.setattr(world, "WORLD_DB", str(tmp_path / "para.db"), raising=False)
+    w = world.get_or_create(DEFAULT_SEED)
+    conn = world._db()
+    conn.execute("INSERT INTO world_jhsaa (world_id, year, gender, data)"
+                 " VALUES (?,?,?,?)",
+                 (w["id"], w["year"], "boys", json.dumps({"season_year": 2068})))
+    conn.execute("INSERT INTO world_jhsaa_jv_state (world_id, year, gender, data)"
+                 " VALUES (?,?,?,?)", (w["id"], w["year"], "boys",
+                                       json.dumps(big36, default=str)))
+    conn.commit(); conn.close()
+    v = jhsaa_jv_state_view(DEFAULT_SEED, "boys", None, w["year"])
+    assert v["ready"] and v["qual_canvas"] and v["canvas"]
+    assert v["qual_canvas"]["columns"] and v["canvas"]["columns"]
+    assert v["at_large_n"] == jvs.AT_LARGE and v["prelim_n"] == 1
+    assert v["main_field_n"] == len(big36["region_champions"]) + 8
+    assert v["rounds"][0]["name"] == jh.PARASTATE_NAME
+    assert len(v["selection"]) == jvs.AT_LARGE
+    assert sum(r["advanced"] for r in v["selection"]) == 8
+    assert all(r["seed"] > len(big36["region_champions"]) for r in v["selection"])
+    from app.web.server import create_app
+    c = create_app().test_client()
+    r = c.get("/jhsaa/jv-state?g=boys")
+    assert r.status_code == 200
+    assert b"Parastate" in r.data and b"At-large selection" in r.data
