@@ -230,6 +230,7 @@ NAV_GROUPS = [
         {"id": "gtt_alumni","label": "Alumni",       "icon": "fa-solid fa-address-book",     "endpoint": "gtt_alumni",       "args": {}},
     ]),
     ("Tools", [
+        {"id": "clinch",    "label": "Clinch Report", "icon": "fa-solid fa-newspaper", "endpoint": "clinch_home", "args": {}},
         {"id": "research_export", "label": "Export Research Data", "icon": "fa-solid fa-file-arrow-down", "endpoint": "research_export", "args": {}},
         {"id": "guide",     "label": "Guide",        "icon": "fa-solid fa-book-open", "endpoint": "guide",           "args": {}},
         {"id": "editor",    "label": "Editor",       "icon": "fa-solid fa-screwdriver-wrench", "endpoint": "editor",          "args": {}},
@@ -257,6 +258,7 @@ def _active_nav(req) -> str:
     if p.startswith("/world"):            return "world"
     if p.startswith("/data"):             return "data"
     if p.startswith("/research/export"):  return "research_export"
+    if p.startswith("/clinch"):           return "clinch"
     if p.startswith("/rankings"):         return "rankings"
     if p.startswith("/results"):          return "results"
     if p.startswith("/injuries"):         return "injuries"
@@ -684,6 +686,11 @@ def create_app() -> Flask:
         # there are dozens of program, player, history and tournament routes, and a
         # typed list quietly sends the next new one back through the college loader.
         if request.path.startswith("/jhsaa"):
+            return
+        # The hosted Clinch Report is a static site the sidecar rendered from
+        # exports; serving a file reads no roster cache. Same namespace rule,
+        # same position below the JHSAA-only check.
+        if request.path.startswith("/clinch"):
             return
         # Cold. Decide loader vs inline by WORLD IDENTITY (the generation salt — a
         # fresh random per New League / takeover, stable within a league), NOT a
@@ -1343,6 +1350,58 @@ def create_app() -> Flask:
         division, gender, label, u = _universe(request)
         return render_template("data_portal.html", active="Data", u=u, uni_label=label,
                                portal=data_portal_view(division, gender))
+
+    # ---- THE CLINCH REPORT, HOSTED (owner request 2026-09) --------------------
+    # `analytics/site/` served under /clinch/, built in-process from the same
+    # export bytes /research/export downloads, through the deferred-job idiom
+    # (a render is minutes of CPU; the app has one request thread). See
+    # `app/clinch.py`.
+    from app import clinch as _clinch
+    from flask import send_from_directory
+
+    @app.route("/clinch/manage", methods=["GET"])
+    def clinch_manage():
+        world = wd.load_world(DEFAULT_SEED)
+        default_year = wd.jhsaa_season_year(world) if world else 2027
+        with _jh_jobs_lock:
+            building = ("clinch", "build") in _jh_jobs
+        return render_template("clinch_manage.html", active="Tools",
+                               default_year=default_year, cached=_clinch.cached_seasons(),
+                               info=_clinch.build_info(), ready=_clinch.site_ready(),
+                               building=building, max_seasons=_clinch.MAX_SEASONS,
+                               error=request.args.get("error", ""))
+
+    @app.route("/clinch/build", methods=["POST"])
+    def clinch_build():
+        try:
+            year = int(request.form.get("year", ""))
+            seasons = int(request.form.get("seasons", "1"))
+        except ValueError:
+            abort(400, "Year and seasons must be numbers.")
+        genders = tuple(g for g in _clinch.GENDERS if request.form.get(f"g_{g}") == "on") \
+            or _clinch.GENDERS
+        kw = dict(year=year, seasons=seasons, genders=genders,
+                  player_pages=request.form.get("player_pages") == "on",
+                  classification=request.form.get("classification", "all") or "all",
+                  refresh=request.form.get("refresh") == "on")
+        _jh_deferred(("clinch", "build"), lambda: _clinch.build(**kw), wait=0.05)
+        return redirect(url_for("clinch_home"))
+
+    @app.route("/clinch/")
+    @app.route("/clinch/<path:subpath>")
+    def clinch_home(subpath: str = "index.html"):
+        key = ("clinch", "build")
+        with _jh_jobs_lock:
+            job = _jh_jobs.get(key)
+        if job is not None:
+            if not job["ev"].is_set():
+                return _jh_building("the Clinch Report")
+            _jh_job_pop(key)
+            if job["error"]:
+                return redirect(url_for("clinch_manage", error=job["error"]))
+        if not _clinch.site_ready():
+            return redirect(url_for("clinch_manage"))
+        return send_from_directory(str(_clinch.SITE), subpath)
 
     @app.route("/research/export", methods=["GET", "POST"])
     def research_export():
