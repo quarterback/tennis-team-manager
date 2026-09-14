@@ -4725,6 +4725,10 @@ def jhsaa_individual_history_rows(world_id: int, gender: str) -> list[dict]:
                 "partner_name": next((q.get("name", "") for j, q in enumerate(players)
                                       if j != i), ""),
                 "runner_up": runner.get("full_label") or runner.get("label") or "",
+                # The finalist's PIDS, not only a label: names are not unique and a
+                # doubles label joins two of them, so a label cannot be joined back.
+                "runner_up_pids": " ".join(q.get("pid", "") for q in
+                                           (runner.get("players") or ()) if q.get("pid")),
                 "runner_up_school": runner.get("school", ""),
                 "runner_up_seed": runner.get("seed") if runner.get("seed") is not None else "",
             })

@@ -337,7 +337,13 @@ def test_the_individual_record_book_reads_a_career_by_pid(archive):
         by_pid.setdefault(r["champion_pid"], []).append(r)
     ada = by_pid["aaaa"]
     assert [(r["world_year"], r["flight"], r["classification"], r["school"])
-            for r in ada] == [(0, "S1", "9A", "Coles Creek"), (2, "S1", "6A", "Mater Dei")]
+            for r in ada if r["flight"] == "S1"] == [(0, "S1", "9A", "Coles Creek"),
+                                                     (2, "S1", "6A", "Mater Dei")]
+    # Her mixed title counts too — as the GIRL of the [boy, girl] pair — and the
+    # boy never reaches the girls' ledger.
+    assert [(r["world_year"], r["flight"]) for r in ada if r["flight"] == "XD"] == [(2, "XD")]
+    assert "eeee" not in by_pid
+    assert all(r["runner_up_pids"] == "z" * 16 for r in rows)
     assert all(r["season_year"] == wd.BASE_YEAR + r["world_year"] + 1 for r in rows)
     # A doubles title is one row per partner, partner as context, never a pair row.
     bo = by_pid["bbbb"]

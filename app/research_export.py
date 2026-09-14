@@ -513,8 +513,19 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
     # consecutive titles, a four-grade sweep) instead of reconstructing it from
     # dozens of archived brackets. Archive path only, like program history;
     # classification scope does not cut it — a career crosses reclassification.
-    individual_history = (wd.jhsaa_individual_history_rows(w["id"], gender)
-                          if (w and not injected) else [])
+    # ‼️ STABLE PROGRAM IDS BESIDE THE NAMES. The archive names a school by its
+    # display name at the time (relabelled to today's on read), and ~300 programs
+    # have been renamed — a name cannot join programs.csv reliably. The id is the
+    # gender's roster identity, as everywhere else in this bundle; a program with
+    # no programs.csv row (a former sponsor) gets an empty id rather than a
+    # dangling one, the coefficient file's rule.
+    individual_history = []
+    if w and not injected:
+        key_by_name_ = {t.school.name: t.school.key for t in all_teams}
+        for r in wd.jhsaa_individual_history_rows(w["id"], gender):
+            r["program_id"] = key_by_name_.get(r["school"], "")
+            r["runner_up_program_id"] = key_by_name_.get(r["runner_up_school"], "")
+            individual_history.append(r)
     tables = {"programs.csv": programs, "players.csv": players, "duals.csv": duals,
               "lines.csv": lines, "line_players.csv": line_players,
               "jhsaa_standings.csv": standings,
@@ -555,7 +566,8 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "scope year; it is empty only when the save has no archived seasons.",
             "jhsaa_individual_history.csv is the individual RECORD BOOK: every individual "
             "state champion of EVERY archived season for this gender, one row per champion "
-            "player (a doubles title is one row per partner, with the partner as context; a "
+            "player, with program_id and runner_up_pids/runner_up_program_id for stable joins "
+            "(a doubles title is one row per partner, with the partner as context; a "
             "mixed title credits only this gender's half; JV brackets carry an empty "
             "classification), with the runner-up and seeds. Group by champion_pid for career "
             "title counts, consecutive runs and four-grade sweeps. Empty when the save has no "
