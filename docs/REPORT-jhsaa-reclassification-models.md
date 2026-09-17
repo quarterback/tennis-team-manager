@@ -12,30 +12,44 @@ cold assessment.
 ## 0. Two words that mean different things in this repo
 
 The confusion is mine to clear up: in conversation I said "class" for both of
-these. They are separate fields on every school row and every `School` object,
-and the split is the single most important fact for any reclassification design.
+these. They are separate fields on every school row and every `School` object.
 
 | field | what it is | what reads it |
 |---|---|---|
-| `classification` | What the school **IS**: its size class, 9A down to 1A or Group 1-3. | Talent generation (`_TALENT` via `School.talent_group`), roster depth (`ROSTER_SIZE_BAND_BY_CLASS`), the play-up gate, the transfer-clearing ladder. |
-| `group` | The championship the program **ENTERS** this season: which league map it is drawn into, which State draw it plays, whose All-State it is picked for. | Leagues, the postseason ladder, State/Parastate tables, awards. |
+| `classification` | What the school **IS**: its size class, 9A down to 1A or Group 1-3. | Roster depth only (`ROSTER_SIZE_BAND_BY_CLASS` via `roster_size` and `_freshman_class_size`), the play-up gate (`can_play_up`), the transfer-clearing ladder (`CLEARING_LEVELS`), and the archive's per-season record of which class a season was played in. |
+| `group` | The championship the program **ENTERS** this season: which league map it is drawn into, which State draw it plays, whose All-State it is picked for. | Leagues, the postseason ladder, State/Parastate tables, awards, the coefficient's within-class ranking. |
 
-In a fresh import `group == classification` for every row. They diverge only
-through play-up (`plays_up`: `group` one step above `classification`), the
-affiliate and border scripts, and two owner decrees (`OWNER_EMIT`). That is
-exactly the split real associations make when they move a school for competitive
-reasons: the school is still a 4A-sized school (it generates 4A-sized rosters),
-it simply competes in the 5A tournament. **A reclassification driven by results
-must move `group` and leave `classification` alone**, or a program moved down is
-also generated with the weaker class's talent, and the fairer field becomes a
-self-fulfilling collapse (the `COMPETITIVE_MOVES` note in CLAUDE.md). The
-converse also holds: a genuine size change (the 2033 2A/3A realignment, Lower
-Lake, the Columbia leagues) moves both.
+**Neither of them sets talent any more.** From `band_era()` on, a cohort's
+ceilings are drawn around the program's TIER (`band_centre`, off
+`data/jhsaa/talent_bands.json`, the owner-editable program bucket), on one
+association-wide scale. Classification sets how many players a school fields
+and nothing about how good they are. The per-class `_TALENT` table is the
+pre-era path only (the `legacy_talent_draw` tests pin it), with one residual
+that still reads it: the `upstart` lift scales off `_TALENT[(talent_group,
+gender)]` as its baseline (`_program_mod`), so an upstart's size is still priced
+by classification. That is a leftover, not a design. ‼️ The CLAUDE.md bullets
+for `COMPETITIVE_MOVES` and the play-up section still say a program moved on
+`classification` would be "generated with the weaker class's talent"; that was
+true before the band era and is stale now.
 
-So "play up" and "play down" are both `group` moves. The plumbing for the first
-already exists (`overrides.set_jhsaa_playup`, `plays_up`, `_compute_playup_league`,
-the `/jhsaa/programs` action bar). The second has a name (`COMPETITIVE_MOVES`)
-and no implementation.
+Consequences for a reclassification design:
+
+- A results-driven move (play up, play down) should still move **`group`**,
+  because that is the thing a competitive move means: the school is the same
+  size, fields the same roster, and competes in a different tournament. The
+  plumbing for the upward half exists (`overrides.set_jhsaa_playup`, `plays_up`,
+  `_compute_playup_league`, the `/jhsaa/programs` action bar); the downward
+  half has a name (`COMPETITIVE_MOVES`) and no implementation.
+- A **size** recut (section 4, point 7) can now move `classification` without
+  touching anybody's ability. Its costs are roster depth (a 7A moved to 6A
+  drops from the 19-22 band to the same 19-22 band, so most adjacent moves
+  change nothing) and the archive, which records the class each season was
+  played in and keeps reading as played. That makes a TSSAA-style equal-count
+  recut far cheaper than it was in the `_TALENT` era.
+- The program bucket is the strength lever, and the coefficient already feeds a
+  suggested tier (`jhsaa.suggested_bands`). A success factor is the
+  complementary lever: the tier says how good a program is, the factor says
+  where a program that good should compete.
 
 ---
 
@@ -207,14 +221,15 @@ factors, nine use socioeconomic factors.
 ### Which of these fit this world
 - Multipliers and socioeconomic adjustments solve a public-versus-private
   enrollment problem. Here `private` is a flag on 8 to 12 programs per class
-  and the talent tier already carries what a private school's advantage would
-  be. They could be modelled (a tier-aware "effective enrollment"), but they
-  would move `classification` on a number that is fiction, and section 2 shows
-  enrollment is not where the imbalance lives.
-- Equal-count splits (TSSAA) address the 7A/6A thinness directly, but they
-  change `classification` for dozens of schools at once and every archived
-  season keys on it. Worth doing once, as a cycle-boundary event, not as the
-  ongoing mechanism.
+  and the program tier already carries what a private school's advantage would
+  be. The nearest equivalent in this world is a tier-aware "effective
+  enrollment" (a Dynasty-tier school counted at 1.35x) feeding a size recut.
+  It is coherent, since classification no longer touches ability, but it is a
+  second way of saying what the success factor says with results.
+- Equal-count splits (TSSAA) address the 7A/6A thinness directly. They change
+  `classification` for dozens of schools at once, which in the band era costs
+  only roster-depth bands and archive labels (section 0), so this is now a
+  cheap cycle-boundary event rather than the ongoing mechanism.
 - The success factor and the hardship play-down are the ones that fit: they
   read results the archive already holds, they move `group` only, they are
   symmetric, and they can run from a button.
@@ -238,7 +253,8 @@ Replace the pile of named tables with one periodic, rule-driven pass.
    cycle, or one moved up that scores at most one point, moves its `group` back
    down one class. A program never moves below its `classification`'s own
    ladder floor, and never more than one class per cycle.
-4. **`group` only, never `classification`** (section 0). Rivalries outrank
+4. **`group` only, never `classification`**, for a results move (section 0):
+   it is a competitive placement, not a size change. Rivalries outrank
    everything, as today.
 5. **Leagues follow.** Movers join a league of the new class through the
    existing placement (`_compute_playup_league` for one-offs; `jhsaa_redistrict.py`
