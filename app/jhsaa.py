@@ -3309,10 +3309,18 @@ def _seat_full_name(rng: random.Random, school: School, entry: int, seat: int,
 
 
 def generated_siblings(school: School, year: int, pid: str, salt: str) -> list[dict]:
-    """Every GENERATED sibling of `pid` on this season's roster of `school`, as
-    member dicts `{pid, name, gender, school, entry, relation}` — older (the seat's
-    own link) and younger (the seats in this town whose link points at it). For the
-    player page; the pairing reads `Prospect.jhsaa["sibling"]` directly."""
+    """Every GENERATED sibling of `pid`, as member dicts `{pid, name, gender,
+    school, entry, relation}` — older (the seat's own link) and younger (the seats
+    in this town whose link points at THIS pid). For the player page; the pairing
+    reads `Prospect.jhsaa["sibling"]` directly.
+
+    `year` must be a season the player was ENROLLED at `school` (the view passes
+    the first archived season it found them on, through the same former-school
+    and transfer resolution the rest of the card uses). ‼️ The younger scan reads
+    each candidate cohort off its OWN season's built roster and compares the
+    full pid, never a reconstructed (ident, entry, seat): `School.ident` is
+    shared across the two genders' rosters, and a `ROSTER_FLOOR` top-up adds
+    freshman seats past `_freshman_class_size` that a size-bounded scan misses."""
     roster = build_roster(school, year, salt)
     me = next((p for p in roster if p.pid == pid), None)
     if me is None or not SIBLING_ENABLED:
@@ -3324,24 +3332,19 @@ def generated_siblings(school: School, year: int, pid: str, salt: str) -> list[d
                     "gender": me.jhsaa.get("sibling_gender", ""),
                     "school": me.jhsaa.get("sibling_school", ""),
                     "entry": me.jhsaa.get("sibling_entry"), "relation": "sibling"})
-    entry, seat = me.entry_year, me.jhsaa.get("seat", -1)
-    if seat < 0:
-        return out
+    entry = me.entry_year
     from app import overrides as ov
     pool = _town_index(ov.jhsaa_playup_version()).get(school.city) or [school]
     for sc in pool:
         for e in range(entry + 1, entry + SIBLING_MAX_GAP + 1):
-            if e < sibling_era() or e > year:
+            if e < sibling_era():
                 continue
-            n = _freshman_class_size(sc.key, e, sc.classification, salt, 0)
-            for st in range(n):
-                link = sibling_link(sc, e, st, salt)
-                if link and link[0].ident == school.ident and link[1] == entry and link[2] == seat:
-                    r = random.Random(f"{salt}|jhsaa|{sc.key}|{e}|{st}")
-                    out.append({"pid": make_pid("jhsaa", sc.ident, sc.gender, e, st),
-                                "name": _seat_full_name(r, sc, e, st, salt)[0],
-                                "gender": sc.gender, "school": sc.name,
-                                "entry": e, "relation": "sibling"})
+            # The cohort as it was generated for ITS OWN freshman season: base
+            # seats and floor top-ups alike, every one carrying its link.
+            for q in build_roster(sc, e, salt):
+                if q.entry_year == e and q.jhsaa.get("sibling") == pid:
+                    out.append({"pid": q.pid, "name": q.name, "gender": sc.gender,
+                                "school": sc.name, "entry": e, "relation": "sibling"})
     return out
 
 

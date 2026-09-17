@@ -6209,7 +6209,7 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
             _team_by_year_cache[sch_name] = hit
         return hit
 
-    seasons, player = [], None
+    seasons, player, first_seen = [], None, None
     for yr in years:
         arc = world.get_jhsaa(w["id"], yr, g)
         if not arc:
@@ -6220,7 +6220,14 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         hit = next((p for p in roster if p.pid == pid), None)
         if hit is None:
             continue                       # not enrolled that year (pre-9th, or graduated)
-        player = player or hit
+        if player is None:
+            player = hit
+            # GENERATED siblings, resolved from the first season the player was
+            # actually enrolled and the school the card resolved for it (a former
+            # program, a renamed one, or a transfer stop) — never the current
+            # school list by display name, and never the latest season, which a
+            # graduated player is not on.
+            first_seen = (yr_sc, season_year)
         sched = world.jhsaa_schedule(w["id"], yr, g, yr_sc.name)
         # `sched` is both levels; every reader scopes itself by `level`.
         rec = _jh_line_records(sched).get(hit.name, {"s": [0, 0], "d": [0, 0]})
@@ -6321,6 +6328,8 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         "scope": _jh_scope(g, sc.group, list(jh.GROUPS),
                            years[0] if years else 0, years, None, None),
         "seasons": seasons, "record": f"{wins}-{losses}", "wins": wins, "losses": losses,
+        "generated": (jh.generated_siblings(first_seen[0], first_seen[1], pid, salt)
+                      if first_seen else []),
         # ‼️ HONOUR CHIPS ARE MERGED BY HONOUR, WITH THEIR YEARS (owner rule
         # 2026-08). The flat concatenation printed "All-State First Team (1A)"
         # once per season it was won, which read as a duplicate — they were

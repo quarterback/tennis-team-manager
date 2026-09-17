@@ -3651,11 +3651,9 @@ def create_app() -> Flask:
                               "already tied to this player." if tied else
                               f"{fam_school} fielded nobody in {fam_season}.")
         # GENERATED siblings (owner rule 2026-09) — derived from the roll, never
-        # stored, shown beside the authored family and never editable from here.
-        own_sc = next((s for s in _jh.load_schools(g) if s.name == school), None)
-        generated = (_jh.generated_siblings(own_sc, view["scope"]["season_year"], pid,
-                                            wd.active_salt(DEFAULT_SEED))
-                     if own_sc is not None else [])
+        # stored, resolved by the view from the season and school the card
+        # itself resolved (former/renamed programs and graduates included).
+        generated = view.get("generated") or []
         return render_template("jhsaa_player.html", active="High School", view=view,
                                gender=gender, u=u, uni_label=label,
                                school_names=school_names,

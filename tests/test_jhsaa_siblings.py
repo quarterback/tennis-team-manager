@@ -160,3 +160,59 @@ def test_siblings_on_one_roster_reach_the_pairing(era0):
                 assert p.pid in ts.sibling_ids[o]
                 found = True
     assert found
+
+
+def test_the_younger_scan_matches_the_full_pid_not_the_shared_ident(era0):
+    """`School.ident` is one string for both genders' rosters, so a scan that
+    rebuilt (ident, entry, seat) listed the boys' player as a sibling on the
+    girls' page too. The scan compares the generated pid, and it also reads each
+    cohort off its own built roster so a `ROSTER_FLOOR` top-up seat is seen."""
+    sch = _schools()
+    ident = {g: {s.ident: s for s in sch[g]} for g in sch}
+    checked = 0
+    for s, p in _freshmen(sch["boys"], n=120):
+        link = p.jhsaa.get("sibling")
+        if not link:
+            continue
+        og = p.jhsaa["sibling_gender"]
+        osc = next(x for x in sch[og] if x.name == p.jhsaa["sibling_school"])
+        twin_g = "girls" if og == "boys" else "boys"
+        twin = ident[twin_g].get(osc.ident)
+        if twin is None:
+            continue
+        # The same (ident, entry, seat) on the OTHER gender's roster is a different
+        # person with a different pid, and must never list this player.
+        e = p.jhsaa["sibling_entry"]
+        other_pid = next((q.pid for q in jh.build_roster(twin, e, SALT)
+                          if q.entry_year == e and q.jhsaa.get("seat") ==
+                          next(r.jhsaa["seat"] for r in jh.build_roster(osc, e, SALT)
+                               if r.pid == link)), None)
+        if other_pid is None:
+            continue
+        wrong = jh.generated_siblings(twin, e, other_pid, SALT)
+        assert not any(y["pid"] == p.pid for y in wrong)
+        right = jh.generated_siblings(osc, e, link, SALT)
+        assert any(y["pid"] == p.pid for y in right)
+        checked += 1
+        if checked >= 3:
+            return
+    assert checked > 0
+
+
+def test_a_floor_added_freshman_is_found_from_the_older_side(era0, monkeypatch):
+    """A thin program's `ROSTER_FLOOR` top-up seats run `_gen_seat` and can roll
+    a link; the older player's page must show them too."""
+    monkeypatch.setattr(jh, "SIBLING_RATE", 1.0)
+    for s in jh.load_schools("boys")[:60]:
+        roster = jh.build_roster(s, 0, SALT)
+        n9 = jh._freshman_class_size(s.key, 0, s.classification, SALT, 0)
+        topped = [p for p in roster if p.entry_year == 0 and p.jhsaa.get("seat", 0) >= n9
+                  and p.jhsaa.get("sibling") and p.jhsaa["sibling_school"] == s.name
+                  and p.jhsaa["sibling_gender"] == s.gender]
+        if not topped:
+            continue
+        p = topped[0]
+        older = jh.generated_siblings(s, 0, p.jhsaa["sibling"], SALT)
+        assert any(y["pid"] == p.pid for y in older)
+        return
+    pytest.skip("no floor-topped roster with a home-school link in the first 60")
