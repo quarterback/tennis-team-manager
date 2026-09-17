@@ -3650,10 +3650,14 @@ def create_app() -> Flask:
                 picker_msg = (f"{fam_school} fielded nobody in {fam_season} who is not "
                               "already tied to this player." if tied else
                               f"{fam_school} fielded nobody in {fam_season}.")
+        # GENERATED siblings (owner rule 2026-09) — derived from the roll, never
+        # stored, resolved by the view from the season and school the card
+        # itself resolved (former/renamed programs and graduates included).
+        generated = view.get("generated") or []
         return render_template("jhsaa_player.html", active="High School", view=view,
                                gender=gender, u=u, uni_label=label,
                                school_names=school_names,
-                               family=_jh.family_for(pid),
+                               family=_jh.family_for(pid), generated=generated,
                                relations=_jh.FAMILY_RELATIONS,
                                fam_g=fam_g, fam_school=fam_school,
                                fam_season=fam_season, picker=picker,

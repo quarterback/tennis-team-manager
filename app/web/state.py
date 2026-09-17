@@ -5748,7 +5748,7 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                     # A recorded family tie, for the roster chip. `fam_map` is
                     # resolved ONCE above, never per player — `families()` reads an
                     # override fingerprint, which is a SQLite round trip.
-                    "family": _family_row(fam_map, p.pid)}
+                    "family": _family_row(fam_map, p.pid, p, roster)}
                    for p in roster],
         "honors": (season or {}).get("honors", []),
         "trophy_banner": trophy_banner,
@@ -6085,15 +6085,28 @@ def jhsaa_schools_view(seed: int, gender: str, mode: str = "county",
             "scope": _jh_scope(g, grp, list(jh.GROUPS), yr, years, None, None)}
 
 
-def _family_row(fam_map: dict, pid: str) -> dict | None:
+def _family_row(fam_map: dict, pid: str, p=None, roster=()) -> dict | None:
     """The compact family tie a roster row shows — label plus the other members.
-    Reads a PRE-RESOLVED map; it never resolves the override fingerprint itself."""
+    Reads a PRE-RESOLVED map; it never resolves the override fingerprint itself.
+    With no authored family, a GENERATED sibling tie (`p.jhsaa["sibling"]`, or a
+    roster-mate whose tie points at `p`) makes the same chip off the roster alone."""
     hit = fam_map.get(pid)
-    if not hit:
+    if hit:
+        _fid, fam = hit
+        return {"label": fam.get("label", ""),
+                "others": [m for m in (fam.get("members") or []) if m.get("pid") != pid]}
+    if p is None:
         return None
-    _fid, fam = hit
-    return {"label": fam.get("label", ""),
-            "others": [m for m in (fam.get("members") or []) if m.get("pid") != pid]}
+    others = []
+    if p.jhsaa.get("sibling"):
+        others.append({"pid": p.jhsaa["sibling"], "name": p.jhsaa.get("sibling_name", ""),
+                       "school": p.jhsaa.get("sibling_school", ""),
+                       "gender": p.jhsaa.get("sibling_gender", "")})
+    others += [{"pid": q.pid, "name": q.name, "school": q.high_school, "gender": ""}
+               for q in roster if q.jhsaa.get("sibling") == pid]
+    if not others:
+        return None
+    return {"label": p.name.split(" ", 1)[-1], "others": others}
 
 
 #: Grade -> class year, the name a results line calls a player by. The same four
@@ -6196,7 +6209,7 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
             _team_by_year_cache[sch_name] = hit
         return hit
 
-    seasons, player = [], None
+    seasons, player, first_seen = [], None, None
     for yr in years:
         arc = world.get_jhsaa(w["id"], yr, g)
         if not arc:
@@ -6207,7 +6220,14 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         hit = next((p for p in roster if p.pid == pid), None)
         if hit is None:
             continue                       # not enrolled that year (pre-9th, or graduated)
-        player = player or hit
+        if player is None:
+            player = hit
+            # GENERATED siblings, resolved from the first season the player was
+            # actually enrolled and the school the card resolved for it (a former
+            # program, a renamed one, or a transfer stop) — never the current
+            # school list by display name, and never the latest season, which a
+            # graduated player is not on.
+            first_seen = (yr_sc, season_year)
         sched = world.jhsaa_schedule(w["id"], yr, g, yr_sc.name)
         # `sched` is both levels; every reader scopes itself by `level`.
         rec = _jh_line_records(sched).get(hit.name, {"s": [0, 0], "d": [0, 0]})
@@ -6308,6 +6328,8 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         "scope": _jh_scope(g, sc.group, list(jh.GROUPS),
                            years[0] if years else 0, years, None, None),
         "seasons": seasons, "record": f"{wins}-{losses}", "wins": wins, "losses": losses,
+        "generated": (jh.generated_siblings(first_seen[0], first_seen[1], pid, salt)
+                      if first_seen else []),
         # ‼️ HONOUR CHIPS ARE MERGED BY HONOUR, WITH THEIR YEARS (owner rule
         # 2026-08). The flat concatenation printed "All-State First Team (1A)"
         # once per season it was won, which read as a duplicate — they were
