@@ -2852,6 +2852,8 @@ def reset_schools() -> None:
     _exchange_era_cache.clear()
     _intl_era_cache.clear()
     _jv_parastate_era_cache.clear()
+    _sibling_era_cache.clear()
+    _town_cache.clear()
     _expo_cache.clear()
     _expo_world.clear()
     _transfer_name_cache.clear()
@@ -3180,6 +3182,169 @@ def exchange_student(school: School, year: int, salt: str,
     return p
 
 
+# --- GENERATED SIBLINGS (owner rule 2026-09) -----------------------------------------
+#
+# Family ties were owner-authored only ("NO generator, NO suggestion pass, NO
+# same-surname candidate scan"). That rule is RETIRED for siblings: on a real save
+# tagging them by hand became too tedious to keep up, and the owner asked for it to
+# happen mechanically. What survives of the old rule is its reason — a surname is
+# NOT evidence. Two Johnsons at one school are strangers unless the ROLL said
+# otherwise, and the roll is what makes them related; the shared surname is the
+# consequence, never the cause. Cousins and parents stay authored.
+#
+# The shape: a freshman seat rolls, at `SIBLING_RATE`, to be the younger sibling of
+# an older player — at the SAME school (either gender: a brother on the boys' roster
+# and a sister on the girls' is the interesting case) or, for the rest of the hits,
+# at another school in the same TOWN (same locality first, the `city` the district
+# cuts read). Never further: geography is the gate, so a Johnson in Port Veles is
+# never tied to one in Halbrook. The younger takes the older's surname; the tie is
+# DERIVED on read (`district_teams` for the doubles pairing, `generated_siblings`
+# for the page) and unioned with the authored families. Nothing is stored.
+#
+# ‼️ ERA-GATED ON THE ENTRY COHORT (`sibling_era`, the `name_era` idiom) because it
+# RENAMES a player, and `world_jhsaa_dual.lines` archives names. ‼️ Deterministic in
+# (school, entry, seat, salt) and LOCAL: the roll itself reads no school list, so
+# adding a program never changes whether another program's seat rolled. The PICK on
+# a hit reads the town's school list (memoised on the play-up fingerprint) — a
+# program added to a town can move which older player a hit lands on, which is the
+# `_playup_league_cache` trade-off and accepted.
+SIBLING_ENABLED = True
+#: Per freshman seat. ~5 freshmen a roster → about one generated sibling per three
+#: rosters a year, a few percent of the association's players at any time.
+SIBLING_RATE = 0.06
+#: Share of hits that look at the player's OWN school first; the rest go to
+#: another school in the same town (and fall back home when the town has none).
+SIBLING_HOME_SHARE = 0.70
+#: The older sibling entered 1..3 years earlier — they are enrolled together for
+#: at least one season, which is what makes the tie visible on the court.
+SIBLING_MAX_GAP = 3
+_sibling_era_cache: dict = {}
+_town_cache: dict = {}
+
+
+def sibling_era() -> int:
+    """The first ENTRY COHORT whose freshmen can roll a generated sibling — the
+    `name_era` idiom, for the same reason: the roll changes a name, every archived
+    season is rebuilt from seed, and the archive keys records on names."""
+    return _resolve_era("jhsaa_sibling_era", _sibling_era_cache)
+
+
+def _town_index(version: str) -> dict:
+    """{city: [School, ...]} over BOTH genders, memoised on the play-up fingerprint
+    (`load_schools`' own key). Resolved only on a HIT, never per seat."""
+    hit = _town_cache.get(version)
+    if hit is not None:
+        return hit
+    fresh: dict = {}
+    for g in ("girls", "boys"):
+        for s in load_schools(g):
+            fresh.setdefault(s.city, []).append(s)
+    for v in fresh.values():
+        v.sort(key=lambda s: s.key)          # a stable order for `rng.choice`
+    _town_cache.clear()
+    _town_cache[version] = fresh
+    return fresh
+
+
+def sibling_link(school: School, entry: int, seat: int, salt: str):
+    """The older sibling this seat was rolled as the younger of, as
+    `(School, entry, seat)`, or None. The whole mechanic — every reader (the name,
+    the pairing, the page) asks this one function, so none can disagree."""
+    if not SIBLING_ENABLED or seat >= EXCHANGE_SEAT_BASE or entry < sibling_era():
+        return None
+    rng = random.Random(f"{salt}|jhsaa-sibling|{school.key}|{entry}|{seat}")
+    if rng.random() >= SIBLING_RATE:
+        return None
+    # Only a hit pays for the school list.
+    from app import overrides as ov
+    pool = _town_index(ov.jhsaa_playup_version()).get(school.city) or []
+    home = [s for s in pool if s.ident == school.ident] or [school]
+    away = [s for s in pool if s.ident != school.ident]
+    # The settlement inside a metro before the metro (`School.locality`; empty
+    # means a core-city school, and two core-city schools are neighbours too).
+    near = [s for s in away if s.locality == school.locality]
+    cands = home
+    if away and rng.random() >= SIBLING_HOME_SHARE:
+        cands = near or away
+    sc = rng.choice(cands)
+    older_entry = entry - rng.randint(1, SIBLING_MAX_GAP)
+    # `extra=0` is a safe UNDER-estimate of that cohort's size (the turnout lever
+    # only raises the target the same gauss draw is scaled by), so every seat
+    # chosen here exists on the older roster, and the roll needs no archetype
+    # lookup for a school it is not building.
+    n = _freshman_class_size(sc.key, older_entry, sc.classification, salt, 0)
+    return sc, older_entry, rng.randrange(n)
+
+
+def _surname(name: str) -> str:
+    parts = name.split(" ", 1)
+    return parts[1] if len(parts) > 1 else ""
+
+
+def _seat_surname(school: School, entry: int, seat: int, salt: str, depth: int = 0) -> str:
+    """The surname this seat CARRIES: its older sibling's, recursively (a chain of
+    rolls is one family), else "" for its own drawn name. Bounded so a cycle in a
+    corrupt fixture cannot recurse forever; real chains are two or three deep."""
+    link = sibling_link(school, entry, seat, salt)
+    if link is None or depth >= 8:
+        return ""
+    sc, e, st = link
+    inherited = _seat_surname(sc, e, st, salt, depth + 1)
+    if inherited:
+        return inherited
+    rng = random.Random(f"{salt}|jhsaa|{sc.key}|{e}|{st}")
+    return _surname(_draw_name(rng, sc, e)[0])
+
+
+def _seat_full_name(rng: random.Random, school: School, entry: int, seat: int,
+                    salt: str) -> tuple[str, str]:
+    """`_draw_name` plus the sibling surname — the ONE naming path `_gen_seat` and
+    `_seat_name` share. The surname swap happens after the draw and reads its own
+    rng streams, so the main rng is consumed exactly as before."""
+    nm, country = _draw_name(rng, school, entry)
+    sur = _seat_surname(school, entry, seat, salt)
+    if sur:
+        nm = f"{nm.split(' ', 1)[0]} {sur}"
+    return nm, country
+
+
+def generated_siblings(school: School, year: int, pid: str, salt: str) -> list[dict]:
+    """Every GENERATED sibling of `pid` on this season's roster of `school`, as
+    member dicts `{pid, name, gender, school, entry, relation}` — older (the seat's
+    own link) and younger (the seats in this town whose link points at it). For the
+    player page; the pairing reads `Prospect.jhsaa["sibling"]` directly."""
+    roster = build_roster(school, year, salt)
+    me = next((p for p in roster if p.pid == pid), None)
+    if me is None or not SIBLING_ENABLED:
+        return []
+    out = []
+    older = me.jhsaa.get("sibling")
+    if older:
+        out.append({"pid": older, "name": me.jhsaa.get("sibling_name", ""),
+                    "gender": me.jhsaa.get("sibling_gender", ""),
+                    "school": me.jhsaa.get("sibling_school", ""),
+                    "entry": me.jhsaa.get("sibling_entry"), "relation": "sibling"})
+    entry, seat = me.entry_year, me.jhsaa.get("seat", -1)
+    if seat < 0:
+        return out
+    from app import overrides as ov
+    pool = _town_index(ov.jhsaa_playup_version()).get(school.city) or [school]
+    for sc in pool:
+        for e in range(entry + 1, entry + SIBLING_MAX_GAP + 1):
+            if e < sibling_era() or e > year:
+                continue
+            n = _freshman_class_size(sc.key, e, sc.classification, salt, 0)
+            for st in range(n):
+                link = sibling_link(sc, e, st, salt)
+                if link and link[0].ident == school.ident and link[1] == entry and link[2] == seat:
+                    r = random.Random(f"{salt}|jhsaa|{sc.key}|{e}|{st}")
+                    out.append({"pid": make_pid("jhsaa", sc.ident, sc.gender, e, st),
+                                "name": _seat_full_name(r, sc, e, st, salt)[0],
+                                "gender": sc.gender, "school": sc.name,
+                                "entry": e, "relation": "sibling"})
+    return out
+
+
 #: Every per-save era cutover, as `worldconfig` keys. ‼️ DERIVED FROM HERE BY
 #: `world.reset()`, never retyped there: a new save deletes the JHSAA archive but
 #: KEEPS `world_setting`, so an era left behind carries the PRIOR league's
@@ -3190,7 +3355,8 @@ def exchange_student(school: School, year: int, salt: str,
 #: resetter reads is what stops the sixth being forgotten too.
 ERA_SETTINGS = ("jhsaa_name_era", "jhsaa_dev_era", "jhsaa_talent_era",
                 "jhsaa_career_era", "jhsaa_exchange_era", "jhsaa_intl_era",
-                "jhsaa_band_era", "jhsaa_style_era", "jhsaa_jv_parastate_era")
+                "jhsaa_band_era", "jhsaa_style_era", "jhsaa_jv_parastate_era",
+                "jhsaa_sibling_era")
 
 
 def reset_eras() -> None:
@@ -3935,7 +4101,7 @@ def _seat_name(school: School, entry: int, seat: int, salt: str) -> str:
     ledger only needs to print who moved, and regenerating a whole Prospect per
     row (~2 ms) was most of what made the transfers page cost seconds."""
     rng = random.Random(f"{salt}|jhsaa|{school.key}|{entry}|{seat}")
-    return _draw_name(rng, school, entry)[0]
+    return _seat_full_name(rng, school, entry, seat, salt)[0]
 
 
 def transfer_ledger() -> list[dict]:
@@ -5128,7 +5294,7 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
     if prng.random() < PRODIGY_RATE:
         lo2, hi2 = PRODIGY_MATURITY
         maturity = (max(maturity[0], lo2), max(maturity[1], hi2))
-    nm, country = _draw_name(rng, school, entry)
+    nm, country = _seat_full_name(rng, school, entry, seat, salt)
     # ‼️ Always generated AS "US": `generate_prospect` branches on country (talent
     # shift, elite roll, academics, hometown path) and consumes the rng differently,
     # so passing the exchange student's country would shift every attribute roll.
@@ -5220,6 +5386,20 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
     p.hometown = f"{school.city}, {_state_abbr(school.state)}"
     p.high_school = school.name
     p.region, p.domestic = (school.state or "Jefferson"), True
+    # The seat, and the GENERATED sibling tie if this seat rolled one — derived
+    # here, on the same roll that set the surname, so the pairing and the page
+    # read the identity `_seat_full_name` already decided. `p.jhsaa` is the
+    # hand-off dict the recruit board fills later; it is merged there, not replaced.
+    p.jhsaa["seat"] = seat
+    link = sibling_link(school, entry, seat, salt)
+    if link is not None:
+        sc, e, st = link
+        p.jhsaa["sibling"] = make_pid("jhsaa", sc.ident, sc.gender, e, st)
+        p.jhsaa["sibling_school"] = sc.name
+        p.jhsaa["sibling_gender"] = sc.gender
+        p.jhsaa["sibling_entry"] = e
+        p.jhsaa["sibling_name"] = _seat_full_name(
+            random.Random(f"{salt}|jhsaa|{sc.key}|{e}|{st}"), sc, e, st, salt)[0]
     return p
 
 
@@ -7256,6 +7436,16 @@ def district_teams(schools: list[School], year: int, salt: str = "",
                    for q in (l.get("a"), l.get("b")) if q != p.pid}
             if kin:
                 sibs[p.pid] = kin
+        # GENERATED siblings (owner rule 2026-09), unioned with the authored ties.
+        # Only a pair on THIS roster matters to the arrangers, so the tie is
+        # entered from both ends when both are here; a sibling at another school
+        # or on the other gender's roster is the page's business, not the lineup's.
+        here = {p.pid for p in roster}
+        for p in roster:
+            o = p.jhsaa.get("sibling")
+            if o and o in here:
+                sibs.setdefault(p.pid, set()).add(o)
+                sibs.setdefault(o, set()).add(p.pid)
         # THE COACH EVALUATION LAYER's inputs, resolved once per program here and
         # never again (the `sibling_ids` rule): his temperament, and his read of
         # each of these players for this season.
@@ -11091,6 +11281,7 @@ def graduating_class(gender: str, year: int, *, seed: int = 0, salt: str = "",
             w, l = ts.records.get(p.pid, [0, 0])
             p.high_school = name
             p.jhsaa = {
+                **p.jhsaa,
                 "school": name, "district": ts.school.district,
                 "group": ts.school.group, "classification": ts.school.classification,
                 "team_record": ts.record, "district_record": ts.district_record,

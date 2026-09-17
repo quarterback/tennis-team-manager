@@ -3006,12 +3006,37 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
 - **‼️ FAMILY TIES ARE OWNER-AUTHORED METADATA (owner rule 2026-08, `jhsaa.family_add`
   / `overrides` kind `jhsaa_family`).** A tie links two PIDS and never touches a name —
   required, since `world_jhsaa_dual.lines` archives NAMES and `_jh_line_records` keys
-  off them, so a surname rewrite silently zeroes an archived record. **NO generator, NO
-  suggestion pass, NO same-surname candidate scan — the owner rejected all three
-  explicitly**; the association is made by hand on the player page (roster picker, not
-  a search). One row per family, opaque id, members carry denormalised name/school/
-  entry (a parent need not be enrolled). Works cross-gender, cross-school and
-  cross-era by construction.
+  off them, so a surname rewrite silently zeroes an archived record. Cousins and
+  parents are authored by hand on the player page (roster picker, not a search — no
+  suggestion pass, no same-surname candidate scan). One row per family, opaque id,
+  members carry denormalised name/school/entry (a parent need not be enrolled). Works
+  cross-gender, cross-school and cross-era by construction.
+  - **‼️ SIBLINGS ALSO ROLL AT GENERATION (owner rule 2026-09, `jhsaa.sibling_link`,
+    `docs/AAR-jhsaa-generated-siblings.md`) — this REVERSED the "no generator" rule for
+    siblings only.** Tagging them by hand on a real save became too tedious to keep
+    up. The reason behind the old rule survives intact: **a surname is NOT evidence**.
+    A freshman seat rolls (`SIBLING_RATE` 0.06) to be the younger sibling of an older
+    player (`SIBLING_MAX_GAP` 1-3 entry years) at the SAME school, either gender, or —
+    for the rest of the hits (`SIBLING_HOME_SHARE` 0.70) — at another school in the
+    same TOWN, same locality first; never further. The younger TAKES the older's
+    surname, so the roll is the cause and the shared name the consequence: two
+    Johnsons at one school are strangers unless the roll tied them (pinned). The tie
+    is DERIVED on read, never stored — `Prospect.jhsaa["sibling"]` off the same roll,
+    unioned with the authored ties in `district_teams` (both ends, same roster only,
+    so the pairing sees it) and shown by `generated_siblings` on the player page
+    (older off the seat's own link, younger by scanning the town's later cohorts —
+    rng rolls, cheap). Exported as `sibling_id` on `players.csv`.
+    ‼️ **ERA-GATED ON THE ENTRY COHORT** (`sibling_era`, in `ERA_SETTINGS`) because it
+    renames a player and the archive keys on names. ‼️ The DECISION to roll reads no
+    school list (local, pinned); only the PICK on a hit reads the town index
+    (`_town_index`, memoised on the play-up fingerprint), so adding a program to a
+    town can move which older player an existing hit lands on — accepted, same
+    trade-off as `_playup_league_cache`. `_seat_full_name` is the ONE naming path
+    (`_gen_seat` and the ledger's `_seat_name`); the surname swap runs on its own
+    rng streams after `_draw_name`, so no attribute roll moves (pinned).
+    `extra=0` in the older-cohort size is a safe UNDER-estimate (turnout only raises
+    the target the same gauss draw scales), so every picked seat exists. Exchange
+    seats (≥ `EXCHANGE_SEAT_BASE`) never roll. `SIBLING_ENABLED` is the kill switch.
   - **‼️ A RELATION BELONGS TO THE PAIR, NOT THE HOUSEHOLD (owner rule 2026-08,
     `jhsaa.family_links`).** It was one `relation` per family, so a household begun
     as cousins made every later member a cousin of everyone — "it doesn't let you

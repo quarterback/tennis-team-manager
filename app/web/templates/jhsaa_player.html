@@ -262,10 +262,21 @@
    and across ERAS (a former player's child), and the other member need not be
    enrolled at all — which is why the stored member carries its own name/school.
    ‼️ The picker below is a PICKER, not a search: the owner decides who is related.
-   No candidate scan exists anywhere in the app and none may be added. #}
+   Siblings ALSO roll at generation (`jhsaa.sibling_link`, owner rule 2026-09) and
+   are listed above the authored ties; cousins and parents are authored only. #}
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">Family</span></div>
       <div class="bl-panel-body">
+        {# GENERATED siblings: the roll's ties, derived on read (owner rule 2026-09).
+           Rendered exactly like an authored sibling — the tie is as real as any other
+           on the page — and listed first because it needs no household to exist. #}
+        {% for o in generated %}
+        <p class="bit">
+          <a href="{{ url_for('jhsaa_player', school=o.school, pid=o.pid, u=u, g=o.gender) }}">{{ o.name }}</a>
+          · sibling
+          {%- if o.school != view.school %} · {{ o.school }}{% endif %}
+          {%- if o.gender != view.gender %} · {{ o.gender }}{% endif %}</p>
+        {% endfor %}
         {% if request.cookies.get('jh_family_result') %}
         <p class="bit" style="margin-bottom:10px;color:var(--brand-strong)">{{ request.cookies.get('jh_family_result') }}</p>
         {% endif %}

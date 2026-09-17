@@ -5748,7 +5748,7 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                     # A recorded family tie, for the roster chip. `fam_map` is
                     # resolved ONCE above, never per player — `families()` reads an
                     # override fingerprint, which is a SQLite round trip.
-                    "family": _family_row(fam_map, p.pid)}
+                    "family": _family_row(fam_map, p.pid, p, roster)}
                    for p in roster],
         "honors": (season or {}).get("honors", []),
         "trophy_banner": trophy_banner,
@@ -6085,15 +6085,28 @@ def jhsaa_schools_view(seed: int, gender: str, mode: str = "county",
             "scope": _jh_scope(g, grp, list(jh.GROUPS), yr, years, None, None)}
 
 
-def _family_row(fam_map: dict, pid: str) -> dict | None:
+def _family_row(fam_map: dict, pid: str, p=None, roster=()) -> dict | None:
     """The compact family tie a roster row shows — label plus the other members.
-    Reads a PRE-RESOLVED map; it never resolves the override fingerprint itself."""
+    Reads a PRE-RESOLVED map; it never resolves the override fingerprint itself.
+    With no authored family, a GENERATED sibling tie (`p.jhsaa["sibling"]`, or a
+    roster-mate whose tie points at `p`) makes the same chip off the roster alone."""
     hit = fam_map.get(pid)
-    if not hit:
+    if hit:
+        _fid, fam = hit
+        return {"label": fam.get("label", ""),
+                "others": [m for m in (fam.get("members") or []) if m.get("pid") != pid]}
+    if p is None:
         return None
-    _fid, fam = hit
-    return {"label": fam.get("label", ""),
-            "others": [m for m in (fam.get("members") or []) if m.get("pid") != pid]}
+    others = []
+    if p.jhsaa.get("sibling"):
+        others.append({"pid": p.jhsaa["sibling"], "name": p.jhsaa.get("sibling_name", ""),
+                       "school": p.jhsaa.get("sibling_school", ""),
+                       "gender": p.jhsaa.get("sibling_gender", "")})
+    others += [{"pid": q.pid, "name": q.name, "school": q.high_school, "gender": ""}
+               for q in roster if q.jhsaa.get("sibling") == pid]
+    if not others:
+        return None
+    return {"label": p.name.split(" ", 1)[-1], "others": others}
 
 
 #: Grade -> class year, the name a results line calls a player by. The same four

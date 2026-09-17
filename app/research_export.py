@@ -260,6 +260,9 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                 "style_trait": p.traits.get("style_trait", "none"),
                 "captain": int(pid in caps) if known else "",
                 "captain_order": caps.index(pid) + 1 if pid in caps else "",
+                # The GENERATED older sibling's player_id (`jhsaa.sibling_link`),
+                # blank for most rows. Authored families are not exported here.
+                "sibling_id": (getattr(p, "jhsaa", None) or {}).get("sibling", ""),
             })
 
     duals, lines, line_players = [], [], []
