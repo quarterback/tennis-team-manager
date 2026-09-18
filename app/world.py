@@ -667,6 +667,11 @@ def reset(seed: int = DEFAULT_SEED) -> None:
                        " DELETE FROM world_jhsaa; DELETE FROM world_jhsaa_dual;"
                        " DELETE FROM world_jhsaa_individual; DELETE FROM world_jhsaa_injury; DELETE FROM world_jhsaa_jv_state;"
                        " DELETE FROM world_jhsaa_standing;")
+    # The reclassification cycle's own tables (app/jhsaa_reclass.py) — created
+    # here if absent, since the reset can run before that module ever opened them.
+    from . import jhsaa_reclass as _rc
+    conn.executescript(_rc._SCHEMA + " DELETE FROM world_jhsaa_reclass;"
+                       " DELETE FROM world_jhsaa_reclass_move;")
     conn.commit()
     conn.close()
     # God-mode editor overrides (player moves, lineups, prestige/academics priors,
@@ -3605,6 +3610,19 @@ def advance_week(seed: int = DEFAULT_SEED) -> dict:
     # have to have finished playing before the board is read — and on a NEW SAVE that
     # means before the first college season, which is why this is not gated on year > 0
     # the way the pro rung below is.
+    # RECLASSIFICATION HOLD (owner spec 2026-09, `app/jhsaa_reclass.py`): every
+    # `cycle` seasons, before the week-0 JHSAA season plays, the world stops on a
+    # proposal the owner reviews on /jhsaa/reclassification. The fall-portal
+    # pattern: the first encounter builds the slate, later ones keep holding until
+    # it is committed or dismissed. An off-cycle "Run now" opens the same hold.
+    if w["week"] == 0 and w["year"] > 0 and not jhsaa_done(w):
+        from . import jhsaa_reclass as rc
+        cur = rc.pending(w["id"])
+        if cur is None and rc.due(w):
+            cur = rc.open_proposal(w)
+        if cur is not None:
+            return {"event": "jhsaa_reclass_pending", "year": w["year"],
+                    "moves": len(cur["data"].get("moves", []))}
     if w["week"] == 0 and not jhsaa_done(w):
         return run_jhsaa(seed, w)
 
@@ -4661,6 +4679,80 @@ def jhsaa_individual_title_repeats(world_id: int, gender: str,
     for rec in keep:
         rec.pop("_quality")
     return keep
+
+
+def jhsaa_individual_history_rows(world_id: int, gender: str) -> list[dict]:
+    """EVERY individual state champion for every archived season, flat — the
+    record-book ledger the research export ships as `jhsaa_individual_history.csv`,
+    the individual counterpart of `jhsaa_history_rows` (owner request 2026-09).
+
+    A season review used to answer "what happened this season" off a single
+    export and could not ask "what did this season just do to the all-time
+    record book" without opening a decade of archived brackets: a four-straight
+    S1 champion went unnoticed by two comprehensive reviews for exactly that
+    reason. One row per (season, class, flight, champion PLAYER) — a doubles
+    title credits each partner on their own row with the partner as context,
+    the `jhsaa_individual_title_repeats` rule (a career is a person's), and a
+    mixed title credits only THIS gender's half of the `[boy, girl]` pair. JV
+    brackets ride with an empty class (won statewide). The champion and the
+    runner-up are extracted in SQLite by index, never by parsing the draw."""
+    from . import jhsaa as _jh
+    flights = _jh_indiv_flight_order()
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT year, grp, gender, flight,"
+            " json_extract(data, '$.entries[' ||"
+            "   json_extract(data, '$.champion') || ']') AS champ,"
+            " json_extract(data, '$.entries[' ||"
+            "   json_extract(data, '$.runner_up') || ']') AS runner"
+            " FROM world_jhsaa_individual WHERE world_id=? AND gender IN (?, 'mixed')"
+            f" AND flight IN ({','.join('?' * len(flights))})"
+            " AND json_extract(data, '$.champion') IS NOT NULL",
+            (world_id, gender, *flights)).fetchall()
+    finally:
+        conn.close()
+    order = {f: i for i, f in enumerate(flights)}
+    jv = _jv_brackets()
+    out = []
+    for r in rows:
+        if r["flight"] not in order or not r["champ"]:
+            continue
+        champ = _relabel(json.loads(r["champ"]))
+        runner = _relabel(json.loads(r["runner"])) if r["runner"] else {}
+        players = champ.get("players") or ()
+        mine = (0 if gender == "boys" else 1) if r["gender"] == "mixed" else None
+        for i, p in enumerate(players):
+            pid = p.get("pid")
+            if not pid or (mine is not None and i != mine):
+                continue
+            out.append({
+                "season_year": BASE_YEAR + r["year"] + 1,   # `jhsaa_season_year`
+                "world_year": r["year"],
+                "gender": gender,
+                "classification": "" if r["flight"] in jv else r["grp"],
+                "flight": r["flight"],
+                "flight_name": _jh_flight_name(r["flight"]),
+                "champion_pid": pid,
+                "champion_name": p.get("name", ""),
+                "school": champ.get("school", ""),
+                "grade": p.get("grade") if p.get("grade") is not None else "",
+                "seed": champ.get("seed") if champ.get("seed") is not None else "",
+                "partner_pid": next((q.get("pid", "") for j, q in enumerate(players)
+                                     if j != i), ""),
+                "partner_name": next((q.get("name", "") for j, q in enumerate(players)
+                                      if j != i), ""),
+                "runner_up": runner.get("full_label") or runner.get("label") or "",
+                # The finalist's PIDS, not only a label: names are not unique and a
+                # doubles label joins two of them, so a label cannot be joined back.
+                "runner_up_pids": " ".join(q.get("pid", "") for q in
+                                           (runner.get("players") or ()) if q.get("pid")),
+                "runner_up_school": runner.get("school", ""),
+                "runner_up_seed": runner.get("seed") if runner.get("seed") is not None else "",
+            })
+    out.sort(key=lambda t: (t["world_year"], t["classification"], order[t["flight"]],
+                            t["champion_pid"]))
+    return out
 
 
 def jhsaa_individual_results(world_id: int, year: int, gender: str, group: str,

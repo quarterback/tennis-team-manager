@@ -40,6 +40,7 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     player_ranks, player_journey)
 from .state import preseason_view as preseason_view_data
 from .state import jhsaa_front_view
+from .state import jhsaa_reclass_view, jhsaa_realignments_view
 from .state import (jhsaa_view, jhsaa_scope_view, jhsaa_school_view, jhsaa_past_winners,
                     jhsaa_bracket_view, jhsaa_toc_view, jhsaa_district_view, jhsaa_districts_view,
                     jhsaa_honors_view,
@@ -230,6 +231,7 @@ NAV_GROUPS = [
         {"id": "gtt_alumni","label": "Alumni",       "icon": "fa-solid fa-address-book",     "endpoint": "gtt_alumni",       "args": {}},
     ]),
     ("Tools", [
+        {"id": "clinch",    "label": "Clinch Report", "icon": "fa-solid fa-newspaper", "endpoint": "clinch_home", "args": {}},
         {"id": "research_export", "label": "Export Research Data", "icon": "fa-solid fa-file-arrow-down", "endpoint": "research_export", "args": {}},
         {"id": "guide",     "label": "Guide",        "icon": "fa-solid fa-book-open", "endpoint": "guide",           "args": {}},
         {"id": "editor",    "label": "Editor",       "icon": "fa-solid fa-screwdriver-wrench", "endpoint": "editor",          "args": {}},
@@ -257,6 +259,7 @@ def _active_nav(req) -> str:
     if p.startswith("/world"):            return "world"
     if p.startswith("/data"):             return "data"
     if p.startswith("/research/export"):  return "research_export"
+    if p.startswith("/clinch"):           return "clinch"
     if p.startswith("/rankings"):         return "rankings"
     if p.startswith("/results"):          return "results"
     if p.startswith("/injuries"):         return "injuries"
@@ -364,6 +367,10 @@ def _game_context():
                 action = "Run awards"
             elif not wd.cups_done(w):
                 action = "Run Davis / BJK Cup"
+        elif w["week"] == 0 and w["year"] > 0 and not wd.jhsaa_done(w) and _reclass_open(w):
+            # A reclassification proposal is open: the advance holds on it, so the
+            # button sends the reader to the review page (the fall-portal shape).
+            stage, action = "jhsaa_reclass", "Review reclassification"
         elif w["week"] == 0 and not wd.jhsaa_done(w):
             # The JHSAA rung runs FIRST at week 0 (before the pros, before any college
             # dual — see advance_week), so the button must advertise it first or it
@@ -388,6 +395,16 @@ def _game_context():
                 "signed": sum(wd.signed_counts().values())}
     except Exception:
         return None
+
+
+def _reclass_open(w: dict) -> bool:
+    """Whether a JHSAA reclassification proposal is open (or due and about to be):
+    resolved once per shell render, cheap — one indexed row."""
+    try:
+        from app import jhsaa_reclass as rc
+        return rc.pending(w["id"]) is not None or rc.due(w)
+    except Exception:
+        return False
 
 
 def _universe(req) -> tuple[str, str, str, str]:
@@ -684,6 +701,11 @@ def create_app() -> Flask:
         # there are dozens of program, player, history and tournament routes, and a
         # typed list quietly sends the next new one back through the college loader.
         if request.path.startswith("/jhsaa"):
+            return
+        # The hosted Clinch Report is a static site the sidecar rendered from
+        # exports; serving a file reads no roster cache. Same namespace rule,
+        # same position below the JHSAA-only check.
+        if request.path.startswith("/clinch"):
             return
         # Cold. Decide loader vs inline by WORLD IDENTITY (the generation salt — a
         # fresh random per New League / takeover, stable within a league), NOT a
@@ -1343,6 +1365,58 @@ def create_app() -> Flask:
         division, gender, label, u = _universe(request)
         return render_template("data_portal.html", active="Data", u=u, uni_label=label,
                                portal=data_portal_view(division, gender))
+
+    # ---- THE CLINCH REPORT, HOSTED (owner request 2026-09) --------------------
+    # `analytics/site/` served under /clinch/, built in-process from the same
+    # export bytes /research/export downloads, through the deferred-job idiom
+    # (a render is minutes of CPU; the app has one request thread). See
+    # `app/clinch.py`.
+    from app import clinch as _clinch
+    from flask import send_from_directory
+
+    @app.route("/clinch/manage", methods=["GET"])
+    def clinch_manage():
+        world = wd.load_world(DEFAULT_SEED)
+        default_year = wd.jhsaa_season_year(world) if world else 2027
+        with _jh_jobs_lock:
+            building = ("clinch", "build") in _jh_jobs
+        return render_template("clinch_manage.html", active="Tools",
+                               default_year=default_year, cached=_clinch.cached_seasons(),
+                               info=_clinch.build_info(), ready=_clinch.site_ready(),
+                               building=building, max_seasons=_clinch.MAX_SEASONS,
+                               error=request.args.get("error", ""))
+
+    @app.route("/clinch/build", methods=["POST"])
+    def clinch_build():
+        try:
+            year = int(request.form.get("year", ""))
+            seasons = int(request.form.get("seasons", "1"))
+        except ValueError:
+            abort(400, "Year and seasons must be numbers.")
+        genders = tuple(g for g in _clinch.GENDERS if request.form.get(f"g_{g}") == "on") \
+            or _clinch.GENDERS
+        kw = dict(year=year, seasons=seasons, genders=genders,
+                  player_pages=request.form.get("player_pages") == "on",
+                  classification=request.form.get("classification", "all") or "all",
+                  refresh=request.form.get("refresh") == "on")
+        _jh_deferred(("clinch", "build"), lambda: _clinch.build(**kw), wait=0.05)
+        return redirect(url_for("clinch_home"))
+
+    @app.route("/clinch/")
+    @app.route("/clinch/<path:subpath>")
+    def clinch_home(subpath: str = "index.html"):
+        key = ("clinch", "build")
+        with _jh_jobs_lock:
+            job = _jh_jobs.get(key)
+        if job is not None:
+            if not job["ev"].is_set():
+                return _jh_building("the Clinch Report")
+            _jh_job_pop(key)
+            if job["error"]:
+                return redirect(url_for("clinch_manage", error=job["error"]))
+        if not _clinch.site_ready():
+            return redirect(url_for("clinch_manage"))
+        return send_from_directory(str(_clinch.SITE), subpath)
 
     @app.route("/research/export", methods=["GET", "POST"])
     def research_export():
@@ -2637,6 +2711,92 @@ def create_app() -> Flask:
                                                         request.args.get("region")),
                                gender=gender, uni_label=label, u=u)
 
+    # ---- RECLASSIFICATION (owner spec 2026-09, app/jhsaa_reclass.py) ----------
+    def _rc_back(msg: str = ""):
+        _, _, _, u = _universe(request)
+        g = request.form.get("g") or request.args.get("g") or ""
+        args = {"u": u}
+        if g:
+            args["g"] = g
+        if msg:
+            args["msg"] = msg
+        return redirect(url_for("jhsaa_reclassification", **args))
+
+    @app.route("/jhsaa/reclassification")
+    def jhsaa_reclassification():
+        """The cycle's proposal page: every pooled school with its evidence and
+        proposed class, the geography moves, counts before/after, the league each
+        mover lands in; veto / pin / add per row; commit, dismiss, run now."""
+        gender, label, u, g, group, year = _jh_scope_args()
+        from app import jhsaa_reclass as rc
+        return render_template("jhsaa_reclass.html", active="High School",
+                               view=jhsaa_reclass_view(DEFAULT_SEED, g, group, year),
+                               gender=gender, u=u, uni_label=label)
+
+    @app.route("/jhsaa/reclassification/run", methods=["POST"])
+    def jhsaa_reclass_run():
+        from app import jhsaa_reclass as rc
+        w = wd.load_world(DEFAULT_SEED)
+        if not w:
+            return _rc_back("No world yet.")
+        rc.open_proposal(w, force=bool(request.form.get("rebuild")))
+        return _rc_back("Proposal built." if not request.form.get("rebuild") else "Proposal rebuilt.")
+
+    @app.route("/jhsaa/reclassification/edit", methods=["POST"])
+    def jhsaa_reclass_edit():
+        from app import jhsaa_reclass as rc
+        w = wd.load_world(DEFAULT_SEED)
+        school = (request.form.get("school") or "").strip()
+        action = request.form.get("action") or ""
+        to = (request.form.get("to") or "").strip()
+        if w and school and action:
+            rc.edit(w, school, action, to)
+        return _rc_back()
+
+    @app.route("/jhsaa/reclassification/config", methods=["POST"])
+    def jhsaa_reclass_config():
+        from app import jhsaa_reclass as rc
+        vals = {}
+        for key in ("cycle", "success_pp", "futility_floor", "futility_pu",
+                    "success_pp_b", "futility_pu_b", "success_pp_g", "futility_pu_g"):
+            vals[key] = (request.form.get(key) or "").strip()
+        for key in ("group_areas", "repatriate_areas"):
+            vals[key] = [x.strip() for x in (request.form.get(key) or "").split(",")]
+        rc.set_config(vals)
+        w = wd.load_world(DEFAULT_SEED)
+        if w and rc.pending(w["id"]):
+            rc.open_proposal(w, force=True)
+        return _rc_back("Coefficients saved.")
+
+    @app.route("/jhsaa/reclassification/commit", methods=["POST"])
+    def jhsaa_reclass_commit():
+        from app import jhsaa_reclass as rc
+        w = wd.load_world(DEFAULT_SEED)
+        if not w:
+            return _rc_back("No world yet.")
+        res = rc.commit(w)
+        if res.get("ok"):
+            # The seed file changed under every cache: schools, leagues, rosters.
+            reset_all()
+        return _rc_back(f"Committed {res.get('moves', 0)} moves." if res.get("ok")
+                        else res.get("msg", "Nothing to commit."))
+
+    @app.route("/jhsaa/reclassification/dismiss", methods=["POST"])
+    def jhsaa_reclass_dismiss():
+        from app import jhsaa_reclass as rc
+        w = wd.load_world(DEFAULT_SEED)
+        if w:
+            rc.dismiss(w)
+        return _rc_back("Proposal dismissed.")
+
+    @app.route("/jhsaa/realignments")
+    def jhsaa_realignments():
+        """Every committed cycle, on the History sub-rail."""
+        gender, label, u, g, group, _year = _jh_scope_args()
+        return render_template("jhsaa_realignments.html", active="High School",
+                               view=jhsaa_realignments_view(DEFAULT_SEED, g, group),
+                               gender=gender, u=u, uni_label=label)
+
     @app.route("/jhsaa/toc")
     def jhsaa_toc():
         """The Tournament of Champions — its own bracket, per gender."""
@@ -3591,10 +3751,14 @@ def create_app() -> Flask:
                 picker_msg = (f"{fam_school} fielded nobody in {fam_season} who is not "
                               "already tied to this player." if tied else
                               f"{fam_school} fielded nobody in {fam_season}.")
+        # GENERATED siblings (owner rule 2026-09) — derived from the roll, never
+        # stored, resolved by the view from the season and school the card
+        # itself resolved (former/renamed programs and graduates included).
+        generated = view.get("generated") or []
         return render_template("jhsaa_player.html", active="High School", view=view,
                                gender=gender, u=u, uni_label=label,
                                school_names=school_names,
-                               family=_jh.family_for(pid),
+                               family=_jh.family_for(pid), generated=generated,
                                relations=_jh.FAMILY_RELATIONS,
                                fam_g=fam_g, fam_school=fam_school,
                                fam_season=fam_season, picker=picker,

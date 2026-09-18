@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header %}
+{% block title %}JHSAA Reclassification{% endblock %}
+{% block content %}
+
+{{ jh_header(view.scope, u, 'reclass', 'Reclassification',
+             'The four-season realignment: geography first, then one sort per pool on effective size, cut into equal bands. Review, edit, commit.',
+             [('Cycle', view.cycle_label)], classless=true) }}
+
+<datalist id="rc-schools">
+  {% for s in view.all_schools %}<option value="{{ s }}">{% endfor %}
+</datalist>
+
+<div class="jh-shell">
+
+{% if request.args.get('msg') %}
+<p class="bit" style="margin:0 0 10px;color:var(--brand-strong)">{{ request.args.get('msg') }}</p>
+{% endif %}
+
+{# ---- controls: run / config ------------------------------------------------ #}
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Cycle</span>
+    <span class="bl-panel-meta">{% if view.pending %}proposal open · built from seasons {{ view.pending.data.season_years|join(', ') }}{% elif view.due %}a cycle is due — it opens on the next advance, or now{% else %}no proposal open · last committed {{ view.last_label }}{% endif %}</span></div>
+  <div class="bl-panel-body" style="padding:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:end">
+    {% if not view.pending %}
+    <form method="post" action="{{ url_for('jhsaa_reclass_run') }}">
+      <input type="hidden" name="u" value="{{ u }}">
+      <button class="bl-btn" type="submit" {% if view.seasons_archived < 1 %}disabled title="No archived JHSAA season yet"{% endif %}>Run reclassification now</button>
+    </form>
+    {% else %}
+    <form method="post" action="{{ url_for('jhsaa_reclass_run') }}">
+      <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="rebuild" value="1">
+      <button class="bl-btn" type="submit">Rebuild proposal</button>
+    </form>
+    <form method="post" action="{{ url_for('jhsaa_reclass_commit') }}"
+          data-loading='{"title":"Committing the reclassification…","sub":"Rewriting the seed file and redrawing the leagues of every touched class."}'>
+      <input type="hidden" name="u" value="{{ u }}">
+      <button class="bl-run-big" type="submit" style="width:auto;height:34px;margin:0;padding:0 16px">Commit {{ view.pending.data.moves|length }} moves</button>
+    </form>
+    <form method="post" action="{{ url_for('jhsaa_reclass_dismiss') }}">
+      <input type="hidden" name="u" value="{{ u }}">
+      <button class="bl-btn" type="submit">Dismiss</button>
+    </form>
+    {% endif %}
+    <details style="margin-left:auto">
+      <summary class="bit" style="cursor:pointer">Coefficients</summary>
+      <form method="post" action="{{ url_for('jhsaa_reclass_config') }}" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-top:8px">
+        <input type="hidden" name="u" value="{{ u }}">
+        {% for key, label in [('cycle','Seasons per cycle'),('success_pp','Success pts → enrollment (9A-5A)'),('futility_floor','Futility floor (win rate)'),('futility_pu','Futility per unit (9A-5A)'),('success_pp_b','Success (4A-1A, blank = scaled)'),('futility_pu_b','Futility (4A-1A, blank = scaled)'),('success_pp_g','Success (Groups, blank = scaled)'),('futility_pu_g','Futility (Groups, blank = scaled)')] %}
+        <label class="bl-field" style="flex-direction:column;align-items:flex-start"><span class="bl-field-label">{{ label }}</span>
+          <input class="bl-select" name="{{ key }}" value="{{ view.config[key] if view.config[key] is not none else '' }}" style="width:150px"></label>
+        {% endfor %}
+        <label class="bl-field" style="flex-direction:column;align-items:flex-start"><span class="bl-field-label">Group territory (areas, comma-separated)</span>
+          <input class="bl-select" name="group_areas" value="{{ view.config.group_areas|join(', ') }}" style="min-width:320px"></label>
+        <label class="bl-field" style="flex-direction:column;align-items:flex-start"><span class="bl-field-label">Approved eastern areas (1A → Groups)</span>
+          <input class="bl-select" name="repatriate_areas" value="{{ view.config.repatriate_areas|join(', ') }}" style="min-width:260px"></label>
+        <button class="bl-btn" type="submit">Save{% if view.pending %} &amp; rebuild{% endif %}</button>
+      </form>
+    </details>
+  </div>
+</div>
+
+{% if view.pending %}
+{% set p = view.pending.data %}
+
+{# ---- counts before / after ---------------------------------------------- #}
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Class counts</span>
+    <span class="bl-panel-meta">{{ p.moves|length }} moves · {{ p.n_up }} up · {{ p.n_down }} down · {{ p.geo|length }} cross-ladder</span></div>
+  <div class="tbl-scroll">
+    <table class="jh-ledger nowrap figures">
+      <tr><th></th>{% for c in view.groups %}<th>{{ c|jh_group_short }}</th>{% endfor %}</tr>
+      <tr><td>Before</td>{% for c in view.groups %}<td>{{ p.counts_before.get(c, 0) }}</td>{% endfor %}</tr>
+      <tr><td>After</td>{% for c in view.groups %}<td><b>{{ p.counts_after.get(c, 0) }}</b></td>{% endfor %}</tr>
+    </table>
+  </div>
+</div>
+
+{# ---- add a school ---------------------------------------------------------- #}
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Add a school to a pool</span>
+    <span class="bl-panel-meta">a Group school asking back onto the A ladder (or the reverse) — the sort places it</span></div>
+  <div class="bl-panel-body" style="padding:12px">
+    <form method="post" action="{{ url_for('jhsaa_reclass_edit') }}" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
+      <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="action" value="add">
+      <label class="bl-field"><span class="bl-field-label">School</span>
+        <input class="bl-select" name="school" list="rc-schools" required style="min-width:240px"></label>
+      <label class="bl-field"><span class="bl-field-label">Pool</span>
+        <select class="bl-select" name="to">
+          <option value="A">9A–5A</option><option value="B">4A–1A</option><option value="G">Groups</option>
+        </select></label>
+      <button class="bl-btn" type="submit">+ Add</button>
+    </form>
+  </div>
+</div>
+
+{# ---- the proposal ---------------------------------------------------------- #}
+{% set pools = [('A','9A – 5A'),('B','4A – 1A'),('G','Group 1 – 3')] %}
+<div class="jh-dirbar">
+  <input class="jh-dirfind" id="rc-find" type="search" autocomplete="off" placeholder="Filter by school, class, area or league…" aria-label="Filter">
+  <label class="jh-ttfilter"><span class="k">Show</span>
+    <select class="bl-select" id="rc-only"><option value="">every pooled school</option><option value="moves">moves only</option></select></label>
+  <span class="jh-dircount" id="rc-count">{{ p.rows|length }} schools</span>
+</div>
+{% for key, label in pools %}
+{% set rows = p.rows|selectattr('pool','equalto',key)|list %}
+{% if rows %}
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">{{ label }}</span>
+    <span class="bl-panel-meta">{{ rows|length }} schools · success {{ '%.1f'|format(p.coefficients[key][0]) }}/pt · futility floor {{ '%.2f'|format(p.coefficients[key][1]) }} · {{ '%.0f'|format(p.coefficients[key][2]) }}/unit</span></div>
+  <div class="tbl-scroll">
+    <table class="jh-ledger nowrap figures rc-table">
+      <tr>
+        <th>#</th><th class="nm">School</th><th>Area</th><th>Now</th><th>Enr</th>
+        <th title="Cycle success points, both genders">Pts</th><th title="Combined record over the cycle">Record</th><th>Win%</th>
+        <th title="success − futility, in enrollment units">Adj</th><th title="enrollment + adjustment">Effective</th>
+        <th>Proposed</th><th class="nm">League after</th><th></th>
+      </tr>
+      {% for x in rows %}
+      <tr class="{{ 'title' if x.moves }}" data-q="{{ (x.school ~ ' ' ~ x.current ~ ' ' ~ x.proposed ~ ' ' ~ x.area ~ ' ' ~ x.league_after)|lower }}" data-moves="{{ 1 if x.moves else 0 }}">
+        <td>{{ x.rank }}</td>
+        <td class="nm"><a href="{{ url_for('jhsaa_school', school=x.school, u=u, g=view.scope.gender) }}">{{ x.school }}</a>{% if x.edit %} <span class="jh-chip">{{ x.edit }}</span>{% endif %}</td>
+        <td style="font-variant-numeric:normal">{{ x.area }}</td>
+        <td>{{ x.current|jh_group_short }}</td>
+        <td>{{ x.enrollment }}</td>
+        <td>{{ x.points }}</td>
+        <td>{{ x.wins }}-{{ x.losses }}</td>
+        <td>{{ '%.3f'|format(x.win_rate) if x.win_rate is not none else '—' }}</td>
+        <td>{{ '%+.0f'|format(x.adjustment) }}</td>
+        <td>{{ '%.0f'|format(x.effective) }}</td>
+        <td>{% if x.moves %}<b>{{ x.proposed|jh_group_short }}</b>{% else %}{{ x.proposed|jh_group_short }}{% endif %}</td>
+        <td class="nm" style="font-variant-numeric:normal">{{ x.league_after }}</td>
+        <td style="white-space:nowrap">
+          <form method="post" action="{{ url_for('jhsaa_reclass_edit') }}" style="display:inline-flex;gap:4px;align-items:center">
+            <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="school" value="{{ x.school }}">
+            {% if x.edit %}
+            <button class="bl-btn" name="action" value="clear" type="submit" title="Undo this edit">undo</button>
+            {% else %}
+            <button class="bl-btn" name="action" value="veto" type="submit" title="Keep in {{ x.current }}">veto</button>
+            <select class="bl-select" name="to" style="width:78px">
+              {% for c in view.pool_classes[key] %}<option value="{{ c }}" {% if c == x.proposed %}selected{% endif %}>{{ c|jh_group_short }}</option>{% endfor %}
+            </select>
+            <button class="bl-btn" name="action" value="redirect" type="submit" title="Pin to the chosen class">pin</button>
+            {% endif %}
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endfor %}
+
+{% if p.geo %}
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Geography pass</span>
+    <span class="bl-panel-meta">cross-ladder moves, resolved before the sorts</span></div>
+  <div class="tbl-scroll"><table class="jh-ledger nowrap">
+    <tr><th class="nm">School</th><th>Area</th><th>From</th><th>To pool</th><th>Reason</th></tr>
+    {% for g in p.geo %}<tr><td class="nm">{{ g.school }}</td><td>{{ g.area }}</td><td>{{ g.from|jh_group_short }}</td><td>{{ {'A':'9A–5A','B':'4A–1A','G':'Groups'}[g.pool] }}</td><td>{{ g.reason }}</td></tr>{% endfor %}
+  </table></div>
+</div>
+{% endif %}
+
+{% if p.redraw_notes %}
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">League redraw</span>
+    <span class="bl-panel-meta">every touched class is redrawn on commit — names inherited by overlap, new ones from the bank</span></div>
+  <div class="bl-panel-body" style="padding:12px">
+    {% for c, notes in p.redraw_notes.items() %}<p class="bit"><b>{{ c }}</b>{% for n in notes %}<br>{{ n }}{% endfor %}</p>{% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<script>
+(function () {
+  var find = document.getElementById('rc-find'), only = document.getElementById('rc-only'),
+      count = document.getElementById('rc-count');
+  function apply() {
+    var q = (find.value || '').toLowerCase(), mv = only.value === 'moves', n = 0;
+    document.querySelectorAll('.rc-table tr[data-q]').forEach(function (tr) {
+      var ok = (!q || tr.dataset.q.indexOf(q) >= 0) && (!mv || tr.dataset.moves === '1');
+      tr.style.display = ok ? '' : 'none'; if (ok) n++;
+    });
+    count.textContent = n + ' schools';
+  }
+  find.addEventListener('input', apply); only.addEventListener('change', apply);
+})();
+</script>
+{% else %}
+<div class="bl-panel"><div class="jh-empty">
+  No proposal is open. {% if view.seasons_archived %}The last {{ view.config.cycle }} archived seasons ({{ view.recent_label }}) would be the cycle's input.{% else %}Play a JHSAA season first.{% endif %}
+</div></div>
+{% endif %}
+</div>
+{% endblock %}

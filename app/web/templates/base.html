@@ -170,6 +170,10 @@
           <a class="fm-advance" href="{{ url_for('fall_portal', u=u) }}" style="text-decoration:none">
             <span class="fm-advance-label">Review fall portal</span>
             <span aria-hidden="true"><i class="fa-solid fa-arrows-rotate"></i></span></a>
+          {% elif game and game.stage == 'jhsaa_reclass' %}
+          <a class="fm-advance" href="{{ url_for('jhsaa_reclassification', u=u) }}" style="text-decoration:none">
+            <span class="fm-advance-label">Review reclassification</span>
+            <span aria-hidden="true"><i class="fa-solid fa-arrows-rotate"></i></span></a>
           {% else %}
           {# Awards are their own step and /world/advance refuses to move past them,
              so post to the awards action while they're pending or the button lies. #}

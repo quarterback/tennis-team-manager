@@ -3006,12 +3006,37 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
 - **‼️ FAMILY TIES ARE OWNER-AUTHORED METADATA (owner rule 2026-08, `jhsaa.family_add`
   / `overrides` kind `jhsaa_family`).** A tie links two PIDS and never touches a name —
   required, since `world_jhsaa_dual.lines` archives NAMES and `_jh_line_records` keys
-  off them, so a surname rewrite silently zeroes an archived record. **NO generator, NO
-  suggestion pass, NO same-surname candidate scan — the owner rejected all three
-  explicitly**; the association is made by hand on the player page (roster picker, not
-  a search). One row per family, opaque id, members carry denormalised name/school/
-  entry (a parent need not be enrolled). Works cross-gender, cross-school and
-  cross-era by construction.
+  off them, so a surname rewrite silently zeroes an archived record. Cousins and
+  parents are authored by hand on the player page (roster picker, not a search — no
+  suggestion pass, no same-surname candidate scan). One row per family, opaque id,
+  members carry denormalised name/school/entry (a parent need not be enrolled). Works
+  cross-gender, cross-school and cross-era by construction.
+  - **‼️ SIBLINGS ALSO ROLL AT GENERATION (owner rule 2026-09, `jhsaa.sibling_link`,
+    `docs/AAR-jhsaa-generated-siblings.md`) — this REVERSED the "no generator" rule for
+    siblings only.** Tagging them by hand on a real save became too tedious to keep
+    up. The reason behind the old rule survives intact: **a surname is NOT evidence**.
+    A freshman seat rolls (`SIBLING_RATE` 0.06) to be the younger sibling of an older
+    player (`SIBLING_MAX_GAP` 1-3 entry years) at the SAME school, either gender, or —
+    for the rest of the hits (`SIBLING_HOME_SHARE` 0.70) — at another school in the
+    same TOWN, same locality first; never further. The younger TAKES the older's
+    surname, so the roll is the cause and the shared name the consequence: two
+    Johnsons at one school are strangers unless the roll tied them (pinned). The tie
+    is DERIVED on read, never stored — `Prospect.jhsaa["sibling"]` off the same roll,
+    unioned with the authored ties in `district_teams` (both ends, same roster only,
+    so the pairing sees it) and shown by `generated_siblings` on the player page
+    (older off the seat's own link, younger by scanning the town's later cohorts —
+    rng rolls, cheap). Exported as `sibling_id` on `players.csv`.
+    ‼️ **ERA-GATED ON THE ENTRY COHORT** (`sibling_era`, in `ERA_SETTINGS`) because it
+    renames a player and the archive keys on names. ‼️ The DECISION to roll reads no
+    school list (local, pinned); only the PICK on a hit reads the town index
+    (`_town_index`, memoised on the play-up fingerprint), so adding a program to a
+    town can move which older player an existing hit lands on — accepted, same
+    trade-off as `_playup_league_cache`. `_seat_full_name` is the ONE naming path
+    (`_gen_seat` and the ledger's `_seat_name`); the surname swap runs on its own
+    rng streams after `_draw_name`, so no attribute roll moves (pinned).
+    `extra=0` in the older-cohort size is a safe UNDER-estimate (turnout only raises
+    the target the same gauss draw scales), so every picked seat exists. Exchange
+    seats (≥ `EXCHANGE_SEAT_BASE`) never roll. `SIBLING_ENABLED` is the kill switch.
   - **‼️ A RELATION BELONGS TO THE PAIR, NOT THE HOUSEHOLD (owner rule 2026-08,
     `jhsaa.family_links`).** It was one `relation` per family, so a household begun
     as cousins made every later member a cousin of everyone — "it doesn't let you
@@ -3864,6 +3889,25 @@ was a school marker, shipped "Baptist HS High School".
   Jacqueline already sat inside 1A's band). These leagues are not in the
   importer — they exist through the 2052/affiliate/border scripts — so replay
   this script after those on a re-import.
+- **‼️ RECLASSIFICATION IS A FOUR-SEASON CYCLE, RUN FROM A BUTTON (owner spec
+  2026-09, `app/jhsaa_reclass.py`, `docs/DESIGN-jhsaa-reclassification.md`,
+  `docs/AAR-jhsaa-reclassification.md`).** At week 0, every `cycle` archived
+  seasons, `advance_week` HOLDS on a proposal (`jhsaa_reclass_pending`, the
+  fall-portal pattern) until it is committed or dismissed on
+  `/jhsaa/reclassification`; "Run now" opens it off-cycle. Geography first
+  (Group territory is the five eastern areas + the approved 1A repatriation
+  areas; ladder schools NEVER enter the Groups on territory — Baptist, Mater Dei
+  and Minnesota City were moved out in 2046 and stay out), then ONE sort per pool
+  (9A-5A, 4A-1A, Groups) on `effective_size = enrollment + success − futility`,
+  cut into EQUAL bands. **NO one-class-per-cycle guard** (owner: an agent added
+  one and it was withdrawn). School-level, both genders, always. A commit moves
+  `classification` AND `group` on the seed file (band era: only roster depth and
+  the championship entered change), pops moved schools' `play_up`, redraws the
+  touched classes' leagues through `app/jhsaa_districting.py` (the script's
+  clustering, moved; positions from `data/jhsaa/coords.json`, bank and constants
+  from `data/jhsaa/districting.json` — asserted equal to the importer's), and
+  records every move with its evidence in `world_jhsaa_reclass_move`. The 2046
+  "never cut-line rebands" note is SUPERSEDED. `tests/test_jhsaa_reclass.py`.
 - **‼️ `COMPETITIVE_MOVES` is the mirror of PLAY_UP** — a program may be placed BELOW its
   enrollment class when it cannot compete where enrollment puts it, and the ENROLLMENT is
   scaled to match rather than the other way round (the numbers are fictional; the number

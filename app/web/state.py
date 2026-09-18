@@ -4716,7 +4716,11 @@ def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
     # Seeds are the STATEWIDE ranking of region champions, read off the archive — the
     # order the draw was actually cut from. Never recomputed from a live record: a
     # ranking that drifts from the seeds it produced is the NCAA region-drift bug.
+    # ‼️ `ranked` IS THE FULL SEED ORDER: the twenty champions, then — from
+    # `jhsaa.jv_parastate_era()` — the sixteen at-larges seeded 21-36 on the
+    # selection index, which is also the archived bracket's `field`.
     seeds = {n: i + 1 for i, n in enumerate(ev.get("ranked") or ())}
+    at_large = set(ev.get("at_large") or ())
     region_of = {}
     for region, champ in (ev.get("region_champions") or {}).items():
         region_of[champ] = region
@@ -4830,18 +4834,48 @@ def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
                 card_w=232, card_h=60, gutter=56, leaf_gap=18)
                 if r_rounds else None),
         }
+    # ‼️ THE 36-TEAM SHAPE RENDERS THROUGH THE VARSITY STATE MACHINERY. The at-large
+    # Parastate is the bracket's first round, NAMED in `round_names`, and
+    # `_jh_split_state` therefore draws it as its own tree feeding a fresh 28-team
+    # main draw — the same two canvases `jhsaa_bracket_view` shows a committee class.
+    # A twenty-team season (before the era, or a legacy play-in archive) splits to
+    # `(br, None)` and renders the one tree it always did.
+    main_br, qual_br = _jh_split_state({**render_st, "seed_map": seeds})
+    # The at-large selection, audited: who the index picked, on what, and how far
+    # each went — the committee page's posture for the varsity bids.
+    selection = []
+    for row in ev.get("selection") or ():
+        if row.get("entry", "at_large") != "at_large":   # the table is the bids
+            continue
+        res = world.jhsaa_state_result(render_st, row["school"])
+        selection.append({**row, "seed": seeds.get(row["school"], 0),
+                          "deco": _jh_deco(schools, row["school"], 22),
+                          "finish": res.get("finish", ""),
+                          "advanced": res.get("finish", "") != jh.PARASTATE_NAME})
     return {
         **base, "ready": True,
         "field_n": len(ev.get("field") or ()),
         "qualifier_n": len(ev.get("qualifiers") or ()),
         "state_field_n": len(st.get("field") or ()),
+        "at_large_n": len(at_large),
+        "main_field_n": len((main_br or {}).get("field") or ()),
+        "selection": selection,
+        "index_jv": int(round(jvs.INDEX_JV_WEIGHT * 100)),
+        "index_varsity": int(round(jvs.INDEX_VARSITY_WEIGHT * 100)),
         "regions": regions, "region_n": len(regions),
         # Legacy opening games are merged back into their State bracket above, so
         # desktop's tree and the mobile round tabs render the same complete event.
+        # ‼️ EVERY ROUND, off the FULL bracket — the Parastate included, so the
+        # mobile tabs and the fold list read it whether or not a canvas drew it.
         "rounds": _rounds(render_st),
+        "prelim_n": max(0, len(render_st.get("rounds") or ())
+                        - len((main_br or {}).get("rounds") or ())),
         "canvas": _bracket_canvas(
-            _jh_bracket_cols({**render_st, "seed_map": seeds}, schools),
+            _jh_bracket_cols(main_br, schools),
             card_w=232, card_h=60, gutter=56, leaf_gap=18),
+        "qual_canvas": (_bracket_canvas(_jh_bracket_cols(qual_br, schools),
+                                        card_w=232, card_h=60, gutter=56,
+                                        leaf_gap=18) if qual_br else None),
         **_jh_final_four(st, schools),
         "champion_region": region_of.get(st.get("champion"), ""),
         "region_brk": region_brk,
@@ -5360,6 +5394,19 @@ def _jh_injury_badges(rows: list[dict]) -> dict:
     return injury_pids
 
 
+def _jh_reclass_lines(world_id: int, school: str) -> list[dict]:
+    """The program's committed reclassifications as display rows."""
+    import app.jhsaa_reclass as rc
+    import app.world as world
+    out = []
+    for m in rc.moves_for(world_id, school):
+        out.append({"season_year": world.BASE_YEAR + m["year"] + 1,
+                    "from": m["from_cls"], "to": m["to_cls"], "points": m["points"],
+                    "win_rate": m["win_rate"], "reason": m["reason"],
+                    "manual": bool(m["manual"]), "league": m["league_after"]})
+    return out
+
+
 def jhsaa_school_view(seed: int, gender: str, school: str,
                       year: int | None = None) -> dict:
     """One JHSAA program, as a PROGRAM page: who they are, how this season went, the
@@ -5714,13 +5761,52 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                     # A recorded family tie, for the roster chip. `fam_map` is
                     # resolved ONCE above, never per player — `families()` reads an
                     # override fingerprint, which is a SQLite round trip.
-                    "family": _family_row(fam_map, p.pid)}
+                    "family": _family_row(fam_map, p.pid, p, roster)}
                    for p in roster],
         "honors": (season or {}).get("honors", []),
         "trophy_banner": trophy_banner,
         "history": hist,
         "career_wins": career_wins,
+        # Every reclassification this program has been through (owner spec
+        # 2026-09) — one line per committed move, oldest first.
+        "reclass": _jh_reclass_lines(w["id"], school),
     }
+
+
+def jhsaa_reclass_view(seed: int, gender: str, group: str | None = None,
+                       year: int | None = None) -> dict:
+    """The reclassification page's model: the open proposal (if any), the cycle's
+    knobs, and the section scope for the header."""
+    import app.jhsaa as jh
+    import app.jhsaa_reclass as rc
+    import app.world as world
+    base = jhsaa_scope_view(seed, gender, group, year)
+    w = world.get_or_create(seed)
+    cfg = rc.config()
+    pend = rc.pending(w["id"])
+    last = rc.last_cycle_year(w["id"])
+    recent = rc.cycle_years(w["id"], cfg["cycle"])
+    label = lambda ys: ", ".join(str(world.BASE_YEAR + y + 1) for y in ys) if ys else "—"
+    return {**base,
+            "pending": pend, "due": rc.due(w) if not pend else False,
+            "config": cfg, "groups": list(jh.GROUPS),
+            "pool_classes": {k: list(v) for k, v in rc.POOLS.items()},
+            "all_schools": sorted(r["name"] for r in jh._rows()
+                                  if r.get("girls") or r.get("boys")),
+            "seasons_archived": len(rc.cycle_years(w["id"], 10_000)),
+            "recent_label": label(recent),
+            "last_label": (str(world.BASE_YEAR + last + 1) if last is not None else "never"),
+            "cycle_label": (f"{label(pend['data']['years'])}" if pend else
+                            f"every {cfg['cycle']} seasons")}
+
+
+def jhsaa_realignments_view(seed: int, gender: str, group: str | None = None) -> dict:
+    import app.jhsaa as jh
+    import app.jhsaa_reclass as rc
+    import app.world as world
+    base = jhsaa_scope_view(seed, gender, group)
+    w = world.get_or_create(seed)
+    return {**base, "cycles": rc.history(w["id"]), "groups": list(jh.GROUPS)}
 
 
 def jhsaa_district_view(seed: int, gender: str, group: str, district: str,
@@ -6051,15 +6137,28 @@ def jhsaa_schools_view(seed: int, gender: str, mode: str = "county",
             "scope": _jh_scope(g, grp, list(jh.GROUPS), yr, years, None, None)}
 
 
-def _family_row(fam_map: dict, pid: str) -> dict | None:
+def _family_row(fam_map: dict, pid: str, p=None, roster=()) -> dict | None:
     """The compact family tie a roster row shows — label plus the other members.
-    Reads a PRE-RESOLVED map; it never resolves the override fingerprint itself."""
+    Reads a PRE-RESOLVED map; it never resolves the override fingerprint itself.
+    With no authored family, a GENERATED sibling tie (`p.jhsaa["sibling"]`, or a
+    roster-mate whose tie points at `p`) makes the same chip off the roster alone."""
     hit = fam_map.get(pid)
-    if not hit:
+    if hit:
+        _fid, fam = hit
+        return {"label": fam.get("label", ""),
+                "others": [m for m in (fam.get("members") or []) if m.get("pid") != pid]}
+    if p is None:
         return None
-    _fid, fam = hit
-    return {"label": fam.get("label", ""),
-            "others": [m for m in (fam.get("members") or []) if m.get("pid") != pid]}
+    others = []
+    if p.jhsaa.get("sibling"):
+        others.append({"pid": p.jhsaa["sibling"], "name": p.jhsaa.get("sibling_name", ""),
+                       "school": p.jhsaa.get("sibling_school", ""),
+                       "gender": p.jhsaa.get("sibling_gender", "")})
+    others += [{"pid": q.pid, "name": q.name, "school": q.high_school, "gender": ""}
+               for q in roster if q.jhsaa.get("sibling") == pid]
+    if not others:
+        return None
+    return {"label": p.name.split(" ", 1)[-1], "others": others}
 
 
 #: Grade -> class year, the name a results line calls a player by. The same four
@@ -6162,7 +6261,7 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
             _team_by_year_cache[sch_name] = hit
         return hit
 
-    seasons, player = [], None
+    seasons, player, first_seen = [], None, None
     for yr in years:
         arc = world.get_jhsaa(w["id"], yr, g)
         if not arc:
@@ -6173,7 +6272,14 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         hit = next((p for p in roster if p.pid == pid), None)
         if hit is None:
             continue                       # not enrolled that year (pre-9th, or graduated)
-        player = player or hit
+        if player is None:
+            player = hit
+            # GENERATED siblings, resolved from the first season the player was
+            # actually enrolled and the school the card resolved for it (a former
+            # program, a renamed one, or a transfer stop) — never the current
+            # school list by display name, and never the latest season, which a
+            # graduated player is not on.
+            first_seen = (yr_sc, season_year)
         sched = world.jhsaa_schedule(w["id"], yr, g, yr_sc.name)
         # `sched` is both levels; every reader scopes itself by `level`.
         rec = _jh_line_records(sched).get(hit.name, {"s": [0, 0], "d": [0, 0]})
@@ -6274,6 +6380,8 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         "scope": _jh_scope(g, sc.group, list(jh.GROUPS),
                            years[0] if years else 0, years, None, None),
         "seasons": seasons, "record": f"{wins}-{losses}", "wins": wins, "losses": losses,
+        "generated": (jh.generated_siblings(first_seen[0], first_seen[1], pid, salt)
+                      if first_seen else []),
         # ‼️ HONOUR CHIPS ARE MERGED BY HONOUR, WITH THEIR YEARS (owner rule
         # 2026-08). The flat concatenation printed "All-State First Team (1A)"
         # once per season it was won, which read as a duplicate — they were

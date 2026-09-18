@@ -260,6 +260,9 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                 "style_trait": p.traits.get("style_trait", "none"),
                 "captain": int(pid in caps) if known else "",
                 "captain_order": caps.index(pid) + 1 if pid in caps else "",
+                # The GENERATED older sibling's player_id (`jhsaa.sibling_link`),
+                # blank for most rows. Authored families are not exported here.
+                "sibling_id": (getattr(p, "jhsaa", None) or {}).get("sibling", ""),
             })
 
     duals, lines, line_players = [], [], []
@@ -496,13 +499,72 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                 "held_most_by": r["top"], "held_most_matches": r["top_n"],
             })
 
+    # THE JV TEAM STATE TOURNAMENT, FLAT (owner rule 2026-09 — "make sure the
+    # data gets exported … as well as analytic for future analysis"): one row
+    # per team in the State field, in seed order, with how it entered
+    # (regional champion / at-large), the JV and varsity regular-season records
+    # and the 30/70 selection index the at-larges were picked on, and how far
+    # it went — read off the SAME archived bracket the JSON carries, through
+    # the shared `jhsaa_state_result`, so the two files cannot disagree. A
+    # season archived at twenty (before `jhsaa.jv_parastate_era`) has no
+    # `selection` table; its champions are still listed off `ranked`, with the
+    # index columns empty, so the file exists for every JV State season and an
+    # analysis across the expansion joins on one shape. Classless and
+    # statewide, so classification scope does not cut it.
+    from app import jhsaa as _jh
+    jv_state_rows = []
+    jv_ev = season.get("jv_state") or {}
+    if jv_ev.get("state"):
+        st_ = jv_ev["state"]
+        key_by_name = {t.school.name: t.school.key for t in all_teams}
+        region_of_ = {v: k for k, v in (jv_ev.get("region_champions") or {}).items()}
+        sel_ = jv_ev.get("selection") or [
+            {"school": nm, "entry": "champion", "region": region_of_.get(nm, "")}
+            for nm in (jv_ev.get("ranked") or st_.get("field") or ())]
+        for seed_, r in enumerate(sel_, start=1):
+            nm = r["school"]
+            res = wd.jhsaa_state_result(st_, nm)
+            jv_state_rows.append({
+                "program_id": key_by_name.get(nm, nm), "program_name": nm,
+                "gender": gender, "seed": seed_, "entry": r.get("entry", ""),
+                "region": r.get("region", ""),
+                "jv_wins": r.get("jv_wins", ""), "jv_losses": r.get("jv_losses", ""),
+                "jv_ties": r.get("jv_ties", ""), "jv_pct": r.get("jv_pct", ""),
+                "varsity_reg_wins": r.get("v_wins", ""),
+                "varsity_reg_losses": r.get("v_losses", ""),
+                "varsity_reg_pct": r.get("v_pct", ""),
+                "selection_index": r.get("index", ""),
+                "made_main_draw": int(res["finish"] != _jh.PARASTATE_NAME),
+                "state_place": res["place"], "state_finish": res["finish"],
+                "champion": int(bool(res["champion"]))})
+    # INDIVIDUAL HISTORY — the record book (owner request 2026-09): every
+    # individual state champion of every archived season, one row per champion
+    # PLAYER, so a consumer groups by champion_pid and reads a career (titles,
+    # consecutive titles, a four-grade sweep) instead of reconstructing it from
+    # dozens of archived brackets. Archive path only, like program history;
+    # classification scope does not cut it — a career crosses reclassification.
+    # ‼️ STABLE PROGRAM IDS BESIDE THE NAMES. The archive names a school by its
+    # display name at the time (relabelled to today's on read), and ~300 programs
+    # have been renamed — a name cannot join programs.csv reliably. The id is the
+    # gender's roster identity, as everywhere else in this bundle; a program with
+    # no programs.csv row (a former sponsor) gets an empty id rather than a
+    # dangling one, the coefficient file's rule.
+    individual_history = []
+    if w and not injected:
+        key_by_name_ = {t.school.name: t.school.key for t in all_teams}
+        for r in wd.jhsaa_individual_history_rows(w["id"], gender):
+            r["program_id"] = key_by_name_.get(r["school"], "")
+            r["runner_up_program_id"] = key_by_name_.get(r["runner_up_school"], "")
+            individual_history.append(r)
     tables = {"programs.csv": programs, "players.csv": players, "duals.csv": duals,
               "lines.csv": lines, "line_players.csv": line_players,
               "jhsaa_standings.csv": standings,
               "jhsaa_computer_ratings.csv": computer_ratings,
               "jhsaa_coefficient.csv": coefficient_rows,
               "jhsaa_flights.csv": flight_rows,
-              "jhsaa_program_history.csv": history}
+              "jhsaa_jv_state.csv": jv_state_rows,
+              "jhsaa_program_history.csv": history,
+              "jhsaa_individual_history.csv": individual_history}
     files = {name: _csv(rows) for name, rows in tables.items()}
     files.update({name: json.dumps(value, indent=2, ensure_ascii=False, default=str).encode()
                   for name, value in json_files.items()})
@@ -534,6 +596,14 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "jhsaa_program_history.csv spans EVERY archived season for this gender (one row "
             "per program per year — the app's program-history ledger), not just this export's "
             "scope year; it is empty only when the save has no archived seasons.",
+            "jhsaa_individual_history.csv is the individual RECORD BOOK: every individual "
+            "state champion of EVERY archived season for this gender, one row per champion "
+            "player, with program_id and runner_up_pids/runner_up_program_id for stable joins "
+            "(a doubles title is one row per partner, with the partner as context; a "
+            "mixed title credits only this gender's half; JV brackets carry an empty "
+            "classification), with the runner-up and seeds. Group by champion_pid for career "
+            "title counts, consecutive runs and four-grade sweeps. Empty when the save has no "
+            "archived seasons.",
             "duals.level is 'v' for varsity and 'jv' for the JV season; they share a "
             "schedule table, so a consumer that wants one must filter on it. JV duals ARE "
             "included (the JV season, its Showcase, and the JV Team State Tournament at "
@@ -549,6 +619,15 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "concurrent 10-point tiebreakers — its points are level and it is NOT a tie.",
             "jhsaa_jv_state.json is the JV Team State Tournament: the twenty geographic-area "
             "regional championships and the statewide classless bracket their champions play. "
+            "From the 36-team seasons its bracket's first round is named 'Parastate' in "
+            "round_names: sixteen at-large selections (at_large / selection, an index of 30% JV "
+            "record + 70% varsity regular-season record) played high-low for eight seats in "
+            "the 28-team main draw, where seeds 1-4 bye. jhsaa_jv_state.csv is that field "
+            "FLAT for analysis: one row per team in seed order — entry (champion/at_large), "
+            "region, jv_* and varsity_reg_* records and percentages, selection_index, "
+            "made_main_draw, state_place (teams alive when eliminated, 1 = champion) and "
+            "state_finish — read off the same archived bracket. Seasons played at twenty "
+            "list their champions with the index columns empty. "
             "jhsaa_individuals.json carries the JV Singles/JV Doubles state draws (flights "
             "JVS/JVD, qualifying QJVS/QJVD) under classification key 'ALL' — statewide and "
             "classless, kept in every classification scope.",
