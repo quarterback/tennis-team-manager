@@ -529,11 +529,36 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             r["program_id"] = key_by_name_.get(r["school"], "")
             r["runner_up_program_id"] = key_by_name_.get(r["runner_up_school"], "")
             individual_history.append(r)
+    # THE REALIGNMENT LEDGER (owner rule 2026-09): every move of every committed
+    # reclassification cycle, newest cycle first, so a consumer can track a
+    # program's class across the whole arc of seasons without opening the app.
+    # Archive path only (the coefficient file's rule) and NOT cut to this export's
+    # season: a cycle moves both genders of a school at once, so the rows are
+    # gender-blind and the same in the girls' and boys' bundle. program_id joins
+    # programs.csv on the school's display name; a school that has since stopped
+    # sponsoring this gender gets an empty id, never a dangling one.
+    from app import jhsaa_reclass as _rc
+    realignments = []
+    if w and not injected:
+        key_by_name_r = {t.school.name: t.school.key for t in all_teams}
+        for m in _rc.all_moves(w["id"]):
+            realignments.append({
+                "season_year": m["season_year"], "world_year": m["year"],
+                "school": m["school"], "program_id": key_by_name_r.get(m["school"], ""),
+                "from_class": m["from_cls"], "to_class": m["to_cls"],
+                "enrollment": m["enrollment"], "state_points": m["points"],
+                "win_rate": "" if m["win_rate"] is None else m["win_rate"],
+                "adjustment": m["adjustment"], "effective_size": m["effective"],
+                "rank_in_pool": m["rank"], "reason": m["reason"],
+                "owner_decision": int(bool(m["manual"])),
+                "league_before": m["league_before"] or "",
+                "league_after": m["league_after"] or ""})
     tables = {"programs.csv": programs, "players.csv": players, "duals.csv": duals,
               "lines.csv": lines, "line_players.csv": line_players,
               "jhsaa_standings.csv": standings,
               "jhsaa_computer_ratings.csv": computer_ratings,
               "jhsaa_coefficient.csv": coefficient_rows,
+              "jhsaa_realignments.csv": realignments,
               "jhsaa_jv_state.csv": jv_state_rows,
               "jhsaa_program_history.csv": history,
               "jhsaa_individual_history.csv": individual_history}
@@ -640,6 +665,19 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "programs.csv: a program that has since stopped sponsoring this gender is "
             "omitted and rank counts current sponsors only (the app's page still lists "
             "it). Empty on an injected season or when the save has no archive.",
+            "jhsaa_realignments.csv is the reclassification LEDGER: one row per school per "
+            "committed realignment cycle, EVERY cycle the save has committed (newest first), "
+            "not just this export's season, and identical in the girls' and boys' bundles — a "
+            "cycle moves a school with both its programs. from_class/to_class are the "
+            "classification left and joined (classification and championship group move "
+            "together); enrollment, state_points, win_rate, adjustment and effective_size "
+            "are the evidence the sort placed the school on (effective_size = enrollment + "
+            "success adjustment − futility adjustment); rank_in_pool is its place in the pool "
+            "it was sorted in; reason is sort, geography (a cross-ladder move on territory) "
+            "or owner (a veto, pin or manual addition; owner_decision=1). league_before/after "
+            "name the league the school played in before the cycle and after the redraw. "
+            "season_year is the first season played in the new class. Empty on an injected "
+            "season or when no cycle has been committed.",
             # ‼️ DERIVED from `AT_LARGE_BIDS`/`STATE_FIELD`, never retyped: this
             # sentence claimed "the 48-team groups (7A and Group 1)" and "sixteen
             # selections in seed order 33-48" after both had stopped being true,
@@ -800,6 +838,30 @@ def build_college(year: int, division: str, gender: str, *, season_id: int | Non
             pass    # not archived for this year/division/gender — leave it out, not an error
 
     json_files = {}
+    # THE REALIGNMENT LEDGER (owner rule 2026-09): every move of every committed
+    # reclassification cycle, newest cycle first, so a consumer can track a
+    # program's class across the whole arc of seasons without opening the app.
+    # Archive path only (the coefficient file's rule) and NOT cut to this export's
+    # season: a cycle moves both genders of a school at once, so the rows are
+    # gender-blind and the same in the girls' and boys' bundle. program_id joins
+    # programs.csv on the school's display name; a school that has since stopped
+    # sponsoring this gender gets an empty id, never a dangling one.
+    from app import jhsaa_reclass as _rc
+    realignments = []
+    if w and not injected:
+        key_by_name_r = {t.school.name: t.school.key for t in all_teams}
+        for m in _rc.all_moves(w["id"]):
+            realignments.append({
+                "season_year": m["season_year"], "world_year": m["year"],
+                "school": m["school"], "program_id": key_by_name_r.get(m["school"], ""),
+                "from_class": m["from_cls"], "to_class": m["to_cls"],
+                "enrollment": m["enrollment"], "state_points": m["points"],
+                "win_rate": "" if m["win_rate"] is None else m["win_rate"],
+                "adjustment": m["adjustment"], "effective_size": m["effective"],
+                "rank_in_pool": m["rank"], "reason": m["reason"],
+                "owner_decision": int(bool(m["manual"])),
+                "league_before": m["league_before"] or "",
+                "league_after": m["league_after"] or ""})
     tables = {"programs.csv": programs, "players.csv": players, "duals.csv": duals,
               "lines.csv": lines, "line_players.csv": line_players,
               "college_standings.csv": standings, "college_scholarships.csv": scholarships,

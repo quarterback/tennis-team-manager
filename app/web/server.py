@@ -2791,10 +2791,12 @@ def create_app() -> Flask:
 
     @app.route("/jhsaa/realignments")
     def jhsaa_realignments():
-        """Every committed cycle, on the History sub-rail."""
+        """Committed cycles on the History sub-rail — an index of years, and the
+        one cycle `?cycle=<season year>` names (the newest by default)."""
         gender, label, u, g, group, _year = _jh_scope_args()
+        cycle = request.args.get("cycle", type=int)
         return render_template("jhsaa_realignments.html", active="High School",
-                               view=jhsaa_realignments_view(DEFAULT_SEED, g, group),
+                               view=jhsaa_realignments_view(DEFAULT_SEED, g, group, cycle),
                                gender=gender, u=u, uni_label=label)
 
     @app.route("/jhsaa/toc")

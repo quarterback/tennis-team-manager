@@ -4,45 +4,141 @@
 {% block content %}
 
 {{ jh_header(view.scope, u, 'realignments', 'Realignments',
-             'Every reclassification cycle the association has committed, and the schools it moved.',
+             'Every reclassification cycle the association has committed. Pick a year to see what that cycle moved.',
              [('Cycles', view.cycles|length)]) }}
 
+{# ‼️ ONE CYCLE AT A TIME (owner rule 2026-09). A cycle is ~400 moves on a real
+   save; stacking every cycle in full meant the page grew by that every four
+   seasons. The years are the index — click one (or use the switcher, the
+   section's sibling idiom) and the page shows that cycle. The moves table is
+   itself folded behind a <details>, so a year opens on its counts and its
+   from → to summary, and the list is a click away. Every cycle is also written
+   to a file (data/jhsaa/realignments/) for reading outside the app. #}
 <div class="jh-shell">
 {% if not view.cycles %}
 <div class="bl-panel"><div class="jh-empty">No reclassification has been committed yet.
   <a href="{{ url_for('jhsaa_reclassification', u=u, g=view.scope.gender) }}">Open the cycle.</a></div></div>
 {% else %}
-{% for c in view.cycles %}
-<div class="bl-panel jh-yearpanel">
-  <div class="bl-panel-head">
-    <span class="bl-panel-title">{{ c.season_year }} realignment</span>
-    <span class="bit">{{ c.moves|length }} school{{ '' if c.moves|length == 1 else 's' }} moved · {{ c.geo|length }} cross-ladder</span>
-  </div>
+{% set sel = view.selected %}
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Cycles</span>
+    <span class="bl-panel-meta">
+      <form method="get" style="display:inline">
+        {% if u %}<input type="hidden" name="u" value="{{ u }}">{% endif %}
+        <input type="hidden" name="g" value="{{ view.scope.gender }}">
+        <input type="hidden" name="group" value="{{ view.scope.group }}">
+        <select name="cycle" onchange="this.form.submit()">
+          {% for c in view.cycles %}
+          <option value="{{ c.season_year }}" {{ 'selected' if sel and c.season_year == sel.season_year }}>{{ c.season_year }} · {{ c.n_moves }} moved</option>
+          {% endfor %}
+        </select>
+      </form>
+    </span></div>
   <div class="tbl-scroll">
     <table class="jh-ledger nowrap figures">
-      <tr><th></th>{% for cls in view.groups %}<th>{{ cls|jh_group_short }}</th>{% endfor %}</tr>
-      <tr><td>Before</td>{% for cls in view.groups %}<td>{{ c.counts_before.get(cls, 0) }}</td>{% endfor %}</tr>
-      <tr><td>After</td>{% for cls in view.groups %}<td><b>{{ c.counts_after.get(cls, 0) }}</b></td>{% endfor %}</tr>
-    </table>
-  </div>
-  <div class="tbl-scroll">
-    <table class="jh-ledger nowrap figures">
-      <tr><th class="nm">School</th><th>From</th><th>To</th><th>Enr</th><th>Pts</th><th>Win%</th><th>Adj</th><th>Rank</th><th>Why</th><th class="nm">League</th></tr>
-      {% for m in c.moves %}
-      <tr>
-        <td class="nm"><a href="{{ url_for('jhsaa_school', school=m.school, u=u, g=view.scope.gender) }}">{{ m.school }}</a></td>
-        <td>{{ m.from_cls|jh_group_short }}</td><td><b>{{ m.to_cls|jh_group_short }}</b></td>
-        <td>{{ m.enrollment }}</td><td>{{ m.points }}</td>
-        <td>{{ '%.3f'|format(m.win_rate) if m.win_rate is not none else '—' }}</td>
-        <td>{{ '%+.0f'|format(m.adjustment) }}</td><td>{{ m.rank }}</td>
-        <td style="font-variant-numeric:normal">{{ m.reason }}{% if m.manual %} (owner){% endif %}</td>
-        <td class="nm" style="font-variant-numeric:normal">{{ m.league_after }}</td>
+      <tr><th>Season</th><th>Moved</th><th>Owner decisions</th><th>Cross-ladder</th>{% for cls in view.groups %}<th>{{ cls|jh_group_short }}</th>{% endfor %}</tr>
+      {% for c in view.cycles %}
+      <tr{% if sel and c.season_year == sel.season_year %} class="on"{% endif %}>
+        <td><a href="{{ url_for('jhsaa_realignments', u=u, g=view.scope.gender, group=view.scope.group, cycle=c.season_year) }}"><b>{{ c.season_year }}</b></a></td>
+        <td>{{ c.n_moves }}</td><td>{{ c.n_manual }}</td><td>{{ c.n_geo }}</td>
+        {% for cls in view.groups %}<td>{{ c.counts_after.get(cls, 0) }}</td>{% endfor %}
       </tr>
       {% endfor %}
     </table>
   </div>
+  <div class="ra-foot bit">Each cycle is also written to <code>{{ view.ledger_dir }}/&lt;season&gt;.md</code> and <code>.json</code>, with <code>LEDGER.md</code> holding the whole arc.</div>
 </div>
-{% endfor %}
+
+{% if sel %}
+<div class="bl-panel jh-yearpanel">
+  <div class="bl-panel-head">
+    <span class="bl-panel-title">{{ sel.season_year }} realignment</span>
+    <span class="bit">{{ sel.moves|length }} school{{ '' if sel.moves|length == 1 else 's' }} moved · {{ sel.geo|length }} cross-ladder{% if sel.years %} · scored on {{ sel.years|length }} seasons{% endif %}</span>
+  </div>
+  <div class="tbl-scroll">
+    <table class="jh-ledger nowrap figures">
+      <tr><th></th>{% for cls in view.groups %}<th>{{ cls|jh_group_short }}</th>{% endfor %}</tr>
+      <tr><td>Before</td>{% for cls in view.groups %}<td>{{ sel.counts_before.get(cls, 0) }}</td>{% endfor %}</tr>
+      <tr><td>After</td>{% for cls in view.groups %}<td><b>{{ sel.counts_after.get(cls, 0) }}</b></td>{% endfor %}</tr>
+    </table>
+  </div>
+  {% if view.matrix %}
+  <div class="bl-panel-body" style="padding:8px 12px">
+    <div class="bit" style="margin-bottom:4px">Where they went</div>
+    <div class="ra-matrix">
+      {% for m in view.matrix %}<span class="jh-chip">{{ m.from_cls|jh_group_short }} → {{ m.to_cls|jh_group_short }} <b>{{ m.n }}</b></span>{% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if sel.geo %}
+  <details class="jh-stagefold">
+    <summary><span class="cr">›</span><span class="nm">Geography pass</span><span class="bit">{{ sel.geo|length }}</span></summary>
+    <div class="tbl-scroll">
+      <table class="jh-ledger nowrap figures">
+        <tr><th class="nm">School</th><th>Area</th><th>From</th><th>To pool</th><th class="nm">Why</th></tr>
+        {% for g in sel.geo %}
+        <tr><td class="nm"><a href="{{ url_for('jhsaa_school', school=g.school, u=u, g=view.scope.gender) }}">{{ g.school }}</a></td>
+          <td style="font-variant-numeric:normal">{{ g.area }}</td>
+          <td>{{ g['from']|jh_group_short }}</td><td><b>{{ {'A':'9A–5A','B':'4A–1A','G':'Groups'}[g.pool] }}</b></td>
+          <td class="nm" style="font-variant-numeric:normal">{{ g.reason }}</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+  </details>
+  {% endif %}
+
+  <details class="jh-stagefold">
+    <summary><span class="cr">›</span><span class="nm">Every move</span><span class="bit">{{ sel.moves|length }} rows</span></summary>
+    <div class="bl-panel-body" style="padding:6px 12px 0">
+      <input id="ra-find" type="search" placeholder="filter by school, class or league" style="width:min(100%,320px)">
+      <span class="bit" id="ra-count"></span>
+    </div>
+    <div class="tbl-scroll">
+      <table class="jh-ledger nowrap figures ra-table">
+        <tr><th class="nm">School</th><th>From</th><th>To</th><th>Enr</th><th>Pts</th><th>Win%</th><th>Adj</th><th>Rank</th><th>Why</th><th class="nm">League</th></tr>
+        {% for m in sel.moves %}
+        <tr data-q="{{ (m.school ~ ' ' ~ m.from_cls ~ ' ' ~ m.to_cls ~ ' ' ~ (m.league_after or '') ~ ' ' ~ (m.league_before or ''))|lower }}">
+          <td class="nm"><a href="{{ url_for('jhsaa_school', school=m.school, u=u, g=view.scope.gender) }}">{{ m.school }}</a></td>
+          <td>{{ m.from_cls|jh_group_short }}</td><td><b>{{ m.to_cls|jh_group_short }}</b></td>
+          <td>{{ m.enrollment }}</td><td>{{ m.points }}</td>
+          <td>{{ '%.3f'|format(m.win_rate) if m.win_rate is not none else '—' }}</td>
+          <td>{{ '%+.0f'|format(m.adjustment) }}</td><td>{{ m.rank }}</td>
+          <td style="font-variant-numeric:normal">{{ m.reason }}</td>
+          <td class="nm" style="font-variant-numeric:normal">{{ m.league_after }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </details>
+
+  {% if sel.redraw_notes %}
+  <details class="jh-stagefold">
+    <summary><span class="cr">›</span><span class="nm">League redraw</span><span class="bit">{{ sel.redraw_notes|length }} class{{ '' if sel.redraw_notes|length == 1 else 'es' }}</span></summary>
+    <div class="bl-panel-body" style="padding:12px">
+      {% for c, notes in sel.redraw_notes.items() %}<p class="bit"><b>{{ c }}</b>{% for n in notes %}<br>{{ n }}{% endfor %}</p>{% endfor %}
+    </div>
+  </details>
+  {% endif %}
+</div>
+
+<script>
+(function () {
+  var find = document.getElementById('ra-find'), count = document.getElementById('ra-count');
+  if (!find) return;
+  function apply() {
+    var q = (find.value || '').toLowerCase(), n = 0;
+    document.querySelectorAll('.ra-table tr[data-q]').forEach(function (tr) {
+      var ok = !q || tr.dataset.q.indexOf(q) >= 0;
+      tr.style.display = ok ? '' : 'none';
+      if (ok) n++;
+    });
+    count.textContent = q ? n + ' shown' : '';
+  }
+  find.addEventListener('input', apply);
+})();
+</script>
+{% endif %}
 {% endif %}
 </div>
 {% endblock %}

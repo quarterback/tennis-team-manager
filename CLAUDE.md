@@ -3908,6 +3908,16 @@ was a school marker, shipped "Baptist HS High School".
   from `data/jhsaa/districting.json` — asserted equal to the importer's), and
   records every move with its evidence in `world_jhsaa_reclass_move`. The 2046
   "never cut-line rebands" note is SUPERSEDED. `tests/test_jhsaa_reclass.py`.
+  ‼️ **THE HISTORY IS AN INDEX PLUS ONE CYCLE, AND A FILE (owner rule 2026-09).**
+  A cycle is ~400 moves; `/jhsaa/realignments` lists cycles (`rc.cycle_index`,
+  counts only) and renders ONE (`rc.cycle`, `?cycle=<season>`, newest by default)
+  with the moves folded — never every cycle's moves stacked, which "will not
+  survive a 2nd realignment". Every commit also writes
+  `data/jhsaa/realignments/<season>.json` + `.md` and regenerates `LEDGER.md`
+  from the cycle files (never appended), and the research export carries
+  `jhsaa_realignments.csv` (every cycle, gender-blind, archive path only) — the
+  owner tracks class changes with a model across seasons from those, not from
+  the page.
 - **‼️ `COMPETITIVE_MOVES` is the mirror of PLAY_UP** — a program may be placed BELOW its
   enrollment class when it cannot compete where enrollment puts it, and the ENROLLMENT is
   scaled to match rather than the other way round (the numbers are fictional; the number
