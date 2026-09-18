@@ -1113,6 +1113,7 @@ def test_the_research_export_carries_the_realignment_ledger(archived):
         for nm in live:
             assert by[nm]["program_id"] in ids
         assert by["A School That Left"]["program_id"] == ""     # no dangling id
+        assert "program_ident" in rows[0]
         assert by[live[0]]["owner_decision"] == "1" and by[live[0]]["reason"] == "owner"
         assert by[live[1]]["win_rate"] == "" and by[live[0]]["win_rate"] == "0.75"
         # the boys' bundle carries the same ledger — a cycle moves the school

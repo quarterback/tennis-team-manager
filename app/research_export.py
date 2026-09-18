@@ -473,31 +473,57 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                 })
 
     # FLIGHT EFFICIENCY (owner request 2026-09): the /jhsaa/flights table —
-    # one row per program and flight, actual vs expected win rate — read off
-    # the same memo the page uses (`world.jhsaa_flight_efficiency`). ARCHIVE
-    # PATH ONLY, the coefficient's rule: an injected season is not in the
-    # archive the fold reads. Rosters are rebuilt to resolve names, so the
-    # first export of a season pays the ~20 s the page pays.
+    # one row per program and flight, actual vs expected win rate. The SAME
+    # fold the page runs (`world.flight_efficiency_fold`), answered off the
+    # rosters and lines THIS BUNDLE HAS ALREADY BUILT — never
+    # `jhsaa_flight_efficiency`, whose ~20 s roster rebuild is keyed per
+    # (year, gender) and cannot be shared across a bulk export's scopes: 120
+    # scopes would have added ~40 minutes to one POST. So it costs the fold
+    # alone, and an injected season carries rows like an archived one. The fit
+    # runs over EVERY varsity dual of the gender (the whole season's curve),
+    # then the rows are cut to the classification scope. `held_most_by_ids`
+    # carries the holder's player_id(s) beside the display string, since a
+    # name is not a join key.
+    roster_ovr: dict[str, dict | None] = {}
+
+    def _ovr_of(name: str) -> dict | None:
+        if name not in roster_ovr:
+            t = team_by_name.get(name)
+            roster_ovr[name] = ({p.name: p.current_overall() for p in t.roster}
+                                if t is not None else None)
+        return roster_ovr[name]
+
+    def _varsity_home_duals():
+        for t in all_teams:
+            for d in t.schedule:
+                if d.get("home") and (d.get("level") or "v") == "v":
+                    yield t.school.name, d["opp"], d.get("lines") or []
+
+    name_to_group = {t.school.name: t.school.group for t in all_teams}
+    fe = wd.flight_efficiency_fold(_varsity_home_duals(), _ovr_of)
     flight_rows = []
-    if not injected and w:
-        name_to_id = {t.school.name: t.school.key for t in all_teams}
-        name_to_group = {t.school.name: t.school.group for t in all_teams}
-        world_year = year - wd.BASE_YEAR - 1
-        fe = wd.jhsaa_flight_efficiency(w["id"], world_year, gender, wd.active_salt(wd.DEFAULT_SEED))
-        for r in sorted(fe["rows"], key=lambda r: (r["school"], r["slot"])):
-            pid = name_to_id.get(r["school"])
-            if pid is None:
-                continue
-            if classification != "all" and name_to_group.get(r["school"]) != classification:
-                continue
-            flight_rows.append({
-                "program_id": pid, "program_name": r["school"], "gender": gender,
-                "championship_group": name_to_group.get(r["school"], ""),
-                "slot": r["slot"], "matches": r["n"], "wins": r["wins"],
-                "actual_pct": round(r["actual"], 2), "expected_pct": round(r["expected"], 2),
-                "delta_pct": round(r["delta"], 2),
-                "held_most_by": r["top"], "held_most_matches": r["top_n"],
-            })
+    for r in sorted(fe["rows"], key=lambda r: (r["school"], r["slot"])):
+        t = team_by_name.get(r["school"])
+        if t is None:
+            continue
+        if classification != "all" and t.school.group != classification:
+            continue
+        flight_rows.append({
+            "program_id": t.school.key, "program_name": r["school"], "gender": gender,
+            "championship_group": name_to_group.get(r["school"], ""),
+            "slot": r["slot"], "matches": r["n"], "wins": r["wins"],
+            "actual_pct": round(r["actual"], 2), "expected_pct": round(r["expected"], 2),
+            "delta_pct": round(r["delta"], 2),
+            "held_most_by": r["top"],
+            "held_most_by_ids": " / ".join(_player_id(r["school"], nm, player_lookup)
+                                           for nm in r["top_names"]),
+            "held_most_matches": r["top_n"],
+        })
+    # ‼️ The slots ADVERTISED are the slots EMITTED: 5S/2D, 3S/4D, 1S/4D, 2S/3D
+    # and 4S/5D all reach this table, so a typed "S1..D4" would have told a
+    # consumer to drop S5 and D5 on a real export.
+    flight_slots = sorted({r["slot"] for r in flight_rows},
+                          key=lambda x: (x[0] != "S", int(x[1:]) if x[1:].isdigit() else 0, x))
 
     # THE JV TEAM STATE TOURNAMENT, FLAT (owner rule 2026-09 — "make sure the
     # data gets exported … as well as analytic for future analysis"): one row
@@ -561,17 +587,25 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
     # program's class across the whole arc of seasons without opening the app.
     # Archive path only (the coefficient file's rule) and NOT cut to this export's
     # season: a cycle moves both genders of a school at once, so the rows are
-    # gender-blind and the same in the girls' and boys' bundle. program_id joins
-    # programs.csv on the school's display name; a school that has since stopped
-    # sponsoring this gender gets an empty id, never a dangling one.
+    # gender-blind and the same in the girls' and boys' bundle. ‼️ program_id
+    # joins programs.csv on the school's IDENT (`School.ident`, the roster
+    # identity a rename never moves), recorded on the move row at commit — the
+    # display name is the name AT THE TIME and a later rename would orphan the
+    # row, or worse attach it to whoever inherits the name. A row written
+    # before the column existed falls back to the name. A school that has since
+    # stopped sponsoring this gender gets an empty id, never a dangling one.
     from app import jhsaa_reclass as _rc
     realignments = []
     if w and not injected:
+        key_by_ident_r = {t.school.ident: t.school.key for t in all_teams}
         key_by_name_r = {t.school.name: t.school.key for t in all_teams}
         for m in _rc.all_moves(w["id"]):
+            ident = m.get("ident") or ""
             realignments.append({
                 "season_year": m["season_year"], "world_year": m["year"],
-                "school": m["school"], "program_id": key_by_name_r.get(m["school"], ""),
+                "school": m["school"], "program_ident": ident,
+                "program_id": (key_by_ident_r.get(ident) if ident else None)
+                              or key_by_name_r.get(m["school"], ""),
                 "from_class": m["from_cls"], "to_class": m["to_cls"],
                 "enrollment": m["enrollment"], "state_points": m["points"],
                 "win_rate": "" if m["win_rate"] is None else m["win_rate"],
@@ -669,13 +703,21 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "Parallel to TOSS/ATR — it feeds neither. Empty on seasons archived before the "
             "layer existed.",
             "jhsaa_flights.csv is Flight Efficiency: one row per program per flight "
-            "(S1..D4), matches and wins at that flight, actual_pct, expected_pct (a logistic "
-            "fitted on this season's own varsity flights — the matchup and home court — "
-            "so the row is judged against how the association converted its matchups this "
-            "year) and delta_pct = actual - expected in points, with the player or pair "
-            "that held the flight most. A row of 25-35 matches swings ~9 points by chance; "
-            "trust programs moving the same way across several flights. Empty for an "
-            "injected season.",
+            "(the flights present in this export: "
+            + (", ".join(flight_slots) if flight_slots else "none — no contested varsity line")
+            + "; every JHSAA dual format from 5S/2D to 4S/5D reaches this table, so S5 and "
+            "D5 appear whenever they were played), matches and wins at that flight, "
+            "actual_pct, expected_pct (a logistic fitted on this season's own varsity "
+            "flights — the matchup and home court — so the row is judged against how the "
+            "association converted its matchups this year) and delta_pct = actual - "
+            "expected in points, with the player or pair that held the flight most: "
+            "held_most_by is the display name(s), held_most_by_ids the matching "
+            "player_id(s) in the same order (joined ' / ' for a pair) for joining "
+            "players.csv — names are not unique. Computed from this bundle's own rosters "
+            "and lines with the same fold as /jhsaa/flights; the fit covers every varsity "
+            "dual of the gender, the rows are cut to this export's classification. A row "
+            "of 25-35 matches swings ~9 points by chance; trust programs moving the same "
+            "way across several flights.",
             # ‼️ Prices DERIVED from `jhsaa_coefficient`, never retyped — the
             # committee sentence above learned this the hard way.
             "jhsaa_coefficient.csv is the Program Coefficient (UEFA-style): one row per "
@@ -875,30 +917,6 @@ def build_college(year: int, division: str, gender: str, *, season_id: int | Non
             pass    # not archived for this year/division/gender — leave it out, not an error
 
     json_files = {}
-    # THE REALIGNMENT LEDGER (owner rule 2026-09): every move of every committed
-    # reclassification cycle, newest cycle first, so a consumer can track a
-    # program's class across the whole arc of seasons without opening the app.
-    # Archive path only (the coefficient file's rule) and NOT cut to this export's
-    # season: a cycle moves both genders of a school at once, so the rows are
-    # gender-blind and the same in the girls' and boys' bundle. program_id joins
-    # programs.csv on the school's display name; a school that has since stopped
-    # sponsoring this gender gets an empty id, never a dangling one.
-    from app import jhsaa_reclass as _rc
-    realignments = []
-    if w and not injected:
-        key_by_name_r = {t.school.name: t.school.key for t in all_teams}
-        for m in _rc.all_moves(w["id"]):
-            realignments.append({
-                "season_year": m["season_year"], "world_year": m["year"],
-                "school": m["school"], "program_id": key_by_name_r.get(m["school"], ""),
-                "from_class": m["from_cls"], "to_class": m["to_cls"],
-                "enrollment": m["enrollment"], "state_points": m["points"],
-                "win_rate": "" if m["win_rate"] is None else m["win_rate"],
-                "adjustment": m["adjustment"], "effective_size": m["effective"],
-                "rank_in_pool": m["rank"], "reason": m["reason"],
-                "owner_decision": int(bool(m["manual"])),
-                "league_before": m["league_before"] or "",
-                "league_after": m["league_after"] or ""})
     tables = {"programs.csv": programs, "players.csv": players, "duals.csv": duals,
               "lines.csv": lines, "line_players.csv": line_players,
               "college_standings.csv": standings, "college_scholarships.csv": scholarships,

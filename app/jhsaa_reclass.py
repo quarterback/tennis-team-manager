@@ -357,7 +357,7 @@ CREATE TABLE IF NOT EXISTS world_jhsaa_reclass_move (
   world_id INTEGER, year INTEGER, school TEXT, from_cls TEXT, to_cls TEXT,
   enrollment INTEGER, points INTEGER, win_rate REAL, adjustment REAL,
   effective REAL, rank INTEGER, reason TEXT, manual INTEGER DEFAULT 0,
-  league_before TEXT, league_after TEXT
+  league_before TEXT, league_after TEXT, ident TEXT
 );
 CREATE INDEX IF NOT EXISTS ix_jhsaa_reclass_move ON world_jhsaa_reclass_move(world_id, school);
 """
@@ -367,6 +367,12 @@ def _conn():
     from . import world
     conn = world._db()
     conn.executescript(_SCHEMA)
+    # `ident` (the school's stable roster identity) was added after the table
+    # shipped; CREATE IF NOT EXISTS cannot add a column to an existing save.
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(world_jhsaa_reclass_move)")}
+    if "ident" not in cols:
+        conn.execute("ALTER TABLE world_jhsaa_reclass_move ADD COLUMN ident TEXT")
+        conn.commit()
     return conn
 
 
@@ -475,6 +481,10 @@ def commit(world: dict) -> dict:
     proposed = {x["school"]: x["proposed"] for x in data["rows"]}
     with open(jh._DATA, encoding="utf-8") as fh:
         doc = json.load(fh)
+    # The move row records the school's IDENT (`source or name`, the roster
+    # identity a rename never moves) beside its display name: the ledger is
+    # meant to be read across seasons, and the name is only the name today.
+    ident_of = {r["name"]: (r.get("source") or r["name"]) for r in doc["schools"]}
     for r in doc["schools"]:
         p = proposed.get(r["name"])
         if p and p != r["classification"]:
@@ -498,13 +508,15 @@ def commit(world: dict) -> dict:
             conn.execute(
                 "INSERT INTO world_jhsaa_reclass_move (world_id, year, school, from_cls,"
                 " to_cls, enrollment, points, win_rate, adjustment, effective, rank, reason,"
-                " manual, league_before, league_after) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                " manual, league_before, league_after, ident)"
+                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (world["id"], world["year"], x["school"], x["current"], x["proposed"],
                  x["enrollment"], x["points"], x["win_rate"], x["adjustment"],
                  x["effective"], x["rank"],
                  "owner" if x["edit"] else ("geography" if x["pool"] != pool_of(x["current"]) else "sort"),
                  1 if x["edit"] else 0, x["league_before"],
-                 after_league.get(x["school"], x["league_after"])))
+                 after_league.get(x["school"], x["league_after"]),
+                 ident_of.get(x["school"], x["school"])))
         data["redraw_notes"] = notes
         conn.execute("UPDATE world_jhsaa_reclass SET status='committed', committed=?, data=?"
                      " WHERE world_id=? AND status='proposed'",
@@ -513,7 +525,7 @@ def commit(world: dict) -> dict:
     finally:
         conn.close()
     jh.reset_schools()
-    paths = write_ledger(cycle(world["id"], world["year"]))
+    paths = write_ledger(world["id"])
     return {"ok": True, "moves": len(moves), "touched": data["touched"], "notes": notes,
             "ledger": paths}
 
@@ -684,29 +696,31 @@ def cycle_markdown(c: dict, depth: int = 1) -> str:
     return "\n".join(lines)
 
 
-def write_ledger(c: dict) -> dict:
-    """Write one committed cycle's JSON and Markdown and regenerate LEDGER.md
-    from every cycle file in the directory. Returns the paths written."""
+def write_ledger(world_id: int) -> dict:
+    """Write EVERY committed cycle's JSON and Markdown and regenerate LEDGER.md —
+    all sourced from the database (`history`), never from whatever files happen
+    to be in the directory: a save with cycles committed before the ledger
+    existed gets them backfilled on the next commit, and a hand-deleted file
+    comes back. Returns the newest cycle's paths and the ledger's."""
     d = ledger_dir()
     os.makedirs(d, exist_ok=True)
-    stem = os.path.join(d, str(c["season_year"]))
-    with open(stem + ".json", "w", encoding="utf-8") as fh:
-        json.dump(c, fh, indent=2, ensure_ascii=False)
-        fh.write("\n")
-    with open(stem + ".md", "w", encoding="utf-8") as fh:
-        fh.write(cycle_markdown(c))
-    cycles = []
-    for name in sorted(os.listdir(d)):
-        if name.endswith(".json") and name[:-5].isdigit():
-            with open(os.path.join(d, name), encoding="utf-8") as fh:
-                cycles.append(json.load(fh))
-    cycles.sort(key=lambda x: x["season_year"])
+    cycles = sorted(history(world_id), key=lambda x: x["season_year"])
+    newest = None
+    for c in cycles:
+        stem = os.path.join(d, str(c["season_year"]))
+        with open(stem + ".json", "w", encoding="utf-8") as fh:
+            json.dump(c, fh, indent=2, ensure_ascii=False)
+            fh.write("\n")
+        with open(stem + ".md", "w", encoding="utf-8") as fh:
+            fh.write(cycle_markdown(c))
+        newest = stem
     head = ["# JHSAA realignment ledger", "",
             "Every reclassification cycle the association has committed, oldest first — "
-            "regenerated from the per-cycle JSON files in this directory on every commit. "
-            "Each cycle names the schools that moved, the class they left and joined, and "
-            "the evidence the sort placed them on (enrollment, State points, win rate, the "
-            "adjustment and the resulting effective size).", "",
+            "regenerated from the archive on every commit (the per-cycle JSON and Markdown "
+            "files beside it are written from the same source). Each cycle names the "
+            "schools that moved, the class they left and joined, and the evidence the sort "
+            "placed them on (enrollment, State points, win rate, the adjustment and the "
+            "resulting effective size).", "",
             _md_table(["Season", "Moved", "Owner decisions", "Cross-ladder"],
                       [[x["season_year"], len(x["moves"]),
                         sum(1 for m in x["moves"] if m.get("manual")), len(x.get("geo", []))]
@@ -715,4 +729,6 @@ def write_ledger(c: dict) -> dict:
     ledger = os.path.join(d, "LEDGER.md")
     with open(ledger, "w", encoding="utf-8") as fh:
         fh.write("\n".join(head) + "\n" + body + "\n")
-    return {"json": stem + ".json", "md": stem + ".md", "ledger": ledger}
+    return {"json": (newest + ".json") if newest else None,
+            "md": (newest + ".md") if newest else None,
+            "ledger": ledger, "cycles": len(cycles)}

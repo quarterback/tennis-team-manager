@@ -44,9 +44,6 @@
     {% endif %}
     <details style="margin-left:auto">
       <summary class="bit" style="cursor:pointer">Coefficients</summary>
-      <p class="bit" style="margin:8px 0 0;max-width:720px;color:var(--text-muted)">Nothing here needs filling in: these are the approved
-        defaults, and the blank boxes mean the 4A–1A and Group pools use the 9A–5A numbers scaled to their own enrollment span.
-        Run the proposal first; change a number only if the tables read too aggressive or too timid, then Save to rebuild.</p>
       <form method="post" action="{{ url_for('jhsaa_reclass_config') }}" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-top:8px">
         <input type="hidden" name="u" value="{{ u }}">
         {% for key, label in [('cycle','Seasons per cycle'),('success_pp','Success: enrollment per cycle point (9A–5A)'),('futility_floor','Futility floor: win rate below which a school sinks'),('futility_pu','Futility: enrollment per 1.0 of win rate under the floor (9A–5A)'),('success_pp_b','Success (4A-1A, blank = scaled)'),('futility_pu_b','Futility (4A-1A, blank = scaled)'),('success_pp_g','Success (Groups, blank = scaled)'),('futility_pu_g','Futility (Groups, blank = scaled)')] %}

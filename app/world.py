@@ -7896,6 +7896,77 @@ def _fit_line_logistic(rows: list[tuple[float, int, int]]) -> tuple[float, float
     return beta, h
 
 
+def flight_efficiency_fold(duals, ovr_of) -> dict:
+    """THE FLIGHT-EFFICIENCY FOLD, pure: `duals` yields `(home_school, away_school,
+    lines)` for every VARSITY dual of one gender-season, lines already unpacked
+    (the archived dicts: slot / home / away names / home_won), and `ovr_of(school)`
+    returns `{player name: OVR}` for a school or None when it cannot be resolved.
+    School names must already be today's (aliases applied by the caller).
+
+    Shared by `jhsaa_flight_efficiency` (the page: rebuilds rosters to answer
+    `ovr_of`, memoised) and `research_export.build_jhsaa` (the zip: answers it
+    off the rosters the bundle has ALREADY built — so a bulk export of 120
+    scopes never pays the ~20 s roster rebuild a second time per scope, and an
+    injected season gets the same rows). One fit, one set of numbers.
+
+    Returns {"beta", "home", "lines", "unresolved", "rows": [{school, slot, n,
+    wins, actual, expected, delta, top, top_names, top_n}]} — actual / expected
+    / delta as percentages of that flight's matches, `top` the display string
+    of the player or pair that held the flight most, `top_names` the tuple."""
+    from collections import Counter
+    import math
+
+    def side_ovr(m: dict, names) -> float | None:
+        vals = [m.get(n) for n in (names or ())]
+        if not vals or any(v is None for v in vals):
+            return None
+        return sum(vals) / len(vals)
+
+    fit_rows: list[tuple[float, int, int]] = []
+    per_side: list[tuple[str, str, float, int, int, tuple]] = []
+    total = unresolved = 0
+    for school, opp, lines in duals:
+        hm = am = None
+        for ln in lines or ():
+            slot = str(ln.get("slot", "")).upper()
+            if not slot or not (ln.get("home") and ln.get("away")):
+                continue
+            total += 1
+            if hm is None:
+                hm, am = ovr_of(school), ovr_of(opp)
+            h = side_ovr(hm, ln.get("home")) if hm else None
+            a_ = side_ovr(am, ln.get("away")) if am else None
+            if h is None or a_ is None:
+                unresolved += 1
+                continue
+            hw = 1 if ln.get("home_won") else 0
+            fit_rows.append((h - a_, 1, hw))
+            per_side.append((school, slot, h - a_, 1, hw, tuple(ln.get("home"))))
+            per_side.append((opp, slot, a_ - h, 0, 1 - hw, tuple(ln.get("away"))))
+
+    beta, home = _fit_line_logistic(fit_rows) if fit_rows else (0.0, 0.0)
+    acc: dict[tuple[str, str], dict] = {}
+    for school, slot, gap, is_home, won, names in per_side:
+        c = acc.setdefault((school, slot), {"n": 0, "wins": 0, "xw": 0.0, "who": Counter()})
+        # the fit is σ(β·gap + h) on HOME rows; the away mirror is 1 − that,
+        # i.e. σ(−β·gap − h) with the gap already signed from the away side
+        z = max(-30.0, min(30.0, beta * gap + home * (1 if is_home else -1)))
+        c["n"] += 1
+        c["wins"] += won
+        c["xw"] += 1.0 / (1.0 + math.exp(-z))
+        c["who"][names] += 1
+    out_rows = []
+    for (school, slot), c in acc.items():
+        n = c["n"]
+        top, top_n = (c["who"].most_common(1)[0] if c["who"] else ((), 0))
+        out_rows.append({"school": school, "slot": slot, "n": n, "wins": c["wins"],
+                         "actual": 100.0 * c["wins"] / n, "expected": 100.0 * c["xw"] / n,
+                         "delta": 100.0 * (c["wins"] - c["xw"]) / n,
+                         "top": " / ".join(top), "top_names": tuple(top), "top_n": top_n})
+    return {"beta": beta, "home": home, "lines": total, "unresolved": unresolved,
+            "rows": out_rows}
+
+
 def jhsaa_flight_efficiency(world_id: int, year: int, gender: str, salt: str = "") -> dict:
     """FLIGHT EFFICIENCY (owner request 2026-09): for every program and every
     flight it fielded, the flight's actual win rate against what the two
@@ -7908,7 +7979,8 @@ def jhsaa_flight_efficiency(world_id: int, year: int, gender: str, salt: str = "
     actually converted gaps this year. Rosters are rebuilt to resolve the
     archive's names to OVRs exactly as `jhsaa_gap_bands` does (~20 s cold) —
     run it through the route's deferred job, never on the request thread;
-    memoised in `_flighteff_cache` (an archived season is immutable).
+    memoised in `_flighteff_cache` (an archived season is immutable). The
+    arithmetic is `flight_efficiency_fold`, shared with the research export.
 
     ‼️ A row of 25-35 matches has a standard error of ~9 points and a season
     has thousands of rows, so a handful of ±25-30 outliers arise by chance.
@@ -7918,7 +7990,6 @@ def jhsaa_flight_efficiency(world_id: int, year: int, gender: str, salt: str = "
     Returns {"year", "season_year", "beta", "home", "lines", "unresolved",
     "rows": [{school, slot, n, wins, actual, expected, delta, top, top_n}]}
     with actual/expected/delta as percentages of that flight's matches."""
-    from collections import Counter
     from . import jhsaa as _jh
     from . import overrides as ov
     ck = (world_id, year, gender, salt, ov.jhsaa_transfer_version(),
@@ -7943,12 +8014,6 @@ def jhsaa_flight_efficiency(world_id: int, year: int, gender: str, salt: str = "
         rosters[name] = m
         return m
 
-    def side_ovr(m: dict, names) -> float | None:
-        vals = [m.get(n) for n in (names or ())]
-        if not vals or any(v is None for v in vals):
-            return None
-        return sum(vals) / len(vals)
-
     conn = _db()
     try:
         rows = conn.execute(
@@ -7959,55 +8024,15 @@ def jhsaa_flight_efficiency(world_id: int, year: int, gender: str, salt: str = "
     finally:
         conn.close()
 
-    fit_rows: list[tuple[float, int, int]] = []
-    # (school, slot) -> [gap, home, won, names]
-    per_side: list[tuple[str, str, float, int, int, tuple]] = []
-    total = unresolved = 0
-    for school, opp, lines_json in rows:
-        try:
-            lines = unpack_lines(lines_json)
-        except ValueError:
-            continue
-        hm = am = None
-        for ln in lines:
-            slot = str(ln.get("slot", "")).upper()
-            if not slot or not (ln.get("home") and ln.get("away")):
+    def duals():
+        for school, opp, lines_json in rows:
+            try:
+                lines = unpack_lines(lines_json)
+            except ValueError:
                 continue
-            total += 1
-            if hm is None:
-                hm, am = ovr_map(alias.get(school, school)), ovr_map(alias.get(opp, opp))
-            h = side_ovr(hm, ln.get("home")) if hm else None
-            a_ = side_ovr(am, ln.get("away")) if am else None
-            if h is None or a_ is None:
-                unresolved += 1
-                continue
-            hw = 1 if ln.get("home_won") else 0
-            fit_rows.append((h - a_, 1, hw))
-            per_side.append((alias.get(school, school), slot, h - a_, 1, hw, tuple(ln.get("home"))))
-            per_side.append((alias.get(opp, opp), slot, a_ - h, 0, 1 - hw, tuple(ln.get("away"))))
+            yield alias.get(school, school), alias.get(opp, opp), lines
 
-    beta, home = _fit_line_logistic(fit_rows) if fit_rows else (0.0, 0.0)
-    import math
-    acc: dict[tuple[str, str], dict] = {}
-    for school, slot, gap, is_home, won, names in per_side:
-        c = acc.setdefault((school, slot), {"n": 0, "wins": 0, "xw": 0.0, "who": Counter()})
-        # the fit is σ(β·gap + h) on HOME rows; the away mirror is 1 − that,
-        # i.e. σ(−β·gap − h) with the gap already signed from the away side
-        z = max(-30.0, min(30.0, beta * gap + home * (1 if is_home else -1)))
-        c["n"] += 1
-        c["wins"] += won
-        c["xw"] += 1.0 / (1.0 + math.exp(-z))
-        c["who"][names] += 1
-    out_rows = []
-    for (school, slot), c in acc.items():
-        n = c["n"]
-        top, top_n = (c["who"].most_common(1)[0] if c["who"] else ((), 0))
-        out_rows.append({"school": school, "slot": slot, "n": n, "wins": c["wins"],
-                         "actual": 100.0 * c["wins"] / n, "expected": 100.0 * c["xw"] / n,
-                         "delta": 100.0 * (c["wins"] - c["xw"]) / n,
-                         "top": " / ".join(top), "top_n": top_n})
-    out = {"year": year, "season_year": season_year, "beta": beta, "home": home,
-           "lines": total, "unresolved": unresolved, "rows": out_rows}
+    out = {"year": year, "season_year": season_year, **flight_efficiency_fold(duals(), ovr_map)}
     with _flighteff_lock:             # cold pages for other years/genders run concurrently
         for k in [k for k in _flighteff_cache if k[:3] == ck[:3]]:
             _flighteff_cache.pop(k, None)

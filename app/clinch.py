@@ -77,9 +77,10 @@ def seasons_behind(info: dict | None, current_year: int) -> int:
     season: 0 when the report is current (or nothing is built). The report is
     a static site — it never follows the world on its own, so the manage page
     says so rather than leaving the reader to compare two dates."""
-    if not info or not info.get("years"):
+    years = info.get("rendered_years") or info.get("years") if info else None
+    if not years:
         return 0
-    return max(0, int(current_year) - int(max(info["years"])))
+    return max(0, int(current_year) - int(max(years)))
 
 
 def site_ready() -> bool:
@@ -127,8 +128,13 @@ def build(year: int, seasons: int = 1, genders: tuple = GENDERS,
         raise RuntimeError("Nothing to render: no season in that window has been "
                            "played. " + "; ".join(missing))
     render.build_site(bundles, player_pages=player_pages, manage_url=MANAGE_URL)
+    # `years` is the window ASKED for; `rendered_years` the seasons the site
+    # actually holds — a requested year not yet played is skipped and the
+    # older cached seasons still render, so the lag must be read off these.
     info = {"built_at": time.strftime("%Y-%m-%d %H:%M"),
-            "years": years, "genders": list(genders), "player_pages": player_pages,
+            "years": years,
+            "rendered_years": sorted({int(b["scope"]["year"]) for b in bundles}),
+            "genders": list(genders), "player_pages": player_pages,
             "classification": classification,
             "rendered": sorted(f"{b['scope']['year']} {b['scope']['gender']}" for b in bundles),
             "exported": exported, "missing": missing,

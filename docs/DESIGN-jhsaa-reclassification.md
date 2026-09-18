@@ -254,6 +254,16 @@ level, which is the point of the exercise.
 
 ---
 
+## Operating the coefficients (the page carries no help text)
+
+The Coefficients fold on `/jhsaa/reclassification` needs nothing filled in: the
+boxes hold the approved defaults, and a BLANK 4A-1A or Group box means that pool
+uses the 9A-5A numbers scaled to its own enrollment span (the live scaled value
+is what the proposal actually ran on). Run the proposal first; change a number
+only if the tables read too aggressive or too timid, then Save to rebuild the
+proposal on the new numbers. Group territory and the approved eastern areas are
+the two area lists the geography pass reads.
+
 ## Decisions (owner, 2026-09 — all approved)
 - Coefficients: the defaults above for both pools (`SUCCESS_PER_POINT` 40 /
   16.5, `FUTILITY_FLOOR` 0.35, `FUTILITY_PER_UNIT` 3000 / 1240), editable on

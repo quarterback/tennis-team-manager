@@ -236,6 +236,10 @@ def test_commit_rewrites_the_seed_file_redraws_leagues_and_records_moves(scored,
     # Recorded, readable from the program side and the history side.
     baptist = rc.moves_for(w["id"], "Baptist")
     assert baptist and baptist[-1]["to_cls"] == "9A"
+    # every move carries the school's stable IDENT beside its display name
+    idents = {r["name"]: (r.get("source") or r["name"]) for r in doc["schools"]}
+    for name in moves:
+        assert rc.moves_for(w["id"], name)[-1]["ident"] == idents[name], name
     hist = rc.history(w["id"])
     assert hist and len(hist[0]["moves"]) == len(moves)
     assert rc.pending(w["id"]) is None and rc.last_cycle_year(w["id"]) == w["year"]
