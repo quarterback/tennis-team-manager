@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header %}
+{% block title %}JHSAA Realignments{% endblock %}
+{% block content %}
+
+{{ jh_header(view.scope, u, 'realignments', 'Realignments',
+             'Every reclassification cycle the association has committed, and the schools it moved.',
+             [('Cycles', view.cycles|length)]) }}
+
+<div class="jh-shell">
+{% if not view.cycles %}
+<div class="bl-panel"><div class="jh-empty">No reclassification has been committed yet.
+  <a href="{{ url_for('jhsaa_reclassification', u=u, g=view.scope.gender) }}">Open the cycle.</a></div></div>
+{% else %}
+{% for c in view.cycles %}
+<div class="bl-panel jh-yearpanel">
+  <div class="bl-panel-head">
+    <span class="bl-panel-title">{{ c.season_year }} realignment</span>
+    <span class="bit">{{ c.moves|length }} school{{ '' if c.moves|length == 1 else 's' }} moved · {{ c.geo|length }} cross-ladder</span>
+  </div>
+  <div class="tbl-scroll">
+    <table class="jh-ledger nowrap figures">
+      <tr><th></th>{% for cls in view.groups %}<th>{{ cls|jh_group_short }}</th>{% endfor %}</tr>
+      <tr><td>Before</td>{% for cls in view.groups %}<td>{{ c.counts_before.get(cls, 0) }}</td>{% endfor %}</tr>
+      <tr><td>After</td>{% for cls in view.groups %}<td><b>{{ c.counts_after.get(cls, 0) }}</b></td>{% endfor %}</tr>
+    </table>
+  </div>
+  <div class="tbl-scroll">
+    <table class="jh-ledger nowrap figures">
+      <tr><th class="nm">School</th><th>From</th><th>To</th><th>Enr</th><th>Pts</th><th>Win%</th><th>Adj</th><th>Rank</th><th>Why</th><th class="nm">League</th></tr>
+      {% for m in c.moves %}
+      <tr>
+        <td class="nm"><a href="{{ url_for('jhsaa_school', school=m.school, u=u, g=view.scope.gender) }}">{{ m.school }}</a></td>
+        <td>{{ m.from_cls|jh_group_short }}</td><td><b>{{ m.to_cls|jh_group_short }}</b></td>
+        <td>{{ m.enrollment }}</td><td>{{ m.points }}</td>
+        <td>{{ '%.3f'|format(m.win_rate) if m.win_rate is not none else '—' }}</td>
+        <td>{{ '%+.0f'|format(m.adjustment) }}</td><td>{{ m.rank }}</td>
+        <td style="font-variant-numeric:normal">{{ m.reason }}{% if m.manual %} (owner){% endif %}</td>
+        <td class="nm" style="font-variant-numeric:normal">{{ m.league_after }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+</div>
+{% endblock %}

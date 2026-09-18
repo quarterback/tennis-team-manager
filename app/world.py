@@ -667,6 +667,11 @@ def reset(seed: int = DEFAULT_SEED) -> None:
                        " DELETE FROM world_jhsaa; DELETE FROM world_jhsaa_dual;"
                        " DELETE FROM world_jhsaa_individual; DELETE FROM world_jhsaa_injury; DELETE FROM world_jhsaa_jv_state;"
                        " DELETE FROM world_jhsaa_standing;")
+    # The reclassification cycle's own tables (app/jhsaa_reclass.py) — created
+    # here if absent, since the reset can run before that module ever opened them.
+    from . import jhsaa_reclass as _rc
+    conn.executescript(_rc._SCHEMA + " DELETE FROM world_jhsaa_reclass;"
+                       " DELETE FROM world_jhsaa_reclass_move;")
     conn.commit()
     conn.close()
     # God-mode editor overrides (player moves, lineups, prestige/academics priors,
@@ -3605,6 +3610,19 @@ def advance_week(seed: int = DEFAULT_SEED) -> dict:
     # have to have finished playing before the board is read — and on a NEW SAVE that
     # means before the first college season, which is why this is not gated on year > 0
     # the way the pro rung below is.
+    # RECLASSIFICATION HOLD (owner spec 2026-09, `app/jhsaa_reclass.py`): every
+    # `cycle` seasons, before the week-0 JHSAA season plays, the world stops on a
+    # proposal the owner reviews on /jhsaa/reclassification. The fall-portal
+    # pattern: the first encounter builds the slate, later ones keep holding until
+    # it is committed or dismissed. An off-cycle "Run now" opens the same hold.
+    if w["week"] == 0 and w["year"] > 0 and not jhsaa_done(w):
+        from . import jhsaa_reclass as rc
+        cur = rc.pending(w["id"])
+        if cur is None and rc.due(w):
+            cur = rc.open_proposal(w)
+        if cur is not None:
+            return {"event": "jhsaa_reclass_pending", "year": w["year"],
+                    "moves": len(cur["data"].get("moves", []))}
     if w["week"] == 0 and not jhsaa_done(w):
         return run_jhsaa(seed, w)
 

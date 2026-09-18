@@ -5394,6 +5394,19 @@ def _jh_injury_badges(rows: list[dict]) -> dict:
     return injury_pids
 
 
+def _jh_reclass_lines(world_id: int, school: str) -> list[dict]:
+    """The program's committed reclassifications as display rows."""
+    import app.jhsaa_reclass as rc
+    import app.world as world
+    out = []
+    for m in rc.moves_for(world_id, school):
+        out.append({"season_year": world.BASE_YEAR + m["year"] + 1,
+                    "from": m["from_cls"], "to": m["to_cls"], "points": m["points"],
+                    "win_rate": m["win_rate"], "reason": m["reason"],
+                    "manual": bool(m["manual"]), "league": m["league_after"]})
+    return out
+
+
 def jhsaa_school_view(seed: int, gender: str, school: str,
                       year: int | None = None) -> dict:
     """One JHSAA program, as a PROGRAM page: who they are, how this season went, the
@@ -5754,7 +5767,46 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         "trophy_banner": trophy_banner,
         "history": hist,
         "career_wins": career_wins,
+        # Every reclassification this program has been through (owner spec
+        # 2026-09) — one line per committed move, oldest first.
+        "reclass": _jh_reclass_lines(w["id"], school),
     }
+
+
+def jhsaa_reclass_view(seed: int, gender: str, group: str | None = None,
+                       year: int | None = None) -> dict:
+    """The reclassification page's model: the open proposal (if any), the cycle's
+    knobs, and the section scope for the header."""
+    import app.jhsaa as jh
+    import app.jhsaa_reclass as rc
+    import app.world as world
+    base = jhsaa_scope_view(seed, gender, group, year)
+    w = world.get_or_create(seed)
+    cfg = rc.config()
+    pend = rc.pending(w["id"])
+    last = rc.last_cycle_year(w["id"])
+    recent = rc.cycle_years(w["id"], cfg["cycle"])
+    label = lambda ys: ", ".join(str(world.BASE_YEAR + y + 1) for y in ys) if ys else "—"
+    return {**base,
+            "pending": pend, "due": rc.due(w) if not pend else False,
+            "config": cfg, "groups": list(jh.GROUPS),
+            "pool_classes": {k: list(v) for k, v in rc.POOLS.items()},
+            "all_schools": sorted(r["name"] for r in jh._rows()
+                                  if r.get("girls") or r.get("boys")),
+            "seasons_archived": len(rc.cycle_years(w["id"], 10_000)),
+            "recent_label": label(recent),
+            "last_label": (str(world.BASE_YEAR + last + 1) if last is not None else "never"),
+            "cycle_label": (f"{label(pend['data']['years'])}" if pend else
+                            f"every {cfg['cycle']} seasons")}
+
+
+def jhsaa_realignments_view(seed: int, gender: str, group: str | None = None) -> dict:
+    import app.jhsaa as jh
+    import app.jhsaa_reclass as rc
+    import app.world as world
+    base = jhsaa_scope_view(seed, gender, group)
+    w = world.get_or_create(seed)
+    return {**base, "cycles": rc.history(w["id"]), "groups": list(jh.GROUPS)}
 
 
 def jhsaa_district_view(seed: int, gender: str, group: str, district: str,

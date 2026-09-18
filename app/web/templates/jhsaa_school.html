@@ -513,6 +513,21 @@
 
 {% elif hq == 'history' %}
 <!-- ============ HISTORY: the career, above the ledger it folds ============ -->
+{% if view.reclass %}
+{# Reclassifications this program has been through (owner spec 2026-09): one line
+   per committed move, with the evidence the cycle moved it on. #}
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Reclassifications</span>
+    <span class="bl-panel-meta"><a href="{{ url_for('jhsaa_realignments', u=u, g=view.gender) }}">all cycles →</a></span></div>
+  <div class="bl-panel-body" style="padding:10px 12px">
+    {% for m in view.reclass %}
+    <p class="bit">{{ m.season_year }}: {{ m.from|jh_group_short }} → <b>{{ m.to|jh_group_short }}</b>
+      · {{ m.points }} pts{% if m.win_rate is not none %}, {{ '%.3f'|format(m.win_rate) }}{% endif %}
+      · {{ m.reason }}{% if m.manual %} (owner){% endif %}{% if m.league %} · {{ m.league }}{% endif %}</p>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
 {# Every number here is a fold over the season rows below, so the two panels read as
    one object and must sit together.
 

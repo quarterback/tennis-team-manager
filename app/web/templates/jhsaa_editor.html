@@ -19,6 +19,7 @@
 <div class="jh-subrail">
   <a class="on" href="{{ url_for('jhsaa_programs', u=u, g=view.scope.gender) }}">Programs</a>
   <a href="{{ url_for('jhsaa_program_tiers', u=u, g=view.scope.gender) }}">Tier settings</a>
+  <a href="{{ url_for('jhsaa_reclassification', u=u, g=view.scope.gender) }}" title="The four-season realignment cycle">Reclassification</a>
 </div>
 
 {% if flash %}<div class="jhx-flash">{{ flash }}</div>{% endif %}

@@ -1,6 +1,6 @@
 # DESIGN — JHSAA reclassification (owner spec 2026-09)
 
-Status: **specified and approved by the owner (2026-09), not yet built.** The rule below is the owner's, given verbatim in
+Status: **built (2026-09)** — `app/jhsaa_reclass.py`, `docs/AAR-jhsaa-reclassification.md`. The rule below is the owner's, given verbatim in
 its two blocks and then mapped onto the code. The dry run at the end is on the
 2086 export with placeholder coefficients, so the owner can see the shape of a
 first cycle before anything is written. Background and the survey of real-state

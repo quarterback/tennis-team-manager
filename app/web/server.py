@@ -40,6 +40,7 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     player_ranks, player_journey)
 from .state import preseason_view as preseason_view_data
 from .state import jhsaa_front_view
+from .state import jhsaa_reclass_view, jhsaa_realignments_view
 from .state import (jhsaa_view, jhsaa_scope_view, jhsaa_school_view, jhsaa_past_winners,
                     jhsaa_bracket_view, jhsaa_toc_view, jhsaa_district_view, jhsaa_districts_view,
                     jhsaa_honors_view,
@@ -366,6 +367,10 @@ def _game_context():
                 action = "Run awards"
             elif not wd.cups_done(w):
                 action = "Run Davis / BJK Cup"
+        elif w["week"] == 0 and w["year"] > 0 and not wd.jhsaa_done(w) and _reclass_open(w):
+            # A reclassification proposal is open: the advance holds on it, so the
+            # button sends the reader to the review page (the fall-portal shape).
+            stage, action = "jhsaa_reclass", "Review reclassification"
         elif w["week"] == 0 and not wd.jhsaa_done(w):
             # The JHSAA rung runs FIRST at week 0 (before the pros, before any college
             # dual — see advance_week), so the button must advertise it first or it
@@ -390,6 +395,16 @@ def _game_context():
                 "signed": sum(wd.signed_counts().values())}
     except Exception:
         return None
+
+
+def _reclass_open(w: dict) -> bool:
+    """Whether a JHSAA reclassification proposal is open (or due and about to be):
+    resolved once per shell render, cheap — one indexed row."""
+    try:
+        from app import jhsaa_reclass as rc
+        return rc.pending(w["id"]) is not None or rc.due(w)
+    except Exception:
+        return False
 
 
 def _universe(req) -> tuple[str, str, str, str]:
@@ -2695,6 +2710,92 @@ def create_app() -> Flask:
                                view=jhsaa_jv_state_view(DEFAULT_SEED, g, group, year,
                                                         request.args.get("region")),
                                gender=gender, uni_label=label, u=u)
+
+    # ---- RECLASSIFICATION (owner spec 2026-09, app/jhsaa_reclass.py) ----------
+    def _rc_back(msg: str = ""):
+        _, _, _, u = _universe(request)
+        g = request.form.get("g") or request.args.get("g") or ""
+        args = {"u": u}
+        if g:
+            args["g"] = g
+        if msg:
+            args["msg"] = msg
+        return redirect(url_for("jhsaa_reclassification", **args))
+
+    @app.route("/jhsaa/reclassification")
+    def jhsaa_reclassification():
+        """The cycle's proposal page: every pooled school with its evidence and
+        proposed class, the geography moves, counts before/after, the league each
+        mover lands in; veto / pin / add per row; commit, dismiss, run now."""
+        gender, label, u, g, group, year = _jh_scope_args()
+        from app import jhsaa_reclass as rc
+        return render_template("jhsaa_reclass.html", active="High School",
+                               view=jhsaa_reclass_view(DEFAULT_SEED, g, group, year),
+                               gender=gender, u=u, uni_label=label)
+
+    @app.route("/jhsaa/reclassification/run", methods=["POST"])
+    def jhsaa_reclass_run():
+        from app import jhsaa_reclass as rc
+        w = wd.load_world(DEFAULT_SEED)
+        if not w:
+            return _rc_back("No world yet.")
+        rc.open_proposal(w, force=bool(request.form.get("rebuild")))
+        return _rc_back("Proposal built." if not request.form.get("rebuild") else "Proposal rebuilt.")
+
+    @app.route("/jhsaa/reclassification/edit", methods=["POST"])
+    def jhsaa_reclass_edit():
+        from app import jhsaa_reclass as rc
+        w = wd.load_world(DEFAULT_SEED)
+        school = (request.form.get("school") or "").strip()
+        action = request.form.get("action") or ""
+        to = (request.form.get("to") or "").strip()
+        if w and school and action:
+            rc.edit(w, school, action, to)
+        return _rc_back()
+
+    @app.route("/jhsaa/reclassification/config", methods=["POST"])
+    def jhsaa_reclass_config():
+        from app import jhsaa_reclass as rc
+        vals = {}
+        for key in ("cycle", "success_pp", "futility_floor", "futility_pu",
+                    "success_pp_b", "futility_pu_b", "success_pp_g", "futility_pu_g"):
+            vals[key] = (request.form.get(key) or "").strip()
+        for key in ("group_areas", "repatriate_areas"):
+            vals[key] = [x.strip() for x in (request.form.get(key) or "").split(",")]
+        rc.set_config(vals)
+        w = wd.load_world(DEFAULT_SEED)
+        if w and rc.pending(w["id"]):
+            rc.open_proposal(w, force=True)
+        return _rc_back("Coefficients saved.")
+
+    @app.route("/jhsaa/reclassification/commit", methods=["POST"])
+    def jhsaa_reclass_commit():
+        from app import jhsaa_reclass as rc
+        w = wd.load_world(DEFAULT_SEED)
+        if not w:
+            return _rc_back("No world yet.")
+        res = rc.commit(w)
+        if res.get("ok"):
+            # The seed file changed under every cache: schools, leagues, rosters.
+            reset_all()
+        return _rc_back(f"Committed {res.get('moves', 0)} moves." if res.get("ok")
+                        else res.get("msg", "Nothing to commit."))
+
+    @app.route("/jhsaa/reclassification/dismiss", methods=["POST"])
+    def jhsaa_reclass_dismiss():
+        from app import jhsaa_reclass as rc
+        w = wd.load_world(DEFAULT_SEED)
+        if w:
+            rc.dismiss(w)
+        return _rc_back("Proposal dismissed.")
+
+    @app.route("/jhsaa/realignments")
+    def jhsaa_realignments():
+        """Every committed cycle, on the History sub-rail."""
+        gender, label, u, g, group, _year = _jh_scope_args()
+        return render_template("jhsaa_realignments.html", active="High School",
+                               view=jhsaa_realignments_view(DEFAULT_SEED, g, group),
+                               gender=gender, u=u, uni_label=label)
 
     @app.route("/jhsaa/toc")
     def jhsaa_toc():
