@@ -472,6 +472,33 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                         [[y, pts, wt] for y, pts, wt in r["breakdown"]]),
                 })
 
+    # FLIGHT EFFICIENCY (owner request 2026-09): the /jhsaa/flights table —
+    # one row per program and flight, actual vs expected win rate — read off
+    # the same memo the page uses (`world.jhsaa_flight_efficiency`). ARCHIVE
+    # PATH ONLY, the coefficient's rule: an injected season is not in the
+    # archive the fold reads. Rosters are rebuilt to resolve names, so the
+    # first export of a season pays the ~20 s the page pays.
+    flight_rows = []
+    if not injected and w:
+        name_to_id = {t.school.name: t.school.key for t in all_teams}
+        name_to_group = {t.school.name: t.school.group for t in all_teams}
+        world_year = year - wd.BASE_YEAR - 1
+        fe = wd.jhsaa_flight_efficiency(w["id"], world_year, gender, wd.active_salt(wd.DEFAULT_SEED))
+        for r in sorted(fe["rows"], key=lambda r: (r["school"], r["slot"])):
+            pid = name_to_id.get(r["school"])
+            if pid is None:
+                continue
+            if classification != "all" and name_to_group.get(r["school"]) != classification:
+                continue
+            flight_rows.append({
+                "program_id": pid, "program_name": r["school"], "gender": gender,
+                "championship_group": name_to_group.get(r["school"], ""),
+                "slot": r["slot"], "matches": r["n"], "wins": r["wins"],
+                "actual_pct": round(r["actual"], 2), "expected_pct": round(r["expected"], 2),
+                "delta_pct": round(r["delta"], 2),
+                "held_most_by": r["top"], "held_most_matches": r["top_n"],
+            })
+
     # THE JV TEAM STATE TOURNAMENT, FLAT (owner rule 2026-09 — "make sure the
     # data gets exported … as well as analytic for future analysis"): one row
     # per team in the State field, in seed order, with how it entered
@@ -558,6 +585,7 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
               "jhsaa_standings.csv": standings,
               "jhsaa_computer_ratings.csv": computer_ratings,
               "jhsaa_coefficient.csv": coefficient_rows,
+              "jhsaa_flights.csv": flight_rows,
               "jhsaa_realignments.csv": realignments,
               "jhsaa_jv_state.csv": jv_state_rows,
               "jhsaa_program_history.csv": history,
@@ -577,6 +605,7 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "style_trait": "Secondary tactical trait, or none (net_rusher, chip_and_charge, first_strike, grinder, retriever, heavy_topspin, flat_hitter, slice_specialist, return_specialist, big_server).",
             "potential_grade": "Hidden ceiling on the same 20-80 scale; included for unrestricted research.",
             "toss_power_raw": "JHSAA opponent-adjusted team power used for selection/seeding; compare only within this season and gender.",
+            "expected_pct": "jhsaa_flights: win rate the flight's matchups were expected to return, fitted on this season's varsity flights with home court; delta_pct is actual minus expected in points.",
             "captain": "players.csv: 1 if the player was one of the program's team captains "
                        "this season (named preseason; 1-3 per program), 0 if not. "
                        "captain_order ranks them best-known first (1 = the lead captain) and "
@@ -639,6 +668,14 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "component and the least-squares systems (Massey dual/game, SRS) were withheld. "
             "Parallel to TOSS/ATR — it feeds neither. Empty on seasons archived before the "
             "layer existed.",
+            "jhsaa_flights.csv is Flight Efficiency: one row per program per flight "
+            "(S1..D4), matches and wins at that flight, actual_pct, expected_pct (a logistic "
+            "fitted on this season's own varsity flights — the matchup and home court — "
+            "so the row is judged against how the association converted its matchups this "
+            "year) and delta_pct = actual - expected in points, with the player or pair "
+            "that held the flight most. A row of 25-35 matches swings ~9 points by chance; "
+            "trust programs moving the same way across several flights. Empty for an "
+            "injected season.",
             # ‼️ Prices DERIVED from `jhsaa_coefficient`, never retyped — the
             # committee sentence above learned this the hard way.
             "jhsaa_coefficient.csv is the Program Coefficient (UEFA-style): one row per "
