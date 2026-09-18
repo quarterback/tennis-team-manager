@@ -60,13 +60,17 @@ Then:
 1. sort the complete 9A-5A pool by effective_size descending
 2. divide the ordered pool into five nearly equal bands
 3. assign those bands 9A, 8A, 7A, 6A, 5A
-4. enforce one-class-per-cycle guard
-5. generate proposal; do not commit immediately
-6. allow manual veto, redirect, or addition
-7. commit accepted classification changes
-8. record each move and its evidence in `jhsaa_reclass_moves`
-9. run existing redistricting logic for every affected class
-10. use the resulting map beginning with the next JHSAA season
+4. generate proposal; do not commit immediately
+5. allow manual veto, redirect, or addition
+6. commit accepted classification changes
+7. record each move and its evidence in `jhsaa_reclass_moves`
+8. run existing redistricting logic for every affected class
+9. use the resulting map beginning with the next JHSAA season
+
+‼️ There is NO one-class-per-cycle guard (owner, 2026-09). A school lands
+where its effective size ranks, however far that is from where it was. An
+earlier draft of this document carried one; it was an agent's addition, not
+the owner's, and it is withdrawn.
 
 Proposal UI must show: school · current class · enrollment · cycle success
 points · hardship/futility figures · adjustment · effective size · pool rank ·
@@ -123,15 +127,13 @@ the page, exported with the proposal). Defaults used in the dry run below:
 2. **A-ladder sort.** 9A-5A pool, `effective_size` descending, five near-equal
    bands.
 3. **Group sort.** All Group schools after pass 1, three equal bands.
-4. **Guard.** One class per cycle. ‼️ See the dry run: the guard and the
-   equal-count cut conflict, and the initial reset should run WITHOUT it.
-5. **Proposal**, stored; **commit** writes `jhsaa_reclass_moves` (year,
+4. **Proposal**, stored; **commit** writes `jhsaa_reclass_moves` (year,
    school, from, to, enrollment, points, win rate, adjustment, effective size,
    rank, reason, overridden-by-owner), updates `schools.json` (the owner starts
    fresh saves from the seed file, so the seed is written too), and calls the
    redistricter (`scripts/jhsaa_redistrict.py`'s clustering, imported, never
    shelled) for every class whose membership changed.
-6. `reset_schools()` + `reset_all()`; the next week-0 rung plays the new map.
+5. `reset_schools()` + `reset_all()`; the next week-0 rung plays the new map.
 
 ### Surfaces
 - `/jhsaa/reclassification` — the proposal table (columns as specified), class
@@ -176,14 +178,9 @@ Top of the down list:
 | Esperanza | 9A → 8A | 2352 | 0 | .11 | -730 | 1621 | 191 |
 | Tippecanoe | 9A → 8A | 2361 | 0 | .12 | -685 | 1675 | 172 |
 
-‼️ **The guard breaks the bands.** Baptist's effective size ranks 51st, a 9A
-seat, and the guard holds it at 8A; Observatory ranks 379th, a 5A seat, and
-the guard holds it at 6A. Applied after the cut, the guard leaves the classes
-at **78 / 81 / 86 / 81 / 65** instead of five 78s. Two honest resolutions:
-run the initial reset without the guard (it is a reset, decades overdue, and
-the spec's step 4 is meant for ordinary cycles), or apply the guard as a clamp
-inside the sort and re-cut iteratively. Recommended: the former for the reset,
-the guard from the second cycle on, where it will rarely bite.
+Unguarded, the cut lands every school where it ranks: Baptist (rank 51) goes
+7A → 9A and Observatory (rank 379) goes 7A → 5A, and the five classes come out
+79 / 78 / 78 / 78 / 78 by construction.
 
 ### Geography pass, initial reset
 - Ladder schools inside Group territory today: **Baptist (7A, Millersylvania),
@@ -207,7 +204,6 @@ the guard from the second cycle on, where it will rarely bite.
 
 ## Decisions still the owner's
 - Coefficient values (the three above), and the finish-point prices.
-- Whether the initial reset runs unguarded (recommended) or clamped.
 - The approved eastern expansion areas for 1A repatriation, and whether the
   three big ladder schools inside Group territory cross or are named exceptions.
 - Whether 4A-1A get any competitive movement at all (the spec leaves them out
