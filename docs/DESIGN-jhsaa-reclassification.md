@@ -1,6 +1,6 @@
 # DESIGN — JHSAA reclassification (owner spec 2026-09)
 
-Status: **specified, not built.** The rule below is the owner's, given verbatim in
+Status: **specified and approved by the owner (2026-09), not yet built.** The rule below is the owner's, given verbatim in
 its two blocks and then mapped onto the code. The dry run at the end is on the
 2086 export with placeholder coefficients, so the owner can see the shape of a
 first cycle before anything is written. Background and the survey of real-state
@@ -254,8 +254,19 @@ level, which is the point of the exercise.
 
 ---
 
-## Decisions still the owner's
-- Coefficient values (the three above), and the finish-point prices.
-- The approved eastern expansion areas for 1A repatriation.
-- The small pool's coefficients: keep the span-scaled defaults or set them by
-  eye off the proposal page.
+## Decisions (owner, 2026-09 — all approved)
+- Coefficients: the defaults above for both pools (`SUCCESS_PER_POINT` 40 /
+  16.5, `FUTILITY_FLOOR` 0.35, `FUTILITY_PER_UNIT` 3000 / 1240), editable on
+  the page.
+- Approved eastern expansion areas for the initial 1A repatriation: **Boise
+  Frontier and Blue Mountain Country** (13 schools, both intact leagues).
+- No guard. Bands are equal by construction.
+- Baptist, Mater Dei and Minnesota City never return to the Groups.
+- **A Group school that wants back onto the A ladder is a manual ADDITION on
+  the proposal page**, nothing more: the owner adds the row and the sort places
+  it. Pacific Friends (Group 2, enrollment 814, 13 cycle points, .830) is the
+  first: it lived on the A ladder before the merger that put it in the Groups,
+  and the sort lands it in **6A**, one class above its enrollment, where it can
+  play its traditional big-school rivals again. Rule 2 is untouched; no
+  exception list is needed.
+- 4A-1A run as the second pool as described.
