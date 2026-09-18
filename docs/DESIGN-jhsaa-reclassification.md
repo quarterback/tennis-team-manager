@@ -120,9 +120,10 @@ the page, exported with the proposal). Defaults used in the dry run below:
 1. **Geography pass.** Group territory is a configured set of areas
    (`Kangas`, `Silver Basin`, `Bear River Country`, `Millersylvania`,
    `Snake River Plain`) plus the owner's approved eastern expansion areas. A
-   ladder school inside Group territory is proposed INTO the Group ladder; a
    Group school outside it is proposed OUT, into the A ladder's normal
-   classification. The initial-reset 1A repatriation moves whole areas/clusters
+   classification. Ladder schools are NEVER proposed into the Groups on
+   territory alone — the 2046 realignment moved the big programs out and they
+   stay out; the only inbound path is the owner-approved 1A repatriation. The initial-reset 1A repatriation moves whole areas/clusters
    from the approved list until 1A and the three Groups are comparable.
 2. **A-ladder sort.** 9A-5A pool, `effective_size` descending, five near-equal
    bands.
@@ -145,7 +146,8 @@ the page, exported with the proposal). Defaults used in the dry run below:
 ### Tests to pin
 - A school's boys and girls never land in different classes.
 - Bands are equal ±1 after an unguarded cut.
-- No 1A school crosses to the Group ladder except through the geography pass.
+- No A-ladder school crosses to the Groups except an approved 1A cluster under
+  rule 4; Baptist, Mater Dei and Minnesota City never do.
 - Archived seasons are byte-identical before and after a commit.
 - The proposal is deterministic for a given archive and coefficients.
 
@@ -183,11 +185,14 @@ Unguarded, the cut lands every school where it ranks: Baptist (rank 51) goes
 79 / 78 / 78 / 78 / 78 by construction.
 
 ### Geography pass, initial reset
-- Ladder schools inside Group territory today: **Baptist (7A, Millersylvania),
-  Mater Dei (9A, Silver Basin), Minnesota City (8A, Kangas)**. Under rule 2
-  they move to the Group ladder (Group 1's band, 1066-2551, holds all three).
-  All three are strong programs; the owner may want to name them as the
-  exception rather than the rule.
+- ‼️ **A-ladder schools inside Group territory STAY on the A ladder** (owner,
+  2026-09). Baptist (7A, Millersylvania), Mater Dei (9A, Silver Basin) and
+  Minnesota City (8A, Kangas) were moved OUT of the Groups by the 2046
+  realignment and do not go back. The geography pass is one-directional for
+  the A ladder: it never proposes a ladder school into the Groups on territory
+  alone. Repatriation into the Groups is only the owner-approved 1A clusters
+  under rule 4; a Group school outside Group territory may still be proposed
+  out.
 - 1A today: 87 (girls' count). Group classes: 70 / 72 / 70. Eastern 1A
   clusters, by county:
   - Boise Frontier — 4 (Barlowe 3, Vance 1)
@@ -204,7 +209,6 @@ Unguarded, the cut lands every school where it ranks: Baptist (rank 51) goes
 
 ## Decisions still the owner's
 - Coefficient values (the three above), and the finish-point prices.
-- The approved eastern expansion areas for 1A repatriation, and whether the
-  three big ladder schools inside Group territory cross or are named exceptions.
+- The approved eastern expansion areas for 1A repatriation.
 - Whether 4A-1A get any competitive movement at all (the spec leaves them out
   of the pool; play-up overrides remain available).
