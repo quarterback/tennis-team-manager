@@ -124,3 +124,23 @@ rather than silently assumed to work.
 `analytics/README.md` is the primary spec/contract now — read it, not this AAR, before
 extending the metrics library or adding a page. This document is the *why*, not the
 *how*.
+
+## Addendum (2026-09): the hosted report froze at its first build
+
+The game hosts the report at `/clinch/`, built in-process from `/clinch/manage`
+(`app/clinch.py`). After the first build nothing linked back to that form: the
+sidebar entry went to the built site, and the form only ever appeared by redirect
+when no site existed or a build had failed. A static site rendered once never
+follows the world, so the report stayed on the season it was first built for and
+the owner could not see how to move it. Three things now:
+
+- **"Rebuild Report"** under Tools in the game's sidebar, pointing at the form.
+- The hosted build passes `manage_url` to `render.build_site`, and the sidecar's
+  masthead and footer carry a **Rebuild** link back to it. The standalone
+  sidecar passes nothing and shows nothing.
+- The form states how many seasons the rendered window trails the world
+  (`clinch.seasons_behind`), so "is this stale?" is answered rather than left
+  to a date comparison.
+
+The rule behind all three: a surface that renders a snapshot has to carry its
+own way back to the thing that refreshes it.

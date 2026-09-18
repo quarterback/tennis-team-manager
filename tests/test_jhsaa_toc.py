@@ -1072,6 +1072,71 @@ def test_the_research_export_carries_the_program_coefficient(archived):
         assert f"{name} {pts:g}" in rule
 
 
+def test_the_research_export_carries_the_realignment_ledger(archived):
+    """Every committed reclassification move rides in the export as
+    jhsaa_realignments.csv (owner rule 2026-09: track class changes with a model
+    across the arc of seasons) — every cycle, newest first, gender-blind, keyed
+    to programs.csv where the school still sponsors; archive path only."""
+    import csv as _csv
+    import io as _io
+    import json as _json
+    from app import jhsaa_reclass as rc
+    from app.research_export import build_jhsaa, _load_archived_jhsaa_season
+    w = archived["world"]
+    y = archived["arc"]["season_year"]
+    live = sorted(s.name for s in jh.load_schools("girls"))[:2]
+    conn = wd._db()
+    try:
+        conn.executescript(rc._SCHEMA)
+        conn.execute("INSERT INTO world_jhsaa_reclass (world_id, year, status, data, edits,"
+                     " created, committed) VALUES (?,?,?,?,?,?,?)",
+                     (w["id"], 3, "committed", "{}", "{}", 1, 2))
+        for i, nm in enumerate(live + ["A School That Left"]):
+            conn.execute(
+                "INSERT INTO world_jhsaa_reclass_move (world_id, year, school, from_cls, to_cls,"
+                " enrollment, points, win_rate, adjustment, effective, rank, reason, manual,"
+                " league_before, league_after) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                (w["id"], 3, nm, "7A", "8A", 1200, 3, None if i else 0.75, 40.0, 1240.0, i + 1,
+                 "owner" if i == 0 else "sort", 1 if i == 0 else 0, "Old", "New"))
+        conn.commit()
+    finally:
+        conn.close()
+    try:
+        files = build_jhsaa(y, "girls")
+        rows = list(_csv.DictReader(_io.TextIOWrapper(_io.BytesIO(files["jhsaa_realignments.csv"]))))
+        assert [r["school"] for r in rows] == sorted(live + ["A School That Left"])
+        assert all(r["season_year"] == str(wd.BASE_YEAR + 3 + 1) and r["world_year"] == "3"
+                   for r in rows)
+        programs = list(_csv.DictReader(_io.TextIOWrapper(_io.BytesIO(files["programs.csv"]))))
+        ids = {p["program_id"] for p in programs}
+        by = {r["school"]: r for r in rows}
+        for nm in live:
+            assert by[nm]["program_id"] in ids
+        assert by["A School That Left"]["program_id"] == ""     # no dangling id
+        assert "program_ident" in rows[0]
+        assert by[live[0]]["owner_decision"] == "1" and by[live[0]]["reason"] == "owner"
+        assert by[live[1]]["win_rate"] == "" and by[live[0]]["win_rate"] == "0.75"
+        # the boys' bundle carries the same ledger — a cycle moves the school
+        boys = list(_csv.DictReader(_io.TextIOWrapper(
+            _io.BytesIO(build_jhsaa(y, "boys")["jhsaa_realignments.csv"]))))
+        assert [r["school"] for r in boys] == [r["school"] for r in rows]
+        # an injected season packages nothing
+        injected = build_jhsaa(y, "girls", season=_load_archived_jhsaa_season(y, "girls"))
+        assert not list(_csv.DictReader(_io.TextIOWrapper(
+            _io.BytesIO(injected["jhsaa_realignments.csv"]))))
+        manifest = _json.loads(files["manifest.json"])
+        assert manifest["files"]["jhsaa_realignments.csv"]["rows"] == len(rows)
+        assert any(d.startswith("jhsaa_realignments.csv") for d in manifest["domain_rules"])
+    finally:
+        conn = wd._db()
+        try:
+            conn.execute("DELETE FROM world_jhsaa_reclass WHERE world_id=?", (w["id"],))
+            conn.execute("DELETE FROM world_jhsaa_reclass_move WHERE world_id=?", (w["id"],))
+            conn.commit()
+        finally:
+            conn.close()
+
+
 def test_the_research_export_carries_the_jv_events(archived):
     """‼️ THE JV EVENTS ARE IN THE EXPORT (owner rule 2070, reversing the 2026-08
     varsity-only decision): the JV season's duals ride in duals.csv labelled

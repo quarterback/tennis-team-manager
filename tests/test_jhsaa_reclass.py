@@ -236,9 +236,27 @@ def test_commit_rewrites_the_seed_file_redraws_leagues_and_records_moves(scored,
     # Recorded, readable from the program side and the history side.
     baptist = rc.moves_for(w["id"], "Baptist")
     assert baptist and baptist[-1]["to_cls"] == "9A"
+    # every move carries the school's stable IDENT beside its display name
+    idents = {r["name"]: (r.get("source") or r["name"]) for r in doc["schools"]}
+    for name in moves:
+        assert rc.moves_for(w["id"], name)[-1]["ident"] == idents[name], name
     hist = rc.history(w["id"])
     assert hist and len(hist[0]["moves"]) == len(moves)
     assert rc.pending(w["id"]) is None and rc.last_cycle_year(w["id"]) == w["year"]
+    # ‼️ THE LEDGER FILES, beside the seed file the commit rewrote (owner rule
+    # 2026-09: a cycle is also a file, for reading across seasons outside the
+    # app). One JSON + one Markdown per cycle, and LEDGER.md over every cycle.
+    season = wd.BASE_YEAR + w["year"] + 1
+    ldir = tmp_path / "realignments"
+    assert res["ledger"]["md"] == str(ldir / f"{season}.md")
+    doc_j = json.load(open(ldir / f"{season}.json"))
+    assert {m["school"] for m in doc_j["moves"]} == set(moves)
+    md = (ldir / f"{season}.md").read_text()
+    ledger = (ldir / "LEDGER.md").read_text()
+    for name, x in moves.items():
+        assert f"| {name} |" in md and f"| {name} |" in ledger
+        assert f"{x['current']} → {x['proposed']}" in md
+    assert f"| {season} | {len(moves)} |" in ledger
     # The archive is byte-identical.
     conn = wd._db()
     try:
@@ -259,3 +277,57 @@ def test_due_counts_seasons_since_the_last_commit(monkeypatch):
     assert not rc.due(w)
     monkeypatch.setattr(rc, "last_cycle_year", lambda wid: 4)
     assert rc.due(w)
+
+
+def test_the_history_is_an_index_plus_one_cycle(clean_archive):
+    """The Realignments page never loads every cycle's moves (owner rule 2026-09:
+    ~400 rows a cycle, and the page must not grow by that every four seasons).
+    `cycle_index` carries counts only; `cycle` loads ONE year; the view picks the
+    named season year and falls to the newest."""
+    from app.web.state import jhsaa_realignments_view
+    w = clean_archive
+    conn = wd._db()
+    try:
+        conn.executescript(rc._SCHEMA)
+        conn.execute("DELETE FROM world_jhsaa_reclass WHERE world_id=?", (w["id"],))
+        conn.execute("DELETE FROM world_jhsaa_reclass_move WHERE world_id=?", (w["id"],))
+        for yr, names in ((4, ("Alpha", "Beta", "Gamma")), (8, ("Delta",))):
+            data = {"counts_before": {"9A": 70}, "counts_after": {"9A": 71},
+                    "geo": [{"school": "Alpha", "area": "Boise Frontier", "from": "Group 1",
+                             "pool": "B", "reason": "territory"}] if yr == 4 else [],
+                    "redraw_notes": {"9A": ["Sunkist League: new"]}, "years": [yr - 1]}
+            conn.execute("INSERT INTO world_jhsaa_reclass (world_id, year, status, data,"
+                         " edits, created, committed) VALUES (?,?,?,?,?,?,?)",
+                         (w["id"], yr, "committed", json.dumps(data), "{}", 1, 2))
+            for i, nm in enumerate(names):
+                conn.execute(
+                    "INSERT INTO world_jhsaa_reclass_move (world_id, year, school, from_cls,"
+                    " to_cls, enrollment, points, win_rate, adjustment, effective, rank,"
+                    " reason, manual, league_before, league_after)"
+                    " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    (w["id"], yr, nm, "8A", "9A", 1500 + i, 4, 0.7, 60.0, 1560.0, i + 1,
+                     "sort", 1 if i == 0 else 0, "Old League", "New League"))
+        conn.commit()
+    finally:
+        conn.close()
+    idx = rc.cycle_index(w["id"])
+    assert [c["year"] for c in idx] == [8, 4]
+    assert idx[1]["n_moves"] == 3 and idx[1]["n_manual"] == 1 and idx[1]["n_geo"] == 1
+    assert "moves" not in idx[0]
+    one = rc.cycle(w["id"], 4)
+    assert [m["school"] for m in one["moves"]] == ["Alpha", "Beta", "Gamma"]
+    assert one["redraw_notes"] == {"9A": ["Sunkist League: new"]}
+    assert rc.cycle(w["id"], 5) is None
+    assert [m["school"] for m in rc.all_moves(w["id"])] == ["Delta", "Alpha", "Beta", "Gamma"]
+    # the view: newest by default, the named season on request, unknown → newest
+    y4, y8 = wd.BASE_YEAR + 4 + 1, wd.BASE_YEAR + 8 + 1
+    v = jhsaa_realignments_view(wd.DEFAULT_SEED, "girls")
+    assert v["selected"]["season_year"] == y8 and len(v["cycles"]) == 2
+    v = jhsaa_realignments_view(wd.DEFAULT_SEED, "girls", cycle=y4)
+    assert v["selected"]["season_year"] == y4 and len(v["selected"]["moves"]) == 3
+    assert v["matrix"] == [{"from_cls": "8A", "to_cls": "9A", "n": 3}]
+    assert jhsaa_realignments_view(wd.DEFAULT_SEED, "girls", cycle=1900)["selected"]["season_year"] == y8
+    # the markdown a model reads: one table row per school, evidence inline
+    md = rc.cycle_markdown(one)
+    assert "### 8A → 9A (3)" in md and "| Alpha | 1500 | 4 | 0.700 | +60 | 1560 | 1 | sort |" in md
+    assert "Sunkist League: new" in md and "| Alpha | Boise Frontier | Group 1 | 4A-1A | territory |" in md

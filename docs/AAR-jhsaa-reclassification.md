@@ -36,9 +36,19 @@ Owner spec: `docs/DESIGN-jhsaa-reclassification.md`. Models and data:
   touched class's leagues through the shared clustering, records each move in
   `world_jhsaa_reclass_move` with its evidence, closes the cycle, resets the
   school and web caches. The next week-0 season plays the new map.
-- **History.** A Realignments page on the History sub-rail, one block per
-  committed cycle; a Reclassifications panel on the program page's History tab;
-  `world.reset` clears the cycle tables for a new save.
+- **History.** A Realignments page on the History sub-rail: an INDEX of
+  committed cycles (season, moved, owner decisions, cross-ladder, the class
+  counts after) and ONE cycle in full — the year picked on the index or the
+  switcher, the newest by default — with the move list, the geography pass and
+  the league redraw each folded behind a `<details>`. A Reclassifications
+  panel on the program page's History tab; `world.reset` clears the cycle
+  tables for a new save.
+- **The ledger.** Every commit also writes `data/jhsaa/realignments/
+  <season>.json` and `<season>.md` (counts, geography pass, every move with
+  its evidence grouped from → to, the redraw notes) and regenerates
+  `LEDGER.md` over every cycle file in the directory, oldest first. The
+  research export carries the same rows as `jhsaa_realignments.csv` (every
+  cycle, newest first, gender-blind, `program_id` joined to `programs.csv`).
 
 ## Lessons
 
@@ -65,6 +75,15 @@ Owner spec: `docs/DESIGN-jhsaa-reclassification.md`. Models and data:
   span is wider (a 378-enrollment school sits in 8A), so the derived numbers are
   13.3 and 1000. They are defaults; the page shows the live values per pool and
   the owner sets a pool's own to override.
+- **The history page was built to stack every cycle in full, and the owner
+  saw at once that it would not survive a second one** (~400 moves a cycle,
+  every four seasons). The index-plus-one-cycle shape is the section's own
+  rule — a parent page gets an index of its children, siblings get a
+  switcher — applied late. And a database row is not something a model can
+  be handed: "track these changes with an LLM across the arc of seasons" is
+  what the per-cycle files and the export table are for. `LEDGER.md` is
+  regenerated from the cycle files rather than appended, so it cannot drift
+  from them.
 - **An off-cycle run on a fresh save is enrollment-only.** With no archive the
   scorer returns nothing and the sort is by enrollment; the button is disabled
   until a season is archived, but the path is legal.

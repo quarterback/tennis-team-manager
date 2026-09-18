@@ -232,6 +232,10 @@ NAV_GROUPS = [
     ]),
     ("Tools", [
         {"id": "clinch",    "label": "Clinch Report", "icon": "fa-solid fa-newspaper", "endpoint": "clinch_home", "args": {}},
+        # The report is a static site rendered ONCE; nothing else links back to
+        # the build form after the first build, so it silently froze at that
+        # season (owner, 2026-09). This is the way to it.
+        {"id": "clinch_manage", "label": "Rebuild Report", "icon": "fa-solid fa-hammer", "endpoint": "clinch_manage", "args": {}},
         {"id": "research_export", "label": "Export Research Data", "icon": "fa-solid fa-file-arrow-down", "endpoint": "research_export", "args": {}},
         {"id": "guide",     "label": "Guide",        "icon": "fa-solid fa-book-open", "endpoint": "guide",           "args": {}},
         {"id": "editor",    "label": "Editor",       "icon": "fa-solid fa-screwdriver-wrench", "endpoint": "editor",          "args": {}},
@@ -259,6 +263,7 @@ def _active_nav(req) -> str:
     if p.startswith("/world"):            return "world"
     if p.startswith("/data"):             return "data"
     if p.startswith("/research/export"):  return "research_export"
+    if p.startswith("/clinch/manage"):    return "clinch_manage"
     if p.startswith("/clinch"):           return "clinch"
     if p.startswith("/rankings"):         return "rankings"
     if p.startswith("/results"):          return "results"
@@ -1380,9 +1385,11 @@ def create_app() -> Flask:
         default_year = wd.jhsaa_season_year(world) if world else 2027
         with _jh_jobs_lock:
             building = ("clinch", "build") in _jh_jobs
+        info = _clinch.build_info()
         return render_template("clinch_manage.html", active="Tools",
                                default_year=default_year, cached=_clinch.cached_seasons(),
-                               info=_clinch.build_info(), ready=_clinch.site_ready(),
+                               info=info, ready=_clinch.site_ready(),
+                               behind=_clinch.seasons_behind(info, default_year),
                                building=building, max_seasons=_clinch.MAX_SEASONS,
                                error=request.args.get("error", ""))
 
@@ -2791,10 +2798,12 @@ def create_app() -> Flask:
 
     @app.route("/jhsaa/realignments")
     def jhsaa_realignments():
-        """Every committed cycle, on the History sub-rail."""
+        """Committed cycles on the History sub-rail — an index of years, and the
+        one cycle `?cycle=<season year>` names (the newest by default)."""
         gender, label, u, g, group, _year = _jh_scope_args()
+        cycle = request.args.get("cycle", type=int)
         return render_template("jhsaa_realignments.html", active="High School",
-                               view=jhsaa_realignments_view(DEFAULT_SEED, g, group),
+                               view=jhsaa_realignments_view(DEFAULT_SEED, g, group, cycle),
                                gender=gender, u=u, uni_label=label)
 
     @app.route("/jhsaa/toc")

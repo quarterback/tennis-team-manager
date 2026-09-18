@@ -242,3 +242,49 @@ def test_the_export_carries_the_computer_ratings_and_committee():
     assert json.loads(files2["jhsaa_committee.json"].decode()) == {}
     assert list(csv.DictReader(io.StringIO(
         files2["jhsaa_computer_ratings.csv"].decode()))) == []
+
+
+def test_jhsaa_flights_ride_on_the_bundles_own_rosters_with_holder_ids():
+    """jhsaa_flights.csv is the /jhsaa/flights fold run over the rosters and lines
+    the bundle already built (`world.flight_efficiency_fold`) — never the page's
+    per-scope roster rebuild, which a bulk export cannot share — so an injected
+    season carries rows too; the holder's player_id rides beside the display
+    name; and the manifest advertises the slots actually EMITTED."""
+    from app.jhsaa import GROUPS
+    a, b = _team("Ace High", "7A", True), _team("Ball High", "7A", False)
+    b.roster[0].current_overall = lambda: 30          # a real gap, so the fit has a slope
+    groups = {g: {"state": {"champion": "Ace High"}} for g in GROUPS}
+    files = build_jhsaa(2027, "girls", "7A",
+                        season={"teams": {"a": a, "b": b}, "groups": groups, "awards": {},
+                                "individuals": {}})
+    rows = list(csv.DictReader(io.StringIO(files["jhsaa_flights.csv"].decode())))
+    by = {(r["program_id"], r["slot"]): r for r in rows}
+    assert set(by) == {("Ace High|girls", "S1"), ("Ball High|girls", "S1")}
+    ace, ball = by[("Ace High|girls", "S1")], by[("Ball High|girls", "S1")]
+    assert (ace["matches"], ace["wins"], ace["actual_pct"]) == ("1", "1", "100.0")
+    assert (ball["matches"], ball["wins"], ball["actual_pct"]) == ("1", "0", "0.0")
+    assert ace["held_most_by"] == "Ana Ace" and ace["held_most_by_ids"] == "ana"
+    assert ball["held_most_by"] == "Bea Ball" and ball["held_most_by_ids"] == "bea"
+    players = {r["player_id"] for r in csv.DictReader(io.StringIO(files["players.csv"].decode()))}
+    assert {"ana", "bea"} <= players
+    manifest = json.loads(files["manifest.json"])
+    rule = next(d for d in manifest["domain_rules"] if d.startswith("jhsaa_flights.csv"))
+    assert "flights present in this export: S1;" in rule and "S1..D4" not in rule
+    assert manifest["files"]["jhsaa_flights.csv"]["rows"] == 2
+
+
+def test_the_flight_fold_keeps_every_slot_it_is_handed():
+    """S5 and D5 are real flights (5S/2D, 4S/5D); the fold never narrows the
+    slot set, and a pair's holder is a tuple of both names."""
+    from app.world import flight_efficiency_fold
+    ovr = {"Home": {"H1": 50, "H2": 44, "H3": 40}, "Away": {"A1": 46, "A2": 41, "A3": 39}}
+    lines = [{"slot": "S5", "home": ["H1"], "away": ["A1"], "home_won": True},
+             {"slot": "D5", "home": ["H2", "H3"], "away": ["A2", "A3"], "home_won": False},
+             {"slot": "S1", "home": ["H1"], "away": ["Nobody"], "home_won": True}]
+    out = flight_efficiency_fold([("Home", "Away", lines)], lambda n: ovr.get(n))
+    assert out["lines"] == 3 and out["unresolved"] == 1          # the S1 line names nobody
+    rows = {(r["school"], r["slot"]): r for r in out["rows"]}
+    assert set(rows) == {("Home", "S5"), ("Away", "S5"), ("Home", "D5"), ("Away", "D5")}
+    assert rows[("Home", "D5")]["top_names"] == ("H2", "H3")
+    assert rows[("Home", "D5")]["top"] == "H2 / H3"
+    assert rows[("Away", "S5")]["wins"] == 0 and rows[("Home", "S5")]["wins"] == 1

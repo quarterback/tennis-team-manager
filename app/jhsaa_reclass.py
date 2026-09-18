@@ -357,7 +357,7 @@ CREATE TABLE IF NOT EXISTS world_jhsaa_reclass_move (
   world_id INTEGER, year INTEGER, school TEXT, from_cls TEXT, to_cls TEXT,
   enrollment INTEGER, points INTEGER, win_rate REAL, adjustment REAL,
   effective REAL, rank INTEGER, reason TEXT, manual INTEGER DEFAULT 0,
-  league_before TEXT, league_after TEXT
+  league_before TEXT, league_after TEXT, ident TEXT
 );
 CREATE INDEX IF NOT EXISTS ix_jhsaa_reclass_move ON world_jhsaa_reclass_move(world_id, school);
 """
@@ -367,6 +367,12 @@ def _conn():
     from . import world
     conn = world._db()
     conn.executescript(_SCHEMA)
+    # `ident` (the school's stable roster identity) was added after the table
+    # shipped; CREATE IF NOT EXISTS cannot add a column to an existing save.
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(world_jhsaa_reclass_move)")}
+    if "ident" not in cols:
+        conn.execute("ALTER TABLE world_jhsaa_reclass_move ADD COLUMN ident TEXT")
+        conn.commit()
     return conn
 
 
@@ -475,6 +481,10 @@ def commit(world: dict) -> dict:
     proposed = {x["school"]: x["proposed"] for x in data["rows"]}
     with open(jh._DATA, encoding="utf-8") as fh:
         doc = json.load(fh)
+    # The move row records the school's IDENT (`source or name`, the roster
+    # identity a rename never moves) beside its display name: the ledger is
+    # meant to be read across seasons, and the name is only the name today.
+    ident_of = {r["name"]: (r.get("source") or r["name"]) for r in doc["schools"]}
     for r in doc["schools"]:
         p = proposed.get(r["name"])
         if p and p != r["classification"]:
@@ -498,13 +508,15 @@ def commit(world: dict) -> dict:
             conn.execute(
                 "INSERT INTO world_jhsaa_reclass_move (world_id, year, school, from_cls,"
                 " to_cls, enrollment, points, win_rate, adjustment, effective, rank, reason,"
-                " manual, league_before, league_after) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                " manual, league_before, league_after, ident)"
+                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (world["id"], world["year"], x["school"], x["current"], x["proposed"],
                  x["enrollment"], x["points"], x["win_rate"], x["adjustment"],
                  x["effective"], x["rank"],
                  "owner" if x["edit"] else ("geography" if x["pool"] != pool_of(x["current"]) else "sort"),
                  1 if x["edit"] else 0, x["league_before"],
-                 after_league.get(x["school"], x["league_after"])))
+                 after_league.get(x["school"], x["league_after"]),
+                 ident_of.get(x["school"], x["school"])))
         data["redraw_notes"] = notes
         conn.execute("UPDATE world_jhsaa_reclass SET status='committed', committed=?, data=?"
                      " WHERE world_id=? AND status='proposed'",
@@ -513,7 +525,9 @@ def commit(world: dict) -> dict:
     finally:
         conn.close()
     jh.reset_schools()
-    return {"ok": True, "moves": len(moves), "touched": data["touched"], "notes": notes}
+    paths = write_ledger(world["id"])
+    return {"ok": True, "moves": len(moves), "touched": data["touched"], "notes": notes,
+            "ledger": paths}
 
 
 def moves_for(world_id: int, school: str) -> list[dict]:
@@ -526,25 +540,195 @@ def moves_for(world_id: int, school: str) -> list[dict]:
     return [dict(r) for r in rows]
 
 
-def history(world_id: int) -> list[dict]:
-    """Every committed cycle, newest first: {year, season_year, moves:[...], counts}."""
+def cycle_index(world_id: int) -> list[dict]:
+    """Every committed cycle, newest first, WITHOUT its moves: {year, season_year,
+    n_moves, n_geo, n_manual, counts_before, counts_after, committed}. The
+    Realignments page lists cycles off this and loads ONE cycle's moves — a cycle
+    is ~400 rows on a real save, and the page must not grow by that every four
+    seasons (owner, 2026-09)."""
     from . import world as wd
     conn = _conn()
     try:
         cycles = conn.execute("SELECT year, data, committed FROM world_jhsaa_reclass WHERE"
                               " world_id=? AND status='committed' ORDER BY year DESC",
                               (world_id,)).fetchall()
-        out = []
-        for c in cycles:
-            mv = conn.execute("SELECT * FROM world_jhsaa_reclass_move WHERE world_id=? AND"
-                              " year=? ORDER BY from_cls, to_cls, school",
-                              (world_id, c["year"])).fetchall()
-            data = json.loads(c["data"])
-            out.append({"year": c["year"], "season_year": wd.BASE_YEAR + c["year"] + 1,
-                        "moves": [dict(r) for r in mv],
-                        "counts_before": data.get("counts_before", {}),
-                        "counts_after": data.get("counts_after", {}),
-                        "geo": data.get("geo", []), "committed": c["committed"]})
+        counts = {r["year"]: (r["n"], r["m"]) for r in conn.execute(
+            "SELECT year, COUNT(*) AS n, SUM(manual) AS m FROM world_jhsaa_reclass_move"
+            " WHERE world_id=? GROUP BY year", (world_id,))}
     finally:
         conn.close()
+    out = []
+    for c in cycles:
+        data = json.loads(c["data"])
+        n, m = counts.get(c["year"], (0, 0))
+        out.append({"year": c["year"], "season_year": wd.BASE_YEAR + c["year"] + 1,
+                    "n_moves": n, "n_manual": m or 0, "n_geo": len(data.get("geo", [])),
+                    "counts_before": data.get("counts_before", {}),
+                    "counts_after": data.get("counts_after", {}),
+                    "committed": c["committed"]})
     return out
+
+
+def cycle(world_id: int, year: int) -> dict | None:
+    """ONE committed cycle with its moves (from_cls, to_cls, school order), the
+    geography pass, the counts and the league-redraw notes; None if no cycle was
+    committed at that world-year."""
+    from . import world as wd
+    conn = _conn()
+    try:
+        c = conn.execute("SELECT year, data, committed FROM world_jhsaa_reclass WHERE"
+                         " world_id=? AND year=? AND status='committed'",
+                         (world_id, year)).fetchone()
+        if not c:
+            return None
+        mv = conn.execute("SELECT * FROM world_jhsaa_reclass_move WHERE world_id=? AND"
+                          " year=? ORDER BY from_cls, to_cls, school",
+                          (world_id, year)).fetchall()
+    finally:
+        conn.close()
+    data = json.loads(c["data"])
+    return {"year": c["year"], "season_year": wd.BASE_YEAR + c["year"] + 1,
+            "moves": [dict(r) for r in mv],
+            "counts_before": data.get("counts_before", {}),
+            "counts_after": data.get("counts_after", {}),
+            "geo": data.get("geo", []), "redraw_notes": data.get("redraw_notes", {}),
+            "years": data.get("years", []), "committed": c["committed"]}
+
+
+def history(world_id: int) -> list[dict]:
+    """Every committed cycle IN FULL, newest first. Tests and the ledger use it;
+    the page reads `cycle_index` + one `cycle`."""
+    return [cycle(world_id, c["year"]) for c in cycle_index(world_id)]
+
+
+def all_moves(world_id: int) -> list[dict]:
+    """Every recorded move of every committed cycle, newest cycle first — the
+    research export's `jhsaa_realignments.csv`. One query, never per cycle."""
+    from . import world as wd
+    conn = _conn()
+    try:
+        rows = conn.execute("SELECT * FROM world_jhsaa_reclass_move WHERE world_id=?"
+                            " ORDER BY year DESC, from_cls, to_cls, school",
+                            (world_id,)).fetchall()
+    finally:
+        conn.close()
+    out = []
+    for r in rows:
+        d = dict(r)
+        d["season_year"] = wd.BASE_YEAR + d["year"] + 1
+        out.append(d)
+    return out
+
+
+# ------------------------------------------------------------- the ledger ----
+# ‼️ EVERY COMMITTED CYCLE IS ALSO WRITTEN TO A FILE (owner rule 2026-09): the
+# owner wants to track realignments "with an llm at some point across the arc
+# of seasons", and a database row is not something a model can be handed. The
+# commit rewrites `data/jhsaa/schools.json` already, so the ledger lives beside
+# it: one JSON and one Markdown per cycle (`<season_year>.json` / `.md`), plus
+# `LEDGER.md`, the whole arc in one document, REGENERATED from the JSON files
+# on every commit — never appended, so it cannot drift from its cycles. The
+# path is resolved off `jh._DATA` at call time, so a test that points the seed
+# file at a copy writes its ledger beside that copy.
+
+
+def ledger_dir() -> str:
+    return os.path.join(os.path.dirname(jh._DATA), "realignments")
+
+
+def _md_table(header: list[str], rows: list[list]) -> str:
+    out = ["| " + " | ".join(header) + " |", "|" + "|".join("---" for _ in header) + "|"]
+    for r in rows:
+        out.append("| " + " | ".join("" if v is None else str(v) for v in r) + " |")
+    return "\n".join(out)
+
+
+def cycle_markdown(c: dict, depth: int = 1) -> str:
+    """One cycle as a Markdown document: counts, the geography pass, every move
+    with its evidence, the league redraw. Plain tables — the reader is a model.
+    `depth` is the heading level of the cycle's own title (LEDGER.md nests each
+    cycle one level down)."""
+    from . import world as wd
+    h1, h2, h3 = "#" * depth, "#" * (depth + 1), "#" * (depth + 2)
+    classes = [g for g in jh.GROUPS]
+    scored = ", ".join(str(wd.BASE_YEAR + y + 1) for y in c.get("years", []))
+    lines = [f"{h1} JHSAA realignment — {c['season_year']} season",
+             "",
+             (f"Committed at world year {c['year']}; scored on the {scored} seasons."
+              if scored else f"Committed at world year {c['year']}."),
+             "",
+             f"{len(c['moves'])} schools moved "
+             f"({sum(1 for m in c['moves'] if m.get('manual'))} by owner decision, "
+             f"{len(c.get('geo', []))} across the ladder/Group line).",
+             "", f"{h2} Class counts", "",
+             _md_table(["", *[jh.group_short(g) for g in classes]],
+                       [["Before", *[c["counts_before"].get(g, 0) for g in classes]],
+                        ["After", *[c["counts_after"].get(g, 0) for g in classes]]]),
+             ""]
+    if c.get("geo"):
+        pool_name = {"A": "9A-5A", "B": "4A-1A", "G": "Groups"}
+        lines += [f"{h2} Geography pass", "",
+                  _md_table(["School", "Area", "From", "To pool", "Reason"],
+                            [[g["school"], g.get("area", ""), g["from"],
+                              pool_name.get(g.get("pool"), g.get("pool", "")),
+                              g.get("reason", "")] for g in c["geo"]]), ""]
+    by_pair: dict[tuple, list] = {}
+    for m in c["moves"]:
+        by_pair.setdefault((m["from_cls"], m["to_cls"]), []).append(m)
+    lines += [f"{h2} Moves", ""]
+    for (a, b), ms in sorted(by_pair.items(), key=lambda kv: (_rank(kv[0][0]), _rank(kv[0][1]))):
+        lines += [f"{h3} {a} → {b} ({len(ms)})", "",
+                  _md_table(["School", "Enrollment", "Points", "Win%", "Adjustment",
+                             "Effective size", "Rank", "Reason", "League before", "League after"],
+                            [[m["school"], m["enrollment"], m["points"],
+                              "" if m["win_rate"] is None else f"{m['win_rate']:.3f}",
+                              f"{m['adjustment']:+.0f}", f"{m['effective']:.0f}", m["rank"],
+                              m["reason"],
+                              m.get("league_before", ""), m.get("league_after", "")]
+                             for m in ms]), ""]
+    notes = c.get("redraw_notes") or {}
+    if notes:
+        lines += [f"{h2} League redraw", ""]
+        for cls, n in notes.items():
+            lines.append(f"- **{cls}**")
+            lines += [f"  - {line}" for line in (n or [])]
+        lines.append("")
+    return "\n".join(lines)
+
+
+def write_ledger(world_id: int) -> dict:
+    """Write EVERY committed cycle's JSON and Markdown and regenerate LEDGER.md —
+    all sourced from the database (`history`), never from whatever files happen
+    to be in the directory: a save with cycles committed before the ledger
+    existed gets them backfilled on the next commit, and a hand-deleted file
+    comes back. Returns the newest cycle's paths and the ledger's."""
+    d = ledger_dir()
+    os.makedirs(d, exist_ok=True)
+    cycles = sorted(history(world_id), key=lambda x: x["season_year"])
+    newest = None
+    for c in cycles:
+        stem = os.path.join(d, str(c["season_year"]))
+        with open(stem + ".json", "w", encoding="utf-8") as fh:
+            json.dump(c, fh, indent=2, ensure_ascii=False)
+            fh.write("\n")
+        with open(stem + ".md", "w", encoding="utf-8") as fh:
+            fh.write(cycle_markdown(c))
+        newest = stem
+    head = ["# JHSAA realignment ledger", "",
+            "Every reclassification cycle the association has committed, oldest first — "
+            "regenerated from the archive on every commit (the per-cycle JSON and Markdown "
+            "files beside it are written from the same source). Each cycle names the "
+            "schools that moved, the class they left and joined, and the evidence the sort "
+            "placed them on (enrollment, State points, win rate, the adjustment and the "
+            "resulting effective size).", "",
+            _md_table(["Season", "Moved", "Owner decisions", "Cross-ladder"],
+                      [[x["season_year"], len(x["moves"]),
+                        sum(1 for m in x["moves"] if m.get("manual")), len(x.get("geo", []))]
+                       for x in cycles]), ""]
+    body = "\n\n".join(cycle_markdown(x, depth=2) for x in cycles)
+    ledger = os.path.join(d, "LEDGER.md")
+    with open(ledger, "w", encoding="utf-8") as fh:
+        fh.write("\n".join(head) + "\n" + body + "\n")
+    return {"json": (newest + ".json") if newest else None,
+            "md": (newest + ".md") if newest else None,
+            "ledger": ledger, "cycles": len(cycles)}

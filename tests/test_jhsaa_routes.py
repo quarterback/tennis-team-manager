@@ -75,6 +75,11 @@ ROUTES = [
     "/jhsaa/computer-ratings?g=boys&group=Group%201",
     "/jhsaa/committee",
     "/jhsaa/committee?g=boys&group=Group%201",
+    # The reclassification cycle and its history — empty state with no cycle
+    # committed, and a `cycle=` year that names nothing falls to the newest.
+    "/jhsaa/reclassification",
+    "/jhsaa/realignments",
+    "/jhsaa/realignments?g=boys&cycle=2099",
 ]
 
 

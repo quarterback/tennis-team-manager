@@ -5800,13 +5800,38 @@ def jhsaa_reclass_view(seed: int, gender: str, group: str | None = None,
                             f"every {cfg['cycle']} seasons")}
 
 
-def jhsaa_realignments_view(seed: int, gender: str, group: str | None = None) -> dict:
+def jhsaa_realignments_view(seed: int, gender: str, group: str | None = None,
+                            cycle: int | None = None) -> dict:
+    """The Realignments page: the INDEX of committed cycles (one line each) and
+    ONE cycle in full — the one whose season year is `cycle`, else the newest.
+    ‼️ Never every cycle's moves at once (owner rule 2026-09): a cycle is ~400
+    rows on a real save and the page would grow by that every four seasons.
+    `matrix` is the selected cycle's from → to counts, the summary a reader
+    gets before opening the move list."""
+    import collections
+    import os
     import app.jhsaa as jh
     import app.jhsaa_reclass as rc
     import app.world as world
     base = jhsaa_scope_view(seed, gender, group)
     w = world.get_or_create(seed)
-    return {**base, "cycles": rc.history(w["id"]), "groups": list(jh.GROUPS)}
+    index = rc.cycle_index(w["id"])
+    sel = None
+    if index:
+        pick = next((c for c in index if c["season_year"] == cycle), None) or index[0]
+        sel = rc.cycle(w["id"], pick["year"])
+    matrix = []
+    if sel:
+        pairs = collections.Counter((m["from_cls"], m["to_cls"]) for m in sel["moves"])
+        order = {g: i for i, g in enumerate(jh.GROUPS)}
+        matrix = [{"from_cls": a, "to_cls": b, "n": n}
+                  for (a, b), n in sorted(pairs.items(),
+                                          key=lambda kv: (order.get(kv[0][0], 99),
+                                                          order.get(kv[0][1], 99)))]
+    repo = os.path.dirname(os.path.dirname(os.path.dirname(jh._DATA)))   # data/jhsaa/schools.json
+    ledger = os.path.relpath(rc.ledger_dir(), repo)
+    return {**base, "cycles": index, "selected": sel, "matrix": matrix,
+            "groups": list(jh.GROUPS), "ledger_dir": ledger}
 
 
 def jhsaa_district_view(seed: int, gender: str, group: str, district: str,

@@ -7,6 +7,7 @@
   <p class="research-export-intro">The analytics almanac, built and served here. Pick a window — the latest season by default, up to {{ max_seasons }} when a comparison needs a prior year — and the game exports, ingests and renders it in the background, then opens it at <a href="{{ url_for('clinch_home') }}">/clinch/</a>.</p>
 
   {% if error %}<div class="bl-panel" style="padding:14px 18px;border-color:var(--neg)"><strong>Last build failed:</strong> {{ error }}</div>{% endif %}
+  {% if behind and not building %}<div class="bl-panel" style="padding:14px 18px;border-color:var(--brand-strong)"><strong>The report is {{ behind }} season{{ '' if behind == 1 else 's' }} behind.</strong> It was last built through {{ info.years|max }}; the world is on {{ default_year }}. The report is a static site and never follows the world on its own — build it again below to bring it up to date.</div>{% endif %}
   {% if building %}<div class="bl-panel" style="padding:14px 18px"><strong>Building now.</strong> <a href="{{ url_for('clinch_home') }}">Open the report</a> — it refreshes itself until the build lands.</div>{% endif %}
 
   <section class="bl-panel research-export-card">

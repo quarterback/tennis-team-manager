@@ -1243,6 +1243,12 @@ html[data-jh-scout="on"] .jh-scout { visibility: visible; }
 .jh-yearpanel { margin-bottom: 12px; }
 .jh-yearpanel .bl-panel-title a { color: inherit; text-decoration: none; }
 .jh-yearpanel .bl-panel-title a:hover { color: var(--brand-strong); }
+/* Realignments: the cycle index marks the year on screen; the from → to summary
+   is a row of plain chips (the default grey — these are counts, not class tags). */
+.jh-ledger tr.on td { background: var(--surface-hover); }
+.ra-matrix { display: flex; flex-wrap: wrap; gap: 6px; }
+.ra-foot { padding: 8px 14px 10px; border-top: 1px solid var(--border-subtle); }
+.ra-foot code { font-size: var(--fs-caption); }
 .jh-yearchamps { display: flex; flex-direction: column; }
 .jh-yearchamps .row {
   display: flex; align-items: center; gap: 10px; min-width: 0;

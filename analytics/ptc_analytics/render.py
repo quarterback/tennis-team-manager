@@ -180,7 +180,14 @@ def _team_stat_row(pid: str, scope_id: str, m, b, abil=None, mv=None) -> dict:
     }
 
 
-def build_site(raw_bundles: list[dict], player_pages: bool = True) -> None:
+def build_site(raw_bundles: list[dict], player_pages: bool = True,
+               manage_url: str | None = None) -> None:
+    """Render the site. `manage_url` is set by the HOSTED build (the game's
+    `app/clinch.py`): the masthead then carries a "Rebuild" link back to the
+    game's build form, because a static site rendered once cannot follow the
+    world — and with no way back to that form the report froze at the season it
+    was first built for (owner, 2026-09). The standalone sidecar passes nothing
+    and shows nothing."""
     global _PLAYER_PAGES
     _PLAYER_PAGES = player_pages
     if SITE.exists():
@@ -202,6 +209,7 @@ def build_site(raw_bundles: list[dict], player_pages: bool = True) -> None:
     # the masthead points every page at a 404 — the one link a reader is most
     # likely to try, on every page of the site.
     env.globals["player_pages"] = player_pages
+    env.globals["manage_url"] = manage_url
 
     bundles = aggregate.load_bundles(raw_bundles)
     teams = aggregate.team_pages(bundles)
