@@ -4113,6 +4113,13 @@ was a school marker, shipped "Baptist HS High School".
   too. The Citadel/VMI are state military colleges, NOT federal academies — deliberately
   ungated, don't add them. The `/editor` move is the owner's god-mode and stays ungated.
   See `docs/AAR-service-academy-us-only-rosters.md`.
+- **The hosted Clinch Report (`/clinch/`, `app/clinch.py`) is a STATIC SITE rendered
+  once and never follows the world.** The rebuild form is `/clinch/manage` ("Rebuild
+  Report" under Tools; the hosted site's masthead links back to it via
+  `render.build_site(manage_url=)`), and the form states how many seasons the rendered
+  window trails the world. After the first build nothing linked to that form and the
+  report froze at its first season (owner, 2026-09) — any surface that renders a
+  snapshot must carry its own way back to what refreshes it.
 - Pre-existing test fragility: `test_roster` `strong > weak` is a borderline
   calibration check that can flip with RNG shifts — investigate, don't blindly edit.
 - Run the full suite with `python3 -m pytest -q` (≈10 min).

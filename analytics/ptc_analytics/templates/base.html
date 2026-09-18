@@ -36,6 +36,7 @@
           <a href="{{ rel }}metrics/value.html">Player Value</a>
         </div>
       </details>
+      {% if manage_url %}<a href="{{ manage_url }}" class="pt-rebuild" title="Export the newest seasons and render the report again">Rebuild</a>{% endif %}
     </nav>
   </div>
 </div>
@@ -44,7 +45,7 @@
 </div>
 <footer class="pt-footer">
   Generated from Play to Clinch research exports · not affiliated with any real school, league, or association ·
-  data reflects exported snapshots, re-run the build after new exports to refresh.
+  data reflects exported snapshots, {% if manage_url %}<a href="{{ manage_url }}">rebuild the report</a> after a new season to refresh{% else %}re-run the build after new exports to refresh{% endif %}.
 </footer>
 <script>
 // "My Teams" — pinned favorites, stored in this browser only (localStorage,

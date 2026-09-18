@@ -29,6 +29,7 @@ ANALYTICS = Path(__file__).resolve().parent.parent / "analytics"
 SITE = ANALYTICS / "site"
 DATA = ANALYTICS / "data"
 BUILD_INFO = SITE / ".build.json"
+MANAGE_URL = "/clinch/manage"
 
 MAX_SEASONS = 3          # 1-3, per the owner's working shape
 GENDERS = ("girls", "boys")
@@ -69,6 +70,16 @@ def build_info() -> dict | None:
         except ValueError:
             return None
     return None
+
+
+def seasons_behind(info: dict | None, current_year: int) -> int:
+    """How many seasons the rendered window trails the world's current JHSAA
+    season: 0 when the report is current (or nothing is built). The report is
+    a static site — it never follows the world on its own, so the manage page
+    says so rather than leaving the reader to compare two dates."""
+    if not info or not info.get("years"):
+        return 0
+    return max(0, int(current_year) - int(max(info["years"])))
 
 
 def site_ready() -> bool:
@@ -115,7 +126,7 @@ def build(year: int, seasons: int = 1, genders: tuple = GENDERS,
     if not bundles:
         raise RuntimeError("Nothing to render: no season in that window has been "
                            "played. " + "; ".join(missing))
-    render.build_site(bundles, player_pages=player_pages)
+    render.build_site(bundles, player_pages=player_pages, manage_url=MANAGE_URL)
     info = {"built_at": time.strftime("%Y-%m-%d %H:%M"),
             "years": years, "genders": list(genders), "player_pages": player_pages,
             "classification": classification,

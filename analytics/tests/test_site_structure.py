@@ -540,3 +540,17 @@ def test_flight_efficiency_page_prices_every_flight(site):
     assert 'data-slot="S1"' in html and 'data-slot="D1"' in html
     assert "Exp %" in html and "Held most by" in html
     assert "flights.html" in read(site, "metrics/index.html")
+
+
+def test_the_hosted_build_carries_a_way_back_to_the_rebuild_form(site, tmp_path_factory):
+    """A static site rendered once cannot follow the world; the HOSTED build
+    (the game's app/clinch.py) passes `manage_url`, and every page's masthead
+    and footer then link back to the build form. The standalone sidecar passes
+    nothing and shows nothing — the site the fixture built has no such link."""
+    from ptc_analytics import ingest, render
+    assert 'class="pt-rebuild"' not in read(site, "index.html")
+    render.build_site(ingest.all_bundles(), player_pages=False, manage_url="/clinch/manage")
+    html = read(site, "index.html")
+    assert '<a href="/clinch/manage" class="pt-rebuild"' in html
+    assert 'href="/clinch/manage">rebuild the report</a>' in html
+    assert '<a href="/clinch/manage" class="pt-rebuild"' in read(site, "seasons/index.html")
