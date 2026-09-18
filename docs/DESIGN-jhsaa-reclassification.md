@@ -207,8 +207,55 @@ Unguarded, the cut lands every school where it ranks: Baptist (rank 51) goes
 
 ---
 
+## 4A-1A: the second pool (owner, 2026-09: "need their own realignment")
+
+The same rule, run as a **second pool after the geography pass**, sorted once
+and cut into four near-equal bands. Nothing new is invented; three things are
+different from the 9A-5A pool and each is a coefficient, not code.
+
+- **Order of passes.** Geography first (the 1A repatriation trims 1A), then the
+  4A-1A sort over what is left. Condotti Vanguard Academy and Romero-Finniski
+  (class 3A, group 7A by decree) are owner placements and are excluded from
+  the pool, as is any school with a live play-up override the owner wants kept.
+  Otherwise a commit supersedes the seeded play-up flags inside the pool: the
+  sort now does what play-up was manufactured to do.
+- **Scale.** The big pool spans 806-2597 in enrollment (1,791); the small pool
+  spans 58-798 (740). The same adjustment in raw enrollment units would move a
+  1A school four classes. So the small pool's coefficients are the big pool's
+  scaled by the span ratio (0.41 on the 2086 data): `SUCCESS_PER_POINT` 16.5
+  and `FUTILITY_PER_UNIT` 1240, with the same `FUTILITY_FLOOR`. They are stored
+  as their own configuration keys, so the owner can set them independently.
+- **What the sort means down here.** Small-school enrollment already overlaps
+  across three classes (2A 86-361 against 1A 58-311), so enrollment barely
+  orders the bottom of the pool and results do most of the ordering. That is
+  the intended effect: a dominant 1A rises, a futile 3A sinks, and two ordinary
+  schools of 130 and 250 stay roughly where they are.
+
+### Dry run, 2086, Boise Frontier + Blue Mountain Country repatriated first
+298 schools → bands of 75 / 75 / 74 / 74. **117 moves** (63 up, 54 down), one
+enrollment-only.
+
+| school | move | enr | pts | wr | adj | rank |
+|---|---|---:|---:|---:|---:|---:|
+| California Canyons | 3A → 4A | 399 | 26 | .95 | +429 | 19 |
+| Banfield Day | 1A → 3A | 126 | 23 | .92 | +380 | 109 |
+| San Lorenzo | 3A → 4A | 450 | 20 | .91 | +330 | 26 |
+| Porterfield | 2A → 4A | 351 | 20 | .88 | +330 | 53 |
+| Cassius | 1A → 3A | 70 | 20 | .87 | +330 | 140 |
+| Sojourner Truth | 4A → 2A | 629 | 0 | .10 | -313 | 185 |
+| Calvary Christian | 3A → 1A | 464 | 0 | .10 | -303 | 246 |
+| Hawk Bar | 2A → 1A | 319 | 0 | .12 | -286 | 279 |
+
+Eleven schools jump two classes, in both directions; that is the sort working
+without a guard, and it is where the owner will judge the coefficient by eye.
+Resulting enrollment bands overlap heavily (3A 70-786), which is expected once
+results order the pool: the class name stops meaning size and starts meaning
+level, which is the point of the exercise.
+
+---
+
 ## Decisions still the owner's
 - Coefficient values (the three above), and the finish-point prices.
 - The approved eastern expansion areas for 1A repatriation.
-- Whether 4A-1A get any competitive movement at all (the spec leaves them out
-  of the pool; play-up overrides remain available).
+- The small pool's coefficients: keep the span-scaled defaults or set them by
+  eye off the proposal page.
