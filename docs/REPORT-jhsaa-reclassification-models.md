@@ -238,6 +238,8 @@ factors, nine use socioeconomic factors.
 
 ## 4. Recommendation
 
+> Superseded by the owner's spec: `docs/DESIGN-jhsaa-reclassification.md`.
+
 Replace the pile of named tables with one periodic, rule-driven pass.
 
 1. **A cycle, not a migration.** Every N seasons (OSAA's four is a good default),
