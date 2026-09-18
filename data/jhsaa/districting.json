@@ -1,0 +1,448 @@
+{
+ "league_names": [
+  [
+   "Ostrobothnia League",
+   "Selquah"
+  ],
+  [
+   "Rauma Athletic Association",
+   "Selquah"
+  ],
+  [
+   "Narpes Interscholastic League",
+   "Selquah"
+  ],
+  [
+   "Pori League",
+   "Selquah"
+  ],
+  [
+   "Tidelands League",
+   "Selquah"
+  ],
+  [
+   "Sea View League",
+   "Selquah"
+  ],
+  [
+   "Cape-Meridian League",
+   "Selquah"
+  ],
+  [
+   "Breakwater Athletic Association",
+   "Selquah"
+  ],
+  [
+   "Chinook League",
+   "Selquah"
+  ],
+  [
+   "Mariners League",
+   "Selquah"
+  ],
+  [
+   "South Coast League",
+   "Sebastian Cape"
+  ],
+  [
+   "Surf League",
+   "Sebastian Cape"
+  ],
+  [
+   "Pacific Coast League",
+   "Sebastian Cape"
+  ],
+  [
+   "Coastal Range League",
+   "Sebastian Cape"
+  ],
+  [
+   "Del Rey Athletic Association",
+   "Sebastian Cape"
+  ],
+  [
+   "Gold Coast League",
+   "Sebastian Cape"
+  ],
+  [
+   "Valley Coast Interscholastic League",
+   "Sebastian Cape"
+  ],
+  [
+   "Metro League",
+   "Ashbury Metro"
+  ],
+  [
+   "Gateway League",
+   "Ashbury Metro"
+  ],
+  [
+   "Greater Ashbury Interscholastic League",
+   "Ashbury Metro"
+  ],
+  [
+   "Capital Athletic Association",
+   "Ashbury Metro"
+  ],
+  [
+   "Crestview League",
+   "Ashbury Metro"
+  ],
+  [
+   "Montview League",
+   "Ashbury Metro"
+  ],
+  [
+   "Ambassador League",
+   "Ashbury Metro"
+  ],
+  [
+   "Commonwealth League",
+   "Ashbury Metro"
+  ],
+  [
+   "Liberty League",
+   "Ashbury Metro"
+  ],
+  [
+   "Premier Athletic Association",
+   "Ashbury Metro"
+  ],
+  [
+   "Halbrook Basin League",
+   "Halbrook Basin"
+  ],
+  [
+   "Three Rivers League",
+   "Halbrook Basin"
+  ],
+  [
+   "Upper Basin League",
+   "Halbrook Basin"
+  ],
+  [
+   "Four Rivers Interscholastic League",
+   "Halbrook Basin"
+  ],
+  [
+   "Dual County League",
+   "Halbrook Basin"
+  ],
+  [
+   "Twin Counties Athletic Association",
+   "Halbrook Basin"
+  ],
+  [
+   "River Valley League",
+   "Halbrook Basin"
+  ],
+  [
+   "Big Basin League",
+   "Halbrook Basin"
+  ],
+  [
+   "Forks League",
+   "Halbrook Basin"
+  ],
+  [
+   "Confluence Athletic Association",
+   "Halbrook Basin"
+  ],
+  [
+   "Gold Valley League",
+   "Gold Valley"
+  ],
+  [
+   "Placer League",
+   "Gold Valley"
+  ],
+  [
+   "Sunkist League",
+   "Gold Valley"
+  ],
+  [
+   "Valle Vista League",
+   "Gold Valley"
+  ],
+  [
+   "Hacienda League",
+   "Gold Valley"
+  ],
+  [
+   "Mission League",
+   "Gold Valley"
+  ],
+  [
+   "Old Jefferson Athletic Association",
+   "Southern Jefferson"
+  ],
+  [
+   "Sluice League",
+   "Southern Jefferson"
+  ],
+  [
+   "Hydraulic League",
+   "Southern Jefferson"
+  ],
+  [
+   "Assay Athletic Association",
+   "Southern Jefferson"
+  ],
+  [
+   "Tailings League",
+   "Southern Jefferson"
+  ],
+  [
+   "Cascade Divide League",
+   "Cascade Divide"
+  ],
+  [
+   "East Cascades League",
+   "Cascade Divide"
+  ],
+  [
+   "Mountain Pass League",
+   "Cascade Divide"
+  ],
+  [
+   "Summit League",
+   "Cascade Divide"
+  ],
+  [
+   "Sky-Em League",
+   "Cascade Divide"
+  ],
+  [
+   "Rim Country League",
+   "Juniper Highlands"
+  ],
+  [
+   "High Desert League",
+   "Juniper Highlands"
+  ],
+  [
+   "Juniper League",
+   "Juniper Highlands"
+  ],
+  [
+   "Desert Sky League",
+   "Juniper Highlands"
+  ],
+  [
+   "Intermountain Athletic Association",
+   "Juniper Highlands"
+  ],
+  [
+   "High Lakes League",
+   "Millersylvania"
+  ],
+  [
+   "North Range League",
+   "Millersylvania"
+  ],
+  [
+   "Big Sky League",
+   "Millersylvania"
+  ],
+  [
+   "Black Canyon League",
+   "Millersylvania"
+  ],
+  [
+   "Basalt League",
+   "Millersylvania"
+  ],
+  [
+   "Sage Plains League",
+   "Kangas"
+  ],
+  [
+   "Inland Empire League",
+   "Kangas"
+  ],
+  [
+   "Far West League",
+   "Kangas"
+  ],
+  [
+   "Golden West League",
+   "Kangas"
+  ],
+  [
+   "Sunbelt League",
+   "Kangas"
+  ],
+  [
+   "Wheatland Athletic Association",
+   "Kangas"
+  ],
+  [
+   "Frontier League",
+   "Kangas"
+  ],
+  [
+   "Kaleva League",
+   "Kangas"
+  ],
+  [
+   "Vesterheim Athletic Association",
+   "Kangas"
+  ],
+  [
+   "Norheim League",
+   "Kangas"
+  ],
+  [
+   "Suomi Interscholastic League",
+   "Kangas"
+  ],
+  [
+   "Vimpeli Athletic Association",
+   "Kangas"
+  ],
+  [
+   "Imatra League",
+   "Kangas"
+  ],
+  [
+   "Kajaani League",
+   "Kangas"
+  ],
+  [
+   "Kokkola Athletic Association",
+   "Kangas"
+  ],
+  [
+   "Pioneer League",
+   "Kangas"
+  ],
+  [
+   "Timber Valley League",
+   "Alderwold"
+  ],
+  [
+   "Foundry League",
+   "Alderwold"
+  ],
+  [
+   "Orchard League",
+   "Alderwold"
+  ],
+  [
+   "Millworks Athletic Association",
+   "Alderwold"
+  ],
+  [
+   "Cowapa League",
+   "Alderwold"
+  ],
+  [
+   "Vermilion Valley League",
+   "Yarrowmere"
+  ],
+  [
+   "Marble Valley League",
+   "Yarrowmere"
+  ],
+  [
+   "Ironwood League",
+   "Yarrowmere"
+  ],
+  [
+   "Quarry League",
+   "Yarrowmere"
+  ],
+  [
+   "Trinity League",
+   null
+  ],
+  [
+   "Olympic League",
+   null
+  ],
+  [
+   "Empire League",
+   null
+  ],
+  [
+   "Ivy League",
+   null
+  ],
+  [
+   "Union Athletic Association",
+   null
+  ],
+  [
+   "Lewis & Clark League",
+   null
+  ],
+  [
+   "PacWest League",
+   null
+  ],
+  [
+   "Sea-King League",
+   null
+  ],
+  [
+   "Skyland League",
+   null
+  ],
+  [
+   "Fiesta Athletic Association",
+   null
+  ],
+  [
+   "Sonoran League",
+   null
+  ],
+  [
+   "Citrus Belt League",
+   null
+  ],
+  [
+   "Del Rio League",
+   null
+  ],
+  [
+   "Rio Hondo League",
+   null
+  ],
+  [
+   "Southwest Assembly",
+   null
+  ],
+  [
+   "Northwest Assembly",
+   null
+  ],
+  [
+   "East Valley Assembly",
+   null
+  ],
+  [
+   "Central Province",
+   null
+  ],
+  [
+   "Western Province",
+   null
+  ],
+  [
+   "Tri-County Organization",
+   null
+  ],
+  [
+   "Charter Athletic Organization",
+   null
+  ]
+ ],
+ "max_district": 12,
+ "district_target": 10,
+ "rivalries": [
+  [
+   "Condotti Vanguard Academy",
+   "Romero-Finniski"
+  ]
+ ]
+}
