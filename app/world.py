@@ -303,6 +303,26 @@ CREATE TABLE IF NOT EXISTS world_jhsaa_standing (
 );
 CREATE INDEX IF NOT EXISTS ix_jhsaa_standing
   ON world_jhsaa_standing(world_id, year, gender);
+-- THE TALENT PIN (owner rule 2026-09): the ceiling every rostered player was
+-- GENERATED with, written the first season they are archived on a roster and
+-- read BEFORE the program tier on every rebuild (`jhsaa.pinned_talents`). A
+-- JHSAA player is rebuilt from a recipe on every build — tier + archetype +
+-- salt + seat rng — and the recipe's inputs live in a data file and an override
+-- table. When one of them moved for an enrolled cohort (a seed-file revert
+-- re-tiered ~94% of programs between 2088 and 2089), every player already in
+-- the building was silently regenerated at a different ceiling, seniors
+-- included, with the same pid and name. This row is the player's identity:
+-- a tier edit, a table edit, a file revert or a re-roll now reaches NEW
+-- ENTRANTS ONLY. One row per (world, pid); `ident` is the ORIGIN program (the
+-- roster identity that regenerates the seat), so a transfer's pin is found by
+-- the program that generates them. ~9k rows a season, never updated.
+CREATE TABLE IF NOT EXISTS world_jhsaa_talent (
+  world_id INTEGER, pid TEXT, gender TEXT, ident TEXT, entry INTEGER,
+  seat INTEGER, talent REAL, tier TEXT, year INTEGER,
+  PRIMARY KEY (world_id, pid)
+);
+CREATE INDEX IF NOT EXISTS ix_jhsaa_talent
+  ON world_jhsaa_talent(world_id, gender, ident);
 CREATE TABLE IF NOT EXISTS world_cups (
   world_id INTEGER, year INTEGER, gender TEXT, data TEXT
 );
@@ -666,7 +686,8 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     conn.executescript("DELETE FROM world_championship; DELETE FROM world_cups;"
                        " DELETE FROM world_jhsaa; DELETE FROM world_jhsaa_dual;"
                        " DELETE FROM world_jhsaa_individual; DELETE FROM world_jhsaa_injury; DELETE FROM world_jhsaa_jv_state;"
-                       " DELETE FROM world_jhsaa_standing;")
+                       " DELETE FROM world_jhsaa_standing;"
+                       " DELETE FROM world_jhsaa_talent;")
     # The reclassification cycle's own tables (app/jhsaa_reclass.py) — created
     # here if absent, since the reset can run before that module ever opened them.
     from . import jhsaa_reclass as _rc
@@ -4026,6 +4047,11 @@ def run_jhsaa(seed: int, world: dict) -> dict:
         # many there are depends on how many eligible early exits each class
         # produced, so the counter runs across both genders too.
         challenge_no = 1
+        # THE TALENT PIN — a save that predates it pins the season it has
+        # already played, so the players returning for THIS season are held at
+        # the ceiling they actually played at (never at whatever the recipe says
+        # today). One rebuild of last season's rosters, once per save.
+        jhsaa.backfill_talent_pins(conn, world["id"], year - 1, season_year - 1, salt)
         for gender in ("girls", "boys"):
             # INCUMBENCY (owner rule 2026-09): what last season's ladders finished
             # saying about their players, resolved ONCE for the whole gender before
@@ -4265,6 +4291,10 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                 " (world_id, year, gender, school, data) VALUES (?,?,?,?,?)",
                 [(world["id"], year, gender, school, json.dumps(rows))
                  for school, rows in (season.get("standing") or {}).items()])
+            # THE TALENT PIN: every player on a roster this season keeps the
+            # ceiling they were generated with, from here on (see the table).
+            jhsaa.record_talents(conn, world["id"], year, gender,
+                                 (t.roster for t in season["teams"].values()))
         # MIXED DOUBLES — run here because a mixed pair is one player from each
         # gender and `run_season` only ever sees one. It is archived under gender
         # 'mixed': it belongs to neither field, so storing it on one gender's rows
