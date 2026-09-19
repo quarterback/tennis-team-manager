@@ -184,8 +184,8 @@ fixed. Everything it does not hold is the writer's, and leaving it blank is the
 failure, not filling it.
 
 Counterfactuals are part of that licence and are wanted: "had the D2 breaker
-gone the other way, Silverton holds the protected line and Oak Knoll's road
-runs through Sectionals" is a legitimate sentence — it is how a desk makes a
+gone the other way, Silverton is in the Zonals and Oak Knoll's road runs
+through the Super Regionals" is a legitimate sentence — it is how a desk makes a
 decisive flight legible, and it is how the writer rates what a result was
 WORTH. Write it as a counterfactual (the reader must not mistake it for what
 happened), and derive it from the actual ladder (the tiebreak rungs, the seed
@@ -228,11 +228,23 @@ sources, used together:
 **What the export carries** (the fixed record the scene is built ON):
 - `lines.score` — every set score of every flight, so "6-4, 3-6, 7-6" is a
   match that swung twice and the writer can say where.
-- `duals.decided_on_tiebreak` and the `tiebreak` points — a level Group 2
-  postseason dual settled at three concurrent 10-point breakers.
-- `duals.date`, `home_program_id` — the day and the venue.
-- `jhsaa_standings.seed`, `state_seed`, `made_state` — the seed line, and so
-  the upset margin.
+- `duals.decided_on_tiebreak` — a FLAG only: a level Group 2 postseason dual
+  was settled at three concurrent 10-point breakers. The export does NOT carry
+  the three decider scores (`build_jhsaa` writes the boolean and drops them,
+  and the championship JSON stores only the overall points and the winner), so
+  a writer may say the dual went to the deciders and who won them, and must
+  not quote decider points as if they were on file.
+- `duals.date`, `home_program_id` — the day, and the DESIGNATED HOME SIDE.
+  That is row orientation, not necessarily the venue: showcases, State and the
+  TOC are neutral (`jhsaa.NEUTRAL_PHASES` — no home-court roll, a showcase's
+  host is stored separately), so only a league, invitational or road dual may
+  be written as played at the home side's campus. A neutral-phase dual is
+  written at a neutral site, or the venue is invented consistently with that.
+- `jhsaa_program_history.state_seed`, `made_state`, `state_place`,
+  `state_finish` — the State seed line and finish, and so the upset margin.
+  (`jhsaa_standings.csv` carries record, district place, points and TOSS only;
+  there is no plain `seed` column anywhere. Road-round seeding is not exported;
+  the committee JSON carries the at-large seeding for the Parastate classes.)
 - `players.style` / `style_trait` — a counterpuncher against a serve-and-
   volleyer is a MATCHUP the engine actually plays
   (`docs/AAR-style-matchup-cross-term.md`); describe it as one.
@@ -291,20 +303,27 @@ Draft:
 Rewrite. The record (seed, flight scores, joint record, grades, prior
 meetings) is the export's; everything else is invented and contradicts none
 of it:
-> The seat Silverton Prep had spent a spring earning came down to two
+> The Zonal place Silverton Prep had spent a spring earning came down to two
 > sophomores at No. 2 doubles, on a Tuesday when the wind off the Klamath
-> made every lob a guess. Oak Knoll, the No. 3 seed, had taken the singles
-> 2-1; Silverton had D1, D3 and D4; the Regional was 3-3 when the D2 pair —
-> 15-6 together since March, never once split, a partnership the coach
-> admits she assembled by accident when a senior missed a bus — lost the
-> first set 4-6, took the second 6-3 and reached 6-6 in the third. "I told
-> them to stop looking at the other courts," Dana Reyes said. "They were the
-> other court." They lost the breaker 8-10, and with it Silverton's protected
-> Regional line went to Oak Knoll, which had not beaten them in four
-> meetings. Had the breaker gone the other way, Silverton holds its seed and
-> Oak Knoll's road to State runs through Sectionals; instead the two
-> sophomores are the first Silverton pair since 2081 to carry a Regional to
-> a third-set breaker and lose it.
+> made every lob a guess. Oak Knoll, seeded above them, had taken the
+> singles 2-1 and won D3; Silverton had S1, D1 and D4; the Regional was 3-3
+> when the D2 pair — 15-6 together since March, never once split, a
+> partnership the coach admits she assembled by accident when a senior
+> missed a bus — lost the first set 4-6, took the second 6-3 and reached 6-6
+> in the third. "I told them to stop looking at the other courts," Dana
+> Reyes said. "They were the other court." They lost the breaker 8-10, and
+> with it the Zonal went to Oak Knoll, which had not beaten them in four
+> meetings; Silverton's road to State now runs through the Super Regionals.
+> Had the breaker gone the other way, the two schools trade those roads;
+> instead the two sophomores are the first Silverton pair since 2081 to
+> carry a Regional to a third-set breaker and lose it.
+
+The tally closes: Oak Knoll S2, S3, D3 and Silverton S1, D1, D4 is 3-3 with
+D2 the seventh flight, so the dual genuinely turns on it (a worked example
+whose flights do not add up teaches the writer to skip the arithmetic). The
+Regional loser goes to the Super Regionals and the winner to the Zonals
+(`docs/JHSAA-road-to-state.md`), which is the consequence the paragraph
+leads with.
 
 It reads as a story because the consequence leads, the sentences vary, the
 verbs are the sport's, the paragraph stays on one match, and the texture — the
