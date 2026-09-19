@@ -153,3 +153,114 @@ def test_the_backfill_pins_the_season_already_played_once(_world):
     for pid in pins:
         if pid in after:
             assert after[pid] == intended[pid]
+
+
+def _attrs(roster):
+    return {p.pid: (dict(p.current), dict(p.potential)) for p in roster}
+
+
+def test_an_archetype_toggle_never_redraws_an_enrolled_player(_world):
+    """The CREATION draw is pinned — ceiling AND attribute shape. blue_blood
+    takes an extra dice draw inside the ceiling routine, so untagging or
+    tagging a program used to reshape every enrolled player; now only the next
+    class draws under the new tag. Coaching/neglect are NOT pinned (the
+    development environment is year to year) — see the rate test below."""
+    wid = _world
+    s = _school()
+    _set(s, "solid")
+    ov.set_jhsaa_archetype(s.name, "blue_blood")
+    jhsaa.reset_schools()
+    r30 = jhsaa.build_roster(s, 2030)
+    assert all(p.jhsaa["kind"] == "blue_blood" for p in r30)
+    intended = _attrs(jhsaa.build_roster(s, 2031))
+    returning = {p.pid for p in r30} & set(intended)
+    # Control: untagged and unpinned, the enrolled players are reshaped.
+    ov.clear_jhsaa_archetype(s.name)
+    jhsaa.reset_schools()
+    moved = _attrs(jhsaa.build_roster(s, 2031))
+    assert any(moved[pid] != intended[pid] for pid in returning), "the control must bite"
+    # Pin, untag, rebuild: enrolled players identical to the blue-blood build,
+    # freshmen identical to the untagged build.
+    conn = wd._db()
+    jhsaa.record_talents(conn, wid, 0, "boys", [r30])
+    conn.commit()
+    jhsaa.reset_schools()
+    r31 = jhsaa.build_roster(s, 2031)
+    after = _attrs(r31)
+    by = {p.pid: p for p in r31}
+    for pid in returning:
+        assert after[pid] == intended[pid]
+        assert by[pid].jhsaa["kind"] == "blue_blood"
+    for pid in after:
+        if pid not in returning:
+            assert after[pid] == moved[pid]
+            assert by[pid].jhsaa["kind"] == ""
+    ov.clear_jhsaa_archetype(s.name)
+
+
+def test_coaching_added_later_still_reaches_enrolled_players(_world):
+    """A program change moves how much an enrolled player GROWS from here —
+    the archetype of the day feeds the yearly capacity — while the pinned
+    ceiling and shape stay put. Owner rule: environment is year to year."""
+    wid = _world
+    s = _school()
+    _set(s, "solid")
+    r30 = jhsaa.build_roster(s, 2030)
+    conn = wd._db()
+    jhsaa.record_talents(conn, wid, 0, "boys", [r30])
+    conn.commit()
+    jhsaa.reset_schools()
+    base = {p.pid: (round(p.current_overall(), 4), round(p.jhsaa["talent"], 4))
+            for p in jhsaa.build_roster(s, 2032)}
+    ov.set_jhsaa_archetype(s.name, "coaching")
+    jhsaa.reset_schools()
+    coached = {p.pid: (round(p.current_overall(), 4), round(p.jhsaa["talent"], 4))
+               for p in jhsaa.build_roster(s, 2032)}
+    ov.clear_jhsaa_archetype(s.name)
+    jhsaa.reset_schools()
+    returning = [p.pid for p in r30 if p.pid in coached]
+    # (The generation value is the invariant; the DISPLAYED ceiling may drift up a
+    # little for a player coached past their drawn peak — the accepted residual.)
+    assert all(coached[pid][1] == base[pid][1] for pid in returning), "ceiling pinned"
+    assert all(coached[pid][0] >= base[pid][0] for pid in returning), "coaching never lowers"
+    assert any(coached[pid][0] > base[pid][0] for pid in returning), "and it reaches them"
+
+
+def test_pot_is_an_estimate_that_converges_on_the_fixed_ceiling(_world):
+    s = _school()
+    _set(s, "solid")
+    r30 = jhsaa.build_roster(s, 2030)
+    fresh = [p for p in r30 if p.grade == 9]
+    seniors = [p for p in r30 if p.grade == 12]
+    assert fresh and seniors
+    # Every seat carries both numbers; the estimate never sits below OVR.
+    for p in r30:
+        assert p.jhsaa["pot_est"] >= p.current_overall() - 1e-6
+        assert p.jhsaa["pot_est"] <= jhsaa.GRADE_CEIL
+        assert abs(p.jhsaa["ceiling"] - p.ceiling_overall()) < 0.51   # ceiling_overall() rounds
+        assert jhsaa.pot_display(p) == p.jhsaa["pot_est"]
+    # Freshmen carry the full misread; seniors have three seasons of knowledge
+    # (no archive → each prior season reads as fully played), so their estimate
+    # sits a quarter as far from the ceiling on average.
+    gap = lambda ps: sum(abs(p.jhsaa["pot_est"] - p.jhsaa["ceiling"]) for p in ps) / len(ps)
+    assert gap(fresh) > 0, "a freshman is not read perfectly"
+    assert gap(seniors) < gap(fresh)
+    # The misread is drawn ONCE per player: the same player one year on has the
+    # same sign of error, only smaller — never a fresh roll.
+    r31 = {p.pid: p for p in jhsaa.build_roster(s, 2031)}
+    for p in fresh:
+        q = r31[p.pid]
+        e0 = p.jhsaa["pot_est"] - p.jhsaa["ceiling"]
+        e1 = q.jhsaa["pot_est"] - q.jhsaa["ceiling"]
+        if abs(e0) > 0.5 and q.jhsaa["pot_est"] > q.current_overall() + 1e-6:
+            assert e0 * e1 >= 0 and abs(e1) < abs(e0) + 1e-9
+    # Kill switch: off, the estimate IS the ceiling.
+    prev = jhsaa.POT_ESTIMATE_ENABLED
+    jhsaa.POT_ESTIMATE_ENABLED = False
+    try:
+        jhsaa.reset_schools()
+        for p in jhsaa.build_roster(s, 2030):
+            assert abs(p.jhsaa["pot_est"] - p.jhsaa["ceiling"]) < 1e-6
+    finally:
+        jhsaa.POT_ESTIMATE_ENABLED = prev
+        jhsaa.reset_schools()

@@ -2654,8 +2654,25 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     ONLY.** One indexed read per program per build, memoised — never per seat.
     ‼️ A whole-roster, same-name, constant-per-cohort rating shift is a REGENERATION,
     never development (`career_ability` only adds); diagnose by joining two exports
-    on pid and looking at `potential_grade` before touching the development model.
+    on pid and looking at `ceiling_grade` before touching the development model.
     The row's `talent` is the moddable per-player ceiling; `tier` is audit only.
+    ‼️ **THE CREATION DRAW IS PINNED, THE ENVIRONMENT IS NOT (owner rule 2026-09).**
+    The pin also records `kind` (the archetype the seat was drawn under — the
+    blue-blood redraw is a dice draw inside `_ceiling`, so today's tag would reshape
+    every enrolled player) and `start` (the feeder head start). A pinned seat draws
+    under its creation archetype; `coach_factor` reads the archetype of the DAY,
+    because coaching/neglect are the development environment and must reach enrolled
+    players season to season (never lowering anyone). Untag a blue blood → enrolled
+    players byte-identical, next class untagged. No ability floor, no incremental
+    engine (owner: a future formula change is a future decision).
+    ‼️ **POT IS AN ESTIMATE (owner rule 2026-09, `jhsaa.pot_display`).** The hidden
+    ceiling is fixed and pinned; a page shows the staff's read of it — one misread
+    per player, drawn ONCE on the pid (never re-rolled), shrunk by
+    `POT_PRIOR / (POT_PRIOR + knowledge)` where knowledge is the exposure odometer's
+    realisation over seasons already played (time + participation; never results,
+    opponents or flight). Display only: engine, career model and hand-off read the
+    true ceiling. Columns read "Pot est."; the export has `potential_grade` (estimate)
+    AND `ceiling_grade` (fixed) — analyse the latter. `POT_ESTIMATE_ENABLED` kills it.
   - **‼️ THE NON-DISTRICT DRAW NO LONGER MATCHES ON STRENGTH** (`_nondistrict_pairs`:
     geography + availability + the ±1 class gate). It used to add `|strength gap|`,
     which scheduled the association's inequality straight back out (2080: early

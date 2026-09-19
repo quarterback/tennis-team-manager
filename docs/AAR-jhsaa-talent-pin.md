@@ -105,3 +105,43 @@ variability mechanic came in with this: the intended model is unchanged (OVR
 grows or holds, POT is the ceiling, coaching moves rate, tier moves incoming
 talent). Any future OVR or POT movement must be a NAMED mechanic with its own
 knob — never a rebuild under a different program setting.
+
+## Addendum (same day): the CREATION draw is pinned, the environment is not — and POT is an estimate
+
+Owner rulings after the first pass:
+
+1. **No ability floor and no incremental engine.** A future change to the
+   development formula is a future decision; nothing is built against it now.
+2. **A program toggle must not redraw an enrolled player, and must still shape
+   their growth.** The archetype does two different things and they were being
+   conflated: at CREATION it sets the ceiling and the attribute shape (the
+   blue-blood redraw takes an extra dice draw inside `_ceiling`); in every LATER
+   season it is the development environment (`coach_factor` on the yearly
+   capacity). So the pin row now also records `kind` (the archetype the seat was
+   drawn under) and `start` (the feeder head start it walked in with), and a
+   pinned seat runs the ceiling routine under its creation archetype — the seat
+   rng consumes exactly what it did at creation — while `coach_factor` keeps
+   reading the archetype of the day. Untagging a blue blood leaves every
+   enrolled player byte-identical and draws the next class untagged; adding
+   `coaching` speeds up the enrolled players from this season on and never
+   lowers anybody. (A player coached past their drawn peak still lifts the
+   DISPLAYED ceiling to meet OVR — the residual CLAUDE.md already accepts.)
+3. **POT is an estimate** (`jhsaa.pot_display`, `_stamp_pot_estimate`,
+   `POT_MISREAD_SD` 6 / `POT_PRIOR` 1). The hidden ceiling is fixed and pinned;
+   what a page shows is the staff's read of it: one misread per player, drawn
+   once and seeded on the pid (never re-rolled — a fresh roll every season would
+   be the instability the pin removed), scaled by `PRIOR / (PRIOR + knowledge)`
+   where knowledge is the exposure odometer's realisation over the seasons
+   already played — time in the building and participation, never results,
+   opponents or the flight played. A freshman carries the whole misread; three
+   full seasons cut it to a quarter. Never below OVR, never above the scale.
+   Display only: the engine, the career model and the college hand-off all read
+   the true ceiling. Every JHSAA POT column is labelled "Pot est." and the
+   export carries `potential_grade` (the estimate) beside `ceiling_grade` (the
+   fixed value), with the manifest saying which to analyse. `POT_ESTIMATE_ENABLED`
+   is the kill switch.
+
+Moddable: `world_jhsaa_talent.kind` / `.start` beside `.talent`; a NULL reads
+as today's value (rows written before the columns existed). `POT_MISREAD_SD`
+sets how wrong a program can be about a freshman, `POT_PRIOR` how fast it
+learns.

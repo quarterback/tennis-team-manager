@@ -319,6 +319,7 @@ CREATE INDEX IF NOT EXISTS ix_jhsaa_standing
 CREATE TABLE IF NOT EXISTS world_jhsaa_talent (
   world_id INTEGER, pid TEXT, gender TEXT, ident TEXT, entry INTEGER,
   seat INTEGER, talent REAL, tier TEXT, year INTEGER,
+  kind TEXT, start REAL,
   PRIMARY KEY (world_id, pid)
 );
 CREATE INDEX IF NOT EXISTS ix_jhsaa_talent
@@ -375,6 +376,14 @@ def init_schema() -> None:
         conn.execute("ALTER TABLE world ADD COLUMN salt TEXT")
     except sqlite3.OperationalError:
         pass
+    # The talent pin's CREATION columns (owner rule 2026-09): the archetype the
+    # seat was drawn under and the feeder start it walked in with. A pin table
+    # created before they existed gains them here; a NULL reads as "use today's".
+    for col, typ in (("kind", "TEXT"), ("start", "REAL")):
+        try:
+            conn.execute(f"ALTER TABLE world_jhsaa_talent ADD COLUMN {col} {typ}")
+        except sqlite3.OperationalError:
+            pass
     # The JV season's three columns (owner rule 2026-08). `level` is the one that
     # matters: it is the ONLY thing separating a JV row from a varsity one, since both
     # carry an empty `lines` — JV by design (no per-court detail is archived) and

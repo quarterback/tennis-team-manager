@@ -33,7 +33,7 @@
     <div class="now">
       <span class="rec">{{ view.record }}</span>
       <span class="bit">career, all lines · {{ view.seasons|length }} high-school season{{ '' if view.seasons|length == 1 else 's' }}</span>
-      <span class="bit jh-scout">OVR {{ view.ovr }} · Pot {{ view.ceiling }} · {{ stars(view.stars) }}</span>
+      <span class="bit jh-scout">OVR {{ view.ovr }} · <span title="Estimated ceiling — the staff's read, converging on the true ceiling with seasons and participation">Pot est. {{ view.ceiling }}</span> · {{ stars(view.stars) }}</span>
       {# Individual state TITLES lead the chip row, in gold — champion first,
          then the season honours. #}
       {% for c in view.title_chips %}<span class="jh-chip gold">{{ c }}</span>{% endfor %}

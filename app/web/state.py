@@ -5745,7 +5745,7 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                     # star rating were already computed by `Prospect` (the same
                     # methods the college recruit board reads), just never surfaced
                     # here. Pure display: no new simulation.
-                    "ceiling": round(p.ceiling_overall(), 1),
+                    "ceiling": round(jh.pot_display(p), 1),
                     "stars": p.star_rating(),
                     "str": p.str_value(),
                     "singles": "{}-{}".format(*lines.get(p.name, {}).get("s", (0, 0))),
@@ -6397,7 +6397,7 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         "country": player.country,
         "hometown": player.hometown, "grade": player.grade,
         "ovr": round(player.current_overall(), 1),
-        "ceiling": round(player.ceiling_overall(), 1),
+        "ceiling": round(jh.pot_display(player), 1),
         "stars": player.star_rating(),
         "mark": jh.mark(sc, 44), "group": sc.group, "district": sc.district,
         "classification": sc.classification, "city": sc.city,
@@ -6576,7 +6576,7 @@ def _jhsaa_build_census(seed: int, g: str) -> list[dict]:
                 "district": sc.district, "classification": sc.classification,
                 "hometown": p.hometown,
                 "ovr": round(p.current_overall(), 1),
-                "ceiling": round(p.ceiling_overall(), 1),
+                "ceiling": round(jh.pot_display(p), 1),
                 "stars": p.star_rating(),
             })
     return rows

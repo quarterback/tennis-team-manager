@@ -255,7 +255,14 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                 "player_id": pid, "program_id": s.key, "name": p.name,
                 "gender": gender, "grade": p.grade, "hometown": p.hometown,
                 "country": p.country, "current_grade": p.current_overall(),
-                "potential_grade": p.ceiling_overall(), "academic_rating": p.academic_rating,
+                # `potential_grade` is what the program SHOWS — the staff's estimate
+                # of the ceiling (`jhsaa.pot_display`), which converges on the true
+                # value with time and participation; `ceiling_grade` is the fixed
+                # hidden ceiling itself (the pinned generation value). A drop in
+                # potential_grade season to season is the estimate correcting,
+                # never the player losing anything — ceiling_grade never moves.
+                "potential_grade": jhsaa.pot_display(p),
+                "ceiling_grade": p.ceiling_overall(), "academic_rating": p.academic_rating,
                 "style": p.traits.get("play_style", ""),
                 "style_trait": p.traits.get("style_trait", "none"),
                 "captain": int(pid in caps) if known else "",
@@ -637,7 +644,8 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "current_grade": "Current visible tennis ability on the game's 20-80 scouting scale.",
             "style": "Primary play style (counterpuncher, junkballer, all_court, serve_and_volley, serve_first, aggressive_baseliner, pusher, balanced).",
             "style_trait": "Secondary tactical trait, or none (net_rusher, chip_and_charge, first_strike, grinder, retriever, heavy_topspin, flat_hitter, slice_specialist, return_specialist, big_server).",
-            "potential_grade": "Hidden ceiling on the same 20-80 scale; included for unrestricted research.",
+            "potential_grade": "The program's ESTIMATE of the player's ceiling (what the JHSAA pages show as POT): a one-time per-player misread that shrinks with seasons in the building and participation. It can move either way season to season as the staff learn the player; that is the estimate correcting, never ability lost.",
+            "ceiling_grade": "The fixed hidden ceiling (pinned at generation; never changes for an enrolled player). Use this, not potential_grade, for any talent analysis.",
             "toss_power_raw": "JHSAA opponent-adjusted team power used for selection/seeding; compare only within this season and gender.",
             "expected_pct": "jhsaa_flights: win rate the flight's matchups were expected to return, fitted on this season's varsity flights with home court; delta_pct is actual minus expected in points.",
             "captain": "players.csv: 1 if the player was one of the program's team captains "
