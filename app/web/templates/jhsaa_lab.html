@@ -27,6 +27,13 @@
       every 5 seconds; no need to resubmit anything.</p>
   </div>
 </div>
+{% elif reclass_pending %}
+<div class="bl-panel" style="border-color:var(--brand-strong)">
+  <div class="bl-panel-body" style="padding:12px">
+    <p class="bit"><b>Reclassification proposal open.</b> The lab holds here until it is committed or dismissed —
+      <a href="{{ url_for('jhsaa_reclassification') }}">review the proposal</a>.</p>
+  </div>
+</div>
 {% elif job_error %}
 <div class="bl-panel" style="border-color:#c0392b">
   <div class="bl-panel-body" style="padding:12px">

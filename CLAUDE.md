@@ -3918,6 +3918,18 @@ was a school marker, shipped "Baptist HS High School".
   `jhsaa_realignments.csv` (every cycle, gender-blind, archive path only) — the
   owner tracks class changes with a model across seasons from those, not from
   the page.
+  ‼️ **THE MAP OUTLIVES THE SEED FILE (owner incident 2026-09).** A committed
+  cycle rewrote `schools.json`, a code update brought the checkout back to the
+  repo's copy, the lab database kept the cycle, and the next season played on
+  the old map with nothing raised. The commit snapshots the whole post-commit
+  map on the cycle row (`data["map"]`) and `jhsaa._rows()` re-applies it — in
+  memory and on disk, one read-only query per cache fill — whenever a moved
+  school still sits in the class it left (`rc.reapply`; a legacy cycle is
+  reconstructed from its rows + the seeded redraw). `advance_jhsaa_lab` holds on
+  a pending/due proposal (`ReclassHold`) exactly as `advance_week` does; the
+  cycle records `first_season` (a lab world's is one later than a college
+  world's). After a commit the owner still has to `git add` the seed file and
+  `data/jhsaa/realignments/` for them to survive a fresh checkout.
 - **‼️ `COMPETITIVE_MOVES` is the mirror of PLAY_UP** — a program may be placed BELOW its
   enrollment class when it cannot compete where enrollment puts it, and the ENROLLMENT is
   scaled to match rather than the other way round (the numbers are fictional; the number

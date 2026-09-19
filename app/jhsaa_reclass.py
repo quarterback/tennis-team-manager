@@ -485,6 +485,7 @@ def commit(world: dict) -> dict:
     # identity a rename never moves) beside its display name: the ledger is
     # meant to be read across seasons, and the name is only the name today.
     ident_of = {r["name"]: (r.get("source") or r["name"]) for r in doc["schools"]}
+    before_cls = {r["name"]: r["classification"] for r in doc["schools"]}
     for r in doc["schools"]:
         p = proposed.get(r["name"])
         if p and p != r["classification"]:
@@ -492,8 +493,23 @@ def commit(world: dict) -> dict:
             r.pop("play_up", None)          # the sort now places it
     from . import jhsaa_districting as jd
     from . import overrides as ov
+    from . import world as wd
     notes = jd.redraw_classes(doc["schools"], data["touched"]) if data["touched"] else {}
     after_league = {r["name"]: r["girls_district"] for r in doc["schools"]}
+    # ‼️ THE MAP LIVES IN THE DATABASE TOO (owner incident 2026-09). The seed file
+    # is the durable form, but it is a file in a git checkout: the owner
+    # committed a 406-move cycle, updated the code, and the checkout came back
+    # with the repo's schools.json while the lab database (outside the repo)
+    # kept the cycle — the next season played on the old map with nothing
+    # raised. So the whole post-commit map is snapshotted on the cycle row
+    # (`_snapshot`) and `reapply(rows)` puts it back whenever `jhsaa._rows()`
+    # finds the file reading pre-commit.
+    data["map"] = _snapshot(doc["schools"], before_cls)
+    # The first season played in the new class: at week 0 of a college world
+    # the season BASE+year+1 has not been played yet; a JHSAA-only lab world at
+    # year N has ARCHIVED season BASE+N+1, so its next season is one later.
+    data["first_season"] = wd.jhsaa_season_year(world) + (
+        1 if wd.is_jhsaa_only(world.get("seed", wd.DEFAULT_SEED)) else 0)
     with open(jh._DATA, "w", encoding="utf-8") as fh:
         json.dump(doc, fh, indent=2, ensure_ascii=False)
         fh.write("\n")
@@ -530,6 +546,95 @@ def commit(world: dict) -> dict:
             "ledger": paths}
 
 
+def _snapshot(rows: list[dict], before_cls: dict) -> dict:
+    """{name: {before, cls, grp, gd, bd, pu}} — every school's post-commit class,
+    championship group, both league names and play-up flag, beside the class it
+    held BEFORE the cycle."""
+    return {r["name"]: {"before": before_cls.get(r["name"], r["classification"]),
+                        "cls": r["classification"], "grp": r.get("group", r["classification"]),
+                        "gd": r.get("girls_district"), "bd": r.get("boys_district"),
+                        "pu": bool(r.get("play_up"))}
+            for r in rows}
+
+
+def committed_map(file_rows: list[dict]) -> dict | None:
+    """The NEWEST committed cycle's post-commit map, from the database — read-only
+    (no schema statement, no write lock: this runs inside `jhsaa._rows()`, which
+    the season simulation calls while other connections may hold a write
+    transaction). None when no cycle has been committed. A cycle committed
+    before `map` was recorded is RECONSTRUCTED: its `rows` carry every pooled
+    school's proposed class, and the league redraw is deterministic (seeded), so
+    re-running it over `file_rows` moved to those classes reproduces the map the
+    commit wrote. One world per save, so the newest committed row is the one."""
+    import sqlite3
+    from . import world as wd
+    try:
+        conn = wd._db()
+    except Exception:
+        return None
+    try:
+        r = conn.execute("SELECT year, data FROM world_jhsaa_reclass WHERE status='committed'"
+                         " ORDER BY year DESC, committed DESC LIMIT 1").fetchone()
+    except sqlite3.OperationalError:          # table not created yet: no cycle
+        return None
+    finally:
+        conn.close()
+    if not r:
+        return None
+    data = json.loads(r["data"])
+    if data.get("map"):
+        return data["map"]
+    if not data.get("rows"):
+        return None
+    from . import jhsaa_districting as jd
+    proposed = {x["school"]: x["proposed"] for x in data["rows"]}
+    current = {x["school"]: x["current"] for x in data["rows"]}
+    rows = [dict(x) for x in file_rows]
+    before_cls = {}
+    for x in rows:
+        before_cls[x["name"]] = current.get(x["name"], x["classification"])
+        p = proposed.get(x["name"])
+        if p and p != x["classification"]:        # exactly what the commit did
+            x["classification"] = x["group"] = p
+            x.pop("play_up", None)
+    if data.get("touched"):
+        jd.redraw_classes(rows, data["touched"])
+    return _snapshot(rows, before_cls)
+
+
+def reapply(rows: list[dict]) -> int:
+    """Put the newest committed map back onto `rows` IN PLACE when the file reads
+    PRE-commit — any moved school still sitting in the class the cycle moved it
+    out of. Returns how many moved schools were restored (0 = nothing to do:
+    no cycle, or the file already carries it, or the owner has since changed
+    things by hand — a file that no longer reads pre-commit is left alone)."""
+    m = committed_map(rows)
+    if not m:
+        return 0
+    by_name = {r["name"]: r for r in rows}
+    reverted = [n for n, e in m.items() if e["before"] != e["cls"]
+                and n in by_name and by_name[n]["classification"] == e["before"]]
+    if not reverted:
+        return 0
+    for n, e in m.items():
+        r = by_name.get(n)
+        if r is None:
+            continue
+        r["classification"] = e["cls"]
+        # `group` is kept apart: an affiliate or competitive move can hold a
+        # school in a championship other than its classification's.
+        r["group"] = e.get("grp") or e["cls"]
+        if e.get("gd"):
+            r["girls_district"] = e["gd"]
+        if e.get("bd"):
+            r["boys_district"] = e["bd"]
+        if e.get("pu"):
+            r["play_up"] = True
+        else:
+            r.pop("play_up", None)
+    return len(reverted)
+
+
 def moves_for(world_id: int, school: str) -> list[dict]:
     conn = _conn()
     try:
@@ -561,7 +666,8 @@ def cycle_index(world_id: int) -> list[dict]:
     for c in cycles:
         data = json.loads(c["data"])
         n, m = counts.get(c["year"], (0, 0))
-        out.append({"year": c["year"], "season_year": wd.BASE_YEAR + c["year"] + 1,
+        out.append({"year": c["year"],
+                    "season_year": data.get("first_season") or wd.BASE_YEAR + c["year"] + 1,
                     "n_moves": n, "n_manual": m or 0, "n_geo": len(data.get("geo", [])),
                     "counts_before": data.get("counts_before", {}),
                     "counts_after": data.get("counts_after", {}),
@@ -587,7 +693,8 @@ def cycle(world_id: int, year: int) -> dict | None:
     finally:
         conn.close()
     data = json.loads(c["data"])
-    return {"year": c["year"], "season_year": wd.BASE_YEAR + c["year"] + 1,
+    return {"year": c["year"],
+            "season_year": data.get("first_season") or wd.BASE_YEAR + c["year"] + 1,
             "moves": [dict(r) for r in mv],
             "counts_before": data.get("counts_before", {}),
             "counts_after": data.get("counts_after", {}),
@@ -610,12 +717,15 @@ def all_moves(world_id: int) -> list[dict]:
         rows = conn.execute("SELECT * FROM world_jhsaa_reclass_move WHERE world_id=?"
                             " ORDER BY year DESC, from_cls, to_cls, school",
                             (world_id,)).fetchall()
+        first = {c["year"]: (json.loads(c["data"]).get("first_season"))
+                 for c in conn.execute("SELECT year, data FROM world_jhsaa_reclass WHERE"
+                                       " world_id=? AND status='committed'", (world_id,))}
     finally:
         conn.close()
     out = []
     for r in rows:
         d = dict(r)
-        d["season_year"] = wd.BASE_YEAR + d["year"] + 1
+        d["season_year"] = first.get(d["year"]) or wd.BASE_YEAR + d["year"] + 1
         out.append(d)
     return out
 
