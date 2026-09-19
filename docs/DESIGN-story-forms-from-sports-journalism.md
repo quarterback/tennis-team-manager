@@ -5,7 +5,9 @@ what the UI cannot show, not restate what it already does. The way to keep a
 writer honest about that is to give it FORMS, not a data dump: each form is a
 claim shape with a known evidence requirement, and a detector is written to a
 form. This document is the taxonomy, drawn from how a handful of real desks
-actually structure their pieces.
+actually structure their pieces — and, since the 2089 draft, the WRITING
+rules at the end ("Writing the piece"), which a story must pass as well as
+the evidence rules. Read both before writing a season review.
 
 Rule of the exercise: a form is only worth a detector here if the evidence it
 needs crosses a seam the site does not cross — two tables, two seasons, two
@@ -153,6 +155,122 @@ the prerequisite for anything beyond forms 1, 4, 5, 6, 9 and 10.
 Reaction, talking points, power rankings, and "X things we learned". They add
 no fact the reader lacks, and they are the register the desk rules
 (`jhsaa_desk.py`: lead with a number or a name, no adjectives) already forbid.
+
+## Writing the piece — what the 2089 draft got wrong
+
+The forms above say what a story may CLAIM and what evidence it needs. They
+say nothing about the sentences, and the first draft written to them (the 2089
+"eight stories") showed that a writer can satisfy every evidence rule and still
+produce something nobody would read. An independent critique of that draft
+found five faults. They are now rules.
+
+### 1. A number is evidence, not a sentence
+The draft read: "Bidwell went 12-12. It won a district title. Its No. 1 went
+7-8." That is telemetry — the box score restated in prose, and the reader
+already has the box score. **A number earns its place when it explains
+something or is explained by something.** Every figure in the body must attach
+to a cause, a consequence or a comparison drawn from the export: a 12-12 record
+is a story only when the piece says what the twelve losses have in common (the
+opponents' class, a flight that never held, a partner change in March), and
+that is a `duals` × `lines` × `line_players` question the writer is expected to
+answer, not leave beside the number.
+
+### 2. Vary the architecture of the sentence
+Every sentence in the draft was Subject → Verb → Record, and after three of
+them the reader hears a drumbeat, not a story. Concretely:
+- **Lead with the consequence at least once a paragraph** ("Because the D2
+  flight went to a third set, the seed line moved" — the Examiner's ordinary
+  report leads with who they meet next, not the score).
+- **Put the number in a subordinate position** when it is context ("Two months
+  after a 12-12 regular season, …") and in the main clause only when it IS the
+  point.
+- **Use one long sentence and one short one per paragraph.** A run of
+  same-length sentences is the tell of a generated draft.
+- **Active, physical verbs.** A team does not "record a result"; a No. 3
+  singles "held serve from 4-4", a pairing "took the set on the second break".
+  Those verbs must be TRUE — see §3.
+
+### 3. Scene over telemetry — built from the export, never invented
+The critique asked for sensory and emotional detail. **This desk cannot invent
+it**, and the no-fabrication rule outranks the critique: no weather, no crowd,
+no body language, no quotes, no "she clenched her fist". What the export DOES
+carry is enough to build a scene, and a writer who says the draft "had nothing
+to work with" did not open the tables:
+- `lines.score` — every set score of every flight, so "6-4, 3-6, 7-6" is a
+  match that swung twice and a writer can say where.
+- `duals.decided_on_tiebreak` and the `tiebreak` points — a level Group 2
+  postseason dual settled at three concurrent 10-point breakers, with the
+  points.
+- `duals.date`, `home_program_id` — the day and the venue; whether the side
+  that won was the one with the home-court lift.
+- `jhsaa_standings.seed`, `state_seed`, `made_state` — the seed line, and so
+  the upset margin.
+- `players.style` / `style_trait` — a counterpuncher against a serve-and-
+  volleyer is a MATCHUP, and the engine plays it as one (`docs/AAR-style-
+  matchup-cross-term.md`); naming it is description, not embroidery.
+- `line_players.position` with `players.grade` — who was on the flight, how
+  old, whether they held it all season or arrived there in the postseason.
+- `jhsaa_program_history` — the prior meeting between the two programs, the
+  last time this one got this far.
+A scene is those facts arranged in the order they happened, at the one dual
+that mattered. Pick the pivotal match, not the season summary, and spend the
+paragraph there. "Show, don't tell" here means: quote the set score, name the
+flight, say who was standing on it, state what it moved.
+
+### 4. Stakes before the tiebreak, not after
+The draft reported the decisive breaker and only then said what it decided.
+State the consequence FIRST — the seed, the berth, the district title that
+hung on the flight — so the reader knows why the 10-8 matters while it is
+being read. The salience rule (`surprise × consequence × invisibility`) is
+already an ordering rule for the sentence: consequence up front.
+
+### 5. The framework never leaks into the body
+"Form 7, the one flight." "Source: the 2089 research export, duals.csv joined
+to lines.csv." "This story crosses the seam between two seasons." All of that
+appeared in the draft's BODY. The forms are scaffolding for the writer; the
+reader must not see the scaffold. No form names, no table names, no column
+names, no evidence-requirement language, no seam talk in the piece. Sourcing
+belongs in ONE line at the end of the whole document ("From the 2089 research
+export"), never per story.
+
+### 6. Constraints are not a licence to drop voice
+The desk rules (no quotes, no ratings, no adjectives in a headline, no
+fabrication) were read by the draft as "write flatly". They forbid CLAIMS the
+data cannot support; they do not forbid rhythm, ordering, emphasis or a
+sentence that leads with the thing that matters. Every desk in the table at
+the top of this document works under a harder constraint than this one (a real
+paper cannot invent either) and none of them reads like a log file. The
+question to ask of each paragraph: would the Examiner's club-GAA desk run it?
+
+### A worked correction
+Draft:
+> Silverton Prep finished 14-9. It went 8-4 in district. Its No. 2 doubles
+> pairing went 15-6. It lost in the Regional to Oak Knoll 4-3. The D2 flight
+> was decided in a tiebreak. Form 7: the one flight.
+
+Rewrite, using only what the export holds for that dual:
+> The seat Silverton Prep had spent a spring earning came down to two
+> sophomores at No. 2 doubles. Oak Knoll, the No. 3 seed, had taken the
+> singles 2-1; Silverton had D1, D3 and D4; the Regional was 3-3 when the
+> D2 pair — 15-6 together since March, never once split — lost
+> the first set 4-6, took the second 6-3 and reached 6-6 in the third. They
+> lost the breaker 8-10, and with it Silverton's protected Regional line went
+> to Oak Knoll, which had not beaten them in four meetings.
+
+Everything in the rewrite is a column: the seed, the flight scores, the
+pairing's joint record from `line_players`, the grades, the prior meetings.
+Nothing is a feeling. It reads as a story because the consequence leads, the
+sentences vary, the verbs are the sport's, and the paragraph stays on one
+match.
+
+### Checklist before a story ships
+- Does any sentence restate a figure a page already shows, with no cause or
+  consequence attached? Cut it or attach one.
+- Are three consecutive sentences the same shape? Recast one.
+- Is there ONE dual, one flight, one set score the paragraph lives on?
+- Is the consequence stated before the decisive score?
+- Does the body name a form, a table, a column or "the export"? Remove it.
+- Is every physical verb and every descriptive noun backed by a row?
 
 ---
 
