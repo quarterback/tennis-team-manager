@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>JHSAA 2089: season analysis and stories</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap">
+<style>
+:root{
+  --bg:#eef3ef; --panel:#ffffff; --ink:#13241d; --muted:#55665e; --court:#1f6f54; --court-ink:#ffffff; --ball:#cfe13a; --rule:#cdd9d2; --bar:#1f6f54;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#0f1a16; --panel:#16261f; --ink:#e6efe9; --muted:#9db0a6; --court:#1b5a45; --court-ink:#f4faf6; --ball:#d6e84a; --rule:#2a3d34; --bar:#4fb38d; }
+}
+:root[data-theme="dark"]{ --bg:#0f1a16; --panel:#16261f; --ink:#e6efe9; --muted:#9db0a6; --court:#1b5a45; --court-ink:#f4faf6; --ball:#d6e84a; --rule:#2a3d34; --bar:#4fb38d; }
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Bricolage Grotesque",system-ui,Segoe UI,Helvetica,Arial,sans-serif;font-size:1.0625rem;line-height:1.55}
+.wrap{max-width:60rem;margin:0 auto;padding:0 1.25rem}
+header.top{padding:3rem 0 2rem}
+h1{font-weight:800;font-size:clamp(2.2rem,6vw,4rem);line-height:1.02;letter-spacing:-0.02em;margin:0 0 1rem;max-width:16ch}
+.lede{max-width:62ch;color:var(--muted);margin:0 0 1.5rem}
+nav a{color:var(--ink);margin-right:1.25rem;text-underline-offset:0.2em}
+a:focus-visible{outline:3px solid var(--ball);outline-offset:2px}
+.board{background:var(--court);color:var(--court-ink);border:4px solid var(--court-ink);outline:1px solid var(--court);padding:1.25rem 1.25rem 1rem;margin:2rem 0 0.5rem}
+.board h2{margin:0 0 0.75rem;font-size:1.15rem;font-weight:600}
+.board table{width:100%;border-collapse:collapse;font-size:1rem}
+.board td{padding:0.4rem 0.5rem;border-top:1px solid rgba(255,255,255,.35);vertical-align:top}
+.board td.s{text-align:center;font-weight:800;font-variant-numeric:tabular-nums;width:3.2rem;font-size:1.25rem}
+.board td.s.w{color:#13241d;background:var(--ball)}
+.board .slot{width:3rem;font-weight:600}
+.board p{margin:0.75rem 0 0;font-size:0.95rem}
+.scroll{overflow-x:auto}
+h2.sec{font-size:clamp(1.8rem,4vw,2.6rem);font-weight:800;letter-spacing:-0.015em;margin:4rem 0 0.5rem;line-height:1.05}
+h3{font-size:1.3rem;font-weight:600;margin:2.5rem 0 0.5rem;line-height:1.2}
+p{max-width:68ch}
+table.data{border-collapse:collapse;width:100%;min-width:40rem;font-size:0.92rem;background:var(--panel);font-variant-numeric:tabular-nums}
+table.data th,table.data td{padding:0.45rem 0.6rem;border-bottom:1px solid var(--rule);text-align:left;vertical-align:top}
+table.data th{font-weight:600;color:var(--muted)}
+table.data td.n,table.data th.n{text-align:right}
+caption{caption-side:top;text-align:left;font-weight:600;padding:0.5rem 0}
+.bars{display:grid;grid-template-columns:9rem 1fr 3.5rem;gap:0.35rem 0.75rem;align-items:center;max-width:42rem;font-size:0.92rem;margin:1rem 0}
+.bars .b{height:0.9rem;background:var(--bar)}
+.bars .v{text-align:right;font-variant-numeric:tabular-nums}
+.note{color:var(--muted);font-size:0.92rem}
+.stories{font-family:"Newsreader",Georgia,"Times New Roman",serif;font-size:1.2rem;line-height:1.62}
+.stories h3{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:clamp(1.5rem,3.2vw,2.1rem);font-weight:800;line-height:1.1;letter-spacing:-0.01em;margin:3.5rem 0 0.75rem;max-width:24ch}
+.stories p{max-width:64ch}
+.whatif{border-left:6px solid var(--ball);background:var(--panel);padding:0.9rem 1.1rem;margin:1.5rem 0;max-width:64ch}
+.whatif strong{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1rem}
+.whatif p{margin:0.4rem 0 0}
+pre.box{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:0.9rem;line-height:1.5;background:var(--panel);padding:0.9rem 1.1rem;overflow-x:auto;max-width:64ch;white-space:pre;margin:1.25rem 0;font-variant-numeric:tabular-nums}
+footer{margin:4rem 0 3rem;color:var(--muted);font-size:0.92rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <h1>JHSAA 2089: season analysis and stories</h1>
+  <p class="lede">Both 2089 seasons, girls in spring and boys in fall, worked from the Play to Clinch export: 1,791 programs, 25,636 varsity duals, about 256,000 lines, 24 state champions and two Tournaments of Champions. The first half is the numbers. The second half is six stories rebuilt from the match records, each with a counterfactual.</p>
+  <nav><a href="#analysis">Analysis</a><a href="#stories">Stories</a><a href="#method">Method</a></nav>
+
+  <div class="board">
+    <h2>Boys 9A final, October 22: Southridge Christian 5, Canal View 4</h2>
+    <div class="scroll">
+    <table>
+      <tr><td class="slot">D5</td><td>Mustafa Ferguson and Malachi Allain, Southridge Christian</td><td class="s w">6</td><td class="s">3</td><td class="s w">7</td></tr>
+      <tr><td class="slot"></td><td>Kameron Frank and Soren Pierce, Canal View</td><td class="s">3</td><td class="s w">6</td><td class="s">6</td></tr>
+      <tr><td class="slot">S2</td><td>Xavier Neff, Southridge Christian</td><td class="s">6</td><td class="s w">6</td><td class="s w">7</td></tr>
+      <tr><td class="slot"></td><td>Victor Gomez, Canal View</td><td class="s w">7</td><td class="s">4</td><td class="s">6</td></tr>
+    </table>
+    </div>
+    <p>Both teams were unbeaten at the start of the day. Two of the nine lines ended in a third set tiebreak and Southridge Christian won both.</p>
+  </div>
+</header>
+
+<main>
+<h2 class="sec" id="analysis">Analysis</h2>
+
+<h3>The 24 champions</h3>
+<p>Computer rank is the program's place within its class on the mean of the nine rating systems. The last column is the class the program played in during 2088.</p>
+<div class="scroll">
+<table class="data">
+<caption>Boys</caption>
+<tr><th>Class</th><th>Champion</th><th>Record</th><th class="n">Seed</th><th class="n">Computer rank</th><th>Final</th><th>2088 class</th></tr>
+<tr><td>9A</td><td>Southridge Christian</td><td>31-1</td><td class="n">2</td><td class="n">3</td><td>5-4 Canal View</td><td>9A</td></tr>
+<tr><td>8A</td><td>Evans Larsen Day</td><td>31-1</td><td class="n">1</td><td class="n">1</td><td>7-2 Lone Pine</td><td>7A</td></tr>
+<tr><td>7A</td><td>Bush</td><td>32-1</td><td class="n">1</td><td class="n">1</td><td>5-4 Springfield</td><td>5A</td></tr>
+<tr><td>6A</td><td>Kilbride Switch</td><td>34-1</td><td class="n">1</td><td class="n">1</td><td>5-2 Cheney</td><td>5A</td></tr>
+<tr><td>5A</td><td>Westfield Friends</td><td>37-1</td><td class="n">1</td><td class="n">1</td><td>3-2 La Grande</td><td>5A</td></tr>
+<tr><td>4A</td><td>Quarmont</td><td>36-1</td><td class="n">1</td><td class="n">1</td><td>4-1 California Canyons</td><td>3A</td></tr>
+<tr><td>3A</td><td>Barclay</td><td>22-8</td><td class="n">15</td><td class="n">13</td><td>3-2 Los Remolinos</td><td>3A</td></tr>
+<tr><td>2A</td><td>Gottschalk-Herman</td><td>31-2</td><td class="n">2</td><td class="n">2</td><td>4-1 Mt Jacqueline</td><td>1A</td></tr>
+<tr><td>1A</td><td>Barley Gap</td><td>29-1</td><td class="n">1</td><td class="n">2</td><td>5-0 Tailingford Union</td><td>1A</td></tr>
+<tr><td>Group 1</td><td>Furnace Creek</td><td>41-1</td><td class="n">2</td><td class="n">2</td><td>6-3 Minidoka</td><td>Group 1</td></tr>
+<tr><td>Group 2</td><td>Mirage Crossing</td><td>29-2</td><td class="n">2</td><td class="n">2</td><td>3-3 Raft County Catholic, tiebreak</td><td>Group 3</td></tr>
+<tr><td>Group 3</td><td>East Simmons</td><td>26-9</td><td class="n">10</td><td class="n">4</td><td>4-1 Quincy</td><td>Group 3</td></tr>
+</table>
+</div>
+<div class="scroll">
+<table class="data">
+<caption>Girls</caption>
+<tr><th>Class</th><th>Champion</th><th>Record</th><th class="n">Seed</th><th class="n">Computer rank</th><th>Final</th><th>2088 class</th></tr>
+<tr><td>9A</td><td>Jesuit</td><td>42-2</td><td class="n">3</td><td class="n">1</td><td>8-1 Tidegate</td><td>9A</td></tr>
+<tr><td>8A</td><td>Chaminade</td><td>35-1</td><td class="n">1</td><td class="n">1</td><td>5-4 Canyonlands</td><td>6A</td></tr>
+<tr><td>7A</td><td>Dusty Spur</td><td>30-4</td><td class="n">3</td><td class="n">4</td><td>6-3 Clover</td><td>6A</td></tr>
+<tr><td>6A</td><td>Perry Green</td><td>33-2</td><td class="n">2</td><td class="n">1</td><td>6-1 Kilbride Switch</td><td>5A</td></tr>
+<tr><td>5A</td><td>Westfield Friends</td><td>37-3</td><td class="n">1</td><td class="n">1</td><td>3-2 La Grande</td><td>5A</td></tr>
+<tr><td>4A</td><td>Ciderhaven</td><td>34-2</td><td class="n">2</td><td class="n">2</td><td>3-2 Grizzly Gulch</td><td>3A</td></tr>
+<tr><td>3A</td><td>Netherwood</td><td>34-4</td><td class="n">2</td><td class="n">3</td><td>5-0 Nyssa</td><td>2A</td></tr>
+<tr><td>2A</td><td>Elgin</td><td>27-2</td><td class="n">3</td><td class="n">3</td><td>3-2 Pine Eagle</td><td>2A</td></tr>
+<tr><td>1A</td><td>Barley Gap</td><td>33-1</td><td class="n">1</td><td class="n">1</td><td>3-2 Punta del Águila</td><td>1A</td></tr>
+<tr><td>Group 1</td><td>Tuscarora</td><td>30-5</td><td class="n">2</td><td class="n">3</td><td>6-3 Toussaint</td><td>Group 1</td></tr>
+<tr><td>Group 2</td><td>E. Baker</td><td>30-3</td><td class="n">5</td><td class="n">1</td><td>4-2 Joseph</td><td>Group 2</td></tr>
+<tr><td>Group 3</td><td>Elk Bluff West</td><td>33-3</td><td class="n">1</td><td class="n">1</td><td>5-0 Quincy</td><td>Group 3</td></tr>
+</table>
+</div>
+<p>Westfield Friends and Barley Gap won both titles in their class. La Grande lost the 5A final 3-2 to Westfield Friends in both seasons, and Quincy lost the Group 3 final in both. Nine programs won a first state title: Barclay, East Simmons and Southridge Christian among the boys, and Barley Gap, Ciderhaven, E. Baker, Elgin, Elk Bluff West and Perry Green among the girls. E. Baker had lost four finals (2034, 2074, 2080, 2088) and Southridge Christian three (2071, 2086, 2087). The Westfield Friends boys title was the program's fifteenth. Furnace Creek won the boys Tournament of Champions and Ciderhaven won the girls.</p>
+<p>The computer No. 1 in the class won 5 of 12 boys titles and 7 of 12 girls titles. No champion of either season ranked lower than fourth except Barclay, which ranked thirteenth in 3A.</p>
+
+<h3>The reclassification moved 674 programs and the promoted ones kept winning</h3>
+<p>Between 2088 and 2089 the association moved 332 boys programs and 342 girls programs to a new class within their system. In the previous fifteen seasons the largest single year count for either gender was 8. Eleven of the 24 champions won in a class they had just been moved up into. From 2027 through 2088, a program playing its first season after a move up won a state title 6 times in total across both genders.</p>
+<div class="scroll">
+<table class="data">
+<caption>2089 results by reclassification status</caption>
+<tr><th>Group</th><th class="n">Programs</th><th class="n">Win pct 2088</th><th class="n">Win pct 2089</th><th class="n">Made state</th><th class="n">Final four</th><th class="n">Titles</th></tr>
+<tr><td>Boys, up two classes</td><td class="n">10</td><td class="n">.850</td><td class="n">.787</td><td class="n">100%</td><td class="n">2</td><td class="n">1</td></tr>
+<tr><td>Boys, up one</td><td class="n">174</td><td class="n">.637</td><td class="n">.639</td><td class="n">81%</td><td class="n">24</td><td class="n">5</td></tr>
+<tr><td>Boys, stayed</td><td class="n">527</td><td class="n">.485</td><td class="n">.480</td><td class="n">56%</td><td class="n">21</td><td class="n">6</td></tr>
+<tr><td>Boys, down</td><td class="n">148</td><td class="n">.263</td><td class="n">.275</td><td class="n">20%</td><td class="n">1</td><td class="n">0</td></tr>
+<tr><td>Girls, up two classes</td><td class="n">10</td><td class="n">.859</td><td class="n">.829</td><td class="n">100%</td><td class="n">4</td><td class="n">1</td></tr>
+<tr><td>Girls, up one</td><td class="n">175</td><td class="n">.641</td><td class="n">.628</td><td class="n">82%</td><td class="n">18</td><td class="n">4</td></tr>
+<tr><td>Girls, stayed</td><td class="n">554</td><td class="n">.486</td><td class="n">.485</td><td class="n">55%</td><td class="n">22</td><td class="n">7</td></tr>
+<tr><td>Girls, down</td><td class="n">157</td><td class="n">.253</td><td class="n">.264</td><td class="n">13%</td><td class="n">1</td><td class="n">0</td></tr>
+</table>
+</div>
+<p>Win percentage barely moved in any group because most programs kept their league and therefore most of their schedule. The postseason is where the new class shows up, and there the promoted programs took 26 of 48 boys final four places and 22 of 48 among the girls. Bush went from 5A to 7A and won it. Chaminade girls went from 6A to 8A and won it. Los Remolinos boys went from 1A to 3A and reached the final. The 305 programs moved down produced two semifinalists, both Granite Basin (1A), and no finalist.</p>
+<p>Condotti Vanguard Academy and Romero-Finniski played 7A as always. The Romero-Finniski boys won the Summit League at 24-5 behind freshman Andrew Bennett, the league player of the year, and the girls won it at 26-7. Both lost in the round of 16.</p>
+
+<h3>Ten boys teams lost once or not at all before the Tournament of Champions</h3>
+<p>Seven boys champions took their only loss of the year in the Tournament of Champions: Southridge Christian, Barley Gap, Westfield Friends, Quarmont, Bush, Kilbride Switch and Evans Larsen Day. Furnace Creek handed three of those seven their loss. Canal View (28-1) lost only the 9A final and Jesuit (39-1) lost only the 9A semifinal, to Canal View. Furnace Creek (41-1) lost only on August 12. Among the girls, Chaminade (35-1) and Barley Gap (33-1) lost only in the Tournament of Champions, Kilbride Switch (38-1) lost only the 6A final and Brown (36-1) lost only a Group 2 quarterfinal that finished 3-3.</p>
+
+<h3>State duals were closer than the regular season, and third sets decided most of the close ones</h3>
+<div class="bars" role="img" aria-label="Share of duals decided by one point">
+  <div>Boys, all varsity</div><div><div class="b" style="width:23.9%"></div></div><div class="v">23.9%</div>
+  <div>Boys, state</div><div><div class="b" style="width:29.8%"></div></div><div class="v">29.8%</div>
+  <div>Girls, all varsity</div><div><div class="b" style="width:25.8%"></div></div><div class="v">25.8%</div>
+  <div>Girls, state</div><div><div class="b" style="width:35.5%"></div></div><div class="v">35.5%</div>
+</div>
+<p class="note">Share of duals decided by one team point. Classes that play five lines at state produce more one point results by construction.</p>
+<p>One third of all standard varsity lines went three sets (33.4% boys, 33.7% girls). In the state tournaments and the Tournament of Champions, 150 boys duals and 174 girls duals were decided by one point or a tiebreak. In 134 and 153 of those, the winner took at least one line in three sets. In 52 and 61, the winner took a line 7-5 or 7-6 in the third. Girls 2A had 21 one point duals in 39. Southridge Christian won three straight 5-4 duals. Barclay won four 3-2 duals in five rounds. Furnace Creek won its semifinal 5-4 and then three straight 3-2 duals in the Tournament of Champions. Chaminade won its semifinal and final 5-4.</p>
+<p>At the other end, the Barley Gap boys won all 20 lines they played at the 1A tournament, and the Kilbride Switch boys won their first 28 lines at 6A before Cheney took two in the final.</p>
+
+<h3>Programs that fall from .700 to under .300 usually stay down. The 2086 group did not.</h3>
+<p>Call it a crash when a program wins at least 70% of its duals one year and under 30% the next. From 2028 through 2079 there were 339 boys crashes and 307 girls crashes, about six a year each.</p>
+<div class="scroll">
+<table class="data">
+<caption>Return to .700 after a crash, 2028 to 2079</caption>
+<tr><th></th><th class="n">Crashes</th><th class="n">Back within 3 seasons</th><th class="n">Back within 5</th><th class="n">Not back within 10</th><th class="n">State title within 4</th></tr>
+<tr><td>Boys</td><td class="n">339</td><td class="n">18%</td><td class="n">36%</td><td class="n">40%</td><td class="n">5</td></tr>
+<tr><td>Girls</td><td class="n">307</td><td class="n">23%</td><td class="n">39%</td><td class="n">41%</td><td class="n">5</td></tr>
+</table>
+</div>
+<p>2086 had 12 boys crashes and 22 girls crashes, the most in at least a dozen years. Ten of the 12 and 21 of the 22 were back above .700 by 2089. That group has already won eight state titles: Dusty Spur and Kilbride Switch boys in 2088, Canyonlands girls in 2088, and Kilbride Switch boys, Dusty Spur girls, Elgin girls, Elk Bluff West girls and Perry Green girls in 2089. Perry Green was 2-24 in 2086. Elk Bluff West was 5-19. Kilbride Switch boys were 3-21. Five more 2089 finalists came from the same group: Kilbride Switch girls, Canyonlands girls, Grizzly Gulch girls and both La Grande teams.</p>
+<p>2089 produced the next large group: 10 boys crashes and 18 girls crashes. The boys are Casa Linda, Cleveland, Dovetail, Los Robles, Meriwether, Minnesota City, Moriarty, Natchez Prep, Treasure Valley and Westside Christian. The girls list includes De La Salle (38-2 to 0-25), Mater Dei (41-1 to 3-21), Westside Christian (28-2 to 1-22), Treasure Valley (28-4 to 2-24) and Minnesota City (31-3 to 3-18). Ten of the 28 play in 9A. The Mater Dei boys, 45-0 a year ago, finished 10-19, which is just outside the definition.</p>
+
+<h3>The state format change did not favor doubles teams, because everyone restacks</h3>
+<p>The regular season is three singles and four doubles in every class. State is not. 2A through 5A and Group 3 play one singles and four doubles. 1A plays two and three, Group 2 plays three and three, 6A keeps the regular format, and 7A through 9A and Group 1 play four singles and five doubles. The Tournament of Champions is one singles and four doubles.</p>
+<p>In the one singles classes, a team's regular season tilt toward doubles (doubles line win rate minus singles line win rate) had no relationship with how far it went relative to its seed. The correlation was -0.003 for boys and -0.011 for girls across 192 state teams each. The reason is in the lineups: 90% of boys D1 seats and 93% of girls D1 seats at state in those classes were filled by players who had spent the regular season in singles. Pairs made of two converted singles players won 51.6% (boys) and 51.8% (girls) of their state lines. Pairs with no converted player won 49.2% and 49.9%.</p>
+
+<h3>Players</h3>
+<div class="scroll">
+<table class="data">
+<caption>Unbeaten in varsity dual lines, 20 or more played</caption>
+<tr><th>Player</th><th>Grade</th><th>School</th><th>Class</th><th>Usual line</th><th class="n">Record</th></tr>
+<tr><td>Lily Pratt</td><td>12</td><td>Kilbride Switch girls</td><td>6A</td><td>D3</td><td class="n">36-0</td></tr>
+<tr><td>Randall Gough</td><td>11</td><td>Kilbride Switch boys</td><td>6A</td><td>S3</td><td class="n">33-0</td></tr>
+<tr><td>Muhammad Martin</td><td>9</td><td>Frontier boys</td><td>Group 1</td><td>D2</td><td class="n">33-0</td></tr>
+<tr><td>Willa Beil</td><td>9</td><td>Brown girls</td><td>Group 2</td><td>D2</td><td class="n">33-0</td></tr>
+<tr><td>Frances Nickel</td><td>11</td><td>California Canyons boys</td><td>4A</td><td>D2</td><td class="n">30-0</td></tr>
+<tr><td>Alexa Subervi</td><td>11</td><td>Barley Gap girls</td><td>1A</td><td>S2</td><td class="n">26-0</td></tr>
+<tr><td>John McIntire</td><td>9</td><td>Evans Larsen Day boys</td><td>8A</td><td>S3</td><td class="n">25-0</td></tr>
+<tr><td>Angelica Granville</td><td>11</td><td>Cradle girls</td><td>2A</td><td>S1</td><td class="n">25-0</td></tr>
+<tr><td>Isaac McClain</td><td>11</td><td>Barley Gap boys</td><td>1A</td><td>S1</td><td class="n">24-0</td></tr>
+<tr><td>Victor Sparks</td><td>11</td><td>Kilbride Switch boys</td><td>6A</td><td>S1</td><td class="n">24-0</td></tr>
+<tr><td>Ellis Eriksen</td><td>12</td><td>Ocean Park boys</td><td>Group 2</td><td>S1</td><td class="n">23-0</td></tr>
+</table>
+</div>
+<p>McClain, Sparks, Eriksen and Granville also won their class No. 1 singles tournament and were named player of the year with full season records of 30-0, 30-0, 29-0 and 31-0. Barley Gap boys had all three singles players unbeaten in duals (McClain, Maxwell Echols 21-0, William Ceja 22-0). Alivia Sims of Westfield Friends went 43-1 as 5A girls player of the year. Her loss came in the first round of the Tournament of Champions, 6-4, 6-4 to Ashlynn Benefield of Elk Bluff West, the Group 3 player of the year, in a dual Westfield Friends won 4-1. Mika Rabasco of the Jesuit girls won the most lines of anyone, 40-1. Jesuit freshman Emmanuel Savitt led the boys at 38-2.</p>
+<p>Freshmen played 20% of all varsity line appearances and seniors 30%. Boys players of the year were five seniors, four juniors and three sophomores. Girls were seven seniors, two juniors and three sophomores. Sophomore Cameron Accardi of Coyote Bend won 9A boys No. 1 singles from the fifth seed, beating the second, sixth and first seeds in three sets each. Sophomore Finn Barbour of Glen Park won 7A from the eleventh seed, beating the top seed 3-6, 6-1, 7-6 in the quarterfinals. Martins Laksa of Evans Larsen Day won a second straight 8A No. 1 singles title and a third individual title overall. Candice Morrison of Texas Beach won 4A girls No. 1 singles after winning No. 3 in 2087 and No. 2 in 2088, all before Texas Beach moved from 2A to 4A this year. She beat top seed Lilly D'Aquila of Grizzly Gulch 1-6, 6-1, 7-6 in the final.</p>
+
+<h3>At large teams and junior varsity</h3>
+<p>The five committee voters filled 120 at large places in each gender. One of the 240 teams reached a quarterfinal: the Powder Valley boys in Group 3. Jackson Hole won the boys JV state tournament and Jesuit won the girls, each from an 18-1 JV season.</p>
+
+<h3>Who brings the most back in 2090</h3>
+<p>Share of state and Tournament of Champions line appearances played by freshmen, sophomores and juniors, final four teams only. Boys: Camden Flat 100%, Glen Park 93%, Pacific Gate 93%, Port Meridian North 89%, Barclay 87%, Canal View 86%, Jesuit 86%. Girls: Mt Jacqueline 89%, California Canyons 89%, Granite Basin 88%, Pine Eagle 87%, Chaminade 86%, Evans Larsen Day 86%, Clover 86%. Three of the four boys 9A semifinalists are on that list. The lowest shares among champions belong to the Elgin girls at 43%.</p>
+
+<section class="stories" id="stories">
+<h2 class="sec" style="font-family:'Bricolage Grotesque',system-ui,sans-serif">Stories</h2>
+<p>Everything below comes from lineups, line scores, dates, brackets and honors in the export. There are no quotes and no invented scenes. Each story ends with a counterfactual that changes one recorded thing and follows the arithmetic.</p>
+
+<h3>Furnace Creek lost once, on a day its best player sat</h3>
+<p>Furnace Creek finished 41-1, won its first Group 1 title since 2035 and then won the Tournament of Champions. The one loss was 4-3 at Cedar on August 12, and the lineup card explains most of it. Channing Shipley, the senior who played No. 1 singles, was not on it.</p>
+<p>That was normal in August. Shipley sat out 12 of Furnace Creek's 42 duals, nearly all of them routs, and the team went 11-1 without him. At Cedar the usual No. 2 and No. 3, Dante Smith and Prince Brandt, moved up a line and won in straight sets. Tyler Courson filled No. 3 singles and lost to Cedar senior Abraham Frost 6-0, 3-6, 6-1. Cedar took three of the four doubles. The last of them belonged to Shaq and George Murphy, a freshman and his sophomore brother, who won No. 4 doubles 7-6, 7-6. Cedar had been moved up from Group 2 that summer and finished second to Furnace Creek in the Metro League. Four weeks later Furnace Creek had Shipley back for the rematch and won 7-0.</p>
+<p>Shipley did not play a third set until October 6. From there he played nine and won nine. The last seven came in a row across eight days. He won the state quarterfinal line 7-6, 6-7, 7-5, the semifinal line 6-0, 4-6, 6-3 in a 5-4 win over Jackson Hole, and the final line 2-6, 6-2, 7-5. Then the format changed. The Tournament of Champions is one singles and four doubles, so Furnace Creek paired Smith and Brandt, who had gone a combined 65-8 in singles, at No. 1 doubles.</p>
+<p>After a 5-0 first round, the next three duals had the same shape. Furnace Creek lost No. 2 and No. 3 doubles each time. Jacob Hilton and Ethan Brown won No. 4 doubles each time. Smith and Brandt won No. 1 doubles each time, twice in three sets. And Shipley won the singles in three sets each time: 4-6, 6-3, 6-2 over Leon Jurgens of Quarmont, the 4A player of the year; 4-6, 6-4, 6-4 over Iker Dipietro of Bush; 7-6, 2-6, 6-2 over Colin Lunsford of Evans Larsen Day, the 8A player of the year. Quarmont, Bush and Evans Larsen Day were a combined 99-0 when they met Furnace Creek.</p>
+<div class="whatif"><strong>What if Shipley plays on August 12?</strong>
+<p>Smith and Brandt drop back to No. 2 and No. 3, where they went 32-3 and 33-5. The line Furnace Creek lost at No. 3 becomes a line Brandt played 38 times and lost 5. A 4-3 loss becomes a 4-3 win on that change alone, and the record becomes 42-0. The other direction is just as short. Shipley lost the first set in three of his last four matches. Reverse the third set of any one of the last three and Furnace Creek goes out of the Tournament of Champions that day, because the rest of each dual was 2-2.</p></div>
+
+<h3>The 9A boys final came down to two tiebreaks</h3>
+<p>Three of the four 9A boys semifinalists had not lost. Jesuit was 39-0. Canal View was 27-0. Southridge Christian was 28-0 and had lost the final in 2086 at 34-1 and in 2087 at 40-1.</p>
+<p>Southridge had already used up a season's worth of luck getting there. It beat Natchitoches 5-4 in the round of 16 with four of its five points coming in three sets. It beat Tamarack 5-4 the next day when senior Thomas Herring won No. 1 singles 4-6, 7-5, 7-6. Canal View reached the final by beating Jesuit 6-3, a score that hides three lines Canal View won in three sets. One was Nikolai Gomez at No. 4 singles, 3-6, 7-6, 6-3 over Emmanuel Savitt, the Jesuit freshman who finished 38-2. Another was the No. 4 doubles win by Cohen and Anibal Kaddouri, a sophomore and his freshman brother.</p>
+<p>Canal View is a family team. Nikolai Gomez, a junior, plays No. 4 singles and his brother Victor, a sophomore, plays No. 2. A year ago the two of them lost the 9A No. 3 doubles final to a Mater Dei pair. In this final Nikolai won in three sets. Keegan Duncan won No. 1 singles for Canal View and the No. 2 and No. 3 doubles pairs won. That is four points. The Kaddouris lost No. 4 doubles in three. At No. 5 doubles, Southridge sophomores Mustafa Ferguson and Malachi Allain beat freshmen Kameron Frank and Soren Pierce 6-3, 3-6, 7-6. At No. 2 singles, Victor Gomez won the first set in a tiebreak, lost the second 6-4, and lost the third in a tiebreak to Xavier Neff. Southridge Christian 5, Canal View 4.</p>
+<div class="whatif"><strong>What if either tiebreak goes the other way?</strong>
+<p>Canal View wins 5-4 and finishes 29-0 one year after finishing third in the Capital Athletic Association behind a 45-0 Mater Dei. Southridge Christian finishes 29-1 with a third lost final in four years. Both had to go Southridge's way, and a third set tiebreak between two players who have split the first two sets is close to even. Canal View played 86% of its state lines with underclassmen, including both Gomez brothers, both Kaddouris, Frank and Pierce. Duncan is the only senior among its winners in the final.</p></div>
+
+<h3>Barclay won 3A while losing No. 1 singles in every round</h3>
+<p>Barclay finished third in the Juniper League at 10-4, behind Villard (14-0) and Governor Woods. It entered the 3A tournament 17-7 as the 15 seed. Its No. 1 singles player, junior Raiden Stewart, was 10-12 in the regular season.</p>
+<p>3A plays one singles and four doubles at state, and Stewart lost the singles all five times: to a Cherry Hill North freshman 7-5 in the third, to Isaiah Hayes of Ostrander Union, to Vahid Crutchfield of Vale in three, to 3A player of the year Cooper Miller of Port Meridian North 7-6, 7-5, and to Cameron Wilson of Los Remolinos in the final. Barclay's doubles went 16-4. Junior Shingo Morii and senior Boston Williams, the only senior in the group, went 5-0 at No. 4. Four of the five duals finished 3-2. In the quarterfinal against Vale, the 4 seed at 30-3, three Barclay doubles wins went three sets, one of them 7-5 in the third. In the final, against a Los Remolinos team that had jumped from 1A to 3A and gone 27-2, the No. 2 and No. 4 doubles both went to a third set and Barclay won both 7-5.</p>
+<p>Two days later, in the Tournament of Champions, Barclay changed the card. Freshman Colton Davis, who had played No. 1 doubles all through state, played the singles against Micah Renfroe of Westfield Friends, the 5A player of the year at 30-7. Davis won 6-2, 6-1. Barclay also won No. 1 doubles and lost 3-2 when Morii and Williams, unbeaten for a week, lost 6-4, 3-6, 6-4 to a Westfield freshman and sophomore.</p>
+<div class="whatif"><strong>What if Davis plays singles from the first round?</strong>
+<p>The export cannot say he would have beaten Miller or Wilson. It does say Barclay won four rounds by a single point while conceding the singles point in each, and that the one time it tried a different player there he beat a player of the year 12 games to 3. It also says the No. 1 doubles team went 2-3 at state with him on it. Barclay played 87% of its postseason lines with underclassmen, Davis included.</p></div>
+
+<h3>Mater Dei, one year after 45-0</h3>
+<p>In 2088 the Mater Dei boys went 45-0 and won 9A and the Tournament of Champions. The girls went 41-1 and did the same. In 2089 the boys went 10-19, finished eighth in the Capital Athletic Association and were out at sectionals on October 3. The girls went 3-21 and finished eleventh.</p>
+<p>Graduation took the top of both lineups: Christopher Strickler, Sawyer Ganesan and Kraigg Cádiz from the boys, and 9A player of the year Alayna Pesce, Amia Severino, Ana Galvan and Heidi Miller from the girls. But most of the boys' card returned, and the returning players are the story. Jayden Bustillos was first team all state, league player of the year and the 9A No. 2 singles runner up in 2088. As a senior he went 12-12 at No. 2. Drew Turk and Luke Davis were first team all state as a doubles pair. Turk went 8-16 in doubles and Davis 6-12. Gavin Hoffer and Gavin Love won the 9A No. 2 doubles title together, Love as a freshman. Hoffer went 11-17 at No. 1 singles and Love 11-18 at No. 3. Malik Trivedi won the No. 1 doubles title as a sophomore and went 7-11. Mater Dei was 5-13 by the end of August.</p>
+<p>On the girls side, Taylor Marten won the 9A No. 3 singles title as a sophomore. As a junior she played three singles lines, lost all three, and went 3-17 in doubles. Faye Ryu, a No. 1 doubles finalist a year ago, moved up to No. 1 singles and went 4-19.</p>
+<p>Programs rise and fall in this association for reasons that never appear in a box score, and Mater Dei has been here before: the girls won everything in 2082 and went 21-11 the next year. The historical record on falls this steep is in the analysis above. Eighteen to 23 percent of crashed programs are back above .700 within three seasons and about 40 percent are not back within ten. The exception is the group that fell in 2086, nearly all of which recovered within three years and eight of which have since won titles.</p>
+<div class="whatif"><strong>What if the returning boys had simply repeated 2088?</strong>
+<p>Seven returning players had won or reached an individual state final the year before, enough to fill most of a nine line card. Instead Canal View, which lost to Mater Dei pairs in the 9A No. 2 and No. 3 doubles finals in 2088 and finished third in the league, won the league at 17-0 and came within two tiebreaks of the state title. Seven freshmen and sophomores played varsity lines for the Mater Dei boys this year.</p></div>
+
+<h3>Ciderhaven lost to Grizzly Gulch twice, then beat them for the title</h3>
+<p>Ciderhaven and Grizzly Gulch share the Far West League. Ciderhaven was moved up to 4A this year from 3A, where it lost the 2088 final. Grizzly Gulch won the league. It beat Ciderhaven 4-3 on March 11 and 5-2 on April 23, and it reached the 4A final at 37-1 as the class's computer No. 1. Grizzly Gulch had been 3-19 three years earlier.</p>
+<p>Both regular season duals were played three singles and four doubles. The final was one singles and four doubles, and both coaches restacked. Grizzly Gulch kept senior Lilly D'Aquila at singles and moved its No. 3, Justina Alonso, to No. 1 doubles. Ciderhaven kept 4A player of the year Olivia Burnett at singles and moved its No. 2 and No. 3, Serena Franklin and Adriana Millar, to No. 1 doubles together. Franklin had beaten the Grizzly Gulch No. 2 in both league duals. D'Aquila beat Burnett 3-6, 6-3, 6-2, her second win in their three meetings. Franklin and Millar won 6-4, 7-5. Ciderhaven won No. 2 and No. 4 doubles in straight sets and the final 3-2. It then won four more duals in the Tournament of Champions, the last two 4-1.</p>
+<p>D'Aquila was also the top seed in the 4A No. 1 singles tournament. She reached the final and lost 1-6, 6-1, 7-6 to Candice Morrison of Texas Beach, who had won the No. 3 singles title in 2087 and the No. 2 title in 2088 two classes below. D'Aquila won her line in the team final, lost the team final, and lost the individual final in a third set tiebreak.</p>
+<div class="whatif"><strong>What if state were played in the regular season format?</strong>
+<p>Then the only evidence is the two league duals, and Grizzly Gulch won both. In those duals Ciderhaven won three of six singles lines and two of eight doubles lines. The one singles format removed two of Ciderhaven's strongest lines from the card and should have hurt it. What it did instead was let Ciderhaven turn two singles winners into one doubles point at the top of the order, against a Grizzly Gulch team that had owned the doubles all spring.</p></div>
+
+<h3>Three more results that turned on a set</h3>
+<p><strong>Brown girls, Group 2.</strong> Brown was 36-0 and the top seed when it met E. Baker in the quarterfinals. Group 2 plays three singles and three doubles at state. Brown swept the doubles in straight sets. Its three singles players were all freshmen, and all three lost, two in straight sets and Paisley Miller 3-6, 6-1, 1-6. The dual finished 3-3 and E. Baker advanced on the tiebreak. E. Baker had lost four state finals. It won the next two rounds and its first title. Freshman Willa Beil of Brown finished 33-0 in doubles.</p>
+<p><strong>Kilbride Switch girls, 6A.</strong> The final score was Perry Green 6, Kilbride Switch 1, and Kilbride Switch finished 38-1. Four of the seven lines went three sets. Perry Green won No. 2 doubles after losing the first set, won No. 4 doubles 7-5 in the third, and won No. 1 singles when Remy Ludwig beat 6A player of the year Astrid Smith 6-7, 7-5, 7-6. Move those three and it is 4-3 Kilbride Switch. Both programs were under .100 in 2086: Perry Green 2-24, Kilbride Switch 1-20.</p>
+<p><strong>Raft County Catholic boys, Group 2.</strong> The final against Mirage Crossing finished 3-3. Sets were 8-8. Raft County Catholic won more games, 76 to 67. Mirage Crossing, moved up from Group 3 after losing that final in 2088, won the tiebreak and the title. Four of the six lines went three sets. Raft County Catholic won the first set of the No. 2 doubles line it lost.</p>
+</section>
+
+<h2 class="sec" id="method">Method</h2>
+<p>All joins use program_id. School names shown are the 2089 display names from the programs table. Player records in the analysis count varsity dual lines only unless a full season record from the awards file is stated. Player ratings were not used anywhere. A one point dual is any varsity dual with a final margin of one team point or less, which includes tied duals settled by tiebreak. The export flags which duals were settled by tiebreak but not the rule. Winners of those duals did not consistently hold the edge in sets, games, No. 1 singles or No. 1 doubles, so the stories report the tiebreak without describing it. Line order within a dual is not recorded, so no story says which line finished last. Crash and recovery rates use program history from 2027 and count only crashes old enough to have ten later seasons on record. Reclassification counts compare each program's class in 2088 and 2089 and leave out the 18 programs per gender that changed between the numbered classes and the Group system.</p>
+
+<footer>Source: play-to-clinch-jhsaa-2089-both.zip, generated September 19, 2026.</footer>
+</main>
+</div>
+</body>
+</html>
