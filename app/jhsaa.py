@@ -4996,7 +4996,31 @@ def _rows() -> list[dict]:
     global _schools_cache
     if _schools_cache is None:
         with open(_DATA, encoding="utf-8") as fh:
-            _schools_cache = json.load(fh)["schools"]
+            doc = json.load(fh)
+        rows = doc["schools"]
+        # ‼️ A COMMITTED REALIGNMENT OUTLIVES THE SEED FILE (owner incident 2026-09):
+        # the file is a tracked file in a git checkout and came back at the repo's
+        # version after a code update, while the lab database kept the cycle — the
+        # next season played on the old map. The database holds the map; if the
+        # file reads pre-commit, put it back (in memory AND on disk, so the next
+        # `git diff` shows it again). ONE read per cache fill, never per row.
+        from . import jhsaa_reclass as _rc
+        try:
+            restored = _rc.reapply(rows)
+        except Exception as exc:                      # never let a repair break a load
+            log.warning("JHSAA reclass re-apply skipped: %s", exc)
+            restored = 0
+        if restored:
+            log.warning("JHSAA seed file read PRE-realignment (%d moved schools back in"
+                        " their old class); re-applied the committed map from the save.",
+                        restored)
+            try:
+                with open(_DATA, "w", encoding="utf-8") as fh:
+                    json.dump(doc, fh, indent=2, ensure_ascii=False)
+                    fh.write("\n")
+            except OSError as exc:
+                log.warning("could not rewrite %s: %s", _DATA, exc)
+        _schools_cache = rows
     return _schools_cache
 
 

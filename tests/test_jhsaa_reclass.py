@@ -331,3 +331,100 @@ def test_the_history_is_an_index_plus_one_cycle(clean_archive):
     md = rc.cycle_markdown(one)
     assert "### 8A → 9A (3)" in md and "| Alpha | 1500 | 4 | 0.700 | +60 | 1560 | 1 | sort |" in md
     assert "Sunkist League: new" in md and "| Alpha | Boise Frontier | Group 1 | 4A-1A | territory |" in md
+
+
+def _commit_on_a_copy(tmp_path, monkeypatch, w):
+    copy_path = tmp_path / "schools.json"
+    shutil.copy(jh._DATA, copy_path)
+    original = copy_path.read_text()
+    monkeypatch.setattr(jh, "_DATA", str(copy_path))
+    jh.reset_schools()
+    conn = wd._db()
+    try:
+        conn.execute("DELETE FROM world_jhsaa WHERE world_id=?", (w["id"],))
+        conn.execute("INSERT INTO world_jhsaa (world_id, year, gender, data) VALUES (?,?,?,?)",
+                     (w["id"], 0, "girls", json.dumps({"standings": {}, "brackets": {}})))
+        conn.commit()
+    finally:
+        conn.close()
+    cur = rc.open_proposal(w, force=True)
+    res = rc.commit(w)
+    assert res["ok"]
+    return copy_path, original, {x["school"]: x for x in cur["data"]["moves"]}
+
+
+def _shape(path):
+    return {r["name"]: (r["classification"], r["group"], r.get("girls_district"),
+                        r.get("boys_district"), bool(r.get("play_up")))
+            for r in json.load(open(path))["schools"]}
+
+
+def test_a_committed_map_is_reapplied_when_the_seed_file_reverts(scored, monkeypatch, tmp_path, clean_archive):
+    """Owner incident 2026-09: the cycle was committed, the code was updated, and the
+    checkout came back with the repo's schools.json while the database kept the
+    cycle — the next season played on the old map. The map is snapshotted on the
+    cycle row and `jhsaa._rows()` puts it back (memory AND disk) whenever the file
+    reads pre-commit; a file that already carries it is left alone."""
+    w = clean_archive
+    copy_path, original, moves = _commit_on_a_copy(tmp_path, monkeypatch, w)
+    committed = _shape(copy_path)
+    # the file comes back at the repo's version, as a fresh checkout leaves it
+    copy_path.write_text(original)
+    jh.reset_schools()
+    rows = jh._rows()
+    loaded = {r["name"]: r["classification"] for r in rows}
+    for name, x in moves.items():
+        assert loaded[name] == x["proposed"], name
+    assert _shape(copy_path) == committed          # rewritten on disk, leagues included
+    assert {s.name: s.group for s in jh.load_schools("girls")}["Baptist"] == moves["Baptist"]["proposed"]
+    # idempotent: a file that already carries the map is not touched again
+    assert rc.reapply(json.load(open(copy_path))["schools"]) == 0
+    # the cycle's recorded first season is the season the map applies from
+    assert rc.cycle_index(w["id"])[0]["season_year"] == wd.BASE_YEAR + w["year"] + 1
+    jh.reset_schools()
+
+
+def test_a_cycle_committed_before_the_snapshot_is_reconstructed(scored, monkeypatch, tmp_path, clean_archive):
+    """The owner's own 2087 cycle predates `map`: its rows carry every proposed
+    class and the league redraw is seeded, so the map is rebuilt from them and
+    lands on exactly the file the commit wrote."""
+    w = clean_archive
+    copy_path, original, moves = _commit_on_a_copy(tmp_path, monkeypatch, w)
+    committed = _shape(copy_path)
+    conn = wd._db()
+    try:
+        data = json.loads(conn.execute("SELECT data FROM world_jhsaa_reclass WHERE world_id=?"
+                                       " AND status='committed'", (w["id"],)).fetchone()["data"])
+        data.pop("map")
+        conn.execute("UPDATE world_jhsaa_reclass SET data=? WHERE world_id=? AND status='committed'",
+                     (json.dumps(data), w["id"]))
+        conn.commit()
+    finally:
+        conn.close()
+    copy_path.write_text(original)
+    jh.reset_schools()
+    jh._rows()
+    assert _shape(copy_path) == committed
+    jh.reset_schools()
+
+
+def test_the_lab_advance_holds_on_an_open_proposal(monkeypatch, clean_archive):
+    """The lab had no hold: a due cycle never opened on its own and a committed one
+    could be advanced straight past. It now stops like `advance_week` does."""
+    w = clean_archive
+    monkeypatch.setattr(rc, "pending", lambda wid: {"data": {"moves": [1, 2, 3]}})
+    played = []
+    monkeypatch.setattr(wd, "run_jhsaa", lambda seed, world: played.append(world["year"]))
+    with pytest.raises(wd.ReclassHold):
+        wd.advance_jhsaa_lab(wd.DEFAULT_SEED)
+    assert played == [] and wd.load_world(wd.DEFAULT_SEED)["year"] == w["year"]
+    monkeypatch.setattr(rc, "pending", lambda wid: None)
+    monkeypatch.setattr(rc, "due", lambda world: False)
+    wd.advance_jhsaa_lab(wd.DEFAULT_SEED)
+    assert played == [w["year"] + 1]
+    conn = wd._db()
+    try:
+        conn.execute("UPDATE world SET year=? WHERE id=?", (w["year"], w["id"]))
+        conn.commit()
+    finally:
+        conn.close()

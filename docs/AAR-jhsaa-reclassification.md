@@ -87,3 +87,40 @@ Owner spec: `docs/DESIGN-jhsaa-reclassification.md`. Models and data:
 - **An off-cycle run on a fresh save is enrollment-only.** With no archive the
   scorer returns nothing and the sort is by enrollment; the button is disabled
   until a season is archived, but the path is legal.
+
+## Addendum (2026-09): the map has to outlive the seed file
+
+The owner committed a 406-move cycle, updated the code, and simulated the next
+season — and it played on the old map. The export made the cause plain: every
+move row's `program_ident` was empty (the commit ran on code from before that
+column) while the export itself carried the column, so the code was updated
+between the commit and the advance, and the checkout came back with the repo's
+`schools.json` while the lab database, outside the repo, kept the cycle. The
+commit's only durable effect had been a file in a working tree; nothing raised,
+the season simply read the old classes.
+
+- **The map is snapshotted on the cycle row** (`data["map"]`: every school's
+  post-commit class, championship group, both league names and play-up flag,
+  beside its pre-commit class) and **`jhsaa._rows()` re-applies it** whenever
+  the file reads pre-commit — in memory and on disk, with a warning. A cycle
+  committed before the snapshot existed is reconstructed from its proposal rows
+  and the seeded league redraw (`committed_map`), which reproduces the file the
+  commit wrote. The detector is "a moved school still sits in the class the
+  cycle moved it out of"; a file the owner has since changed by hand does not
+  trip it. The read is one query per cache fill, no schema statement, so it
+  cannot take a write lock under the season simulation.
+- **The lab advance now holds** like the world advance (`ReclassHold`): a due
+  cycle opens on its own and a pending one stops the advance, with the lab page
+  saying so. Before this the lab never opened a cycle and would advance straight
+  past a committed one.
+- **The cycle records the first season it applies to** (`first_season`): at
+  week 0 of a college world that is BASE+year+1; a lab world at year N has
+  archived that season, so its first new season is one later. The owner's
+  existing cycle keeps its 2087 label; the map takes effect from the next season
+  played after the repair.
+- The ledger files were lost with the checkout too; the Realignments page has a
+  "Rewrite the files" action that regenerates them from the database.
+
+The lesson is the one the explorer's action bar already carries from the other
+direction: a seed file and a save disagree the moment either is reset, so a
+decision has to be recoverable from whichever survives.

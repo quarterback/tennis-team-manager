@@ -3794,6 +3794,11 @@ def departing_now(seed: int = DEFAULT_SEED) -> list[tuple]:
     return rows
 
 
+class ReclassHold(RuntimeError):
+    """`advance_jhsaa_lab` refused to play a season while a reclassification
+    proposal is open (or just became due) — the lab's hold."""
+
+
 def advance_jhsaa_lab(seed: int) -> dict:
     """Advance a JHSAA-only lab world ONE year and simulate+archive that year's
     season — the lab equivalent of the year-rollover step, but with none of
@@ -3828,6 +3833,19 @@ def advance_jhsaa_lab(seed: int) -> dict:
     w = load_world(seed)
     if not w:
         raise ValueError(f"No lab world at seed {seed} — generate one first.")
+    # RECLASSIFICATION HOLD, the lab's copy of `advance_week`'s (owner incident
+    # 2026-09: the lab had no hold, so a due cycle never opened on its own and a
+    # committed one could be advanced straight past). A pending proposal stops
+    # the advance here; a due one is opened and stops it the same way. The lab
+    # page shows the hold; commit or dismiss on /jhsaa/reclassification.
+    from . import jhsaa_reclass as rc
+    cur = rc.pending(w["id"])
+    if cur is None and rc.due(w):
+        cur = rc.open_proposal(w)
+    if cur is not None:
+        raise ReclassHold(f"Reclassification proposal open ({len(cur['data'].get('moves', []))}"
+                          " moves) — commit or dismiss it on /jhsaa/reclassification"
+                          " before advancing.")
     new_year = w["year"] + 1
     run_jhsaa(seed, {**w, "year": new_year})
     conn = _db()

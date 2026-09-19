@@ -2796,6 +2796,18 @@ def create_app() -> Flask:
             rc.dismiss(w)
         return _rc_back("Proposal dismissed.")
 
+    @app.route("/jhsaa/realignments/ledger", methods=["POST"])
+    def jhsaa_realignments_ledger():
+        """Rewrite data/jhsaa/realignments/ from the database — every committed
+        cycle. The files are untracked in the checkout until the owner commits
+        them, so a fresh checkout loses them while the save keeps the cycles."""
+        from app import jhsaa_reclass as rc
+        w = wd.load_world(DEFAULT_SEED)
+        if w:
+            rc.write_ledger(w["id"])
+        g = request.form.get("g") or "girls"
+        return redirect(url_for("jhsaa_realignments", u=request.form.get("u") or None, g=g))
+
     @app.route("/jhsaa/realignments")
     def jhsaa_realignments():
         """Committed cycles on the History sub-rail — an index of years, and the
@@ -3535,11 +3547,15 @@ def create_app() -> Flask:
         import time as _time
         job = dict(_jhsaa_lab_job)
         elapsed = int(_time.time() - job["started"]) if job["running"] and job["started"] else None
+        from app import jhsaa_reclass as _rc
+        _w = wd.load_world(wd.DEFAULT_SEED)
+        reclass_pending = bool(_w and _rc.pending(_w["id"]))
         return render_template("jhsaa_lab.html", active="Tools",
                                exists=bool(w), season_year=season_year,
                                years_archived=years_archived, db_path=str(wd.WORLD_DB),
                                job_running=job["running"], job_kind=job["kind"],
-                               job_elapsed=elapsed, job_error=job["error"])
+                               job_elapsed=elapsed, job_error=job["error"],
+                               reclass_pending=reclass_pending)
 
     @app.route("/jhsaa-lab/generate", methods=["POST"])
     def jhsaa_lab_generate():

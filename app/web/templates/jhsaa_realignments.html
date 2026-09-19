@@ -46,7 +46,12 @@
       {% endfor %}
     </table>
   </div>
-  <div class="ra-foot bit">Each cycle is also written to <code>{{ view.ledger_dir }}/&lt;season&gt;.md</code> and <code>.json</code>, with <code>LEDGER.md</code> holding the whole arc.</div>
+  <div class="ra-foot bit">Each cycle is also written to <code>{{ view.ledger_dir }}/&lt;season&gt;.md</code> and <code>.json</code>, with <code>LEDGER.md</code> holding the whole arc.
+    <form method="post" action="{{ url_for('jhsaa_realignments_ledger') }}" style="display:inline;margin-left:8px">
+      {% if u %}<input type="hidden" name="u" value="{{ u }}">{% endif %}
+      <input type="hidden" name="g" value="{{ view.scope.gender }}">
+      <button type="submit" class="bl-btn bl-btn-sm">Rewrite the files</button>
+    </form></div>
 </div>
 
 {% if sel %}
