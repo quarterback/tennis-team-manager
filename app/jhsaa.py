@@ -2856,6 +2856,7 @@ def reset_schools() -> None:
     _town_cache.clear()
     _expo_cache.clear()
     _expo_world.clear()
+    _pins_cache.clear()
     _transfer_name_cache.clear()
     global _former_cache
     _former_cache = None
@@ -3166,7 +3167,8 @@ def exchange_student(school: School, year: int, salt: str,
     emod = dict(mod or {})
     emod["mean"] = emod.get("mean", 0.0) + EXCHANGE_MEAN
     emod["spread"] = emod.get("spread", 1.0) * EXCHANGE_SPREAD
-    p = _gen_seat(school, emod, year, EXCHANGE_SEAT_BASE, EXCHANGE_GRADE, salt)
+    p = _gen_seat(school, emod, year, EXCHANGE_SEAT_BASE, EXCHANGE_GRADE, salt,
+                  pins=pinned_talents(school.gender, school.ident))
     # ‼️ THE NAME AND FLAG ARE REDRAWN, THE PLAYER IS NOT. `_gen_seat` already
     # generated them AS US and stamped a cohort flag; the arrival's nationality
     # comes from a different mix, so it is restamped here on its OWN rng. The
@@ -3695,6 +3697,7 @@ EXPO_CAP = 14.0                   # units at which a season counts as fully play
 _expo_cache: dict = {}
 _expo_world: dict = {}
 _EXPO_MISS = object()
+_pins_cache: dict = {}            # (db, gender, ident) -> {pid: pinned talent}
 #: Per (school, season) entries are ~20 names each, so this bounds memory without
 #: thrashing: a full-association pass touches ~860 schools x 3 seasons a gender.
 _EXPO_CACHE_MAX = 8192
@@ -3725,6 +3728,101 @@ def _expo_world_id(db_path: str):
         wid = None
     _expo_world[db_path] = wid
     return wid
+
+
+def pinned_talents(gender: str, ident: str) -> dict:
+    """{pid: {talent, kind, start}} for every player this ORIGIN program has ever
+    archived on a roster — the CREATION draw: the ceiling they were generated
+    with, the archetype the seat was drawn under and the feeder head start they
+    walked in with (`world_jhsaa_talent`; owner rule 2026-09). Every rebuild of
+    them reuses all three; a NULL `kind`/`start` (a row from before those
+    columns) reads as today's.
+
+    ‼️ ONE indexed read per (gender, program), memoised until `record_talents` /
+    `reset_schools` — never per seat (the fingerprint-in-a-loop storm). Scoped to
+    THE world (`_expo_world_id`). A database with no world, or without the table
+    (a fresh scratch file), pins nobody: the recipe alone, exactly as before."""
+    from .dbpath import resolve_db_path
+    db = resolve_db_path()
+    key = (db, gender, ident)
+    got = _pins_cache.get(key)
+    if got is not None:
+        return got
+    out: dict = {}
+    wid = _expo_world_id(db)
+    if wid is not None:
+        import sqlite3
+        try:
+            conn = sqlite3.connect(db)
+            try:
+                rows = conn.execute(
+                    "SELECT pid, talent, kind, start FROM world_jhsaa_talent"
+                    " WHERE world_id=? AND gender=? AND ident=?",
+                    (wid, gender, ident)).fetchall()
+                out = {pid: {"talent": float(t), "kind": kind,
+                             "start": (float(st) if st is not None else None)}
+                       for pid, t, kind, st in rows if t is not None}
+            finally:
+                conn.close()
+        except sqlite3.Error:
+            out = {}
+    _pins_cache[key] = out
+    return out
+
+
+def record_talents(conn, world_id: int, year: int, gender: str, rosters) -> int:
+    """Pin every player in `rosters` (iterables of Prospects) at the ceiling they
+    were generated with — INSERT OR IGNORE, so a player already pinned keeps the
+    FIRST value ever archived for them and nothing here can move an existing
+    pin. Called by `world.run_jhsaa` after each gender's season is archived;
+    `year` is the archive index it was pinned at. Returns rows attempted."""
+    rows = []
+    for roster in rosters:
+        for p in roster:
+            meta = getattr(p, "jhsaa", None) or {}
+            tal = meta.get("talent")
+            if tal is None or not p.pid:
+                continue
+            rows.append((world_id, p.pid, gender, meta.get("ident", ""),
+                         getattr(p, "entry_year", None), meta.get("seat"),
+                         float(tal), meta.get("tier", ""), year,
+                         meta.get("kind", ""), float(meta.get("start", 0.0) or 0.0)))
+    if rows:
+        conn.executemany(
+            "INSERT OR IGNORE INTO world_jhsaa_talent"
+            " (world_id, pid, gender, ident, entry, seat, talent, tier, year, kind, start)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?)", rows)
+    _pins_cache.clear()
+    return len(rows)
+
+
+def backfill_talent_pins(conn, world_id: int, year: int, season_year: int,
+                         salt: str) -> int:
+    """A save that predates the pin: if this world has NO pins yet and HAS an
+    archived season at index `year`, rebuild that season's rosters (both
+    genders, as the recipe produces them today — which is what that season
+    played, since nothing has moved since it was archived) and pin them. One
+    rebuild of one season, once per save; returns rows pinned (0 when nothing
+    to do). Runs inside `run_jhsaa`'s transaction, before the new season's
+    rosters are built, so this season's returning players are held."""
+    if year < 0:
+        return 0
+    try:
+        has = conn.execute("SELECT 1 FROM world_jhsaa_talent WHERE world_id=? LIMIT 1",
+                           (world_id,)).fetchone()
+        archived = conn.execute("SELECT 1 FROM world_jhsaa WHERE world_id=? AND year=? LIMIT 1",
+                                (world_id, year)).fetchone()
+    except Exception:
+        return 0
+    if has or not archived:
+        return 0
+    log.warning("JHSAA talent pin: backfilling season %s (archive index %s) — "
+                "one-time rebuild of last season's rosters", season_year, year)
+    n = 0
+    for gender in ("girls", "boys"):
+        rosters = [build_roster(s, season_year, salt) for s in load_schools(gender)]
+        n += record_talents(conn, world_id, year, gender, rosters)
+    return n
 
 
 def school_exposure(gender: str, school_name: str, season_years) -> dict:
@@ -5289,8 +5387,61 @@ def _draw_name(rng: random.Random, school: School, entry: int) -> tuple[str, str
     return nm, "US"
 
 
+# --- ESTIMATED POT (owner rule 2026-09) ----------------------------------------
+#
+# The hidden ceiling is fixed (and pinned). What a page SHOWS as POT is the
+# program's ESTIMATE of it: a per-player misread, drawn ONCE and seeded on the
+# pid (never re-rolled — a re-roll each season would recreate the instability
+# the pin just removed), scaled by how little the staff know yet. Knowledge is
+# time in the building and participation — the exposure odometer's realisation
+# factors for the seasons already played — never results, opponents or the
+# flight played. So a hyped freshman shown at 92 converges on a true 84 over
+# two or three seasons, and a quiet one shown at 76 is gradually recognised at
+# 89; nothing was taken from anybody, and the ceiling never moved.
+#   estimate = ceiling + misread × PRIOR / (PRIOR + knowledge)
+# with knowledge = Σ realisation over prior grades (0 for a freshman, ~1 per
+# full varsity season). ‼️ DISPLAY ONLY: the engine plays on current ability,
+# the career model develops toward the TRUE ceiling, and the college hand-off
+# translates by rank — none of them read this. Never below current ability (the
+# POT-never-below-OVR rule) and never above the scale. `POT_ESTIMATE_ENABLED`
+# is the kill switch: off, the estimate IS the ceiling.
+POT_ESTIMATE_ENABLED = True
+POT_MISREAD_SD = 6.0         # sd of the one-time misread, grade points
+POT_PRIOR = 1.0              # knowledge (full seasons) at which the misread has halved
+
+
+def pot_display(p) -> float:
+    """The POT a JHSAA surface shows: the staff's estimate when the seat carries
+    one, else the true ceiling (a player built outside `_gen_seat`)."""
+    meta = getattr(p, "jhsaa", None) or {}
+    est = meta.get("pot_est")
+    return float(est) if est is not None else p.ceiling_overall()
+
+
+def _stamp_pot_estimate(p, pid: str, salt: str, grade: int, exposure: dict | None) -> None:
+    from .player_attributes import OVERALL_WEIGHTS, _WEIGHT_TOTAL
+    ceiling = sum(OVERALL_WEIGHTS[a] * v for a, v in p.potential.items()) / _WEIGHT_TOTAL
+    current = sum(OVERALL_WEIGHTS[a] * v for a, v in p.current.items()) / _WEIGHT_TOTAL
+    p.jhsaa["ceiling"] = round(ceiling, 4)
+    if not POT_ESTIMATE_ENABLED:
+        p.jhsaa["pot_est"] = round(ceiling, 4)
+        return
+    misread = random.Random(f"{salt}|jhsaa-pot|{pid}").gauss(0.0, POT_MISREAD_SD)
+    # Prior grades' realisation: absent (no archive, or the legacy path) reads
+    # as a full season, exactly as `career_ability` reads it.
+    knowledge = 0.0
+    for pg in range(9, grade):
+        f = (exposure or {}).get(pg)
+        knowledge += 1.0 if f is None else float(f)
+    shrink = POT_PRIOR / (POT_PRIOR + knowledge)
+    est = ceiling + misread * shrink
+    est = max(current, min(float(GRADE_CEIL), est))
+    p.jhsaa["pot_est"] = round(est, 4)
+
+
 def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
-              salt: str, expo_years: dict | None = None) -> Prospect:
+              salt: str, expo_years: dict | None = None,
+              pins: dict | None = None) -> Prospect:
     """One seat's Prospect — pulled out of `build_roster` so a TRANSFER (see
     below) can regenerate the exact same person under the school they actually
     play for now, from the ORIGIN school's identity/program modifiers. `pid`
@@ -5339,7 +5490,25 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
     # is separate from the seat rng, so pre-era cohorts are byte-identical.
     centre = (band_centre(school, entry, salt, mod.get("band"))
               if entry >= band_era() else None)
-    talent = min(cap, _ceiling(rng, school.talent_group, school.gender, mod,
+    # `ident`, never `name` — a pid has to survive a rename or every archived
+    # award points at nobody.
+    pid = make_pid("jhsaa", school.ident, school.gender, entry, seat)
+    # ‼️ THE TALENT PIN (owner rule 2026-09) — the CREATION draw is preserved.
+    # A player already archived on a roster keeps (1) the ceiling they were
+    # generated with, (2) the ARCHETYPE the seat was drawn under — the
+    # blue-blood redraw takes a dice draw inside `_ceiling`, so the archetype of
+    # the day would otherwise shift every enrolled player's attribute SHAPE —
+    # and (3) the feeder head start they walked in with. What is NOT pinned is
+    # the program's development environment: coaching and neglect read the
+    # archetype of the day every season (`coach_factor` below), because a
+    # program change is meant to move how much an enrolled player GROWS from
+    # here, never who they are. The recipe below still runs in full, so the seat
+    # rng consumes exactly what it did at creation, and its answer is replaced.
+    pinned = pins.get(pid) if pins else None
+    kind_at_creation = (pinned.get("kind") if pinned and pinned.get("kind")
+                        else mod.get("kind", ""))
+    cmod = mod if kind_at_creation == mod.get("kind", "") else {**mod, "kind": kind_at_creation}
+    talent = min(cap, _ceiling(rng, school.talent_group, school.gender, cmod,
                                cap=cap, centre=centre) + mod.get("pot", 0.0))
     compress = _compresses(entry)
     elite_key = ("jhsaa-elite", school.ident, school.gender, entry, seat)
@@ -5350,6 +5519,18 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
         # pid's own identity, so it shifts nobody else and holds all four years.
         from .development import compress_talent
         talent = compress_talent(talent, sex, key=elite_key)
+    # Without the pin, a change to any generation input rewrote every enrolled
+    # cohort in place (same pid, same name, a different person): ~94% of
+    # programs re-tiered between 2088 and 2089. New entrants are unpinned and
+    # draw from the inputs of the day — the ONLY way an edit reaches a roster.
+    generated_talent = talent
+    if pinned is not None:
+        talent = pinned["talent"]
+    # The feeder head start is a CREATION property (how far along the player
+    # walked in), so the pinned value wins; today's tag reaches new entrants.
+    start_lift_today = mod.get("start", 0.0) if entry >= feeder_era() else 0.0
+    start_lift = (pinned["start"] if pinned and pinned.get("start") is not None
+                  else start_lift_today)
     p = generate_prospect(rng, nm, "US", gender=sex,
                           talent=talent,
                           # ‼️ The career model derives current ability itself,
@@ -5358,10 +5539,7 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
                           # exactly ONE uniform draw, so the main rng stream is
                           # identical either side of the era.
                           maturity_range=(1.0, 1.0) if free else maturity,
-                          # `ident`, never `name` — a pid has to survive a
-                          # rename or every archived award points at nobody.
-                          pid=make_pid("jhsaa", school.ident, school.gender,
-                                       entry, seat),
+                          pid=pid,
                           ceiling_max=cap,
                           # The style-plane profile from `style_era()` on;
                           # earlier cohorts keep the v1 shape they were archived with.
@@ -5385,11 +5563,11 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
         # this argument a program archetype that develops players — `coaching`
         # and `neglect` alike — is silently inert for every cohort in a fresh
         # save, which is exactly the state this was found in.
+        # `coach_factor` reads TODAY's archetype on purpose (the development
+        # environment is year to year); `start_lift` is the pinned creation value.
         _apply_career(p, school.key, entry, seat, grade, salt,
                       exposure or None, coach_factor(mod.get("mature", 0.0)),
-                      # A `feeder` head start reaches cohorts from `feeder_era()`
-                      # on only — an ungated one rewrites every archived freshman.
-                      mod.get("start", 0.0) if entry >= feeder_era() else 0.0)
+                      start_lift)
     elif compress:
         # The guarantee half: attribute noise lifts displayed ceilings past the
         # squashed centre, so the visible number is trimmed after generation.
@@ -5418,6 +5596,23 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
     # read the identity `_seat_full_name` already decided. `p.jhsaa` is the
     # hand-off dict the recruit board fills later; it is merged there, not replaced.
     p.jhsaa["seat"] = seat
+    # What the pin records (`record_talents`): the ceiling this player was
+    # generated with, the ORIGIN program that generates the seat, and the tier
+    # the recipe resolved for audit (the pin is what binds; the tier is why).
+    p.jhsaa["talent"] = float(talent)
+    p.jhsaa["ident"] = school.ident
+    p.jhsaa["kind"] = kind_at_creation
+    p.jhsaa["start"] = float(start_lift)
+    if pinned is None and centre is not None and mod.get("band"):
+        try:
+            p.jhsaa["tier"] = band_tier_for(mod["band"], entry)["key"]
+        except Exception:
+            p.jhsaa["tier"] = ""
+    elif pinned is not None:
+        p.jhsaa["tier"] = "pinned"
+        p.jhsaa["generated_talent"] = float(generated_talent)
+    # ESTIMATED POT (owner rule 2026-09): what the staff BELIEVE the ceiling is.
+    _stamp_pot_estimate(p, pid, salt, grade, exposure if free else None)
     link = sibling_link(school, entry, seat, salt)
     if link is not None:
         sc, e, st = link
@@ -5478,6 +5673,9 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     # Transfers are rare owner-authored overrides; they realise in full.
     expo_years = school_exposure(school.gender, school.name,
                                  (year - 1, year - 2, year - 3))
+    # The talent pins for every seat THIS program generates — one indexed read,
+    # memoised (`pinned_talents`); threaded down like `expo_years`.
+    pins = pinned_talents(school.gender, school.ident)
     out = []
     fresh9_seats = 0
     for grade in GRADES:
@@ -5487,7 +5685,7 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
         if grade == 9:
             fresh9_seats = n_seats
         for seat in range(n_seats):
-            p = _gen_seat(school, mod, entry, seat, grade, salt, expo_years)
+            p = _gen_seat(school, mod, entry, seat, grade, salt, expo_years, pins)
             rec = tmap.get(p.pid)
             # Somewhere else THIS season — `transfer_school` walks every recorded
             # move and returns where they actually are, so a player who moved away
@@ -5501,7 +5699,7 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     # collides with the seats `_freshman_class_size` already rolled for it.
     if len(out) < ROSTER_FLOOR:
         for seat in range(fresh9_seats, fresh9_seats + (ROSTER_FLOOR - len(out))):
-            out.append(_gen_seat(school, mod, year, seat, 9, salt, expo_years))
+            out.append(_gen_seat(school, mod, year, seat, 9, salt, expo_years, pins))
     # Incoming: every transfer whose DESTINATION is this school AND this gender,
     # effective by now. School names are shared across a boys' and a girls' program
     # (the display identity is per-team, not per-school), so the name match alone
@@ -5525,7 +5723,8 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
         if origin is None:
             continue                       # origin school renamed/removed since the move
         omod = _program_mod(origin, year, salt)
-        p = _gen_seat(origin, omod, entry, rec.get("seat"), grade, salt)
+        p = _gen_seat(origin, omod, entry, rec.get("seat"), grade, salt,
+                      pins=pinned_talents(origin.gender, origin.ident))
         if p.pid != pid:
             continue                       # stale/mismatched record — never invent a player
         p.high_school = school.name

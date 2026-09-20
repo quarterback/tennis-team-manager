@@ -5,7 +5,9 @@ what the UI cannot show, not restate what it already does. The way to keep a
 writer honest about that is to give it FORMS, not a data dump: each form is a
 claim shape with a known evidence requirement, and a detector is written to a
 form. This document is the taxonomy, drawn from how a handful of real desks
-actually structure their pieces.
+actually structure their pieces — and, since the 2089 draft, the WRITING
+rules at the end ("Writing the piece"), which a story must pass as well as
+the evidence rules. Read both before writing a season review.
 
 Rule of the exercise: a form is only worth a detector here if the evidence it
 needs crosses a seam the site does not cross — two tables, two seasons, two
@@ -153,6 +155,193 @@ the prerequisite for anything beyond forms 1, 4, 5, 6, 9 and 10.
 Reaction, talking points, power rankings, and "X things we learned". They add
 no fact the reader lacks, and they are the register the desk rules
 (`jhsaa_desk.py`: lead with a number or a name, no adjectives) already forbid.
+
+## Writing the piece — what the 2089 draft got wrong
+
+The forms above say what a story may CLAIM and what evidence it needs. They
+say nothing about the sentences, and the first draft written to them (the 2089
+"eight stories") showed that a writer can satisfy every evidence rule and still
+produce something nobody would read. An independent critique of that draft
+found five faults. They are now rules, and one earlier misreading is retired.
+
+### 0. Invent the fiction. The record is the only thing you may not contradict
+**Owner rule (2026-09, restating what was said at the start):** this is a
+fictional association and the point of the desk is to invent the fiction and
+the texture around the record. The draft refused to — it treated the export as
+the whole of what may be said, wrote "there is no way to know why" beside a
+12-12 record, and read every constraint as "do not generate". That is the
+opposite of the brief. `docs/JHSAA_HIGH_SCHOOL_TENNIS_REPORTING_GUIDE.md` is
+the authority and already lists what a writer INVENTS FREELY: coach and
+assistant names, short player and coach quotes, practice observations, lineup
+discussions, local expectations, how a partnership formed, how a player earned
+a seat, reasonable context around a turnaround — and, for the desk, the
+weather on the day, the crowd, the drive, the family in the stands, the
+history a town tells about itself. **The one rule is the guide's: do not
+invent a fact that contradicts the files.** A 5-0 is never a 3-2 thriller; a
+junior is never a senior; a No. 28 seed stays a No. 28 seed; a team that
+missed State never qualified. Everything the export holds is the RECORD and is
+fixed. Everything it does not hold is the writer's, and leaving it blank is the
+failure, not filling it.
+
+Counterfactuals are part of that licence and are wanted: "had the D2 breaker
+gone the other way, Silverton is in the Zonals and Oak Knoll's road runs
+through the Super Regionals" is a legitimate sentence — it is how a desk makes a
+decisive flight legible, and it is how the writer rates what a result was
+WORTH. Write it as a counterfactual (the reader must not mistake it for what
+happened), and derive it from the actual ladder (the tiebreak rungs, the seed
+order, the road) rather than from a guess.
+
+### 1. A number is evidence, not a sentence
+The draft read: "Bidwell went 12-12. It won a district title. Its No. 1 went
+7-8." That is telemetry — the box score restated in prose, and the reader
+already has the box score. **A number earns its place when it explains
+something or is explained by something.** Every figure in the body must attach
+to a cause, a consequence or a comparison: a 12-12 record is a story only when
+the piece says what the twelve losses have in common (the opponents' class, a
+flight that never held, a partner change in March) — a `duals` × `lines` ×
+`line_players` question where the export answers it, and the writer's own
+invention where it does not (a coach who rebuilt the doubles after spring
+break, a No. 1 playing through a spring of exams). Either way the number is
+never left standing alone.
+
+### 2. Vary the architecture of the sentence
+Every sentence in the draft was Subject → Verb → Record, and after three of
+them the reader hears a drumbeat, not a story. Concretely:
+- **Lead with the consequence at least once a paragraph** ("Because the D2
+  flight went to a third set, the seed line moved" — the Examiner's ordinary
+  report leads with who they meet next, not the score).
+- **Put the number in a subordinate position** when it is context ("Two months
+  after a 12-12 regular season, …") and in the main clause only when it IS the
+  point.
+- **Use one long sentence and one short one per paragraph.** A run of
+  same-length sentences is the tell of a generated draft.
+- **Active, physical verbs.** A team does not "record a result"; a No. 3
+  singles "held serve from 4-4", a pairing "took the set on the second break".
+  Where the set score supports the verb, use it; where it does not, the verb is
+  yours to invent within the score.
+
+### 3. Scene over telemetry
+The critique asked for sensory and emotional detail, and the draft had none —
+it said the constraints left it nothing to work with. They did not. Two
+sources, used together:
+
+**What the export carries** (the fixed record the scene is built ON):
+- `lines.score` — every set score of every flight, so "6-4, 3-6, 7-6" is a
+  match that swung twice and the writer can say where.
+- `duals.decided_on_tiebreak` — a FLAG only: a level Group 2 postseason dual
+  was settled at three concurrent 10-point breakers. The export does NOT carry
+  the three decider scores (`build_jhsaa` writes the boolean and drops them,
+  and the championship JSON stores only the overall points and the winner), so
+  a writer may say the dual went to the deciders and who won them, and must
+  not quote decider points as if they were on file.
+- `duals.date`, `home_program_id` — the day, and the DESIGNATED HOME SIDE.
+  That is row orientation, not necessarily the venue: showcases, State and the
+  TOC are neutral (`jhsaa.NEUTRAL_PHASES` — no home-court roll, a showcase's
+  host is stored separately), so only a league, invitational or road dual may
+  be written as played at the home side's campus. A neutral-phase dual is
+  written at a neutral site, or the venue is invented consistently with that.
+- `jhsaa_program_history.state_seed`, `made_state`, `state_place`,
+  `state_finish` — the State seed line and finish, and so the upset margin.
+  (`jhsaa_standings.csv` carries record, district place, points and TOSS only;
+  there is no plain `seed` column anywhere. Road-round seeding is not exported;
+  the committee JSON carries the at-large seeding for the Parastate classes.)
+- `players.style` / `style_trait` — a counterpuncher against a serve-and-
+  volleyer is a MATCHUP the engine actually plays
+  (`docs/AAR-style-matchup-cross-term.md`); describe it as one.
+- `line_players.position` with `players.grade` — who was on the flight, how
+  old, whether they held it all season or arrived there in the postseason.
+- `jhsaa_program_history` — the prior meeting, the last time this one got
+  this far.
+
+**What the writer supplies** (the texture, per §0): the wind off the river at
+the away court, the bus that left at six, the assistant who charts every
+service game, the senior's parents who have not missed a dual since ninth
+grade, what the coach said at 6-6, what the sophomore said afterwards. None of
+it is in a table and all of it belongs in the piece — consistent with the
+record, with the town (the gazetteer is real geography), with the grades and
+the school, and with the sport (a quote should sound like a high-school coach,
+never a television analyst).
+
+A scene is the record's facts arranged in the order they happened, at the one
+dual that mattered, dressed in invented texture that never contradicts them.
+Pick the pivotal match, not the season summary, and spend the paragraph there.
+
+### 4. Stakes before the tiebreak, not after
+The draft reported the decisive breaker and only then said what it decided.
+State the consequence FIRST — the seed, the berth, the district title that
+hung on the flight — so the reader knows why the 10-8 matters while it is
+being read. The salience rule (`surprise × consequence × invisibility`) is
+already an ordering rule for the sentence: consequence up front.
+
+### 5. The framework never leaks into the body
+"Form 7, the one flight." "Source: the 2089 research export, duals.csv joined
+to lines.csv." "This story crosses the seam between two seasons." "The data
+does not say why." All of that appeared in the draft's BODY. The forms are
+scaffolding for the writer; the reader must not see the scaffold. No form
+names, no table names, no column names, no evidence-requirement language, no
+seam talk, and no confession that the tables ran out — where they run out the
+writer writes. Sourcing belongs in ONE line at the end of the whole document,
+never per story.
+
+### 6. Constraints are not a licence to drop voice
+The desk rules (no ratings in the prose, no adjectives in a headline, no fact
+against the record) were read by the draft as "write flatly" and then as "do
+not write". They forbid CONTRADICTING the record; they do not forbid rhythm,
+ordering, emphasis, a quote, a scene, or a sentence that leads with the thing
+that matters. Every desk in the table at the top of this document works under
+a HARDER constraint than this one — a real paper cannot invent at all — and
+none of them reads like a log file. The question to ask of each paragraph:
+would the Examiner's club-GAA desk run it?
+
+### A worked correction
+Draft:
+> Silverton Prep finished 14-9. It went 8-4 in district. Its No. 2 doubles
+> pairing went 15-6. It lost in the Regional to Oak Knoll 4-3. The D2 flight
+> was decided in a tiebreak. Form 7: the one flight. The data does not show
+> why the pairing lost.
+
+Rewrite. The record (seed, flight scores, joint record, grades, prior
+meetings) is the export's; everything else is invented and contradicts none
+of it:
+> The Zonal place Silverton Prep had spent a spring earning came down to two
+> sophomores at No. 2 doubles, on a Tuesday when the wind off the Klamath
+> made every lob a guess. Oak Knoll, seeded above them, had taken the
+> singles 2-1 and won D3; Silverton had S1, D1 and D4; the Regional was 3-3
+> when the D2 pair — 15-6 together since March, never once split, a
+> partnership the coach admits she assembled by accident when a senior
+> missed a bus — lost the first set 4-6, took the second 6-3 and reached 6-6
+> in the third. "I told them to stop looking at the other courts," Dana
+> Reyes said. "They were the other court." They lost the breaker 8-10, and
+> with it the Zonal went to Oak Knoll, which had not beaten them in four
+> meetings; Silverton's road to State now runs through the Super Regionals.
+> Had the breaker gone the other way, the two schools trade those roads;
+> instead the two sophomores are the first Silverton pair since 2081 to
+> carry a Regional to a third-set breaker and lose it.
+
+The tally closes: Oak Knoll S2, S3, D3 and Silverton S1, D1, D4 is 3-3 with
+D2 the seventh flight, so the dual genuinely turns on it (a worked example
+whose flights do not add up teaches the writer to skip the arithmetic). The
+Regional loser goes to the Super Regionals and the winner to the Zonals
+(`docs/JHSAA-road-to-state.md`), which is the consequence the paragraph
+leads with.
+
+It reads as a story because the consequence leads, the sentences vary, the
+verbs are the sport's, the paragraph stays on one match, and the texture — the
+wind, the bus, the quote, the counterfactual — is written rather than
+withheld.
+
+### Checklist before a story ships
+- Does any sentence restate a figure a page already shows, with no cause or
+  consequence attached? Cut it or attach one — invented if need be.
+- Are three consecutive sentences the same shape? Recast one.
+- Is there ONE dual, one flight, one set score the paragraph lives on?
+- Is the consequence stated before the decisive score?
+- Does the body name a form, a table, a column, "the export", or say the
+  data cannot tell? Remove it and write the missing part.
+- Does any invented detail contradict a row — a score, a seed, a grade, a
+  finish, a date, a name? Fix the detail, never the record.
+- Is there a quote, a scene or a counterfactual? If not, the piece is still
+  telemetry.
 
 ---
 
