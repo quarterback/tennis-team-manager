@@ -76,21 +76,17 @@ def test_the_road_can_no_longer_imitate_depth_at_state():
     road = coef.road_points()
     # ‼️ THE BOUND IS A LEGAL PATH, NOT THE SUM OF EVERY RUNG. The ladder is a
     # route: Super Regionals is for Regional LOSERS, the Conference for Semi-State
-    # losers, so no program can bank both halves and `sum(road.values())` (11.6)
-    # is a number nobody can reach. The longest chain of wins one program can
-    # actually assemble is the local rungs, then a Regionals loss into the full
-    # recovery run, then the Metastate on a low seed.
+    # losers, so no program can bank both halves and `sum(road.values())` (5.8) is
+    # a number nobody can reach. The richest route is the CLEAN one — the local
+    # rungs, Regionals, a Zonal title and the Epiregional.
     longest = (road["Areas"] + road["Sectionals"] + road["Wards"]
-               + road["Super Regionals"]        # lost Regionals, won the recovery
-               + road["Semi-Conference"] + road["Conference"]
-               + road["State Specials"]         # the Conference's berth round
-               + road["Metastate"])             # seeded low into the draw
+               + road["Regionals"] + road["Zonals"] + road["Epiregionals"])             # seeded low into the draw
     assert longest < coef.STATE_OCTO, (longest, coef.STATE_OCTO)
-    # ‼️ AND THE SECOND PASS HALVED IT: 4.10 → 2.05. Re-grading the rungs fixed the
+    # ‼️ AND THE SECOND PASS HALVED IT: 4.60 → 2.30. Re-grading the rungs fixed the
     # ORDER and left the SCALE, so a program's ROUTE still weighed as much as two
     # rounds of the draw. Every price is exactly half its first-pass value, which is
     # what keeps every relative judgement below intact while the road goes quiet.
-    assert 2.0 <= longest <= 2.1, longest
+    assert longest == 2.3, longest
     # And the local rungs together are worth less than one first-round State dual.
     assert road["Areas"] + road["Sectionals"] + road["Wards"] < coef.STATE_ENTRY
     # The recovery rungs are priced BELOW the rounds they are a second chance at.
@@ -131,16 +127,25 @@ def test_making_state_outscores_every_road_without_it():
     inside the tournament. Everything above it measures what a program did after
     arriving, which is why a Parastate exit still sits far below one bracket win."""
     road = coef.road_points()
-    longest = (road["Areas"] + road["Sectionals"] + road["Wards"]
-               + road["Super Regionals"] + road["Semi-Conference"]
-               + road["Conference"] + road["State Specials"] + road["Metastate"])
-    assert longest < coef.STATE_PARASTATE, (longest, coef.STATE_PARASTATE)
-    # ‼️ The bound is GENEROUS on purpose: that chain ENDS in qualification (the
-    # Conference's berth round is in it), so no program that missed State can even
-    # reach it. The inequality has to hold against the unreachable case, since a
-    # schedule that only worked for the reachable one would be one rung-price away
-    # from breaking silently.
+    # ‼️ ENUMERATED AS ROUTES, because the ladder IS a route and the wins are
+    # mutually exclusive — a Zonal title, a Semi-State win, a Divisional win and a
+    # won State Special are each a BERTH, so a program that banks one is a
+    # qualifier and leaves this set. The richest route that still ends outside the
+    # State field is a Regionals winner who loses the whole recovery ladder, is
+    # drawn as a Special Challenger, wins that dual and then loses the Special.
+    missed = (road["Areas"] + road["Sectionals"] + road["Wards"]
+              + road["Regionals"] + road["Special Challengers"])
+    assert missed == 1.8, missed
+    assert missed < coef.STATE_PARASTATE, (missed, coef.STATE_PARASTATE)
+    # ‼️ AND NO SINGLE RUNG MAY OUTPRICE THE FLOOR EITHER, so the guarantee cannot
+    # be broken by re-pricing one round without re-deriving the route above.
     assert max(road.values()) < coef.STATE_PARASTATE
+    # The road CEILING over every route, qualifiers included — the clean road, a
+    # Zonal title plus the Epiregional. Under the floor as well, which is what makes
+    # the guarantee robust to a program's route rather than true only on average.
+    ceiling = (road["Areas"] + road["Sectionals"] + road["Wards"]
+               + road["Regionals"] + road["Zonals"] + road["Epiregionals"])
+    assert ceiling == 2.3 and ceiling < coef.STATE_PARASTATE, ceiling
     # And arriving is still worth far less than doing anything once there.
     assert coef.STATE_PARASTATE < coef.STATE_ENTRY < coef.STATE_OCTO
     # The TOC bonus is champions-only, so it can never lift a weaker State finisher

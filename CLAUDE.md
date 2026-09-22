@@ -3657,15 +3657,26 @@ was a school marker, shipped "Baptist HS High School".
     change, so every relative judgement above survives to the bit: recovery below
     the round it answers, the local rungs below one State dual, a Zonal title as
     the road's peak) and the State schedule is lifted by 2, which makes the
-    association's boundary ARITHMETIC: longest legal road chain **2.05**, State
-    floor **3**. The 3 for a Parastate loss is a **QUALIFICATION FLOOR**, not a
+    association's boundary ARITHMETIC: **the most a program can score and MISS
+    State is 1.80; the least it scores having MADE State is 3.** No route closes
+    that, and structurally rather than by arithmetic — **every road win rich enough
+    to push a program higher IS ITSELF A BERTH** (a Zonal title, Semi-State,
+    Divisionals, a won State Special), so banking one makes you a qualifier and
+    takes you out of the comparison. Road ceiling over every route, qualifiers
+    included: **2.30** (the clean Zonal + Epiregional road), also under the floor.
+    The 3 for a Parastate loss is a **QUALIFICATION FLOOR**, not a
     reward for anything done inside the tournament — the points above it measure
     what a program did after arriving. The lower steps also stopped lurching
     (1 · 2 · 8 was one point then six; now +2 · +4 · +5 · +8 · +20 · +10). Pinned
-    by `test_making_state_outscores_every_road_without_it`, which asserts against
-    the UNREACHABLE chain (it ends in qualification, so no non-qualifier can even
-    reach it) — a schedule that only held for the reachable case would be one
-    rung-price from breaking silently.
+    by `test_making_state_outscores_every_road_without_it`.
+    ‼️ **A ROUTE BOUND MUST BE ENUMERATED AS A ROUTE, AND THE FIRST ONE WAS NOT.**
+    That test shipped pinning a hand-assembled 2.05 chain — local rungs + Super
+    Regionals + Semi-Conference + Conference + State Specials + Metastate — which is
+    ILLEGAL: a Wards WINNER cannot enter the Semi-Conference, which takes Ward
+    LOSERS. It was conservative by luck, so the guarantee held without being
+    derived. The naive `sum(road_points().values())` is obviously wrong and gets
+    caught; a plausible chain mixing two sides of the ladder does not. Enumerate
+    routes, and say which ones end in a berth.
     ‼️ **ONE BEST ROAD AWARD WAS CONSIDERED AND REJECTED** (score only a program's
     deepest road accomplishment, ~0-1.5). It needs the coefficient to interpret a
     whole qualification PATH — principal route or recovery, one result chosen —

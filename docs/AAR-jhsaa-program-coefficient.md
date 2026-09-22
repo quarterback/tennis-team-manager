@@ -40,17 +40,36 @@ road-to-state and State-bracket results and nothing else.
   rungs below one State dual, a Zonal title as the road's peak), and no new concept
   is introduced.
 - ‼️ **AND THE BOUNDARY IS NOW ARITHMETIC: MAKING STATE IS WORTH MORE THAN ANY ROAD
-  A PROGRAM CAN WALK WITHOUT IT.** The State schedule is lifted by 2, so the longest
-  legal road chain is **2.05** and the State floor is **3**. The 3 for a Parastate
-  loss is a **qualification floor**, not a reward for anything done inside the
-  tournament — the points above it measure what a program did after arriving, which
-  is why a Parastate exit still sits far below one bracket win. The lower steps
-  stopped lurching at the same time (1 · 2 · 8 was one point and then six; the ladder
-  now rises +2 · +4 · +5 · +8 · +20 · +10).
-  ‼️ The test asserts against the **UNREACHABLE** chain: that path ends in
-  qualification (the Conference's berth round is in it), so no program that missed
-  State can reach 2.05 anyway. Pinning the easy inequality would leave the schedule
-  one rung-price away from breaking silently.
+  A PROGRAM CAN WALK WITHOUT IT (owner rule 2026-09).** The State schedule is lifted
+  by 2, and the two numbers that matter are:
+
+  | | |
+  |---|---:|
+  | most a program can score and **miss** State | **1.80** |
+  | least a program scores having **made** State | **3.00** |
+
+  No route closes that gap, and the reason is structural rather than arithmetic:
+  **every road win rich enough to push a program higher IS ITSELF A BERTH** — a Zonal
+  title, a Semi-State win, a Divisional win, a won State Special — so banking one
+  makes you a qualifier and takes you out of the comparison. The richest route that
+  still ends outside the field is a Regionals winner who loses the entire recovery
+  ladder, is drawn as a Special Challenger, wins that dual and then loses the
+  Special: 1.80. The road CEILING over every route (qualifiers included) is **2.30**,
+  the clean road of a Zonal title plus the Epiregional — also under the floor, which
+  is what makes the guarantee hold per PROGRAM rather than on average.
+  The 3 for a Parastate loss is a **qualification floor**, not a reward for anything
+  done inside the tournament — the points above it measure what a program did after
+  arriving, which is why a Parastate exit still sits far below one bracket win. The
+  lower steps stopped lurching at the same time (1 · 2 · 8 was one point and then
+  six; the ladder now rises +2 · +4 · +5 · +8 · +20 · +10).
+  ‼️ **THE FIRST VERSION OF THIS TEST PINNED AN ILLEGAL CHAIN.** It hand-assembled
+  the local rungs + Super Regionals + Semi-Conference + Conference + State Specials +
+  Metastate for 2.05 and called it the longest assemblable route — but a WARDS winner
+  cannot enter the Semi-Conference, which takes Ward LOSERS. It happened to be
+  conservative, so the guarantee held by luck rather than by derivation. This is the
+  same trap the bullet below names, one level in: the naive SUM is obviously wrong
+  and gets caught, while a plausible-looking chain that mixes two sides of the ladder
+  is not. Enumerate routes, and state which end in a berth.
 - ‼️ **ONE BEST ROAD AWARD WAS CONSIDERED AND REJECTED.** The alternative was to score
   only a program's deepest road accomplishment (Regionals 0.5 · Zonals 1 ·
   Epiregional 1.5 · a recovery qualification 1), which is attractive — it says the
@@ -83,9 +102,9 @@ road-to-state and State-bracket results and nothing else.
 - ‼️ **THE ROAD BOUND IS A LEGAL PATH, never `sum(road_points().values())`.** The
   ladder is a route — Super Regionals takes Regional LOSERS, the Conference takes
   Semi-State losers — so no program can bank both halves and the naive sum (11.6) is
-  a number nobody reaches. The longest chain one program can assemble is 2.05:
-  the local rungs, a Regionals loss into the full recovery run, and the Metastate on
-  a low seed. A test asserting the naive sum was written first and failed, correctly.
+  a number nobody reaches. The richest route is the CLEAN one — the local rungs,
+  Regionals, a Zonal title and the Epiregional, **2.30**. A test asserting the naive
+  sum was written first and failed, correctly.
 - ‼️ **A RUNG WITH NO PRICE SCORES NOTHING AND READS LIKE A PROGRAM THAT NEVER
   PLAYED IT.** The Metastate did exactly that on arrival: not a road unit, and its
   losers are deliberately absent from the State draw's field, so neither half of the
