@@ -218,9 +218,11 @@ _EXPANSION_2052_PLACES = [
     ("Lyle",             "Klickitat", "Columbia Gorge",        "Klickitat County, WA", 45.696, -121.288,   530),
     ("Wishram",          "Klickitat", "Columbia Gorge",        "Klickitat County, WA", 45.658, -120.965,   340),
     # NOTE: shares its name with Jefferson's own Trout Lake (Rimrock County) —
-    # ordinary for towns in different states; setdefault means the prep-network
-    # row wins the place entry, so the WA town may file under the Jefferson one
-    # in the doc until the generator learns to key a town on (name, county).
+    # ordinary for towns in different states. Places are keyed on (name, county)
+    # for exactly this pair: keyed on the name alone the prep-network row won
+    # and the WA program filed under the Jefferson town's coordinates, which is
+    # what put it in a south-central league (owner retcon 2026-09: the program
+    # has always been the Washington school).
     ("Trout Lake",       "Klickitat", "Columbia Gorge",        "Klickitat County, WA", 45.997, -121.528,   630),
     # Jefferson's own addition, filed with its ladder county:
     ("Amelia City",      "Barlowe",   "Boise Frontier",        "Baker County, OR",     44.390, -117.623,  4500),
@@ -242,7 +244,7 @@ def build(m, rows: list[dict], cities: list[dict]) -> str:
         # Boise Frontier / Silver Basin for the split ground.
         name = m.CITY_RENAMES.get(c["name"], c["name"])
         area = m.AREA_RENAMES.get(c["area"], c["area"])
-        place[name] = {
+        place[(name, c.get("county", ""))] = {
             **c,
             "name": name,
             "area": m.split_area(area, c.get("county", ""), name),
@@ -253,12 +255,14 @@ def build(m, rows: list[dict], cities: list[dict]) -> str:
     for name, county, area, realc, lat, lon, pop in (
             _EXPANSION_2046_PLACES + _EXPANSION_2052_PLACES
             + _UNANCHORED_PLACES):
-        place.setdefault(name, {"name": name, "county": county, "area": area,
+        place.setdefault((name, county), {"name": name, "county": county, "area": area,
                                 "real_county": realc, "lat": lat, "lon": lon,
                                 "population": pop})
     by_town = collections.defaultdict(list)
+    # ‼️ Keyed on (city, county), like `place`: a program files under the town in
+    # ITS county, never under a same-named town elsewhere in the state.
     for r in rows:
-        by_town[r["city"]].append(r)
+        by_town[(r["city"], r.get("county", ""))].append(r)
 
     # ‼️ THE TWO AREA SETS MUST AGREE. The association's area names come from
     # AREA_RENAMES over prep-network's, and that table is keyed on prep-network's
@@ -288,7 +292,7 @@ def build(m, rows: list[dict], cities: list[dict]) -> str:
 
     def area_stats(towns):
         pop = sum(t["population"] for t in towns)
-        progs = sum(len(by_town.get(t["name"], ())) for t in towns)
+        progs = sum(len(by_town.get((t["name"], t["county"]), ())) for t in towns)
         la = sum(t["lat"] for t in towns) / len(towns)
         lo = sum(t["lon"] for t in towns) / len(towns)
         counties = sorted({t["county"] for t in towns})
@@ -367,7 +371,7 @@ def build(m, rows: list[dict], cities: list[dict]) -> str:
         counties[c["county"]].append(c)
     for name in sorted(counties):
         ts = counties[name]
-        progs = sum(len(by_town.get(t["name"], ())) for t in ts)
+        progs = sum(len(by_town.get((t["name"], t["county"]), ())) for t in ts)
         w(f"| {name} | {ts[0]['real_county']} | {ts[0]['area']} | "
           f"{sum(t['population'] for t in ts):,} | {len(ts)} | {progs} |\n")
 
@@ -385,7 +389,7 @@ def build(m, rows: list[dict], cities: list[dict]) -> str:
                         key=lambda t: -t["population"])
             w(f"\n### {county} County — {ts[0]['real_county']}\n\n")
             for t in ts:
-                progs = sorted(by_town.get(t["name"], ()), key=lambda r: -r["enrollment"])
+                progs = sorted(by_town.get((t["name"], t["county"]), ()), key=lambda r: -r["enrollment"])
                 head = (f"**{t['name']}** — {t['population']:,} · "
                         f"{t['lat']:.2f}N {abs(t['lon']):.2f}W")
                 if not progs:

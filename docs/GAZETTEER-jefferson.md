@@ -72,7 +72,7 @@ coordinates, not written down by hand.
 
 | Area | Where | Counties | Population | Towns | Tennis programs |
 |---|---|---|---:|---:|---:|
-| **Columbia Gorge** | northwest (45.6N, 120.9W) | 4 | 20,450 | 9 | 9 |
+| **Columbia Gorge** | northwest (45.7N, 121.0W) | 4 | 21,080 | 10 | 10 |
 | **Blue Mountain Country** | northwest (45.2N, 118.2W) | 6 | 114,690 | 28 | 30 |
 | **Boise Frontier** | north (43.9N, 116.9W) | 3 | 1,699,600 | 11 | 56 |
 | **Halbrook Basin** | north (43.6N, 116.8W) | 1 | 1,400,000 | 12 | 49 |
@@ -84,7 +84,7 @@ coordinates, not written down by hand.
 | **Snake River Plain** | east (42.6N, 113.8W) | 3 | 38,660 | 22 | 25 |
 | **Ashbury Metro** | west (42.4N, 123.1W) | 2 | 1,970,000 | 22 | 74 |
 | **Cascade Divide** | west (42.1N, 122.0W) | 5 | 1,010,798 | 28 | 59 |
-| **Juniper Highlands** | west (42.1N, 120.6W) | 2 | 715,733 | 24 | 45 |
+| **Juniper Highlands** | west (42.1N, 120.6W) | 2 | 715,733 | 24 | 44 |
 | **Silver Basin** | east (42.0N, 116.1W) | 2 | 1,377,070 | 26 | 65 |
 | **Bear River Country** | east (42.0N, 111.2W) | 11 | 158,730 | 28 | 30 |
 | **Sebastian Cape** | southwest (41.0N, 124.1W) | 2 | 1,637,000 | 22 | 71 |
@@ -121,7 +121,7 @@ coordinates, not written down by hand.
 | Highgrade | Sierra County, CA | Southern Jefferson | 38,000 | 4 | 4 |
 | Juniper | Modoc County, CA | Juniper Highlands | 227,800 | 12 | 19 |
 | Kernwood | Butte County, CA | Yarrowmere | 419,900 | 12 | 26 |
-| Klickitat | Klickitat County, WA | Columbia Gorge | 1,800 | 4 | 4 |
+| Klickitat | Klickitat County, WA | Columbia Gorge | 2,430 | 5 | 5 |
 | Lake | Lake County, CA | Cascade Divide | 1,300 | 1 | 1 |
 | Laketown | Rich County, UT | Bear River Country | 1,290 | 3 | 3 |
 | Lincoln | Lincoln County, WY | Bear River Country | 4,490 | 4 | 4 |
@@ -136,7 +136,7 @@ coordinates, not written down by hand.
 | Ostrander | Del Norte County, CA | Sebastian Cape | 33,900 | 6 | 6 |
 | Paddock | Glenn County, CA | Yarrowmere | 140,200 | 11 | 13 |
 | Raft | Cassia County, ID | Snake River Plain | 12,650 | 3 | 3 |
-| Rimrock | Lake County, OR | Juniper Highlands | 487,933 | 12 | 26 |
+| Rimrock | Lake County, OR | Juniper Highlands | 487,933 | 12 | 25 |
 | Ruby | Elko County, NV | Silver Basin | 23,700 | 3 | 3 |
 | Sablewood | Trinity County, CA | Gold Valley | 450,804 | 13 | 24 |
 | San Marcos | Humboldt County, CA | Sebastian Cape | 1,603,100 | 16 | 65 |
@@ -167,7 +167,7 @@ class, enrollment, and locality where the school carries one.
 
 ## Columbia Gorge
 
-*Northwest Jefferson · Gilliam, Klickitat, Sherman, Wasco · 20,450 people · 9 tennis programs*
+*Northwest Jefferson · Gilliam, Klickitat, Sherman, Wasco · 21,080 people · 10 tennis programs*
 
 ### Gilliam County — Gilliam County, OR
 
@@ -178,6 +178,8 @@ class, enrollment, and locality where the school carries one.
 
 ### Klickitat County — Klickitat County, WA
 
+- **Trout Lake** — 630 · 46.00N 121.53W
+    - Trout Lake — 1A, 110 · Columbia Gorge District
 - **Glenwood** — 530 · 46.02N 121.29W
     - Glenwood — 1A, 90 · Columbia Gorge District
 - **Lyle** — 530 · 45.70N 121.29W
@@ -1097,7 +1099,7 @@ class, enrollment, and locality where the school carries one.
 
 ## Juniper Highlands
 
-*West Jefferson · Juniper, Rimrock · 715,733 people · 45 tennis programs*
+*West Jefferson · Juniper, Rimrock · 715,733 people · 44 tennis programs*
 
 ### Juniper County — Modoc County, CA
 
@@ -1165,8 +1167,7 @@ class, enrollment, and locality where the school carries one.
 - **Clear Springs** — 14,833 · 43.24N 120.64W
     - Owl Canyon — 3A, 382 · Rim Country League
     - South Rim — 2A, 268 · Valle Vista League
-- **Trout Lake** — 6,800 · 42.19N 120.43W
-    - Trout Lake — 1A, 110 · Columbia Gorge District
+- **Trout Lake** — 6,800 · 42.19N 120.43W · *no tennis programs*
 - **Camas Landing** — 6,200 · 43.36N 121.05W
     - Ostrander Union — 3A, 393 · Rim Country League
 - **Stovepipe** — 2,700 · 42.32N 120.82W
