@@ -52,7 +52,7 @@ POOL_B = ("4A", "3A", "2A", "1A")
 POOL_G = ("Group 1", "Group 2", "Group 3")
 POOLS = {"A": POOL_A, "B": POOL_B, "G": POOL_G}
 #: Finish points per season, by teams alive when eliminated (`jhsaa_state_result`).
-FINISH_POINTS = ((1, 4), (2, 3), (4, 2))
+FINISH_POINTS = ((1, 6), (2, 4), (4, 2))
 MADE_STATE_POINTS = 1
 #: Group territory — the five eastern areas (all but three Group schools sit here).
 GROUP_TERRITORY = ("Kangas", "Silver Basin", "Bear River Country", "Millersylvania",
@@ -181,15 +181,23 @@ def _ladder_pool_for(enrollment: int, rows: list[dict]) -> str:
     return "A" if enrollment >= floor else "B"
 
 
+GROUP_COEFF_SCALE = 1.5
+
+
 def _pool_coeffs(cfg: dict, pool: str, spans: dict) -> tuple[float, float, float]:
-    """(success_pp, futility_floor, futility_pu) for a pool. B and G default to A's
-    numbers scaled by their enrollment span over A's, so one authored pair serves
-    every pool unless the owner sets a pool's own."""
+    """(success_pp, futility_floor, futility_pu) for a pool. B defaults to A's
+    numbers scaled by its enrollment span over A's; G defaults to A's numbers
+    times `GROUP_COEFF_SCALE` — the Group pool's raw span is dominated by
+    Group 1 (~1,500 wide against Group 2/3's ~340-640), so span scaling handed
+    the Groups a coefficient that barely moved anybody. 1.5x makes a title
+    worth roughly the same share of a Group 2/3 band as it is of a mid A-ladder
+    class. An explicit per-pool value from the page wins either way."""
     pp, floor, pu = cfg["success_pp"], cfg["futility_floor"], cfg["futility_pu"]
     if pool == "A":
         return pp, floor, pu
     k = pool.lower()
-    scale = (spans.get(pool) or 1.0) / (spans.get("A") or 1.0)
+    scale = (GROUP_COEFF_SCALE if pool == "G"
+             else (spans.get(pool) or 1.0) / (spans.get("A") or 1.0))
     return (cfg.get(f"success_pp_{k}") if cfg.get(f"success_pp_{k}") is not None else pp * scale,
             floor,
             cfg.get(f"futility_pu_{k}") if cfg.get(f"futility_pu_{k}") is not None else pu * scale)

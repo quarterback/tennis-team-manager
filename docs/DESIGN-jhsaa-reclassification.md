@@ -106,7 +106,7 @@ load; the proposal is built once per cycle and stored.
 From `jhsaa_program_history` over the cycle's four archived seasons:
 
 - **success points** = sum over both genders of per-season finish points
-  (champion 4, finalist 3, semifinalist 2, made State 1 — configuration).
+  (champion 6, finalist 4, semifinalist 2, made State 1 — configuration).
 - **win rate** = combined wins / (wins + losses) over both genders and all
   four seasons. A single-gender sponsor is scored on that gender.
 - `success_adjustment = points × SUCCESS_PER_POINT`
@@ -225,6 +225,11 @@ different from the 9A-5A pool and each is a coefficient, not code.
   scaled by the span ratio (0.41 on the 2086 data): `SUCCESS_PER_POINT` 16.5
   and `FUTILITY_PER_UNIT` 1240, with the same `FUTILITY_FLOOR`. They are stored
   as their own configuration keys, so the owner can set them independently.
+  The Group pool does NOT span-scale (owner rule 2026-09): its raw span is
+  dominated by Group 1 (~1,500 wide against Group 2/3's ~340-640), so the span
+  ratio produced a coefficient that barely moved anybody. Its default is the
+  big pool's numbers × `GROUP_COEFF_SCALE` (1.5 — success 60/pt, futility
+  4,500/unit at the defaults), still overridable per pool on the page.
 - **What the sort means down here.** Small-school enrollment already overlaps
   across three classes (2A 86-361 against 1A 58-311), so enrollment barely
   orders the bottom of the pool and results do most of the ordering. That is

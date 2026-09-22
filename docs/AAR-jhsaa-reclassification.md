@@ -16,7 +16,7 @@ Owner spec: `docs/DESIGN-jhsaa-reclassification.md`. Models and data:
   is committed or dismissed — the fall-portal pattern. "Run reclassification
   now" opens the same hold off-cycle.
 - **The score.** One fold per archived season, both genders, school-level:
-  finish points off the State bracket (champion 4, finalist 3, semifinalist 2,
+  finish points off the State bracket (champion 6, finalist 4, semifinalist 2,
   made State 1) and the combined record off the standings rows. Never a
   per-school read of the archive (the title-board rule).
 - **The passes.** Geography first: a Group school outside Group territory
