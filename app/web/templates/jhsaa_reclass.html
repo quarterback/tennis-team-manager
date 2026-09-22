@@ -54,6 +54,10 @@
           <input class="bl-select" name="group_areas" value="{{ view.config.group_areas|join(', ') }}" style="min-width:320px"></label>
         <label class="bl-field" style="flex-direction:column;align-items:flex-start"><span class="bl-field-label">Approved eastern areas (1A → Groups)</span>
           <input class="bl-select" name="repatriate_areas" value="{{ view.config.repatriate_areas|join(', ') }}" style="min-width:260px"></label>
+        <label class="bl-field" style="flex-direction:column;align-items:flex-start"><span class="bl-field-label">Group-joining areas (every class → Groups)</span>
+          <input class="bl-select" name="join_areas" value="{{ view.config.join_areas|join(', ') }}" style="min-width:260px"></label>
+        <label class="bl-field" style="flex-direction:column;align-items:flex-start"><span class="bl-field-label">Named joiners (schools → Groups)</span>
+          <input class="bl-select" name="join_schools" value="{{ view.config.join_schools|join(', ') }}" style="min-width:200px"></label>
         <button class="bl-btn" type="submit">Save{% if view.pending %} &amp; rebuild{% endif %}</button>
       </form>
     </details>

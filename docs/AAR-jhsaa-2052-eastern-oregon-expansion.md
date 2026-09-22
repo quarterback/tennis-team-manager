@@ -69,9 +69,18 @@ JEFFERSON city on the real Amelia City, OR ghost-town site (44.3903,
   under it, and left behind it would be a dead key aimed at a live school's
   own name. Desert Sky League (2A) runs a member thinner; the Rimrock town of
   Trout Lake keeps its name, school-less, so the state has two towns named
-  Trout Lake — ordinary, though the gazetteer generator keys towns on name
-  alone and will file the WA town under the Jefferson one until it learns
-  (name, county).
+  Trout Lake — ordinary. ‼️ **The generator keys places on (name, county)
+  now (2026-09)** — it keyed on the name alone at first, so the prep-network
+  row for Rimrock's Trout Lake won the entry, the WA program filed under it,
+  and `coords.json` (keyed on the town name, what a school row carries)
+  carried 42.19N 120.43W for a school at 46.00N 121.53W. The districting
+  redraw read that and placed the school in a south-central 1A league, 200+
+  miles from the Gorge schools it belongs with, with nothing raised.
+  `build_jhsaa_coords.py` resolves a duplicated town name to the entry that
+  lists programs beneath it — the file exists to place programs, and the
+  Rimrock town has none. A same-named town in another county is ordinary;
+  a program filing under the wrong one is not, and the invariant is that a
+  program files under the town in ITS county.
 - **Owner-name resolutions** (confirmed in-session): "Ginsburg" = Ruth Bader
   Ginsburg (Group 1), "Talling Crossing" = Tailing Crossing (2A), bare
   "Harmon" = Annes Summit (source `Harmon` — Harmon Siding was already named
@@ -101,10 +110,14 @@ JEFFERSON city on the real Amelia City, OR ghost-town site (44.3903,
   A gender GAINED needs no league redraw (`jhsaa_sponsors.py`'s own rule —
   the league belongs to the school and the rows already carried
   `boys_district`).
-- **Gazetteer doc regeneration is deferred** — `jefferson_gazetteer.py` needs
-  a prep-network clone, unavailable in this session. The script tables are in
-  place; run it (with `jhsaa_name_list.py` and `prep_network_name_map.py`)
-  next time that repo is on disk.
+- **Gazetteer doc regeneration** was deferred at the time (`jefferson_gazetteer.py`
+  needs a prep-network clone) and has since been done; the 2026-09 (name, county)
+  fix above was applied to BOTH committed outputs (`docs/GAZETTEER-jefferson.md`
+  and the root `GAZETTEERjefferson.md` — `_OUTS` writes both so they cannot
+  drift) by patching them to what the generator now emits, again without the
+  clone on disk. `coords.json` was regenerated from the doc. Run the generator
+  (with `jhsaa_name_list.py` and `prep_network_name_map.py`) next time that
+  repo is on disk to confirm the two agree.
 - **Amelia City is in the JF recruit hometown pool** (owner ask, same
   session): one slot in `hometowns.json` `us_states["JF"]` (pop ~4,500 —
   repeats ARE the weighting, one slot per 25k), and in

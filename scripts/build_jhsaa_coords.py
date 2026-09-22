@@ -23,15 +23,31 @@ _LINE = re.compile(r"^- \*\*(?P<town>.+?)\*\* — .*?(?P<lat>\d+\.\d+)([NS]) (?P
 
 
 def build() -> dict:
-    out = {}
+    """{town: [lat, lon]}. The file is keyed on the town NAME because that is what a
+    school row carries, and two towns in the state can share one (Trout Lake, WA
+    and Jefferson's own Trout Lake in Rimrock County). When they do, the entry that
+    lists tennis programs beneath it wins — the coordinate exists to place
+    PROGRAMS, and the other town has none to place."""
+    out: dict = {}
+    progs: dict = {}
+    cur = None
     with open(_DOC, encoding="utf-8") as fh:
-        for line in fh:
-            m = _LINE.match(line.rstrip("\n"))
-            if not m:
+        for raw in fh:
+            line = raw.rstrip("\n")
+            m = _LINE.match(line)
+            if m:
+                cur = m["town"]
+                lat = float(m["lat"]) * (-1 if m.group(3) == "S" else 1)
+                lon = float(m["lon"]) * (-1 if m.group(5) == "W" else 1)
+                n = 0 if "*no tennis programs*" in line else None
+                if cur not in out or (progs.get(cur, 0) == 0 and n is None):
+                    out[cur] = [lat, lon]
+                    progs[cur] = 0
+                elif n is None and progs.get(cur, 0) > 0:
+                    cur = None   # a later duplicate with programs never displaces one that has them
                 continue
-            lat = float(m["lat"]) * (-1 if m.group(3) == "S" else 1)
-            lon = float(m["lon"]) * (-1 if m.group(5) == "W" else 1)
-            out.setdefault(m["town"], [lat, lon])
+            if cur and line.startswith("    - "):
+                progs[cur] = progs.get(cur, 0) + 1
     return out
 
 
