@@ -16,7 +16,7 @@ Owner spec: `docs/DESIGN-jhsaa-reclassification.md`. Models and data:
   is committed or dismissed — the fall-portal pattern. "Run reclassification
   now" opens the same hold off-cycle.
 - **The score.** One fold per archived season, both genders, school-level:
-  finish points off the State bracket (champion 4, finalist 3, semifinalist 2,
+  finish points off the State bracket (champion 6, finalist 4, semifinalist 2,
   made State 1) and the combined record off the standings rows. Never a
   per-school read of the archive (the title-board rule).
 - **The passes.** Geography first: a Group school outside Group territory
@@ -70,11 +70,15 @@ Owner spec: `docs/DESIGN-jhsaa-reclassification.md`. Models and data:
   around leaves that class one seat heavy. Each class's quota is reduced by the
   schools pinned into it before the free rows are dealt, so the bands stay
   equal with edits on top.
-- **The scaled per-pool coefficients read off the live spans.** The design doc
-  quoted 16.5 and 1240 for 4A-1A from the 2086 export; on the seed file the 9A-5A
-  span is wider (a 378-enrollment school sits in 8A), so the derived numbers are
-  13.3 and 1000. They are defaults; the page shows the live values per pool and
-  the owner sets a pool's own to override.
+- **The 4A-1A coefficients read off the live spans; the Group ones do NOT.**
+  The design doc quoted 16.5 and 1240 for 4A-1A from the 2086 export; on the
+  seed file the 9A-5A span is wider (a 378-enrollment school sits in 8A), so
+  the derived numbers are 13.3 and 1000. The Group pool was span-scaled too at
+  first, and its span is dominated by Group 1 (~1,500 wide against Group 2/3's
+  ~340-640), so the derived ~45/pt barely moved anybody where Group schools
+  actually move. It now defaults to the 9A-5A numbers × `GROUP_COEFF_SCALE`
+  (1.5 — 60/pt, 4,500/unit). All are defaults; the page shows the live values
+  per pool and the owner sets a pool's own to override.
 - **The history page was built to stack every cycle in full, and the owner
   saw at once that it would not survive a second one** (~400 moves a cycle,
   every four seasons). The index-plus-one-cycle shape is the section's own

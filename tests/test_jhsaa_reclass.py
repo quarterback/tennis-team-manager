@@ -189,8 +189,8 @@ def test_score_folds_both_genders_into_one_school(monkeypatch, clean_archive):
         conn.close()
     monkeypatch.setattr(wd, "_relabel", lambda obj, *a, **k: obj)
     s = rc.score(w["id"], [0])
-    assert s["Alpha"]["pts"] == 4 + 3 and s["Alpha"]["wins"] == 28 and s["Alpha"]["losses"] == 12
-    assert s["Beta"]["pts"] == 3 + 4
+    assert s["Alpha"]["pts"] == 6 + 4 and s["Alpha"]["wins"] == 28 and s["Alpha"]["losses"] == 12
+    assert s["Beta"]["pts"] == 4 + 6
     assert s["Gamma"]["pts"] == 2 * 2 and s["Delta"]["pts"] == 2 * 2   # semifinalists both
     assert s["Alpha"]["wr"] == pytest.approx(28 / 40)
     assert rc.cycle_years(w["id"], 4) == [0]

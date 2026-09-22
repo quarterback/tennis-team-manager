@@ -46,7 +46,7 @@
       <summary class="bit" style="cursor:pointer">Coefficients</summary>
       <form method="post" action="{{ url_for('jhsaa_reclass_config') }}" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-top:8px">
         <input type="hidden" name="u" value="{{ u }}">
-        {% for key, label in [('cycle','Seasons per cycle'),('success_pp','Success: enrollment per cycle point (9A–5A)'),('futility_floor','Futility floor: win rate below which a school sinks'),('futility_pu','Futility: enrollment per 1.0 of win rate under the floor (9A–5A)'),('success_pp_b','Success (4A-1A, blank = scaled)'),('futility_pu_b','Futility (4A-1A, blank = scaled)'),('success_pp_g','Success (Groups, blank = scaled)'),('futility_pu_g','Futility (Groups, blank = scaled)')] %}
+        {% for key, label in [('cycle','Seasons per cycle'),('success_pp','Success: enrollment per cycle point (9A–5A)'),('futility_floor','Futility floor: win rate below which a school sinks'),('futility_pu','Futility: enrollment per 1.0 of win rate under the floor (9A–5A)'),('success_pp_b','Success (4A-1A, blank = scaled)'),('futility_pu_b','Futility (4A-1A, blank = scaled)'),('success_pp_g','Success (Groups, blank = 1.5× the 9A–5A value)'),('futility_pu_g','Futility (Groups, blank = 1.5× the 9A–5A value)')] %}
         <label class="bl-field" style="flex-direction:column;align-items:flex-start"><span class="bl-field-label">{{ label }}</span>
           <input class="bl-select" name="{{ key }}" value="{{ view.config[key] if view.config[key] is not none else '' }}" style="width:150px"></label>
         {% endfor %}
