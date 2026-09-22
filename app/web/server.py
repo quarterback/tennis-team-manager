@@ -2767,7 +2767,7 @@ def create_app() -> Flask:
         for key in ("cycle", "success_pp", "futility_floor", "futility_pu",
                     "success_pp_b", "futility_pu_b", "success_pp_g", "futility_pu_g"):
             vals[key] = (request.form.get(key) or "").strip()
-        for key in ("group_areas", "repatriate_areas"):
+        for key in ("group_areas", "repatriate_areas", "join_areas", "join_schools"):
             vals[key] = [x.strip() for x in (request.form.get(key) or "").split(",")]
         rc.set_config(vals)
         w = wd.load_world(DEFAULT_SEED)

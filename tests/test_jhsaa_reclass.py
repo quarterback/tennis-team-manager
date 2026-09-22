@@ -122,14 +122,41 @@ def test_the_big_programs_never_return_to_the_groups(scored):
 
 def test_only_approved_eastern_1a_areas_cross_into_the_groups(scored):
     p = _build()
-    crossed = [g for g in p["geo"] if g["pool"] == "G"]
+    cfg = rc.config()
+    join_areas, joiners = set(cfg["join_areas"]), set(cfg["join_schools"])
+    crossed = [g for g in p["geo"] if g["pool"] == "G"
+               and g["area"] not in join_areas and g["school"] not in joiners]
     assert crossed, "the initial reset repatriates the approved areas"
-    approved = set(rc.config()["repatriate_areas"])
+    approved = set(cfg["repatriate_areas"])
     assert all(g["from"] == "1A" and g["area"] in approved for g in crossed)
     # And no other A-ladder school reaches the Group pool.
     for x in p["rows"]:
         if x["pool"] == "G" and rc.pool_of(x["current"]) != "G":
-            assert x["area"] in approved and x["current"] == "1A"
+            assert (x["area"] in join_areas or x["school"] in joiners
+                    or (x["area"] in approved and x["current"] == "1A"))
+
+
+def test_the_oregon_areas_and_the_named_joiners_enter_the_groups(scored):
+    """Owner rule 2026-09: every ladder school in Blue Mountain Country and the
+    Columbia Gorge joins the Groups whatever its class, Canal View joins by name,
+    and Canal View's 44 Boise Frontier ladder neighbours do not."""
+    p = _build()
+    row = {x["school"]: x for x in p["rows"]}
+    cfg = rc.config()
+    for x in p["rows"]:
+        if x["area"] in set(cfg["join_areas"]):
+            assert x["pool"] == "G", x["school"]
+    assert row["Canal View"]["pool"] == "G"
+    reasons = {g["school"]: g["reason"] for g in p["geo"]}
+    assert reasons["Canal View"] == "named joiner"
+    assert any(r == "Group-joining area" for r in reasons.values())
+    others = [x for x in p["rows"] if x["area"] == "Canal View" or
+              (x["area"] == "Boise Frontier" and x["school"] != "Canal View"
+               and rc.pool_of(x["current"]) != "G" and x["current"] != "1A")]
+    assert others and all(x["pool"] != "G" for x in others)
+    # A joiner already inside is not bounced back out on the next cycle.
+    assert not any(g["school"] == "Canal View" and g["reason"] == "outside Group territory"
+                   for g in p["geo"])
 
 
 def test_an_owner_addition_is_placed_by_the_sort(scored):

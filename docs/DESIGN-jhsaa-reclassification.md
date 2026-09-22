@@ -121,7 +121,11 @@ the page, exported with the proposal). Defaults used in the dry run below:
    (`Kangas`, `Silver Basin`, `Bear River Country`, `Millersylvania`,
    `Snake River Plain`) plus the owner's approved eastern expansion areas. A
    Group school outside it is proposed OUT, into the A ladder's normal
-   classification. Ladder schools are NEVER proposed into the Groups on
+   classification. Two owner join tables (2026-09) sit beside it: every ladder
+   school in `GROUP_JOIN_AREAS` (Blue Mountain Country, Columbia Gorge) is
+   proposed INTO the Groups whatever its class, and `GROUP_JOIN_SCHOOLS`
+   (Canal View) names one-off joiners; both areas then count as territory.
+   Otherwise ladder schools are NEVER proposed into the Groups on
    territory alone — the 2046 realignment moved the big programs out and they
    stay out; the only inbound path is the owner-approved 1A repatriation. The initial-reset 1A repatriation moves whole areas/clusters
    from the approved list until 1A and the three Groups are comparable.

@@ -3932,7 +3932,11 @@ was a school marker, shipped "Baptist HS High School".
   `/jhsaa/reclassification`; "Run now" opens it off-cycle. Geography first
   (Group territory is the five eastern areas + the approved 1A repatriation
   areas; ladder schools NEVER enter the Groups on territory — Baptist, Mater Dei
-  and Minnesota City were moved out in 2046 and stay out), then ONE sort per pool
+  and Minnesota City were moved out in 2046 and stay out — EXCEPT the owner's
+  two join tables (2026-09): `GROUP_JOIN_AREAS` (Blue Mountain Country, Columbia
+  Gorge — every ladder class joins) and `GROUP_JOIN_SCHOOLS` (Canal View by
+  name; its 44 Boise Frontier neighbours stay). Both editable on the page; a
+  joiner's area counts as territory after, so it is never bounced back), then ONE sort per pool
   (9A-5A, 4A-1A, Groups) on `effective_size = enrollment + success − futility`,
   cut into EQUAL bands. **NO one-class-per-cycle guard** (owner: an agent added
   one and it was withdrawn). School-level, both genders, always. A commit moves

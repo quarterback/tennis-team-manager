@@ -7,8 +7,15 @@ One pass, three stages, nothing typed:
   1. GEOGRAPHY. Group membership is territory. A Group school outside Group
      territory re-enters the A ladder; the owner-approved eastern 1A areas
      repatriate into the Groups (the initial reset; idempotent after). Ladder
-     schools NEVER enter the Groups on territory — the 2046 realignment moved the
-     big programs out and they stay out (Baptist, Mater Dei, Minnesota City).
+     schools NEVER enter the Groups on Group territory — the 2046 realignment moved
+     the big programs out and they stay out (Baptist, Mater Dei, Minnesota City).
+     TWO owner exceptions (2026-09): every ladder school in the two Oregon
+     affiliate areas (`GROUP_JOIN_AREAS` — Blue Mountain Country, Columbia Gorge)
+     joins the Groups whatever its class, and `GROUP_JOIN_SCHOOLS` names one-off
+     joiners (Canal View, 9A Boise Frontier — its 44 ladder neighbours stay). Both
+     are tables the owner named, the RECLASSIFY_TO_2A idiom, and both are editable
+     on the page; once inside, a joiner's area counts as territory so the next
+     cycle does not bounce it back out.
   2. SORT. Three pools — 9A-5A, 4A-1A, Group 1-3 — each sorted ONCE on
      `effective_size = enrollment + success_adjustment - futility_adjustment`
      and cut into equal bands. There is NO one-class-per-cycle guard (owner): a
@@ -61,6 +68,14 @@ GROUP_TERRITORY = ("Kangas", "Silver Basin", "Bear River Country", "Millersylvan
                    "Snake River Plain")
 #: Owner-approved eastern expansion areas for the 1A repatriation (2026-09).
 REPATRIATE_AREAS = ("Boise Frontier", "Blue Mountain Country")
+#: Areas whose EVERY ladder school joins the Groups (owner rule 2026-09): the two
+#: Oregon affiliate areas, 26 schools from 6A to 1A, which sit on top of the
+#: Columbia Range and Inland Empire leagues and have no A-ladder league nearby.
+GROUP_JOIN_AREAS = ("Blue Mountain Country", "Columbia Gorge")
+#: Named one-off joiners (owner rule 2026-09). Canal View is a 9A in Boise
+#: Frontier beside Group 1's Fort Valois pocket; the area's other 44 ladder
+#: schools are not asked to move, so this is a name, not an area.
+GROUP_JOIN_SCHOOLS = ("Canal View",)
 DEFAULTS = {"success_pp": 40.0, "futility_floor": 0.35, "futility_pu": 3000.0}
 _CFG = "jhsaa_reclass_"
 
@@ -78,6 +93,8 @@ def config() -> dict:
         "futility_pu": wc.get_float(_CFG + "futility_pu", DEFAULTS["futility_pu"], hi=1e6),
         "group_areas": wc.get_json(_CFG + "group_areas", list(GROUP_TERRITORY)),
         "repatriate_areas": wc.get_json(_CFG + "repatriate_areas", list(REPATRIATE_AREAS)),
+        "join_areas": wc.get_json(_CFG + "join_areas", list(GROUP_JOIN_AREAS)),
+        "join_schools": wc.get_json(_CFG + "join_schools", list(GROUP_JOIN_SCHOOLS)),
     }
     for pool in ("b", "g"):
         for key in ("success_pp", "futility_pu"):
@@ -92,7 +109,7 @@ def config() -> dict:
 def set_config(values: dict) -> None:
     from . import worldconfig as wc
     for key, val in values.items():
-        if key in ("group_areas", "repatriate_areas"):
+        if key in ("group_areas", "repatriate_areas", "join_areas", "join_schools"):
             wc.set(_CFG + key, json.dumps([v for v in val if v]))
         else:
             wc.set(_CFG + key, "" if val in (None, "") else str(val))
@@ -228,8 +245,10 @@ def build_proposal(world_id: int, years: list[int], cfg: dict | None = None,
     rows = _live_rows()
     sc = score(world_id, years)
     by_name = {r["name"]: r for r in rows}
-    territory = set(cfg["group_areas"]) | set(cfg["repatriate_areas"])
-    decreed = {r["name"] for r in rows if r.get("talent")}
+    join_areas = set(cfg.get("join_areas") or ())
+    join_schools = set(cfg.get("join_schools") or ())
+    territory = set(cfg["group_areas"]) | set(cfg["repatriate_areas"]) | join_areas
+    decreed = {r["name"] for r in rows if r.get("talent")} - join_schools
 
     # --- 1. geography: which ladder each school is on for this cycle ---------
     pool_for: dict[str, str] = {}
@@ -239,11 +258,19 @@ def build_proposal(world_id: int, years: list[int], cfg: dict | None = None,
         p = pool_of(cls)
         if p is None or r["name"] in decreed:
             continue
-        if p == "G" and r["area"] not in territory:
+        if p == "G" and r["area"] not in territory and r["name"] not in join_schools:
             dest = _ladder_pool_for(int(r["enrollment"]), rows)
             pool_for[r["name"]] = dest
             geo.append({"school": r["name"], "area": r["area"], "from": cls,
                         "pool": dest, "reason": "outside Group territory"})
+        elif p != "G" and r["name"] in join_schools:
+            pool_for[r["name"]] = "G"
+            geo.append({"school": r["name"], "area": r["area"], "from": cls,
+                        "pool": "G", "reason": "named joiner"})
+        elif p != "G" and r["area"] in join_areas:
+            pool_for[r["name"]] = "G"
+            geo.append({"school": r["name"], "area": r["area"], "from": cls,
+                        "pool": "G", "reason": "Group-joining area"})
         elif cls == "1A" and r["area"] in set(cfg["repatriate_areas"]):
             pool_for[r["name"]] = "G"
             geo.append({"school": r["name"], "area": r["area"], "from": cls,
