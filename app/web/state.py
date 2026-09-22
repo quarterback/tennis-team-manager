@@ -3652,6 +3652,7 @@ _JH_PHASE_LABEL = {"showcase_pod": "Showcase (Pod)", "showcase_tiered": "Showcas
                    "semi_conference": "Semi-Conference", "divisional": "Divisionals",
                    "semi_state": "Semi-State", "super_regional": "Super Regional",
                    "epiregional": "Epiregional",
+                   "maxiregional": "Maxiregional",
                    "zonal": "Zonal", "regional": "Regional", "ward": "Ward",
                    "sectional": "Sectional"}
 
@@ -5140,7 +5141,15 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
     # their fold tops the list. Its "byes" are the dry-pool direct admits.
     # (The Special Challengers bridge round is PLAYED before the Specials, so in
     # this reverse-chronological fold it sits just under them.)
-    for key in ("state_special", "special_challenger", "conference",
+    # ‼️ THE MAXIREGIONALS TOP THE LIST — they are the last duals played before the
+    # draw (after the Specials have filled the road's final berths), so in this
+    # reverse-chronological fold they sit above everything. They render as a STAGE
+    # and not a tree column for the Epiregional's reason: eight duals feeding a
+    # separate Parastate field is not a halving, and `_bracket_canvas` links
+    # columns on exactly that halving. Absent in 1A/Group 3, which do not play
+    # them, and in every season archived before they existed — the key reads None
+    # and the fold is skipped.
+    for key in (jh.MAXI_PHASE, "state_special", "special_challenger", "conference",
                 "semi_conference", "divisional",
                 "semi_state", "super_regional"):
         d = (arc.get(key) or {}).get(grp) or {}
@@ -5495,6 +5504,11 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     # guardrail); it was only ever wrong as a label on a match.
     _KIND = {"showcase_pod": "SHOWCASE", "showcase_tiered": "SHOWCASE",
              "toc": "TOC", "state": "STATE",
+             # The at-larges' first qualifying layer (owner rule 2026-09), and
+             # its own chip because it is its own event: a maxi exit is NOT a
+             # State appearance, so a STATE chip on the row would say the
+             # opposite of what the ledger says.
+             "maxiregional": "MAXI",
              "state_special": "STATE SPECIAL",
              # The bridge round's chip (owner, 2026-08): CHALLENGE on the
              # season-ending doc; "Special Challengers" is the formal heading.

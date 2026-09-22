@@ -215,9 +215,16 @@ def test_a_specials_loser_finishes_at_specials():
         == jh.STATE_SPECIAL_FINISH == "Specials"
 
 
-def test_the_road_ladder_ranks_it_deepest():
+def test_the_road_ladder_ranks_it_deepest_of_the_ROAD():
+    """The Specials are the road's last rung, and were the deepest rung on this
+    ladder full stop until the MAXIREGIONALS landed (owner rule 2026-09). The
+    maxis are not the road — they are the State event's own first qualifying
+    layer — but a maxi exit is a pre-State exit (`made_state` False), so it ranks
+    on this ladder too and caps it. The Specials keep every relationship they had
+    with the rungs below them."""
     ladder = wd.jh_road_ladder()
-    assert ladder[-1] == jh.STATE_SPECIAL_FINISH
+    assert ladder[-1] == jh.MAXI_FINISH
+    assert ladder[-2] == jh.STATE_SPECIAL_FINISH
     # The Special Challengers bridge round sits between the two (owner 2026-08).
-    assert ladder[-2] == jh.SPECIAL_CHALLENGER_FINISH
-    assert ladder[-3] == jh.CONFERENCE_NAME
+    assert ladder[-3] == jh.SPECIAL_CHALLENGER_FINISH
+    assert ladder[-4] == jh.CONFERENCE_NAME

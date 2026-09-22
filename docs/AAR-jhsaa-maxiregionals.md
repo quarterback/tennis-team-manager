@@ -1,0 +1,136 @@
+# AAR — the Maxiregionals: a second qualifying layer in front of the Parastate
+
+Owner rule 2026-09. `app/jhsaa.py` (`MAXI_GROUPS`, `run_state_parastate(maxi=)`),
+`app/world.py` (the archive key and the finish walk), `app/web/state.py` (the stage
+and the chip), `tests/test_jhsaa_maxiregionals.py`.
+
+## What was wrong
+
+The Parastate put the `2 × bids` lowest seeds together and paired them high-low. In
+a 48-team class that is seeds 17-48, so the field's seeds 17-24 drew seeds 41-48 —
+and **won 279 of 288 of those duals over six seasons**. A round the top half cannot
+lose is not a qualifying round; it is a formality that costs the weakest eight teams
+their only dual of the tournament.
+
+## The shape
+
+The maxis take the bottom `bids` seeds and pair them among **themselves** first. The
+`bids / 2` winners then meet the next `bids / 2` seeds in the Parastate, and the
+survivors join the byes in the State draw.
+
+| Class | Bids | Maxis | Parastate | State draw |
+|---|---:|---|---|---|
+| 9A, 8A, Group 1 | 16 | seeds 33-48, 8 duals | 25-32 + 8 winners | 24 byes + 8 |
+| 7A-2A, Group 2 | 8 | seeds 33-40, 4 duals | 29-32 + 4 winners | 28 byes + 4 |
+| 1A, Group 3 | 8 | *none* | 17-32, 8 duals | 16 byes + 8 |
+
+**The arithmetic closes on the road field at every allocation**: the draw is
+`(road − bids / 2) + bids / 2 = road`, so the State bracket is the shape that class
+already played and no bracket geometry changed. Pinned as a pure fold over the
+tables, so it needs no season and cannot rot behind a fixture.
+
+Nobody who makes the field today is shut out and the same number of teams reach the
+draw. What changed is who plays whom: the weakest seeds play each other, and seeds
+17-24 (a 48) or 25-28 (a 40) bye to the State draw.
+
+## Decisions
+
+- **1A and Group 3 are OUT** (owner). They crown from 32 off a 24-team road and keep
+  the single-Parastate progression, their at-larges entering the Parastate directly.
+  `MAXI_GROUPS` is a TUPLE and not a derivation off the road size — "road == 32"
+  happens to separate the two today and would silently enrol 1A the day its road
+  moved. Membership is the whole change, the `WIDE_GROUPS` idiom.
+- **The name** is Maxiregionals, shortened **maxis** in prose exactly as the
+  Epiregionals are epis and the Super Regionals supers. A draft flagged the fourth
+  "-regional" round as colliding with Regionals / Super Regionals / Epiregionals;
+  the owner's shortening convention is what distinguishes them and the concern was
+  withdrawn.
+- **A maxi exit is NOT a State appearance** (owner). This is the one substantive
+  break with the Parastate, where every entrant *is* a State participant because the
+  Parastate is a round OF the State event.
+
+## ‼️ The finish is bought by the PHASE, and nothing else
+
+`world.jhsaa_state_result` reports `made_state` off membership of the draw's
+`field`. So the only way to keep a maxi loser out of the State record is to keep it
+out of that list: the maxis are their own **phase** (`maxiregional`, in `POSTSEASON`
+directly in front of `state`) with their own archive key, and `run_state_parastate`
+returns a `field` of everyone who started at the Parastate or later.
+
+Membership of `POSTSEASON` then carries the postseason dual format, the lineup
+freeze, the class's own calendar lane and exclusion from TOSS, exactly as it does for
+every other rung — the `special_challenger` idiom.
+
+The finish walk tries the maxis **before the Specials**, because a Specials WINNER is
+a State qualifier and can be seeded into the maxis; tried later, its year would read
+as ending a round earlier than it did. A maxi WINNER is in the draw's field and never
+reaches the walk at all.
+
+**Consequence, accepted:** a program's career state-trip total folds seasons counted
+two ways — an honest record of a rule that changed, the way an NCAA expansion is.
+Seasons archived before the maxis read unchanged (`.get` on the key, never a
+migration).
+
+## ‼️ Two degradation faults, found by a small world
+
+Both were invisible at full size and would have shipped.
+
+1. **The maxis ate the bye lines.** Sized `min(maxi, len(field))`, a short field (a
+   fixture's two districts a class, a save whose road ran dry) put its WHOLE field
+   into the maxis: every team played one, half were out before the Parastate, and the
+   survivors all byed into a draw the association never plays. The round now convenes
+   only when the field seats the byes AND the maxi block (`len(field) − maxi >= byes`).
+2. **And skipping them broke the Parastate.** `byes` is passed as `road − bids / 2`,
+   which is only right *because* the maxis are about to halve the at-large block. Skip
+   them and that bye line is too high by exactly the half they would have removed, so
+   the Parastate ran out of entrants and quietly stopped convening too — the round
+   vanished from a short world's archive and its bracket page stopped describing a
+   Parastate at all. The allocation is handed back (`byes − maxi // 2`) whenever the
+   maxis do not convene, which makes a short field **byte-identical** to the
+   pre-change call. Pinned.
+
+The lesson is the section's own, running the other way: usually the path a real save
+takes every season is the one a small world never reaches. Here a small world reaches
+a path a real save never does, and a guard written only for the full-size shape let
+it through.
+
+## ‼️ The divisibility guard forbids the fault, not the shapes played
+
+A first draft asserted `bids % 4 == 0` on a muddled reading of the halving. The
+arithmetic needs `bids` **even** and nothing more: an ODD allocation is what stops
+`bids / 2` being a whole number of seeds and sends both rounds down the degraded
+odd-field path. 16 and 8 are even and so is the 4 Group 3 ran through 2079, so `% 4`
+would have blocked a shape the association has actually played — the
+`check_rename_keys` lesson, a guard written from the incident rather than the fault.
+
+## Rendering
+
+The maxis are a **stage**, the top one on the bracket page's reverse-chronological
+fold, above the Specials. Never a tree column: eight duals feeding a separate
+Parastate field is not a halving and `_bracket_canvas` links columns on exactly that
+halving — the Epiregional's reason and the JV qualifying round's lesson. Their chip
+is **MAXI** and not STATE, because a STATE chip would say the opposite of what the
+ledger says. The Match Center names the phase rather than falling through to
+"Invitational".
+
+‼️ The render is covered by a HAND-ARCHIVED season, because the real-season fixture is
+a small world where the maxis correctly do not convene — a round nothing renders is
+indistinguishable from a round that was not played.
+
+## Open: the program coefficient prices a maxi appearance at ZERO
+
+`jhsaa_coefficient` scores ROAD unit wins and STATE finishes only. A maxi exit is
+neither: not in the State bracket's field, and not a road unit anybody wins. So a
+team that qualified for the field and lost in the maxis now rates identically to a
+team that missed the postseason entirely — roughly 8 programs a class a season in a
+48, 4 in a 40. Deliberately NOT invented here: a coefficient price is a decision, and
+the owner has not set one. Raise it if the Suggested tier starts reading low for the
+bottom of a big class.
+
+## Not done, by design
+
+- **No title-board column.** A maxi is not a unit anybody wins, so there is no title
+  to count; `jhsaa_title_stages` is untouched.
+- **No unit names or statewide numbering.** The Specials and the Challenges number
+  their duals because a program's ledger names the unit it played in; a maxi dual is
+  a qualifying pairing inside one classification's own field.

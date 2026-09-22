@@ -263,6 +263,75 @@ ATLARGE_GROUPS = tuple(AT_LARGE_BIDS)
 #: path from a Parastate slot to a main-draw slot the positional canvas could
 #: invent).
 PARASTATE_NAME = "Parastate"
+#: ‼️ THE MAXIREGIONALS — a SECOND qualifying layer in front of the Parastate
+#: (owner rule 2026-09, `docs/AAR-jhsaa-maxiregionals.md`). Shortened "maxis" in
+#: prose, the way the Epiregionals are "epis" and the Super Regionals "supers".
+#:
+#: The Parastate put the `2 × bids` lowest seeds together, so in a 48 the field's
+#: seeds 17-24 drew seeds 41-48 and won 279 of 288 of those duals over six
+#: seasons — a round the top half of the Parastate could not lose. The maxis take
+#: the bottom `bids` seeds and pair them among THEMSELVES first; the `bids / 2`
+#: winners then meet the next `bids / 2` seeds in the Parastate. Nobody who makes
+#: the field today is shut out and the State draw is the same size; what changes
+#: is that the weakest seeds now play each other rather than the middle of the
+#: field, and seeds 17-24 (a 48) or 25-28 (a 40) bye to the State draw.
+#:
+#: ‼️ MEMBERSHIP IS THE WHOLE CHANGE (`WIDE_GROUPS` idiom), and 1A/Group 3 are
+#: OUT by owner decision: they crown from 32 off a 24-team road and keep the
+#: single-Parastate progression they already play, their at-larges entering the
+#: Parastate directly. It is a TUPLE and not a derivation off the road size —
+#: "road == 32" happens to separate the two today, and would silently enrol 1A
+#: the day its road moved.
+MAXI_GROUPS = ("9A", "8A", "7A", "6A", "5A", "4A", "3A", "2A",
+               "Group 1", "Group 2")
+#: The stage, PLURAL and with no "Round" — the `DIVISIONAL_NAME` rule, matching
+#: every other stage heading. `MAXI_UNIT` is the singular per-dual unit.
+MAXI_NAME = "Maxiregionals"
+MAXI_UNIT = "Maxiregional"
+#: A maxi loser's finish. ‼️ AND IT IS NOT A STATE APPEARANCE (owner rule
+#: 2026-09): the maxis are their own PHASE with their own archive key, so a team
+#: knocked out there is not in the State draw's `field` and
+#: `world.jhsaa_state_result` reports `made_state` False for it. That is the one
+#: substantive break with the Parastate, where every entrant is a State
+#: participant because the Parastate is a round OF the State event. A program's
+#: career state-trip total therefore folds seasons counted two ways, which is an
+#: honest record of a rule that changed rather than a fault.
+MAXI_FINISH = MAXI_NAME
+MAXI_PHASE = "maxiregional"
+
+
+def maxi_bids(group: str | None) -> int:
+    """How many of the field's LOWEST seeds play the maxis — the group's whole
+    at-large allocation, or 0 where the class does not play them. The `bids / 2`
+    winners go on to the Parastate."""
+    return AT_LARGE_BIDS.get(group or "", 0) if group in MAXI_GROUPS else 0
+
+
+def parastate_byes(group: str | None) -> int:
+    """How many top seeds sit the Parastate out. Without the maxis that is the
+    road less the bids (1A: 24 − 8 = 16). With them the maxis have already halved
+    the at-large allocation, so only `bids / 2` road seeds are drawn into the
+    Parastate and the byes rise to `road − bids / 2` (a 48: 32 − 8 = 24; a 40:
+    32 − 4 = 28). Off the TABLE size, never a played field's length."""
+    bids = AT_LARGE_BIDS.get(group or "", 0)
+    return state_field_size(group) - (bids // 2 if group in MAXI_GROUPS else bids)
+
+
+#: ‼️ THE HALVING NEEDS `bids` EVEN, and nothing more. The maxis pair `bids`
+#: teams into `bids / 2` winners; the Parastate pairs those against the next
+#: `bids / 2` seeds, so it is `bids` teams into `bids / 2`; and the State draw is
+#: `(road − bids / 2) + bids / 2 = road` at every allocation. An ODD allocation
+#: is what breaks it — `bids / 2` stops being a whole number of seeds and both
+#: rounds advance a middle team unplayed through the degraded path. 16 and 8 are
+#: even and so is the 4 Group 3 ran through 2079, so this forbids the fault
+#: rather than the shapes the association has actually played. Asserted here so a
+#: future table edit fails at import rather than in a played season.
+assert all(AT_LARGE_BIDS[g] % 2 == 0 for g in MAXI_GROUPS), \
+    "a Maxiregional class needs an EVEN at-large allocation: %r" % (
+        {g: AT_LARGE_BIDS[g] for g in MAXI_GROUPS if AT_LARGE_BIDS[g] % 2},)
+assert all(g in ATLARGE_GROUPS for g in MAXI_GROUPS), \
+    "a Maxiregional class must have at-large bids: %r" % (
+        tuple(g for g in MAXI_GROUPS if g not in ATLARGE_GROUPS),)
 
 
 def parastate_summary() -> list[tuple[str, list[str], int, int]]:
@@ -332,9 +401,17 @@ EARLY_FORMAT_PHASE = "early"
 # the State draw's first four bye lines. It sits right after "zonal" so the calendar
 # lane, the lineup freeze, the dual shape and the TOSS exclusion all fall out of
 # membership, exactly as they do for every other rung.
+# "maxiregional" is the at-larges' first layer (owner rule 2026-09) and sits
+# directly in front of "state", which is where it is played: after the Specials
+# have filled the last road berths and the whole field is seeded. Membership
+# gives it the postseason dual shape, the lineup freeze, its own calendar lane
+# and exclusion from TOSS, exactly as it does for every other rung — and it is a
+# phase at all because that is the only thing that keeps a maxi loser out of the
+# State draw's field (see `MAXI_FINISH`).
 POSTSEASON = ("sectional", "ward", "regional", "zonal", "epiregional",
               "super_regional", "semi_state", "divisional", "semi_conference",
-              "conference", "special_challenger", "state_special", "state", "toc")
+              "conference", "special_challenger", "state_special",
+              "maxiregional", "state", "toc")
 
 # The mid-season MATCH SHOWCASES (owner spec 2027-08) — see the INVITATIONALS section
 # below for the scheduling rules. Two phases rather than one, because the phase is the
@@ -8183,7 +8260,11 @@ def rating_duals(teams, prestate: bool = False) -> list[dict]:
     shape does not make it less real — it is exactly the cross-league edge an
     opponent-strength rating is starved of. `_flight_score` normalises per dual, so the
     1S/4D shape sits in the same table without being over- or under-counted."""
-    drop = ("state", "toc") if prestate else POSTSEASON
+    # The maxis ride with "state" in the prestate drop: they are the State
+    # event's own qualifying, so they must never feed a recompute that seeds it.
+    # (No recompute runs after them today — they are the last thing before the
+    # draw — so this costs nothing and stops a reordering from mattering.)
+    drop = ("state", "toc", MAXI_PHASE) if prestate else POSTSEASON
     if not SHOWCASE_RATED:
         drop = tuple(drop) + SHOWCASE
     out = []
@@ -9931,7 +10012,8 @@ def run_state(field: list[TeamSeason], *, seed: int, champions: int = 8) -> dict
             "field": [t.school.name for t in field]}
 
 
-def run_state_parastate(seeds: list[TeamSeason], *, byes: int, seed: int) -> dict:
+def run_state_parastate(seeds: list[TeamSeason], *, byes: int, seed: int,
+                        maxi: int = 0) -> dict:
     """The Parastate State event for `ATLARGE_GROUPS` (owner spec 2026-09;
     resized 2026-09 — 48 for 8A/9A/Group 1 — and expanded 2026-09 to 40 for
     7A/6A/5A/4A/3A/2A/1A).
@@ -9958,13 +10040,71 @@ def run_state_parastate(seeds: list[TeamSeason], *, byes: int, seed: int) -> dic
     makes `state._jh_split_state` draw it as its own tree — there is no bracket
     path from a Parastate slot to a main-draw slot.
 
+    ‼️ `maxi` PUTS A SECOND QUALIFYING LAYER IN FRONT OF ALL THAT (owner rule
+    2026-09, `MAXI_GROUPS`): the `maxi` LOWEST seeds pair among themselves
+    high-low first, and only the `maxi / 2` winners join the field the Parastate
+    is then drawn from. Winners RETAIN their seed here too, so the Parastate's
+    high-low pairing sees the same seed order it always did. Callers pass
+    `maxi=jhsaa.maxi_bids(group)` and `byes=jhsaa.parastate_byes(group)`, which
+    already account for each other — a 48 plays 16 in the maxis and byes 24 into
+    the Parastate, a 40 plays 8 and byes 28, and 1A passes `maxi=0` and byes 16
+    exactly as before.
+
+    ‼️ THE MAXI ROUND IS RETURNED SEPARATELY, under `"maxi"`, and its losers are
+    NOT in the returned `field`. That is deliberate and is the whole of "a maxi
+    exit is not a State appearance": `world.jhsaa_state_result` reports
+    `made_state` off membership of `field`, so the only way to keep a maxi loser
+    out of the State record is to keep it out of the State draw's field. The
+    round is archived under its own group key and its duals carry `MAXI_PHASE`,
+    so the ledger, the chip and the finish all read it as its own event.
+
     Short fields (tiny worlds, a road that ran dry) degrade generically: the
     first `byes` seeds bye, the rest fold high-low, an odd team advances
     unplayed. The table shapes are the only ones the association plays at full
     size."""
     rng = random.Random(seed)
-    n_byes = max(0, min(byes, len(seeds)))
-    byes_, rest = list(seeds[:n_byes]), list(seeds[n_byes:])
+    field = list(seeds)
+    maxi_arc = None
+    # ‼️ THE MAXIS NEVER EAT INTO THE BYE LINES. `min(maxi, len(field))` would, and
+    # in a small world (a test fixture's two districts a class, a save whose road
+    # ran dry) it took the WHOLE field: every team played a maxi, half of them
+    # were out before the Parastate, and the survivors all byed into a draw the
+    # association never plays. A field too short to seat the byes AND the maxi
+    # block plays no maxis at all and degrades exactly as it did before they
+    # existed — which is also what keeps a small-world fixture byte-identical.
+    # ‼️ AND IF THEY DO NOT CONVENE, THE PARASTATE TAKES THE WHOLE ALLOCATION
+    # BACK. `byes` is passed as `road − bids / 2`, which is only right BECAUSE the
+    # maxis are about to halve the at-large block; skip them and that bye line is
+    # too high by exactly the half they would have removed, so the Parastate runs
+    # out of entrants and quietly does not convene either — the round vanished
+    # from a short world's archive and its bracket page stopped describing a
+    # Parastate at all.
+    if maxi > 0 and len(field) - maxi < byes:
+        byes = max(0, byes - maxi // 2)
+    elif maxi > 0:
+        n_maxi = maxi
+        head, tail = field[:len(field) - n_maxi], field[len(field) - n_maxi:]
+        maxi_games, through = [], []
+        for i in range(len(tail) // 2):
+            a, b = tail[i], tail[len(tail) - 1 - i]
+            res = play_dual(a, b, seed=rng.randrange(1 << 30), phase=MAXI_PHASE)
+            win = a if res.winner == 0 else b
+            maxi_games.append({"home": a.school.name, "away": b.school.name,
+                               "home_points": res.home_points,
+                               "away_points": res.away_points,
+                               "winner": win.school.name})
+            through.append(win)
+        if len(tail) % 2:                          # degraded odd field only
+            through.append(tail[len(tail) // 2])
+        # Winners keep their SEED, so the survivors re-enter in the order they
+        # were seeded in rather than in the order the duals were played.
+        rank = {t.school.name: i for i, t in enumerate(field)}
+        field = head + sorted(through, key=lambda t: rank[t.school.name])
+        maxi_arc = {"field": [t.school.name for t in tail],
+                    "rounds": [maxi_games], "round_names": [MAXI_NAME],
+                    "advanced": [t.school.name for t in through]}
+    n_byes = max(0, min(byes, len(field)))
+    byes_, rest = list(field[:n_byes]), list(field[n_byes:])
     para_games = []
     alive = set()
     for i in range(len(rest) // 2):
@@ -9983,9 +10123,14 @@ def run_state_parastate(seeds: list[TeamSeason], *, byes: int, seed: int) -> dic
                       seed=rng.randrange(1 << 30))
     rounds = ([para_games] if para_games else []) + inner["rounds"]
     names = ([PARASTATE_NAME] if para_games else []) + list(inner["round_names"])
-    return {"champion": inner["champion"], "rounds": rounds,
-            "round_names": names,
-            "field": [t.school.name for t in seeds]}
+    # `field` is everyone who started at the Parastate or later — the whole
+    # seeding when no maxis were played, and the post-maxi field when they were.
+    out = {"champion": inner["champion"], "rounds": rounds,
+           "round_names": names,
+           "field": [t.school.name for t in field]}
+    if maxi_arc is not None:
+        out["maxi"] = maxi_arc
+    return out
 
 
 def run_state_48(seeds: list[TeamSeason], *, seed: int) -> dict:
@@ -11192,7 +11337,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
         conferences[group] = cf
         recovery_q[group], district_q[group] = quals, dq
         atr_snap.update(atr_used)
-    states, state_specials = {}, {}
+    states, state_specials, maxis = {}, {}, {}
     special_challengers: dict[str, dict] = {}
     state_pools: dict[str, list] = {}
     for group in GROUPS:
@@ -11347,14 +11492,20 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
             by_name_g = {t.school.name: t
                          for ts in by_group[group].values() for t in ts}
             at_large = [by_name_g[n] for n in sel["selected"] if n in by_name_g]
-            # Byes = the road field less the bids, so the Parastate is exactly
-            # the at-larges and their `bids` road opponents (a 48: 1-16 bye; a
-            # 40: 1-24 bye). Off the TABLE size, never `len(road_seeds)`: a
-            # short road (tiny world) still byes the right lines.
+            # THE MAXIS then the Parastate (owner rule 2026-09). `maxi_bids`
+            # is the group's whole allocation in a `MAXI_GROUPS` class and 0 in
+            # 1A/Group 3, and `parastate_byes` already accounts for it — the two
+            # are read off the TABLES, never off `len(road_seeds)`, so a short
+            # road (a tiny world) still byes the right lines.
             arc = run_state_parastate(
-                road_seeds + at_large, byes=state_field_size(group) - bids,
+                road_seeds + at_large, byes=parastate_byes(group),
+                maxi=maxi_bids(group),
                 seed=seed + hash(group) % 9973 + 12281)
             arc["at_large"] = [t.school.name for t in at_large]
+            # The maxis are their OWN archive key, so a maxi loser is not in the
+            # State draw's field and reads back as a Maxiregional exit with no
+            # State appearance (`MAXI_FINISH`).
+            maxis[group] = arc.pop("maxi", None)
             states[group] = arc
             continue
         committee_by_group[group] = None
@@ -11446,6 +11597,9 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
             # existed carry no key.
             "special_challenger": special_challengers[group],
             "state_special": state_specials[group],
+            # THE MAXIREGIONALS (owner rule 2026-09) — None in 1A/Group 3, which
+            # do not play them, and in every season archived before they existed.
+            MAXI_PHASE: maxis.get(group),
             # The names admitted by the DISTRICT GUARANTEE alone (champions who
             # did not win a Zonal) — access without a bye. Replaces the retired
             # TOSS wild cards; old archives keep their "wildcards" key.
