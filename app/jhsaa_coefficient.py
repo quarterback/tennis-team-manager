@@ -37,28 +37,40 @@ from __future__ import annotations
 #: only the two rounds that decide a berth (Challengers, and the Metastate/Parastate
 #: qualifying pair) carry real weight. The road still ACCUMULATES; what changed is
 #: that accumulating it can no longer imitate depth at State.
+#:
+#: ‼️ THEN HALVED (owner rule 2026-09, second pass). Re-grading the rungs fixed the
+#: ORDER and left the SCALE: a legal road chain still reached 4.10 against a bottom
+#: of the State schedule that started at 1, so how a program ARRIVED still dominated
+#: what it did once there. Every price above is exactly half its first-pass value —
+#: a uniform scale change, so every relative judgement the re-grading made (recovery
+#: below the round it answers, the local rungs below one State dual, a Zonal title
+#: as the road's peak) is preserved to the bit. The alternative considered and
+#: REJECTED was one best-road award: it needs the coefficient to interpret a
+#: program's whole qualification PATH — principal or recovery, one result chosen —
+#: which is a new kind of logic for a small distinction, and it would have dropped
+#: the owner's own rule that road results accumulate.
 def road_points() -> dict[str, float]:
     import app.jhsaa as jh
     return {
         # The local rungs: a win is evidence of a pulse, not of a season.
-        "Areas": 0.10, "Sectionals": 0.25, jh._STAGE_NAMES["ward"]: 0.25,
+        "Areas": 0.05, "Sectionals": 0.125, jh._STAGE_NAMES["ward"]: 0.125,
         # Where the road starts to mean something.
-        jh._STAGE_NAMES["regional"]: 1, jh._STAGE_NAMES["zonal"]: 2,
-        jh.EPIREGIONAL_NAME: 1,
+        jh._STAGE_NAMES["regional"]: 0.5, jh._STAGE_NAMES["zonal"]: 1,
+        jh.EPIREGIONAL_NAME: 0.5,
         # Recovery. Priced BELOW the rungs they are a second chance at, which is the
         # whole correction: a ladder of consolation wins must not out-earn winning.
-        jh._RECOVERY_NAMES["super_regional"]: 0.5,
-        jh._RECOVERY_NAMES["semi_state"]: 0.5,
-        jh._RECOVERY_NAMES["divisional"]: 1,
-        jh._RECOVERY_NAMES["semi_conference"]: 0.5,
-        jh._RECOVERY_NAMES["conference"]: 1,
-        jh._RECOVERY_NAMES["special_challenger"]: 2,
-        jh._RECOVERY_NAMES["state_special"]: 0.5,
+        jh._RECOVERY_NAMES["super_regional"]: 0.25,
+        jh._RECOVERY_NAMES["semi_state"]: 0.25,
+        jh._RECOVERY_NAMES["divisional"]: 0.5,
+        jh._RECOVERY_NAMES["semi_conference"]: 0.25,
+        jh._RECOVERY_NAMES["conference"]: 0.5,
+        jh._RECOVERY_NAMES["special_challenger"]: 1,
+        jh._RECOVERY_NAMES["state_special"]: 0.25,
         # The Metastate (owner rule 2026-09) — the at-larges' first qualifying layer.
         # It scored NOTHING before this schedule: not a road unit, and a metastate
         # loser is not in the State draw's field, so those programs rated like
         # programs that missed the postseason entirely.
-        jh.METASTATE_NAME: 1,
+        jh.METASTATE_NAME: 0.5,
     }
 
 
@@ -66,19 +78,32 @@ def road_points() -> dict[str, float]:
 #: with the road). Keyed on `place` = teams still alive when eliminated, the archive's
 #: own number (`world.jhsaa_state_result`), never a label string.
 #: ‼️ RE-PRICED WITH THE ROAD (owner rule 2026-09) so the whole ladder reads as one
-#: progression from the qualifying rounds to the title: Metastate 1 · Parastate 1 ·
-#: first round 2 · Octofinals 8 · Quarterfinals 12 · Semifinals 20 · Final 40 ·
-#: Champion 50. ‼️ THE TOP USED TO BE NEARLY FLAT — 20 · 22 · 30, so reaching the
-#: FINAL was worth 2 more than losing the semi while semi-over-quarter was worth 8,
-#: and the schedule stopped discriminating exactly where the association's whole
-#: season is decided. The gaps now widen all the way up, which is the same principle
-#: as the road's re-grading one rung further on. Only the semifinal is unchanged.
+#: progression from the qualifying rounds to the title. ‼️ THE TOP USED TO BE NEARLY
+#: FLAT — 20 · 22 · 30, so reaching the FINAL was worth 2 more than losing the semi
+#: while semi-over-quarter was worth 8, and the schedule stopped discriminating
+#: exactly where the association's whole season is decided.
+#:
+#: ‼️ THE SECOND PASS SMOOTHED THE BOTTOM AND RAISED THE FLOOR (owner rule 2026-09).
+#: It read Parastate 1 · first round 2 · Octofinals 8: one point between an at-large's
+#: only dual and entering the draw proper, then SIX for winning once. The lower steps
+#: now rise the way the upper ones do (+2 · +4 · +5 · +8 · +20 · +10), and the whole
+#: schedule is lifted by 2 to state the association's boundary as ARITHMETIC:
+#:
+#:     ‼️ MAKING STATE IS WORTH MORE THAN ANY ROAD A PROGRAM CAN WALK WITHOUT IT.
+#:
+#: The longest legal road chain is 2.05 and the State floor is 3, so every program in
+#: the State field outscores every program that missed it, whatever its route. That is
+#: what the 3 for a Parastate loss MEANS — a QUALIFICATION FLOOR, not a reward for
+#: anything done inside the tournament; the points above it measure what a program did
+#: after arriving. Pinned by `test_making_state_outscores_every_road_without_it`.
 STATE_CHAMPION, STATE_FINAL, STATE_SEMI, STATE_QUARTER, STATE_OCTO, STATE_ENTRY = \
-    50, 40, 20, 12, 8, 2
-#: A Parastate exit — the at-large's only State dual. Worth something (owner rule
-#: 2026-09) rather than the 0 it scored before, but less than playing the first
-#: round of the draw proper.
-STATE_PARASTATE = 1
+    52, 42, 22, 14, 9, 5
+#: A Parastate exit — the at-large's only State dual, and the State floor above.
+#: Worth something (owner rule 2026-09) rather than the 0 it scored before, but less
+#: than playing the first round of the draw proper.
+STATE_PARASTATE = 3
+#: Champions only, so it can never lift a weaker State finisher past a stronger one
+#: (owner rule 2026-09: left at 4 through both re-pricings).
 TOC_BONUS = 4
 
 #: Recency weights by seasons back from the newest archived season: three tiers,

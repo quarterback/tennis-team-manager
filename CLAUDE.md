@@ -3636,17 +3636,46 @@ was a school marker, shipped "Baptist HS High School".
     deeper one**, and the deepest road haul banked before State was 11 against a
     first-round exit's 4. Owner: the prices "ought to be at levels of significance
     and then cumulative rather than aggregating as if each round is somehow equal
-    prior to state." The road still ACCUMULATES; the rungs are now graded —
-    **Areas 0.10 · Sectionals/Wards 0.25 · Regionals 1 · Zonals 2 · Epiregional 1 ·
-    Super Regionals/Semi-State/Semi-Conference 0.5 · Divisionals/Conference 1 ·
-    Special Challengers 2 · State Specials 0.5 · Metastate 1**, and State reads
-    **Parastate 1 · first round 2 · Octofinals 8 · Quarterfinals 12 ·
-    Semifinals 20 · Final 40 · Champion 50**. ‼️ The top was re-priced in the same
-    pass because it was nearly FLAT (20 · 22 · 30): reaching the FINAL beat losing
-    the semifinal by 2 while the semifinal beat the quarters by 8, so the schedule
-    stopped separating teams exactly where the season is decided — and that flatness
-    was what the road could still invert. Measured after: **0 inversions in either
-    gender** (from 4.5% girls / 5.1% boys) and a road ceiling of 4.
+    prior to state." The road still ACCUMULATES; the rungs are GRADED, then
+    **HALVED in a second pass** —
+    **Areas 0.05 · Sectionals/Wards 0.125 · Regionals 0.5 · Zonals 1 ·
+    Epiregional 0.5 · Super Regionals/Semi-State/Semi-Conference 0.25 ·
+    Divisionals/Conference 0.5 · Special Challengers 1 · State Specials 0.25 ·
+    Metastate 0.5**, and State reads **Parastate 3 · first round 5 · Octofinals 9 ·
+    Quarterfinals 14 · Semifinals 22 · Final 42 · Champion 52**, TOC entry 4.
+    ‼️ The top was re-priced in the first pass because it was nearly FLAT
+    (20 · 22 · 30): reaching the FINAL beat losing the semifinal by 2 while the
+    semifinal beat the quarters by 8, so the schedule stopped separating teams
+    exactly where the season is decided — and that flatness was what the road could
+    still invert. Measured after: **0 inversions in either gender** (from 4.5%
+    girls / 5.1% boys).
+    ‼️ **THEN: MAKING STATE IS WORTH MORE THAN ANY ROAD WALKED WITHOUT IT (owner
+    rule 2026-09, the second pass).** Grading the rungs fixed the ORDER and left
+    the SCALE — a legal road chain still reached 4.10 against a State bottom that
+    started at 1, so the bottom of the table still measured how a program ARRIVED.
+    Every road price is **exactly half** its first-pass value (a uniform scale
+    change, so every relative judgement above survives to the bit: recovery below
+    the round it answers, the local rungs below one State dual, a Zonal title as
+    the road's peak) and the State schedule is lifted by 2, which makes the
+    association's boundary ARITHMETIC: longest legal road chain **2.05**, State
+    floor **3**. The 3 for a Parastate loss is a **QUALIFICATION FLOOR**, not a
+    reward for anything done inside the tournament — the points above it measure
+    what a program did after arriving. The lower steps also stopped lurching
+    (1 · 2 · 8 was one point then six; now +2 · +4 · +5 · +8 · +20 · +10). Pinned
+    by `test_making_state_outscores_every_road_without_it`, which asserts against
+    the UNREACHABLE chain (it ends in qualification, so no non-qualifier can even
+    reach it) — a schedule that only held for the reachable case would be one
+    rung-price from breaking silently.
+    ‼️ **ONE BEST ROAD AWARD WAS CONSIDERED AND REJECTED** (score only a program's
+    deepest road accomplishment, ~0-1.5). It needs the coefficient to interpret a
+    whole qualification PATH — principal route or recovery, one result chosen —
+    which is a new kind of logic for a small distinction, and it drops the owner's
+    own rule that road results accumulate. Halving is a scale change and needed no
+    new concept. ‼️ It was also proposed with recovery priced LEVEL with a Zonal
+    title, which contradicts the rule below; if it is ever revisited, recovery goes
+    under the rung it answers.
+    ‼️ **`TOC_BONUS` stays 4 through both passes**: champions only, so it can never
+    lift a weaker State finisher past a stronger one.
     ‼️ The gaps do NOT widen monotonically (entry→octo 6, octo→quarter 4) and must
     not be asserted to; what is guaranteed is `FINAL − SEMI > SEMI − QUARTER`. ‼️ Recovery rungs are
     priced BELOW the round they are a second chance at — that inequality IS the
