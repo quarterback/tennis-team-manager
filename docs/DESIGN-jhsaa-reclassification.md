@@ -262,9 +262,11 @@ level, which is the point of the exercise.
 ## Operating the coefficients (the page carries no help text)
 
 The Coefficients fold on `/jhsaa/reclassification` needs nothing filled in: the
-boxes hold the approved defaults, and a BLANK 4A-1A or Group box means that pool
-uses the 9A-5A numbers scaled to its own enrollment span (the live scaled value
-is what the proposal actually ran on). Run the proposal first; change a number
+boxes hold the approved defaults. A BLANK 4A-1A box means that pool uses the
+9A-5A numbers scaled to its own enrollment span; a BLANK Group box means the
+9A-5A numbers × 1.5 (`GROUP_COEFF_SCALE` — never span-scaled, see Scale above).
+The live derived value is what the proposal actually ran on and is shown in
+each pool's panel heading. Run the proposal first; change a number
 only if the tables read too aggressive or too timid, then Save to rebuild the
 proposal on the new numbers. Group territory and the approved eastern areas are
 the two area lists the geography pass reads.

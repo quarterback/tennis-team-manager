@@ -34,7 +34,9 @@ flag on any school the sort moved, since the sort now does what the flag was for
 ‼️ ONE FOLD PER SEASON, NOT PER SCHOOL (the title-board rule): `score()` walks each
 archived season once and credits whoever it names. Coefficients live in
 `worldconfig` so the page can edit them; the small pool's default is the big
-pool's scaled by enrollment span, and the Group pool's likewise.
+pool's scaled by enrollment span, and the Group pool's is the big pool's times
+a FIXED `GROUP_COEFF_SCALE` (1.5) — its span is dominated by Group 1 and would
+scale success down to nothing where Group 2/3 schools actually move.
 """
 from __future__ import annotations
 
@@ -65,8 +67,9 @@ _CFG = "jhsaa_reclass_"
 
 def config() -> dict:
     """The cycle's knobs, off `worldconfig` with the defaults above. Per-pool
-    coefficients for B and G default to A's scaled by enrollment span at build
-    time (see `_pool_coeffs`); an explicit value wins."""
+    coefficients default at build time (see `_pool_coeffs`): B to A's scaled by
+    enrollment span, G to A's times the fixed `GROUP_COEFF_SCALE`; an explicit
+    value wins."""
     from . import worldconfig as wc
     cfg = {
         "cycle": wc.get_int(_CFG + "cycle", CYCLE_SEASONS, lo=1, hi=20),
