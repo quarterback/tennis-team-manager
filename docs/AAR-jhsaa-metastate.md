@@ -122,15 +122,20 @@ ledger says. The Match Center names the phase rather than falling through to
 a small world where the metas correctly do not convene — a round nothing renders is
 indistinguishable from a round that was not played.
 
-## Open: the program coefficient prices a meta appearance at ZERO
+## Closed: the coefficient now prices it
 
-`jhsaa_coefficient` scores ROAD unit wins and STATE finishes only. A meta exit is
-neither: not in the State bracket's field, and not a road unit anybody wins. So a
-team that qualified for the field and lost in the metas now rates identically to a
-team that missed the postseason entirely — roughly 8 programs a class a season in a
-48, 4 in a 40. Deliberately NOT invented here: a coefficient price is a decision, and
-the owner has not set one. Raise it if the Suggested tier starts reading low for the
-bottom of a big class.
+It scored ZERO at first, and that was left open deliberately rather than invented: a
+metastate exit is not in the State bracket's field and not a road unit anybody wins,
+so a team that qualified and lost there rated identically to a team that missed the
+postseason — roughly 8 programs a class a season in a 48, 4 in a 40.
+
+The owner set the price in the same pass that re-graded the whole schedule (2026-09):
+a **metastate win is 1** on the road side, and a **Parastate exit is 1** rather than
+the 0 it had always been, so the qualifying ladder reads as one progression into the
+draw — Metastate 1, Parastate 1, first round 2, Octofinals 8. The metastate needed
+its archive key adding to `_ROAD_KEYS` as well as a price: a rung the walk never
+visits is unpriced however many numbers the table holds. See
+`docs/AAR-jhsaa-program-coefficient.md`.
 
 ## Not done, by design
 

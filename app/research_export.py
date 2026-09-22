@@ -738,7 +738,11 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             f"State finish (champion {_coef.STATE_CHAMPION}, runner-up {_coef.STATE_FINAL}, "
             f"semifinalist {_coef.STATE_SEMI}, quarterfinalist {_coef.STATE_QUARTER}, "
             f"octofinalist {_coef.STATE_OCTO}, any other main-draw entry {_coef.STATE_ENTRY}, "
-            f"a Parastate exit 0) plus {_coef.TOC_BONUS} for a TOC entry; the regular season "
+            # ‼️ DERIVED like every other price in this sentence. It was typed as a
+            # literal 0 and went stale the moment the owner priced a Parastate exit
+            # (2026-09) — the one retyped number in a sentence whose whole rule is
+            # that it must not retype them.
+            f"a Parastate exit {_coef.STATE_PARASTATE:g}) plus {_coef.TOC_BONUS} for a TOC entry; the regular season "
             "is NEVER an input. season_points is this season's own points; trend is the "
             "coefficient minus the same program's coefficient as of the previous archived "
             "season (0 with no prior season); seasons_of_history counts every archived "

@@ -954,10 +954,10 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   lesson). Renders as the TOP STAGE on the bracket page, never a tree column (the
   Epiregional's reason), chip **META** not STATE, and the render is covered by a
   HAND-ARCHIVED season because the real-season fixture is a small world where the
-  metas correctly do not convene. ‼️ OPEN: `jhsaa_coefficient` prices a meta
-  appearance at ZERO (not a road unit, not a State finish), so those teams rate
-  like programs that missed the postseason — a price is a decision and none was
-  invented.
+  metas correctly do not convene. The coefficient prices a metastate WIN at 1 and
+  a Parastate exit at 1 (owner schedule 2026-09, below) — it scored them at ZERO
+  at first, since a metastate loser is neither a road unit nor in the State
+  draw's field, so those programs rated like programs that missed the postseason.
   **‼️ RECORD OVER EXPECTED IS CONTEXT, NEVER A BALLOT (owner rule 2026-09,
   `jhsaa_committee.record_context` / `XW_EXPONENT` 1.83).** For every team, from the
   pre-State varsity duals, counted in FLIGHTS (never sets, games or appearances):
@@ -3616,6 +3616,36 @@ was a school marker, shipped "Baptist HS High School".
     with no established program suggests nothing. The tier is still the owner's to
     set — the suggestion is a column and a facet, applied through the ordinary
     selection.
+    ‼️ **PRICED BY SIGNIFICANCE, AND THE ROAD MUST NOT IMITATE DEPTH (owner rule
+    2026-09, `road_points` / `state_points`).** The first schedule priced every
+    road rung at 1, 2 or 3, so ELEVEN rungs AGGREGATED into a number that rivalled
+    a real State run — measured on the owner's 2090 girls export, **4.5% of
+    ordered pairs had the program with the SHALLOWER State run outscoring the
+    deeper one**, and the deepest road haul banked before State was 11 against a
+    first-round exit's 4. Owner: the prices "ought to be at levels of significance
+    and then cumulative rather than aggregating as if each round is somehow equal
+    prior to state." The road still ACCUMULATES; the rungs are now graded —
+    **Areas 0.10 · Sectionals/Wards 0.25 · Regionals 1 · Zonals 2 · Epiregional 1 ·
+    Super Regionals/Semi-State/Semi-Conference 0.5 · Divisionals/Conference 1 ·
+    Special Challengers 2 · State Specials 0.5 · Metastate 1**, and State reads
+    **Parastate 1 · first round 2 · Octofinals 8 · Quarterfinals 12 ·
+    Semifinals 20 · Final 40 · Champion 50**. ‼️ The top was re-priced in the same
+    pass because it was nearly FLAT (20 · 22 · 30): reaching the FINAL beat losing
+    the semifinal by 2 while the semifinal beat the quarters by 8, so the schedule
+    stopped separating teams exactly where the season is decided — and that flatness
+    was what the road could still invert. Measured after: **0 inversions in either
+    gender** (from 4.5% girls / 5.1% boys) and a road ceiling of 4.
+    ‼️ The gaps do NOT widen monotonically (entry→octo 6, octo→quarter 4) and must
+    not be asserted to; what is guaranteed is `FINAL − SEMI > SEMI − QUARTER`. ‼️ Recovery rungs are
+    priced BELOW the round they are a second chance at — that inequality IS the
+    correction, and a ladder of consolation wins must never out-earn winning.
+    ‼️ The road bound is a LEGAL PATH, never `sum(road_points().values())`: the
+    ladder is a route (Super Regionals takes Regional LOSERS), so the naive sum is
+    11.6 and nobody can reach it, while the longest assemblable chain is 4.10.
+    Pinned by `test_the_road_can_no_longer_imitate_depth_at_state` and
+    `test_every_road_round_the_association_plays_is_priced` — a rung with NO price
+    scores nothing and reads exactly like a program that never played it, which is
+    what the Metastate did.
     **It is in the research export** (`jhsaa_coefficient.csv`, every JHSAA bundle):
     same memo as the page, `program_id` on the roster identity, the export's SEASON
     year mapped to the archive world-year before it becomes `as_of`, and the
