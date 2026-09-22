@@ -919,42 +919,42 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   40 ROAD and no class is on one. Margins in the margin systems are
   FORMAT-NORMALISED (a 5-0, 7-0 and 9-0 are all +1.0) — never feed raw margins
   across mixed formats.
-  **‼️ THE MAXIREGIONALS — a SECOND qualifying layer in FRONT of the Parastate
-  (owner rule 2026-09, `jhsaa.MAXI_GROUPS`, `docs/AAR-jhsaa-maxiregionals.md`).**
-  Shortened **maxis**, as epis and supers are. The Parastate paired the `2 × bids`
+  **‼️ THE METASTATE — a SECOND qualifying layer in FRONT of the Parastate
+  (owner rule 2026-09, `jhsaa.METASTATE_GROUPS`, `docs/AAR-jhsaa-metastate.md`).**
+  Shortened **metas**, as epis and supers are. The Parastate paired the `2 × bids`
   lowest seeds, so a 48's seeds 17-24 drew 41-48 and **won 279 of 288 over six
-  seasons** — a round the top half could not lose. The maxis pair the bottom
+  seasons** — a round the top half could not lose. The metas pair the bottom
   `bids` seeds among THEMSELVES (`bids / 2` duals), and the winners meet the next
   `bids / 2` seeds in the Parastate: a 48 plays 33v48…40v41 then 25-32 + the 8
   winners; a 40 plays 33v40…36v37 then 29-32 + the 4. **The arithmetic closes on
   the ROAD field at every allocation** — `(road − bids/2) + bids/2 = road` — so
   the State draw is the shape that class already played and no geometry moved.
-  `maxi_bids(group)` / `parastate_byes(group)` are the ONLY two numbers a caller
+  `metastate_bids(group)` / `parastate_byes(group)` are the ONLY two numbers a caller
   passes, both off the TABLES. **1A and Group 3 are OUT by owner decision** (they
   crown from 32 off a 24 road and keep the single Parastate, at-larges entering it
-  directly); `MAXI_GROUPS` is a TUPLE, never a derivation off road size, which
+  directly); `METASTATE_GROUPS` is a TUPLE, never a derivation off road size, which
   today happens to separate the two and would enrol 1A the day its road moved.
-  ‼️ **A MAXI EXIT IS NOT A STATE APPEARANCE** (owner) — the one break with the
+  ‼️ **A METASTATE EXIT IS NOT A STATE APPEARANCE** (owner) — the one break with the
   Parastate, where every entrant IS a State participant because the Parastate is a
-  round OF the State event. It is bought ENTIRELY by the maxis being their own
-  PHASE (`maxiregional`, in `POSTSEASON` directly before `state`) with their own
+  round OF the State event. It is bought ENTIRELY by the metas being their own
+  PHASE (`metastate`, in `POSTSEASON` directly before `state`) with their own
   archive key: `jhsaa_state_result` reads `made_state` off membership of the
-  draw's `field`, so a maxi loser is kept out of that list and nothing else keeps
-  it out of the State record. The finish walk tries the maxis BEFORE the Specials
+  draw's `field`, so a meta loser is kept out of that list and nothing else keeps
+  it out of the State record. The finish walk tries the metas BEFORE the Specials
   (a Specials winner is a State qualifier and can be seeded into them). A career
   state-trip total therefore folds seasons counted two ways — an honest record of
   a changed rule. ‼️ **TWO DEGRADATION FAULTS, both invisible at full size**: sized
-  `min(maxi, len(field))` a short world put its WHOLE field in the maxis, and
+  `min(meta, len(field))` a short world put its WHOLE field in the metas, and
   skipping them left `byes` too high by the half they would have removed so the
   PARASTATE stopped convening too. The round now convenes only when the field
-  seats the byes and the block (`len − maxi >= byes`) and hands the allocation
-  back (`byes − maxi//2`) when it does not, which makes a short field
+  seats the byes and the block (`len − meta >= byes`) and hands the allocation
+  back (`byes − meta//2`) when it does not, which makes a short field
   byte-identical to the pre-change call. The guard is `bids` EVEN, not `% 4` (a
   first draft blocked the 4 Group 3 actually played — the `check_rename_keys`
   lesson). Renders as the TOP STAGE on the bracket page, never a tree column (the
-  Epiregional's reason), chip **MAXI** not STATE, and the render is covered by a
+  Epiregional's reason), chip **META** not STATE, and the render is covered by a
   HAND-ARCHIVED season because the real-season fixture is a small world where the
-  maxis correctly do not convene. ‼️ OPEN: `jhsaa_coefficient` prices a maxi
+  metas correctly do not convene. ‼️ OPEN: `jhsaa_coefficient` prices a meta
   appearance at ZERO (not a road unit, not a State finish), so those teams rate
   like programs that missed the postseason — a price is a decision and none was
   invented.
