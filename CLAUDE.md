@@ -958,6 +958,18 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   a Parastate exit at 1 (owner schedule 2026-09, below) — it scored them at ZERO
   at first, since a metastate loser is neither a road unit nor in the State
   draw's field, so those programs rated like programs that missed the postseason.
+  ‼️ **A NEW PHASE IS FOUR MAPS, NOT ONE, AND THREE OF THEM FAIL QUIETLY.**
+  `jhsaa_postseason_result` grew the metas branch and could not fire, because
+  `world._season_row` ASSEMBLES the stage dict itself one key per stage and had no
+  `metastate` key — so every metas loser carried an EMPTY `state_finish` on the
+  ledger row, the program history and the best-season fold while the archive held
+  the stage; and the schedule's phase heading is a KEYED lookup in
+  `jhsaa_school.html` while the opponent seed comes off `state._SEEDS`, neither of
+  which knew the kind. **A key the walk never receives is a branch that cannot
+  fire.** The Epiregional, the Semi-Conference and the Special Challengers were all
+  missing from the heading map too, so the agreement between `_KIND`, that map and
+  `_SEEDS` is now SWEPT (`test_every_schedule_kind_has_a_heading_and_a_seed_map_
+  entry`); a SHOWCASE is the one kind with no seeds, because it is not a draw.
   **‼️ RECORD OVER EXPECTED IS CONTEXT, NEVER A BALLOT (owner rule 2026-09,
   `jhsaa_committee.record_context` / `XW_EXPONENT` 1.83).** For every team, from the
   pre-State varsity duals, counted in FLIGHTS (never sets, games or appearances):

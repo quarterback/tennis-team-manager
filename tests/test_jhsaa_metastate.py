@@ -18,6 +18,8 @@ Two things are pinned here that nothing else can catch:
 1A and Group 3 are OUT by owner decision and keep the single-Parastate
 progression; their at-larges enter the Parastate directly.
 """
+import pathlib
+
 import pytest
 
 from app import jhsaa as jh
@@ -265,3 +267,55 @@ def test_the_metas_render_as_their_own_stage_on_the_bracket_page(monkeypatch):
     # surface a meta exit is visible on.
     for name in ("Alpha", "Beta", "Gamma", "Delta"):
         assert name in html, name
+
+
+def test_the_ledger_row_carries_the_metastate_finish():
+    """‼️ A KEY THE WALK NEVER RECEIVES IS A BRANCH THAT CANNOT FIRE. The finish
+    check above passes on a hand-built stage dict and still said nothing about the
+    school page: `_season_row` assembles that dict itself, one key per stage, and
+    the metastate is archived under its OWN phase — so while the key was missing
+    there, every metas loser read back with an EMPTY finish on the ledger row, the
+    program history and the best-season fold, with the stage sitting in the archive
+    the whole time. This goes through the production path for exactly that reason."""
+    grp = jh.METASTATE_GROUPS[0]
+    arc = {"season_year": 2099,
+           "standings": {grp: {"Marble Valley District": [
+               {"school": "Alpha", "record": "18-4", "drecord": "9-1", "place": 1}]}},
+           jh.METASTATE_PHASE: {grp: {"field": ["Alpha", "Beta"],
+                                     "round_names": [jh.METASTATE_NAME],
+                                     "advanced": ["Beta"], "rounds": [[]]}},
+           "brackets": {grp: {"field": ["Beta"], "rounds": [], "champion": "Beta"}}}
+    row = wd._season_row(arc, 0, "Alpha", [])
+    assert row["state_finish"] == jh.METASTATE_FINISH
+    assert row["made_state"] is False
+    # And a program that never reached it is unaffected.
+    arc["standings"][grp]["Marble Valley District"].append(
+        {"school": "Zeta", "record": "2-18", "drecord": "0-10", "place": 12})
+    assert wd._season_row(arc, 0, "Zeta", [])["state_finish"] == ""
+
+
+def test_every_schedule_kind_has_a_heading_and_a_seed_map_entry():
+    """‼️ THE SCHEDULE'S PHASE HEADING IS A KEYED LOOKUP, so a kind nobody labelled
+    blanks (or raises) over a whole block of duals, and a kind missing from `_SEEDS`
+    silently drops the opponent seed off every dual of that stage. Both maps live a
+    long way from `_KIND` — the metas, the Epiregional, the Semi-Conference and the
+    Special Challengers had all been added to one and not the others — so the
+    agreement is swept rather than trusted."""
+    import re
+    src = pathlib.Path("app/web/state.py").read_text()
+    kind_block = re.search(r"    _KIND = \{.*?\}\n", src, re.S).group(0)
+    kinds = set(re.findall(r'"[a-z_]+": "([A-Z -]+)"', kind_block))
+    assert "META" in kinds, "the metas must reach the schedule as their own kind"
+
+    tpl = pathlib.Path("app/web/templates/jhsaa_school.html").read_text()
+    head_block = re.search(r"\{'INVITE':.*?\}\[d\.kind\]", tpl, re.S).group(0)
+    labelled = set(re.findall(r"'([A-Z -]+)':", head_block))
+    seed_block = re.search(r"    _SEEDS = \{.*?\}\n", src, re.S).group(0)
+    seeded = set(re.findall(r'"([A-Z -]+)":', seed_block))
+
+    assert not kinds - labelled, f"unlabelled schedule phases: {sorted(kinds - labelled)}"
+    # A SHOWCASE is not a draw — no bracket, no seeds — so it is the one kind with
+    # nothing to look up. (DIST and INVITE are `_KIND.get`'s fallbacks and never
+    # appear in the map at all.)
+    assert not kinds - seeded - {"SHOWCASE"}, \
+        f"unseeded schedule phases: {sorted(kinds - seeded - {'SHOWCASE'})}"

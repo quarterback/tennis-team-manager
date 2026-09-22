@@ -5497,6 +5497,10 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     cf_seeds = _jh_seeds((arc or {}).get("conference", {}).get(sc.group) or {})
     sp_seeds = _jh_seeds((arc or {}).get("state_special", {}).get(sc.group) or {})
     ch_seeds = _jh_seeds((arc or {}).get("special_challenger", {}).get(sc.group) or {})
+    # The metas are their own draw (their own phase, their own archive key), so like
+    # every stage above they carry their own seed order — within-round, off the arc's
+    # own field, never the State seed the entrant brought in.
+    meta_seeds = _jh_seeds((arc or {}).get(jh.METASTATE_PHASE, {}).get(sc.group) or {})
     # A non-district dual is an INVITATIONAL (owner rule 2027-08) — that is what the
     # association calls the duals a program arranges outside its league, and the card
     # should say what they are rather than what they are not. "Non-district" is still
@@ -5584,7 +5588,7 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                     other = gm["away"] if gm["home"] == school else gm["home"]
                     jv_round[other] = nm
 
-    _SEEDS = {"TOC": toc_seeds, "STATE": seeds,
+    _SEEDS = {"TOC": toc_seeds, "STATE": seeds, "META": meta_seeds,
               "STATE SPECIAL": sp_seeds, "CHALLENGE": ch_seeds,
               "CONFERENCE": cf_seeds,
               "SEMI-CONFERENCE": sc_seeds,

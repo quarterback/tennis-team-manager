@@ -7135,6 +7135,7 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
     # / "Regionals" / "Zonals" / "Super Regionals" / "Semi-State" — instead of
     # going blank for a team that never reached the State bracket.
     g = row["group"]
+    from . import jhsaa
     st = jhsaa_postseason_result(
         {"sectional": (arc.get("sectionals") or {}).get(g),
          "ward": (arc.get("wards") or {}).get(g),
@@ -7146,6 +7147,11 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
          "conference": (arc.get("conference") or {}).get(g),
          "special_challenger": (arc.get("special_challenger") or {}).get(g),
          "state_special": (arc.get("state_special") or {}).get(g),
+         # A key the walk never receives is a branch that cannot fire: the
+         # metastate is archived under its own phase, so leaving it out here left
+         # every metas loser with an empty finish on the ledger row, the school
+         # history and the best-season fold while the archive held the stage.
+         jhsaa.METASTATE_PHASE: (arc.get(jhsaa.METASTATE_PHASE) or {}).get(g),
          "state": (arc.get("brackets") or {}).get(g),
          "wildcards": (arc.get("wildcards") or {}).get(g),
          "district_qualifiers": (arc.get("district_qualifiers") or {}).get(g)}, school)

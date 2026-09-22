@@ -122,6 +122,33 @@ ledger says. The Match Center names the phase rather than falling through to
 a small world where the metas correctly do not convene — a round nothing renders is
 indistinguishable from a round that was not played.
 
+## ‼️ A new phase is four maps, and three of them fail quietly
+
+Adding the phase and its finish branch is the easy half. Three separate maps have to
+learn the phase, none of them near the branch, and **not one of them raises when it
+does not**:
+
+| Map | What it does | What a missing entry looks like |
+|---|---|---|
+| `jhsaa_postseason_result` | the finish walk | — (this is the branch) |
+| `world._season_row` | assembles the stage dict the walk reads | empty `state_finish` on the ledger row, the program history and the best-season fold |
+| `jhsaa_school.html`'s heading map | the schedule's phase band | a blank band over a block of duals |
+| `state._SEEDS` | the opponent seed per stage | the seed silently drops off every dual of that stage |
+
+The finish branch shipped unreachable: `_season_row` builds its stage dict one key per
+stage and had no `metastate` key, so the archive held the stage and every metas loser
+read back with nothing. **A key the walk never receives is a branch that cannot fire**
+— and the unit test could not see it, because it hand-built the stage dict the
+production path was failing to build. The replacement test goes through `_season_row`.
+
+The schedule maps were worse than a metastate problem: the **Epiregional**, the
+**Semi-Conference** and the **Special Challengers** had never been added to the heading
+map either, each one a whole postseason stage rendering a blank band. Three phases
+drifted the same way before anyone noticed, so the agreement between `_KIND`, the
+heading map and `_SEEDS` is now swept rather than trusted
+(`test_every_schedule_kind_has_a_heading_and_a_seed_map_entry`). A **SHOWCASE** is the
+one kind with no `_SEEDS` entry, and legitimately: it is not a draw.
+
 ## Closed: the coefficient now prices it
 
 It scored ZERO at first, and that was left open deliberately rather than invented: a
