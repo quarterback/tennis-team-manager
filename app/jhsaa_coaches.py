@@ -639,6 +639,25 @@ def coach_career(world_id: int, coach_id: str) -> dict:
             "head_record": f"{w}-{l}"}
 
 
+def season_heads(world_id: int, gender: str) -> dict:
+    """{(year, ident): {"coach_id", "name"}} — who was HEAD coach of every program
+    in every archived season, for the champions history (the OSAA records' Coach
+    column). ONE query for the whole archive; a season archived before coaches
+    existed has no rows, so its coach cell stays blank — the OSAA's own convention
+    for years nobody recorded who coached."""
+    conn = _conn()
+    try:
+        rows = conn.execute(
+            "SELECT h.year, h.ident, h.coach_id, c.name FROM jhsaa_coach_history h"
+            " LEFT JOIN jhsaa_coach c ON c.world_id=h.world_id AND c.coach_id=h.coach_id"
+            " WHERE h.world_id=? AND h.gender=? AND h.slot='head'",
+            (world_id, gender)).fetchall()
+    finally:
+        conn.close()
+    return {(y, ident): {"coach_id": cid, "name": nm or ""}
+            for y, ident, cid, nm in rows if cid}
+
+
 def slot_label(slot: str, jv_head: bool) -> str:
     if slot == "head":
         return "Head coach"

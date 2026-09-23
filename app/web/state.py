@@ -7198,10 +7198,31 @@ def jhsaa_past_winners(seed: int, gender: str, group: str | None = None,
     `layout` picks between two presentations of the SAME rows (owner asked to see it
     both ways) — see the template. It changes nothing about what is computed."""
     import app.jhsaa as jh
+    import app.jhsaa_coaches as jc
     import app.world as world
     w = world.get_or_create(seed)
     g = _jh_g(gender)
     schools = _jh_schools(g)
+    # THE COACH COLUMN (owner, 2026-09, after the OSAA's champions record): the
+    # head coach of the champion and of the runner-up that season, off the coach
+    # history — one query for the whole archive. Keyed on the program's IDENT, not
+    # its name, so a renamed school keeps its coaches. A season archived before
+    # coaches existed has no history rows and its coach cells are simply BLANK,
+    # the way the OSAA leaves the years nobody recorded.
+    heads = jc.season_heads(w["id"], g)
+    idents = {}
+
+    def _ident(nm):
+        if nm not in idents:
+            s = schools.get(nm) or jh.former_school(nm, g)
+            idents[nm] = s.ident if s is not None else None
+        return idents[nm]
+
+    def _team(nm, year, recs):
+        head = heads.get((year, _ident(nm))) if nm else None
+        return {**_jh_deco(schools, nm, 20), "record": recs.get(nm, ""),
+                "coach": head}
+
     years = []
     for year in world.jhsaa_years(w["id"], g):
         arc = world.get_jhsaa(w["id"], year, g)
@@ -7214,11 +7235,26 @@ def jhsaa_past_winners(seed: int, gender: str, group: str | None = None,
             for rows in (districts or {}).values():
                 for r in rows or ():
                     recs.setdefault(gp, {})[r.get("school")] = r.get("record", "")
+        champs = {}
+        for gp, nm in (arc.get("champions") or {}).items():
+            if not nm:
+                continue
+            ch = _team(nm, year, recs.get(gp) or {})
+            # The runner-up and the final's score, off the archived State bracket:
+            # the last round's game the champion played. Score is WINNER-FIRST.
+            rounds = ((arc.get("brackets") or {}).get(gp) or {}).get("rounds") or ()
+            final = next((gm for gm in (rounds[-1] if rounds else ())
+                          if nm in (gm.get("home"), gm.get("away"))), None)
+            if final:
+                ru = final["away"] if final.get("home") == nm else final.get("home")
+                hp, ap = final.get("home_points"), final.get("away_points")
+                ch["score"] = (f"{max(hp, ap)}-{min(hp, ap)}"
+                               if hp is not None and ap is not None else "")
+                ch["runner_up"] = _team(ru, year, recs.get(gp) or {}) if ru else None
+            champs[gp] = ch
         years.append({
             "year": year, "season_year": arc.get("season_year"),
-            "champions": {gp: {**_jh_deco(schools, nm, 20),
-                               "record": (recs.get(gp) or {}).get(nm, "")}
-                          for gp, nm in (arc.get("champions") or {}).items() if nm},
+            "champions": champs,
             "poy": {grp: (aw.get("poy") or {})
                     for grp, aw in (arc.get("awards") or {}).items()}})
     return {"gender": g, "groups": list(jh.GROUPS), "years": years,
