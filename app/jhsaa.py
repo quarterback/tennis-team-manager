@@ -5758,6 +5758,16 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
                 if e.lean and x is not None:
                     depth = (1.0 - x) / (1.0 - EXPO_FLOOR)
                     f *= 1.0 + LEAN_K * e.lean * (depth - 0.5)
+                # MENTORSHIP (owner spec 2026-09): under a mentorship head the
+                # league's doubles pool pairs the oldest with the youngest, so a
+                # freshman or sophomore who PLAYED that season banks a little extra
+                # growth off the seniors they partnered — scaled by how much they
+                # dressed (the exposure odometer), nothing for one who never did.
+                # Upperclassmen are the mentors and gain nothing from it.
+                if e.strategy == "mentorship" and pg <= 10 and x is not None:
+                    from .jhsaa_coaches import MENTOR_K
+                    played = max(0.0, (x - EXPO_FLOOR) / (1.0 - EXPO_FLOOR))
+                    f *= 1.0 + MENTOR_K * played
                 if f != 1.0:
                     staff_mult[pg] = f
         _apply_career(p, school.key, entry, seat, grade, salt,
@@ -7949,7 +7959,10 @@ def district_teams(schools: list[School], year: int, salt: str = "",
         lens = eff.lens if eff is not None else coach_lens(s.name, salt)
         ts = TeamSeason(
             school=s, roster=roster, sibling_ids=sibs, lens=lens,
-            culture=eff.culture if eff is not None else doubles_culture(s.name, salt),
+            # A `doubles_culture` TAG is a program trait the owner set, so it stays a
+            # FLOOR under the staff's own doubles instinct rather than being replaced.
+            culture=(max(eff.culture, doubles_culture(s.name, salt)) if eff is not None
+                     else doubles_culture(s.name, salt)),
             strategy=eff.strategy if eff is not None else "",
             **_stage_b_fields(eff),
             # Only this roster's own evidence — `_order` looks up by pid so a

@@ -2843,9 +2843,12 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   assistants by roster size (one carries the JV-head LABEL — a designation only);
   seats key on `School.ident` + gender, never name or class. The coach lens,
   doubles culture and pairing philosophy now READ THE STAFF (`district_teams(staff=)`)
-  instead of the school draws. ‼️ The inaugural staff REPRODUCES those draws exactly
-  (head's grades SOLVED against full-rated assistants and pinned), so a save plays
-  identically until the owner moves someone — pinned by a byte-identical-season test.
+  instead of the school draws. ‼️ EVERY coach's grades and philosophies ROLL AT RANDOM,
+  inaugural staffs included (owner rule 2026-09) — an earlier build solved the first
+  head to reproduce the old draws and was withdrawn (every head read Adaptability 50).
+  No owner input after an update: `ensure_staff` seats every program on the next rung,
+  and a player who graduated before coaches existed is indexed as an alumnus from their
+  player page. A `doubles_culture` TAG stays a floor under the staff's doubles instinct.
   ‼️ ONE converter, `world.jhsaa_staff_for_season`, for the rung AND the recruit
   hand-off (the `prior` rule — two resolutions fork the memoised season); an
   archived season reads the effects stored on its history rows. Ratings are
@@ -2859,7 +2862,8 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   gate (no setting). Clutch (a poor big-match head sometimes runs the frozen
   ladder instead of the best legal arrangement), participation temperament
   (rotation/rest multipliers; "steady" is ×1.0) and mentorship pairing act in
-  season. ‼️ **CHANGEOVER IS THE ONE COACH EFFECT THAT CHANGES HOW A MATCH PLAYS**
+  season; a mentorship head's freshmen/sophomores who dressed bank up to +8% of that
+  year's growth (`MENTOR_K`, history-only like development). ‼️ **CHANGEOVER IS THE ONE COACH EFFECT THAT CHANGES HOW A MATCH PLAYS**
   — the single, bounded exception to "nothing in the coach layer changes how
   anybody plays": both heads roll at SET BREAKS only (max two a best-of-3),
   the net is an offset on the next set's gap, replaced not stacked, on its OWN

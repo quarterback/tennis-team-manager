@@ -12,7 +12,13 @@ behind it. Three mechanics were random draws seeded on the SCHOOL:
 Stage A gives every program a named staff and routes those three through it.
 The code is `app/jhsaa_coaches.py`.
 
-## The contract: identical first season
+## (Superseded) The Stage A contract: identical first season
+
+> **Withdrawn (owner rule 2026-09): every coach now rolls at random, inaugural
+> staffs included.** The solve made every inaugural head read Adaptability 50 and
+> Doubles instinct 50, which is not a random roll. The staff replaces the old school
+> draws; a `doubles_culture` tag stays a floor. The history below is kept as a record.
+
 - **The inaugural staff reproduces the old draws EXACTLY.**
   - The head's Talent ID quantile is the lens `q`.
   - Adaptability is 0.5, which means zero tilt.
@@ -106,7 +112,10 @@ read per program, memoised and cleared by `record_season`.
 - **Temperament:** scales bench rotation and resting. "steady" is ×1.0 exactly.
 - **Mentorship:** a fourth pairing philosophy that pairs oldest with youngest inside
   the fixed doubles pool. Its off-night flip is "balanced".
-  - The planned development bump for the younger partner was NOT built.
+  - **The younger partner's development boost (`MENTOR_K`):** under a mentorship
+    head, a freshman or sophomore banks up to +8% of that year's growth, scaled by
+    how much they dressed (the exposure odometer). It reads history only, like
+    development, so archived seasons rebuild unchanged. Nobody loses growth.
 - **Changeover (`CHANGEOVER_K`):**
   - Both heads roll at set breaks only.
   - The net of the two rolls (capped at 2 OVR) shifts the next set's gap and is
@@ -129,3 +138,11 @@ read per program, memoised and cleared by `record_season`.
   - Fill order: the program's own assistant, then an area assistant, then an
     alumnus, then a new local candidate.
   - Vetoing a departure or promotion keeps that seat filled.
+
+## No work after an update
+- **Coaches:** `ensure_staff` seats every program, with random rolls, the first time
+  the season rung runs. The tables are created by the ordinary schema pass.
+- **Former players who graduated before the alumni index existed:** they are indexed
+  on demand from their player page. A senior of the newest archived season or earlier
+  counts as graduated, so the "Hire as coach" form appears with no migration or
+  backfill. From then on, every archived season indexes its own seniors.

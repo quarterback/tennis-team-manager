@@ -6482,6 +6482,9 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         # so it is the hand-off between this career and the rest of the game.
         "grad_year": (seasons[0]["season_year"] + (12 - seasons[0]["grade"])
                       if seasons else None),
+        # Playing style — what a hired former player's coaching philosophy tilts on.
+        "style": (player.traits or {}).get("play_style", ""),
+        "style_trait": (player.traits or {}).get("style_trait", ""),
     }
 
 

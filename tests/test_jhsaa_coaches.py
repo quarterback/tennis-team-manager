@@ -1,9 +1,9 @@
 """Named JHSAA coaching staffs (owner spec 2026-09, `app/jhsaa_coaches.py`).
 
-Stage A's whole promise is that an existing save plays IDENTICALLY once coaches
-exist: the inaugural staff is built so its effective values ARE the school draws
-the association already played on. So the load-bearing test here plays a real
-(scaled) season twice, with and without staffs, and compares every dual.
+Every coach's grades and philosophies ROLL AT RANDOM, inaugural staffs included
+(owner rule 2026-09) — nothing reproduces the school draws the association used
+before coaches existed, and nothing needs the owner's input after an update:
+`ensure_staff` seats every program the first time the rung runs.
 """
 import json
 
@@ -24,28 +24,17 @@ def _sample(n=120):
     return out
 
 
-@pytest.mark.parametrize("salt", ["", "s1"])
-def test_inaugural_staff_reproduces_the_school_draws_exactly(salt):
-    for s in _sample():
-        n = jc.assistants_for(jh.roster_size(s.classification, s.key, salt))
-        staff = jc.inaugural_staff(s, n, salt, 2030)
-        e = jc.staff_effect(staff[0], staff[1:])
-        assert e.lens == jh.coach_lens(s.name, salt)
-        assert e.culture == jh.doubles_culture(s.name, salt)
-        assert e.strategy == jh._coach_strategy(s.key)
-
-
-def test_assistants_keep_full_ratings_the_head_is_solved():
-    """Assistants are never capped to the head's grades (a Doubles guru must read
-    as one); the head is solved beneath a stronger assistant instead."""
-    seen_above = False
-    for s in _sample():
-        staff = jc.inaugural_staff(s, 3, "", 2030)
-        head, ast = staff[0], staff[1:]
-        for a in ast:
-            if a.grades["doubles"] > head.grades["doubles"]:
-                seen_above = True
-    assert seen_above
+def test_every_inaugural_grade_and_philosophy_rolls_at_random():
+    """No attribute is pinned: the head coaches' grades spread across the scale
+    for EVERY attribute (none sits on one value), and philosophies vary."""
+    from collections import Counter
+    heads = [jc.inaugural_staff(s, 1, "", 2030)[0] for s in _sample()]
+    for a in jc.GRADES:
+        vals = {h.grade(a) for h in heads}
+        assert len(vals) > 15, (a, sorted(vals))
+        assert 30 < sum(h.grade(a) for h in heads) / len(heads) < 62
+    assert len(Counter(h.pairing for h in heads)) == len(jc.PAIRINGS)
+    assert len(Counter(h.temperament for h in heads)) == len(jc.TEMPERAMENTS)
 
 
 def test_the_blend_covers_weak_spots_and_never_exceeds_the_best_coach():
@@ -138,6 +127,33 @@ def test_mentorship_pairs_old_with_young_and_keeps_the_singles():
     assert jh._flip_strategy("mentorship") == "balanced"
 
 
+def test_mentorship_grows_the_underclassmen_who_played(monkeypatch):
+    """Under a mentorship head, a freshman/sophomore who dressed that season banks
+    extra growth; nobody loses any, and a season nobody dressed in gives nothing."""
+    s = jh.load_schools("girls")[5]
+    lens = jh.coach_lens(s.name, "")
+    years = range(2026, 2032)
+    # Every prior season archived, everyone fully played.
+    monkeypatch.setattr(jh, "school_exposure", lambda g, n, ys: {y: {} for y in ys})
+    monkeypatch.setattr(jh, "_expo_factor", lambda season, name: 1.0)
+
+    def build(strategy):
+        hist = {y: jc.StaffEffect(lens=lens, culture=1.0, strategy=strategy) for y in years}
+        monkeypatch.setattr(jh, "staff_history", lambda g, i: hist)
+        return {p.pid: (p.grade, p.current_overall()) for p in jh.build_roster(s, 2032, "")}
+    base, mentored = build("balanced"), build("mentorship")
+    assert base.keys() == mentored.keys()
+    for pid, (grade, ovr) in base.items():
+        assert mentored[pid][1] >= ovr - 1e-9          # never lowers anyone
+        if grade == 9:
+            assert mentored[pid][1] == ovr             # no season behind them yet
+    assert any(mentored[p][1] > base[p][1] for p in base if base[p][0] >= 10)
+    # …and a season nobody dressed in (the exposure floor) gives nothing.
+    monkeypatch.setattr(jh, "_expo_factor", lambda season, name: jh.EXPO_FLOOR)
+    idle_base, idle_mentored = build("balanced"), build("mentorship")
+    assert idle_base == idle_mentored
+
+
 # --- a real season ----------------------------------------------------------------
 
 def _small(real_load):
@@ -200,19 +216,17 @@ def world_season(tmp_path_factory):
         wd.is_primed, wd.prime = real_primed, real_prime
 
 
-def test_a_season_with_inaugural_staffs_is_byte_identical(world_season, monkeypatch):
-    """Stage A's contract. Stage B's in-season effects (the changeover roll and
-    clutch) are real new behaviour, so their dials are zeroed here — with them
-    off, an inaugural staff plays the pre-coaches season exactly."""
-    monkeypatch.setattr(jc, "CHANGEOVER_K", 0.0)
-    monkeypatch.setattr(jc, "CLUTCH_MISS", 0.0)
+def test_a_season_with_staffs_reads_the_staffs(world_season):
+    """The staffs, not the old school draws, drive the season: the lens a program
+    plays with is the one its staff produces."""
     staff = wd.jhsaa_staff_for_season(world_season["season_year"], "girls",
                                       world_season["world"]["id"])
     assert staff, "run_jhsaa should have seated staffs"
-    jh._season_cache.clear()
-    with_staff = _digest(jh.run_season("girls", world_season["season_year"], seed=0,
-                                       salt=world_season["salt"], staff=staff))
-    assert with_staff == world_season["bare"]
+    s = jh.load_schools("girls")[0]
+    teams = jh.district_teams([s], world_season["season_year"], world_season["salt"],
+                              staff=staff)
+    assert teams[0].lens == staff[s.key].lens
+    assert teams[0].strategy == staff[s.key].strategy
 
 
 def test_every_program_has_a_head_and_history(world_season):

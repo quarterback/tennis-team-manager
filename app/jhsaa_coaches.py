@@ -7,10 +7,12 @@ Before this module every JHSAA "coach" was a random draw seeded on the SCHOOL:
 Nobody had a name, a career or an alma mater. This module gives each program a
 named STAFF and makes those three mechanics read the staff instead of the school.
 
-‼️ STAGE A IS COSMETIC. `ensure_staff` builds every program's inaugural staff so
-that the staff's EFFECTIVE values reproduce today's school draws EXACTLY — the
-first season with coaches plays byte-identically to the season without them. A
-program's behaviour changes only when the owner moves somebody.
+‼️ EVERY COACH ROLLS AT RANDOM, INAUGURAL STAFFS INCLUDED (owner rule 2026-09).
+An earlier build solved the first head's grades so the staff reproduced the old
+school draws exactly; it was withdrawn because it left every inaugural head at
+Adaptability 50 and Doubles instinct 50 — visibly not a random roll. The staff
+REPLACES the old hidden draws. Nothing needs the owner after an update:
+`ensure_staff` seats every program the first time the season rung runs.
 
 ‼️ ONE ENTITY, READ BY BOTH THE PAGES AND THE SIM. The college game has two
 coach models (`coaches.program_coach`, never stored, and `coachreg`, a different
@@ -136,13 +138,6 @@ class Coach:
     alma: str = ""                     # school ident the coach played for, if any
     player_pid: str = ""
     created: int = 0                   # season year the coach was created
-    # ‼️ EXACT REPRODUCTION PINS, inaugural heads only (`inaugural_staff`). The
-    # head's grade is SOLVED so the staff blend lands on the school's old draw, and
-    # float arithmetic lands within ~1e-16 of it rather than on it — so a blended
-    # value within `_PIN_TOL` of a pin is snapped to the pin. `culture_pin` is the
-    # exact `doubles_culture` of a tagged program, used when doubles snaps.
-    pins: dict = field(default_factory=dict)
-    culture_pin: float | None = None
     retired: int = 0                   # season year retired; 0 = active
 
     def grade(self, attr: str) -> int:
@@ -189,41 +184,17 @@ def culture_of(q: float) -> float:
     return 1.0 + 4.0 * (q - 0.5)
 
 
-def q_of_culture(c: float) -> float:
-    if c >= 1.0:
-        return min(1.0, 0.5 + (c - 1.0) / 4.0)
-    return max(0.0, (c - 0.75) / 0.5)
-
-
-_PIN_TOL = 1e-9
-
-
 def effective(head: Coach | None, assistants: list[Coach]) -> dict:
     """The staff's effective quantile per attribute — "cover weak spots"."""
     out = {}
-    pins = head.pins if head else {}
     for a in GRADES:
         h = head.grades.get(a, 0.5) if head else 0.5
         if a in BLENDED and assistants:
             b = max(x.grades.get(a, 0.5) for x in assistants)
             if b > h:
                 h = h + COVER * (b - h)
-        p = pins.get(a)
-        if p is not None and abs(h - p) < _PIN_TOL:
-            h = p
         out[a] = h
     return out
-
-
-def solve_head(target: float, assistants: list[Coach], attr: str) -> float:
-    """The head grade whose staff blend lands on `target`. When the best
-    assistant is above the target the head sits below it:
-    `h = (T − C·b) / (1 − C)`. Infeasible only when `b > T / C` (the head would
-    need a negative grade) — the caller caps that assistant first."""
-    b = max((x.grades.get(attr, 0.5) for x in assistants), default=0.0)
-    if b <= target:
-        return target
-    return (target - COVER * b) / (1.0 - COVER)
 
 
 # --- STAGE B dials (owner spec 2026-09). Each is the ONLY knob for its effect;
@@ -235,6 +206,8 @@ CLUTCH_MISS = 0.35     # chance a grade-20 head settles for the 2nd-best postsea
 CHANGEOVER_K = 0.8     # engine.fast set-break roll scale (≈±1-2 pts best vs worst coach)
 FEEDER_K = 0.04        # ± freshman head start (share of peak) at the top/bottom
 RETENTION_MAX = 2      # ± players a class at the culture extremes
+MENTOR_K = 0.08        # mentorship: up to +8% of a year's growth for a mentored
+                       # freshman/sophomore, scaled by how much they played
 CULTURE_KEEP = 0.8     # culture carried year to year (the rest moves to the staff)
 TEMPERAMENT_ROTATE = {"broad": 1.5, "steady": 1.0, "senior": 0.5}
 TEMPERAMENT_REST = {"broad": 1.2, "steady": 1.0, "senior": 0.8}
@@ -295,9 +268,7 @@ def staff_effect(head: Coach | None, assistants: list[Coach]) -> StaffEffect | N
     if head is None:
         return None
     eff = effective(head, assistants)
-    culture = (head.culture_pin
-               if head.culture_pin is not None and eff["doubles"] == head.pins.get("doubles")
-               else culture_of(eff["doubles"]))
+    culture = culture_of(eff["doubles"])
     lean = 0.0
     for c in [head] + list(assistants):
         if c.profile == "jv_whisperer":
@@ -332,51 +303,32 @@ def _cid(world_id, *parts) -> str:
 
 def inaugural_staff(school, n_assistants: int, salt: str, season_year: int,
                     world_id: int = 0, hometowns: list | None = None) -> list[Coach]:
-    """A program's first staff: `[head, asst1, …]`, built so its EFFECTIVE values
-    reproduce the school draws the association already played on.
+    """A program's first staff: `[head, asst1, …]`, EVERY grade and philosophy
+    rolled at random (owner rule 2026-09 — "the attributes roll randomly for all
+    coaches"). Nothing is solved or pinned to the school draws the association
+    used before coaches existed: the staff REPLACES those draws, so the first
+    season with coaches plays under the people, not the old hidden numbers.
 
-    - Talent ID IS the school's `coach_lens` draw `q`; Adaptability is exactly 0.5
-      (no tilt). So `lens_of` returns `coach_lens(school.name, salt)` exactly.
-    - Doubles instinct reproduces `doubles_culture` (1.0 untagged → q 0.5 exactly).
-    - The head's pairing philosophy is `_coach_strategy(school.key)`.
-    - The assistants keep their FULL grades; the head's three reproduced grades
-      are SOLVED against them (`solve_head`) and pinned, so the staff blend lands
-      exactly on the old draw. A strong assistant therefore sits beside a head a
-      little below the program's old read, which is the blend working as designed.
-      Only when the solve is infeasible (a very low draw beside a very strong
-      assistant) is that assistant's grade capped at `target / COVER`.
-    """
-    from . import jhsaa
-    q = random.Random(f"{salt}|jhsaa-coach-lens|{school.name}").random()
-    culture = jhsaa.doubles_culture(school.name, salt)
+    Deterministic per (salt, program, gender, seat) — the same save rolls the
+    same staff — and needs no input from the owner: `ensure_staff` seats every
+    program the first time the rung runs after an update."""
     towns = hometowns or [school.city]
     staff = []
     for i in range(1 + n_assistants):
         slot = SLOTS[i]
         rng = _rng("jhsaa-coach", salt, school.ident, school.gender, slot)
         profile = roll_profile(rng)
-        grades = roll_grades(rng, profile)
         age = int(rng.triangular(32, 64, 47) if i == 0 else rng.triangular(23, 68, 40))
+        grades = roll_grades(rng, profile, mean=54.0 if age >= 55 else GRADE_MEAN)
         hometown = school.city if rng.random() < 0.55 else rng.choice(towns)
         c = Coach(coach_id=_cid(world_id, salt, school.ident, school.gender, slot),
                   name=roll_name(rng, school.gender), grades=grades,
                   profile=profile,
                   pairing=rng.choice(PAIRINGS),
-                  temperament="steady",
+                  temperament=rng.choice(TEMPERAMENTS),
                   hometown=hometown, birth_year=season_year - age,
                   origin="inaugural", created=season_year)
         staff.append(c)
-    head, ast = staff[0], staff[1:]
-    targets = {"talent_id": q, "adaptability": 0.5,
-               "doubles": 0.5 if culture == 1.0 else q_of_culture(culture)}
-    for attr, t in targets.items():
-        for a in ast:
-            a.grades[attr] = min(a.grades[attr], t / COVER)
-        head.grades[attr] = solve_head(t, ast, attr)
-        head.pins[attr] = t
-    if culture != 1.0:
-        head.culture_pin = culture
-    head.pairing = jhsaa._coach_strategy(school.key)
     return staff
 
 
@@ -443,12 +395,19 @@ def reset() -> None:
 def _coach_row(c: Coach) -> str:
     return json.dumps({k: getattr(c, k) for k in (
         "grades", "profile", "pairing", "temperament", "hometown", "birth_year",
-        "origin", "alma", "player_pid", "created", "pins", "culture_pin", "retired")})
+        "origin", "alma", "player_pid", "created", "retired")})
+
+
+_COACH_FIELDS = ("grades", "profile", "pairing", "temperament", "hometown",
+                 "birth_year", "origin", "alma", "player_pid", "created", "retired")
 
 
 def _coach_from(coach_id: str, name: str, data: str) -> Coach:
+    """A stored coach. Unknown keys are ignored, so a row written by an earlier
+    build (which carried reproduction pins) still loads."""
     d = json.loads(data)
-    return Coach(coach_id=coach_id, name=name, **d)
+    return Coach(coach_id=coach_id, name=name,
+                 **{k: v for k, v in d.items() if k in _COACH_FIELDS})
 
 
 def save_coach(conn, world_id: int, c: Coach) -> None:
@@ -782,6 +741,24 @@ def record_alumni(conn, world_id: int, gender: str, teams, season_year: int,
         " VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", rows)
 
 
+def index_alumnus(world_id: int, cand: dict) -> None:
+    """Add one former player to the alumni index by hand-off from their player
+    page — how a player who graduated BEFORE coaches existed (so was never
+    indexed at archive time) becomes hireable with no migration."""
+    conn = _conn()
+    try:
+        conn.execute(
+            "INSERT OR IGNORE INTO jhsaa_alumni (world_id, pid, gender, ident, school,"
+            " grad_year, name, style, trait, ovr, rank, honored)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+            (world_id, cand["pid"], cand["gender"], cand["ident"], cand["school"],
+             cand["grad_year"], cand["name"], cand.get("style", ""),
+             cand.get("trait", ""), float(cand.get("ovr") or 0.0), 0, 0))
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def alumnus(world_id: int, pid: str) -> dict | None:
     conn = _conn()
     try:
@@ -991,9 +968,6 @@ def set_grade(world_id: int, coach_id: str, attr: str, grade: float) -> None:
         if c is None:
             raise StaffError("No such coach.")
         c.grades[attr] = to_q(max(20.0, min(80.0, float(grade))))
-        c.pins.pop(attr, None)
-        if attr == "doubles":
-            c.culture_pin = None
         save_coach(conn, world_id, c)
         conn.commit()
     finally:

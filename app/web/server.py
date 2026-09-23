@@ -3862,6 +3862,20 @@ def create_app() -> Flask:
         from app import jhsaa_coaches as _jc
         _w = wd.get_or_create(DEFAULT_SEED)
         hire_ok = bool(_jc.alumnus(_w["id"], pid) or _jc.college_graduate(_w["id"], pid))
+        if not hire_ok and view.get("grad_year"):
+            # Graduated before coaches existed (never indexed at archive time): a
+            # senior of the newest archived season or earlier is an alumnus.
+            _yrs = wd.jhsaa_years(_w["id"], g)
+            _last = (wd.BASE_YEAR + _yrs[0] + 1) if _yrs else None
+            if _last is not None and view["grad_year"] <= _last:
+                _sc = _jh.former_school(school, g)
+                if _sc is not None:
+                    _jc.index_alumnus(_w["id"], {
+                        "pid": pid, "gender": g, "ident": _sc.ident, "school": school,
+                        "grad_year": view["grad_year"], "name": view.get("name", pid),
+                        "style": view.get("style", ""), "trait": view.get("style_trait", ""),
+                        "ovr": view.get("ovr")})
+                    hire_ok = True
         hire_msg = request.cookies.get("jh_coach_result", "")
         # The Family block. `fam_school`/`fam_season` drive the PICKER — the roster
         # you choose the other member from — and default to this player's own team
