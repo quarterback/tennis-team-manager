@@ -15,6 +15,14 @@ programs, two genders, or the two sides of one dual. Anything a single page
 already states scores zero on the invisibility factor
 (`salience = surprise × consequence × invisibility`).
 
+**Consequence is a gate, not merely a multiplier.** Repetition, closeness and
+familiarity do not make a regular-season dual consequential in a postseason system
+where both teams remain comfortably alive. A repeated matchup may provide the
+opening observation or the history for a later rematch, but it does not deserve the
+lead unless one of the meetings changed a berth, seed, road, elimination, title,
+streak or settled evaluation of a program. A well-written observation cannot rescue
+a low-stakes selection.
+
 ---
 
 ## What each desk is actually doing
@@ -164,6 +172,23 @@ say nothing about the sentences, and the first draft written to them (the 2089
 produce something nobody would read. An independent critique of that draft
 found five faults. They are now rules, and one earlier misreading is retired.
 
+### Before rule 0: use memory, not meaning, to choose the material
+
+"What did the season mean?" invites a thesis before the reporting and produces a
+piece that spends its length proving its first sentence. A season review starts with
+the questions a beat writer can answer after living through it:
+
+- What did people keep bringing up after the schedule ended?
+- Which prediction aged badly?
+- Which result changed how coaches spoke about a team or player?
+- Which postseason match made an earlier result newly relevant?
+- What looked obvious afterward but was not obvious beforehand?
+
+The answers do not have to collapse into one idea. If the material contains several
+unrelated consequential stories, the correct architecture may be a notebook with
+unequal items. Do not turn a notebook into an awards banquet or use one anecdote as
+a metaphor for the entire association.
+
 ### 0. Invent the fiction. The record is the only thing you may not contradict
 **Owner rule (2026-09, restating what was said at the start):** this is a
 fictional association and the point of the desk is to invent the fiction and
@@ -293,6 +318,32 @@ a HARDER constraint than this one — a real paper cannot invent at all — and
 none of them reads like a log file. The question to ask of each paragraph:
 would the Examiner's club-GAA desk run it?
 
+### 7. Stay at the scale of the observation
+
+The useful sentence in a draft is often the one that could only have been written
+after watching this particular season: by the third meeting the parents knew both
+lineups; a coach kept referring to the same lost breaker; the State draw made a
+March result look different in June. When the draft reaches such an observation,
+stay there long enough to report it.
+
+Do not immediately promote the observation into a thesis about the year, judgment,
+resilience, belief, uncertainty or sport itself. Those zoom-outs create the synthetic
+cadence the reporting is supposed to avoid.
+
+Ban these constructions from season journalism unless the literal wording is
+unavoidable in a quoted source:
+
+- "The season was..." / "The year belonged to..."
+- "What made [year] unique..." / "The lesson was..."
+- "The story of the season..." / "That was [year]."
+- "It was not X. It was Y." / "Not X. Y."
+- "In the end..."
+
+Use the counterfactual sentence test: if the line could have been drafted before the
+season and completed later by inserting names, it is not reporting. Replace it with
+a detail that depends on the recorded sequence or with invented local texture that
+could only belong to this scene.
+
 ### A worked correction
 Draft:
 > Silverton Prep finished 14-9. It went 8-4 in district. Its No. 2 doubles
@@ -331,6 +382,10 @@ wind, the bus, the quote, the counterfactual — is written rather than
 withheld.
 
 ### Checklist before a story ships
+- Did the lead event change a title, elimination, berth, seed, road, streak or the
+  evaluation of a player/program? If not, why is it leading?
+- Is a repeated regular-season matchup being mistaken for stakes? State the later
+  consequence it caused or reduce it to context.
 - Does any sentence restate a figure a page already shows, with no cause or
   consequence attached? Cut it or attach one — invented if need be.
 - Are three consecutive sentences the same shape? Recast one.
@@ -342,6 +397,8 @@ withheld.
   finish, a date, a name? Fix the detail, never the record.
 - Is there a quote, a scene or a counterfactual? If not, the piece is still
   telemetry.
+- Could the closing sentence have been written before the season? If yes, cut the
+  conclusion and end on the last concrete fact or observation.
 
 ---
 
