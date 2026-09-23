@@ -4155,6 +4155,12 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                 # year; `.get` for seasons archived before it existed.
                 "special_challenger": {g: season["groups"][g].get("special_challenger")
                                        for g in jhsaa.GROUPS},
+                # THE METASTATE (owner rule 2026-09) — the at-larges' first
+                # qualifying layer, in front of the Parastate. None in 1A and
+                # Group 3, which do not play them, and in every season archived
+                # before they existed; `.get` on read for exactly that.
+                jhsaa.METASTATE_PHASE: {g: season["groups"][g].get(jhsaa.METASTATE_PHASE)
+                                   for g in jhsaa.GROUPS},
                 "conference": {g: season["groups"][g].get("conference")
                                 for g in jhsaa.GROUPS},
                 "semi_state": {g: season["groups"][g]["semi_state"]
@@ -6618,6 +6624,19 @@ def jhsaa_postseason_result(grp: dict, school: str) -> dict:
     out = {"made_state": False, "seed": 0, "place": 0, "finish": "",
            "champion": False, "played_sectional": school in sec_field,
            "wildcard": False, "district_qualifier": False}
+    # THE METASTATE are the deepest rung of all — the State event's own
+    # first qualifying layer, played after the Specials have filled the last road
+    # berths (owner rule 2026-09). A Specials WINNER is a State qualifier and can
+    # be seeded into them, so this has to be tried before the Specials or its
+    # year would read as ending a round earlier than it did. A meta WINNER is in
+    # the State draw's field and never reaches here — `jhsaa_state_result` above
+    # already returned. So this is exactly the set knocked out in the metas, and
+    # ‼️ it is NOT a State appearance: `made_state` stays False and the finish is
+    # `METASTATE_FINISH`.
+    from . import jhsaa as _jh
+    if school in ((grp.get(_jh.METASTATE_PHASE) or {}).get("field") or ()):
+        out["finish"] = _jh.METASTATE_FINISH
+        return out
     # A recovery run supersedes the ladder loss that sent the school there,
     # deepest rung first — the CONFERENCE is the last one played, so a school
     # that reached it did not end its year at Sectionals.
@@ -7116,6 +7135,7 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
     # / "Regionals" / "Zonals" / "Super Regionals" / "Semi-State" — instead of
     # going blank for a team that never reached the State bracket.
     g = row["group"]
+    from . import jhsaa
     st = jhsaa_postseason_result(
         {"sectional": (arc.get("sectionals") or {}).get(g),
          "ward": (arc.get("wards") or {}).get(g),
@@ -7127,6 +7147,11 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
          "conference": (arc.get("conference") or {}).get(g),
          "special_challenger": (arc.get("special_challenger") or {}).get(g),
          "state_special": (arc.get("state_special") or {}).get(g),
+         # A key the walk never receives is a branch that cannot fire: the
+         # metastate is archived under its own phase, so leaving it out here left
+         # every metas loser with an empty finish on the ledger row, the school
+         # history and the best-season fold while the archive held the stage.
+         jhsaa.METASTATE_PHASE: (arc.get(jhsaa.METASTATE_PHASE) or {}).get(g),
          "state": (arc.get("brackets") or {}).get(g),
          "wildcards": (arc.get("wildcards") or {}).get(g),
          "district_qualifiers": (arc.get("district_qualifiers") or {}).get(g)}, school)
@@ -7298,7 +7323,8 @@ def jh_road_ladder() -> tuple[str, ...]:
     return ("Areas", "Sectionals", "Wards", "Regionals", "Zonals",
             "Super Regionals", "Semi-State", _jh.DIVISIONAL_NAME,
             _jh.SEMI_CONFERENCE_NAME, _jh.CONFERENCE_NAME,
-            _jh.SPECIAL_CHALLENGER_FINISH, _jh.STATE_SPECIAL_FINISH)
+            _jh.SPECIAL_CHALLENGER_FINISH, _jh.STATE_SPECIAL_FINISH,
+            _jh.METASTATE_FINISH)
 
 
 def jhsaa_season_depth(row: dict) -> tuple:

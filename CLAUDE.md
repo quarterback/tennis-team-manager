@@ -919,6 +919,57 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   40 ROAD and no class is on one. Margins in the margin systems are
   FORMAT-NORMALISED (a 5-0, 7-0 and 9-0 are all +1.0) — never feed raw margins
   across mixed formats.
+  **‼️ THE METASTATE — a SECOND qualifying layer in FRONT of the Parastate
+  (owner rule 2026-09, `jhsaa.METASTATE_GROUPS`, `docs/AAR-jhsaa-metastate.md`).**
+  Shortened **metas**, as epis and supers are. The Parastate paired the `2 × bids`
+  lowest seeds, so a 48's seeds 17-24 drew 41-48 and **won 279 of 288 over six
+  seasons** — a round the top half could not lose. The metas pair the bottom
+  `bids` seeds among THEMSELVES (`bids / 2` duals), and the winners meet the next
+  `bids / 2` seeds in the Parastate: a 48 plays 33v48…40v41 then 25-32 + the 8
+  winners; a 40 plays 33v40…36v37 then 29-32 + the 4. **The arithmetic closes on
+  the ROAD field at every allocation** — `(road − bids/2) + bids/2 = road` — so
+  the State draw is the shape that class already played and no geometry moved.
+  `metastate_bids(group)` / `parastate_byes(group)` are the ONLY two numbers a caller
+  passes, both off the TABLES. **1A and Group 3 are OUT by owner decision** (they
+  crown from 32 off a 24 road and keep the single Parastate, at-larges entering it
+  directly); `METASTATE_GROUPS` is a TUPLE, never a derivation off road size, which
+  today happens to separate the two and would enrol 1A the day its road moved.
+  ‼️ **A METASTATE EXIT IS NOT A STATE APPEARANCE** (owner) — the one break with the
+  Parastate, where every entrant IS a State participant because the Parastate is a
+  round OF the State event. It is bought ENTIRELY by the metas being their own
+  PHASE (`metastate`, in `POSTSEASON` directly before `state`) with their own
+  archive key: `jhsaa_state_result` reads `made_state` off membership of the
+  draw's `field`, so a meta loser is kept out of that list and nothing else keeps
+  it out of the State record. The finish walk tries the metas BEFORE the Specials
+  (a Specials winner is a State qualifier and can be seeded into them). A career
+  state-trip total therefore folds seasons counted two ways — an honest record of
+  a changed rule. ‼️ **TWO DEGRADATION FAULTS, both invisible at full size**: sized
+  `min(meta, len(field))` a short world put its WHOLE field in the metas, and
+  skipping them left `byes` too high by the half they would have removed so the
+  PARASTATE stopped convening too. The round now convenes only when the field
+  seats the byes and the block (`len − meta >= byes`) and hands the allocation
+  back (`byes − meta//2`) when it does not, which makes a short field
+  byte-identical to the pre-change call. The guard is `bids` EVEN, not `% 4` (a
+  first draft blocked the 4 Group 3 actually played — the `check_rename_keys`
+  lesson). Renders as the TOP STAGE on the bracket page, never a tree column (the
+  Epiregional's reason), chip **META** not STATE, and the render is covered by a
+  HAND-ARCHIVED season because the real-season fixture is a small world where the
+  metas correctly do not convene. The coefficient prices a metastate WIN at 1 and
+  a Parastate exit at 1 (owner schedule 2026-09, below) — it scored them at ZERO
+  at first, since a metastate loser is neither a road unit nor in the State
+  draw's field, so those programs rated like programs that missed the postseason.
+  ‼️ **A NEW PHASE IS FOUR MAPS, NOT ONE, AND THREE OF THEM FAIL QUIETLY.**
+  `jhsaa_postseason_result` grew the metas branch and could not fire, because
+  `world._season_row` ASSEMBLES the stage dict itself one key per stage and had no
+  `metastate` key — so every metas loser carried an EMPTY `state_finish` on the
+  ledger row, the program history and the best-season fold while the archive held
+  the stage; and the schedule's phase heading is a KEYED lookup in
+  `jhsaa_school.html` while the opponent seed comes off `state._SEEDS`, neither of
+  which knew the kind. **A key the walk never receives is a branch that cannot
+  fire.** The Epiregional, the Semi-Conference and the Special Challengers were all
+  missing from the heading map too, so the agreement between `_KIND`, that map and
+  `_SEEDS` is now SWEPT (`test_every_schedule_kind_has_a_heading_and_a_seed_map_
+  entry`); a SHOWCASE is the one kind with no seeds, because it is not a draw.
   **‼️ RECORD OVER EXPECTED IS CONTEXT, NEVER A BALLOT (owner rule 2026-09,
   `jhsaa_committee.record_context` / `XW_EXPONENT` 1.83).** For every team, from the
   pre-State varsity duals, counted in FLIGHTS (never sets, games or appearances):
@@ -3577,6 +3628,76 @@ was a school marker, shipped "Baptist HS High School".
     with no established program suggests nothing. The tier is still the owner's to
     set — the suggestion is a column and a facet, applied through the ordinary
     selection.
+    ‼️ **PRICED BY SIGNIFICANCE, AND THE ROAD MUST NOT IMITATE DEPTH (owner rule
+    2026-09, `road_points` / `state_points`).** The first schedule priced every
+    road rung at 1, 2 or 3, so ELEVEN rungs AGGREGATED into a number that rivalled
+    a real State run — measured on the owner's 2090 girls export, **4.5% of
+    ordered pairs had the program with the SHALLOWER State run outscoring the
+    deeper one**, and the deepest road haul banked before State was 11 against a
+    first-round exit's 4. Owner: the prices "ought to be at levels of significance
+    and then cumulative rather than aggregating as if each round is somehow equal
+    prior to state." The road still ACCUMULATES; the rungs are GRADED, then
+    **HALVED in a second pass** —
+    **Areas 0.05 · Sectionals/Wards 0.125 · Regionals 0.5 · Zonals 1 ·
+    Epiregional 0.5 · Super Regionals/Semi-State/Semi-Conference 0.25 ·
+    Divisionals/Conference 0.5 · Special Challengers 1 · State Specials 0.25 ·
+    Metastate 0.5**, and State reads **Parastate 3 · first round 5 · Octofinals 9 ·
+    Quarterfinals 14 · Semifinals 22 · Final 42 · Champion 52**, TOC entry 4.
+    ‼️ The top was re-priced in the first pass because it was nearly FLAT
+    (20 · 22 · 30): reaching the FINAL beat losing the semifinal by 2 while the
+    semifinal beat the quarters by 8, so the schedule stopped separating teams
+    exactly where the season is decided — and that flatness was what the road could
+    still invert. Measured after: **0 inversions in either gender** (from 4.5%
+    girls / 5.1% boys).
+    ‼️ **THEN: MAKING STATE IS WORTH MORE THAN ANY ROAD WALKED WITHOUT IT (owner
+    rule 2026-09, the second pass).** Grading the rungs fixed the ORDER and left
+    the SCALE — a legal road chain still reached 4.10 against a State bottom that
+    started at 1, so the bottom of the table still measured how a program ARRIVED.
+    Every road price is **exactly half** its first-pass value (a uniform scale
+    change, so every relative judgement above survives to the bit: recovery below
+    the round it answers, the local rungs below one State dual, a Zonal title as
+    the road's peak) and the State schedule is lifted by 2, which makes the
+    association's boundary ARITHMETIC: **the most a program can score and MISS
+    State is 1.80; the least it scores having MADE State is 3.** No route closes
+    that, and structurally rather than by arithmetic — **every road win rich enough
+    to push a program higher IS ITSELF A BERTH** (a Zonal title, Semi-State,
+    Divisionals, a won State Special), so banking one makes you a qualifier and
+    takes you out of the comparison. Road ceiling over every route, qualifiers
+    included: **2.30** (the clean Zonal + Epiregional road), also under the floor.
+    The 3 for a Parastate loss is a **QUALIFICATION FLOOR**, not a
+    reward for anything done inside the tournament — the points above it measure
+    what a program did after arriving. The lower steps also stopped lurching
+    (1 · 2 · 8 was one point then six; now +2 · +4 · +5 · +8 · +20 · +10). Pinned
+    by `test_making_state_outscores_every_road_without_it`.
+    ‼️ **A ROUTE BOUND MUST BE ENUMERATED AS A ROUTE, AND THE FIRST ONE WAS NOT.**
+    That test shipped pinning a hand-assembled 2.05 chain — local rungs + Super
+    Regionals + Semi-Conference + Conference + State Specials + Metastate — which is
+    ILLEGAL: a Wards WINNER cannot enter the Semi-Conference, which takes Ward
+    LOSERS. It was conservative by luck, so the guarantee held without being
+    derived. The naive `sum(road_points().values())` is obviously wrong and gets
+    caught; a plausible chain mixing two sides of the ladder does not. Enumerate
+    routes, and say which ones end in a berth.
+    ‼️ **ONE BEST ROAD AWARD WAS CONSIDERED AND REJECTED** (score only a program's
+    deepest road accomplishment, ~0-1.5). It needs the coefficient to interpret a
+    whole qualification PATH — principal route or recovery, one result chosen —
+    which is a new kind of logic for a small distinction, and it drops the owner's
+    own rule that road results accumulate. Halving is a scale change and needed no
+    new concept. ‼️ It was also proposed with recovery priced LEVEL with a Zonal
+    title, which contradicts the rule below; if it is ever revisited, recovery goes
+    under the rung it answers.
+    ‼️ **`TOC_BONUS` stays 4 through both passes**: champions only, so it can never
+    lift a weaker State finisher past a stronger one.
+    ‼️ The gaps do NOT widen monotonically (entry→octo 6, octo→quarter 4) and must
+    not be asserted to; what is guaranteed is `FINAL − SEMI > SEMI − QUARTER`. ‼️ Recovery rungs are
+    priced BELOW the round they are a second chance at — that inequality IS the
+    correction, and a ladder of consolation wins must never out-earn winning.
+    ‼️ The road bound is a LEGAL PATH, never `sum(road_points().values())`: the
+    ladder is a route (Super Regionals takes Regional LOSERS), so the naive sum is
+    11.6 and nobody can reach it, while the longest assemblable chain is 4.10.
+    Pinned by `test_the_road_can_no_longer_imitate_depth_at_state` and
+    `test_every_road_round_the_association_plays_is_priced` — a rung with NO price
+    scores nothing and reads exactly like a program that never played it, which is
+    what the Metastate did.
     **It is in the research export** (`jhsaa_coefficient.csv`, every JHSAA bundle):
     same memo as the page, `program_id` on the roster identity, the export's SEASON
     year mapped to the archive world-year before it becomes `as_of`, and the

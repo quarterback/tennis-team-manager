@@ -49,17 +49,125 @@ def _season(year):
 
 def test_the_season_schedule_prices_every_road_win_and_one_state_finish():
     pts = coef.season_points(_season(10))
-    # A: Sectional 1 + Regional 2 + Zonal 2 + Epiregional 1 = 6 road; champion 30; TOC 4
-    assert pts["A"]["road"] == 6 and pts["A"]["state"] == 30 and pts["A"]["toc"] == 4
-    assert pts["A"]["points"] == 40 and pts["A"]["group"] == "9A"
-    # B: no road wins (its Super Regional "game" was a bye); runner-up 22
-    assert pts["B"]["road"] == 0 and pts["B"]["state"] == 22
-    # C: Super Regional 2; out in the semis with 4 alive → 20
-    assert pts["C"]["road"] == 2 and pts["C"]["state"] == coef.STATE_SEMI
-    # D: a Parastate exit scores nothing at State
-    assert pts["D"]["state"] == 0
-    # E: a 3A champion with a one-team draw — champion 30, TOC entrant 4
-    assert pts["E"]["points"] == 34 and pts["E"]["group"] == "3A"
+    # A: Sectional .125 + Regional .5 + Zonal 1 + Epiregional .5 = 2.125 road;
+    # champion 52; TOC 4
+    assert pts["A"]["road"] == 2.125 and pts["A"]["state"] == 52 and pts["A"]["toc"] == 4
+    assert pts["A"]["points"] == 58.125 and pts["A"]["group"] == "9A"
+    # B: no road wins (its Super Regional "game" was a bye); runner-up 42
+    assert pts["B"]["road"] == 0 and pts["B"]["state"] == 42
+    # C: Super Regional .25; out in the semis with 4 alive → 22
+    assert pts["C"]["road"] == 0.25 and pts["C"]["state"] == coef.STATE_SEMI
+    # D: a Parastate exit is priced with the qualifying rounds, not the draw
+    assert pts["D"]["state"] == coef.STATE_PARASTATE == 3
+    # E: a 3A champion with a one-team draw — champion 52, TOC entrant 4
+    assert pts["E"]["points"] == 56 and pts["E"]["group"] == "3A"
+
+
+def test_the_road_can_no_longer_imitate_depth_at_state():
+    """‼️ THE CORRECTION (owner rule 2026-09). Every road rung used to cost 1, 2 or
+    3, so ELEVEN of them aggregated into a number that rivalled a real State run —
+    measured on the owner's 2090 girls export, 4.5% of ordered pairs had the
+    program with the SHALLOWER State run outscoring the deeper one, and the deepest
+    road haul banked before State was 11 points against a first-round exit's 4.
+    Under this schedule that is 0.04% and 4 points.
+
+    Pinned as arithmetic on the tables, because the property is a property of the
+    PRICES: no reachable road total may approach the gap between two State rounds."""
+    road = coef.road_points()
+    # ‼️ THE BOUND IS A LEGAL PATH, NOT THE SUM OF EVERY RUNG. The ladder is a
+    # route: Super Regionals is for Regional LOSERS, the Conference for Semi-State
+    # losers, so no program can bank both halves and `sum(road.values())` (5.8) is
+    # a number nobody can reach. The richest route is the CLEAN one — the local
+    # rungs, Regionals, a Zonal title and the Epiregional.
+    longest = (road["Areas"] + road["Sectionals"] + road["Wards"]
+               + road["Regionals"] + road["Zonals"] + road["Epiregionals"])             # seeded low into the draw
+    assert longest < coef.STATE_OCTO, (longest, coef.STATE_OCTO)
+    # ‼️ AND THE SECOND PASS HALVED IT: 4.60 → 2.30. Re-grading the rungs fixed the
+    # ORDER and left the SCALE, so a program's ROUTE still weighed as much as two
+    # rounds of the draw. Every price is exactly half its first-pass value, which is
+    # what keeps every relative judgement below intact while the road goes quiet.
+    assert longest == 2.3, longest
+    # And the local rungs together are worth less than one first-round State dual.
+    assert road["Areas"] + road["Sectionals"] + road["Wards"] < coef.STATE_ENTRY
+    # The recovery rungs are priced BELOW the rounds they are a second chance at.
+    assert road["Super Regionals"] < road["Regionals"]
+    assert road["Semi-State"] < road["Zonals"]
+    # The whole ladder reads as one progression, qualifying rounds to title.
+    ladder = [coef.STATE_PARASTATE, coef.STATE_ENTRY, coef.STATE_OCTO,
+              coef.STATE_QUARTER, coef.STATE_SEMI, coef.STATE_FINAL,
+              coef.STATE_CHAMPION]
+    assert ladder == sorted(ladder) and len(set(ladder)) == len(ladder), ladder
+    assert road["Metastate"] <= coef.STATE_PARASTATE
+    # ‼️ AND THE TOP DISCRIMINATES. It was 20 · 22 · 30, so reaching the FINAL beat
+    # losing the semifinal by 2 while the semifinal beat the quarters by 8 — the
+    # schedule stopped separating teams exactly where the season is decided. The
+    # gaps do NOT widen monotonically all the way (entry→octo is 6, octo→quarter 4)
+    # and must not be asserted to; what the correction guarantees is this.
+    assert (coef.STATE_FINAL - coef.STATE_SEMI) > (coef.STATE_SEMI - coef.STATE_QUARTER)
+    assert coef.STATE_CHAMPION > coef.STATE_FINAL > coef.STATE_SEMI
+    # ‼️ AND THE BOTTOM STOPPED JUMPING. It was 1 · 2 · 8: one point between an
+    # at-large's only dual and entering the draw, then SIX for winning once. The
+    # lower steps now rise like the upper ones instead of stalling and lurching.
+    steps = [b - a for a, b in zip(ladder, ladder[1:])]
+    assert steps[:4] == sorted(steps[:4]), steps
+
+
+def test_making_state_outscores_every_road_without_it():
+    """‼️ THE BOUNDARY THE SCHEDULE EXISTS TO STATE (owner rule 2026-09): making
+    State is worth more than any road a program can walk WITHOUT making it.
+
+    The road is cumulative, so before this pass the two scales overlapped — a long
+    qualification route out-scored an at-large's State berth, and the bottom of the
+    table read as a measure of how a program ARRIVED rather than what it did. The
+    floor is arithmetic now, not a judgement: the longest legal road chain is 2.05
+    and the State floor is 3, so every program in the State field outscores every
+    program that missed it, whatever route either walked.
+
+    That is what the 3 MEANS — a qualification floor, not a reward for anything done
+    inside the tournament. Everything above it measures what a program did after
+    arriving, which is why a Parastate exit still sits far below one bracket win."""
+    road = coef.road_points()
+    # ‼️ ENUMERATED AS ROUTES, because the ladder IS a route and the wins are
+    # mutually exclusive — a Zonal title, a Semi-State win, a Divisional win and a
+    # won State Special are each a BERTH, so a program that banks one is a
+    # qualifier and leaves this set. The richest route that still ends outside the
+    # State field is a Regionals winner who loses the whole recovery ladder, is
+    # drawn as a Special Challenger, wins that dual and then loses the Special.
+    missed = (road["Areas"] + road["Sectionals"] + road["Wards"]
+              + road["Regionals"] + road["Special Challengers"])
+    assert missed == 1.8, missed
+    assert missed < coef.STATE_PARASTATE, (missed, coef.STATE_PARASTATE)
+    # ‼️ AND NO SINGLE RUNG MAY OUTPRICE THE FLOOR EITHER, so the guarantee cannot
+    # be broken by re-pricing one round without re-deriving the route above.
+    assert max(road.values()) < coef.STATE_PARASTATE
+    # The road CEILING over every route, qualifiers included — the clean road, a
+    # Zonal title plus the Epiregional. Under the floor as well, which is what makes
+    # the guarantee robust to a program's route rather than true only on average.
+    ceiling = (road["Areas"] + road["Sectionals"] + road["Wards"]
+               + road["Regionals"] + road["Zonals"] + road["Epiregionals"])
+    assert ceiling == 2.3 and ceiling < coef.STATE_PARASTATE, ceiling
+    # And arriving is still worth far less than doing anything once there.
+    assert coef.STATE_PARASTATE < coef.STATE_ENTRY < coef.STATE_OCTO
+    # The TOC bonus is champions-only, so it can never lift a weaker State finisher
+    # past a stronger one — the gap it has to clear is the smallest State step.
+    assert coef.TOC_BONUS <= min(b - a for a, b in
+                                 zip((coef.STATE_SEMI, coef.STATE_FINAL),
+                                     (coef.STATE_FINAL, coef.STATE_CHAMPION)))
+
+
+def test_every_road_round_the_association_plays_is_priced():
+    """A rung with no price scores NOTHING and reads like a program that never
+    played it — which is exactly what the Metastate did until this schedule. Swept
+    against `jhsaa`'s own stage tables so a new round fails here rather than
+    silently costing its programs."""
+    from app import jhsaa as jh
+    road = coef.road_points()
+    for name in (["Areas", "Sectionals", jh.EPIREGIONAL_NAME, jh.METASTATE_NAME]
+                 + list(jh._STAGE_NAMES.values())
+                 + list(jh._RECOVERY_NAMES.values())):
+        assert road.get(name), name
+    # And the archive key the round is stored under is walked for road wins.
+    assert jh.METASTATE_PHASE in coef._ROAD_KEYS
 
 
 def test_the_window_weights_recency_and_drops_the_tenth_season():
@@ -172,10 +280,13 @@ def test_a_reset_during_a_load_stops_the_old_save_publishing(monkeypatch):
         return _season(year)
     monkeypatch.setattr(world, "get_jhsaa", slow_archive)
     monkeypatch.setattr(jh, "_rows", lambda: [{"name": n} for n in "ABCDE"])
+    # Off the fixture, never a typed total: the prices move and this test is about
+    # the reset, not the schedule.
+    want = coef.season_points(_season(1))["A"]["points"]
     first = coef._season(1, 5, "girls")
-    assert first["A"]["points"] == 40                    # the caller still gets its answer
+    assert first["A"]["points"] == want                  # the caller still gets its answer
     assert not coef._season_cache, "a stale load must not be published after a reset"
     second = coef._season(1, 5, "girls")                # the new save computes afresh
-    assert calls["n"] == 2 and second["A"]["points"] == 40
+    assert calls["n"] == 2 and second["A"]["points"] == want
     assert len(coef._season_cache) == 1                  # and this one IS published
     coef.reset()
