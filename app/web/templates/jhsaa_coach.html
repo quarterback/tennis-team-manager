@@ -50,7 +50,7 @@
         <tr><th style="width:56px">Year</th><th>Program</th><th>Role</th><th style="width:60px">Class</th><th class="num" style="width:64px">Record</th></tr>
         {% for h in view.history|reverse %}
         <tr><td>{{ h.year }}</td>
-          <td><a href="{{ url_for('jhsaa_school', school=h.school, u=u, g=h.gender) }}">{{ h.school }}</a></td>
+          <td><a href="{{ url_for('jhsaa_school', school=h.school, u=u, g=h.gender, year=h.world_year) }}">{{ h.school }}</a></td>
           <td>{{ h.role }}</td><td>{{ h.classification }}</td>
           <td class="num">{{ h.wins }}-{{ h.losses }}{% if h.ties %}-{{ h.ties }}{% endif %}</td></tr>
         {% endfor %}

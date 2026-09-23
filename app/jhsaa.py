@@ -55,6 +55,7 @@ import os
 import random
 import uuid
 import re
+import threading
 from collections import defaultdict
 from dataclasses import dataclass, field
 
@@ -2926,7 +2927,7 @@ def reset_schools() -> None:
     global _schools_cache
     _schools_cache = None
     _playup_cache.clear()
-    _staff_hist_cache.clear()
+    invalidate_staff_history()
     _schoolobj_cache.clear()
     _upstart_cache.clear()
     _playup_league_cache.clear()
@@ -3869,6 +3870,24 @@ def pinned_talents(gender: str, ident: str) -> dict:
 
 
 _staff_hist_cache: dict = {}     # (db, gender, ident) -> {season_year: StaffEffect}
+# ‼️ THREADED WORKER: a roster build can read this while `/world/advance` archives
+# a season. `record_season` invalidates INSIDE the rung's transaction, so a reader
+# that queries between that clear and the commit sees the OLD committed history —
+# and, unguarded, would publish it back into the cache after the clear, leaving
+# the next season without the year just archived. So every invalidation bumps a
+# GENERATION under the lock, a reader publishes only if the generation it
+# snapshotted before its query still stands, and the rung invalidates AGAIN after
+# it commits (`invalidate_staff_history`). A read that raced either bump is
+# returned to its caller but never cached.
+_staff_hist_lock = threading.Lock()
+_staff_hist_gen = 0
+
+
+def invalidate_staff_history() -> None:
+    global _staff_hist_gen
+    with _staff_hist_lock:
+        _staff_hist_gen += 1
+        _staff_hist_cache.clear()
 
 
 def staff_history(gender: str, ident: str) -> dict:
@@ -3887,7 +3906,9 @@ def staff_history(gender: str, ident: str) -> dict:
     from .dbpath import resolve_db_path
     db = resolve_db_path()
     key = (db, gender, ident)
-    got = _staff_hist_cache.get(key)
+    with _staff_hist_lock:
+        got = _staff_hist_cache.get(key)
+        gen = _staff_hist_gen
     if got is not None:
         return got
     out: dict = {}
@@ -3908,7 +3929,9 @@ def staff_history(gender: str, ident: str) -> dict:
             out = {BASE_YEAR + int(y) + 1: _eff_from_json(e) for y, e in rows}
         except sqlite3.Error:
             out = {}
-    _staff_hist_cache[key] = out
+    with _staff_hist_lock:
+        if gen == _staff_hist_gen:
+            _staff_hist_cache[key] = out
     return out
 
 

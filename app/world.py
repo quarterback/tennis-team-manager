@@ -4378,6 +4378,11 @@ def run_jhsaa(seed: int, world: dict) -> dict:
         conn.commit()
     finally:
         conn.close()
+        # POST-COMMIT invalidation of the staff history (`record_season` cleared it
+        # before the commit, which a concurrent reader can race — see
+        # `jhsaa.invalidate_staff_history`). In `finally` so a rolled-back rung
+        # does not leave a cache built from its uncommitted clear either.
+        jhsaa.invalidate_staff_history()
     return {"event": "jhsaa", "year": year, "champions": champs}
 
 

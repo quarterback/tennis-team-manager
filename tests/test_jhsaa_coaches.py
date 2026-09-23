@@ -183,6 +183,58 @@ def _digest(season) -> str:
     return json.dumps(rows, default=str)
 
 
+def test_a_history_read_that_races_an_invalidation_is_never_cached(monkeypatch):
+    """The threaded worker: `record_season` clears the staff history inside the
+    rung's transaction, and a reader querying between that clear and the commit
+    sees the OLD history. It may return it, but must never cache it — or the next
+    season builds without the year just archived."""
+    jh.invalidate_staff_history()
+
+    def racing(_db):
+        jh.invalidate_staff_history()          # the rung, mid-read
+        return None
+    monkeypatch.setattr(jh, "_expo_world_id", racing)
+    assert jh.staff_history("girls", "race-ident") == {}
+    assert not jh._staff_hist_cache, "a read that raced an invalidation was published"
+    monkeypatch.setattr(jh, "_expo_world_id", lambda _db: None)
+    jh.staff_history("girls", "race-ident")
+    assert jh._staff_hist_cache, "an unraced read should still be memoised"
+    jh.invalidate_staff_history()
+
+
+def test_a_vetoed_departure_keeps_every_seat_its_skipped_moves_would_have_left(
+        monkeypatch):
+    """Veto the head's retirement, leave the promotion that would fill it: the
+    promotion is skipped (the seat is not vacant), so the assistant stays — and
+    the fill proposed for THEIR seat must be skipped too, and so on down the
+    chain, or somebody who never moved is sent to the free pool."""
+    def ln(kind, ident, slot, cid, veto=False, frm=None):
+        d = {"kind": kind, "gender": "girls", "ident": ident, "slot": slot,
+             "coach_id": cid, "veto": veto}
+        if frm:
+            d["from_ident"], d["from_slot"] = frm
+        return d
+    prop = {"year": 2030, "lines": [
+        ln("retire", "X", "head", "old", veto=True),
+        ln("promote", "X", "head", "a", frm=("X", "asst1")),
+        ln("move", "X", "asst1", "b", frm=("Y", "asst1")),
+        ln("move", "Y", "asst1", "c", frm=("Z", "asst2")),
+        ln("promote", "Q", "head", "d", frm=("Q", "asst1")),   # unrelated, applies
+    ]}
+    moved = []
+    monkeypatch.setattr(jc, "pending_cycle", lambda wid: prop)
+    monkeypatch.setattr(jc, "move_coach", lambda wid, cid, *a: moved.append(cid))
+    monkeypatch.setattr(jc, "retire_coach", lambda *a: moved.append("RETIRED"))
+
+    class _Fake:
+        def execute(self, *a): return self
+        def commit(self): pass
+        def close(self): pass
+    monkeypatch.setattr(jc, "_cconn", lambda: _Fake())
+    assert jc.commit_cycle(1) == 1
+    assert moved == ["d"]
+
+
 @pytest.fixture(scope="module")
 def world_season(tmp_path_factory):
     db = str(tmp_path_factory.mktemp("jhsaa") / "coaches.db")
@@ -281,6 +333,11 @@ def test_program_and_coach_pages_render(world_season):
     body = page.get_data(as_text=True)
     assert head.name in body and "Changeover" in body and "Clutch" in body
     assert s.name in body                      # the career row
+    # ‼️ the history row is keyed on the WORLD year; the page shows the SEASON
+    car = jc.coach_career(wid, head.coach_id)
+    assert [h["year"] for h in car["history"]] == [world_season["season_year"]]
+    assert car["history"][0]["world_year"] == world_season["world"]["year"]
+    assert f"<td>{world_season['season_year']}</td>" in body
     assert client.get("/jhsaa/coach/nope").status_code == 404
 
 

@@ -597,9 +597,11 @@ def record_season(conn, world_id: int, year: int, gender: str, teams, effects: d
         "INSERT INTO jhsaa_coach_history (world_id, year, ident, gender, slot, coach_id,"
         " school, classification, grp, wins, losses, ties, eff)"
         " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", hist)
-    # A new archived year changes what a roster build reads.
+    # A new archived year changes what a roster build reads. The rung invalidates
+    # AGAIN after its commit (`world.run_jhsaa`) — this one alone would let a
+    # concurrent reader re-cache the pre-commit history.
     from . import jhsaa
-    jhsaa._staff_hist_cache.clear()
+    jhsaa.invalidate_staff_history()
 
 
 # ------------------------------------------------------------ read models ----
@@ -631,6 +633,14 @@ def coach_career(world_id: int, coach_id: str) -> dict:
             " WHERE world_id=? AND coach_id=?", (world_id, coach_id)).fetchone()
     finally:
         conn.close()
+    # ‼️ `jhsaa_coach_history.year` is the WORLD KEY (0, 1, …), the same key the
+    # archive uses — never a calendar year. The page shows the season, so map it the
+    # way `world.jhsaa_season_year` does (events and seats already store seasons);
+    # `world_year` keeps the key for anything that links back into the archive.
+    from .world import BASE_YEAR
+    for h in hist:
+        h["world_year"] = h["year"]
+        h["year"] = BASE_YEAR + int(h["year"]) + 1
     w = sum(h["wins"] or 0 for h in hist if h["slot"] == "head")
     l = sum(h["losses"] or 0 for h in hist if h["slot"] == "head")
     return {"history": hist, "events": events,
@@ -1287,6 +1297,21 @@ def commit_cycle(world_id: int) -> int:
                  if ln["veto"] and ln["kind"] in ("retire", "fire")}
     kept_seat |= {(ln["gender"], ln["from_ident"], ln["from_slot"]) for ln in prop["lines"]
                   if ln["veto"] and ln.get("from_slot")}
+    # ‼️ A move that is SKIPPED (its destination is kept) leaves its coach where
+    # they are, so the seat they would have left is kept too — otherwise the fill
+    # proposed for it replaces an assistant who never moved and sends them to the
+    # free pool. That can chain (the skipped move's source had its own fill, whose
+    # coach came from somewhere else), so close the set to a fixpoint first.
+    grew = True
+    while grew:
+        grew = False
+        for ln in prop["lines"]:
+            src = (ln["gender"], ln.get("from_ident"), ln.get("from_slot"))
+            if (not ln["veto"] and ln.get("from_slot")
+                    and (ln["gender"], ln["ident"], ln["slot"]) in kept_seat
+                    and src not in kept_seat):
+                kept_seat.add(src)
+                grew = True
     applied = 0
     for ln in prop["lines"]:
         if ln["veto"]:
