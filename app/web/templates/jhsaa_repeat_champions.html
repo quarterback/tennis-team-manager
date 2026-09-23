@@ -40,8 +40,8 @@
       <td><a class="nm" href="{{ url_for('jhsaa_player', school=r.link, pid=r.pid, u=u, g=view.gender) }}">{{ r.name }}</a></td>
       <td class="sch">{% for st in r.stints %}<span class="stint">{% if st.deco.mark %}<span class="mk">{{ st.deco.mark|safe }}</span>{% endif %}{{ st.school }}</span>{{ ' · ' if not loop.last }}{% endfor %}</td>
       <td class="won">{% for st in r.stints %}{% for t in st.won %}<span class="ti"
-        title="{{ t.season_year }} {{ t.group }} {{ t.flight_name }} · {{ st.school }}{% if t.partner %} · with {{ t.partner }}{% endif %}"
-        ><b>{{ t.season_year }}</b> {{ t.group }} {{ t.flight }}{% if t.partner %} <span class="pt">w/ {{ t.partner }}</span>{% endif %}</span>{{ ', ' if not (loop.last and st is sameas r.stints[-1]) }}{% endfor %}{% endfor %}</td>
+        title="{{ t.season_year|cal }} {{ t.group }} {{ t.flight_name }} · {{ st.school }}{% if t.partner %} · with {{ t.partner }}{% endif %}"
+        ><b>{{ t.season_year|cal }}</b> {{ t.group }} {{ t.flight }}{% if t.partner %} <span class="pt">w/ {{ t.partner }}</span>{% endif %}</span>{{ ', ' if not (loop.last and st is sameas r.stints[-1]) }}{% endfor %}{% endfor %}</td>
     </tr>
     {% endfor %}
     {% endfor %}

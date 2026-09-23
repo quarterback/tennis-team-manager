@@ -21,7 +21,7 @@
 <div class="jh-champ" style="margin-bottom:12px">
   <span class="mark">{{ view.champion.mark|safe }}</span>
   <div style="min-width:0">
-    <span class="lbl">{{ view.season_year }} JHSAA Tournament of Champions</span>
+    <span class="lbl">{{ view.season_year|cal }} JHSAA Tournament of Champions</span>
     <a class="nm" href="{{ url_for('jhsaa_school', school=view.champion.name, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.champion.name }}</a>
     {# An affiliate's real geography is city/state — see School.state. #}
     <div class="sub">{{ view.champion.mascot }} · {{ view.champion.city }}, {{ view.champion.state if view.champion.state else 'Jefferson' }}
@@ -43,7 +43,7 @@
   <div class="brk-stage" id="brkstage">
     <section class="brk-region" data-view="all">
       <div class="brk-region-head">
-        <h2>{{ view.season_year }} TOC · {{ view.field_n }} state champions</h2>
+        <h2>{{ view.season_year|cal }} TOC · {{ view.field_n }} state champions</h2>
         <span class="brk-region-champ">
           {% if view.champion %}{{ view.champion.name }} def. {{ view.runner_up.name }}{% else %}in progress{% endif %}</span>
       </div>

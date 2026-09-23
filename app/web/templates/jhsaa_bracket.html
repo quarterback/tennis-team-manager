@@ -21,7 +21,7 @@
 <div class="jh-champ" style="margin-bottom:12px">
   <span class="mark">{{ view.champion.mark|safe }}</span>
   <div style="min-width:0">
-    <span class="lbl">{{ view.season_year }} JHSAA {{ view.group }} State Champions</span>
+    <span class="lbl">{{ view.season_year|cal }} JHSAA {{ view.group }} State Champions</span>
     <a class="nm" href="{{ url_for('jhsaa_school', school=view.champion.name, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.champion.name }}</a>
     {# An affiliate's real geography is city/state — see School.state. #}
     <div class="sub">{{ view.champion.mascot }} · {{ view.champion.city }}, {{ view.champion.state if view.champion.state else 'Jefferson' }} · {{ view.champion.district }}</div>
@@ -46,7 +46,7 @@
   <div class="brk-stage" id="brkstage">
     <section class="brk-region" data-view="all">
       <div class="brk-region-head">
-        <h2>{{ view.season_year }} {{ view.group }} · {{ view.field_n }}-team field</h2>
+        <h2>{{ view.season_year|cal }} {{ view.group }} · {{ view.field_n }}-team field</h2>
         <span class="brk-region-champ">
           {% if view.champion %}{{ view.champion.name }} def. {{ view.runner_up.name }}{% else %}in progress{% endif %}</span>
       </div>
@@ -55,7 +55,7 @@
     {% if view.qual_canvas %}
     <section class="brk-region" data-view="qual" hidden>
       <div class="brk-region-head">
-        <h2>{{ view.season_year }} {{ view.group }} · Qualifying</h2>
+        <h2>{{ view.season_year|cal }} {{ view.group }} · Qualifying</h2>
       </div>
       {{ brk_canvas(view.qual_canvas, u, false, 'jhsaa_school', {'g': view.gender, 'year': view.scope.pin}) }}
     </section>
@@ -78,7 +78,7 @@
 {% if view.rounds %}
 <div class="bl-panel" style="margin-top:14px">
   <div class="bl-panel-head"><span class="bl-panel-title">{{ view.group }} Draw · every round</span>
-    <span class="bl-panel-meta">{{ view.season_year }} · {{ view.field_n }}-team field</span></div>
+    <span class="bl-panel-meta">{{ view.season_year|cal }} · {{ view.field_n }}-team field</span></div>
   <div class="bl-panel-body">
     {% for rd in view.rounds %}
     <details class="jh-stagefold"{{ ' open' if loop.index0 < view.prelim_n }}>

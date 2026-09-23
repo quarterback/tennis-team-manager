@@ -462,7 +462,7 @@ def open_proposal(world: dict, force: bool = False) -> dict:
     edits = (cur or {}).get("edits") or {}
     data = build_proposal(world["id"], years, cfg, edits)
     from . import world as wd
-    data["season_years"] = [wd.BASE_YEAR + y + 1 for y in years]
+    data["season_years"] = [wd.display_base_year() + y + 1 for y in years]
     conn = _conn()
     try:
         conn.execute("DELETE FROM world_jhsaa_reclass WHERE world_id=? AND status='proposed'",
@@ -705,7 +705,7 @@ def cycle_index(world_id: int) -> list[dict]:
         data = json.loads(c["data"])
         n, m = counts.get(c["year"], (0, 0))
         out.append({"year": c["year"],
-                    "season_year": data.get("first_season") or wd.BASE_YEAR + c["year"] + 1,
+                    "season_year": wd.display_year(data.get("first_season") or wd.BASE_YEAR + c["year"] + 1),
                     "n_moves": n, "n_manual": m or 0, "n_geo": len(data.get("geo", [])),
                     "counts_before": data.get("counts_before", {}),
                     "counts_after": data.get("counts_after", {}),
@@ -732,7 +732,7 @@ def cycle(world_id: int, year: int) -> dict | None:
         conn.close()
     data = json.loads(c["data"])
     return {"year": c["year"],
-            "season_year": data.get("first_season") or wd.BASE_YEAR + c["year"] + 1,
+            "season_year": wd.display_year(data.get("first_season") or wd.BASE_YEAR + c["year"] + 1),
             "moves": [dict(r) for r in mv],
             "counts_before": data.get("counts_before", {}),
             "counts_after": data.get("counts_after", {}),
@@ -763,7 +763,7 @@ def all_moves(world_id: int) -> list[dict]:
     out = []
     for r in rows:
         d = dict(r)
-        d["season_year"] = first.get(d["year"]) or wd.BASE_YEAR + d["year"] + 1
+        d["season_year"] = wd.display_year(first.get(d["year"]) or wd.BASE_YEAR + d["year"] + 1)
         out.append(d)
     return out
 
@@ -799,7 +799,7 @@ def cycle_markdown(c: dict, depth: int = 1) -> str:
     from . import world as wd
     h1, h2, h3 = "#" * depth, "#" * (depth + 1), "#" * (depth + 2)
     classes = [g for g in jh.GROUPS]
-    scored = ", ".join(str(wd.BASE_YEAR + y + 1) for y in c.get("years", []))
+    scored = ", ".join(str(wd.display_base_year() + y + 1) for y in c.get("years", []))
     lines = [f"{h1} JHSAA realignment — {c['season_year']} season",
              "",
              (f"Committed at world year {c['year']}; scored on the {scored} seasons."

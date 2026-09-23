@@ -13,7 +13,7 @@
     </select></span></label>
   <label class="bl-field"><span class="bl-field-label">Class</span>
     <span class="bl-select-wrap"><select class="bl-select" name="grad_year" onchange="this.form.submit()" style="min-width:78px">
-      {% for y in grad_years %}<option{% if y == grad_year %} selected{% endif %}>{{ y }}</option>{% endfor %}
+      {% for y in grad_years %}<option{% if y == grad_year %} selected{% endif %}>{{ y|cal }}</option>{% endfor %}
     </select></span></label>
   <label class="bl-field"><span class="bl-field-label">Board</span>
     <span class="bl-select-wrap"><select class="bl-select" name="scope" onchange="this.form.submit()" style="min-width:120px">
@@ -37,7 +37,7 @@
 
 <div class="bl-container"><div class="bl-entries">
   <div class="bl-entries-left">Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ total }}{% if status=='unsigned' %} available{% endif %}</div>
-  <span class="bl-entries-right">{{ uni_label }} · class of {{ grad_year }} ·
+  <span class="bl-entries-right">{{ uni_label }} · class of {{ grad_year|cal }} ·
     {{ 'National' if scope=='national' else (state if scope=='state' else 'International') }} board{% if status=='unsigned' %} · uncommitted only{% endif %}</span>
 </div></div>
 

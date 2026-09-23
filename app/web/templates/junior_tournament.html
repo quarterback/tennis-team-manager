@@ -4,7 +4,7 @@
 
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
   <a class="bl-pill" style="text-decoration:none" href="{{ url_for('junior_tour', u=u, grad_year=grad_year, tier=t.level) }}">← Junior Tour</a>
-  <span style="margin-left:auto;font-size:16px;color:var(--text-muted)">Week {{ t.week }} · {{ t.n_entrants }}-player draw · class of {{ grad_year }}</span>
+  <span style="margin-left:auto;font-size:16px;color:var(--text-muted)">Week {{ t.week }} · {{ t.n_entrants }}-player draw · class of {{ grad_year|cal }}</span>
 </div></div>
 
 <div class="bl-container">

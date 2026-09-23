@@ -366,7 +366,7 @@ def _game_context():
         awards_pending = False
         if stage == "complete":
             import app.honors as honors
-            awards_pending = not all(honors.has_season(2026 + w["year"], d, g)
+            awards_pending = not all(honors.has_season(wd.display_base_year() + w["year"], d, g)
                                      for (d, g) in wd._active_unis())
             if awards_pending:
                 action = "Run awards"
@@ -392,7 +392,7 @@ def _game_context():
         # corner said 2072 under a page full of 2073 — "the one in the corner is
         # wrong". The shell shows `jh_year` while the reader is in the High
         # School section, so the corner always agrees with the page under it.
-        return {"year": 2026 + w["year"], "jh_year": 2026 + w["year"] + 1,
+        return {"year": wd.display_base_year() + w["year"], "jh_year": wd.display_base_year() + w["year"] + 1,
                 "season_no": w["year"] + 1,
                 "week": w["week"], "phase": _LBL.get(stage, "Regular season"),
                 "stage": stage, "action": action, "awards_pending": awards_pending,
@@ -507,7 +507,7 @@ def create_app() -> Flask:
     if _w:
         _season = (f"JHSAA season {_wd.jhsaa_season_year(_w)}"
                    if _wd.is_jhsaa_only(_wd.DEFAULT_SEED)
-                   else f"season {2026 + _w['year']}")
+                   else f"season {_wd.display_base_year() + _w['year']}")
     logging.getLogger("baseline.server").warning(
         "save%s: %s — %s", _mode, _rdp(),
         f"world year {_w['year']} ({_season})" if _w else
@@ -612,6 +612,12 @@ def create_app() -> Flask:
     )
     from app.pros import is_pro as _is_pro
     app.jinja_env.filters["is_pro"] = _is_pro
+    # `|cal`: a stored IDENTITY calendar year (jhsaa season years, grad years —
+    # anything that keys a roster rebuild or an archive) shown on the display
+    # calendar. On an ordinary save the offset is 0 and it is the identity function;
+    # on a lab-integrated backdated save it subtracts the display offset. Views
+    # keep identity years so data flows never shift; the template edge converts.
+    app.jinja_env.filters["cal"] = wd.display_year
     app.jinja_env.filters["flag"] = flag
     app.jinja_env.filters["flags"] = flags
     app.jinja_env.filters["country_name"] = country_name
@@ -1081,7 +1087,7 @@ def create_app() -> Flask:
                 # Once the active seasons are complete, hold at the awards step until honors
                 # are stamped for every ACTIVE universe (don't wait on a dormant one, whose
                 # honors never stamp — that would jam a single-gender save here forever).
-                year = wd.BASE_YEAR + wd.load_world()["year"]
+                year = wd.display_base_year() + wd.load_world()["year"]
                 pending = (wd.season_complete()
                            and not all(honors.has_season(year, d, g) for (d, g) in wd._active_unis()))
                 if not pending:
@@ -1430,7 +1436,7 @@ def create_app() -> Flask:
         """Browser-native research download; simulation state is never modified."""
         if request.method == "GET":
             world = wd.load_world(DEFAULT_SEED)
-            default_year = wd.jhsaa_season_year(world) if world else 2027
+            default_year = wd.display_year(wd.jhsaa_season_year(world)) if world else 2027
             return render_template("research_export.html", active="Tools",
                                    default_year=default_year)
         from app.research_export import ExportError, export_zip, export_zip_bulk
@@ -1441,6 +1447,11 @@ def create_app() -> Flask:
                 raise ValueError
         except ValueError:
             abort(400, "Year must be between 2020 and 2200.")
+        # The form speaks DISPLAYED years (a backdated save's user thinks in them);
+        # the export engine and its zips stay on identity calendar years, so the
+        # corpus stays continuous across the lab-to-college integration. Convert
+        # once here; the download filename keeps the year the user typed.
+        _off = wd.display_offset()
         gender = request.form.get("gender", "girls" if family == "jhsaa" else "men")
         both_genders = request.form.get("both_genders") == "on"
         year_to_raw = request.form.get("year_to", "").strip()
@@ -1450,7 +1461,7 @@ def create_app() -> Flask:
         if not both_genders and not year_to_raw:
             # Single (year, gender) — unchanged, ordinary single-scope download.
             try:
-                bundle = export_zip(family, year=year, gender=gender, **extra)
+                bundle = export_zip(family, year=year + _off, gender=gender, **extra)
             except ExportError as exc:
                 abort(400, str(exc))
             filename = f"play-to-clinch-{family}-{year}-{gender}.zip"
@@ -1468,7 +1479,7 @@ def create_app() -> Flask:
                 abort(400, "End year must be a valid year on or after the start year.")
         genders = (["girls", "boys"] if family == "jhsaa" else ["men", "women"]) \
             if both_genders else [gender]
-        years = list(range(year, year_to + 1))
+        years = [y + _off for y in range(year, year_to + 1)]
         if len(years) * len(genders) > 120:
             abort(400, "That range is too large for one export — narrow the years or genders.")
         try:
@@ -1556,7 +1567,7 @@ def create_app() -> Flask:
         # Season select: the current year is the LIVE board; past years serve the
         # final rankings stamped when that season's conference tournaments ended.
         from app import rankings_archive
-        cur_year = 2026 + (wd.load_world()["year"] if wd.exists() else 0)
+        cur_year = wd.display_base_year() + (wd.load_world()["year"] if wd.exists() else 0)
         past_years = [y for y in rankings_archive.years(division, gender) if y != cur_year]
         season_opts = [cur_year] + past_years
         try:
@@ -1722,7 +1733,7 @@ def create_app() -> Flask:
         # swap if the target is occupied, just fill it if it's vacant (no demotion).
         from app import coachgen
         coachgen.ensure(d2, g2, s2, r2)
-        move_year = wd.BASE_YEAR + (wd.load_world()["year"] if wd.exists() else 0)
+        move_year = wd.display_base_year() + (wd.load_world()["year"] if wd.exists() else 0)
         coachreg.move_to(coach_id, g2, d2, s2, r2, year=move_year)
         reset_all()
         if request.form.get("back") == "editor":     # invoked from the Editor — stay there
@@ -1757,7 +1768,7 @@ def create_app() -> Flask:
         s = sm.load_season(sid)
         final = aw.get("concluded", False)      # honors are only named once the season concludes
         conf_p = paginate(aw["all_conference"], request.args.get("page", 1), per_page=6)
-        cur_year = wd.BASE_YEAR + (wd.load_world()["year"] if wd.exists() else 0)
+        cur_year = wd.display_base_year() + (wd.load_world()["year"] if wd.exists() else 0)
         past_years = [y for y in archive_years(division, gender) if y < cur_year]
         return render_template("awards.html", active="Awards", aw=aw, conf_p=conf_p,
                                coach_awards=coach_awards, u=u, uni_label=label, crest=crest,
@@ -1827,7 +1838,7 @@ def create_app() -> Flask:
         # same canvas, same viewer — so it takes the same season picker too.
         division, gender, label, u = _universe(request)
         years = ita_bracket_years(division, gender)
-        cur_year = wd.BASE_YEAR + (wd.load_world()["year"] if wd.exists() else 0)
+        cur_year = wd.display_base_year() + (wd.load_world()["year"] if wd.exists() else 0)
         sel = request.args.get("year", type=int)
         view_year = sel if (sel and sel != cur_year) else None
         return render_template("ita.html", active="Season", u=u, uni_label=label,
@@ -1850,7 +1861,7 @@ def create_app() -> Flask:
         # the current year has no cup — and `get_world_cup` falls through to the most
         # recent archive, which rendered LAST year's champion and draw under a pill
         # highlighting this year.
-        years = sorted((wd.BASE_YEAR + y for y in wd.world_cup_years(DEFAULT_SEED)),
+        years = sorted((wd.display_base_year() + y for y in wd.world_cup_years(DEFAULT_SEED)),
                        reverse=True)
         return render_template("world_cups.html", active="World Cups", g=g,
                                cup=cup, years=years, sel_year=sel_year, crest=crest)
@@ -2353,7 +2364,7 @@ def create_app() -> Flask:
     def ncaa_bracket():
         division, gender, label, u = _universe(request)
         years = ncaa_bracket_years(division, gender)
-        cur_year = wd.BASE_YEAR + (wd.load_world()["year"] if wd.exists() else 0)
+        cur_year = wd.display_base_year() + (wd.load_world()["year"] if wd.exists() else 0)
         sel = request.args.get("year", type=int)
         view_year = sel if (sel and sel != cur_year) else None
         return render_template("ncaa_bracket.html", active="NCAA Bracket", u=u, uni_label=label,
@@ -3396,7 +3407,8 @@ def create_app() -> Flask:
                 request.form.get("note", "").strip(),
                 salt=wd.active_salt(DEFAULT_SEED),
                 where_a={"gender": g, "school": school,
-                         "year": request.form.get("player_season", type=int)},
+                         "year": (lambda _y: _y + wd.display_offset() if _y is not None else _y)(
+                    request.form.get("player_season", type=int))},
                 where_b={"gender": request.form.get("fam_g", g),
                          "school": request.form.get("fam_school", ""),
                          "year": request.form.get("fam_season", type=int)})
@@ -3417,6 +3429,8 @@ def create_app() -> Flask:
         text = request.form.get("batch", "")
         do_apply = request.form.get("do") == "apply"
         year = request.form.get("jh_year", type=int)
+        if year is not None:
+            year += wd.display_offset()     # forms speak displayed years
         pairs = []
         for line in text.splitlines():
             line = line.strip()
@@ -4020,7 +4034,7 @@ def create_app() -> Flask:
         pg = paginate(v["rows"], request.args.get("page", 1))
         v = {**v, "rows": pg.items}
         return render_template("wire.html", active="World", u=u, uni_label=label,
-                               v=v, p=pg, base_year=wd.BASE_YEAR,
+                               v=v, p=pg, base_year=wd.display_base_year(),
                                divisions=["All", "D1", "D2", "D3", "D4"])
 
     @app.route("/recruiting/hub")
@@ -4571,8 +4585,10 @@ def create_app() -> Flask:
         pid = request.form.get("jh_pid", "")
         to_school = request.form.get("jh_to_school", "").strip()
         try:
-            entry = int(request.form.get("jh_entry", ""))
-            year = int(request.form.get("jh_year", ""))
+            # Forms speak DISPLAYED years; entry year is a pid component and the
+            # move year keys the ledger, so both convert to identity here, once.
+            entry = int(request.form.get("jh_entry", "")) + wd.display_offset()
+            year = int(request.form.get("jh_year", "")) + wd.display_offset()
         except ValueError:
             entry = year = None
         # A flash cookie, same pattern as the archetype bulk editor's
@@ -4588,6 +4604,8 @@ def create_app() -> Flask:
         existing = _jh.transfer_for(pid) if pid else None
         origin_name = (existing or {}).get("from") or from_school
         undo_year = request.form.get("jh_undo_year", type=int)
+        if undo_year is not None:
+            undo_year += wd.display_offset()
         if pid and request.form.get("do") == "undo":
             # One hop, or the lot. Undoing a MOVE leaves the rest of the career
             # standing — the whole point of keeping a history.

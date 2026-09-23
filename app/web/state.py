@@ -122,7 +122,7 @@ def _hydrate_championship(data):
 
 
 def _cur_cal_year(world, seed):
-    return world.BASE_YEAR + (world.load_world(seed)["year"] if world.exists(seed) else 0)
+    return world.display_base_year() + (world.load_world(seed)["year"] if world.exists(seed) else 0)
 
 
 def championship_years(division: str, gender: str, seed: int = DEFAULT_SEED):
@@ -157,7 +157,7 @@ def get_singles_championship(division: str, gender: str, seed: int = DEFAULT_SEE
     from app.individuals import run_singles_championship, clamp_field, championship_to_dict
     if year is not None and year != _cur_cal_year(world, seed):
         return _hydrate_championship(world.latest_championship(
-            seed, division, gender, "Singles", year=year - world.BASE_YEAR))
+            seed, division, gender, "Singles", year=year - world.display_base_year()))
     eff = world.current_year_seed(seed)
     sid = sm.get_or_create(division, gender, seed=eff)
     s = sm.load_season(sid)
@@ -190,7 +190,7 @@ def get_doubles_championship(division: str, gender: str, seed: int = DEFAULT_SEE
     from app.individuals import run_doubles_championship, clamp_field, championship_to_dict
     if year is not None and year != _cur_cal_year(world, seed):
         return _hydrate_championship(world.latest_championship(
-            seed, division, gender, "Doubles", year=year - world.BASE_YEAR))
+            seed, division, gender, "Doubles", year=year - world.display_base_year()))
     eff = world.current_year_seed(seed)
     sid = sm.get_or_create(division, gender, seed=eff)
     s = sm.load_season(sid)
@@ -229,7 +229,7 @@ def get_world_cup(gender: str, seed: int = DEFAULT_SEED, year: int | None = None
         # through to "most recent archived" when the requested year was the current
         # one, so a current year with no cup yet rendered the PRIOR year's champion
         # and draw as if they were this year's.
-        return world.latest_world_cup(seed, gender, year=year - world.BASE_YEAR)
+        return world.latest_world_cup(seed, gender, year=year - world.display_base_year())
     return world.latest_world_cup(seed, gender)
 
 
@@ -1057,8 +1057,8 @@ def signing_tracker(gender: str, division: str | None = None,
             "total_signed": sum(c["n"] for c in classes), "n_programs": len(classes),
             "n_flipped": flipped_total,
             "year": year, "archive": is_archive,
-            "class_of": world.BASE_YEAR + year + 1,
-            "years": [{"val": y, "label": f"Class of {world.BASE_YEAR + y + 1}"
+            "class_of": world.display_base_year() + year + 1,
+            "years": [{"val": y, "label": f"Class of {world.display_base_year() + y + 1}"
                        + ("" if y != cur else " (live)")} for y in years]}
 
 
@@ -1216,7 +1216,7 @@ def wire_view(seed: int = DEFAULT_SEED, gender: str = "all", division: str = "Al
         label, why = _WIRE_KINDS.get(m["kind"], (m["kind"].title(), ""))
         d_src, d_dst = _DIV_RANK.get(m["src_div"], 9), _DIV_RANK.get(m["dest_div"], 9)
         rows.append({
-            "year": m["year"], "year_label": world.BASE_YEAR + m["year"],
+            "year": m["year"], "year_label": world.display_base_year() + m["year"],
             "cycle": m["cycle"], "cycle_label": _CYCLE_LABEL.get(m["cycle"], m["cycle"].title()),
             "gender": m["gender"], "pid": m["pid"], "name": m["name"],
             "str": round(m["str"], 1), "kind": m["kind"], "kind_label": label, "why": why,
@@ -1299,7 +1299,7 @@ def portal_class_rankings(seed: int = DEFAULT_SEED, gender: str = "all",
     import app.world as world
     from .rankings_data import crest
     years = world.portal_years(seed)
-    year_opts = [{"val": y, "label": world.BASE_YEAR + y} for y in years]
+    year_opts = [{"val": y, "label": world.display_base_year() + y} for y in years]
     if not years:
         return {"year": None, "year_label": None, "years": [], "classes": [], "gender": gender,
                 "division": division, "kpis": {}, "n_programs": 0, "total_moves": 0}
@@ -1370,7 +1370,7 @@ def portal_class_rankings(seed: int = DEFAULT_SEED, gender: str = "all",
         "programs": len(classes),
         "top_pickup": max(kpi_moves, key=lambda m: m["str"]) if kpi_moves else None,
     }
-    return {"year": year, "year_label": world.BASE_YEAR + year, "years": year_opts,
+    return {"year": year, "year_label": world.display_base_year() + year, "years": year_opts,
             "classes": classes, "gender": g, "division": division, "kpis": kpis,
             "n_programs": len(classes), "total_moves": len(kpi_moves)}
 
@@ -1553,6 +1553,8 @@ def _signed_school_map(gender: str, grad_year: int, seed: int = DEFAULT_SEED) ->
     season index (0,1,2…) to a calendar year and so always cleared the flag."""
     import app.world as world
     w = world.load_world(seed)
+    # Identity compare: `grad_year` is the recruit class KEY (seeds board_class,
+    # keys world_signing) and stays a calendar identity year — never display-offset.
     if not w or world.BASE_YEAR + w["year"] + 1 != grad_year:
         return {}
     wgender = _REV_RECRUIT_GENDERS.get(gender, gender)
@@ -1707,7 +1709,7 @@ def player_career_records(division: str, gender: str, pid: str, seed: int = DEFA
     seasons = []
     for h in hist:
         seasons.append({
-            "cal_year": world.BASE_YEAR + h["year"],
+            "cal_year": world.display_base_year() + h["year"],
             "singles": {int(k): v for k, v in (h.get("singles_lines") or {}).items()},
             "doubles": {int(k): v for k, v in (h.get("doubles_lines") or {}).items()},
         })
@@ -1717,7 +1719,7 @@ def player_career_records(division: str, gender: str, pid: str, seed: int = DEFA
         sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
         lr = sm.player_line_records(sid).get(pid)
         if lr:
-            seasons.append({"cal_year": world.BASE_YEAR + cur,
+            seasons.append({"cal_year": world.display_base_year() + cur,
                             "singles": lr["singles"], "doubles": lr["doubles"]})
     seasons.sort(key=lambda s: s["cal_year"])
 
@@ -1836,13 +1838,13 @@ def transfer_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED, y
     if not w:
         return {"transfers": [], "n": 0, "current_year": None, "years": [], "year": year}
     rosters = world._base_rosters(w).get((division, gender), {})
-    cur_cal = world.BASE_YEAR + w["year"]
+    cur_cal = world.display_base_year() + w["year"]
     events = []
     for school, roster in rosters.items():
         for p in roster:
             hist = sorted((getattr(p, "history", []) or []),
                           key=lambda h: (h.get("year", 0), h.get("stint", 0)))
-            seq = [(world.BASE_YEAR + h["year"], h.get("school")) for h in hist]
+            seq = [(world.display_base_year() + h["year"], h.get("school")) for h in hist]
             seq.append((cur_cal, school))               # current spot closes the timeline
             for i in range(1, len(seq)):
                 (_py, ps), (cy, cs) = seq[i - 1], seq[i]
@@ -1925,7 +1927,7 @@ def fall_portal_view(seed: int = DEFAULT_SEED, page: int = 1,
     # totals over the whole slate, proposals is just the current page.
     shown = _portal_q_filter(out, q)
     pg = paginate(shown, page, per_page or PRESEASON_PORTAL_PER_PAGE)
-    return {"year": world.BASE_YEAR + w["year"], "raw_year": w["year"],
+    return {"year": world.display_base_year() + w["year"], "raw_year": w["year"],
             "proposals": pg.items, "n": len(out), "q": (q or "").strip(),
             "riders": sum(1 for r in out if r["is_riser"]),
             "committed": len(committed), "pros": pros_in,
@@ -2047,7 +2049,7 @@ def preseason_portal_view(seed: int = DEFAULT_SEED, gender: str = "all",
                 "is_riser": m["cascade_from"] is None})
         out.sort(key=lambda r: (0 if r["is_riser"] else 1, -r["str"], r["pid"]))
         pg = _paginate_portal(_portal_q_filter(out, q), gender, page, per_page)
-        return {"year": world.BASE_YEAR + w["year"], "raw_year": w["year"],
+        return {"year": world.display_base_year() + w["year"], "raw_year": w["year"],
                 "proposals": pg["page_rows"], "n": len(out), "q": (q or "").strip(),
                 "riders": sum(1 for r in out if r["is_riser"]),
                 "committed": len(committed), "done": True, "cap": cap, "pros_cycle": pros_cycle,
@@ -2075,7 +2077,7 @@ def preseason_portal_view(seed: int = DEFAULT_SEED, gender: str = "all",
     # unexpected 0 is explainable and the user can force a re-scan.
     debug = world.preseason_portal_debug(seed) if not out else None
     pg = _paginate_portal(_portal_q_filter(out, q), gender, page, per_page)
-    return {"year": world.BASE_YEAR + w["year"], "raw_year": w["year"],
+    return {"year": world.display_base_year() + w["year"], "raw_year": w["year"],
             "proposals": pg["page_rows"], "n": len(out), "q": (q or "").strip(),
             "riders": sum(1 for r in out if r["is_riser"]),
             "committed": 0, "done": False, "cap": cap, "pros_cycle": pros_cycle,
@@ -2102,7 +2104,7 @@ def ncaa_bracket_years(division: str, gender: str, seed: int = DEFAULT_SEED):
             continue
         ph = (sm.load_season(sid) or {}).get("phase")
         if ph in ("selection", "ncaa", "complete"):
-            years.append(world.BASE_YEAR + idx)
+            years.append(world.display_base_year() + idx)
     return sorted(years, reverse=True)
 
 
@@ -2138,7 +2140,7 @@ def ncaa_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED, year
         return [{"name": region_names[r], "teams": by_rgn[region_names[r]]}
                 for r in _regions.MAIN_DRAW_ORDER]
     if year is not None:
-        idx = year - world.BASE_YEAR
+        idx = year - world.display_base_year()
         sid = sm.find_season(division, gender, seed=world.year_seed(seed, idx))
         if sid is None:
             return None
@@ -2425,7 +2427,7 @@ def ita_bracket_years(division: str, gender: str, seed: int = DEFAULT_SEED) -> l
         if sid is None:
             continue
         if sm.ita_view(sid):
-            years.append(world.BASE_YEAR + idx)
+            years.append(world.display_base_year() + idx)
     return sorted(years, reverse=True)
 
 
@@ -2444,7 +2446,7 @@ def ita_bracket_view(division: str, gender: str, seed: int = DEFAULT_SEED,
     from .rankings_data import crest
 
     if year is not None:
-        sid = sm.find_season(division, gender, seed=world.year_seed(seed, year - world.BASE_YEAR))
+        sid = sm.find_season(division, gender, seed=world.year_seed(seed, year - world.display_base_year()))
         if sid is None:
             return None
     else:
@@ -2828,7 +2830,7 @@ def program_history(division: str, gender: str, school: str, seed: int = DEFAULT
         row = sm.season_program_result(ysid, school)
         if not row:
             continue
-        row["year"] = 2026 + y
+        row["year"] = world.display_base_year() + y
         row["season_no"] = y + 1
         seasons.append(row)
     seasons.reverse()                                  # newest first
@@ -2859,7 +2861,7 @@ def player_career(division: str, gender: str, pid: str, seed: int = DEFAULT_SEED
     log = sm.player_log(sid, pid)
     w = sum(1 for m in log if m["won"])
     l = len(log) - w
-    groups = [{"year": 2026 + yr, "season_no": yr + 1, "log": log, "w": w, "l": l}] if log else []
+    groups = [{"year": world.display_base_year() + yr, "season_no": yr + 1, "log": log, "w": w, "l": l}] if log else []
     return groups, (w, l)
 
 
@@ -2886,7 +2888,7 @@ def player_career_table(division: str, gender: str, pid: str, seed: int = DEFAUL
 
     rows = []
     for h in hist:
-        cal = world.BASE_YEAR + h["year"]
+        cal = world.display_base_year() + h["year"]
         rows.append({
             "cal_year": cal, "season_no": h.get("season_no", h["year"] + 1),
             "school": h["school"], "division": h.get("division", division),
@@ -2907,7 +2909,7 @@ def player_career_table(division: str, gender: str, pid: str, seed: int = DEFAUL
         if info:
             w_, l_ = sm.player_records(sid).get(pid, (0, 0))
             strv = sm.season_player_str(sid).get(pid, (None, 0.0))[0]
-            cal = world.BASE_YEAR + cur
+            cal = world.display_base_year() + cur
             rows.append({
                 "cal_year": cal, "season_no": cur + 1, "school": info["school"],
                 "division": division, "class": info.get("class", ""),
@@ -3103,7 +3105,7 @@ def world_hub(seed: int = DEFAULT_SEED):
     # rankings compare fields that have played different numbers of duals.
     in_sync = len(progress) <= 1
     signed = world.signed_counts(seed)
-    year = world.BASE_YEAR + w["year"]
+    year = world.display_base_year() + w["year"]
     complete = bool(divisions) and all(d["phase"] == "complete" for d in divisions)
 
     import app.honors as honors
@@ -3175,7 +3177,7 @@ def preseason_view(seed: int = DEFAULT_SEED) -> dict:
     import app.world as world
     from app import worldconfig
     w = world.get_or_create(seed)
-    year = world.BASE_YEAR + w["year"]
+    year = world.display_base_year() + w["year"]
     active = [lbl for (_v, d, g, lbl) in UNIVERSES if worldconfig.is_active(d, g)]
     dormant = [lbl for (_v, d, g, lbl) in UNIVERSES if not worldconfig.is_active(d, g)]
     steps = [
@@ -3241,7 +3243,7 @@ def my_program_view(seed: int = DEFAULT_SEED) -> dict | None:
         "u": f"{division}-{gender}",
         "conf": p.conf, "conf_abbr": p.conf_abbr,
         "prestige": round(getattr(p, "prestige", 0.0) * 100),
-        "year": world.BASE_YEAR + w["year"], "week": w["week"],
+        "year": world.display_base_year() + w["year"], "week": w["week"],
         "is_preseason": w["week"] == 0,
         "season_complete": sm.load_season(sid).get("phase") == "complete",
         "wins": rec["wins"], "losses": rec["losses"], "results": rec["results"][-5:],
@@ -3315,7 +3317,7 @@ def my_season_report(seed: int = DEFAULT_SEED) -> dict | None:
     rec = team_results(division, gender, school, seed)
     played = rec["wins"] + rec["losses"]
     base = {"school": school, "u": f"{division}-{gender}", "conf": div.by_school(school).conf,
-            "year": world.BASE_YEAR + w["year"]}
+            "year": world.display_base_year() + w["year"]}
     progs = [p for p in div.programs if p.school in pi]
     if played == 0 or len(progs) < 2:
         return {**base, "started": False}
@@ -3717,6 +3719,10 @@ def jhsaa_dual_view(dual_id: int) -> dict | None:
     # "regular" and is told apart from a non-league one by `district` alone.
     phase_label = (_JH_PHASE_LABEL.get(row["phase"])
                    or ("League Play" if row["district"] else "Invitational"))
+    # IDENTITY year into `jhsaa_match_dates` — every caller must feed the same
+    # season_year or the two schools' cards disagree on the weekday (the exact
+    # reciprocity fault the one-date-per-dual rule exists to stop). Only the
+    # RENDERED year is display-offset, below.
     season_year = world.BASE_YEAR + row["year"] + 1
     # This DUAL'S OWN calendar date, off the same display calendar
     # `jhsaa_prior_meetings` reads for the Matches tab (`jhsaa_match_dates`)
@@ -3726,12 +3732,13 @@ def jhsaa_dual_view(dual_id: int) -> dict | None:
                           else (row["opp_raw"], row["school_raw"]))
     cal = world.jhsaa_match_dates(row["world_id"], row["year"], row["gender"], season_year)
     day = cal.get((level, row["phase"] or "", int(bool(row["district"])), raw_home, raw_away))
-    date_label = f"{day:%b} {day.day}, {season_year}" if day else str(season_year)
+    season_disp = world.display_year(season_year)
+    date_label = f"{day:%b} {day.day}, {season_disp}" if day else str(season_disp)
     return {"id": dual_id, "home": home, "away": away,
             "home_points": home_pts, "away_points": away_pts, "winner": winner,
             "phase_label": phase_label, "date_label": date_label,
             "level": level, "year": row["year"],
-            "season_year": season_year, "gender": row["gender"],
+            "season_year": season_disp, "gender": row["gender"],
             "lines": _jh_reported_lines(row), "stat_groups": None,
             "tiebreak": _jh_reported_tiebreak(row),
             "meetings": meetings, "series": series}
@@ -4114,7 +4121,7 @@ def _jh_scope(gender: str, group: str, groups: list, year: int, years: list,
             # of the season on screen instead of silently falling back to the newest.
             "pin": year if (years and year != years[0]) else None,
             "season_year": season_year or (world.BASE_YEAR + (year or 0) + 1),
-            "season_years": {y: world.BASE_YEAR + y + 1 for y in years}}
+            "season_years": {y: world.display_base_year() + y + 1 for y in years}}
 
 
 #: A State FINISH, abbreviated for a dense table (owner's set, 2026-08):
@@ -5409,7 +5416,7 @@ def _jh_reclass_lines(world_id: int, school: str) -> list[dict]:
     import app.world as world
     out = []
     for m in rc.moves_for(world_id, school):
-        out.append({"season_year": world.BASE_YEAR + m["year"] + 1,
+        out.append({"season_year": world.display_base_year() + m["year"] + 1,
                     "from": m["from_cls"], "to": m["to_cls"], "points": m["points"],
                     "win_rate": m["win_rate"], "reason": m["reason"],
                     "manual": bool(m["manual"]), "league": m["league_after"]})
@@ -5810,7 +5817,7 @@ def jhsaa_reclass_view(seed: int, gender: str, group: str | None = None,
     pend = rc.pending(w["id"])
     last = rc.last_cycle_year(w["id"])
     recent = rc.cycle_years(w["id"], cfg["cycle"])
-    label = lambda ys: ", ".join(str(world.BASE_YEAR + y + 1) for y in ys) if ys else "—"
+    label = lambda ys: ", ".join(str(world.display_base_year() + y + 1) for y in ys) if ys else "—"
     return {**base,
             "pending": pend, "due": rc.due(w) if not pend else False,
             "config": cfg, "groups": list(jh.GROUPS),
@@ -5819,7 +5826,7 @@ def jhsaa_reclass_view(seed: int, gender: str, group: str | None = None,
                                   if r.get("girls") or r.get("boys")),
             "seasons_archived": len(rc.cycle_years(w["id"], 10_000)),
             "recent_label": label(recent),
-            "last_label": (str(world.BASE_YEAR + last + 1) if last is not None else "never"),
+            "last_label": (str(world.display_base_year() + last + 1) if last is not None else "never"),
             "cycle_label": (f"{label(pend['data']['years'])}" if pend else
                             f"every {cfg['cycle']} seasons")}
 
@@ -6028,8 +6035,8 @@ def jhsaa_realism_view(seed: int, gender: str, group: str | None = None,
     return {"ready": bool(years), "gender": g, "years": years, "year": yr,
             "bands": bands, "band_data": band_data,
             "prev_year": prev_yr,
-            "season_label": world.BASE_YEAR + yr + 1,
-            "prev_label": (world.BASE_YEAR + prev_yr + 1
+            "season_label": world.display_base_year() + yr + 1,
+            "prev_label": (world.display_base_year() + prev_yr + 1
                            if prev_yr is not None else None),
             "data": data,
             "scope": _jh_scope(g, grp, list(jh.GROUPS), yr, years, None, None)}
@@ -6976,7 +6983,7 @@ def jhsaa_repeat_individual_champions(seed: int, gender: str,
             # ‼️ NEVER PRINT THE BARE WORLD INDEX. A draw is archived under the world
             # year; the season it stands for is the calendar year, and a history
             # reading "Year 0, Year 1" is what made the old program page unreadable.
-            t["season_year"] = world.BASE_YEAR + t["year"] + 1
+            t["season_year"] = world.BASE_YEAR + t["year"] + 1   # identity; template |cal converts
             t["deco"] = _jh_deco(schools, t["school"], 18)
         r["stints"] = _jh_career_stints(r["titles"], schools)
         r["link"] = r["titles"][-1]["school"]      # newest school — the pid's page

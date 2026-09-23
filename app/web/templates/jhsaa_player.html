@@ -7,7 +7,7 @@
 {# An affiliate's real geography is city, state — see School.state. #}
 {{ jh_header(view.scope, u, 'state', view.name,
              view.school ~ ' · ' ~ (view.locality ~ ', ' if view.locality else '') ~ view.city ~ ', ' ~ (view.state if view.state else 'Jefferson'),
-             [('Career', view.record), ('Class of', view.grad_year or '—')]) }}
+             [('Career', view.record), ('Class of', view.grad_year|cal or '—')]) }}
 
 <div class="jh-shell">
 <div class="jh-crumb">
@@ -58,7 +58,7 @@
             <th class="jh-scout" style="width:46px">OVR</th><th style="width:64px">Team</th><th>Honours</th></tr>
           {% for s in view.seasons %}
           <tr{% if s.transferred %} style="opacity:.72"{% endif %}>
-            <td class="yr"><a href="{{ url_for('jhsaa_school', school=s.school, year=s.year, u=u, g=view.gender) }}">{{ s.season_year }}</a></td>
+            <td class="yr"><a href="{{ url_for('jhsaa_school', school=s.school, year=s.year, u=u, g=view.gender) }}">{{ s.season_year|cal }}</a></td>
             <td style="font-variant-numeric:normal">{{ s.class }}</td>
             <td style="font-size:14px">
               <a href="{{ url_for('jhsaa_school', school=s.school, year=s.year, u=u, g=view.gender) }}"
@@ -89,7 +89,7 @@
         <th class="yr">Season</th>{% for sl in box.slots %}<th>{{ sl }}</th>{% endfor %}<th>Overall</th>
       </tr></thead><tbody>
         {% for r in box.rows %}
-        <tr><td class="yr">{{ r.year }}</td>
+        <tr><td class="yr">{{ r.year|cal }}</td>
           {% for sl in box.slots %}<td>{{ r.cells[sl] }}</td>{% endfor %}
           <td class="tot">{{ r.overall }}</td></tr>
         {% endfor %}
@@ -121,7 +121,7 @@
         {% if view.honors_total %}
         {% for s in view.seasons %}
         {% for h in s.honors %}
-        <div class="jh-honor"><span class="y">{{ s.season_year }}</span><span>{{ h }}</span></div>
+        <div class="jh-honor"><span class="y">{{ s.season_year|cal }}</span><span>{{ h }}</span></div>
         {% endfor %}
         {% endfor %}
         {% else %}
@@ -157,7 +157,7 @@
             <div class="meat">
               {# A JV bracket is classless — "Statewide", never the archive's
                  bare group key; `flight_name` already carries the JV. #}
-              <div class="when">{{ r.season.season_year }} · {{ 'Statewide' if r.jv else r.group }}
+              <div class="when">{{ r.season.season_year|cal }} · {{ 'Statewide' if r.jv else r.group }}
                 <span class="yr">{{ r.season.class_year }}</span></div>
               <div class="what">
                 <span class="fl">{{ r.flight_name }}</span>
@@ -193,7 +193,7 @@
       <div class="jh-pane" data-pane="injury" hidden>
         {% if view.injuries %}
         {% for i in view.injuries %}
-        <div class="jh-honor"><span class="y">{{ i.season.season_year }}</span>
+        <div class="jh-honor"><span class="y">{{ i.season.season_year|cal }}</span>
           <span>{% if i.season_ending %}Season-ending injury{% else %}Out {{ i.duals_out }}
             dual{{ 's' if i.duals_out != 1 }}{% endif %}</span></div>
         {% endfor %}
@@ -229,7 +229,7 @@
         <div class="jh-cols3">
           <div class="jh-metric"><span class="k">Career</span><span class="v">{{ view.record }}</span>
             <span class="s">all lines</span></div>
-          <div class="jh-metric"><span class="k">Class of</span><span class="v">{{ view.grad_year or '—' }}</span>
+          <div class="jh-metric"><span class="k">Class of</span><span class="v">{{ view.grad_year|cal or '—' }}</span>
             <span class="s">grade {{ view.grade }} now</span></div>
           <div class="jh-metric"><span class="k">Honours</span><span class="v">{{ view.honors_total }}</span>
             <span class="s">across the career</span></div>
@@ -382,7 +382,7 @@
           <input type="hidden" name="fam_school" value="{{ fam_school }}">
           {# THIS player's own season, which is not the picker's: a cross-era tie
              looks at an old roster while this page stays in the current one. #}
-          <input type="hidden" name="player_season" value="{{ view.scope.season_year }}">
+          <input type="hidden" name="player_season" value="{{ view.scope.season_year|cal }}">
           <input type="hidden" name="u" value="{{ u }}">
           <label class="s">Related to
             <select name="other_pid" required style="max-width:260px">
@@ -441,7 +441,7 @@
           <input type="hidden" name="gender" value="{{ view.gender }}">
           <input type="hidden" name="jh_from_school" value="{{ view.school }}">
           <input type="hidden" name="jh_pid" value="{{ view.pid }}">
-          <input type="hidden" name="jh_entry" value="{{ view.entry_year }}">
+          <input type="hidden" name="jh_entry" value="{{ view.entry_year|cal }}">
           <input type="hidden" name="u" value="{{ u }}">
           <label class="s">{{ 'Move again to' if view.transfer_moves else 'Move to' }}
             <input type="text" name="jh_to_school" list="jh-transfer-schools"
@@ -455,7 +455,7 @@
                `scope.year` — that mismatch made an entered transfer effective
                against every season back to year zero, since the small index is
                always <= any real calendar year. #}
-            <input type="number" name="jh_year" value="{{ view.scope.season_year + 1 }}" required></label>
+            <input type="number" name="jh_year" value="{{ view.scope.season_year|cal + 1 }}" required></label>
           <button type="submit" class="bl-run-big" style="width:auto;height:32px;margin:0;padding:0 14px;font-size:16px">Transfer</button>
         </form>
         <p class="bit">Manual and always-approved — no eligibility rules, no
