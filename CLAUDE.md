@@ -2838,6 +2838,22 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   A blue-blood small school SHOULD beat an average big one — that is the talent model's
   thesis, not a bug. What must survive is the class ladder INSIDE each tag.
   Pinned by `tests/test_jhsaa_archetypes.py`.
+- **‼️ NAMED COACHING STAFFS (owner spec 2026-09, `app/jhsaa_coaches.py`,
+  `docs/AAR-jhsaa-named-coaches.md`).** Every program has a head plus 1-3
+  assistants by roster size (one carries the JV-head LABEL — a designation only);
+  seats key on `School.ident` + gender, never name or class. The coach lens,
+  doubles culture and pairing philosophy now READ THE STAFF (`district_teams(staff=)`)
+  instead of the school draws. ‼️ The inaugural staff REPRODUCES those draws exactly
+  (head's grades SOLVED against full-rated assistants and pinned), so a save plays
+  identically until the owner moves someone — pinned by a byte-identical-season test.
+  ‼️ ONE converter, `world.jhsaa_staff_for_season`, for the rung AND the recruit
+  hand-off (the `prior` rule — two resolutions fork the memoised season); an
+  archived season reads the effects stored on its history rows. Ratings are
+  IMPRINTED at creation and never develop; only the owner's editor changes one.
+  Former players are hired off the `jhsaa_alumni` index (or `world_graduates`),
+  their grades rolled independently of playing ability. Nothing moves on its own.
+  Stage B effects (development, clutch, changeover at set breaks, culture,
+  feeder ties, the vetoable carousel) are NOT built — each needs an era gate.
 - **‼️ SELECTION RUNS THROUGH A COACH EVALUATION LAYER — `_order` IS A JUDGMENT, NOT A
   TALENT RANKING (owner rule 2026-09, `jhsaa.coach_eval`, `docs/AAR-jhsaa-coach-evaluation-layer.md`).**
   `RAW ABILITY → COACH EVALUATION → LINEUP SELECTION → MATCH ENGINE (raw ability)`. The

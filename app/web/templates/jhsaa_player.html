@@ -264,6 +264,27 @@
    ‼️ The picker below is a PICKER, not a search: the owner decides who is related.
    Siblings ALSO roll at generation (`jhsaa.sibling_link`, owner rule 2026-09) and
    are listed above the authored ties; cousins and parents are authored only. #}
+    {# HIRE AS COACH (owner spec 2026-09) — a graduated player only. Coaching
+       grades are rolled independently of how good a player they were. #}
+    {% if hire_ok %}
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">Hire as coach</span></div>
+      <div class="bl-panel-body">
+        {% if hire_msg %}<p class="bit" style="margin-bottom:10px;color:var(--brand-strong)">{{ hire_msg }}</p>{% endif %}
+        <datalist id="jh-hire-schools">{% for n in hire_schools %}<option value="{{ n }}">{% endfor %}</datalist>
+        <form method="post" action="{{ url_for('editor_jhsaa_coach') }}" class="jh-form-row">
+          <input type="hidden" name="do" value="hire">
+          <input type="hidden" name="jh_pid" value="{{ view.pid }}">
+          <input type="hidden" name="jh_player_school" value="{{ view.school }}">
+          <input type="hidden" name="g" value="{{ view.gender }}">
+          <input name="jh_school" list="jh-hire-schools" placeholder="Program" value="{{ view.school }}" required>
+          <select name="slot"><option value="head">Head coach</option><option value="asst" selected>Assistant (next open)</option>
+            <option value="asst1">Replace assistant 1</option><option value="asst2">Replace assistant 2</option><option value="asst3">Replace assistant 3</option></select>
+          <button class="bl-pill" type="submit">Hire</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">Family</span></div>
       <div class="bl-panel-body">

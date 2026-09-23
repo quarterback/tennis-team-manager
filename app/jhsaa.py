@@ -2610,6 +2610,10 @@ class TeamSeason:
     # `doubles_culture` program (`doubles_culture()`), resolved once per team here
     # for the `sibling_ids` reason: `archetype()` resolves a table fingerprint.
     culture: float = 1.0
+    # The head coach's pairing philosophy (`jhsaa_coaches`, owner spec 2026-09).
+    # Empty means "no named staff" and `_lineup` falls back to the school draw
+    # `_coach_strategy`, exactly as before coaches existed.
+    strategy: str = ""
     # ‼️ INJURIES (owner rule 2026-08, ported off the college model — see
     # `app/injuries.py`). VARSITY ONLY: `play_dual` rolls these, `play_jv_dual`
     # never touches this dict — JV is deliberately injury-blind (`jv_pool`),
@@ -6529,6 +6533,14 @@ def team_standing(ts: TeamSeason, awards: dict, prior: dict | None = None) -> di
     return out
 
 
+def _staff_fingerprint(staff: dict | None) -> str:
+    """The staff map's memo-key digest — see `jhsaa_coaches.effect_fingerprint`."""
+    if not staff:
+        return ""
+    from .jhsaa_coaches import effect_fingerprint
+    return effect_fingerprint(staff)
+
+
 def _prior_fingerprint(prior: dict | None) -> str:
     """A stable digest of a standing map, for `run_season`'s memo key. `blake2s`
     rather than `hash()` — Python salts str/tuple hashes per process, and a season
@@ -7277,7 +7289,7 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None,
     if phase == "regular":
         # the per-dual flip draw runs either way, so the rng stream stays aligned.
         flip = rng.random() < _PHILOSOPHY_FLIP
-        strategy = _coach_strategy(ts.school.key)
+        strategy = ts.strategy or _coach_strategy(ts.school.key)
         if flip:
             strategy = _flip_strategy(strategy)
         return _arrange_regular(nine, strategy, ts.sibling_ids, ts.pair_counts,
@@ -7714,7 +7726,8 @@ def run_district(schools: list[School], year: int, *, seed: int,
 
 
 def district_teams(schools: list[School], year: int, salt: str = "",
-                   prior: dict | None = None) -> list[TeamSeason]:
+                   prior: dict | None = None,
+                   staff: dict | None = None) -> list[TeamSeason]:
     """A district's programs with this year's rosters, before a ball is struck.
 
     `prior` is LAST season's evidence for the whole gender, `{pid: PriorSeason}` —
@@ -7723,8 +7736,15 @@ def district_teams(schools: list[School], year: int, salt: str = "",
     on (school, pid) deliberately: a pid survives a transfer, so an owner-authored
     move carries the player's record to the new program, which is the answer a
     coach would give about a junior who started two years somewhere else. Omitted,
-    every coach evaluates with no memory of last season."""
-    fam = families()          # resolved ONCE here, never per team and never per dual
+    every coach evaluates with no memory of last season.
+
+    `staff` is the gender's named coaching staffs, `{school.key: StaffEffect}`
+    (`jhsaa_coaches`), resolved ONCE by the caller like `prior`. A program with a
+    staff reads its lens, doubles culture and pairing philosophy off the PEOPLE;
+    one without (a standalone run, a test) reads the school draws, which is exactly
+    what an inaugural staff reproduces."""
+    fam = families()
+    st = staff or {}          # resolved ONCE here, never per team and never per dual
     pr = prior or {}
     out = []
     for s in schools:
@@ -7755,10 +7775,12 @@ def district_teams(schools: list[School], year: int, salt: str = "",
         # THE COACH EVALUATION LAYER's inputs, resolved once per program here and
         # never again (the `sibling_ids` rule): his temperament, and his read of
         # each of these players for this season.
-        lens = coach_lens(s.name, salt)
+        eff = st.get(s.key)
+        lens = eff.lens if eff is not None else coach_lens(s.name, salt)
         ts = TeamSeason(
             school=s, roster=roster, sibling_ids=sibs, lens=lens,
-            culture=doubles_culture(s.name, salt),
+            culture=eff.culture if eff is not None else doubles_culture(s.name, salt),
+            strategy=eff.strategy if eff is not None else "",
             # Only this roster's own evidence — `_order` looks up by pid so a
             # gender-wide dict would work, but a team should carry its own memory
             # and nothing else's.
@@ -11117,7 +11139,7 @@ def _jv_wildcards(jv_arc: dict, by_group: dict) -> dict:
 
 
 def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
-               prior: dict | None = None) -> dict:
+               prior: dict | None = None, staff: dict | None = None) -> dict:
     """One full JHSAA season for `gender`: every district's regular season, the
     crossover schedule, the awards, and each classification's postseason ladder
     (Sectionals → Wards → Regionals → Zonals → Super Regionals → Semi-State →
@@ -11140,7 +11162,10 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     # call (which plays ~10,000 duals), never anything resolved in a loop.
     ck = (salt, gender, year, seed,
           _ov.jhsaa_archetype_version(), _ov.jhsaa_playup_version(),
-          _ov.jhsaa_band_version(), _prior_fingerprint(prior))
+          _ov.jhsaa_band_version(), _prior_fingerprint(prior),
+          # ‼️ AND THE COACHING STAFFS (owner spec 2026-09): a season played under a
+          # different staff is a different season. Empty (no staff) keys like before.
+          _staff_fingerprint(staff))
     hit = _season_cache.get(ck)
     if hit is not None:
         return hit
@@ -11165,7 +11190,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     # Non-district pairing still seeds on ROSTER STRENGTH, not results, so the early
     # window can lead. The one exception is the mid-season challenge, which is paired at
     # the break precisely because by then there are results worth pairing on.
-    by_group = {group: {dname: district_teams(schools, year, salt, prior)
+    by_group = {group: {dname: district_teams(schools, year, salt, prior, staff)
                         for dname, schools in sorted(districts(gender, group).items())}
                 for group in GROUPS}
     # THE INDIVIDUAL STATE TOURNAMENTS — six flighted draws (No. 1-3 singles,
@@ -11634,7 +11659,8 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
 
 def graduating_class(gender: str, year: int, *, seed: int = 0, salt: str = "",
                      limit: int | None = None,
-                     prior: dict | None = None) -> list[Prospect]:
+                     prior: dict | None = None,
+                     staff: dict | None = None) -> list[Prospect]:
     """Jefferson's entry into the college recruit rankings: this year's JHSAA seniors,
     ranked by what they actually did, carrying their high-school record.
 
@@ -11652,7 +11678,7 @@ def graduating_class(gender: str, year: int, *, seed: int = 0, salt: str = "",
     with DIFFERENT LINEUPS from the one on the JHSAA pages, each internally
     consistent, which is the shape of bug nobody notices. `apply_to_class` resolves
     it through `world.jhsaa_prior_for_season`, the one converter both callers use."""
-    season = run_season(gender, year, seed=seed, salt=salt, prior=prior)
+    season = run_season(gender, year, seed=seed, salt=salt, prior=prior, staff=staff)
     grads = []
     # All-Region is GENDER-WIDE, so it is merged into each class's slate for the
     # honours lookup rather than living inside one — `honors_for` reads by pid.
@@ -11717,9 +11743,10 @@ def apply_to_class(klass, gender: str, grad_year: int, salt: str) -> int:
     # `run_jhsaa` land on the same `run_season` memo entry: without it the board is
     # built from a differently-played season, and the tell would be a Jefferson
     # recruit whose record disagrees with his own school page.
-    from .world import jhsaa_prior_for_season
+    from .world import jhsaa_prior_for_season, jhsaa_staff_for_season
     grads = graduating_class(_GENDER[gender], grad_year, salt=salt, limit=len(slots),
-                             prior=jhsaa_prior_for_season(grad_year, _GENDER[gender]))
+                             prior=jhsaa_prior_for_season(grad_year, _GENDER[gender]),
+                             staff=jhsaa_staff_for_season(grad_year, _GENDER[gender]))
     # Rank-match: the best Jefferson senior becomes the best Jefferson recruit, and so
     # on down. IDENTITY and RECORD transfer; ABILITY does not.
     #

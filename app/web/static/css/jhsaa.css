@@ -1489,3 +1489,13 @@ body.jhx-panel-open .jhx-bar-inner { padding-right: min(400px, 100vw); }
 .jhx-pform .bl-select { width: 100%; }
 .jhx-pform .bl-pill { height: 30px; }
 @media (max-width: 720px) { .jhx-facet-k { min-width: 0; } }
+
+/* JHSAA coach ratings — visible, unlike a player's (owner spec 2026-09). */
+.jh-coachgrade { display: grid; grid-template-columns: minmax(0, 1fr) 120px 36px; gap: 10px; align-items: center; padding: 4px 0; }
+.jh-coachgrade .k { color: var(--text-secondary); }
+.jh-coachgrade .bar { display: block; height: 8px; border-radius: 2px; background: var(--border); overflow: hidden; }
+.jh-coachgrade .bar span { display: block; height: 100%; background: var(--accent); }
+.jh-coachgrade .v { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.jh-form-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 0; }
+.jh-form-row input:not([type=hidden]), .jh-form-row select { min-width: 0; max-width: 100%; }
+.jh-note { color: var(--brand-strong); }

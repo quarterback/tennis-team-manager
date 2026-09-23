@@ -5679,9 +5679,14 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
 
     trophy_banner = _jh_trophy_banner(hist["seasons"])
 
+    # THE COACHING STAFF (owner spec 2026-09) — today's seats, with the staff's
+    # effective value per attribute and who covers it. One read, this program only.
+    import app.jhsaa_coaches as jc
+    staff = jc.program_staff(w["id"], sc.ident, g)
     return {
         "found": True, "school": school, "gender": g, "year": yr, "years": years,
         "season_year": season_year, "is_current": bool(years) and yr == years[0],
+        "staff": staff,
         # No longer fields a team in this sport — the page is a record, not a roster.
         # `last_season` is the season it is showing, which for a former program is the
         # last one they played.
