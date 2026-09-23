@@ -2852,8 +2852,22 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   IMPRINTED at creation and never develop; only the owner's editor changes one.
   Former players are hired off the `jhsaa_alumni` index (or `world_graduates`),
   their grades rolled independently of playing ability. Nothing moves on its own.
-  Stage B effects (development, clutch, changeover at set breaks, culture,
-  feeder ties, the vetoable carousel) are NOT built — each needs an era gate.
+  **STAGE B (built):** development (+ a JV-whisperer's depth lean), feeder ties
+  (head start off the PREVIOUS season's staff) and retention (culture = a fold of
+  Program builder over history) act on ROSTERS and read ONLY archived history
+  (`jhsaa.staff_history`) — a Stage A history row reads NEUTRAL, which is the era
+  gate (no setting). Clutch (a poor big-match head sometimes runs the frozen
+  ladder instead of the best legal arrangement), participation temperament
+  (rotation/rest multipliers; "steady" is ×1.0) and mentorship pairing act in
+  season. ‼️ **CHANGEOVER IS THE ONE COACH EFFECT THAT CHANGES HOW A MATCH PLAYS**
+  — the single, bounded exception to "nothing in the coach layer changes how
+  anybody plays": both heads roll at SET BREAKS only (max two a best-of-3),
+  the net is an offset on the next set's gap, replaced not stacked, on its OWN
+  rng stream (`engine.fast.changeover_offset`); set 1 never moves and
+  `co_k`=0 is byte-identical. Measured: random pairings move favourite rates
+  ≤0.1 pt; best-vs-worst coach ≈ +1-2 pts in a close match. Every dial is one
+  constant in `jhsaa_coaches` (0 = off). The carousel is a BUTTON with veto
+  (`/jhsaa/coaches/carousel`), never a rung, never holds the advance.
 - **‼️ SELECTION RUNS THROUGH A COACH EVALUATION LAYER — `_order` IS A JUDGMENT, NOT A
   TALENT RANKING (owner rule 2026-09, `jhsaa.coach_eval`, `docs/AAR-jhsaa-coach-evaluation-layer.md`).**
   `RAW ABILITY → COACH EVALUATION → LINEUP SELECTION → MATCH ENGINE (raw ability)`. The

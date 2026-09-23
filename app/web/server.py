@@ -3737,6 +3737,48 @@ def create_app() -> Flask:
                                grade_attrs=jc.GRADE_LABELS,
                                msg=request.cookies.get("jh_coach_result", ""))
 
+    @app.route("/jhsaa/coaches/carousel")
+    def jhsaa_coach_carousel():
+        """The coaching carousel — a BUTTON, never a rung (owner rule 2026-09).
+        Run a cycle, veto any line, commit. Nothing moves until you do."""
+        from app import jhsaa_coaches as jc
+        gender, label, u, g, _group, _year = _jh_scope_args()
+        w = wd.get_or_create(DEFAULT_SEED)
+        prop = jc.pending_cycle(w["id"])
+        return render_template("jhsaa_coach_carousel.html", active="High School",
+                               prop=prop, pool=jc.free_pool(w["id"])[:60],
+                               kinds={"retire": "Retires", "fire": "Let go",
+                                      "promote": "Promoted", "move": "Moves",
+                                      "alumnus": "Alumnus returns", "new": "New hire"},
+                               gender=gender, u=u, uni_label=label,
+                               msg=request.cookies.get("jh_coach_result", ""))
+
+    @app.route("/jhsaa/coaches/carousel", methods=["POST"])
+    def jhsaa_coach_carousel_post():
+        from app import jhsaa_coaches as jc
+        _gender, _label, u, _g, _group, _year = _jh_scope_args()
+        w = wd.get_or_create(DEFAULT_SEED)
+        do = request.form.get("do", "")
+        msg = ""
+        try:
+            if do == "run":
+                prop = jc.propose_cycle(w["id"], wd.jhsaa_season_year(w))
+                msg = f"{len(prop['lines'])} proposed changes."
+            elif do in ("save", "commit"):
+                jc.set_vetoes(w["id"], {int(x) for x in request.form.getlist("veto")})
+                if do == "commit":
+                    msg = f"Committed {jc.commit_cycle(w['id'])} changes."
+                else:
+                    msg = "Vetoes saved."
+            elif do == "dismiss":
+                jc.dismiss_cycle(w["id"])
+                msg = "Cycle dismissed."
+        except jc.StaffError as e:
+            msg = str(e)
+        resp = redirect(url_for("jhsaa_coach_carousel", u=u))
+        resp.set_cookie("jh_coach_result", msg, max_age=30, samesite="Lax")
+        return resp
+
     @app.route("/editor/jhsaa-coach", methods=["POST"])
     def editor_jhsaa_coach():
         """The owner's staff moves: hire a former player, move or retire a coach,

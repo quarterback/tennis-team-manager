@@ -59,7 +59,7 @@ HEAD_ONLY = ("clutch", "changeover")
 #: best coach on the staff, never below the head.
 COVER = 0.4
 
-PAIRINGS = ("maximize", "balanced", "traditional")   # + "mentorship" in Stage B
+PAIRINGS = ("maximize", "balanced", "traditional", "mentorship")
 TEMPERAMENTS = ("broad", "steady", "senior")
 TEMPERAMENT_LABELS = {"broad": "Broad rotation", "steady": "Steady",
                       "senior": "Senior-first"}
@@ -226,18 +226,45 @@ def solve_head(target: float, assistants: list[Coach], attr: str) -> float:
     return (target - COVER * b) / (1.0 - COVER)
 
 
+# --- STAGE B dials (owner spec 2026-09). Each is the ONLY knob for its effect;
+# set one to 0 and that effect is gone. Every one is centred on grade 50, so an
+# average staff changes nothing and the association's average is unchanged. ----
+DEV_K = 0.40           # development: grade 20 → ×0.80 yearly capacity, 80 → ×1.20
+LEAN_K = 0.20          # JV/floor-raiser lean: tilt of that multiplier toward depth
+CLUTCH_MISS = 0.35     # chance a grade-20 head settles for the 2nd-best postseason lineup
+CHANGEOVER_K = 0.8     # engine.fast set-break roll scale (≈±1-2 pts best vs worst coach)
+FEEDER_K = 0.04        # ± freshman head start (share of peak) at the top/bottom
+RETENTION_MAX = 2      # ± players a class at the culture extremes
+CULTURE_KEEP = 0.8     # culture carried year to year (the rest moves to the staff)
+TEMPERAMENT_ROTATE = {"broad": 1.5, "steady": 1.0, "senior": 0.5}
+TEMPERAMENT_REST = {"broad": 1.2, "steady": 1.0, "senior": 0.8}
+
+
 @dataclass(frozen=True)
 class StaffEffect:
-    """What `jhsaa.district_teams` reads for one program — the three mechanics
-    Stage A routes through the staff. Plain values so `jhsaa` needs no import of
-    this module."""
+    """What the season reads for one program. Stage A routes the lens, doubles
+    culture and pairing through the staff; Stage B adds the rest. Plain values so
+    `jhsaa` needs no import of this module. Every Stage B field defaults to the
+    neutral value, which is also how a history row written before Stage B reads."""
     lens: object            # jhsaa.CoachLens
     culture: float
     strategy: str
+    dev: float = 1.0        # yearly-capacity multiplier (staff Development)
+    lean: float = 0.0       # −1 top-leaning … +1 depth-leaning (JV/floor-raiser)
+    clutch: float | None = None       # head's Clutch quantile; None = no effect
+    changeover: float | None = None   # head's Changeover quantile; None = no effect
+    temperament: str = "steady"
+    builder: float = 0.5    # staff Program builder quantile (feeds culture)
+    feeder: float = 0.5     # staff Feeder ties quantile (freshman head start)
 
     def fingerprint(self) -> tuple:
+        # Everything that changes how a SEASON plays (rosters read history, not
+        # this, so dev/lean/builder/feeder are already fixed by the season year).
         return (round(self.lens.read, 12), round(self.lens.trust, 12),
-                round(self.lens.form, 12), round(self.culture, 12), self.strategy)
+                round(self.lens.form, 12), round(self.culture, 12), self.strategy,
+                None if self.clutch is None else round(self.clutch, 9),
+                None if self.changeover is None else round(self.changeover, 9),
+                self.temperament)
 
 
 def lens_of(talent_id: float, adaptability: float):
@@ -271,8 +298,18 @@ def staff_effect(head: Coach | None, assistants: list[Coach]) -> StaffEffect | N
     culture = (head.culture_pin
                if head.culture_pin is not None and eff["doubles"] == head.pins.get("doubles")
                else culture_of(eff["doubles"]))
+    lean = 0.0
+    for c in [head] + list(assistants):
+        if c.profile == "jv_whisperer":
+            lean = 1.0 if c is head else max(lean, 0.5)
     return StaffEffect(lens=lens_of(eff["talent_id"], eff["adaptability"]),
-                       culture=culture, strategy=head.pairing)
+                       culture=culture, strategy=head.pairing,
+                       dev=1.0 + DEV_K * (eff["development"] - 0.5),
+                       lean=lean,
+                       clutch=head.grades.get("clutch", 0.5),
+                       changeover=head.grades.get("changeover", 0.5),
+                       temperament=head.temperament,
+                       builder=eff["builder"], feeder=eff["feeder"])
 
 
 def effect_fingerprint(staff: dict | None) -> str:
@@ -377,10 +414,14 @@ CREATE TABLE IF NOT EXISTS jhsaa_alumni (
   PRIMARY KEY (world_id, pid)
 );
 CREATE INDEX IF NOT EXISTS ix_jhsaa_alumni_school ON jhsaa_alumni(world_id, ident, gender);
+-- The coaching carousel's proposals (a button, never a rung — see below).
+CREATE TABLE IF NOT EXISTS jhsaa_coach_carousel (
+  world_id INTEGER, year INTEGER, status TEXT, data TEXT
+);
 """
 
 _TABLES = ("jhsaa_coach", "jhsaa_coach_seat", "jhsaa_coach_history", "jhsaa_coach_event",
-           "jhsaa_alumni")
+           "jhsaa_alumni", "jhsaa_coach_carousel")
 
 
 def _conn():
@@ -520,15 +561,26 @@ def current_effects(world_id: int, gender: str) -> dict:
 
 def _eff_to_json(e: StaffEffect) -> str:
     return json.dumps({"read": e.lens.read, "trust": e.lens.trust, "form": e.lens.form,
-                       "culture": e.culture, "strategy": e.strategy})
+                       "culture": e.culture, "strategy": e.strategy,
+                       "dev": e.dev, "lean": e.lean, "clutch": e.clutch,
+                       "changeover": e.changeover, "temperament": e.temperament,
+                       "builder": e.builder, "feeder": e.feeder})
 
 
 def _eff_from_json(s: str) -> StaffEffect:
+    """‼️ TOLERANT OF A STAGE A ROW: a season archived before Stage B carries only
+    the first five keys, and reads back NEUTRAL for everything else — so Stage B
+    reaches only seasons played under it, with no era setting (the `_relabel`
+    idiom: derive on read, never migrate)."""
     from . import jhsaa
     d = json.loads(s)
     return StaffEffect(lens=jhsaa.CoachLens(read=d["read"], trust=d["trust"],
                                             form=d["form"]),
-                       culture=d["culture"], strategy=d["strategy"])
+                       culture=d["culture"], strategy=d["strategy"],
+                       dev=d.get("dev", 1.0), lean=d.get("lean", 0.0),
+                       clutch=d.get("clutch"), changeover=d.get("changeover"),
+                       temperament=d.get("temperament", "steady"),
+                       builder=d.get("builder", 0.5), feeder=d.get("feeder", 0.5))
 
 
 def season_effects(world_id: int, year: int, gender: str) -> dict:
@@ -586,6 +638,9 @@ def record_season(conn, world_id: int, year: int, gender: str, teams, effects: d
         "INSERT INTO jhsaa_coach_history (world_id, year, ident, gender, slot, coach_id,"
         " school, classification, grp, wins, losses, ties, eff)"
         " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", hist)
+    # A new archived year changes what a roster build reads.
+    from . import jhsaa
+    jhsaa._staff_hist_cache.clear()
 
 
 # ------------------------------------------------------------ read models ----
@@ -976,3 +1031,316 @@ def resolve_slot(world_id: int, ident: str, gender: str, slot: str) -> str:
     if n >= MAX_ASSISTANTS:
         raise StaffError("That staff is full — pick an assistant to replace.")
     return SLOTS[n + 1]
+
+
+# ------------------------------------------------------ the coaching carousel ----
+#
+# ‼️ A BUTTON, NEVER A RUNG (owner rule 2026-09). High-school coaches stay 10-25
+# years — nobody is paid enough to chase jobs — so nothing here runs on its own and
+# nothing holds `advance_week`. "Run a coaching cycle" builds a PENDING proposal
+# (the `jhsaa_reclass_pending` idiom); the owner vetoes any line and commits. The
+# proposal stores everything it will do, new coaches included, so what is committed
+# is exactly what was reviewed.
+
+RETIRE_BY_AGE = ((55, 0.01), (65, 0.06), (200, 0.25))   # age < bound → chance
+RETIRE_LONG_TENURE = (25, 0.05)                          # years, extra chance
+FIRE_MIN_SEASONS = 5          # a head is judged only on a long run…
+FIRE_BELOW = 0.20             # …of this far below the program's own norm
+FIRE_CHANCE = 0.30            # and even then, usually kept
+PROMOTE_CHANCE = 0.60         # a head vacancy goes to the staff's own assistant first
+ALUMNI_MIN_YEARS = 4          # an alumnus coaches once they are this far out
+AREA_MOVE_CHANCE = 0.25       # a head vacancy lures an area assistant up
+
+def _cconn():
+    return _conn()
+
+
+def legacy(world_id: int, gender: str) -> dict:
+    """{ident: 0-1} — a program's coaching LEGACY: how much of its archived
+    history was coached by long-tenured heads (10+ seasons there). Reputation
+    only: it raises how often the program's own alumni come home to coach, and
+    nothing in a match or a roster reads it."""
+    conn = _conn()
+    try:
+        rows = conn.execute("SELECT ident, coach_id, COUNT(*) FROM jhsaa_coach_history"
+                            " WHERE world_id=? AND gender=? AND slot='head'"
+                            " GROUP BY ident, coach_id", (world_id, gender)).fetchall()
+    finally:
+        conn.close()
+    out: dict = {}
+    for ident, _cid_, n in rows:
+        if n >= 10:
+            out[ident] = min(1.0, out.get(ident, 0.0) + n / 20.0)
+    return out
+
+
+def _head_run(conn, world_id, gender, ident, coach_id):
+    rows = conn.execute("SELECT year, coach_id, wins, losses, classification"
+                        " FROM jhsaa_coach_history WHERE world_id=? AND gender=?"
+                        " AND ident=? AND slot='head' ORDER BY year",
+                        (world_id, gender, ident)).fetchall()
+    mine = [r for r in rows if r[1] == coach_id]
+    before = [r for r in rows if r[1] != coach_id and (not mine or r[0] < mine[0][0])]
+    return mine, before
+
+
+def _pct(rows):
+    w = sum(r[2] or 0 for r in rows)
+    l = sum(r[3] or 0 for r in rows)
+    return w / (w + l) if w + l else None
+
+
+def _new_candidate(world_id: int, season_year: int, gender: str, school_city: str,
+                   tag: str) -> Coach:
+    rng = _rng("jhsaa-coach-candidate", world_id, season_year, tag)
+    age = int(rng.triangular(24, 68, 42))
+    profile = roll_profile(rng)
+    grades = roll_grades(rng, profile, mean=54.0 if age >= 55 else GRADE_MEAN)
+    return Coach(coach_id=_cid(world_id, "cand", season_year, tag),
+                 name=roll_name(rng, gender), grades=grades, profile=profile,
+                 pairing=rng.choice(PAIRINGS), temperament=rng.choice(TEMPERAMENTS),
+                 hometown=school_city, birth_year=season_year - age, origin="area",
+                 created=season_year)
+
+
+def propose_cycle(world_id: int, season_year: int) -> dict:
+    """Build (and store as PENDING) one coaching cycle: retirements, the rare
+    firing, then every vacancy filled — the program's own assistant first, then
+    its alumni (more often at a legacy program), then an area move or a new
+    local candidate. Deterministic for (world, season)."""
+    from . import jhsaa
+    lines = []
+    conn = _conn()
+    try:
+        for gender in ("girls", "boys"):
+            schools = {s.ident: s for s in jhsaa.load_schools(gender)}
+            leg = legacy(world_id, gender)
+            seat_rows = seats(world_id, gender)
+            staff = _staffs(seat_rows)
+            vacancies = []                      # (ident, slot)
+            leaving = set()
+            for r in sorted(seat_rows, key=lambda r: (r["ident"], SLOTS.index(r["slot"]))):
+                ident, slot, c = r["ident"], r["slot"], r["coach"]
+                if ident not in schools or c is None:
+                    continue
+                rng = _rng("jhsaa-carousel", world_id, season_year, c.coach_id)
+                age = season_year - c.birth_year if c.birth_year else 45
+                tenure = season_year - (r["since"] or season_year)
+                p = next(ch for bound, ch in RETIRE_BY_AGE if age < bound)
+                if tenure >= RETIRE_LONG_TENURE[0]:
+                    p += RETIRE_LONG_TENURE[1]
+                if rng.random() < p:
+                    lines.append({"kind": "retire", "gender": gender, "ident": ident,
+                                  "school": schools[ident].name, "slot": slot,
+                                  "coach_id": c.coach_id, "name": c.name,
+                                  "why": f"age {age}, {tenure} seasons in the seat"})
+                    leaving.add(c.coach_id)
+                    vacancies.append((ident, slot))
+                    continue
+                if slot == "head":
+                    mine, before = _head_run(conn, world_id, gender, ident, c.coach_id)
+                    # Only seasons in the program's CURRENT class count —
+                    # a realignment is not the coach's doing.
+                    cls = schools[ident].classification
+                    mine_same = [r for r in mine if r[4] == cls]
+                    norm = _pct(before)
+                    got = _pct(mine_same)
+                    if (len(mine_same) >= FIRE_MIN_SEASONS and norm is not None
+                            and got is not None and got < norm - FIRE_BELOW
+                            and rng.random() < FIRE_CHANCE):
+                        lines.append({"kind": "fire", "gender": gender, "ident": ident,
+                                      "school": schools[ident].name, "slot": "head",
+                                      "coach_id": c.coach_id, "name": c.name,
+                                      "why": f"{got:.3f} over {len(mine_same)} seasons"
+                                             f" against the program's {norm:.3f}"})
+                        leaving.add(c.coach_id)
+                        vacancies.append((ident, "head"))
+            # Seats already vacant (a grown roster, an earlier move).
+            for r in seat_rows:
+                if r["coach"] is None and r["ident"] in schools:
+                    vacancies.append((r["ident"], r["slot"]))
+            # Heads first, so a promotion's vacated assistant seat is filled too.
+            vacancies.sort(key=lambda v: (v[1] != "head", v[0], v[1]))
+            taken = set(leaving)
+            alumni_used = set()
+            k = 0
+            while k < len(vacancies):
+                ident, slot = vacancies[k]
+                k += 1
+                sc = schools[ident]
+                rng = _rng("jhsaa-carousel-fill", world_id, season_year, gender, ident, slot)
+                head, ast = staff.get((ident, gender), (None, []))
+                line = None
+                if slot == "head":
+                    own = [a for a in ast if a.coach_id not in taken]
+                    if own and rng.random() < PROMOTE_CHANCE:
+                        best = max(own, key=lambda a: sum(a.grades.values()))
+                        old_slot = next(r["slot"] for r in seats(world_id, gender, ident)
+                                        if r["coach"] and r["coach"].coach_id == best.coach_id)
+                        line = {"kind": "promote", "coach_id": best.coach_id,
+                                "name": best.name, "why": "the program's own assistant",
+                                "from_ident": ident, "from_slot": old_slot}
+                        taken.add(best.coach_id)
+                        vacancies.append((ident, old_slot))
+                    elif rng.random() < AREA_MOVE_CHANCE:
+                        near = [(i2, a) for (i2, g2), (_h, aa) in staff.items()
+                                if i2 in schools and i2 != ident
+                                and schools[i2].area == sc.area
+                                for a in aa if a.coach_id not in taken]
+                        if near:
+                            i2, a = max(near, key=lambda t: (sum(t[1].grades.values()),
+                                                             t[1].coach_id))
+                            taken.add(a.coach_id)
+                            old_slot = next(r["slot"] for r in seats(world_id, gender, i2)
+                                            if r["coach"] and r["coach"].coach_id == a.coach_id)
+                            line = {"kind": "move", "coach_id": a.coach_id, "name": a.name,
+                                    "why": f"assistant at {schools[i2].name}, same area",
+                                    "from_ident": i2, "from_slot": old_slot}
+                            vacancies.append((i2, old_slot))
+                if line is None:
+                    p_alum = 0.25 + 0.5 * leg.get(ident, 0.0)
+                    if rng.random() < p_alum:
+                        alum = conn.execute(
+                            "SELECT pid, name, grad_year FROM jhsaa_alumni WHERE world_id=?"
+                            " AND gender=? AND ident=? AND grad_year<=? ORDER BY pid",
+                            (world_id, gender, ident, season_year - ALUMNI_MIN_YEARS)).fetchall()
+                        alum = [a for a in alum if a[0] not in alumni_used
+                                and _cid(world_id, "player", a[0]) not in taken]
+                        if alum:
+                            pid, nm, gy = alum[rng.randrange(len(alum))]
+                            alumni_used.add(pid)
+                            line = {"kind": "alumnus", "pid": pid, "name": nm,
+                                    "why": f"class of {gy} — home to coach"}
+                if line is None:
+                    c = _new_candidate(world_id, season_year, gender, sc.city,
+                                       f"{gender}|{ident}|{slot}")
+                    line = {"kind": "new", "coach": json.loads(_coach_row(c)),
+                            "coach_id": c.coach_id, "name": c.name,
+                            "why": f"{PROFILE_LABELS.get(c.profile, c.profile)}, local"}
+                line.update({"gender": gender, "ident": ident, "school": sc.name,
+                             "slot": slot, "fill": True})
+                lines.append(line)
+    finally:
+        conn.close()
+    for i, ln in enumerate(lines):
+        ln["n"] = i
+        ln["veto"] = False
+    prop = {"year": season_year, "lines": lines}
+    conn = _cconn()
+    try:
+        conn.execute("DELETE FROM jhsaa_coach_carousel WHERE world_id=? AND status='pending'",
+                     (world_id,))
+        conn.execute("INSERT INTO jhsaa_coach_carousel (world_id, year, status, data)"
+                     " VALUES (?,?,?,?)", (world_id, season_year, "pending", json.dumps(prop)))
+        conn.commit()
+    finally:
+        conn.close()
+    return prop
+
+
+def pending_cycle(world_id: int) -> dict | None:
+    conn = _cconn()
+    try:
+        r = conn.execute("SELECT data FROM jhsaa_coach_carousel WHERE world_id=?"
+                         " AND status='pending' ORDER BY rowid DESC LIMIT 1",
+                         (world_id,)).fetchone()
+    finally:
+        conn.close()
+    return json.loads(r[0]) if r else None
+
+
+def _save_pending(world_id: int, prop: dict) -> None:
+    conn = _cconn()
+    try:
+        conn.execute("UPDATE jhsaa_coach_carousel SET data=? WHERE world_id=?"
+                     " AND status='pending'", (json.dumps(prop), world_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def set_vetoes(world_id: int, vetoed: set) -> None:
+    prop = pending_cycle(world_id)
+    if prop is None:
+        raise StaffError("No coaching cycle is pending.")
+    for ln in prop["lines"]:
+        ln["veto"] = ln["n"] in vetoed
+    _save_pending(world_id, prop)
+
+
+def dismiss_cycle(world_id: int) -> None:
+    conn = _cconn()
+    try:
+        conn.execute("UPDATE jhsaa_coach_carousel SET status='dismissed' WHERE world_id=?"
+                     " AND status='pending'", (world_id,))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def commit_cycle(world_id: int) -> int:
+    """Apply every line not vetoed, in proposal order. A fill whose incoming coach
+    was vetoed out of their old seat still applies (the seat is the proposal's
+    unit); a fill onto a seat whose departure was vetoed is skipped, since the
+    seat is not vacant. Returns the number of lines applied."""
+    prop = pending_cycle(world_id)
+    if prop is None:
+        raise StaffError("No coaching cycle is pending.")
+    sy = prop["year"]
+    # A vetoed departure keeps its seat filled, and so does a vetoed promotion or
+    # move — for the seat the coach would have LEFT — so no fill lands on a coach
+    # who is staying and sends them to the free pool.
+    kept_seat = {(ln["gender"], ln["ident"], ln["slot"]) for ln in prop["lines"]
+                 if ln["veto"] and ln["kind"] in ("retire", "fire")}
+    kept_seat |= {(ln["gender"], ln["from_ident"], ln["from_slot"]) for ln in prop["lines"]
+                  if ln["veto"] and ln.get("from_slot")}
+    applied = 0
+    for ln in prop["lines"]:
+        if ln["veto"]:
+            continue
+        key = (ln["gender"], ln["ident"], ln["slot"])
+        if ln["kind"] in ("retire", "fire"):
+            retire_coach(world_id, ln["coach_id"], sy)
+            if ln["kind"] == "fire":
+                conn = _conn()
+                try:
+                    _event(conn, world_id, sy, ln["coach_id"], ln["ident"], ln["gender"],
+                           "head", "fired", ln.get("why", ""))
+                    c = _load_coaches(conn, world_id, [ln["coach_id"]]).get(ln["coach_id"])
+                    if c is not None:          # fired, not retired: back to the pool
+                        c.retired = 0
+                        save_coach(conn, world_id, c)
+                    conn.commit()
+                finally:
+                    conn.close()
+            applied += 1
+            continue
+        if key in kept_seat:
+            continue
+        try:
+            if ln["kind"] == "alumnus":
+                appoint_former_player(world_id, ln["pid"], ln["ident"], ln["gender"],
+                                      ln["slot"], sy)
+            elif ln["kind"] == "new":
+                conn = _conn()
+                try:
+                    c = Coach(coach_id=ln["coach_id"], name=ln["name"], **ln["coach"])
+                    save_coach(conn, world_id, c)
+                    conn.commit()
+                finally:
+                    conn.close()
+                move_coach(world_id, c.coach_id, ln["ident"], ln["gender"], ln["slot"], sy)
+            else:                              # promote / move
+                move_coach(world_id, ln["coach_id"], ln["ident"], ln["gender"],
+                           ln["slot"], sy)
+            applied += 1
+        except StaffError:
+            continue
+    conn = _cconn()
+    try:
+        conn.execute("UPDATE jhsaa_coach_carousel SET status='committed' WHERE world_id=?"
+                     " AND status='pending'", (world_id,))
+        conn.commit()
+    finally:
+        conn.close()
+    return applied

@@ -431,6 +431,8 @@ def _hold_prob(server: Player, returner: Player, context: MatchContext,
         gap += tune["edge_stamina"] * (es["s_dev"] - er["s_dev"])
     gap += style_edge(*es["style"], *er["style"],
                       es["overall"] - er["overall"], tune)
+    if "co" in es:                     # the set-break changeover roll, if any
+        gap += es["co"] - er["co"]
     return _logistic(
         tune["hold_base_logit"]
         + tune["skill_slope"] * effective_gap(gap, tune["gap_knee"],
@@ -451,6 +453,8 @@ def _tb_prob(p0: Player, p1: Player, context: MatchContext,
         gap += tune["edge_stamina"] * (e0["s_dev"] - e1["s_dev"])
     gap += style_edge(*e0["style"], *e1["style"],
                       e0["overall"] - e1["overall"], tune)
+    if "co" in e0:
+        gap += e0["co"] - e1["co"]
     return _logistic(
         tune["tb_slope"] * effective_gap(gap, tune["gap_knee"],
                                          tune["gap_accel"],
@@ -482,6 +486,43 @@ def _mtb_score(win: int, r: float, p: float, target: int) -> tuple[int, int]:
     lo = int(round((1.0 - min(edge, 1.0)) * (target - 2)))
     lo = max(0, min(target - 2, lo))
     return (target, lo) if win == 0 else (lo, target)
+
+
+# --- THE CHANGEOVER ROLL (owner spec 2026-09, JHSAA coaches) -----------------
+#
+# High-school coaches talk to their players at the SET BREAK — not every odd-game
+# changeover, since a coach cannot reach every court every time. So at most two
+# rolls a best-of-3: before set 2, and before a deciding set or match tiebreak.
+# Both coaches roll; a better Changeover grade rolls higher on average and more
+# consistently. The NET is a small offset on the next set's effective gap (it is
+# added to the same gap every other modifier builds, so it only decides sets that
+# are close) and it is DISCARDED at the next break, never stacked.
+#
+# ‼️ ITS OWN RNG STREAM, seeded off the match seed — the match's main stream draws
+# exactly what it drew before, so every other roll in the season is untouched and
+# `engine.boxstats` still replays the flow. Inert unless the profile carries
+# `co_q` (the two sides' Changeover quantiles) — college, cups and pros never do.
+CO_MEAN = 1.0          # roll mean at the top (+) / bottom (−) of the scale
+CO_SD = (1.2, 0.6)     # roll spread: weakest coach → strongest coach
+CO_CAP = 2.0          # the net offset never exceeds this many OVR points
+
+
+def changeover_offset(seed: int, set_no: int, q0: float, q1: float,
+                      k: float) -> float:
+    """Side 0's gap offset for set `set_no` (1-based, >= 2), in OVR POINTS —
+    callers divide by `GRADE_SPAN`, since a gap here is OVR / 60."""
+    rng = random.Random(f"jh-changeover|{seed}|{set_no}")
+
+    def roll(q):
+        sd = CO_SD[0] + (CO_SD[1] - CO_SD[0]) * q
+        return rng.gauss(CO_MEAN * (2.0 * q - 1.0), sd)
+    net = k * (roll(q0) - roll(q1))
+    return max(-CO_CAP, min(CO_CAP, net))
+
+
+def _with_co(edges, off: float):
+    """The edge pair for one set, side 0 carrying the changeover offset."""
+    return ({**edges[0], "co": off}, {**edges[1], "co": 0.0})
 
 
 def _play_set(rng, players, server, fmt, final_tb: bool, target_games: int,
@@ -577,12 +618,18 @@ def simulate_fast(
         )
 
     sets_needed = fmt.best_of // 2 + 1
+    co_q = tune.get("co_q")
+    co_k = tune.get("co_k", 0.0)
     while max(sets) < sets_needed:
         is_final = sets[0] == sets_needed - 1 and sets[1] == sets_needed - 1
+        set_edges = edges
+        if co_q and co_k and set_scores:           # a set break has happened
+            set_edges = _with_co(edges, changeover_offset(
+                seed, len(set_scores) + 1, co_q[0], co_q[1], co_k) / GRADE_SPAN)
         win, score, server, flow = _play_set(
             rng, players, server, fmt,
             is_final and fmt.final_set_tiebreak, fmt.set_games, context,
-            edges, decider=is_final, tune=tune,
+            set_edges, decider=is_final, tune=tune,
         )
         sets[win] += 1
         set_scores.append(score)

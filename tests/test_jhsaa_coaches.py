@@ -82,6 +82,62 @@ def test_grades_are_imprinted_in_range_and_deterministic():
             assert 0.0 <= v <= 1.0
 
 
+# --- Stage B, as pure functions -----------------------------------------------------
+
+def test_the_changeover_roll_never_touches_set_one_and_is_inert_at_zero():
+    import random
+    from engine.state import random_player
+    from engine.fast import simulate_fast, HS_PROFILE
+    from engine.format import PRESETS
+    fmt = PRESETS["high_school"]
+    changed = 0
+    for i in range(150):
+        rng = random.Random(i)
+        a, b = random_player(rng, "a"), random_player(rng, "b")
+        base = simulate_fast(a, b, seed=i, fmt=fmt, profile=HS_PROFILE)
+        off = simulate_fast(a, b, seed=i, fmt=fmt,
+                            profile={**HS_PROFILE, "co_q": (0.9, 0.1), "co_k": 0.0})
+        assert off.set_scores == base.set_scores and off.game_flow == base.game_flow
+        on = simulate_fast(a, b, seed=i, fmt=fmt,
+                           profile={**HS_PROFILE, "co_q": (0.9, 0.1), "co_k": 0.8})
+        assert on.set_scores[0] == base.set_scores[0]      # rolls at set BREAKS only
+        changed += on.set_scores != base.set_scores
+    assert changed > 0
+
+
+def test_a_stage_a_history_row_reads_neutral():
+    """A season archived before Stage B carries only the lens/culture/strategy —
+    it must read back with no development, clutch or changeover effect."""
+    old = '{"read": 1.0, "trust": 1.1, "form": 1.1, "culture": 1.0, "strategy": "balanced"}'
+    e = jc._eff_from_json(old)
+    assert e.dev == 1.0 and e.lean == 0.0 and e.clutch is None and e.changeover is None
+    assert e.feeder == 0.5 and e.builder == 0.5 and e.temperament == "steady"
+
+
+def test_neutral_staff_history_leaves_rosters_identical(monkeypatch):
+    s = jh.load_schools("girls")[5]
+    base = [(p.pid, p.current_overall()) for p in jh.build_roster(s, 2032, "")]
+    lens = jh.coach_lens(s.name, "")
+    neutral = {y: jc.StaffEffect(lens=lens, culture=1.0, strategy="balanced")
+               for y in range(2026, 2032)}
+    monkeypatch.setattr(jh, "staff_history", lambda g, i: neutral)
+    assert [(p.pid, p.current_overall()) for p in jh.build_roster(s, 2032, "")] == base
+    strong = {y: jc.StaffEffect(lens=lens, culture=1.0, strategy="balanced", dev=1.2)
+              for y in range(2026, 2032)}
+    monkeypatch.setattr(jh, "staff_history", lambda g, i: strong)
+    up = dict((p.pid, p.current_overall()) for p in jh.build_roster(s, 2032, ""))
+    assert sum(up[pid] - v for pid, v in base) > 0
+
+
+def test_mentorship_pairs_old_with_young_and_keeps_the_singles():
+    s = jh.load_schools("girls")[5]
+    ros = jh.build_roster(s, 2032, "")[:11]
+    out = jh._arrange_regular(ros, "mentorship")
+    assert out[:3] == ros[:3]
+    assert sorted(p.pid for p in out) == sorted(p.pid for p in ros)
+    assert jh._flip_strategy("mentorship") == "balanced"
+
+
 # --- a real season ----------------------------------------------------------------
 
 def _small(real_load):
@@ -144,7 +200,12 @@ def world_season(tmp_path_factory):
         wd.is_primed, wd.prime = real_primed, real_prime
 
 
-def test_a_season_with_inaugural_staffs_is_byte_identical(world_season):
+def test_a_season_with_inaugural_staffs_is_byte_identical(world_season, monkeypatch):
+    """Stage A's contract. Stage B's in-season effects (the changeover roll and
+    clutch) are real new behaviour, so their dials are zeroed here — with them
+    off, an inaugural staff plays the pre-coaches season exactly."""
+    monkeypatch.setattr(jc, "CHANGEOVER_K", 0.0)
+    monkeypatch.setattr(jc, "CLUTCH_MISS", 0.0)
     staff = wd.jhsaa_staff_for_season(world_season["season_year"], "girls",
                                       world_season["world"]["id"])
     assert staff, "run_jhsaa should have seated staffs"

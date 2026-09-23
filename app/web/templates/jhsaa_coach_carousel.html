@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Coaching carousel — JHSAA{% endblock %}
+{% block content %}
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <span style="font-size:16px;color:var(--text-muted)">High School › Coaching carousel</span>
+</div></div>
+<div class="jh-shell">
+{% if msg %}<p class="jh-note" style="margin:0 0 12px">{{ msg }}</p>{% endif %}
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Coaching cycle</span>
+    {% if prop %}<span class="bl-panel-meta">{{ prop.year }} · {{ prop.lines|length }} proposed</span>{% endif %}</div>
+  {% if not prop %}
+  <form method="post" class="jh-form-row">
+    <input type="hidden" name="do" value="run">
+    <button class="bl-pill" type="submit">Run a coaching cycle</button>
+  </form>
+  {% else %}
+  <form method="post">
+    <div class="tbl-scroll">
+    <table class="jh-roster">
+      <tr><th style="width:56px">Veto</th><th>Program</th><th style="width:70px">Team</th><th>Seat</th><th>Change</th><th>Coach</th><th>Why</th></tr>
+      {% for ln in prop.lines %}
+      <tr>
+        <td><input type="checkbox" name="veto" value="{{ ln.n }}" {{ 'checked' if ln.veto }}></td>
+        <td><a href="{{ url_for('jhsaa_school', school=ln.school, u=u, g=ln.gender) }}">{{ ln.school }}</a></td>
+        <td>{{ ln.gender|capitalize }}</td>
+        <td>{{ 'Head coach' if ln.slot == 'head' else 'Assistant' }}</td>
+        <td>{{ kinds.get(ln.kind, ln.kind) }}</td>
+        <td>{% if ln.coach_id and ln.kind not in ('new',) %}<a href="{{ url_for('jhsaa_coach', coach_id=ln.coach_id, u=u, g=ln.gender) }}">{{ ln.name }}</a>{% else %}{{ ln.name }}{% endif %}</td>
+        <td><span class="s">{{ ln.why }}</span></td>
+      </tr>
+      {% endfor %}
+    </table>
+    </div>
+    <div class="jh-form-row">
+      <button class="bl-pill" type="submit" name="do" value="save">Save vetoes</button>
+      <button class="bl-pill" type="submit" name="do" value="commit">Commit cycle</button>
+      <button class="bl-pill" type="submit" name="do" value="dismiss">Dismiss</button>
+    </div>
+  </form>
+  {% endif %}
+</div>
+{% if pool %}
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Available coaches</span></div>
+  {% for c in pool %}
+  <div class="jh-kv"><span class="k"><a href="{{ url_for('jhsaa_coach', coach_id=c.coach_id, u=u) }}">{{ c.name }}</a></span>
+    <span class="v"><span class="s">{{ c.hometown }}</span></span></div>
+  {% endfor %}
+</div>
+{% endif %}
+</div>
+{% endblock %}

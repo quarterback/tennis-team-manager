@@ -2614,6 +2614,12 @@ class TeamSeason:
     # Empty means "no named staff" and `_lineup` falls back to the school draw
     # `_coach_strategy`, exactly as before coaches existed.
     strategy: str = ""
+    # STAGE B staff effects (`jhsaa_coaches`). Each defaults to "no effect", which
+    # is what every program without a named staff reads, exactly as before.
+    co_q: float | None = None           # head's Changeover quantile (engine roll)
+    clutch: float | None = None         # head's Clutch quantile (postseason lineup)
+    rotate_mult: float = 1.0            # participation temperament → bench rotation
+    rest_mult: float = 1.0              # participation temperament → resting starters
     # ‼️ INJURIES (owner rule 2026-08, ported off the college model — see
     # `app/injuries.py`). VARSITY ONLY: `play_dual` rolls these, `play_jv_dual`
     # never touches this dict — JV is deliberately injury-blind (`jv_pool`),
@@ -2920,6 +2926,7 @@ def reset_schools() -> None:
     global _schools_cache
     _schools_cache = None
     _playup_cache.clear()
+    _staff_hist_cache.clear()
     _schoolobj_cache.clear()
     _upstart_cache.clear()
     _playup_league_cache.clear()
@@ -3358,8 +3365,13 @@ def sibling_link(school: School, entry: int, seat: int, salt: str):
     # only raises the target the same gauss draw is scaled by), so every seat
     # chosen here exists on the older roster, and the roll needs no archetype
     # lookup for a school it is not building.
-    n = _freshman_class_size(sc.key, older_entry, sc.classification, salt, 0)
-    return sc, older_entry, rng.randrange(n)
+    # ‼️ RETENTION CAN SHRINK A CLASS (named staffs, owner spec 2026-09), so the
+    # under-estimate has to include any NEGATIVE retention for that cohort — it
+    # reads only archived seasons before `older_entry`, so it is fixed forever.
+    shrink = min(0, len(GRADES) * retention_extra(staff_history(sc.gender, sc.ident),
+                                                  older_entry))
+    n = _freshman_class_size(sc.key, older_entry, sc.classification, salt, shrink)
+    return sc, older_entry, rng.randrange(max(1, n))
 
 
 def _surname(name: str) -> str:
@@ -3715,7 +3727,7 @@ def coach_factor(mature: float) -> float:
 def career_ability(school_key: str, entry: int, seat: int, grade: int,
                    salt: str, ceiling: float,
                    exposure: dict | None = None, coach: float = 1.0,
-                   start_lift: float = 0.0) -> float:
+                   start_lift: float = 0.0, staff: dict | None = None) -> float:
     """This player's ability at `grade` under the career model.
 
     `exposure` maps a GRADE to how much of that year's capacity the player
@@ -3745,7 +3757,9 @@ def career_ability(school_key: str, entry: int, seat: int, grade: int,
         # ceilings raised, and worse the harder the tag was pushed. "Doesn't expand a
         # player's skillset, just makes them potentially more likely to REACH" is a
         # rule about exactly this line, and reach is not exceed.
-        gain = base * coach
+        # `staff` is the named coaching staff's development multiplier for the
+        # season that year was played in (owner spec 2026-09) — absent = 1.0.
+        gain = base * coach * (staff or {}).get(g - 1, 1.0)
         if v >= peak:
             gain = base * CAREER_OVERFLOW
         elif v + gain > peak:
@@ -3852,6 +3866,75 @@ def pinned_talents(gender: str, ident: str) -> dict:
             out = {}
     _pins_cache[key] = out
     return out
+
+
+_staff_hist_cache: dict = {}     # (db, gender, ident) -> {season_year: StaffEffect}
+
+
+def staff_history(gender: str, ident: str) -> dict:
+    """{season_year: StaffEffect} — the staff this program was ARCHIVED with each
+    season (`jhsaa_coach_history`, the head row's `eff`; owner spec 2026-09).
+
+    What a roster build reads for the Stage B effects that act on PLAYERS
+    (development, the JV lean, feeder ties, retention). ‼️ HISTORY ONLY, never
+    today's seats: rosters are rebuilt from seed for every archived season, so a
+    past year's development must come from the staff that coached THAT year, and
+    a row written before Stage B reads NEUTRAL (`_eff_from_json`) — which is what
+    keeps every season archived before it byte-identical, with no era setting.
+
+    ONE indexed read per (gender, program), memoised until `record_season`
+    appends a year or `reset_schools` runs — never per seat."""
+    from .dbpath import resolve_db_path
+    db = resolve_db_path()
+    key = (db, gender, ident)
+    got = _staff_hist_cache.get(key)
+    if got is not None:
+        return got
+    out: dict = {}
+    wid = _expo_world_id(db)
+    if wid is not None:
+        import sqlite3
+        try:
+            conn = sqlite3.connect(db)
+            try:
+                rows = conn.execute(
+                    "SELECT year, eff FROM jhsaa_coach_history WHERE world_id=?"
+                    " AND gender=? AND ident=? AND slot='head' AND eff IS NOT NULL",
+                    (wid, gender, ident)).fetchall()
+            finally:
+                conn.close()
+            from .jhsaa_coaches import _eff_from_json
+            from .world import BASE_YEAR
+            out = {BASE_YEAR + int(y) + 1: _eff_from_json(e) for y, e in rows}
+        except sqlite3.Error:
+            out = {}
+    _staff_hist_cache[key] = out
+    return out
+
+
+def staff_culture(hist: dict, season_year: int) -> float:
+    """Program culture going INTO `season_year` (owner spec 2026-09): an
+    exponential carry of every archived staff's Program builder grade —
+    `CULTURE_KEEP` of last year's culture plus the rest from that year's staff —
+    starting from neutral 0.5. So a long-tenured builder raises it over several
+    seasons and it decays slowly after they leave. A FOLD over history, never a
+    store."""
+    from .jhsaa_coaches import CULTURE_KEEP
+    c = 0.5
+    for y in sorted(k for k in hist if k < season_year):
+        c = CULTURE_KEEP * c + (1.0 - CULTURE_KEEP) * hist[y].builder
+    return c
+
+
+def retention_extra(hist: dict, entry: int) -> int:
+    """± players on the cohort entering `entry`, off the culture it walked into.
+    Pinned by construction: it reads only seasons before `entry`, which are
+    archived and immutable."""
+    if not hist:
+        return 0
+    from .jhsaa_coaches import RETENTION_MAX
+    c = staff_culture(hist, entry)
+    return int(round(RETENTION_MAX * 2.0 * (c - 0.5)))
 
 
 def record_talents(conn, world_id: int, year: int, gender: str, rosters) -> int:
@@ -5399,7 +5482,8 @@ def _ceiling(rng: random.Random, group: str, gender: str,
 
 def _apply_career(p: Prospect, school_key: str, entry: int, seat: int,
                   grade: int, salt: str, exposure: dict | None = None,
-                  coach: float = 1.0, start_lift: float = 0.0) -> Prospect:
+                  coach: float = 1.0, start_lift: float = 0.0,
+                  staff: dict | None = None) -> Prospect:
     """Set a career-era player's CURRENT ability from their career plan.
 
     The prospect arrives generated AT its ceiling (maturity 1.0), so this scales
@@ -5417,7 +5501,7 @@ def _apply_career(p: Prospect, school_key: str, entry: int, seat: int,
     if ceiling <= 0:
         return p
     target = career_ability(school_key, entry, seat, grade, salt, ceiling,
-                            exposure, coach, start_lift)
+                            exposure, coach, start_lift, staff)
     factor = target / ceiling
     for a, ceil_v in p.potential.items():
         p.current[a] = clamp_grade(ceil_v * factor)
@@ -5525,7 +5609,8 @@ def _stamp_pot_estimate(p, pid: str, salt: str, grade: int, exposure: dict | Non
 
 def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
               salt: str, expo_years: dict | None = None,
-              pins: dict | None = None) -> Prospect:
+              pins: dict | None = None,
+              staff_years: dict | None = None) -> Prospect:
     """One seat's Prospect — pulled out of `build_roster` so a TRANSFER (see
     below) can regenerate the exact same person under the school they actually
     play for now, from the ORIGIN school's identity/program modifiers. `pid`
@@ -5613,6 +5698,13 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
     # The feeder head start is a CREATION property (how far along the player
     # walked in), so the pinned value wins; today's tag reaches new entrants.
     start_lift_today = mod.get("start", 0.0) if entry >= feeder_era() else 0.0
+    # FEEDER TIES (owner spec 2026-09): the staff that ran the summer clinics the
+    # year BEFORE this cohort arrived adds to its head start — history only, so
+    # an archived cohort cannot move, and the pin freezes it once rostered.
+    fe = (staff_years or {}).get(entry - 1)
+    if fe is not None:
+        from .jhsaa_coaches import FEEDER_K
+        start_lift_today += FEEDER_K * 2.0 * (fe.feeder - 0.5)
     start_lift = (pinned["start"] if pinned and pinned.get("start") is not None
                   else start_lift_today)
     p = generate_prospect(rng, nm, "US", gender=sex,
@@ -5649,9 +5741,28 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
         # save, which is exactly the state this was found in.
         # `coach_factor` reads TODAY's archetype on purpose (the development
         # environment is year to year); `start_lift` is the pinned creation value.
+        # THE NAMED STAFF's development, per season played (owner spec 2026-09):
+        # the multiplier of the staff that coached each prior grade's season,
+        # tilted toward depth or the top by a JV-whisperer's lean (a player who
+        # rarely dressed that year is "depth"). Absent history → nothing.
+        staff_mult = None
+        if staff_years:
+            from .jhsaa_coaches import LEAN_K
+            staff_mult = {}
+            for pg in range(9, grade):
+                e = staff_years.get(entry + (pg - 9))
+                if e is None:
+                    continue
+                f = e.dev
+                x = (exposure or {}).get(pg)
+                if e.lean and x is not None:
+                    depth = (1.0 - x) / (1.0 - EXPO_FLOOR)
+                    f *= 1.0 + LEAN_K * e.lean * (depth - 0.5)
+                if f != 1.0:
+                    staff_mult[pg] = f
         _apply_career(p, school.key, entry, seat, grade, salt,
                       exposure or None, coach_factor(mod.get("mature", 0.0)),
-                      start_lift)
+                      start_lift, staff_mult or None)
     elif compress:
         # The guarantee half: attribute noise lifts displayed ceilings past the
         # squashed centre, so the visible number is trimmed after generation.
@@ -5760,16 +5871,23 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     # The talent pins for every seat THIS program generates — one indexed read,
     # memoised (`pinned_talents`); threaded down like `expo_years`.
     pins = pinned_talents(school.gender, school.ident)
+    # The named staff's archived history (owner spec 2026-09) — one read.
+    staff_years = staff_history(school.gender, school.ident)
     out = []
     fresh9_seats = 0
     for grade in GRADES:
         entry = year - (grade - 9)
         n_seats = _freshman_class_size(school.key, entry, school.classification,
-                                       salt, mod.get("roster", 0))
+                                       salt, mod.get("roster", 0)
+                                       # `extra` is roster-wide; retention is
+                                       # per CLASS, hence the four grades.
+                                       + len(GRADES) * retention_extra(staff_years,
+                                                                       entry))
         if grade == 9:
             fresh9_seats = n_seats
         for seat in range(n_seats):
-            p = _gen_seat(school, mod, entry, seat, grade, salt, expo_years, pins)
+            p = _gen_seat(school, mod, entry, seat, grade, salt, expo_years, pins,
+                          staff_years)
             rec = tmap.get(p.pid)
             # Somewhere else THIS season — `transfer_school` walks every recorded
             # move and returns where they actually are, so a player who moved away
@@ -5783,7 +5901,8 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     # collides with the seats `_freshman_class_size` already rolled for it.
     if len(out) < ROSTER_FLOOR:
         for seat in range(fresh9_seats, fresh9_seats + (ROSTER_FLOOR - len(out))):
-            out.append(_gen_seat(school, mod, year, seat, 9, salt, expo_years, pins))
+            out.append(_gen_seat(school, mod, year, seat, 9, salt, expo_years, pins,
+                                 staff_years))
     # Incoming: every transfer whose DESTINATION is this school AND this gender,
     # effective by now. School names are shared across a boys' and a girls' program
     # (the display identity is per-team, not per-school), so the name match alone
@@ -6010,7 +6129,7 @@ def _rest_count(ts: TeamSeason, opp, rng: random.Random, spare: int) -> int:
     n = opp.wins + opp.losses
     if n >= REST_MIN_SAMPLE and opp.win_pct > REST_OPP_PCT:
         return 0                       # a real record says they aren't that bad
-    if rng.random() >= REST_RATE:
+    if rng.random() >= min(1.0, REST_RATE * getattr(ts, "rest_mult", 1.0)):
         return 0
     k, cap = 1, min(REST_MAX, spare)
     while k < cap:
@@ -7034,7 +7153,10 @@ def _coach_strategy(school_key: str) -> str:
 
 def _flip_strategy(strategy: str) -> str:
     """The next strategy in a fixed cycle — deterministic given which one the
-    program normally runs, so a flip is reproducible from the same seed."""
+    program normally runs, so a flip is reproducible from the same seed. A
+    mentorship coach's off-night is an ordinary balanced pairing."""
+    if strategy not in _STRATEGIES:
+        return "balanced"
     i = _STRATEGIES.index(strategy)
     return _STRATEGIES[(i + 1) % len(_STRATEGIES)]
 
@@ -7100,7 +7222,15 @@ def _arrange_regular(eleven: list, strategy: str,
                 r += FAMILY_CHEMISTRY      # see `_arrange_state` — a tiebreak only
             return r + partner_chemistry(pair_counts, a.pid, b.pid, culture)
 
-        if strategy == "balanced":
+        if strategy == "mentorship":
+            # MENTORSHIP (owner spec 2026-09, a head coach's philosophy): pair the
+            # oldest with the youngest inside the fixed pool, ladder order breaking
+            # ties — a senior carries a freshman through the league season. It
+            # decides PAIRING only, never who is in the pool, and never applies in
+            # the postseason (this arranger is regular-season only).
+            ranked = sorted(pool, key=lambda p: (-getattr(p, "grade", 9),
+                                                 pool.index(p)))
+        elif strategy == "balanced":
             # Snake-pair strongest with weakest, next-strongest with
             # next-weakest, and so on -- spreads ability evenly across the
             # four courts without scoring a single combination.
@@ -7226,6 +7356,18 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None,
     if phase in POSTSEASON:                        # strict, frozen, arranged
         pool = _postseason_nine(ts, phase, group)
         g = ts.school.group if group is _OWN_GROUP else group
+        # CLUTCH (owner spec 2026-09): a head coach who is poor in big matches
+        # sometimes just runs the frozen ladder instead of finding the best legal
+        # arrangement. The ladder in slot order is itself legal under the Order of
+        # Ability (S1+D1 consume the top ranks), so nobody is ever stacked — the
+        # miss only costs the pairing/seat optimisation. Its own stream, so no
+        # other roll in the dual moves; never taken when siblings would be split.
+        if ts.clutch is not None and not ts.sibling_ids:
+            from .jhsaa_coaches import CLUTCH_MISS
+            miss = CLUTCH_MISS * (1.0 - ts.clutch)
+            crng = random.Random(f"jh-clutch|{ts.school.key}|{phase}|{len(ts.schedule)}")
+            if crng.random() < miss:
+                return list(pool)
         return _arrange_postseason(pool, dual_format(phase, g), ts.sibling_ids,
                                    ts.pair_counts, ts.culture)
     if phase in SHOWCASE:
@@ -7243,7 +7385,7 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None,
         order = _healthy(ts, _order(ts))
         need = lineup_need(phase, g)
         nine, bench = order[:need], order[need:]
-        if bench and rng.random() < _ROTATE_ONE:
+        if bench and rng.random() < min(0.95, _ROTATE_ONE * ts.rotate_mult):
             nine[-1] = bench[rng.randrange(len(bench))]
         # Captains dress — AFTER the rotation, so the rotation can never be what
         # costs a captain his place (owner rule 2026-09).
@@ -7262,9 +7404,11 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None,
         order = order[rest:]
     nine, bench = order[:need], order[need:]
     if bench:
-        if rng.random() < _ROTATE_ONE:
+        # PARTICIPATION TEMPERAMENT scales how readily the coach rotates the bench
+        # in (owner spec 2026-09); "steady" is ×1.0 — the league default exactly.
+        if rng.random() < min(0.95, _ROTATE_ONE * ts.rotate_mult):
             nine[-1] = bench[rng.randrange(len(bench))]
-        if len(bench) > 1 and rng.random() < _ROTATE_TWO:
+        if len(bench) > 1 and rng.random() < min(0.95, _ROTATE_TWO * ts.rotate_mult):
             pick = bench[rng.randrange(len(bench))]
             if pick is not nine[-1]:
                 nine[-2] = pick
@@ -7496,7 +7640,8 @@ def play_jv_dual(a: JVTeam, b: JVTeam, *, seed: int, phase: str = "regular",
     res = simulate_dual(_squad(a.team, phase, la, fmt, lift=home_court(seed, phase)),
                         _squad(b.team, phase, lb, fmt),
                         seed=seed, play_all=True, fidelity=FIDELITY, dual_fmt=fmt,
-                        singles_fmt=mf, doubles_fmt=mf, profile=HS_PROFILE)
+                        singles_fmt=mf, doubles_fmt=mf,
+                        profile=hs_profile(a.team, b.team))
     out = jv_outcome(res)
     a.points_for += res.home_points
     a.points_against += res.away_points
@@ -7622,7 +7767,7 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     res = simulate_dual(home_team, away_team, seed=seed,
                         play_all=True, fidelity=FIDELITY,
                         dual_fmt=shape,
-                        singles_fmt=fmt, doubles_fmt=fmt, profile=HS_PROFILE)
+                        singles_fmt=fmt, doubles_fmt=fmt, profile=hs_profile(a, b))
     lines = []
     for ln in res.lines:                       # individual records, for awards
         hw = getattr(ln, "home_won", None)
@@ -7725,6 +7870,31 @@ def run_district(schools: list[School], year: int, *, seed: int,
     return teams
 
 
+def _stage_b_fields(eff) -> dict:
+    """The Stage B staff effects a TeamSeason carries (`jhsaa_coaches`) — empty
+    for a program with no staff, so it plays exactly as before coaches existed.
+    A zero dial in `jhsaa_coaches` switches its effect off here."""
+    if eff is None:
+        return {}
+    from . import jhsaa_coaches as jc
+    return {"co_q": eff.changeover if jc.CHANGEOVER_K else None,
+            "clutch": eff.clutch if jc.CLUTCH_MISS else None,
+            "rotate_mult": jc.TEMPERAMENT_ROTATE.get(eff.temperament, 1.0),
+            "rest_mult": jc.TEMPERAMENT_REST.get(eff.temperament, 1.0)}
+
+
+def hs_profile(a: "TeamSeason", b: "TeamSeason") -> dict:
+    """The engine profile for a dual with `a` at home: `HS_PROFILE`, plus the two
+    head coaches' Changeover grades when BOTH sides have a staff (owner spec
+    2026-09 — the set-break roll, `engine.fast.changeover_offset`). Anything
+    else gets the shared `HS_PROFILE` object itself, untouched."""
+    qa, qb = getattr(a, "co_q", None), getattr(b, "co_q", None)
+    if qa is None or qb is None:
+        return HS_PROFILE
+    from .jhsaa_coaches import CHANGEOVER_K
+    return {**HS_PROFILE, "co_q": (qa, qb), "co_k": CHANGEOVER_K}
+
+
 def district_teams(schools: list[School], year: int, salt: str = "",
                    prior: dict | None = None,
                    staff: dict | None = None) -> list[TeamSeason]:
@@ -7781,6 +7951,7 @@ def district_teams(schools: list[School], year: int, salt: str = "",
             school=s, roster=roster, sibling_ids=sibs, lens=lens,
             culture=eff.culture if eff is not None else doubles_culture(s.name, salt),
             strategy=eff.strategy if eff is not None else "",
+            **_stage_b_fields(eff),
             # Only this roster's own evidence — `_order` looks up by pid so a
             # gender-wide dict would work, but a team should carry its own memory
             # and nothing else's.

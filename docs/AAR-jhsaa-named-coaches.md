@@ -72,21 +72,60 @@ The code is `app/jhsaa_coaches.py`.
 - **Displacement:** a displaced coach goes to the free pool with their career intact.
 - **Retirement:** stamps `retired`.
 
-## Stage B (not built)
-- Development grade and the JV/floor-raiser lean.
-- Participation temperament.
-- Clutch (postseason arrangement quality within anti-stacking).
-- Mentorship pairing.
-- Feeder ties (via the feeder head start).
-- Program culture and retention.
-- Legacy.
-- The vetoable carousel page.
-- **Changeover** (the one engine effect):
-  - Both coaches roll at SET BREAKS only, at most two per best-of-3.
-  - The net adjusts the next set's effective gap and is replaced at the next break.
-  - It uses its own rng stream.
-  - Tune it to move favourite rates under ~1 point.
+## Stage B (built)
+Every effect has one dial in `app/jhsaa_coaches.py`; 0 switches it off. Every
+grade is centred on 50, so an average staff changes nothing.
 
-Each Stage B item needs its own era gate: rosters rebuild from seed, so a staff
-effect on development must read the staff OF THAT SEASON from
-`jhsaa_coach_history`.
+**Acting on ROSTERS: read archived history only.** `jhsaa.staff_history` is one
+read per program, memoised and cleared by `record_season`.
+- **Why history only:** rosters rebuild from seed for every archived season, so a
+  past year must use the staff that coached THAT year.
+- **This is the era gate:** a Stage A history row carries no Stage B keys, so it
+  reads NEUTRAL (`_eff_from_json`). No setting is needed.
+- **Development (`DEV_K`):**
+  - Multiplies each year's capacity by the staff's blended grade, ×0.80..×1.20.
+  - A JV whisperer on staff tilts the multiplier toward players who rarely dressed
+    that year (`LEAN_K`, read off the exposure odometer).
+- **Feeder ties (`FEEDER_K`):**
+  - Adds to the freshman head start. The value comes from the staff of the season
+    BEFORE entry (who ran the summer clinics).
+  - The talent pin freezes it once the player is rostered.
+- **Retention (`RETENTION_MAX`):**
+  - Up to ± players per class.
+  - It reads the program culture the cohort walked into: a fold of Program builder
+    (`CULTURE_KEEP` carry), rising over a long tenure and fading after.
+  - The sibling generator's cohort-size estimate includes negative retention, so
+    it never picks a seat that does not exist.
+
+**Acting in SEASON (the current staff):**
+- **Clutch (`CLUTCH_MISS`):**
+  - A weak big-match head sometimes runs the frozen ladder instead of the best
+    legal postseason arrangement. The ladder in slot order is itself legal under
+    the Order of Ability.
+  - It uses its own stream, and it is skipped when siblings would be split.
+- **Temperament:** scales bench rotation and resting. "steady" is ×1.0 exactly.
+- **Mentorship:** a fourth pairing philosophy that pairs oldest with youngest inside
+  the fixed doubles pool. Its off-night flip is "balanced".
+  - The planned development bump for the younger partner was NOT built.
+- **Changeover (`CHANGEOVER_K`):**
+  - Both heads roll at set breaks only.
+  - The net of the two rolls (capped at 2 OVR) shifts the next set's gap and is
+    replaced at the next break.
+  - It uses its own rng stream, so set 1 never changes, and `co_k`=0 is
+    byte-identical.
+  - **Measured:** random coach pairings move favourite rates ≤0.1 pt; best vs
+    worst coach ≈ +1-2 pts in a close match.
+  - Comebacks do not rise on average: both coaches roll, so the effect is
+    symmetric.
+
+**Legacy and the carousel:**
+- **Legacy** (seasons by 10+-year heads) raises how often a program's alumni come
+  home.
+- **The carousel** is `/jhsaa/coaches/carousel`: a button that stores a PENDING
+  proposal. The owner vetoes lines, then commits.
+  - Each cycle proposes retirements (by age and tenure), rare firings (5+ seasons
+    in the current class, 0.20 below the program's own norm, then a 30% chance),
+    and a fill for every vacancy.
+  - Fill order: the program's own assistant, then an area assistant, then an
+    alumnus, then a new local candidate.
+  - Vetoing a departure or promotion keeps that seat filled.

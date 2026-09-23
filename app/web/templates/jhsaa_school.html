@@ -227,7 +227,8 @@
 
     {% if view.staff %}
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">Coaching staff</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title">Coaching staff</span>
+        <a class="jh-hqmore" href="{{ url_for('jhsaa_coach_carousel', u=u) }}">Carousel →</a></div>
       {% for st in view.staff.seats %}
       <div class="jh-kv"><span class="k">{{ st.label }}</span>
         <span class="v">{% if st.coach %}<a href="{{ url_for('jhsaa_coach', coach_id=st.coach.coach_id, u=u, g=view.gender) }}">{{ st.coach.name }}</a>
