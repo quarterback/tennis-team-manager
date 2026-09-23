@@ -27,7 +27,7 @@
     <div class="jh-champ">
       <span class="mark">{{ st.champion.mark|safe }}</span>
       <div style="min-width:0">
-        <span class="lbl">{{ view.season_year }} JHSAA {{ view.group }} State Champions</span>
+        <span class="lbl">{{ view.season_year|cal }} JHSAA {{ view.group }} State Champions</span>
         <a class="nm" href="{{ url_for('jhsaa_school', school=st.champion.name, u=u, g=view.gender, year=view.scope.pin) }}">{{ st.champion.name }}</a>
         {# An affiliate's real geography is city/state, never "city, Jefferson"
            — see School.state. #}

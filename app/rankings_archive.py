@@ -87,7 +87,7 @@ def _season_year() -> tuple[int, int]:
     for a standalone season with no world (tests, calibration)."""
     import app.world as world
     yr = world.load_world()["year"] if world.exists() else 0
-    return 2026 + yr, yr + 1
+    return world.display_base_year() + yr, yr + 1
 
 
 def _region_map(division: str, gender: str) -> dict:

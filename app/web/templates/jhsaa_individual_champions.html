@@ -61,7 +61,7 @@
     <div class="row">
       <img class="ic" src="{{ url_for('jhsaa_medal', name=view.gold_icon) }}"
            alt="" width="30" height="30" loading="lazy">
-      <div class="yr">{{ r.season_year }}</div>
+      <div class="yr">{{ r.season_year|cal }}</div>
       <div class="meat">
         <div class="line">
           <a class="who" href="{{ url_for('jhsaa_player', school=r.champion.school, pid=r.champion.players[0].pid, u=u, g=view.gender, year=r.year) }}">{{ r.champ_line }}</a>

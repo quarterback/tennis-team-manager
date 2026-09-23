@@ -102,6 +102,17 @@ RETIRE_FROM = 30           # probabilistic retirement begins here
 # `advance` + the `on_world_rollover` hook keep the two in lockstep — the pro
 # league can never sim ahead of the college game or stamp future-dated honors.
 BASE_YEAR = 2026
+
+
+def _cal_base() -> int:
+    """The display base for this module's `BASE_YEAR + year` calendar convention —
+    `world.display_base_year()`, so a backdated lab-integrated save labels its pro
+    seasons on the same shifted calendar as everything else. Every GTT store that
+    holds a calendar year is written AND read through this, and the pro league is
+    only ever founded after the offset is set (or on an offset-0 save), so the two
+    conventions can never mix inside one save."""
+    from app import world as _wd
+    return _wd.display_base_year()
 # D1 dominates the top of the board; the lower divisions fill the tail and the
 # undrafted pool. A hard 0.95 starved the wire of anyone signable AND wasted the
 # fact that D2-D4 graduate far more players than the pros can ever use.
@@ -1045,7 +1056,7 @@ def season_schedule(league_id, year=None):
         teams = 2 * len(matches)
         playoffs.append({"name": _PO_ROUND_NAMES.get(teams, f"Round of {teams}"),
                          "matches": matches})
-    return {"year": year, "cal_year": BASE_YEAR + year,
+    return {"year": year, "cal_year": _cal_base() + year,
             "weeks": [{"week": w, "duals": weeks[w]} for w in sorted(weeks)],
             "playoffs": playoffs, "phase": s["phase"],
             "current_week": s["current_week"], "champion": s.get("champion")}
@@ -1095,7 +1106,7 @@ def league_leaders(league_id, year=None, top=12):
         strs[g].sort(key=lambda x: (-x["str"], -x["w"]))
         wins[g] = wins[g][:top]
         strs[g] = strs[g][:top]
-    return {"year": year, "cal_year": BASE_YEAR + year, "wins": wins, "str": strs}
+    return {"year": year, "cal_year": _cal_base() + year, "wins": wins, "str": strs}
 
 
 def draft_board(league_id, year=None):
@@ -1148,7 +1159,7 @@ def draft_board(league_id, year=None):
         while len(rounds) < rnd:
             rounds.append([])
         rounds[rnd - 1].append(row)
-    return {"year": year, "cal_year": BASE_YEAR + year, "is_founding": is_founding,
+    return {"year": year, "cal_year": _cal_base() + year, "is_founding": is_founding,
             "pro_round": pro_round, "rounds": rounds, "total": len(pro_round) + n}
 
 
@@ -2065,7 +2076,7 @@ def _honor_records(conn, s, champ_fid, mvp_row):
     """Build GTT honor rows under each player's real pid, so a graduate's college
     + pro honors live on one career page. Stamped by the caller post-commit."""
     lid, year = s["id"], s["current_year"]
-    cal_year = BASE_YEAR + year
+    cal_year = _cal_base() + year
     names = _fr_names(conn, lid)
     recs = []
     if champ_fid:
@@ -2265,7 +2276,7 @@ def prior_meetings(league_id: int, fid_a: int, fid_b: int, exclude_dual_id: int)
     conn.close()
 
     def _label(r):
-        cal_year = BASE_YEAR + r["year"]
+        cal_year = _cal_base() + r["year"]
         day = datetime.date(cal_year, 1, 16) + datetime.timedelta(weeks=r["week"] - 1)
         return f"{day:%b} {day.day}, {cal_year}"
 
@@ -2490,7 +2501,7 @@ def player_detail(league_id, pid):
         clubs = _team_records_for_year(conn3, league_id, y).get(pid, {})
         club = " / ".join(names.get(f, str(f)) for f in clubs) or names.get(row["fid"], "")
         career_rows.append({
-            "kind": "pro", "cal_year": BASE_YEAR + y, "team": club,
+            "kind": "pro", "cal_year": _cal_base() + y, "team": club,
             "division": "GTT", "gender": row["gender"],
             "cls": f"Pro {y - (row['joined_year'] or 0) + 1}" if row["origin"] != "founder" else "Pro",
             "pos": "—", "w": ww, "l": ll,
@@ -2505,7 +2516,7 @@ def player_detail(league_id, pid):
         added = t["add_pid"] == pid
         kind = ("Drafted / signed" if t["week"] == 0 else "Signed off the wire") if added \
             else ("Released" if t["week"] == 0 else "Waived")
-        moves.append({"cal_year": BASE_YEAR + t["year"], "week": t["week"],
+        moves.append({"cal_year": _cal_base() + t["year"], "week": t["week"],
                       "kind": kind, "added": added,
                       "franchise": names.get(t["fid"], str(t["fid"]))})
     conn3.close()
@@ -2588,7 +2599,7 @@ def enshrine(league_id, pid):
     conn = _db()
     conn.execute("INSERT INTO gtt_hof (league_id, pid, name, gender, year_enshrined, data,"
                  " honors_json, record, peak_str) VALUES (?,?,?,?,?,?,?,?,?)",
-                 (league_id, pid, p.name, row["gender"], BASE_YEAR + s["current_year"],
+                 (league_id, pid, p.name, row["gender"], _cal_base() + s["current_year"],
                   row["data"], json.dumps(snapshot), f"{w}-{l}", round(p.str_value(), 1)))
     conn.commit()
     conn.close()
@@ -2624,7 +2635,7 @@ def season_history(league_id):
             pr = conn.execute("SELECT data FROM gtt_players WHERE league_id=? AND pid=?",
                               (league_id, r["mvp_pid"])).fetchone()
             mvp_name = _prospect(pr["data"]).name if pr else None
-        out.append({"year": r["year"], "cal_year": BASE_YEAR + r["year"],
+        out.append({"year": r["year"], "cal_year": _cal_base() + r["year"],
                     "champion": names.get(r["champion"]), "champion_fid": r["champion"],
                     "mvp": mvp_name, "mvp_pid": r["mvp_pid"]})
     conn.close()

@@ -10,7 +10,7 @@
 {% set reg_key = "INT'L" if not p.domestic else (p.region|state_abbrev if p.region|state_abbrev else 'STATE') %}
 
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:16px;color:var(--text-muted)">Recruiting › Class of {{ grad_year }} › Profile</span>
+  <span style="font-size:16px;color:var(--text-muted)">Recruiting › Class of {{ grad_year|cal }} › Profile</span>
   <a class="bl-pill" style="text-decoration:none;margin-left:auto" href="{{ url_for('recruiting', u=u, grad_year=grad_year) }}">← Recruiting board</a>
 </div></div>
 
@@ -19,7 +19,7 @@
   <div class="rc-hero-top">
     <span class="rc-avatar">{% if p.committed %}{{ crest_box(p.commit_school, '', '', 'lg', 'width:76px;height:76px') }}{% else %}{{ initials }}{% endif %}</span>
     <div class="rc-hero-id">
-      <div class="rc-eyebrow">Class of {{ grad_year }} · {{ p.recruit_tier or 'Unrated' }}</div>
+      <div class="rc-eyebrow">Class of {{ grad_year|cal }} · {{ p.recruit_tier or 'Unrated' }}</div>
       <h1 class="rc-hero-name">
         <span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags(p.secondary_country) }}</span>
         {{ p.name }}</h1>
@@ -44,7 +44,7 @@
   {% if p.committed %}
   <div class="rc-hero-banner signed">
     <span class="rc-check">✓</span>
-    <span>Signed with <a href="{{ url_for('team_recruiting', school=p.commit_school, u=u) }}">{{ p.commit_school }}</a> — off the board for the Class of {{ grad_year }}.</span>
+    <span>Signed with <a href="{{ url_for('team_recruiting', school=p.commit_school, u=u) }}">{{ p.commit_school }}</a> — off the board for the Class of {{ grad_year|cal }}.</span>
   </div>
   {% else %}
   <div class="rc-hero-banner">
@@ -97,7 +97,7 @@
 <div class="rc-cball">
   <span class="rc-cball-crest">{{ crest_box(p.commit_school, '', '', 'md') }}</span>
   <div class="rc-cball-main">
-    <div class="rc-cball-eyebrow">Signed · Class of {{ grad_year }}</div>
+    <div class="rc-cball-eyebrow">Signed · Class of {{ grad_year|cal }}</div>
     <div class="rc-cball-school"><a href="{{ url_for('team_recruiting', school=p.commit_school, u=u) }}">{{ p.commit_school }}</a></div>
     <div class="rc-cball-meta">Recruitment closed — {{ rec.n_offers }} program{{ '' if rec.n_offers==1 else 's' }} were in on this prospect.</div>
   </div>

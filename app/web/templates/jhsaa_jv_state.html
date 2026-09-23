@@ -37,7 +37,7 @@
 <div class="jh-champ" style="margin-bottom:12px">
   <span class="mark">{{ view.champion.mark|safe }}</span>
   <div style="min-width:0">
-    <span class="lbl">{{ view.season_year }} JHSAA JV Team State Champion</span>
+    <span class="lbl">{{ view.season_year|cal }} JHSAA JV Team State Champion</span>
     <a class="nm" href="{{ url_for('jhsaa_school', school=view.champion.name, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.champion.name }}</a>
     <div class="sub">{{ view.champion.mascot }} · {{ view.champion.city }}, {{ view.champion.state if view.champion.state else 'Jefferson' }}
       {%- if view.champion_region %} · {{ view.champion_region }}{% endif %}</div>
@@ -62,7 +62,7 @@
   <div class="brk-stage" id="brkstage">
     <section class="brk-region" data-view="all">
       <div class="brk-region-head">
-        <h2>{{ view.season_year }} JV Team State · {{ view.main_field_n or view.state_field_n }}-team main draw</h2>
+        <h2>{{ view.season_year|cal }} JV Team State · {{ view.main_field_n or view.state_field_n }}-team main draw</h2>
         <span class="brk-region-champ">
           {% if view.champion %}{{ view.champion.name }} def. {{ view.runner_up.name }}{% else %}in progress{% endif %}</span>
       </div>
@@ -71,7 +71,7 @@
     {% if view.qual_canvas %}
     <section class="brk-region" data-view="qual" hidden>
       <div class="brk-region-head">
-        <h2>{{ view.season_year }} JV Team State · Parastate · {{ view.at_large_n }} at-large</h2>
+        <h2>{{ view.season_year|cal }} JV Team State · Parastate · {{ view.at_large_n }} at-large</h2>
       </div>
       {{ brk_canvas(view.qual_canvas, u, false, 'jhsaa_school', {'g': view.gender, 'year': view.scope.pin}) }}
     </section>
