@@ -57,7 +57,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     7A  1625  Mercer City                            Mercer City            Mercer City
     5A   904  Mercer Latin                           Mercer City            St. Olga College Prep
 
-    5A   961  Morne Caribou Polytechnic              Belyakov               Belyakov Polytechnic Institute
+    5A   961  Morne Caribou                          Belyakov               Belyakov Polytechnic Institute
     7A  1370  Morne Rouge                            Belyakov               Lorraine Calder
 
    Group 1  1254  Natchez                                Natchez                Depot High North
@@ -91,7 +91,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     9A  2458  Veles Vo-Tech                          Port Veles             Port Veles Maritime Academy
 
 
--- SAME LEADING WORD, DIFFERENT CITIES (82 groups)
+-- SAME LEADING WORD, DIFFERENT CITIES (81 groups)
     7A  1444  Alder Crossing                         Boyerstown             Boyerstown North
     3A   438  Alder Co-op                            Monte Blanco           Claudette Freeman
 
@@ -101,6 +101,9 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     4A   661  Arroyo                                 Llerena                Anya Belov
     9A  2417  Arroyo Verde                           Santa Michaela         Irina Kovalenko North
     9A  2583  Arroyo Seco                            Serrano                Serrano Applied Sciences Institute
+
+    5A   884  Arthur                                 Caswell                Caswell School of Science and Industry
+    2A   297  Arthur Ashe                            Gruesome Ridge         Ashwood
 
     1A   188  Aspen Spur Union                       Aspen Spur             Aspen Spur Union
     1A   105  Aspen Hollow                           Summervale             Summervale Heights
@@ -118,7 +121,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
    Group 3   211  Blue Valley                            Galena                 Nerea Urrutia
     6A  1105  Blue Grama                             Moriarty               Lorna Booker
 
-   Group 2   900  Bridger Regional                       Lyman                  Bridger Regional
+   Group 2   900  Bridger                                Lyman                  Bridger Regional
    Group 2   460  Bridger County Christian               Mountain View          Bridger County Christian
 
     1A   139  California Beach                       California Beach       Ashfield
@@ -126,6 +129,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
 
     2A   309  Cape Angeles                           Cape Angeles           Aldermont
     7A  1636  Cape Jean                              Caswell                Adela Villaseñor
+    9A  2355  Cape Blanco                            Tamarack Harbor        Tamarack Harbor
 
    Group 1  1424  Carden City                            Carden City            Carden City
     6A  1072  Carden Pass                            Fort Carden            Winifred Booker North
@@ -136,7 +140,6 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     2A   261  Chaff Crossing                         Chaff Crossing         Chaff Crossing
     2A   314  Chaff Head                             Chaff Head             Chaff Head
 
-   Group 2   480  Copper Bar                             Copper Bar             Copper Bar
     1A    68  Copper Gap                             Copper Gap             Copper Crossing
     7A  1489  Copper Lake                            Copper Lake            Copper Lake
     1A   188  Copper Prairie                         Copper Prairie         Copper Prairie
@@ -152,7 +155,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     6A  1214  Doyle                                  Halbrook               Archbishop Doyle Prep
 
     8A  2030  Dry Fork                               Ashbury                North Fork
-    5A  1020  Dry Creek Co-op                        Boyerstown             Opal Stokes
+    5A  1020  Dry Creek                              Boyerstown             Opal Stokes
     6A  1201  Dry Lake                               Three Saints           Dry Lake
 
     8A  1894  East Moscow                            Belyakov               Belyakov
@@ -175,6 +178,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
    Group 1  2469  Fort Valois                            Fort Valois            Fort Valois
     4A   729  Fort Weller                            Fort Weller            Fort Salish
     1A   118  Fort Wren                              Fort Wren              Silvale
+    2A   238  Fort Paynes                            Jessup Bar             Jessup Bar
 
     3A   451  Goldbank County                        Hydraulic Gap          Goldbank County
     3A   330  Goldbank Hall                          Tunnel Diggings        Goldbank Hall
@@ -188,16 +192,12 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
    Group 2   597  Green River                            Green River            Green River High
    Group 1  1540  Green Valley                           Harriman               St. Michael Academy North
 
-    2A   319  Hawk Bar                               Hawk Bar               Hawk Bar
-    6A  1143  Hawk Lake                              Hawk Lake              Hawk Lake
-
     9A  2524  Hayes Valley                           Orellana               Lev Kareva
     6A  1124  Hayes                                  Port Veles             Marcus Langston
 
     1A   199  High Timber                            Annes Summits Landing  High Timber
     3A   380  High Desert Christian                  Doyle Pass             High Desert Christian
-   Group 1  1158  High Desert Co-op                      Etchartville           Sadie Freeman
-    2A   291  High Bar                               High Bar               High Bar
+   Group 1  1158  High Desert                            Etchartville           Sadie Freeman
    Group 3    57  High Prairie                           Placer                 High Prairie
 
     4A   676  Indigo Bend                            Furrow Crossing        Indigo Bend
@@ -225,7 +225,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     5A   870  La Grande                              La Grande              La Grande High
 
    Group 3   280  Laketown County Christian              Laketown               Laketown County Christian
-   Group 2   540  Laketown Regional                      Randolph               Laketown Regional
+   Group 2   540  Laketown                               Randolph               Laketown Regional
 
     4A   764  Las Norias                             Las Norias             Las Norias
     4A   611  Las Colinas                            Valderra               Petra Weiss North
@@ -246,14 +246,11 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     4A   655  Marlow                                 St. Varian             Gabriel Montoya
 
     3A   379  Meridian Valley                        Port Meridian          Providence Academy Valley
-    1A   175  Meridian Regional                      Stovepipe              Meridian Regional
+    1A   175  Meridian                               Stovepipe              Meridian Regional
 
     8A   536  Mesa Dorada                            Mesa Dorada            Mesa Dorada
     9A  2453  Mesa Verde                             San Cordero            San Cordero School of Commerce
-    7A  1421  Mesa Co-op                             Santa Cruz del Norte   Winifred Stokes
-
-    3A   465  Mill Bar                               Fellows Mill           Fellows Mill International School
-    3A   531  Mill Creek                             Tamarack Flat          Mill Creek
+    7A  1421  Mesa                                   Santa Cruz del Norte   Winifred Stokes
 
    Group 3   149  Mirage Crossing                        Mirage Crossing        Mirage Crossing
    Group 2   860  Mirage Regional                        Mirage Siding          Mirage Siding Regional
@@ -270,6 +267,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     3A   500  Mountain Gate                          Orlova                 Mountain Gate
     3A   458  Mountain House                         Sage Springs           Mountain House
 
+    1A   229  New Casper                             Arrieta                Nicolás Treviño
    Group 2   913  New Boston                             Harrow                 Harrow School of Design and Engineering
     2A   344  New Ballard                            New Ballard            Rimrock Valley
     3A   412  New Bergen                             New Bergen             Tule
@@ -278,7 +276,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
    Group 2   930  New Baltimore                          Oakley                 New Baltimore
     1A   187  New Hope Christian                     Pear Slough            New Hope Christian
 
-    2A   314  North Antler Regional                  Alderwell              North Antler Regional
+    2A   314  North Antler                           Alderwell              North Antler Regional
     4A   613  North Averill                          Averill                St. Isidore
     6A  1185  North Carroway                         Carroway               Frances Gaines
     3A   370  North Wind                             Klamoya                St. Sophia School
@@ -307,12 +305,13 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
 
     2A   120  Pine Eagle                             Halfway                Pine Eagle High
     5A   921  Pine Barrens                           Hawk Lake              Hawk Lake Southeast
-    1A   190  Pine                                   Pine Siding            Pine Siding
-    1A   177  Pine Rim                               Sage Spur              Pine Rim
+
+   Group 1  2258  Point Loma                             Aldecoa                Aitor Echevarria
+   Group 2   610  Point Sable                            Paris                  Jean Baptiste
 
     2A   217  Puerto Alma                            Puerto Alma            Puerto Alma
     6A  1185  Puerto Gallego                         Puerto Gallego         Puerto Gallego
-    8A  1848  Puerto de los Reyes                    Puerto de los Reyes    Puerto de los Reyes
+    8A  1848  Puerto Reyes                           Puerto de los Reyes    Puerto de los Reyes
 
    Group 1  1729  Red Bluff                              Echevarria             Echevarria I-50 Technical
     8A  1713  Red Mesa                               Valderra               Clara Cross
@@ -339,7 +338,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     3A   450  San Lorenzo                            San Lorenzo            San Lorenzo
     6A  1069  San Telmo                              San Telmo              San Telmo
     9A  2330  San Tomás                              San Tomás              San Tomás
-   Group 2   920  San Vito Regional                      San Vito               San Vito Regional
+   Group 2   920  San Vito                               San Vito               San Vito Regional
 
     7A  1581  Santa Cruz del Norte                   Santa Cruz del Norte   Santa Cruz del Norte
     9A  2404  Santa Laura                            Santa Laura            Santa Laura
@@ -367,14 +366,11 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
 
    Group 2   500  Star Valley Catholic                   Afton                  Star Valley Catholic
     5A   949  Star City                              Gagarin                Gagarin School of Public Service
-   Group 2  1000  Star Valley Regional                   Kemmerer               Star Valley Regional
+   Group 2  1000  Star Valley                            Kemmerer               Star Valley Regional
     3A   419  Star Hollow                            Summervale             Summervale Northwest
 
     4A   598  Tallulah Canyon                        San Borondón           Blackbird Canyon
    Group 1  1577  Tallulah Central                       Tallulah               Ashbury Central
-
-    9A  2475  Tamarack                               San Cordero            Svenja Bianchi
-    9A  2355  Tamarack Harbor                        Tamarack Harbor        Tamarack Harbor
 
     1A   133  Trinity Fork                           Ansoteguiville         Trinity Fork
     9A  2380  Trinity Catholic                       Summervale             Trinity Catholic
@@ -440,7 +436,7 @@ Aldecoa — 9 programs (Vance County, Silver Basin)
    Group 1  1477 pub  Coles Creek                                               High Desert League                 Pavel Kovalenko
    Group 1  1314 priv Pope Leo XIV                                              High Desert League                 Jon Garmendia
    Group 1  1066 pub  Sawtelle                                                  High Desert League                 Esteban Téllez
-   Group 2  1035 pub  Lizarra                                                   Confluence Athletic Association    St. Catherine College Prep
+   Group 2  1035 pub  Lizard Creek                                              Confluence Athletic Association    St. Catherine College Prep
 
 Alder Flat — 1 program (San Marcos County, Sebastian Cape)
     1A   144 pub  Coast Prairie                                             South Coast League                 Coast Prairie
@@ -449,7 +445,7 @@ Alderton — 1 program (Tamarack County, Cascade Divide)
     1A   161 pub  Alderton                                                  Hacienda League                    Alderton
 
 Alderwell — 1 program (Antler County, Alderwold)
-    2A   314 pub  North Antler Regional                                     Foundry League                     North Antler Regional
+    2A   314 pub  North Antler                                              Foundry League                     North Antler Regional
 
 Allegheny — 1 program (Vance County, Silver Basin)
    Group 2   574 pub  Allegheny                              Allegheny          Confluence Athletic Association    Timberline North
@@ -497,7 +493,7 @@ Arlington — 1 program (Gilliam County, Columbia Gorge)
 Arrieta — 3 programs (Halbrook County, Halbrook Basin)
     9A  2367 pub  Arrieta                                                   Forks League                       Arrieta
     7A  1361 pub  Canyonlands                                               Three Rivers League                Arrieta Treasure Valley
-    1A   229 pub  Valera                                                    Hacienda League                    Nicolás Treviño
+    1A   229 pub  New Casper                                                Hacienda League                    Nicolás Treviño
 
 Ashbrook — 1 program (Emigrant County, Kangas)
    Group 3   180 pub  Ashbrook                                                  Kaleva League                      Ashbrook
@@ -643,7 +639,7 @@ Belyakov — 29 programs (Vance County, Boise Frontier)
     6A  1181 pub  Bois Neuf                              Bois Neuf          Cascade Divide League              Orchard Gate North
     6A  1087 priv Lycee Valmont                          Valmont            Cascade Divide League              Belyakov River Plain North
     6A  1043 priv Verrettes                                                 Cascade Divide League              Viktor Antonov
-    5A   961 pub  Morne Caribou Polytechnic              Morne Caribou      Kajaani League                     Belyakov Polytechnic Institute
+    5A   961 pub  Morne Caribou                          Morne Caribou      Kajaani League                     Belyakov Polytechnic Institute
     5A   947 pub  Grand Fond                             Grand Fond         Kajaani League                     Belyakov River Plain
     5A   885 pub  Belle Rive                             Belle Rive         Kajaani League                     José Martí North
     4A   782 pub  Siberia                                                   Millworks Athletic Association     Mila Chernov North
@@ -707,7 +703,7 @@ Boyerstown — 7 programs (Marlow County, Ashbury Metro)
     8A  2024 pub  Coleman                                                   Summit League                      Leonard Coleman
     7A  1444 pub  Alder Crossing                                            Premier Athletic Association       Boyerstown North
     6A  1022 pub  Eastgate North                                            Metro League                       Eastgate North
-    5A  1020 pub  Dry Creek Co-op                                           Ambassador League                  Opal Stokes
+    5A  1020 pub  Dry Creek                                                 Ambassador League                  Opal Stokes
     5A   944 pub  Boyerstown                                                Ambassador League                  Boyerstown
 
 Bracken — 2 programs (Olivet County, Yarrowmere)
@@ -773,7 +769,7 @@ Carlin — 1 program (Ruby County, Silver Basin)
    Group 2   620 pub  Carlin                                                    Dual County League                 Ruby County Catholic
 
 Carmina — 1 program (Vance County, Silver Basin)
-   Group 2   506 pub  Carmina                                                   Confluence Athletic Association    Carmina
+   Group 2   506 pub  Camrose                                                   Confluence Athletic Association    Carmina
 
 Carolina Island — 1 program (Ostrander County, Sebastian Cape)
     1A    73 pub  Carolina Island                                           South Coast League                 Elk Prairie
@@ -852,7 +848,7 @@ Cook City — 3 programs (Featherstone County, Southern Jefferson)
     1A   117 priv Featherstone Tech                                         Marble Valley League               Featherstone Institute
 
 Copper Bar — 1 program (Lodestone County, Millersylvania)
-   Group 2   480 pub  Copper Bar                                                High Lakes League                  Copper Bar
+   Group 2   480 pub  Bronzeview                                                High Lakes League                  Copper Bar
 
 Copper Gap — 1 program (Juniper County, Juniper Highlands)
     1A    68 priv Copper Gap                                                Desert Sky League                  Copper Crossing
@@ -877,10 +873,10 @@ Cordero Wells — 1 program (Stagewater County, Kangas)
 
 Corey Canyon — 2 programs (Antler County, Alderwold)
     3A   477 pub  Corey Canyon                                              Sky-Em League                      Wolf Gap
-    2A   258 pub  Wolf Gap International                                    Foundry League                     Wolf Gap International School
+    2A   258 pub  Heartsport                                                Foundry League                     Wolf Gap International School
 
 Corliss — 1 program (Kernwood County, Yarrowmere)
-    3A   427 pub  Corliss Regional                                          Assay Athletic Association         Corliss Regional
+    3A   427 pub  Corliss                                                   Assay Athletic Association         Corliss Regional
 
 Corliss Junction — 1 program (Kernwood County, Yarrowmere)
     1A   188 pub  Longmeadow                                                Tailings League                    Heritage Christian
@@ -1001,7 +997,7 @@ Etchart — 1 program (Lodestone County, Millersylvania)
 Etchartville — 3 programs (Vance County, Silver Basin)
    Group 1  1645 pub  Etchartville                                              Ambassador League                  Etchartville
    Group 1  1219 pub  Terrace Park                                              Far West League                    Terrace Park
-   Group 1  1158 pub  High Desert Co-op                                         Far West League                    Sadie Freeman
+   Group 1  1158 pub  High Desert                                               Far West League                    Sadie Freeman
 
 Evanston — 1 program (Bridger County, Bear River Country)
    Group 1  1550 pub  Rio San Juan                                              Ambassador League                  Rio San Juan
@@ -1016,7 +1012,7 @@ Fellows Mill — 4 programs (Sablewood County, Gold Valley)
     4A   789 pub  Millworks                                                 Mission League                     Fellows Mill Civic Leadership Academy
     4A   647 pub  Fellows Mill                                              Mission League                     Fellows Mill
     4A   588 pub  Blue Mountain                                             Mission League                     Katherine Davenport
-    3A   465 pub  Mill Bar                                                  Gold Valley League                 Fellows Mill International School
+    3A   465 pub  Lewiston                                                  Gold Valley League                 Fellows Mill International School
 
 Ferris — 1 program (Galena County, Millersylvania)
    Group 3   189 pub  Union Prairie                                             Basalt League                      Ferris Union
@@ -1081,7 +1077,7 @@ Free Hill — 1 program (Paddock County, Yarrowmere)
 
 Furrow Crossing — 6 programs (Barlowe County, Boise Frontier)
     9A  2187 pub  Reagan                                                    Capital Athletic Association       Ronald Reagan
-    5A  1019 pub  Furrow Crossing                                           Twin Counties Athletic Association Furrow Crossing
+    5A  1019 pub  Furrow                                                    Twin Counties Athletic Association Furrow Crossing
     4A   742 pub  Hoover                                                    Millworks Athletic Association     Herbert Hoover
     4A   676 pub  Indigo Bend                                               Millworks Athletic Association     Indigo Bend
     3A   312 pub  Tallgrass                                                 Timber Valley League               St. Lucy
@@ -1145,7 +1141,7 @@ Green River — 1 program (Sweetwater County, Bear River Country)
    Group 2   597 pub  Green River                                               Marble Valley League               Green River High
 
 Gruesome Ridge — 1 program (Antler County, Alderwold)
-    2A   297 pub  Gruesome Ridge                                            Foundry League                     Ashwood
+    2A   297 pub  Arthur Ashe                                               Foundry League                     Ashwood
 
 Guthrie — 1 program (Lincoln County, Bear River Country)
    Group 3   241 pub  Guthrie                                                   Black Canyon League                Guthrie Catholic
@@ -1216,7 +1212,7 @@ Haverly — 2 programs (Camas County, Ashbury Metro)
     2A   254 pub  Haverly                                                   Millworks Athletic Association     Haverly
 
 Hawk Bar — 1 program (Ferris County, Gold Valley)
-    2A   319 pub  Hawk Bar                                                  Millworks Athletic Association     Hawk Bar
+    2A   319 pub  Lassen                                                    Millworks Athletic Association     Hawk Bar
 
 Hawk Lake — 3 programs (Camas County, Ashbury Metro)
     6A  1299 pub  Oakhaven                                                  Metro League                       Hawk Lake Eastgate
@@ -1230,7 +1226,7 @@ Hermiston — 1 program (Umatilla County, Blue Mountain Country)
     5A  1015 pub  Hermiston                                                 Eastern Oregon League              Hermiston High
 
 High Bar — 1 program (Ferris County, Gold Valley)
-    2A   291 pub  High Bar                                                  Valle Vista League                 High Bar
+    2A   291 pub  Fall River Valley                                         Valle Vista League                 High Bar
 
 Homecroft — 3 programs (Vance County, Silver Basin)
    Group 1  1643 pub  Homecroft                                                 Ostrobothnia League                Homecroft
@@ -1280,7 +1276,7 @@ Jersey City — 1 program (Kernwood County, Yarrowmere)
     9A  2306 pub  Jersey City                                               Gold Valley League                 Marsh Depot
 
 Jessup Bar — 1 program (Olivet County, Yarrowmere)
-    2A   238 pub  Jessup Bar                                                Marble Valley League               Jessup Bar
+    2A   238 pub  Fort Paynes                                               Marble Valley League               Jessup Bar
 
 Joseph — 1 program (Wallowa County, Blue Mountain Country)
     1A   120 pub  Joseph                                                    Columbia Range League              Joseph High
@@ -1298,7 +1294,7 @@ Kelford — 4 programs (Ferris County, Gold Valley)
     3A   379 pub  Horseshoe Bend                                            Gold Valley League                 Kelford Northwest
 
 Kemmerer — 1 program (Star Valley County, Bear River Country)
-   Group 2  1000 pub  Star Valley Regional                                      Forks League                       Star Valley Regional
+   Group 2  1000 pub  Star Valley                                               Forks League                       Star Valley Regional
 
 Kendricks Landing — 1 program (Stagewater County, Kangas)
    Group 3   135 pub  Kendricks Landing                                         Inland Empire League               Kendricks Landing
@@ -1434,7 +1430,7 @@ Lyle — 1 program (Klickitat County, Columbia Gorge)
     1A   105 pub  Lyle                                                      Columbia Gorge District            Lyle High
 
 Lyman — 1 program (Bridger County, Bear River Country)
-   Group 2   900 pub  Bridger Regional                                          PacWest League                     Bridger Regional
+   Group 2   900 pub  Bridger                                                   PacWest League                     Bridger Regional
 
 Mabry — 1 program (Stagewater County, Kangas)
    Group 3   310 pub  Mabry Township                                            Inland Empire League               Mabry Township
@@ -1570,7 +1566,7 @@ Naylors Landing — 1 program (Stagewater County, Kangas)
 Netherwood — 3 programs (Antler County, Alderwold)
     3A   464 priv Calvary Christian                                         Sky-Em League                      Janice Bennett
     2A   349 pub  Netherwood                                                Foundry League                     Netherwood
-    3A   336 pub  Trailsend                                                 Sky-Em League                      North Valley Christian
+    3A   336 pub  Ridgeline                                                 Sky-Em League                      North Valley Christian
 
 New Ballard — 1 program (Bidwell County, Selquah)
     2A   344 pub  New Ballard                                               Foundry League                     Rimrock Valley
@@ -1684,7 +1680,7 @@ Orlova — 3 programs (Tamarack County, Cascade Divide)
     3A   500 pub  Mountain Gate                                             Juniper League                     Mountain Gate
 
 Paris — 1 program (Beargrass County, Bear River Country)
-   Group 2   610 pub  Baptiste                                                  Forks League                       Jean Baptiste
+   Group 2   610 pub  Point Sable                                               Forks League                       Jean Baptiste
 
 Pasquale — 1 program (Sablewood County, Gold Valley)
     2A   269 pub  Pasquale                                                  Desert Sky League                  Pasquale
@@ -1697,7 +1693,7 @@ Pellburg — 1 program (Antler County, Alderwold)
     2A   251 pub  Pellburg                                                  Desert Sky League                  Pellburg
 
 Pellford — 1 program (Weller County, Selquah)
-    1A   183 pub  Pellford                                                  South Coast League                 Pellford
+    1A   183 pub  Pellbrook                                                 South Coast League                 Pellford
 
 Pellmont — 1 program (Antler County, Alderwold)
     1A   205 pub  Pellmont                                                  Orchard League                     Pellmont
@@ -1721,7 +1717,7 @@ Pilot Rock — 1 program (Umatilla County, Blue Mountain Country)
     1A   170 pub  Pilot Rock                                                Columbia Range League              Pilot Rock High
 
 Pine Siding — 1 program (Antler County, Alderwold)
-    1A   190 pub  Pine                                                      Orchard League                     Pine Siding
+    1A   190 pub  Winchester Bay                                            Orchard League                     Pine Siding
 
 Placer — 1 program (Windrow County, Millersylvania)
    Group 3    57 pub  High Prairie                                              Black Canyon League                High Prairie
@@ -1822,7 +1818,7 @@ Puerto Gallego — 2 programs (San Marcos County, Sebastian Cape)
 Puerto de los Reyes — 8 programs (San Marcos County, Sebastian Cape)
     9A  2281 pub  Morgan Park                                               Del Rey Athletic Association       Alejandro Zamora
     8A  1916 pub  Avalon Park                                               Del Rey Athletic Association       César Peralta
-    8A  1848 pub  Puerto de los Reyes                                       Del Rey Athletic Association       Puerto de los Reyes
+    8A  1848 pub  Puerto Reyes                                              Del Rey Athletic Association       Puerto de los Reyes
     8A  1824 pub  Montclair                                                 Del Rey Athletic Association       Sofía Aranda
     8A  1778 priv Archbishop Gregory                                        Del Rey Athletic Association       Oksana Romanov
     8A  1745 pub  Quarry Workers                                            Del Rey Athletic Association       Rosa Salcedo
@@ -1854,7 +1850,7 @@ Raahe — 1 program (Stagewater County, Kangas)
    Group 3    71 pub  Raahe                                                     Inland Empire League               Stone Meadows
 
 Randolph — 1 program (Laketown County, Bear River Country)
-   Group 2   540 pub  Laketown Regional                                         Forks League                       Laketown Regional
+   Group 2   540 pub  Laketown                                                  Forks League                       Laketown Regional
 
 Ransom — 1 program (Tamarack County, Cascade Divide)
     1A   172 pub  Reverend City                                             East Cascades League               Reverend City
@@ -1909,7 +1905,7 @@ Sage Springs — 1 program (Sablewood County, Gold Valley)
     3A   458 pub  Mountain House                                            Gold Valley League                 Mountain House
 
 Sage Spur — 1 program (Cinder County, Cascade Divide)
-    1A   177 pub  Pine Rim                                                  East Cascades League               Pine Rim
+    1A   177 pub  Hamburg                                                   East Cascades League               Pine Rim
 
 Sage Village — 1 program (Windrow County, Millersylvania)
    Group 3   107 pub  Sage Village                                              Big Sky League                     Sage Lake
@@ -1963,7 +1959,7 @@ San Borondón — 29 programs (San Marcos County, Sebastian Cape)
 San Cordero — 14 programs (Tamarack County, Cascade Divide)
     9A  2565 pub  Mar Vista                                                 Ironwood League                    Anya Antonov
     9A  2528 pub  Marshall                                                  Ironwood League                    Thurgood Marshall
-    9A  2475 pub  Tamarack                                                  Ironwood League                    Svenja Bianchi
+    9A  2475 pub  Bonanza                                                   Ironwood League                    Svenja Bianchi
     9A  2453 pub  Mesa Verde                                                Ironwood League                    San Cordero School of Commerce
     8A  2131 pub  Forks Harbor                                              Sunkist League                     Ruby Stokes North
     8A  2032 pub  Brooks                                                    Sunkist League                     Gwendolyn Brooks
@@ -2001,12 +1997,12 @@ San Tomás — 3 programs (Ferris County, Gold Valley)
     5A   806 pub  Meyerland                                                 Valley Coast Interscholastic League Naomi Moss
 
 San Vito — 1 program (Emigrant County, Kangas)
-   Group 2   920 pub  San Vito Regional                                         Vesterheim Athletic Association    San Vito Regional
+   Group 2   920 pub  San Vito                                                  Vesterheim Athletic Association    San Vito Regional
 
 Santa Cruz del Norte — 4 programs (San Marcos County, Sebastian Cape)
     8A  1990 pub  Harlan                                                    Gold Valley League                 Harlan Cole
     7A  1581 pub  Santa Cruz del Norte                                      Pacific Coast League               Santa Cruz del Norte
-    7A  1421 pub  Mesa Co-op                                                Pacific Coast League               Winifred Stokes
+    7A  1421 pub  Mesa                                                      Pacific Coast League               Winifred Stokes
     5A   987 pub  Kingwood                                                  Valley Coast Interscholastic League Winifred Ellison
 
 Santa Laura — 3 programs (San Marcos County, Sebastian Cape)
@@ -2105,7 +2101,7 @@ Starlight — 3 programs (Halbrook County, Halbrook Basin)
     7A  1357 pub  Observatory                                               Three Rivers League                Starlight School of Science and Industry
 
 Stovepipe — 1 program (Rimrock County, Juniper Highlands)
-    1A   175 pub  Meridian Regional                                         Desert Sky League                  Meridian Regional
+    1A   175 pub  Meridian                                                  Desert Sky League                  Meridian Regional
 
 Summervale — 5 programs (Juniper County, Juniper Highlands)
     9A  2380 priv Trinity Catholic                                          Rim Country League                 Trinity Catholic
@@ -2140,7 +2136,7 @@ Tamarack Flat — 1 program (Antler County, Alderwold)
     3A   531 pub  Mill Creek                                                Sky-Em League                      Mill Creek
 
 Tamarack Harbor — 1 program (Weller County, Selquah)
-    9A  2355 pub  Tamarack Harbor                                           Gateway League                     Tamarack Harbor
+    9A  2355 pub  Cape Blanco                                               Gateway League                     Tamarack Harbor
 
 Tamarack Springs — 1 program (Tamarack County, Cascade Divide)
     2A   246 pub  Mineral Springs                                           Valle Vista League                 Tamarack Springs
@@ -2235,7 +2231,7 @@ Valderra — 19 programs (Ferris County, Gold Valley)
     9A  2527 pub  Ferris                                                    Valle Vista League                 Carmen Valera
     9A  2442 pub  Harrisburgh                                               Valle Vista League                 Jean Lindgren North
     9A  2436 pub  Coyote Bend                                               Valle Vista League                 Valderra Aviation and Engineering Academy
-    9A  2384 pub  Shasta Agricultural                                       Valle Vista League                 Lars Mercier
+    9A  2384 pub  Shasta                                                    Valle Vista League                 Lars Mercier
     9A  2273 pub  West Valderra                                             Valle Vista League                 Orchard Hill
     9A  2233 pub  Rogers Park                                               Forks League                       Winifred Browne
     8A  2118 pub  D. Eisenhower                                             Gold Valley League                 Valderra Technical Arts Academy

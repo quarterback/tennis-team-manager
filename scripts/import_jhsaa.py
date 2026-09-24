@@ -535,8 +535,8 @@ FORMER_NAMES = {
     "Ewartville":                                  "Fort Tabor",
     "Featherstone Institute":                      "Featherstone Tech",
     "Fellows Mill Civic Leadership Academy":       "Millworks",
-    "Fellows Mill International":                  "Mill Bar",
-    "Fellows Mill International School":           "Mill Bar",
+    "Fellows Mill International":                  "Lewiston",
+    "Fellows Mill International School":           "Lewiston",
     "Ferris Union":                                "Union Prairie",
     "Fig Gap":                                     "Río Verde",
     "Fort Meriwether Breakwater":                  "Breakwater",
@@ -598,6 +598,7 @@ FORMER_NAMES = {
     "Harrow School of Design and Engineering":     "New Boston",
     "Harry S. Truman North":                       "Fair Park",
     "Harry Truman":                                "Truman",
+    "Hawk Bar":                                    "Lassen",
     "Hawk Lake Eastgate":                          "Oakhaven",
     "Hawk Lake Southeast":                         "Pine Barrens",
     "Hazel Bennett":                               "Benton Park",
@@ -606,6 +607,7 @@ FORMER_NAMES = {
     "Herbert Hoover":                              "Hoover",
     "Heritage Christian":                          "Longmeadow",
     "Hetfield":                                    "Brynildson Hill",
+    "High Bar":                                    "Fall River Valley",
     "High Desert Co-op":                           "High Desert",
     "Homecroft Manufacturing and Technology Academy": "West Burlington",
     "Homestead North":                             "Garden Plain",
@@ -644,6 +646,7 @@ FORMER_NAMES = {
     "Jefferson School of Science and Technology":  "Jefferson Science",
     "Jefferson School of Science and Technology North": "Evans Larsen Day",
     "Jefferson Science North":                     "Evans Larsen Day",
+    "Jessup Bar":                                  "Fort Paynes",
     "Jimmy Carter":                                "Carter",
     "John F. Kennedy North":                       "Box Canyon",
     "John Lewis":                                  "Lewis",
@@ -724,6 +727,7 @@ FORMER_NAMES = {
     "Mikhail Sidorov":                             "Cap Rouge",
     "Mila Chernov North":                          "Siberia",
     "Mila Melnick":                                "Sea Cliff",
+    "Mill Bar":                                    "Lewiston",
     "Milldale Union":                              "Sotkamo Union",
     "Millport":                                    "Vonjo City",
     "Millview":                                    "Kuusamo",
@@ -798,7 +802,9 @@ FORMER_NAMES = {
     "Petra Bianchi":                               "Perryville",
     "Petra Jansen":                                "Southern Pacific Tech",
     "Petra Weiss North":                           "Las Colinas",
-    "Pine Siding":                                 "Pine",
+    "Pine":                                        "Winchester Bay",
+    "Pine Rim":                                    "Hamburg",
+    "Pine Siding":                                 "Winchester Bay",
     "Pinecrest School":                            "Pinecrest",
     "Plainfield Science":                          "Plainfield",
     "Port Meridian Polytechnic":                   "Port Meridian North",
@@ -946,10 +952,12 @@ FORMER_NAMES = {
     "Summervale Heights":                          "Aspen Hollow",
     "Summervale Northwest":                        "Star Hollow",
     "Svenja Adler":                                "East Range Agricultural",
-    "Svenja Bianchi":                              "Tamarack",
+    "Svenja Bianchi":                              "Bonanza",
     "Svenja Ekström":                              "Memorial",
     "Sycamore Flat":                               "La Savane",
     "Tailing Crossing-Ewart Bar Union":            "Fountain Park",
+    "Tamarack":                                    "Bonanza",
+    "Tamarack Harbor":                             "Cape Blanco",
     "Tamarack Springs":                            "Mineral Springs",
     "Tatiana Chernov North":                       "Bahía Vista",
     "Tatiana Moroz North":                         "Ironwood Flats",
@@ -1076,7 +1084,7 @@ RENAMES = {
     "Olive Reach Baptist": "Olive Baptist",
     "Oscar Michaeux": "Michaeux",
     "Paul Robeson": "Robeson",
-    "Pine Siding": "Pine",
+    "Pine Siding": "Winchester Bay",
     "Port Meridian West": "Port Meridian Central",
     "Prune Siding": "Prunedale",
     "Ralph Bellamy": "Bellamy",
@@ -1245,7 +1253,7 @@ RENAMES = {
     "San Cordero School of Commerce": "Mesa Verde",
     "Fort Valois School of Design and Engineering": "Valois Bluffs",
     "Gagarin School of Public Service": "Star City",
-    "Fellows Mill International School": "Mill Bar",
+    "Fellows Mill International School": "Lewiston",
     "Rye Academy of Arts and Letters": "Barley Point",
     "Ansotegui Siding Commonwealth": "Pinebluffs",
     # Two St. Genevieves — a 1A in Benchton natively bare, a 6A whose suffix
@@ -1524,6 +1532,24 @@ RENAMES = {
     # North) does. So the second school takes the terrain or the settlement it
     # actually stands on. Keyed on the SOURCE name; where a school already had a
     # RENAMES entry its target was rewritten in place, never chained.
+    # 2026-09 owner rename: "Bar" schools. Four of these are schools whose display
+    # name was simply their own town's — a real Gold-Rush "gravel bar" naming style
+    # (Rich Bar, Indian Bar) that reads fine for a TOWN but sounds like a saloon for
+    # a SCHOOL. The town keeps its name (`city` is untouched); only the school's
+    # display name moves, researched off the real ground each fictional county
+    # stands on (`docs/GAZETTEER-jefferson.md`). "Tamarack Harbor" was renamed for a
+    # different reason — it shared its whole name with "Tamarack" (San Cordero),
+    # both 9A, no relation between the two towns beyond the coincidence.
+    # Same reason for this pair: "Pine" (town Pine Siding, Antler Co./Douglas Co.,
+    # OR) and "Pine Rim" (town Sage Spur, Cinder Co./Siskiyou Co., CA) are unrelated
+    # towns, both 1A, whose school names read as one being a variant of the other.
+    # "Pine Siding" is the key here (not "Pine") because it was ALREADY the target of
+    # an earlier rename — the target is rewritten in place, never chained.
+    "Pine Rim": "Hamburg",                                     # 1A Cinder (Siskiyou Co., CA)
+    "Hawk Bar": "Lassen",                                      # 2A Ferris (Shasta Co., CA)
+    "High Bar": "Fall River Valley",                           # 2A Ferris (Shasta Co., CA)
+    "Jessup Bar": "Fort Paynes",                                # 2A Olivet (Tehama Co., CA)
+    "Tamarack Harbor": "Cape Blanco",                          # 9A Weller (Curry Co., OR)
     "Annie Springs Crater View": "Crater View",                # 3A Annie Springs
     "Archbishop Doyle Prep North": "Monk",                     # 6A Halbrook
     "Arrieta Treasure Valley": "Canyonlands",                  # 7A Arrieta
@@ -1757,7 +1783,7 @@ RENAMES = {
     "Elena Petrov":              "Talladega",              # 9A San Marcos County
     "Irina Kovalenko North":     "Arroyo Verde",    # 4A Santa Michaela
     "Galina Romanov":            "Stagewater",              # 9A Stagewater County
-    "Svenja Bianchi":            "Tamarack",                # 9A Tamarack County
+    "Svenja Bianchi":            "Bonanza",                 # 9A Tamarack County
     "Carmen Cordero":            "Bannock",                   # 9A Vance County
     "Salvador Figueroa":         "Vesper",                  # 4A Vesper
     "Klara Marchand":            "Meriwether",
@@ -3049,7 +3075,7 @@ MASCOTS = {
     "Drayfield": "Prairie Dogs",
     "D. Eisenhower": "Millionaires",
     "Gold Hollow": "Phantoms",
-    "Mill Bar": "Quarrymen",
+    "Lewiston": "Quarrymen",
     "C. Coolidge": "Privateers",
     "Hidden Draw": "Galloping Ghosts",
     # ‼️ PINNED PER SCHOOL, NOT POOLED. Both were Olallie, and both names are the
@@ -3210,7 +3236,7 @@ MASCOTS = {
     "Klamath": "Garnets",
     "San Cordero Central": "Lava Bears",
     "Mesa Verde": "Obsidians",
-    "Tamarack": "Snowcaps",
+    "Bonanza": "Snowcaps",
     "Yarmere": "Ensatinas",                     # the salamander
 
     # ── Juniper Highlands: high desert ───────────────────────────────────────
