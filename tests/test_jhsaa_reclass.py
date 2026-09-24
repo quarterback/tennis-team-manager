@@ -455,3 +455,26 @@ def test_the_lab_advance_holds_on_an_open_proposal(monkeypatch, clean_archive):
         conn.commit()
     finally:
         conn.close()
+
+
+def test_a_school_renamed_after_the_cycle_still_takes_its_committed_league(scored, monkeypatch, tmp_path, clean_archive):
+    """Owner report 2095: a school renamed after the realignment was missed by the
+    re-apply (the map is keyed on the commit-time display name), kept the seed
+    file's old league while every leaguemate took the save's, and played in a
+    one-team league. A rename (display name moved, old name stamped in `source`)
+    must still resolve to its map entry."""
+    w = clean_archive
+    copy_path, original, moves = _commit_on_a_copy(tmp_path, monkeypatch, w)
+    committed = _shape(copy_path)
+    doc = json.loads(original)
+    old = next(iter(moves))
+    row = next(r for r in doc["schools"] if r["name"] == old)
+    row["source"] = row.get("source") or old
+    row["name"] = old + " Renamed"
+    copy_path.write_text(json.dumps(doc))
+    jh.reset_schools()
+    rows = {r["name"]: r for r in jh._rows()}
+    got = rows[old + " Renamed"]
+    assert (got["classification"], got["group"], got.get("girls_district"),
+            got.get("boys_district")) == committed[old][:4]
+    jh.reset_schools()
