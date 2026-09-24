@@ -809,7 +809,7 @@
       "group": "8A",
       "enrollment": 2117,
       "private": false,
-      "mascot": "Sardines",
+      "mascot": "Roadrunners",
       "colors": [
         "#0e7490",
         "#fbbf24"
@@ -948,7 +948,7 @@
       "group": "2A",
       "enrollment": 348,
       "private": false,
-      "mascot": "Goldbacks",
+      "mascot": "Shovelers",
       "colors": [
         "#3f2a56",
         "#3ba55d"
@@ -1109,7 +1109,7 @@
       "group": "9A",
       "enrollment": 2322,
       "private": false,
-      "mascot": "Lambs",
+      "mascot": "Sun Dodgers",
       "colors": [
         "#92400e",
         "#1d1d1f"
@@ -1761,7 +1761,7 @@
       "group": "3A",
       "enrollment": 389,
       "private": false,
-      "mascot": "Brambles",
+      "mascot": "Bodega Cats",
       "colors": [
         "#333d29",
         "#d97706"
@@ -2523,7 +2523,7 @@
       "group": "6A",
       "enrollment": 1308,
       "private": false,
-      "mascot": "Cinderpits",
+      "mascot": "Anglers",
       "colors": [
         "#3f2a56",
         "#3ba55d"
@@ -2685,7 +2685,7 @@
       "group": "9A",
       "enrollment": 2217,
       "private": false,
-      "mascot": "Cablecars",
+      "mascot": "Limos",
       "colors": [
         "#14532d",
         "#e8c46b"
@@ -2725,7 +2725,7 @@
       "group": "6A",
       "enrollment": 1187,
       "private": false,
-      "mascot": "Dredgemen",
+      "mascot": "Privateers",
       "colors": [
         "#0e7490",
         "#fbbf24"
@@ -3047,7 +3047,7 @@
       "group": "Group 1",
       "enrollment": 1190,
       "private": false,
-      "mascot": "Sugar Beets",
+      "mascot": "Syrupmakers",
       "colors": [
         "#4E1533",
         "#DED3B4"
@@ -3327,7 +3327,7 @@
       "group": "6A",
       "enrollment": 1140,
       "private": false,
-      "mascot": "Barkers",
+      "mascot": "Peanut Mashers",
       "colors": [
         "#6d1a36",
         "#9fb4c7"
@@ -3468,7 +3468,7 @@
       "group": "8A",
       "enrollment": 2028,
       "private": false,
-      "mascot": "Silos",
+      "mascot": "Dreadnoughts",
       "colors": [
         "#92400e",
         "#1d1d1f"
@@ -3725,7 +3725,7 @@
       "group": "7A",
       "enrollment": 1398,
       "private": false,
-      "mascot": "Buttermakers",
+      "mascot": "Boggers",
       "colors": [
         "#1d1d1f",
         "#d97706"
@@ -4028,7 +4028,7 @@
       "group": "Group 2",
       "enrollment": 407,
       "private": false,
-      "mascot": "White Sage",
+      "mascot": "Gales",
       "colors": [
         "#0e7490",
         "#fbbf24"
@@ -4230,7 +4230,7 @@
       "group": "Group 1",
       "enrollment": 1477,
       "private": false,
-      "mascot": "Sunflowers",
+      "mascot": "Swords",
       "colors": [
         "#0e7490",
         "#fbbf24"
@@ -4864,7 +4864,7 @@
       "group": "8A",
       "enrollment": 2118,
       "private": false,
-      "mascot": "Sluicers",
+      "mascot": "Millionaires",
       "colors": [
         "#3f2a56",
         "#3ba55d"
@@ -5159,7 +5159,7 @@
       "group": "Group 2",
       "enrollment": 881,
       "private": false,
-      "mascot": "Draymen",
+      "mascot": "Prairie Dogs",
       "colors": [
         "#14294e",
         "#c8ccd4"
@@ -5878,7 +5878,7 @@
       "group": "2A",
       "enrollment": 270,
       "private": false,
-      "mascot": "Tidepools",
+      "mascot": "Walrus",
       "colors": [
         "#7b1e2b",
         "#e8c46b"
@@ -6376,7 +6376,7 @@
       "group": "9A",
       "enrollment": 2427,
       "private": false,
-      "mascot": "Milkmen",
+      "mascot": "Valkyries",
       "colors": [
         "#1d4e9e",
         "#f2f2ee"
@@ -6827,7 +6827,7 @@
       "source": "Leire Aramburu"
     },
     {
-      "name": "Furrow Crossing",
+      "name": "Furrow",
       "city": "Furrow Crossing",
       "county": "Barlowe",
       "area": "Boise Frontier",
@@ -6835,7 +6835,7 @@
       "group": "5A",
       "enrollment": 1019,
       "private": false,
-      "mascot": "Windrowers",
+      "mascot": "Brows",
       "colors": [
         "#333d29",
         "#d97706"
@@ -6843,7 +6843,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Twin Counties Athletic Association",
-      "boys_district": "Twin Counties Athletic Association"
+      "boys_district": "Twin Counties Athletic Association",
+      "source": "Furrow Crossing"
     },
     {
       "name": "Gagarin",
@@ -6914,7 +6915,7 @@
       "group": "3A",
       "enrollment": 498,
       "private": false,
-      "mascot": "Combers",
+      "mascot": "Sea Dogs",
       "colors": [
         "#92400e",
         "#1d1d1f"
@@ -7053,7 +7054,7 @@
       "group": "Group 3",
       "enrollment": 279,
       "private": true,
-      "mascot": "Flapjacks",
+      "mascot": "Paperweights",
       "colors": [
         "#167339",
         "#e8e6df"
@@ -7193,7 +7194,7 @@
       "group": "2A",
       "enrollment": 253,
       "private": false,
-      "mascot": "Sluicers",
+      "mascot": "Phantoms",
       "colors": [
         "#5b2a86",
         "#e5e7eb"
@@ -7429,7 +7430,7 @@
       "group": "2A",
       "enrollment": 86,
       "private": false,
-      "mascot": "Bullbuckers",
+      "mascot": "Gusties",
       "colors": [
         "#14532d",
         "#e8c46b"
@@ -8163,7 +8164,7 @@
       "group": "Group 1",
       "enrollment": 2021,
       "private": false,
-      "mascot": "Waterhaulers",
+      "mascot": "Galloping Ghosts",
       "colors": [
         "#3a5a78",
         "#f5e9d0"
@@ -10548,7 +10549,7 @@
       "group": "1A",
       "enrollment": 311,
       "private": false,
-      "mascot": "Brambles",
+      "mascot": "Squalls",
       "colors": [
         "#14294e",
         "#c8ccd4"
@@ -11405,7 +11406,7 @@
       "group": "3A",
       "enrollment": 465,
       "private": false,
-      "mascot": "Sluicers",
+      "mascot": "Quarrymen",
       "colors": [
         "#204e39",
         "#c8a24a"
@@ -11920,7 +11921,7 @@
       "group": "7A",
       "enrollment": 1370,
       "private": false,
-      "mascot": "Mobiles",
+      "mascot": "Maroons",
       "colors": [
         "#7b1e2b",
         "#e8c46b"
@@ -12185,7 +12186,7 @@
       "group": "8A",
       "enrollment": 2128,
       "private": false,
-      "mascot": "Daffies",
+      "mascot": "Wranglers",
       "colors": [
         "#1e5631",
         "#f2f2ee"
@@ -12839,7 +12840,7 @@
       "group": "Group 2",
       "enrollment": 847,
       "private": false,
-      "mascot": "Choristers",
+      "mascot": "Pilots",
       "colors": [
         "#1d4e9e",
         "#f2f2ee"
@@ -15099,7 +15100,7 @@
       "group": "6A",
       "enrollment": 1151,
       "private": false,
-      "mascot": "Chandlers",
+      "mascot": "Comet Riders",
       "colors": [
         "#14294e",
         "#c8ccd4"
@@ -15119,7 +15120,7 @@
       "group": "3A",
       "enrollment": 336,
       "private": false,
-      "mascot": "Peelers",
+      "mascot": "Timberjacks",
       "colors": [
         "#7f1d1d",
         "#d4d4d8"
@@ -16093,7 +16094,7 @@
       "group": "5A",
       "enrollment": 967,
       "private": false,
-      "mascot": "Highgraders",
+      "mascot": "Cranes",
       "colors": [
         "#1d4e9e",
         "#f2f2ee"
@@ -16481,7 +16482,7 @@
       "source": "Emilia Jansen"
     },
     {
-      "name": "Shasta Agricultural",
+      "name": "Shasta",
       "city": "Valderra",
       "county": "Ferris",
       "area": "Gold Valley",
@@ -16489,7 +16490,7 @@
       "group": "9A",
       "enrollment": 2384,
       "private": false,
-      "mascot": "Cellarmen",
+      "mascot": "Cherry Pickers",
       "colors": [
         "#6d1a36",
         "#9fb4c7"
@@ -17271,7 +17272,7 @@
       "group": "6A",
       "enrollment": 1281,
       "private": false,
-      "mascot": "Headgates",
+      "mascot": "Purples",
       "colors": [
         "#14532d",
         "#e8c46b"
@@ -17947,7 +17948,7 @@
       "group": "9A",
       "enrollment": 2597,
       "private": false,
-      "mascot": "Moon Jellies",
+      "mascot": "Speed Demons",
       "colors": [
         "#0e7490",
         "#fbbf24"
@@ -18231,7 +18232,7 @@
       "group": "1A",
       "enrollment": 100,
       "private": false,
-      "mascot": "Hawthorns",
+      "mascot": "Pricklers",
       "colors": [
         "#204e39",
         "#c8a24a"
@@ -18790,7 +18791,7 @@
       "group": "8A",
       "enrollment": 2082,
       "private": false,
-      "mascot": "Brambles",
+      "mascot": "Crimson",
       "colors": [
         "#1e5631",
         "#f2f2ee"
@@ -18955,7 +18956,7 @@
       "group": "Group 3",
       "enrollment": 189,
       "private": false,
-      "mascot": "Sectionmen",
+      "mascot": "Smelters",
       "colors": [
         "#4b2e83",
         "#b7a57a"

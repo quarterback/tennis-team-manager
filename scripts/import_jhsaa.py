@@ -1039,6 +1039,7 @@ RENAMES = {
     "San Vito Regional": "San Vito",
     "Star Valley Regional": "Star Valley",
     "Pellford": "Pellbrook",
+    "Furrow Crossing": "Furrow",
     "Puerto de los Reyes": "Puerto Reyes",
     "Carmina": "Camrose",
     "Copper Bar": "Bronzeview",
@@ -1683,7 +1684,7 @@ RENAMES = {
     "Janice Cole": "Fallon",
     "Jeannette Freeman": "Round Mountain",
     "Katherine Davenport": "Blue Mountain",
-    "Lars Mercier": "Shasta Agricultural",
+    "Lars Mercier": "Shasta",
     "Lillian Price": "North Coast",
     "Manuel Robles": "Asteroid City",      # 2026-08: was "Pacific Fruit Exchange",
                                            # then briefly "Marshfield" (rewritten in
@@ -3011,13 +3012,50 @@ MASCOTS = {
     # Owner pick 2026-09 — "what the fuck is a Brickie?" (it came in with the
     # source record). Condotti's rival, so the two sit together here.
     "Romero-Finniski": "Nor'westers",
+    # ── owner picks 2026-09, the mascot survey (applied exactly as named) ──
+    "Shasta": "Cherry Pickers",
+    "B.T. Washington": "Shovelers",
+    "Union Prairie": "Smelters",
+    "Butler": "Limos",
+    "Caswell": "Dreadnoughts",
+    "Carver": "Peanut Mashers",
+    "Morne Rouge": "Maroons",
+    "Tuscaloosa": "Crimson",
+    "Springfield": "Purples",
+    "Ride": "Comet Riders",
+    "Gallego Bay": "Sea Dogs",
+    "Estuary Bay": "Walrus",
+    "Talladega": "Speed Demons",
+    "Asteroid City": "Roadrunners",
+    "Los Remolinos": "Squalls",
+    "Clear Lake": "Gales",
+    "Ridgeline": "Timberjacks",
+    "Granite Basin": "Gusties",
+    "Sandhill Marsh": "Cranes",
+    "Cherry Hill East": "Boggers",
+    "Brookside": "Anglers",
+    "Berrio": "Bodega Cats",
+    "Forest Park": "Valkyries",
+    "Georgia Mills": "Paperweights",
+    "Caney": "Syrupmakers",
+    "Natchitoches": "Wranglers",
+    "Bannock": "Sun Dodgers",
+    "Coles Creek": "Swords",
+    "Thorn Summit": "Pricklers",
+    "Furrow": "Brows",
+    "Norwood Park": "Pilots",
+    "Drayfield": "Prairie Dogs",
+    "D. Eisenhower": "Millionaires",
+    "Gold Hollow": "Phantoms",
+    "Mill Bar": "Quarrymen",
+    "C. Coolidge": "Privateers",
+    "Hidden Draw": "Galloping Ghosts",
     # ‼️ PINNED PER SCHOOL, NOT POOLED. Both were Olallie, and both names are the
     # owner's. A pool of two names over four schools kept dropping one of them
     # depending on how the hashes fell — a name you were given should not survive at
     # the mercy of a later pool edit, so the two botanical puns are placed by hand and
     # the pool keeps the rest.
     "Netherwood": "Dandy Lions",
-    "Natchitoches": "Daffies",
     # ── the private-school layer (see the RENAMES block) ──────────────────
     # Real-world mascots where the institution has one everybody knows, which is
     # half of what makes the name land. ⚠️ NO AQUATIC ANIMALS (the rule at the head
@@ -3075,11 +3113,9 @@ MASCOTS = {
     # ── South Coast: the southern shore and its canneries ────────────────────
     "Carolina Island": "Tule Elk",
     "Quarmont": "Stonecutters",
-    "Asteroid City": "Sardines",             # Bahía Leal, a cannery town
     "Quarry Workers": "Lightkeepers",
     "Biloxi Heights": "Sea Otters",
     "Claudette Cole": "Godwits",
-    "Talladega": "Moon Jellies",
     "Mission Bay": "Sea Lions",
     "San Borondón North": "Rockfish",
     "Isla Verde": "Albatross",
@@ -3101,7 +3137,6 @@ MASCOTS = {
     "Moriarty": "Jackrabbits",
     "Silver Glen": "Silversmiths",
     "Kimberly": "Abbots",
-    "Shasta Agricultural": "Cellarmen",                # Valderra
     "West Valderra": "Orchardists",
     "Orchardgate": "Archangels",
     "Blue Mountain": "Millwrights",       # Fellows Mill
@@ -3116,8 +3151,6 @@ MASCOTS = {
     "Okefenokee": "Onion Toppers",
     "Pennsauken": "Stone Lifters",         # harri-jasotzaile
     "Kinnickinny": "Rapids",
-    "Caney": "Sugar Beets",
-    "Berrio": "Brambles",
     "Cherry Hill": "Cherry Pickers",
     "Robeson": "Rivermen",
     "Juniper Crossing": "Switchmen",
@@ -3127,23 +3160,17 @@ MASCOTS = {
     "E. Baker": "Torchbearers",
     "Javier Cárdenas": "Roadrunners",
     "Llerena": "Bighorns",
-    "Norwood Park": "Choristers",              # Madrigal
     "Madrigal": "Minstrels",
     "Serrano": "Chiles",                        # the pepper the town is named for
     "Arroyo Seco": "Sidewinders",             # and the snake
-    "Coles Creek": "Sunflowers",
     "Borough Beach": "Woodchoppers",            # aizkolari
     "Petoskey Rock": "Burrowing Owls",
     "Friendship City": "Beet Haulers",
-    "Bannock": "Lambs",                  # cordero
-    "Morne Rouge": "Mobiles",
     "Granite": "Fire Opals",               # Carden City
-    "Drayfield": "Draymen",
     "Jemison": "Orbiters",
     "William McKinley": "Buckeyes",
     "High Desert": "Sheepwagons",             # Etchartville
     "Armour Fields": "Thunderheads",            # gromov — thunder
-    "Springfield": "Headgates",                  # Orellana
     "Grizzly Gulch": "Riverboats",
     "Starlake": "Bull Trout",
     "Simmons": "Springers",               # a spring chinook, on a Springs town
@@ -3189,7 +3216,6 @@ MASCOTS = {
     "Seamus Town": "Assayers",
     "Summervale": "Haymakers",
     "Star Hollow": "Pronghorns",
-    "Thorn Summit": "Hawthorns",
     "Owl Canyon": "Screech Owls",
     "High Desert Christian": "Sojourners",
     "Marshall": "Jackalopes",
@@ -3210,7 +3236,6 @@ MASCOTS = {
 
     # ── Kangas: sagebrush, stock and the Finn settlements ────────────────────
     "Ninemile": "Freighters",
-    "Clear Lake": "White Sage",
     "Galactica Plains": "Meadowlarks",
     "Ocean Park": "Woolgrowers",
     "Riverview": "Joiners",                 # Dovetail
@@ -3220,7 +3245,6 @@ MASCOTS = {
     # ── Timber Valley: the woods trades ──────────────────────────────────────
     "Ansotegui": "Chokermen",
     "Bidwell": "Cruisers",                      # the timber cruiser
-    "Gold Hollow": "Sluicers",
     "Pellmont": "Newts",
     "Ransoms Landing": "Muskrats",
     "Whistle Stop": "Whistlepunks",
