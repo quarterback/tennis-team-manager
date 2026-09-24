@@ -346,16 +346,22 @@ def test_only_1a_road_to_state_plays_2s3d():
     assert (road.n_singles, road.n_doubles) == (2, 3)
     # the TOC fields every class's champion, so it stays one shape for everyone
     assert jh.dual_format("toc", "1A") == jh.FORMATS["state"]
-    for g in ("2A", "5A", "6A", None):
+    for g in ("2A", "3A", "4A", None):
         assert jh.dual_format("state", g) == jh.FORMATS["state"], g
     # 7A/8A/9A are the OTHER pilot (owner rule 2070; 7A joined 2026-09) — not this one
     for g in jh.WIDE_GROUPS:
         assert jh.dual_format("state", g) == jh.FORMATS["state_4s5d"], g
+    # 5A is the THIRD (JHSAA rule 2094) and 6A the fourth — neither is this one
+    for g in jh.SINGLES_FORWARD_GROUPS:
+        assert jh.dual_format("state", g) == jh.FORMATS["state_6s5d"], g
+    for g in jh.LEAGUE_SHAPE_GROUPS:
+        assert jh.dual_format("state", g) == jh.FORMATS["regular"], g
     # untouched outside the postseason, 1A included
     assert jh.dual_format("regular", "1A") == jh.FORMATS["regular"]
     # a showcase rehearses the class's OWN state format (owner rule 2026-09)
     assert jh.dual_format("showcase_pod", "1A") == jh.FORMATS["state_1a"]
-    assert jh.dual_format("showcase_tiered", "5A") == jh.FORMATS["state"]
+    assert jh.dual_format("showcase_tiered", "3A") == jh.FORMATS["state"]
+    assert jh.dual_format("showcase_tiered", "5A") == jh.FORMATS["state_6s5d"]
     assert jh.dual_format("early", "1A") == jh.FORMATS["early"]
     # ...and the roster the shape demands follows it
     assert jh.lineup_need("state", "1A") == 8
@@ -738,14 +744,20 @@ def test_a_dual_across_classifications_plays_ONE_shape_AND_IT_IS_THE_WIDER():
     for a, b in (("8A", "9A"), ("8A", "7A"), ("7A", "6A"), ("6A", "5A"), ("1A", "2A")):
         assert jh.dual_format(ep, jh.shape_group(ep, a, b)) == jh.FORMATS["early"], (a, b)
     # the wider side wins where shapes differ — a showcase host in a wide class
-    assert jh.dual_format("showcase_pod", jh.shape_group("showcase_pod", "9A", "5A")) == wide
-    assert jh.dual_format("showcase_pod", jh.shape_group("showcase_pod", "5A", "9A")) == wide
+    widest = jh.FORMATS["state_6s5d"]          # 5A's eleven courts, JHSAA rule 2094
+    assert jh.dual_format("showcase_pod", jh.shape_group("showcase_pod", "9A", "4A")) == wide
+    assert jh.dual_format("showcase_pod", jh.shape_group("showcase_pod", "4A", "9A")) == wide
+    # ‼️ 5A's 6S/5D is now the WIDEST card in the association, so it beats 4S/5D too
+    assert jh.dual_format("showcase_pod", jh.shape_group("showcase_pod", "9A", "5A")) == widest
+    assert jh.dual_format("showcase_pod", jh.shape_group("showcase_pod", "5A", "9A")) == widest
     # a postseason bracket never crosses groups, so the sides always agree there
     assert jh.dual_format("state", jh.shape_group("state", "8A", "8A")) == wide
-    # ...and the roster the widest format needs is comfortably inside every band
+    # ...and the roster every shape needs is inside its own class's band. ‼️ Checked
+    # per class against ITS OWN card, not against one class's: since 2094 the cards
+    # differ by seven players across the association (1A's eight to 5A's sixteen).
     for cls, (lo, _hi) in jh.ROSTER_SIZE_BAND_BY_CLASS.items():
-        if cls in ("8A", "9A", "7A", "6A"):
-            assert lo >= jh.lineup_need("state", "8A"), cls
+        assert lo >= jh.lineup_need("state", cls), cls
+        assert lo >= jh.ROSTER_FLOOR, cls
 
 
 def test_the_4s5d_postseason_lineup_is_legal_under_the_order_of_ability():
@@ -796,8 +808,12 @@ def test_the_jv_playoff_cut_moves_but_the_jv_SEASON_cut_does_not():
     assert jh.lineup_need("regular", "8A") == 11        # the JV season's cut
     for g in jh.WIDE_GROUPS:
         assert jh.jv_postseason_cut(g) == 14
-    for g in ("1A", "5A", "6A", None):
+    for g in ("1A", "6A", None):
         assert jh.jv_postseason_cut(g) == 11, g
+    # ‼️ 5A dresses SIXTEEN since 2094, and the freeze is derived from `lineup_need`
+    # rather than typed, so it follows the shape — #17 down, as designed.
+    for g in jh.SINGLES_FORWARD_GROUPS:
+        assert jh.jv_postseason_cut(g) == 16, g
 
 # --- PARTNER CONTINUITY (owner rule 2026-09) ----------------------------------
 #
