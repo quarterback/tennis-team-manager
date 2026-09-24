@@ -107,5 +107,24 @@ def test_a_hand_archived_season_crowns_both_awards(tmp_path, monkeypatch):
         state = aw["state"]["5A"]
         assert {r["school"] for r in state} <= set(names)
         assert "district" in {a["level"] for a in coy.coach_awards(wid, "c5")}
+        assert district[0]["detail"]["repeat"] == 0
+
+        # A District COY won earlier IN THIS DISTRICT discounts the ranking score;
+        # one won in another league does not.
+        conn = wd._db()
+        conn.executemany(
+            "INSERT INTO jhsaa_coach_award (world_id, year, gender, level, grp, district,"
+            " rank, school, ident, coach_id, coach_name, score, detail)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            [(wid, 1, "girls", "district", "5A", "L", 1, names[5], "", "c5", "Coach 5", 60, "{}"),
+             (wid, 1, "girls", "district", "5A", "Other", 1, names[0], "", "c0", "Coach 0", 60, "{}")])
+        conn.commit()
+        conn.close()
+        before = {r["coach_id"]: r["score"] for r in district}
+        coy.select_season(wid, year, "girls", salt="")
+        again = {r["coach_id"]: r for r in coy.season_awards(wid, year, "girls")["district"][("5A", "L")]}
+        assert again["c5"]["detail"]["repeat"] == coy.DISTRICT_REPEAT_PENALTY
+        assert abs(again["c5"]["score"] - (before["c5"] - coy.DISTRICT_REPEAT_PENALTY)) < 0.011
+        assert all(r["detail"]["repeat"] == 0 for c, r in again.items() if c != "c5")
     finally:
         wd.WORLD_DB, wd._schema_ready_for = real_db, real_ready

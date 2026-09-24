@@ -1989,7 +1989,8 @@ def coach_state_titles(world_id: int, gender: str | None, minimum: int = 2) -> l
     Repeat POY roll's idea for coaches. Reads ONLY each season's `champions`
     (json_extract, never the whole archived blob) for the seasons that have a
     coach history at all."""
-    from . import world
+    from . import world, jhsaa
+    from .jhsaa_coefficient import identity_map
     from .world import BASE_YEAR
     genders = [gender] if gender else ["girls", "boys"]
     conn = _conn()
@@ -2000,17 +2001,25 @@ def coach_state_titles(world_id: int, gender: str | None, minimum: int = 2) -> l
             if not heads:
                 continue
             years = sorted({y for y, _i in heads})
-            inv = {nm: i for i, nm in ident_names(g).items()}
+            rows = jhsaa._rows()
             for y in years:
                 r = conn.execute(
-                    "SELECT json_extract(data, '$.champions') FROM world_jhsaa"
+                    "SELECT json_extract(data, '$.champions'),"
+                    " json_extract(data, '$.standings') FROM world_jhsaa"
                     " WHERE world_id=? AND year=? AND gender=?",
                     (world_id, y, g)).fetchone()
                 if not r or not r[0]:
                     continue
-                champs = world._relabel({"champions": json.loads(r[0])})["champions"]
+                arc = world._relabel({"champions": json.loads(r[0]),
+                                      "standings": json.loads(r[1] or "{}")})
+                champs = arc["champions"]
+                # The season's own name set resolves an archived name to the
+                # program that held it THEN — never today's holder of the string.
+                named = {t.get("school") for d in (arc["standings"] or {}).values()
+                         for ts in (d or {}).values() for t in ts or () if t.get("school")}
+                ident = identity_map(named | set((champs or {}).values()), rows)
                 for grp, nm in (champs or {}).items():
-                    head = heads.get((y, inv.get(nm)))
+                    head = heads.get((y, ident.get(nm, nm)))
                     if not head:
                         continue
                     t = titles.setdefault(head["coach_id"], {

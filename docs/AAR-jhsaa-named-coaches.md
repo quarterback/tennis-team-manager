@@ -354,10 +354,15 @@ Every component is a 0-100 score and the award score is the weighted sum.
     seeds get the byes. Every game is played on `σ(k · strength gap)` with no home
     court, since State is neutral.
   - **Pricing:** a loser is priced by teams still alive when it went out, through
-    `state_points` (the same arithmetic as the archive). The champion gets 52 + 4
-    (the TOC).
-  - **400 draws per class** (`SIMS`), seeded on blake2s of (world, year, gender,
-    class), so re-selecting a season is byte-identical.
+    `state_points` (the same arithmetic as the archive). The champion gets
+    `state_points(1) + TOC_BONUS`.
+  - The postseason component's 100 is that same `state_points(1) + TOC_BONUS`,
+    DERIVED from the coefficient module and never typed as a literal (it was 56
+    once), so a re-priced schedule cannot leave the ceiling stale.
+  - **400 draws per class** (`SIMS`), seeded on blake2s of (world SALT, year,
+    gender, class), so re-selecting a season is byte-identical. It is the salt and
+    NOT the world row id: the id is a database row number and says nothing about
+    which world this is, while the salt is the world's own seed material.
   - A preseason No. 20 reaching a semifinal scores far more surprise than a
     preseason No. 2 doing it, which is the reason for simulating rather than
     treating every semifinal alike.
@@ -404,12 +409,29 @@ Every component is a 0-100 score and the award score is the weighted sum.
     derived.
   - The page says the selection is running and lands on the result after a refresh.
 - **Name handling:** duals are read in archived names and mapped through
-  `jhsaa.former_names`. The archive is already relabelled on read, and the coach
-  is found by (world-year, school ident) through `season_heads`.
+  `jhsaa.former_names`. The archive is already relabelled on read, but
+  `_relabel` deliberately leaves a retired name that ANOTHER program now uses as
+  its live name. So the coach is found by (world-year, ident) where the ident
+  comes from `jhsaa_coefficient.identity_map(season's names, jhsaa._rows())` —
+  the season-aware resolution the coefficient uses — never by inverting today's
+  names, which would credit the current holder of the string's coach with the
+  older program's season. `coach_state_titles` resolves champions the same way,
+  per season, off that season's standings names.
+- **Repeat winners, District only** (owner rule 2026-09): the award favours a
+  first-time winner. Each District COY the coach already won IN THE SAME DISTRICT
+  (same classification and league name, same gender, an earlier season) takes
+  `DISTRICT_REPEAT_PENALTY` (4) points off the ranking score, capped at
+  `DISTRICT_REPEAT_CAP` (10). A repeat can still win; it needs a clearly better
+  season. A win in another league does not count. The discount is stored in
+  `detail["repeat"]`. **State COY has no such term.**
+  - A backfill counts only awards already selected for earlier seasons, so
+    seasons selected out of order can read a shorter history. That is accepted.
 - **Where it shows:**
-  - The Honors page's **Coach of the Year** tab: the State winner with its five
-    finalists and every component score, then one row per league with the District
-    winner.
+  - The Honors page's **Coach of the Year** tab: the State winner and its five
+    finalists by RANK, then one row per league with the District winner.
+    **‼️ Names and rank ONLY (owner rule 2026-09).** No score, component, weight
+    or record appears in the visible UI anywhere in the award. Those numbers are
+    stored for the record and stay behind the scenes.
   - The coach page: a career tile with the state and district counts, and the
     award on its season's ledger row (`coach_awards`).
   - The program History tab's Seasons column puts a **COY / STATE COY** chip beside

@@ -53,6 +53,12 @@ Z_CAP = 2.5
 FINALISTS = 5
 
 DISTRICT_WEIGHTS = {"over": 0.45, "achieve": 0.40, "improve": 0.10, "quality": 0.05}
+# District COY favours a FIRST-TIME winner (owner rule 2026-09): each earlier
+# District COY the coach won IN THE SAME DISTRICT takes this many points off the ranking score, up to
+# the cap. A repeat can still win on a clearly better season; it just has to be
+# clearly better. State COY carries no such term, by the same rule.
+DISTRICT_REPEAT_PENALTY = 4.0
+DISTRICT_REPEAT_CAP = 10.0
 STATE_WEIGHTS = {"quality": 0.30, "post": 0.30, "over": 0.30, "improve": 0.10}
 STATE_OVER_SPLIT = (20.0, 10.0)           # full-season z : postseason surprise
 BASELINE_WEIGHTS = (0.5, 0.3, 0.2)        # one, two, three seasons back
@@ -255,7 +261,7 @@ def select_season(world_id: int, year: int, gender: str, salt: str) -> dict:
     from . import world
     from . import jhsaa as jh
     from . import jhsaa_coaches as jc
-    from .jhsaa_coefficient import season_points
+    from .jhsaa_coefficient import season_points, identity_map, state_points, TOC_BONUS
     arc = world.get_jhsaa(world_id, year, gender)
     if not arc:
         return {"district": 0, "state": 0}
@@ -269,7 +275,10 @@ def select_season(world_id: int, year: int, gender: str, salt: str) -> dict:
     if not where:
         return {"district": 0, "state": 0}
     heads = jc.season_heads(world_id, gender)
-    inv = {nm: i for i, nm in jc.ident_names(gender).items()}
+    # Archived name -> stable roster identity FOR THIS SEASON. Never invert
+    # today's names: a retired name a different program now uses would credit
+    # today's holder's coach with the older program's season.
+    ident = identity_map(where, jh._rows())
     strength = _preseason(world_id, year, gender, list(where), salt)
     alias = jh.former_names()
     # One side's perspective per row: every varsity dual appears once per school.
@@ -326,14 +335,27 @@ def select_season(world_id: int, year: int, gender: str, salt: str) -> dict:
         delta = now_pct.get(school, 0.5) - num / den
         return 50.0 + 50.0 * max(-1.0, min(1.0, delta / IMPROVE_FULL))
 
+    # The ceiling is the schedule's own top (a State title plus the TOC bonus),
+    # derived rather than typed so a re-priced schedule cannot leave it stale.
+    POST_CEILING = state_points(1) + TOC_BONUS
     actual = season_points(arc)            # keyed by display name (no rows passed)
     rows_out = []
 
     def head_of(school):
-        return heads.get((year, inv.get(school)))
+        return heads.get((year, ident.get(school, school)))
 
     # ---------------- District: one per (class, league) ----------------
     n_d = 0
+    conn = _conn()
+    try:
+        # Earlier District COY wins IN THIS SAME DISTRICT (a district is
+        # (classification, name)); a title won in another league is not a repeat.
+        prior_wins = {(c, g, d): n for c, g, d, n in conn.execute(
+            "SELECT coach_id, grp, district, COUNT(*) FROM jhsaa_coach_award"
+            " WHERE world_id=? AND gender=? AND level='district' AND rank=1 AND year<?"
+            " GROUP BY coach_id, grp, district", (world_id, gender, year))}
+    finally:
+        conn.close()
     by_district: dict = {}
     for school, (grp, dname, r) in where.items():
         by_district.setdefault((grp, dname), []).append((school, r))
@@ -355,13 +377,17 @@ def select_season(world_id: int, year: int, gender: str, salt: str) -> dict:
             qual = 100.0 * now_pct.get(school, 0.5)
             parts = {"over": over, "achieve": achieve, "improve": imp, "quality": qual}
             score = sum(DISTRICT_WEIGHTS[c] * v for c, v in parts.items())
+            repeat = min(DISTRICT_REPEAT_CAP,
+                         DISTRICT_REPEAT_PENALTY * prior_wins.get((hd["coach_id"], grp, dname), 0))
+            score -= repeat
             cands.append((score, school, hd, {**parts, "z": z, "place": place,
+                                              "repeat": repeat,
                                               "drecord": r.get("drecord", ""),
                                               "record": r.get("record", "")}))
         cands.sort(key=lambda c: (-c[0], c[1]))
         for rank, (score, school, hd, detail) in enumerate(cands[:FINALISTS], 1):
             rows_out.append((world_id, year, gender, "district", grp, dname, rank, school,
-                             inv.get(school, ""), hd["coach_id"], hd["name"],
+                             ident.get(school, school), hd["coach_id"], hd["name"],
                              round(score, 2), json.dumps(detail)))
         n_d += bool(cands)
 
@@ -374,7 +400,7 @@ def select_season(world_id: int, year: int, gender: str, salt: str) -> dict:
         br = (arc.get("brackets") or {}).get(grp) or {}
         field = len(br.get("field") or ())
         exp = expected_state_values({s: strength[s] for s, _r in teams if s in strength},
-                                    field, k, (world_id, year, gender, grp))
+                                    field, k, (salt, year, gender, grp))
         cands = []
         for school, r in teams:
             hd = head_of(school)
@@ -382,7 +408,7 @@ def select_season(world_id: int, year: int, gender: str, salt: str) -> dict:
                 continue
             got = actual.get(school) or {}
             value = (got.get("state") or 0.0) + (got.get("toc") or 0.0)
-            post = min(100.0, value / (52 + 4) * 100.0)
+            post = min(100.0, value / POST_CEILING * 100.0)
             z = z_score(res(school, False))
             surprise = value - exp.get(school, 0.0)
             s_score = 50.0 + 50.0 * max(-1.0, min(1.0, surprise / SURPRISE_FULL))
@@ -399,7 +425,7 @@ def select_season(world_id: int, year: int, gender: str, salt: str) -> dict:
         cands.sort(key=lambda c: (-c[0], c[1]))
         for rank, (score, school, hd, detail) in enumerate(cands[:FINALISTS], 1):
             rows_out.append((world_id, year, gender, "state", grp, "", rank, school,
-                             inv.get(school, ""), hd["coach_id"], hd["name"],
+                             ident.get(school, school), hd["coach_id"], hd["name"],
                              round(score, 2), json.dumps(detail)))
         n_s += bool(cands)
 
