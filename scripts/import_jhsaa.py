@@ -598,6 +598,7 @@ FORMER_NAMES = {
     "Harrow School of Design and Engineering":     "New Boston",
     "Harry S. Truman North":                       "Fair Park",
     "Harry Truman":                                "Truman",
+    "Hawk Bar":                                    "Lassen",
     "Hawk Lake Eastgate":                          "Oakhaven",
     "Hawk Lake Southeast":                         "Pine Barrens",
     "Hazel Bennett":                               "Benton Park",
@@ -606,6 +607,7 @@ FORMER_NAMES = {
     "Herbert Hoover":                              "Hoover",
     "Heritage Christian":                          "Longmeadow",
     "Hetfield":                                    "Brynildson Hill",
+    "High Bar":                                    "Fall River Valley",
     "High Desert Co-op":                           "High Desert",
     "Homecroft Manufacturing and Technology Academy": "West Burlington",
     "Homestead North":                             "Garden Plain",
@@ -644,6 +646,7 @@ FORMER_NAMES = {
     "Jefferson School of Science and Technology":  "Jefferson Science",
     "Jefferson School of Science and Technology North": "Evans Larsen Day",
     "Jefferson Science North":                     "Evans Larsen Day",
+    "Jessup Bar":                                  "Fort Paynes",
     "Jimmy Carter":                                "Carter",
     "John F. Kennedy North":                       "Box Canyon",
     "John Lewis":                                  "Lewis",
@@ -799,7 +802,8 @@ FORMER_NAMES = {
     "Petra Bianchi":                               "Perryville",
     "Petra Jansen":                                "Southern Pacific Tech",
     "Petra Weiss North":                           "Las Colinas",
-    "Pine Siding":                                 "Pine",
+    "Pine":                                        "Winchester Bay",
+    "Pine Siding":                                 "Winchester Bay",
     "Pinecrest School":                            "Pinecrest",
     "Plainfield Science":                          "Plainfield",
     "Port Meridian Polytechnic":                   "Port Meridian North",
@@ -952,6 +956,7 @@ FORMER_NAMES = {
     "Sycamore Flat":                               "La Savane",
     "Tailing Crossing-Ewart Bar Union":            "Fountain Park",
     "Tamarack":                                    "Bonanza",
+    "Tamarack Harbor":                             "Cape Blanco",
     "Tamarack Springs":                            "Mineral Springs",
     "Tatiana Chernov North":                       "Bahía Vista",
     "Tatiana Moroz North":                         "Ironwood Flats",
@@ -1078,7 +1083,7 @@ RENAMES = {
     "Olive Reach Baptist": "Olive Baptist",
     "Oscar Michaeux": "Michaeux",
     "Paul Robeson": "Robeson",
-    "Pine Siding": "Pine",
+    "Pine Siding": "Winchester Bay",
     "Port Meridian West": "Port Meridian Central",
     "Prune Siding": "Prunedale",
     "Ralph Bellamy": "Bellamy",
@@ -1534,6 +1539,12 @@ RENAMES = {
     # stands on (`docs/GAZETTEER-jefferson.md`). "Tamarack Harbor" was renamed for a
     # different reason — it shared its whole name with "Tamarack" (San Cordero),
     # both 9A, no relation between the two towns beyond the coincidence.
+    # Same reason for this pair: "Pine" (town Pine Siding, Antler Co./Douglas Co.,
+    # OR) and "Pine Rim" (town Sage Spur, Cinder Co./Siskiyou Co., CA) are unrelated
+    # towns, both 1A, whose school names read as one being a variant of the other.
+    # "Pine Siding" is the key here (not "Pine") because it was ALREADY the target of
+    # an earlier rename — the target is rewritten in place, never chained.
+    "Pine Rim": "Hamburg",                                     # 1A Cinder (Siskiyou Co., CA)
     "Hawk Bar": "Lassen",                                      # 2A Ferris (Shasta Co., CA)
     "High Bar": "Fall River Valley",                           # 2A Ferris (Shasta Co., CA)
     "Jessup Bar": "Fort Paynes",                                # 2A Olivet (Tehama Co., CA)

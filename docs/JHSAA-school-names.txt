@@ -305,8 +305,6 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
 
     2A   120  Pine Eagle                             Halfway                Pine Eagle High
     5A   921  Pine Barrens                           Hawk Lake              Hawk Lake Southeast
-    1A   190  Pine                                   Pine Siding            Pine Siding
-    1A   177  Pine Rim                               Sage Spur              Pine Rim
 
    Group 1  2258  Point Loma                             Aldecoa                Aitor Echevarria
    Group 2   610  Point Sable                            Paris                  Jean Baptiste
@@ -1719,7 +1717,7 @@ Pilot Rock — 1 program (Umatilla County, Blue Mountain Country)
     1A   170 pub  Pilot Rock                                                Columbia Range League              Pilot Rock High
 
 Pine Siding — 1 program (Antler County, Alderwold)
-    1A   190 pub  Pine                                                      Orchard League                     Pine Siding
+    1A   190 pub  Winchester Bay                                            Orchard League                     Pine Siding
 
 Placer — 1 program (Windrow County, Millersylvania)
    Group 3    57 pub  High Prairie                                              Black Canyon League                High Prairie
@@ -1907,7 +1905,7 @@ Sage Springs — 1 program (Sablewood County, Gold Valley)
     3A   458 pub  Mountain House                                            Gold Valley League                 Mountain House
 
 Sage Spur — 1 program (Cinder County, Cascade Divide)
-    1A   177 pub  Pine Rim                                                  East Cascades League               Pine Rim
+    1A   177 pub  Hamburg                                                   East Cascades League               Pine Rim
 
 Sage Village — 1 program (Windrow County, Millersylvania)
    Group 3   107 pub  Sage Village                                              Big Sky League                     Sage Lake

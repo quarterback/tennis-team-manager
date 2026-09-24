@@ -7819,6 +7819,26 @@
       "boys_district": "Del Rey Athletic Association"
     },
     {
+      "name": "Hamburg",
+      "source": "Pine Rim",
+      "city": "Sage Spur",
+      "county": "Cinder",
+      "area": "Cascade Divide",
+      "classification": "1A",
+      "group": "1A",
+      "enrollment": 177,
+      "private": false,
+      "mascot": "Prospectors",
+      "colors": [
+        "#22333b",
+        "#c6ac8f"
+      ],
+      "girls": false,
+      "boys": false,
+      "girls_district": "East Cascades League",
+      "boys_district": "East Cascades League"
+    },
+    {
       "name": "Hampton",
       "source": "Hampton Technical",
       "city": "Hampton",
@@ -13940,26 +13960,6 @@
       "boys_district": "Columbia Range League"
     },
     {
-      "name": "Pine",
-      "city": "Pine Siding",
-      "county": "Antler",
-      "area": "Alderwold",
-      "classification": "1A",
-      "group": "1A",
-      "enrollment": 190,
-      "private": false,
-      "mascot": "Jaguars",
-      "colors": [
-        "#204e39",
-        "#c8a24a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Orchard League",
-      "boys_district": "Orchard League",
-      "source": "Pine Siding"
-    },
-    {
       "name": "Pine Barrens",
       "city": "Hawk Lake",
       "county": "Camas",
@@ -13999,26 +13999,6 @@
       "boys": true,
       "girls_district": "Snake River District",
       "boys_district": "Snake River District"
-    },
-    {
-      "name": "Pine Rim",
-      "source": "Pine Rim",
-      "city": "Sage Spur",
-      "county": "Cinder",
-      "area": "Cascade Divide",
-      "classification": "1A",
-      "group": "1A",
-      "enrollment": 177,
-      "private": false,
-      "mascot": "Prospectors",
-      "colors": [
-        "#22333b",
-        "#c6ac8f"
-      ],
-      "girls": false,
-      "boys": false,
-      "girls_district": "East Cascades League",
-      "boys_district": "East Cascades League"
     },
     {
       "name": "Pinebluffs",
@@ -20084,6 +20064,26 @@
       "girls_district": "Desert Sky League",
       "boys_district": "Desert Sky League",
       "source": "Sergei Petrenko"
+    },
+    {
+      "name": "Winchester Bay",
+      "city": "Pine Siding",
+      "county": "Antler",
+      "area": "Alderwold",
+      "classification": "1A",
+      "group": "1A",
+      "enrollment": 190,
+      "private": false,
+      "mascot": "Jaguars",
+      "colors": [
+        "#204e39",
+        "#c8a24a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Orchard League",
+      "boys_district": "Orchard League",
+      "source": "Pine Siding"
     },
     {
       "name": "Windmill Ridge",
