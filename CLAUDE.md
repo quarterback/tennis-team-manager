@@ -2853,6 +2853,13 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   hand-off (the `prior` rule — two resolutions fork the memoised season); an
   archived season reads the effects stored on its history rows. Ratings are
   IMPRINTED at creation and never develop; only the owner's editor changes one.
+  ‼️ **THE ROLL IS A BAND, THEN AN OVERALL, THEN WIDE WINDOWS (owner spec 2026-09,
+  `roll_coach`)** — seven overlapping bands Bad 20-32 … Elite 78-90, an integer
+  overall inside it, an identity whose floors guarantee one 50+ grade, and every
+  attribute rolled −20/+30 around the overall. Elite breaks 80 (to 90) and the page
+  shows the real number. Never re-centre it or narrow it back to ~50. **Tactics**
+  (scales the style-matchup edge) and **Singles** (singles flights only) are blended
+  match effects beside Changeover — fast engine only, like it.
   Former players are hired off the `jhsaa_alumni` index (or `world_graduates`),
   their grades rolled independently of playing ability. Nothing moves on its own.
   **STAGE B (built):** development (+ a JV-whisperer's depth lean), feeder ties

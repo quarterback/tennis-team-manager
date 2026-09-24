@@ -59,14 +59,49 @@ The code is `app/jhsaa_coaches.py`.
   realignment keeps its staff.
 
 ## Ratings
-- Eight grades on the 20-80 scale, stored as quantiles: Talent ID, Adaptability,
-  Development, Doubles instinct, Program builder, Feeder ties, Clutch, Changeover.
+> **Superseded by the band roll below (owner spec 2026-09).** Ten grades now —
+> Tactics and Singles were added — on a 20-90 roll.
+
+- Originally eight grades on the 20-80 scale, stored as quantiles: Talent ID,
+  Adaptability, Development, Doubles instinct, Program builder, Feeder ties,
+  Clutch, Changeover.
 - Two philosophies: pairing and participation temperament.
 - **Rolled ONCE at creation and never developed** (owner rule). The only change is
   the owner's editor.
 - **Blended:** the first six. **Head only:** Clutch and Changeover.
 - **Stage A reads only** Talent ID, Adaptability, Doubles instinct and pairing. The rest
   are imprinted and shown, and become live in Stage B (era-gated).
+
+## How a coach rolls (owner spec 2026-09)
+Everyone came out ~50 under the old N(50,10)-per-grade roll: the averaged
+coach overall spanned 43-60 and staffs 48-63. The replacement is ONE upstream
+quality roll, then the permanent attribute rolls, then nothing (`roll_coach`):
+1. **Band** (`BANDS`, overlapping): Bad 20-32 · Poor 25-36 · Below average
+   33-46 · Average 44-56 · Good 51-68 · Excellent 68-79 · Elite 78-90. The mix
+   (6/9/18/32/22/9/4%) is this module's call; the owner set the bands.
+2. **Overall**: any integer inside the band — the anchor, never a round tier value.
+3. **Identity** (`IDENTITIES`) with FLOORS, not values: a primary floor of 50
+   (so every coach, a Bad one included, is good at something) plus related floors.
+4. **Wide windows** around the overall: primary −5/+30, related −15/+20, other
+   −20/+15, clamped 20-90; a floor above the window's top raises the top to leave
+   a real roll (`MIN_ROLL`). No budget; nothing averages back to the overall.
+Measured: overall p1 22 / p50 50 / p99 87; single grades 20-90.
+**Elite breaks 80 and the page shows the real number** (quantile up to 70/60;
+every consumer clamps or stays sane past 1.0).
+
+**Tactics and Singles** are new, both BLENDED so an assistant can supply them:
+- **Tactics** (`TACTICS_K` 0.5) scales the existing style-matchup edge
+  (`engine.fast.tactics_scale`): the favoured side's better tactician amplifies
+  it, the other blunts it; a flat matchup stays zero; exactly antisymmetric.
+  Singles and doubles.
+- **Singles** (`SINGLES_K` 1.2) is a small per-side offset at the singles
+  flights only (doubles never reads it).
+- Measured on real rosters, best vs worst staff: Tactics +0.9 pts overall /
+  +3.8 in close matches; Singles +2.3 / +3.3. At grade 60 vs 40: +0.4/+1.6
+  and +0.7/+1.2.
+- **Fast engine only**, like Changeover: the HS profile is read by the fast
+  model alone. The JHSAA always plays fast (`jhsaa.FIDELITY`); on the point
+  engine the three match effects would simply not apply.
 
 ## Former players
 - **The pool:** `jhsaa_alumni` indexes every senior at archive time (JHSAA players
