@@ -664,7 +664,7 @@ class, enrollment, and locality where the school carries one.
 - **Harmon Siding** — 4,000 · 43.18N 123.49W
     - Harmon Siding — 2A, 210 · Foundry League
 - **Pine Siding** — 4,000 · 43.25N 123.46W
-    - Pine Siding — 1A, 190 · Orchard League
+    - Winchester Bay — 1A, 190 · Orchard League
 - **Bidwell City** — 3,900 · 43.10N 123.43W
     - Alfalfa City — 1A, 186 · Orchard League
 - **Huckle Glen** — 3,900 · 43.68N 124.17W
@@ -809,7 +809,7 @@ class, enrollment, and locality where the school carries one.
 - **Cabo Esperanza** — 25,000 · 42.51N 124.41W
     - Cabo Esperanza Tech — 3A, 534 · Pori League
 - **Tamarack Harbor** — 20,863 · 42.92N 124.45W
-    - Tamarack Harbor — 9A, 2,355 · Gateway League
+    - Cape Blanco — 9A, 2,355 · Gateway League
 - **Bay Oregon** — 13,491 · 42.28N 124.39W
     - Bay Oregon — 2A, 225 · Del Rey Athletic Association
 - **Bahía Azúl** — 7,000 · 42.56N 124.07W
@@ -1009,7 +1009,7 @@ class, enrollment, and locality where the school carries one.
 - **Mount Dylan Lake** — 1,700 · 41.73N 122.53W
     - Mount Dylan Lake — 1A, 76 · Placer League
 - **Sage Spur** — 1,400 · 41.79N 123.38W
-    - Pine Rim — 1A, 177 · East Cascades League
+    - Hamburg — 1A, 177 · East Cascades League
 - **Wheatley** — 740 · 41.62N 122.90W
     - Wheatley — 1A, 134 · Placer League
 
@@ -1036,7 +1036,7 @@ class, enrollment, and locality where the school carries one.
 - **San Cordero** — 380,000 · 42.22N 121.78W
     - Mar Vista — 9A, 2,565 · Ironwood League
     - Thurgood Marshall — 9A, 2,528 · Ironwood League
-    - Tamarack — 9A, 2,475 · Ironwood League
+    - Bonanza — 9A, 2,475 · Ironwood League
     - Mesa Verde — 9A, 2,453 · Ironwood League
     - Forks Harbor — 8A, 2,131 · Sunkist League
     - Gwendolyn Brooks — 8A, 2,032 · Sunkist League
@@ -1588,9 +1588,9 @@ class, enrollment, and locality where the school carries one.
 - **Velasco** — 8,000 · 40.79N 121.94W
     - Velasco — 1A, 139 · Placer League
 - **High Bar** — 6,800 · 41.02N 121.91W
-    - High Bar — 2A, 291 · Valle Vista League
+    - Fall River Valley — 2A, 291 · Valle Vista League
 - **Hawk Bar** — 6,400 · 40.68N 121.43W
-    - Hawk Bar — 2A, 319 · Millworks Athletic Association
+    - Lassen — 2A, 319 · Millworks Athletic Association
 - **St. Elian** — 6,000 · 40.40N 122.26W
     - Elian — 2A, 224 · Marble Valley League
 - **Ansoteguiville** — 4,000 · 40.90N 122.37W
@@ -1616,7 +1616,7 @@ class, enrollment, and locality where the school carries one.
     - Millworks — 4A, 789 · Mission League
     - Fellows Mill — 4A, 647 · Mission League
     - Blue Mountain Grange — 4A, 588 · Mission League
-    - Mill Bar — 3A, 465 · Gold Valley League
+    - Lewiston — 3A, 465 · Gold Valley League
 - **Leidesdorff** — 56,304 · 40.73N 123.05W
     - East Burlington — 5A, 953 · Valley Coast Interscholastic League
     - Leidesdorff — 3A, 511 · Gold Valley League
@@ -1793,7 +1793,7 @@ class, enrollment, and locality where the school carries one.
 - **Wardlow Depot** — 9,500 · 40.06N 122.15W
     - Wardlow Depot — 2A, 275 · Marble Valley League
 - **Jessup Bar** — 7,400 · 40.26N 122.21W
-    - Jessup Bar — 2A, 238 · Marble Valley League
+    - Fort Paynes — 2A, 238 · Marble Valley League
 - **South Simmons** — 6,000 · 40.03N 122.12W
     - South Simmons — 2A, 317 · Marble Valley League
 - **Prune Siding** — 5,000 · 40.44N 121.87W

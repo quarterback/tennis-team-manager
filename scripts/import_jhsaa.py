@@ -803,6 +803,7 @@ FORMER_NAMES = {
     "Petra Jansen":                                "Southern Pacific Tech",
     "Petra Weiss North":                           "Las Colinas",
     "Pine":                                        "Winchester Bay",
+    "Pine Rim":                                    "Hamburg",
     "Pine Siding":                                 "Winchester Bay",
     "Pinecrest School":                            "Pinecrest",
     "Plainfield Science":                          "Plainfield",
