@@ -1069,6 +1069,10 @@ a.jh-eyebrow:hover { color: var(--brand-strong); }
 .jh-stagefold > summary .nm { font-weight: 800; font-size: var(--fs-body-l); color: var(--text-primary); }
 .jh-stagefold > summary:hover .nm { color: var(--brand-strong); }
 .jh-stagefold > .bd { padding: 2px 16px 14px; }
+/* The duals are batched into two columns; when a narrow container (the Road to
+   State rail) stacks them, the column gap opened a hole mid-list between two
+   duals of the same round. No row gap here — the cards' own spacing carries it. */
+.jh-stagefold .jh-cols2 { row-gap: 0; }
 .jh-mgame .cap { grid-column: 1 / -1; font-size: var(--fs-micro); font-weight: 800;
   letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-faint); }
 
