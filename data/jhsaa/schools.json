@@ -663,6 +663,26 @@
       "boys_district": "Twin Counties Athletic Association"
     },
     {
+      "name": "Arthur Ashe",
+      "city": "Gruesome Ridge",
+      "county": "Antler",
+      "area": "Alderwold",
+      "classification": "2A",
+      "group": "2A",
+      "enrollment": 297,
+      "private": false,
+      "mascot": "Crusaders",
+      "colors": [
+        "#0e7490",
+        "#fbbf24"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Foundry League",
+      "boys_district": "Foundry League",
+      "source": "Ashwood"
+    },
+    {
       "name": "Ashbrook",
       "source": "Ashbrook",
       "city": "Ashbrook",
@@ -1120,26 +1140,6 @@
       "boys": true,
       "girls_district": "Valle Vista League",
       "boys_district": "Valle Vista League"
-    },
-    {
-      "name": "Baptiste",
-      "source": "Jean Baptiste",
-      "city": "Paris",
-      "county": "Beargrass",
-      "area": "Bear River Country",
-      "classification": "Group 2",
-      "group": "Group 2",
-      "enrollment": 610,
-      "private": false,
-      "mascot": "Prospectors",
-      "colors": [
-        "#1c3f5f",
-        "#c9a961"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Forks League",
-      "boys_district": "Forks League"
     },
     {
       "name": "Barclay",
@@ -2375,6 +2375,26 @@
       "source": "Jean Lindgren"
     },
     {
+      "name": "Bridger",
+      "source": "Bridger Regional",
+      "city": "Lyman",
+      "county": "Bridger",
+      "area": "Bear River Country",
+      "classification": "Group 2",
+      "group": "Group 2",
+      "enrollment": 900,
+      "private": false,
+      "mascot": "Foothillers",
+      "colors": [
+        "#3a2a1c",
+        "#d9a441"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "PacWest League",
+      "boys_district": "PacWest League"
+    },
+    {
       "name": "Bridger County Christian",
       "source": "Bridger County Christian",
       "city": "Mountain View",
@@ -2393,26 +2413,6 @@
       "boys": false,
       "girls_district": "Olympic League",
       "boys_district": "Olympic League"
-    },
-    {
-      "name": "Bridger Regional",
-      "source": "Bridger Regional",
-      "city": "Lyman",
-      "county": "Bridger",
-      "area": "Bear River Country",
-      "classification": "Group 2",
-      "group": "Group 2",
-      "enrollment": 900,
-      "private": false,
-      "mascot": "Foothillers",
-      "colors": [
-        "#3a2a1c",
-        "#d9a441"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "PacWest League",
-      "boys_district": "PacWest League"
     },
     {
       "name": "Bridgewater",
@@ -2454,6 +2454,26 @@
       "boys_district": "Valley Coast Interscholastic League",
       "source": "St. Casimir Preparatory",
       "locality": "Natchitoches"
+    },
+    {
+      "name": "Bronzeview",
+      "source": "Copper Bar",
+      "city": "Copper Bar",
+      "county": "Lodestone",
+      "area": "Millersylvania",
+      "classification": "Group 2",
+      "group": "Group 2",
+      "enrollment": 480,
+      "private": false,
+      "mascot": "Rockhounds",
+      "colors": [
+        "#2b2d42",
+        "#edf2f4"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "High Lakes League",
+      "boys_district": "High Lakes League"
     },
     {
       "name": "Brookmont",
@@ -2959,6 +2979,26 @@
       "boys_district": "Tailings League"
     },
     {
+      "name": "Camrose",
+      "city": "Carmina",
+      "county": "Vance",
+      "area": "Silver Basin",
+      "classification": "Group 2",
+      "group": "Group 2",
+      "enrollment": 506,
+      "private": false,
+      "mascot": "Huskies",
+      "colors": [
+        "#7f1d1d",
+        "#d4d4d8"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Confluence Athletic Association",
+      "boys_district": "Confluence Athletic Association",
+      "source": "Carmina"
+    },
+    {
       "name": "Canaan Bend",
       "source": "Canaan Bend",
       "city": "Canaan Bend",
@@ -3178,25 +3218,6 @@
       "boys": true,
       "girls_district": "Dual County League",
       "boys_district": "Dual County League"
-    },
-    {
-      "name": "Carmina",
-      "city": "Carmina",
-      "county": "Vance",
-      "area": "Silver Basin",
-      "classification": "Group 2",
-      "group": "Group 2",
-      "enrollment": 506,
-      "private": false,
-      "mascot": "Huskies",
-      "colors": [
-        "#7f1d1d",
-        "#d4d4d8"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Confluence Athletic Association",
-      "boys_district": "Confluence Athletic Association"
     },
     {
       "name": "Carolina Island",
@@ -4221,6 +4242,26 @@
       "source": "Pavel Kovalenko"
     },
     {
+      "name": "Coltrane",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Selquah",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 862,
+      "private": false,
+      "mascot": "Chinook",
+      "colors": [
+        "#1e5631",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Narpes Interscholastic League",
+      "boys_district": "Narpes Interscholastic League",
+      "source": "Port Veles"
+    },
+    {
       "name": "Commonwealth",
       "city": "St. Varian",
       "county": "Marlow",
@@ -4300,26 +4341,6 @@
       "girls_district": "Mariners League",
       "boys_district": "Mariners League",
       "source": "Ewart City"
-    },
-    {
-      "name": "Copper Bar",
-      "source": "Copper Bar",
-      "city": "Copper Bar",
-      "county": "Lodestone",
-      "area": "Millersylvania",
-      "classification": "Group 2",
-      "group": "Group 2",
-      "enrollment": 480,
-      "private": false,
-      "mascot": "Rockhounds",
-      "colors": [
-        "#2b2d42",
-        "#edf2f4"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "High Lakes League",
-      "boys_district": "High Lakes League"
     },
     {
       "name": "Copper Belt",
@@ -4479,7 +4500,7 @@
       "source": "Wolf Gap"
     },
     {
-      "name": "Corliss Regional",
+      "name": "Corliss",
       "source": "Corliss Regional",
       "city": "Corliss",
       "county": "Kernwood",
@@ -5091,26 +5112,6 @@
       "source": "Doyle Junction"
     },
     {
-      "name": "Monk",
-      "city": "Halbrook",
-      "county": "Halbrook",
-      "area": "Halbrook Basin",
-      "classification": "6A",
-      "group": "6A",
-      "enrollment": 1185,
-      "private": false,
-      "mascot": "Eagles",
-      "colors": [
-        "#0e7490",
-        "#fbbf24"
-      ],
-      "girls": false,
-      "boys": false,
-      "girls_district": "Placer League",
-      "boys_district": "Placer League",
-      "source": "Archbishop Doyle Prep North"
-    },
-    {
       "name": "Doyleville Union",
       "source": "Doyleville Union",
       "city": "Doyleville",
@@ -5189,7 +5190,7 @@
       "source": "Marcus Price North"
     },
     {
-      "name": "Dry Creek Co-op",
+      "name": "Dry Creek",
       "city": "Boyerstown",
       "county": "Marlow",
       "area": "Ashbury Metro",
@@ -5847,26 +5848,6 @@
       "girls_district": "Gold Valley League",
       "boys_district": "Gold Valley League",
       "source": "Foundry High"
-    },
-    {
-      "name": "Gershwin",
-      "city": "Lake Esperanza",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 956,
-      "private": false,
-      "mascot": "Badgers",
-      "colors": [
-        "#6d1a36",
-        "#9fb4c7"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Mariners League",
-      "boys_district": "Mariners League",
-      "source": "Thomas Jansen North"
     },
     {
       "name": "Espoo",
@@ -7084,6 +7065,26 @@
       "source": "Graymont"
     },
     {
+      "name": "Gershwin",
+      "city": "Lake Esperanza",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 956,
+      "private": false,
+      "mascot": "Badgers",
+      "colors": [
+        "#6d1a36",
+        "#9fb4c7"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Mariners League",
+      "boys_district": "Mariners League",
+      "source": "Thomas Jansen North"
+    },
+    {
       "name": "Gilhooly",
       "city": "Gilhooly",
       "county": "Featherstone",
@@ -7596,26 +7597,6 @@
       "boys": true,
       "girls_district": "Far West League",
       "boys_district": "Far West League"
-    },
-    {
-      "name": "Gruesome Ridge",
-      "city": "Gruesome Ridge",
-      "county": "Antler",
-      "area": "Alderwold",
-      "classification": "2A",
-      "group": "2A",
-      "enrollment": 297,
-      "private": false,
-      "mascot": "Crusaders",
-      "colors": [
-        "#0e7490",
-        "#fbbf24"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Foundry League",
-      "boys_district": "Foundry League",
-      "source": "Ashwood"
     },
     {
       "name": "Guthrie",
@@ -8193,26 +8174,7 @@
       "boys_district": "Valle Vista League"
     },
     {
-      "name": "High Desert Christian",
-      "city": "Doyle Pass",
-      "county": "Rimrock",
-      "area": "Juniper Highlands",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 380,
-      "private": true,
-      "mascot": "Sojourners",
-      "colors": [
-        "#6d1a36",
-        "#9fb4c7"
-      ],
-      "girls": false,
-      "boys": false,
-      "girls_district": "Rim Country League",
-      "boys_district": "Rim Country League"
-    },
-    {
-      "name": "High Desert Co-op",
+      "name": "High Desert",
       "city": "Etchartville",
       "county": "Vance",
       "area": "Silver Basin",
@@ -8230,6 +8192,25 @@
       "girls_district": "Far West League",
       "boys_district": "Far West League",
       "source": "Sadie Freeman"
+    },
+    {
+      "name": "High Desert Christian",
+      "city": "Doyle Pass",
+      "county": "Rimrock",
+      "area": "Juniper Highlands",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 380,
+      "private": true,
+      "mascot": "Sojourners",
+      "colors": [
+        "#6d1a36",
+        "#9fb4c7"
+      ],
+      "girls": false,
+      "boys": false,
+      "girls_district": "Rim Country League",
+      "boys_district": "Rim Country League"
     },
     {
       "name": "High Prairie",
@@ -9931,6 +9912,26 @@
       "boys_district": "Mission League"
     },
     {
+      "name": "Laketown",
+      "source": "Laketown Regional",
+      "city": "Randolph",
+      "county": "Laketown",
+      "area": "Bear River Country",
+      "classification": "Group 2",
+      "group": "Group 2",
+      "enrollment": 540,
+      "private": false,
+      "mascot": "Hawks",
+      "colors": [
+        "#5c1a1a",
+        "#e0dcd0"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Forks League",
+      "boys_district": "Forks League"
+    },
+    {
       "name": "Laketown County Christian",
       "source": "Laketown County Christian",
       "city": "Laketown",
@@ -9949,26 +9950,6 @@
       "boys": false,
       "girls_district": "Greater Ashbury Interscholastic League",
       "boys_district": "Greater Ashbury Interscholastic League"
-    },
-    {
-      "name": "Laketown Regional",
-      "source": "Laketown Regional",
-      "city": "Randolph",
-      "county": "Laketown",
-      "area": "Bear River Country",
-      "classification": "Group 2",
-      "group": "Group 2",
-      "enrollment": 540,
-      "private": false,
-      "mascot": "Hawks",
-      "colors": [
-        "#5c1a1a",
-        "#e0dcd0"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Forks League",
-      "boys_district": "Forks League"
     },
     {
       "name": "Lakewood",
@@ -10305,7 +10286,7 @@
       "source": "Alderfield"
     },
     {
-      "name": "Lizarra",
+      "name": "Lizard Creek",
       "city": "Aldecoa",
       "county": "Vance",
       "area": "Silver Basin",
@@ -11059,6 +11040,26 @@
       "source": "Svenja Ekström"
     },
     {
+      "name": "Mendelssohn",
+      "city": "Olive Reach",
+      "county": "Kernwood",
+      "area": "Yarrowmere",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 998,
+      "private": false,
+      "mascot": "Bulldogs",
+      "colors": [
+        "#92400e",
+        "#1d1d1f"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Mariners League",
+      "boys_district": "Mariners League",
+      "source": "Olive Reach"
+    },
+    {
       "name": "Mercer City",
       "city": "Mercer City",
       "county": "Ferris",
@@ -11136,7 +11137,7 @@
       "boys_district": "Black Canyon League"
     },
     {
-      "name": "Meridian Regional",
+      "name": "Meridian",
       "city": "Stovepipe",
       "county": "Rimrock",
       "area": "Juniper Highlands",
@@ -11152,7 +11153,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Desert Sky League",
-      "boys_district": "Desert Sky League"
+      "boys_district": "Desert Sky League",
+      "source": "Meridian Regional"
     },
     {
       "name": "Meridian Valley",
@@ -11195,7 +11197,7 @@
       "source": "Klara Marchand"
     },
     {
-      "name": "Mesa Co-op",
+      "name": "Mesa",
       "city": "Santa Cruz del Norte",
       "county": "San Marcos",
       "area": "Sebastian Cape",
@@ -11352,6 +11354,26 @@
       "girls_district": "Forks League",
       "boys_district": "Forks League",
       "source": "Belyakov Agricultural Sciences Academy"
+    },
+    {
+      "name": "Miles Davis",
+      "city": "Port Veles",
+      "county": "Bidwell",
+      "area": "Selquah",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 865,
+      "private": false,
+      "mascot": "Dorymen",
+      "colors": [
+        "#1e2a4a",
+        "#c05621"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Narpes Interscholastic League",
+      "boys_district": "Narpes Interscholastic League",
+      "source": "Nathaniel Cross North"
     },
     {
       "name": "Mill Bar",
@@ -11630,6 +11652,26 @@
       "boys_district": "Forks League"
     },
     {
+      "name": "Monk",
+      "city": "Halbrook",
+      "county": "Halbrook",
+      "area": "Halbrook Basin",
+      "classification": "6A",
+      "group": "6A",
+      "enrollment": 1185,
+      "private": false,
+      "mascot": "Eagles",
+      "colors": [
+        "#0e7490",
+        "#fbbf24"
+      ],
+      "girls": false,
+      "boys": false,
+      "girls_district": "Placer League",
+      "boys_district": "Placer League",
+      "source": "Archbishop Doyle Prep North"
+    },
+    {
       "name": "Monongahela",
       "city": "Monongahela",
       "county": "Minidoka",
@@ -11829,7 +11871,7 @@
       "boys_district": "Mission League"
     },
     {
-      "name": "Morne Caribou Polytechnic",
+      "name": "Morne Caribou",
       "source": "Belyakov Polytechnic Institute",
       "city": "Belyakov",
       "county": "Vance",
@@ -12294,6 +12336,26 @@
       "boys_district": "High Lakes League"
     },
     {
+      "name": "New Casper",
+      "city": "Arrieta",
+      "county": "Halbrook",
+      "area": "Halbrook Basin",
+      "classification": "1A",
+      "group": "1A",
+      "enrollment": 229,
+      "private": false,
+      "mascot": "Ghosts",
+      "colors": [
+        "#1e5631",
+        "#f2f2ee"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Hacienda League",
+      "boys_district": "Hacienda League",
+      "source": "Nicolás Treviño"
+    },
+    {
       "name": "New Hope Christian",
       "city": "Pear Slough",
       "county": "Barlowe",
@@ -12530,7 +12592,7 @@
       "boys_district": "Basalt League"
     },
     {
-      "name": "North Antler Regional",
+      "name": "North Antler",
       "source": "North Antler Regional",
       "city": "Alderwell",
       "county": "Antler",
@@ -13032,26 +13094,6 @@
       "locality": "Okefenokee"
     },
     {
-      "name": "Mendelssohn",
-      "city": "Olive Reach",
-      "county": "Kernwood",
-      "area": "Yarrowmere",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 998,
-      "private": false,
-      "mascot": "Bulldogs",
-      "colors": [
-        "#92400e",
-        "#1d1d1f"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Mariners League",
-      "boys_district": "Mariners League",
-      "source": "Olive Reach"
-    },
-    {
       "name": "Olive Baptist",
       "city": "Olive Reach",
       "county": "Kernwood",
@@ -13527,26 +13569,7 @@
       "boys_district": "Black Canyon League"
     },
     {
-      "name": "Pellburg",
-      "city": "Pellburg",
-      "county": "Antler",
-      "area": "Alderwold",
-      "classification": "2A",
-      "group": "2A",
-      "enrollment": 251,
-      "private": false,
-      "mascot": "Miners",
-      "colors": [
-        "#3f2a56",
-        "#e8c46b"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Desert Sky League",
-      "boys_district": "Desert Sky League"
-    },
-    {
-      "name": "Pellford",
+      "name": "Pellbrook",
       "source": "Pellford",
       "city": "Pellford",
       "county": "Weller",
@@ -13564,6 +13587,25 @@
       "boys": true,
       "girls_district": "South Coast League",
       "boys_district": "South Coast League"
+    },
+    {
+      "name": "Pellburg",
+      "city": "Pellburg",
+      "county": "Antler",
+      "area": "Alderwold",
+      "classification": "2A",
+      "group": "2A",
+      "enrollment": 251,
+      "private": false,
+      "mascot": "Miners",
+      "colors": [
+        "#3f2a56",
+        "#e8c46b"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Desert Sky League",
+      "boys_district": "Desert Sky League"
     },
     {
       "name": "Pellmont",
@@ -14037,6 +14079,26 @@
       "source": "Aitor Echevarria"
     },
     {
+      "name": "Point Sable",
+      "source": "Jean Baptiste",
+      "city": "Paris",
+      "county": "Beargrass",
+      "area": "Bear River Country",
+      "classification": "Group 2",
+      "group": "Group 2",
+      "enrollment": 610,
+      "private": false,
+      "mascot": "Prospectors",
+      "colors": [
+        "#1c3f5f",
+        "#c9a961"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Forks League",
+      "boys_district": "Forks League"
+    },
+    {
       "name": "Pointe Coupee",
       "city": "San Borondón",
       "county": "San Marcos",
@@ -14474,7 +14536,7 @@
       "boys_district": "Del Rey Athletic Association"
     },
     {
-      "name": "Puerto de los Reyes",
+      "name": "Puerto Reyes",
       "city": "Puerto de los Reyes",
       "county": "San Marcos",
       "area": "Sebastian Cape",
@@ -14490,7 +14552,8 @@
       "girls": true,
       "boys": true,
       "girls_district": "Del Rey Athletic Association",
-      "boys_district": "Del Rey Athletic Association"
+      "boys_district": "Del Rey Athletic Association",
+      "source": "Puerto de los Reyes"
     },
     {
       "name": "Punta del Águila",
@@ -15026,6 +15089,26 @@
       "girls_district": "Mariners League",
       "boys_district": "Mariners League",
       "locality": "Roanoke"
+    },
+    {
+      "name": "Ridgeline",
+      "city": "Netherwood",
+      "county": "Antler",
+      "area": "Alderwold",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 336,
+      "private": false,
+      "mascot": "Peelers",
+      "colors": [
+        "#7f1d1d",
+        "#d4d4d8"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Sky-Em League",
+      "boys_district": "Sky-Em League",
+      "source": "North Valley Christian"
     },
     {
       "name": "Rilland",
@@ -15962,7 +16045,7 @@
       "boys_district": "Valle Vista League"
     },
     {
-      "name": "San Vito Regional",
+      "name": "San Vito",
       "source": "San Vito Regional",
       "city": "San Vito",
       "county": "Emigrant",
@@ -17459,6 +17542,26 @@
       "source": "Summervale Northwest"
     },
     {
+      "name": "Star Valley",
+      "source": "Star Valley Regional",
+      "city": "Kemmerer",
+      "county": "Star Valley",
+      "area": "Bear River Country",
+      "classification": "Group 2",
+      "group": "Group 2",
+      "enrollment": 1000,
+      "private": false,
+      "mascot": "Ranchers",
+      "colors": [
+        "#4a2c40",
+        "#e8d5b7"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Forks League",
+      "boys_district": "Forks League"
+    },
+    {
       "name": "Star Valley Catholic",
       "source": "Star Valley Catholic",
       "city": "Afton",
@@ -17472,26 +17575,6 @@
       "colors": [
         "#0f3d3e",
         "#f2c14e"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Forks League",
-      "boys_district": "Forks League"
-    },
-    {
-      "name": "Star Valley Regional",
-      "source": "Star Valley Regional",
-      "city": "Kemmerer",
-      "county": "Star Valley",
-      "area": "Bear River Country",
-      "classification": "Group 2",
-      "group": "Group 2",
-      "enrollment": 1000,
-      "private": false,
-      "mascot": "Ranchers",
-      "colors": [
-        "#4a2c40",
-        "#e8d5b7"
       ],
       "girls": true,
       "boys": true,
@@ -18461,26 +18544,6 @@
       "source": "Emigrant Trail"
     },
     {
-      "name": "Trailsend",
-      "city": "Netherwood",
-      "county": "Antler",
-      "area": "Alderwold",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 336,
-      "private": false,
-      "mascot": "Peelers",
-      "colors": [
-        "#7f1d1d",
-        "#d4d4d8"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Sky-Em League",
-      "boys_district": "Sky-Em League",
-      "source": "North Valley Christian"
-    },
-    {
       "name": "Treasure Valley",
       "city": "Orellana",
       "county": "Vance",
@@ -18964,26 +19027,6 @@
       "boys_district": "Valle Vista League"
     },
     {
-      "name": "Valera",
-      "city": "Arrieta",
-      "county": "Halbrook",
-      "area": "Halbrook Basin",
-      "classification": "1A",
-      "group": "1A",
-      "enrollment": 229,
-      "private": false,
-      "mascot": "Bulldogs",
-      "colors": [
-        "#1e5631",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Hacienda League",
-      "boys_district": "Hacienda League",
-      "source": "Nicolás Treviño"
-    },
-    {
       "name": "Valley Christian",
       "city": "New Leiden",
       "county": "Tamarack",
@@ -19083,26 +19126,6 @@
       "boys_district": "Placer League"
     },
     {
-      "name": "Coltrane",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Selquah",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 862,
-      "private": false,
-      "mascot": "Chinook",
-      "colors": [
-        "#1e5631",
-        "#f2f2ee"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Narpes Interscholastic League",
-      "boys_district": "Narpes Interscholastic League",
-      "source": "Port Veles"
-    },
-    {
       "name": "Veles Harbor",
       "city": "Port Veles",
       "county": "Bidwell",
@@ -19141,26 +19164,6 @@
       "girls_district": "Pori League",
       "boys_district": "Pori League",
       "source": "Port Veles International Academy"
-    },
-    {
-      "name": "Miles Davis",
-      "city": "Port Veles",
-      "county": "Bidwell",
-      "area": "Selquah",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 865,
-      "private": false,
-      "mascot": "Dorymen",
-      "colors": [
-        "#1e2a4a",
-        "#c05621"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Narpes Interscholastic League",
-      "boys_district": "Narpes Interscholastic League",
-      "source": "Nathaniel Cross North"
     },
     {
       "name": "Veles Vo-Tech",

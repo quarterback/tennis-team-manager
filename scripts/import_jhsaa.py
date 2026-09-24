@@ -311,7 +311,7 @@ OWNER_EDICTS = frozenset({
     "Georgia Mills", "Texas Beach", "California Beach", "Jersey City", "Jamaica",
     "Sotkamo", "Kuusamo", "Iisalmi", "Lieksa", "Nurmes", "Raahe",
     # the uplands the owner named outright
-    "Mount Clambake", "Mt Jacqueline", "Gruesome Ridge", "Annes Summit",
+    "Mount Clambake", "Mt Jacqueline", "Gruesome Ridge", "Annes Summit", "Arthur Ashe",
     "Meridian Passage", "Mount Ruth", "Mount Dylan Lake", "Corey Canyon",
     "Aftdahl Ridge", "Brynildson Hill",
     # NOT "Mount Henson" — that rename was agent work, not an edict, and the owner
@@ -1075,6 +1075,20 @@ FORMER_NAMES = {
 }
 
 RENAMES = {
+    # ── owner renames 2026-09 (named by the owner, applied exactly) ──────────
+    # Rows whose identity IS their current name: the key is that name, and the
+    # apply script stamps it as `source` so the roster identity does not move.
+    "Bridger Regional": "Bridger",
+    "Corliss Regional": "Corliss",
+    "Laketown Regional": "Laketown",
+    "Meridian Regional": "Meridian",
+    "North Antler Regional": "North Antler",
+    "San Vito Regional": "San Vito",
+    "Star Valley Regional": "Star Valley",
+    "Pellford": "Pellbrook",
+    "Puerto de los Reyes": "Puerto Reyes",
+    "Carmina": "Camrose",
+    "Copper Bar": "Bronzeview",
     # ── the 2026-09 surname abbreviations (scripts/jhsaa_abbreviate_person_names.py) ──
     "Alben Barkley": "Barkley",
     "Ansotegui Siding": "Ansotegui",
@@ -1094,7 +1108,7 @@ RENAMES = {
     "Herbert Hoover": "Hoover",
     "Ida B. Wells": "Wells",
     "James Baldwin": "Baldwin",
-    "Jean Baptiste": "Baptiste",
+    "Jean Baptiste": "Point Sable",
     "Jimmy Carter": "Carter",
     "John Lewis": "Lewis",
     "Katherine Johnson": "K. Johnson",
@@ -1124,7 +1138,7 @@ RENAMES = {
     # 2026-09 — more saint names retired at the owner's request. Their display
     # name WAS their roster identity, so without a row here `jhsaa_former_names`
     # has no chain to walk and the old name resolves to nothing.
-    "St. Catherine College Prep": "Lizarra",
+    "St. Catherine College Prep": "Lizard Creek",
     "St. Elias College Prep": "Aranaz",
     "St. Jerome Academy": "Isla Verde",
     "St. Elian": "Kimberly",
@@ -1156,7 +1170,7 @@ RENAMES = {
     "Madison": "Governor Woods",
     "Malad County Christian": "Sixmile",
     "Martin Luther": "King",
-    "North Valley Christian": "Trailsend",
+    "North Valley Christian": "Ridgeline",
     "Presentation Academy": "Garrow North",
     "Ruby County Catholic": "Carlin",
     "Saint Francis": "Kingsley",
@@ -1200,7 +1214,7 @@ RENAMES = {
 
     "Belyakov Academy of Music and Media": "Walter-Kenny School",
     "Belyakov Environmental Sciences Academy": "Friendship City",
-    "Belyakov Polytechnic Institute": "Morne Caribou Polytechnic",
+    "Belyakov Polytechnic Institute": "Morne Caribou",
     "Belyakov School of Design and Engineering": "Grande-Savane Arts",
     "Belyakov School of Science and Industry": "Kongisburg",
     "Belmonte Agricultural Sciences Academy": "Pelican Town",
@@ -1445,7 +1459,7 @@ RENAMES = {
     "Graymont": "Georgia Mills",
     "Marsh Depot": "Jersey City",
     "Rentie Grove": "Jamaica",
-    "Ashwood": "Gruesome Ridge",
+    "Ashwood": "Arthur Ashe",
     "Copper Crossing": "Copper Gap",
     "Dahlberg": "Dahlberg Summit",
     "Doyle Junction": "Doyle Pass",
@@ -1499,7 +1513,7 @@ RENAMES = {
     "Zoya Orlov": "Sacred Heart",          # 8A Santa Michaela — 2026-08
                                            # suffix-ish trim, "Cathedral" dropped
     "Edith Hart": "Bellarmine Prep",                 # 8A — Prep, never Preparatory
-    "Nicolás Treviño": "Valera",              # 7A — Jefferson surname
+    "Nicolás Treviño": "New Casper",              # 7A — Jefferson surname
     "Harlan Tillman": "Xavier College Prep",         # 7A Mercer City
     "Amos Moss": "Robledo",             # 7A Ashbury
     "Nikolai Markov": "Christian Brothers",          # 7A Sebastian Cape
@@ -1727,21 +1741,21 @@ RENAMES = {
     "Nathaniel Ward": "Juniper Agricultural",
     "Nerea Mendizabal": "Sparrowhawk",
     "Nicolás Salcedo": "South Serrano",
-    "Opal Stokes": "Dry Creek Co-op",
+    "Opal Stokes": "Dry Creek",
     "Opal Tillman": "Granite",
     "Petra Jansen": "Southern Pacific Tech",
     "Rafael Escobedo": "Bolton",           # 2026-08: was "Pioneer Electric"
     "Renata Adler": "Bracken",             # 2026-08: was "Bracken Works"
     "Rosa Salcedo": "Quarry Workers",
     "Ruby Stokes": "Klamath",
-    "Sadie Freeman": "High Desert Co-op",
+    "Sadie Freeman": "High Desert",
     "Sergei Belov": "Shabazz",
     "Svenja Adler": "East Range Agricultural",
     "Teresa Escobedo": "Canyon",           # 2026-08: was "Cañada Irrigation"
     "Thelma Stokes": "Iron Gate",
     "Thomas Jansen": "Lone Pine",
     "Winifred Davenport": "Lost River",    # 2026-08: was "Lost River Irrigation"
-    "Winifred Stokes": "Mesa Co-op",
+    "Winifred Stokes": "Mesa",
     "Xavier Robles": "Elk River",
     "Yelena Belov": "Pennsauke",
 
@@ -2042,11 +2056,11 @@ RENAMES = {
 INSTITUTION_NAMES = [
     "Alder Co-op", "Anchor", "Arroyo Water District", "Basalt",
     "Blue Mountain", "Bracken Works", "Cañada Irrigation", "Cascade",
-    "Cedar", "Copper Belt", "Crown Paper", "Dry Creek Co-op",
+    "Cedar", "Copper Belt", "Crown Paper", "Dry Creek",
     "East Range Agricultural", "Elk River", "North Carroway", "Fallon",
     "Fir Valley", "Golden State", "Granite",
-    "High Desert Co-op", "Iron Gate", "Juniper Agricultural",
-    "Klamath", "Lone Pine", "Lost River Irrigation", "Mesa Co-op",
+    "High Desert", "Iron Gate", "Juniper Agricultural",
+    "Klamath", "Lone Pine", "Lost River Irrigation", "Mesa",
     "Millrace Technical", "North Coast", "Pacific Fruit Exchange",
     "Pioneer Electric", "Quarry Workers", "Red Butte Cooperative", "Redwood",
     "Rogue Valley", "Round Mountain", "Shasta Agricultural",
@@ -2229,7 +2243,7 @@ LOCALITIES = {
     "Grand Fond":                            "Grand Fond",
     "La Savane":                             "La Savane",
     "Lycee Valmont":                         "Valmont",
-    "Morne Caribou Polytechnic":             "Morne Caribou",
+    "Morne Caribou":                         "Morne Caribou",
     "Morne Rouge":                           "Morne Rouge",
     "Pennsauke":                             "Pennsauke",
     "Petoskey Rock":                         "Petoskey",
@@ -2430,7 +2444,7 @@ RECLASSIFY_2039B = {
     "Sacred Heart": "7A", "Bellarmine Prep": "7A",
     "Port Veles Episcopal": "4A",
     "Covenant Christian": "2A",
-    "Valera": "1A", "Isla Verde": "1A",
+    "New Casper": "1A", "Isla Verde": "1A",
     # Up — backfilling the seats the moves above emptied.
     "Marshall": "8A", "Cherry Hill South": "8A", "Roosevelt": "8A",
     "Charlotte": "9A", "O'Connor": "9A", "Ginsburg": "9A",
@@ -3057,7 +3071,7 @@ MASCOTS = {
     "Archbishop Gregory": "Griffins",
     "Sacred Heart": "Irish",
     "Bellarmine Prep": "Lions",
-    "Valera": "Bulldogs",
+    "New Casper": "Ghosts",
     "Xavier College Prep": "Cavaliers",
     "Robledo": "Lancers",
     "Christian Brothers": "Falcons",
@@ -3171,7 +3185,7 @@ MASCOTS = {
     "Drayfield": "Draymen",
     "Jemison": "Orbiters",
     "William McKinley": "Buckeyes",
-    "High Desert Co-op": "Sheepwagons",             # Etchartville
+    "High Desert": "Sheepwagons",             # Etchartville
     "Armour Fields": "Thunderheads",            # gromov — thunder
     "Springfield": "Headgates",                  # Orellana
     "Grizzly Gulch": "Riverboats",
@@ -3186,7 +3200,7 @@ MASCOTS = {
     "Pine Barrens": "Steelhead",
     "Southridge Christian": "Lamplighters",
     "St. Sebastian Prep": "Archers",            # the saint's own iconography
-    "Dry Creek Co-op": "Glassblowers",
+    "Dry Creek": "Glassblowers",
     # ⚠️ Was keyed "Oskar Bellini" and had to move with the name: MASCOTS is keyed
     # on the DISPLAY name (see the emit block), so a rename silently orphans its
     # entry and the school quietly reverts to its source record's mascot.
@@ -3223,7 +3237,7 @@ MASCOTS = {
     "Owl Canyon": "Screech Owls",
     "High Desert Christian": "Sojourners",
     "Marshall": "Jackalopes",
-    "Meridian Regional": "Tinsmiths",           # Stovepipe
+    "Meridian": "Tinsmiths",           # Stovepipe
     "Pacersburg": "Kangaroo Rats",
     "Dry Lake": "Mirages",
     "Trout Lake": "Silverlegs",             # the ask: named for its own fish —
