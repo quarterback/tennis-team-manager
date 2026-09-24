@@ -1,20 +1,15 @@
 {% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header %}
 {% block title %}{{ view.coach.name }} — JHSAA coach{% endblock %}
 {% block content %}
 {% set c = view.coach %}
-<div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:16px;color:var(--text-muted)">High School › Coach</span>
-  {% if view.seat %}
-  <a class="bl-pill" style="text-decoration:none;margin-left:auto"
-     href="{{ url_for('jhsaa_school', school=view.seat.school, u=u, g=view.gender) }}">← {{ view.seat.school }}</a>
-  {% endif %}
-</div></div>
+{{ jh_header(scope_view.scope, u, 'coaches', 'Coaches', '') }}
 
 <div class="jh-shell">
 <div class="jh-ident" style="margin-bottom:14px">
   <div class="jh-ident-body">
     <h1>{{ c.name }}</h1>
-    <div class="mascot">{% if view.seat %}{{ view.seat.label }} · {{ view.seat.school }} ({{ view.gender }}) · since {{ view.seat.since }}{% else %}Not on a staff{% endif %}</div>
+    <div class="mascot">{% if view.seat %}{{ view.seat.label }} · <a href="{{ url_for('jhsaa_school', school=view.seat.school, u=u, g=view.gender, view='staff') }}">{{ view.seat.school }}</a> ({{ view.gender }}) · since {{ view.seat.since }}{% else %}Not on a staff{% endif %}</div>
     <div class="where">{{ c.hometown }}{% if view.age %} · age {{ view.age }}{% endif %} · {{ view.origin }}{% if view.alma %} · played at {{ view.alma }}{% endif %}</div>
     <div class="now"><span class="rec">{{ view.head_record }}</span><span class="bit">as a head coach</span></div>
   </div>
@@ -65,8 +60,8 @@
       <p class="jh-empty">No season coached yet.</p>
       {% endif %}
     </div>
-    <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">Staff moves</span></div>
+    <div class="bl-panel" id="edit">
+      <div class="bl-panel-head"><span class="bl-panel-title">Edit coach</span></div>
       <datalist id="jh-coach-schools">{% for n in schools %}<option value="{{ n }}">{% endfor %}</datalist>
       <form method="post" action="{{ url_for('editor_jhsaa_coach') }}" class="jh-form-row">
         <input type="hidden" name="do" value="move"><input type="hidden" name="coach_id" value="{{ c.coach_id }}">

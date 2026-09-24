@@ -704,6 +704,7 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     from . import jhsaa_reclass as _rc
     from . import jhsaa_coaches as _jc
     conn.executescript(_jc._SCHEMA + "".join(f" DELETE FROM {t};" for t in _jc._TABLES))
+    _jc._seated.clear()      # the pages' "already seated" memo describes wiped rows
     conn.executescript(_rc._SCHEMA + " DELETE FROM world_jhsaa_reclass;"
                        " DELETE FROM world_jhsaa_reclass_move;")
     conn.commit()

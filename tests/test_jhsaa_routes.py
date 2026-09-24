@@ -62,6 +62,13 @@ ROUTES = [
     # is in tests/test_jhsaa_scorelines.py.
     "/jhsaa/realism",
     "/jhsaa/realism?g=boys",
+    # The Programs submenu's coach pages. With no season archived they must SEAT
+    # the staffs on demand and render them (owner report 2026-09: the coaches
+    # were invisible until a season had been simulated).
+    "/jhsaa/coaches",
+    "/jhsaa/coaches?g=boys",
+    "/jhsaa/coaches/carousel",
+    "/jhsaa/programs/tiers",
     "/jhsaa/flights",
     "/jhsaa/flights?g=boys&group=5A&sort=actual&dir=asc&min=5&slot=S1",
     # The computer-ratings layer and the at-large committee (owner spec
@@ -88,6 +95,29 @@ def test_the_page_responds(client, path):
     r = client.get(path)
     assert r.status_code in (200, 302), (path, r.status_code)
 
+
+
+def test_the_coaches_live_under_programs_and_show_without_a_season(client):
+    """Owner report 2026-09: the coaches were invisible (staffs were only seated by
+    the season rung) and the editor had no home. With NOTHING archived, the
+    Programs submenu's Coaches page must seat and list every staff, and a program
+    page's Staff tab must show its coaches with their ratings."""
+    import re
+    from app import jhsaa as jh
+    r = client.get("/jhsaa/coaches?g=girls")
+    assert r.status_code == 200
+    html = r.get_data(as_text=True)
+    assert html.count("data-q=") > 100                      # every program's head
+    for label in ("Programs", "Talent Tiers", "Coaches", "Carousel"):
+        assert f">{label}</a>" in html                      # the Programs submenu
+    s = jh.load_schools("girls")[0]
+    page = client.get(f"/jhsaa/school/{s.name}?g=girls&view=staff")
+    assert page.status_code == 200
+    body = page.get_data(as_text=True)
+    assert "Coaching staff" in body and "Tactics" in body and "Singles" in body
+    cid = re.search(r"/jhsaa/coach/([^?\"#]+)", body).group(1)
+    coach = client.get(f"/jhsaa/coach/{cid}?g=girls").get_data(as_text=True)
+    assert 'id="edit"' in coach and "Edit coach" in coach and ">Carousel</a>" in coach
 
 
 def test_jhsaa_pages_do_not_wait_for_the_college_world_prime(monkeypatch):

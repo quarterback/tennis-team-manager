@@ -167,7 +167,7 @@
       {# The section's own settings — archetypes and play-up. A tab, because the panels
          were on /editor and nobody could find them there. Carries no group or year:
          both properties belong to the SCHOOL and outlive any one season. #}
-      <a class="{{ 'on' if tab == 'programs' }}" title="Archetypes and play-up"
+      <a class="{{ 'on' if tab in ('programs', 'program_tiers', 'coaches', 'carousel') }}" title="Archetypes, play-up, talent tiers and coaching staffs"
          href="{{ url_for('jhsaa_programs', u=u, g=scope.gender) }}">Programs</a>
       <a class="{{ 'on' if tab == 'players' }}" title="Searchable directory — talent, potential, stars"
          href="{{ url_for('jhsaa_players', u=u, g=scope.gender) }}">Players</a>
@@ -275,6 +275,22 @@
        class, when, and on what evidence. Class-blind like the Title Board. #}
     <a class="{{ 'on' if tab == 'realignments' }}" title="Every committed reclassification cycle"
        href="{{ url_for('jhsaa_realignments', u=u, g=scope.gender, group=scope.group) }}">Realignments</a>
+  </div>
+  {% endif %}
+  {# The PROGRAMS area's submenu (owner, 2026-09): the program explorer, the tier
+     table, and the coaching staffs — every page that edits a program's standing
+     settings lives here, the coach editor included. A coach's own page carries
+     `coaches`, so this rail stays lit while editing one. #}
+  {% if tab in ('programs', 'program_tiers', 'coaches', 'carousel') %}
+  <div class="jh-subrail">
+    <a class="{{ 'on' if tab == 'programs' }}"
+       href="{{ url_for('jhsaa_programs', u=u, g=scope.gender) }}">Programs</a>
+    <a class="{{ 'on' if tab == 'program_tiers' }}"
+       href="{{ url_for('jhsaa_program_tiers', u=u, g=scope.gender) }}">Talent Tiers</a>
+    <a class="{{ 'on' if tab == 'coaches' }}" title="Every program's coaching staff — each coach's page is their editor"
+       href="{{ url_for('jhsaa_coaches', u=u, g=scope.gender) }}">Coaches</a>
+    <a class="{{ 'on' if tab == 'carousel' }}" title="Run a coaching cycle, veto any line, commit"
+       href="{{ url_for('jhsaa_coach_carousel', u=u, g=scope.gender) }}">Carousel</a>
   </div>
   {% endif %}
 </div></div>

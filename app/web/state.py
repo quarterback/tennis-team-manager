@@ -5682,7 +5682,8 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     # THE COACHING STAFF (owner spec 2026-09) — today's seats, with the staff's
     # effective value per attribute and who covers it. One read, this program only.
     import app.jhsaa_coaches as jc
-    staff = jc.program_staff(w["id"], sc.ident, g)
+    jc.ensure_seated(w["id"], world.jhsaa_season_year(w), world.active_salt(seed))
+    staff = jc.program_staff(w["id"], sc.ident, g, world.jhsaa_season_year(w))
     return {
         "found": True, "school": school, "gender": g, "year": yr, "years": years,
         "season_year": season_year, "is_current": bool(years) and yr == years[0],

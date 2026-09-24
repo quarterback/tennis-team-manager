@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header %}
+{% block title %}JHSAA Coaches{% endblock %}
+{% block content %}
+
+{{ jh_header(view.scope, u, 'coaches', 'Coaches', '', [('Programs', rows|length)]) }}
+
+<div class="jh-shell">
+{# Every program's head coach, one row each (owner report 2026-09: the coach
+   editor was only reachable from a program page panel that did not render).
+   A coach's page IS the editor — ratings, moves, JV head, retirement. #}
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Head coaches</span>
+    <a class="jh-hqmore" href="{{ url_for('jhsaa_coach_carousel', u=u) }}">Carousel{% if free %} · {{ free }} available{% endif %} →</a></div>
+  <div class="jh-form-row" style="padding:0 14px">
+    <input id="jh-cfind" type="search" autocomplete="off" placeholder="Program or coach">
+    <select id="jh-ctier"><option value="">Every tier</option>
+      {% for t in tiers %}<option value="{{ t }}">{{ t }}</option>{% endfor %}</select>
+    <select id="jh-cclass"><option value="">Every class</option>
+      {% for gp in view.groups %}<option value="{{ gp }}">{{ gp }}</option>{% endfor %}</select>
+  </div>
+  {% if rows %}
+  <div class="tbl-scroll">
+  <table class="jh-roster" id="jh-ctable">
+    <tr><th>Program</th><th style="width:72px">Class</th><th>Head coach</th>
+      <th class="num" style="width:64px">Overall</th><th>Tier</th><th>Identity</th>
+      <th class="num" style="width:56px">Staff</th><th></th></tr>
+    {% for r in rows %}
+    <tr data-q="{{ (r.school ~ ' ' ~ r.head.name)|lower }}" data-tier="{{ r.head.tier }}" data-class="{{ r.group }}">
+      <td class="nm"><a href="{{ url_for('jhsaa_school', school=r.school, u=u, g=view.gender, view='staff') }}">{{ r.school }}</a></td>
+      <td>{{ r.group }}</td>
+      <td class="nm"><a href="{{ url_for('jhsaa_coach', coach_id=r.head.coach_id, u=u, g=view.gender) }}">{{ r.head.name }}</a></td>
+      <td class="num"><b>{{ r.head.overall or '' }}</b></td>
+      <td>{{ r.head.tier }}</td>
+      <td>{{ r.identity }}</td>
+      <td class="num">{{ r.staff }}{% if r.vacant %} <span class="s">+{{ r.vacant }} open</span>{% endif %}</td>
+      <td><a href="{{ url_for('jhsaa_coach', coach_id=r.head.coach_id, u=u, g=view.gender) }}#edit">Edit</a></td>
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+  {% else %}
+  <p class="jh-empty">No program in this sport has a staff.</p>
+  {% endif %}
+</div>
+</div>
+<script>
+(function () {
+  var q = document.getElementById('jh-cfind'), t = document.getElementById('jh-ctier'),
+      c = document.getElementById('jh-cclass'), tb = document.getElementById('jh-ctable');
+  if (!tb) return;
+  function apply() {
+    var s = (q.value || '').toLowerCase().trim(), tv = t.value, cv = c.value;
+    tb.querySelectorAll('tr[data-q]').forEach(function (r) {
+      var ok = (!s || r.dataset.q.indexOf(s) !== -1) && (!tv || r.dataset.tier === tv)
+               && (!cv || r.dataset.class === cv);
+      r.style.display = ok ? '' : 'none';
+    });
+  }
+  q.addEventListener('input', apply); t.addEventListener('change', apply);
+  c.addEventListener('change', apply);
+})();
+</script>
+{% endblock %}

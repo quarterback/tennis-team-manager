@@ -549,6 +549,60 @@ def ensure_staff(world_id: int, season_year: int, salt: str) -> int:
         conn.close()
 
 
+_seated: set = set()     # (db, world_id) already confirmed to have staffs
+
+
+def ensure_seated(world_id: int, season_year: int, salt: str) -> None:
+    """Seat every program's staff NOW if this world has none yet — for the PAGES
+    (owner report 2026-09: "you don't display them"). `ensure_staff` otherwise
+    only runs inside the season rung, so a save opened after this build showed
+    no coaches anywhere until its next season was simulated, and the program
+    page's staff panel simply did not render.
+
+    Cost: one indexed probe, memoised per (database, world) so later requests
+    pay nothing; the one-time seating is ~1 s for the whole association. It
+    rolls the SAME staffs the rung would (same salt, same season year, same
+    seeds), so seating here or at the rung is indistinguishable."""
+    from .dbpath import resolve_db_path
+    key = (resolve_db_path(), world_id)
+    if key in _seated:
+        return
+    conn = _conn()
+    try:
+        have = conn.execute("SELECT 1 FROM jhsaa_coach_seat WHERE world_id=? LIMIT 1",
+                            (world_id,)).fetchone()
+    finally:
+        conn.close()
+    if not have:
+        ensure_staff(world_id, season_year, salt)
+    _seated.add(key)
+
+
+def directory(world_id: int, gender: str) -> list[dict]:
+    """Every program's HEAD coach and staff size, for the Coaches page — one read
+    of the seats and one of the coaches, never a query per program."""
+    from . import jhsaa
+    rows = seats(world_id, gender)
+    by = {}
+    for r in rows:
+        by.setdefault(r["ident"], []).append(r)
+    out = []
+    for s in jhsaa.load_schools(gender):
+        seat_rows = by.get(s.ident, [])
+        head = next((r["coach"] for r in seat_rows if r["slot"] == "head"), None)
+        if head is None:
+            continue
+        ast = [r["coach"] for r in seat_rows if r["slot"] != "head" and r["coach"]]
+        eff = effective(head, ast)
+        out.append({"school": s.name, "group": s.group, "head": head,
+                    "identity": PROFILE_LABELS.get(head.profile, head.profile),
+                    "staff": 1 + len(ast),
+                    "vacant": sum(1 for r in seat_rows if not r["coach"]),
+                    "staff_best": max(round(to_grade(v)) for v in eff.values())})
+    out.sort(key=lambda r: (-(r["head"].overall or 0), r["school"]))
+    return out
+
+
 def _load_coaches(conn, world_id: int, ids) -> dict:
     ids = [i for i in set(ids) if i]
     out = {}
@@ -768,9 +822,11 @@ def slot_label(slot: str, jv_head: bool) -> str:
     return "JV head coach" if jv_head else "Assistant coach"
 
 
-def program_staff(world_id: int, ident: str, gender: str) -> dict | None:
+def program_staff(world_id: int, ident: str, gender: str,
+                  season_year: int | None = None) -> dict | None:
     """The program page's staff block: every seat (vacant ones included), and the
-    EFFECTIVE value per attribute with who covers it."""
+    EFFECTIVE value per attribute with who covers it — plus the Staff tab's
+    MATRIX (every coach's grade per attribute beside the staff's effective one)."""
     rows = seats(world_id, gender, ident)
     if not rows:
         return None
@@ -784,10 +840,19 @@ def program_staff(world_id: int, ident: str, gender: str) -> dict | None:
             best = max(ast, key=lambda x: x.grades.get(a, 0.5))
             if best.grades.get(a, 0.5) > head.grades.get(a, 0.5):
                 cover[a] = best
+    seat_rows = [{**r, "label": slot_label(r["slot"], r["jv_head"]),
+                  "identity": PROFILE_LABELS.get(r["coach"].profile, r["coach"].profile)
+                  if r["coach"] else "",
+                  "age": (season_year - r["coach"].birth_year)
+                  if (r["coach"] and season_year and r["coach"].birth_year) else None}
+                 for r in rows]
+    matrix = [{"attr": a, "label": GRADE_LABELS[a], "blended": a in BLENDED,
+               "grades": [r["coach"].grade(a) if r["coach"] else None for r in rows],
+               "effective": round(to_grade(eff[a])), "via": cover.get(a)}
+              for a in GRADES]
     return {
-        "seats": [{**r, "label": slot_label(r["slot"], r["jv_head"]),
-                   "identity": PROFILE_LABELS.get(r["coach"].profile, r["coach"].profile)
-                   if r["coach"] else ""} for r in rows],
+        "seats": seat_rows,
+        "matrix": matrix,
         "head": head,
         "effective": [{"attr": a, "label": GRADE_LABELS[a],
                        "grade": round(to_grade(eff[a])),
