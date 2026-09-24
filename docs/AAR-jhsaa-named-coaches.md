@@ -244,45 +244,177 @@ read per program, memoised and cleared by `record_season`.
     blob.
 
 ## Coach of the Year (owner spec 2026-09, `app/jhsaa_coy.py`)
-- Two awards, both for **head** coaches, both by gender:
-  - **District**: one per league, ranked against the league.
-  - **State**: one per class, ranked against the class.
-- Each component is scored 0-100. The weights are the owner's:
-  - **District** (a district-season award, so a State run never decides it):
-    - 45%: district overperformance.
-    - 40%: district achievement, `100 × (0.65 × place percentile + 0.35 ×
-      district win %)`. Dual margin is left out on purpose.
-    - 10%: improvement.
-    - 5%: team quality.
-  - **State**:
-    - 30%: season quality.
-    - 30%: postseason achievement, which is the coefficient's State prices plus
-      the TOC bonus. There is no second title bonus.
-    - 30%: overperformance, split into 20 points of full-season z and 10 points of
-      postseason surprise.
-    - 10%: improvement.
-- **The expectation is preseason.**
-  - Strength is the mean overall of the nine who would dress, stored per program
-    per season in `jhsaa_preseason` by the rung.
-  - A dual's win probability is a logistic on the strength gap plus home court,
-    fitted on that season's varsity duals.
-  - Overperformance is z = (W − Σp) / √Σp(1−p), capped at ±2.5.
-- **The postseason surprise** is actual State value minus expected State value.
-  The expected value comes from simulating qualification (preseason strength plus
-  a season's noise) and the seeded single-elimination bracket, 400 draws per class
-  on blake2s.
-- **Schedule-adjusted rating** is TOSS (`pi`) as a percentile within the class.
-- **Improvement** compares this season's percentile with a weighted baseline of
-  the previous three seasons (0.5 / 0.3 / 0.2). A program with no history scores a
-  neutral 50.
-- The award is **selected once, after the rung commits**, and stored in
-  `jhsaa_coach_award` with the top five per pool. It is never recomputed on read.
-- A season archived before this existed is awarded on the first Honors visit, in
-  the background. That run rebuilds that season's rosters for the preseason
-  strengths.
-- **Where it shows:**
-  - The Honors page has a Coach of the Year tab, with State finalists and one
-    District winner per league.
-  - The coach page counts the awards and shows them in the ledger honours.
-  - Program Seasons puts a COY chip beside the head coach.
 
+### What it is
+- **Two awards, both for HEAD coaches, both by gender**:
+  - **District Coach of the Year**: one per league, where league and district are
+    the same thing (`(classification, league)`). Ranked against the other heads in
+    that league.
+  - **State Coach of the Year**: one per classification, ranked against the other
+    heads in that class.
+- Both are RÉSUMÉ selections off the archived season. Nothing reads a coach's
+  ratings: a Bad-band coach whose team overperformed can win.
+- A program with no head coach that season has no candidate.
+- **A State run never decides the District award.** Its inputs are district duals,
+  district place and district record only. The two schedule-level components
+  (improvement, quality) read end-of-season TOSS, which excludes the postseason by
+  construction (`rating_duals`).
+
+### The formulas (owner's weights, exactly)
+Every component is a 0-100 score and the award score is the weighted sum.
+
+**District** (`DISTRICT_WEIGHTS`)
+
+| Component | Weight | Measurement |
+|---|---:|---|
+| District overperformance | 45% | `z_to_score(z)` over district duals only |
+| District achievement | 40% | `100 × (0.65 × place percentile + 0.35 × district win %)` |
+| Program improvement | 10% | `improve()` (below) |
+| Overall team quality | 5% | `100 × TOSS percentile within the class` |
+
+- Place percentile is `1 − (place − 1) / (n − 1)` in a league of `n` teams, and
+  1.0 in a league of one.
+- District win % counts a tie as half.
+- **Dual margin is deliberately left out** (owner). It would reward a coach for
+  leaving the strongest lineup in against poor opposition, and district finish
+  already captures dominance.
+
+**State** (`STATE_WEIGHTS`)
+
+| Component | Weight | Measurement |
+|---|---:|---|
+| Season quality | 30% | `100 × TOSS percentile within the class` |
+| Postseason achievement | 30% | `100 × (State value) / 56` |
+| Overperformance | 30% | `(20 × z_to_score(z_full) + 10 × surprise_score) / 30` |
+| Program improvement | 10% | `improve()` |
+
+- **State value** is the coefficient's State prices, read through
+  `jhsaa_coefficient.season_points`, plus the TOC bonus:
+  - Parastate 3.
+  - First round 5.
+  - Octofinals 9.
+  - Quarterfinals 14.
+  - Semifinals 22.
+  - Final 42.
+  - Champion 52.
+  - TOC field +4.
+  - Divided by the maximum, 52 + 4 = 56.
+  - **There is NO separate title bonus.** The 22 → 42 → 52 steps already pay for
+    reaching and winning the final, and a second bonus would pay for the same
+    thing twice.
+- **The 20 : 10 split** (`STATE_OVER_SPLIT`) is the owner's internal split of the
+  30% between the full-season expected-win residual and the postseason surprise.
+
+### The expectation: preseason strength and the fitted curve
+- **Preseason strength** is the mean `current_overall()` of the nine best players
+  on the roster the season was played with (`strength_of`, the same rule as
+  `jhsaa._strength`).
+  - The rung stores it per program per season in `jhsaa_preseason`
+    (`record_preseason`, inside the rung's transaction beside `record_season`).
+  - It is PRESEASON: ratings do not change within a season, because development
+    happens between seasons.
+- **Win probability for one dual:** `p = σ(k · gap + h · hosted)`.
+  - `gap` is the team's strength minus the opponent's.
+  - `hosted` is +1 at home, −1 away, and 0 in a neutral phase (`jhsaa.NEUTRAL_PHASES`
+    — the showcases, State and the TOC).
+- **`k` and `h` are FITTED on the season's own varsity duals** (`fit_curve`: a
+  two-parameter logistic maximum likelihood by Newton's method, a small ridge on
+  the diagonal only).
+  - Fitting on outcomes sets only the curve's STEEPNESS. The ratings feeding it are
+    preseason, so an overperforming team is still judged against what its roster
+    said it should do.
+  - It falls back to k = 0.2, h = 0 on a degenerate season (under 20 duals), and
+    clamps k to 0.01-3 and h to ±2.
+  - ‼️ The first build regularised the cross term too (`a01 = 1e-6`). With no home
+    variation that leaked the slope's step into `h`. A test caught it
+    (`test_the_fitted_curve_recovers_a_real_slope`).
+- **Overperformance z** (`z_score`):
+
+  z = (W − Σ pᵢ) / √(Σ pᵢ(1 − pᵢ))
+
+  - `W` is actual wins, where a tie counts half.
+  - **The denominator is the point.** Two wins above expectation over coin flips
+    (p = 0.5, variance 0.25 per dual) is ordinary. Two wins where the model gave
+    p = 0.1 (variance 0.09) is not.
+  - Capped at ±2.5 (`Z_CAP`), then `z_to_score(z) = (z + 2.5) / 5 × 100`.
+  - A team with no duals scores 50.
+  - District z uses district duals only (the dual row's `district` flag). The
+    State z uses every varsity dual of the season, postseason included.
+
+### The postseason surprise
+- `surprise = actual State value − expected State value`, scored as
+  `50 + 50 × clamp(surprise / 40, −1, 1)` (`SURPRISE_FULL` 40).
+- **Expected State value** (`expected_state_values`) simulates qualification and
+  the bracket from preseason strengths, as the owner asked:
+  - **Qualification:** each class's teams are ranked by `strength + N(0, 1.2/k)`,
+    which is a season's worth of noise in rating units, and the top `F` qualify.
+    `F` is the size of the archived State field for that class and season.
+  - **Bracket:** the qualifiers are seeded by that noisy order into a
+    power-of-two bracket in standard seed order (1 v 16, 8 v 9 …), and the top
+    seeds get the byes. Every game is played on `σ(k · strength gap)` with no home
+    court, since State is neutral.
+  - **Pricing:** a loser is priced by teams still alive when it went out, through
+    `state_points` (the same arithmetic as the archive). The champion gets 52 + 4
+    (the TOC).
+  - **400 draws per class** (`SIMS`), seeded on blake2s of (world, year, gender,
+    class), so re-selecting a season is byte-identical.
+  - A preseason No. 20 reaching a semifinal scores far more surprise than a
+    preseason No. 2 doing it, which is the reason for simulating rather than
+    treating every semifinal alike.
+  - **Accepted simplification:** the simulation does not model the Parastate or
+    Metastate separately. It qualifies straight into a seeded bracket, so a real
+    Parastate exit (3) is compared against expectations built on first-round
+    pricing.
+
+### Improvement and the rating choice (TOSS, not ATR)
+- `improve()` compares this season's **TOSS percentile within the class** with a
+  weighted baseline of the previous three seasons: 0.5 / 0.3 / 0.2
+  (`BASELINE_WEIGHTS`), renormalised over the seasons that exist.
+  - Score: `50 + 50 × clamp((now − baseline) / 0.5, −1, 1)` (`IMPROVE_FULL` 0.5, so a
+    half-field percentile move earns full marks).
+  - **No history is a neutral 50, never a penalty.**
+  - Percentiles rather than records keep it resilient to realignment and changing
+    schedules.
+- **Why TOSS and not ATR** (owner question 2026-09, "isn't ATR better?"):
+  - ATR is the association's POSTSEASON SEEDING key (the 2070 rule). TOSS folds
+    three dual formats into one opponent-strength graph, which distorts cross-format
+    comparisons.
+  - But ATR is **half raw win percentage**. The season-quality component exists so
+    that a 24-4 team against an excellent schedule does not lose to a 28-1 team that
+    played nobody, and the win-% half of ATR leans exactly back toward the 28-1.
+  - The record is already rewarded elsewhere in the State formula (the postseason
+    and overperformance components).
+  - Every comparison here is WITHIN a class, where every team plays the same
+    postseason format, and that is where the format distortion bites least.
+  - The owner accepted TOSS. Switching is one line if it is ever wanted, because
+    `atr` is archived on every standings row beside `pi`.
+
+### Selection, storage, backfill
+- **Selected ONCE, after the rung commits** (`world.run_jhsaa` →
+  `jhsaa_coy.select_season`, both genders), off the season exactly as stored.
+- Stored in `jhsaa_coach_award`: the top five per pool (`FINALISTS`), each row
+  with its component scores in `detail`. It is **never recomputed on read**, the
+  same rule as `pi`, because an award is a decision the season already made.
+- A failure is logged loudly and leaves the season intact.
+- **A season archived before this module** has coach history but no awards
+  (`needs_awards`). The Honors page selects it once in the background
+  (`_jh_deferred`).
+  - `_preseason` rebuilds that season's rosters with `build_roster(school,
+    season_year, salt)`, which is deterministic, and stores the strengths it
+    derived.
+  - The page says the selection is running and lands on the result after a refresh.
+- **Name handling:** duals are read in archived names and mapped through
+  `jhsaa.former_names`. The archive is already relabelled on read, and the coach
+  is found by (world-year, school ident) through `season_heads`.
+- **Where it shows:**
+  - The Honors page's **Coach of the Year** tab: the State winner with its five
+    finalists and every component score, then one row per league with the District
+    winner.
+  - The coach page: a career tile with the state and district counts, and the
+    award on its season's ledger row (`coach_awards`).
+  - The program History tab's Seasons column puts a **COY / STATE COY** chip beside
+    that season's head coach (`program_awards`).
+- **Tests:** `tests/test_jhsaa_coy.py` covers the binomial z and its cap, the curve
+  fit recovering a known slope, expected State value rising with strength, and a
+  hand-archived season selected end to end. In that season, a league's preseason
+  last place wins the league and takes District Coach of the Year.
