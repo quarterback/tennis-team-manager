@@ -3007,7 +3007,7 @@ def fix_mascot(display: str, mascot: str) -> str:
 MASCOTS = {
     # ── owner picks (2026-08) ──
     "Plainfield": "Cardinals",
-    "Condotti Vanguard Academy": "Valiant",
+    "Condotti Vanguard Academy": "Sauropods",       # owner pick 2026-09 (was Valiant)
     # Owner pick 2026-09 — "what the fuck is a Brickie?" (it came in with the
     # source record). Condotti's rival, so the two sit together here.
     "Romero-Finniski": "Nor'westers",
