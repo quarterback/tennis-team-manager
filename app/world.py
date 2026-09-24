@@ -366,6 +366,8 @@ def init_schema() -> None:
     global _schema_ready_for
     conn = dbpath.connect(WORLD_DB)
     conn.executescript(_SCHEMA)
+    from . import jhsaa_coaches as _jc
+    conn.executescript(_jc._SCHEMA)
     for col, typ in (("week_signed", "INTEGER DEFAULT 0"), ("flips", "INTEGER DEFAULT 0"),
                      ("commit_history", "TEXT DEFAULT '[]'")):
         try:
@@ -700,6 +702,8 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     # The reclassification cycle's own tables (app/jhsaa_reclass.py) — created
     # here if absent, since the reset can run before that module ever opened them.
     from . import jhsaa_reclass as _rc
+    from . import jhsaa_coaches as _jc
+    conn.executescript(_jc._SCHEMA + "".join(f" DELETE FROM {t};" for t in _jc._TABLES))
     conn.executescript(_rc._SCHEMA + " DELETE FROM world_jhsaa_reclass;"
                        " DELETE FROM world_jhsaa_reclass_move;")
     conn.commit()
@@ -4018,6 +4022,24 @@ def jhsaa_prior_for_season(season_year: int, gender: str,
     return jhsaa_prior_standing(world_id, season_year - BASE_YEAR - 2, gender)
 
 
+def jhsaa_staff_for_season(season_year: int, gender: str,
+                           world_id: int | None = None) -> dict:
+    """The coaching staffs a season is played with, `{school.key: StaffEffect}` —
+    the `jhsaa_prior_for_season` twin, and for the same reason: the JHSAA rung and
+    the recruit hand-off must resolve the SAME staffs or the memoised season forks.
+
+    An archived season reads the staffs it was ARCHIVED with (so a coach the owner
+    moved afterwards cannot change the season the college board replays); a season
+    not yet played reads the current seats. Empty when the save has no staffs,
+    which is the pre-coaches behaviour exactly."""
+    from . import jhsaa_coaches
+    if world_id is None:
+        world_id = _active_world_id()
+        if world_id is None:
+            return {}
+    return jhsaa_coaches.season_effects(world_id, season_year - BASE_YEAR - 1, gender)
+
+
 def run_jhsaa(seed: int, world: dict) -> dict:
     """One rung of the ladder: play Jefferson's high-school season for both genders and
     archive it. Runs BEFORE the college year, so the seniors it graduates are on the
@@ -4039,6 +4061,13 @@ def run_jhsaa(seed: int, world: dict) -> dict:
     # Matching parameters also means the memoized season is shared: the hand-off
     # reuses this sim instead of playing a second one.
     season_year = jhsaa_season_year(world)
+    # THE COACHING STAFFS (owner spec 2026-09): seat an inaugural staff for any
+    # program that has none — idempotent, and built so its effective values ARE
+    # the school draws the season already used. Its own connection, committed
+    # before the rung's transaction opens.
+    from . import jhsaa_coaches
+    jhsaa_coaches.ensure_staff(world["id"], season_year, salt)
+    staffs: dict = {}
     conn = _db()
     champs = {}
     try:
@@ -4072,8 +4101,10 @@ def run_jhsaa(seed: int, world: dict) -> dict:
             # and the recruit hand-off drifting onto different keys — see
             # `jhsaa_prior_for_season`. Empty at year 0, the no-memory ladder.
             prior = jhsaa_prior_for_season(season_year, gender, world["id"])
+            staff = staffs[gender] = jhsaa_staff_for_season(season_year, gender,
+                                                            world["id"])
             season = jhsaa.run_season(gender, season_year, seed=0, salt=salt,
-                                      prior=prior)
+                                      prior=prior, staff=staff)
             division_no = jhsaa.renumber_divisions(season, division_no)
             conference_ix = jhsaa.reletter_conferences(season, conference_ix)
             special_no = jhsaa.renumber_state_specials(season, special_no)
@@ -4310,6 +4341,20 @@ def run_jhsaa(seed: int, world: dict) -> dict:
             # ceiling they were generated with, from here on (see the table).
             jhsaa.record_talents(conn, world["id"], year, gender,
                                  (t.roster for t in season["teams"].values()))
+            # WHO COACHED — one history row per seat, the head's carrying the staff
+            # effects the season was played under (read back by the recruit
+            # hand-off through `jhsaa_staff_for_season`).
+            jhsaa_coaches.record_season(conn, world["id"], year, gender,
+                                        season["teams"].values(), staff, season_year)
+            # THE ALUMNI INDEX — this season's seniors, the pool a former player is
+            # hired from. `honored` is any award row naming them (`row_pids`).
+            from . import jhsaa_awards as _jaw
+            honored = set()
+            for aw in season["awards"].values():
+                for row in (aw.get("all_state") or []) + [aw.get("poy") or {}]:
+                    honored.update(_jaw.row_pids(row))
+            jhsaa_coaches.record_alumni(conn, world["id"], gender,
+                                        season["teams"].values(), season_year, honored)
         # MIXED DOUBLES — run here because a mixed pair is one player from each
         # gender and `run_season` only ever sees one. It is archived under gender
         # 'mixed': it belongs to neither field, so storing it on one gender's rows
@@ -4322,7 +4367,9 @@ def run_jhsaa(seed: int, world: dict) -> dict:
         # spring girls, so this is the FIRST event of the year and its pool must be
         # cut from the preseason ability ladder, not from one moved by seasons that
         # on this calendar have not been played yet. See `run_mixed_season`.
-        mixed = jhsaa_individuals.run_mixed_season(season_year, salt=salt, seed=0)
+        mixed = jhsaa_individuals.run_mixed_season(
+            season_year, salt=salt, seed=0,
+            staff=staffs)
         conn.executemany(
             "INSERT INTO world_jhsaa_individual"
             " (world_id, year, gender, grp, flight, data) VALUES (?,?,?,?,?,?)",
@@ -4331,6 +4378,11 @@ def run_jhsaa(seed: int, world: dict) -> dict:
         conn.commit()
     finally:
         conn.close()
+        # POST-COMMIT invalidation of the staff history (`record_season` cleared it
+        # before the commit, which a concurrent reader can race — see
+        # `jhsaa.invalidate_staff_history`). In `finally` so a rolled-back rung
+        # does not leave a cache built from its uncommitted clear either.
+        jhsaa.invalidate_staff_history()
     return {"event": "jhsaa", "year": year, "champions": champs}
 
 

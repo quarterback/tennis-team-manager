@@ -47,7 +47,7 @@ from .rally import (
     _first_serve_in_prob, _second_serve_in_prob, _ace_prob,
     _rally_condition_bonus, _logistic, _clamp01, TUNE as RALLY_TUNE,
 )
-from .fast import effective_gap, _mtb_score, style_vector, style_edge, TUNE as FAST_TUNE
+from .fast import GRADE_SPAN, changeover_offset, effective_gap, _mtb_score, style_vector, style_edge, TUNE as FAST_TUNE
 
 # Tunables for the doubles point model — talent shifts these distributions, it
 # does not script outcomes. Kept in one table so the model retunes without
@@ -296,6 +296,8 @@ class _DState:
     sets: list[int] = field(default_factory=lambda: [0, 0])
     set_scores: list[tuple[int, int]] = field(default_factory=list)
     profile: dict | None = None           # fast-model overlay (HS scorelines)
+    seed: int = 0                         # the match seed (the changeover stream)
+    co: float = 0.0                       # side 0's set-break changeover offset
     # Each side's point on the style plane (engine.fast.style_vector, averaged
     # over the pair) — resolved once per match by `_fast_style`, read per game.
     style: tuple | None = None
@@ -636,6 +638,8 @@ def _fast_gap(state: _DState, s: int, r: int) -> float:
     tune = {**FAST_TUNE, **pr}
     tune["style_k"] = tune.get("d_style_k", tune["style_k"])
     gap += style_edge(xs, ys, xr, yr, gap, tune)
+    if state.co:                       # the set-break changeover roll (fast.py)
+        gap += state.co if s == 0 else -state.co
     return effective_gap(gap, pr.get("gap_knee"), pr.get("gap_accel"),
                          pr.get("gap_bands", False))
 
@@ -736,9 +740,14 @@ def _simulate_fast(state: _DState) -> DoublesResult:
         state.set_scores.append(score)
         return _result(state, state.teams, "fast", game_flow=flows)
 
+    pr = state.profile or {}
+    co_q, co_k = pr.get("co_q"), pr.get("co_k", 0.0)
     while max(state.sets) < state.sets_needed:
         is_final = (state.sets[0] == state.sets_needed - 1
                     and state.sets[1] == state.sets_needed - 1)
+        if co_q and co_k and state.set_scores:
+            state.co = changeover_offset(state.seed, len(state.set_scores) + 1,
+                                         co_q[0], co_q[1], co_k) / GRADE_SPAN
         win, score = play_set(fmt.set_games, is_final and fmt.final_set_tiebreak)
         state.sets[win] += 1
         state.set_scores.append(score)
@@ -769,7 +778,8 @@ def simulate_doubles(
     t0 = team0 if isinstance(team0, DoublesTeam) else DoublesTeam(players=tuple(team0))
     t1 = team1 if isinstance(team1, DoublesTeam) else DoublesTeam(players=tuple(team1))
     state = _DState(teams=(t0, t1), rng=random.Random(seed), fmt=fmt,
-                    context=context, server=first_server, profile=profile)
+                    context=context, server=first_server, profile=profile,
+                    seed=seed)
     state.sets_needed = 1 if fmt.pro_set else fmt.best_of // 2 + 1
 
     if fidelity == "fast":

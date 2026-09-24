@@ -774,6 +774,33 @@ def test_the_title_board_page_renders_its_champions(archived):
     assert 'data-k="CHAMP" data-v="1"' in html
 
 
+def test_the_champions_history_names_both_head_coaches(archived, monkeypatch):
+    """The OSAA champions-record layout (owner, 2026-09): champion · coach · score ·
+    runner-up · coach. Coaches are keyed on the program IDENT off the coach
+    history, and a season with no coach on record shows NOTHING in that cell."""
+    import app.jhsaa_coaches as jc
+    view = st.jhsaa_past_winners(wd.DEFAULT_SEED, "girls", layout="stack")
+    champs = [c for y in view["years"] for c in y["champions"].values()]
+    assert champs, "the season crowned nobody"
+    for c in champs:
+        assert c["coach"] and c["coach"]["name"], c["name"]
+        ru = c.get("runner_up")
+        assert ru and ru["name"] != c["name"], c["name"]
+        assert ru["coach"] and ru["coach"]["coach_id"] != c["coach"]["coach_id"]
+        hi, lo = (int(x) for x in c["score"].split("-"))
+        assert hi > lo, c["score"]          # winner-first
+    html = archived["client"].get("/jhsaa/champions?g=girls").get_data(as_text=True)
+    for c in champs:
+        assert c["coach"]["name"] in html and c["runner_up"]["coach"]["name"] in html
+    # A season from before coaches existed: blank, never a placeholder.
+    monkeypatch.setattr(jc, "season_heads", lambda *a, **k: {})
+    html = archived["client"].get("/jhsaa/champions?g=girls").get_data(as_text=True)
+    assert 'class="co"' not in html
+    assert "Unknown" not in html
+    for c in champs:
+        assert c["name"] in html
+
+
 # --- the JV participation record -----------------------------------------------
 
 def test_played_survives_the_archive_and_reaches_the_player_page(archived):

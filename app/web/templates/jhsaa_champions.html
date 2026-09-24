@@ -64,6 +64,7 @@
           <span class="jh-schoolcell">{{ ch.mark|safe }}
             <a href="{{ url_for('jhsaa_school', school=ch.name, u=u, g=view.gender, year=y.year) }}">{{ ch.name }}</a></span>
           {% if ch.record %}<span class="rec">{{ ch.record }}</span>{% endif %}
+          {% if ch.coach %}<a class="co" href="{{ url_for('jhsaa_coach', coach_id=ch.coach.coach_id, u=u, g=view.gender) }}">{{ ch.coach.name }}</a>{% endif %}
           {% else %}<span style="color:var(--text-faint)">—</span>{% endif %}
         </td>
         {% endfor %}
@@ -94,6 +95,18 @@
       {# The record is the scan context a bare name cannot give — a 25-6 title and
          a 17-9 one are different seasons. #}
       {% if ch.record %}<span class="rec">({{ ch.record }})</span>{% endif %}
+      {# THE COACH, AFTER THE OSAA'S CHAMPIONS RECORD (owner, 2026-09): champion ·
+         coach · score · 2nd place · coach. A season with no coach on record shows
+         NOTHING there — no dash, no "unknown", the way the OSAA leaves its
+         unrecorded years. #}
+      {% if ch.coach %}<a class="co" href="{{ url_for('jhsaa_coach', coach_id=ch.coach.coach_id, u=u, g=view.gender) }}">{{ ch.coach.name }}</a>{% endif %}
+      {% if ch.runner_up %}
+      <span class="fin">{% if ch.score %}<span class="sc">{{ ch.score }}</span>{% endif %}
+        <span class="def">over</span>
+        <a class="ru" href="{{ url_for('jhsaa_school', school=ch.runner_up.name, u=u, g=view.gender, year=y.year) }}">{{ ch.runner_up.name }}</a>
+        {% if ch.runner_up.coach %}<a class="co" href="{{ url_for('jhsaa_coach', coach_id=ch.runner_up.coach.coach_id, u=u, g=view.gender) }}">{{ ch.runner_up.coach.name }}</a>{% endif %}
+      </span>
+      {% endif %}
     </div>
     {% endif %}
     {% endfor %}

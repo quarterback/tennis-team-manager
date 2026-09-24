@@ -225,6 +225,25 @@
       {% endif %}
     </div>
 
+    {% if view.staff %}
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">Coaching staff</span>
+        <a class="jh-hqmore" href="{{ url_for('jhsaa_coach_carousel', u=u) }}">Carousel →</a></div>
+      {% for st in view.staff.seats %}
+      <div class="jh-kv"><span class="k">{{ st.label }}</span>
+        <span class="v">{% if st.coach %}<a href="{{ url_for('jhsaa_coach', coach_id=st.coach.coach_id, u=u, g=view.gender) }}">{{ st.coach.name }}</a>
+          <span class="s">since {{ st.since }}</span>{% else %}<span class="s">Vacant</span>{% endif %}</span></div>
+      {% endfor %}
+      <table class="jh-roster jh-staffeff">
+        <tr><th>Staff</th><th class="num" style="width:48px">Grade</th><th>Via</th></tr>
+        {% for e in view.staff.effective %}
+        <tr><td>{{ e.label }}</td><td class="num">{{ e.grade }}</td>
+          <td>{% if e.via %}<a href="{{ url_for('jhsaa_coach', coach_id=e.via.coach_id, u=u, g=view.gender) }}">{{ e.via.name }}</a>{% endif %}</td></tr>
+        {% endfor %}
+      </table>
+    </div>
+    {% endif %}
+
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">All-time</span>
         <a class="jh-hqmore" href="{{ hq_url('history') }}">History →</a></div>

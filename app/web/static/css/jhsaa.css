@@ -1267,6 +1267,23 @@ html[data-jh-scout="on"] .jh-scout { visibility: visible; }
   flex: 0 0 auto; font-size: var(--fs-caption); color: var(--text-faint);
   font-variant-numeric: tabular-nums;
 }
+/* The coach column and the final (OSAA champions-record layout, owner 2026-09).
+   The row wraps so the runner-up drops to its own line on a phone rather than
+   squeezing the champion's name. */
+.jh-yearchamps .row { flex-wrap: wrap; }
+.jh-yearchamps .co, .jh-champ-cell .co {
+  font-size: var(--fs-caption); color: var(--text-secondary); text-decoration: none;
+}
+.jh-champ-cell .co { display: block; margin-top: 1px; }
+.jh-yearchamps .co:hover, .jh-champ-cell .co:hover { color: var(--brand-strong); }
+.jh-yearchamps .fin {
+  display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 6px;
+  margin-left: auto; color: var(--text-secondary);
+}
+.jh-yearchamps .fin .sc { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.jh-yearchamps .fin .def { font-size: var(--fs-caption); color: var(--text-faint); }
+.jh-yearchamps .fin .ru { color: var(--text-primary); text-decoration: none; }
+.jh-yearchamps .fin .ru:hover { color: var(--brand-strong); }
 
 /* THE CAREER ROLLS — Repeat POY and Repeat State Champs, on the History sub-rail.
    A row is a SENTENCE, not a table row (owner layout, 2026-08): the player, then a
@@ -1489,3 +1506,13 @@ body.jhx-panel-open .jhx-bar-inner { padding-right: min(400px, 100vw); }
 .jhx-pform .bl-select { width: 100%; }
 .jhx-pform .bl-pill { height: 30px; }
 @media (max-width: 720px) { .jhx-facet-k { min-width: 0; } }
+
+/* JHSAA coach ratings — visible, unlike a player's (owner spec 2026-09). */
+.jh-coachgrade { display: grid; grid-template-columns: minmax(0, 1fr) 120px 36px; gap: 10px; align-items: center; padding: 4px 0; }
+.jh-coachgrade .k { color: var(--text-secondary); }
+.jh-coachgrade .bar { display: block; height: 8px; border-radius: 2px; background: var(--border); overflow: hidden; }
+.jh-coachgrade .bar span { display: block; height: 100%; background: var(--accent); }
+.jh-coachgrade .v { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+.jh-form-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 0; }
+.jh-form-row input:not([type=hidden]), .jh-form-row select { min-width: 0; max-width: 100%; }
+.jh-note { color: var(--brand-strong); }

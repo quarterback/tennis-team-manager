@@ -3720,6 +3720,119 @@ def create_app() -> Flask:
         return render_template("jhsaa_school.html", active="High School", view=view,
                                gender=gender, u=u, uni_label=label, hq=hq)
 
+    @app.route("/jhsaa/coach/<coach_id>")
+    def jhsaa_coach(coach_id):
+        """One JHSAA coach — imprinted grades (visible, unlike a player's), the
+        seat they hold, and every season they have coached."""
+        from app import jhsaa_coaches as jc
+        gender, label, u, g, _group, _year = _jh_scope_args()
+        w = wd.get_or_create(DEFAULT_SEED)
+        view = jc.coach_view(w["id"], coach_id, wd.jhsaa_season_year(w))
+        if view is None:
+            abort(404)
+        from app import jhsaa as _jhm
+        schools = sorted(s.name for s in _jhm.load_schools(view["gender"]))
+        return render_template("jhsaa_coach.html", active="High School", view=view,
+                               gender=gender, u=u, uni_label=label, schools=schools,
+                               grade_attrs=jc.GRADE_LABELS,
+                               msg=request.cookies.get("jh_coach_result", ""))
+
+    @app.route("/jhsaa/coaches/carousel")
+    def jhsaa_coach_carousel():
+        """The coaching carousel — a BUTTON, never a rung (owner rule 2026-09).
+        Run a cycle, veto any line, commit. Nothing moves until you do."""
+        from app import jhsaa_coaches as jc
+        gender, label, u, g, _group, _year = _jh_scope_args()
+        w = wd.get_or_create(DEFAULT_SEED)
+        prop = jc.pending_cycle(w["id"])
+        return render_template("jhsaa_coach_carousel.html", active="High School",
+                               prop=prop, pool=jc.free_pool(w["id"])[:60],
+                               kinds={"retire": "Retires", "fire": "Let go",
+                                      "promote": "Promoted", "move": "Moves",
+                                      "alumnus": "Alumnus returns", "new": "New hire"},
+                               gender=gender, u=u, uni_label=label,
+                               msg=request.cookies.get("jh_coach_result", ""))
+
+    @app.route("/jhsaa/coaches/carousel", methods=["POST"])
+    def jhsaa_coach_carousel_post():
+        from app import jhsaa_coaches as jc
+        _gender, _label, u, _g, _group, _year = _jh_scope_args()
+        w = wd.get_or_create(DEFAULT_SEED)
+        do = request.form.get("do", "")
+        msg = ""
+        try:
+            if do == "run":
+                prop = jc.propose_cycle(w["id"], wd.jhsaa_season_year(w))
+                msg = f"{len(prop['lines'])} proposed changes."
+            elif do in ("save", "commit"):
+                jc.set_vetoes(w["id"], {int(x) for x in request.form.getlist("veto")})
+                if do == "commit":
+                    msg = f"Committed {jc.commit_cycle(w['id'])} changes."
+                else:
+                    msg = "Vetoes saved."
+            elif do == "dismiss":
+                jc.dismiss_cycle(w["id"])
+                msg = "Cycle dismissed."
+        except jc.StaffError as e:
+            msg = str(e)
+        resp = redirect(url_for("jhsaa_coach_carousel", u=u))
+        resp.set_cookie("jh_coach_result", msg, max_age=30, samesite="Lax")
+        return resp
+
+    @app.route("/editor/jhsaa-coach", methods=["POST"])
+    def editor_jhsaa_coach():
+        """The owner's staff moves: hire a former player, move or retire a coach,
+        set the JV-head label, edit a rating. Nothing moves on its own (owner rule).
+        Gender comes off the FORM — a POST has no query string (the family lesson)."""
+        from app import jhsaa as _jh
+        from app import jhsaa_coaches as jc
+        _gender, _label, u, g, _group, _year = _jh_scope_args()
+        g = request.form.get("g") or g
+        w = wd.get_or_create(DEFAULT_SEED)
+        sy = wd.jhsaa_season_year(w)
+        do = request.form.get("do", "")
+        coach_id = request.form.get("coach_id", "")
+        back_pid = request.form.get("jh_pid", "")
+        back_school = request.form.get("jh_player_school", "")
+        msg = ""
+        try:
+            target = request.form.get("jh_school", "").strip()
+            ident = None
+            if do in ("hire", "move", "jvhead"):
+                sc = next((s for s in _jh.load_schools(g) if s.name == target), None)
+                if sc is None:
+                    raise jc.StaffError(f'No {g} program named "{target}".')
+                ident = sc.ident
+            if do == "hire":
+                slot = jc.resolve_slot(w["id"], ident, g, request.form.get("slot", "asst"))
+                c = jc.appoint_former_player(w["id"], back_pid, ident, g, slot, sy)
+                coach_id, msg = c.coach_id, f"{c.name} hired at {target}."
+            elif do == "move":
+                slot = jc.resolve_slot(w["id"], ident, g, request.form.get("slot", "asst"))
+                jc.move_coach(w["id"], coach_id, ident, g, slot, sy)
+                msg = f"Moved to {target}."
+            elif do == "retire":
+                jc.retire_coach(w["id"], coach_id, sy)
+                msg = "Retired."
+            elif do == "jvhead":
+                jc.set_jv_head(w["id"], ident, g, request.form.get("slot", ""))
+                msg = "JV head set."
+            elif do == "grade":
+                jc.set_grade(w["id"], coach_id, request.form.get("attr", ""),
+                             request.form.get("grade", type=float) or 50.0)
+                msg = "Rating saved."
+            else:
+                raise jc.StaffError("Unknown action.")
+        except jc.StaffError as e:
+            msg = str(e)
+        if do == "hire" and not coach_id:
+            resp = redirect(url_for("jhsaa_player", school=back_school, pid=back_pid,
+                                    u=u, g=g))
+        else:
+            resp = redirect(url_for("jhsaa_coach", coach_id=coach_id, u=u, g=g))
+        resp.set_cookie("jh_coach_result", msg, max_age=30, samesite="Lax")
+        return resp
+
     @app.route("/jhsaa/dual/<int:dual_id>")
     def jhsaa_dual(dual_id):
         gender, label, u, g, _group, _qyear = _jh_scope_args()
@@ -3744,6 +3857,26 @@ def create_app() -> Flask:
         # list (same pattern as the Programs editor's `jh-names` datalist), so a
         # transfer target is PICKED, never typed exact-and-hope.
         school_names = sorted(s.name for s in _jh.load_schools(g) if s.name != school)
+        # HIRE AS COACH (owner spec 2026-09) — offered once the player has
+        # graduated (the alumni index) or is a college graduate of this world.
+        from app import jhsaa_coaches as _jc
+        _w = wd.get_or_create(DEFAULT_SEED)
+        hire_ok = bool(_jc.alumnus(_w["id"], pid) or _jc.college_graduate(_w["id"], pid))
+        if not hire_ok and view.get("grad_year"):
+            # Graduated before coaches existed (never indexed at archive time): a
+            # senior of the newest archived season or earlier is an alumnus.
+            _yrs = wd.jhsaa_years(_w["id"], g)
+            _last = (wd.BASE_YEAR + _yrs[0] + 1) if _yrs else None
+            if _last is not None and view["grad_year"] <= _last:
+                _sc = _jh.former_school(school, g)
+                if _sc is not None:
+                    _jc.index_alumnus(_w["id"], {
+                        "pid": pid, "gender": g, "ident": _sc.ident, "school": school,
+                        "grad_year": view["grad_year"], "name": view.get("name", pid),
+                        "style": view.get("style", ""), "trait": view.get("style_trait", ""),
+                        "ovr": view.get("ovr")})
+                    hire_ok = True
+        hire_msg = request.cookies.get("jh_coach_result", "")
         # The Family block. `fam_school`/`fam_season` drive the PICKER — the roster
         # you choose the other member from — and default to this player's own team
         # and season, so a sibling on the same roster is two clicks. Naming another
@@ -3788,7 +3921,9 @@ def create_app() -> Flask:
                                fam_g=fam_g, fam_school=fam_school,
                                fam_season=fam_season, picker=picker,
                                picker_msg=picker_msg,
-                               all_schools=sorted(s.name for s in _jh.load_schools(fam_g)))
+                               all_schools=sorted(s.name for s in _jh.load_schools(fam_g)),
+                               hire_ok=hire_ok, hire_msg=hire_msg,
+                               hire_schools=sorted(s.name for s in _jh.load_schools(g)))
 
     @app.route("/jhsaa/champions")
     def jhsaa_champions():

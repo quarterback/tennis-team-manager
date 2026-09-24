@@ -663,7 +663,8 @@ def run_mixed(boys_by_school: dict, girls_by_school: dict, group: str, *,
     return _assemble("mixed", group, "XD", result, played)
 
 
-def run_mixed_season(year: int, *, salt: str = "", seed: int = 0) -> dict:
+def run_mixed_season(year: int, *, salt: str = "", seed: int = 0,
+                     staff: dict | None = None) -> dict:
     """The whole association's mixed doubles, one draw per classification,
     archive-flattened as `{group: dict}`.
 
@@ -705,9 +706,11 @@ def run_mixed_season(year: int, *, salt: str = "", seed: int = 0) -> dict:
     out: dict = {}
     for group, names in sorted(groups.items()):
         bt = {t.school.name: t
-              for t in district_teams([boys[n] for n in names], year, salt)}
+              for t in district_teams([boys[n] for n in names], year, salt,
+                                      staff=(staff or {}).get("boys"))}
         gt = {t.school.name: t
-              for t in district_teams([girls[n] for n in names], year, salt)}
+              for t in district_teams([girls[n] for n in names], year, salt,
+                                      staff=(staff or {}).get("girls"))}
         d = run_mixed(bt, gt, group,
                       seed=_draw_seed(seed, "mixed", str(year), group))
         if d is not None:

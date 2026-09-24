@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}{{ view.coach.name }} — JHSAA coach{% endblock %}
+{% block content %}
+{% set c = view.coach %}
+<div class="bl-toolbar"><div class="bl-toolbar-inner">
+  <span style="font-size:16px;color:var(--text-muted)">High School › Coach</span>
+  {% if view.seat %}
+  <a class="bl-pill" style="text-decoration:none;margin-left:auto"
+     href="{{ url_for('jhsaa_school', school=view.seat.school, u=u, g=view.gender) }}">← {{ view.seat.school }}</a>
+  {% endif %}
+</div></div>
+
+<div class="jh-shell">
+<div class="jh-ident" style="margin-bottom:14px">
+  <div class="jh-ident-body">
+    <h1>{{ c.name }}</h1>
+    <div class="mascot">{% if view.seat %}{{ view.seat.label }} · {{ view.seat.school }} ({{ view.gender }}) · since {{ view.seat.since }}{% else %}Not on a staff{% endif %}</div>
+    <div class="where">{{ c.hometown }}{% if view.age %} · age {{ view.age }}{% endif %} · {{ view.origin }}{% if view.alma %} · played at {{ view.alma }}{% endif %}</div>
+    <div class="now"><span class="rec">{{ view.head_record }}</span><span class="bit">as a head coach</span></div>
+  </div>
+</div>
+
+{% if msg %}<p class="jh-note" style="margin:0 0 12px">{{ msg }}</p>{% endif %}
+<div class="jh-cols2">
+  <div class="jh-stack">
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">Ratings</span>
+        <span class="bl-panel-meta">{{ view.profile }}</span></div>
+      {% for gr in view.grades %}
+      <div class="jh-coachgrade">
+        <span class="k">{{ gr.label }}</span>
+        <span class="bar"><span style="width:{{ ((gr.grade - 20) / 60 * 100)|round(0) }}%"></span></span>
+        <span class="v">{{ gr.grade }}</span>
+      </div>
+      {% endfor %}
+      <div class="jh-kv"><span class="k">Pairing philosophy</span><span class="v">{{ view.pairing }}</span></div>
+      <div class="jh-kv"><span class="k">Participation</span><span class="v">{{ view.temperament }}</span></div>
+      {% if c.player_pid %}
+      <div class="jh-kv"><span class="k">Playing career</span><span class="v">
+        <a href="{{ url_for('jhsaa_player', school=view.alma, pid=c.player_pid, u=u, g=view.gender) }}">Player page</a></span></div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="jh-stack">
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">Career</span></div>
+      {% if view.history %}
+      <div class="tbl-scroll">
+      <table class="jh-roster">
+        <tr><th style="width:56px">Year</th><th>Program</th><th>Role</th><th style="width:60px">Class</th><th class="num" style="width:64px">Record</th></tr>
+        {% for h in view.history|reverse %}
+        <tr><td>{{ h.year }}</td>
+          <td><a href="{{ url_for('jhsaa_school', school=h.school, u=u, g=h.gender, year=h.world_year) }}">{{ h.school }}</a></td>
+          <td>{{ h.role }}</td><td>{{ h.classification }}</td>
+          <td class="num">{{ h.wins }}-{{ h.losses }}{% if h.ties %}-{{ h.ties }}{% endif %}</td></tr>
+        {% endfor %}
+      </table>
+      </div>
+      {% else %}
+      <p class="jh-empty">No season coached yet.</p>
+      {% endif %}
+    </div>
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">Staff moves</span></div>
+      <datalist id="jh-coach-schools">{% for n in schools %}<option value="{{ n }}">{% endfor %}</datalist>
+      <form method="post" action="{{ url_for('editor_jhsaa_coach') }}" class="jh-form-row">
+        <input type="hidden" name="do" value="move"><input type="hidden" name="coach_id" value="{{ c.coach_id }}">
+        <select name="g"><option value="girls" {{ 'selected' if view.gender == 'girls' }}>Girls</option>
+          <option value="boys" {{ 'selected' if view.gender == 'boys' }}>Boys</option></select>
+        <input name="jh_school" list="jh-coach-schools" placeholder="Program" required>
+        <select name="slot"><option value="head">Head coach</option><option value="asst" selected>Assistant (next open)</option>
+          <option value="asst1">Replace assistant 1</option><option value="asst2">Replace assistant 2</option><option value="asst3">Replace assistant 3</option></select>
+        <button class="bl-pill" type="submit">Move</button>
+      </form>
+      {% if view.seat and view.seat.slot != 'head' and not view.seat.jv_head %}
+      <form method="post" action="{{ url_for('editor_jhsaa_coach') }}" class="jh-form-row">
+        <input type="hidden" name="do" value="jvhead"><input type="hidden" name="coach_id" value="{{ c.coach_id }}">
+        <input type="hidden" name="g" value="{{ view.gender }}"><input type="hidden" name="jh_school" value="{{ view.seat.school }}">
+        <input type="hidden" name="slot" value="{{ view.seat.slot }}">
+        <button class="bl-pill" type="submit">Make JV head</button>
+      </form>
+      {% endif %}
+      {% if not c.retired %}
+      <form method="post" action="{{ url_for('editor_jhsaa_coach') }}" class="jh-form-row">
+        <input type="hidden" name="do" value="retire"><input type="hidden" name="coach_id" value="{{ c.coach_id }}">
+        <input type="hidden" name="g" value="{{ view.gender }}">
+        <button class="bl-pill" type="submit">Retire</button>
+      </form>
+      {% endif %}
+      <details><summary>Edit a rating</summary>
+      <form method="post" action="{{ url_for('editor_jhsaa_coach') }}" class="jh-form-row">
+        <input type="hidden" name="do" value="grade"><input type="hidden" name="coach_id" value="{{ c.coach_id }}">
+        <input type="hidden" name="g" value="{{ view.gender }}">
+        <select name="attr">{% for k, lbl in grade_attrs.items() %}<option value="{{ k }}">{{ lbl }}</option>{% endfor %}</select>
+        <input name="grade" type="number" min="20" max="80" step="1" value="50" style="width:64px">
+        <button class="bl-pill" type="submit">Save</button>
+      </form>
+      </details>
+    </div>
+    {% if view.events %}
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">Moves</span></div>
+      {% for e in view.events %}
+      <div class="jh-kv"><span class="k">{{ e.event|capitalize }} · {{ e.school }}</span><span class="v"><span class="s">{{ e.note }}</span></span></div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+</div>
+{% endblock %}

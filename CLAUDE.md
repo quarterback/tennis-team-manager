@@ -2838,6 +2838,40 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   A blue-blood small school SHOULD beat an average big one — that is the talent model's
   thesis, not a bug. What must survive is the class ladder INSIDE each tag.
   Pinned by `tests/test_jhsaa_archetypes.py`.
+- **‼️ NAMED COACHING STAFFS (owner spec 2026-09, `app/jhsaa_coaches.py`,
+  `docs/AAR-jhsaa-named-coaches.md`).** Every program has a head plus 1-3
+  assistants by roster size (one carries the JV-head LABEL — a designation only);
+  seats key on `School.ident` + gender, never name or class. The coach lens,
+  doubles culture and pairing philosophy now READ THE STAFF (`district_teams(staff=)`)
+  instead of the school draws. ‼️ EVERY coach's grades and philosophies ROLL AT RANDOM,
+  inaugural staffs included (owner rule 2026-09) — an earlier build solved the first
+  head to reproduce the old draws and was withdrawn (every head read Adaptability 50).
+  No owner input after an update: `ensure_staff` seats every program on the next rung,
+  and a player who graduated before coaches existed is indexed as an alumnus from their
+  player page. A `doubles_culture` TAG stays a floor under the staff's doubles instinct.
+  ‼️ ONE converter, `world.jhsaa_staff_for_season`, for the rung AND the recruit
+  hand-off (the `prior` rule — two resolutions fork the memoised season); an
+  archived season reads the effects stored on its history rows. Ratings are
+  IMPRINTED at creation and never develop; only the owner's editor changes one.
+  Former players are hired off the `jhsaa_alumni` index (or `world_graduates`),
+  their grades rolled independently of playing ability. Nothing moves on its own.
+  **STAGE B (built):** development (+ a JV-whisperer's depth lean), feeder ties
+  (head start off the PREVIOUS season's staff) and retention (culture = a fold of
+  Program builder over history) act on ROSTERS and read ONLY archived history
+  (`jhsaa.staff_history`) — a Stage A history row reads NEUTRAL, which is the era
+  gate (no setting). Clutch (a poor big-match head sometimes runs the frozen
+  ladder instead of the best legal arrangement), participation temperament
+  (rotation/rest multipliers; "steady" is ×1.0) and mentorship pairing act in
+  season; a mentorship head's freshmen/sophomores who dressed bank up to +8% of that
+  year's growth (`MENTOR_K`, history-only like development). ‼️ **CHANGEOVER IS THE ONE COACH EFFECT THAT CHANGES HOW A MATCH PLAYS**
+  — the single, bounded exception to "nothing in the coach layer changes how
+  anybody plays": both heads roll at SET BREAKS only (max two a best-of-3),
+  the net is an offset on the next set's gap, replaced not stacked, on its OWN
+  rng stream (`engine.fast.changeover_offset`); set 1 never moves and
+  `co_k`=0 is byte-identical. Measured: random pairings move favourite rates
+  ≤0.1 pt; best-vs-worst coach ≈ +1-2 pts in a close match. Every dial is one
+  constant in `jhsaa_coaches` (0 = off). The carousel is a BUTTON with veto
+  (`/jhsaa/coaches/carousel`), never a rung, never holds the advance.
 - **‼️ SELECTION RUNS THROUGH A COACH EVALUATION LAYER — `_order` IS A JUDGMENT, NOT A
   TALENT RANKING (owner rule 2026-09, `jhsaa.coach_eval`, `docs/AAR-jhsaa-coach-evaluation-layer.md`).**
   `RAW ABILITY → COACH EVALUATION → LINEUP SELECTION → MATCH ENGINE (raw ability)`. The
