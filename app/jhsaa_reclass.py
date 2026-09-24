@@ -626,9 +626,17 @@ def committed_map(file_rows: list[dict]) -> dict | None:
     if not data.get("rows"):
         return None
     from . import jhsaa_districting as jd
-    proposed = {x["school"]: x["proposed"] for x in data["rows"]}
-    current = {x["school"]: x["current"] for x in data["rows"]}
     rows = [dict(x) for x in file_rows]
+    # ‼️ The archived rows name schools as they were at commit time; a school
+    # renamed since would miss the lookup below and be reconstructed as unmoved
+    # (keyed under its new name with before == cls), so reapply never sees it.
+    # Resolve each archived name to the row it describes TODAY first.
+    today = _resolve_names({x["school"]: {} for x in data["rows"]}, rows)
+    proposed, current = {}, {}
+    for x in data["rows"]:
+        n = today[x["school"]]["name"] if x["school"] in today else x["school"]
+        proposed[n] = x["proposed"]
+        current[n] = x["current"]
     before_cls = {}
     for x in rows:
         before_cls[x["name"]] = current.get(x["name"], x["classification"])
