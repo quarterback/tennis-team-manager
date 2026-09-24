@@ -783,14 +783,19 @@ def test_the_4s5d_postseason_lineup_is_legal_under_the_order_of_ability():
 
 def test_the_4s5d_dual_is_rated_on_the_associations_own_weight_table():
     """‼️ The same flight NAME is worth different amounts in different shapes (S1 is
-    2.00 on the nine-court card and 1.00 everywhere else), so the table is resolved
+    2.00 on the nine-flight format and 1.00 everywhere else), so the table is resolved
     per DUAL and a 4S/5D dual carries its own — `rating._flight_score` normalises by
     the weight contested, which is what lets both live in one TOSS graph. D5 must be
-    weighted at all: an unrecognised flight RAISES, by design."""
+    weighted at all: an unrecognised flight RAISES, by design.
+
+    ‼️ D5 IS 0.09, NOT 0.10 (JHSAA rule 2094). At 0.10 the table summed 750 — even, so
+    FWS could come back level on a split like S1+S2+S3+D5, which the anti-stacking
+    signal cannot afford. The tail flight carries the odd hundredth; nothing else about
+    the 2070 backtest's pricing moved. See `test_no_varsity_format_can_return_a_level_FWS`."""
     from app import rating as rt
     w = jh.flight_weights("state", "8A")
     assert w is jh.FLIGHT_WEIGHTS_4S5D
-    assert max(w.values()) == 2.00 and w["D5"] == 0.10
+    assert max(w.values()) == 2.00 and w["D5"] == 0.09
     assert w["S4"] > w["D5"] and w["D4"] > w["D5"]
     # a class's LEAGUE season is 3S/4D whatever its playoff shape, and rates on the
     # ordinary table — the resolution is on the SHAPE, not the classification
@@ -916,36 +921,58 @@ def test_a_doubles_line_records_the_pair_and_a_singles_line_does_not():
     assert ts.pair_counts == {key: [2, 1]}
 
 
-def test_6s5d_flight_weights_cannot_return_a_level_fws():
-    """‼️ 5A's FWS MUST NOT BE ABLE TO TIE (JHSAA rule 2094).
+def test_no_varsity_format_can_return_a_level_FWS():
+    """‼️ FWS MUST NEVER TIE, IN ANY FORMAT (JHSAA rule 2094).
 
-    FWS is weight won over weight contested, so the two sides of a dual come back level
-    exactly when one side's won weight is half the contested total. The 6S/5D table is
-    priced so its total is ODD in hundredths (895), which puts half of it between two
-    whole hundredths and therefore out of reach of any subset — no combination of
-    flights can split the format evenly.
+    FWS is the ANTI-STACKING signal: weight declines down the lineup so that farming a
+    lower flight buys less rating than winning a higher one. It is weight won over
+    weight contested, so the two sides come back LEVEL exactly when one holds half the
+    contested total — and a tie prices nothing, which is the one outcome the mechanic
+    cannot afford.
 
-    This is a PRICING invariant, not a court-count one: eleven flights already means the
-    dual itself cannot tie on points, but FWS is weighted and could still have landed on
-    0.500 apiece. Re-pricing any flight must keep the total odd."""
-    from itertools import combinations
-    t = jh.FLIGHT_WEIGHTS_6S5D
-    cents = [round(v * 100) for v in t.values()]
-    total = sum(cents)
-    assert total == 895, f"6S/5D total moved to {total}; re-check the invariant below"
-    assert total % 2 == 1, "6S/5D weights must total an ODD number of hundredths"
-    # belt and braces: no subset reaches half, checked exhaustively rather than argued
-    reachable = {0}
-    for c in cents:
-        reachable |= {r + c for r in reachable}
-    assert total / 2 not in reachable
-    # and every flight the format contests is actually priced
-    fmt = jh.FORMATS["state_6s5d"]
-    for i in range(1, fmt.n_singles + 1):
-        assert f"S{i}" in t, f"S{i} unpriced"
-    for i in range(1, fmt.n_doubles + 1):
-        assert f"D{i}" in t, f"D{i} unpriced"
-    assert len(t) == fmt.n_singles + fmt.n_doubles
+    An ODD total in hundredths makes that unreachable: every subset sum is a whole
+    number of hundredths and half of an odd total is not. Checked exhaustively per
+    format rather than argued, because the base table is shared by five formats as
+    SUBSETS and a re-price moves several parities at once.
+
+    Until 2094 three of these were even and could tie — 5S/2D at 370, 2S/3D at 350 and
+    4S/5D at 750 (which ties on S1+S2+S3+D5). That was a pricing error, not a design
+    choice."""
+    shapes = {"1S/4D": ("state", "4A"), "3S/4D": ("regular", None),
+              "5S/2D": (jh.EARLY_FORMAT_PHASE, None), "2S/3D": ("state", "1A"),
+              "3S/3D": ("state", "Group 2"), "4S/5D": ("state", "9A"),
+              "6S/5D": ("state", "5A")}
+    for name, (phase, group) in shapes.items():
+        fmt = jh.dual_format(phase, group)
+        table = jh.flight_weights(phase, group)
+        contested = {}
+        for i in range(1, fmt.n_singles + 1):
+            assert f"S{i}" in table, f"{name}: S{i} unpriced"
+            contested[f"S{i}"] = table[f"S{i}"]
+        for i in range(1, fmt.n_doubles + 1):
+            assert f"D{i}" in table, f"{name}: D{i} unpriced"
+            contested[f"D{i}"] = table[f"D{i}"]
+        cents = [round(v * 100) for v in contested.values()]
+        total = sum(cents)
+        assert total % 2 == 1, f"{name}: weights total {total} hundredths (EVEN) — FWS can tie"
+        reachable = {0}
+        for c in cents:
+            reachable |= {r + c for r in reachable}
+        assert total / 2 not in reachable, f"{name}: a subset splits the dual evenly"
+
+
+def test_flight_weights_decline_down_every_lineup():
+    """The anti-stacking gradient: a lower flight is never worth more than a higher one,
+    in either discipline, in any format. A flat or inverted rung is a rung the mechanic
+    is not applying — S4/S5 sat flat at 0.10 on the shared table until 2094."""
+    shapes = [("state", "4A"), ("regular", None), (jh.EARLY_FORMAT_PHASE, None),
+              ("state", "1A"), ("state", "Group 2"), ("state", "9A"), ("state", "5A")]
+    for phase, group in shapes:
+        fmt = jh.dual_format(phase, group)
+        table = jh.flight_weights(phase, group)
+        for pre, n in (("S", fmt.n_singles), ("D", fmt.n_doubles)):
+            seq = [table[f"{pre}{i}"] for i in range(1, n + 1)]
+            assert seq == sorted(seq, reverse=True), f"{group} {pre}: {seq} not declining"
 
 
 def test_6s5d_is_singles_forward_in_aggregate_but_ties_S1_and_D1():

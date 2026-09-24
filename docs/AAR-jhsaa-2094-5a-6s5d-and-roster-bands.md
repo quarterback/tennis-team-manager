@@ -67,9 +67,33 @@ any subset, so **FWS cannot tie on this format** whichever way the flights fall.
 flights already prevents a tie on points; this prevents one on the weighted share. Re-pricing
 any flight must preserve the odd total — `tests/test_jhsaa_lineup.py` asserts it exhaustively.
 
-‼️ **This property does not hold association-wide.** 5S/2D (370), 4S/5D (750) and 2S/3D (350)
-all total EVEN and can return a level FWS — 4S/5D ties on S1+S2+S3+D5, for instance. That is
-pre-existing, was not introduced here, and was not fixed here.
+‼️ **Three other formats were mispriced the same way, and are fixed here.** 5S/2D (370),
+2S/3D (350) and 4S/5D (750) all totalled EVEN and could return a level FWS — 4S/5D tied on
+S1+S2+S3+D5. That was a pricing error rather than a design choice, so all three are corrected
+to odd and the invariant now holds association-wide.
+
+The shared base table serves **five** formats as subsets (1S/4D, 3S/4D, 5S/2D, 2S/3D, 3S/3D),
+so parity cannot be fixed one format at a time — an edit moves several subsets at once. Three
+flights is the provable minimum that makes all five odd: S2 is forced by the system, S3
+follows it, and one of D3/S4/S5 must join them. The minimal choice moves each by a single
+hundredth:
+
+| flight | was | now | why |
+|---|---|---|---|
+| S2 | 0.75 | **0.74** | forced — 2S/3D parity cannot move without it |
+| S3 | 0.25 | **0.26** | follows S2 to hold 3S/4D and 3S/3D odd |
+| S4 | 0.10 | **0.11** | third flip for 5S/2D; also retires the S4 = S5 flat spot |
+| 4S/5D D5 | 0.10 | **0.09** | its own table; the tail is the cheapest hundredth to spend |
+
+Totals after: 1S/4D 285, 3S/4D 385, 5S/2D 371, 2S/3D 349, 3S/3D 375, 4S/5D 749, 6S/5D 895 —
+all odd. The 2070 backtest's judgement about what a flight is worth is otherwise untouched;
+no ordering changes and no rated share moves by more than ~0.1%.
+
+‼️ **Why a tie is not survivable here.** FWS is the association's anti-stacking signal —
+weight declines down the lineup so that farming a lower flight buys less rating than winning
+a higher one. A level FWS prices nothing, which is precisely the outcome a stacking program
+would play for. The S4 = S5 flat spot was a milder version of the same fault: a rung where
+the gradient was not actually applying.
 
 A class that wanted width alone would have
 asked for 4S/5D, which was on the table and is not what was petitioned for. If that table

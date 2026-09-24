@@ -8465,7 +8465,21 @@ def play_district(teams: list[TeamSeason], year: int, salt: str = "") -> list[Te
 # singles, doubles below #1 singles) and not Oregon's (a 4S/4D format that does not
 # map). They are the only flight numbers in the pipeline — nothing else hard-codes one.
 FLIGHT_WEIGHTS = {
-    "S1": 1.00, "S2": 0.75, "S3": 0.25, "S4": 0.10, "S5": 0.10,
+    # ‼️ S2/S3/S4 CARRY AN ODD HUNDREDTH TO KEEP FWS FROM TYING (JHSAA rule 2094).
+    # They read 0.75/0.25/0.10 until then, which left the 5S/2D (370) and 2S/3D (350)
+    # subsets of this table summing EVEN — and an even total is exactly the condition
+    # under which two teams can split a dual's contested weight 50/50 and come back
+    # level on FWS. That defeats what FWS is for: it is the ANTI-STACKING signal, a
+    # declining price down the lineup so that farming a lower flight buys less rating
+    # than winning a higher one, and a tie is the one outcome that prices nothing.
+    # ‼️ THIS TABLE IS SHARED BY FIVE FORMATS AS SUBSETS (1S/4D, 3S/4D, 5S/2D, 2S/3D,
+    # 3S/3D), so parity cannot be fixed one format at a time — an edit moves several
+    # subsets at once. Three flights is the MINIMUM that makes all five odd: S2 is
+    # forced, S3 follows it, and one of D3/S4/S5 must join them. Any re-price here
+    # must re-check all five; `tests/test_jhsaa_lineup.py` asserts them.
+    # Moving S4 off 0.10 also retires a flat spot — S4 and S5 were priced identically,
+    # which is a rung the anti-stacking gradient was not actually applying.
+    "S1": 1.00, "S2": 0.74, "S3": 0.26, "S4": 0.11, "S5": 0.10,
     # S6 is contested in NO shape on this table — same reason as D5 below: a generic
     # per-slot reader must rank 5A's sixth singles flight below its fifth instead of
     # taking the bare `.get(slot, 0.25)` default and pricing the format's last singles
@@ -8497,9 +8511,15 @@ FLIGHT_WEIGHTS = {
 #: so a 7.50-max shape and a 3.85-max one each contribute a 0-1 share to the same
 #: TOSS table; that is the same property that already lets 5S/2D, 3S/4D and 1S/4D
 #: share one rating graph, and it is what makes a per-dual table safe here.
+#: ‼️ D5 IS 0.09, NOT 0.10, SO THE TOTAL IS ODD (JHSAA rule 2094). At 0.10 this table
+#: summed 750 — even, and therefore able to return a level FWS on a split such as
+#: S1+S2+S3+D5. The tail flight carries the hundredth because it is the cheapest place
+#: to put it: one hundredth off the bottom rung changes no ordering and moves a rated
+#: share by ~0.1%. The 2070 backtest's judgement about what each flight is worth is
+#: otherwise untouched.
 FLIGHT_WEIGHTS_4S5D = {
     "S1": 2.00, "S2": 1.00, "S3": 0.65, "S4": 0.30,
-    "D1": 2.00, "D2": 0.80, "D3": 0.45, "D4": 0.20, "D5": 0.10,
+    "D1": 2.00, "D2": 0.80, "D3": 0.45, "D4": 0.20, "D5": 0.09,
 }
 
 #: 5A's eleven-flight format (JHSAA rule 2094). Singles carry 500 of the 895 total
