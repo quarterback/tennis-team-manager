@@ -456,6 +456,15 @@ def test_program_and_coach_pages_render(world_season):
     # Transactions read Hired / Left staff / Retired — never the raw plumbing.
     assert "Transactions" in body and "Hired" in body
     assert "coaches were introduced" not in body and "free pool" not in body
+    # A Coach of the Year winner's page lists the award ABOVE Transactions, as a
+    # name only — never the score (owner rules 2026-09).
+    from app import jhsaa_coy as coy
+    won = coy.season_awards(wid, world_season["world"]["year"], "girls")
+    winner = next(rows[0] for rows in (*won["state"].values(), *won["district"].values()) if rows)
+    wbody = client.get(f"/jhsaa/coach/{winner['coach_id']}?g=girls").get_data(as_text=True)
+    assert "Coach of the Year" in wbody
+    assert wbody.index(">Awards<") < wbody.index(">Transactions<")
+    assert f"{winner['score']}" not in wbody
     assert client.get("/jhsaa/coach/nope").status_code == 404
     # The program's History tab lists every varsity head coach, in a fold.
     hist = client.get(f"/jhsaa/school/{s.name}?g=girls&view=history").get_data(as_text=True)

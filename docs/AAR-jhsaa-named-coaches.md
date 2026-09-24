@@ -437,11 +437,29 @@ Every component is a 0-100 score and the award score is the weighted sum.
     **‼️ Names and rank ONLY (owner rule 2026-09).** No score, component, weight
     or record appears in the visible UI anywhere in the award. Those numbers are
     stored for the record and stay behind the scenes.
-  - The coach page: a career tile with the state and district counts, and the
-    award on its season's ledger row (`coach_awards`).
+  - The coach page: an **Awards** panel ABOVE Transactions (owner rule 2026-09),
+    one row per Coach of the Year won, newest first ("2094 1A Coach of the Year",
+    "2094 Mariners League Coach of the Year" — the player page's honours rows),
+    plus a career tile with the state and district counts and the award on its
+    season's ledger row (`coach_awards`).
   - The program History tab's Seasons column puts a **COY / STATE COY** chip beside
     that season's head coach (`program_awards`).
 - **Tests:** `tests/test_jhsaa_coy.py` covers the binomial z and its cap, the curve
   fit recovering a known slope, expected State value rising with strength, and a
   hand-archived season selected end to end. In that season, a league's preseason
   last place wins the league and takes District Coach of the Year.
+
+## The research export (owner request 2026-09)
+Every JHSAA bundle carries five coach files, built by `jhsaa_coaches.research_tables`
+from whole-table reads (never one query per coach), for the bundle's gender and
+EVERY archived season — archive path only, like the realignment ledger:
+`jhsaa_coaches.csv` (identity, current seat, status, overall/tier, profile, pairing,
+temperament, every grade), `jhsaa_coach_seasons.csv` (one row per coach per seat
+per season, with the program's record and the blended staff effects played with),
+`jhsaa_coach_events.csv` (the raw staff ledger the Transactions panel folds),
+`jhsaa_coach_awards.csv` (every Coach of the Year finalist WITH score and
+components, `repeat` included) and `jhsaa_coach_records.csv` (each head's career:
+W-L-T, programs, state titles, COY counts). `coach_id` joins all five; `program_id`
+joins programs.csv on the roster identity. The scores are in the export ON PURPOSE:
+the names-and-rank-only rule governs the pages, and the export is the owner's
+analysis copy.

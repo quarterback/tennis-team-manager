@@ -64,6 +64,17 @@
       <p class="jh-empty">No season coached yet.</p>
       {% endif %}
     </div>
+    {# AWARDS (owner rule 2026-09): every Coach of the Year won, newest first,
+       above Transactions — the player page's honours rows. Names only: the
+       award's score and components never appear on a page. #}
+    {% if view.awards %}
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">Awards</span></div>
+      {% for a in view.awards %}
+      <div class="jh-honor"><span class="y">{{ a.season_year }}</span><span>{{ a.label }}</span></div>
+      {% endfor %}
+    </div>
+    {% endif %}
     {# TRANSACTIONS (owner rule 2026-09): Hired · Left staff · Retired — the
        year, what happened and where. Nothing about free pools or migrations. #}
     {% if view.events %}

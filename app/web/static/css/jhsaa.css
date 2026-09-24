@@ -335,7 +335,7 @@ a.jh-eyebrow:hover { color: var(--brand-strong); }
 .jh-dirsec { margin-bottom: 14px; }
 /* Three across on a wide screen: ~860 programs one per line is the scroll this
    page exists to end. */
-.jh-dirgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
+.jh-dirgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(330px, 100%), 1fr)); }
 .jh-dirrow {
   display: flex; align-items: center; gap: 9px; padding: 8px 13px; min-width: 0;
   text-decoration: none; border-bottom: 1px solid var(--border-subtle);
@@ -450,7 +450,7 @@ a.jh-eyebrow:hover { color: var(--brand-strong); }
 .jh-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
 .jh-layout.wide { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); }
 .jh-stack { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
-.jh-cols2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 18px; align-items: start; min-width: 0; }
+.jh-cols2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap: 18px; align-items: start; min-width: 0; }
 .jh-cols2 > * { min-width: 0; }
 .jh-cols3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; align-items: start; }
 @media (max-width: 1000px) {
@@ -1069,6 +1069,10 @@ a.jh-eyebrow:hover { color: var(--brand-strong); }
 .jh-stagefold > summary .nm { font-weight: 800; font-size: var(--fs-body-l); color: var(--text-primary); }
 .jh-stagefold > summary:hover .nm { color: var(--brand-strong); }
 .jh-stagefold > .bd { padding: 2px 16px 14px; }
+/* The duals are batched into two columns; when a narrow container (the Road to
+   State rail) stacks them, the column gap opened a hole mid-list between two
+   duals of the same round. No row gap here — the cards' own spacing carries it. */
+.jh-stagefold .jh-cols2 { row-gap: 0; }
 .jh-mgame .cap { grid-column: 1 / -1; font-size: var(--fs-micro); font-weight: 800;
   letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-faint); }
 
