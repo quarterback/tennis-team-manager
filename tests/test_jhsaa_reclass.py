@@ -455,3 +455,57 @@ def test_the_lab_advance_holds_on_an_open_proposal(monkeypatch, clean_archive):
         conn.commit()
     finally:
         conn.close()
+
+
+def test_a_school_renamed_after_the_cycle_still_takes_its_committed_league(scored, monkeypatch, tmp_path, clean_archive):
+    """Owner report 2095: a school renamed after the realignment was missed by the
+    re-apply (the map is keyed on the commit-time display name), kept the seed
+    file's old league while every leaguemate took the save's, and played in a
+    one-team league. A rename (display name moved, old name stamped in `source`)
+    must still resolve to its map entry."""
+    w = clean_archive
+    copy_path, original, moves = _commit_on_a_copy(tmp_path, monkeypatch, w)
+    committed = _shape(copy_path)
+    doc = json.loads(original)
+    old = next(iter(moves))
+    row = next(r for r in doc["schools"] if r["name"] == old)
+    row["source"] = row.get("source") or old
+    row["name"] = old + " Renamed"
+    copy_path.write_text(json.dumps(doc))
+    jh.reset_schools()
+    rows = {r["name"]: r for r in jh._rows()}
+    got = rows[old + " Renamed"]
+    assert (got["classification"], got["group"], got.get("girls_district"),
+            got.get("boys_district")) == committed[old][:4]
+    jh.reset_schools()
+
+
+def test_a_legacy_cycle_still_moves_a_school_renamed_after_it(scored, monkeypatch, tmp_path, clean_archive):
+    """A cycle committed before `map` is rebuilt from its archived rows, which
+    name schools as they were at commit time. A school renamed since (display
+    name moved, old name in `source`) must still be moved and re-leagued."""
+    w = clean_archive
+    copy_path, original, moves = _commit_on_a_copy(tmp_path, monkeypatch, w)
+    committed = _shape(copy_path)
+    conn = wd._db()
+    try:
+        data = json.loads(conn.execute("SELECT data FROM world_jhsaa_reclass WHERE world_id=?"
+                                       " AND status='committed'", (w["id"],)).fetchone()["data"])
+        data.pop("map")
+        conn.execute("UPDATE world_jhsaa_reclass SET data=? WHERE world_id=? AND status='committed'",
+                     (json.dumps(data), w["id"]))
+        conn.commit()
+    finally:
+        conn.close()
+    doc = json.loads(original)
+    old = next(n for n in moves
+               if not next(r for r in doc["schools"] if r["name"] == n).get("source"))
+    row = next(r for r in doc["schools"] if r["name"] == old)
+    row["source"] = old
+    row["name"] = old + " Renamed"
+    copy_path.write_text(json.dumps(doc))
+    jh.reset_schools()
+    got = {r["name"]: r for r in jh._rows()}[old + " Renamed"]
+    assert (got["classification"], got["group"], got.get("girls_district"),
+            got.get("boys_district")) == committed[old][:4]
+    jh.reset_schools()

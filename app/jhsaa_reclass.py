@@ -591,7 +591,8 @@ def _snapshot(rows: list[dict], before_cls: dict) -> dict:
     return {r["name"]: {"before": before_cls.get(r["name"], r["classification"]),
                         "cls": r["classification"], "grp": r.get("group", r["classification"]),
                         "gd": r.get("girls_district"), "bd": r.get("boys_district"),
-                        "pu": bool(r.get("play_up"))}
+                        "pu": bool(r.get("play_up")),
+                        "id": r.get("source") or r["name"]}
             for r in rows}
 
 
@@ -625,9 +626,17 @@ def committed_map(file_rows: list[dict]) -> dict | None:
     if not data.get("rows"):
         return None
     from . import jhsaa_districting as jd
-    proposed = {x["school"]: x["proposed"] for x in data["rows"]}
-    current = {x["school"]: x["current"] for x in data["rows"]}
     rows = [dict(x) for x in file_rows]
+    # ‼️ The archived rows name schools as they were at commit time; a school
+    # renamed since would miss the lookup below and be reconstructed as unmoved
+    # (keyed under its new name with before == cls), so reapply never sees it.
+    # Resolve each archived name to the row it describes TODAY first.
+    today = _resolve_names({x["school"]: {} for x in data["rows"]}, rows)
+    proposed, current = {}, {}
+    for x in data["rows"]:
+        n = today[x["school"]]["name"] if x["school"] in today else x["school"]
+        proposed[n] = x["proposed"]
+        current[n] = x["current"]
     before_cls = {}
     for x in rows:
         before_cls[x["name"]] = current.get(x["name"], x["classification"])
@@ -640,6 +649,45 @@ def committed_map(file_rows: list[dict]) -> dict | None:
     return _snapshot(rows, before_cls)
 
 
+def _resolve_names(m: dict, rows: list[dict]) -> dict:
+    """{map key: the row it describes TODAY}. ‼️ The map is keyed on the DISPLAY
+    name at commit time, and the owner renames schools after a cycle: a renamed
+    school's key named nobody, so reapply skipped it and it kept the SEED FILE's
+    league while every leaguemate took the save's — a one-team league (Morne
+    Caribou, ex-Belyakov, alone in "Kajaani League", 2095). Follow renames: a live
+    name wins, then the importer's alias file, then each row's `source` (a display
+    rename stamps the old name there). Built here, not via `jhsaa.former_names()`,
+    because that reads `_rows()` and this runs inside it."""
+    by_name = {r["name"]: r for r in rows}
+    by_ident = {(r.get("source") or r["name"]): r for r in rows}
+    alias: dict[str, str] = {}
+    try:
+        with open(jh._FORMER, encoding="utf-8") as fh:
+            alias.update(json.load(fh)["former_names"])
+    except (OSError, ValueError, KeyError):
+        pass
+    for r in rows:
+        src = r.get("source")
+        if src and src != r["name"] and src not in by_name:
+            alias[src] = r["name"]
+    out = {}
+    for n, e in m.items():
+        # the roster identity (`source or name`) never moves on a rename — the
+        # map records it from the snapshot on; older maps fall back to aliases
+        if e.get("id") and e["id"] in by_ident:
+            out[n] = by_ident[e["id"]]
+            continue
+        cur, seen = n, set()
+        while cur not in by_name and cur in alias and cur not in seen:
+            seen.add(cur)
+            cur = alias[cur]
+        r = by_name.get(cur)
+        # never let an alias land on a school the map ALSO names directly
+        if r is not None and (cur == n or cur not in m):
+            out[n] = r
+    return out
+
+
 def reapply(rows: list[dict]) -> int:
     """Put the newest committed map back onto `rows` IN PLACE when the file reads
     PRE-commit — any moved school still sitting in the class the cycle moved it
@@ -649,7 +697,7 @@ def reapply(rows: list[dict]) -> int:
     m = committed_map(rows)
     if not m:
         return 0
-    by_name = {r["name"]: r for r in rows}
+    by_name = _resolve_names(m, rows)
     reverted = [n for n, e in m.items() if e["before"] != e["cls"]
                 and n in by_name and by_name[n]["classification"] == e["before"]]
     if not reverted:
