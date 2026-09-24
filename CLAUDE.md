@@ -2892,6 +2892,15 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   equal) outranks an assistant's; a NEW coach only when nobody applied.
   ‼️ NO TENURE GATE on applying: a two-season minimum closed the whole market
   on a save seated one season earlier, and every opening became a new coach.
+  ‼️ **COACH OF THE YEAR (owner spec 2026-09, `app/jhsaa_coy.py`)** — District
+  (per league) and State (per class), by gender, head coaches only, owner's
+  weights (District 45 overperformance / 40 achievement / 10 improvement / 5
+  quality; State 30 season / 30 postseason / 30 overperformance / 10
+  improvement). Expectations are PRESEASON (`jhsaa_preseason`, stored by the
+  rung) through a logistic fitted on the season; z uses √Σp(1−p), capped ±2.5.
+  Selected once after the commit into `jhsaa_coach_award`, never on read; a
+  season archived before it is awarded once from the Honors page (background).
+  A State run never decides the District award.
   ‼️ **The program page shows OVR, age, first season and the head's record —
   never ratings** (those live on the coach page; the Staff tab keeps them
   collapsed).

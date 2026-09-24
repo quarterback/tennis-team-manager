@@ -4409,7 +4409,21 @@ def jhsaa_honors_view(seed: int, gender: str, group: str | None = None,
     # as a single unnamed team rather than an empty page.
     tiers = aw.get("teams") or ([{"name": "All-State", "players": aw["all_state"]}]
                                 if aw.get("all_state") else [])
+    # COACH OF THE YEAR (owner spec 2026-09) — read back off `jhsaa_coach_award`;
+    # the route backfills a season archived before the award existed.
+    import app.jhsaa_coy as coy
+    ca = coy.season_awards(w["id"], yr, g)
+    coy_state = [{**r, "mark": _jh_deco(schools, r["school"], 20)["mark"]}
+                 for r in ca["state"].get(grp, [])]
+    coy_district = sorted(
+        ({"district": d, "rows": [{**r, "mark": _jh_deco(schools, r["school"], 20)["mark"]}
+                                  for r in rows]}
+         for (gp, d), rows in ca["district"].items() if gp == grp),
+        key=lambda x: x["district"])
     return {
+        "coy_state": coy_state, "coy_district": coy_district,
+        "coy_pending": coy.needs_awards(w["id"], yr, g),
+        "world_id": w["id"],
         "ready": bool(arc), "gender": g, "year": yr, "years": years,
         "group": grp, "groups": list(jh.GROUPS), "scope": scope,
         "season_year": arc.get("season_year", world.jhsaa_season_year(w)),
@@ -5689,6 +5703,10 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     head_coaches = jc.program_head_coaches(w["id"], sc.ident, g,
                                            world.jhsaa_season_year(w))
     heads_by_year = jc.program_heads_by_year(w["id"], sc.ident, g)
+    import app.jhsaa_coy as _coy
+    for y, labels in _coy.program_awards(w["id"], sc.ident, g).items():
+        if y in heads_by_year:
+            heads_by_year[y] = {**heads_by_year[y], "coy": labels}
     return {
         "found": True, "school": school, "gender": g, "year": yr, "years": years,
         "season_year": season_year, "is_current": bool(years) and yr == years[0],

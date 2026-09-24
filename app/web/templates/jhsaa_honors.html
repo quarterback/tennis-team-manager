@@ -82,6 +82,7 @@
   {{ jh_tabs([('state', 'All-State', view.teams|map(attribute='players')|map('length')|sum),
               ('region', 'All-Region', view.regions|sum(attribute='n')),
               ('district', 'All-District', view.districts|length),
+              ('coaches', 'Coach of the Year', view.coy_district|length + (1 if view.coy_state else 0)),
               ('method', 'Flight check', 0)], 'jhaw') }}
 
   {# --- All-State ------------------------------------------------------- #}
@@ -196,6 +197,72 @@
       </div>
     </div>
     {% endfor %}
+  </div>
+
+  {# --- Coach of the Year (owner spec 2026-09): State for the class, then one
+       per league. Head coaches only; finalists shown with the four components
+       the award is scored on. --- #}
+  <div class="jh-pane" data-pane="coaches" hidden>
+    {% if view.coy_pending %}
+    <div class="jh-empty" style="padding:16px">Selecting this season's Coach of the Year —
+      refresh in a moment.</div>
+    {% elif not view.coy_state and not view.coy_district %}
+    <div class="jh-empty" style="padding:16px">No Coach of the Year for this season —
+      it predates named coaches.</div>
+    {% else %}
+    {% if view.coy_state %}{% set w = view.coy_state[0] %}
+    <div class="jh-poy" style="margin:10px 14px 4px">
+      <span class="jh-schoolcell">{{ w.mark|safe }}</span>
+      <div>
+        <div class="nm"><a href="{{ url_for('jhsaa_coach', coach_id=w.coach_id, u=u, g=view.gender) }}">{{ w.name }}</a></div>
+        <div class="sub">{{ w.school }} · {{ w.detail.record }}</div>
+      </div>
+      <span class="jh-chip gold">{{ view.group }} COACH OF THE YEAR</span>
+    </div>
+    <div class="jh-awardsec">
+      <div class="jh-awardsec-head">State finalists <span>season 30 · postseason 30 · overperformance 30 · improvement 10</span></div>
+      <div class="bl-tablescroll">
+      <table class="bl-table jh-ledger nowrap">
+        <thead><tr><th style="width:36px">#</th><th>Coach</th><th>Program</th><th style="width:72px">Record</th>
+          <th style="width:64px">Season</th><th style="width:72px">Postseason</th><th style="width:64px">Over</th>
+          <th style="width:64px">Improve</th><th style="width:64px">Score</th></tr></thead>
+        <tbody>
+        {% for r in view.coy_state %}
+        <tr><td>{{ r.rank }}</td>
+          <td class="nm"><a href="{{ url_for('jhsaa_coach', coach_id=r.coach_id, u=u, g=view.gender) }}">{{ r.name }}</a></td>
+          <td class="nm">{{ r.school }}</td><td>{{ r.detail.record }}</td>
+          <td>{{ r.detail.quality|round|int }}</td><td>{{ r.detail.post|round|int }}</td>
+          <td>{{ r.detail.over|round|int }}</td><td>{{ r.detail.improve|round|int }}</td>
+          <td><b>{{ r.score|round(1) }}</b></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    </div>
+    {% endif %}
+    {% if view.coy_district %}
+    <div class="jh-awardsec">
+      <div class="jh-awardsec-head">District Coach of the Year <span>overperformance 45 · achievement 40 · improvement 10 · quality 5</span></div>
+      <div class="bl-tablescroll">
+      <table class="bl-table jh-ledger nowrap">
+        <thead><tr><th>District</th><th>Coach</th><th>Program</th><th style="width:72px">Dist</th>
+          <th style="width:64px">Over</th><th style="width:72px">Achieve</th><th style="width:64px">Improve</th>
+          <th style="width:64px">Quality</th><th style="width:64px">Score</th></tr></thead>
+        <tbody>
+        {% for d in view.coy_district %}{% set r = d.rows[0] %}
+        <tr><td class="nm">{{ d.district }}</td>
+          <td class="nm"><a href="{{ url_for('jhsaa_coach', coach_id=r.coach_id, u=u, g=view.gender) }}">{{ r.name }}</a></td>
+          <td class="nm">{{ r.school }}</td><td>{{ r.detail.drecord }}</td>
+          <td>{{ r.detail.over|round|int }}</td><td>{{ r.detail.achieve|round|int }}</td>
+          <td>{{ r.detail.improve|round|int }}</td><td>{{ r.detail.quality|round|int }}</td>
+          <td><b>{{ r.score|round(1) }}</b></td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    </div>
+    {% endif %}
+    {% endif %}
   </div>
 
   {# --- The flight check the selector ran ------- #}

@@ -632,7 +632,7 @@
           {% if s.made_toc %}<span class="jh-chip {{ 'gold' if s.toc_champion }}">{{ s.toc_finish|upper }}</span>{% endif %}</td>
         <td>{{ s.state_rank or '—' }}</td>
         {% set hc = view.heads_by_year.get(s.year) %}
-        <td class="nm" style="font-variant-numeric:normal">{% if hc %}<a href="{{ url_for('jhsaa_coach', coach_id=hc.coach_id, u=u, g=view.gender) }}">{{ hc.name }}</a>{% endif %}</td>
+        <td class="nm" style="font-variant-numeric:normal">{% if hc %}<a href="{{ url_for('jhsaa_coach', coach_id=hc.coach_id, u=u, g=view.gender) }}">{{ hc.name }}</a>{% for c in (hc.coy or []) %} <span class="jh-chip gold">{{ 'STATE COY' if c == 'State COY' else 'COY' }}</span>{% endfor %}{% endif %}</td>
         <td style="font-variant-numeric:normal;color:var(--text-secondary)">
           {% if n_honors %}{{ n_honors }} honour{{ '' if n_honors == 1 else 's' }} <span class="jh-caret" aria-hidden="true">›</span>
           {% else %}<span style="color:var(--text-faint)">—</span>{% endif %}

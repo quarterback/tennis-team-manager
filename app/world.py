@@ -368,6 +368,8 @@ def init_schema() -> None:
     conn.executescript(_SCHEMA)
     from . import jhsaa_coaches as _jc
     conn.executescript(_jc._SCHEMA)
+    from . import jhsaa_coy as _coy
+    conn.executescript(_coy.SCHEMA)
     for col, typ in (("week_signed", "INTEGER DEFAULT 0"), ("flips", "INTEGER DEFAULT 0"),
                      ("commit_history", "TEXT DEFAULT '[]'")):
         try:
@@ -4347,6 +4349,12 @@ def run_jhsaa(seed: int, world: dict) -> dict:
             # hand-off through `jhsaa_staff_for_season`).
             jhsaa_coaches.record_season(conn, world["id"], year, gender,
                                         season["teams"].values(), staff, season_year)
+            # THE PRESEASON STRENGTHS Coach of the Year is measured against —
+            # the roster the season was played with, stored so the award (and a
+            # later re-selection) never has to rebuild it.
+            from . import jhsaa_coy as _coy
+            _coy.record_preseason(conn, world["id"], year, gender,
+                                  season["teams"].values())
             # THE ALUMNI INDEX — this season's seniors, the pool a former player is
             # hired from. `honored` is any award row naming them (`row_pids`).
             from . import jhsaa_awards as _jaw
@@ -4384,6 +4392,18 @@ def run_jhsaa(seed: int, world: dict) -> dict:
         # `jhsaa.invalidate_staff_history`). In `finally` so a rolled-back rung
         # does not leave a cache built from its uncommitted clear either.
         jhsaa.invalidate_staff_history()
+    # COACH OF THE YEAR — selected once, off the committed archive (owner spec
+    # 2026-09). After the commit, so it reads the season exactly as stored; a
+    # failure here leaves the season intact and the award is selected on the
+    # Honors page's first visit instead (`jhsaa_coy.ensure_season`).
+    from . import jhsaa_coy as _coy
+    for gender in ("girls", "boys"):
+        try:
+            _coy.select_season(world["id"], year, gender, salt)
+        except Exception:                                  # noqa: BLE001
+            import logging
+            logging.getLogger(__name__).exception(
+                "Coach of the Year selection failed for %s %s", year, gender)
     return {"event": "jhsaa", "year": year, "champions": champs}
 
 

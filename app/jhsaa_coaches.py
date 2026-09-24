@@ -466,7 +466,7 @@ CREATE TABLE IF NOT EXISTS jhsaa_coach_carousel (
 """
 
 _TABLES = ("jhsaa_coach", "jhsaa_coach_seat", "jhsaa_coach_history", "jhsaa_coach_event",
-           "jhsaa_alumni", "jhsaa_coach_carousel")
+           "jhsaa_alumni", "jhsaa_coach_carousel", "jhsaa_preseason", "jhsaa_coach_award")
 
 
 def _conn():
@@ -952,6 +952,18 @@ def coach_view(world_id: int, coach_id: str, season_year: int) -> dict | None:
                 "role": "Head coach" if h["slot"] == "head" else "Assistant"}
                for h in car["history"]]
     ledger, totals = _career_ledger(world_id, history)
+    # Coach of the Year (owner spec 2026-09): each award rides on its season row
+    # and is counted on the career panel.
+    from . import jhsaa_coy
+    coy = jhsaa_coy.coach_awards(world_id, coach_id)
+    by_season = {}
+    for a in coy:
+        by_season.setdefault((a["world_year"], a["gender"]), []).append(
+            "State COY" if a["level"] == "state" else "District COY")
+    for row in ledger:
+        row["coy"] = by_season.get((row["world_year"], row["gender"]), [])
+    totals["coy_state"] = sum(1 for a in coy if a["level"] == "state")
+    totals["coy_district"] = sum(1 for a in coy if a["level"] == "district")
     events = transactions([{**e, "school": names.get(e["ident"], e["ident"])}
                            for e in car["events"]])
     # Off a staff a coach is a FREE AGENT, or RETIRED (owner rule 2026-09) — never

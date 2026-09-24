@@ -243,3 +243,46 @@ read per program, memoised and cleared by `record_season`.
     only for seasons with a coach history. It never parses the whole archived
     blob.
 
+## Coach of the Year (owner spec 2026-09, `app/jhsaa_coy.py`)
+- Two awards, both for **head** coaches, both by gender:
+  - **District**: one per league, ranked against the league.
+  - **State**: one per class, ranked against the class.
+- Each component is scored 0-100. The weights are the owner's:
+  - **District** (a district-season award, so a State run never decides it):
+    - 45%: district overperformance.
+    - 40%: district achievement, `100 × (0.65 × place percentile + 0.35 ×
+      district win %)`. Dual margin is left out on purpose.
+    - 10%: improvement.
+    - 5%: team quality.
+  - **State**:
+    - 30%: season quality.
+    - 30%: postseason achievement, which is the coefficient's State prices plus
+      the TOC bonus. There is no second title bonus.
+    - 30%: overperformance, split into 20 points of full-season z and 10 points of
+      postseason surprise.
+    - 10%: improvement.
+- **The expectation is preseason.**
+  - Strength is the mean overall of the nine who would dress, stored per program
+    per season in `jhsaa_preseason` by the rung.
+  - A dual's win probability is a logistic on the strength gap plus home court,
+    fitted on that season's varsity duals.
+  - Overperformance is z = (W − Σp) / √Σp(1−p), capped at ±2.5.
+- **The postseason surprise** is actual State value minus expected State value.
+  The expected value comes from simulating qualification (preseason strength plus
+  a season's noise) and the seeded single-elimination bracket, 400 draws per class
+  on blake2s.
+- **Schedule-adjusted rating** is TOSS (`pi`) as a percentile within the class.
+- **Improvement** compares this season's percentile with a weighted baseline of
+  the previous three seasons (0.5 / 0.3 / 0.2). A program with no history scores a
+  neutral 50.
+- The award is **selected once, after the rung commits**, and stored in
+  `jhsaa_coach_award` with the top five per pool. It is never recomputed on read.
+- A season archived before this existed is awarded on the first Honors visit, in
+  the background. That run rebuilds that season's rosters for the preseason
+  strengths.
+- **Where it shows:**
+  - The Honors page has a Coach of the Year tab, with State finalists and one
+    District winner per league.
+  - The coach page counts the awards and shows them in the ledger honours.
+  - Program Seasons puts a COY chip beside the head coach.
+

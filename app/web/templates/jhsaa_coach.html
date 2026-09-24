@@ -52,6 +52,7 @@
               {% if s.toc_champion %} <span class="jh-chip gold">TOC</span>{% endif %}</td>
             <td style="font-variant-numeric:normal;font-size:14px;color:var(--text-secondary)">
               {% set bits = [] %}
+              {% for c in (s.coy or []) %}{% set _ = bits.append(c) %}{% endfor %}
               {% if s.poy %}{% set _ = bits.append(s.poy ~ ' POY') %}{% endif %}
               {% if s.all_state %}{% set _ = bits.append(s.all_state ~ ' All-State') %}{% endif %}
               {{ bits|join(' · ') }}</td>
@@ -89,6 +90,8 @@
             <span class="s">{{ t.state_apps }} State trip{{ 's' if t.state_apps != 1 }}</span></div>
           <div class="jh-metric"><span class="k">District titles</span><span class="v">{{ t.district_titles }}</span>
             <span class="s">as head</span></div>
+          <div class="jh-metric"><span class="k">Coach of the Year</span><span class="v">{{ t.coy_state + t.coy_district }}</span>
+            <span class="s">{{ t.coy_state }} state · {{ t.coy_district }} district</span></div>
           <div class="jh-metric"><span class="k">All-State</span><span class="v">{{ t.all_state }}</span>
             <span class="s">players coached{% if t.poy %} · {{ t.poy }} POY{% endif %}</span></div>
           <div class="jh-metric"><span class="k">Programs</span><span class="v">{{ t.programs }}</span>
