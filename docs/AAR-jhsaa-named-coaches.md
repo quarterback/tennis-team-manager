@@ -243,6 +243,32 @@ read per program, memoised and cleared by `record_season`.
     only for seasons with a coach history. It never parses the whole archived
     blob.
 
+## The career table's Role names the program (owner rule 2026-09)
+- **What changed.** The coaching-career table on a coach's page said "Head coach"
+  or "Assistant" and nothing about WHICH program. A coach can hold seats in the
+  girls' and the boys' program over a career (the carousel is one statewide market
+  for both), so a row read "Gagarin · Head coach" with no way to tell which team.
+  The Role column now reads **Girls HC · Boys HC · Girls Asst · Boys Asst**.
+- **Reused, not added.** The gender was already on every `jhsaa_coach_history`
+  row (it is part of the seat's identity), so the label is a projection of
+  `coach_career`'s rows inside `coach_view`, with no schema change and no
+  migration: seasons played before the change read the new labels too. The
+  college coach page was the model. Its Coaching record separates head seasons,
+  which count toward the career record, from assistant ones, so head seasons are
+  bold here and assistant seasons keep the muted row they already had. The cell
+  never wraps, which is what split "Head coach" over two lines.
+- **‼️ Deliberately NOT done: a JV role.** A first pass added a `jv_head` column to
+  the history rows so a season could read "Girls JV". The owner withdrew it: the
+  JV-head label is a DESIGNATION on an assistant, not a separate job, and a JV
+  head's seasons are assistant seasons. There is no per-season JV record, and the
+  JV label never appears as a role.
+- **Tests.** `tests/test_jhsaa_coy.py`:
+  `test_the_coach_ledger_role_names_the_program` (the view) and
+  `test_the_coach_page_renders_the_program_role_and_awards_above_transactions`,
+  which renders `/jhsaa/coach/<id>` on a hand-built archive and asserts on the
+  HTML: the bold, no-wrap "Girls HC" cell, the "Boys Asst" cell, the Awards panel
+  above Transactions, and no award score anywhere on the page.
+
 ## Coach of the Year (owner spec 2026-09, `app/jhsaa_coy.py`)
 
 ### What it is
