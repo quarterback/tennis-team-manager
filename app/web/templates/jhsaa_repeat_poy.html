@@ -28,7 +28,7 @@
     <tr>
       <td><a class="nm" href="{{ url_for('jhsaa_player', school=r.link, pid=r.pid, u=u, g=view.gender) }}">{{ r.name }}</a></td>
       <td class="sch">{% for st in r.stints %}<span class="stint">{% if st.deco.mark %}<span class="mk">{{ st.deco.mark|safe }}</span>{% endif %}{{ st.school }}</span>{{ ' · ' if not loop.last }}{% endfor %}</td>
-      <td class="won">{% for st in r.stints %}{% for a in st.won %}<span class="ti" title="{{ a.season_year }} {{ a.group }} · {{ st.school }}"><b>{{ a.season_year }}</b> {{ a.group }}</span>{{ ', ' if not (loop.last and st is sameas r.stints[-1]) }}{% endfor %}{% endfor %}</td>
+      <td class="won">{% for st in r.stints %}{% for a in st.won %}<span class="ti" title="{{ a.season_year|cal }} {{ a.group }} · {{ st.school }}"><b>{{ a.season_year|cal }}</b> {{ a.group }}</span>{{ ', ' if not (loop.last and st is sameas r.stints[-1]) }}{% endfor %}{% endfor %}</td>
     </tr>
     {% endfor %}
     {% endfor %}

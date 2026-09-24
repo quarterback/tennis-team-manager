@@ -48,7 +48,7 @@
         {% for gp in view.groups %}<th>{{ gp }}</th>{% endfor %}</tr>
       {% for y in view.years %}
       <tr>
-        <td class="yr"><a href="{{ url_for('jhsaa_page', u=u, g=view.gender, group=view.groups[0], year=y.year) }}">{{ y.season_year }}</a></td>
+        <td class="yr"><a href="{{ url_for('jhsaa_page', u=u, g=view.gender, group=view.groups[0], year=y.year) }}">{{ y.season_year|cal }}</a></td>
         {% for gp in view.groups %}
         {% set ch = y.champions.get(gp) %}
         {# ‼️ CHAMPIONS ONLY, AND THE NAME MUST FIT (owner, 2026-08). Nine
@@ -80,7 +80,7 @@
 <div class="bl-panel jh-yearpanel">
   <div class="bl-panel-head">
     <span class="bl-panel-title">
-      <a href="{{ url_for('jhsaa_page', u=u, g=view.gender, group=view.groups[0], year=y.year) }}">{{ y.season_year }}</a>
+      <a href="{{ url_for('jhsaa_page', u=u, g=view.gender, group=view.groups[0], year=y.year) }}">{{ y.season_year|cal }}</a>
     </span>
     <span class="bit">{{ y.champions|length }} champions</span>
   </div>

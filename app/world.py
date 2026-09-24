@@ -63,6 +63,58 @@ GENDERS = ["men", "women"]
 DEFAULT_SEED = 2026
 BASE_YEAR = 2026
 
+# --- Display-year offset (owner request 2026-09): a lab-grown save backdated -----
+#
+# A JHSAA lab save carries decades of archive before its college era begins, and the
+# owner wants the COMBINED save to read as starting in 2026 — the final lab season
+# becomes the 2026-27 school year. The archive cannot be renumbered: players are
+# regenerated from (school, gender, ENTRY YEAR, seat), and the era gates, talent
+# pins, transfers and realignment cycles all key on calendar years, so moving the
+# numbers regenerates every archived person. Instead every calendar year keeps its
+# IDENTITY internally and the DISPLAY layer subtracts a per-save offset.
+#
+# Two helpers, one rule each:
+#   display_base_year() — replaces BASE_YEAR in additive display/URL sites
+#       (`display_base_year() + idx` renders; `year - display_base_year()` parses a
+#       URL year back to the index, so round-trips stay consistent by construction).
+#   display_year(cal)   — for a STORED calendar year crossing to output (honors
+#       rows, reclass cycle files' `first_season`, jhsaa season years).
+# Store conventions are NEVER offset: `jhsaa_season_year`, the era gates, talent
+# pins, `honors.stamp`'s year and every archive key stay identity years. An offset
+# of 0 (every ordinary save) makes both helpers byte-identical to today.
+
+_DISPLAY_OFFSET_KEY = "display_year_offset"
+
+
+def display_offset() -> int:
+    """Years subtracted from every calendar year at display. 0 on ordinary saves."""
+    try:
+        return int(worldconfig.get(_DISPLAY_OFFSET_KEY) or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def set_display_offset(years: int) -> None:
+    worldconfig.set(_DISPLAY_OFFSET_KEY, str(int(years)))
+
+
+def display_base_year() -> int:
+    """`BASE_YEAR` as the display/URL layers should see it. Use this — never the
+    bare constant — anywhere a year is rendered for or parsed from the user."""
+    return BASE_YEAR - display_offset()
+
+
+def display_year(cal):
+    """A stored calendar year (identity) as shown to the user. Tolerates None and
+    non-numeric strings (template filter duty) by returning them unchanged."""
+    try:
+        return int(cal) - display_offset()
+    except Exception:
+        # TypeError/ValueError for None and non-numeric strings, and Jinja's
+        # UndefinedError when a template pipes a missing attribute through the
+        # `|cal` filter — an empty-state page must render empty, never 500.
+        return cal
+
 _NEXT_CLASS = {"Fr": "So", "So": "Jr", "Jr": "Sr"}
 _RS_PREFIX = "RS-"
 
@@ -685,6 +737,9 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     # era is covered by existing; it clears the memos too (`reset_schools`).
     from . import jhsaa as _jhsaa
     _jhsaa.reset_eras()
+    # The display-year offset is the same shape of leftover: a backdated lab-grown
+    # save's offset carried into a fresh league would relabel 2026 as something else.
+    worldconfig.set(_DISPLAY_OFFSET_KEY, "")
     from . import jhsaa_desk as _desk
     _desk.reset()
     # Stored individual championships AND the national-team cups (Davis / BJK) are
@@ -757,6 +812,56 @@ def get_or_create_jhsaa_only(seed: int = DEFAULT_SEED, salt: str | None = None) 
     dedicated to lab runs (`scripts/jhsaa_lab.py`), never the real save — see
     `docs/PLAN-jhsaa-standalone-lab-mode.md`."""
     return get_or_create(seed, salt=salt, skip_college=True)
+
+
+def attach_college(seed: int = DEFAULT_SEED) -> dict:
+    """Build the college universes INTO an existing JHSAA-only lab world, at its
+    CURRENT year — the integration step that turns a lab save into a full save
+    (owner request 2026-09: "backdate the history so I can start in 2026").
+
+    Why in place and not a fresh save: every JHSAA player is regenerated from
+    (school, gender, entry year, seat) UNDER THIS WORLD'S SALT, so the archive is
+    only readable inside the save that wrote it. The college rosters are built
+    exactly the way `get_or_create` builds a year-0 world — same `_build_universe`
+    workers, same salt — just written at the world's current year, which is where
+    `_base_rosters`/`prime()` read them from. Nothing else changes shape: the next
+    `/world/advance` plays the first college season, and this year's JHSAA season
+    is already archived by the lab so the week-0 rung skips itself. The graduating
+    class the first rollover recruits from IS the lab's final senior cohort.
+
+    Also sets the DISPLAY OFFSET to the world's year, so the first college season
+    renders as `BASE_YEAR` (2026-27) and the decades of lab history read backdated
+    behind it — identity years untouched (see `display_offset` above). And it
+    pre-stamps `pros_rolled_year`: there was never a college year before this one
+    to graduate, so the pro rung has nothing to roll on the first click.
+
+    Refuses a save that already carries college rosters — this is a one-time step,
+    and running it twice would rebuild the current year's rosters mid-season."""
+    w = load_world(seed)
+    if w is None:
+        raise RuntimeError(f"no world exists for seed {seed} in {WORLD_DB}")
+    if not is_jhsaa_only(seed):
+        raise RuntimeError(
+            "this save already carries college rosters for its current year — "
+            "attach_college is only for a JHSAA-only lab world, and only once")
+    salt = w.get("salt") or ""
+    ncaa.WORLD_SALT = salt
+    reset_caches()
+    from app.parallel import pmap, workers_for
+    cfg = worldconfig.snapshot()
+    conn = _db()
+    tasks = [(salt, cfg, d, g) for (d, g) in UNIVERSES]
+    for (d, g, uni) in pmap(_build_universe, tasks,
+                            workers=workers_for(len(tasks), cap=_BUILD_WORKER_CAP)):
+        rows = [(w["id"], w["year"], d, g, school, p["pid"], json.dumps(p))
+                for school, roster in uni.items() for p in roster]
+        conn.executemany("INSERT INTO world_roster VALUES (?,?,?,?,?,?,?)", rows)
+        del uni, rows
+    conn.commit()
+    conn.close()
+    set_display_offset(w["year"])
+    worldconfig.set("pros_rolled_year", str(w["year"]))
+    return load_world(seed)
 
 
 def current_year_seed(seed: int = DEFAULT_SEED) -> int:
@@ -1096,7 +1201,7 @@ def run_pro_offseason(seed: int = DEFAULT_SEED, world: dict | None = None) -> di
     from app import gtt_seasonmode as _gtt
     rolled = _gtt.on_world_rollover()
     worldconfig.set("pros_rolled_year", str(w["year"]))
-    return {"event": "pro_offseason", "year": 2026 + w["year"], "leagues_rolled": rolled}
+    return {"event": "pro_offseason", "year": display_base_year() + w["year"], "leagues_rolled": rolled}
 
 
 def universe_progress(seed: int = DEFAULT_SEED) -> list[dict]:
@@ -7749,9 +7854,9 @@ def _store_world_cups(conn, world: dict, rosters: dict) -> dict:
                      (world["id"], yr, gender, json.dumps(cup)))
         # Stamp through the CALLER's connection — a second connection here
         # deadlocks against the open rollover transaction on the shared file.
-        honors.stamp(nt.honor_records(cup, year=2026 + yr, season_no=yr + 1), conn=conn)
+        honors.stamp(nt.honor_records(cup, year=display_base_year() + yr, season_no=yr + 1), conn=conn)
         champions[gender] = (cup.get("champion") or {}).get("name")
-    return {"event": "world_cups", "year": 2026 + yr, "champions": champions}
+    return {"event": "world_cups", "year": display_base_year() + yr, "champions": champions}
 
 
 def latest_world_cup(seed: int, gender: str, year: int | None = None) -> dict | None:
@@ -7811,7 +7916,7 @@ def player_world_cups(seed: int, pid: str) -> list[dict]:
         finish = ("Champion" if any(p["pid"] == pid for p in champ.get("squad", []))
                   else "Finalist" if any(p["pid"] == pid for p in finalist.get("squad", []))
                   else "")
-        out.append({"year": 2026 + r["year"], "event": cup["event"],
+        out.append({"year": display_base_year() + r["year"], "event": cup["event"],
                     "country": rec["country"], "flag": flag_emoji(rec["country"]),
                     "ties": rec["ties"],
                     "singles": f"{rec['singles_w']}-{rec['singles_l']}",

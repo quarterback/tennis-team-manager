@@ -40,7 +40,7 @@
             <th style="width:92px">District</th><th style="width:130px">Finish</th><th>Honours</th></tr>
           {% for s in view.ledger %}
           <tr{% if not s.head %} style="color:var(--text-secondary)"{% endif %}>
-            <td class="yr"><a href="{{ url_for('jhsaa_school', school=s.school, year=s.world_year, u=u, g=s.gender) }}">{{ s.season_year }}</a></td>
+            <td class="yr"><a href="{{ url_for('jhsaa_school', school=s.school, year=s.world_year, u=u, g=s.gender) }}">{{ s.season_year|cal }}</a></td>
             <td style="font-size:14px"><a href="{{ url_for('jhsaa_school', school=s.school, year=s.world_year, u=u, g=s.gender) }}" style="color:inherit">{{ s.school }}</a></td>
             <td style="font-variant-numeric:normal">{{ s.class }}</td>
             <td>{{ s.role }}</td>
@@ -67,7 +67,7 @@
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">Moves</span></div>
       {% for e in view.events %}
-      <div class="jh-kv"><span class="k">{{ e.year }} · {{ e.event|capitalize }} · {{ e.school }}</span><span class="v"><span class="s">{{ e.note }}</span></span></div>
+      <div class="jh-kv"><span class="k">{{ e.year|cal }} · {{ e.event|capitalize }} · {{ e.school }}</span><span class="v"><span class="s">{{ e.note }}</span></span></div>
       {% endfor %}
     </div>
     {% endif %}

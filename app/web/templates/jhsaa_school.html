@@ -27,7 +27,7 @@
    "city, Jefferson" line, and never a state abbreviation on the name. #}
 {{ jh_header(view.scope, u, 'state', view.school,
              view.mascot ~ ' · ' ~ view.city ~ ', ' ~ (view.state if view.state else 'Jefferson'),
-             [('Season', view.season_year), ('Class', view.group)]) }}
+             [('Season', view.season_year|cal), ('Class', view.group)]) }}
 
 {% macro hq_url(dest) -%}
 {{ url_for('jhsaa_school', school=view.school, year=view.scope.pin, u=u, g=view.gender, view=(dest if dest != 'overview' else none)) }}
@@ -40,7 +40,7 @@
   <a href="{{ url_for('jhsaa_district', group=view.group, district=view.district, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.district }}</a>
   <span class="sep">›</span>
   <span>{{ view.school }}</span>
-  {% if not view.is_current %}<span class="jh-chip ghost">ARCHIVED {{ view.season_year }} SEASON</span>{% endif %}
+  {% if not view.is_current %}<span class="jh-chip ghost">ARCHIVED {{ view.season_year|cal }} SEASON</span>{% endif %}
 </div>
 
 {# ‼️ A PROGRAM THAT STOPPED SPONSORING KEEPS ITS PAGE (owner rule 2026-08). The page
@@ -101,7 +101,7 @@
    where they simply are. #}
 <div class="jh-progstrip">
   <div><span class="v">{{ t.record }}</span><span class="k">all-time · {{ '%.3f'|format(t.pct)|replace('0.', '.') }}</span></div>
-  <div><span class="v">{{ t.state_titles }}</span><span class="k">state titles{% if t.last_title %} · last {{ t.last_title.season_year }}{% endif %}</span></div>
+  <div><span class="v">{{ t.state_titles }}</span><span class="k">state titles{% if t.last_title %} · last {{ t.last_title.season_year|cal }}{% endif %}</span></div>
   <div><span class="v">{{ t.state_appearances }}</span><span class="k">state trips</span></div>
   <div><span class="v">{{ t.district_titles }}</span><span class="k">district titles of {{ t.seasons }}</span></div>
   <div><span class="v">{{ t.toc_titles }}</span><span class="k">tournament of champions</span></div>
@@ -113,7 +113,7 @@
   <div><span class="v">{{ view.history.individual_champions|length }}</span><span class="k">individual champions</span></div>
   {% if t.best %}
   <div><span class="v sm">{{ t.best.toc_finish or t.best.state_finish or '—' }}</span>
-    <span class="k">best season · {{ t.best.season_year }} · {{ t.best.record }}</span></div>
+    <span class="k">best season · {{ t.best.season_year|cal }} · {{ t.best.record }}</span></div>
   {% endif %}
   <div><span class="v sm">{{ t.poy }} POY · {{ t.all_state }} A-S</span>
     <span class="k">{{ t.all_district }} all-district</span></div>
@@ -186,11 +186,11 @@
       <div class="bl-panel-head"><span class="bl-panel-title">Honors</span>
         <a class="jh-hqmore" href="{{ hq_url('honors') }}">Honors →</a></div>
       {% if cur_season.unit_wins %}
-      <div class="jh-honor"><span class="y">{{ cur_season.season_year }}</span>
+      <div class="jh-honor"><span class="y">{{ cur_season.season_year|cal }}</span>
         <span>{% for w in cur_season.unit_wins %}<span class="jh-chip unit">{{ w }}</span>{% if not loop.last %} {% endif %}{% endfor %}</span></div>
       {% endif %}
       {% for line in (cur_season.honor_lines or []) %}
-      <div class="jh-honor"><span class="y">{{ cur_season.season_year }}</span>
+      <div class="jh-honor"><span class="y">{{ cur_season.season_year|cal }}</span>
         <span>{% if line.label %}{{ line.label }} — {% endif %}{% for n in line.names %}<strong>{{ n }}</strong>{% if not loop.last %} · {% endif %}{% endfor %}</span></div>
       {% endfor %}
     </div>
@@ -235,7 +235,7 @@
       {% for st in view.staff.seats %}
       <div class="jh-kv"><span class="k">{{ st.label }}</span>
         <span class="v">{% if st.coach %}<a href="{{ url_for('jhsaa_coach', coach_id=st.coach.coach_id, u=u, g=view.gender) }}">{{ st.coach.name }}</a>
-          <span class="s">{% if st.coach.overall %}{{ st.coach.overall }} OVR · {% endif %}{% if st.age %}age {{ st.age }} · {% endif %}{% if st.record %}{{ st.record }} · {% endif %}since {{ st.since }}</span>{% else %}<span class="s">Vacant</span>{% endif %}</span></div>
+          <span class="s">{% if st.coach.overall %}{{ st.coach.overall }} OVR · {% endif %}{% if st.age %}age {{ st.age }} · {% endif %}{% if st.record %}{{ st.record }} · {% endif %}since {{ st.since|cal }}</span>{% else %}<span class="s">Vacant</span>{% endif %}</span></div>
       {% endfor %}
     </div>
     {% endif %}
@@ -244,11 +244,11 @@
       <div class="bl-panel-head"><span class="bl-panel-title">All-time</span>
         <a class="jh-hqmore" href="{{ hq_url('history') }}">History →</a></div>
       <div class="jh-kv"><span class="k">Record</span><span class="v">{{ t.record }} · {{ '%.3f'|format(t.pct)|replace('0.', '.') }}</span></div>
-      <div class="jh-kv"><span class="k">State titles</span><span class="v">{{ t.state_titles }}{% if t.last_title %} <span class="s">last {{ t.last_title.season_year }}</span>{% endif %}</span></div>
+      <div class="jh-kv"><span class="k">State titles</span><span class="v">{{ t.state_titles }}{% if t.last_title %} <span class="s">last {{ t.last_title.season_year|cal }}</span>{% endif %}</span></div>
       <div class="jh-kv"><span class="k">State trips</span><span class="v">{{ t.state_appearances }}</span></div>
       <div class="jh-kv"><span class="k">District titles</span><span class="v">{{ t.district_titles }} <span class="s">of {{ t.seasons }}</span></span></div>
       {% if t.best %}
-      <div class="jh-kv"><span class="k">Best season</span><span class="v">{{ t.best.toc_finish or t.best.state_finish }} <span class="s">{{ t.best.season_year }} · {{ t.best.record }}</span></span></div>
+      <div class="jh-kv"><span class="k">Best season</span><span class="v">{{ t.best.toc_finish or t.best.state_finish }} <span class="s">{{ t.best.season_year|cal }} · {{ t.best.record }}</span></span></div>
       {% endif %}
       <div class="jh-kv"><span class="k">Individual state champs</span><span class="v">{{ view.history.individual_champions|length }}</span></div>
     </div>
@@ -562,7 +562,7 @@
       <div class="jh-metric"><span class="k">All-time</span><span class="v">{{ t.record }}</span>
         <span class="s">{{ '%.3f'|format(t.pct)|replace('0.', '.') }}</span></div>
       <div class="jh-metric"><span class="k">State titles</span><span class="v">{{ t.state_titles }}</span>
-        {% if t.last_title %}<span class="s">last {{ t.last_title.season_year }}</span>{% endif %}</div>
+        {% if t.last_title %}<span class="s">last {{ t.last_title.season_year|cal }}</span>{% endif %}</div>
       <div class="jh-metric"><span class="k">State trips</span><span class="v">{{ t.state_appearances }}</span>
         {% if t.state_finals or t.state_semis %}<span class="s">{{ t.state_finals }} final{{ '' if t.state_finals == 1 else 's' }} · {{ t.state_semis }} semi{{ '' if t.state_semis == 1 else 's' }}</span>{% endif %}</div>
       <div class="jh-metric"><span class="k">District titles</span><span class="v">{{ t.district_titles }}</span>
@@ -581,7 +581,7 @@
          (`world.jhsaa_season_depth`). #}
       <div class="jh-metric"><span class="k">Best season</span>
         <span class="v sm">{{ (t.best.toc_finish or t.best.state_finish or '—') if t.best else '—' }}</span>
-        {% if t.best %}<span class="s">{{ t.best.season_year }} · {{ t.best.record }}</span>{% endif %}</div>
+        {% if t.best %}<span class="s">{{ t.best.season_year|cal }} · {{ t.best.record }}</span>{% endif %}</div>
       <div class="jh-metric"><span class="k">Honours</span>
         <span class="v sm">{{ t.poy }} POY · {{ t.all_state }} A-S</span>
         {% if t.all_district %}<span class="s">{{ t.all_district }} all-district</span>{% endif %}</div>
@@ -616,7 +616,7 @@
       {% set n_honors = ((s.honor_lines or [])|length) + ((s.unit_wins or [])|length) + ((s.team_honors or [])|length) %}
       <tr class="{{ 'title' if s.champion }}{{ ' has-lines' if n_honors }}"
           {% if n_honors %}data-lines="{{ loop.index }}" title="this season's honours"{% endif %}>
-        <td class="yr"><a href="{{ url_for('jhsaa_school', school=view.school, year=s.year, u=u, g=view.gender) }}">{{ s.season_year }}</a></td>
+        <td class="yr"><a href="{{ url_for('jhsaa_school', school=view.school, year=s.year, u=u, g=view.gender) }}">{{ s.season_year|cal }}</a></td>
         {# SHORT FORM — the ladder's 9A..1A are two characters and the column is
            sized for them; "Group 1" reads as its short form so the row stays one
            line (the ledger no longer clips a cell — it grows — so this is width
@@ -734,7 +734,7 @@
       {% for row in view.trophy_banner %}
       <div class="row{{ ' gold' if row.gold }}">
         <span class="what">{{ row.label }}</span>
-        <span class="yrs">{% for y in row.years %}<a href="{{ url_for('jhsaa_school', school=view.school, year=y.year, u=u, g=view.gender) }}">{{ y.season_year }}</a>{% endfor %}</span>
+        <span class="yrs">{% for y in row.years %}<a href="{{ url_for('jhsaa_school', school=view.school, year=y.year, u=u, g=view.gender) }}">{{ y.season_year|cal }}</a>{% endfor %}</span>
       </div>
       {% endfor %}
     </div>
@@ -763,7 +763,7 @@
         <tr>
           <td class="nm">{{ n }}</td>
           <td class="what">{{ line.label or '—' }}</td>
-          <td class="yr">{{ s.season_year }}</td>
+          <td class="yr">{{ s.season_year|cal }}</td>
         </tr>
         {% endfor %}{% endfor %}{% endfor %}
         </tbody>
@@ -801,7 +801,7 @@
         <tr>
           <td class="nm">{% for p in r.players %}{{ p.name }}{% if p.class_year %} ({{ p.class_year }}){% endif %}{% if not loop.last %} &amp; {% endif %}{% endfor %}</td>
           <td class="what">{{ r.flight_name }}</td>
-          <td class="yr">{{ r.season_year }}</td>
+          <td class="yr">{{ r.season_year|cal }}</td>
         </tr>
         {% endfor %}
         </tbody>
@@ -864,10 +864,10 @@
       <td class="nm"><a href="{{ url_for('jhsaa_coach', coach_id=st.coach.coach_id, u=u, g=view.gender) }}">{{ st.coach.name }}</a></td>
       <td class="num"><b>{{ st.coach.overall or '' }}</b></td>
       <td class="num">{{ st.age or '' }}</td><td class="num">{{ st.record or '' }}</td>
-      <td class="num">{{ st.since }}</td>
+      <td class="num">{{ st.since|cal }}</td>
       <td><a href="{{ url_for('jhsaa_coach', coach_id=st.coach.coach_id, u=u, g=view.gender) }}#edit">Edit</a></td>
       {% else %}
-      <td class="nm"><span class="s">Vacant</span></td><td></td><td></td><td></td><td class="num">{{ st.since }}</td>
+      <td class="nm"><span class="s">Vacant</span></td><td></td><td></td><td></td><td class="num">{{ st.since|cal }}</td>
       <td><a href="{{ url_for('jhsaa_coach_carousel', u=u, g=view.gender) }}#pool">Fill</a></td>
       {% endif %}
     </tr>

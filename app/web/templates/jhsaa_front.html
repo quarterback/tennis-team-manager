@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_jhsaa.html" import jh_header, jh_player %}
-{% block title %}JHSAA {{ view.season_year }} — High School{% endblock %}
+{% block title %}JHSAA {{ view.season_year|cal }} — High School{% endblock %}
 {% block content %}
 
 {# ‼️ THE FRONT PAGE (owner spec 2026-09): a newspaper front with a data desk.
@@ -17,7 +17,7 @@
 {% if g == 'girls' %}<span class="jh-gtag g">G</span>{% elif g == 'boys' %}<span class="jh-gtag b">B</span>{% else %}<span class="jh-gtag g">G</span><span class="jh-gtag b">B</span>{% endif %}
 {%- endmacro %}
 
-{{ jh_header(view.scope, u, 'front', 'The ' ~ view.season_year ~ ' Season', '',
+{{ jh_header(view.scope, u, 'front', 'The ' ~ view.season_year|cal ~ ' Season', '',
              [('Season', view.season_year)] if view.ready else [], classless=true) }}
 
 <div class="jh-shell jh-front">

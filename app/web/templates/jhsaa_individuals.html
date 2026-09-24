@@ -55,7 +55,7 @@
 <div class="jh-champ" style="margin-bottom:12px">
   <span class="mark">{{ view.champion_deco.mark|safe }}</span>
   <div style="min-width:0">
-    <span class="lbl">{{ view.season_year }} JHSAA {{ view.event_name }} Champion{{ 's' if view.champion.players|length > 1 }}</span>
+    <span class="lbl">{{ view.season_year|cal }} JHSAA {{ view.event_name }} Champion{{ 's' if view.champion.players|length > 1 }}</span>
     {# By PID, never by name — a pid keys on (school, gender, entry year, seat), so
        it is stable across all four years and matches the award rows. A PAIR links
        through its first member; a partnership has no page of its own. #}
@@ -90,7 +90,7 @@
 <div class="brk-stage" id="brkstage">
   <section class="brk-region" data-view="all">
     <div class="brk-region-head">
-      <h2>{{ view.season_year }} {{ view.event_name }} · {{ view.field_n }} entries</h2>
+      <h2>{{ view.season_year|cal }} {{ view.event_name }} · {{ view.field_n }} entries</h2>
       <span class="brk-region-champ">
         {% if view.qualifying %}{{ view.qual_advance }} qualify{% elif view.champion %}{{ view.champion.label }}{% if view.runner_up %} def. {{ view.runner_up.label }}{% endif %}{% else %}in progress{% endif %}</span>
     </div>
