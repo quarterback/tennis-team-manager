@@ -418,12 +418,17 @@ Every component is a 0-100 score and the award score is the weighted sum.
   older program's season. `coach_state_titles` resolves champions the same way,
   per season, off that season's standings names.
 - **Repeat winners, District only** (owner rule 2026-09): the award favours a
-  first-time winner. Each District COY the coach already won IN THE SAME DISTRICT
-  (same classification and league name, same gender, an earlier season) takes
-  `DISTRICT_REPEAT_PENALTY` (4) points off the ranking score, capped at
-  `DISTRICT_REPEAT_CAP` (10). A repeat can still win; it needs a clearly better
-  season. A win in another league does not count. The discount is stored in
-  `detail["repeat"]`. **State COY has no such term.**
+  first-time winner through a four-season RECENCY penalty on the ranking score:
+  `penalty = min(10, 5·W−1 + 4·W−2 + 2·W−3 + 1·W−4)`, where each W is 1 if the
+  coach won this same district's award (same classification and league name,
+  same gender) that many seasons back (`repeat_penalty`,
+  `DISTRICT_REPEAT_WEIGHTS`, `DISTRICT_REPEAT_CAP`). Won last year −5; the
+  previous two −9; the previous three −10 after the cap; only four years ago −1;
+  last won five years ago, nothing. It strongly discourages an automatic repeat,
+  makes a three-peat need a genuinely exceptional season, and clears with time
+  rather than imposing a career-long penalty. A win in another league does not
+  count. The penalty is stored in `detail["repeat"]`. **State COY has no such
+  term.**
   - A backfill counts only awards already selected for earlier seasons, so
     seasons selected out of order can read a shorter history. That is accepted.
 - **Where it shows:**

@@ -23,6 +23,15 @@ def test_z_uses_the_binomial_denominator_and_is_capped():
     assert flips  # (kept for readability)
 
 
+def test_the_district_repeat_penalty_is_a_four_season_recency_schedule():
+    assert coy.repeat_penalty([1]) == 5          # won last year
+    assert coy.repeat_penalty([1, 2]) == 9       # the previous two
+    assert coy.repeat_penalty([1, 2, 3]) == 10   # the previous three, capped
+    assert coy.repeat_penalty([4]) == 1          # only four years ago
+    assert coy.repeat_penalty([5]) == 0          # five years ago: cleared
+    assert coy.repeat_penalty([]) == 0
+
+
 def test_the_fitted_curve_recovers_a_real_slope():
     import random
     rng = random.Random(3)
@@ -123,8 +132,9 @@ def test_a_hand_archived_season_crowns_both_awards(tmp_path, monkeypatch):
         before = {r["coach_id"]: r["score"] for r in district}
         coy.select_season(wid, year, "girls", salt="")
         again = {r["coach_id"]: r for r in coy.season_awards(wid, year, "girls")["district"][("5A", "L")]}
-        assert again["c5"]["detail"]["repeat"] == coy.DISTRICT_REPEAT_PENALTY
-        assert abs(again["c5"]["score"] - (before["c5"] - coy.DISTRICT_REPEAT_PENALTY)) < 0.011
+        # Won two seasons back (year 1, selecting year 3): −4.
+        assert again["c5"]["detail"]["repeat"] == 4.0
+        assert abs(again["c5"]["score"] - (before["c5"] - 4.0)) < 0.011
         assert all(r["detail"]["repeat"] == 0 for c, r in again.items() if c != "c5")
     finally:
         wd.WORLD_DB, wd._schema_ready_for = real_db, real_ready

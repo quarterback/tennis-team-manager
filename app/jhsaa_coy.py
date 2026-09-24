@@ -53,12 +53,22 @@ Z_CAP = 2.5
 FINALISTS = 5
 
 DISTRICT_WEIGHTS = {"over": 0.45, "achieve": 0.40, "improve": 0.10, "quality": 0.05}
-# District COY favours a FIRST-TIME winner (owner rule 2026-09): each earlier
-# District COY the coach won IN THE SAME DISTRICT takes this many points off the ranking score, up to
-# the cap. A repeat can still win on a clearly better season; it just has to be
-# clearly better. State COY carries no such term, by the same rule.
-DISTRICT_REPEAT_PENALTY = 4.0
+# District COY favours a FIRST-TIME winner (owner rule 2026-09): a four-season
+# RECENCY penalty off the ranking score for District COYs the coach won IN THE
+# SAME DISTRICT — 5 for last season, 4 two back, 2 three back, 1 four back,
+# capped at 10. Won last year −5; the last two −9; the last three −10 (cap);
+# only four years ago −1; five years ago nothing. A repeat can still win on a
+# clearly better season, and the history clears rather than following a coach
+# for life. State COY carries no such term.
+DISTRICT_REPEAT_WEIGHTS = {1: 5.0, 2: 4.0, 3: 2.0, 4: 1.0}   # seasons back → points
 DISTRICT_REPEAT_CAP = 10.0
+
+
+def repeat_penalty(years_back) -> float:
+    """`min(10, 5·W−1 + 4·W−2 + 2·W−3 + 1·W−4)` over the seasons back (1 = last
+    season) in which the coach won this same district's award."""
+    return min(DISTRICT_REPEAT_CAP,
+               sum(DISTRICT_REPEAT_WEIGHTS.get(b, 0.0) for b in set(years_back)))
 STATE_WEIGHTS = {"quality": 0.30, "post": 0.30, "over": 0.30, "improve": 0.10}
 STATE_OVER_SPLIT = (20.0, 10.0)           # full-season z : postseason surprise
 BASELINE_WEIGHTS = (0.5, 0.3, 0.2)        # one, two, three seasons back
@@ -350,10 +360,12 @@ def select_season(world_id: int, year: int, gender: str, salt: str) -> dict:
     try:
         # Earlier District COY wins IN THIS SAME DISTRICT (a district is
         # (classification, name)); a title won in another league is not a repeat.
-        prior_wins = {(c, g, d): n for c, g, d, n in conn.execute(
-            "SELECT coach_id, grp, district, COUNT(*) FROM jhsaa_coach_award"
-            " WHERE world_id=? AND gender=? AND level='district' AND rank=1 AND year<?"
-            " GROUP BY coach_id, grp, district", (world_id, gender, year))}
+        prior_wins: dict = {}
+        for c, g, d, y in conn.execute(
+                "SELECT coach_id, grp, district, year FROM jhsaa_coach_award"
+                " WHERE world_id=? AND gender=? AND level='district' AND rank=1"
+                " AND year BETWEEN ? AND ?", (world_id, gender, year - 4, year - 1)):
+            prior_wins.setdefault((c, g, d), []).append(year - y)
     finally:
         conn.close()
     by_district: dict = {}
@@ -377,8 +389,7 @@ def select_season(world_id: int, year: int, gender: str, salt: str) -> dict:
             qual = 100.0 * now_pct.get(school, 0.5)
             parts = {"over": over, "achieve": achieve, "improve": imp, "quality": qual}
             score = sum(DISTRICT_WEIGHTS[c] * v for c, v in parts.items())
-            repeat = min(DISTRICT_REPEAT_CAP,
-                         DISTRICT_REPEAT_PENALTY * prior_wins.get((hd["coach_id"], grp, dname), 0))
+            repeat = repeat_penalty(prior_wins.get((hd["coach_id"], grp, dname), ()))
             score -= repeat
             cands.append((score, school, hd, {**parts, "z": z, "place": place,
                                               "repeat": repeat,

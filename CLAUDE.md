@@ -2900,7 +2900,7 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   rung) through a logistic fitted on the season; z uses √Σp(1−p), capped ±2.5.
   Selected once after the commit into `jhsaa_coach_award`, never on read; a
   season archived before it is awarded once from the Honors page (background).
-  A State run never decides the District award. District COY discounts a coach's earlier wins IN THE SAME DISTRICT (`DISTRICT_REPEAT_PENALTY` 4/win, cap 10) so first-time winners are favoured; State has no such term. ‼️ The UI shows NAMES AND RANK ONLY — never a score, component, weight or record (owner rule).
+  A State run never decides the District award. District COY carries a four-season RECENCY penalty for wins IN THE SAME DISTRICT (`repeat_penalty`: min(10, 5·W−1 + 4·W−2 + 2·W−3 + 1·W−4)) so first-time winners are favoured and history clears; State has no such term. ‼️ The UI shows NAMES AND RANK ONLY — never a score, component, weight or record (owner rule).
   ‼️ **The program page shows OVR, age, first season and the head's record —
   never ratings** (those live on the coach page; the Staff tab keeps them
   collapsed).
