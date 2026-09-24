@@ -5684,10 +5684,17 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     import app.jhsaa_coaches as jc
     jc.ensure_seated(w["id"], world.jhsaa_season_year(w), world.active_salt(seed))
     staff = jc.program_staff(w["id"], sc.ident, g, world.jhsaa_season_year(w))
+    # Every varsity HEAD coach in the program's history (owner, 2026-09) — the
+    # Staff tab's second panel. One indexed read.
+    head_coaches = jc.program_head_coaches(w["id"], sc.ident, g,
+                                           world.jhsaa_season_year(w))
+    heads_by_year = jc.program_heads_by_year(w["id"], sc.ident, g)
     return {
         "found": True, "school": school, "gender": g, "year": yr, "years": years,
         "season_year": season_year, "is_current": bool(years) and yr == years[0],
         "staff": staff,
+        "head_coaches": head_coaches,
+        "heads_by_year": heads_by_year,
         # No longer fields a team in this sport — the page is a record, not a roster.
         # `last_season` is the season it is showing, which for a former program is the
         # last one they played.
@@ -7500,3 +7507,27 @@ def jhsaa_flights_view(seed: int, gender: str, group: str | None = None,
     return {**base, "ready": True, "rows": rows, "season_year": data["season_year"],
             "beta": data["beta"], "home": data["home"], "lines": data["lines"],
             "unresolved": data["unresolved"]}
+
+
+def jhsaa_coach_records_view(seed: int, gender: str, group: str | None = None,
+                             board: str | None = None, sport: str | None = None) -> dict:
+    """Coach records (owner, 2026-09), on the History sub-rail beside the player
+    career rolls: MOST WINS (head coach, varsity duals) and MULTIPLE STATE TITLES
+    (head coach of the champion). Each reads this sport or BOTH — a coach who
+    moved from a girls' program to a boys' one is one career, which is why the
+    overall list exists. Class-blind; `group` rides the scope bar only."""
+    import app.jhsaa as jh
+    import app.jhsaa_coaches as jc
+    import app.world as world
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    board = board if board in ("wins", "titles") else "wins"
+    sport = sport if sport in ("this", "all") else "this"
+    who = g if sport == "this" else None
+    rows = (jc.coach_win_leaders(w["id"], who) if board == "wins"
+            else jc.coach_state_titles(w["id"], who))
+    years = world.jhsaa_years(w["id"], g)
+    return {"gender": g, "board": board, "sport": sport, "rows": rows,
+            "scope": _jh_scope(g, group if group in jh.GROUPS else jh.GROUPS[0],
+                               list(jh.GROUPS), years[0] if years else 0,
+                               years, None, None)}

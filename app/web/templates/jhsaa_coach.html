@@ -4,7 +4,7 @@
 {% block content %}
 {% set c = view.coach %}
 {{ jh_header(scope_view.scope, u, 'coaches', c.name,
-             (view.seat.label ~ ' · ' ~ view.seat.school if view.seat else 'Not on a staff') ~ ' · ' ~ view.profile,
+             (view.seat.label ~ ' · ' ~ view.seat.school if view.seat else view.status) ~ ' · ' ~ view.profile,
              [('Head coach', view.totals.record or '0-0'), ('Overall', c.overall or '—')]) }}
 
 <div class="jh-shell">
@@ -17,8 +17,8 @@
 <div class="jh-ident" style="margin-bottom:14px">
   <div class="jh-ident-body">
     <h1>{{ c.name }}</h1>
-    <div class="mascot">{% if view.seat %}{{ view.seat.label }} · <a href="{{ url_for('jhsaa_school', school=view.seat.school, u=u, g=view.gender, view='staff') }}">{{ view.seat.school }}</a> ({{ view.gender }}) · since {{ view.seat.since }}{% else %}Not on a staff{% endif %}</div>
-    <div class="where">{{ c.hometown }}{% if view.age %} · age {{ view.age }}{% endif %} · {{ view.origin }}{% if view.alma %} · played at {{ view.alma }}{% endif %}</div>
+    <div class="mascot">{% if view.seat %}{{ view.seat.label }} · <a href="{{ url_for('jhsaa_school', school=view.seat.school, u=u, g=view.gender, view='staff') }}">{{ view.seat.school }}</a> ({{ view.gender }}) · since {{ view.seat.since }}{% else %}{{ view.status }}{% endif %}</div>
+    <div class="where">{{ c.hometown }}{% if view.age %} · age {{ view.age }}{% endif %} {% if view.origin %} · {{ view.origin }}{% endif %}{% if view.alma %} · played at {{ view.alma }}{% endif %}</div>
     <div class="now"><span class="rec">{{ view.totals.record or '0-0' }}</span><span class="bit">as a head coach · varsity</span></div>
   </div>
 </div>
@@ -63,11 +63,13 @@
       <p class="jh-empty">No season coached yet.</p>
       {% endif %}
     </div>
+    {# TRANSACTIONS (owner rule 2026-09): Hired · Left staff · Retired — the
+       year, what happened and where. Nothing about free pools or migrations. #}
     {% if view.events %}
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">Moves</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title">Transactions</span></div>
       {% for e in view.events %}
-      <div class="jh-kv"><span class="k">{{ e.year }} · {{ e.event|capitalize }} · {{ e.school }}</span><span class="v"><span class="s">{{ e.note }}</span></span></div>
+      <div class="jh-kv"><span class="k">{{ e.year }}</span><span class="v">{{ e.label }}{% if e.school %} · <a href="{{ url_for('jhsaa_school', school=e.school, u=u, g=view.gender, view='staff') }}">{{ e.school }}</a>{% endif %}</span></div>
       {% endfor %}
     </div>
     {% endif %}

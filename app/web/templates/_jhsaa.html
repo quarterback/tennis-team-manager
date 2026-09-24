@@ -162,7 +162,7 @@
       {# History is TWO pages on its own sub-rail (owner, 2026-08): the champions
          grid (who won each class each season) and the title board (what a program
          has ever won). Same question from the two ends. #}
-      <a class="{{ 'on' if tab in ('history', 'titles', 'indiv_history', 'repeat_poy', 'repeat_champs', 'retired', 'realignments') }}"
+      <a class="{{ 'on' if tab in ('history', 'titles', 'indiv_history', 'repeat_poy', 'repeat_champs', 'coach_records', 'retired', 'realignments') }}"
          href="{{ url_for('jhsaa_champions', u=u, g=scope.gender) }}">History</a>
       {# The section's own settings — archetypes and play-up. A tab, because the panels
          were on /editor and nobody could find them there. Carries no group or year:
@@ -240,7 +240,7 @@
   </div>
   {% endif %}
 
-  {% if tab in ('history', 'titles', 'indiv_history', 'repeat_poy', 'repeat_champs', 'retired', 'career_wins', 'program_wins', 'realignments') %}
+  {% if tab in ('history', 'titles', 'indiv_history', 'repeat_poy', 'repeat_champs', 'coach_records', 'retired', 'career_wins', 'program_wins', 'realignments') %}
   <div class="jh-subrail">
     <a class="{{ 'on' if tab == 'history' }}"
        href="{{ url_for('jhsaa_champions', u=u, g=scope.gender, group=scope.group) }}">State Champions</a>
@@ -266,6 +266,9 @@
        href="{{ url_for('jhsaa_repeat_poy_view', u=u, g=scope.gender, group=scope.group) }}">Repeat POY</a>
     <a class="{{ 'on' if tab == 'repeat_champs' }}" title="Players with more than one individual state title"
        href="{{ url_for('jhsaa_repeat_champions', u=u, g=scope.gender, group=scope.group) }}">Repeat State Champs</a>
+    {# Coach records (owner, 2026-09): most head-coach wins, multiple state titles. #}
+    <a class="{{ 'on' if tab == 'coach_records' }}" title="Most head-coach dual wins, and coaches with more than one state title"
+       href="{{ url_for('jhsaa_coach_records', u=u, g=scope.gender, group=scope.group) }}">Coach Records</a>
     {# Programs that no longer sponsor the sport — a school and its last season,
        so its history is findable without guessing what class it played in when
        it stopped. #}

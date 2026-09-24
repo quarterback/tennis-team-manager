@@ -2578,6 +2578,18 @@ def create_app() -> Flask:
         return render_template("jhsaa_repeat_poy.html", active="High School",
                                view=view, gender=gender, u=u, uni_label=label)
 
+    @app.route("/jhsaa/coach-records")
+    def jhsaa_coach_records():
+        """Coach records — most head-coach dual wins and multiple state titles,
+        this sport or both (owner, 2026-09). History sub-rail."""
+        from app.web.state import jhsaa_coach_records_view
+        gender, label, u, g, group, _year = _jh_scope_args()
+        view = jhsaa_coach_records_view(DEFAULT_SEED, g, group,
+                                        request.args.get("board"),
+                                        request.args.get("sport"))
+        return render_template("jhsaa_coach_records.html", active="High School",
+                               view=view, gender=gender, u=u, uni_label=label)
+
     @app.route("/jhsaa/repeat-champions")
     def jhsaa_repeat_champions():
         """Repeat individual state champions — the same career fold over the six

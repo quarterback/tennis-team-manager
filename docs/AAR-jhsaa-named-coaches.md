@@ -196,6 +196,18 @@ read per program, memoised and cleared by `record_season`.
     to. Entrants still equal departures (the pool is conserved), but they
     enter at the BOTTOM of the ladder (measured: destination prestige 0.28
     against 0.45 for moves) after the chain has moved everyone up.
+  - **‼️ No tenure gate on who applies (owner report 2026-09).** The first
+    market required two seasons in a seat before a coach would apply anywhere.
+    On a save whose staffs were seated one season earlier that closed the
+    market entirely: no assistant moved, no head was hired away, and every
+    opening fell through to a promotion or a new coach ("the idea that it's
+    only program assistant, alumni or no one else applied seems silly").
+    Ambition alone now decides who is looking. On one-season staffs a cycle
+    proposes about 200 assistant moves, ~65 assistants moving up to head jobs
+    elsewhere and ~50 heads hired away. The lateral step-up is now 0.05
+    prestige.
+  - A coach may sit on several shortlists; the best job is filled first, so
+    their first offer is the best one they applied for.
   - Vetoing a departure or promotion keeps that seat filled.
 
 ## No work after an update
@@ -205,3 +217,29 @@ read per program, memoised and cleared by `record_season`.
   on demand from their player page. A senior of the newest archived season or earlier
   counts as graduated, so the "Hire as coach" form appears with no migration or
   backfill. From then on, every archived season indexes its own seniors.
+
+## Transactions, program head-coach history, coach records (owner, 2026-09)
+- **The coach page's "Moves" panel is "Transactions"**, and it says only
+  **Hired · Left staff · Retired**, with the year and the school
+  (`jhsaa_coaches.transactions`). The raw event log said "existing — on staff
+  when coaches were introduced" and "replaced — moved to the free pool": that is
+  plumbing, not a coaching history. Head or assistant does not change the line.
+  Going to the free pool is what leaving a staff means, so it is never stated. An
+  assistant-to-head move inside one staff in one season reads as "Promoted to head
+  coach". A carousel firing is written as a retirement and then an un-retirement,
+  so it reads as leaving staff.
+- **Off a staff a coach is a FREE AGENT, or RETIRED**, never "not on a staff".
+  Nothing deletes a coach row, so a retired coach's page stays.
+- **Every varsity head coach in a program's history** is a collapsible panel on
+  the program's **History** tab, under Seasons (`program_head_coaches`). One row
+  per consecutive run: "Janes Jacobs 2056-present · Dave Williams 2054-56". Every
+  panel on that tab (and on the Staff tab) is now a `jh-fold`.
+- **Coach Records** (`/jhsaa/coach-records`, History sub-rail) has two boards:
+  - *Most wins*: head coach, varsity dual wins.
+  - *Multiple state titles*: head coach of the champion, 2+ titles.
+  - Each board reads this sport or **Overall**. A coach who moves between the
+    girls' and boys' programs is one career, which is why the overall list exists.
+  - The titles board reads each season's `champions` through `json_extract`,
+    only for seasons with a coach history. It never parses the whole archived
+    blob.
+

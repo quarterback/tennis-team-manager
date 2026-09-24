@@ -2890,6 +2890,8 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   hired away by more prestigious programs; head experience (`head_record`, a
   record-sized edge — wins blended with the coefficient, since wins are not all
   equal) outranks an assistant's; a NEW coach only when nobody applied.
+  ‼️ NO TENURE GATE on applying: a two-season minimum closed the whole market
+  on a save seated one season earlier, and every opening became a new coach.
   ‼️ **The program page shows OVR, age, first season and the head's record —
   never ratings** (those live on the coach page; the Staff tab keeps them
   collapsed).

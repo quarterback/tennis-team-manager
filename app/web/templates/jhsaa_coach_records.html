@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header %}
+{% block title %}JHSAA Coach Records{% endblock %}
+{% block content %}
+
+{{ jh_header(view.scope, u, 'coach_records', 'Coach Records', '',
+             [('Coaches', view.rows|length)]) }}
+
+<div class="jh-shell">
+{# Two boards, each for THIS sport or BOTH (owner, 2026-09): a coach who moves
+   from the girls' program to the boys' is one career, which is what the overall
+   list is for. Head coach, varsity only. #}
+<div class="jh-subrail" style="margin-bottom:10px">
+  <a class="{{ 'on' if view.board == 'wins' }}"
+     href="{{ url_for('jhsaa_coach_records', u=u, g=view.gender, group=view.scope.group, board='wins', sport=view.sport) }}">Most wins</a>
+  <a class="{{ 'on' if view.board == 'titles' }}"
+     href="{{ url_for('jhsaa_coach_records', u=u, g=view.gender, group=view.scope.group, board='titles', sport=view.sport) }}">Multiple state titles</a>
+  <span class="sep"></span>
+  <a class="{{ 'on' if view.sport == 'this' }}"
+     href="{{ url_for('jhsaa_coach_records', u=u, g=view.gender, group=view.scope.group, board=view.board, sport='this') }}">{{ view.gender|capitalize }}</a>
+  <a class="{{ 'on' if view.sport == 'all' }}"
+     href="{{ url_for('jhsaa_coach_records', u=u, g=view.gender, group=view.scope.group, board=view.board, sport='all') }}">Overall</a>
+</div>
+
+<details class="bl-panel jh-fold" open>
+  <summary class="bl-panel-head"><span class="bl-panel-title">{{ 'Most wins' if view.board == 'wins' else 'Multiple state titles' }}</span>
+    <span class="bl-panel-meta">{{ view.gender if view.sport == 'this' else 'girls and boys' }} · head coach, varsity</span></summary>
+  {% if view.rows %}
+  <div class="bl-tablescroll">
+  {% if view.board == 'wins' %}
+  <table class="bl-table jh-ledger nowrap">
+    <thead><tr><th style="width:40px">#</th><th>Coach</th><th>Programs</th>
+      <th style="width:90px">Record</th><th style="width:64px">Pct</th>
+      <th style="width:70px">Seasons</th><th style="width:100px">Years</th></tr></thead>
+    <tbody>
+    {% for r in view.rows %}
+    <tr><td>{{ loop.index }}</td>
+      <td class="nm"><a href="{{ url_for('jhsaa_coach', coach_id=r.coach_id, u=u, g=r.genders[0] or view.gender) }}">{{ r.name }}</a>{% if r.retired %} <span class="s">retired</span>{% endif %}</td>
+      <td class="nm">{{ r.schools|join(' · ') }}</td>
+      <td><b>{{ r.w }}-{{ r.l }}{% if r.t %}-{{ r.t }}{% endif %}</b></td>
+      <td>{% if r.pct is not none %}{{ '%.3f'|format(r.pct)|replace('0.', '.') }}{% endif %}</td>
+      <td>{{ r.seasons }}</td>
+      <td>{{ r.first }}{% if r.last != r.first %}-{{ r.last }}{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <table class="bl-table jh-repeat">
+    <thead><tr><th>Coach</th><th style="width:60px">Titles</th><th>State titles</th></tr></thead>
+    <tbody>
+    {% for r in view.rows %}
+    <tr><td><a class="nm" href="{{ url_for('jhsaa_coach', coach_id=r.coach_id, u=u, g=r.won[0].gender) }}">{{ r.name }}</a></td>
+      <td><b>{{ r.count }}</b></td>
+      <td class="won">{% for a in r.won %}<span class="ti" title="{{ a.season_year }} {{ a.group }} · {{ a.school }}"><b>{{ a.season_year }}</b> {{ a.group }} {{ a.school }}{% if view.sport == 'all' %} ({{ a.gender }}){% endif %}</span>{{ ', ' if not loop.last }}{% endfor %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+  </div>
+  {% else %}
+  <p class="jh-empty">Nobody yet.</p>
+  {% endif %}
+</details>
+</div>
+{% endblock %}
