@@ -117,6 +117,18 @@ PROFILE_LABELS = {
     "tactician": "Tactician", "evaluator": "Evaluator", "motivator": "Motivator",
     "generalist": "Generalist",
 }
+#: Identities retired by the 2026-09 band roll, still carried by coaches a save
+#: persisted under the previous build. ‼️ NEVER REMAPPED ON LOAD: a coach's ratings
+#: are imprinted and their identity is part of that record, and a remap would move
+#: effects (an old "teacher" never carried the depth lean, so reading it as
+#: "practice" would add one). They keep their name, their label and exactly the
+#: effect they had — `JV_LEAN_PROFILES` is the one place an effect keys on one.
+LEGACY_PROFILE_LABELS = {"teacher": "Teacher", "jv_whisperer": "JV whisperer",
+                         "doubles_guru": "Doubles guru"}
+PROFILE_LABELS.update(LEGACY_PROFILE_LABELS)
+#: Identities that carry the JV / floor-raiser depth lean: the practice identity,
+#: and the retired JV whisperer it replaced (so a stored one keeps its lean).
+JV_LEAN_PROFILES = ("practice", "jv_whisperer")
 PROFILE_WEIGHTS = {"builder": 12, "practice": 16, "singles": 14, "doubles": 14,
                    "tactician": 14, "evaluator": 10, "motivator": 10, "generalist": 10}
 
@@ -349,7 +361,7 @@ def staff_effect(head: Coach | None, assistants: list[Coach]) -> StaffEffect | N
     culture = culture_of(eff["doubles"])
     lean = 0.0
     for c in [head] + list(assistants):
-        if c.profile == "practice":
+        if c.profile in JV_LEAN_PROFILES:
             lean = 1.0 if c is head else max(lean, 0.5)
     return StaffEffect(lens=lens_of(eff["talent_id"], eff["adaptability"]),
                        culture=culture, strategy=head.pairing,

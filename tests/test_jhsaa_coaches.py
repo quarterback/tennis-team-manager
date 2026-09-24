@@ -111,6 +111,22 @@ def test_identity_floors_are_floors_not_values():
     assert jc.to_grade(bad["doubles"]) >= 50 and jc.to_grade(bad["changeover"]) >= 35
 
 
+def test_a_stored_jv_whisperer_keeps_its_depth_lean():
+    """A coach persisted under the previous build still reads "jv_whisperer" and
+    must keep the lean; a legacy "teacher" never had one and must not gain it."""
+    import json
+    grades = {a: 0.5 for a in jc.GRADES}
+    data = json.dumps({"grades": grades, "profile": "jv_whisperer"})
+    jv = jc._coach_from("x", "x", data)
+    teacher = jc._coach_from("t", "t", json.dumps({"grades": grades, "profile": "teacher"}))
+    plain = jc._coach_from("p", "p", json.dumps({"grades": grades, "profile": "tactician"}))
+    assert jv.profile == "jv_whisperer"                      # never remapped
+    assert jc.staff_effect(jv, []).lean == 1.0
+    assert jc.staff_effect(plain, [jv]).lean == 0.5
+    assert jc.staff_effect(teacher, []).lean == 0.0
+    assert jc.PROFILE_LABELS["jv_whisperer"] == "JV whisperer"
+
+
 def test_tactics_scales_the_style_edge_and_nothing_else():
     """Tactics rides the style matchup: a flat matchup stays zero, the favoured
     side's better tactician amplifies it, and the scaling is antisymmetric."""
