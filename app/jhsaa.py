@@ -133,8 +133,8 @@ FORMATS = {
     # Group 2's postseason shape (JHSAA rule 2026-09) — the association's ONE even
     # dual; a 3-3 is settled by `_deciding_tiebreaks`. See `THREE_THREE_GROUPS`.
     "state_3s3d": DualFormat(n_singles=3, n_doubles=3, doubles_team_point=False),
-    # 5A's shape (JHSAA rule 2094) — ELEVEN courts, sixteen on court, the largest
-    # card the association plays and the only one where singles outweigh doubles.
+    # 5A's shape (JHSAA rule 2094) — ELEVEN FLIGHTS, sixteen players, the largest
+    # format the association plays and the only one where singles outweigh doubles.
     # See `SINGLES_FORWARD_GROUPS`.
     "state_6s5d": DualFormat(n_singles=6, n_doubles=5, doubles_team_point=False),
 }
@@ -177,25 +177,25 @@ DECIDER_TARGET = 10
 # logic is needed anywhere; high school has no clinch, so all nine are always played.
 WIDE_GROUPS = ("7A", "8A", "9A", "Group 1")  # groups whose road-to-State AND early window play 4S/5D
 
-# ‼️ 5A PLAYS 6S/5D — ELEVEN COURTS, AND IT IS THE SINGLES CLASS (JHSAA rule 2094,
-# on the 5A schools' own petition). The association's widest card by two courts:
-# six singles and five doubles, SIXTEEN on court. Membership in
+# ‼️ 5A PLAYS 6S/5D — ELEVEN FLIGHTS, AND IT IS THE SINGLES CLASS (JHSAA rule 2094,
+# on the 5A schools' own petition). The association's widest format by two flights:
+# six singles and five doubles, SIXTEEN players. Membership in
 # `SINGLES_FORWARD_GROUPS` is the whole change, exactly as `WIDE_GROUPS` was — the
 # road to State, the State draw and a 5A-hosted showcase play it; the league season
 # stays the universal 3S/4D, the early window stays 5S/2D, the TOC stays 1S/4D like
 # every other pilot's entrant, and the individual state tournaments read no dual
 # format at all.
 #
-# ‼️ THE POINT IS THE SINGLES WEIGHTING, NOT THE WIDTH. At 6/11 courts this is the
-# ONLY JHSAA shape where singles outweigh doubles — every other postseason card runs
+# ‼️ THE POINT IS THE SINGLES WEIGHTING, NOT THE WIDTH. At 6/11 flights this is the
+# ONLY JHSAA shape where singles outweigh doubles — every other postseason format runs
 # 20% (1S/4D) to 50% (Group 2's 3S/3D) singles. `FLIGHT_WEIGHTS_6S5D` carries that
-# through to what a court is WORTH, pricing S1 above D1 where every other shape ties
-# them or puts doubles level. A class that wanted more courts and not this weighting
+# through to what a flight is WORTH, pricing S1 above D1 where every other shape ties
+# them or puts doubles level. A class that wanted more flights and not this weighting
 # would have asked for 4S/5D, which was on the table and was not what was petitioned
-# for. Eleven courts is odd, so a 6S/5D dual cannot tie and no tie-breaking logic is
+# for. Eleven flights is odd, so a 6S/5D dual cannot tie and no tie-breaking logic is
 # reachable from it; high school has no clinch, so all eleven are always played.
 #
-# ‼️ THIS IS WHY `ROSTER_FLOOR` MOVED (same rule). Sixteen on court against the old
+# ‼️ THIS IS WHY `ROSTER_FLOOR` MOVED (same rule). A sixteen-player lineup against the old
 # floor of 16 left a floor-sized program dressing its whole roster with nothing in
 # reserve, and the old floor was not an arbitrary 16 — it was the varsity eleven plus
 # the five a JV dual needs. The floor and every band were re-cut for the JV ladder in
@@ -502,7 +502,7 @@ def dual_format(phase: str, group: str | None = None) -> DualFormat:
     if group in THREE_THREE_GROUPS and rehearsal:
         return FORMATS["state_3s3d"]
     # 5A's 6S/5D (JHSAA rule 2094): the road, State and a 5A-hosted showcase, the TOC
-    # excepted — the same scoping as every other pilot. Sixteen on court.
+    # excepted — the same scoping as every other pilot. Sixteen players dressed.
     if group in SINGLES_FORWARD_GROUPS and rehearsal:
         return FORMATS["state_6s5d"]
     # 6A's format-continuity pilot (owner rule 2026-09): the league's 3S/4D carried
@@ -754,7 +754,7 @@ ROSTER_SIZE_BAND_BY_CLASS = {
     "7A": (24, 28), "6A": (24, 28),
     # ‼️ 5A AND 4A NO LONGER SHARE A BAND (JHSAA rule 2094). 5A dresses SIXTEEN for
     # 6S/5D where 4A still dresses nine for 1S/4D, so the one entry they used to
-    # share cannot serve both: 5A is set for its own card plus the JV ladder, 4A
+    # share cannot serve both: 5A is set for its own format plus the JV ladder, 4A
     # for the JV ladder alone. Do not "tidy" them back onto one line.
     "5A": (23, 26),
     "4A": (22, 24),
@@ -851,15 +851,15 @@ def roster_size(classification: str, school_key: str = "", salt: str = "") -> in
 #: broke 16 at once and they have the SAME fix. (1) The JV ladder has grown a long way
 #: past the table it launched with — `jv_format` is unbounded (D = (spare+1)//3) and
 #: reaches 6S/5D at sixteen spare — but the bands were never re-cut for it, so the
-#: bottom of the association was pinned at the three-court minimum: 1A's band bought
+#: bottom of the association was pinned at the three-flight minimum: 1A's band bought
 #: spare 5 and exactly ONE JV shape, and 1A/2A/Group 3 all had band MINIMA below the
 #: floor, i.e. dead numbers the floor was silently overriding. (2) 5A's 6S/5D puts
-#: SIXTEEN on court, so a floor-sized program dressed its whole roster with nothing in
+#: SIXTEEN players, so a floor-sized program dressed its whole roster with nothing in
 #: reserve — the same "no bench at all" failure the original floor of 12 existed to
 #: prevent, arriving by a different door. At 20 every class reaches at least 3S/3D on
 #: JV, every band minimum is at or above the floor, and a floor-sized 5A program
 #: dresses sixteen with four spare. The floor is still read the same way — varsity
-#: card plus the JV minimum — it is just read against a ladder that moved.
+#: format plus the JV minimum — it is just read against a ladder that moved.
 #: See `docs/AAR-jhsaa-2094-5a-6s5d-and-roster-bands.md`.
 ROSTER_FLOOR = 20
 
@@ -8466,8 +8466,8 @@ def play_district(teams: list[TeamSeason], year: int, salt: str = "") -> list[Te
 FLIGHT_WEIGHTS = {
     "S1": 1.00, "S2": 0.75, "S3": 0.25, "S4": 0.10, "S5": 0.10,
     # S6 is contested in NO shape on this table — same reason as D5 below: a generic
-    # per-slot reader must rank 5A's sixth singles court below its fifth instead of
-    # taking the bare `.get(slot, 0.25)` default and pricing the card's last singles
+    # per-slot reader must rank 5A's sixth singles flight below its fifth instead of
+    # taking the bare `.get(slot, 0.25)` default and pricing the format's last singles
     # seat above four of its others. 6S/5D rates on its own table.
     "S6": 0.05,
     "D1": 1.00, "D2": 0.50,
@@ -8501,11 +8501,11 @@ FLIGHT_WEIGHTS_4S5D = {
     "D1": 2.00, "D2": 0.80, "D3": 0.45, "D4": 0.20, "D5": 0.10,
 }
 
-#: 5A's eleven-court card (JHSAA rule 2094). ‼️ THE ONE TABLE WHERE SINGLES OUTPRICE
+#: 5A's eleven-flight format (JHSAA rule 2094). ‼️ THE ONE TABLE WHERE SINGLES OUTPRICE
 #: DOUBLES, and that is the whole point of the shape rather than a side effect of
-#: having more singles courts: S1 is priced ABOVE D1 where every other JHSAA table
+#: having more singles flights: S1 is priced ABOVE D1 where every other JHSAA table
 #: ties them (1.00/1.00, or 4S/5D's 2.00/2.00), and the six singles seats carry 65% of
-#: the card's total weight. A 5A coach's top eight is still a real decision —
+#: the format's total weight. A 5A coach's top eight is still a real decision —
 #: `_arrange_wide` pools eight and searches which six play singles — but the search
 #: now pays for singles depth where 4S/5D's pays for a stacked D1.
 FLIGHT_WEIGHTS_6S5D = {

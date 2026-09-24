@@ -744,16 +744,16 @@ def test_a_dual_across_classifications_plays_ONE_shape_AND_IT_IS_THE_WIDER():
     for a, b in (("8A", "9A"), ("8A", "7A"), ("7A", "6A"), ("6A", "5A"), ("1A", "2A")):
         assert jh.dual_format(ep, jh.shape_group(ep, a, b)) == jh.FORMATS["early"], (a, b)
     # the wider side wins where shapes differ — a showcase host in a wide class
-    widest = jh.FORMATS["state_6s5d"]          # 5A's eleven courts, JHSAA rule 2094
+    widest = jh.FORMATS["state_6s5d"]          # 5A's eleven flights, JHSAA rule 2094
     assert jh.dual_format("showcase_pod", jh.shape_group("showcase_pod", "9A", "4A")) == wide
     assert jh.dual_format("showcase_pod", jh.shape_group("showcase_pod", "4A", "9A")) == wide
-    # ‼️ 5A's 6S/5D is now the WIDEST card in the association, so it beats 4S/5D too
+    # ‼️ 5A's 6S/5D is now the WIDEST format in the association, so it beats 4S/5D too
     assert jh.dual_format("showcase_pod", jh.shape_group("showcase_pod", "9A", "5A")) == widest
     assert jh.dual_format("showcase_pod", jh.shape_group("showcase_pod", "5A", "9A")) == widest
     # a postseason bracket never crosses groups, so the sides always agree there
     assert jh.dual_format("state", jh.shape_group("state", "8A", "8A")) == wide
     # ...and the roster every shape needs is inside its own class's band. ‼️ Checked
-    # per class against ITS OWN card, not against one class's: since 2094 the cards
+    # per class against ITS OWN format, not against one class's: since 2094 the formats
     # differ by seven players across the association (1A's eight to 5A's sixteen).
     for cls, (lo, _hi) in jh.ROSTER_SIZE_BAND_BY_CLASS.items():
         assert lo >= jh.lineup_need("state", cls), cls

@@ -125,15 +125,15 @@ rewrites archived duals.
 ## ‼️ SUPERSEDED IN PART — the 2094 re-cut (JHSAA rule 2094)
 
 `ROSTER_FLOOR` is **20**, not 16, and every band in the table above has been replaced.
-The reasoning in this document still holds — the floor is still "the varsity card plus
+The reasoning in this document still holds — the floor is still "the varsity format plus
 the five a JV dual needs", and the bands are still targets rather than caps — but both
 numbers were read against a ladder that has since moved, twice:
 
 - **The JV ladder outgrew the bands.** `jv_format` is unbounded and reaches 6S/5D at
   sixteen spare, while the bands still reflected the table it launched with. Three bands
   (1A, Group 3, 2A) had minima *below* the floor, so the floor was silently overriding
-  them and the bottom of the association was pinned at JV's three-court minimum.
-- **5A's card now needs sixteen on court** (6S/5D), so a floor-sized 5A program dressed
+  them and the bottom of the association was pinned at JV's three-flight minimum.
+- **5A's format now needs sixteen players** (6S/5D), so a floor-sized 5A program dressed
   its entire roster — the same "no bench at all" failure the original floor of 12 existed
   to prevent.
 
@@ -141,9 +141,9 @@ Also superseded: **5A and 4A no longer share a band entry**, and the Groups were
 against the ladder classes rather than the enrolment blend described above.
 
 The bullet below that reads "`ROSTER_FLOOR` is a structural minimum tied to the
-regular-season card shape" is now only half true: since 2094 the biggest card in the
+regular-season format" is now only half true: since 2094 the biggest format in the
 association is a POSTSEASON one (5A's 6S/5D, sixteen), not the regular season's eleven.
-Read it as "tied to the biggest card `dual_format` can return, plus the JV minimum".
+Read it as "tied to the biggest format `dual_format` can return, plus the JV minimum".
 
 See `docs/AAR-jhsaa-2094-5a-6s5d-and-roster-bands.md` for the new table and the
 measurement behind it.

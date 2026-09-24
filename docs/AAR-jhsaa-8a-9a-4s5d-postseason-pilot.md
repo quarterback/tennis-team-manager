@@ -150,19 +150,19 @@ reads `jv_state_pool`) · `tests/test_jhsaa_lineup.py`.
 
 ---
 
-## ‼️ NO LONGER THE WIDEST CARD (JHSAA rule 2094)
+## ‼️ NO LONGER THE WIDEST FORMAT (JHSAA rule 2094)
 
 4S/5D was the association's widest shape from 2070 until 2094, when **5A took 6S/5D** —
-eleven courts, sixteen on court (`SINGLES_FORWARD_GROUPS`). Two consequences for anything
+eleven flights, sixteen players (`SINGLES_FORWARD_GROUPS`). Two consequences for anything
 written above:
 
-- **"The wider card wins" now resolves to 5A, not to `WIDE_GROUPS`.** A 9A-hosted showcase
-  meeting a 5A side plays *eleven* courts, not nine. Any code or test that treats
+- **The wider-format rule now resolves to 5A, not to `WIDE_GROUPS`.** A 9A-hosted showcase
+  meeting a 5A side plays *eleven* flights, not nine. Any code or test that treats
   `state_4s5d` as the maximum `shape_group` can return is stale.
 - **The 2070 backtest's framing does not carry over.** It chose 4S/5D on depth-vs-top-end
   correlation; the 2094 petition was decided on singles weighting and roster capacity, and
   explicitly not on competitive balance. Do not read this document's reasoning as the
-  association's standing rationale for widening a card.
+  association's standing rationale for widening a format.
 
 `WIDE_GROUPS` itself is unchanged — 7A/8A/9A/Group 1 still play 4S/5D on exactly the terms
 above.
