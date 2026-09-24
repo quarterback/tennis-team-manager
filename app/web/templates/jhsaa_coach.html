@@ -43,7 +43,7 @@
             <td class="yr"><a href="{{ url_for('jhsaa_school', school=s.school, year=s.world_year, u=u, g=s.gender) }}">{{ s.season_year }}</a></td>
             <td style="font-size:14px"><a href="{{ url_for('jhsaa_school', school=s.school, year=s.world_year, u=u, g=s.gender) }}" style="color:inherit">{{ s.school }}</a></td>
             <td style="font-variant-numeric:normal">{{ s.class }}</td>
-            <td>{{ s.role }}</td>
+            <td style="white-space:nowrap">{% if s.head %}<b>{{ s.role }}</b>{% else %}{{ s.role }}{% endif %}</td>
             <td>{% if s.head %}<b>{{ s.record }}</b>{% else %}—{% endif %}</td>
             <td>{{ s.team_record or '—' }}</td>
             <td>{% if s.district_place == 1 %}<b>1st</b>{% elif s.district_place %}{{ s.district_place }}{{ {1:'st',2:'nd',3:'rd'}.get(s.district_place if s.district_place < 20 else s.district_place % 10, 'th') }}{% endif %}{% if s.district_record %} <span style="color:var(--text-faint)">{{ s.district_record }}</span>{% endif %}</td>

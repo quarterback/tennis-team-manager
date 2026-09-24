@@ -210,3 +210,77 @@ def test_the_research_export_carries_every_coach_table(tmp_path):
         assert jc.research_tables(1, "boys", {}) == {k: [] for k in rx.COACH_FILES}
     finally:
         wd.WORLD_DB, wd._schema_ready_for = real_db, real_ready
+
+
+def test_the_coach_ledger_role_names_the_program(tmp_path):
+    """Owner rule 2026-09: the Role column says WHICH program — "Girls HC",
+    "Boys Asst" — because one coach can hold seats in both sports."""
+    from app import jhsaa_coaches as jc
+    db = str(tmp_path / "role.db")
+    real_db, real_ready = wd.WORLD_DB, wd._schema_ready_for
+    wd.WORLD_DB = db
+    wd._schema_ready_for = None
+    try:
+        wd.init_schema()
+        conn = wd._db()
+        conn.execute("INSERT INTO jhsaa_coach (world_id, coach_id, name, data) VALUES (1,'c1','Coach 1',?)",
+                     (json.dumps({"grades": {}}),))
+        for yr, g, slot in ((2, "boys", "asst1"), (3, "girls", "head")):
+            conn.execute(
+                "INSERT INTO jhsaa_coach_history (world_id, year, ident, gender, slot,"
+                " coach_id, school, classification, grp, wins, losses, ties, eff)"
+                " VALUES (1, ?, 'X', ?, ?, 'c1', 'X', '5A', '5A', 10, 3, 0, NULL)", (yr, g, slot))
+        conn.commit()
+        conn.close()
+        roles = {r["season_year"]: r["role"] for r in jc.coach_view(1, "c1", 2031)["ledger"]}
+        assert sorted(roles.values()) == ["Boys Asst", "Girls HC"]
+    finally:
+        wd.WORLD_DB, wd._schema_ready_for = real_db, real_ready
+
+
+def test_the_coach_page_renders_the_program_role_and_awards_above_transactions(
+        tmp_path, monkeypatch):
+    """The page, not just the view: the Role column reads "Girls HC" (bold, one
+    line) / "Boys Asst", the Awards panel sits above Transactions, and no award
+    score reaches the HTML (owner rules 2026-09)."""
+    from app import jhsaa_coaches as jc
+    from app.web.server import create_app
+    db = str(tmp_path / "page.db")
+    real_db, real_ready = wd.WORLD_DB, wd._schema_ready_for
+    wd.WORLD_DB = db
+    wd._schema_ready_for = None
+    try:
+        wd.init_schema()
+        conn = wd._db()
+        conn.execute("INSERT INTO jhsaa_coach (world_id, coach_id, name, data) VALUES (1,'c1','Coach One',?)",
+                     (json.dumps({"grades": {}}),))
+        for yr, g, slot in ((2, "boys", "asst1"), (3, "girls", "head")):
+            conn.execute(
+                "INSERT INTO jhsaa_coach_history (world_id, year, ident, gender, slot,"
+                " coach_id, school, classification, grp, wins, losses, ties, eff)"
+                " VALUES (1, ?, 'X', ?, ?, 'c1', 'X', '5A', '5A', 10, 3, 0, NULL)", (yr, g, slot))
+        conn.execute("INSERT INTO jhsaa_coach_event (world_id, year, coach_id, ident, gender, slot, event)"
+                     " VALUES (1, 2028, 'c1', 'X', 'boys', 'asst1', 'hired')")
+        conn.execute(
+            "INSERT INTO jhsaa_coach_award (world_id, year, gender, level, grp, district, rank,"
+            " school, ident, coach_id, coach_name, score, detail)"
+            " VALUES (1, 3, 'girls', 'district', '5A', 'Quarry League', 1, 'X', 'X', 'c1',"
+            " 'Coach One', 87.65, '{}')")
+        conn.commit()
+        conn.close()
+        world = {"id": 1, "year": 3, "seed": wd.DEFAULT_SEED}
+        monkeypatch.setattr(wd, "get_or_create", lambda *a, **k: world)
+        monkeypatch.setattr(wd, "active_salt", lambda *a, **k: "")
+        monkeypatch.setattr(wd, "is_primed", lambda *a, **k: True)
+        monkeypatch.setattr(wd, "prime", lambda *a, **k: None)
+        monkeypatch.setattr(jc, "ensure_seated", lambda *a, **k: None)
+        resp = create_app().test_client().get("/jhsaa/coach/c1?g=girls")
+        assert resp.status_code == 200
+        html = resp.get_data(as_text=True)
+        assert '<td style="white-space:nowrap"><b>Girls HC</b></td>' in html
+        assert '<td style="white-space:nowrap">Boys Asst</td>' in html
+        assert "Quarry League Coach of the Year" in html
+        assert html.index(">Awards<") < html.index(">Transactions<")
+        assert "87.65" not in html and "87.7" not in html
+    finally:
+        wd.WORLD_DB, wd._schema_ready_for = real_db, real_ready

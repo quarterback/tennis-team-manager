@@ -948,8 +948,13 @@ def coach_view(world_id: int, coach_id: str, season_year: int) -> dict | None:
         (h["gender"] for h in car["history"]), None) or next(
         (e["gender"] for e in car["events"]), "girls")
     names = ident_names(gender)
+    # ROLE NAMES THE PROGRAM (owner rule 2026-09): a coach can hold seats in both
+    # sports, so the column reads "Girls HC" / "Boys Asst" rather than a bare
+    # "Head coach". The JV-head label is a designation on an assistant, not a
+    # separate job, so it is never a role here.
     history = [{**h, "school": names.get(h["ident"], h["school"]),
-                "role": "Head coach" if h["slot"] == "head" else "Assistant"}
+                "role": f"{(h.get('gender') or '').capitalize()} "
+                        f"{'HC' if h['slot'] == 'head' else 'Asst'}"}
                for h in car["history"]]
     ledger, totals = _career_ledger(world_id, history)
     # Coach of the Year (owner spec 2026-09): each award rides on its season row
