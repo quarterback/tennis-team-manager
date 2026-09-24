@@ -11,7 +11,7 @@
    A coach's page IS the editor — ratings, moves, JV head, retirement. #}
 <div class="bl-panel">
   <div class="bl-panel-head"><span class="bl-panel-title">Head coaches</span>
-    <a class="jh-hqmore" href="{{ url_for('jhsaa_coach_carousel', u=u) }}">Carousel{% if free %} · {{ free }} available{% endif %} →</a></div>
+    <a class="jh-hqmore" href="{{ url_for('jhsaa_coach_carousel', u=u, g=view.gender) }}">Carousel{% if free %} · {{ free }} available{% endif %} →</a></div>
   <div class="jh-form-row" style="padding:0 14px">
     <input id="jh-cfind" type="search" autocomplete="off" placeholder="Program or coach">
     <select id="jh-ctier"><option value="">Every tier</option>

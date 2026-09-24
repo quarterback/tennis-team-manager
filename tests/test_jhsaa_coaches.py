@@ -314,6 +314,41 @@ def test_a_vetoed_departure_keeps_every_seat_its_skipped_moves_would_have_left(
     assert moved == ["d"]
 
 
+def test_first_time_seating_is_single_flight():
+    """Two first-time page requests and the rung seating one world at once must
+    seat every program exactly once — no lock timeout, no duplicate inaugural
+    events. (A write lock held while reading the school list deadlocked every
+    caller on itself; the staffs are rolled before the lock now.)"""
+    import threading
+    wid = 424242
+    errs = []
+
+    def go(fn):
+        try:
+            fn()
+        except Exception as e:          # noqa: BLE001 — the test reports it
+            errs.append(repr(e))
+    ts = [threading.Thread(target=go, args=(lambda: jc.ensure_seated(wid, 2030, "r"),))
+          for _ in range(2)]
+    ts.append(threading.Thread(target=go, args=(lambda: jc.ensure_staff(wid, 2030, "r"),)))
+    for t in ts:
+        t.start()
+    for t in ts:
+        t.join()
+    assert not errs, errs
+    conn = wd._db()
+    try:
+        seats = conn.execute("SELECT COUNT(*) FROM jhsaa_coach_seat WHERE world_id=?",
+                             (wid,)).fetchone()[0]
+        events = conn.execute("SELECT COUNT(*) FROM jhsaa_coach_event WHERE world_id=?",
+                              (wid,)).fetchone()[0]
+        conn.executescript(" ".join(f"DELETE FROM {t} WHERE world_id={wid};"
+                                    for t in jc._TABLES))
+    finally:
+        conn.close()
+    assert seats > 1000 and events == seats
+
+
 @pytest.fixture(scope="module")
 def world_season(tmp_path_factory):
     db = str(tmp_path_factory.mktemp("jhsaa") / "coaches.db")

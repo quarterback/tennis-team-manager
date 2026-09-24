@@ -857,7 +857,7 @@
 <div class="bl-panel">
   <div class="bl-panel-head"><span class="bl-panel-title">Coaching staff</span>
     <a class="jh-hqmore" href="{{ url_for('jhsaa_coaches', u=u, g=view.gender) }}">All coaches →</a>
-    <a class="jh-hqmore" href="{{ url_for('jhsaa_coach_carousel', u=u) }}">Carousel →</a></div>
+    <a class="jh-hqmore" href="{{ url_for('jhsaa_coach_carousel', u=u, g=view.gender) }}">Carousel →</a></div>
   <div class="tbl-scroll">
   <table class="jh-roster">
     <tr><th>Role</th><th>Coach</th><th class="num" style="width:64px">Overall</th><th>Tier</th>
@@ -871,7 +871,7 @@
       <td><a href="{{ url_for('jhsaa_coach', coach_id=st.coach.coach_id, u=u, g=view.gender) }}#edit">Edit</a></td>
       {% else %}
       <td class="nm"><span class="s">Vacant</span></td><td></td><td></td><td></td><td></td><td class="num">{{ st.since }}</td>
-      <td><a href="{{ url_for('jhsaa_coach_carousel', u=u) }}#pool">Fill</a></td>
+      <td><a href="{{ url_for('jhsaa_coach_carousel', u=u, g=view.gender) }}#pool">Fill</a></td>
       {% endif %}
     </tr>
     {% endfor %}

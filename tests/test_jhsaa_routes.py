@@ -118,6 +118,12 @@ def test_the_coaches_live_under_programs_and_show_without_a_season(client):
     cid = re.search(r"/jhsaa/coach/([^?\"#]+)", body).group(1)
     coach = client.get(f"/jhsaa/coach/{cid}?g=girls").get_data(as_text=True)
     assert 'id="edit"' in coach and "Edit coach" in coach and ">Carousel</a>" in coach
+    # the REQUESTED scope reaches the header: the 5A tab is marked, and the
+    # Carousel links keep the girls' sport
+    scoped = client.get(f"/jhsaa/coach/{cid}?g=girls&group=5A").get_data(as_text=True)
+    assert 'class="on c-5A"' in scoped, "header lost the requested class"
+    carousel = re.findall(r'href="([^"]*coaches/carousel[^"]*)"', html)
+    assert carousel and all("g=girls" in h for h in carousel), carousel
 
 
 def test_jhsaa_pages_do_not_wait_for_the_college_world_prime(monkeypatch):

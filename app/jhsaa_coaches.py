@@ -33,6 +33,7 @@ from __future__ import annotations
 import hashlib
 import json
 import random
+import threading
 from dataclasses import dataclass, field
 
 # --------------------------------------------------------------- the model ----
@@ -519,30 +520,65 @@ def ensure_staff(world_id: int, season_year: int, salt: str) -> int:
     program that starts sponsoring later is seated the first season it plays.
     Returns how many programs were seated."""
     from . import jhsaa
+    with _seat_lock:
+        return _ensure_staff(jhsaa, world_id, season_year, salt)
+
+
+def _seated_heads(conn, world_id: int) -> set:
+    return {(r[0], r[1]) for r in conn.execute(
+        "SELECT ident, gender FROM jhsaa_coach_seat"
+        " WHERE world_id=? AND slot='head'", (world_id,))}
+
+
+def _ensure_staff(jhsaa, world_id: int, season_year: int, salt: str) -> int:
+    # 1. WHO IS MISSING, read without any lock.
     conn = _conn()
     try:
-        have = {(r[0], r[1]) for r in conn.execute(
-            "SELECT ident, gender FROM jhsaa_coach_seat"
-            " WHERE world_id=? AND slot='head'", (world_id,))}
+        have = _seated_heads(conn, world_id)
+    finally:
+        conn.close()
+    # 2. ROLL THEIR STAFFS BEFORE TAKING THE WRITE LOCK. ‼️ `load_schools` and
+    # `roster_size` open connections of their own (override and config reads, and
+    # a config read can CREATE a table): run under our BEGIN IMMEDIATE they wait
+    # on our own lock and the seater times out on itself — measured, every
+    # caller failed "database is locked". So everything that might touch the
+    # database is done here, and the locked section below only writes.
+    todo = []
+    for gender in ("girls", "boys"):
+        schools = jhsaa.load_schools(gender)
+        towns = sorted({s.city for s in schools})
+        for s in schools:
+            if (s.ident, gender) in have:
+                continue
+            n_ast = assistants_for(jhsaa.roster_size(s.classification, s.key, salt))
+            todo.append((s.ident, gender,
+                         inaugural_staff(s, n_ast, salt, season_year, world_id, towns)))
+    if not todo:
+        return 0
+    # 3. THE WRITE LOCK, THEN RE-READ, THEN WRITE. A concurrent seater (another
+    # process, or the rung) may have committed since step 1; BEGIN IMMEDIATE makes
+    # the re-read and the writes one critical section, so a program somebody else
+    # just seated is skipped rather than seated twice with duplicate events.
+    conn = _conn()
+    try:
+        if conn.in_transaction:
+            conn.commit()
+        conn.execute("BEGIN IMMEDIATE")
+        have = _seated_heads(conn, world_id)
         n = 0
-        for gender in ("girls", "boys"):
-            schools = jhsaa.load_schools(gender)
-            towns = sorted({s.city for s in schools})
-            for s in schools:
-                if (s.ident, gender) in have:
-                    continue
-                n_ast = assistants_for(jhsaa.roster_size(s.classification, s.key, salt))
-                staff = inaugural_staff(s, n_ast, salt, season_year, world_id, towns)
-                for i, c in enumerate(staff):
-                    save_coach(conn, world_id, c)
-                    conn.execute(
-                        "INSERT OR REPLACE INTO jhsaa_coach_seat (world_id, ident, gender,"
-                        " slot, coach_id, since, jv_head) VALUES (?,?,?,?,?,?,?)",
-                        (world_id, s.ident, gender, SLOTS[i], c.coach_id, season_year,
-                         int(i == 1)))
-                    _event(conn, world_id, season_year, c.coach_id, s.ident, gender,
-                           SLOTS[i], "existing", "on staff when coaches were introduced")
-                n += 1
+        for ident, gender, staff in todo:
+            if (ident, gender) in have:
+                continue
+            for i, c in enumerate(staff):
+                save_coach(conn, world_id, c)
+                conn.execute(
+                    "INSERT OR REPLACE INTO jhsaa_coach_seat (world_id, ident, gender,"
+                    " slot, coach_id, since, jv_head) VALUES (?,?,?,?,?,?,?)",
+                    (world_id, ident, gender, SLOTS[i], c.coach_id, season_year,
+                     int(i == 1)))
+                _event(conn, world_id, season_year, c.coach_id, ident, gender,
+                       SLOTS[i], "existing", "on staff when coaches were introduced")
+            n += 1
         conn.commit()
         return n
     finally:
@@ -550,6 +586,15 @@ def ensure_staff(world_id: int, season_year: int, salt: str) -> int:
 
 
 _seated: set = set()     # (db, world_id) already confirmed to have staffs
+# ‼️ FIRST-TIME SEATING IS SINGLE-FLIGHT. Two requests reaching a coach surface on a
+# save with no staffs both passed the memo and the probe and both entered
+# `ensure_staff`: the second either timed out on SQLite's lock or, after the first
+# committed, re-read an out-of-date "who has a head" set and appended every
+# inaugural event a second time. The lock serialises this process (the one gthread
+# worker); `ensure_staff` also takes the DATABASE write lock before it reads, which
+# covers a second process and the season rung. Re-entrant because ensure_seated
+# calls ensure_staff under it.
+_seat_lock = threading.RLock()
 
 
 def ensure_seated(world_id: int, season_year: int, salt: str) -> None:
@@ -565,17 +610,20 @@ def ensure_seated(world_id: int, season_year: int, salt: str) -> None:
     seeds), so seating here or at the rung is indistinguishable."""
     from .dbpath import resolve_db_path
     key = (resolve_db_path(), world_id)
-    if key in _seated:
+    if key in _seated:                 # the fast path: no lock once seated
         return
-    conn = _conn()
-    try:
-        have = conn.execute("SELECT 1 FROM jhsaa_coach_seat WHERE world_id=? LIMIT 1",
-                            (world_id,)).fetchone()
-    finally:
-        conn.close()
-    if not have:
-        ensure_staff(world_id, season_year, salt)
-    _seated.add(key)
+    with _seat_lock:
+        if key in _seated:             # another request seated it while we waited
+            return
+        conn = _conn()
+        try:
+            have = conn.execute("SELECT 1 FROM jhsaa_coach_seat WHERE world_id=? LIMIT 1",
+                                (world_id,)).fetchone()
+        finally:
+            conn.close()
+        if not have:
+            ensure_staff(world_id, season_year, salt)
+        _seated.add(key)
 
 
 def directory(world_id: int, gender: str) -> list[dict]:

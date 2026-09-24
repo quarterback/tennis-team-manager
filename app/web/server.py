@@ -3730,7 +3730,7 @@ def create_app() -> Flask:
         """One JHSAA coach — imprinted grades (visible, unlike a player's), the
         seat they hold, and every season they have coached."""
         from app import jhsaa_coaches as jc
-        gender, label, u, g, _group, _year = _jh_scope_args()
+        gender, label, u, g, group, year = _jh_scope_args()
         w = wd.get_or_create(DEFAULT_SEED)
         jc.ensure_seated(w["id"], wd.jhsaa_season_year(w), wd.active_salt(DEFAULT_SEED))
         view = jc.coach_view(w["id"], coach_id, wd.jhsaa_season_year(w))
@@ -3739,7 +3739,11 @@ def create_app() -> Flask:
         from app import jhsaa as _jhm
         schools = sorted(s.name for s in _jhm.load_schools(view["gender"]))
         return render_template("jhsaa_coach.html", active="High School", view=view,
-                               scope_view=jhsaa_scope_view(DEFAULT_SEED, view["gender"]),
+                               # the REQUESTED class and season, or the header
+                               # marks the first class and the latest year and every
+                               # scope link it builds drops an archived selection
+                               scope_view=jhsaa_scope_view(DEFAULT_SEED, view["gender"],
+                                                           group, year),
                                gender=gender, u=u, uni_label=label, schools=schools,
                                grade_attrs=jc.GRADE_LABELS,
                                msg=request.cookies.get("jh_coach_result", ""))
@@ -3750,13 +3754,13 @@ def create_app() -> Flask:
         editor lives (owner report 2026-09: "it's unclear where you put the coach
         editor"). Seats every staff first if this save has none yet."""
         from app import jhsaa_coaches as jc
-        gender, label, u, g, group, _year = _jh_scope_args()
+        gender, label, u, g, group, year = _jh_scope_args()
         w = wd.get_or_create(DEFAULT_SEED)
         sy = wd.jhsaa_season_year(w)
         jc.ensure_seated(w["id"], sy, wd.active_salt(DEFAULT_SEED))
         rows = jc.directory(w["id"], g)
         return render_template("jhsaa_coaches.html", active="High School", rows=rows,
-                               view=jhsaa_scope_view(DEFAULT_SEED, g, group),
+                               view=jhsaa_scope_view(DEFAULT_SEED, g, group, year),
                                gender=gender, u=u, uni_label=label,
                                tiers=[b[0] for b in jc.BANDS],
                                free=len(jc.free_pool(w["id"])))
@@ -3766,12 +3770,12 @@ def create_app() -> Flask:
         """The coaching carousel — a BUTTON, never a rung (owner rule 2026-09).
         Run a cycle, veto any line, commit. Nothing moves until you do."""
         from app import jhsaa_coaches as jc
-        gender, label, u, g, _group, _year = _jh_scope_args()
+        gender, label, u, g, group, year = _jh_scope_args()
         w = wd.get_or_create(DEFAULT_SEED)
         jc.ensure_seated(w["id"], wd.jhsaa_season_year(w), wd.active_salt(DEFAULT_SEED))
         prop = jc.pending_cycle(w["id"])
         return render_template("jhsaa_coach_carousel.html", active="High School",
-                               view=jhsaa_scope_view(DEFAULT_SEED, g),
+                               view=jhsaa_scope_view(DEFAULT_SEED, g, group, year),
                                prop=prop, pool=jc.free_pool(w["id"])[:60],
                                kinds={"retire": "Retires", "fire": "Let go",
                                       "promote": "Promoted", "move": "Moves",
@@ -3782,7 +3786,7 @@ def create_app() -> Flask:
     @app.route("/jhsaa/coaches/carousel", methods=["POST"])
     def jhsaa_coach_carousel_post():
         from app import jhsaa_coaches as jc
-        _gender, _label, u, _g, _group, _year = _jh_scope_args()
+        _gender, _label, u, g, _group, _year = _jh_scope_args()
         w = wd.get_or_create(DEFAULT_SEED)
         do = request.form.get("do", "")
         msg = ""
@@ -3801,7 +3805,7 @@ def create_app() -> Flask:
                 msg = "Cycle dismissed."
         except jc.StaffError as e:
             msg = str(e)
-        resp = redirect(url_for("jhsaa_coach_carousel", u=u))
+        resp = redirect(url_for("jhsaa_coach_carousel", u=u, g=g))
         resp.set_cookie("jh_coach_result", msg, max_age=30, samesite="Lax")
         return resp
 
