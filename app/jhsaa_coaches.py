@@ -1956,7 +1956,7 @@ def coach_win_leaders(world_id: int, gender: str | None, limit: int = 100) -> li
     conn = _conn()
     try:
         rows = conn.execute(
-            "SELECT h.coach_id, c.name, c.retired, SUM(h.wins), SUM(h.losses),"
+            "SELECT h.coach_id, c.name, COALESCE(json_extract(c.data, '$.retired'), 0), SUM(h.wins), SUM(h.losses),"
             " SUM(COALESCE(h.ties,0)), COUNT(*), MIN(h.year), MAX(h.year),"
             " GROUP_CONCAT(DISTINCT h.ident), GROUP_CONCAT(DISTINCT h.gender)"
             f" FROM jhsaa_coach_history h LEFT JOIN jhsaa_coach c"

@@ -138,3 +138,30 @@ def test_a_hand_archived_season_crowns_both_awards(tmp_path, monkeypatch):
         assert all(r["detail"]["repeat"] == 0 for c, r in again.items() if c != "c5")
     finally:
         wd.WORLD_DB, wd._schema_ready_for = real_db, real_ready
+
+
+def test_coach_records_boards_query_the_real_schema(tmp_path):
+    """`retired` lives in the coach's JSON `data`, not a column — the wins board
+    500'd with "no such column: c.retired" on a real save."""
+    from app import jhsaa_coaches as jc
+    db = str(tmp_path / "rec.db")
+    real_db, real_ready = wd.WORLD_DB, wd._schema_ready_for
+    wd.WORLD_DB = db
+    wd._schema_ready_for = None
+    try:
+        wd.init_schema()
+        conn = wd._db()
+        conn.execute("INSERT INTO jhsaa_coach (world_id, coach_id, name, data) VALUES (1,'c1','Coach 1',?)",
+                     (json.dumps({"retired": 2031}),))
+        conn.execute(
+            "INSERT INTO jhsaa_coach_history (world_id, year, ident, gender, slot,"
+            " coach_id, school, classification, grp, wins, losses, ties, eff)"
+            " VALUES (1, 3, 'X', 'girls', 'head', 'c1', 'X', '5A', '5A', 12, 4, 0, NULL)")
+        conn.commit()
+        conn.close()
+        for g in ("girls", None):
+            rows = jc.coach_win_leaders(1, g)
+            assert rows and rows[0]["w"] == 12 and rows[0]["retired"]
+        assert jc.coach_state_titles(1, None) == []
+    finally:
+        wd.WORLD_DB, wd._schema_ready_for = real_db, real_ready
