@@ -3,21 +3,98 @@
 {% block title %}{{ view.coach.name }} — JHSAA coach{% endblock %}
 {% block content %}
 {% set c = view.coach %}
-{{ jh_header(scope_view.scope, u, 'coaches', 'Coaches', '') }}
+{{ jh_header(scope_view.scope, u, 'coaches', c.name,
+             (view.seat.label ~ ' · ' ~ view.seat.school if view.seat else 'Not on a staff') ~ ' · ' ~ view.profile,
+             [('Head coach', view.totals.record or '0-0'), ('Overall', c.overall or '—')]) }}
 
 <div class="jh-shell">
+<div class="jh-crumb">
+  <a href="{{ url_for('jhsaa_coaches', u=u, g=view.gender) }}">Coaches</a>
+  {% if view.seat %}<span class="sep">›</span>
+  <a href="{{ url_for('jhsaa_school', school=view.seat.school, u=u, g=view.gender, view='staff') }}">{{ view.seat.school }}</a>{% endif %}
+  <span class="sep">›</span><span>{{ c.name }}</span>
+</div>
 <div class="jh-ident" style="margin-bottom:14px">
   <div class="jh-ident-body">
     <h1>{{ c.name }}</h1>
     <div class="mascot">{% if view.seat %}{{ view.seat.label }} · <a href="{{ url_for('jhsaa_school', school=view.seat.school, u=u, g=view.gender, view='staff') }}">{{ view.seat.school }}</a> ({{ view.gender }}) · since {{ view.seat.since }}{% else %}Not on a staff{% endif %}</div>
     <div class="where">{{ c.hometown }}{% if view.age %} · age {{ view.age }}{% endif %} · {{ view.origin }}{% if view.alma %} · played at {{ view.alma }}{% endif %}</div>
-    <div class="now"><span class="rec">{{ view.head_record }}</span><span class="bit">as a head coach</span></div>
+    <div class="now"><span class="rec">{{ view.totals.record or '0-0' }}</span><span class="bit">as a head coach · varsity</span></div>
   </div>
 </div>
 
 {% if msg %}<p class="jh-note" style="margin:0 0 12px">{{ msg }}</p>{% endif %}
-<div class="jh-cols2">
+<div class="jh-layout wide">
   <div class="jh-stack">
+    {# THE CAREER LEDGER — the player page's table, for a coach (owner, 2026-09). One
+       row per season on a staff. RECORD is the coach's own, and only a HEAD season
+       has one: an assistant year shows how the team did (Team) but adds nothing to
+       the career W-L, and JV never enters it. #}
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">Coaching career</span></div>
+      {% if view.ledger %}
+      <div class="tbl-scroll">
+        <table class="jh-ledger minw">
+          <tr><th style="width:66px">Season</th><th style="width:150px">Program</th><th style="width:52px">Class</th>
+            <th style="width:96px">Role</th><th style="width:64px">Record</th><th style="width:64px">Team</th>
+            <th style="width:92px">District</th><th style="width:130px">Finish</th><th>Honours</th></tr>
+          {% for s in view.ledger %}
+          <tr{% if not s.head %} style="color:var(--text-secondary)"{% endif %}>
+            <td class="yr"><a href="{{ url_for('jhsaa_school', school=s.school, year=s.world_year, u=u, g=s.gender) }}">{{ s.season_year }}</a></td>
+            <td style="font-size:14px"><a href="{{ url_for('jhsaa_school', school=s.school, year=s.world_year, u=u, g=s.gender) }}" style="color:inherit">{{ s.school }}</a></td>
+            <td style="font-variant-numeric:normal">{{ s.class }}</td>
+            <td>{{ s.role }}</td>
+            <td>{% if s.head %}<b>{{ s.record }}</b>{% else %}—{% endif %}</td>
+            <td>{{ s.team_record or '—' }}</td>
+            <td>{% if s.district_place == 1 %}<b>1st</b>{% elif s.district_place %}{{ s.district_place }}{{ {1:'st',2:'nd',3:'rd'}.get(s.district_place if s.district_place < 20 else s.district_place % 10, 'th') }}{% endif %}{% if s.district_record %} <span style="color:var(--text-faint)">{{ s.district_record }}</span>{% endif %}</td>
+            <td style="font-variant-numeric:normal;font-size:14px">
+              {% if s.champion %}<span class="jh-chip gold">{{ s.class }} CHAMPION</span>{% else %}{{ s.finish }}{% endif %}
+              {% if s.toc_champion %} <span class="jh-chip gold">TOC</span>{% endif %}</td>
+            <td style="font-variant-numeric:normal;font-size:14px;color:var(--text-secondary)">
+              {% set bits = [] %}
+              {% if s.poy %}{% set _ = bits.append(s.poy ~ ' POY') %}{% endif %}
+              {% if s.all_state %}{% set _ = bits.append(s.all_state ~ ' All-State') %}{% endif %}
+              {{ bits|join(' · ') }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+      {% else %}
+      <p class="jh-empty">No season coached yet.</p>
+      {% endif %}
+    </div>
+    {% if view.events %}
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">Moves</span></div>
+      {% for e in view.events %}
+      <div class="jh-kv"><span class="k">{{ e.year }} · {{ e.event|capitalize }} · {{ e.school }}</span><span class="v"><span class="s">{{ e.note }}</span></span></div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="jh-stack">
+    {% set t = view.totals %}
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">Career</span></div>
+      <div class="bl-panel-body" style="padding:12px">
+        <div class="jh-cols3">
+          <div class="jh-metric"><span class="k">Head coach</span><span class="v">{{ t.record or '0-0' }}</span>
+            <span class="s">{% if t.pct is not none %}{{ '%.3f'|format(t.pct)|replace('0.', '.') }} · {% endif %}varsity only</span></div>
+          <div class="jh-metric"><span class="k">Seasons</span><span class="v">{{ t.head_seasons }}</span>
+            <span class="s">as head{% if t.asst_seasons %} · {{ t.asst_seasons }} as assistant{% endif %}</span></div>
+          <div class="jh-metric"><span class="k">State titles</span><span class="v">{{ t.state_titles }}</span>
+            <span class="s">{{ t.state_apps }} State trip{{ 's' if t.state_apps != 1 }}</span></div>
+          <div class="jh-metric"><span class="k">District titles</span><span class="v">{{ t.district_titles }}</span>
+            <span class="s">as head</span></div>
+          <div class="jh-metric"><span class="k">All-State</span><span class="v">{{ t.all_state }}</span>
+            <span class="s">players coached{% if t.poy %} · {{ t.poy }} POY{% endif %}</span></div>
+          <div class="jh-metric"><span class="k">Programs</span><span class="v">{{ t.programs }}</span>
+            <span class="s">{% if t.toc_titles %}{{ t.toc_titles }} TOC title{{ 's' if t.toc_titles != 1 }}{% else %}coached{% endif %}</span></div>
+        </div>
+      </div>
+    </div>
+
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">Ratings</span>
         <span class="bl-panel-meta">{{ view.profile }}</span></div>
@@ -40,26 +117,7 @@
         <a href="{{ url_for('jhsaa_player', school=view.alma, pid=c.player_pid, u=u, g=view.gender) }}">Player page</a></span></div>
       {% endif %}
     </div>
-  </div>
-  <div class="jh-stack">
-    <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">Career</span></div>
-      {% if view.history %}
-      <div class="tbl-scroll">
-      <table class="jh-roster">
-        <tr><th style="width:56px">Year</th><th>Program</th><th>Role</th><th style="width:60px">Class</th><th class="num" style="width:64px">Record</th></tr>
-        {% for h in view.history|reverse %}
-        <tr><td>{{ h.year }}</td>
-          <td><a href="{{ url_for('jhsaa_school', school=h.school, u=u, g=h.gender, year=h.world_year) }}">{{ h.school }}</a></td>
-          <td>{{ h.role }}</td><td>{{ h.classification }}</td>
-          <td class="num">{{ h.wins }}-{{ h.losses }}{% if h.ties %}-{{ h.ties }}{% endif %}</td></tr>
-        {% endfor %}
-      </table>
-      </div>
-      {% else %}
-      <p class="jh-empty">No season coached yet.</p>
-      {% endif %}
-    </div>
+
     <div class="bl-panel" id="edit">
       <div class="bl-panel-head"><span class="bl-panel-title">Edit coach</span></div>
       <datalist id="jh-coach-schools">{% for n in schools %}<option value="{{ n }}">{% endfor %}</datalist>
@@ -97,14 +155,6 @@
       </form>
       </details>
     </div>
-    {% if view.events %}
-    <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">Moves</span></div>
-      {% for e in view.events %}
-      <div class="jh-kv"><span class="k">{{ e.event|capitalize }} · {{ e.school }}</span><span class="v"><span class="s">{{ e.note }}</span></span></div>
-      {% endfor %}
-    </div>
-    {% endif %}
   </div>
 </div>
 </div>

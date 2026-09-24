@@ -934,8 +934,9 @@ def coach_view(world_id: int, coach_id: str, season_year: int) -> dict | None:
         (e["gender"] for e in car["events"]), "girls")
     names = ident_names(gender)
     history = [{**h, "school": names.get(h["ident"], h["school"]),
-                "role": slot_label(h["slot"], False) if h["slot"] == "head" else "Staff"}
+                "role": "Head coach" if h["slot"] == "head" else "Assistant"}
                for h in car["history"]]
+    ledger, totals = _career_ledger(world_id, history)
     events = [{**e, "school": names.get(e["ident"], e["ident"])} for e in car["events"]]
     return {
         "coach": c,
@@ -953,9 +954,72 @@ def coach_view(world_id: int, coach_id: str, season_year: int) -> dict | None:
         "seat": ({**seat, "school": names.get(seat["ident"], seat["ident"]),
                   "label": slot_label(seat["slot"], seat["jv_head"])} if seat else None),
         "history": history,
+        "ledger": ledger,
+        "totals": totals,
         "events": events,
-        "head_record": car["head_record"],
+        "head_record": totals["record"],
     }
+
+
+def _career_ledger(world_id: int, history: list[dict]) -> tuple[list, dict]:
+    """The coach page's season ledger — the player page's career table, for a coach
+    (owner, 2026-09). One row per season on a staff, newest first, with that
+    program's season beside it (district, finish, titles, honours).
+
+    ‼️ THE CAREER RECORD IS THE HEAD COACH'S VARSITY RECORD AND NOTHING ELSE (owner
+    rule): an assistant season shows how the TEAM did but adds nothing to the
+    coach's W-L, and JV never enters it (the archived W-L is the varsity
+    TeamSeason's). A head season's W-L comes off the coach's own history row — the
+    record that season was archived with — never re-derived."""
+    from . import world
+    wanted = [(h["world_year"], h["gender"], h["school"]) for h in history]
+    rows = world.jhsaa_season_rows_at(world_id, wanted) if wanted else {}
+    ledger = []
+    t = {"head_seasons": 0, "asst_seasons": 0, "w": 0, "l": 0, "ties": 0,
+         "district_titles": 0, "state_apps": 0, "state_titles": 0, "finals": 0,
+         "toc_titles": 0, "all_state": 0, "poy": 0, "programs": set()}
+    for h in sorted(history, key=lambda h: (-h["world_year"], h["slot"] != "head")):
+        head = h["slot"] == "head"
+        r = rows.get((h["world_year"], h["gender"], h["school"])) or {}
+        rec = ""
+        if head:
+            w, l, ti = h.get("wins") or 0, h.get("losses") or 0, h.get("ties") or 0
+            rec = f"{w}-{l}" + (f"-{ti}" if ti else "")
+            t["head_seasons"] += 1
+            t["w"] += w
+            t["l"] += l
+            t["ties"] += ti
+            t["district_titles"] += int(r.get("place") == 1)
+            t["state_apps"] += int(bool(r.get("made_state")))
+            t["state_titles"] += int(bool(r.get("champion")))
+            t["finals"] += int(0 < (r.get("state_place") or 0) <= 2)
+            t["toc_titles"] += int(bool(r.get("toc_champion")))
+            t["all_state"] += len(r.get("all_state") or ())
+            t["poy"] += len(r.get("poy") or ())
+        else:
+            t["asst_seasons"] += 1
+        t["programs"].add(h["school"])
+        place = r.get("place") or 0
+        ledger.append({
+            "season_year": h["year"], "world_year": h["world_year"],
+            "gender": h["gender"], "school": h["school"],
+            "class": r.get("group") or h.get("grp") or h.get("classification") or "",
+            "role": h["role"], "head": head, "record": rec,
+            "team_record": r.get("record", ""),
+            "district": r.get("district", ""),
+            "district_place": place,
+            "district_record": r.get("district_record", ""),
+            "finish": r.get("state_finish") or "",
+            "champion": bool(r.get("champion")),
+            "toc_champion": bool(r.get("toc_champion")),
+            "all_state": len(r.get("all_state") or ()),
+            "poy": len(r.get("poy") or ()),
+        })
+    games = t["w"] + t["l"]
+    t["pct"] = (t["w"] + 0.5 * t["ties"]) / (games + t["ties"]) if games + t["ties"] else None
+    t["record"] = f"{t['w']}-{t['l']}" + (f"-{t['ties']}" if t["ties"] else "")
+    t["programs"] = len(t["programs"])
+    return ledger, t
 
 
 # ------------------------------------------------------------ former players ----

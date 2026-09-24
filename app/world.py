@@ -7360,6 +7360,38 @@ def jhsaa_school_seasons(world_id: int, gender: str, school: str) -> list[dict]:
     return out
 
 
+def jhsaa_season_rows_at(world_id: int, wanted) -> dict:
+    """`{(year, gender, school): season row}` for exactly the seasons named — the
+    coach page's ledger (owner, 2026-09: mirror the player page, by season).
+
+    `jhsaa_school_seasons` builds a program's WHOLE history; a coach needs only the
+    years they coached, possibly at several programs. So each (year, gender)
+    archive is loaded ONCE here and every program wanted from it is read off the
+    same parse — the cost is bounded by the career, never by the save's length.
+    `school` is today's display name (the archive is relabelled into today's
+    names, so a renamed program still finds its own seasons)."""
+    by_arc: dict = {}
+    for year, gender, school in wanted:
+        by_arc.setdefault((year, gender), set()).add(school)
+    out: dict = {}
+    conn = _db()
+    try:
+        for (year, gender), schools in sorted(by_arc.items()):
+            r = conn.execute("SELECT data FROM world_jhsaa WHERE world_id=? AND year=?"
+                             " AND gender=?", (world_id, year, gender)).fetchone()
+            if not r:
+                continue
+            arc = _relabel(json.loads(r["data"]))
+            for school in schools:
+                row = _season_row(arc, year, school,
+                                  _schedule_rows(conn, world_id, year, gender, school))
+                if row:
+                    out[(year, gender, school)] = row
+    finally:
+        conn.close()
+    return out
+
+
 def jh_road_ladder() -> tuple[str, ...]:
     """The road to State, shallowest rung first — the ORDER `jhsaa_season_depth`
     ranks a pre-State exit on.
