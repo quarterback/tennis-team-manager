@@ -3008,6 +3008,9 @@ MASCOTS = {
     # ── owner picks (2026-08) ──
     "Plainfield": "Cardinals",
     "Condotti Vanguard Academy": "Valiant",
+    # Owner pick 2026-09 — "what the fuck is a Brickie?" (it came in with the
+    # source record). Condotti's rival, so the two sit together here.
+    "Romero-Finniski": "Nor'westers",
     # ‼️ PINNED PER SCHOOL, NOT POOLED. Both were Olallie, and both names are the
     # owner's. A pool of two names over four schools kept dropping one of them
     # depending on how the hashes fell — a name you were given should not survive at
