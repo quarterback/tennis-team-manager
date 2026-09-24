@@ -76,9 +76,9 @@
    32 all show every dual they played. Folds the main tree does not draw
    (`prelim_n`) open by default. #}
 {% if view.rounds %}
-<div class="bl-panel" style="margin-top:14px">
-  <div class="bl-panel-head"><span class="bl-panel-title">{{ view.group }} Draw · every round</span>
-    <span class="bl-panel-meta">{{ view.season_year }} · {{ view.field_n }}-team field</span></div>
+<details class="bl-panel jh-fold" style="margin-top:14px">
+  <summary class="bl-panel-head"><span class="bl-panel-title">{{ view.group }} Draw · every round</span>
+    <span class="bl-panel-meta">{{ view.season_year }} · {{ view.field_n }}-team field</span></summary>
   <div class="bl-panel-body">
     {% for rd in view.rounds %}
     <details class="jh-stagefold"{{ ' open' if loop.index0 < view.prelim_n }}>
@@ -109,19 +109,24 @@
     </details>
     {% endfor %}
   </div>
-</div>
+</details>
 {% endif %}
 
-<div class="jh-layout" style="margin-top:14px">
+{# ‼️ ONE COLUMN, EVERY SECTION A FOLD (owner rule 2026-09). Road to State used
+   to sit in a 340px rail beside the Epiregionals: the rail was too narrow for its
+   duals, and the page below could not start until the taller rail ended, which
+   left a gap the height of the whole road. "The field" list was cut — the tree
+   already shows every seed and name. #}
+<div class="jh-stack" style="margin-top:14px">
   {% if view.epiregional %}
   {# THE EPIREGIONAL — the Zonal champions' play-in for the first four bye lines
      (owner rule 2026-09). Its OWN panel: four duals deciding four placements is
      not a halving, so it can never be a column of the tree above. Each dual is a
      named unit off the NCAA region-name pool. The second block is the eight bye
      lines the draw was built on — four Epiregional winners, four on ATR. #}
-  <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">{{ view.group }} Epiregionals</span>
-      <span class="bl-panel-meta">Zonal champions' play-in · winners hold bye lines</span></div>
+  <details class="bl-panel jh-fold" open>
+    <summary class="bl-panel-head"><span class="bl-panel-title">{{ view.group }} Epiregionals</span>
+      <span class="bl-panel-meta">Zonal champions' play-in · winners hold bye lines</span></summary>
     <div class="bl-panel-body">
       <div class="jh-cols2">
         {% for col in view.epiregional.games|batch(2, none) %}
@@ -150,7 +155,7 @@
         {% for b in view.epiregional.bye_lines %}<a href="{{ url_for('jhsaa_school', school=b.name, u=u, g=view.gender, year=view.scope.pin) }}">{{ b.seed }} {{ b.name }}</a> ({{ b.how }}){{ ", " if not loop.last }}{% endfor %}</p>
       {% endif %}
     </div>
-  </div>
+  </details>
   {% endif %}
   {% if view.stages %}
   {# Road to State — one collapsed fold per pre-state stage, newest first: the
@@ -160,8 +165,8 @@
      renders by being archived. These duals are drawn nowhere
      else; the State bracket's own results are exactly what the tree above shows,
      so they are deliberately not repeated here. #}
-  <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Road to State</span></div>
+  <details class="bl-panel jh-fold" open>
+    <summary class="bl-panel-head"><span class="bl-panel-title">Road to State</span></summary>
     <div class="bl-panel-body">
       {% for st in view.stages %}
       <details class="jh-stagefold">
@@ -199,21 +204,8 @@
       </details>
       {% endfor %}
     </div>
-  </div>
+  </details>
   {% endif %}
-
-  <div class="bl-panel jh-mod">
-    <div class="bl-panel-head"><span class="bl-panel-title">The field</span></div>
-    <div class="bl-panel-body">
-      {% for s in view.field %}
-      <a class="jh-modrow" href="{{ url_for('jhsaa_school', school=s.name, u=u, g=view.gender, year=view.scope.pin) }}">
-        <span class="rk">{{ s.seed }}</span>
-        {{ s.mark|safe }}
-        <span class="bd"><span class="n">{{ s.name }}</span></span>
-      </a>
-      {% endfor %}
-    </div>
-  </div>
 </div>
 {% endif %}
 </div>

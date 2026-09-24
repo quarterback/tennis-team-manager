@@ -267,6 +267,11 @@ def test_the_metas_render_as_their_own_stage_on_the_bracket_page(monkeypatch):
     # surface a meta exit is visible on.
     for name in ("Alpha", "Beta", "Gamma", "Delta"):
         assert name in html, name
+    # One column, every section a fold (owner rule 2026-09): Road to State is
+    # never in the rail again, and the field list the tree already shows is gone.
+    assert 'jh-layout' not in html.split('brkstage')[1]
+    assert '<summary class="bl-panel-head"><span class="bl-panel-title">Road to State' in html
+    assert ">The field<" not in html
 
 
 def test_the_ledger_row_carries_the_metastate_finish():
