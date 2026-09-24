@@ -2884,6 +2884,15 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   ≤0.1 pt; best-vs-worst coach ≈ +1-2 pts in a close match. Every dial is one
   constant in `jhsaa_coaches` (0 = off). The carousel is a BUTTON with veto
   (`/jhsaa/coaches/carousel`), never a rung, never holds the advance.
+  ‼️ **THE CAROUSEL IS A STATEWIDE MARKET (owner rule 2026-09)** — never gate a
+  move on area ("your insistence on regionality is overwrought"); same area is a
+  2-point tiebreak. Vacancies fill best-job-first and CASCADE; sitting heads are
+  hired away by more prestigious programs; head experience (`head_record`, a
+  record-sized edge — wins blended with the coefficient, since wins are not all
+  equal) outranks an assistant's; a NEW coach only when nobody applied.
+  ‼️ **The program page shows OVR, age, first season and the head's record —
+  never ratings** (those live on the coach page; the Staff tab keeps them
+  collapsed).
 - **‼️ SELECTION RUNS THROUGH A COACH EVALUATION LAYER — `_order` IS A JUDGMENT, NOT A
   TALENT RANKING (owner rule 2026-09, `jhsaa.coach_eval`, `docs/AAR-jhsaa-coach-evaluation-layer.md`).**
   `RAW ABILITY → COACH EVALUATION → LINEUP SELECTION → MATCH ENGINE (raw ability)`. The

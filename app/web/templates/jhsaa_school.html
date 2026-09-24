@@ -230,18 +230,13 @@
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">Coaching staff</span>
         <a class="jh-hqmore" href="{{ hq_url('staff') }}">Staff →</a></div>
+      {# Who, how good, how old, since when — and the head's record. Ratings and
+         style live one click away on the coach page (owner, 2026-09). #}
       {% for st in view.staff.seats %}
       <div class="jh-kv"><span class="k">{{ st.label }}</span>
         <span class="v">{% if st.coach %}<a href="{{ url_for('jhsaa_coach', coach_id=st.coach.coach_id, u=u, g=view.gender) }}">{{ st.coach.name }}</a>
-          <span class="s">{% if st.coach.overall %}{{ st.coach.overall }} {{ st.coach.tier }} · {% endif %}{{ st.identity }} · since {{ st.since }}</span>{% else %}<span class="s">Vacant</span>{% endif %}</span></div>
+          <span class="s">{% if st.coach.overall %}{{ st.coach.overall }} OVR · {% endif %}{% if st.age %}age {{ st.age }} · {% endif %}{% if st.record %}{{ st.record }} · {% endif %}since {{ st.since }}</span>{% else %}<span class="s">Vacant</span>{% endif %}</span></div>
       {% endfor %}
-      <table class="jh-roster jh-staffeff">
-        <tr><th>Staff</th><th class="num" style="width:48px">Grade</th><th>Via</th></tr>
-        {% for e in view.staff.effective %}
-        <tr><td>{{ e.label }}</td><td class="num">{{ e.grade }}</td>
-          <td>{% if e.via %}<a href="{{ url_for('jhsaa_coach', coach_id=e.via.coach_id, u=u, g=view.gender) }}">{{ e.via.name }}</a>{% endif %}</td></tr>
-        {% endfor %}
-      </table>
     </div>
     {% endif %}
 
@@ -860,17 +855,19 @@
     <a class="jh-hqmore" href="{{ url_for('jhsaa_coach_carousel', u=u, g=view.gender) }}">Carousel →</a></div>
   <div class="tbl-scroll">
   <table class="jh-roster">
-    <tr><th>Role</th><th>Coach</th><th class="num" style="width:64px">Overall</th><th>Tier</th>
-      <th>Identity</th><th class="num" style="width:48px">Age</th><th class="num" style="width:56px">Since</th><th></th></tr>
+    <tr><th>Role</th><th>Coach</th><th class="num" style="width:56px">OVR</th>
+      <th class="num" style="width:48px">Age</th><th class="num" style="width:84px">Record</th>
+      <th class="num" style="width:56px">Since</th><th></th></tr>
     {% for st in stf.seats %}
     <tr><td>{{ st.label }}</td>
       {% if st.coach %}
       <td class="nm"><a href="{{ url_for('jhsaa_coach', coach_id=st.coach.coach_id, u=u, g=view.gender) }}">{{ st.coach.name }}</a></td>
-      <td class="num"><b>{{ st.coach.overall or '' }}</b></td><td>{{ st.coach.tier }}</td>
-      <td>{{ st.identity }}</td><td class="num">{{ st.age or '' }}</td><td class="num">{{ st.since }}</td>
+      <td class="num"><b>{{ st.coach.overall or '' }}</b></td>
+      <td class="num">{{ st.age or '' }}</td><td class="num">{{ st.record or '' }}</td>
+      <td class="num">{{ st.since }}</td>
       <td><a href="{{ url_for('jhsaa_coach', coach_id=st.coach.coach_id, u=u, g=view.gender) }}#edit">Edit</a></td>
       {% else %}
-      <td class="nm"><span class="s">Vacant</span></td><td></td><td></td><td></td><td></td><td class="num">{{ st.since }}</td>
+      <td class="nm"><span class="s">Vacant</span></td><td></td><td></td><td></td><td class="num">{{ st.since }}</td>
       <td><a href="{{ url_for('jhsaa_coach_carousel', u=u, g=view.gender) }}#pool">Fill</a></td>
       {% endif %}
     </tr>
@@ -878,8 +875,9 @@
   </table>
   </div>
 </div>
-<div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">Ratings</span></div>
+{# The ratings stay on the click: collapsed here, full on each coach's page. #}
+<details class="bl-panel jh-staffratings">
+  <summary class="bl-panel-head"><span class="bl-panel-title">Ratings</span></summary>
   <div class="tbl-scroll">
   <table class="jh-roster jh-staffmatrix">
     <tr><th>Rating</th>
@@ -893,7 +891,7 @@
     {% endfor %}
   </table>
   </div>
-</div>
+</details>
 {% else %}
 <div class="bl-panel"><p class="jh-empty">This program has no staff.</p></div>
 {% endif %}

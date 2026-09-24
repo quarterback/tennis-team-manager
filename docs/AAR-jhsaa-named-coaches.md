@@ -164,14 +164,38 @@ read per program, memoised and cleared by `record_season`.
 
 **Legacy and the carousel:**
 - **Legacy** (seasons by 10+-year heads) raises how often a program's alumni come
-  home.
+  home, and is a fifth of a job's prestige.
 - **The carousel** is `/jhsaa/coaches/carousel`: a button that stores a PENDING
   proposal. The owner vetoes lines, then commits.
   - Each cycle proposes retirements (by age and tenure), rare firings (5+ seasons
     in the current class, 0.20 below the program's own norm, then a 30% chance),
     and a fill for every vacancy.
-  - Fill order: the program's own assistant, then an area assistant, then an
-    alumnus, then a new local candidate.
+  - **A statewide market, not a regional one (owner rule 2026-09).** The first
+    build filled a head vacancy from its own assistant, then an assistant in
+    the same AREA, then an alumnus, then a new local — which the owner called
+    overwrought: coaches move for jobs. Now every vacancy, best jobs first
+    (head seats, then by prestige = coefficient standing + enrollment +
+    legacy), interviews applicants from ANY program: its own assistants,
+    assistants anywhere chasing a head job, sitting heads at less prestigious
+    programs (hired away — a dedicated shortlist of five), free-pool coaches
+    and one alumnus. Each hire opens the seat it left, so moves CASCADE down
+    the ladder. A better job draws a longer shortlist (4-20 for a head seat).
+  - **Heads first, then assistants (owner rule).** The pick is the best
+    interview: talent (the overall) + a noisy read (`HIRE_NOISE` 5) + small
+    edges (own assistant 6, alumnus 4, same area 2 — a tiebreak, never a gate).
+    Anyone who has RUN a program carries `head_record`'s edge: 18 points at an
+    average record, ±30 per unit of record quality, scaled by seasons
+    (n/(n+1)). The record blends a shrunk win % (60%) with the program's
+    coefficient standing (40%) — wins are not all equal, and postseason
+    results are what separate them. So a head of any consequence beats an
+    assistant who never ran a program; a clearly better assistant can still
+    beat a poor head. Measured on a synthetic full association: when a head
+    applied they took 33 of 67 jobs, and every assistant who beat one was
+    9-35 points more talented.
+  - **A new coach is the LAST RESORT** — rolled only for a seat nobody applied
+    to. Entrants still equal departures (the pool is conserved), but they
+    enter at the BOTTOM of the ladder (measured: destination prestige 0.28
+    against 0.45 for moves) after the chain has moved everyone up.
   - Vetoing a departure or promotion keeps that seat filled.
 
 ## No work after an update
