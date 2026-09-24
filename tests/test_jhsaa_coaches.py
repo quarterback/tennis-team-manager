@@ -68,7 +68,86 @@ def test_grades_are_imprinted_in_range_and_deterministic():
     assert [c.name for c in a] == [c.name for c in b]
     for c in a:
         for v in c.grades.values():
-            assert 0.0 <= v <= 1.0
+            assert 0.0 <= v <= jc.to_q(90)
+        assert c.overall and c.tier
+
+
+def test_every_band_rolls_and_elite_breaks_80():
+    """Owner spec 2026-09: seven overlapping quality bands, an overall rolled
+    inside the band (never a round tier value), and Elite reaching 90 — shown as
+    the real number, never clamped."""
+    from collections import Counter
+    rng = __import__("random").Random(4)
+    rolls = [jc.roll_coach(rng) for _ in range(6000)]
+    tiers = Counter(t for _p, t, _o, _g in rolls)
+    assert set(tiers) == {b[0] for b in jc.BANDS}
+    for p, t, o, g in rolls:
+        lo, hi = next((b[1], b[2]) for b in jc.BANDS if b[0] == t)
+        assert lo <= o <= hi, (t, o)
+        grades = {a: jc.to_grade(q) for a, q in g.items()}
+        assert all(20 <= v <= 90 for v in grades.values())
+        # every coach, a Bad one included, is good at SOMETHING
+        assert max(grades.values()) >= 50, (t, o, p)
+    overalls = [o for _p, _t, o, _g in rolls]
+    assert min(overalls) <= 25 and max(overalls) >= 85
+    top = max((c for c in rolls), key=lambda r: max(r[3].values()))
+    c = jc.Coach(coach_id="x", name="x", grades=top[3])
+    assert max(c.grade(a) for a in jc.GRADES) > 80        # displayed unclamped
+
+
+def test_identity_floors_are_floors_not_values():
+    """A singles specialist's Singles is ROLLED — never below 50, and not stuck
+    on 50 either — and a Bad one still clears the floor."""
+    rng = __import__("random").Random(9)
+    vals = []
+    for _ in range(400):
+        g = jc.roll_grades(rng, "singles", rng.randint(20, 90))
+        v = jc.to_grade(g["singles"])
+        assert v >= 50
+        assert jc.to_grade(g["tactics"]) >= 40
+        vals.append(round(v))
+    assert len(set(vals)) > 25
+    bad = jc.roll_grades(rng, "doubles", 22)
+    assert jc.to_grade(bad["doubles"]) >= 50 and jc.to_grade(bad["changeover"]) >= 35
+
+
+def test_a_stored_jv_whisperer_keeps_its_depth_lean():
+    """A coach persisted under the previous build still reads "jv_whisperer" and
+    must keep the lean; a legacy "teacher" never had one and must not gain it."""
+    import json
+    grades = {a: 0.5 for a in jc.GRADES}
+    data = json.dumps({"grades": grades, "profile": "jv_whisperer"})
+    jv = jc._coach_from("x", "x", data)
+    teacher = jc._coach_from("t", "t", json.dumps({"grades": grades, "profile": "teacher"}))
+    plain = jc._coach_from("p", "p", json.dumps({"grades": grades, "profile": "tactician"}))
+    assert jv.profile == "jv_whisperer"                      # never remapped
+    assert jc.staff_effect(jv, []).lean == 1.0
+    assert jc.staff_effect(plain, [jv]).lean == 0.5
+    assert jc.staff_effect(teacher, []).lean == 0.0
+    assert jc.PROFILE_LABELS["jv_whisperer"] == "JV whisperer"
+
+
+def test_tactics_scales_the_style_edge_and_nothing_else():
+    """Tactics rides the style matchup: a flat matchup stays zero, the favoured
+    side's better tactician amplifies it, and the scaling is antisymmetric."""
+    from engine.fast import tactics_scale
+    assert tactics_scale(0.0, 1.0, 0.0, 0.5) == 0.0
+    e = 0.01
+    assert tactics_scale(e, 0.9, 0.3, 0.5) > e > tactics_scale(e, 0.3, 0.9, 0.5) >= 0
+    assert tactics_scale(-e, 0.3, 0.9, 0.5) == pytest.approx(-tactics_scale(e, 0.9, 0.3, 0.5))
+    assert tactics_scale(e, 0.9, 0.3, 0.0) == e
+
+
+def test_tactics_and_singles_need_both_staffs_and_singles_skips_doubles():
+    a = jh.TeamSeason.__new__(jh.TeamSeason)
+    b = jh.TeamSeason.__new__(jh.TeamSeason)
+    for t, q in ((a, 0.8), (b, None)):
+        t.co_q, t.tac_q, t.sg_q = None, q, q
+    assert jh.hs_profile(a, b) is jh.HS_PROFILE
+    b.tac_q = b.sg_q = 0.3
+    prof = jh.hs_profile(a, b)
+    assert prof["tac_q"] == (0.8, 0.3) and prof["sg_q"] == (0.8, 0.3)
+    assert "co_q" not in prof
 
 
 # --- Stage B, as pure functions -----------------------------------------------------

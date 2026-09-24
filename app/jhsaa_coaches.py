@@ -37,23 +37,33 @@ from dataclasses import dataclass, field
 
 # --------------------------------------------------------------- the model ----
 
-#: Graded attributes, in display order. Each is a quantile in [0, 1].
-GRADES = ("talent_id", "adaptability", "development", "doubles", "builder",
-          "feeder", "clutch", "changeover")
+#: Graded attributes, in display order. Each is stored as a quantile of the
+#: 20-80 display scale — (grade − 20) / 60 — and an Elite coach may break it:
+#: the roll runs to 90, so a quantile runs to 70/60 (owner rule 2026-09: "like
+#: players, I would let Elite coaches break"). Every consumer of a quantile
+#: either clamps (the lens) or stays in a sane range past 1.0 (checked, see the AAR).
+GRADES = ("tactics", "singles", "doubles", "development", "talent_id",
+          "adaptability", "builder", "feeder", "clutch", "changeover")
 
 GRADE_LABELS = {
+    "tactics": "Tactics",
+    "singles": "Singles",
+    "doubles": "Doubles instinct",
+    "development": "Development",
     "talent_id": "Talent ID",
     "adaptability": "Adaptability",
-    "development": "Development",
-    "doubles": "Doubles instinct",
     "builder": "Program builder",
     "feeder": "Feeder ties",
     "clutch": "Clutch",
     "changeover": "Changeover",
 }
 
-#: Staff-blended ("cover weak spots"); the rest belong to the head alone.
-BLENDED = ("talent_id", "adaptability", "development", "doubles", "builder", "feeder")
+#: Staff-blended ("cover weak spots"); the rest belong to the head alone. Tactics
+#: and Singles are BLENDED on purpose (owner, 2026-09): the point is that a
+#: program-builder head can hire an assistant who is good at singles, doubles,
+#: tactics or practice, and have the staff be good at it.
+BLENDED = ("tactics", "singles", "doubles", "development", "talent_id",
+           "adaptability", "builder", "feeder")
 HEAD_ONLY = ("clutch", "changeover")
 
 #: How much of the gap to the best assistant a staff closes, per attribute.
@@ -66,31 +76,70 @@ TEMPERAMENTS = ("broad", "steady", "senior")
 TEMPERAMENT_LABELS = {"broad": "Broad rotation", "steady": "Steady",
                       "senior": "Senior-first"}
 
-#: Profiles — each coach draws one; it is also an assistant's SPECIALTY. The
-#: listed attributes get `PROFILE_BONUS`; one other attribute gets the penalty.
-PROFILES = {
-    "teacher": ("development",),
-    "jv_whisperer": ("adaptability", "development"),
-    "tactician": ("talent_id", "clutch", "changeover"),
-    "builder": ("builder", "feeder"),
-    "doubles_guru": ("doubles",),
-    "motivator": ("adaptability", "changeover"),
-    "generalist": (),
+# --- HOW A COACH ROLLS (owner spec 2026-09) -------------------------------------
+# ONE upstream quality roll, then the permanent attribute rolls, then nothing —
+# no budget, no development, no regeneration:
+#   1. a QUALITY BAND (overlapping, so a 35 can be Poor or Below Average);
+#   2. the coach's own OVERALL, any integer inside that band — never a round tier
+#      value — the anchor for everything after it;
+#   3. an IDENTITY, whose FLOORS guarantee competence where it is built (a primary
+#      of at least 50, so every coach — a Bad one included — is good at something);
+#   4. every attribute rolled across a WIDE window around the overall, floored by
+#      the identity. The attributes need not average back to the overall, and an
+#      unrelated attribute can land as an unexpected strength.
+
+#: (name, overall band lo, hi, share of coaches). The shares are this module's
+#: call (the owner set the bands, not the mix); Average is the widest single block
+#: and both tails are real — ~1 coach in 7 is Bad or Poor.
+BANDS = (("Bad", 20, 32, 6), ("Poor", 25, 36, 9), ("Below average", 33, 46, 18),
+         ("Average", 44, 56, 32), ("Good", 51, 68, 22), ("Excellent", 68, 79, 9),
+         ("Elite", 78, 90, 4))
+GRADE_MIN, GRADE_MAX = 20, 90
+
+#: identity → (primary, primary floor, {related: floor}). Floors, never values:
+#: a singles specialist's Singles is ROLLED, it just cannot finish below 50.
+IDENTITIES = {
+    "builder":    ("builder", 50, {"feeder": 40, "talent_id": 35}),
+    "practice":   ("development", 50, {"adaptability": 40, "singles": 35,
+                                       "doubles": 35}),
+    "singles":    ("singles", 50, {"tactics": 40, "development": 38}),
+    "doubles":    ("doubles", 50, {"tactics": 40, "changeover": 35}),
+    "tactician":  ("tactics", 50, {"adaptability": 40, "changeover": 38}),
+    "evaluator":  ("talent_id", 50, {"adaptability": 42, "development": 35}),
+    "motivator":  ("clutch", 50, {"changeover": 42, "builder": 35}),
+    "generalist": (None, 50, {}),        # one random primary; broad floors elsewhere
 }
+GENERALIST_FLOOR = 30
+PROFILES = IDENTITIES                    # the identity is also an assistant's specialty
 PROFILE_LABELS = {
-    "teacher": "Teacher", "jv_whisperer": "JV whisperer",
-    "tactician": "Tactician", "builder": "Program builder",
-    "doubles_guru": "Doubles guru", "motivator": "Motivator",
+    "builder": "Program builder", "practice": "Practice / development",
+    "singles": "Singles specialist", "doubles": "Doubles specialist",
+    "tactician": "Tactician", "evaluator": "Evaluator", "motivator": "Motivator",
     "generalist": "Generalist",
 }
-PROFILE_WEIGHTS = {"teacher": 18, "jv_whisperer": 12, "tactician": 16,
-                   "builder": 14, "doubles_guru": 14, "motivator": 12,
-                   "generalist": 14}
-PROFILE_BONUS = 8.0          # grade points
-PROFILE_PENALTY = 5.0
-GENERALIST_BONUS = 3.0
-GRADE_MEAN, GRADE_SD = 50.0, 10.0
-GRADE_LO, GRADE_HI = 25.0, 75.0      # the roll's clamp; the editor may go 20-80
+#: Identities retired by the 2026-09 band roll, still carried by coaches a save
+#: persisted under the previous build. ‼️ NEVER REMAPPED ON LOAD: a coach's ratings
+#: are imprinted and their identity is part of that record, and a remap would move
+#: effects (an old "teacher" never carried the depth lean, so reading it as
+#: "practice" would add one). They keep their name, their label and exactly the
+#: effect they had — `JV_LEAN_PROFILES` is the one place an effect keys on one.
+LEGACY_PROFILE_LABELS = {"teacher": "Teacher", "jv_whisperer": "JV whisperer",
+                         "doubles_guru": "Doubles guru"}
+PROFILE_LABELS.update(LEGACY_PROFILE_LABELS)
+#: Identities that carry the JV / floor-raiser depth lean: the practice identity,
+#: and the retired JV whisperer it replaced (so a stored one keeps its lean).
+JV_LEAN_PROFILES = ("practice", "jv_whisperer")
+PROFILE_WEIGHTS = {"builder": 12, "practice": 16, "singles": 14, "doubles": 14,
+                   "tactician": 14, "evaluator": 10, "motivator": 10, "generalist": 10}
+
+#: Roll windows around the overall: (below, above).
+WIN_PRIMARY = (5, 30)
+WIN_RELATED = (15, 20)
+WIN_OTHER = (20, 15)
+#: When a low overall puts the window's top under the identity floor, the top is
+#: raised to leave a REAL roll of at least this many points above the floor,
+#: rather than handing out the floor itself.
+MIN_ROLL = 12
 
 #: Assistants by ROSTER SIZE (owner rule): a small program carries one, a big
 #: one up to three. Seats are opened by growth and never closed by shrinkage
@@ -108,12 +157,14 @@ def assistants_for(roster: int) -> int:
 
 
 def to_grade(q: float) -> float:
-    """A stored quantile as a 20-80 grade — DISPLAY only."""
+    """A stored quantile as a grade — DISPLAY only, and never clamped (an Elite
+    coach shows the 84 they rolled)."""
     return 20.0 + 60.0 * q
 
 
 def to_q(grade: float) -> float:
-    return min(1.0, max(0.0, (grade - 20.0) / 60.0))
+    g = min(float(GRADE_MAX), max(float(GRADE_MIN), grade))
+    return (g - 20.0) / 60.0
 
 
 def _rng(*parts) -> random.Random:
@@ -129,7 +180,7 @@ class Coach:
     coach_id: str
     name: str
     grades: dict                       # {attr: quantile}
-    profile: str = "generalist"
+    profile: str = "generalist"        # the IDENTITY
     pairing: str = "balanced"
     temperament: str = "steady"
     hometown: str = ""
@@ -139,30 +190,58 @@ class Coach:
     player_pid: str = ""
     created: int = 0                   # season year the coach was created
     retired: int = 0                   # season year retired; 0 = active
+    overall: int = 0                   # the rolled caliber (the attribute anchor)
+    tier: str = ""                     # the quality band it was rolled in
 
     def grade(self, attr: str) -> int:
         return round(to_grade(self.grades.get(attr, 0.5)))
 
 
-def roll_grades(rng: random.Random, profile: str, mean: float = GRADE_MEAN) -> dict:
-    """One coach's imprinted grades, as quantiles. Base N(mean, 10) clamped to
-    25-75, then the profile's bonus and one penalty elsewhere."""
-    g = {a: min(GRADE_HI, max(GRADE_LO, rng.gauss(mean, GRADE_SD))) for a in GRADES}
-    strong = PROFILES.get(profile, ())
-    if profile == "generalist":
-        for a in GRADES:
-            g[a] += GENERALIST_BONUS
-    else:
-        for a in strong:
-            g[a] += PROFILE_BONUS
-        weak = [a for a in GRADES if a not in strong]
-        g[rng.choice(weak)] -= PROFILE_PENALTY
-    return {a: to_q(v) for a, v in g.items()}
+def roll_band(rng: random.Random) -> tuple[str, int]:
+    """Step 1 and 2: the quality band, then the coach's own overall inside it."""
+    name, lo, hi, _w = rng.choices(BANDS, weights=[b[3] for b in BANDS])[0]
+    return name, rng.randint(lo, hi)
+
+
+def _window(overall: int, win: tuple[int, int], floor: int) -> tuple[int, int]:
+    lo = max(GRADE_MIN, overall - win[0], floor)
+    hi = min(GRADE_MAX, overall + win[1])
+    if hi < lo + MIN_ROLL:
+        hi = min(GRADE_MAX, lo + MIN_ROLL)
+    return lo, max(lo, hi)
+
+
+def roll_grades(rng: random.Random, profile: str, overall: int) -> dict:
+    """Steps 3 and 4: every attribute, rolled once, as quantiles. Wide windows
+    around `overall`, floored by the identity — independent rolls, no shared
+    budget, nothing averaging back to the overall."""
+    primary, pfloor, related = IDENTITIES.get(profile, IDENTITIES["generalist"])
+    if primary is None:                                     # the generalist
+        primary = rng.choice(GRADES)
+        related = {a: GENERALIST_FLOOR for a in GRADES if a != primary}
+    out = {}
+    for a in GRADES:
+        if a == primary:
+            lo, hi = _window(overall, WIN_PRIMARY, pfloor)
+        elif a in related:
+            lo, hi = _window(overall, WIN_RELATED, related[a])
+        else:
+            lo, hi = _window(overall, WIN_OTHER, GRADE_MIN)
+        out[a] = to_q(rng.randint(lo, hi))
+    return out
 
 
 def roll_profile(rng: random.Random) -> str:
     names = list(PROFILE_WEIGHTS)
     return rng.choices(names, weights=[PROFILE_WEIGHTS[n] for n in names])[0]
+
+
+def roll_coach(rng: random.Random, profile: str | None = None) -> tuple:
+    """The whole creation roll: (identity, tier, overall, grades). The ONLY way a
+    coach's ratings come into being; nothing re-runs it."""
+    profile = profile or roll_profile(rng)
+    tier, overall = roll_band(rng)
+    return profile, tier, overall, roll_grades(rng, profile, overall)
 
 
 def roll_name(rng: random.Random, team_gender: str) -> str:
@@ -204,6 +283,13 @@ DEV_K = 0.40           # development: grade 20 → ×0.80 yearly capacity, 80 �
 LEAN_K = 0.20          # JV/floor-raiser lean: tilt of that multiplier toward depth
 CLUTCH_MISS = 0.35     # chance a grade-20 head settles for the 2nd-best postseason lineup
 CHANGEOVER_K = 0.8     # engine.fast set-break roll scale (≈±1-2 pts best vs worst coach)
+TACTICS_K = 0.5        # the game plan: how much a better tactician scales the STYLE
+                       # MATCHUP edge (engine.fast.style_edge) — the favoured side's
+                       # coach amplifies it, the other side's coach blunts it; a flat
+                       # matchup stays zero, so it only acts where style already did
+SINGLES_K = 1.2        # singles coaching: ± OVR points per side at the singles
+                       # flights, per unit of quantile off grade 50 (best vs worst
+                       # staff ≈ 1.4 OVR — home court is 1-4 for a whole dual)
 FEEDER_K = 0.04        # ± freshman head start (share of peak) at the top/bottom
 RETENTION_MAX = 2      # ± players a class at the culture extremes
 MENTOR_K = 0.08        # mentorship: up to +8% of a year's growth for a mentored
@@ -229,6 +315,8 @@ class StaffEffect:
     temperament: str = "steady"
     builder: float = 0.5    # staff Program builder quantile (feeds culture)
     feeder: float = 0.5     # staff Feeder ties quantile (freshman head start)
+    tactics: float | None = None      # staff Tactics quantile (style-matchup scale)
+    singles: float | None = None      # staff Singles quantile (singles flights)
 
     def fingerprint(self) -> tuple:
         # Everything that changes how a SEASON plays (rosters read history, not
@@ -237,7 +325,9 @@ class StaffEffect:
                 round(self.lens.form, 12), round(self.culture, 12), self.strategy,
                 None if self.clutch is None else round(self.clutch, 9),
                 None if self.changeover is None else round(self.changeover, 9),
-                self.temperament)
+                self.temperament,
+                None if self.tactics is None else round(self.tactics, 9),
+                None if self.singles is None else round(self.singles, 9))
 
 
 def lens_of(talent_id: float, adaptability: float):
@@ -271,7 +361,7 @@ def staff_effect(head: Coach | None, assistants: list[Coach]) -> StaffEffect | N
     culture = culture_of(eff["doubles"])
     lean = 0.0
     for c in [head] + list(assistants):
-        if c.profile == "jv_whisperer":
+        if c.profile in JV_LEAN_PROFILES:
             lean = 1.0 if c is head else max(lean, 0.5)
     return StaffEffect(lens=lens_of(eff["talent_id"], eff["adaptability"]),
                        culture=culture, strategy=head.pairing,
@@ -280,7 +370,8 @@ def staff_effect(head: Coach | None, assistants: list[Coach]) -> StaffEffect | N
                        clutch=head.grades.get("clutch", 0.5),
                        changeover=head.grades.get("changeover", 0.5),
                        temperament=head.temperament,
-                       builder=eff["builder"], feeder=eff["feeder"])
+                       builder=eff["builder"], feeder=eff["feeder"],
+                       tactics=eff["tactics"], singles=eff["singles"])
 
 
 def effect_fingerprint(staff: dict | None) -> str:
@@ -317,9 +408,8 @@ def inaugural_staff(school, n_assistants: int, salt: str, season_year: int,
     for i in range(1 + n_assistants):
         slot = SLOTS[i]
         rng = _rng("jhsaa-coach", salt, school.ident, school.gender, slot)
-        profile = roll_profile(rng)
+        profile, tier, overall, grades = roll_coach(rng)
         age = int(rng.triangular(32, 64, 47) if i == 0 else rng.triangular(23, 68, 40))
-        grades = roll_grades(rng, profile, mean=54.0 if age >= 55 else GRADE_MEAN)
         hometown = school.city if rng.random() < 0.55 else rng.choice(towns)
         c = Coach(coach_id=_cid(world_id, salt, school.ident, school.gender, slot),
                   name=roll_name(rng, school.gender), grades=grades,
@@ -327,7 +417,8 @@ def inaugural_staff(school, n_assistants: int, salt: str, season_year: int,
                   pairing=rng.choice(PAIRINGS),
                   temperament=rng.choice(TEMPERAMENTS),
                   hometown=hometown, birth_year=season_year - age,
-                  origin="inaugural", created=season_year)
+                  origin="inaugural", created=season_year,
+                  overall=overall, tier=tier)
         staff.append(c)
     return staff
 
@@ -395,11 +486,12 @@ def reset() -> None:
 def _coach_row(c: Coach) -> str:
     return json.dumps({k: getattr(c, k) for k in (
         "grades", "profile", "pairing", "temperament", "hometown", "birth_year",
-        "origin", "alma", "player_pid", "created", "retired")})
+        "origin", "alma", "player_pid", "created", "retired", "overall", "tier")})
 
 
 _COACH_FIELDS = ("grades", "profile", "pairing", "temperament", "hometown",
-                 "birth_year", "origin", "alma", "player_pid", "created", "retired")
+                 "birth_year", "origin", "alma", "player_pid", "created", "retired",
+                 "overall", "tier")
 
 
 def _coach_from(coach_id: str, name: str, data: str) -> Coach:
@@ -523,7 +615,8 @@ def _eff_to_json(e: StaffEffect) -> str:
                        "culture": e.culture, "strategy": e.strategy,
                        "dev": e.dev, "lean": e.lean, "clutch": e.clutch,
                        "changeover": e.changeover, "temperament": e.temperament,
-                       "builder": e.builder, "feeder": e.feeder})
+                       "builder": e.builder, "feeder": e.feeder,
+                       "tactics": e.tactics, "singles": e.singles})
 
 
 def _eff_from_json(s: str) -> StaffEffect:
@@ -539,7 +632,8 @@ def _eff_from_json(s: str) -> StaffEffect:
                        dev=d.get("dev", 1.0), lean=d.get("lean", 0.0),
                        clutch=d.get("clutch"), changeover=d.get("changeover"),
                        temperament=d.get("temperament", "steady"),
-                       builder=d.get("builder", 0.5), feeder=d.get("feeder", 0.5))
+                       builder=d.get("builder", 0.5), feeder=d.get("feeder", 0.5),
+                       tactics=d.get("tactics"), singles=d.get("singles"))
 
 
 def season_effects(world_id: int, year: int, gender: str) -> dict:
@@ -691,7 +785,9 @@ def program_staff(world_id: int, ident: str, gender: str) -> dict | None:
             if best.grades.get(a, 0.5) > head.grades.get(a, 0.5):
                 cover[a] = best
     return {
-        "seats": [{**r, "label": slot_label(r["slot"], r["jv_head"])} for r in rows],
+        "seats": [{**r, "label": slot_label(r["slot"], r["jv_head"]),
+                   "identity": PROFILE_LABELS.get(r["coach"].profile, r["coach"].profile)
+                   if r["coach"] else ""} for r in rows],
         "head": head,
         "effective": [{"attr": a, "label": GRADE_LABELS[a],
                        "grade": round(to_grade(eff[a])),
@@ -714,7 +810,7 @@ def ident_names(gender: str) -> dict:
 
 def coach_view(world_id: int, coach_id: str, season_year: int) -> dict | None:
     """The coach page's read model. Grades are shown (unlike a player's
-    attributes, owner rule) on the 20-80 scale."""
+    attributes, owner rule) as the real rolled number, 20-90."""
     c = get_coach(world_id, coach_id)
     if c is None:
         return None
@@ -820,43 +916,47 @@ def college_graduate(world_id: int, pid: str) -> dict | None:
             "hometown": d.get("hometown", "")}
 
 
-#: Playing style → the coaching grade it tilts (+3) and the philosophy it leans to.
-#: Coaching ABILITY is never read off playing ability (owner rule): the tilt is
-#: what the player TEACHES, not how good a coach they are.
-_STYLE_TILT = {
+#: Playing style → the coaching IDENTITY it leans to, and the pairing philosophy.
+#: Coaching ABILITY is never read off playing ability (owner rule): the band and
+#: the overall roll exactly as for anybody else — the style only nudges WHAT the
+#: former player teaches, and only half the time.
+_STYLE_IDENTITY = {
     "serve_and_volley": ("doubles", "balanced"), "net_rusher": ("doubles", "balanced"),
-    "chip_and_charge": ("doubles", "balanced"), "all_court": ("doubles", "balanced"),
-    "grinder": ("development", None), "retriever": ("development", None),
-    "counterpuncher": ("development", None), "pusher": ("development", None),
-    "first_strike": ("clutch", "maximize"), "big_server": ("clutch", "maximize"),
-    "serve_first": ("clutch", "maximize"), "aggressive_baseliner": ("clutch", "maximize"),
-    "junkballer": ("changeover", "traditional"),
-    "slice_specialist": ("changeover", "traditional"),
+    "chip_and_charge": ("doubles", "balanced"), "all_court": ("tactician", None),
+    "grinder": ("practice", None), "retriever": ("practice", None),
+    "pusher": ("practice", None),
+    "counterpuncher": ("singles", None), "aggressive_baseliner": ("singles", "maximize"),
+    "serve_first": ("singles", "maximize"),
+    "first_strike": ("motivator", "maximize"), "big_server": ("motivator", "maximize"),
+    "junkballer": ("tactician", "traditional"),
+    "slice_specialist": ("tactician", "traditional"),
 }
-STYLE_TILT = 3.0 / 60.0
+STYLE_IDENTITY_SHARE = 0.5
 
 
 def coach_from_player(world_id: int, cand: dict, team_gender: str, season_year: int,
                       origin: str) -> Coach:
-    """A former player's coaching identity. Grades are rolled INDEPENDENTLY of how
-    good a player they were, seeded on the pid (so the same person is the same
-    coach in any save built from the same world); their style tilts one grade and
-    their pairing philosophy."""
+    """A former player's coaching identity. Everything is rolled INDEPENDENTLY of
+    how good a player they were, seeded on the pid (so the same person is the same
+    coach in any save built from the same world); their style leans the identity
+    (half the time) and the pairing philosophy."""
     rng = _rng("jhsaa-coach-from-player", world_id, cand["pid"])
-    profile = roll_profile(rng)
-    grades = roll_grades(rng, profile)
     pairing = rng.choice(PAIRINGS)
     temperament = rng.choice(TEMPERAMENTS)
+    profile = roll_profile(rng)
+    lean_roll = rng.random()
     for key in (cand.get("trait"), cand.get("style")):
-        tilt = _STYLE_TILT.get(key or "")
-        if tilt:
-            attr, lean = tilt
-            grades[attr] = min(1.0, grades[attr] + STYLE_TILT)
-            if lean:
-                pairing = lean
-            if attr == "development":
+        lean = _STYLE_IDENTITY.get(key or "")
+        if lean:
+            ident, pair = lean
+            if lean_roll < STYLE_IDENTITY_SHARE:
+                profile = ident
+            if pair:
+                pairing = pair
+            if ident == "practice":
                 temperament = "broad"
             break
+    profile, tier, overall, grades = roll_coach(rng, profile)
     grad = cand.get("grad_year") or season_year - 4
     age = max(22, season_year - grad + 18)
     return Coach(coach_id=_cid(world_id, "player", cand["pid"]), name=cand["name"],
@@ -864,7 +964,8 @@ def coach_from_player(world_id: int, cand: dict, team_gender: str, season_year: 
                  temperament=temperament,
                  hometown=cand.get("hometown") or "",
                  birth_year=season_year - age, origin=origin,
-                 alma=cand.get("ident", ""), player_pid=cand["pid"], created=season_year)
+                 alma=cand.get("ident", ""), player_pid=cand["pid"], created=season_year,
+                 overall=overall, tier=tier)
 
 
 class StaffError(ValueError):
@@ -996,7 +1097,7 @@ def set_grade(world_id: int, coach_id: str, attr: str, grade: float) -> None:
         c = _load_coaches(conn, world_id, [coach_id]).get(coach_id)
         if c is None:
             raise StaffError("No such coach.")
-        c.grades[attr] = to_q(max(20.0, min(80.0, float(grade))))
+        c.grades[attr] = to_q(float(grade))
         save_coach(conn, world_id, c)
         conn.commit()
     finally:
@@ -1097,13 +1198,12 @@ def _new_candidate(world_id: int, season_year: int, gender: str, school_city: st
                    tag: str) -> Coach:
     rng = _rng("jhsaa-coach-candidate", world_id, season_year, tag)
     age = int(rng.triangular(24, 68, 42))
-    profile = roll_profile(rng)
-    grades = roll_grades(rng, profile, mean=54.0 if age >= 55 else GRADE_MEAN)
+    profile, tier, overall, grades = roll_coach(rng)
     return Coach(coach_id=_cid(world_id, "cand", season_year, tag),
                  name=roll_name(rng, gender), grades=grades, profile=profile,
                  pairing=rng.choice(PAIRINGS), temperament=rng.choice(TEMPERAMENTS),
                  hometown=school_city, birth_year=season_year - age, origin="area",
-                 created=season_year)
+                 created=season_year, overall=overall, tier=tier)
 
 
 def propose_cycle(world_id: int, season_year: int) -> dict:

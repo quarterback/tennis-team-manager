@@ -232,7 +232,7 @@
       {% for st in view.staff.seats %}
       <div class="jh-kv"><span class="k">{{ st.label }}</span>
         <span class="v">{% if st.coach %}<a href="{{ url_for('jhsaa_coach', coach_id=st.coach.coach_id, u=u, g=view.gender) }}">{{ st.coach.name }}</a>
-          <span class="s">since {{ st.since }}</span>{% else %}<span class="s">Vacant</span>{% endif %}</span></div>
+          <span class="s">{% if st.coach.overall %}{{ st.coach.overall }} {{ st.coach.tier }} · {% endif %}{{ st.identity }} · since {{ st.since }}</span>{% else %}<span class="s">Vacant</span>{% endif %}</span></div>
       {% endfor %}
       <table class="jh-roster jh-staffeff">
         <tr><th>Staff</th><th class="num" style="width:48px">Grade</th><th>Via</th></tr>

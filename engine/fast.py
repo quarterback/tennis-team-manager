@@ -382,6 +382,32 @@ def style_edge(xa: float, ya: float, xb: float, yb: float,
     return k * w * (ya * xb - xa * yb)
 
 
+def tactics_scale(edge: float, t_a: float, t_b: float, k: float) -> float:
+    """TACTICS (JHSAA coaches, owner spec 2026-09): the game plan rides the
+    style matchup that already exists. `edge` is A's style edge over B; `t_a` /
+    `t_b` are the two staffs' Tactics quantiles. The coach on the FAVOURED side
+    amplifies the edge and the other coach blunts it, in proportion to how much
+    better a tactician they are — so a flat matchup stays zero, and the scaling
+    is exactly antisymmetric: seen from B, the edge flips sign and so does the
+    tactics difference, leaving the same factor. Never reverses the edge."""
+    if not edge or not k:
+        return edge
+    fav = (t_a - t_b) if edge > 0 else (t_b - t_a)
+    return edge * max(0.0, 1.0 + k * fav)
+
+
+def _style_and_staff(es: dict, er: dict, tune: dict) -> float:
+    """The style edge for one server/returner (or tiebreak) pair, scaled by the
+    two staffs' Tactics, plus the Singles offset — both inert unless the HS
+    profile put the staffs' quantiles on the edge dicts."""
+    e = style_edge(*es["style"], *er["style"], es["overall"] - er["overall"], tune)
+    if "tac" in es:
+        e = tactics_scale(e, es["tac"], er["tac"], tune.get("tac_k", 0.0))
+    if "sg" in es:
+        e += es["sg"] - er["sg"]
+    return e
+
+
 def _context_edge(server: Player, returner: Player, context: MatchContext) -> float:
     venue = (server.indoor_comfort - returner.indoor_comfort) if context.indoor else (server.outdoor_comfort - returner.outdoor_comfort)
     wind = context.wind * (server.wind_tolerance - returner.wind_tolerance)
@@ -429,8 +455,7 @@ def _hold_prob(server: Player, returner: Player, context: MatchContext,
            + tune["hold_stamina"] * (es["stamina"] - er["stamina"]))
     if decider:
         gap += tune["edge_stamina"] * (es["s_dev"] - er["s_dev"])
-    gap += style_edge(*es["style"], *er["style"],
-                      es["overall"] - er["overall"], tune)
+    gap += _style_and_staff(es, er, tune)
     if "co" in es:                     # the set-break changeover roll, if any
         gap += es["co"] - er["co"]
     return _logistic(
@@ -451,8 +476,7 @@ def _tb_prob(p0: Player, p1: Player, context: MatchContext,
            + tune["edge_clutch"] * (e0["m_dev"] - e1["m_dev"]))
     if decider:
         gap += tune["edge_stamina"] * (e0["s_dev"] - e1["s_dev"])
-    gap += style_edge(*e0["style"], *e1["style"],
-                      e0["overall"] - e1["overall"], tune)
+    gap += _style_and_staff(e0, e1, tune)
     if "co" in e0:
         gap += e0["co"] - e1["co"]
     return _logistic(
@@ -600,6 +624,16 @@ def simulate_fast(
 
     tune = TUNE if profile is None else {**TUNE, **profile}
     edges = (_edges(p0), _edges(p1))
+    # The JHSAA staffs' Tactics and Singles (owner spec 2026-09) — present only
+    # when the HS profile carries both sides' quantiles, so every other caller's
+    # edge dicts (and therefore every scoreline) are exactly what they were.
+    tac_q, sg_q = tune.get("tac_q"), tune.get("sg_q")
+    if tac_q and tune.get("tac_k"):
+        for i in (0, 1):
+            edges[i]["tac"] = tac_q[i]
+    if sg_q and tune.get("sg_k"):
+        for i in (0, 1):
+            edges[i]["sg"] = tune["sg_k"] * (sg_q[i] - 0.5) / GRADE_SPAN
 
     if fmt.pro_set:
         win, score, server, flow = _play_set(rng, players, server, fmt, False,

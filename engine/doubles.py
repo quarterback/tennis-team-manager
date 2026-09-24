@@ -47,7 +47,7 @@ from .rally import (
     _first_serve_in_prob, _second_serve_in_prob, _ace_prob,
     _rally_condition_bonus, _logistic, _clamp01, TUNE as RALLY_TUNE,
 )
-from .fast import GRADE_SPAN, changeover_offset, effective_gap, _mtb_score, style_vector, style_edge, TUNE as FAST_TUNE
+from .fast import GRADE_SPAN, changeover_offset, effective_gap, _mtb_score, style_vector, style_edge, tactics_scale, TUNE as FAST_TUNE
 
 # Tunables for the doubles point model — talent shifts these distributions, it
 # does not script outcomes. Kept in one table so the model retunes without
@@ -637,7 +637,11 @@ def _fast_gap(state: _DState, s: int, r: int) -> float:
     xr, yr = _fast_style(state)[r]
     tune = {**FAST_TUNE, **pr}
     tune["style_k"] = tune.get("d_style_k", tune["style_k"])
-    gap += style_edge(xs, ys, xr, yr, gap, tune)
+    edge = style_edge(xs, ys, xr, yr, gap, tune)
+    tq = pr.get("tac_q")
+    if tq and pr.get("tac_k"):         # the staffs' Tactics (engine.fast.tactics_scale)
+        edge = tactics_scale(edge, tq[s], tq[r], pr["tac_k"])
+    gap += edge
     if state.co:                       # the set-break changeover roll (fast.py)
         gap += state.co if s == 0 else -state.co
     return effective_gap(gap, pr.get("gap_knee"), pr.get("gap_accel"),

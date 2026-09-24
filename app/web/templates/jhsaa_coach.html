@@ -26,10 +26,15 @@
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">Ratings</span>
         <span class="bl-panel-meta">{{ view.profile }}</span></div>
+      {% if c.overall %}
+      <div class="jh-kv"><span class="k">Overall</span><span class="v"><b>{{ c.overall }}</b> · {{ c.tier }}</span></div>
+      {% endif %}
+      {# The bar runs the ROLL's whole range, 20-90 — the number beside it is the
+         real one, never clamped (an Elite coach shows the 84 they rolled). #}
       {% for gr in view.grades %}
       <div class="jh-coachgrade">
         <span class="k">{{ gr.label }}</span>
-        <span class="bar"><span style="width:{{ ((gr.grade - 20) / 60 * 100)|round(0) }}%"></span></span>
+        <span class="bar"><span style="width:{{ ([0, (gr.grade - 20) / 70 * 100]|max)|round(0) }}%"></span></span>
         <span class="v">{{ gr.grade }}</span>
       </div>
       {% endfor %}
@@ -92,7 +97,7 @@
         <input type="hidden" name="do" value="grade"><input type="hidden" name="coach_id" value="{{ c.coach_id }}">
         <input type="hidden" name="g" value="{{ view.gender }}">
         <select name="attr">{% for k, lbl in grade_attrs.items() %}<option value="{{ k }}">{{ lbl }}</option>{% endfor %}</select>
-        <input name="grade" type="number" min="20" max="80" step="1" value="50" style="width:64px">
+        <input name="grade" type="number" min="20" max="90" step="1" value="50" style="width:64px">
         <button class="bl-pill" type="submit">Save</button>
       </form>
       </details>

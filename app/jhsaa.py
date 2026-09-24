@@ -2618,6 +2618,8 @@ class TeamSeason:
     # STAGE B staff effects (`jhsaa_coaches`). Each defaults to "no effect", which
     # is what every program without a named staff reads, exactly as before.
     co_q: float | None = None           # head's Changeover quantile (engine roll)
+    tac_q: float | None = None          # staff Tactics quantile (style-matchup scale)
+    sg_q: float | None = None           # staff Singles quantile (singles flights)
     clutch: float | None = None         # head's Clutch quantile (postseason lineup)
     rotate_mult: float = 1.0            # participation temperament → bench rotation
     rest_mult: float = 1.0              # participation temperament → resting starters
@@ -7911,6 +7913,8 @@ def _stage_b_fields(eff) -> dict:
         return {}
     from . import jhsaa_coaches as jc
     return {"co_q": eff.changeover if jc.CHANGEOVER_K else None,
+            "tac_q": eff.tactics if jc.TACTICS_K else None,
+            "sg_q": eff.singles if jc.SINGLES_K else None,
             "clutch": eff.clutch if jc.CLUTCH_MISS else None,
             "rotate_mult": jc.TEMPERAMENT_ROTATE.get(eff.temperament, 1.0),
             "rest_mult": jc.TEMPERAMENT_REST.get(eff.temperament, 1.0)}
@@ -7921,11 +7925,21 @@ def hs_profile(a: "TeamSeason", b: "TeamSeason") -> dict:
     head coaches' Changeover grades when BOTH sides have a staff (owner spec
     2026-09 — the set-break roll, `engine.fast.changeover_offset`). Anything
     else gets the shared `HS_PROFILE` object itself, untouched."""
+    from .jhsaa_coaches import CHANGEOVER_K, TACTICS_K, SINGLES_K
+    extra = {}
     qa, qb = getattr(a, "co_q", None), getattr(b, "co_q", None)
-    if qa is None or qb is None:
-        return HS_PROFILE
-    from .jhsaa_coaches import CHANGEOVER_K
-    return {**HS_PROFILE, "co_q": (qa, qb), "co_k": CHANGEOVER_K}
+    if qa is not None and qb is not None:
+        extra.update(co_q=(qa, qb), co_k=CHANGEOVER_K)
+    # Tactics and Singles (owner spec 2026-09) ride the same per-dual profile and,
+    # like Changeover, act only when BOTH sides have a staff. Singles is read by
+    # the singles simulator alone (`engine.fast`); doubles never sees it.
+    ta, tb = getattr(a, "tac_q", None), getattr(b, "tac_q", None)
+    if ta is not None and tb is not None:
+        extra.update(tac_q=(ta, tb), tac_k=TACTICS_K)
+    sa, sb = getattr(a, "sg_q", None), getattr(b, "sg_q", None)
+    if sa is not None and sb is not None:
+        extra.update(sg_q=(sa, sb), sg_k=SINGLES_K)
+    return {**HS_PROFILE, **extra} if extra else HS_PROFILE
 
 
 def district_teams(schools: list[School], year: int, salt: str = "",
