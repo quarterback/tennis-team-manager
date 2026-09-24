@@ -312,6 +312,7 @@ OWNER_EDICTS = frozenset({
     "Sotkamo", "Kuusamo", "Iisalmi", "Lieksa", "Nurmes", "Raahe",
     # the uplands the owner named outright
     "Mount Clambake", "Mt Jacqueline", "Gruesome Ridge", "Annes Summit", "Arthur Ashe",
+    "Heartsport",
     "Meridian Passage", "Mount Ruth", "Mount Dylan Lake", "Corey Canyon",
     "Aftdahl Ridge", "Brynildson Hill",
     # NOT "Mount Henson" — that rename was agent work, not an edict, and the owner
@@ -1390,7 +1391,7 @@ RENAMES = {
     "Thelma Avery": "Readbury",
     "Walter Hart": "Kittery",
     "Walter Hart North": "Wicomico",
-    "Wolf Gap International School": "Wolf Gap International",
+    "Wolf Gap International School": "Heartsport",
     "Alder Landing Beacon Hill": "Bay Oregon",
     "Aspen Harbor": "East Simmons",
     "Cedarport": "North San Francisco",

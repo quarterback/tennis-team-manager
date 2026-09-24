@@ -8055,6 +8055,26 @@
       "boys_district": "Valley Coast Interscholastic League"
     },
     {
+      "name": "Heartsport",
+      "source": "Wolf Gap International School",
+      "city": "Corey Canyon",
+      "county": "Antler",
+      "area": "Alderwold",
+      "classification": "2A",
+      "group": "2A",
+      "enrollment": 258,
+      "private": false,
+      "mascot": "Redbands",
+      "colors": [
+        "#3f2a56",
+        "#3ba55d"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Foundry League",
+      "boys_district": "Foundry League"
+    },
+    {
       "name": "Helena Academy",
       "city": "Montelago",
       "county": "Ferris",
@@ -20160,26 +20180,6 @@
       "boys": true,
       "girls_district": "Columbia Gorge District",
       "boys_district": "Columbia Gorge District"
-    },
-    {
-      "name": "Wolf Gap International",
-      "source": "Wolf Gap International School",
-      "city": "Corey Canyon",
-      "county": "Antler",
-      "area": "Alderwold",
-      "classification": "2A",
-      "group": "2A",
-      "enrollment": 258,
-      "private": false,
-      "mascot": "Redbands",
-      "colors": [
-        "#3f2a56",
-        "#3ba55d"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Foundry League",
-      "boys_district": "Foundry League"
     },
     {
       "name": "Wong",
