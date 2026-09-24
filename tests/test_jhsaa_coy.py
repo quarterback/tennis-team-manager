@@ -210,3 +210,29 @@ def test_the_research_export_carries_every_coach_table(tmp_path):
         assert jc.research_tables(1, "boys", {}) == {k: [] for k in rx.COACH_FILES}
     finally:
         wd.WORLD_DB, wd._schema_ready_for = real_db, real_ready
+
+
+def test_the_coach_ledger_role_names_the_program(tmp_path):
+    """Owner rule 2026-09: the Role column says WHICH program — "Girls HC",
+    "Boys Asst" — because one coach can hold seats in both sports."""
+    from app import jhsaa_coaches as jc
+    db = str(tmp_path / "role.db")
+    real_db, real_ready = wd.WORLD_DB, wd._schema_ready_for
+    wd.WORLD_DB = db
+    wd._schema_ready_for = None
+    try:
+        wd.init_schema()
+        conn = wd._db()
+        conn.execute("INSERT INTO jhsaa_coach (world_id, coach_id, name, data) VALUES (1,'c1','Coach 1',?)",
+                     (json.dumps({"grades": {}}),))
+        for yr, g, slot in ((2, "boys", "asst1"), (3, "girls", "head")):
+            conn.execute(
+                "INSERT INTO jhsaa_coach_history (world_id, year, ident, gender, slot,"
+                " coach_id, school, classification, grp, wins, losses, ties, eff)"
+                " VALUES (1, ?, 'X', ?, ?, 'c1', 'X', '5A', '5A', 10, 3, 0, NULL)", (yr, g, slot))
+        conn.commit()
+        conn.close()
+        roles = {r["season_year"]: r["role"] for r in jc.coach_view(1, "c1", 2031)["ledger"]}
+        assert sorted(roles.values()) == ["Boys Asst", "Girls HC"]
+    finally:
+        wd.WORLD_DB, wd._schema_ready_for = real_db, real_ready
