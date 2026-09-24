@@ -33,6 +33,7 @@ from __future__ import annotations
 import hashlib
 import json
 import random
+import threading
 from dataclasses import dataclass, field
 
 # --------------------------------------------------------------- the model ----
@@ -519,34 +520,135 @@ def ensure_staff(world_id: int, season_year: int, salt: str) -> int:
     program that starts sponsoring later is seated the first season it plays.
     Returns how many programs were seated."""
     from . import jhsaa
+    with _seat_lock:
+        return _ensure_staff(jhsaa, world_id, season_year, salt)
+
+
+def _seated_heads(conn, world_id: int) -> set:
+    return {(r[0], r[1]) for r in conn.execute(
+        "SELECT ident, gender FROM jhsaa_coach_seat"
+        " WHERE world_id=? AND slot='head'", (world_id,))}
+
+
+def _ensure_staff(jhsaa, world_id: int, season_year: int, salt: str) -> int:
+    # 1. WHO IS MISSING, read without any lock.
     conn = _conn()
     try:
-        have = {(r[0], r[1]) for r in conn.execute(
-            "SELECT ident, gender FROM jhsaa_coach_seat"
-            " WHERE world_id=? AND slot='head'", (world_id,))}
+        have = _seated_heads(conn, world_id)
+    finally:
+        conn.close()
+    # 2. ROLL THEIR STAFFS BEFORE TAKING THE WRITE LOCK. ‼️ `load_schools` and
+    # `roster_size` open connections of their own (override and config reads, and
+    # a config read can CREATE a table): run under our BEGIN IMMEDIATE they wait
+    # on our own lock and the seater times out on itself — measured, every
+    # caller failed "database is locked". So everything that might touch the
+    # database is done here, and the locked section below only writes.
+    todo = []
+    for gender in ("girls", "boys"):
+        schools = jhsaa.load_schools(gender)
+        towns = sorted({s.city for s in schools})
+        for s in schools:
+            if (s.ident, gender) in have:
+                continue
+            n_ast = assistants_for(jhsaa.roster_size(s.classification, s.key, salt))
+            todo.append((s.ident, gender,
+                         inaugural_staff(s, n_ast, salt, season_year, world_id, towns)))
+    if not todo:
+        return 0
+    # 3. THE WRITE LOCK, THEN RE-READ, THEN WRITE. A concurrent seater (another
+    # process, or the rung) may have committed since step 1; BEGIN IMMEDIATE makes
+    # the re-read and the writes one critical section, so a program somebody else
+    # just seated is skipped rather than seated twice with duplicate events.
+    conn = _conn()
+    try:
+        if conn.in_transaction:
+            conn.commit()
+        conn.execute("BEGIN IMMEDIATE")
+        have = _seated_heads(conn, world_id)
         n = 0
-        for gender in ("girls", "boys"):
-            schools = jhsaa.load_schools(gender)
-            towns = sorted({s.city for s in schools})
-            for s in schools:
-                if (s.ident, gender) in have:
-                    continue
-                n_ast = assistants_for(jhsaa.roster_size(s.classification, s.key, salt))
-                staff = inaugural_staff(s, n_ast, salt, season_year, world_id, towns)
-                for i, c in enumerate(staff):
-                    save_coach(conn, world_id, c)
-                    conn.execute(
-                        "INSERT OR REPLACE INTO jhsaa_coach_seat (world_id, ident, gender,"
-                        " slot, coach_id, since, jv_head) VALUES (?,?,?,?,?,?,?)",
-                        (world_id, s.ident, gender, SLOTS[i], c.coach_id, season_year,
-                         int(i == 1)))
-                    _event(conn, world_id, season_year, c.coach_id, s.ident, gender,
-                           SLOTS[i], "existing", "on staff when coaches were introduced")
-                n += 1
+        for ident, gender, staff in todo:
+            if (ident, gender) in have:
+                continue
+            for i, c in enumerate(staff):
+                save_coach(conn, world_id, c)
+                conn.execute(
+                    "INSERT OR REPLACE INTO jhsaa_coach_seat (world_id, ident, gender,"
+                    " slot, coach_id, since, jv_head) VALUES (?,?,?,?,?,?,?)",
+                    (world_id, ident, gender, SLOTS[i], c.coach_id, season_year,
+                     int(i == 1)))
+                _event(conn, world_id, season_year, c.coach_id, ident, gender,
+                       SLOTS[i], "existing", "on staff when coaches were introduced")
+            n += 1
         conn.commit()
         return n
     finally:
         conn.close()
+
+
+_seated: set = set()     # (db, world_id) already confirmed to have staffs
+# ‼️ FIRST-TIME SEATING IS SINGLE-FLIGHT. Two requests reaching a coach surface on a
+# save with no staffs both passed the memo and the probe and both entered
+# `ensure_staff`: the second either timed out on SQLite's lock or, after the first
+# committed, re-read an out-of-date "who has a head" set and appended every
+# inaugural event a second time. The lock serialises this process (the one gthread
+# worker); `ensure_staff` also takes the DATABASE write lock before it reads, which
+# covers a second process and the season rung. Re-entrant because ensure_seated
+# calls ensure_staff under it.
+_seat_lock = threading.RLock()
+
+
+def ensure_seated(world_id: int, season_year: int, salt: str) -> None:
+    """Seat every program's staff NOW if this world has none yet — for the PAGES
+    (owner report 2026-09: "you don't display them"). `ensure_staff` otherwise
+    only runs inside the season rung, so a save opened after this build showed
+    no coaches anywhere until its next season was simulated, and the program
+    page's staff panel simply did not render.
+
+    Cost: one indexed probe, memoised per (database, world) so later requests
+    pay nothing; the one-time seating is ~1 s for the whole association. It
+    rolls the SAME staffs the rung would (same salt, same season year, same
+    seeds), so seating here or at the rung is indistinguishable."""
+    from .dbpath import resolve_db_path
+    key = (resolve_db_path(), world_id)
+    if key in _seated:                 # the fast path: no lock once seated
+        return
+    with _seat_lock:
+        if key in _seated:             # another request seated it while we waited
+            return
+        conn = _conn()
+        try:
+            have = conn.execute("SELECT 1 FROM jhsaa_coach_seat WHERE world_id=? LIMIT 1",
+                                (world_id,)).fetchone()
+        finally:
+            conn.close()
+        if not have:
+            ensure_staff(world_id, season_year, salt)
+        _seated.add(key)
+
+
+def directory(world_id: int, gender: str) -> list[dict]:
+    """Every program's HEAD coach and staff size, for the Coaches page — one read
+    of the seats and one of the coaches, never a query per program."""
+    from . import jhsaa
+    rows = seats(world_id, gender)
+    by = {}
+    for r in rows:
+        by.setdefault(r["ident"], []).append(r)
+    out = []
+    for s in jhsaa.load_schools(gender):
+        seat_rows = by.get(s.ident, [])
+        head = next((r["coach"] for r in seat_rows if r["slot"] == "head"), None)
+        if head is None:
+            continue
+        ast = [r["coach"] for r in seat_rows if r["slot"] != "head" and r["coach"]]
+        eff = effective(head, ast)
+        out.append({"school": s.name, "group": s.group, "head": head,
+                    "identity": PROFILE_LABELS.get(head.profile, head.profile),
+                    "staff": 1 + len(ast),
+                    "vacant": sum(1 for r in seat_rows if not r["coach"]),
+                    "staff_best": max(round(to_grade(v)) for v in eff.values())})
+    out.sort(key=lambda r: (-(r["head"].overall or 0), r["school"]))
+    return out
 
 
 def _load_coaches(conn, world_id: int, ids) -> dict:
@@ -768,9 +870,11 @@ def slot_label(slot: str, jv_head: bool) -> str:
     return "JV head coach" if jv_head else "Assistant coach"
 
 
-def program_staff(world_id: int, ident: str, gender: str) -> dict | None:
+def program_staff(world_id: int, ident: str, gender: str,
+                  season_year: int | None = None) -> dict | None:
     """The program page's staff block: every seat (vacant ones included), and the
-    EFFECTIVE value per attribute with who covers it."""
+    EFFECTIVE value per attribute with who covers it — plus the Staff tab's
+    MATRIX (every coach's grade per attribute beside the staff's effective one)."""
     rows = seats(world_id, gender, ident)
     if not rows:
         return None
@@ -784,10 +888,19 @@ def program_staff(world_id: int, ident: str, gender: str) -> dict | None:
             best = max(ast, key=lambda x: x.grades.get(a, 0.5))
             if best.grades.get(a, 0.5) > head.grades.get(a, 0.5):
                 cover[a] = best
+    seat_rows = [{**r, "label": slot_label(r["slot"], r["jv_head"]),
+                  "identity": PROFILE_LABELS.get(r["coach"].profile, r["coach"].profile)
+                  if r["coach"] else "",
+                  "age": (season_year - r["coach"].birth_year)
+                  if (r["coach"] and season_year and r["coach"].birth_year) else None}
+                 for r in rows]
+    matrix = [{"attr": a, "label": GRADE_LABELS[a], "blended": a in BLENDED,
+               "grades": [r["coach"].grade(a) if r["coach"] else None for r in rows],
+               "effective": round(to_grade(eff[a])), "via": cover.get(a)}
+              for a in GRADES]
     return {
-        "seats": [{**r, "label": slot_label(r["slot"], r["jv_head"]),
-                   "identity": PROFILE_LABELS.get(r["coach"].profile, r["coach"].profile)
-                   if r["coach"] else ""} for r in rows],
+        "seats": seat_rows,
+        "matrix": matrix,
         "head": head,
         "effective": [{"attr": a, "label": GRADE_LABELS[a],
                        "grade": round(to_grade(eff[a])),
@@ -821,8 +934,9 @@ def coach_view(world_id: int, coach_id: str, season_year: int) -> dict | None:
         (e["gender"] for e in car["events"]), "girls")
     names = ident_names(gender)
     history = [{**h, "school": names.get(h["ident"], h["school"]),
-                "role": slot_label(h["slot"], False) if h["slot"] == "head" else "Staff"}
+                "role": "Head coach" if h["slot"] == "head" else "Assistant"}
                for h in car["history"]]
+    ledger, totals = _career_ledger(world_id, history)
     events = [{**e, "school": names.get(e["ident"], e["ident"])} for e in car["events"]]
     return {
         "coach": c,
@@ -840,9 +954,72 @@ def coach_view(world_id: int, coach_id: str, season_year: int) -> dict | None:
         "seat": ({**seat, "school": names.get(seat["ident"], seat["ident"]),
                   "label": slot_label(seat["slot"], seat["jv_head"])} if seat else None),
         "history": history,
+        "ledger": ledger,
+        "totals": totals,
         "events": events,
-        "head_record": car["head_record"],
+        "head_record": totals["record"],
     }
+
+
+def _career_ledger(world_id: int, history: list[dict]) -> tuple[list, dict]:
+    """The coach page's season ledger — the player page's career table, for a coach
+    (owner, 2026-09). One row per season on a staff, newest first, with that
+    program's season beside it (district, finish, titles, honours).
+
+    ‼️ THE CAREER RECORD IS THE HEAD COACH'S VARSITY RECORD AND NOTHING ELSE (owner
+    rule): an assistant season shows how the TEAM did but adds nothing to the
+    coach's W-L, and JV never enters it (the archived W-L is the varsity
+    TeamSeason's). A head season's W-L comes off the coach's own history row — the
+    record that season was archived with — never re-derived."""
+    from . import world
+    wanted = [(h["world_year"], h["gender"], h["school"]) for h in history]
+    rows = world.jhsaa_season_rows_at(world_id, wanted) if wanted else {}
+    ledger = []
+    t = {"head_seasons": 0, "asst_seasons": 0, "w": 0, "l": 0, "ties": 0,
+         "district_titles": 0, "state_apps": 0, "state_titles": 0, "finals": 0,
+         "toc_titles": 0, "all_state": 0, "poy": 0, "programs": set()}
+    for h in sorted(history, key=lambda h: (-h["world_year"], h["slot"] != "head")):
+        head = h["slot"] == "head"
+        r = rows.get((h["world_year"], h["gender"], h["school"])) or {}
+        rec = ""
+        if head:
+            w, l, ti = h.get("wins") or 0, h.get("losses") or 0, h.get("ties") or 0
+            rec = f"{w}-{l}" + (f"-{ti}" if ti else "")
+            t["head_seasons"] += 1
+            t["w"] += w
+            t["l"] += l
+            t["ties"] += ti
+            t["district_titles"] += int(r.get("place") == 1)
+            t["state_apps"] += int(bool(r.get("made_state")))
+            t["state_titles"] += int(bool(r.get("champion")))
+            t["finals"] += int(0 < (r.get("state_place") or 0) <= 2)
+            t["toc_titles"] += int(bool(r.get("toc_champion")))
+            t["all_state"] += len(r.get("all_state") or ())
+            t["poy"] += len(r.get("poy") or ())
+        else:
+            t["asst_seasons"] += 1
+        t["programs"].add(h["school"])
+        place = r.get("place") or 0
+        ledger.append({
+            "season_year": h["year"], "world_year": h["world_year"],
+            "gender": h["gender"], "school": h["school"],
+            "class": r.get("group") or h.get("grp") or h.get("classification") or "",
+            "role": h["role"], "head": head, "record": rec,
+            "team_record": r.get("record", ""),
+            "district": r.get("district", ""),
+            "district_place": place,
+            "district_record": r.get("district_record", ""),
+            "finish": r.get("state_finish") or "",
+            "champion": bool(r.get("champion")),
+            "toc_champion": bool(r.get("toc_champion")),
+            "all_state": len(r.get("all_state") or ()),
+            "poy": len(r.get("poy") or ()),
+        })
+    games = t["w"] + t["l"]
+    t["pct"] = (t["w"] + 0.5 * t["ties"]) / (games + t["ties"]) if games + t["ties"] else None
+    t["record"] = f"{t['w']}-{t['l']}" + (f"-{t['ties']}" if t["ties"] else "")
+    t["programs"] = len(t["programs"])
+    return ledger, t
 
 
 # ------------------------------------------------------------ former players ----

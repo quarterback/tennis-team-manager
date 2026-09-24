@@ -129,6 +129,7 @@
   <a class="{{ 'on' if hq == 'history' }}" href="{{ hq_url('history') }}">History</a>
   <a class="{{ 'on' if hq == 'honors' }}" href="{{ hq_url('honors') }}">Honors</a>
   <a class="{{ 'on' if hq == 'records' }}" href="{{ hq_url('records') }}">Records</a>
+  <a class="{{ 'on' if hq == 'staff' }}" href="{{ hq_url('staff') }}">Staff</a>
 </nav>
 
 {% if hq == 'overview' %}
@@ -228,7 +229,7 @@
     {% if view.staff %}
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">Coaching staff</span>
-        <a class="jh-hqmore" href="{{ url_for('jhsaa_coach_carousel', u=u) }}">Carousel →</a></div>
+        <a class="jh-hqmore" href="{{ hq_url('staff') }}">Staff →</a></div>
       {% for st in view.staff.seats %}
       <div class="jh-kv"><span class="k">{{ st.label }}</span>
         <span class="v">{% if st.coach %}<a href="{{ url_for('jhsaa_coach', coach_id=st.coach.coach_id, u=u, g=view.gender) }}">{{ st.coach.name }}</a>
@@ -848,6 +849,54 @@
     {% endif %}
   </div>
 </div>
+
+{% elif hq == 'staff' %}
+<!-- ============ STAFF: the people coaching this program ============ -->
+{% set stf = view.staff %}
+{% if stf %}
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Coaching staff</span>
+    <a class="jh-hqmore" href="{{ url_for('jhsaa_coaches', u=u, g=view.gender) }}">All coaches →</a>
+    <a class="jh-hqmore" href="{{ url_for('jhsaa_coach_carousel', u=u, g=view.gender) }}">Carousel →</a></div>
+  <div class="tbl-scroll">
+  <table class="jh-roster">
+    <tr><th>Role</th><th>Coach</th><th class="num" style="width:64px">Overall</th><th>Tier</th>
+      <th>Identity</th><th class="num" style="width:48px">Age</th><th class="num" style="width:56px">Since</th><th></th></tr>
+    {% for st in stf.seats %}
+    <tr><td>{{ st.label }}</td>
+      {% if st.coach %}
+      <td class="nm"><a href="{{ url_for('jhsaa_coach', coach_id=st.coach.coach_id, u=u, g=view.gender) }}">{{ st.coach.name }}</a></td>
+      <td class="num"><b>{{ st.coach.overall or '' }}</b></td><td>{{ st.coach.tier }}</td>
+      <td>{{ st.identity }}</td><td class="num">{{ st.age or '' }}</td><td class="num">{{ st.since }}</td>
+      <td><a href="{{ url_for('jhsaa_coach', coach_id=st.coach.coach_id, u=u, g=view.gender) }}#edit">Edit</a></td>
+      {% else %}
+      <td class="nm"><span class="s">Vacant</span></td><td></td><td></td><td></td><td></td><td class="num">{{ st.since }}</td>
+      <td><a href="{{ url_for('jhsaa_coach_carousel', u=u, g=view.gender) }}#pool">Fill</a></td>
+      {% endif %}
+    </tr>
+    {% endfor %}
+  </table>
+  </div>
+</div>
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">Ratings</span></div>
+  <div class="tbl-scroll">
+  <table class="jh-roster jh-staffmatrix">
+    <tr><th>Rating</th>
+      {% for st in stf.seats %}<th class="num">{{ st.coach.name.split(' ')[-1] if st.coach else '—' }}</th>{% endfor %}
+      <th class="num">Staff</th><th>Via</th></tr>
+    {% for m in stf.matrix %}
+    <tr><td>{{ m.label }}{% if not m.blended %} <span class="s">head</span>{% endif %}</td>
+      {% for gr in m.grades %}<td class="num">{{ gr if gr is not none else '' }}</td>{% endfor %}
+      <td class="num"><b>{{ m.effective }}</b></td>
+      <td>{% if m.via %}<a href="{{ url_for('jhsaa_coach', coach_id=m.via.coach_id, u=u, g=view.gender) }}">{{ m.via.name }}</a>{% endif %}</td></tr>
+    {% endfor %}
+  </table>
+  </div>
+</div>
+{% else %}
+<div class="bl-panel"><p class="jh-empty">This program has no staff.</p></div>
+{% endif %}
 {% endif %}
 </div>
 {% endblock %}

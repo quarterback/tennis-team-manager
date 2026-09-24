@@ -704,6 +704,7 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     from . import jhsaa_reclass as _rc
     from . import jhsaa_coaches as _jc
     conn.executescript(_jc._SCHEMA + "".join(f" DELETE FROM {t};" for t in _jc._TABLES))
+    _jc._seated.clear()      # the pages' "already seated" memo describes wiped rows
     conn.executescript(_rc._SCHEMA + " DELETE FROM world_jhsaa_reclass;"
                        " DELETE FROM world_jhsaa_reclass_move;")
     conn.commit()
@@ -7354,6 +7355,38 @@ def jhsaa_school_seasons(world_id: int, gender: str, school: str) -> list[dict]:
                               _schedule_rows(conn, world_id, year, gender, school))
             if row:
                 out.append(row)
+    finally:
+        conn.close()
+    return out
+
+
+def jhsaa_season_rows_at(world_id: int, wanted) -> dict:
+    """`{(year, gender, school): season row}` for exactly the seasons named — the
+    coach page's ledger (owner, 2026-09: mirror the player page, by season).
+
+    `jhsaa_school_seasons` builds a program's WHOLE history; a coach needs only the
+    years they coached, possibly at several programs. So each (year, gender)
+    archive is loaded ONCE here and every program wanted from it is read off the
+    same parse — the cost is bounded by the career, never by the save's length.
+    `school` is today's display name (the archive is relabelled into today's
+    names, so a renamed program still finds its own seasons)."""
+    by_arc: dict = {}
+    for year, gender, school in wanted:
+        by_arc.setdefault((year, gender), set()).add(school)
+    out: dict = {}
+    conn = _db()
+    try:
+        for (year, gender), schools in sorted(by_arc.items()):
+            r = conn.execute("SELECT data FROM world_jhsaa WHERE world_id=? AND year=?"
+                             " AND gender=?", (world_id, year, gender)).fetchone()
+            if not r:
+                continue
+            arc = _relabel(json.loads(r["data"]))
+            for school in schools:
+                row = _season_row(arc, year, school,
+                                  _schedule_rows(conn, world_id, year, gender, school))
+                if row:
+                    out[(year, gender, school)] = row
     finally:
         conn.close()
     return out

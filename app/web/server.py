@@ -2463,7 +2463,10 @@ def create_app() -> Flask:
                           "jhsaa_district_jv": "jhsaa_districts"}
     # A pid is a seat on ONE gender's roster, so it cannot follow a gender switch;
     # the same school's other program can.
-    _JH_GENDER_FALLBACK = {"jhsaa_player": "jhsaa_school"}
+    _JH_GENDER_FALLBACK = {"jhsaa_player": "jhsaa_school",
+                           # a coach holds a seat on ONE gender's staff; the other
+                           # gender's coaches are the directory's to list
+                           "jhsaa_coach": "jhsaa_coaches"}
     #: Path arguments that identify WHICH page this is — carried through a scope
     #: change, dropped when the change falls back to another endpoint.
     _JH_PATH_ARGS = {"jhsaa_district": ("group", "district"),
@@ -2475,7 +2478,8 @@ def create_app() -> Flask:
                      # otherwise correct.
                      "jhsaa_district_jv": ("group", "district"),
                      "jhsaa_school": ("school", "year"),
-                     "jhsaa_player": ("school", "pid")}
+                     "jhsaa_player": ("school", "pid"),
+                     "jhsaa_coach": ("coach_id",)}
 
     def jh_scope_url(scope, u, **change):
         """This page, with ONE scope axis changed. `change` is `g=`, `group=` or
@@ -3715,7 +3719,8 @@ def create_app() -> Flask:
         # A query arg, not a route, so `jh_scope_url` carries it: switching gender
         # or season keeps you on the view you were reading.
         hq = request.args.get("view", "overview")
-        if hq not in ("overview", "team", "season", "history", "honors", "records"):
+        if hq not in ("overview", "team", "season", "history", "honors", "records",
+                      "staff"):
             hq = "overview"
         return render_template("jhsaa_school.html", active="High School", view=view,
                                gender=gender, u=u, uni_label=label, hq=hq)
@@ -3725,27 +3730,52 @@ def create_app() -> Flask:
         """One JHSAA coach — imprinted grades (visible, unlike a player's), the
         seat they hold, and every season they have coached."""
         from app import jhsaa_coaches as jc
-        gender, label, u, g, _group, _year = _jh_scope_args()
+        gender, label, u, g, group, year = _jh_scope_args()
         w = wd.get_or_create(DEFAULT_SEED)
+        jc.ensure_seated(w["id"], wd.jhsaa_season_year(w), wd.active_salt(DEFAULT_SEED))
         view = jc.coach_view(w["id"], coach_id, wd.jhsaa_season_year(w))
         if view is None:
             abort(404)
         from app import jhsaa as _jhm
         schools = sorted(s.name for s in _jhm.load_schools(view["gender"]))
         return render_template("jhsaa_coach.html", active="High School", view=view,
+                               # the REQUESTED class and season, or the header
+                               # marks the first class and the latest year and every
+                               # scope link it builds drops an archived selection
+                               scope_view=jhsaa_scope_view(DEFAULT_SEED, view["gender"],
+                                                           group, year),
                                gender=gender, u=u, uni_label=label, schools=schools,
                                grade_attrs=jc.GRADE_LABELS,
                                msg=request.cookies.get("jh_coach_result", ""))
+
+    @app.route("/jhsaa/coaches")
+    def jhsaa_coaches():
+        """Every program's head coach — the way into any coach's page, where the
+        editor lives (owner report 2026-09: "it's unclear where you put the coach
+        editor"). Seats every staff first if this save has none yet."""
+        from app import jhsaa_coaches as jc
+        gender, label, u, g, group, year = _jh_scope_args()
+        w = wd.get_or_create(DEFAULT_SEED)
+        sy = wd.jhsaa_season_year(w)
+        jc.ensure_seated(w["id"], sy, wd.active_salt(DEFAULT_SEED))
+        rows = jc.directory(w["id"], g)
+        return render_template("jhsaa_coaches.html", active="High School", rows=rows,
+                               view=jhsaa_scope_view(DEFAULT_SEED, g, group, year),
+                               gender=gender, u=u, uni_label=label,
+                               tiers=[b[0] for b in jc.BANDS],
+                               free=len(jc.free_pool(w["id"])))
 
     @app.route("/jhsaa/coaches/carousel")
     def jhsaa_coach_carousel():
         """The coaching carousel — a BUTTON, never a rung (owner rule 2026-09).
         Run a cycle, veto any line, commit. Nothing moves until you do."""
         from app import jhsaa_coaches as jc
-        gender, label, u, g, _group, _year = _jh_scope_args()
+        gender, label, u, g, group, year = _jh_scope_args()
         w = wd.get_or_create(DEFAULT_SEED)
+        jc.ensure_seated(w["id"], wd.jhsaa_season_year(w), wd.active_salt(DEFAULT_SEED))
         prop = jc.pending_cycle(w["id"])
         return render_template("jhsaa_coach_carousel.html", active="High School",
+                               view=jhsaa_scope_view(DEFAULT_SEED, g, group, year),
                                prop=prop, pool=jc.free_pool(w["id"])[:60],
                                kinds={"retire": "Retires", "fire": "Let go",
                                       "promote": "Promoted", "move": "Moves",
@@ -3756,7 +3786,7 @@ def create_app() -> Flask:
     @app.route("/jhsaa/coaches/carousel", methods=["POST"])
     def jhsaa_coach_carousel_post():
         from app import jhsaa_coaches as jc
-        _gender, _label, u, _g, _group, _year = _jh_scope_args()
+        _gender, _label, u, g, _group, _year = _jh_scope_args()
         w = wd.get_or_create(DEFAULT_SEED)
         do = request.form.get("do", "")
         msg = ""
@@ -3775,7 +3805,7 @@ def create_app() -> Flask:
                 msg = "Cycle dismissed."
         except jc.StaffError as e:
             msg = str(e)
-        resp = redirect(url_for("jhsaa_coach_carousel", u=u))
+        resp = redirect(url_for("jhsaa_coach_carousel", u=u, g=g))
         resp.set_cookie("jh_coach_result", msg, max_age=30, samesite="Lax")
         return resp
 

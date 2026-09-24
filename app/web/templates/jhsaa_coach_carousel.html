@@ -1,9 +1,8 @@
 {% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header %}
 {% block title %}Coaching carousel — JHSAA{% endblock %}
 {% block content %}
-<div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:16px;color:var(--text-muted)">High School › Coaching carousel</span>
-</div></div>
+{{ jh_header(view.scope, u, 'carousel', 'Coaching carousel', '') }}
 <div class="jh-shell">
 {% if msg %}<p class="jh-note" style="margin:0 0 12px">{{ msg }}</p>{% endif %}
 <div class="bl-panel">
@@ -41,7 +40,7 @@
   {% endif %}
 </div>
 {% if pool %}
-<div class="bl-panel">
+<div class="bl-panel" id="pool">
   <div class="bl-panel-head"><span class="bl-panel-title">Available coaches</span></div>
   {% for c in pool %}
   <div class="jh-kv"><span class="k"><a href="{{ url_for('jhsaa_coach', coach_id=c.coach_id, u=u) }}">{{ c.name }}</a></span>

@@ -2860,6 +2860,11 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   shows the real number. Never re-centre it or narrow it back to ~50. **Tactics**
   (scales the style-matchup edge) and **Singles** (singles flights only) are blended
   match effects beside Changeover — fast engine only, like it.
+  ‼️ **THE COACH PAGES LIVE ON THE PROGRAMS SUBMENU (owner rule 2026-09)** —
+  Programs · Talent Tiers · Coaches · Carousel; a coach's own page IS the editor
+  (`#edit`) and each program page has a **Staff** tab. Every coach surface calls
+  `jc.ensure_seated` first: staffs were only seated by the season rung, so a save
+  opened after the update showed no coaches anywhere until a season was played.
   Former players are hired off the `jhsaa_alumni` index (or `world_graduates`),
   their grades rolled independently of playing ability. Nothing moves on its own.
   **STAGE B (built):** development (+ a JV-whisperer's depth lean), feeder ties
