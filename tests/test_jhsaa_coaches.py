@@ -453,7 +453,20 @@ def test_program_and_coach_pages_render(world_season):
     assert car["history"][0]["world_year"] == world_season["world"]["year"]
     assert f">{world_season['season_year']}</a></td>" in body
     assert "Coaching career" in body and "varsity only" in body
+    # Transactions read Hired / Left staff / Retired — never the raw plumbing.
+    assert "Transactions" in body and "Hired" in body
+    assert "coaches were introduced" not in body and "free pool" not in body
     assert client.get("/jhsaa/coach/nope").status_code == 404
+    # The program's History tab lists every varsity head coach, in a fold.
+    hist = client.get(f"/jhsaa/school/{s.name}?g=girls&view=history").get_data(as_text=True)
+    assert "Head coaches" in hist and head.name in hist and "-present" in hist
+    assert "Head coach</th>" in hist          # the Seasons ledger's coach column
+    # Coach records: most wins (this sport and overall) and multiple titles.
+    for q in ("", "?sport=all", "?board=titles", "?board=titles&sport=all"):
+        rec = client.get(f"/jhsaa/coach-records{q}{'&' if q else '?'}g=girls")
+        assert rec.status_code == 200
+    wins = client.get("/jhsaa/coach-records?g=girls").get_data(as_text=True)
+    assert "Most wins" in wins and head.name in wins
 
 
 def test_the_career_record_counts_head_varsity_seasons_only(world_season):
@@ -590,7 +603,7 @@ def test_the_carousel_is_a_statewide_market_that_cascades(world_season):
             assert src in filled[i + 1:], f"{src} was vacated by a move and never filled"
     for ln in fills:
         if ln["kind"] == "new":
-            assert "no one else applied" in ln["why"]
+            assert "overall" in ln["why"]
 
 
 def test_running_a_program_is_worth_more_than_it_is_to_have_won_a_little():
@@ -609,3 +622,26 @@ def test_running_a_program_is_worth_more_than_it_is_to_have_won_a_little():
     assert avg >= jc.OWN_ASSISTANT_EDGE + jc.HIRE_NOISE     # a head of consequence
     assert rookie < avg
     assert jc.head_record({}, {}, "c") is None
+
+
+def test_transactions_read_hired_left_staff_retired():
+    """Owner rule 2026-09: Hired / Left staff / Retired — a promotion inside one
+    staff is a promotion, a carousel firing (written retire-then-unretire) is
+    leaving staff, and nothing mentions the free pool."""
+    ev = [
+        {"year": 2093, "event": "existing", "school": "Jesuit", "slot": "asst1"},
+        {"year": 2095, "event": "left", "school": "Jesuit", "slot": "asst1"},
+        {"year": 2095, "event": "moved", "school": "Jesuit", "slot": "head"},
+        {"year": 2098, "event": "retired", "school": "Jesuit", "slot": "head"},
+        {"year": 2098, "event": "fired", "school": "Jesuit", "slot": "head"},
+        {"year": 2099, "event": "moved", "school": "Ferris", "slot": "asst2"},
+        {"year": 2104, "event": "replaced", "school": "Ferris", "slot": "asst2"},
+        {"year": 2110, "event": "retired", "school": "", "slot": ""},
+    ]
+    got = [(t["year"], t["label"], t["school"]) for t in jc.transactions(ev)]
+    assert got == [(2093, "Hired", "Jesuit"),
+                   (2095, "Promoted to head coach", "Jesuit"),
+                   (2098, "Left staff", "Jesuit"),
+                   (2099, "Hired", "Ferris"),
+                   (2104, "Left staff", "Ferris"),
+                   (2110, "Retired", "")]

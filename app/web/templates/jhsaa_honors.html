@@ -82,6 +82,7 @@
   {{ jh_tabs([('state', 'All-State', view.teams|map(attribute='players')|map('length')|sum),
               ('region', 'All-Region', view.regions|sum(attribute='n')),
               ('district', 'All-District', view.districts|length),
+              ('coaches', 'Coach of the Year', view.coy_district|length + (1 if view.coy_state else 0)),
               ('method', 'Flight check', 0)], 'jhaw') }}
 
   {# --- All-State ------------------------------------------------------- #}
@@ -196,6 +197,63 @@
       </div>
     </div>
     {% endfor %}
+  </div>
+
+  {# --- Coach of the Year (owner spec 2026-09): State for the class, then one
+       per league. Head coaches only. ‼️ NAMES AND RANK ONLY (owner rule
+       2026-09): the scores and their components are stored for the record and
+       never shown — no score, component, weight or record column here. --- #}
+  <div class="jh-pane" data-pane="coaches" hidden>
+    {% if view.coy_pending %}
+    <div class="jh-empty" style="padding:16px">Selecting this season's Coach of the Year —
+      refresh in a moment.</div>
+    {% elif not view.coy_state and not view.coy_district %}
+    <div class="jh-empty" style="padding:16px">No Coach of the Year for this season —
+      it predates named coaches.</div>
+    {% else %}
+    {% if view.coy_state %}{% set w = view.coy_state[0] %}
+    <div class="jh-poy" style="margin:10px 14px 4px">
+      <span class="jh-schoolcell">{{ w.mark|safe }}</span>
+      <div>
+        <div class="nm"><a href="{{ url_for('jhsaa_coach', coach_id=w.coach_id, u=u, g=view.gender) }}">{{ w.name }}</a></div>
+        <div class="sub">{{ w.school }}</div>
+      </div>
+      <span class="jh-chip gold">{{ view.group }} COACH OF THE YEAR</span>
+    </div>
+    <div class="jh-awardsec">
+      <div class="jh-awardsec-head">State finalists</div>
+      <div class="bl-tablescroll">
+      <table class="bl-table jh-ledger nowrap">
+        <thead><tr><th style="width:36px">#</th><th>Coach</th><th>Program</th></tr></thead>
+        <tbody>
+        {% for r in view.coy_state %}
+        <tr><td>{{ r.rank }}</td>
+          <td class="nm"><a href="{{ url_for('jhsaa_coach', coach_id=r.coach_id, u=u, g=view.gender) }}">{{ r.name }}</a></td>
+          <td class="nm">{{ r.school }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    </div>
+    {% endif %}
+    {% if view.coy_district %}
+    <div class="jh-awardsec">
+      <div class="jh-awardsec-head">District Coach of the Year</div>
+      <div class="bl-tablescroll">
+      <table class="bl-table jh-ledger nowrap">
+        <thead><tr><th>District</th><th>Coach</th><th>Program</th></tr></thead>
+        <tbody>
+        {% for d in view.coy_district %}{% set r = d.rows[0] %}
+        <tr><td class="nm">{{ d.district }}</td>
+          <td class="nm"><a href="{{ url_for('jhsaa_coach', coach_id=r.coach_id, u=u, g=view.gender) }}">{{ r.name }}</a></td>
+          <td class="nm">{{ r.school }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    </div>
+    {% endif %}
+    {% endif %}
   </div>
 
   {# --- The flight check the selector ran ------- #}

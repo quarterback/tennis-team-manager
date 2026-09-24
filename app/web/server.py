@@ -2578,6 +2578,18 @@ def create_app() -> Flask:
         return render_template("jhsaa_repeat_poy.html", active="High School",
                                view=view, gender=gender, u=u, uni_label=label)
 
+    @app.route("/jhsaa/coach-records")
+    def jhsaa_coach_records():
+        """Coach records — most head-coach dual wins and multiple state titles,
+        this sport or both (owner, 2026-09). History sub-rail."""
+        from app.web.state import jhsaa_coach_records_view
+        gender, label, u, g, group, _year = _jh_scope_args()
+        view = jhsaa_coach_records_view(DEFAULT_SEED, g, group,
+                                        request.args.get("board"),
+                                        request.args.get("sport"))
+        return render_template("jhsaa_coach_records.html", active="High School",
+                               view=view, gender=gender, u=u, uni_label=label)
+
     @app.route("/jhsaa/repeat-champions")
     def jhsaa_repeat_champions():
         """Repeat individual state champions — the same career fold over the six
@@ -3661,6 +3673,19 @@ def create_app() -> Flask:
         every district's All-District team, archived season by season."""
         gender, label, u, g, group, year = _jh_scope_args()
         view = jhsaa_honors_view(DEFAULT_SEED, g, group, year)
+        if view.get("coy_pending"):
+            # A season archived before Coach of the Year existed is awarded once,
+            # in the background (it rebuilds that season's rosters for the
+            # preseason strengths — too slow for the request thread).
+            from app import jhsaa_coy as coy
+            wid, yr = view["world_id"], view["year"]
+            job = _jh_deferred(("coy", wid, yr, g),
+                               lambda: coy.select_season(wid, yr, g,
+                                                         wd.active_salt(DEFAULT_SEED)),
+                               wait=0.2)
+            if job is not None:
+                _jh_job_pop(("coy", wid, yr, g))
+                view = jhsaa_honors_view(DEFAULT_SEED, g, group, year)
         return render_template("jhsaa_honors.html", active="High School", view=view,
                                gender=gender, u=u, uni_label=label)
 

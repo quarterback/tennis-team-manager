@@ -466,7 +466,7 @@ CREATE TABLE IF NOT EXISTS jhsaa_coach_carousel (
 """
 
 _TABLES = ("jhsaa_coach", "jhsaa_coach_seat", "jhsaa_coach_history", "jhsaa_coach_event",
-           "jhsaa_alumni", "jhsaa_coach_carousel")
+           "jhsaa_alumni", "jhsaa_coach_carousel", "jhsaa_preseason", "jhsaa_coach_award")
 
 
 def _conn():
@@ -952,7 +952,23 @@ def coach_view(world_id: int, coach_id: str, season_year: int) -> dict | None:
                 "role": "Head coach" if h["slot"] == "head" else "Assistant"}
                for h in car["history"]]
     ledger, totals = _career_ledger(world_id, history)
-    events = [{**e, "school": names.get(e["ident"], e["ident"])} for e in car["events"]]
+    # Coach of the Year (owner spec 2026-09): each award rides on its season row
+    # and is counted on the career panel.
+    from . import jhsaa_coy
+    coy = jhsaa_coy.coach_awards(world_id, coach_id)
+    by_season = {}
+    for a in coy:
+        by_season.setdefault((a["world_year"], a["gender"]), []).append(
+            "State COY" if a["level"] == "state" else "District COY")
+    for row in ledger:
+        row["coy"] = by_season.get((row["world_year"], row["gender"]), [])
+    totals["coy_state"] = sum(1 for a in coy if a["level"] == "state")
+    totals["coy_district"] = sum(1 for a in coy if a["level"] == "district")
+    events = transactions([{**e, "school": names.get(e["ident"], e["ident"])}
+                           for e in car["events"]])
+    # Off a staff a coach is a FREE AGENT, or RETIRED (owner rule 2026-09) — never
+    # "not on a staff". A retired coach's page stays: history is never deleted.
+    status = ("Retired" if c.retired else "Free agent") if not seat else ""
     return {
         "coach": c,
         "grades": [{"attr": a, "label": GRADE_LABELS[a], "grade": c.grade(a),
@@ -961,7 +977,7 @@ def coach_view(world_id: int, coach_id: str, season_year: int) -> dict | None:
         "pairing": c.pairing.title(),
         "temperament": TEMPERAMENT_LABELS.get(c.temperament, c.temperament),
         "age": season_year - c.birth_year if c.birth_year else None,
-        "origin": {"inaugural": "On staff when coaches were introduced",
+        "origin": {"inaugural": "",
                    "alumnus": "Former JHSAA player", "college_grad": "Former college player",
                    "editor": "Appointed by the association"}.get(c.origin, c.origin),
         "alma": names.get(c.alma, c.alma) if c.alma else "",
@@ -971,7 +987,8 @@ def coach_view(world_id: int, coach_id: str, season_year: int) -> dict | None:
         "history": history,
         "ledger": ledger,
         "totals": totals,
-        "events": events,
+        "events": list(reversed(events)),
+        "status": status,
         "head_record": totals["record"],
     }
 
@@ -1354,9 +1371,11 @@ ALUMNI_MIN_YEARS = 4          # an alumnus coaches once they are this far out
 HEAD_AMBITION = 0.45          # share of heads open to a step-up job this cycle
 ASST_HEAD_AMBITION = 0.60     # share of assistants chasing a head job
 ASST_LATERAL = 0.35           # share of assistants open to a better assistant seat
-STEP_UP = 0.12                # prestige a destination must add to tempt a mover
-HEAD_MIN_SEASONS = 2          # a head goes looking after this long in the seat
-ASST_MIN_SEASONS = 2          # an assistant seeks a move after this long in a seat
+STEP_UP = 0.05                # prestige a destination must add to tempt a mover
+# ‼️ NO TENURE GATE on who applies (owner report 2026-09). A two-season minimum
+# shut the whole market on a save whose staffs were seated one season ago —
+# every opening fell through to a new coach. Ambition alone decides who is
+# looking; a head's short record already shrinks their head-experience edge.
 PROMOTE_BONUS = 2.5           # weight edge for the program's OWN assistant
 FREE_POOL_WEIGHT = 0.8        # an unattached coach, relative to a working one
 ALUMNI_WEIGHT = 0.6           # the school's own alumnus (× 0.5 + legacy)
@@ -1540,7 +1559,8 @@ def propose_cycle(world_id: int, season_year: int) -> dict:
                     lines.append({"kind": "retire", "gender": gender, "ident": ident,
                                   "school": schools[ident].name, "slot": slot,
                                   "coach_id": c.coach_id, "name": c.name,
-                                  "why": f"age {age}, {tenure} seasons in the seat"})
+                                  "why": f"age {age}, {tenure} season{'s' if tenure != 1 else ''}"
+                                         " in the seat"})
                     taken.add(c.coach_id)
                     vacancies.append((ident, slot))
                     continue
@@ -1576,15 +1596,12 @@ def propose_cycle(world_id: int, season_year: int) -> dict:
             for cid in set(where) | {c.coach_id for c in free}:
                 if cid in by_coach:
                     recs[cid] = head_record(by_coach[cid], coef, cid)
-            head_seekers = sorted(cid for cid, (i, s, since) in where.items()
-                                  if s != "head" and wants[cid] < ASST_HEAD_AMBITION
-                                  and season_year - (since or season_year) >= ASST_MIN_SEASONS)
-            laterals = sorted(cid for cid, (i, s, since) in where.items()
-                              if s != "head" and wants[cid] < ASST_LATERAL
-                              and season_year - (since or season_year) >= ASST_MIN_SEASONS)
-            movers = sorted(cid for cid, (i, s, since) in where.items()
-                            if s == "head" and wants[cid] < HEAD_AMBITION
-                            and season_year - (since or season_year) >= HEAD_MIN_SEASONS)
+            head_seekers = sorted(cid for cid, (i, s, _since) in where.items()
+                                  if s != "head" and wants[cid] < ASST_HEAD_AMBITION)
+            laterals = sorted(cid for cid, (i, s, _since) in where.items()
+                              if s != "head" and wants[cid] < ASST_LATERAL)
+            movers = sorted(cid for cid, (i, s, _since) in where.items()
+                            if s == "head" and wants[cid] < HEAD_AMBITION)
 
             heap = [((slot != "head"), -prest[ident], ident, slot) for ident, slot in vacancies]
             heapq.heapify(heap)
@@ -1688,7 +1705,7 @@ def propose_cycle(world_id: int, season_year: int) -> dict:
                     line = {"kind": "new", "coach": json.loads(_coach_row(c)),
                             "coach_id": c.coach_id, "name": c.name,
                             "why": f"{PROFILE_LABELS.get(c.profile, c.profile)},"
-                                   " no one else applied"}
+                                   f" {round(_quality(c))} overall"}
                 line.update({"gender": gender, "ident": ident, "school": sc.name,
                              "slot": slot, "fill": True})
                 lines.append(line)
@@ -1831,3 +1848,205 @@ def commit_cycle(world_id: int) -> int:
     finally:
         conn.close()
     return applied
+
+
+# ------------------------------------------------ transactions and records ----
+#
+# ‼️ A COACH'S TRANSACTIONS ARE HIRED / LEFT STAFF / RETIRED, NOTHING ELSE (owner
+# rule 2026-09). The raw event log says "existing — on staff when coaches were
+# introduced", "replaced — moved to the free pool": plumbing, not a coaching
+# history. Head or assistant does not matter to the line, and going to the free
+# pool is what leaving a staff MEANS, so it is never said.
+
+_HIRE_EVENTS = ("existing", "hired", "moved", "promoted", "appointed")
+_LEAVE_EVENTS = ("left", "replaced", "fired")
+
+
+def transactions(events: list[dict]) -> list[dict]:
+    """[{year, label, school}] from a coach's raw events, oldest first. A move
+    inside ONE program in one season (assistant → head) reads as a promotion, not
+    as leaving and being hired by the same school; a firing that the carousel
+    wrote as retire-then-unretire reads as leaving staff, never as retiring."""
+    out: list[dict] = []
+    fired = {(e["year"], e.get("school")) for e in events if e["event"] == "fired"}
+    for e in events:
+        ev, yr, sch = e["event"], e["year"], e.get("school", "")
+        if ev in _LEAVE_EVENTS:
+            if ev == "fired" and any(o["label"] == "Left staff" and o["year"] == yr
+                                     and o["school"] == sch for o in out):
+                continue
+            out.append({"year": yr, "label": "Left staff", "school": sch})
+        elif ev in _HIRE_EVENTS:
+            last = out[-1] if out else None
+            if last and last["label"] == "Left staff" and last["year"] == yr \
+                    and last["school"] == sch:
+                out.pop()                       # a shuffle inside one staff
+                label = "Promoted to head coach" if e.get("slot") == "head" else None
+                if label:
+                    out.append({"year": yr, "label": label, "school": sch})
+                continue
+            out.append({"year": yr, "label": "Hired", "school": sch})
+        elif ev == "retired":
+            if (yr, sch) in fired:
+                continue
+            out.append({"year": yr, "label": "Retired", "school": ""})
+    return out
+
+
+def program_head_coaches(world_id: int, ident: str, gender: str,
+                         current_year: int) -> list[dict]:
+    """Every HEAD coach in a program's history, varsity only, newest first —
+    one row per consecutive run ("Janes Jacobs 2056-present"). Off the season
+    history, one indexed read; the sitting head who has not coached an archived
+    season yet is read off the seat."""
+    from .world import BASE_YEAR
+    conn = _conn()
+    try:
+        rows = conn.execute(
+            "SELECT h.year, h.coach_id, c.name, h.wins, h.losses, h.ties"
+            " FROM jhsaa_coach_history h LEFT JOIN jhsaa_coach c"
+            " ON c.world_id=h.world_id AND c.coach_id=h.coach_id"
+            " WHERE h.world_id=? AND h.ident=? AND h.gender=? AND h.slot='head'"
+            " ORDER BY h.year", (world_id, ident, gender)).fetchall()
+        seat = conn.execute(
+            "SELECT s.coach_id, c.name, s.since FROM jhsaa_coach_seat s"
+            " LEFT JOIN jhsaa_coach c ON c.world_id=s.world_id AND c.coach_id=s.coach_id"
+            " WHERE s.world_id=? AND s.ident=? AND s.gender=? AND s.slot='head'",
+            (world_id, ident, gender)).fetchone()
+    finally:
+        conn.close()
+    runs: list[dict] = []
+    for y, cid, nm, w, l, t in rows:
+        season = BASE_YEAR + int(y) + 1
+        if runs and runs[-1]["coach_id"] == cid and runs[-1]["last"] == season - 1:
+            r = runs[-1]
+            r["last"] = season
+        else:
+            r = {"coach_id": cid, "name": nm or "", "first": season, "last": season,
+                 "w": 0, "l": 0, "t": 0}
+            runs.append(r)
+        r["w"] += w or 0
+        r["l"] += l or 0
+        r["t"] += t or 0
+    if seat and seat[0]:
+        cid, nm, since = seat
+        if runs and runs[-1]["coach_id"] == cid:
+            runs[-1]["present"] = True
+        else:
+            runs.append({"coach_id": cid, "name": nm or "", "first": since or current_year,
+                         "last": since or current_year, "w": 0, "l": 0, "t": 0,
+                         "present": True})
+    for r in runs:
+        r["record"] = f"{r['w']}-{r['l']}" + (f"-{r['t']}" if r["t"] else "")
+        r["span"] = (f"{r['first']}-present" if r.get("present")
+                     else str(r["first"]) if r["first"] == r["last"]
+                     else f"{r['first']}-{str(r['last'])[-2:]}")
+    return list(reversed(runs))
+
+
+def coach_win_leaders(world_id: int, gender: str | None, limit: int = 100) -> list[dict]:
+    """Most HEAD-COACH varsity dual wins, one sport (`gender`) or both (None —
+    a coach who crossed from the girls' program to the boys' is one career).
+    One grouped query."""
+    from .world import BASE_YEAR
+    where, args = "h.world_id=? AND h.slot='head'", [world_id]
+    if gender:
+        where += " AND h.gender=?"
+        args.append(gender)
+    conn = _conn()
+    try:
+        rows = conn.execute(
+            "SELECT h.coach_id, c.name, c.retired, SUM(h.wins), SUM(h.losses),"
+            " SUM(COALESCE(h.ties,0)), COUNT(*), MIN(h.year), MAX(h.year),"
+            " GROUP_CONCAT(DISTINCT h.ident), GROUP_CONCAT(DISTINCT h.gender)"
+            f" FROM jhsaa_coach_history h LEFT JOIN jhsaa_coach c"
+            " ON c.world_id=h.world_id AND c.coach_id=h.coach_id"
+            f" WHERE {where} GROUP BY h.coach_id"
+            " ORDER BY SUM(h.wins) DESC, SUM(h.losses) ASC, c.name LIMIT ?",
+            (*args, limit)).fetchall()
+    finally:
+        conn.close()
+    names = {g: ident_names(g) for g in ("girls", "boys")}
+    out = []
+    for cid, nm, retired, w, l, t, n, y0, y1, idents, genders in rows:
+        gs = (genders or "").split(",")
+        schools = []
+        for i in (idents or "").split(","):
+            s = next((names[g].get(i) for g in gs if names.get(g, {}).get(i)), i)
+            if s and s not in schools:
+                schools.append(s)
+        games = (w or 0) + (l or 0) + (t or 0)
+        out.append({"coach_id": cid, "name": nm or "", "retired": bool(retired),
+                    "w": w or 0, "l": l or 0, "t": t or 0, "seasons": n,
+                    "pct": ((w or 0) + 0.5 * (t or 0)) / games if games else None,
+                    "first": BASE_YEAR + int(y0) + 1, "last": BASE_YEAR + int(y1) + 1,
+                    "schools": schools, "genders": gs})
+    return out
+
+
+def coach_state_titles(world_id: int, gender: str | None, minimum: int = 2) -> list[dict]:
+    """Head coaches with `minimum`+ state team titles, one sport or both — the
+    Repeat POY roll's idea for coaches. Reads ONLY each season's `champions`
+    (json_extract, never the whole archived blob) for the seasons that have a
+    coach history at all."""
+    from . import world, jhsaa
+    from .jhsaa_coefficient import identity_map
+    from .world import BASE_YEAR
+    genders = [gender] if gender else ["girls", "boys"]
+    conn = _conn()
+    try:
+        titles: dict = {}
+        for g in genders:
+            heads = season_heads(world_id, g)
+            if not heads:
+                continue
+            years = sorted({y for y, _i in heads})
+            rows = jhsaa._rows()
+            for y in years:
+                r = conn.execute(
+                    "SELECT json_extract(data, '$.champions'),"
+                    " json_extract(data, '$.standings') FROM world_jhsaa"
+                    " WHERE world_id=? AND year=? AND gender=?",
+                    (world_id, y, g)).fetchone()
+                if not r or not r[0]:
+                    continue
+                arc = world._relabel({"champions": json.loads(r[0]),
+                                      "standings": json.loads(r[1] or "{}")})
+                champs = arc["champions"]
+                # The season's own name set resolves an archived name to the
+                # program that held it THEN — never today's holder of the string.
+                named = {t.get("school") for d in (arc["standings"] or {}).values()
+                         for ts in (d or {}).values() for t in ts or () if t.get("school")}
+                ident = identity_map(named | set((champs or {}).values()), rows)
+                for grp, nm in (champs or {}).items():
+                    head = heads.get((y, ident.get(nm, nm)))
+                    if not head:
+                        continue
+                    t = titles.setdefault(head["coach_id"], {
+                        "coach_id": head["coach_id"], "name": head["name"], "won": []})
+                    t["won"].append({"season_year": BASE_YEAR + int(y) + 1,
+                                     "group": grp, "school": nm, "gender": g})
+    finally:
+        conn.close()
+    out = [t for t in titles.values() if len(t["won"]) >= minimum]
+    for t in out:
+        t["won"].sort(key=lambda a: a["season_year"])
+        t["count"] = len(t["won"])
+    out.sort(key=lambda t: (-t["count"], -t["won"][-1]["season_year"], t["name"]))
+    return out
+
+
+def program_heads_by_year(world_id: int, ident: str, gender: str) -> dict:
+    """{world_year: {"coach_id", "name"}} — the program's HEAD coach each archived
+    season, for the Seasons ledger's coach column. One indexed read; a season
+    before coaches existed has no row and its cell stays blank."""
+    conn = _conn()
+    try:
+        rows = conn.execute(
+            "SELECT h.year, h.coach_id, c.name FROM jhsaa_coach_history h"
+            " LEFT JOIN jhsaa_coach c ON c.world_id=h.world_id AND c.coach_id=h.coach_id"
+            " WHERE h.world_id=? AND h.ident=? AND h.gender=? AND h.slot='head'",
+            (world_id, ident, gender)).fetchall()
+    finally:
+        conn.close()
+    return {y: {"coach_id": cid, "name": nm or ""} for y, cid, nm in rows if cid}
