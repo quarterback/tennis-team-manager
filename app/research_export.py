@@ -198,6 +198,10 @@ def _load_archived_jhsaa_season(year: int, gender: str) -> dict:
             "jv_state": wd.jhsaa_jv_state(world["id"], world_year, gender) or {}}
 
 
+COACH_FILES = ("jhsaa_coaches.csv", "jhsaa_coach_seasons.csv", "jhsaa_coach_events.csv",
+               "jhsaa_coach_awards.csv", "jhsaa_coach_records.csv")
+
+
 def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=None) -> dict[str, bytes]:
     """Build JHSAA files. ``season`` is injectable for tests and archive adapters;
     otherwise READ from the persisted archive (see ``_load_archived_jhsaa_season``
@@ -621,6 +625,17 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                 "owner_decision": int(bool(m["manual"])),
                 "league_before": m["league_before"] or "",
                 "league_after": m["league_after"] or ""})
+    # THE COACHES (owner request 2026-09): every named coach, every seat-season,
+    # every staff event, every Coach of the Year finalist WITH its score and
+    # components, and each head's career totals — for this gender, across EVERY
+    # archived season. Archive path only (the realignment ledger's rule). The
+    # scores are here on purpose: the names-and-rank-only rule governs the pages,
+    # and this file is the owner's analysis copy.
+    from app import jhsaa_coaches as _jc
+    coach_tables = {name: [] for name in COACH_FILES}
+    if w and not injected:
+        coach_tables = _jc.research_tables(
+            w["id"], gender, {t.school.ident: t.school.key for t in all_teams})
     tables = {"programs.csv": programs, "players.csv": players, "duals.csv": duals,
               "lines.csv": lines, "line_players.csv": line_players,
               "jhsaa_standings.csv": standings,
@@ -630,7 +645,8 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
               "jhsaa_realignments.csv": realignments,
               "jhsaa_jv_state.csv": jv_state_rows,
               "jhsaa_program_history.csv": history,
-              "jhsaa_individual_history.csv": individual_history}
+              "jhsaa_individual_history.csv": individual_history,
+              **coach_tables}
     files = {name: _csv(rows) for name, rows in tables.items()}
     files.update({name: json.dumps(value, indent=2, ensure_ascii=False, default=str).encode()
                   for name, value in json_files.items()})
@@ -756,6 +772,28 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "programs.csv: a program that has since stopped sponsoring this gender is "
             "omitted and rank counts current sponsors only (the app's page still lists "
             "it). Empty on an injected season or when the save has no archive.",
+            "The coach files span EVERY archived season for this gender and are empty on "
+            "an injected season or a save with no named coaches. jhsaa_coaches.csv is one "
+            "row per coach who has held a seat, an award or a staff event in this sport: "
+            "status (head/assistant/free_agent/retired), current seat (program_id, slot, "
+            "jv_head, seat_since season), identity (birth_year, origin, alma, player_pid "
+            "for a former player), overall/tier, profile, pairing and temperament "
+            "philosophies, and every grade_* on the 20-90 scale. jhsaa_coach_seasons.csv is "
+            "one row per coach per seat per season (slot head/asstN, that season's "
+            "classification and group, the program's varsity W-L-T, staff_effects_json = "
+            "the blended staff effects the season was played with). jhsaa_coach_events.csv "
+            "is the raw staff ledger (hired, promoted, moved, hired_away, fired, retired, "
+            "…) in season years; the coach page's Transactions panel is a fold over it. "
+            "jhsaa_coach_awards.csv is every Coach of the Year finalist (top five per pool; "
+            "winner=1 on rank 1): level district (one per league, keyed "
+            "championship_group + district) or state (one per group), with the score and "
+            "its components — district: over (overperformance, 0-100 from a z capped "
+            "+/-2.5 on district duals), achieve, improve, quality and repeat (the "
+            "four-season same-district recency penalty already subtracted from score); "
+            "state: quality, post, over, improve, plus z, state_value and expected. "
+            "jhsaa_coach_records.csv is each head coach's career in this sport: head "
+            "seasons, W-L-T, pct, programs, state_titles and Coach of the Year counts. "
+            "coach_id joins across all five files.",
             "jhsaa_realignments.csv is the reclassification LEDGER: one row per school per "
             "committed realignment cycle, EVERY cycle the save has committed (newest first), "
             "not just this export's season, and identical in the girls' and boys' bundles — a "

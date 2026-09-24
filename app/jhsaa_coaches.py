@@ -988,6 +988,9 @@ def coach_view(world_id: int, coach_id: str, season_year: int) -> dict | None:
         "ledger": ledger,
         "totals": totals,
         "events": list(reversed(events)),
+        # Coach of the Year titles WON, newest first — the page lists them above
+        # Transactions (owner rule 2026-09), names only, never a score.
+        "awards": coy,
         "status": status,
         "head_record": totals["record"],
     }
@@ -2050,3 +2053,119 @@ def program_heads_by_year(world_id: int, ident: str, gender: str) -> dict:
     finally:
         conn.close()
     return {y: {"coach_id": cid, "name": nm or ""} for y, cid, nm in rows if cid}
+
+
+def research_tables(world_id: int, gender: str, key_by_ident: dict) -> dict:
+    """The research export's coach tables for ONE gender (owner request 2026-09):
+    every coach, every seat-season, every staff event, every Coach of the Year
+    finalist and each head's career totals. Whole-archive reads, a handful of
+    queries in all — never one per coach.
+
+    ‼️ The export is the owner's analysis file, so it CARRIES the award scores and
+    their components; the rule that the visible UI shows names and rank only is
+    about the pages, not this file. `program_id` joins programs.csv on the roster
+    identity (empty when the program no longer sponsors this gender);
+    `program_ident` is always the identity itself."""
+    from .world import BASE_YEAR
+    names = ident_names(gender)
+    conn = _conn()
+    try:
+        hist = conn.execute(
+            "SELECT year, ident, slot, coach_id, school, classification, grp, wins,"
+            " losses, ties, eff FROM jhsaa_coach_history"
+            " WHERE world_id=? AND gender=? ORDER BY year, ident, slot",
+            (world_id, gender)).fetchall()
+        events = conn.execute(
+            "SELECT year, coach_id, ident, slot, event, note FROM jhsaa_coach_event"
+            " WHERE world_id=? AND gender=? ORDER BY rowid",
+            (world_id, gender)).fetchall()
+        seats_ = conn.execute(
+            "SELECT coach_id, ident, slot, since, jv_head FROM jhsaa_coach_seat"
+            " WHERE world_id=? AND gender=?", (world_id, gender)).fetchall()
+        awards = conn.execute(
+            "SELECT year, level, grp, district, rank, school, ident, coach_id,"
+            " coach_name, score, detail FROM jhsaa_coach_award"
+            " WHERE world_id=? AND gender=? ORDER BY year, level, grp, district, rank",
+            (world_id, gender)).fetchall()
+        ids = ({r[3] for r in hist} | {r[1] for r in events} | {r[0] for r in seats_}
+               | {r[7] for r in awards})
+        coaches = _load_coaches(conn, world_id, sorted(i for i in ids if i))
+    finally:
+        conn.close()
+
+    def season(y):
+        return BASE_YEAR + int(y) + 1
+
+    def pid(ident):
+        return key_by_ident.get(ident, "")
+
+    seat_of = {r[0]: r for r in seats_}
+    coach_rows = []
+    for cid, c in sorted(coaches.items()):
+        s = seat_of.get(cid)
+        status = (("head" if s[2] == "head" else "assistant") if s
+                  else "retired" if c.retired else "free_agent")
+        row = {"coach_id": cid, "name": c.name, "status": status,
+               "program_ident": s[1] if s else "", "program_id": pid(s[1]) if s else "",
+               "school": names.get(s[1], s[1]) if s else "",
+               "slot": s[2] if s else "", "jv_head": int(bool(s[4])) if s else "",
+               "seat_since": s[3] if s else "", "birth_year": c.birth_year,
+               "hometown": c.hometown, "origin": c.origin,
+               "alma_ident": c.alma, "alma": names.get(c.alma, c.alma) if c.alma else "",
+               "player_pid": c.player_pid, "created": c.created,
+               "retired": c.retired or "", "overall": c.overall, "tier": c.tier,
+               "profile": c.profile, "pairing": c.pairing,
+               "temperament": c.temperament}
+        row.update({f"grade_{a}": c.grade(a) for a in GRADES})
+        coach_rows.append(row)
+
+    season_rows = [{
+        "season_year": season(y), "world_year": y, "coach_id": cid,
+        "coach_name": coaches[cid].name if cid in coaches else "",
+        "program_ident": ident, "program_id": pid(ident), "school": school,
+        "slot": slot, "classification": cls, "championship_group": grp,
+        "wins": w or 0, "losses": l or 0, "ties": t or 0, "staff_effects_json": eff or ""}
+        for y, ident, slot, cid, school, cls, grp, w, l, t, eff in hist]
+
+    event_rows = [{
+        "season_year": y, "coach_id": cid,
+        "coach_name": coaches[cid].name if cid in coaches else "",
+        "program_ident": ident or "", "program_id": pid(ident) if ident else "",
+        "school": names.get(ident, ident) if ident else "", "slot": slot or "",
+        "event": ev, "note": note or ""}
+        for y, cid, ident, slot, ev, note in events]
+
+    comp_keys = ("over", "achieve", "improve", "quality", "post", "z", "repeat",
+                 "state_value", "expected", "place", "drecord", "record")
+    award_rows = []
+    for y, level, grp, dist, rank, school, ident, cid, cname, score, detail in awards:
+        d = json.loads(detail or "{}")
+        award_rows.append({
+            "season_year": season(y), "world_year": y, "level": level,
+            "championship_group": grp, "district": dist or "", "rank": rank,
+            "winner": int(rank == 1), "coach_id": cid, "coach_name": cname,
+            "program_ident": ident or "", "program_id": pid(ident) if ident else "",
+            "school": school, "score": score,
+            **{k: ("" if d.get(k) is None else d.get(k)) for k in comp_keys}})
+
+    titles = {t["coach_id"]: t["count"] for t in coach_state_titles(world_id, gender, 1)}
+    coy = {}
+    for r in award_rows:
+        if r["winner"]:
+            k = coy.setdefault(r["coach_id"], {"state": 0, "district": 0})
+            k[r["level"]] += 1
+    record_rows = [{
+        "coach_id": r["coach_id"], "name": r["name"], "retired": int(r["retired"]),
+        "head_seasons": r["seasons"], "wins": r["w"], "losses": r["l"], "ties": r["t"],
+        "pct": "" if r["pct"] is None else round(r["pct"], 4),
+        "first_season": r["first"], "last_season": r["last"],
+        "programs": " / ".join(r["schools"]),
+        "state_titles": titles.get(r["coach_id"], 0),
+        "coy_state": coy.get(r["coach_id"], {}).get("state", 0),
+        "coy_district": coy.get(r["coach_id"], {}).get("district", 0)}
+        for r in coach_win_leaders(world_id, gender, limit=1_000_000)]
+    return {"jhsaa_coaches.csv": coach_rows,
+            "jhsaa_coach_seasons.csv": season_rows,
+            "jhsaa_coach_events.csv": event_rows,
+            "jhsaa_coach_awards.csv": award_rows,
+            "jhsaa_coach_records.csv": record_rows}

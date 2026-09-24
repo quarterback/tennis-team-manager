@@ -165,3 +165,48 @@ def test_coach_records_boards_query_the_real_schema(tmp_path):
         assert jc.coach_state_titles(1, None) == []
     finally:
         wd.WORLD_DB, wd._schema_ready_for = real_db, real_ready
+
+
+def test_the_research_export_carries_every_coach_table(tmp_path):
+    """Owner request 2026-09: coaches, seat-seasons, events, awards (WITH their
+    scores — the export is the analysis copy) and career records."""
+    from app import jhsaa_coaches as jc
+    from app import research_export as rx
+    db = str(tmp_path / "rx.db")
+    real_db, real_ready = wd.WORLD_DB, wd._schema_ready_for
+    wd.WORLD_DB = db
+    wd._schema_ready_for = None
+    try:
+        wd.init_schema()
+        conn = wd._db()
+        conn.execute("INSERT INTO jhsaa_coach (world_id, coach_id, name, data) VALUES (1,'c1','Coach 1',?)",
+                     (json.dumps({"grades": {"tactics": 0.6}, "overall": 61, "tier": "Good"}),))
+        conn.execute("INSERT INTO jhsaa_coach_seat (world_id, ident, gender, slot, coach_id, since)"
+                     " VALUES (1, 'X', 'girls', 'head', 'c1', 2029)")
+        conn.execute(
+            "INSERT INTO jhsaa_coach_history (world_id, year, ident, gender, slot,"
+            " coach_id, school, classification, grp, wins, losses, ties, eff)"
+            " VALUES (1, 3, 'X', 'girls', 'head', 'c1', 'X', '5A', '5A', 12, 4, 0, NULL)")
+        conn.execute("INSERT INTO jhsaa_coach_event (world_id, year, coach_id, ident, gender, slot, event)"
+                     " VALUES (1, 2029, 'c1', 'X', 'girls', 'head', 'hired')")
+        conn.execute(
+            "INSERT INTO jhsaa_coach_award (world_id, year, gender, level, grp, district, rank,"
+            " school, ident, coach_id, coach_name, score, detail)"
+            " VALUES (1, 3, 'girls', 'district', '5A', 'L', 1, 'X', 'X', 'c1', 'Coach 1', 71.5, ?)",
+            (json.dumps({"over": 80, "achieve": 70, "improve": 50, "quality": 60, "repeat": 5}),))
+        conn.commit()
+        conn.close()
+        t = jc.research_tables(1, "girls", {"X": "prog-x"})
+        assert set(t) == set(rx.COACH_FILES)
+        c = t["jhsaa_coaches.csv"][0]
+        assert c["status"] == "head" and c["program_id"] == "prog-x"
+        assert c["grade_tactics"] == round(jc.to_grade(0.6))
+        assert t["jhsaa_coach_seasons.csv"][0]["wins"] == 12
+        assert t["jhsaa_coach_events.csv"][0]["event"] == "hired"
+        a = t["jhsaa_coach_awards.csv"][0]
+        assert a["winner"] == 1 and a["score"] == 71.5 and a["repeat"] == 5
+        r = t["jhsaa_coach_records.csv"][0]
+        assert (r["wins"], r["coy_district"], r["coy_state"]) == (12, 1, 0)
+        assert jc.research_tables(1, "boys", {}) == {k: [] for k in rx.COACH_FILES}
+    finally:
+        wd.WORLD_DB, wd._schema_ready_for = real_db, real_ready
