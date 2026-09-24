@@ -235,7 +235,7 @@
       {% for st in view.staff.seats %}
       <div class="jh-kv"><span class="k">{{ st.label }}</span>
         <span class="v">{% if st.coach %}<a href="{{ url_for('jhsaa_coach', coach_id=st.coach.coach_id, u=u, g=view.gender) }}">{{ st.coach.name }}</a>
-          <span class="s">{% if st.coach.overall %}{{ st.coach.overall }} OVR · {% endif %}{% if st.age %}age {{ st.age }} · {% endif %}{% if st.record %}{{ st.record }} · {% endif %}since {{ st.since }}</span>{% else %}<span class="s">Vacant</span>{% endif %}</span></div>
+          <span class="s">{% if st.coach.overall %}{{ st.coach.overall }} OVR · {% endif %}{% if st.age %}age {{ st.age }} · {% endif %}{% if st.record %}{{ st.record }} · {% endif %}since {{ st.since|cal }}</span>{% else %}<span class="s">Vacant</span>{% endif %}</span></div>
       {% endfor %}
     </div>
     {% endif %}
@@ -864,10 +864,10 @@
       <td class="nm"><a href="{{ url_for('jhsaa_coach', coach_id=st.coach.coach_id, u=u, g=view.gender) }}">{{ st.coach.name }}</a></td>
       <td class="num"><b>{{ st.coach.overall or '' }}</b></td>
       <td class="num">{{ st.age or '' }}</td><td class="num">{{ st.record or '' }}</td>
-      <td class="num">{{ st.since }}</td>
+      <td class="num">{{ st.since|cal }}</td>
       <td><a href="{{ url_for('jhsaa_coach', coach_id=st.coach.coach_id, u=u, g=view.gender) }}#edit">Edit</a></td>
       {% else %}
-      <td class="nm"><span class="s">Vacant</span></td><td></td><td></td><td></td><td class="num">{{ st.since }}</td>
+      <td class="nm"><span class="s">Vacant</span></td><td></td><td></td><td></td><td class="num">{{ st.since|cal }}</td>
       <td><a href="{{ url_for('jhsaa_coach_carousel', u=u, g=view.gender) }}#pool">Fill</a></td>
       {% endif %}
     </tr>

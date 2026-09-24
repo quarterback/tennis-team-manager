@@ -7,7 +7,7 @@
 {% if msg %}<p class="jh-note" style="margin:0 0 12px">{{ msg }}</p>{% endif %}
 <div class="bl-panel">
   <div class="bl-panel-head"><span class="bl-panel-title">Coaching cycle</span>
-    {% if prop %}<span class="bl-panel-meta">{{ prop.year }} · {{ prop.lines|length }} proposed</span>{% endif %}</div>
+    {% if prop %}<span class="bl-panel-meta">{{ prop.year|cal }} · {{ prop.lines|length }} proposed</span>{% endif %}</div>
   {% if not prop %}
   <form method="post" class="jh-form-row">
     <input type="hidden" name="do" value="run">
