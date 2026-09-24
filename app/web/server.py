@@ -3779,7 +3779,8 @@ def create_app() -> Flask:
                                prop=prop, pool=jc.free_pool(w["id"])[:60],
                                kinds={"retire": "Retires", "fire": "Let go",
                                       "promote": "Promoted", "move": "Moves",
-                                      "alumnus": "Alumnus returns", "new": "New hire"},
+                                      "hired_away": "Hired away", "hire": "Hired",
+                                      "alumnus": "Alumnus returns", "new": "New coach"},
                                gender=gender, u=u, uni_label=label,
                                msg=request.cookies.get("jh_coach_result", ""))
 

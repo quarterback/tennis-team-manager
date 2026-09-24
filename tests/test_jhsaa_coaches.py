@@ -564,3 +564,48 @@ def test_a_staff_never_exceeds_four_seats(world_season):
     if len(have) == 4:
         with pytest.raises(jc.StaffError):
             jc.resolve_slot(wid, s.ident, "girls", "asst")
+
+
+def test_the_carousel_is_a_statewide_market_that_cascades(world_season):
+    """A vacancy draws applicants from any program, the seat each mover leaves
+    is filled further down the list, nobody moves twice, and a proposal is
+    deterministic for (world, season). A new coach is only rolled for a seat
+    nobody applied to — never proposed while someone did."""
+    wid = world_season["world"]["id"]
+    sy = world_season["season_year"] + 7         # ages and tenures have moved on
+    try:
+        prop = jc.propose_cycle(wid, sy)
+        again = jc.propose_cycle(wid, sy)
+    finally:
+        jc.dismiss_cycle(wid)
+    assert prop["lines"] == again["lines"]
+    fills = [ln for ln in prop["lines"] if ln.get("fill")]
+    incoming = [ln["coach_id"] for ln in fills if ln["kind"] != "alumnus"]
+    assert len(incoming) == len(set(incoming)), "a coach moved twice in one cycle"
+    filled = [(ln["gender"], ln["ident"], ln["slot"]) for ln in fills]
+    assert len(filled) == len(set(filled)), "a seat was filled twice"
+    for i, ln in enumerate(fills):
+        if ln.get("from_slot"):
+            src = (ln["gender"], ln["from_ident"], ln["from_slot"])
+            assert src in filled[i + 1:], f"{src} was vacated by a move and never filled"
+    for ln in fills:
+        if ln["kind"] == "new":
+            assert "no one else applied" in ln["why"]
+
+
+def test_running_a_program_is_worth_more_than_it_is_to_have_won_a_little():
+    """Head experience is an EDGE in a head-job interview, sized by the record:
+    any real head carries one (so they beat an equally talented assistant who
+    has never run a program), a strong record carries more, and wins in a
+    program's postseason count beyond regular-season wins."""
+    def runs(w, l, n=6, ident="X"):
+        return {(ident, "c"): [(2020 + k, w, l) for k in range(n)]}
+    good = jc.head_record(runs(16, 4), {"X": 0.8}, "c")[2]
+    avg = jc.head_record(runs(10, 10), {"X": 0.5}, "c")[2]
+    poor = jc.head_record(runs(5, 15), {"X": 0.2}, "c")[2]
+    padded = jc.head_record(runs(16, 4), {"X": 0.2}, "c")[2]
+    rookie = jc.head_record(runs(10, 10, n=1), {"X": 0.5}, "c")[2]
+    assert good > padded > avg > poor >= 0.0
+    assert avg >= jc.OWN_ASSISTANT_EDGE + jc.HIRE_NOISE     # a head of consequence
+    assert rookie < avg
+    assert jc.head_record({}, {}, "c") is None
