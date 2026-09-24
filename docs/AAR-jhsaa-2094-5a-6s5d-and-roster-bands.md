@@ -54,9 +54,24 @@ the only JHSAA shape where singles outweigh doubles — every other postseason f
 | 3S/3D | 6 | 50.0% | Group 2 |
 | **6S/5D** | **11** | **54.5%** | **5A** |
 
-`FLIGHT_WEIGHTS_6S5D` carries that through to what a flight is WORTH: **S1 is priced above
-D1** (2.00 vs 1.50) where every other table in the association ties them, and the six
-singles seats carry 65% of the format's weight. A class that wanted width alone would have
+`FLIGHT_WEIGHTS_6S5D` carries that through to what a flight is WORTH: singles take **500 of
+the table's 895** (55.9%), spread over six flights against five. **S1 and D1 stay tied at
+2.00**, as they are on the 4S/5D table — the petition asked 5A to be the singles class, not
+for the No. 1 doubles flight to be devalued, and tying the top two is also what keeps
+`_arrange_wide`'s eight-player search live instead of pinning the best player to S1.
+
+‼️ **The total is ODD in hundredths, and that is deliberate.** FWS is weight
+won over weight contested, so a dual comes back level exactly when one side holds half the
+contested weight. An odd total puts half of it between two whole hundredths, out of reach of
+any subset, so **FWS cannot tie on this format** whichever way the flights fall. Eleven
+flights already prevents a tie on points; this prevents one on the weighted share. Re-pricing
+any flight must preserve the odd total — `tests/test_jhsaa_lineup.py` asserts it exhaustively.
+
+‼️ **This property does not hold association-wide.** 5S/2D (370), 4S/5D (750) and 2S/3D (350)
+all total EVEN and can return a level FWS — 4S/5D ties on S1+S2+S3+D5, for instance. That is
+pre-existing, was not introduced here, and was not fixed here.
+
+A class that wanted width alone would have
 asked for 4S/5D, which was on the table and is not what was petitioned for. If that table
 is ever "corrected" to tie S1 and D1 like its siblings, the rule has been undone.
 

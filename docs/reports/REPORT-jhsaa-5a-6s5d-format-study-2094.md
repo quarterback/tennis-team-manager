@@ -76,8 +76,10 @@ Nothing in the association is singles-majority in the postseason; Group 2's 3S/3
 exactly even. The claim that 6S/5D would make 5A distinct is correct on its own terms,
 and it is a claim about **weighting** — a class that wanted width alone would have asked
 for 4S/5D, which was available and is not what was petitioned for. `FLIGHT_WEIGHTS_6S5D`
-carries it through to what a flight is worth, pricing S1 above D1 where every other table
-ties them.
+carries it through to what a flight is worth: singles take 500 of the table's 895 (55.9%)
+across six flights, while S1 and D1 stay tied at 2.00 as they are on the 4S/5D table. The
+total is odd in hundredths by construction, which puts half of it out of reach of any
+subset and so makes a level FWS unreachable on this format.
 
 Eleven flights is odd, so a 6S/5D dual cannot tie. That is the reason to prefer it over
 4S/4D and 3S/5D, the two other expansive shapes considered: both are eight flights, both

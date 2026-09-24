@@ -189,8 +189,9 @@ WIDE_GROUPS = ("7A", "8A", "9A", "Group 1")  # groups whose road-to-State AND ea
 # ‼️ THE POINT IS THE SINGLES WEIGHTING, NOT THE WIDTH. At 6/11 flights this is the
 # ONLY JHSAA shape where singles outweigh doubles — every other postseason format runs
 # 20% (1S/4D) to 50% (Group 2's 3S/3D) singles. `FLIGHT_WEIGHTS_6S5D` carries that
-# through to what a flight is WORTH, pricing S1 above D1 where every other shape ties
-# them or puts doubles level. A class that wanted more flights and not this weighting
+# through to what a flight is WORTH: singles take 55.9% of the table's weight, while
+# S1 and D1 stay TIED at 2.00 so the top doubles flight is not devalued. A class that
+# wanted more flights and not this weighting
 # would have asked for 4S/5D, which was on the table and was not what was petitioned
 # for. Eleven flights is odd, so a 6S/5D dual cannot tie and no tie-breaking logic is
 # reachable from it; high school has no clinch, so all eleven are always played.
@@ -8501,16 +8502,31 @@ FLIGHT_WEIGHTS_4S5D = {
     "D1": 2.00, "D2": 0.80, "D3": 0.45, "D4": 0.20, "D5": 0.10,
 }
 
-#: 5A's eleven-flight format (JHSAA rule 2094). ‼️ THE ONE TABLE WHERE SINGLES OUTPRICE
-#: DOUBLES, and that is the whole point of the shape rather than a side effect of
-#: having more singles flights: S1 is priced ABOVE D1 where every other JHSAA table
-#: ties them (1.00/1.00, or 4S/5D's 2.00/2.00), and the six singles seats carry 65% of
-#: the format's total weight. A 5A coach's top eight is still a real decision —
-#: `_arrange_wide` pools eight and searches which six play singles — but the search
-#: now pays for singles depth where 4S/5D's pays for a stacked D1.
+#: 5A's eleven-flight format (JHSAA rule 2094). Singles carry 500 of the 895 total
+#: (55.9%) — the format is singles-forward in AGGREGATE, over six singles flights
+#: against five doubles — but S1 and D1 are TIED at 2.00, as they are on the 4S/5D
+#: table. The petition asked 5A to be the singles class; it did not ask for the No. 1
+#: doubles flight to be devalued, and pricing S1 over D1 would have done that. A 5A
+#: coach's top eight is still a real decision — `_arrange_wide` pools eight and
+#: searches which six play singles — and tying the two top flights is what keeps that
+#: search live rather than forcing the best player to singles.
+#:
+#: ‼️ THE TOTAL IS ODD IN HUNDREDTHS (895) AND MUST STAY THAT WAY. FWS is weight won
+#: over weight contested, so the two sides of a dual tie exactly when one side's won
+#: weight is half the contested total. An odd total in hundredths makes that
+#: unreachable — every subset sum is a whole number of hundredths and half of an odd
+#: total is not — so FWS cannot come back level on this format, no matter which
+#: flights fall which way. Re-pricing ANY flight here must preserve the odd total;
+#: `tests/test_jhsaa_lineup.py` asserts it. (This property does NOT hold across the
+#: association: 5S/2D at 370, 4S/5D at 750 and 2S/3D at 350 are all even and CAN
+#: return a level FWS — e.g. 4S/5D ties on S1+S2+S3+D5. That is pre-existing and is
+#: not addressed here.)
 FLIGHT_WEIGHTS_6S5D = {
-    "S1": 2.00, "S2": 1.30, "S3": 0.90, "S4": 0.60, "S5": 0.35, "S6": 0.20,
-    "D1": 1.50, "D2": 0.70, "D3": 0.40, "D4": 0.20, "D5": 0.10,
+    "S1": 2.00, "D1": 2.00,
+    "S2": 1.00, "D2": 1.00,
+    "S3": 0.90, "D3": 0.65,
+    "S4": 0.55, "S5": 0.35, "S6": 0.20,
+    "D4": 0.20, "D5": 0.10,
 }
 
 

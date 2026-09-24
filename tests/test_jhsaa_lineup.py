@@ -914,3 +914,50 @@ def test_a_doubles_line_records_the_pair_and_a_singles_line_does_not():
     jh._credit(ts, lu, "regular", "S1", True, fmt=f)
     key = tuple(sorted((lu[3].pid, lu[4].pid)))
     assert ts.pair_counts == {key: [2, 1]}
+
+
+def test_6s5d_flight_weights_cannot_return_a_level_fws():
+    """‼️ 5A's FWS MUST NOT BE ABLE TO TIE (JHSAA rule 2094).
+
+    FWS is weight won over weight contested, so the two sides of a dual come back level
+    exactly when one side's won weight is half the contested total. The 6S/5D table is
+    priced so its total is ODD in hundredths (895), which puts half of it between two
+    whole hundredths and therefore out of reach of any subset — no combination of
+    flights can split the format evenly.
+
+    This is a PRICING invariant, not a court-count one: eleven flights already means the
+    dual itself cannot tie on points, but FWS is weighted and could still have landed on
+    0.500 apiece. Re-pricing any flight must keep the total odd."""
+    from itertools import combinations
+    t = jh.FLIGHT_WEIGHTS_6S5D
+    cents = [round(v * 100) for v in t.values()]
+    total = sum(cents)
+    assert total == 895, f"6S/5D total moved to {total}; re-check the invariant below"
+    assert total % 2 == 1, "6S/5D weights must total an ODD number of hundredths"
+    # belt and braces: no subset reaches half, checked exhaustively rather than argued
+    reachable = {0}
+    for c in cents:
+        reachable |= {r + c for r in reachable}
+    assert total / 2 not in reachable
+    # and every flight the format contests is actually priced
+    fmt = jh.FORMATS["state_6s5d"]
+    for i in range(1, fmt.n_singles + 1):
+        assert f"S{i}" in t, f"S{i} unpriced"
+    for i in range(1, fmt.n_doubles + 1):
+        assert f"D{i}" in t, f"D{i} unpriced"
+    assert len(t) == fmt.n_singles + fmt.n_doubles
+
+
+def test_6s5d_is_singles_forward_in_aggregate_but_ties_S1_and_D1():
+    """The petition asked for the singles class, not for a devalued No. 1 doubles.
+
+    Singles carry the majority of the table's weight across six flights, while S1 and
+    D1 stay level at 2.00 exactly as they are on the 4S/5D table — which is what keeps
+    `_arrange_wide`'s top-eight search live instead of pinning the best player to S1."""
+    t = jh.FLIGHT_WEIGHTS_6S5D
+    singles = sum(v for k, v in t.items() if k[0] == "S")
+    assert singles / sum(t.values()) > 0.5
+    assert t["S1"] == t["D1"] == 2.00
+    for pre, n in (("S", 6), ("D", 5)):          # monotone down each discipline
+        seq = [t[f"{pre}{i}"] for i in range(1, n + 1)]
+        assert seq == sorted(seq, reverse=True), f"{pre} weights not monotone: {seq}"
