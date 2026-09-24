@@ -133,6 +133,10 @@ FORMATS = {
     # Group 2's postseason shape (JHSAA rule 2026-09) — the association's ONE even
     # dual; a 3-3 is settled by `_deciding_tiebreaks`. See `THREE_THREE_GROUPS`.
     "state_3s3d": DualFormat(n_singles=3, n_doubles=3, doubles_team_point=False),
+    # 5A's shape (JHSAA rule 2094) — ELEVEN FLIGHTS, sixteen players, the largest
+    # format the association plays and the only one where singles outweigh doubles.
+    # See `SINGLES_FORWARD_GROUPS`.
+    "state_6s5d": DualFormat(n_singles=6, n_doubles=5, doubles_team_point=False),
 }
 PILOT_GROUPS = ("1A",)          # groups whose road-to-State plays `state_1a`
 #: ‼️ 6A KEEPS ITS LEAGUE FORMAT THROUGH THE POSTSEASON (owner rule 2026-09, the
@@ -172,6 +176,32 @@ DECIDER_TARGET = 10
 # format at all. Nine courts is odd, so a 4S/5D dual cannot tie and no tie-breaking
 # logic is needed anywhere; high school has no clinch, so all nine are always played.
 WIDE_GROUPS = ("7A", "8A", "9A", "Group 1")  # groups whose road-to-State AND early window play 4S/5D
+
+# ‼️ 5A PLAYS 6S/5D — ELEVEN FLIGHTS, AND IT IS THE SINGLES CLASS (JHSAA rule 2094,
+# on the 5A schools' own petition). The association's widest format by two flights:
+# six singles and five doubles, SIXTEEN players. Membership in
+# `SINGLES_FORWARD_GROUPS` is the whole change, exactly as `WIDE_GROUPS` was — the
+# road to State, the State draw and a 5A-hosted showcase play it; the league season
+# stays the universal 3S/4D, the early window stays 5S/2D, the TOC stays 1S/4D like
+# every other pilot's entrant, and the individual state tournaments read no dual
+# format at all.
+#
+# ‼️ THE POINT IS THE SINGLES WEIGHTING, NOT THE WIDTH. At 6/11 flights this is the
+# ONLY JHSAA shape where singles outweigh doubles — every other postseason format runs
+# 20% (1S/4D) to 50% (Group 2's 3S/3D) singles. `FLIGHT_WEIGHTS_6S5D` carries that
+# through to what a flight is WORTH, pricing S1 above D1 where every other shape ties
+# them or puts doubles level. A class that wanted more flights and not this weighting
+# would have asked for 4S/5D, which was on the table and was not what was petitioned
+# for. Eleven flights is odd, so a 6S/5D dual cannot tie and no tie-breaking logic is
+# reachable from it; high school has no clinch, so all eleven are always played.
+#
+# ‼️ THIS IS WHY `ROSTER_FLOOR` MOVED (same rule). A sixteen-player lineup against the old
+# floor of 16 left a floor-sized program dressing its whole roster with nothing in
+# reserve, and the old floor was not an arbitrary 16 — it was the varsity eleven plus
+# the five a JV dual needs. The floor and every band were re-cut for the JV ladder in
+# the same rule; see `ROSTER_FLOOR` and `ROSTER_SIZE_BAND_BY_CLASS` below, and
+# docs/AAR-jhsaa-2094-5a-6s5d-and-roster-bands.md.
+SINGLES_FORWARD_GROUPS = ("5A",)  # groups whose road-to-State and showcases play 6S/5D
 
 # ‼️ THE PARASTATE GROUPS (owner spec 2026-09, resized 2026-09, EXPANDED 2026-09):
 # the road is UNTOUCHED — it qualifies exactly `STATE_FIELD[group]` by the existing
@@ -471,6 +501,10 @@ def dual_format(phase: str, group: str | None = None) -> DualFormat:
     # excepted. The one EVEN shape; `play_dual` settles a postseason 3-3.
     if group in THREE_THREE_GROUPS and rehearsal:
         return FORMATS["state_3s3d"]
+    # 5A's 6S/5D (JHSAA rule 2094): the road, State and a 5A-hosted showcase, the TOC
+    # excepted — the same scoping as every other pilot. Sixteen players dressed.
+    if group in SINGLES_FORWARD_GROUPS and rehearsal:
+        return FORMATS["state_6s5d"]
     # 6A's format-continuity pilot (owner rule 2026-09): the league's 3S/4D carried
     # through the road, State and a 6A-hosted showcase; the TOC excepted.
     if group in LEAGUE_SHAPE_GROUPS and rehearsal:
@@ -716,12 +750,17 @@ ROSTER_SIZE = 12          # legacy flat default; real depth is per-classificatio
 #: 4A 18→18-20, 3A 16→17-19, 2A 14→15-17, 1A 13→14-16) — smallest classes gained
 #: the most, which is exactly where `ROSTER_FLOOR` was getting hit.
 ROSTER_SIZE_BAND_BY_CLASS = {
-    "9A": (20, 24), "8A": (20, 24),
-    "7A": (19, 22), "6A": (19, 22),
-    "5A": (18, 20), "4A": (18, 20),
-    "3A": (17, 19),
-    "2A": (15, 17),
-    "1A": (14, 16),
+    "9A": (26, 30), "8A": (26, 30),
+    "7A": (24, 28), "6A": (24, 28),
+    # ‼️ 5A AND 4A NO LONGER SHARE A BAND (JHSAA rule 2094). 5A dresses SIXTEEN for
+    # 6S/5D where 4A still dresses nine for 1S/4D, so the one entry they used to
+    # share cannot serve both: 5A is set for its own format plus the JV ladder, 4A
+    # for the JV ladder alone. Do not "tidy" them back onto one line.
+    "5A": (23, 26),
+    "4A": (22, 24),
+    "3A": (21, 24),
+    "2A": (21, 23),
+    "1A": (20, 22),
     # 2046 Great Basin groups, retiered three ways by the Heritage Valley
     # migration (which pooled the original 184 Group 1/2 schools with 38
     # eastern arrivals and re-cut the enrollment-sorted 222 into three even
@@ -730,9 +769,15 @@ ROSTER_SIZE_BAND_BY_CLASS = {
     # (1066-2556, roughly 6A-9A) blends the 7A/6A bands; Group 2 (407-1059,
     # roughly 3A-5A) blends the 5A/4A bands; Group 3 (57-396, roughly 1A-2A)
     # blends the 2A/1A bands.
-    "Group 1": (19, 22),
-    "Group 2": (17, 20),
-    "Group 3": (14, 17),
+    # ‼️ RE-CUT AGAINST THE LADDER CLASSES, NOT THE OLD BLEND (JHSAA rule 2094).
+    # Group 1 runs to 2556 enrolment — the 9A end of the ladder, not the 7A/6A
+    # middle the original blend gave it — so it now sits between 8A/9A and 7A/6A.
+    # Group 2 moves to the 7A/6A band. Both are deeper than the enrolment blend
+    # alone would give them, which is the owner's call and not an oversight: the
+    # Groups are geographically distinct and are carried for JV depth.
+    "Group 1": (25, 29),
+    "Group 2": (24, 28),
+    "Group 3": (20, 23),
 }
 
 
@@ -802,7 +847,21 @@ def roster_size(classification: str, school_key: str = "", salt: str = "") -> in
 #: exactly 15 — still one player short, i.e. it changes nothing at all for JV. At 16,
 #: 864/864 girls' and 780/780 boys' programs field one.
 #: See `docs/BRIEF-jhsaa-jv-and-varsity-2-feasibility.md` §3.
-ROSTER_FLOOR = 16
+#: ‼️ RAISED 16 -> 20 FOR THE JV LADDER AND 5A's 6S/5D (JHSAA rule 2094). Two things
+#: broke 16 at once and they have the SAME fix. (1) The JV ladder has grown a long way
+#: past the table it launched with — `jv_format` is unbounded (D = (spare+1)//3) and
+#: reaches 6S/5D at sixteen spare — but the bands were never re-cut for it, so the
+#: bottom of the association was pinned at the three-flight minimum: 1A's band bought
+#: spare 5 and exactly ONE JV shape, and 1A/2A/Group 3 all had band MINIMA below the
+#: floor, i.e. dead numbers the floor was silently overriding. (2) 5A's 6S/5D puts
+#: SIXTEEN players, so a floor-sized program dressed its whole roster with nothing in
+#: reserve — the same "no bench at all" failure the original floor of 12 existed to
+#: prevent, arriving by a different door. At 20 every class reaches at least 3S/3D on
+#: JV, every band minimum is at or above the floor, and a floor-sized 5A program
+#: dresses sixteen with four spare. The floor is still read the same way — varsity
+#: format plus the JV minimum — it is just read against a ladder that moved.
+#: See `docs/AAR-jhsaa-2094-5a-6s5d-and-roster-bands.md`.
+ROSTER_FLOOR = 20
 
 
 def _freshman_class_size(school_key: str, entry_year: int, classification: str,
@@ -8406,6 +8465,11 @@ def play_district(teams: list[TeamSeason], year: int, salt: str = "") -> list[Te
 # map). They are the only flight numbers in the pipeline — nothing else hard-codes one.
 FLIGHT_WEIGHTS = {
     "S1": 1.00, "S2": 0.75, "S3": 0.25, "S4": 0.10, "S5": 0.10,
+    # S6 is contested in NO shape on this table — same reason as D5 below: a generic
+    # per-slot reader must rank 5A's sixth singles flight below its fifth instead of
+    # taking the bare `.get(slot, 0.25)` default and pricing the format's last singles
+    # seat above four of its others. 6S/5D rates on its own table.
+    "S6": 0.05,
     "D1": 1.00, "D2": 0.50,
     # D3/D4 appear in every 1S/4D dual (postseason + showcases) AND, since the
     # 2027-08 regular-season swap to 3S/4D, in EVERY ordinary league dual too —
@@ -8437,6 +8501,18 @@ FLIGHT_WEIGHTS_4S5D = {
     "D1": 2.00, "D2": 0.80, "D3": 0.45, "D4": 0.20, "D5": 0.10,
 }
 
+#: 5A's eleven-flight format (JHSAA rule 2094). ‼️ THE ONE TABLE WHERE SINGLES OUTPRICE
+#: DOUBLES, and that is the whole point of the shape rather than a side effect of
+#: having more singles flights: S1 is priced ABOVE D1 where every other JHSAA table
+#: ties them (1.00/1.00, or 4S/5D's 2.00/2.00), and the six singles seats carry 65% of
+#: the format's total weight. A 5A coach's top eight is still a real decision —
+#: `_arrange_wide` pools eight and searches which six play singles — but the search
+#: now pays for singles depth where 4S/5D's pays for a stacked D1.
+FLIGHT_WEIGHTS_6S5D = {
+    "S1": 2.00, "S2": 1.30, "S3": 0.90, "S4": 0.60, "S5": 0.35, "S6": 0.20,
+    "D1": 1.50, "D2": 0.70, "D3": 0.40, "D4": 0.20, "D5": 0.10,
+}
+
 
 def flight_weights(phase: str, group: str | None = None) -> dict:
     """The flight weight table for a dual of `phase` at `group`'s shape.
@@ -8444,10 +8520,14 @@ def flight_weights(phase: str, group: str | None = None) -> dict:
     ‼️ KEYED ON THE SHAPE, NOT THE CLASSIFICATION. 8A/9A's league season is 3S/4D
     like everybody's and rates on the ordinary table; only the shapes that actually
     play nine courts — their road to State and their early window — use
-    `FLIGHT_WEIGHTS_4S5D`. Pass `shape_group`'s answer for a real dual."""
-    return (FLIGHT_WEIGHTS_4S5D
-            if dual_format(phase, group) is FORMATS["state_4s5d"]
-            else FLIGHT_WEIGHTS)
+    `FLIGHT_WEIGHTS_4S5D`; only 5A's road, State and showcases use
+    `FLIGHT_WEIGHTS_6S5D`. Pass `shape_group`'s answer for a real dual."""
+    fmt = dual_format(phase, group)
+    if fmt is FORMATS["state_4s5d"]:
+        return FLIGHT_WEIGHTS_4S5D
+    if fmt is FORMATS["state_6s5d"]:
+        return FLIGHT_WEIGHTS_6S5D
+    return FLIGHT_WEIGHTS
 # ‼️ NOT a shared denominator FQI divides by, and NOT the max for any one dual shape
 # any more (the three cards — 5S/2D early, 3S/4D regular, 1S/4D state/showcase — each
 # contest a different weight total now that D3/D4 are load-bearing everywhere).

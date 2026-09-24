@@ -7471,7 +7471,23 @@ def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
             "auto": sel.get("auto") or [], "locks": sel.get("locks") or []}
 
 
-_FLIGHT_ORDER = ("S1", "S2", "S3", "S4", "S5", "D1", "D2", "D3", "D4", "D5")
+def _flight_order() -> tuple:
+    """Every flight any JHSAA format can contest, singles then doubles, in lineup order.
+
+    ‼️ DERIVED FROM `jhsaa.FORMATS`, NEVER TYPED (JHSAA rule 2094). This was a literal
+    through S5/D5 and went stale the moment 5A's 6S/5D added S6: the flight was not
+    selectable in the picker and sorted to the unknown-slot position (99) in the table.
+    Deriving it means a future format's flights appear here the day it is added, which
+    is the only way this list stays correct — the association has changed shape four
+    times since it was written."""
+    from ..jhsaa import FORMATS
+    s_max = max(f.n_singles for f in FORMATS.values())
+    d_max = max(f.n_doubles for f in FORMATS.values())
+    return (tuple(f"S{i}" for i in range(1, s_max + 1))
+            + tuple(f"D{i}" for i in range(1, d_max + 1)))
+
+
+_FLIGHT_ORDER = _flight_order()
 
 
 def jhsaa_flights_view(seed: int, gender: str, group: str | None = None,

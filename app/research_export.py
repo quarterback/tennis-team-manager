@@ -729,8 +729,9 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "jhsaa_flights.csv is Flight Efficiency: one row per program per flight "
             "(the flights present in this export: "
             + (", ".join(flight_slots) if flight_slots else "none — no contested varsity line")
-            + "; every JHSAA dual format from 5S/2D to 4S/5D reaches this table, so S5 and "
-            "D5 appear whenever they were played), matches and wins at that flight, "
+            + "; every JHSAA dual format reaches this table — 5S/2D up to 5A's 6S/5D "
+            "(JHSAA rule 2094) — so S5, S6 and D5 appear whenever they were played), "
+            "matches and wins at that flight, "
             "actual_pct, expected_pct (a logistic fitted on this season's own varsity "
             "flights — the matchup and home court — so the row is judged against how the "
             "association converted its matchups this year) and delta_pct = actual - "
