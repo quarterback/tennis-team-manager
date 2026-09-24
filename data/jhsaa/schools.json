@@ -2134,6 +2134,26 @@
       "source": "Rafael Escobedo"
     },
     {
+      "name": "Bonanza",
+      "city": "San Cordero",
+      "county": "Tamarack",
+      "area": "Cascade Divide",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2475,
+      "private": false,
+      "mascot": "Snowcaps",
+      "colors": [
+        "#333d29",
+        "#d97706"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Ironwood League",
+      "boys_district": "Ironwood League",
+      "source": "Svenja Bianchi"
+    },
+    {
       "name": "Bonds",
       "source": "Bonds",
       "city": "Malad City",
@@ -3139,6 +3159,26 @@
       "girls_district": "Foundry League",
       "boys_district": "Foundry League",
       "source": "Aldermont"
+    },
+    {
+      "name": "Cape Blanco",
+      "city": "Tamarack Harbor",
+      "county": "Weller",
+      "area": "Selquah",
+      "classification": "9A",
+      "group": "9A",
+      "enrollment": 2355,
+      "private": false,
+      "mascot": "Pine Martens",
+      "colors": [
+        "#333d29",
+        "#d97706"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Gateway League",
+      "boys_district": "Gateway League",
+      "source": "Tamarack Harbor"
     },
     {
       "name": "Cape Jean",
@@ -6029,6 +6069,26 @@
       "source": "Tomás Mendoza"
     },
     {
+      "name": "Fall River Valley",
+      "city": "High Bar",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "2A",
+      "group": "2A",
+      "enrollment": 291,
+      "private": false,
+      "mascot": "Lions",
+      "colors": [
+        "#14532d",
+        "#e8c46b"
+      ],
+      "girls": false,
+      "boys": false,
+      "girls_district": "Valle Vista League",
+      "boys_district": "Valle Vista League",
+      "source": "High Bar"
+    },
+    {
       "name": "Fallon",
       "city": "Puerto de los Reyes",
       "county": "San Marcos",
@@ -6545,6 +6605,26 @@
       "boys": true,
       "girls_district": "Ostrobothnia League",
       "boys_district": "Ostrobothnia League"
+    },
+    {
+      "name": "Fort Paynes",
+      "city": "Jessup Bar",
+      "county": "Olivet",
+      "area": "Yarrowmere",
+      "classification": "2A",
+      "group": "2A",
+      "enrollment": 238,
+      "private": false,
+      "mascot": "Bobcats",
+      "colors": [
+        "#3f2a56",
+        "#3ba55d"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Marble Valley League",
+      "boys_district": "Marble Valley League",
+      "source": "Jessup Bar"
     },
     {
       "name": "Fort Tabor",
@@ -7957,25 +8037,6 @@
       "boys_district": "Millworks Athletic Association"
     },
     {
-      "name": "Hawk Bar",
-      "city": "Hawk Bar",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "2A",
-      "group": "2A",
-      "enrollment": 319,
-      "private": false,
-      "mascot": "Orediggers",
-      "colors": [
-        "#333d29",
-        "#d97706"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Millworks Athletic Association",
-      "boys_district": "Millworks Athletic Association"
-    },
-    {
       "name": "Hawk Lake",
       "city": "Hawk Lake",
       "county": "Camas",
@@ -8174,25 +8235,6 @@
       "girls_district": "Sage Plains League",
       "boys_district": "Sage Plains League",
       "source": "Harriman South"
-    },
-    {
-      "name": "High Bar",
-      "city": "High Bar",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "2A",
-      "group": "2A",
-      "enrollment": 291,
-      "private": false,
-      "mascot": "Lions",
-      "colors": [
-        "#14532d",
-        "#e8c46b"
-      ],
-      "girls": false,
-      "boys": false,
-      "girls_district": "Valle Vista League",
-      "boys_district": "Valle Vista League"
     },
     {
       "name": "High Desert",
@@ -9052,25 +9094,6 @@
       "girls_district": "Gold Valley League",
       "boys_district": "Gold Valley League",
       "source": "Marsh Depot"
-    },
-    {
-      "name": "Jessup Bar",
-      "city": "Jessup Bar",
-      "county": "Olivet",
-      "area": "Yarrowmere",
-      "classification": "2A",
-      "group": "2A",
-      "enrollment": 238,
-      "private": false,
-      "mascot": "Bobcats",
-      "colors": [
-        "#3f2a56",
-        "#3ba55d"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League"
     },
     {
       "name": "Jesuit",
@@ -10090,6 +10113,26 @@
       "boys_district": "Valle Vista League"
     },
     {
+      "name": "Lassen",
+      "city": "Hawk Bar",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "2A",
+      "group": "2A",
+      "enrollment": 319,
+      "private": false,
+      "mascot": "Orediggers",
+      "colors": [
+        "#333d29",
+        "#d97706"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Millworks Athletic Association",
+      "boys_district": "Millworks Athletic Association",
+      "source": "Hawk Bar"
+    },
+    {
       "name": "Lateral Seven",
       "city": "Orellana",
       "county": "Vance",
@@ -10205,6 +10248,26 @@
       "girls_district": "Valle Vista League",
       "boys_district": "Valle Vista League",
       "source": "John Lewis"
+    },
+    {
+      "name": "Lewiston",
+      "source": "Fellows Mill International School",
+      "city": "Fellows Mill",
+      "county": "Sablewood",
+      "area": "Gold Valley",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 465,
+      "private": false,
+      "mascot": "Quarrymen",
+      "colors": [
+        "#204e39",
+        "#c8a24a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Gold Valley League",
+      "boys_district": "Gold Valley League"
     },
     {
       "name": "Liberty Hill",
@@ -11395,26 +11458,6 @@
       "girls_district": "Narpes Interscholastic League",
       "boys_district": "Narpes Interscholastic League",
       "source": "Nathaniel Cross North"
-    },
-    {
-      "name": "Mill Bar",
-      "source": "Fellows Mill International School",
-      "city": "Fellows Mill",
-      "county": "Sablewood",
-      "area": "Gold Valley",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 465,
-      "private": false,
-      "mascot": "Quarrymen",
-      "colors": [
-        "#204e39",
-        "#c8a24a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Gold Valley League",
-      "boys_district": "Gold Valley League"
     },
     {
       "name": "Mill Creek",
@@ -18040,46 +18083,6 @@
       "boys_district": "Halbrook Basin League",
       "source": "Ashbury Central",
       "locality": "Tallulah"
-    },
-    {
-      "name": "Tamarack",
-      "city": "San Cordero",
-      "county": "Tamarack",
-      "area": "Cascade Divide",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2475,
-      "private": false,
-      "mascot": "Snowcaps",
-      "colors": [
-        "#333d29",
-        "#d97706"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Ironwood League",
-      "boys_district": "Ironwood League",
-      "source": "Svenja Bianchi"
-    },
-    {
-      "name": "Tamarack Harbor",
-      "city": "Tamarack Harbor",
-      "county": "Weller",
-      "area": "Selquah",
-      "classification": "9A",
-      "group": "9A",
-      "enrollment": 2355,
-      "private": false,
-      "mascot": "Pine Martens",
-      "colors": [
-        "#333d29",
-        "#d97706"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Gateway League",
-      "boys_district": "Gateway League",
-      "source": "Tamarack Harbor"
     },
     {
       "name": "Taylor",
