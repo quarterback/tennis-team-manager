@@ -42,14 +42,24 @@ def districting_config() -> SimpleNamespace:
         return hit
     with open(_DISTRICTING, encoding="utf-8") as fh:
         doc = json.load(fh)
-    max_d, target = int(doc["max_district"]), int(doc["district_target"])
+    # ‼️ `district_target` IS A FLOAT (9.5 since 2096) — `int()` silently made it 9 and
+    # put the runtime redraw on a different rule from the importer while the sync test
+    # still compared equal-ish. `min_district_size` is the hard floor the importer got
+    # in the same rule; defaulted so an older config file still reads.
+    max_d = int(doc["max_district"])
+    target = float(doc["district_target"])
+    min_size = int(doc.get("min_district_size", 1))
 
     def district_count(n: int) -> int:
+        """`import_jhsaa.district_count`, mirrored. Must stay identical — the sync test
+        compares both across a spread of pool sizes."""
         if n <= 0:
             return 0
-        return max(round(n / target), -(-n // max_d), 1)
+        k = max(round(n / target), -(-n // max_d), 1)
+        return max(1, min(k, n // min_size)) if n >= min_size else 1
 
     cfg = SimpleNamespace(MAX_DISTRICT=max_d, DISTRICT_TARGET=target,
+                          MIN_DISTRICT_SIZE=min_size,
                           RIVALRIES=[tuple(p) for p in doc["rivalries"]],
                           LEAGUE_NAMES=[(n, a) for n, a in doc["league_names"]],
                           district_count=district_count)
@@ -235,19 +245,33 @@ def redistrict(rows, cls, pos, m, rng, cap=None, log=None):
 
     by_name = {r["name"]: r["girls_district"] for r in members}
     by_area = {r["name"]: r["area"] for r in members}
+    # ‼️ EVERY OTHER CLASS'S LEAGUES ARE ALREADY CLAIMED (owner rule 2096: no league
+    # name repeats anywhere in the association). Seeded from `rows` — which holds the
+    # WHOLE state, not just `cls` — rather than passed in, so every caller gets this
+    # without being updated: `redistrict` is the one door the offseason redraws and the
+    # one-off scripts all come through. Scoped per class, a redraw could hand 3A a name
+    # 9A already holds; on the current pools, drawing the classes independently yields
+    # only 71 distinct names for 95 leagues.
+    #
+    # A name this class is RETIRING is not claimed elsewhere and stays available to it,
+    # which is why `names` is excluded from the foreign set rather than added to it.
+    foreign = {r["girls_district"] for r in rows
+               if r.get("group") != cls and (r.get("girls") or r.get("boys"))
+               and r.get("girls_district")} - set(names)
     taken, out = set(), {}
-    heads = {n.split()[0] for n in names}
+    heads = {n.split()[0] for n in names} | {n.split()[0] for n in foreign}
     bank = m.LEAGUE_NAMES[:]
     rng.shuffle(bank)
     order = sorted(groups.items(), key=lambda kv: -len(kv[1]))
     for ci, idx in order:
         counts = collections.Counter(by_name[items[i][0]] for i in idx)
-        pick = next((n for n, _ in counts.most_common() if n not in taken), None)
+        pick = next((n for n, _ in counts.most_common()
+                     if n not in taken and n not in foreign), None)
         if pick is None:
             area = collections.Counter(
                 by_area[items[i][0]] for i in idx).most_common(1)[0][0]
             free = [(n, aff) for n, aff in bank
-                    if n not in taken and n not in names
+                    if n not in taken and n not in names and n not in foreign
                     and n.split()[0] not in heads]
             pick = (next((n for n, aff in free if aff == area), None)
                     or next((n for n, _ in free), None)

@@ -390,11 +390,31 @@ and a program in a short league gets its gap filled instead of simply playing a 
 The 4-8 band still clamps the top-up so a pathological league cannot demand a twelve-dual
 non-league card.
 
-**Name pool**: the owner's 114 stems × 7 suffixes are APPENDED to the 109 authored names, not
-substituted, so every existing league keeps what it has. 798 new candidates against ~100
+**Name pool**: the owner's 114 stems × 7 suffixes are APPENDED to the 109 authored names rather
+than substituted. ‼️ THAT DOES NOT PRESERVE EXISTING LEAGUE NAMES and an earlier draft of this
+AAR wrongly said it did: `league_names` shuffles the whole bank, so growing it from 109 to 907
+reorders the walk and nearly every pick changes. A re-import therefore RENAMES most leagues, not
+just adds a code to them. That is accepted — the owner's rule is that leagues are not preserved
+across a realignment, which is already how the redraws behave, and OSAA renames when it moves the
+geography. Recorded because the previous wording would have had somebody treat a rename as a bug. 798 new candidates against ~100
 leagues is the headroom that lets `league_names` keep leading words distinct within a class
 without ever falling through to "District 7". No area affinity is carried on them — with the
 code as identity, flavour is all a name has to carry.
+
+**The runtime redraw is synced too.** `data/jhsaa/districting.json` is the app's copy of the
+importer's constants and bank (the app cannot read `scripts/`), and it held the old 12/10 rules
+and the 109-name bank — so an offseason class redraw would have drawn on different rules from a
+fresh import. Worse, `districting_config` parsed the target with `int()`, which would have turned
+9.5 into 9 silently. Both fixed, plus `min_district_size` carried across, and
+`district_count` verified identical between importer and runtime for every pool size 0-200.
+
+**And `redistrict` now claims names statewide.** Its `taken`/`heads` were scoped to the class
+being redrawn, so an offseason redraw could hand 3A a name 9A already holds — drawn
+independently, the current pools yield only 71 distinct names for 95 leagues. The foreign claim
+set is derived from `rows`, which already holds the whole state, rather than threaded in as a
+parameter: `redistrict` is the single door all six redraw scripts come through, so deriving it
+there fixes every caller without touching any of them. A name the class is RETIRING is excluded
+from the foreign set, so it stays available to the class giving it up.
 
 **‼️ THIS NEEDS A RE-IMPORT TO TAKE EFFECT.** League membership and names live in
 `data/jhsaa/schools.json`, written by `scripts/import_jhsaa.py`. Nothing changes in a save until

@@ -8348,7 +8348,12 @@ DISTRICT_DUAL_CAP = 16
 
 
 def district_dual_count(n: int) -> int:
-    """League duals per team in a league of `n`, the number `district_rounds` builds.
+    """The MAXIMUM league duals any one team plays in a league of `n`.
+
+    ‼️ NOT WHAT EVERY MEMBER PLAYS. An odd league over the cap sits a different team out
+    in each kept pass-2 round, so an 11-team league splits 15/16 — six teams and five.
+    Anything sizing a per-team quota must count the real rounds (`play_crossovers` does);
+    this is for headline copy and sanity checks only.
 
     Pass 1 always plays in full (n-1 per team); pass 2 runs until the per-team total
     reaches `DISTRICT_DUAL_CAP`. An odd `n` sits a team out each round, so a real total
@@ -11010,10 +11015,27 @@ def play_regular_season(by_group: dict, year: int, gender: str,
     # both arrive at 22. Read off the district the team is actually in, per gender, so
     # a class whose girls league is a size larger than its boys one backfills each
     # correctly rather than sharing one number.
-    league_n = {id(t): len(ts) for st in by_group.values() for ts in st.values()
-                for t in ts}
-    quota = {id(t): nondistrict_quota(district_dual_count(league_n[id(t)]))
-             for t in every_team}
+    # ‼️ COUNTED PER TEAM OFF THE REAL ROUNDS, NOT FROM THE LEAGUE'S SIZE. An ODD league
+    # over the cap sits a different team out in each kept round of pass 2, so its members
+    # do NOT all play the same number: an 11-team league gives six teams 15 league duals
+    # and five 16. Sizing the backfill off `district_dual_count` hands everyone the same
+    # quota and strands the bye teams a dual short of `SEASON_DUAL_TARGET`. Everybody is
+    # force-scheduled to the same total regardless of byes, which is the whole point of
+    # backfilling, so the count has to come from the rounds themselves.
+    #
+    # `district_rounds` is pure over (teams, year, salt) and is called again to PLAY the
+    # league, returning the identical draw — counting here costs a rebuild, never a
+    # divergence.
+    league_duals: dict[int, int] = {}
+    for st in by_group.values():
+        for ts in st.values():
+            if len(ts) < 2:
+                continue
+            for rnd in district_rounds(ts, year, salt):
+                for a, b in rnd:
+                    league_duals[id(a)] = league_duals.get(id(a), 0) + 1
+                    league_duals[id(b)] = league_duals.get(id(b), 0) + 1
+    quota = {id(t): nondistrict_quota(league_duals.get(id(t), 0)) for t in every_team}
     played: dict[int, set[str]] = {id(t): set() for t in every_team}
     reserved = MID_NONDISTRICT + (1 if CHALLENGE_ENABLED else 0)
     owed = {k: max(1, round((v - reserved) * EARLY_SHARE)) for k, v in quota.items()}
