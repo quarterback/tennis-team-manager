@@ -4736,9 +4736,13 @@ def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
     # selection index, which is also the archived bracket's `field`.
     seeds = {n: i + 1 for i, n in enumerate(ev.get("ranked") or ())}
     at_large = set(ev.get("at_large") or ())
-    region_of = {}
+    # ‼️ TWO ARCHIVE SHAPES, ONE MAP. From 2096 a Region crowns nobody and sends FOUR,
+    # so the archive carries `region_of` (qualifier -> Region) directly; before that
+    # only the single champion of each region was recorded, under `region_champions`.
+    # Read the direct map first and fall back, so both eras label their bracket cards.
+    region_of = dict(ev.get("region_of") or {})
     for region, champ in (ev.get("region_champions") or {}).items():
-        region_of[champ] = region
+        region_of.setdefault(champ, region)
 
     # ‼️ AN ARCHIVE WRITTEN BY THE PLAY-IN BUILD STILL READS. That version stored the
     # opening duals in a bracket of their own under `play_in` and started `state` at

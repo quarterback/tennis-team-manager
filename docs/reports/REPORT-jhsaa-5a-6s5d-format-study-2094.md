@@ -82,7 +82,8 @@ total is odd in hundredths by construction, which puts half of it out of reach o
 and so makes a level FWS unreachable — FWS is the anti-stacking signal, and a level result
 prices nothing. Checking that invariant turned up three older formats mispriced the same way
 (5S/2D 370, 2S/3D 350, 4S/5D 750, which tied on S1+S2+S3+D5); all three are corrected to odd
-under the same rule.
+under the same rule, at a cost of up to 0.514 points of FWS on a dual (5S/2D, winning
+S3+S4) — small, but larger than a first reading of a one-hundredth change suggests.
 
 Eleven flights is odd, so a 6S/5D dual cannot tie. That is the reason to prefer it over
 4S/4D and 3S/5D, the two other expansive shapes considered: both are eight flights, both

@@ -52,10 +52,19 @@ from engine.dual import DualFormat, simulate_dual
 
 from . import jhsaa as jh
 
-#: ‼️ FIVE COURTS, FIRST TO THREE, AND SEVEN PLAYERS DRESS. S1/S2/S3 + D1/D2 —
-#: three singles and two doubles pairs is 3 + 4 = 7 on court. Odd by requirement
-#: (see the module docstring): a drawn dual cannot advance anybody.
-FORMAT = DualFormat(n_singles=3, n_doubles=2, doubles_team_point=False)
+#: ‼️ SEVEN FLIGHTS, ELEVEN PLAYERS DRESS (JHSAA rule 2096). S1-S3 + D1-D4 is
+#: 3 + 8 = 11 on court — the association's universal league format, now played by the
+#: JV postseason too. Odd by requirement (see the module docstring): a drawn dual
+#: cannot advance anybody, and seven flights cannot draw.
+#:
+#: ‼️ IT WAS 3S/2D UNTIL 2096, and the reason it was is gone. Five flights was "the
+#: shape that lets the event exist at the depth most programs have" — chosen when a
+#: JV squad was whatever a sixteen-player roster had spare. Rosters are far deeper
+#: now and the owner's save carries the players, so the event plays the league format
+#: instead of a reduction of it. ‼️ DO NOT re-derive this from `ROSTER_FLOOR`: the
+#: floor is a theoretical minimum the real save does not sit on, and gating the
+#: format on it would hold the event at a depth nobody actually fields.
+FORMAT = DualFormat(n_singles=3, n_doubles=4, doubles_team_point=False)
 
 #: Players the card needs (7) and the championship roster CAP (16).
 #: ‼️ 16 IS A CEILING, NOT A SQUAD SIZE: a program carries UP TO sixteen frozen-
@@ -83,12 +92,59 @@ PHASE_LABELS = {PHASE_REGION: "JV REGIONALS", PHASE: "JV STATE"}
 
 #: District berths by how many JV teams the district actually fielded (spec).
 #: Read as "up to and including": 2-5 -> 1, 6-9 -> 2, 10-15 -> 3, 16+ -> 4.
+#: ‼️ RETIRED FROM THE TEAM EVENT IN 2096 — every JV team now enters its Region and
+#: there is nothing to qualify out of a league. Kept because seasons archived before
+#: the era were cut with it, and `jhsaa_jv_individuals` has its own, unrelated,
+#: district qualifying that this is NOT. Measured before deleting the cap: no league
+#: ever reached 16 teams, so `DISTRICT_BERTHS_MAX` never once bound.
 DISTRICT_BERTHS = ((5, 1), (9, 2), (15, 3))
 DISTRICT_BERTHS_MAX = 4
 
-#: The association's twenty geographic areas — every one of which crowns a champion
-#: every season (owner, 2026-09), so this is the field the State draw is cut from.
-REGIONS = 20
+#: ‼️ THIRTY JV REGIONS, AND THEY ARE BUCKETS, NOT PLACES (JHSAA rule 2096). The event
+#: used the association's twenty geographic areas, which are wildly uneven — 2 teams in
+#: one, 22 in another in 2095 — so a Region title was worth a single win in one place
+#: and five in another, and the tiny regions' qualifiers went out in the opening round
+#: at State. Thirty buckets of comparable size fixes that, and comparable size is the
+#: whole requirement: `assign_regions` deals a geographically-ORDERED field into thirty
+#: near-equal buckets, so a bucket holds schools that are mostly near each other
+#: without anybody promising it is a place. ‼️ DO NOT "fix" this by pinning buckets
+#: inside the twenty areas — that is what made them uneven, and containing them forces
+#: 35 buckets to hold the same ceiling.
+REGIONS = 30
+
+#: ‼️ THE STATE DRAW IS NAMED IN DEBATE PARLANCE (JHSAA rule 2096), because a
+#: 120-team bracket runs out of tennis words three rounds before it runs out of
+#: rounds. Debate has named draws this size for a century: an OCTAFINAL is the round
+#: of sixteen, DOUBLES the round of thirty-two, TRIPLES the round of sixty-four. The
+#: opening round is numbered like a prelim (R120) because it is one — eight byes and
+#: fifty-six duals to get to a clean 64.
+#:
+#: ‼️ JV ONLY. `world._round_label` bands the VARSITY brackets and must not learn
+#: these: a varsity State draw of 32 says "Round of 32", not "Doubles Octafinals".
+#: These names are written onto the JV bracket as `round_names`, which
+#: `world.jhsaa_state_rounds` already prefers over its own banding.
+STATE_ROUND_NAMES = {2: "Final", 4: "Semifinals", 8: "Quarterfinals",
+                     16: "Octafinals", 32: "Doubles Octafinals",
+                     64: "Triple Octafinals"}
+
+
+def state_round_names(field_n: int, rounds: list) -> list[str]:
+    """Debate-parlance names for a JV State draw, one per round actually played.
+
+    Counted DOWN from the field the way `world.jhsaa_state_rounds` counts — every dual
+    eliminates exactly one team — so a draw that is not a power of two names its
+    opening round for its real size (R120) and lands on the named rounds after it."""
+    names, alive = [], field_n
+    for games in rounds:
+        names.append(STATE_ROUND_NAMES.get(alive, f"R{alive}"))
+        alive -= len(games)
+    return names
+
+
+#: How many each Region sends to State. ‼️ A REGION CROWNS NOBODY: its draw is pure
+#: qualifying, run until four remain and stopped there — no semifinal, no final, no
+#: champion, no runner-up. Thirty times four is the 120-team State field.
+QUALIFIERS_PER_REGION = 4
 
 #: ‼️ NOTHING IS CALLED QUALIFYING INSIDE THIS EVENT. Winning your region IS how you
 #: qualify; every one of the twenty champions is already at State. The opening round
@@ -292,6 +348,30 @@ def selection_rows(field: list[JVEntry], champions: set[str],
     return out
 
 
+def qualifier_rows(ranked: list[JVEntry], region_of: dict[str, str]) -> list[dict]:
+    """The State field as an auditable table, in SEED ORDER — `selection_rows` for the
+    2096 qualifying shape (JHSAA rule 2096).
+
+    Same columns so `jhsaa_jv_state.csv` keeps ONE schema across all three eras and an
+    analysis spanning them joins on one shape. Two read differently and deliberately:
+    `entry` is always `qualifier` (nobody is a champion of anything — a Region crowns
+    no one), and `index` is empty (there is no selection index; nothing is picked).
+    The varsity record is still carried because it is useful context, NOT because it
+    selects anybody — that it used to select people, at 70% weight on a JV event, is
+    the thing this rule removed."""
+    out = []
+    for e in ranked:
+        vw, vl = varsity_record(e)
+        out.append({"school": e.name, "entry": "qualifier",
+                    "region": region_of.get(e.name, ""),
+                    "jv_wins": e.jv.wins, "jv_losses": e.jv.losses,
+                    "jv_ties": e.jv.ties, "jv_pct": round(e.jv.win_pct, 4),
+                    "v_wins": vw, "v_losses": vl,
+                    "v_pct": round(vw / (vw + vl), 4) if vw + vl else 0.0,
+                    "index": ""})
+    return out
+
+
 def run_parastate(bids: list[JVEntry], *, seed: int) -> tuple[list[JVEntry], list]:
     """The Parastate round over the at-large field: pairs pinned HIGH-LOW (1v16 …
     8v9), the higher seed on the home side — orientation only, since every dual of
@@ -388,7 +468,7 @@ def play_dual(a: JVEntry, b: JVEntry, *, seed: int, phase: str = PHASE) -> tuple
 
 
 def _run_bracket(field: list[JVEntry], *, seed: int, phase: str = PHASE,
-                 round_names: list[str] | None = None) -> tuple:
+                 round_names: list[str] | None = None, stop_at: int = 1) -> tuple:
     """A seeded single-elimination draw over `field`, returning `(champion, bracket)`.
 
     ‼️ THE BRACKET IS THE VARSITY STATE DRAW'S ARCHIVE SHAPE — `{champion, field,
@@ -414,13 +494,17 @@ def _run_bracket(field: list[JVEntry], *, seed: int, phase: str = PHASE,
     1 and 2 can only meet in the final.
     """
     rng = random.Random(seed)
+    # ‼️ `stop_at` HALTS THE DRAW WITH THAT MANY ALIVE instead of at one, which is what
+    # makes a Region a QUALIFYING draw rather than a championship (JHSAA rule 2096):
+    # 32 -> 16 -> 8 -> 4 and stop, the four survivors being the qualifiers. There is no
+    # champion to return, so the caller reads the survivors off the bracket instead.
     order = [1]
     while len(order) < len(field):
         m = 2 * len(order)
         order = [s for a in order for s in (a, m + 1 - a)]
     slots: list = [field[s - 1] if s <= len(field) else None for s in order]
     rounds: list = []
-    while len(slots) > 1:
+    while len([x for x in slots if x is not None]) > stop_at and len(slots) > 1:
         nxt, games = [], []
         for i in range(0, len(slots), 2):
             a, b = slots[i], slots[i + 1]
@@ -433,10 +517,34 @@ def _run_bracket(field: list[JVEntry], *, seed: int, phase: str = PHASE,
         if games:
             rounds.append(games)
         slots = nxt
-    champ = slots[0] if slots else None
+    alive = [x for x in slots if x is not None]
+    champ = alive[0] if alive and stop_at == 1 else None
     return champ, {"champion": champ.name if champ else None,
                    "field": [e.name for e in field], "rounds": rounds,
-                   "round_names": list(round_names or ())}
+                   "round_names": list(round_names or ()),
+                   "survivors": [e.name for e in alive]}
+
+
+def assign_regions(field: list[JVEntry], n: int = REGIONS) -> dict[str, str]:
+    """Deal the whole field into `n` JV Regions of near-equal size -> {name: region}.
+
+    ‼️ EVEN SIZE IS THE REQUIREMENT; GEOGRAPHY IS THE TIE-BREAK. The field is ordered
+    by area, then county, then city, then name, and dealt into `n` contiguous buckets.
+    Ordering first means a bucket holds schools that are mostly near each other, which
+    is all the geography this event needs; dealing into equal slices means no bucket is
+    a tenth the size of another, which is what the twenty areas got wrong.
+
+    Deterministic and stateless — same field, same buckets — so a re-run reproduces the
+    draw without storing the map. A bucket is named for its index, NOT for a place: it
+    is not one, and naming it after the area it mostly covers would invite somebody to
+    pin it there again."""
+    order = sorted(field, key=lambda e: (e.jv.school.area, e.jv.school.county,
+                                         e.jv.school.city, e.name))
+    if not order:
+        return {}
+    per = len(order) / n
+    return {e.name: f"JV Region {min(n, int(i // per) + 1)}"
+            for i, e in enumerate(order)}
 
 
 def district_qualifiers(field: list[JVEntry]) -> list[JVEntry]:
@@ -460,6 +568,34 @@ def district_qualifiers(field: list[JVEntry]) -> list[JVEntry]:
     return out
 
 
+def run_qualifying(field: list[JVEntry], *, seed: int) -> tuple:
+    """Every JV team enters its Region; each Region plays down to `QUALIFIERS_PER_REGION`
+    and stops. Returns `(qualifiers, draws by region)` (JHSAA rule 2096).
+
+    ‼️ NOTHING IS WON HERE. A Region has no champion, no final and no runner-up — the
+    draw exists to cut a bucket of ~30 down to four, the way a Grand Slam qualifying
+    draw exists to fill the last seats of a main draw. A team that reaches the last
+    four has qualified; which of the four it is carries no meaning and is not played
+    for.
+
+    A short bucket behaves identically: seeded into the same slots, the byes fall to
+    the top seeds, and it still stops with four alive."""
+    region_of = assign_regions(field)
+    by_region: dict[str, list[JVEntry]] = {}
+    for e in field:
+        by_region.setdefault(region_of[e.name], []).append(e)
+    quals, out = [], {}
+    for i, region in enumerate(sorted(by_region, key=lambda r: int(r.rsplit(" ", 1)[1]))):
+        teams = sorted(by_region[region], key=lambda e: (-seed_key(e), e.name))
+        _, br = _run_bracket(teams, seed=seed + 101 * i, phase=PHASE_REGION,
+                             stop_at=QUALIFIERS_PER_REGION)
+        by_name = {e.name: e for e in teams}
+        got = [by_name[n] for n in br["survivors"]]
+        out[region] = {**br, "qualifiers": [e.name for e in got]}
+        quals.extend(got)
+    return quals, out
+
+
 def run_regionals(quals: list[JVEntry], *, seed: int) -> tuple:
     """Each region crowns one champion. Returns `(champions, brackets by region)`.
 
@@ -479,7 +615,7 @@ def run_regionals(quals: list[JVEntry], *, seed: int) -> tuple:
 
 
 def run_jv_state(jv: dict, *, gender: str, year: int, seed: int = 0,
-                 expanded: bool | None = None) -> dict:
+                 expanded: bool | None = None, qualifying: bool | None = None) -> dict:
     """The whole JV team postseason for one gender.
 
     Returns the archive `world.run_jhsaa` stores: the field, every region's draw,
@@ -495,6 +631,26 @@ def run_jv_state(jv: dict, *, gender: str, year: int, seed: int = 0,
     field = entries(jv)
     if not field:
         return {}
+    if qualifying is None:
+        qualifying = year >= jh.jv_qualifying_era()
+    if qualifying:
+        # ‼️ THE 2096 SHAPE: no league berths, no champions, no at-larges, no committee.
+        # Every JV team enters one of thirty buckets, each bucket plays down to four,
+        # and those 120 are the State field — seeded straight into a 128-slot draw where
+        # eight byes fall to the top seeds. The whole event is two mechanisms.
+        region_of = assign_regions(field)
+        quals, regions = run_qualifying(field, seed=seed + 7919 * (gender == "boys"))
+        ranked = sorted(quals, key=lambda e: (-seed_key(e), e.name))
+        champ, state = _run_bracket(ranked, seed=seed + 5701)
+        state = {**state, "round_names": state_round_names(len(ranked), state["rounds"])}
+        return {"field": [e.name for e in field],
+                "qualifiers": [e.name for e in quals],
+                "regions": regions,
+                "region_of": {e.name: region_of[e.name] for e in quals},
+                "ranked": [e.name for e in ranked],
+                "selection": qualifier_rows(ranked, region_of),
+                "state": state,
+                "champion": champ.name if champ else ""}
     quals = district_qualifiers(field)
     champs, regions = run_regionals(quals, seed=seed + 7919 * (gender == "boys"))
     ranked = sorted(champs.values(), key=lambda e: (-seed_key(e), e.name))

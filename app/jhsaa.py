@@ -3006,6 +3006,7 @@ def reset_schools() -> None:
     _exchange_era_cache.clear()
     _intl_era_cache.clear()
     _jv_parastate_era_cache.clear()
+    _jv_qualifying_era_cache.clear()
     _sibling_era_cache.clear()
     _town_cache.clear()
     _expo_cache.clear()
@@ -3266,6 +3267,22 @@ def jv_parastate_era() -> int:
     return _resolve_era("jhsaa_jv_parastate_era", _jv_parastate_era_cache)
 
 
+_jv_qualifying_era_cache: dict = {}
+
+
+def jv_qualifying_era() -> int:
+    """The first SEASON the JV Team State Tournament runs the QUALIFYING shape (JHSAA
+    rule 2096): every JV team enters one of thirty near-equal Regions, each Region
+    plays down to four and crowns nobody, and the 120 qualifiers fill a 128-slot State
+    draw. No league berths, no at-large bids, no selection committee.
+
+    Same `exchange_era` idiom as `jv_parastate_era` and for the same reason — the event
+    is archived, so a save holding seasons played at twenty or at thirty-six keeps
+    reading them as the years they were, and the new shape applies from the first
+    unplayed season forward. See `jhsaa_jv_state`."""
+    return _resolve_era("jhsaa_jv_qualifying_era", _jv_qualifying_era_cache)
+
+
 def exchange_era() -> int:
     """The first SEASON that has exchange students in this save — the `name_era`
     idiom (`_resolve_era`), and load-bearing for the same reason.
@@ -3520,6 +3537,7 @@ def generated_siblings(school: School, year: int, pid: str, salt: str) -> list[d
 ERA_SETTINGS = ("jhsaa_name_era", "jhsaa_dev_era", "jhsaa_talent_era",
                 "jhsaa_career_era", "jhsaa_exchange_era", "jhsaa_intl_era",
                 "jhsaa_band_era", "jhsaa_style_era", "jhsaa_jv_parastate_era",
+                "jhsaa_jv_qualifying_era",
                 "jhsaa_sibling_era")
 
 

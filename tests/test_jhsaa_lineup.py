@@ -942,6 +942,16 @@ def test_no_varsity_format_can_return_a_level_FWS():
               "5S/2D": (jh.EARLY_FORMAT_PHASE, None), "2S/3D": ("state", "1A"),
               "3S/3D": ("state", "Group 2"), "4S/5D": ("state", "9A"),
               "6S/5D": ("state", "5A")}
+    # ‼️ THE REPRESENTATIVES MUST COVER `FORMATS`, WHICH IS THE SOURCE OF TRUTH. A
+    # hand-kept list silently stops being association-wide the day a shape is added:
+    # the test would still pass while never looking at the new format, which is
+    # exactly how an even total would slip through. Assert coverage by IDENTITY
+    # against the shipped table, so adding to `FORMATS` fails here until a
+    # representative is added beside it.
+    covered = {id(jh.dual_format(p, g)) for p, g in shapes.values()}
+    missing = [k for k, f in jh.FORMATS.items() if id(f) not in covered]
+    assert not missing, (f"varsity formats with no representative in this test: "
+                         f"{missing} — add one per format, do not delete this check")
     for name, (phase, group) in shapes.items():
         fmt = jh.dual_format(phase, group)
         table = jh.flight_weights(phase, group)
@@ -972,7 +982,13 @@ def test_flight_weights_decline_down_every_lineup():
         table = jh.flight_weights(phase, group)
         for pre, n in (("S", fmt.n_singles), ("D", fmt.n_doubles)):
             seq = [table[f"{pre}{i}"] for i in range(1, n + 1)]
-            assert seq == sorted(seq, reverse=True), f"{group} {pre}: {seq} not declining"
+            # ‼️ STRICTLY DECREASING, NOT MERELY NON-INCREASING. Sorting-based
+            # comparison accepts a FLAT rung (S4 == S5 == 0.10, as the shared table
+            # read until 2094), which is precisely the fault this test claims to
+            # catch: two flights priced the same is a step where the anti-stacking
+            # gradient is not applying at all.
+            for hi, lo in zip(seq, seq[1:]):
+                assert hi > lo, f"{group} {pre}: {seq} has a flat or inverted rung"
 
 
 def test_6s5d_is_singles_forward_in_aggregate_but_ties_S1_and_D1():
