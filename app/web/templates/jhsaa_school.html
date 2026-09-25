@@ -457,6 +457,7 @@
         <td class="op">
           <span class="jh-schoolcell">{{ d.opp_deco.mark|safe }}
             <a href="{{ url_for('jhsaa_school', school=d.opp, u=u, g=view.gender, year=view.scope.pin) }}">{{ d.opp }}</a>
+            {% if d.opp_squad %}<span class="jh-chip">{{ d.opp_squad }}</span>{% endif %}
             </span>
         </td>
         {# Three outcomes: a JV dual can be drawn. #}

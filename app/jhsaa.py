@@ -8197,6 +8197,8 @@ def play_squad_dual(a, b, *, seed: int) -> None:
     NO credit of any kind. Both carry the full box score (the two rows sit at
     different levels, so the archive's home-row counterpart lookup cannot bridge
     them — see `world._archive_lines`)."""
+    if isinstance(a, SquadTeam) and isinstance(b, SquadTeam):
+        return _play_squad_vs_squad(a, b, seed=seed)
     sq, v1 = (a, b) if isinstance(a, SquadTeam) else (b, a)
     v1_home = v1 is a
     fmt = SQUAD_FORMATS[sq.squad]
@@ -8257,6 +8259,49 @@ def play_squad_dual(a, b, *, seed: int) -> None:
         sq.wins += 1
         v1.losses += 1
     _injury_tick_and_roll(v1, lv1, len(v1.schedule))
+
+
+def _play_squad_vs_squad(a: SquadTeam, b: SquadTeam, *, seed: int) -> None:
+    """Two programs' squads (rule 2097). JV on both sides — nothing credited,
+    nothing rated — at the SMALLER squad's format (V3 if either is a V3)."""
+    fmt = SQUAD_FORMATS["V3" if "V3" in (a.squad, b.squad) else "V2"]
+    need = jv_lineup_need(fmt)
+    la, lb = squad_pool(a.team, a.squad)[:need], squad_pool(b.team, b.squad)[:need]
+    if len(la) < need or len(lb) < need:
+        return
+    phase = "regular"
+    mf = match_format(phase)
+    res = simulate_dual(_squad(a.team, phase, la, fmt, lift=home_court(seed, phase)),
+                        _squad(b.team, phase, lb, fmt),
+                        seed=seed, play_all=True, fidelity=FIDELITY, dual_fmt=fmt,
+                        singles_fmt=mf, doubles_fmt=mf,
+                        profile=hs_profile(a.team, b.team))
+    home_won = res.home_points > res.away_points
+    lines = []
+    for ln in res.lines:
+        hw = getattr(ln, "home_won", None)
+        if hw is None:
+            continue
+        slot = getattr(ln, "slot", "")
+        lines.append({"slot": slot,
+                      "home": [x.name for x in _slot_players(la, phase, slot, fmt)],
+                      "away": [x.name for x in _slot_players(lb, phase, slot, fmt)],
+                      "score": _score_str(ln), "home_won": bool(hw)})
+    shape = f"{fmt.n_singles}S/{fmt.n_doubles}D"
+    for me, op, home, pf, pa, won, lp in (
+            (a, b, True, res.home_points, res.away_points, home_won, la),
+            (b, a, False, res.away_points, res.home_points, not home_won, lb)):
+        me.schedule.append({"opp": op.school.name, "home": home, "phase": phase,
+                            "pf": pf, "pa": pa, "won": won, "tied": False,
+                            "district": False, "level": LEVEL_JV, "shape": shape,
+                            "lines": lines, "played": [p.name for p in lp],
+                            "squad": me.squad, "opp_squad": op.squad})
+        me.points_for += pf
+        me.points_against += pa
+        if won:
+            me.wins += 1
+        else:
+            me.losses += 1
 
 
 def _fold_squads(jv: dict, squads: list) -> None:
@@ -11176,6 +11221,17 @@ def _rivalry_pairs(teams: list[TeamSeason], year: int,
     return pairs
 
 
+def _nd_ok(a, t) -> bool:
+    """May `a` and `t` meet in a non-district window? Two V1s: not league mates.
+    A squad: not its own school, and a V1 only from ANOTHER class (rule 2097)."""
+    a_sq, t_sq = isinstance(a, SquadTeam), isinstance(t, SquadTeam)
+    if not (a_sq or t_sq):
+        return (t.school.group, t.school.district) != (a.school.group, a.school.district)
+    if t.school.name == a.school.name:
+        return False
+    return (a_sq and t_sq) or t.school.group != a.school.group
+
+
 def _nondistrict_pairs(teams: list[TeamSeason], rng: random.Random,
                        owed: dict[int, int], played: dict[int, set[str]]) -> list[tuple]:
     """PAIR the non-district card — it does not play it.
@@ -11217,17 +11273,12 @@ def _nondistrict_pairs(teams: list[TeamSeason], rng: random.Random,
         a = need[rng.randrange(len(need))]
         a_sq = isinstance(a, SquadTeam)
         # NO CLASSIFICATION GATE (owner rule 2097): non-district opponents are
-        # whoever the geography matcher finds, at any class — the old ±1 gate is
-        # gone for everyone. SPLIT SQUADS: a squad may meet a league mate's V1
-        # (only V1-vs-V1 league meetings are the league's), never its own school
-        # or another squad.
+        # whoever the geography matcher finds, at any class. SPLIT SQUADS: a
+        # squad never meets its own school, and never a V1 in its OWN class
+        # (league mate or not); it may meet another program's squad.
         cands = [t for t in need if t is not a
-                 and ((a_sq or isinstance(t, SquadTeam))
-                      or (t.school.group, t.school.district)
-                      != (a.school.group, a.school.district))
                  and t.school.name not in played[id(a)]
-                 and not (a_sq and isinstance(t, SquadTeam))
-                 and t.school.name != a.school.name]
+                 and _nd_ok(a, t)]
         if not cands:
             owed[id(a)] = 0            # can't be topped up; drop it, don't stall the run
             need = short()

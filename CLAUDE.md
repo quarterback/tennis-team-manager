@@ -1742,8 +1742,9 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     empty and every season reproduces byte for byte (verified by digest against
     `main`, and pinned by forcing every program into a squad tier at 2096).
   - **Scheduling**: squads join `_nondistrict_pairs`' pool with their school's own
-    allowance each window. A squad never meets its own school or another squad; it
-    MAY meet a league mate's V1 (only V1-vs-V1 league meetings are the league's).
+    allowance each window. A squad never meets its own school and NEVER a V1 of
+    its OWN class (league mate or not); it may meet another program's squad (JV
+    both sides, the smaller squad's format).
     ‼️ NO CLASS GATE on non-district pairing for ANYONE (owner rule 2097 — the
     old ±1 gate is removed association-wide; the geography matcher decides). Schedules show the school name plus a V2/V3 chip
     (the JV idiom); never the word "varsity". Squad duals are always

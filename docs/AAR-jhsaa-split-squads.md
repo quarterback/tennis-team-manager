@@ -46,11 +46,12 @@ Squads join the pool of `_nondistrict_pairs` in all three non-district windows
 own allowance, and in the late window that is the school's quota minus the
 squad's duals so far. The pairing rules:
 
-- A squad never plays its own school or another squad.
-- A squad may play a league mate's V1. Only a V1-vs-V1 league meeting belongs to
-  the league season.
-- There is no classification gate at all, for squads or anyone else (owner rule
-  2097). The old ±1 gate on non-district pairing is gone association-wide.
+- A squad never plays its own school, and never a V1 from its OWN class (league
+  mate or not).
+- A squad may play another program's squad. That dual is JV on both sides: no
+  credit, no rating, at the smaller squad's format (3S/2D if either is a V3).
+- There is no classification gate otherwise, for anyone (owner rule 2097). The
+  old ±1 gate on non-district pairing is gone association-wide.
 
 On the calendar, a squad dual is dated once, on the V1's varsity calendar.
 `jh_match_key` names the squad side `School#V2`, which gives each squad its own
@@ -132,16 +133,17 @@ date cursor, separate from its school's varsity cursor.
 | Tier-eligible (power/elite/dynasty) | 38 |
 | Programs fielding V2 | 31 |
 | Programs fielding V3 | 14 (all 14 also field V2; 17 are V2-only) |
-| Squad duals | 267 (V2 183, V3 84), 4-6 per squad (most 6) |
-| Share of V1 non-district **dates** (V1 schedule rows) | 11.6% (267 of 2,307) |
-| Share of unique V1 non-district **duals** | 20.7% (267 of 1,287) |
-| V1 programs that met a squad | 180 (max 5 each) |
-| Squad wins | 116 of 267 (V2 91/183 = 50%, V3 25/84 = 30%) |
+| Squad duals vs V1 | 220 (V2 151, V3 69); every squad plays 6 non-district duals in all |
+| Squad-vs-squad duals | 25 (JV both sides) |
+| Share of V1 non-district **dates** (V1 schedule rows) | 9.5% (220 of 2,312) |
+| Share of unique V1 non-district **duals** | 17.4% (220 of 1,266) |
+| V1 programs that met a squad | 177 (max 4 each) |
+| Squad wins vs V1 | 95 of 220 (V2 76/151 = 50%, V3 19/69 = 28%) |
 | JV invitationals lost to the 16-dual cap | none: all 31 squad programs still reached 16 JV duals |
 
 For comparison, the ungated version put squads in 118 of 145 programs and took
 about 70% of V1 non-district dates. The two gates cut that to 31 of 396 programs
-and about 12% of dates.
+and about 10% of dates.
 
 ## Notes
 

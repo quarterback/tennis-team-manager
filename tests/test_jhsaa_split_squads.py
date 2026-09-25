@@ -157,32 +157,43 @@ def _pairs_seen(pool, n=80):
         owed = {id(t): 3 for t in pool}
         played = {id(t): set() for t in pool}
         for x, y in jh._nondistrict_pairs(pool, random.Random(seed), owed, played):
-            if jh._is_squad(x) or jh._is_squad(y):
-                assert not (jh._is_squad(x) and jh._is_squad(y))      # never two squads
+            xs, ys = jh._is_squad(x), jh._is_squad(y)
+            if xs or ys:
                 assert x.school.name != y.school.name                  # never own school
+                if xs != ys:                                           # squad v V1:
+                    assert x.school.group != y.school.group            # never own class
             else:                                                      # V1 v V1: never league
                 assert (x.school.group, x.school.district) != (y.school.group, y.school.district)
-            seen.add(frozenset(((x.school.name, jh._is_squad(x)),
-                                (y.school.name, jh._is_squad(y)))))
+            seen.add(frozenset(((x.school.name, xs), (y.school.name, ys))))
     return seen
 
 
 def test_pairing_rules():
     a = _team("A", district="L1", group="9A")
     b = _team("B", district="L1", group="9A")          # a's league mate
+    g = _team("G", district="L9", group="9A")          # same class, other league
     c = _team("C", district="L2", group="1A")          # far smaller class
     e = _team("E", district="L4", group="5A")
-    f = _team("F", district="L5", group="1A")
-    sa, se = jh.SquadTeam(team=a, squad="V2"), jh.SquadTeam(team=e, squad="V2")
-    seen = _pairs_seen([a, b, c, e, f, sa, se])
-    # A squad may play a league mate's V1...
-    assert frozenset({("A", True), ("B", False)}) in seen
-    # ...and nobody has a class gate any more, squad or V1.
+    sa, sb, se = (jh.SquadTeam(team=t, squad="V2") for t in (a, b, e))
+    seen = _pairs_seen([a, b, g, c, e, sa, sb, se])
+    # A squad never meets a V1 in its own class, league mate or not...
+    for v1 in ("B", "G"):
+        assert frozenset({("A", True), (v1, False)}) not in seen
+    # ...but may meet another program's squad, and a V1 of any other class.
+    assert frozenset({("A", True), ("B", True)}) in seen
     assert frozenset({("A", True), ("C", False)}) in seen
-    assert frozenset({("E", True), ("F", False)}) in seen or \
-        frozenset({("E", True), ("C", False)}) in seen
-    assert any({"A", "B"} & {n for n, _ in p} and {"C", "F"} & {n for n, _ in p}
-               and not any(sq for _, sq in p) for p in seen)
+    # V1s have no class gate either (owner rule 2097).
+    assert any(not any(sq for _, sq in p) and {n for n, _ in p} == {"A", "C"} for p in seen)
+
+
+def test_squad_vs_squad_is_jv_on_both_sides():
+    x, y = _team("X", n=30), _team("Y", n=30, district="Beta")
+    sx, sy = jh.SquadTeam(team=x, squad="V2"), jh.SquadTeam(team=y, squad="V3")
+    jh.play_squad_dual(sx, sy, seed=4)
+    r1, r2 = sx.schedule[-1], sy.schedule[-1]
+    assert r1["level"] == r2["level"] == "jv" and r1["shape"] == "3S/2D"
+    assert (r1["squad"], r1["opp_squad"]) == ("V2", "V3") and r1["won"] != r2["won"]
+    assert x.records == {} and y.records == {} and x.schedule == y.schedule == []
 
 
 # --- 5. rating discounts ---------------------------------------------------------
@@ -352,15 +363,13 @@ def test_before_2097_the_season_is_identical_whoever_would_qualify(monkeypatch):
     assert not any(d.get("opp_squad") for t in every for d in t.schedule)
 
 
-def test_from_2097_squads_take_v1_nondistrict_dates(monkeypatch):
+def test_from_2097_squads_play_and_never_a_same_class_v1(monkeypatch):
+    """A one-class fixture: every V1 is in the squads' own class, so squads may
+    only meet each other."""
     _, every = _small_season(2097, monkeypatch, tiers_on=True)
-    sq = [d for t in every for d in t.schedule if d.get("opp_squad")]
-    assert sq, "an all-dynasty 2097 league fields squads"
-    assert all(not d["district"] for d in sq)
-    for t in every:
-        for s in t.squads:
-            assert all(r["squad"] == s.squad for r in s.schedule)
-
+    assert not any(d.get("opp_squad") for t in every for d in t.schedule)
+    rows = [r for t in every for s in t.squads for r in s.schedule]
+    assert rows and all(r["opp_squad"] and r["level"] == "jv" for r in rows)
 
 def _insert(db, rows):
     c = sqlite3.connect(db)

@@ -6308,9 +6308,10 @@ def jhsaa_match_dates(world_id: int, year: int, gender: str,
     for r in rows:
         d = dict(r)
         k = jh_match_key(d)
-        if d.get("squad"):
+        if d.get("squad") and not d.get("opp_squad"):
             # The squad's JV row shares its key with the V1 row, which takes a
             # VARSITY date (it is a V1 non-district date); dated once, there.
+            # (Squad-vs-squad rows fall through to the JV calendar.)
             continue
         if (d.get("level") or "v") == "jv":
             jv_by_school.setdefault(r["school"], []).append(k)

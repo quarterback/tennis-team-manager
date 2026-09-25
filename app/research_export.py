@@ -293,9 +293,11 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             # the V1's own row whichever side hosted (the squad's JV row is
             # skipped), with `squad` naming the V2/V3 side and the venue kept
             # honest in home/away program ids.
-            if dual.get("squad"):
-                continue
-            osq = dual.get("opp_squad") or ""
+            if dual.get("squad") and not dual.get("opp_squad"):
+                continue                 # the V1's row carries this dual
+            # the V1 row of a V1-vs-squad dual; squad-vs-squad rows are JV and
+            # go out once, off the home row, like any JV dual.
+            osq = (dual.get("opp_squad") or "") if not dual.get("squad") else ""
             if (not osq and not dual.get("home")) or not ({team.school.name, dual["opp"]} & selected_names):
                 continue                         # each event appears on both cards
             level = dual.get("level") or "v"
@@ -314,7 +316,7 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                 # '' on every dual but a split-squad one (rule 2097), where it names
                 # the squad ("V2"/"V3") the V1 played; the squad side is the program
                 # that is NOT the V1. Filter squad='' for V1-vs-V1 play.
-                "squad": osq,
+                "squad": osq or (dual.get("squad") or ""),
                 "date": dual.get("date") or "",
                 # ‼️ `level` must be on the row. The archive loader reads JV and
                 # varsity duals together, so without this a JV dual arrives in
