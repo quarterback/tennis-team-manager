@@ -51,7 +51,7 @@ _OUT_DIR = os.path.join(_REPO, "data", "jhsaa")
 _OUT = os.path.join(_OUT_DIR, "schools.json")
 
 SEED = 11
-MAX_DISTRICT = 12
+MAX_DISTRICT = 11
 
 # ‼️ A LEAGUE IS AIMED AT `DISTRICT_TARGET`, AND ONLY CAPPED AT `MAX_DISTRICT`
 # (owner rule 2026-08). The draw used to take `k = ceil(n / MAX_DISTRICT)` — the
@@ -63,19 +63,32 @@ MAX_DISTRICT = 12
 # land near TEN and the cap is what it says it is — a limit that must not be
 # exceeded, not a size to fill. A ten-team league plays an 18-dual double round
 # robin under `jhsaa.DISTRICT_DUAL_CAP`, which is a full league season.
-DISTRICT_TARGET = 10
+DISTRICT_TARGET = 9.5
+
+#: ‼️ AND A HARD FLOOR (owner rule 2096). A league may not be smaller than this. The
+#: draw had a cap and no floor, which is how seven one-team districts reached the 2095
+#: save: a ragged remainder or a realignment that empties a league had nothing to catch
+#: it, and in a double round robin a lone member plays no league season at all. The
+#: band is 8-11 — an 8-team league plays a 14-dual double, everything larger is held at
+#: `jhsaa.DISTRICT_DUAL_CAP`, so every program's league card is 14-16 duals.
+MIN_DISTRICT_SIZE = 8
 
 
 def district_count(n: int) -> int:
     """How many leagues a pool of `n` schools is cut into.
 
-    Aim at `DISTRICT_TARGET`, never exceed `MAX_DISTRICT`. `round` rather than
-    `ceil` because both sides of the target are fine — nine is as good a league as
-    eleven — and the max() floor is what keeps the cap a hard one.
+    Aim at `DISTRICT_TARGET`, never exceed `MAX_DISTRICT`, never go under
+    `MIN_DISTRICT_SIZE`. `round` rather than `ceil` because both sides of the target
+    are fine — nine is as good a league as ten — and the max() is what keeps the cap
+    hard. The final min() is the FLOOR: asking for more blocks than `n // 8` is asking
+    for a block of seven or fewer, so the block count is clamped instead. The caller
+    spreads the remainder, so sizes differ by at most one and the floor holds for every
+    block rather than on average.
     """
     if n <= 0:
         return 0
-    return max(round(n / DISTRICT_TARGET), -(-n // MAX_DISTRICT), 1)
+    k = max(round(n / DISTRICT_TARGET), -(-n // MAX_DISTRICT), 1)
+    return max(1, min(k, n // MIN_DISTRICT_SIZE)) if n >= MIN_DISTRICT_SIZE else 1
 
 # Girls sponsorship rate by classification; boys is a subset of the girls sponsors.
 # 2A and 1A are deliberately well above a realistic sponsorship rate (owner rule
@@ -2775,8 +2788,99 @@ LEAGUE_NAMES: list[tuple[str, str | None]] = [
 ]
 
 
-def league_names(blocks: list[list[dict]], group: str) -> list[str]:
+#: ‼️ THE COMPOSITIONAL POOL (owner list 2096) — stems x suffixes, appended to the
+#: authored names above rather than replacing them, so every existing league keeps the
+#: name it has. Grouped the way the owner grouped them; the grouping is documentation,
+#: the generator sees one flat bank. 112 stems against 7 suffixes is ~780 candidates
+#: for ~100 leagues, which is the headroom that lets `league_names` keep leading words
+#: distinct within a class without ever falling through to "District 7".
+#:
+#: No area affinity is carried: these are drawn for flavour, and since 2096 a league's
+#: IDENTITY is its class-scoped code (`6A-1`) rather than its name, so a name no longer
+#: has to be unique statewide to be unambiguous — the OSAA model exactly, where 4A-4
+#: Sky-Em League and a 3A league of the same name are simply different leagues.
+LEAGUE_STEMS: tuple[str, ...] = (
+    # regional and geographic
+    "Siskiyou", "Klamath", "Redwood", "Cascade", "Cascades", "Rogue", "Shasta",
+    "Umpqua", "Lost Coast", "Trinity", "Modoc", "Applegate", "Metolius", "Coos",
+    "Alsea", "Siuslaw", "Deschutes", "Santiam", "Willamette", "Mendocino", "Del Norte",
+    # topographical and nature
+    "Pacific", "Emerald", "Evergreen", "Timberline", "High Desert", "Coastal", "Coast",
+    "Intermountain", "Pacific Rim", "Pine Ridge", "Summit", "Glacier", "Basin",
+    "Piedmont", "Sierra", "Foothill", "Valley", "Wildwood", "Coastal Range",
+    # directional and multi-county
+    "North Coast", "Far West", "Mid-Valley", "Greater", "Tri-County", "Tri-Valley",
+    "Bi-County", "West Slope", "South Coast", "Inter-Valley", "Upper Basin",
+    "Lower River", "Central Coast", "Borderline",
+    # rivers and waterways
+    "Chetco", "Mattole", "Sprague", "Winchuck", "Williamson", "McCloud", "Coquille",
+    "Illinois Valley", "Mad River", "Eel River", "Scott Valley", "Pit River",
+    "Smith River",
+    # mountains, peaks and volcanic ridges
+    "McLoughlin", "Castle Crags", "Marble Mountain", "Black Butte", "Lassen Crest",
+    "Yamsay", "Iron Mountain", "Pilot Rock", "Mount Eddy", "Table Rock",
+    "Sawtooth Ridge", "Broken Top", "Timber Mountain",
+    # coastal and marine
+    "Cape Blanco", "Humboldt", "Point St. George", "Rogue Coast", "Port Orford",
+    "Cape Sebastian", "Trinidad", "Gold Beach", "Crescent Coast", "North Shoal",
+    "Shelter Cove",
+    # forests and botanical
+    "Port Orford Cedar", "Madrone", "Chinquapin", "Tanbark", "Sugar Pine", "Manzanita",
+    "Pacific Yew", "Redcedar", "Alder Creek", "Willow Ridge", "Calocedrus",
+    # borderland and fictional regional stems
+    "Jefferson", "Siskiwana", "Calore", "Klamonia", "Shasta-Cascade", "Cascadia South",
+    "Border Crest", "Klamath-Modoc", "Inter-Cascadia", "Siskiyou-Crest",
+    "Alturas Basin", "Trans-Cascade",
+)
+
+LEAGUE_SUFFIXES: tuple[str, ...] = (
+    "League", "Athletic Conference", "Athletic League", "Association", "Circuit",
+    "Alliance", "Interscholastic League",
+)
+
+LEAGUE_NAMES += [(f"{stem} {suffix}", None)
+                 for stem in LEAGUE_STEMS for suffix in LEAGUE_SUFFIXES]
+
+#: ‼️ A LEAGUE'S IDENTITY IS ITS CODE, THE NAME IS COSMETIC (owner rule 2096). Every
+#: district is stored as "<code> <name>" — "6A-1 Portland Interscholastic League", the
+#: OSAA form — where the code is the classification's short form plus the block number.
+#: Before this, the name alone was the identity and the SAME name was drawn in several
+#: classes: Gold Valley League existed in 9A, 7A, 3A and 1A as four separate leagues
+#: that anything grouping by name added together into a 37-team one. The code makes
+#: them distinct by construction, so the bank no longer has to be unique statewide and
+#: a name can repeat across classes exactly as it does in a real association.
+#:
+#: Boys and girls share the code as they share the name — a league belongs to the
+#: SCHOOL. Renumbering on a redraw is intended: the code says where a league sits in
+#: its class today, and OSAA renumbers when it moves the geography.
+_GROUP_CODE = {"Group 1": "G1", "Group 2": "G2", "Group 3": "G3"}
+
+
+def district_code(group: str, index: int) -> str:
+    """The class-scoped league code — `6A-1`, `G2-3`. `index` is 0-based."""
+    return f"{_GROUP_CODE.get(group, group)}-{index + 1}"
+
+
+def league_names(blocks: list[list[dict]], group: str,
+                 taken: dict | None = None) -> list[str]:
     """A name per block, drawn from `LEAGUE_NAMES` rather than from the map.
+
+    ‼️ NO NAME REPEATS ANYWHERE IN THE ASSOCIATION (owner rule 2096). `taken` carries
+    the used names and used leading words ACROSS classes — the caller makes one and
+    threads it through every group — so a name drawn for a 9A league is gone for the
+    rest of the state. It used to be per-class, which is how Gold Valley League ended
+    up existing in 9A, 7A, 3A and 1A at once: four separate leagues that anything
+    grouping by name added into one 37-team league. The class-scoped code
+    (`district_code`) disambiguates them for the ENGINE; this is what stops them
+    reading as the same league to a person.
+    
+    This is only affordable because the bank was expanded: 907 candidates with 900
+    distinct names and 191 distinct leading words, against roughly 102 leagues
+    statewide. Both constraints therefore hold globally with headroom, and the
+    fall-through to a numbered District stays unreachable.
+
+    Omitting `taken` keeps the old per-call behaviour, which is what the tests that
+    exercise one class in isolation want.
 
     Deterministic: the bank is walked in an order seeded on the group, so a
     rebuild reproduces the same leagues and a league keeps its name across
@@ -2791,8 +2895,10 @@ def league_names(blocks: list[list[dict]], group: str) -> list[str]:
     rng = random.Random(f"league|{SEED}|{group}")
     bank = LEAGUE_NAMES[:]
     rng.shuffle(bank)
-    used: set[str] = set()
-    heads: set[str] = set()
+    if taken is None:
+        taken = {}
+    used: set[str] = taken.setdefault("names", set())
+    heads: set[str] = taken.setdefault("heads", set())
     out: list[str] = []
     for i, block in enumerate(blocks):
         area = Counter(s["area"] for s in block).most_common(1)[0][0] if block else None
@@ -3731,7 +3837,8 @@ def sponsors(schools: list[dict]) -> tuple[set[str], set[str]]:
     return girls, boys
 
 
-def draw_districts(pool: list[dict], cities: dict, group: str = "") -> dict[str, str]:
+def draw_districts(pool: list[dict], cities: dict, group: str = "",
+                   taken: dict | None = None) -> dict[str, str]:
     """school name -> district name, for ONE classification group.
 
     Sorted by area → county → city so a district is geographically contiguous, then cut
@@ -3796,9 +3903,10 @@ def draw_districts(pool: list[dict], cities: dict, group: str = "") -> dict[str,
     # and cannot raise or repeat. See LEAGUE_NAMES.
     blocks = [pool[lo:hi] for lo, hi in bounds if hi > lo]
     out = {}
-    for block, name in zip(blocks, league_names(blocks, group)):
+    for i, (block, name) in enumerate(zip(blocks, league_names(blocks, group, taken))):
+        label = f"{district_code(group, i)} {name}"
         for s in block:
-            out[s["name"]] = name
+            out[s["name"]] = label
     return out
 
 
@@ -3859,10 +3967,15 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
     # team. A league carrying eleven girls' teams and nine boys' is exactly how
     # this works in life; it is not an imbalance to correct.
     league = {}
+    # ‼️ ONE `taken` FOR THE WHOLE STATE (owner rule 2096) — no league name, and no
+    # leading word, is used twice across every classification. Threaded rather than
+    # module-global so a rebuild is a pure function of its inputs and a test can draw
+    # one class without inheriting another's claims.
+    taken: dict = {}
     for g in GROUPS:
         pool = [by_name[n] for n in (girls | boys)
                 if champ_group(by_name[n]["classification"]) == g]
-        league.update(draw_districts(pool, cities, g))
+        league.update(draw_districts(pool, cities, g, taken))
     dist = {"girls": league, "boys": league}
     out = []
     for name in sorted(girls | boys):

@@ -288,7 +288,19 @@ def simulate_dual(home: Team, away: Team, *, seed: int, fidelity: str = "full",
                           key=lambda i: (i not in priority_finish, length[i], i))
 
     by_slot: dict[int, DualLine] = {}
-    clinch_at: float | None = None
+    # ‼️ A DUAL CAN BE DECIDED BEFORE A SINGLES BALL IS STRUCK. Doubles play FIRST and,
+    # in a doubles-heavy shape, can reach the clinch on their own: a format with as many
+    # doubles flights as its clinch (3S/4D clinches at 4 and has four doubles; 1S/4D
+    # clinches at 3 with four; 4S/5D at 5 with five) is decided outright by a doubles
+    # sweep. `clinch_at` is otherwise recorded only when a SINGLES court finishes, so in
+    # that case the first singles court took the abandon branch below with no clinch time
+    # and `_partial_score` divided by None — a crash, not a wrong score.
+    #
+    # Zero is the honest elapsed: singles had not started, so every abandoned court
+    # scores (0, 0). Only reachable with `play_all=False` — JHSAA varsity plays every
+    # flight out and never abandons, which is why this sat latent until the JV State
+    # event moved from 3S/2D (clinch 3, two doubles — unreachable) to 3S/4D.
+    clinch_at: float | None = 0.0 if (not play_all and max(points) >= clinch) else None
     s_finish = 0                                      # running order-of-finish counter
     for i in finish_order:
         if not play_all and max(points) >= clinch:   # dual decided — abandon in progress

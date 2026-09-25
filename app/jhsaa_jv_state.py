@@ -643,7 +643,11 @@ def run_jv_state(jv: dict, *, gender: str, year: int, seed: int = 0,
     if not field:
         return {}
     if qualifying is None:
-        qualifying = year >= jh.jv_qualifying_era()
+        # ‼️ AN EXPLICIT `expanded=` PINS THE OLD SHAPE. A caller naming the 20- or
+        # 36-team era is asking for that era on purpose — a test, or a re-render of an
+        # archive — and must not be silently upgraded to the 2096 qualifying shape by a
+        # fresh save's era resolving to 0. Only an unpinned call consults the era.
+        qualifying = expanded is None and year >= jh.jv_qualifying_era()
     if qualifying:
         # ‼️ THE 2096 SHAPE: no league berths, no champions, no at-larges, no committee.
         # Every JV team enters one of thirty buckets, each bucket plays down to four,

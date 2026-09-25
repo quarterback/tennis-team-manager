@@ -301,3 +301,123 @@ what they were. `jhsaa_jv_state.csv` keeps ONE schema across all three eras: `en
 `qualifier` from 2096, `selection_index` is empty (nothing is selected), and the varsity
 columns remain as context rather than as a criterion — that they were a criterion, at 70%
 weight on a JV event, is what this rule removed.
+
+---
+
+## Two crashes and an orphan, found running 2096
+
+**‼️ A DUAL CAN BE DECIDED BEFORE A SINGLES BALL IS STRUCK** (`engine/dual.py`). Doubles are
+played first, and a format with as many doubles flights as its clinch is decided outright by a
+doubles sweep: 3S/4D totals seven points, clinches at four, and has four doubles. `clinch_at`
+was recorded only when a SINGLES court finished, so the first singles court took the
+abandon-in-progress branch with no clinch time and `_partial_score` divided by `None`.
+
+It is a latent engine bug, not a JV one — **1S/4D (clinch 3, four doubles) and 4S/5D (clinch 5,
+five doubles) are both vulnerable too**, and only escape it because JHSAA varsity plays every
+flight out and never abandons. It sat unreachable while the JV event was 3S/2D, which clinches
+at three with two doubles. Fixed by seeding `clinch_at` to `0.0` when the doubles already
+decided it: singles had not started, so every abandoned court scores (0, 0).
+
+**An explicit era pin must win.** `run_jv_state(expanded=...)` names the 20- or 36-team shape on
+purpose — a test, or a re-render of an archive — and was being silently upgraded to the
+qualifying shape because a fresh save's era resolves to 0. Only an unpinned call consults the
+era now.
+
+**‼️ ONE IS NOT A DISTRICT, BY ANY ROUTE** (`_merge_orphan_districts`, `MIN_DISTRICT`). The
+loader already moved a played-up school's league with it, and a rename that broke realignment
+reapply was fixed separately, but neither covers a school the SEED DATA leaves alone. Seven
+were on the 2095 save, in two shapes and **none of them realigned**:
+
+| program | district | shape of the fault |
+|---|---|---|
+| Fort Paynes (2A) | Marble Valley League | league holds 18 — it is the only 2A member |
+| Shasta (9A) | Valle Vista League | league holds 24 — only 9A member |
+| New Casper (1A) | Hacienda League | league holds 9 — only 1A member |
+| Morne Caribou (5A) | Kajaani League | league holds 9 — only 5A member |
+| Ridgeline (3A) | Sky-Em League | league holds **one program statewide** |
+| Bridger (Group 2) | PacWest League | one program statewide |
+| San Vito (Group 2) | Vesterheim Athletic Association | one program statewide |
+
+Both shapes read identically downstream — `districts()` returns a bucket of one, and in a double
+round robin that is a program with no league season, no district record and no district place to
+seed off — so both are fixed in one pass at load, after every other league assignment. The
+school moves to the nearest league in its OWN championship group that is not itself orphaned:
+same area, then same county, then the largest, name breaking ties, so a re-load reproduces it
+and both genders land on the same map.
+
+---
+
+## Leagues become class-scoped entities (JHSAA rule 2096)
+
+**A league's identity is its code; the name is cosmetic.** Every district is stored as
+`"<code> <name>"` — `6A-1 Portland Interscholastic League`, the OSAA form — where the code is
+the classification's short form plus the block number.
+
+**What was wrong.** The name alone was the identity, and the bank was drawn per class from one
+statewide list, so the SAME name came up in several classes: Gold Valley League existed in 9A,
+7A, 3A and 1A as four separate leagues that anything grouping by name added into a 37-team one.
+Del Rey Athletic Association read as 52 programs across five classes. The leagues were already
+class-confined competitively — `district_count` cuts each class's pool on its own — so this was
+never a scheduling fault. It was a naming collision that made the renderer lie.
+
+**‼️ AND NO NAME REPEATS ANYWHERE.** The code disambiguates a league for the ENGINE; it does
+not stop two leagues reading as the same league to a person, and the owner's requirement is that
+they not. `league_names` now carries its used names AND used leading words across every class in
+one `taken` dict, threaded from the single `for g in GROUPS` loop rather than held module-global,
+so a rebuild stays a pure function of its inputs. **This is the reason the bank was expanded**:
+907 candidates with 900 distinct names and 191 distinct leading words against 96 leagues, so both
+constraints hold globally with headroom and the fall-through to a numbered District stays
+unreachable. Drawn on the real 2095 pools: 96 leagues, 96 distinct names, 96 distinct leading
+words, zero fall-throughs, every league 9-10 teams.
+
+Boys and girls share the code as they share the name — a league belongs to the SCHOOL. OSAA
+renumbers when it moves the geography and so does this.
+
+**The band is 8-11, with a hard floor.** `MAX_DISTRICT` 12 → 11, `DISTRICT_TARGET` 10 → 9.5,
+and a new `MIN_DISTRICT_SIZE` of 8 clamps the block count so no block can come out under it.
+The draw had a cap and no floor, which is how seven one-team districts reached the 2095 save —
+a ragged remainder or a realignment that empties a league had nothing to catch it. Every class
+in both genders now lands at 9-10.
+
+**`DISTRICT_DUAL_CAP` 18 → 16**, so a league card is 14-16 duals instead of 10-to-18.
+
+**‼️ The non-league allowance becomes a BACKFILL.** It was 4-8 drawn at random on top of
+whatever the league gave you, with a comment arguing that "a fixed season total would force
+wildly different non-league loads on schools of different districts". That was true at 6-13
+league sizes. At 8-11 it is not: `nondistrict_quota` tops every program up to
+`SEASON_DUAL_TARGET` (22), so an 8-team league plays 14 + 8 and a 10-team league plays 16 + 6,
+and a program in a short league gets its gap filled instead of simply playing a shorter season.
+The 4-8 band still clamps the top-up so a pathological league cannot demand a twelve-dual
+non-league card.
+
+**Name pool**: the owner's 114 stems × 7 suffixes are APPENDED to the 109 authored names rather
+than substituted. ‼️ THAT DOES NOT PRESERVE EXISTING LEAGUE NAMES and an earlier draft of this
+AAR wrongly said it did: `league_names` shuffles the whole bank, so growing it from 109 to 907
+reorders the walk and nearly every pick changes. A re-import therefore RENAMES most leagues, not
+just adds a code to them. That is accepted — the owner's rule is that leagues are not preserved
+across a realignment, which is already how the redraws behave, and OSAA renames when it moves the
+geography. Recorded because the previous wording would have had somebody treat a rename as a bug. 798 new candidates against ~100
+leagues is the headroom that lets `league_names` keep leading words distinct within a class
+without ever falling through to "District 7". No area affinity is carried on them — with the
+code as identity, flavour is all a name has to carry.
+
+**The runtime redraw is synced too.** `data/jhsaa/districting.json` is the app's copy of the
+importer's constants and bank (the app cannot read `scripts/`), and it held the old 12/10 rules
+and the 109-name bank — so an offseason class redraw would have drawn on different rules from a
+fresh import. Worse, `districting_config` parsed the target with `int()`, which would have turned
+9.5 into 9 silently. Both fixed, plus `min_district_size` carried across, and
+`district_count` verified identical between importer and runtime for every pool size 0-200.
+
+**And `redistrict` now claims names statewide.** Its `taken`/`heads` were scoped to the class
+being redrawn, so an offseason redraw could hand 3A a name 9A already holds — drawn
+independently, the current pools yield only 71 distinct names for 95 leagues. The foreign claim
+set is derived from `rows`, which already holds the whole state, rather than threaded in as a
+parameter: `redistrict` is the single door all six redraw scripts come through, so deriving it
+there fixes every caller without touching any of them. A name the class is RETIRING is excluded
+from the foreign set, so it stays available to the class giving it up.
+
+**‼️ THIS NEEDS A RE-IMPORT TO TAKE EFFECT.** League membership and names live in
+`data/jhsaa/schools.json`, written by `scripts/import_jhsaa.py`. Nothing changes in a save until
+that is re-run, and re-running it relabels every league in every archive — the codes are new
+strings. `_merge_orphan_districts` stays as the load-time backstop for any save that has not
+been re-imported.
