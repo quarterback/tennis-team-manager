@@ -344,3 +344,52 @@ seed off — so both are fixed in one pass at load, after every other league ass
 school moves to the nearest league in its OWN championship group that is not itself orphaned:
 same area, then same county, then the largest, name breaking ties, so a re-load reproduces it
 and both genders land on the same map.
+
+---
+
+## Leagues become class-scoped entities (JHSAA rule 2096)
+
+**A league's identity is its code; the name is cosmetic.** Every district is stored as
+`"<code> <name>"` — `6A-1 Portland Interscholastic League`, the OSAA form — where the code is
+the classification's short form plus the block number.
+
+**What was wrong.** The name alone was the identity, and the bank was drawn per class from one
+statewide list, so the SAME name came up in several classes: Gold Valley League existed in 9A,
+7A, 3A and 1A as four separate leagues that anything grouping by name added into a 37-team one.
+Del Rey Athletic Association read as 52 programs across five classes. The leagues were already
+class-confined competitively — `district_count` cuts each class's pool on its own — so this was
+never a scheduling fault. It was a naming collision that made the renderer lie.
+
+The code makes them distinct by construction, which means a name no longer has to be unique
+statewide to be unambiguous. That is how a real association does it: OSAA runs `4A-4 Sky-Em
+League` and renumbers when it moves the geography. Boys and girls share the code as they share
+the name — a league belongs to the SCHOOL.
+
+**The band is 8-11, with a hard floor.** `MAX_DISTRICT` 12 → 11, `DISTRICT_TARGET` 10 → 9.5,
+and a new `MIN_DISTRICT_SIZE` of 8 clamps the block count so no block can come out under it.
+The draw had a cap and no floor, which is how seven one-team districts reached the 2095 save —
+a ragged remainder or a realignment that empties a league had nothing to catch it. Every class
+in both genders now lands at 9-10.
+
+**`DISTRICT_DUAL_CAP` 18 → 16**, so a league card is 14-16 duals instead of 10-to-18.
+
+**‼️ The non-league allowance becomes a BACKFILL.** It was 4-8 drawn at random on top of
+whatever the league gave you, with a comment arguing that "a fixed season total would force
+wildly different non-league loads on schools of different districts". That was true at 6-13
+league sizes. At 8-11 it is not: `nondistrict_quota` tops every program up to
+`SEASON_DUAL_TARGET` (22), so an 8-team league plays 14 + 8 and a 10-team league plays 16 + 6,
+and a program in a short league gets its gap filled instead of simply playing a shorter season.
+The 4-8 band still clamps the top-up so a pathological league cannot demand a twelve-dual
+non-league card.
+
+**Name pool**: the owner's 114 stems × 7 suffixes are APPENDED to the 109 authored names, not
+substituted, so every existing league keeps what it has. 798 new candidates against ~100
+leagues is the headroom that lets `league_names` keep leading words distinct within a class
+without ever falling through to "District 7". No area affinity is carried on them — with the
+code as identity, flavour is all a name has to carry.
+
+**‼️ THIS NEEDS A RE-IMPORT TO TAKE EFFECT.** League membership and names live in
+`data/jhsaa/schools.json`, written by `scripts/import_jhsaa.py`. Nothing changes in a save until
+that is re-run, and re-running it relabels every league in every archive — the codes are new
+strings. `_merge_orphan_districts` stays as the load-time backstop for any save that has not
+been re-imported.

@@ -899,14 +899,36 @@ def _freshman_class_size(school_key: str, entry_year: int, classification: str,
     rng = random.Random(f"{salt}|jhsaa-class|{school_key}|{entry_year}")
     return max(1, round(rng.gauss(target, target * 0.35)))
 
-# Non-district duals per team (owner rule 2027-08). The POSTSEASON IS EXEMPT.
-# This is an ALLOWANCE ON TOP of the district card, not a season total: district
-# size sets most of the schedule (a 12-team district is 18 league duals under
-# `DISTRICT_DUAL_CAP`, a 6-team one is 10), so a fixed season total would force
-# wildly different non-league loads on schools of different districts. To shorten
-# seasons, lower `DISTRICT_DUAL_CAP` or shrink the districts (`MAX_DISTRICT` in
-# `scripts/import_jhsaa.py`) — not this.
+# Non-district duals per team. The POSTSEASON IS EXEMPT.
+#
+# ‼️ IT IS A BACKFILL TO A SEASON TOTAL SINCE 2096 (owner rule), not a flat allowance.
+# It was 4-8 drawn at random on top of whatever the league gave you, on the reasoning
+# that "a fixed season total would force wildly different non-league loads on schools of
+# different districts" — true when leagues ran 6 to 13 and the league card was anything
+# from 10 duals to 18. The 8-11 band retired that: a league card is now 14-16, so
+# topping up to a common total costs 6-8 non-league duals for everybody and the loads
+# are not wildly different at all. A program in a short league gets the gap filled
+# instead of simply playing a shorter season.
+#
+# The band still clamps the top-up, so a pathological league can never demand a
+# twelve-dual non-league card or drop below the four that make a non-league schedule
+# worth having.
 NONDISTRICT_MIN, NONDISTRICT_MAX = 4, 8
+
+#: Total regular-season duals a program aims at — league card plus the non-league
+#: backfill. 16 league + 6 = 22 for a 9-to-11-team league; a 8-team league plays 14 and
+#: backfills 8 to the same place.
+SEASON_DUAL_TARGET = 22
+
+
+def nondistrict_quota(league_duals: int) -> int:
+    """How many non-league duals a program with `league_duals` league duals is owed.
+
+    Tops up to `SEASON_DUAL_TARGET`, clamped to the band. Deterministic — the season
+    length is a structural number now, not a per-program roll, which is the whole point
+    of backfilling rather than allowancing."""
+    return max(NONDISTRICT_MIN,
+               min(NONDISTRICT_MAX, SEASON_DUAL_TARGET - max(0, league_duals)))
 
 # How that allowance is spread across the season (owner rule 2027-08). A high-school
 # card is not "all the non-league games, then all the league ones" — it opens
@@ -8318,7 +8340,24 @@ def _orient(order: list[list[tuple[int, int]]], mirror: list[int], n: int,
 #: all), which is exactly how real oversized high-school leagues schedule; the
 #: tiebreak ladder already reads head-to-head and series aggregate off the
 #: meetings actually played, so 1-vs-2 meetings need no special casing.
-DISTRICT_DUAL_CAP = 18
+#: ‼️ SIXTEEN SINCE 2096 (owner rule), down from eighteen. The league band is 8-11 now
+#: (`import_jhsaa.MIN_DISTRICT_SIZE` / `MAX_DISTRICT`), so a full double is 14 to 20 and
+#: this holds everything from nine up at sixteen: every program's league card is 14-16
+#: duals instead of the 10-to-18 spread the old 6-13 sizes produced.
+DISTRICT_DUAL_CAP = 16
+
+
+def district_dual_count(n: int) -> int:
+    """League duals per team in a league of `n`, the number `district_rounds` builds.
+
+    Pass 1 always plays in full (n-1 per team); pass 2 runs until the per-team total
+    reaches `DISTRICT_DUAL_CAP`. An odd `n` sits a team out each round, so a real total
+    can land a dual under the cap — this returns the SCHEDULED number, which is what a
+    backfill should size against. `nondistrict_quota` is the only caller that needs it
+    ahead of the draw."""
+    if n < 2:
+        return 0
+    return min(2 * (n - 1), DISTRICT_DUAL_CAP)
 
 
 def district_pass1_rounds(n: int) -> int:
@@ -10965,7 +11004,15 @@ def play_regular_season(by_group: dict, year: int, gender: str,
     # The non-district ALLOWANCE, split into windows up front. `owed`/`played` are shared
     # across every window, so a program's total card is the allowance it drew and no
     # pairing can quietly recreate a home-and-home that only the league is meant to have.
-    quota = {id(t): NONDISTRICT_MIN + xrng.randrange(NONDISTRICT_MAX - NONDISTRICT_MIN + 1)
+    # ‼️ THE BACKFILL, NOT A ROLL (owner rule 2096). A program's non-league card is
+    # whatever its LEAGUE card leaves short of `SEASON_DUAL_TARGET`, so a 8-team league
+    # (14 league duals) plays 8 non-league and a 10-team league (16, capped) plays 6 —
+    # both arrive at 22. Read off the district the team is actually in, per gender, so
+    # a class whose girls league is a size larger than its boys one backfills each
+    # correctly rather than sharing one number.
+    league_n = {id(t): len(ts) for st in by_group.values() for ts in st.values()
+                for t in ts}
+    quota = {id(t): nondistrict_quota(district_dual_count(league_n[id(t)]))
              for t in every_team}
     played: dict[int, set[str]] = {id(t): set() for t in every_team}
     reserved = MID_NONDISTRICT + (1 if CHALLENGE_ENABLED else 0)
