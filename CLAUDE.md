@@ -1744,9 +1744,8 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   - **Scheduling**: squads join `_nondistrict_pairs`' pool with their school's own
     allowance each window. A squad never meets its own school or another squad; it
     MAY meet a league mate's V1 (only V1-vs-V1 league meetings are the league's).
-    Ordinary ±1 class gate, EXCEPT big-program squads (`SQUAD_DROP_GROUPS` 9A/8A/
-    7A/Group 1) may also play DOWN to any smaller class's V1 — owner: this is not
-    a "cross-class only" feature. Schedules show the school name plus a V2/V3 chip
+    ‼️ NO CLASS GATE on non-district pairing for ANYONE (owner rule 2097 — the
+    old ±1 gate is removed association-wide; the geography matcher decides). Schedules show the school name plus a V2/V3 chip
     (the JV idiom); never the word "varsity". Squad duals are always
     `phase="regular"` at the squad's shape, whatever window they fall in. ‼️ The V1
     gets **no rest or rotation relief** (`_squad_v1_lineup` skips both).
@@ -2767,7 +2766,7 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     true ceiling. Columns read "Pot est."; the export has `potential_grade` (estimate)
     AND `ceiling_grade` (fixed) — analyse the latter. `POT_ESTIMATE_ENABLED` kills it.
   - **‼️ THE NON-DISTRICT DRAW NO LONGER MATCHES ON STRENGTH** (`_nondistrict_pairs`:
-    geography + availability + the ±1 class gate). It used to add `|strength gap|`,
+    geography + availability; the ±1 class gate was removed in 2097). It used to add `|strength gap|`,
     which scheduled the association's inequality straight back out (2080: early
     non-district strength correlation .84, median gap 2.3 OVR; a 50-55 team was .312 in
     9A and .747 in 1A). Do not put it back. District, rivalries, the challenge and the

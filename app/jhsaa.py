@@ -766,9 +766,6 @@ SQUAD_FORMATS = {
 #: seeding score that are built on TOSS. Applied uniformly.
 SQUAD_DISCOUNT = {"V2": 0.61, "V3": 0.39}
 
-#: The big programs whose squads may play DOWN to any smaller class's V1 (rule
-#: 2097). Every other squad pairing keeps the ordinary ±1 class gate.
-SQUAD_DROP_GROUPS = ("9A", "8A", "7A", "Group 1")
 
 
 ROSTER_SIZE = 12          # legacy flat default; real depth is per-classification, see below
@@ -11179,17 +11176,6 @@ def _rivalry_pairs(teams: list[TeamSeason], year: int,
     return pairs
 
 
-def _squad_drops(a, b) -> bool:
-    """A big program's squad meeting a SMALLER class's V1 — the one pairing that
-    may reach past the ±1 class gate (rule 2097)."""
-    for sq, v1 in ((a, b), (b, a)):
-        if (isinstance(sq, SquadTeam) and not isinstance(v1, SquadTeam)
-                and sq.school.group in SQUAD_DROP_GROUPS
-                and _GROUP_IX[v1.school.group] > _GROUP_IX[sq.school.group]):
-            return True
-    return False
-
-
 def _nondistrict_pairs(teams: list[TeamSeason], rng: random.Random,
                        owed: dict[int, int], played: dict[int, set[str]]) -> list[tuple]:
     """PAIR the non-district card — it does not play it.
@@ -11203,8 +11189,9 @@ def _nondistrict_pairs(teams: list[TeamSeason], rng: random.Random,
     Opponents are drawn on the two things that actually decide a real non-league card:
       1. GEOGRAPHY  — same county, then same area, then anywhere (`GEO_WEIGHT`).
       2. AVAILABILITY — both schools still owe duals this window, and haven't met.
-    Classification is a gate on top: same level or ONE level apart, never further, so a
-    7A card mixes 7A and 6A and never lands on 1A.
+    ‼️ NO CLASSIFICATION GATE (owner rule 2097). There used to be one — same level or
+    one apart — and it is gone for everyone: a program schedules whoever the matcher
+    finds, at any class.
 
     ‼️ TALENT IS DELIBERATELY NOT A CRITERION (owner rule 2026-09). The draw used
     to add |strength gap| to the score, so a strong program's card was other strong
@@ -11228,21 +11215,17 @@ def _nondistrict_pairs(teams: list[TeamSeason], rng: random.Random,
     while len(need) > 1 and guard < 200000:
         guard += 1
         a = need[rng.randrange(len(need))]
-        ga = _GROUP_IX[a.school.group]
         a_sq = isinstance(a, SquadTeam)
-        # SPLIT SQUADS (rule 2097). A squad may meet a league mate's V1 (only
-        # V1-vs-V1 league meetings are the league's), never its own school or
-        # another squad, and sits under the ordinary ±1 class gate — except that
-        # a big program's squad (`SQUAD_DROP_GROUPS`) may also play DOWN to any
-        # smaller class's V1. With no squads in the pool (every season before
-        # 2097) every added term is a no-op.
+        # NO CLASSIFICATION GATE (owner rule 2097): non-district opponents are
+        # whoever the geography matcher finds, at any class — the old ±1 gate is
+        # gone for everyone. SPLIT SQUADS: a squad may meet a league mate's V1
+        # (only V1-vs-V1 league meetings are the league's), never its own school
+        # or another squad.
         cands = [t for t in need if t is not a
                  and ((a_sq or isinstance(t, SquadTeam))
                       or (t.school.group, t.school.district)
                       != (a.school.group, a.school.district))
                  and t.school.name not in played[id(a)]
-                 and (abs(_GROUP_IX[t.school.group] - ga) <= 1
-                      or _squad_drops(a, t))
                  and not (a_sq and isinstance(t, SquadTeam))
                  and t.school.name != a.school.name]
         if not cands:

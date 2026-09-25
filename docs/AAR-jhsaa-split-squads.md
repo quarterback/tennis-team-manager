@@ -49,9 +49,8 @@ squad's duals so far. The pairing rules:
 - A squad never plays its own school or another squad.
 - A squad may play a league mate's V1. Only a V1-vs-V1 league meeting belongs to
   the league season.
-- A squad dual keeps the ordinary ±1 classification gate. The one exception:
-  squads from the big programs (`SQUAD_DROP_GROUPS`: 9A, 8A, 7A, Group 1) may also
-  play DOWN to any smaller class's V1.
+- There is no classification gate at all, for squads or anyone else (owner rule
+  2097). The old ±1 gate on non-district pairing is gone association-wide.
 
 On the calendar, a squad dual is dated once, on the V1's varsity calendar.
 `jh_match_key` names the squad side `School#V2`, which gives each squad its own

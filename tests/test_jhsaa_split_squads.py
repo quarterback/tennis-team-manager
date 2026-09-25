@@ -177,10 +177,12 @@ def test_pairing_rules():
     seen = _pairs_seen([a, b, c, e, f, sa, se])
     # A squad may play a league mate's V1...
     assert frozenset({("A", True), ("B", False)}) in seen
-    # ...a big program's squad may play DOWN to a much smaller class...
+    # ...and nobody has a class gate any more, squad or V1.
     assert frozenset({("A", True), ("C", False)}) in seen
-    # ...but an ordinary program's squad keeps the ±1 gate.
-    assert not any(("E", True) in p and ({("C", False), ("F", False)} & p) for p in seen)
+    assert frozenset({("E", True), ("F", False)}) in seen or \
+        frozenset({("E", True), ("C", False)}) in seen
+    assert any({"A", "B"} & {n for n, _ in p} and {"C", "F"} & {n for n, _ in p}
+               and not any(sq for _, sq in p) for p in seen)
 
 
 # --- 5. rating discounts ---------------------------------------------------------
