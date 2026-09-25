@@ -5304,6 +5304,7 @@ def load_schools(gender: str) -> list[School]:
             locality=r.get("locality", ""),
             state=r.get("state", ""),
         ))
+    _merge_orphan_districts(out)
     # Compute into a local, publish, return the LOCAL (the gthread rule): a sibling
     # thread can clear this between the store and the return.
     _schoolobj_cache.clear()          # one version is live at a time
@@ -5533,6 +5534,55 @@ def _plays_up_row(row: dict, pmap: dict | None = None) -> str | None:
     it every call costs a database round trip."""
     return plays_up(row["name"], bool(row.get("play_up")), pmap,
                     row.get("classification"))
+
+
+#: The fewest programs a district may hold. ‼️ ONE IS NOT A DISTRICT — in a double
+#: round robin a lone member has NO league season at all, no district record, and no
+#: district place to seed off. The loader already says this about play-ups; the rule
+#: has to hold for every route in, not just that one.
+MIN_DISTRICT = 2
+
+
+def _merge_orphan_districts(schools: list[School]) -> None:
+    """Fold any district holding fewer than `MIN_DISTRICT` programs into a real one,
+    in place, before anything reads the leagues.
+
+    ‼️ A PLAY-UP IS NOT THE ONLY WAY TO BE ORPHANED, which is what this exists for.
+    The loader already moves a played-up school's league with it, and a rename that
+    broke realignment reapply was fixed separately — but neither covers a school the
+    SEED DATA simply leaves alone. Measured on the 2095 save, seven were, in two
+    shapes and NEITHER of them realigned:
+      * the league is populous and the school is its class's only member of it
+        (Fort Paynes, the one 2A school in an 18-program Marble Valley League);
+      * the league holds exactly one program statewide (Sky-Em, PacWest, Vesterheim).
+    Both read the same downstream — `districts()` returns a bucket of one — so both
+    are fixed here rather than at either source.
+
+    The school moves to the nearest league IN ITS OWN championship group that is not
+    itself orphaned: same area first, then same county, then the largest, with the
+    name breaking every tie so the result is deterministic and a re-load reproduces
+    it. Never across groups — a district is (group, league) and moving the group
+    would move what the school competes for."""
+    by: dict[tuple, list[School]] = defaultdict(list)
+    for s in schools:
+        by[(s.group, s.district)].append(s)
+    orphans = sorted((k for k, v in by.items() if len(v) < MIN_DISTRICT),
+                     key=lambda k: (k[0], k[1]))
+    for grp, lg in orphans:
+        # Targets are leagues of the same group that are NOT orphaned themselves, so
+        # two lone schools never merge into a district of two nobody else plays.
+        targets = [(k[1], v) for k, v in by.items()
+                   if k[0] == grp and k[1] != lg and len(v) >= MIN_DISTRICT]
+        if not targets:
+            continue
+        for s in list(by[(grp, lg)]):
+            best = min(targets, key=lambda t: (
+                0 if any(m.area == s.area for m in t[1]) else 1,
+                0 if any(m.county == s.county for m in t[1]) else 1,
+                -len(t[1]), t[0]))
+            by[(grp, lg)].remove(s)
+            s.district = best[0]
+            by[(grp, best[0])].append(s)
 
 
 def districts(gender: str, group: str) -> dict[str, list[School]]:

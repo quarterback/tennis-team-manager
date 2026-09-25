@@ -301,3 +301,46 @@ what they were. `jhsaa_jv_state.csv` keeps ONE schema across all three eras: `en
 `qualifier` from 2096, `selection_index` is empty (nothing is selected), and the varsity
 columns remain as context rather than as a criterion — that they were a criterion, at 70%
 weight on a JV event, is what this rule removed.
+
+---
+
+## Two crashes and an orphan, found running 2096
+
+**‼️ A DUAL CAN BE DECIDED BEFORE A SINGLES BALL IS STRUCK** (`engine/dual.py`). Doubles are
+played first, and a format with as many doubles flights as its clinch is decided outright by a
+doubles sweep: 3S/4D totals seven points, clinches at four, and has four doubles. `clinch_at`
+was recorded only when a SINGLES court finished, so the first singles court took the
+abandon-in-progress branch with no clinch time and `_partial_score` divided by `None`.
+
+It is a latent engine bug, not a JV one — **1S/4D (clinch 3, four doubles) and 4S/5D (clinch 5,
+five doubles) are both vulnerable too**, and only escape it because JHSAA varsity plays every
+flight out and never abandons. It sat unreachable while the JV event was 3S/2D, which clinches
+at three with two doubles. Fixed by seeding `clinch_at` to `0.0` when the doubles already
+decided it: singles had not started, so every abandoned court scores (0, 0).
+
+**An explicit era pin must win.** `run_jv_state(expanded=...)` names the 20- or 36-team shape on
+purpose — a test, or a re-render of an archive — and was being silently upgraded to the
+qualifying shape because a fresh save's era resolves to 0. Only an unpinned call consults the
+era now.
+
+**‼️ ONE IS NOT A DISTRICT, BY ANY ROUTE** (`_merge_orphan_districts`, `MIN_DISTRICT`). The
+loader already moved a played-up school's league with it, and a rename that broke realignment
+reapply was fixed separately, but neither covers a school the SEED DATA leaves alone. Seven
+were on the 2095 save, in two shapes and **none of them realigned**:
+
+| program | district | shape of the fault |
+|---|---|---|
+| Fort Paynes (2A) | Marble Valley League | league holds 18 — it is the only 2A member |
+| Shasta (9A) | Valle Vista League | league holds 24 — only 9A member |
+| New Casper (1A) | Hacienda League | league holds 9 — only 1A member |
+| Morne Caribou (5A) | Kajaani League | league holds 9 — only 5A member |
+| Ridgeline (3A) | Sky-Em League | league holds **one program statewide** |
+| Bridger (Group 2) | PacWest League | one program statewide |
+| San Vito (Group 2) | Vesterheim Athletic Association | one program statewide |
+
+Both shapes read identically downstream — `districts()` returns a bucket of one, and in a double
+round robin that is a program with no league season, no district record and no district place to
+seed off — so both are fixed in one pass at load, after every other league assignment. The
+school moves to the nearest league in its OWN championship group that is not itself orphaned:
+same area, then same county, then the largest, name breaking ties, so a re-load reproduces it
+and both genders land on the same map.
