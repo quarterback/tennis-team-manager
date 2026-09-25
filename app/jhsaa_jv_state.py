@@ -128,6 +128,17 @@ STATE_ROUND_NAMES = {2: "Final", 4: "Semifinals", 8: "Quarterfinals",
                      64: "Triple Octafinals"}
 
 
+#: A JV State exit, named for the ROUND it happened in rather than banded off the
+#: alive count. ‼️ ONLY THE ROUNDS WHOSE BAND WOULD BE WRONG OR MUTE: `world._finish_label`
+#: reads 64 and 32 as "Round of 64" / "Round of 32", which are true but say nothing about
+#: where in a 120-team draw that is, and it reads 16 as "Octofinalist" in the VARSITY
+#: spelling. Quarterfinals, Semifinals and the Final already band correctly and are
+#: deliberately absent, so every other archive stays byte-identical.
+STATE_FINISH_LABELS = {"Triple Octafinals": "Triple Octafinalist",
+                       "Doubles Octafinals": "Doubles Octafinalist",
+                       "Octafinals": "Octafinalist"}
+
+
 def state_round_names(field_n: int, rounds: list) -> list[str]:
     """Debate-parlance names for a JV State draw, one per round actually played.
 

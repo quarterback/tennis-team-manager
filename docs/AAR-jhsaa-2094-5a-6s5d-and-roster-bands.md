@@ -286,6 +286,15 @@ Octafinals, Quarterfinals, Semifinals, Final — because a 120-team bracket runs
 words three rounds early and debate has named draws this size for a century. JV only;
 `world._round_label` still bands varsity as "Round of 32".
 
+**Finishes follow the rounds.** A JV State exit is named for the round it happened in —
+Triple Octafinalist, Doubles Octafinalist, Octafinalist — rather than banded off the alive
+count, which would read "Round of 64" and "Round of 32" and tell a reader nothing about where
+in a 120-team draw that is. Scoped to those three names, the same carve-out shape the
+Parastate exit already uses, so **varsity keeps its own spelling**: a JV team is an
+*Octafinalist*, a varsity team is an *Octofinalist*, and each event uses its own vocabulary.
+Quarterfinals, Semifinals and the Final already band correctly and are deliberately not
+overridden.
+
 **Archives keep reading.** `jv_qualifying_era()` gates the new shape on the season, the same
 idiom as `jv_parastate_era`, so seasons played at twenty and at thirty-six still render as
 what they were. `jhsaa_jv_state.csv` keeps ONE schema across all three eras: `entry` reads
