@@ -217,7 +217,8 @@ CREATE TABLE IF NOT EXISTS world_jhsaa_dual (
   lines TEXT DEFAULT '[]',
   level TEXT DEFAULT 'v', tied INTEGER DEFAULT 0, shape TEXT DEFAULT '',
   played TEXT DEFAULT '[]',
-  tiebreak TEXT DEFAULT '[]'
+  tiebreak TEXT DEFAULT '[]',
+  squad TEXT DEFAULT '', opp_squad TEXT DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS ix_jhsaa_dual ON world_jhsaa_dual(world_id, year, gender, school);
 -- ‼️ THE MIRROR INDEX IS NOT OPTIONAL. Since the box score moved to the HOME row only,
@@ -402,7 +403,12 @@ def init_schema() -> None:
     # of `lines` counts a match and a 10-point decider is not one.
     for col, typ in (("level", "TEXT DEFAULT 'v'"), ("tied", "INTEGER DEFAULT 0"),
                      ("shape", "TEXT DEFAULT ''"), ("played", "TEXT DEFAULT '[]'"),
-                     ("tiebreak", "TEXT DEFAULT '[]'")):
+                     ("tiebreak", "TEXT DEFAULT '[]'"),
+                     # SPLIT SQUADS (JHSAA rule 2097): `squad` names the V2/V3 on
+                     # the squad's own (JV-level) row, `opp_squad` the squad a V1
+                     # row played. '' on every other row, so every season archived
+                     # before 2097 reads exactly as it did.
+                     ("squad", "TEXT DEFAULT ''"), ("opp_squad", "TEXT DEFAULT ''")):
         try:
             conn.execute(f"ALTER TABLE world_jhsaa_dual ADD COLUMN {col} {typ}")
         except sqlite3.OperationalError:
@@ -442,6 +448,26 @@ def _db() -> sqlite3.Connection:
 # bytes raises, but two call sites already swallow ValueError to survive a
 # malformed row, so a missed reader reads as "this season has no box scores".
 # `grep -rn 'json.loads(.*lines' app/` before adding a ninth.
+# SPLIT SQUADS (JHSAA rule 2097). A V1-vs-squad dual archives a VARSITY row for
+# the V1 (tagged `opp_squad`) and a JV row for the squad (tagged `squad`), each
+# with the full box score. A whole-season fold that reads `home=1` and credits
+# BOTH sides off that one row must therefore (a) also read a V1 squad row when
+# the squad hosted, and (b) credit only the V1 side of it. `_JH_V1_ROWS` is (a);
+# `_jh_credit_sides` is (b). Folds that describe V1-vs-V1 play only (scoreline
+# realism, gap bands, flight efficiency, head-to-head) exclude squad rows with
+# `_JH_NO_SQUAD` instead.
+_JH_V1_ROWS = "(home=1 OR COALESCE(opp_squad,'')<>'')"
+_JH_NO_SQUAD = " AND COALESCE(opp_squad,'')='' AND COALESCE(squad,'')=''"
+
+
+def _jh_credit_sides(d, home_school: str, away_school: str) -> tuple:
+    """((lines key, school), ...) to credit for ONE row of a `_JH_V1_ROWS` scan."""
+    if d["opp_squad"]:
+        return ((("home", home_school),) if d["home"]
+                else (("away", home_school),))
+    return (("home", home_school), ("away", away_school))
+
+
 def pack_lines(obj) -> bytes:
     """Encode a box score for storage. Compact separators first — it shrinks the
     text before zlib ever sees it, and costs nothing to read back."""
@@ -464,6 +490,11 @@ def _archive_lines(d: dict):
     written before this still carry both copies and still read — nothing is
     migrated, the reader simply prefers its own row when it has one.
     """
+    # ‼️ A SQUAD DUAL (rule 2097) keeps its box score on BOTH rows: one row is
+    # varsity (the V1) and the other JV (the squad), so they sit at different
+    # levels and no home-row counterpart lookup can bridge them.
+    if d.get("squad") or d.get("opp_squad"):
+        return pack_lines(d.get("lines", []))
     return pack_lines(d.get("lines", [])) if d.get("home") else None
 
 
@@ -4239,7 +4270,8 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                      d["phase"], d["pf"], d["pa"], int(d["won"]), int(d["district"]),
                      _archive_lines(d), d.get("level", "v"),
                      int(bool(d.get("tied"))), d.get("shape", ""), "[]",
-                     json.dumps(d.get("tiebreak") or []))
+                     json.dumps(d.get("tiebreak") or []),
+                     d.get("squad") or "", d.get("opp_squad") or "")
                     for t in season["teams"].values() for d in t.schedule]
             # `played` is JV-only: a varsity row's participants are already in its
             # lines, and the career ledger's JV column folds this without having to
@@ -4248,13 +4280,14 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                       d["phase"], d["pf"], d["pa"], int(d["won"]), int(d["district"]),
                       _archive_lines(d), d.get("level", "jv"),
                       int(bool(d.get("tied"))),
-                      d.get("shape", ""), json.dumps(d.get("played", [])), "[]")
+                      d.get("shape", ""), json.dumps(d.get("played", [])), "[]",
+                      d.get("squad") or "", d.get("opp_squad") or "")
                      for t in (season.get("jv") or {}).values() for d in t.schedule]
             conn.executemany(
                 "INSERT INTO world_jhsaa_dual (world_id, year, gender, school, opp,"
                 " home, phase, pf, pa, won, district, lines, level, tied, shape, played,"
-                " tiebreak)"
-                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
+                " tiebreak, squad, opp_squad)"
+                " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", rows)
             # THE INDIVIDUAL STATE TOURNAMENTS — one row per completed draw, in their
             # own table rather than on the summary blob above (see the schema note).
             conn.executemany(
@@ -5030,17 +5063,18 @@ def jhsaa_underplayed(world_id: int, gender: str, salt: str = "",
                 # the home row (see `_archive_lines`) and that one row names both
                 # teams, so this reads half the rows it used to and counts exactly
                 # the same appearances — on new and legacy archives alike.
-                "SELECT school, opp, lines FROM world_jhsaa_dual"
+                # SPLIT SQUADS (rule 2097): a V1 row that played a squad is read
+                # whichever side hosted, and credits the V1 side ONLY.
+                "SELECT school, opp, home, opp_squad, lines FROM world_jhsaa_dual"
                 " WHERE world_id=? AND year=? AND gender=?"
-                " AND COALESCE(level,'v')='v' AND home=1",
+                " AND COALESCE(level,'v')='v' AND " + _JH_V1_ROWS,
                 (world_id, year, gender)):
             hs = alias.get(d["school"], d["school"])
             aw = alias.get(d["opp"], d["opp"])
             for ln in unpack_lines(d["lines"]):
-                for nm in ln.get("home") or ():
-                    played[hs][nm] += 1
-                for nm in ln.get("away") or ():
-                    played[aw][nm] += 1
+                for key, school in _jh_credit_sides(d, hs, aw):
+                    for nm in ln.get(key) or ():
+                        played[school][nm] += 1
     finally:
         conn.close()
     rows = []
@@ -5097,8 +5131,9 @@ def jhsaa_record_context(world_id: int, year: int, gender: str) -> dict:
     conn = _db()
     try:
         rows = conn.execute(
-            "SELECT school, opp, phase, pf, pa, won, tied, lines FROM world_jhsaa_dual"
-            " WHERE world_id=? AND year=? AND gender=? AND home=1"
+            "SELECT school, opp, home, opp_squad, phase, pf, pa, won, tied, lines"
+            " FROM world_jhsaa_dual"
+            " WHERE world_id=? AND year=? AND gender=? AND " + _JH_V1_ROWS +
             " AND COALESCE(level,'v')='v'",
             (world_id, year, gender)).fetchall()
     finally:
@@ -5108,6 +5143,12 @@ def jhsaa_record_context(world_id: int, year: int, gender: str) -> dict:
         lines = unpack_lines(r["lines"]) or []
         home_won = bool(r["won"]); tied = bool(r["tied"])
         base = {"phase": r["phase"], "level": "v", "tied": tied}
+        if r["opp_squad"]:
+            # A V1-vs-squad dual: the V1's own result, and nothing for the squad.
+            sched.setdefault(r["school"], []).append(
+                {**base, "home": bool(r["home"]), "won": bool(r["won"]),
+                 "pf": r["pf"], "pa": r["pa"], "lines": lines})
+            continue
         sched.setdefault(r["school"], []).append(
             {**base, "home": True, "won": home_won, "pf": r["pf"], "pa": r["pa"],
              "lines": lines})
@@ -5173,7 +5214,7 @@ def jhsaa_scoreline_realism(world_id: int, year: int, gender: str) -> dict:
     try:
         rows = conn.execute(
             "SELECT phase, lines FROM world_jhsaa_dual"
-            " WHERE world_id=? AND year=? AND gender=? AND home=1"
+            " WHERE world_id=? AND year=? AND gender=? AND home=1" + _JH_NO_SQUAD + ""
             " AND COALESCE(level,'v')='v'",
             (world_id, year, gender)).fetchall()
     finally:
@@ -5394,7 +5435,7 @@ def jhsaa_gap_bands(world_id: int, year: int, gender: str, salt: str = "") -> di
     try:
         rows = conn.execute(
             "SELECT school, opp, lines FROM world_jhsaa_dual"
-            " WHERE world_id=? AND year=? AND gender=? AND home=1"
+            " WHERE world_id=? AND year=? AND gender=? AND home=1" + _JH_NO_SQUAD + ""
             " AND COALESCE(level,'v')='v'",
             (world_id, year, gender)).fetchall()
     finally:
@@ -5561,11 +5602,18 @@ def jhsaa_program_wins(world_id: int, gender: str, school: str,
         # own `school`, never off `home` — every row here IS the home row.
         nameset = set(names)
         for d in conn.execute(
-                "SELECT year, school, lines FROM world_jhsaa_dual"
+                "SELECT year, school, home, opp_squad, lines FROM world_jhsaa_dual"
                 f" WHERE world_id=? AND gender=? AND COALESCE(level,'v')='v'"
-                f" AND home=1 AND (school IN ({qmarks}) OR opp IN ({qmarks}))",
+                f" AND {_JH_V1_ROWS} AND (school IN ({qmarks}) OR opp IN ({qmarks}))",
                 (world_id, gender, *names, *names)):
-            ours_home = d["school"] in nameset
+            if d["opp_squad"]:
+                # SPLIT SQUADS: a V1 row that played a squad credits the V1 only —
+                # read as THIS school's only if this school is that V1.
+                if d["school"] not in nameset:
+                    continue
+                ours_home = bool(d["home"])
+            else:
+                ours_home = d["school"] in nameset
             side = "home" if ours_home else "away"
             for ln in unpack_lines(d["lines"]):
                 slot = ln.get("slot") or ""
@@ -5683,12 +5731,12 @@ def jhsaa_career_wins(world_id: int, gender: str, salt: str = "",
                 # home side and names both teams, so one row credits both careers.
                 # `home_won` is relative to THAT row's own school, which is why each
                 # side's `won` is derived from it rather than from a `home` flag.
-                "SELECT year, school, opp, lines FROM world_jhsaa_dual"
+                "SELECT year, school, opp, home, opp_squad, lines FROM world_jhsaa_dual"
                 " WHERE world_id=? AND gender=? AND COALESCE(level,'v')='v'"
-                " AND home=1",
+                " AND " + _JH_V1_ROWS,
                 (world_id, gender)):
-            sides = (("home", alias.get(d["school"], d["school"]), True),
-                     ("away", alias.get(d["opp"], d["opp"]), False))
+            sides = tuple((k, sc, k == "home") for k, sc in _jh_credit_sides(
+                d, alias.get(d["school"], d["school"]), alias.get(d["opp"], d["opp"])))
             for ln in unpack_lines(d["lines"]):
                 slot = ln.get("slot") or ""
                 hw = ln.get("home_won")
@@ -5898,7 +5946,7 @@ def _schedule_rows(conn, world_id: int, year: int, gender: str, school: str) -> 
     names = _jh.known_names(school, gender)
     rows = conn.execute(
         "SELECT rowid AS id, school AS raw_school, opp, home, phase, pf, pa, won,"
-        " district, lines, level, tied, shape, played, tiebreak"
+        " district, lines, level, tied, shape, played, tiebreak, squad, opp_squad"
         " FROM world_jhsaa_dual"
         " WHERE world_id=? AND year=? AND gender=? AND school IN (%s) ORDER BY rowid"
         % ",".join("?" * len(names)),
@@ -5924,7 +5972,8 @@ def _schedule_rows(conn, world_id: int, year: int, gender: str, school: str) -> 
     for r in rows:
         d = dict(r)
         raw = {"home": d["home"], "school": d.pop("raw_school"), "opp": d["opp"],
-               "level": d["level"], "phase": d["phase"], "district": d["district"]}
+               "level": d["level"], "phase": d["phase"], "district": d["district"],
+               "squad": d.get("squad") or "", "opp_squad": d.get("opp_squad") or ""}
         d["opp"] = alias.get(d["opp"], d["opp"])     # an opponent renamed since
         # The row is one SIDE of a dual; carrying its own school makes it
         # self-describing, so `jh_match_key` can identify the match from either
@@ -6020,6 +6069,17 @@ def jh_match_key(row: dict) -> tuple:
     gender's topological sort falls into its cycle fallback. Nothing raises; every
     card just quietly stops reading in play order."""
     home = bool(row.get("home"))
+    # ‼️ A SQUAD DUAL (rule 2097) is its own identity: level "sq" on BOTH rows
+    # (the V1 row is varsity and the squad row JV, so their `level`s differ), and
+    # the squad side named "School#V2" — which is also what gives the squad its
+    # OWN date cursor in `jhsaa_match_dates`, apart from its school's varsity.
+    # Still a 5-tuple: four consumers read this key positionally.
+    sq, osq = row.get("squad") or "", row.get("opp_squad") or ""
+    if sq or osq:
+        me = row["school"] + (f"#{sq}" if sq else "")
+        op = row["opp"] + (f"#{osq}" if osq else "")
+        a, b = (me, op) if home else (op, me)
+        return ("sq", row.get("phase") or "", int(bool(row.get("district"))), a, b)
     a, b = (row["school"], row["opp"]) if home else (row["opp"], row["school"])
     return (row.get("level") or "v", row.get("phase") or "",
             int(bool(row.get("district"))), a, b)
@@ -6225,7 +6285,8 @@ def jhsaa_match_dates(world_id: int, year: int, gender: str,
     conn = _db()
     try:
         rows = conn.execute(
-            "SELECT rowid, school, opp, home, phase, district, level"
+            "SELECT rowid, school, opp, home, phase, district, level,"
+            " squad, opp_squad"
             " FROM world_jhsaa_dual"
             " WHERE world_id=? AND year=? AND gender=? ORDER BY rowid",
             (world_id, year, gender)).fetchall()
@@ -6247,6 +6308,10 @@ def jhsaa_match_dates(world_id: int, year: int, gender: str,
     for r in rows:
         d = dict(r)
         k = jh_match_key(d)
+        if d.get("squad"):
+            # The squad's JV row shares its key with the V1 row, which takes a
+            # VARSITY date (it is a V1 non-district date); dated once, there.
+            continue
         if (d.get("level") or "v") == "jv":
             jv_by_school.setdefault(r["school"], []).append(k)
             jv_seen.setdefault(k, r["rowid"])
@@ -6457,7 +6522,7 @@ def jhsaa_home_row_id(world_id: int, year: int, gender: str, level: str,
     try:
         r = conn.execute(
             "SELECT rowid AS id FROM world_jhsaa_dual WHERE world_id=? AND year=?"
-            " AND gender=? AND COALESCE(level,'v')=? AND home=1 AND school=? AND opp=?"
+            " AND gender=? AND COALESCE(level,'v')=? AND home=1 AND school=? AND opp=?" + _JH_NO_SQUAD + ""
             " AND COALESCE(phase,'')=?"
             " AND (CASE WHEN COALESCE(district,0)<>0 THEN 1 ELSE 0 END)=?",
             (world_id, year, gender, level, school_raw, opp_raw,
@@ -6510,7 +6575,7 @@ def jhsaa_prior_meetings(world_id: int, gender: str, home: str, away: str,
         rows = conn.execute(
             "SELECT rowid AS id, year, school, opp, pf, pa, phase, district, won, tied"
             " FROM world_jhsaa_dual"
-            " WHERE world_id=? AND gender=? AND home=1 AND COALESCE(level,'v')=?"
+            " WHERE world_id=? AND gender=? AND home=1 AND COALESCE(level,'v')=?" + _JH_NO_SQUAD + ""
             f" AND ((school IN ({qmarks_h}) AND opp IN ({qmarks_a}))"
             f"  OR (school IN ({qmarks_a}) AND opp IN ({qmarks_h})))"
             " ORDER BY year DESC, rowid DESC",
@@ -8216,7 +8281,7 @@ def jhsaa_flight_efficiency(world_id: int, year: int, gender: str, salt: str = "
     try:
         rows = conn.execute(
             "SELECT school, opp, lines FROM world_jhsaa_dual"
-            " WHERE world_id=? AND year=? AND gender=? AND home=1"
+            " WHERE world_id=? AND year=? AND gender=? AND home=1" + _JH_NO_SQUAD + ""
             " AND COALESCE(level,'v')='v'",
             (world_id, year, gender)).fetchall()
     finally:

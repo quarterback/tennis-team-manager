@@ -187,21 +187,44 @@ def compute_ratings(duals: list[dict], *,
         return teams[t]
 
     # --- dual W/L + opponents ---
+    # ‼️ A SQUAD DUAL (JHSAA split squads, rule 2097) carries `squad_side`
+    # ("home"/"away") and `squad_factor`. The squad is NEVER rated: only the
+    # other (V1) side takes the win/loss, the opponent terms and the FQI/oGS
+    # entry, and it reads the squad's SCHOOL at `factor` x that school's value.
+    # Every other dual has factor 1.0 and takes the original arithmetic
+    # untouched, so a league with no squads rates bit-for-bit as before.
+    opp_f: dict[str, list[float]] = {}
     for d in duals:
         h, a = get(d["home"]), get(d["away"])
-        opps[d["home"]].append(d["away"])
-        opps[d["away"]].append(d["home"])
+        sq = d.get("squad_side")
+        f = d.get("squad_factor", 1.0)
+        if sq != "home":
+            opps[d["home"]].append(d["away"])
+            opp_f.setdefault(d["home"], []).append(f)
+        if sq != "away":
+            opps[d["away"]].append(d["home"])
+            opp_f.setdefault(d["away"], []).append(f)
         if d["home_won"]:
-            h.wins += 1; a.losses += 1
+            if sq != "home":
+                h.wins += 1
+            if sq != "away":
+                a.losses += 1
         else:
-            a.wins += 1; a.road_wins += 1; h.losses += 1   # away team won on the road
+            if sq != "away":
+                a.wins += 1; a.road_wins += 1               # away team won on the road
+            if sq != "home":
+                h.losses += 1
 
     # Per-team game log (opponent, won, is_road) — feeds the quality-adjusted win%.
     games: dict[str, list] = {t: [] for t in teams}
     for d in duals:
         h, a, hw = d["home"], d["away"], d["home_won"]
-        games[h].append((a, hw, False))
-        games[a].append((h, not hw, True))
+        sq = d.get("squad_side")
+        f = d.get("squad_factor", 1.0)
+        if sq != "home":
+            games[h].append((a, hw, False, f))
+        if sq != "away":
+            games[a].append((h, not hw, True, f))
 
     # --- APR: iterated, strength-of-schedule-aware ---
     # Classic RPI compresses (built for a single overlapping league). Here the
@@ -217,8 +240,9 @@ def compute_ratings(duals: list[dict], *,
     win_num = {t: teams[t].wins + ROAD_WIN_BONUS * teams[t].road_wins for t in teams}
 
     def _ewp(t: str, S: dict) -> float:
-        loss_wt = sum(1.0 - LOSS_FORGIVE * S.get(o, 0.5)
-                      for (o, won, _r) in games[t] if not won)
+        loss_wt = sum(1.0 - LOSS_FORGIVE * (S.get(o, 0.5) if f == 1.0
+                                            else S.get(o, 0.5) * f)
+                      for (o, won, _r, f) in games[t] if not won)
         den = teams[t].wins + loss_wt
         return min(1.0, win_num[t] / den) if den else 0.0
 
@@ -228,7 +252,9 @@ def compute_ratings(duals: list[dict], *,
         ewp = {t: _ewp(t, S) for t in teams}
         nS = {}
         for t in teams:
-            sos = (sum(S[o] for o in opps[t]) / len(opps[t])) if opps[t] else 0.5
+            sos = (sum((S[o] if f == 1.0 else S[o] * f)
+                       for o, f in zip(opps[t], opp_f.get(t, ())))
+                   / len(opps[t])) if opps[t] else 0.5
             nS[t] = min(1.0, max(0.0, ewp[t] + K_SOS * (sos - 0.5)))
         S = nS
     for t, r in teams.items():
@@ -248,7 +274,14 @@ def compute_ratings(duals: list[dict], *,
         h, a = d["home"], d["away"]
         mh = teams[a].apr / median_apr   # home's opponent multiplier
         ma = teams[h].apr / median_apr
+        sq = d.get("squad_side")
+        if sq == "away":
+            mh = mh * d.get("squad_factor", 1.0)
+        elif sq == "home":
+            ma = ma * d.get("squad_factor", 1.0)
         for side, t, m in (("home", h, mh), ("away", a, ma)):
+            if side == sq:
+                continue                 # the squad is never rated
             fs = _flight_score(lines, side, d.get("weights") or weights)
             gs = _game_share(lines, side)
             if fs is not None:

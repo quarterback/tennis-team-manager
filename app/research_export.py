@@ -86,7 +86,7 @@ def _load_archived_jhsaa_season(year: int, gender: str) -> dict:
         # the JV column existed reads back NULL, and those are all varsity.
         rows = conn.execute(
             "SELECT school, opp, home, phase, pf, pa, won, district, lines,"
-            " level, tied, shape, tiebreak"
+            " level, tied, shape, tiebreak, squad, opp_squad"
             " FROM world_jhsaa_dual WHERE world_id=? AND year=? AND gender=?"
             " ORDER BY school, rowid",
             (world["id"], world_year, gender)).fetchall()
@@ -289,17 +289,32 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
               if name in team_by_name]
     for team, schedule in walks:
         for ordinal, dual in enumerate(schedule, 1):
-            if not dual.get("home") or not ({team.school.name, dual["opp"]} & selected_names):
+            # SPLIT SQUADS (rule 2097): a V1-vs-squad dual is exported ONCE, off
+            # the V1's own row whichever side hosted (the squad's JV row is
+            # skipped), with `squad` naming the V2/V3 side and the venue kept
+            # honest in home/away program ids.
+            if dual.get("squad"):
+                continue
+            osq = dual.get("opp_squad") or ""
+            if (not osq and not dual.get("home")) or not ({team.school.name, dual["opp"]} & selected_names):
                 continue                         # each event appears on both cards
             level = dual.get("level") or "v"
             tied = bool(dual.get("tied"))
             key = (f"{year}|{gender}|{team.school.name}|{dual['opp']}|{ordinal}"
                    f"|{dual['phase']}|{level}")
+            if osq:
+                key += f"|{osq}"
             dual_id = "jhdual:" + hashlib.sha1(key.encode()).hexdigest()[:16]
+            opp_key = next((x.school.key for x in all_teams if x.school.name == dual["opp"]), dual["opp"])
+            v1_home = bool(dual.get("home"))
             duals.append({
                 "dual_id": dual_id, "year": year, "gender": gender,
-                "home_program_id": team.school.key,
-                "away_program_id": next((x.school.key for x in all_teams if x.school.name == dual["opp"]), dual["opp"]),
+                "home_program_id": team.school.key if v1_home else opp_key,
+                "away_program_id": opp_key if v1_home else team.school.key,
+                # '' on every dual but a split-squad one (rule 2097), where it names
+                # the squad ("V2"/"V3") the V1 played; the squad side is the program
+                # that is NOT the V1. Filter squad='' for V1-vs-V1 play.
+                "squad": osq,
                 "date": dual.get("date") or "",
                 # ‼️ `level` must be on the row. The archive loader reads JV and
                 # varsity duals together, so without this a JV dual arrives in
@@ -324,14 +339,17 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                 # does not mistake the level score for a tie.
                 "decided_on_tiebreak": int(bool(dual.get("tiebreak"))),
                 "phase": dual["phase"], "district": int(bool(dual.get("district"))),
-                "home_points": dual["pf"], "away_points": dual["pa"],
+                "home_points": dual["pf"] if v1_home else dual["pa"],
+                "away_points": dual["pa"] if v1_home else dual["pf"],
                 "winner_program_id": "" if tied else (team.school.key if dual["won"] else next((x.school.key for x in all_teams if x.school.name == dual["opp"]), dual["opp"])),
             })
             for line_no, line in enumerate(dual.get("lines", []), 1):
                 line_id = f"{dual_id}:{line_no}"
                 lines.append({"line_id": line_id, "dual_id": dual_id, "slot": line["slot"],
                               "score": line["score"], "home_won": int(bool(line["home_won"]))})
-                for side, school in (("home", team.school.name), ("away", dual["opp"])):
+                for side, school in ((("home", team.school.name), ("away", dual["opp"]))
+                                     if v1_home else
+                                     (("home", dual["opp"]), ("away", team.school.name))):
                     for pos, name in enumerate(line.get(side, []), 1):
                         line_players.append({"line_id": line_id, "side": side, "position": pos,
                                              "player_id": _player_id(school, name, player_lookup), "player_name": name})
@@ -700,6 +718,12 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "has no winner_program_id. duals.decided_on_tiebreak marks a LEVEL varsity "
             "postseason dual (Group 2's 3S/3D road) whose winner was decided on three "
             "concurrent 10-point tiebreakers — its points are level and it is NOT a tie.",
+            "duals.squad is '' on every dual but a SPLIT-SQUAD one (JHSAA rule 2097, "
+            "seasons from 2097): a program's V2 or V3 squad (a JV slice) against another "
+            "program's varsity, exported ONCE as a varsity row (level='v') with squad naming "
+            "the squad side ('V2' plays 3S/4D, 'V3' 3S/2D). It is a normal varsity result for "
+            "the V1 program and nothing for the squad's; the squad program is whichever of "
+            "home/away is not the V1. Filter squad='' for varsity-vs-varsity play.",
             "jhsaa_jv_state.json is the JV Team State Tournament, a statewide classless "
             "event archived in three shapes and readable as one. FROM 2096 (the qualifying "
             "shape) every JV team enters one of THIRTY near-equal Regions — buckets sized "

@@ -189,8 +189,12 @@ class Bundle:
         # column — that is also what a varsity dual whose lines failed to
         # record looks like, which is exactly why the export was given `level`
         # rather than the sidecar being taught to guess.
+        # SPLIT SQUADS (JHSAA rule 2097) are excluded the way JV is: a V1-vs-
+        # squad dual is a varsity row for one side and a JV squad for the other,
+        # so it describes no varsity-vs-varsity meeting. `squad` is absent/'' on
+        # every other dual.
         self.duals = {d["dual_id"]: d for d in t.get("duals", [])
-                      if (d.get("level") or "v") == "v"}
+                      if (d.get("level") or "v") == "v" and not d.get("squad")}
         self.lines_by_dual = defaultdict(list)
         for line in t.get("lines", []):
             self.lines_by_dual[line["dual_id"]].append(line)

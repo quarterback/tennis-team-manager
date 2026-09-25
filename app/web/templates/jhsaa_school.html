@@ -168,7 +168,10 @@
           <td class="ha" style="width:26px">{{ 'vs' if d.home else 'at' }}</td>
           <td class="op"><span class="jh-schoolcell">{{ d.opp_deco.mark|safe }}
             <a href="{{ url_for('jhsaa_school', school=d.opp, u=u, g=view.gender, year=view.scope.pin) }}">{{ d.opp }}</a>
-            {% if d.opp_seed %}<span class="jh-chip ghost">#{{ d.opp_seed }}</span>{% endif %}</span></td>
+            {% if d.opp_seed %}<span class="jh-chip ghost">#{{ d.opp_seed }}</span>{% endif %}
+            {# SPLIT SQUADS (rule 2097): the opponent's V2/V3 squad lineup, not its
+               varsity — a normal varsity result for this program. #}
+            {% if d.opp_squad %}<span class="jh-chip" title="{{ d.opp }} {{ d.opp_squad }}">{{ d.opp_squad }}</span>{% endif %}</span></td>
           <td class="{{ 'W' if d.won else 'L' }}" style="width:34px">{{ 'W' if d.won else 'L' }}</td>
           <td class="sc" style="width:56px">{{ d.pf|int }}–{{ d.pa|int }}</td>
           <td style="width:150px"><span class="jh-tag {{ 'toc' if d.kind == 'TOC' else 'state' if d.kind == 'STATE' else 'road' }}">{{ d.kind }}</span>
@@ -352,7 +355,10 @@
         <td class="op">
           <span class="jh-schoolcell">{{ d.opp_deco.mark|safe }}
             <a href="{{ url_for('jhsaa_school', school=d.opp, u=u, g=view.gender, year=view.scope.pin) }}">{{ d.opp }}</a>
-            {% if d.opp_seed %}<span class="jh-chip ghost">#{{ d.opp_seed }}</span>{% endif %}</span>
+            {% if d.opp_seed %}<span class="jh-chip ghost">#{{ d.opp_seed }}</span>{% endif %}
+            {# SPLIT SQUADS (rule 2097): the opponent's V2/V3 squad lineup, not its
+               varsity — a normal varsity result for this program. #}
+            {% if d.opp_squad %}<span class="jh-chip" title="{{ d.opp }} {{ d.opp_squad }}">{{ d.opp_squad }}</span>{% endif %}</span>
         </td>
         <td class="{{ 'T' if d.tied else 'W' if d.won else 'L' }}">{{ 'T' if d.tied else 'W' if d.won else 'L' }}</td>
         <td class="sc">{{ d.pf|int }}–{{ d.pa|int }}{% if d.tiebreak %}<span class="jh-chip ghost" title="Level dual, decided on three concurrent 10-point tiebreakers (S1, D1, D2)">TB</span>{% endif %}</td>
@@ -464,7 +470,11 @@
            exist it's not different but labeling can be") — only the wording says
            JV. The phase is what tells a regional championship from the State
            draw, which is why the event archives two. #}
-        {% set jvk = 'JV DISTRICT' if d.district
+        {# SPLIT SQUADS (rule 2097): this program's V2/V3 against another
+           program's V1 — just the squad chip, like JV. In the aggregate JV
+           record above, never in the JV seeding record. #}
+        {% set jvk = d.squad if d.squad
+                     else 'JV DISTRICT' if d.district
                      else 'WEEKEND' if d.phase.startswith('showcase')
                      else 'JV STATE' if d.phase == 'jv_state'
                      else 'JV REGIONALS' if d.phase == 'jv_region'

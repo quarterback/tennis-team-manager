@@ -729,6 +729,47 @@ JV_SHOWCASE_NAME = 'JV Showcase Weekend'
 LEVEL_VARSITY = "v"
 LEVEL_JV = "jv"
 
+# --- SPLIT SQUADS (JHSAA rule 2097) --------------------------------------------
+#
+# A deep, top-tier program may split its JV into a V2 and a V3 squad that take
+# NON-DISTRICT dates against other programs' VARSITY (V1) teams — Cherry Creek's
+# multi-varsity program is the model. A squad is JV in every other sense: its
+# players keep the JV season, the JV individual events and the JV Team State
+# Tournament, and nothing it does reaches `records`, `matches`, the ladder, an
+# award or a rating of its own. See `docs/AAR-jhsaa-split-squads.md`.
+#
+# ‼️ A YEAR GATE, NOT A FLAG — every season before it must reproduce byte for
+# byte, which it does because the squad list is simply empty and every code path
+# below sees exactly the pre-2097 inputs.
+SPLIT_SQUAD_FROM = 2097
+
+#: The talent tiers whose programs may field squads — ONE constant (rule 2097).
+#: Keyed on the tier KEY (`data/jhsaa/talent_bands.json`), resolved off the
+#: program's stable ident, never its display name. The volatile tiers never
+#: qualify, whatever range they happen to roll.
+SQUAD_TIERS = ("power", "elite", "dynasty")
+
+#: Healthy players a program needs BELOW its varsity eleven to field each squad.
+#: V2 dresses eleven (3S/4D) and V3 seven (3S/2D) more beneath it: 11 + 7 = 18.
+SQUAD_DEPTH = {"V2": 11, "V3": 18}
+
+#: The squad formats. Fixed per squad — a squad dual never takes the elastic JV
+#: sizing, and the V1 opponent plays the squad's format.
+SQUAD_FORMATS = {
+    "V2": DualFormat(n_singles=3, n_doubles=4, doubles_team_point=False),
+    "V3": DualFormat(n_singles=3, n_doubles=2, doubles_team_point=False),
+}
+
+#: ‼️ THE OPPONENT DISCOUNT. A squad is never rated; a V1 that plays one is read
+#: as having played the squad's SCHOOL at this share of its V1 value — in TOSS
+#: (APR's opponent terms and the FQI/oGS multiplier), OOWP, and so ATR and the
+#: seeding score that are built on TOSS. Applied uniformly.
+SQUAD_DISCOUNT = {"V2": 0.61, "V3": 0.39}
+
+#: The big programs whose squads may play DOWN to any smaller class's V1 (rule
+#: 2097). Every other squad pairing keeps the ordinary ±1 class gate.
+SQUAD_DROP_GROUPS = ("9A", "8A", "7A", "Group 1")
+
 
 ROSTER_SIZE = 12          # legacy flat default; real depth is per-classification, see below
 
@@ -2754,6 +2795,10 @@ class TeamSeason:
     # coach misjudges his own roster less (`captain_mitigation`). Empty is a real
     # answer — a program with no varsity to speak of names nobody.
     captains: list = field(default_factory=list)
+    # SPLIT SQUADS (rule 2097) — this program's `SquadTeam`s for the season, set
+    # before the first dual by `field_squads`. Empty before 2097 and for every
+    # program that fails either gate.
+    squads: list = field(default_factory=list)
 
     @property
     def record(self) -> str:
@@ -2801,6 +2846,13 @@ class JVTeam:
     points_for: float = 0.0
     points_against: float = 0.0
     schedule: list = field(default_factory=list)
+    # SPLIT SQUADS (rule 2097): the squads' results against varsity, kept APART
+    # from `wins`/`losses`/`points_*` on purpose. Those four SEED the JV Regions
+    # and the JV State draw (`jhsaa_jv_state`), and a squad dual is excluded from
+    # that W-L; the aggregate JV record on the program's JV tab folds both.
+    squad_wins: int = 0
+    squad_losses: int = 0
+    squad_ties: int = 0
 
     @property
     def school(self) -> School:
@@ -2882,6 +2934,75 @@ def jv_state_pool(ts: TeamSeason) -> list:
 def jv_spare(ts: TeamSeason) -> int:
     """How many players a program has for JV — the size input to `jv_format`."""
     return len(jv_pool(ts))
+
+
+@dataclass(eq=False)
+class SquadTeam:
+    """A program's V2 or V3 SQUAD (rule 2097) — a slice of its JV that takes
+    non-district dates against other programs' varsity.
+
+    ‼️ A SEPARATE TYPE, like `JVTeam` and for the same reason: nothing a squad does
+    may reach `records`, `matches`, `wins` or TOSS on its school's `TeamSeason`, and
+    the cheapest guarantee is that this object has nowhere to put them. Its own
+    W-L and schedule are folded into the school's JV tab after the JV season
+    (`_fold_squads`), outside the JV seeding record. `eq=False` so it hashes by
+    identity — the pairing keys every team by `id()`."""
+    team: TeamSeason
+    squad: str                          # "V2" | "V3"
+    wins: int = 0
+    losses: int = 0
+    ties: int = 0
+    points_for: float = 0.0
+    points_against: float = 0.0
+    schedule: list = field(default_factory=list)
+
+    @property
+    def school(self) -> School:
+        return self.team.school
+
+
+def squad_depth(ts: TeamSeason) -> int:
+    """HEALTHY players below the varsity eleven — the depth gate's input."""
+    return sum(1 for p in jv_pool(ts) if p.pid not in ts.injuries)
+
+
+def squad_tier_ok(school) -> bool:
+    """The talent-tier gate — the program's CURRENT tier, off its stable ident."""
+    return program_band(school) in SQUAD_TIERS
+
+
+def squad_eligible(ts: TeamSeason) -> list[str]:
+    """The squads this program may field this season: both gates must pass. V3 sits
+    UNDER V2 (its seven are ranks 12-18 of the JV), so a program with V3 has V2."""
+    if not squad_tier_ok(ts.school):
+        return []
+    depth = squad_depth(ts)
+    return [sq for sq in ("V2", "V3") if depth >= SQUAD_DEPTH[sq]]
+
+
+def field_squads(teams: list[TeamSeason], year: int) -> list[SquadTeam]:
+    """Name every program's squads for the season, before its first dual. Returns
+    the flat list; each team carries its own on `ts.squads`. Empty before
+    `SPLIT_SQUAD_FROM`, which is the whole year gate."""
+    if year < SPLIT_SQUAD_FROM:
+        return []
+    out: list[SquadTeam] = []
+    for t in teams:
+        t.squads = [SquadTeam(team=t, squad=sq) for sq in squad_eligible(t)]
+        out += t.squads
+    return out
+
+
+def squad_pool(ts: TeamSeason, squad: str) -> list:
+    """Who dresses for a squad dual: V2 = the first eleven HEALTHY players below the
+    varsity eleven, V3 = the next seven. Read off the live ladder at the dual."""
+    healthy = [p for p in jv_pool(ts) if p.pid not in ts.injuries]
+    lo = 0 if squad == "V2" else SQUAD_DEPTH["V2"]
+    return healthy[lo:lo + jv_lineup_need(SQUAD_FORMATS[squad])]
+
+
+def _is_squad(t) -> bool:
+    return isinstance(t, SquadTeam)
 
 
 def jv_strength(ts: TeamSeason) -> float:
@@ -4153,6 +4274,14 @@ def school_exposure(gender: str, school_name: str, season_years) -> dict:
     # a 50-season archive written under both encodings. See its note in `world`.
     from .world import BASE_YEAR, unpack_lines as _world_unpack_lines
     wid = _expo_world_id(db)
+    # ‼️ The queries below name the split-squad columns (rule 2097), and this
+    # reads through a RAW connection whose errors are swallowed — on an archive
+    # not yet migrated that would silently zero every program's exposure. So make
+    # sure the world schema (and its column migration) has run: a no-op check
+    # once it has.
+    from . import world as _w
+    if wid is not None and _w._schema_ready_for != _w.WORLD_DB:
+        _w.init_schema()
     out = {y: None for y in years}
     idx_of = {y - BASE_YEAR - 1: y for y in years if y - BASE_YEAR - 1 >= 0}
     if wid is not None and idx_of:
@@ -4174,20 +4303,26 @@ def school_exposure(gender: str, school_name: str, season_years) -> dict:
                 # builds a JHSAA season advance makes. `ix_jhsaa_dual` covers the
                 # first arm and `ix_jhsaa_dual_opp` the second; both must exist.
                 yr = ",".join("?" * len(idx_of))
-                mine = ("SELECT year, school, opp, lines, level, played, home"
-                        " FROM world_jhsaa_dual"
+                mine = ("SELECT year, school, opp, lines, level, played, home,"
+                        " opp_squad FROM world_jhsaa_dual"
                         " WHERE world_id=? AND year IN (%s) AND gender=? AND school=?"
                         % yr)
-                theirs = ("SELECT year, school, opp, lines, level, played, home"
-                          " FROM world_jhsaa_dual"
+                # SPLIT SQUADS (rule 2097): a V1 row that played OUR squad names
+                # our squad players on its away side — they are JV, and their
+                # exposure arrives through our own squad row's `played` instead.
+                theirs = ("SELECT year, school, opp, lines, level, played, home,"
+                          " opp_squad FROM world_jhsaa_dual"
                           " WHERE world_id=? AND year IN (%s) AND gender=? AND opp=?"
-                          " AND home=1 AND COALESCE(level,'v')='v'" % yr)
+                          " AND home=1 AND COALESCE(level,'v')='v'"
+                          " AND COALESCE(opp_squad,'')=''" % yr)
                 keys = tuple(idx_of.keys())
                 rows = conn.execute(mine, (wid, *keys, gender, school_name)).fetchall()
                 # Our own rows carry the JV `played` list and, when we hosted, the
                 # varsity box score; an away row of ours holds nothing (or, on an
                 # un-migrated save, a duplicate the home row already supplies).
-                rows = [r for r in rows if (r[4] or "v") != "v" or r[6]]
+                # ...and a V1 row of ours against a SQUAD always carries its own
+                # box score, whichever side hosted.
+                rows = [r for r in rows if (r[4] or "v") != "v" or r[6] or r[7]]
                 rows += conn.execute(theirs,
                                      (wid, *keys, gender, school_name)).fetchall()
             except sqlite3.Error:
@@ -4196,7 +4331,7 @@ def school_exposure(gender: str, school_name: str, season_years) -> dict:
                 conn.close()
         except sqlite3.Error:
             rows = []
-        for year_idx, row_school, row_opp, lines, level, played, _home in rows:
+        for year_idx, row_school, row_opp, lines, level, played, _home, osq in rows:
             season = idx_of.get(year_idx)
             if season is None:
                 continue
@@ -4205,6 +4340,8 @@ def school_exposure(gender: str, school_name: str, season_years) -> dict:
                 units = out[season] = {}
             if (level or "v") == "v":
                 side = "home" if row_school == school_name else "away"
+                if osq and row_school == school_name and not _home:
+                    side = "away"                    # our V1 row, away at a squad
                 dressed = set()
                 for ln in _world_unpack_lines(lines):
                     dressed.update(ln.get(side) or ())
@@ -8035,6 +8172,111 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     return res
 
 
+def _squad_v1_lineup(ts: TeamSeason, fmt: DualFormat, rng: random.Random) -> list:
+    """The V1 side's lineup against a squad. ‼️ NO REST AND NO ROTATION RELIEF (rule
+    2097): `_lineup`'s talent-aware rest and bench rotation are skipped entirely —
+    the healthy top of the live ladder dresses, captains seated, in the league's
+    arrangement when the format is the 3S/4D one and in plain ladder order for
+    V3's 3S/2D (S1-S3 = #1-#3, D1-D2 = #4-#7)."""
+    order = _healthy(ts, _order(ts))
+    need = jv_lineup_need(fmt)
+    nine = _seat_captains(ts, order[:need], order)
+    if (fmt.n_singles, fmt.n_doubles) == (3, 4):
+        strategy = ts.strategy or _coach_strategy(ts.school.key)
+        return _arrange_regular(nine, strategy, ts.sibling_ids, ts.pair_counts,
+                                ts.culture)
+    return nine
+
+
+def play_squad_dual(a, b, *, seed: int) -> None:
+    """One SQUAD dual (rule 2097): a program's V2/V3 against another program's V1.
+    `a` hosts, as everywhere. Played at the squad's format (`SQUAD_FORMATS`) — odd
+    either way, so it can never be drawn.
+
+    V1 side: an ORDINARY varsity non-district result — `_credit`, W-L, points, an
+    injury roll — tagged `opp_squad` so every reader can tell it from a V1-vs-V1
+    dual and TOSS can read the opponent at `SQUAD_DISCOUNT`.
+    Squad side: a JV-level schedule entry on the `SquadTeam`, tagged `squad`, with
+    NO credit of any kind. Both carry the full box score (the two rows sit at
+    different levels, so the archive's home-row counterpart lookup cannot bridge
+    them — see `world._archive_lines`)."""
+    sq, v1 = (a, b) if isinstance(a, SquadTeam) else (b, a)
+    v1_home = v1 is a
+    fmt = SQUAD_FORMATS[sq.squad]
+    lsq = squad_pool(sq.team, sq.squad)
+    if len(lsq) < jv_lineup_need(fmt):
+        return                              # injuries thinned the squad: not played
+    lrng = random.Random(f"squad-lineup|{seed}")
+    lv1 = _squad_v1_lineup(v1, fmt, lrng)
+    if (fmt.n_singles, fmt.n_doubles) == (3, 4):
+        strategy = sq.team.strategy or _coach_strategy(sq.school.key)
+        lsq = _arrange_regular(lsq, strategy, sq.team.sibling_ids,
+                               sq.team.pair_counts, sq.team.culture)
+    phase = "regular"
+    mf = match_format(phase)
+    lift = home_court(seed, phase)
+    la, lb = (lv1, lsq) if v1_home else (lsq, lv1)
+    ta, tb = (v1, sq.team) if v1_home else (sq.team, v1)
+    res = simulate_dual(_squad(ta, phase, la, fmt, lift=lift),
+                        _squad(tb, phase, lb, fmt),
+                        seed=seed, play_all=True, fidelity=FIDELITY, dual_fmt=fmt,
+                        singles_fmt=mf, doubles_fmt=mf, profile=hs_profile(ta, tb))
+    home_won = res.home_points > res.away_points
+    v1_won = home_won == v1_home
+    lines = []
+    for ln in res.lines:
+        hw = getattr(ln, "home_won", None)
+        if hw is None:
+            continue
+        slot = getattr(ln, "slot", "")
+        v1_line = bool(hw) == v1_home
+        _credit(v1, lv1, phase, slot, v1_line, lsq, sq.school.name, fmt)
+        lines.append({"slot": slot,
+                      "home": [x.name for x in _slot_players(la, phase, slot, fmt)],
+                      "away": [x.name for x in _slot_players(lb, phase, slot, fmt)],
+                      "score": _score_str(ln), "home_won": bool(hw)})
+    v1_pf, v1_pa = ((res.home_points, res.away_points) if v1_home
+                    else (res.away_points, res.home_points))
+    shape = f"{fmt.n_singles}S/{fmt.n_doubles}D"
+    v1.schedule.append({"opp": sq.school.name, "home": v1_home, "phase": phase,
+                        "pf": v1_pf, "pa": v1_pa, "won": v1_won, "tied": False,
+                        "district": False, "level": LEVEL_VARSITY,
+                        "challenge": False, "lines": lines, "tiebreak": [],
+                        "shape_group": v1.school.group, "shape": shape,
+                        "opp_squad": sq.squad, "squad": ""})
+    sq.schedule.append({"opp": v1.school.name, "home": not v1_home, "phase": phase,
+                        "pf": v1_pa, "pa": v1_pf, "won": not v1_won, "tied": False,
+                        "district": False, "level": LEVEL_JV, "shape": shape,
+                        "lines": lines, "played": [p.name for p in lsq],
+                        "squad": sq.squad, "opp_squad": ""})
+    v1.points_for += v1_pf
+    v1.points_against += v1_pa
+    sq.points_for += v1_pa
+    sq.points_against += v1_pf
+    if v1_won:
+        v1.wins += 1
+        sq.losses += 1
+    else:
+        sq.wins += 1
+        v1.losses += 1
+    _injury_tick_and_roll(v1, lv1, len(v1.schedule))
+
+
+def _fold_squads(jv: dict, squads: list) -> None:
+    """Hang each squad's season on its school's JV team, AFTER the JV season has
+    been played (so squad dates never count toward `JV_DUAL_CAP` nor seed the JV
+    invitational no-rematch set). Squad W-L goes to `squad_*`, never `wins`/
+    `losses`: the JV Regions / JV State seeding reads only those."""
+    for sq in squads:
+        jvt = jv.get(sq.school.name)
+        if jvt is None:
+            continue
+        jvt.schedule.extend(sq.schedule)
+        jvt.squad_wins += sq.wins
+        jvt.squad_losses += sq.losses
+        jvt.squad_ties += sq.ties
+
+
 # --- the season --------------------------------------------------------------
 
 def run_district(schools: list[School], year: int, *, seed: int,
@@ -8473,19 +8715,23 @@ def district_oowp(teams: list[TeamSeason]) -> dict[str, float]:
     # The early non-district window (`EARLY_FORMAT_PHASE`) is still a regular-season
     # opponent for OOWP's purposes; filtering to "regular" only would silently drop
     # every program's early-window opponents from its opponents' opponents' win %.
-    opps = {t.school.name: [x["opp"] for x in t.schedule
+    # SPLIT SQUADS (rule 2097): a squad opponent is read as its SCHOOL's V1 value
+    # at `SQUAD_DISCOUNT` — never the squad's own record. Factor 1.0 everywhere
+    # else, which multiplies exactly, so a pre-2097 season is unchanged.
+    opps = {t.school.name: [(x["opp"], SQUAD_DISCOUNT.get(x.get("opp_squad") or "", 1.0))
+                            for x in t.schedule
                             if x.get("phase") not in POSTSEASON
                             and x.get("phase") not in SHOWCASE]
             for t in teams}
 
     def owp(name: str) -> float:
-        seen = [by[o].win_pct for o in opps.get(name, ()) if o in by]
+        seen = [by[o].win_pct * f for o, f in opps.get(name, ()) if o in by]
         return sum(seen) / len(seen) if seen else 0.0
 
     cache = {n: owp(n) for n in by}
     out = {}
     for name in by:
-        seen = [cache[o] for o in opps.get(name, ()) if o in cache]
+        seen = [cache[o] * f for o, f in opps.get(name, ()) if o in cache]
         out[name] = sum(seen) / len(seen) if seen else 0.0
     return out
 
@@ -8746,7 +8992,10 @@ def rating_duals(teams, prestate: bool = False) -> list[dict]:
     _group_of = {t.school.name: t.school.group for t in teams}
     for t in teams:
         for d in t.schedule:
-            if not d.get("home") or d.get("phase") in drop:
+            osq = d.get("opp_squad") or ""
+            # A SQUAD dual (rule 2097) is rated from the V1 side whichever way the
+            # venue fell — the squad has no TeamSeason schedule to be read from.
+            if (not osq and not d.get("home")) or d.get("phase") in drop:
                 continue
             lines = []
             for ln in d.get("lines") or ():
@@ -8764,9 +9013,19 @@ def rating_duals(teams, prestate: bool = False) -> list[dict]:
             # played at. In-memory rows only; the archive path never rates.
             grp = d.get("shape_group") if "shape_group" in d else shape_group(
                 d.get("phase") or "regular", t.school.group, _group_of.get(d["opp"]))
-            out.append({"home": t.school.name, "away": d["opp"], "home_won": d["won"],
-                        "home_points": d["pf"], "away_points": d["pa"], "lines": lines,
-                        "weights": flight_weights(d.get("phase") or "regular", grp)})
+            row = {"home": t.school.name, "away": d["opp"], "home_won": d["won"],
+                   "home_points": d["pf"], "away_points": d["pa"], "lines": lines,
+                   "weights": flight_weights(d.get("phase") or "regular", grp)}
+            if osq:
+                # ‼️ The squad side is NEVER rated: `rating.compute_ratings` credits
+                # only the V1 side and reads the opposing school at the discount.
+                if not d.get("home"):
+                    row.update({"home": d["opp"], "away": t.school.name,
+                                "home_won": not d["won"],
+                                "home_points": d["pa"], "away_points": d["pf"]})
+                row["squad_side"] = "away" if d.get("home") else "home"
+                row["squad_factor"] = SQUAD_DISCOUNT[osq]
+            out.append(row)
     return out
 
 
@@ -10920,6 +11179,17 @@ def _rivalry_pairs(teams: list[TeamSeason], year: int,
     return pairs
 
 
+def _squad_drops(a, b) -> bool:
+    """A big program's squad meeting a SMALLER class's V1 — the one pairing that
+    may reach past the ±1 class gate (rule 2097)."""
+    for sq, v1 in ((a, b), (b, a)):
+        if (isinstance(sq, SquadTeam) and not isinstance(v1, SquadTeam)
+                and sq.school.group in SQUAD_DROP_GROUPS
+                and _GROUP_IX[v1.school.group] > _GROUP_IX[sq.school.group]):
+            return True
+    return False
+
+
 def _nondistrict_pairs(teams: list[TeamSeason], rng: random.Random,
                        owed: dict[int, int], played: dict[int, set[str]]) -> list[tuple]:
     """PAIR the non-district card — it does not play it.
@@ -10959,11 +11229,22 @@ def _nondistrict_pairs(teams: list[TeamSeason], rng: random.Random,
         guard += 1
         a = need[rng.randrange(len(need))]
         ga = _GROUP_IX[a.school.group]
+        a_sq = isinstance(a, SquadTeam)
+        # SPLIT SQUADS (rule 2097). A squad may meet a league mate's V1 (only
+        # V1-vs-V1 league meetings are the league's), never its own school or
+        # another squad, and sits under the ordinary ±1 class gate — except that
+        # a big program's squad (`SQUAD_DROP_GROUPS`) may also play DOWN to any
+        # smaller class's V1. With no squads in the pool (every season before
+        # 2097) every added term is a no-op.
         cands = [t for t in need if t is not a
-                 and (t.school.group, t.school.district)
-                 != (a.school.group, a.school.district)
+                 and ((a_sq or isinstance(t, SquadTeam))
+                      or (t.school.group, t.school.district)
+                      != (a.school.group, a.school.district))
                  and t.school.name not in played[id(a)]
-                 and abs(_GROUP_IX[t.school.group] - ga) <= 1]
+                 and (abs(_GROUP_IX[t.school.group] - ga) <= 1
+                      or _squad_drops(a, t))
+                 and not (a_sq and isinstance(t, SquadTeam))
+                 and t.school.name != a.school.name]
         if not cands:
             owed[id(a)] = 0            # can't be topped up; drop it, don't stall the run
             need = short()
@@ -10985,6 +11266,10 @@ def _play_pairs(pairs: list[tuple], rng: random.Random, *, challenge: bool = Fal
     untouched whatever else these results feed. `phase` defaults to the ordinary
     3S/4D card; the early window passes `EARLY_FORMAT_PHASE` for the 5S/2D one."""
     for a, b in pairs:
+        if isinstance(a, SquadTeam) or isinstance(b, SquadTeam):
+            # A squad dual plays the SQUAD's format whatever the window.
+            play_squad_dual(a, b, seed=rng.randrange(1 << 30))
+            continue
         play_dual(a, b, seed=rng.randrange(1 << 30), phase=phase,
                   district=False, challenge=challenge)
 
@@ -11049,11 +11334,19 @@ def play_regular_season(by_group: dict, year: int, gender: str,
     # first, so the venue could stay with one school two seasons running. A fixture
     # that the draw can pre-empt is a fixture only when the draw does not.
     rival_pairs = _rivalry_pairs(every_team, year, played)
+    # SPLIT SQUADS (rule 2097) — fielded before the first draw, each carrying its
+    # school's own non-district allowance, window by window. Empty before 2097, so
+    # `pool` IS `every_team` and every draw below is byte-identical.
+    squads = field_squads(every_team, year)
+    for sq in squads:
+        owed[id(sq)] = owed[id(sq.team)]
+        played[id(sq)] = set()
+    pool = every_team + squads
     # The early window plays 5S/2D (owner rule 2027-08, `EARLY_FORMAT_PHASE`) — the
     # ONLY block of the season that does. Everything from district pass 1 on, including
     # the mid-season non-district window and the late tune-up below, is back to the
     # ordinary 3S/4D `phase="regular"` because district play has already started by then.
-    _play_pairs(_nondistrict_pairs(every_team, xrng, owed, played), xrng,
+    _play_pairs(_nondistrict_pairs(pool, xrng, owed, played), xrng,
                phase=EARLY_FORMAT_PHASE)
 
     # The mid-season window sits at the END OF PASS 1 — `district_pass1_rounds`,
@@ -11078,8 +11371,8 @@ def play_regular_season(by_group: dict, year: int, gender: str,
     _play_pairs(rival_pairs, xrng)
 
     # --- the mid-season window: a non-district date, then the challenge ---
-    owed = {id(t): MID_NONDISTRICT for t in every_team}
-    _play_pairs(_nondistrict_pairs(every_team, xrng, owed, played), xrng)
+    owed = {id(t): MID_NONDISTRICT for t in pool}
+    _play_pairs(_nondistrict_pairs(pool, xrng, owed, played), xrng)
     if CHALLENGE_ENABLED:
         _play_pairs(_challenge_pairs(by_group, year, salt, played), xrng, challenge=True)
 
@@ -11106,7 +11399,9 @@ def play_regular_season(by_group: dict, year: int, gender: str,
              for t in every_team}
     owed = {id(t): max(0, quota[id(t)] - spent[id(t)] - traded.get(id(t), 0))
             for t in every_team}
-    _play_pairs(_nondistrict_pairs(every_team, xrng, owed, played), xrng)
+    for sq in squads:                   # a squad's allowance is its school's quota
+        owed[id(sq)] = max(0, quota[id(sq.team)] - len(sq.schedule))
+    _play_pairs(_nondistrict_pairs(pool, xrng, owed, played), xrng)
 
     # Power Index BEFORE settling: rung 4 of the tiebreak ladder reads `t.power`, and it
     # is a function of the whole pool's results graph, so it cannot exist until every
@@ -11259,6 +11554,8 @@ def play_jv_season(by_group: dict, year: int, gender: str,
                              a.school.name, b.school.name))) % (1 << 30)
             play_jv_dual(a, b, seed=seed, district=False)
     jv_showcase(jv, year, salt, played, rng)
+    _fold_squads(jv, [sq for st in by_group.values() for ts in st.values()
+                      for t in ts for sq in t.squads])
     return jv
 
 

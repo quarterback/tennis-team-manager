@@ -102,6 +102,10 @@ def dual_rows(teams: list) -> list[dict]:
                 continue
             if d["opp"] not in names:
                 continue
+            # SPLIT SQUADS (rule 2097): a V1-vs-squad dual is not a meeting of
+            # two programs' varsities, so none of the nine systems sees it.
+            if d.get("opp_squad") or d.get("squad"):
+                continue
             # `hw`: the archived HOME result — True won, False lost, None a drawn
             # league dual. ‼️ Never derive it from the points: Group 2's 3S/3D
             # road (JHSAA rule 2026-09) archives a LEVEL 3-3 with the winner
