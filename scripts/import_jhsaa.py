@@ -2835,8 +2835,26 @@ def district_code(group: str, index: int) -> str:
     return f"{_GROUP_CODE.get(group, group)}-{index + 1}"
 
 
-def league_names(blocks: list[list[dict]], group: str) -> list[str]:
+def league_names(blocks: list[list[dict]], group: str,
+                 taken: dict | None = None) -> list[str]:
     """A name per block, drawn from `LEAGUE_NAMES` rather than from the map.
+
+    ‼️ NO NAME REPEATS ANYWHERE IN THE ASSOCIATION (owner rule 2096). `taken` carries
+    the used names and used leading words ACROSS classes — the caller makes one and
+    threads it through every group — so a name drawn for a 9A league is gone for the
+    rest of the state. It used to be per-class, which is how Gold Valley League ended
+    up existing in 9A, 7A, 3A and 1A at once: four separate leagues that anything
+    grouping by name added into one 37-team league. The class-scoped code
+    (`district_code`) disambiguates them for the ENGINE; this is what stops them
+    reading as the same league to a person.
+    
+    This is only affordable because the bank was expanded: 907 candidates with 900
+    distinct names and 191 distinct leading words, against roughly 102 leagues
+    statewide. Both constraints therefore hold globally with headroom, and the
+    fall-through to a numbered District stays unreachable.
+
+    Omitting `taken` keeps the old per-call behaviour, which is what the tests that
+    exercise one class in isolation want.
 
     Deterministic: the bank is walked in an order seeded on the group, so a
     rebuild reproduces the same leagues and a league keeps its name across
@@ -2851,8 +2869,10 @@ def league_names(blocks: list[list[dict]], group: str) -> list[str]:
     rng = random.Random(f"league|{SEED}|{group}")
     bank = LEAGUE_NAMES[:]
     rng.shuffle(bank)
-    used: set[str] = set()
-    heads: set[str] = set()
+    if taken is None:
+        taken = {}
+    used: set[str] = taken.setdefault("names", set())
+    heads: set[str] = taken.setdefault("heads", set())
     out: list[str] = []
     for i, block in enumerate(blocks):
         area = Counter(s["area"] for s in block).most_common(1)[0][0] if block else None
@@ -3791,7 +3811,8 @@ def sponsors(schools: list[dict]) -> tuple[set[str], set[str]]:
     return girls, boys
 
 
-def draw_districts(pool: list[dict], cities: dict, group: str = "") -> dict[str, str]:
+def draw_districts(pool: list[dict], cities: dict, group: str = "",
+                   taken: dict | None = None) -> dict[str, str]:
     """school name -> district name, for ONE classification group.
 
     Sorted by area → county → city so a district is geographically contiguous, then cut
@@ -3856,7 +3877,7 @@ def draw_districts(pool: list[dict], cities: dict, group: str = "") -> dict[str,
     # and cannot raise or repeat. See LEAGUE_NAMES.
     blocks = [pool[lo:hi] for lo, hi in bounds if hi > lo]
     out = {}
-    for i, (block, name) in enumerate(zip(blocks, league_names(blocks, group))):
+    for i, (block, name) in enumerate(zip(blocks, league_names(blocks, group, taken))):
         label = f"{district_code(group, i)} {name}"
         for s in block:
             out[s["name"]] = label
@@ -3920,10 +3941,15 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
     # team. A league carrying eleven girls' teams and nine boys' is exactly how
     # this works in life; it is not an imbalance to correct.
     league = {}
+    # ‼️ ONE `taken` FOR THE WHOLE STATE (owner rule 2096) — no league name, and no
+    # leading word, is used twice across every classification. Threaded rather than
+    # module-global so a rebuild is a pure function of its inputs and a test can draw
+    # one class without inheriting another's claims.
+    taken: dict = {}
     for g in GROUPS:
         pool = [by_name[n] for n in (girls | boys)
                 if champ_group(by_name[n]["classification"]) == g]
-        league.update(draw_districts(pool, cities, g))
+        league.update(draw_districts(pool, cities, g, taken))
     dist = {"girls": league, "boys": league}
     out = []
     for name in sorted(girls | boys):

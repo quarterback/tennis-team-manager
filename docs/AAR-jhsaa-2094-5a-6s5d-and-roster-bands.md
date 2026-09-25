@@ -360,10 +360,18 @@ Del Rey Athletic Association read as 52 programs across five classes. The league
 class-confined competitively — `district_count` cuts each class's pool on its own — so this was
 never a scheduling fault. It was a naming collision that made the renderer lie.
 
-The code makes them distinct by construction, which means a name no longer has to be unique
-statewide to be unambiguous. That is how a real association does it: OSAA runs `4A-4 Sky-Em
-League` and renumbers when it moves the geography. Boys and girls share the code as they share
-the name — a league belongs to the SCHOOL.
+**‼️ AND NO NAME REPEATS ANYWHERE.** The code disambiguates a league for the ENGINE; it does
+not stop two leagues reading as the same league to a person, and the owner's requirement is that
+they not. `league_names` now carries its used names AND used leading words across every class in
+one `taken` dict, threaded from the single `for g in GROUPS` loop rather than held module-global,
+so a rebuild stays a pure function of its inputs. **This is the reason the bank was expanded**:
+907 candidates with 900 distinct names and 191 distinct leading words against 96 leagues, so both
+constraints hold globally with headroom and the fall-through to a numbered District stays
+unreachable. Drawn on the real 2095 pools: 96 leagues, 96 distinct names, 96 distinct leading
+words, zero fall-throughs, every league 9-10 teams.
+
+Boys and girls share the code as they share the name — a league belongs to the SCHOOL. OSAA
+renumbers when it moves the geography and so does this.
 
 **The band is 8-11, with a hard floor.** `MAX_DISTRICT` 12 → 11, `DISTRICT_TARGET` 10 → 9.5,
 and a new `MIN_DISTRICT_SIZE` of 8 clamps the block count so no block can come out under it.
