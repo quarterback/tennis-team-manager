@@ -78,8 +78,12 @@ and it is a claim about **weighting** — a class that wanted width alone would 
 for 4S/5D, which was available and is not what was petitioned for. `FLIGHT_WEIGHTS_6S5D`
 carries it through to what a flight is worth: singles take 500 of the table's 895 (55.9%)
 across six flights, while S1 and D1 stay tied at 2.00 as they are on the 4S/5D table. The
-total is odd in hundredths by construction, which puts half of it out of reach of any
-subset and so makes a level FWS unreachable on this format.
+total is odd in hundredths by construction, which puts half of it out of reach of any subset
+and so makes a level FWS unreachable — FWS is the anti-stacking signal, and a level result
+prices nothing. Checking that invariant turned up three older formats mispriced the same way
+(5S/2D 370, 2S/3D 350, 4S/5D 750, which tied on S1+S2+S3+D5); all three are corrected to odd
+under the same rule, at a cost of up to 0.514 points of FWS on a dual (5S/2D, winning
+S3+S4) — small, but larger than a first reading of a one-hundredth change suggests.
 
 Eleven flights is odd, so a 6S/5D dual cannot tie. That is the reason to prefer it over
 4S/4D and 3S/5D, the two other expansive shapes considered: both are eight flights, both

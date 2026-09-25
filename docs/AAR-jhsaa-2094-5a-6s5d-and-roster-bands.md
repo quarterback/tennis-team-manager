@@ -67,9 +67,52 @@ any subset, so **FWS cannot tie on this format** whichever way the flights fall.
 flights already prevents a tie on points; this prevents one on the weighted share. Re-pricing
 any flight must preserve the odd total — `tests/test_jhsaa_lineup.py` asserts it exhaustively.
 
-‼️ **This property does not hold association-wide.** 5S/2D (370), 4S/5D (750) and 2S/3D (350)
-all total EVEN and can return a level FWS — 4S/5D ties on S1+S2+S3+D5, for instance. That is
-pre-existing, was not introduced here, and was not fixed here.
+‼️ **Three other formats were mispriced the same way, and are fixed here.** 5S/2D (370),
+2S/3D (350) and 4S/5D (750) all totalled EVEN and could return a level FWS — 4S/5D tied on
+S1+S2+S3+D5. That was a pricing error rather than a design choice, so all three are corrected
+to odd and the invariant now holds association-wide.
+
+The shared base table serves **five** formats as subsets (1S/4D, 3S/4D, 5S/2D, 2S/3D, 3S/3D),
+so parity cannot be fixed one format at a time — an edit moves several subsets at once. Three
+flights is the provable minimum that makes all five odd: S2 is forced by the system, S3
+follows it, and one of D3/S4/S5 must join them. The minimal choice moves each by a single
+hundredth:
+
+| flight | was | now | why |
+|---|---|---|---|
+| S2 | 0.75 | **0.74** | forced — 2S/3D parity cannot move without it |
+| S3 | 0.25 | **0.26** | follows S2 to hold 3S/4D and 3S/3D odd |
+| S4 | 0.10 | **0.11** | third flip for 5S/2D; also retires the S4 = S5 flat spot |
+| 4S/5D D5 | 0.10 | **0.09** | its own table; the tail is the cheapest hundredth to spend |
+
+Totals after: 1S/4D 285, 3S/4D 385, 5S/2D 371, 2S/3D 349, 3S/3D 375, 4S/5D 749, 6S/5D 895 —
+all odd. No ordering changes anywhere.
+
+‼️ **The rated share DOES move, by more than a first reading suggests.** An earlier draft of
+this AAR said "no rated share moves by more than ~0.1%", which was wrong by about five times.
+FWS divides by the contested TOTAL, so a one-hundredth change to a flight moves both the
+numerator and the denominator, and the two do not cancel. Searching every possible set of
+flights won, per format:
+
+| format | largest FWS shift | on |
+|---|---|---|
+| **5S/2D** | **0.514 pp** | winning S3+S4 |
+| 3S/3D | 0.267 pp | S1+S3 |
+| 3S/4D | 0.260 pp | S2 |
+| 2S/3D | 0.225 pp | S2 |
+| 4S/5D | 0.132 pp | D5 |
+| 1S/4D | 0.000 pp | unchanged |
+
+Half a point of FWS on a single dual is small but it is not nothing, and it can reorder teams
+that were close. That is the price of the invariant and it should be recorded honestly rather
+than rounded away; the 2070 backtest's judgement about what a flight is WORTH is untouched,
+but what a result is worth moved slightly everywhere except 1S/4D.
+
+‼️ **Why a tie is not survivable here.** FWS is the association's anti-stacking signal —
+weight declines down the lineup so that farming a lower flight buys less rating than winning
+a higher one. A level FWS prices nothing, which is precisely the outcome a stacking program
+would play for. The S4 = S5 flat spot was a milder version of the same fault: a rung where
+the gradient was not actually applying.
 
 A class that wanted width alone would have
 asked for 4S/5D, which was on the table and is not what was petitioned for. If that table
@@ -208,3 +251,53 @@ none was used to justify the change.
 - `tests/test_jhsaa_lineup.py::test_maximize_never_scores_worse_than_traditional` fails both
   before and after this change — a pre-existing `_arrange_regular("maximize")` defect, not
   this rule's. Untouched here.
+
+---
+
+## Follow-on: the JV team postseason (JHSAA rule 2096)
+
+Separate rule, recorded here because it lands on the same branch and shares the roster
+reasoning. The JV Team State Tournament is rebuilt around qualifying rather than regional
+championships.
+
+**What changed.** Every JV team now enters one of **thirty** Regions instead of qualifying
+out of a league; each Region is a **qualifying draw only** — it runs down to four and stops,
+crowning nobody — and the 30 × 4 = **120 qualifiers** fill a 128-slot State draw. At-large
+bids, the selection index and the league-berth rule are gone from the team event. The event
+format moves **3S/2D → 3S/4D**, the association's universal league format: seven flights,
+eleven players, still odd so a dual cannot draw.
+
+**Why the regions moved.** The twenty geographic areas were wildly uneven — 2 teams in one
+and 22 in another in 2095, an 11× spread — so a Region title cost one win in one place and
+five in another, and champions out of the tiny regions were eliminated in the opening round
+at State (mean place 28, against ~19 for champions out of the big ones). Thirty buckets of
+comparable size is the fix, and comparable size is the entire requirement: `assign_regions`
+orders the field geographically and deals it into thirty near-equal slices, so a bucket holds
+schools that are mostly near each other without anybody claiming it is a place.
+
+**‼️ The format is NOT gated on `ROSTER_FLOOR`.** 3S/4D needs eleven players below the
+varsity eleven, and the floor of 20 only guarantees nine. That is deliberate: the floor is a
+theoretical minimum the real save does not sit on, and holding the event at a depth nobody
+actually fields would be defending a constraint that does not exist. The floor was NOT raised
+for this.
+
+**Round names are debate parlance** — R120, Triple Octafinals, Doubles Octafinals,
+Octafinals, Quarterfinals, Semifinals, Final — because a 120-team bracket runs out of tennis
+words three rounds early and debate has named draws this size for a century. JV only;
+`world._round_label` still bands varsity as "Round of 32".
+
+**Finishes follow the rounds.** A JV State exit is named for the round it happened in —
+Triple Octafinalist, Doubles Octafinalist, Octafinalist — rather than banded off the alive
+count, which would read "Round of 64" and "Round of 32" and tell a reader nothing about where
+in a 120-team draw that is. Scoped to those three names, the same carve-out shape the
+Parastate exit already uses, so **varsity keeps its own spelling**: a JV team is an
+*Octafinalist*, a varsity team is an *Octofinalist*, and each event uses its own vocabulary.
+Quarterfinals, Semifinals and the Final already band correctly and are deliberately not
+overridden.
+
+**Archives keep reading.** `jv_qualifying_era()` gates the new shape on the season, the same
+idiom as `jv_parastate_era`, so seasons played at twenty and at thirty-six still render as
+what they were. `jhsaa_jv_state.csv` keeps ONE schema across all three eras: `entry` reads
+`qualifier` from 2096, `selection_index` is empty (nothing is selected), and the varsity
+columns remain as context rather than as a criterion — that they were a criterion, at 70%
+weight on a JV event, is what this rule removed.

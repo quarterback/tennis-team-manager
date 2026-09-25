@@ -6670,6 +6670,16 @@ def jhsaa_state_result(bracket: dict, school: str) -> dict:
     if not champion and last is not None and \
             last.get("name") == _jh.PARASTATE_NAME:
         finish = _jh.PARASTATE_NAME
+    # ‼️ A JV STATE EXIT IS NAMED FOR ITS ROUND TOO (JHSAA rule 2096), and for the
+    # Parastate's reason: a 120-team draw's middle rounds band to "Round of 64" /
+    # "Round of 32", which are true and tell a reader nothing about where in the
+    # tournament that is. The event names those rounds in debate parlance, so the
+    # finish follows the round. Scoped to the named rounds — the same carve-out shape
+    # as above — so varsity keeps its own spelling ("Octofinalist") and every archive
+    # written before the era is byte-identical.
+    if not champion and last is not None:
+        from . import jhsaa_jv_state as _jvs
+        finish = _jvs.STATE_FINISH_LABELS.get(last.get("name"), finish)
     out.update(made_state=True, seed=field.index(school) + 1, place=place,
                finish=finish, champion=champion)
     return out
