@@ -296,7 +296,10 @@ def select_season(world_id: int, year: int, gender: str, salt: str) -> dict:
     try:
         duals = conn.execute(
             "SELECT school, opp, home, phase, won, tied, district FROM world_jhsaa_dual"
-            " WHERE world_id=? AND year=? AND gender=? AND COALESCE(level,'v')='v'",
+            " WHERE world_id=? AND year=? AND gender=? AND COALESCE(level,'v')='v'"
+            # A V1-vs-squad dual (rule 2097) is not a meeting of two programs'
+            # strengths, so it stays out of the expectation fit.
+            " AND COALESCE(opp_squad,'')=''",
             (world_id, year, gender)).fetchall()
     finally:
         conn.close()

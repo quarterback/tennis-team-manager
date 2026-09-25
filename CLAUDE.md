@@ -1729,6 +1729,48 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
       `docs/AAR-jhsaa-jv-team-state-tournament.md`.
   - Cost: the week-0 rung goes **~5 → ~7 minutes** for both genders (+40%).
     `tests/test_jhsaa_jv.py`.
+- **‼️ SPLIT SQUADS — V2/V3 AGAINST OTHER PROGRAMS' VARSITY, FROM 2097 (JHSAA rule
+  2097, `jhsaa.SPLIT_SQUAD_FROM`, `docs/AAR-jhsaa-split-squads.md`).** A deep, top-tier
+  program splits its JV into a **V2** (3S/4D, JV ranks 1-11) and a **V3** (3S/2D, JV
+  ranks 12-18) that take NON-DISTRICT dates against other programs' V1 — Cherry
+  Creek's multi-varsity model. A squad is JV in every other sense.
+  - **Two gates, both required**: the program's talent tier is in `SQUAD_TIERS`
+    (power/elite/dynasty — ONE constant, keyed on the stable ident via
+    `program_band`, volatile tiers never), and `SQUAD_DEPTH` healthy players below
+    the varsity eleven (V2 11, V3 18). Fielded once, before the first dual
+    (`field_squads`). **A YEAR GATE, NOT A FLAG**: before 2097 the squad list is
+    empty and every season reproduces byte for byte (verified by digest against
+    `main`, and pinned by forcing every program into a squad tier at 2096).
+  - **Scheduling**: squads join `_nondistrict_pairs`' pool with their school's own
+    allowance each window. A squad never meets its own school and NEVER a V1 of
+    its OWN class (league mate or not); it may meet another program's squad (JV
+    both sides, the smaller squad's format).
+    ‼️ NO CLASS GATE on non-district pairing for ANYONE (owner rule 2097 — the
+    old ±1 gate is removed association-wide; the geography matcher decides). Schedules show the school name plus a V2/V3 chip
+    (the JV idiom); never the word "varsity". Squad duals are always
+    `phase="regular"` at the squad's shape, whatever window they fall in. ‼️ The V1
+    gets **no rest or rotation relief** (`_squad_v1_lineup` skips both).
+  - **Results**: the V1 side is an ORDINARY varsity result (credit, W-L, injury
+    roll) tagged `opp_squad`; the squad side is a `SquadTeam` (its own type, like
+    `JVTeam`, so it cannot reach `records`/`matches`) folded onto the school's JV
+    tab after the JV season (`_fold_squads`) — in the aggregate JV record, **never
+    in `JVTeam.wins/losses`**, which is what JV Regions/JV State seed on (kept on
+    `squad_wins/…`). Squad duals never count toward `JV_DUAL_CAP`.
+  - **Ratings**: TOSS (`rating.compute_ratings`' `squad_side`/`squad_factor`),
+    OOWP, and so ATR and the seeding score, read the squad's SCHOOL at
+    `SQUAD_DISCOUNT` (V2 0.61, V3 0.39) × its V1 value; the squad is never rated.
+    The nine computer ratings exclude squad duals entirely.
+  - **Archive**: `squad`/`opp_squad` TEXT DEFAULT '' on `world_jhsaa_dual` (migrated).
+    ‼️ A squad dual keeps its box score on BOTH rows (one is varsity, one JV, so
+    no counterpart lookup bridges them), and `jh_match_key` gives it level `"sq"`
+    and names the squad side `"School#V2"` — still a 5-tuple — which is also what
+    gives the squad its own date cursor. ‼️ **Every whole-season `home=1` fold that
+    credits BOTH sides** must read V1 squad rows whichever side hosted and credit
+    the V1 only (`world._JH_V1_ROWS` / `_jh_credit_sides`); folds describing V1-vs-V1
+    play (realism, gap bands, flight efficiency, head-to-head, the COY fit) exclude
+    them (`_JH_NO_SQUAD`). The research export writes each squad dual ONCE from the
+    V1 row with a `squad` column; the analytics sidecar drops `squad != ''` like JV.
+    `tests/test_jhsaa_split_squads.py`.
 - **‼️ THE JV INDIVIDUAL STATE TOURNAMENTS — two CLASSLESS draws a gender (owner rule
   2026-08, `app/jhsaa_jv_individuals.py`).** JV Singles and JV Doubles, four state
   draws in all, and a VARIANT of `jhsaa_individuals` rather than a second engine —
@@ -2725,7 +2767,7 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     true ceiling. Columns read "Pot est."; the export has `potential_grade` (estimate)
     AND `ceiling_grade` (fixed) — analyse the latter. `POT_ESTIMATE_ENABLED` kills it.
   - **‼️ THE NON-DISTRICT DRAW NO LONGER MATCHES ON STRENGTH** (`_nondistrict_pairs`:
-    geography + availability + the ±1 class gate). It used to add `|strength gap|`,
+    geography + availability; the ±1 class gate was removed in 2097). It used to add `|strength gap|`,
     which scheduled the association's inequality straight back out (2080: early
     non-district strength correlation .84, median gap 2.3 OVR; a 50-55 team was .312 in
     9A and .747 in 1A). Do not put it back. District, rivalries, the challenge and the
