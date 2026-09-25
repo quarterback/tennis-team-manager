@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_matchcenter.html" import mc_scorehdr, mc_tabs, mc_panel_open, mc_panel_close, mc_stat_bars, mc_h2h %}
-{% block title %}Play to Clinch — {{ d.home }} vs {{ d.away }}{% endblock %}
+{% block title %}Play to Clinch — {{ d.home_label }} vs {{ d.away_label }}{% endblock %}
 {% block content %}
 
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
@@ -10,7 +10,7 @@
 </div></div>
 
 <div class="bl-board">
-  {{ mc_scorehdr(d.home, d.away, d.home_points, d.away_points, d.winner,
+  {{ mc_scorehdr(d.home_label, d.away_label, d.home_points, d.away_points, d.winner,
                 'Final · ' ~ d.date_label ~ ' · ' ~ d.phase_label) }}
 
   {{ mc_tabs('mc') }}
@@ -33,10 +33,10 @@
            `ln.away` are the archive's own sides, so the label is the dual's
            own `d.home`/`d.away` — never re-derived per line. #}
         <div class="bl-side {{ 'won' if ln.home_won }}">
-          <span class="nm">{% if ln.home_won %}<span class="chk">✓</span>{% endif %}{{ (ln.home or [])|join(' / ') }} <span class="bl-court-team">{{ d.home }}</span></span>
+          <span class="nm">{% if ln.home_won %}<span class="chk">✓</span>{% endif %}{{ (ln.home or [])|join(' / ') }} <span class="bl-court-team">{{ d.home_label }}</span></span>
         </div>
         <div class="bl-side {{ 'won' if not ln.home_won }}">
-          <span class="nm">{% if not ln.home_won %}<span class="chk">✓</span>{% endif %}{{ (ln.away or [])|join(' / ') }} <span class="bl-court-team">{{ d.away }}</span></span>
+          <span class="nm">{% if not ln.home_won %}<span class="chk">✓</span>{% endif %}{{ (ln.away or [])|join(' / ') }} <span class="bl-court-team">{{ d.away_label }}</span></span>
         </div>
       </div>
       <div class="bl-final">{{ ln.score or '—' }}</div>
@@ -58,10 +58,10 @@
       </div>
       <div class="bl-match-sides">
         <div class="bl-side {{ 'won' if ln.home_won }}">
-          <span class="nm">{% if ln.home_won %}<span class="chk">✓</span>{% endif %}{{ (ln.home or [])|join(' / ') }} <span class="bl-court-team">{{ d.home }}</span></span>
+          <span class="nm">{% if ln.home_won %}<span class="chk">✓</span>{% endif %}{{ (ln.home or [])|join(' / ') }} <span class="bl-court-team">{{ d.home_label }}</span></span>
         </div>
         <div class="bl-side {{ 'won' if not ln.home_won }}">
-          <span class="nm">{% if not ln.home_won %}<span class="chk">✓</span>{% endif %}{{ (ln.away or [])|join(' / ') }} <span class="bl-court-team">{{ d.away }}</span></span>
+          <span class="nm">{% if not ln.home_won %}<span class="chk">✓</span>{% endif %}{{ (ln.away or [])|join(' / ') }} <span class="bl-court-team">{{ d.away_label }}</span></span>
         </div>
       </div>
       <div class="bl-final">{{ ln.score or '—' }}</div>
@@ -72,8 +72,8 @@
     <div class="bl-matchrow" style="font-weight:600">
       <div class="bl-court"><span class="kind">Total</span><span class="num"></span></div>
       <div class="bl-match-sides">
-        <div class="bl-side"><span class="nm">{{ d.home }} <span class="bl-court-team">{{ d.home_points }} ({{ tbh }})</span></span></div>
-        <div class="bl-side"><span class="nm">{{ d.away }} <span class="bl-court-team">{{ d.away_points }} ({{ d.tiebreak|length - tbh }})</span></span></div>
+        <div class="bl-side"><span class="nm">{{ d.home_label }} <span class="bl-court-team">{{ d.home_points }} ({{ tbh }})</span></span></div>
+        <div class="bl-side"><span class="nm">{{ d.away_label }} <span class="bl-court-team">{{ d.away_points }} ({{ d.tiebreak|length - tbh }})</span></span></div>
       </div>
       <div class="bl-final">{{ d.home_points }} ({{ tbh }}) · {{ d.away_points }} ({{ d.tiebreak|length - tbh }})</div>
     </div>

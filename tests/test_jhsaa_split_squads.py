@@ -413,3 +413,40 @@ def test_archived_squad_dual_dates_schedules_and_head_to_head(tmp_path, monkeypa
     sq = [r for r in rows if r.get("squad")]
     assert len(sq) == 1 and sq[0]["level"] == "jv" and sq[0]["lines"] == ln
     assert wd.jhsaa_jv_record(rows) == (0, 1, 0)             # aggregate JV record
+
+
+def test_counterpart_keys_and_match_center_keep_squad_identity(tmp_path, monkeypatch):
+    """Same two programs, same phase: A's V1 v B's V2, and A's V1 v B's V1.
+    B's AWAY varsity row must resolve the V1-v-V1 box score, never the squad's,
+    and the Match Center must find the squad dual's own calendar date."""
+    db = str(tmp_path / "mc.db")
+    monkeypatch.setattr(wd, "WORLD_DB", db)
+    monkeypatch.setattr(wd, "_schema_ready_for", None)
+    wd.init_schema()
+    wd._JH_CAL_CACHE.clear()
+    sq_ln = [{"slot": "S3", "home": ["Sq"], "away": ["Jv"], "score": "6-0, 6-0",
+              "home_won": True}]
+    v_ln = [{"slot": "S1", "home": ["Ann"], "away": ["Bea"], "score": "6-4, 6-4",
+             "home_won": True}]
+    # the plain V1-v-V1 dual FIRST so a later squad row would overwrite it
+    _insert(db, [
+        (1, 70, "girls", "A", "B", 1, "regular", 4, 3, 1, 0, wd.pack_lines(v_ln),
+         "v", 0, "", "[]", "[]", "", ""),
+        (1, 70, "girls", "B", "A", 0, "regular", 3, 4, 0, 0, None, "v", 0, "",
+         "[]", "[]", "", ""),
+        (1, 70, "girls", "A", "B", 1, "regular", 5, 2, 1, 0, wd.pack_lines(sq_ln),
+         "v", 0, "3S/4D", "[]", "[]", "", "V2"),
+        (1, 70, "girls", "B", "A", 0, "regular", 2, 5, 0, 0, wd.pack_lines(sq_ln),
+         "jv", 0, "3S/4D", '["Jv"]', "[]", "V2", ""),
+    ])
+    rows = wd.jhsaa_schedule(1, 70, "girls", "B")
+    v_away = [r for r in rows if r["level"] == "v"]
+    assert len(v_away) == 1 and v_away[0]["lines"] == v_ln
+
+    from app.web import state
+    sq_id = sqlite3.connect(db).execute(
+        "SELECT rowid FROM world_jhsaa_dual WHERE opp_squad='V2'").fetchone()[0]
+    view = state.jhsaa_dual_view(sq_id)
+    assert view["away_label"] == "B V2" and view["home_label"] == "A"
+    assert view["meetings"] == []                      # no V1-v-V1 series here
+    assert view["date_label"] != str(view["season_year"])   # a real calendar date

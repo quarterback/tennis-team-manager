@@ -3708,8 +3708,13 @@ def jhsaa_dual_view(dual_id: int) -> dict | None:
         # A LEVEL POSTSEASON DUAL settled by the deciders (Group 2's 3S/3D, JHSAA
         # rule 2026-09): the points cannot name the winner, the row's `won` can.
         winner = 0 if bool(row["won"]) == bool(row["home"]) else 1
-    meetings = world.jhsaa_prior_meetings(row["world_id"], row["gender"], home, away,
-                                          level=level, exclude_id=home_row_id)
+    # SPLIT SQUADS (rule 2097): the V1 row of a V1-vs-squad dual. The squad side
+    # is labelled as the squad, and the page carries no head-to-head series —
+    # that series is between the two VARSITIES, which this dual was not.
+    osq = row.get("opp_squad") or ""
+    home_sq, away_sq = ("", osq) if row["home"] else (osq, "")
+    meetings = [] if osq else world.jhsaa_prior_meetings(
+        row["world_id"], row["gender"], home, away, level=level, exclude_id=home_row_id)
     import app.matchcenter as mc
     series = mc.summarize_series(meetings, home, away)
     # `phase` is only a special string for postseason/showcase duals (see
@@ -3717,6 +3722,8 @@ def jhsaa_dual_view(dual_id: int) -> dict | None:
     # "regular" and is told apart from a non-league one by `district` alone.
     phase_label = (_JH_PHASE_LABEL.get(row["phase"])
                    or ("League Play" if row["district"] else "Invitational"))
+    if osq:
+        phase_label = f"{phase_label} · {osq}"
     season_year = world.BASE_YEAR + row["year"] + 1
     # This DUAL'S OWN calendar date, off the same display calendar
     # `jhsaa_prior_meetings` reads for the Matches tab (`jhsaa_match_dates`)
@@ -3725,9 +3732,17 @@ def jhsaa_dual_view(dual_id: int) -> dict | None:
     raw_home, raw_away = ((row["school_raw"], row["opp_raw"]) if row["home"]
                           else (row["opp_raw"], row["school_raw"]))
     cal = world.jhsaa_match_dates(row["world_id"], row["year"], row["gender"], season_year)
-    day = cal.get((level, row["phase"] or "", int(bool(row["district"])), raw_home, raw_away))
+    # The SAME key the calendar was built with (`jh_match_key`), so a squad dual
+    # finds its "sq"/"School#V2" entry rather than falling back to the year.
+    day = cal.get(world.jh_match_key({
+        "home": True, "school": raw_home, "opp": raw_away, "level": level,
+        "phase": row["phase"] or "", "district": row["district"],
+        "squad": home_sq, "opp_squad": away_sq}))
     date_label = f"{day:%b} {day.day}, {season_year}" if day else str(season_year)
     return {"id": dual_id, "home": home, "away": away,
+            "home_label": f"{home} {home_sq}" if home_sq else home,
+            "away_label": f"{away} {away_sq}" if away_sq else away,
+            "squad": osq,
             "home_points": home_pts, "away_points": away_pts, "winner": winner,
             "phase_label": phase_label, "date_label": date_label,
             "level": level, "year": row["year"],

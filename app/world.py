@@ -5960,7 +5960,11 @@ def _schedule_rows(conn, world_id: int, year: int, gender: str, school: str) -> 
     home_lines = {}
     if any(not r["home"] for r in rows):
         for h in conn.execute(
-                "SELECT school, opp, home, phase, district, level, lines"
+                # `squad`/`opp_squad` MUST reach `jh_match_key` (rule 2097): without
+                # them a squad dual's home row collapses onto the ordinary V1 key
+                # and can overwrite that dual's box score here.
+                "SELECT school, opp, home, phase, district, level, lines,"
+                " squad, opp_squad"
                 " FROM world_jhsaa_dual"
                 " WHERE world_id=? AND year=? AND gender=? AND home=1"
                 " AND opp IN (%s)" % ",".join("?" * len(names)),
@@ -6465,7 +6469,8 @@ def jhsaa_dual_row(dual_id: int) -> dict | None:
     try:
         r = conn.execute(
             "SELECT rowid AS id, world_id, year, gender, school, opp, home, phase,"
-            " pf, pa, won, district, lines, level, tied, shape, played, tiebreak"
+            " pf, pa, won, district, lines, level, tied, shape, played, tiebreak,"
+            " squad, opp_squad"
             " FROM world_jhsaa_dual WHERE rowid=?", (dual_id,)).fetchone()
     finally:
         conn.close()
@@ -7642,7 +7647,9 @@ def jhsaa_history_rows(world_id: int, gender: str) -> dict[str, list[dict]]:
             # (the same tuple from either side). Materialised in ONE pass, because a
             # cursor can hand back an away row before its home row.
             drows = conn.execute(
-                "SELECT school, opp, home, phase, district, lines, level, tied"
+                # squad tags too, for the same `jh_match_key` reason (rule 2097).
+                "SELECT school, opp, home, phase, district, lines, level, tied,"
+                " squad, opp_squad"
                 " FROM world_jhsaa_dual"
                 " WHERE world_id=? AND year=? AND gender=?",
                 (world_id, year, gender)).fetchall()
