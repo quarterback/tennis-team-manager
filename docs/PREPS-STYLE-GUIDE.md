@@ -161,6 +161,19 @@ Banned phrases, on top of the lists in the reporting guide:
 * avenged
 * when all was said and done
 
+## 6a. Section structure rules (owner, after the 2098 notebook)
+
+1. **No orphan tack-ons.** A section about one team never ends on a one sentence result for a different team, including the same school's other gender. If that result isn't part of the section's story, it goes in the Notebook at the bottom.
+2. **Weave rules into action.** Never stop a story to explain a format or scoring rule the way a rulebook would. Put the mechanic inside the moment it governs.
+   * Bad: "Group 2 plays three singles and three doubles, so a dual can end 3-3. When it does, three tiebreakers decide it."
+   * Good: "Level at 3-3, Doyleville had to win two of three match tiebreaks played at once, and the two doubles pairs that had just lost were walking back on."
+3. **Vary the quote position across sections.** Within one review, rotate where the main quote sits:
+   * Some sections lead with it.
+   * Some open on the action and put the quote in the middle.
+   * Some save it for the last line.
+   Consecutive sections never share a quote position.
+4. **Flash back; don't list in order.** Open at the point of highest drama: the deciding tiebreak, the final set, the benching. Then go back briefly to how the team got there. Never walk through a season as March, then May, then June.
+
 ## 7. Endings
 
 The last paragraph must tell the reader something new. It should be one of:
@@ -185,5 +198,9 @@ Never end on a summary, a lesson, or a sentence about what the season meant. If 
 * Does any invented detail contradict the record?
 * Does any section reuse a story, opening or quote from a previous season's review?
 * Does any closing sentence summarize or zoom out?
+* Does any section end on another team's result that isn't part of its story?
+* Does any paragraph explain a format like a rulebook instead of inside the action?
+* Do two consecutive sections put their main quote in the same position?
+* Does any section walk through the season in calendar order instead of opening at its peak?
 
 Sources consulted: Joe Gisondi, Sports Media Field Guide ("Back to basics: teaching, learning to write sports game stories"; "Pitfalls to avoid when writing sports leads"); Columbia University Journalism, headline guidelines; Nieman Storyboard on nut grafs; UIL Texas feature lead types; Columbia Journalism Review on sports leads; St. Louis Post-Dispatch and KNIA/KRLS prep tennis coverage for season wrap and countdown formats.
