@@ -295,24 +295,18 @@ def test_recovery_shape_matches_the_played_season(pilot):
 
 
 def test_a_thin_road_on_real_data_fields_only_the_two_doors(pilot):
-    """The boys' pilot classes are deliberately thin (see the fixture): whatever
-    their Semi-State delivered, State is the Zonal champions plus the Semi-State
-    winners and NOTHING else, any shortfall byes the TOP seeds, and no removed
-    round convened to make up the difference."""
+    """The boys' pilot classes are deliberately thin (see the fixture). State is
+    the Zonal champions plus the Semi-State winners — or, where the class was too
+    thin to fill a Semi-State, the Super Regional winners — and nothing else."""
     arc = pilot["arc_boys"]
     for grp in jh.SIXTEEN_STATE_GROUPS:
         st = arc["brackets"][grp]
         zc = arc["prestate"][grp]["survivors"]
-        ss = arc["semi_state"][grp]["survivors"]
+        ss = arc["semi_state"][grp]
+        door = ss["survivors"] if ss.get("field") else \
+            arc["super_regional"][grp]["survivors"]
         assert set(st["field"][:len(zc)]) == set(zc)
-        assert set(st["field"][len(zc):]) == set(ss)
-        assert len(st["field"]) <= 16
-        missing = 16 - len(st["field"])
-        if missing and st["rounds"]:
-            seed = {n: i + 1 for i, n in enumerate(st["field"])}
-            played = {seed[n] for gm in st["rounds"][0]
-                      for n in (gm["home"], gm["away"])}
-            assert set(range(1, missing + 1)).isdisjoint(played), grp
+        assert set(st["field"][len(zc):]) == set(door)
         for key in ("divisional", "semi_conference", "conference",
                     "state_special", "special_challenger"):
             assert not any((arc[key][grp] or {}).get("rounds") or ()), (grp, key)
@@ -351,10 +345,10 @@ def test_the_pilot_off_season_plays_the_standing_ladder(pilot):
         assert len(g["state"]["field"]) > 16
 
 
-def test_a_thin_semi_state_runs_short_and_reopens_nothing(pilot, monkeypatch):
-    """Two Zonals voided: Semi-State is 8 + 6 = 14 teams, 7 winners, and State
-    runs 6 + 7 = 13 with byes to the top three seeds. No Divisional convenes to
-    fill the three missing berths."""
+def test_too_few_for_semi_state_qualifies_the_super_regional_winners(pilot, monkeypatch):
+    """Two Zonals voided: the Semi-State pool is 8 + 6 = 14, short of 16, so no
+    Semi-State is played. The Super Regional winners qualify, and nothing else
+    convenes."""
     monkeypatch.setattr(jh, "sixteen_state_era", lambda: 0)
     on, sy = pilot["on"], pilot["season_year"]
     grp = "3A"
@@ -366,15 +360,10 @@ def test_a_thin_semi_state_runs_short_and_reopens_nothing(pilot, monkeypatch):
     sr, ss, dv, sc, cf, quals, _dq, _atr = jh._recovery(
         grp, by_name, g["sectional"], g["ward"], pre, champs,
         [], {}, seed=5, year=sy)
-    assert len(ss["field"]) == 14 and len(quals) == 7
+    assert not ss["field"] and not any(ss["rounds"])
+    assert [t.school.name for t in quals] == list(sr["survivors"])
     for arc in (dv, sc, cf):
         assert not arc["field"] and not any(arc["rounds"])
-    st = jh.run_state_sixteen(champs, champs[:3], quals, None, seed=9)
-    assert len(st["field"]) == 13
-    seed = {n: i + 1 for i, n in enumerate(st["field"])}
-    played_r1 = {seed[n] for gm in st["rounds"][0] for n in (gm["home"], gm["away"])}
-    assert {1, 2, 3}.isdisjoint(played_r1)                   # the byes
-    assert len(st["rounds"][0]) == 5
 
 
 def test_the_bracket_page_renders_a_plain_16(pilot):

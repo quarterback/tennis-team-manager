@@ -208,9 +208,9 @@ What that means for a team:
   "Round of 32", "Round of 24" or "Parastate".
 
 A State appearance still means the same thing — a team in the State draw's
-field — so the pilot only makes it harder to make. If a thin Semi-State ever
-produced fewer than eight winners, State would run short with byes to the top
-seeds; the removed rounds are never reopened to fill it.
+field — so the pilot only makes it harder to make. A class too thin to fill
+a Semi-State (it cannot happen at real size) skips it: State is then the Zonal
+champions plus the Super Regional winners, and nothing else.
 
 ## TOSS's role
 

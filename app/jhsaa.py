@@ -10182,7 +10182,19 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     ss_pool = sorted(list(sr_winners) + zon_losers, key=_atr_key(power))
     if len(ss_pool) % 2:
         ss_pool = ss_pool[:-1]
-    ss_arc, ss_winners = _recovery_round(ss_pool, phase="semi_state", rng=rng)
+    if pilot and len(ss_pool) < 2 * berths:
+        # ‼️ TOO FEW FOR A SEMI-STATE (owner rule 2026-09): a class that cannot
+        # fill it — only possible under the ward gate, never at real size — does
+        # not play one. State is the Zonal champions plus the SUPER REGIONAL
+        # winners and nothing else; no short draw, no reopened round.
+        log.warning("JHSAA %s 16-team State pilot: Semi-State cannot fill (%d of "
+                    "%d) — Super Regional winners qualify", group, len(ss_pool),
+                    2 * berths)
+        ss_arc = {"field": [], "rounds": [[]], "survivors": [],
+                  "round_names": [_RECOVERY_NAMES["semi_state"]]}
+        ss_winners = list(sr_winners)
+    else:
+        ss_arc, ss_winners = _recovery_round(ss_pool, phase="semi_state", rng=rng)
 
     if pilot:
         # ‼️ THE 16-TEAM STATE PILOT (JHSAA rule 2099): RECOVERY ENDS HERE. The
@@ -10194,14 +10206,10 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
         # below happen to size the Divisionals and the Conference at zero — but
         # only while Semi-State delivers all eight. A thin Semi-State (fewer than
         # eight winners) would leave berths outstanding and the formulas would
-        # quietly reopen the Divisionals to fill them. The pilot runs short with
-        # byes to the top seeds instead; nothing reopens a removed round.
+        # quietly reopen the Divisionals to fill them. A class too thin for a
+        # full Semi-State skips it above (Super Regional winners qualify).
         # The arcs keep their "did not convene" shape, so no caller branches.
         atr_used = {t.school.name: atr(t, power) for t in by_name.values()}
-        if len(ss_winners) != berths:
-            log.warning("JHSAA %s 16-team State pilot: Semi-State delivered %d "
-                        "of %d berths — State runs short", group,
-                        len(ss_winners), berths)
         return (sr_arc, ss_arc,
                 {"field": [], "rounds": [[]], "survivors": [],
                  "round_names": [_RECOVERY_NAMES["divisional"]]},

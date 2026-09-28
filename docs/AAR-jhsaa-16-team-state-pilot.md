@@ -39,6 +39,8 @@ never survived the Octofinals.
   `_recovery`'s own equations already size the Divisionals and Conference at zero —
   but only while Semi-State delivers all eight. A thin Semi-State would leave
   berths outstanding and the same equations would quietly reopen the Divisionals.
+  A class too thin to FILL a Semi-State skips it; the Super Regional winners
+  qualify instead (owner rule).
   The pilot branch returns straight after Semi-State with the three later arcs in
   their "did not convene" shape, so callers do not branch and the archive shape is
   unchanged.
@@ -99,8 +101,9 @@ been **unwired since 2026-08** — every class, 1A and Group 3 included, runs
   and no pilot-class dual in any removed phase; every pilot finish reads the round the
   team lost in (Semi-State / Super Regionals, never Conference, Specials, Parastate,
   Round of 32/24); `recovery_shape(g, year)` matches the played season; the non-pilot
-  scoped identity; the gate-closed season still plays the full ladder; a thin
-  Semi-State (two Zonals voided) runs 13 with byes to seeds 1-3 and reopens nothing;
+  scoped identity; the gate-closed season still plays the full ladder; a class too
+  thin to fill a Semi-State (two Zonals voided) skips it and qualifies its Super
+  Regional winners, reopening nothing (owner rule — unreachable at real size);
   the bracket page renders, the committee page lists no pilot class, the export's
   committee JSON omits them.
 - `tests/conftest.py` replaces the era resolver for every other suite: a fresh test

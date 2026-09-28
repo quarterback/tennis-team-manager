@@ -1046,7 +1046,8 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   1-8, Epiregional order) + the 8 Semi-State winners (9-16, seed ATR), a plain 16 on
   STRICT seed lines from the Octofinals. Recovery ENDS at Semi-State (`_recovery`'s
   explicit pilot return — never the arithmetic, which would reopen the Divisionals
-  on a thin Semi-State); no Divisionals, Semi-Conference, Conference, Special
+  on a thin Semi-State; a class too thin to FILL a Semi-State skips it and the
+  Super Regional winners qualify instead, owner rule); no Divisionals, Semi-Conference, Conference, Special
   Challengers, State Specials, Metastate, Parastate or committee (`committee` None).
   Everything before Super Regionals, formats, calendar, TOC and JV are untouched.
   ‼️ **SEASON-GATED, and every shape question takes the season**:
