@@ -40,7 +40,7 @@
       <td><b>{{ r.w }}-{{ r.l }}{% if r.t %}-{{ r.t }}{% endif %}</b></td>
       <td>{% if r.pct is not none %}{{ '%.3f'|format(r.pct)|replace('0.', '.') }}{% endif %}</td>
       <td>{{ r.seasons }}</td>
-      <td>{{ r.first }}{% if r.last != r.first %}-{{ r.last }}{% endif %}</td></tr>
+      <td>{{ r.first|cal }}{% if r.last != r.first %}-{{ r.last|cal }}{% endif %}</td></tr>
     {% endfor %}
     </tbody>
   </table>
@@ -51,7 +51,7 @@
     {% for r in view.rows %}
     <tr><td><a class="nm" href="{{ url_for('jhsaa_coach', coach_id=r.coach_id, u=u, g=r.won[0].gender) }}">{{ r.name }}</a></td>
       <td><b>{{ r.count }}</b></td>
-      <td class="won">{% for a in r.won %}<span class="ti" title="{{ a.season_year }} {{ a.group }} · {{ a.school }}"><b>{{ a.season_year }}</b> {{ a.group }} {{ a.school }}{% if view.sport == 'all' %} ({{ a.gender }}){% endif %}</span>{{ ', ' if not loop.last }}{% endfor %}</td></tr>
+      <td class="won">{% for a in r.won %}<span class="ti" title="{{ a.season_year|cal }} {{ a.group }} · {{ a.school }}"><b>{{ a.season_year|cal }}</b> {{ a.group }} {{ a.school }}{% if view.sport == 'all' %} ({{ a.gender }}){% endif %}</span>{{ ', ' if not loop.last }}{% endfor %}</td></tr>
     {% endfor %}
     </tbody>
   </table>

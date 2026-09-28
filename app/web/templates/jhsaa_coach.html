@@ -17,7 +17,7 @@
 <div class="jh-ident" style="margin-bottom:14px">
   <div class="jh-ident-body">
     <h1>{{ c.name }}</h1>
-    <div class="mascot">{% if view.seat %}{{ view.seat.label }} · <a href="{{ url_for('jhsaa_school', school=view.seat.school, u=u, g=view.gender, view='staff') }}">{{ view.seat.school }}</a> ({{ view.gender }}) · since {{ view.seat.since }}{% else %}{{ view.status }}{% endif %}</div>
+    <div class="mascot">{% if view.seat %}{{ view.seat.label }} · <a href="{{ url_for('jhsaa_school', school=view.seat.school, u=u, g=view.gender, view='staff') }}">{{ view.seat.school }}</a> ({{ view.gender }}) · since {{ view.seat.since|cal }}{% else %}{{ view.status }}{% endif %}</div>
     <div class="where">{{ c.hometown }}{% if view.age %} · age {{ view.age }}{% endif %} {% if view.origin %} · {{ view.origin }}{% endif %}{% if view.alma %} · played at {{ view.alma }}{% endif %}</div>
     <div class="now"><span class="rec">{{ view.totals.record or '0-0' }}</span><span class="bit">as a head coach · varsity</span></div>
   </div>
@@ -71,7 +71,7 @@
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">Awards</span></div>
       {% for a in view.awards %}
-      <div class="jh-honor"><span class="y">{{ a.season_year }}</span><span>{{ a.label }}</span></div>
+      <div class="jh-honor"><span class="y">{{ a.season_year|cal }}</span><span>{{ a.label }}</span></div>
       {% endfor %}
     </div>
     {% endif %}

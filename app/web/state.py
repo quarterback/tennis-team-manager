@@ -5718,8 +5718,10 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     career_wins = []
     for r in world.jhsaa_program_wins(w["id"], g, school, salt):
         career_wins.append({**r,
-                            "span": (str(r["first"]) if r["first"] == r["last"]
-                                     else f"{r['first']}–{str(r['last'])[2:]}")})
+                            "span": (lambda f, l: str(f) if f == l
+                                     else f"{f}–{str(l)[2:]}")(
+                                world.display_year(r["first"]),
+                                world.display_year(r["last"]))})
 
     trophy_banner = _jh_trophy_banner(hist["seasons"])
 
@@ -7101,8 +7103,10 @@ def jhsaa_career_wins_view(seed: int, gender: str, cat: str | None = None,
                          "deco": _jh_deco(schools, r["school"], 18),
                          "stint_rows": [{**st, "deco": _jh_deco(schools, st["school"], 18)}
                                         for st in r["stints"]],
-                         "span": (str(r["first"]) if r["first"] == r["last"]
-                                  else f"{r['first']}–{str(r['last'])[2:]}")})
+                         "span": (lambda f, l: str(f) if f == l
+                                  else f"{f}–{str(l)[2:]}")(
+                             world.display_year(r["first"]),
+                             world.display_year(r["last"]))})
         boards[key] = rows
     c = cat if cat in dict(JH_CAREER_CATS) else "overall"
     return {"gender": g, "cat": c, "cats": list(JH_CAREER_CATS),
