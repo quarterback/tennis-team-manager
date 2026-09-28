@@ -795,6 +795,8 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     _jc._seated.clear()      # the pages' "already seated" memo describes wiped rows
     conn.executescript(_rc._SCHEMA + " DELETE FROM world_jhsaa_reclass;"
                        " DELETE FROM world_jhsaa_reclass_move;")
+    from . import jhsaa_portal as _jp
+    conn.executescript(_jp._SCHEMA + " DELETE FROM world_jhsaa_portal;")
     conn.commit()
     conn.close()
     # God-mode editor overrides (player moves, lineups, prestige/academics priors,
@@ -3796,6 +3798,16 @@ def advance_week(seed: int = DEFAULT_SEED) -> dict:
         if cur is not None:
             return {"event": "jhsaa_reclass_pending", "year": w["year"],
                     "moves": len(cur["data"].get("moves", []))}
+    # THE RISING-FRESHMAN PORTAL HOLD (JHSAA rule 2100, `app/jhsaa_portal.py`):
+    # after reclassification and before the season plays, every early participant
+    # without a projected V1 seat is proposed a move; the world holds on
+    # /jhsaa/portal until the owner commits or dismisses. An empty slate never holds.
+    if w["week"] == 0 and not jhsaa_done(w):
+        from . import jhsaa_portal as jp
+        cur = jp.check_hold(w)
+        if cur is not None:
+            return {"event": "jhsaa_portal_pending", "year": w["year"],
+                    "moves": len(cur["data"].get("moves", []))}
     if w["week"] == 0 and not jhsaa_done(w):
         return run_jhsaa(seed, w)
 
@@ -3972,6 +3984,11 @@ class ReclassHold(RuntimeError):
     proposal is open (or just became due) — the lab's hold."""
 
 
+class PortalHold(RuntimeError):
+    """`advance_jhsaa_lab` refused to play a season while a rising-freshman
+    portal proposal is open — the lab's copy of `advance_week`'s hold."""
+
+
 def advance_jhsaa_lab(seed: int) -> dict:
     """Advance a JHSAA-only lab world ONE year and simulate+archive that year's
     season — the lab equivalent of the year-rollover step, but with none of
@@ -4019,6 +4036,11 @@ def advance_jhsaa_lab(seed: int) -> dict:
         raise ReclassHold(f"Reclassification proposal open ({len(cur['data'].get('moves', []))}"
                           " moves) — commit or dismiss it on /jhsaa/reclassification"
                           " before advancing.")
+    from . import jhsaa_portal as jp
+    cur = jp.check_hold(w, lab=True)
+    if cur is not None:
+        raise PortalHold(f"Rising-freshman portal open ({len(cur['data'].get('moves', []))}"
+                         " moves) — commit or dismiss it on /jhsaa/portal before advancing.")
     new_year = w["year"] + 1
     run_jhsaa(seed, {**w, "year": new_year})
     conn = _db()
@@ -4530,6 +4552,9 @@ def run_jhsaa(seed: int, world: dict) -> dict:
         # `jhsaa.invalidate_staff_history`). In `finally` so a rolled-back rung
         # does not leave a cache built from its uncommitted clear either.
         jhsaa.invalidate_staff_history()
+        # The exposure odometer's memo too: the season just archived is the one
+        # every roster built from here reads as "last season".
+        jhsaa._expo_cache.clear()
     # COACH OF THE YEAR — selected once, off the committed archive (owner spec
     # 2026-09). After the commit, so it reads the season exactly as stored; a
     # failure here leaves the season intact and the award is selected on the
@@ -5907,7 +5932,9 @@ def jhsaa_career_wins(world_id: int, gender: str, salt: str = "",
         tot = [0] * 8
         for year in sorted(years):
             sy = BASE_YEAR + year + 1
-            if not (entry <= sy <= entry + 3):
+            # From 7th grade: an early participant's pre-HS seasons (rule 2100)
+            # are this career too.
+            if not (entry - 2 <= sy <= entry + 3):
                 continue
             school = alias.get(_jh.transfer_school(rec, sy), "") or ""
             school = alias.get(school, school)

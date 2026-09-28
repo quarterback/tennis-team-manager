@@ -2861,6 +2861,14 @@ class TeamSeason:
     prior: dict = field(default_factory=dict)
     lens: "CoachLens" = field(default_factory=lambda: CoachLens())
     read: dict = field(default_factory=dict)
+    # COACH INVESTMENT (owner spec 2026-09): {pid: OVR points} for Future Value and
+    # Program Interest, {pid: seasons here} for tenure, and the staff's two weights
+    # (0.0 = no staff, both terms off). Resolved once in `district_teams`.
+    future: dict = field(default_factory=dict)
+    interest: dict = field(default_factory=dict)
+    tenure: dict = field(default_factory=dict)
+    future_w: float = 0.0
+    loyalty_w: float = 0.0
     # ‼️ CAPTAINS (owner rule 2026-09) — pids, best-known first, named PRESEASON in
     # `district_teams` and never re-picked. They change nothing about any player:
     # their whole effect is that `read` above was drawn at a smaller sd, so this
@@ -3219,6 +3227,8 @@ def reset_schools() -> None:
     _band_doc_cache.clear()
     _band_ident_cache.clear()
     _exchange_era_cache.clear()
+    _early_era_cache.clear()
+    _class_moves_cache.clear()
     _intl_era_cache.clear()
     _jv_parastate_era_cache.clear()
     _jv_qualifying_era_cache.clear()
@@ -3684,8 +3694,10 @@ def sibling_link(school: School, entry: int, seat: int, salt: str):
     # ‼️ RETENTION CAN SHRINK A CLASS (named staffs, owner spec 2026-09), so the
     # under-estimate has to include any NEGATIVE retention for that cohort — it
     # reads only archived seasons before `older_entry`, so it is fixed forever.
+    # An early-participation cohort is sized at its first early season
+    # (`cohort_horizon`), so its under-estimate is too.
     shrink = min(0, len(GRADES) * retention_extra(staff_history(sc.gender, sc.ident),
-                                                  older_entry))
+                                                  cohort_horizon(sc, older_entry)))
     n = _freshman_class_size(sc.key, older_entry, sc.classification, salt, shrink)
     return sc, older_entry, rng.randrange(max(1, n))
 
@@ -3774,7 +3786,8 @@ ERA_SETTINGS = ("jhsaa_name_era", "jhsaa_dev_era", "jhsaa_talent_era",
                 "jhsaa_career_era", "jhsaa_exchange_era", "jhsaa_intl_era",
                 "jhsaa_band_era", "jhsaa_style_era", "jhsaa_jv_parastate_era",
                 "jhsaa_jv_qualifying_era",
-                "jhsaa_sibling_era", "jhsaa_sixteen_state_era")
+                "jhsaa_sibling_era", "jhsaa_sixteen_state_era",
+                "jhsaa_early_era")
 
 
 def reset_eras() -> None:
@@ -3957,6 +3970,200 @@ CAREER_STEP_BAND = (0.0, 3.5)       # an ordinary year
 CAREER_OVERFLOW = 0.20              # share of a gain that lands PAST career peak
 
 
+# --- EARLY PARTICIPATION (JHSAA rule 2100) -----------------------------------
+#
+# From the 2100 season, 7th- and 8th-graders may play tennis for a 1A or Group
+# program. They are NOT a middle-school system: an early participant is simply a
+# seat of a FUTURE freshman class of the same school, rostered one or two seasons
+# early — the same (school, gender, entry year, seat) identity, so the same pid,
+# name and ceiling the player carries through high school. Nothing is assigned,
+# recruited or stored; the feeder is the school itself. Once on the roster they
+# are ordinary players to everything downstream: the coach's ladder decides V1,
+# a split squad, JV or not dressing. See `docs/AAR-jhsaa-early-participation.md`.
+#
+# ‼️ A YEAR GATE, and the seasons before it rebuild byte for byte: every early
+# path is keyed off `early_seasons`, which is empty for a season before
+# `early_era()` and for any program outside `EARLY_CLASSES`.
+EARLY_PARTICIPATION_FROM = 2100
+
+#: The classifications whose programs may roster 7th/8th-graders — ONE constant,
+#: read against `classification` (what the school IS), never `group` (where it
+#: plays): a 1A program playing up into 2A is still a 1A-sized school. The three
+#: small classes (owner rule 2026-09) — enrollment 57-396; Group 1 and Group 2 are
+#: 6A-9A and 3A-5A sized and deliberately NOT in it.
+EARLY_CLASSES = ("1A", "2A", "Group 3")
+
+EARLY_GRADES = (7, 8)
+
+#: ‼️ MATURITY — the late bloomer (owner rule 2026-09). Every player carries a
+#: hidden `maturity` (0-1, most low: the square of a uniform). In each of their
+#: 7th, 8th and 9th-grade seasons that is ARCHIVED — for every program in the
+#: association the freshman year, and for an early participant all three — a
+#: MATURITY EVENT may fire. Only PLAYING TIME moves the odds: chance
+#: `MATURITY_RATE × maturity × played`, `played` being that season's exposure-
+#: odometer share (varsity appearances count double a JV one — the odometer's own
+#: `EXPO_JV_UNIT`). Results never enter it. An event does two INDEPENDENT things
+#: (owner rule: POT and OVR are not mechanically coupled):
+#:   * a POT REVEAL — the ceiling rises by a share of the base ceiling, capped PER
+#:     GRADE (`MATURITY_POT_CAP`, owner rule 2026-09): the 7th-grade event (7th→8th)
+#:     at 6.00%, the 8th- and 9th-grade events (8th→9th, 9th→10th) higher. Drawn to
+#:     the hundredth of a percent and skewed LOW (cap × u²) — modest for most, a lot
+#:     for a few — and it never reads the player's talent, so an elite freshman can
+#:     bloom as readily as a 30. `MATURITY_REALISE` of the new headroom joins the
+#:     player's yearly capacity over the growth years left, realised at the
+#:     odometer's rate like every capacity (the 30 who becomes a 60 over years);
+#:   * a GROWTH SPURT — a smaller immediate OVR gain, its own draw: a
+#:     `MATURITY_SPURT` share of that grade's cap, as a share of the base career
+#:     peak — so it stays under what the reveal can reach, without tracking it.
+#: HISTORY ONLY: an event is read off the archived season, so it moves builds of
+#: the seasons AFTER it and never the season it happened in. From `early_era()`.
+MATURITY_GRADES = (7, 8, 9)
+MATURITY_RATE = 0.35
+MATURITY_POT_CAP = {7: 0.06, 8: 0.15, 9: 0.15}
+MATURITY_REALISE = 0.50
+MATURITY_SPURT = (0.10, 0.50)
+MATURITY_ENABLED = True
+
+#: A 7th-grader's ability never falls below this share of their career peak (the
+#: pre-high-school years are scaled down to fit rather than clipped, so the path
+#: from 7th grade to the freshman start stays continuous).
+EARLY_FLOOR = 0.30
+
+_early_era_cache: dict = {}
+_class_moves_cache: dict = {}
+
+
+def early_era() -> int:
+    """The first SEASON early participation is live in this save: `EARLY_
+    PARTICIPATION_FROM`, or later if the save has already archived past it — the
+    `exchange_era` idiom, so a save that reaches this code with 2100+ already
+    played never grows 7th-graders into seasons archived without them."""
+    return max(EARLY_PARTICIPATION_FROM,
+               _resolve_era("jhsaa_early_era", _early_era_cache))
+
+
+def _class_moves() -> dict:
+    """{ident or school name: [(first_season, from_cls), …] newest first} — every
+    committed reclassification move in THE world, one query per save, memoised
+    until `reset_schools()` (which a reclass commit calls)."""
+    from .dbpath import resolve_db_path
+    db = resolve_db_path()
+    got = _class_moves_cache.get(db)
+    if got is not None:
+        return got
+    out: dict = {}
+    wid = _expo_world_id(db)
+    if wid is not None:
+        import sqlite3
+        from .world import BASE_YEAR
+        try:
+            conn = sqlite3.connect(db)
+            try:
+                first = {y: (json.loads(d or "{}").get("first_season")
+                             or BASE_YEAR + y + 1)
+                         for y, d in conn.execute(
+                             "SELECT year, data FROM world_jhsaa_reclass WHERE"
+                             " world_id=? AND status='committed'", (wid,))}
+                rows = conn.execute(
+                    "SELECT year, school, ident, from_cls FROM world_jhsaa_reclass_move"
+                    " WHERE world_id=?", (wid,)).fetchall()
+            finally:
+                conn.close()
+            for y, school, ident, from_cls in rows:
+                fs = first.get(y)
+                if fs is None:
+                    continue
+                out.setdefault(ident or school, []).append((int(fs), from_cls))
+            for v in out.values():
+                v.sort(reverse=True)
+        except sqlite3.Error:
+            out = {}
+    _class_moves_cache[db] = out
+    return out
+
+
+def classification_in(school: School, season: int) -> str:
+    """The classification `school` held in `season` — today's, rewound through
+    every committed reclassification that took effect after it.
+
+    ‼️ Archived rosters are REBUILT, so an eligibility rule read off today's map
+    would add or delete an old season's 7th-graders the day a cycle moves the
+    school — players the archived box scores name. The cycle history is the
+    record of what the class was, so this is a projection of it, not a store."""
+    moves = _class_moves()
+    hist = moves.get(school.ident) or moves.get(school.name) or ()
+    cls = school.classification
+    for first_season, from_cls in hist:
+        if first_season > season:
+            cls = from_cls
+        else:
+            break
+    return cls
+
+
+def early_seasons(school: School, entry: int) -> tuple:
+    """The seasons the cohort entering `school` in `entry` is on its roster BEFORE
+    ninth grade — (), (entry-1,) or (entry-2, entry-1).
+
+    A 7th-grade season needs the school in `EARLY_CLASSES` that season; an
+    8th-grade season needs it that season OR a 7th-grade season already played
+    there (owner rule: GRANDFATHERED — a reclassification out of the gated
+    classes never cuts a player the program already has). Career-era cohorts
+    only: the legacy maturity tables have no grade below nine."""
+    era = early_era()
+    s7, s8 = entry - 2, entry - 1
+    if s8 < era or entry < career_era():
+        return ()
+    g7 = s7 >= era and classification_in(school, s7) in EARLY_CLASSES
+    if g7:
+        return (s7, s8)
+    return (s8,) if classification_in(school, s8) in EARLY_CLASSES else ()
+
+
+def player_maturity(school_key: str, entry: int, seat: int, salt: str) -> float:
+    """The player's hidden maturity (0-1), on its own rng stream. (`player_`
+    because `_gen_seat` has a legacy local called `maturity`.)"""
+    return random.Random(f"{salt}|jhsaa-maturity|{school_key}|{entry}|{seat}").random() ** 2
+
+
+def maturity_events(school_key: str, entry: int, seat: int, grade: int, salt: str,
+                    played: dict) -> dict:
+    """{grade: (pot, spurt)} — the maturity events of the player's archived
+    7th/8th/9th-grade seasons BEFORE `grade`. `played` maps a grade to that
+    season's played share (0-1); a grade absent from it (not rostered, not
+    archived, before the era) never fires. Each grade rolls on its own stream, and
+    the reveal and the spurt are separate draws off it."""
+    if not MATURITY_ENABLED or not played:
+        return {}
+    m = player_maturity(school_key, entry, seat, salt)
+    out: dict = {}
+    for g in MATURITY_GRADES:
+        if g >= grade or g not in played:
+            continue
+        r = random.Random(f"{salt}|jhsaa-bloom|{school_key}|{entry}|{seat}|{g}")
+        hit = r.random() < MATURITY_RATE * m * played[g]
+        pot = round(MATURITY_POT_CAP[g] * r.random() ** 2, 4)
+        spurt = MATURITY_POT_CAP[g] * r.uniform(*MATURITY_SPURT)
+        if hit and pot > 0:
+            out[g] = (pot, spurt)
+    return out
+
+
+def cohort_horizon(school: School, entry: int) -> int:
+    """The season a cohort is SIZED at: its first early season if it played early,
+    else its freshman year — see `build_roster`'s `cohort_size`."""
+    ss = early_seasons(school, entry)
+    return ss[0] if ss else entry
+
+
+def _early_caps(school_key: str, entry: int, seat: int, salt: str) -> dict:
+    """{7: c7, 8: c8} — the growth capacity of the two pre-high-school years, on
+    their OWN rng stream (`jhsaa-early`) so no other roll moves."""
+    r = random.Random(f"{salt}|jhsaa-early|{school_key}|{entry}|{seat}")
+    return {g: (r.uniform(*CAREER_BIG_BAND) if r.random() < CAREER_BIG_RATE
+                else r.uniform(*CAREER_STEP_BAND)) for g in EARLY_GRADES}
+
+
 def _career_plan(school_key: str, entry: int, seat: int, salt: str,
                  ceiling: float, start_lift: float = 0.0) -> tuple[float, float, list[float]]:
     """(starting ability, career peak, four yearly capacities) for one player.
@@ -4044,7 +4251,8 @@ def coach_factor(mature: float) -> float:
 def career_ability(school_key: str, entry: int, seat: int, grade: int,
                    salt: str, ceiling: float,
                    exposure: dict | None = None, coach: float = 1.0,
-                   start_lift: float = 0.0, staff: dict | None = None) -> float:
+                   start_lift: float = 0.0, staff: dict | None = None,
+                   early: dict | None = None, bloom: dict | None = None) -> float:
     """This player's ability at `grade` under the career model.
 
     `exposure` maps a GRADE to how much of that year's capacity the player
@@ -4055,15 +4263,70 @@ def career_ability(school_key: str, entry: int, seat: int, grade: int,
     `coach` is the program's development multiplier (`coach_factor`) — 1.0 for an
     untagged program. It scales the same yearly capacity `exposure` does, because
     they are the same kind of thing: how much of a year's available development a
-    player actually banked."""
+    player actually banked.
+
+    `early` is EARLY PARTICIPATION (rule 2100): {7: x, 8: x} realisation for the
+    pre-high-school seasons, None for everyone else (untouched to the bit). The
+    career plan's freshman start is read as a kid who went through 7th and 8th
+    grade at `EXPO_FLOOR` — adolescence happens anyway, which is exactly what a
+    program with no early participation shows. So a 7th-grader sits the two
+    years' floor-realised growth below that start, a pre-HS season realises at
+    the odometer's own rate, and a player who PLAYED arrives at ninth grade
+    `Σ cap × (x − EXPO_FLOOR)` ahead of it — the same formula every high-school
+    year uses, nothing new. Never behind it: a rostered kid who never dressed
+    realises the floor, which is the baseline.
+
+    `bloom` is MATURITY (rule 2100): {grade: (pot, spurt)} for each archived
+    7th/8th/9th-grade season whose maturity event fired, None otherwise. `ceiling`
+    is always the player's BASE ceiling. An event at grade g, applied as that
+    season turns into the next: (1) the POT REVEAL raises the career peak by `pot`
+    × the base peak and adds `MATURITY_REALISE` of that new headroom to the
+    player's yearly capacity, spread evenly over the growth years left through
+    grade 12 — so it is realised the way every capacity is, at the odometer's
+    rate; (2) the GROWTH SPURT adds `spurt` OVR at once. The two are independent
+    draws — a large reveal can come with a small spurt and vice versa."""
     start, peak, caps = _career_plan(school_key, entry, seat, salt, ceiling,
                                      start_lift)
+    bloom = bloom or {}
+    base_peak = peak
+    bonus = 0.0                     # revealed headroom realised per growth year
+
+    def fire(g, v):
+        nonlocal peak, bonus
+        pot, spurt = bloom[g]
+        peak += pot * base_peak
+        bonus += pot * base_peak * MATURITY_REALISE / (12 - g)
+        return v + spurt * base_peak
+
+    if early is not None:
+        pre = _early_caps(school_key, entry, seat, salt)
+        total = EXPO_FLOOR * sum(pre.values())
+        # Scale the pre-HS years down, never clip them, if they would carry a
+        # 7th-grader under the floor — the path stays continuous either way.
+        k = 1.0
+        if total > 0 and start - total < EARLY_FLOOR * peak:
+            k = max(0.0, (start - EARLY_FLOOR * peak) / total)
+        st = staff or {}
+        v = start - total * k
+        for g in EARLY_GRADES:
+            if g >= grade:
+                return v
+            if g in bloom:
+                v = fire(g, v)
+            x = early.get(g, EXPO_FLOOR)
+            v += (pre[g] * k * st.get(g, 1.0) + bonus) * x
+        # Never behind the baseline start (a rostered kid who never dressed
+        # realised exactly the floor), never past the peak on arrival.
+        start = min(peak, max(start, v))
     # A `feeder` head start is partly given back over the four years (see
     # `FEEDER_FADE`): zero for everyone else, so nothing below changes for them.
-    fade = start_lift * peak * FEEDER_FADE / 4.0
+    fade = start_lift * base_peak * FEEDER_FADE / 4.0
     v = start
     for i, g in enumerate(range(10, grade + 1)):
-        base = max(0.0, caps[i] * ((exposure or {}).get(g - 1, 1.0)) - fade)
+        if g - 1 in bloom:
+            v = fire(g - 1, v)
+        x = (exposure or {}).get(g - 1, 1.0)
+        base = max(0.0, (caps[i] + bonus) * x - fade)
         # ‼️ COACHING ACCELERATES TOWARD THE PEAK AND NEVER PAST IT. The multiplier
         # is applied to the run UP to `peak`; the overflow a year earns beyond it is
         # the UNCOACHED amount. Applied to the whole gain instead, a coaching program
@@ -4126,7 +4389,13 @@ def _expo_world_id(db_path: str):
     same reason: any later row is a stray artifact and must never be read as the
     player's game. Resolved once per save."""
     got = _expo_world.get(db_path, _EXPO_MISS)
-    if got is not _EXPO_MISS:
+    # ‼️ A "no world" answer is NEVER memoised: a save's world row can be created
+    # later in the same process (a fresh save, the lab's generate, a test
+    # fixture), and a cached None would leave the odometer, the talent pin and
+    # the class-move history reading "no archive" for the life of the process.
+    # Re-probing costs one indexed row and only ever happens while there is no
+    # world — the cold path, where there is nothing to read anyway.
+    if got is not _EXPO_MISS and got is not None:
         return got
     import sqlite3
     wid = None
@@ -4141,7 +4410,8 @@ def _expo_world_id(db_path: str):
             conn.close()
     except sqlite3.Error:
         wid = None
-    _expo_world[db_path] = wid
+    if wid is not None:
+        _expo_world[db_path] = wid
     return wid
 
 
@@ -5888,7 +6158,8 @@ def _ceiling(rng: random.Random, group: str, gender: str,
 def _apply_career(p: Prospect, school_key: str, entry: int, seat: int,
                   grade: int, salt: str, exposure: dict | None = None,
                   coach: float = 1.0, start_lift: float = 0.0,
-                  staff: dict | None = None) -> Prospect:
+                  staff: dict | None = None, early: dict | None = None,
+                  bloom: dict | None = None, reveal: float = 1.0) -> Prospect:
     """Set a career-era player's CURRENT ability from their career plan.
 
     The prospect arrives generated AT its ceiling (maturity 1.0), so this scales
@@ -5905,8 +6176,11 @@ def _apply_career(p: Prospect, school_key: str, entry: int, seat: int,
                   for a, v in p.potential.items()) / _WEIGHT_TOTAL
     if ceiling <= 0:
         return p
-    target = career_ability(school_key, entry, seat, grade, salt, ceiling,
-                            exposure, coach, start_lift, staff)
+    # `reveal` is the MATURITY POT reveal the prospect was generated with: the
+    # career model runs off the BASE ceiling (the events reach it through
+    # `bloom`), and the attributes are scaled against the displayed one.
+    target = career_ability(school_key, entry, seat, grade, salt, ceiling / reveal,
+                            exposure, coach, start_lift, staff, early, bloom)
     factor = target / ceiling
     for a, ceil_v in p.potential.items():
         p.current[a] = clamp_grade(ceil_v * factor)
@@ -5991,7 +6265,8 @@ def pot_display(p) -> float:
     return float(est) if est is not None else p.ceiling_overall()
 
 
-def _stamp_pot_estimate(p, pid: str, salt: str, grade: int, exposure: dict | None) -> None:
+def _stamp_pot_estimate(p, pid: str, salt: str, grade: int, exposure: dict | None,
+                        early: dict | None = None) -> None:
     from .player_attributes import OVERALL_WEIGHTS, _WEIGHT_TOTAL
     ceiling = sum(OVERALL_WEIGHTS[a] * v for a, v in p.potential.items()) / _WEIGHT_TOTAL
     current = sum(OVERALL_WEIGHTS[a] * v for a, v in p.current.items()) / _WEIGHT_TOTAL
@@ -6006,6 +6281,8 @@ def _stamp_pot_estimate(p, pid: str, salt: str, grade: int, exposure: dict | Non
     for pg in range(9, grade):
         f = (exposure or {}).get(pg)
         knowledge += 1.0 if f is None else float(f)
+    # An early participant's 7th/8th-grade seasons were watched by this staff too.
+    knowledge += sum((early or {}).values())
     shrink = POT_PRIOR / (POT_PRIOR + knowledge)
     est = ceiling + misread * shrink
     est = max(current, min(float(GRADE_CEIL), est))
@@ -6015,7 +6292,8 @@ def _stamp_pot_estimate(p, pid: str, salt: str, grade: int, exposure: dict | Non
 def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
               salt: str, expo_years: dict | None = None,
               pins: dict | None = None,
-              staff_years: dict | None = None) -> Prospect:
+              staff_years: dict | None = None,
+              early_s: tuple = (), fire_expo: dict | None = None) -> Prospect:
     """One seat's Prospect — pulled out of `build_roster` so a TRANSFER (see
     below) can regenerate the exact same person under the school they actually
     play for now, from the ORIGIN school's identity/program modifiers. `pid`
@@ -6027,16 +6305,22 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
     # (grade - 9), so a FRESHMAN gets nothing and the bonus compounds over four
     # years. Keyed off 8 it would land on ninth-graders too, and a development
     # program's whole character is that you cannot spot it in its freshmen.
-    step = mod.get("mature", 0.0) * (grade - 9)
+    # EARLY PARTICIPATION: a 7th/8th-grader (`early_s` names the pre-HS seasons
+    # this cohort is rostered for) is always a career-era player, whose ability
+    # `_apply_career` sets outright — the maturity tables below are consumed for
+    # their rng draw only, so they are read at ninth grade rather than indexed at
+    # a grade they have no row for.
+    mgrade = max(9, grade)
+    step = mod.get("mature", 0.0) * (mgrade - 9)
     if entry >= dev_era():
         # New-era cohorts develop on their own rolled trajectory (see
         # `_dev_maturity`) — an exact point, passed as a degenerate band so
         # `generate_prospect` consumes the SAME one uniform draw either era.
-        m = min(DEV_CAP, _dev_maturity(school.key, entry, seat, grade, salt) + step)
+        m = min(DEV_CAP, _dev_maturity(school.key, entry, seat, mgrade, salt) + step)
         maturity = (m, m)
     else:
         # Legacy lockstep bands — existing cohorts keep their exact numbers.
-        lo, hi = _MATURITY[grade]
+        lo, hi = _MATURITY[mgrade]
         maturity = (min(1.0, lo + step), min(1.0, hi + step))
     rng = random.Random(f"{salt}|jhsaa|{school.key}|{entry}|{seat}")
     # Keyed on (school, entry, seat) — the same identity the pid is built from —
@@ -6112,8 +6396,42 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
         start_lift_today += FEEDER_K * 2.0 * (fe.feeder - 0.5)
     start_lift = (pinned["start"] if pinned and pinned.get("start") is not None
                   else start_lift_today)
+    # EARLY PARTICIPATION + MATURITY (rule 2100). Both read the ARCHIVED seasons a
+    # player was on this roster for, by name — `fire_expo` when the caller knows
+    # the player played somewhere else (a transfer), else this school's own.
+    fexpo = expo_years if fire_expo is None else fire_expo
+    early = None
+    bloom = {}
+    if free:
+        if early_s:
+            # Each pre-HS season realises at the odometer's rate off its
+            # archive; a season with no archive reads FULL — the odometer's own
+            # convention. A season not rostered for is absent (`career_ability`
+            # reads it as the floor, the baseline everyone else has).
+            early = {}
+            for pg in EARLY_GRADES:
+                season = entry + (pg - 9)
+                if season in early_s and pg < grade:
+                    f = _expo_factor((fexpo or {}).get(season), nm)
+                    early[pg] = 1.0 if f is None else f
+        if MATURITY_ENABLED and grade > MATURITY_GRADES[0]:
+            era = early_era()
+            for g in MATURITY_GRADES:
+                season = entry + (g - 9)
+                if g >= grade or season < era or (g < 9 and season not in early_s):
+                    continue
+                f = _expo_factor((fexpo or {}).get(season), nm)
+                if f is not None:                 # never fires off an unplayed year
+                    bloom[g] = (f - EXPO_FLOOR) / (1.0 - EXPO_FLOOR)
+    events = maturity_events(school.key, entry, seat, grade, salt, bloom) if bloom else {}
+    boost = sum(pot for pot, _ in events.values())
+    # The POT reveal is on the CEILING the prospect is generated at, so the
+    # displayed potential shows it; the career model is handed the BASE ceiling
+    # and the events separately (`_apply_career`), so OVR is not simply scaled
+    # with it. `talent` itself stays the creation value the pin records.
+    gen_talent = min(cap, talent * (1.0 + boost)) if boost else talent
     p = generate_prospect(rng, nm, "US", gender=sex,
-                          talent=talent,
+                          talent=gen_talent,
                           # ‼️ The career model derives current ability itself,
                           # so it generates AT the ceiling and scales down after
                           # (`_apply_career`). A degenerate band still consumes
@@ -6154,12 +6472,14 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
         if staff_years:
             from .jhsaa_coaches import LEAN_K
             staff_mult = {}
-            for pg in range(9, grade):
+            # An early participant's 7th/8th-grade seasons were coached by the
+            # same staff, and develop like any other season of theirs.
+            for pg in [*(early or {}), *range(9, grade)]:
                 e = staff_years.get(entry + (pg - 9))
                 if e is None:
                     continue
                 f = e.dev
-                x = (exposure or {}).get(pg)
+                x = (early or {}).get(pg) if pg < 9 else (exposure or {}).get(pg)
                 if e.lean and x is not None:
                     depth = (1.0 - x) / (1.0 - EXPO_FLOOR)
                     f *= 1.0 + LEAN_K * e.lean * (depth - 0.5)
@@ -6177,7 +6497,8 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
                     staff_mult[pg] = f
         _apply_career(p, school.key, entry, seat, grade, salt,
                       exposure or None, coach_factor(mod.get("mature", 0.0)),
-                      start_lift, staff_mult or None)
+                      start_lift, staff_mult or None, early, events or None,
+                      gen_talent / talent if boost and talent else 1.0)
     elif compress:
         # The guarantee half: attribute noise lifts displayed ceilings past the
         # squashed centre, so the visible number is trimmed after generation.
@@ -6213,6 +6534,11 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
     p.jhsaa["ident"] = school.ident
     p.jhsaa["kind"] = kind_at_creation
     p.jhsaa["start"] = float(start_lift)
+    if early_s:
+        p.jhsaa["early"] = list(early_s)
+    p.jhsaa["maturity"] = round(player_maturity(school.key, entry, seat, salt), 4)
+    if events:
+        p.jhsaa["bloom"] = {str(g): [round(a, 4), round(b, 4)] for g, (a, b) in events.items()}
     if pinned is None and centre is not None and mod.get("band"):
         try:
             p.jhsaa["tier"] = band_tier_for(mod["band"], entry)["key"]
@@ -6222,7 +6548,7 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
         p.jhsaa["tier"] = "pinned"
         p.jhsaa["generated_talent"] = float(generated_talent)
     # ESTIMATED POT (owner rule 2026-09): what the staff BELIEVE the ceiling is.
-    _stamp_pot_estimate(p, pid, salt, grade, exposure if free else None)
+    _stamp_pot_estimate(p, pid, salt, grade, exposure if free else None, early)
     link = sibling_link(school, entry, seat, salt)
     if link is not None:
         sc, e, st = link
@@ -6281,8 +6607,18 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     # seasons are archived under the school they actually played at, so a
     # (this-school, name) lookup would misread their played years as sitting.
     # Transfers are rare owner-authored overrides; they realise in full.
-    expo_years = school_exposure(school.gender, school.name,
-                                 (year - 1, year - 2, year - 3))
+    # EARLY PARTICIPATION (rule 2100): the pre-HS seasons of every cohort on the
+    # roster, resolved once per build. A cohort that played early reads its 7th/
+    # 8th-grade seasons from the archive too, so those years join the one query
+    # — and only for a program that has any, so every other build asks exactly
+    # the three seasons it always did.
+    early = {entry: early_seasons(school, entry)
+             for entry in range(year - 3, year + 3)}
+    early = {e: v for e, v in early.items() if v}
+    expo_ask = [year - 1, year - 2, year - 3]
+    expo_ask += sorted({sn for v in early.values() for sn in v
+                        if sn < year and sn not in expo_ask}, reverse=True)
+    expo_years = school_exposure(school.gender, school.name, tuple(expo_ask))
     # The talent pins for every seat THIS program generates — one indexed read,
     # memoised (`pinned_talents`); threaded down like `expo_years`.
     pins = pinned_talents(school.gender, school.ident)
@@ -6290,19 +6626,30 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     staff_years = staff_history(school.gender, school.ident)
     out = []
     fresh9_seats = 0
+    def cohort_size(entry: int) -> int:
+        # ‼️ A cohort that played EARLY is sized off the culture it walked into
+        # at its FIRST early season, not at ninth grade: `retention_extra` folds
+        # every archived season before its horizon, and read at `entry` the
+        # 7th-grade build (seasons < entry-2 archived) and the freshman build
+        # would see different histories — a player on the 8th-grade roster could
+        # vanish at ninth grade, or a stranger appear, under box scores that name
+        # them. Every other cohort keeps `entry`, to the bit.
+        horizon = early[entry][0] if entry in early else entry
+        return _freshman_class_size(school.key, entry, school.classification,
+                                    salt, mod.get("roster", 0)
+                                    # `extra` is roster-wide; retention is per
+                                    # CLASS, hence the four grades.
+                                    + len(GRADES) * retention_extra(staff_years,
+                                                                    horizon))
+
     for grade in GRADES:
         entry = year - (grade - 9)
-        n_seats = _freshman_class_size(school.key, entry, school.classification,
-                                       salt, mod.get("roster", 0)
-                                       # `extra` is roster-wide; retention is
-                                       # per CLASS, hence the four grades.
-                                       + len(GRADES) * retention_extra(staff_years,
-                                                                       entry))
+        n_seats = cohort_size(entry)
         if grade == 9:
             fresh9_seats = n_seats
         for seat in range(n_seats):
             p = _gen_seat(school, mod, entry, seat, grade, salt, expo_years, pins,
-                          staff_years)
+                          staff_years, early.get(entry, ()))
             rec = tmap.get(p.pid)
             # Somewhere else THIS season — `transfer_school` walks every recorded
             # move and returns where they actually are, so a player who moved away
@@ -6311,6 +6658,18 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
             if rec and transfer_school(rec, year) != school.name:
                 continue
             out.append(p)
+    # EARLY PARTICIPATION (JHSAA rule 2100): the 8th- and 7th-graders — seats of
+    # the NEXT two freshman classes, rostered early. Every seat of the cohort
+    # comes: there is no tryout, the coach's ladder decides who plays. They COUNT
+    # toward the floor below (owner rule 2026-09) — a program that fields 7th- and
+    # 8th-graders tops up fewer freshmen, because it is not short of players.
+    for grade in EARLY_GRADES:
+        entry = year + (9 - grade)
+        if year not in early.get(entry, ()):
+            continue
+        for seat in range(cohort_size(entry)):
+            out.append(_gen_seat(school, mod, entry, seat, grade, salt, expo_years,
+                                 pins, staff_years, early[entry]))
     # ‼️ THE HARD FLOOR — see `ROSTER_FLOOR` above. Grown on THIS year's freshman
     # class only, continuing its own seat numbering (`fresh9_seats` on) so it never
     # collides with the seats `_freshman_class_size` already rolled for it.
@@ -6341,8 +6700,18 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
         if origin is None:
             continue                       # origin school renamed/removed since the move
         omod = _program_mod(origin, year, salt)
+        # EARLY PARTICIPATION + MATURITY read the seasons the mover actually
+        # played, at whichever school `transfer_school` puts them in each — the
+        # HS odometer keeps its "transfers realise in full" rule untouched.
+        es = early_seasons(origin, entry)
+        fire_expo = {}
+        for sn in (*es, entry):
+            if sn < year and sn >= early_era():
+                where = transfer_school(rec, sn) or origin.name
+                fire_expo[sn] = school_exposure(school.gender, where, (sn,)).get(sn)
         p = _gen_seat(origin, omod, entry, rec.get("seat"), grade, salt,
-                      pins=pinned_talents(origin.gender, origin.ident))
+                      pins=pinned_talents(origin.gender, origin.ident),
+                      early_s=es, fire_expo=fire_expo)
         if p.pid != pid:
             continue                       # stale/mismatched record — never invent a player
         p.high_school = school.name
@@ -6683,6 +7052,109 @@ PROOF_POSTSEASON = 1        # dressed in at least one postseason dual
 PROOF_INDIVIDUAL = 2        # entered an individual state draw
 PROOF_HONORED = 4           # named on any award team (All-State/Region/District/POY)
 
+# --- COACH INVESTMENT — Future Value and Program Interest (owner spec 2026-09) ---
+#
+# The transfer system could not tell a player a coach is WILLING TO LOSE from one
+# the coach wants to KEEP: "no projected varsity seat" read as "the program does not
+# care". A coach does not select on current ability alone — he decides whom to
+# INVEST competitive opportunities in — so the ladder now carries two more bounded
+# judgments, in the same OVR-point units as form (±7) and proof (+8):
+#
+#   FUTURE VALUE — expected return on further development. A younger player is
+#   played a little ahead of current ability because the coach believes he will
+#   matter. Reads the STAFF'S ESTIMATE of the ceiling (`pot_est`), never the true
+#   one, and is strongest through sophomore year — `FUTURE_HORIZON` stays high at
+#   9th and 10th grade on purpose (owner: "I do not want freshman future value
+#   falling rapidly just because they're already in high school") and drops after.
+#
+#   PROGRAM INTEREST (the "senior interest rate") — return on investment the
+#   program has ALREADY made. Trust and reward for years in THIS program, most
+#   valuable in senior year and only decisive in a close call: it is additive and
+#   capped, so a 3-point gap turns, a 7-point gap is coach-dependent, a 13-point
+#   gap never does. Tenure is DERIVED from history — early seasons, the entry year
+#   and the transfer record — so a senior who entered in seventh grade (six years),
+#   one who walked in as a freshman (four) and one who transferred in this year
+#   (one) do not read alike, and staying somewhere accrues a small selection
+#   benefit that a move resets (the new coach can still value you highly).
+#
+# Both weights come off the NAMED STAFF (`jhsaa_coaches.StaffEffect.future` /
+# `.loyalty`), so a program with no staff — a standalone season, a test, an
+# archived season from before this existed — reads NEITHER term and plays exactly
+# as before (the Stage B idiom, which is also the era gate). Captains stay
+# separate; captaincy is not this mechanism. Selection only: nothing here changes
+# how anybody plays, and a senior keeps developing through the ordinary model.
+FUTURE_HORIZON = {7: 1.00, 8: 1.00, 9: 0.90, 10: 0.80, 11: 0.35, 12: 0.00}
+FUTURE_K = 0.20             # share of estimated headroom a coach of weight 1.0 invests
+FUTURE_MAX = 8.0            # OVR points — the proof tier's ceiling
+FUTURE_BAND = (0.4, 1.6)    # the staff's Development quantile → weight
+INTEREST_CLASS = {7: 0.0, 8: 0.0, 9: 0.2, 10: 0.3, 11: 0.6, 12: 1.0}
+INTEREST_K = 5.0            # OVR points for a full-tenure senior under a weight-1.0 coach
+INTEREST_MAX = 8.0          # the outside boundary (owner: ~10-20% of a ~50 OVR gap)
+INTEREST_MAX_YEARS = 6      # seventh grade through senior year
+LOYALTY_BAND = (0.4, 1.6)   # the staff's loyalty quantile → weight
+
+
+def _lerp(band, t: float) -> float:
+    t = min(1.0, max(0.0, t))
+    return band[0] + (band[1] - band[0]) * t
+
+
+def program_tenure(p, school_name: str, season: int, rec: dict | None = None) -> int:
+    """Seasons `p` has been with `school_name` up to and INCLUDING `season` — the
+    early seasons, the high-school years so far, minus any played elsewhere on a
+    transfer record. Derived, never stored."""
+    entry = getattr(p, "entry_year", None)
+    if entry is None:
+        return 0
+    seasons = {sn for sn in ((getattr(p, "jhsaa", None) or {}).get("early") or ())
+               if sn <= season}
+    seasons |= set(range(entry, season + 1))
+    if rec:
+        seasons = {sn for sn in seasons if transfer_school(rec, sn) == school_name}
+    return len(seasons)
+
+
+def future_value(p, future_w: float) -> float:
+    """The coach's investment in what `p` will become, in OVR points."""
+    if future_w <= 0.0:
+        return 0.0
+    h = FUTURE_HORIZON.get(getattr(p, "grade", 0), 0.0)
+    if h <= 0.0:
+        return 0.0
+    meta = getattr(p, "jhsaa", None) or {}
+    pot = meta.get("pot_est")
+    if pot is None:
+        pot = p.ceiling_overall()
+    room = max(0.0, float(pot) - p.current_overall())
+    return min(FUTURE_MAX, FUTURE_K * future_w * h * room)
+
+
+def program_interest(p, tenure: int, loyalty_w: float) -> float:
+    """The coach's return on the program's investment in `p`, in OVR points."""
+    if loyalty_w <= 0.0 or tenure <= 0:
+        return 0.0
+    c = INTEREST_CLASS.get(getattr(p, "grade", 0), 0.0)
+    share = min(1.0, tenure / INTEREST_MAX_YEARS)
+    return min(INTEREST_MAX, INTEREST_K * loyalty_w * c * share)
+
+
+def investment_terms(roster, school_name: str, season: int, future_w: float,
+                     loyalty_w: float, active: dict | None = None) -> tuple:
+    """({pid: future}, {pid: interest}, {pid: tenure}) for a roster — resolved
+    ONCE per team, never per dual. `active` is the enrolled transfer slice
+    (`enrolled_transfers`), so a mover's years elsewhere are not this program's."""
+    fut, itr, ten = {}, {}, {}
+    for p in roster:
+        t = program_tenure(p, school_name, season, (active or {}).get(p.pid))
+        ten[p.pid] = t
+        f = future_value(p, future_w)
+        if f:
+            fut[p.pid] = f
+        i = program_interest(p, t, loyalty_w)
+        if i:
+            itr[p.pid] = i
+    return fut, itr, ten
+
 
 @dataclass(frozen=True)
 class CoachLens:
@@ -6812,7 +7284,16 @@ def varsity_proof(p, st: PriorSeason | None, lens: CoachLens,
     tier = proof_tier(st)
     if not tier:
         return 0.0
-    grade = PROOF_GRADE.get(getattr(p, "grade", 0), 0.0)
+    g = getattr(p, "grade", 0)
+    # EARLY PARTICIPATION: experience is seasons IN THE PROGRAM, so a freshman
+    # who played here as an 8th-grader reads as a sophomore would. Everyone else
+    # adds nothing.
+    ee = getattr(p, "entry_year", None)
+    if ee is not None:
+        now = ee + g - 9
+        g = min(12, g + sum(1 for sn in ((getattr(p, "jhsaa", None) or {}).get("early")
+                                         or ()) if sn < now))
+    grade = PROOF_GRADE.get(g, 0.0)
     if not grade:
         return 0.0
     decay = PROOF_FLOOR + (1.0 - PROOF_FLOOR) * (PROOF_PRIOR / (played + PROOF_PRIOR))
@@ -6821,7 +7302,8 @@ def varsity_proof(p, st: PriorSeason | None, lens: CoachLens,
 
 def coach_eval(p, record: list[int] | None = None, *,
                prior: PriorSeason | None = None,
-               lens: CoachLens | None = None, read: float = 0.0) -> float:
+               lens: CoachLens | None = None, read: float = 0.0,
+               future: float = 0.0, interest: float = 0.0) -> float:
     """What the COACH thinks `p` is worth to his lineup — NOT what `p` is worth on
     a tennis court. `_order` sorts on this and the match engine never sees it.
 
@@ -6847,6 +7329,9 @@ def coach_eval(p, record: list[int] | None = None, *,
     # RECENT FORM — this season's record, weighted by how much he chases it.
     if n:
         out += ln.form * LADDER_SWING * (w / n - 0.5) * n / (n + LADDER_PRIOR)
+    # FUTURE VALUE + PROGRAM INTEREST (owner spec 2026-09) — resolved per team in
+    # `district_teams` (`investment_terms`), zero for a program with no staff.
+    out += future + interest
     return out
 
 
@@ -6855,10 +7340,16 @@ def _order(ts: TeamSeason) -> list:
     not a ranking of talent. Ties break on STR, which is ability, because two
     players he values identically are separated by the thing he cannot see."""
     prior, lens, read = ts.prior, ts.lens, ts.read
+    # Optional on purpose: a team-like stand-in (a test's, a tool's) without the
+    # investment fields orders exactly as before the terms existed.
+    fut = getattr(ts, "future", None) or {}
+    itr = getattr(ts, "interest", None) or {}
     return sorted(ts.roster,
                   key=lambda p: (-coach_eval(p, ts.records.get(p.pid),
                                              prior=prior.get(p.pid), lens=lens,
-                                             read=read.get(p.pid, 0.0)),
+                                             read=read.get(p.pid, 0.0),
+                                             future=fut.get(p.pid, 0.0),
+                                             interest=itr.get(p.pid, 0.0)),
                                  -p.str_value()))
 
 
@@ -8493,6 +8984,11 @@ def district_teams(schools: list[School], year: int, salt: str = "",
     fam = families()
     st = staff or {}          # resolved ONCE here, never per team and never per dual
     pr = prior or {}
+    # The enrolled transfer slice (tenure) and the owner's coach-read overrides —
+    # each ONE read per call, never per team.
+    active, _inb = enrolled_transfers(year)
+    from app import overrides as _ov
+    reads = _ov.get_jhsaa_reads()
     out = []
     for s in schools:
         roster = build_roster(s, year, salt)
@@ -8559,6 +9055,23 @@ def district_teams(schools: list[School], year: int, salt: str = "",
         if roster and lens.read > 0.0:
             k = max(0.0, lens.read - CAPTAIN_VALUE) / lens.read
             ts.read = {pid: v * k for pid, v in ts.read.items()}
+        # COACH INVESTMENT (owner spec 2026-09): the staff's two weights, then the
+        # per-player terms. `eff.future is None` is a program with no staff or a
+        # history row from before the terms existed — both terms stay off, and the
+        # season plays exactly as it did (the Stage B idiom, and the era gate).
+        if eff is not None and getattr(eff, "future", None) is not None:
+            ts.future_w = _lerp(FUTURE_BAND, eff.future)
+            ts.loyalty_w = _lerp(LOYALTY_BAND, eff.loyalty)
+            ts.future, ts.interest, ts.tenure = investment_terms(
+                roster, s.name, year, ts.future_w, ts.loyalty_w, active)
+        # THE OWNER'S READ (owner spec 2026-09): a per-player offset on THIS coach's
+        # judgment, applied after the captain scaling because it is a decision, not
+        # a misread. It moves the evaluation only — never a position directly.
+        if reads:
+            for p in roster:
+                o = reads.get(p.pid)
+                if o and o.get("school") == s.name:
+                    ts.read[p.pid] = ts.read.get(p.pid, 0.0) + float(o.get("delta", 0.0))
         # ‼️ THE MITIGATION IS APPLIED HERE, THE PICK IS NOT (owner rule 2026-09).
         # `run_season` names captains AFTER the individual state tournaments, so
         # `ts.captains` is empty at this point and stays empty for a standalone
@@ -12176,7 +12689,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     # call (which plays ~10,000 duals), never anything resolved in a loop.
     ck = (salt, gender, year, seed,
           _ov.jhsaa_archetype_version(), _ov.jhsaa_playup_version(),
-          _ov.jhsaa_band_version(), _prior_fingerprint(prior),
+          _ov.jhsaa_band_version(), _ov.jhsaa_read_version(), _prior_fingerprint(prior),
           # ‼️ AND THE COACHING STAFFS (owner spec 2026-09): a season played under a
           # different staff is a different season. Empty (no staff) keys like before.
           _staff_fingerprint(staff),
@@ -12828,7 +13341,8 @@ def mark(school: School, size: int = 72) -> str:
 
 def career(school_name: str, gender: str, name: str, grad_year: int,
            salt: str = "") -> list[dict]:
-    """A player's four high-school seasons, grade 9 through 12.
+    """A player's high-school seasons, grade 9 through 12 — from 7th or 8th grade
+    for an early participant.
 
     Rebuilt on demand rather than stored: a career is deterministic from (school,
     gender, entry year, seat), so replaying it costs a roster build per year — no duals,
@@ -12840,7 +13354,10 @@ def career(school_name: str, gender: str, name: str, grad_year: int,
     if school is None:
         return []
     out = []
-    for grade in GRADES:
+    # An early participant's 7th/8th-grade seasons (rule 2100) lead the career —
+    # asked only for a cohort that played early, so nobody else pays two builds.
+    pre = [9 - (grad_year - 3 - sn) for sn in early_seasons(school, grad_year - 3)]
+    for grade in (*pre, *GRADES):
         year = grad_year - (12 - grade)
         roster = build_roster(school, year, salt)
         for i, p in enumerate(roster, 1):

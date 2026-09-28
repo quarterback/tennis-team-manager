@@ -40,7 +40,7 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     player_ranks, player_journey)
 from .state import preseason_view as preseason_view_data
 from .state import jhsaa_front_view
-from .state import jhsaa_reclass_view, jhsaa_realignments_view
+from .state import jhsaa_reclass_view, jhsaa_realignments_view, jhsaa_portal_view
 from .state import (jhsaa_view, jhsaa_scope_view, jhsaa_school_view, jhsaa_past_winners,
                     jhsaa_bracket_view, jhsaa_toc_view, jhsaa_district_view, jhsaa_districts_view,
                     jhsaa_honors_view,
@@ -376,6 +376,9 @@ def _game_context():
             # A reclassification proposal is open: the advance holds on it, so the
             # button sends the reader to the review page (the fall-portal shape).
             stage, action = "jhsaa_reclass", "Review reclassification"
+        elif w["week"] == 0 and not wd.jhsaa_done(w) and _portal_open(w):
+            # The rising-freshman portal (rule 2100) holds the same way.
+            stage, action = "jhsaa_portal", "Review rising-freshman portal"
         elif w["week"] == 0 and not wd.jhsaa_done(w):
             # The JHSAA rung runs FIRST at week 0 (before the pros, before any college
             # dual — see advance_week), so the button must advertise it first or it
@@ -400,6 +403,17 @@ def _game_context():
                 "signed": sum(wd.signed_counts().values())}
     except Exception:
         return None
+
+
+def _portal_open(w: dict) -> bool:
+    """Whether a rising-freshman portal proposal is open (or due and about to be)
+    — one indexed row, like `_reclass_open`. Never OPENS one: building the slate
+    projects ~180 ladders, and the shell renders on every page."""
+    try:
+        from app import jhsaa_portal as jp
+        return jp.pending(w["id"]) is not None or jp.due(w)
+    except Exception:
+        return False
 
 
 def _reclass_open(w: dict) -> bool:
@@ -2825,6 +2839,67 @@ def create_app() -> Flask:
             rc.dismiss(w)
         return _rc_back("Proposal dismissed.")
 
+    # ---- THE RISING-FRESHMAN PORTAL (JHSAA rule 2100, app/jhsaa_portal.py) -----
+    def _jp_back(msg: str = ""):
+        _, _, _, u = _universe(request)
+        g = request.form.get("g") or request.args.get("g") or ""
+        args = {"u": u}
+        if g:
+            args["g"] = g
+        if msg:
+            args["msg"] = msg
+        return redirect(url_for("jhsaa_portal", **args))
+
+    @app.route("/jhsaa/portal")
+    def jhsaa_portal():
+        """The held proposal: every early participant without a projected V1
+        seat, the destination the cascade picked and the other V1 seats in the
+        same tier; redirect / drop per row; commit, dismiss, run now."""
+        gender, label, u, g, group, year = _jh_scope_args()
+        return render_template("jhsaa_portal.html", active="High School",
+                               view=jhsaa_portal_view(DEFAULT_SEED, g, group, year),
+                               gender=gender, u=u, uni_label=label)
+
+    @app.route("/jhsaa/portal/run", methods=["POST"])
+    def jhsaa_portal_run():
+        from app import jhsaa_portal as jp
+        w = wd.load_world(DEFAULT_SEED)
+        if not w:
+            return _jp_back("No world yet.")
+        cur = jp.open_proposal(w, lab=_jhsaa_lab_mode(), force=bool(request.form.get("rebuild")))
+        return _jp_back("Proposal built." if cur else "Nobody needs a move — nothing to hold on.")
+
+    @app.route("/jhsaa/portal/edit", methods=["POST"])
+    def jhsaa_portal_edit():
+        from app import jhsaa_portal as jp
+        w = wd.load_world(DEFAULT_SEED)
+        pid = (request.form.get("pid") or "").strip()
+        action = request.form.get("action") or ""
+        to = (request.form.get("to") or "").strip()
+        if w and pid and action:
+            jp.edit(w, pid, action, to)
+        return _jp_back()
+
+    @app.route("/jhsaa/portal/commit", methods=["POST"])
+    def jhsaa_portal_commit():
+        from app import jhsaa_portal as jp
+        w = wd.load_world(DEFAULT_SEED)
+        if not w:
+            return _jp_back("No world yet.")
+        res = jp.commit(w)
+        if res.get("ok"):
+            reset_all()          # transfer records changed under every roster cache
+        return _jp_back(f"Committed {res.get('moves', 0)} moves." if res.get("ok")
+                        else res.get("msg", "Nothing to commit."))
+
+    @app.route("/jhsaa/portal/dismiss", methods=["POST"])
+    def jhsaa_portal_dismiss():
+        from app import jhsaa_portal as jp
+        w = wd.load_world(DEFAULT_SEED)
+        if w:
+            jp.dismiss(w)
+        return _jp_back("Proposal dismissed — nobody moves.")
+
     @app.route("/jhsaa/realignments/ledger", methods=["POST"])
     def jhsaa_realignments_ledger():
         """Rewrite data/jhsaa/realignments/ from the database — every committed
@@ -3582,7 +3657,10 @@ def create_app() -> Flask:
         from app import jhsaa_reclass as _rc
         _w = wd.load_world(wd.DEFAULT_SEED)
         reclass_pending = bool(_w and _rc.pending(_w["id"]))
+        from app import jhsaa_portal as _jp
+        portal_pending = bool(_w and _jp.pending(_w["id"]))
         return render_template("jhsaa_lab.html", active="Tools",
+                               portal_pending=portal_pending,
                                exists=bool(w), season_year=season_year,
                                years_archived=years_archived, db_path=str(wd.WORLD_DB),
                                job_running=job["running"], job_kind=job["kind"],
@@ -4596,6 +4674,40 @@ def create_app() -> Flask:
             _jh.reset_schools()
             reset_all()
         return _editor_redirect()
+
+    @app.route("/editor/jhsaa-read", methods=["POST"])
+    def editor_jhsaa_read():
+        """THE OWNER'S COACH READ (owner spec 2026-09): an offset, in OVR points, on
+        how THIS program's coach evaluates one player — the way the owner says "I
+        want this coach to value this kid more and keep them". It modifies the
+        judgment (`coach_eval`'s read) and never pins a position; the projected
+        ladder, and so the rising-freshman portal, read the result."""
+        from app import overrides as ov
+        gender = request.form.get("gender", "")
+        school = request.form.get("jh_school", "")
+        pid = request.form.get("jh_pid", "")
+        if pid and school:
+            if request.form.get("do") == "clear":
+                ov.clear_jhsaa_read(pid)
+                result = "Coach's read cleared."
+            else:
+                try:
+                    delta = float(request.form.get("jh_read", ""))
+                except ValueError:
+                    delta = None
+                if delta is None:
+                    result = "Enter a number of OVR points (e.g. 4 or -3)."
+                else:
+                    delta = max(-15.0, min(15.0, delta))
+                    ov.set_jhsaa_read(pid, school, delta)
+                    result = f"{school}'s coach now reads this player {delta:+.1f}."
+            reset_all()              # the ladder (and the season memo) moved
+        else:
+            result = "Missing information — read not saved."
+        resp = redirect(url_for("jhsaa_player", school=school, pid=pid,
+                                u=request.form.get("u", "D1-men"), g=gender))
+        resp.set_cookie("jh_transfer_result", result, max_age=30, samesite="Lax")
+        return resp
 
     @app.route("/editor/jhsaa-transfer", methods=["POST"])
     def editor_jhsaa_transfer():

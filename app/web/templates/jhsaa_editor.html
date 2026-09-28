@@ -20,6 +20,7 @@
   <a class="on" href="{{ url_for('jhsaa_programs', u=u, g=view.scope.gender) }}">Programs</a>
   <a href="{{ url_for('jhsaa_program_tiers', u=u, g=view.scope.gender) }}">Tier settings</a>
   <a href="{{ url_for('jhsaa_reclassification', u=u, g=view.scope.gender) }}" title="The four-season realignment cycle">Reclassification</a>
+  <a href="{{ url_for('jhsaa_portal', u=u, g=view.scope.gender) }}" title="Rising freshmen without a projected V1 seat (rule 2100)">Rising-freshman portal</a>
 </div>
 
 {% if flash %}<div class="jhx-flash">{{ flash }}</div>{% endif %}

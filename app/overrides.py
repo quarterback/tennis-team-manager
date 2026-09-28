@@ -455,6 +455,68 @@ def clear_jhsaa_playup(school: str) -> None:
     conn.commit(); conn.close()
 
 
+# --- THE OWNER'S COACH READ (owner spec 2026-09) ---------------------------------
+# A per-player offset on ONE program's coach evaluation — how the owner says "this
+# coach values this kid more (or less) than the sim thinks", which is what keeps a
+# player the owner wants retained inside the projected lineup. It modifies the
+# judgment; it never pins a position. Keyed on the pid, scoped to a school.
+
+def get_jhsaa_reads() -> dict:
+    """{pid: {school, delta}} — ONE read for the whole table (it is tiny)."""
+    conn = _db()
+    rows = conn.execute(
+        "SELECT key, value FROM roster_overrides WHERE kind='jhsaa_read'").fetchall()
+    conn.close()
+    out = {}
+    for k, v in rows:
+        try:
+            out[k] = json.loads(v) if v else None
+        except (TypeError, ValueError):
+            continue
+    return {k: v for k, v in out.items() if v}
+
+
+def get_jhsaa_read(pid: str) -> dict | None:
+    conn = _db()
+    row = conn.execute("SELECT value FROM roster_overrides WHERE kind='jhsaa_read'"
+                       " AND key=?", (pid,)).fetchone()
+    conn.close()
+    if not row or not row[0]:
+        return None
+    try:
+        return json.loads(row[0])
+    except (TypeError, ValueError):
+        return None
+
+
+def set_jhsaa_read(pid: str, school: str, delta: float) -> None:
+    conn = _db()
+    conn.execute("INSERT OR REPLACE INTO roster_overrides (kind, key, value)"
+                 " VALUES ('jhsaa_read',?,?)",
+                 (pid, json.dumps({"school": school, "delta": float(delta)})))
+    conn.commit(); conn.close()
+
+
+def clear_jhsaa_read(pid: str) -> None:
+    conn = _db()
+    conn.execute("DELETE FROM roster_overrides WHERE kind='jhsaa_read' AND key=?", (pid,))
+    conn.commit(); conn.close()
+
+
+def jhsaa_read_version() -> str:
+    """Fingerprint of the read table — it moves a ladder, so it keys the season
+    memo. Resolved ONCE per `run_season`, never in a loop."""
+    import hashlib
+    conn = _db()
+    rows = conn.execute("SELECT key, value FROM roster_overrides WHERE kind='jhsaa_read'"
+                        " ORDER BY key").fetchall()
+    conn.close()
+    h = hashlib.md5()
+    for r in rows:
+        h.update(repr(tuple(r)).encode())
+    return h.hexdigest()
+
+
 def jhsaa_playup_version() -> str:
     """Fingerprint of the play-up table. It decides which CHAMPIONSHIP a program
     enters, so the school cache and the season cache both have to fall when it

@@ -5881,6 +5881,40 @@ def jhsaa_reclass_view(seed: int, gender: str, group: str | None = None,
                             f"every {cfg['cycle']} seasons")}
 
 
+def jhsaa_portal_view(seed: int, gender: str, group: str | None = None,
+                      year: int | None = None) -> dict:
+    """The rising-freshman portal page (JHSAA rule 2100, `app/jhsaa_portal.py`):
+    the open proposal with the owner's edits applied, every mover's V1 options,
+    the players who had no V1 destination in reach, and the committed history.
+    BOTH genders on one page — the hold is one event, not one per gender."""
+    import app.jhsaa_portal as jp
+    import app.world as world
+    base = jhsaa_scope_view(seed, gender, group, year)
+    w = world.get_or_create(seed)
+    pend = jp.pending(w["id"])
+    moves, stays = [], []
+    if pend:
+        edits = pend.get("edits") or {}
+        final = {m["pid"]: m for m in jp.final_moves(pend)}
+        for m in pend["data"]["moves"]:
+            e = edits.get(m["pid"]) or {}
+            f = final.get(m["pid"])
+            moves.append({**(f or m), "dropped": bool(e.get("drop")),
+                          "edited": bool(e), "proposed_to": m["to"]})
+        stays = pend["data"].get("stays") or []
+    moves.sort(key=lambda m: (m["gender"], -m["ovr"]))
+    hist = jp.applied(w["id"])
+    seasons = sorted({m["season"] for m in hist}, reverse=True)
+    return {**base, "pending": pend, "moves": moves, "stays": stays,
+            "kept": sum(1 for m in moves if not m["dropped"]),
+            "due": (jp.due(w) if not pend else False),
+            "season": pend["season"] if pend else jp.upcoming_season(w),
+            "history": hist[-200:][::-1], "history_seasons": seasons,
+            "history_total": len(hist),
+            "tier_label": {"county": "same county", "area": "same area",
+                           "neighbor": "neighbouring area"}}
+
+
 def jhsaa_realignments_view(seed: int, gender: str, group: str | None = None,
                             cycle: int | None = None) -> dict:
     """The Realignments page: the INDEX of committed cycles (one line each) and
@@ -6270,7 +6304,8 @@ def _family_row(fam_map: dict, pid: str, p=None, roster=()) -> dict | None:
 #: Grade -> class year, the name a results line calls a player by. The same four
 #: labels the college side already uses (`scout_intel._CLASS_ORD`); high school has
 #: no fifth year, so there is no RS- case to strip here.
-_JH_CLASS_YEAR = {9: "Fr", 10: "So", 11: "Jr", 12: "Sr"}
+# 7th/8th: early participation (JHSAA rule 2100) — named by grade, there is no class year.
+_JH_CLASS_YEAR = {7: "7th", 8: "8th", 9: "Fr", 10: "So", 11: "Jr", 12: "Sr"}
 
 
 def _jh_years_abbr(years: list[int]) -> str:
@@ -6529,6 +6564,8 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         "jv_matches": sum(s["jv_matches"] for s in seasons),
         # For the transfer form — the identity a `set_jhsaa_transfer` row is keyed on.
         "entry_year": player.entry_year,
+        # THE OWNER'S COACH READ (owner spec 2026-09) — the standing offset, if any.
+        "read_override": __import__("app.overrides", fromlist=["x"]).get_jhsaa_read(pid),
         "transfer": moved,
         # The whole history, each hop reading FROM where they were before it — what
         # the card lists, and what makes a move back to the old school legible.
@@ -6589,7 +6626,7 @@ def jhsaa_players_search(seed: int, gender: str, group: str = "All", district: s
         "gender": gender, "rows": rows, "total": len(rows),
         "groups": ["All"] + list(jh.GROUPS),
         "districts": districts,
-        "grades": ["All", "9", "10", "11", "12"],
+        "grades": ["All", "7", "8", "9", "10", "11", "12"],
         "group": group, "district": district, "grade": grade, "sort": sort, "q": q,
     }
 
@@ -6765,14 +6802,14 @@ def jhsaa_misapplied_players(seed: int, gender: str, group: str = "All",
 
     return {"gender": gender, "rows": flagged, "total": len(flagged),
             "groups": ["All"] + list(jh.GROUPS), "group": group, "sort": sort,
-            "grades": ["All", "9", "10", "11", "12"], "grade": grade}
+            "grades": ["All", "7", "8", "9", "10", "11", "12"], "grade": grade}
 
 
 #: Lineup Lab grade-pool options: which grades a hypothetical squad may draw
 #: from. A scouting squad built around seniors is a one-year mirage, so the lab
 #: can exclude them (or go younger still) — label beside the set it keeps.
 JHSAA_LAB_GRADE_POOLS = {
-    "all":   ("All grades", (9, 10, 11, 12)),
+    "all":   ("All grades", (7, 8, 9, 10, 11, 12)),
     "no12":  ("Exclude seniors", (9, 10, 11)),
     "under": ("Underclassmen (9-10)", (9, 10)),
 }
