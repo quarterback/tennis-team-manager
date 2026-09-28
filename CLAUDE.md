@@ -1849,6 +1849,22 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     Measured on the fixture: "best seat" often means the WEAKEST program in the county
     (a 68 sent to a 6A whose No. 1 was a 41) and ~70% of rising early participants
     moved — read both off the first real 2100 export before retuning.
+    ‼️ **EDITS ARE REPROJECTED, NEVER PASTED FROM A CACHED OPTION (review 2026-09):**
+    every edit and the commit REBUILD the slate (`build(edits=)`) — redirects placed
+    first, strongest first, each re-checked with `_with`/`v1_rank` against a ladder
+    carrying the earlier redirects (`held`; the cascade never takes a seat that would
+    push one off), a failing redirect falls to the cascade and is flagged
+    `redirect_failed`; and a mover is EMITTED only if the FINAL ladder of his final
+    destination seats him, else he is pulled back and listed `displaced`. **NO RATINGS
+    ON THE PAGE**: rows carry the origin's projected ladder position vs its V1, the
+    8th-grade record (`PriorSeason`) and the destination seat (`_describe`);
+    `ovr`/`pot` stay on the stored row for the export only. **SCOPED like the
+    section** — one sport, one class (rail = `EARLY_CLASSES`), grouped by ORIGIN
+    DISTRICT; Commit still commits the whole slate. ‼️ **An early grader's transfer
+    record applies** (`is_enrolled` spans `entry-2..entry+3`;
+    `early_transfer_effective` is the one authority both sides of `build_roster`
+    ask, and it ignores a move for any season the destination is not in
+    `EARLY_CLASSES` — the player stays, never vanishes).
   - **‼️ COACH INVESTMENT — FUTURE VALUE AND PROGRAM INTEREST IN `coach_eval` (owner spec
     2026-09, `jhsaa.investment_terms`, AAR §9).** The portal could not tell a player a
     coach is willing to lose from one he wants to KEEP, so the ladder now carries two more

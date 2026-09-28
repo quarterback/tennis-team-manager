@@ -2752,9 +2752,12 @@ def create_app() -> Flask:
     def _rc_back(msg: str = ""):
         _, _, _, u = _universe(request)
         g = request.form.get("g") or request.args.get("g") or ""
+        group = request.form.get("group") or request.args.get("group") or ""
         args = {"u": u}
         if g:
             args["g"] = g
+        if group:
+            args["group"] = group        # the page is scoped by class; stay in it
         if msg:
             args["msg"] = msg
         return redirect(url_for("jhsaa_reclassification", **args))
@@ -2830,9 +2833,12 @@ def create_app() -> Flask:
     def _jp_back(msg: str = ""):
         _, _, _, u = _universe(request)
         g = request.form.get("g") or request.args.get("g") or ""
+        group = request.form.get("group") or request.args.get("group") or ""
         args = {"u": u}
         if g:
             args["g"] = g
+        if group:
+            args["group"] = group        # the page is scoped by class; stay in it
         if msg:
             args["msg"] = msg
         return redirect(url_for("jhsaa_portal", **args))

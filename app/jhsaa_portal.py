@@ -147,9 +147,40 @@ def _rising(ts, season: int) -> list:
             and (season - 1) in ((p.jhsaa or {}).get("early") or ())]
 
 
-def build(world_id: int, season: int, salt: str) -> dict:
-    """The proposal for `season` — both genders. Writes nothing."""
+def _describe(p, origin_ts, prior: dict) -> dict:
+    """What the page says about a player INSTEAD of a rating (owner rule 2026-09:
+    no OVR / Pot on the portal). Where they sit on the origin's projected ladder
+    against its V1, what they did last season as an 8th-grader, and how many
+    early seasons they played — all things the game already knows and shows."""
+    order = jh._order(origin_ts)
+    ladder = next((i + 1 for i, q in enumerate(order) if q.pid == p.pid), None)
+    pr = prior.get(p.pid)
+    return {"ladder": ladder, "roster_n": len(order), "from_v1": v1_size(origin_ts),
+            "apps": pr.apps if pr else 0, "wins": pr.wins if pr else 0,
+            "losses": pr.losses if pr else 0, "prior_rank": pr.rank if pr else 0,
+            "early_years": len((p.jhsaa or {}).get("early") or ())}
+
+
+def build(world_id: int, season: int, salt: str, edits: dict | None = None) -> dict:
+    """The proposal for `season` — both genders. Writes nothing.
+
+    `edits` is the owner's `{pid: {"drop": True} | {"to": school}}`. ‼️ EDITS ARE
+    REPROJECTED, NEVER TRUSTED: a redirect is placed FIRST, in ability order, and
+    only where that destination's ladder — with every earlier redirect on it —
+    seats the player on V1; a redirect that fails falls back to the automatic pass
+    and says so (`redirect_failed`). The automatic pass then never takes a seat
+    that would push a redirected player off (the owner's decision outranks the
+    cascade). A dropped player never enters placement and is reported as staying.
+
+    ‼️ ONLY MOVERS WHO STILL PROJECT ONTO V1 AT THEIR FINAL DESTINATION ARE EMITTED.
+    A later mover can push an earlier one off the seat he was placed on; if the
+    passes run out before he is re-placed he is removed from that roster and
+    listed as displaced (a stay), never proposed to a seat he does not have.
+    """
     from . import world as wd
+    edits = edits or {}
+    dropped = {pid for pid, e in edits.items() if (e or {}).get("drop")}
+    redirect = {pid: e["to"] for pid, e in edits.items() if (e or {}).get("to")}
     neighbors = area_neighbors()
     active, _inbound = jh.enrolled_transfers(season)
     moves, stays = [], []
@@ -186,75 +217,137 @@ def build(world_id: int, season: int, salt: str) -> dict:
             return (("county", sorted(county)), ("area", sorted(area)),
                     ("neighbor", sorted(near)))
 
-        placed: dict = {}             # pid -> move row
-        stuck: set = set()            # no V1 destination anywhere in reach
         # ‼️ THE TRIGGER IS THE ORIGIN'S OWN PRESEASON LADDER, with no portal move
         # applied — a rising freshman with a projected seat at home is never
         # proposed out because a mover was later sent INTO his program (that
         # cascade pushed home kids into the portal and the slate churned). The
         # destinations DO see the moves already sent to them, so nobody is
         # projected onto a seat somebody in this same slate already took.
-        todo = [pid for pid in player
-                if v1_rank(teams[origin_of[pid]], pid) is None]
-        for _ in range(MAX_PASSES):
-            todo = [pid for pid in todo if pid not in stuck]
-            if not todo:
-                break
-            todo.sort(key=lambda pid: (-player[pid].current_overall(), pid))
-            for pid in todo:
-                p = player[pid]
-                origin = teams[origin_of[pid]].school
-                options = []
-                # The FIRST tier with any V1 seat is the tier the player moves in;
-                # the owner may redirect within it.
-                for tier, names in tiers(origin):
-                    for dname in names:
-                        if dname == where[pid]:
-                            continue
-                        trial = _with(teams[dname], p, prior, season, salt)
-                        r = v1_rank(trial, pid)
-                        if r is not None:
-                            options.append({"school": dname,
-                                            "class": teams[dname].school.classification,
-                                            "tier": tier, "rank": r + 1,
-                                            "v1": v1_size(trial)})
-                    if options:
-                        break
-                if not options:
-                    stuck.add(pid)
-                    continue
-                options.sort(key=lambda o: (o["rank"], o["school"]))
-                best = options[0]
-                teams[where[pid]] = _without(teams[where[pid]], pid)
-                teams[best["school"]] = _with(teams[best["school"]], p, prior,
-                                              season, salt)
-                where[pid] = best["school"]
-                placed[pid] = {
-                    "pid": pid, "name": p.name, "gender": gender,
-                    "from": origin.name, "from_class": origin.classification,
+        need = [pid for pid in player if v1_rank(teams[origin_of[pid]], pid) is None]
+        desc = {pid: _describe(player[pid], teams[origin_of[pid]], prior) for pid in need}
+        by_ovr = lambda pid: (-player[pid].current_overall(), pid)   # noqa: E731
+
+        def base_row(pid):
+            p, o = player[pid], teams[origin_of[pid]].school
+            return {"pid": pid, "name": p.name, "gender": gender,
+                    "from": o.name, "from_class": o.classification,
+                    "from_district": o.district,
                     "entry": p.entry_year, "seat": (p.jhsaa or {}).get("seat"),
+                    # kept for the research export, never shown on the page
                     "ovr": round(p.current_overall(), 1),
                     "pot": round((p.jhsaa or {}).get("pot_est")
                                  or p.ceiling_overall(), 1),
                     "maturity": (p.jhsaa or {}).get("maturity"),
-                    "from_v1": v1_size(teams[origin_of[pid]]),
-                    "to": best["school"], "to_class": best["class"],
-                    "tier": best["tier"], "rank": best["rank"], "v1": best["v1"],
-                    "options": options[:MAX_OPTIONS],
-                }
+                    **desc[pid]}
+
+        held: dict = {}               # destination -> pids the owner redirected there
+
+        def seats(pid, dname):
+            """The player's V1 rank at `dname`, or None — and None too when the
+            trial would push a REDIRECTED player at that school off V1."""
+            trial = _with(teams[dname], player[pid], prior, season, salt)
+            r = v1_rank(trial, pid)
+            if r is None:
+                return None, trial
+            if any(v1_rank(trial, q) is None for q in held.get(dname, ())):
+                return None, trial
+            return r, trial
+
+        def options_for(pid):
+            """The first tier with any V1 seat, as option rows; () when none."""
+            origin = teams[origin_of[pid]].school
+            for tier, names in tiers(origin):
+                out = []
+                for dname in names:
+                    if dname == where[pid]:
+                        continue
+                    r, trial = seats(pid, dname)
+                    if r is not None:
+                        out.append({"school": dname,
+                                    "class": teams[dname].school.classification,
+                                    "tier": tier, "rank": r + 1, "v1": v1_size(trial)})
+                if out:
+                    out.sort(key=lambda o: (o["rank"], o["school"]))
+                    return out
+            return []
+
+        def place(pid, dname, tier, r, options, **flags):
+            p = player[pid]
+            teams[where[pid]] = _without(teams[where[pid]], pid)
+            teams[dname] = _with(teams[dname], p, prior, season, salt)
+            where[pid] = dname
+            placed[pid] = {**base_row(pid), "to": dname,
+                           "to_class": teams[dname].school.classification,
+                           "tier": tier, "rank": r + 1, "v1": v1_size(teams[dname]),
+                           "options": options[:MAX_OPTIONS], **flags}
+
+        placed: dict = {}             # pid -> move row
+        stuck: set = set()            # no V1 destination anywhere in reach
+        failed: dict = {}             # pid -> the redirect that could not be honoured
+        # 1. dropped by the owner: never placed, reported as staying
+        for pid in need:
+            if pid in dropped:
+                stays.append({**base_row(pid), "dropped": True})
+        todo = [pid for pid in need if pid not in dropped]
+        # 2. the owner's redirects, strongest first, each reprojected
+        for pid in sorted((q for q in todo if q in redirect), key=by_ovr):
+            dest = redirect[pid]
+            origin = teams[origin_of[pid]].school
+            tier = next((t for t, names in tiers(origin) if dest in names), None)
+            r = None
+            if tier is not None and dest != origin.name:
+                r, _trial = seats(pid, dest)
+            if r is None:
+                failed[pid] = dest
+                continue
+            options = options_for(pid)
+            if all(o["school"] != dest for o in options):
+                options.append({"school": dest, "class": teams[dest].school.classification,
+                                "tier": tier, "rank": r + 1,
+                                "v1": v1_size(teams[dest])})
+            place(pid, dest, tier, r, options, redirected=True)
+            held.setdefault(dest, []).append(pid)
+        # 3. the automatic cascade
+        todo = [pid for pid in todo if pid not in placed]
+        for _ in range(MAX_PASSES):
+            todo = [pid for pid in todo if pid not in stuck]
+            if not todo:
+                break
+            todo.sort(key=by_ovr)
+            for pid in todo:
+                options = options_for(pid)
+                if not options:
+                    stuck.add(pid)
+                    continue
+                best = options[0]
+                flags = {"redirect_failed": failed[pid]} if pid in failed else {}
+                place(pid, best["school"], best["tier"], best["rank"] - 1, options, **flags)
             # Only MOVERS are re-checked: an earlier mover a later one pushed off
             # V1 at the same destination is placed again (his old destination no
             # longer projects him, so he goes elsewhere or is stuck).
             todo = [pid for pid in placed
                     if v1_rank(teams[where[pid]], pid) is None]
+        # 4. emit only what still holds; the rest stay where they are
+        for pid in list(placed):
+            m = placed[pid]
+            r = v1_rank(teams[where[pid]], pid)
+            if r is None or where[pid] == origin_of[pid]:
+                teams[where[pid]] = _without(teams[where[pid]], pid)
+                where[pid] = origin_of[pid]
+                placed.pop(pid)
+                stays.append({**base_row(pid), "displaced": True,
+                              "redirect_failed": failed.get(pid, "")})
+                continue
+            m["rank"] = r + 1             # the FINAL projected seat, not the one at placement
         for pid in stuck:
             if pid not in placed:
-                p = player[pid]
-                o = teams[origin_of[pid]].school
-                stays.append({"pid": pid, "name": p.name, "gender": gender,
-                              "school": o.name, "class": o.classification,
-                              "ovr": round(p.current_overall(), 1)})
-        moves += [m for m in placed.values() if m["to"] != m["from"]]
+                stays.append({**base_row(pid), "redirect_failed": failed.get(pid, "")})
+        moves += placed.values()
+    order = {g: i for i, g in enumerate(jh.GROUPS)}
+    key = lambda m: (m["gender"], order.get(m["from_class"], 99), m["from_district"],   # noqa: E731
+                     m["from"], m.get("ladder") or 999, m["pid"])
+    moves.sort(key=key)
+    stays.sort(key=key)
     return {"season": season, "moves": moves, "stays": stays,
             "neighbors": neighbors}
 
@@ -319,11 +412,12 @@ def open_proposal(world: dict, lab: bool = False, force: bool = False) -> dict |
     if cur and not force:
         return cur
     season = cur["season"] if cur else upcoming_season(world, lab)
-    data = build(world["id"], season, wd.active_salt(world["seed"]))
-    if not data["moves"]:
+    edits = (cur or {}).get("edits") or {}
+    data = build(world["id"], season, wd.active_salt(world["seed"]), edits)
+    if not data["moves"] and not edits:
         _store(world["id"], season, "committed", {**data, "applied": []}, {})
         return None
-    _store(world["id"], season, "proposed", data, (cur or {}).get("edits") or {})
+    _store(world["id"], season, "proposed", data, edits)
     return pending(world["id"])
 
 
@@ -336,26 +430,17 @@ def check_hold(world: dict, lab: bool = False) -> dict | None:
 
 
 def final_moves(cur: dict) -> list:
-    """The proposal with the owner's edits applied: dropped moves removed, a
-    redirect replacing the destination (only to one of the player's own V1
-    options — a projection the portal made, never a guess)."""
-    edits = cur.get("edits") or {}
-    out = []
-    for m in cur["data"]["moves"]:
-        e = edits.get(m["pid"]) or {}
-        if e.get("drop"):
-            continue
-        to = e.get("to")
-        if to:
-            opt = next((o for o in m["options"] if o["school"] == to), None)
-            if opt:
-                m = {**m, "to": to, "to_class": opt["class"], "tier": opt["tier"],
-                     "rank": opt["rank"], "v1": opt["v1"], "redirected": True}
-        out.append(m)
-    return out
+    """The slate as it will be committed. The stored proposal is already built
+    WITH the owner's edits (`build(edits=)` reprojects every redirect and leaves
+    every drop at home), so this is the move list itself — kept as the one name
+    both the page and the commit read it by."""
+    return [m for m in cur["data"]["moves"] if not m.get("dropped")]
 
 
 def edit(world: dict, pid: str, action: str, to: str = "") -> None:
+    """Record one owner decision and REBUILD the proposal around it — a redirect
+    is a projection the portal makes, never a row rewritten from a cached option."""
+    from . import world as wd
     cur = pending(world["id"])
     if cur is None:
         return
@@ -366,21 +451,25 @@ def edit(world: dict, pid: str, action: str, to: str = "") -> None:
         edits[pid] = {"to": to}
     elif action == "reset":
         edits.pop(pid, None)
-    _store(world["id"], cur["season"], "proposed", cur["data"], edits)
+    data = build(world["id"], cur["season"], wd.active_salt(world["seed"]), edits)
+    _store(world["id"], cur["season"], "proposed", data, edits)
 
 
 def commit(world: dict) -> dict:
     """Write every surviving move as a transfer record effective the freshman
-    season, and release the hold."""
+    season, and release the hold. The slate is REPROJECTED with the edits first:
+    what is committed is what the ladders say now, never a stale proposal."""
     from . import overrides as ov
+    from . import world as wd
     cur = pending(world["id"])
     if cur is None:
         return {"ok": False, "msg": "No open portal."}
-    moves = final_moves(cur)
+    data = build(world["id"], cur["season"], wd.active_salt(world["seed"]), cur["edits"])
+    moves = final_moves({"data": data})
     for m in moves:
         ov.set_jhsaa_transfer(m["pid"], m["from"], m["gender"], m["entry"], m["seat"],
                               m["to"], cur["season"])
-    _store(world["id"], cur["season"], "committed", {**cur["data"], "applied": moves},
+    _store(world["id"], cur["season"], "committed", {**data, "applied": moves},
            cur["edits"])
     jh.reset_schools()
     return {"ok": True, "moves": len(moves)}

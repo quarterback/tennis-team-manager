@@ -258,6 +258,60 @@ The first interactive system in the high-school game; the college portal's shape
   know what to do with them. `world_jhsaa_portal` is the record of what the PORTAL
   did (`applied()`), which is what the export reads.
 
+### The review pass (2026-09) — four faults in the first build, and what they taught
+
+1. **A displaced mover was still proposed to a seat he no longer had.** Placement is
+   sequential and a later, stronger mover can push an earlier one off the seat he was
+   placed on; the re-check re-placed him only while passes remained, and the emit
+   step read the stale row. Now `build` emits a mover ONLY if `v1_rank` on the FINAL
+   ladder of his final destination is not None; anyone else is pulled back off that
+   roster and listed as a stay flagged `displaced`. The row's `rank` is the FINAL
+   projected seat, not the one at placement (pinned:
+   `test_every_emitted_mover_holds_a_v1_seat_with_the_whole_slate_applied`).
+2. **A redirect was a cached option pasted onto the row.** `final_moves` swapped the
+   destination from the option list the proposal was built with — but the options
+   were computed against a ladder that has since taken other movers, and two
+   redirects onto one school were never checked against each other. Now every edit
+   REBUILDS the proposal (`build(edits=)`): redirects are placed FIRST, strongest
+   first, each reprojected with `_with`/`v1_rank` on a ladder already carrying the
+   earlier redirects; a redirect that fails falls to the automatic pass and the row
+   says so (`redirect_failed`); the automatic pass never takes a seat that would
+   push a redirected player off V1 (`held` — the owner's decision outranks the
+   cascade). `commit` rebuilds once more before writing, so what lands in the ledger
+   is what the ladders say at that moment, never a proposal that went stale while
+   the page sat open. A dropped player never enters placement and is reported as a
+   stay flagged `dropped`, with an undo. **Reproject, never trust a cached row.**
+3. **The page printed ratings.** OVR and the staff's potential estimate were columns
+   on a page the owner reads to make decisions — exactly the god-mode data the
+   section keeps behind a toggle everywhere else. A candidate is now described by
+   what the game already shows: the origin's projected LADDER position against its
+   V1 (`ladder` of `roster_n`, V1 `from_v1`), the 8th-grade record and ladder
+   finish off `PriorSeason`, the early-season count, and the destination's
+   projected seat. `_describe` builds those fields; `ovr`/`pot`/`maturity` stay on
+   the stored row for `jhsaa_portal.csv` only.
+4. **The page was a statewide splat.** Both genders, every class, one list sorted
+   by OVR — nothing else in the section reads that way, and at ~270 movers a season
+   it would have been unusable. The view now shows ONE sport and ONE classification
+   (the class rail carries the three gated classes only, defaulting to the first
+   with anything to show), rows grouped by ORIGIN DISTRICT with the district linked,
+   and the meta line says how much of the slate is in view. The slate is still one
+   event: Commit commits everything, and the class counts sit beside the buttons.
+   `_jp_back` carries `g` and `group` so an edit lands back in the same view.
+
+**And one roster fault beside them (P2):** a 7th/8th-grader's transfer record did
+nothing. `is_enrolled` sliced the ledger to grades 9-12, so an early participant's
+record never reached `build_roster`'s `tmap`, the early loop had no outbound check,
+and the inbound path refused any grade outside 9-12. Now `is_enrolled` spans
+`entry - 2 .. entry + 3`, the early loop asks `early_transfer_effective`, and the
+inbound path admits grade 7/8 when the seat exists (`year in early_seasons(origin,
+entry)`) through the SAME helper. That helper carries the one extra rule: **a 7th/
+8th-grader can only go where the destination is in `EARLY_CLASSES` that season**;
+a move to a program that cannot take them is ignored for that season and the
+player stays put — never nowhere. One authority for both sides of the build, the
+`transfer_school` idiom, so the origin's skip and the destination's pull cannot
+disagree (pinned: `test_an_early_graders_transfer_record_moves_them_only_where_
+they_may_go`).
+
 **Two things measured on the fixture that the owner should look at** (not changed
 unasked):
 
@@ -312,6 +366,11 @@ unasked):
   the full roster model (`jhsaa_school_view(...)["roster"]`) is where to assert.
 - **Diagnose the seat-1 rows before "fixing" them** (§5): both ladders were printed
   and the projection was right; the surprise was the design, not the code.
+- **A sequential placement's LAST state is the only one that counts.** The first
+  build stored each row when the player was placed and never re-read it; the emit
+  step is where the slate must be re-validated (§5, review pass 1). Same shape as a
+  redirect applied from a cached option (review pass 2): a projection made earlier
+  in the pass is not a projection of the slate.
 - A full season on the scaled fixture is **~8 minutes**, so the test file was made
   self-diagnosing (the odometer assertion prints memo state, both resolved paths and
   a direct row count) — one run tells the story.

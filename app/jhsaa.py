@@ -4938,10 +4938,32 @@ def transfer_school(rec: dict | None, season_year: int) -> str:
 
 
 def is_enrolled(rec: dict, season_year: int) -> bool:
-    """Whether the record's player is in high school in `season_year` — grades
-    9-12 are the four seasons from their entry year."""
+    """Whether the record's player can be on ANY roster in `season_year` — the
+    four high-school seasons from their entry year, plus the two seasons before
+    it a 7th/8th-grader may be rostered early (rule 2100). Wider than a grade
+    check on purpose: this slices the ledger, and a record it leaves out cannot
+    reach a roster at all — an early participant's move was invisible to both
+    the origin's outbound skip and the destination's inbound pull."""
     entry = rec.get("entry")
-    return isinstance(entry, int) and entry <= season_year <= entry + len(GRADES) - 1
+    return (isinstance(entry, int)
+            and entry - len(EARLY_GRADES) <= season_year <= entry + len(GRADES) - 1)
+
+
+def early_transfer_effective(rec: dict | None, school_name: str, gender: str,
+                             season_year: int) -> str:
+    """Where a record puts a player in a season they would be an EARLY
+    participant (grade 7/8) — `transfer_school`, with one extra rule: a 7th/8th-
+    grader can only be rostered by a program in `EARLY_CLASSES` that season, so
+    a move to a program that cannot take them is ignored for that season and
+    the player stays where they are (never nowhere). ONE authority for both
+    sides of the build, like `transfer_school` itself."""
+    where = transfer_school(rec, season_year)
+    if not where or where == school_name:
+        return where
+    dest = next((s for s in load_schools(gender) if s.name == where), None)
+    if dest is None or classification_in(dest, season_year) not in EARLY_CLASSES:
+        return rec.get("from", "") if rec else ""
+    return where
 
 
 def enrolled_transfers(season_year: int) -> tuple[dict, dict]:
@@ -6668,8 +6690,17 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
         if year not in early.get(entry, ()):
             continue
         for seat in range(cohort_size(entry)):
-            out.append(_gen_seat(school, mod, entry, seat, grade, salt, expo_years,
-                                 pins, staff_years, early[entry]))
+            p = _gen_seat(school, mod, entry, seat, grade, salt, expo_years,
+                          pins, staff_years, early[entry])
+            # An early participant's transfer record applies here too — `tmap`
+            # carries the two early cohorts (`is_enrolled`) — through the ONE
+            # authority that also knows a 7th-grader can only go where the
+            # destination is gated that season.
+            rec = tmap.get(p.pid)
+            if rec and early_transfer_effective(rec, school.name, school.gender,
+                                                year) != school.name:
+                continue
+            out.append(p)
     # ‼️ THE HARD FLOOR — see `ROSTER_FLOOR` above. Grown on THIS year's freshman
     # class only, continuing its own seat numbering (`fresh9_seats` on) so it never
     # collides with the seats `_freshman_class_size` already rolled for it.
@@ -6693,12 +6724,21 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     for pid, rec in inbound.get((school.gender, school.name), ()):
         entry = rec.get("entry")
         grade = year - entry + 9
-        if grade not in GRADES:
+        if grade not in GRADES and grade not in EARLY_GRADES:
             continue                       # not enrolled anywhere this year (yet, or graduated)
         origin = next((s for s in load_schools(rec.get("gender", school.gender))
                        if s.name == rec.get("from")), None)
         if origin is None:
             continue                       # origin school renamed/removed since the move
+        if grade in EARLY_GRADES:
+            # A 7th/8th-grade mover: only a seat that EXISTS (the origin rosters
+            # that cohort early this season) and only where THIS program may
+            # take an early participant — the same test the origin's skip ran,
+            # so the two sides of the build cannot disagree.
+            if (year not in early_seasons(origin, entry)
+                    or early_transfer_effective(rec, origin.name, school.gender,
+                                                year) != school.name):
+                continue
         omod = _program_mod(origin, year, salt)
         # EARLY PARTICIPATION + MATURITY read the seasons the mover actually
         # played, at whichever school `transfer_school` puts them in each — the

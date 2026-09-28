@@ -3,11 +3,16 @@
 {% block title %}JHSAA Rising-Freshman Portal{% endblock %}
 {% block content %}
 
-{# The rising-freshman portal (JHSAA rule 2100, app/jhsaa_portal.py). Both genders
-   on one page: the hold is ONE event. Class-blind like Reclassification. #}
+{# The rising-freshman portal (JHSAA rule 2100, app/jhsaa_portal.py). ONE proposal
+   for both genders — the hold is one event — but the PAGE is scoped like every
+   other JHSAA surface (owner review 2026-09): one sport, one classification, rows
+   grouped by origin district. The class rail carries the three gated classes only.
+   ‼️ NO RATINGS HERE: a candidate is described by where the origin's projected
+   ladder puts them against its V1, what they did as an 8th-grader, and the seat
+   the destination projects — never OVR or a potential estimate. #}
 {{ jh_header(view.scope, u, 'portal', 'Rising-freshman portal',
              'Early participants going into ninth grade with no projected V1 seat at the school they played for. Same county, then same area, then neighbouring areas; the best V1 seat in the first tier that has one.',
-             [('Season', view.season)], classless=true) }}
+             [('Season', view.season), ('Sport', view.gender|capitalize), ('Class', view.group)]) }}
 
 <div class="jh-shell">
 
@@ -15,73 +20,85 @@
 <p class="bit" style="margin:0 0 10px;color:var(--brand-strong)">{{ request.args.get('msg') }}</p>
 {% endif %}
 
+{% macro ladder(r) %}{% if r.ladder %}{{ r.ladder }} of {{ r.roster_n }} · V1 {{ r.from_v1 }}{% else %}—{% endif %}{% endmacro %}
+{% macro record(r) %}{% if r.apps %}{{ r.wins }}-{{ r.losses }} in {{ r.apps }}{% if r.prior_rank %} · No. {{ r.prior_rank }}{% endif %}{% else %}no varsity duals{% endif %}{% endmacro %}
+
 <div class="bl-panel">
   <div class="bl-panel-head"><span class="bl-panel-title">Portal</span>
-    <span class="bl-panel-meta">{% if view.pending %}proposal open for the {{ view.season }} season · {{ view.kept }} of {{ view.moves|length }} moves kept{% elif view.due %}due — it opens on the next advance, or now{% else %}no proposal open{% endif %}</span></div>
+    <span class="bl-panel-meta">{% if view.pending %}proposal open for the {{ view.season }} season · {{ view.kept }} moves in the slate{% if view.kept %} · {{ view.in_view }} in {{ view.gender }} {{ view.group }}{% endif %}{% elif view.due %}due — it opens on the next advance, or now{% else %}no proposal open{% endif %}</span></div>
   <div class="bl-panel-body" style="padding:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:end">
     {% if not view.pending %}
     <form method="post" action="{{ url_for('jhsaa_portal_run') }}"
           data-loading='{"title":"Projecting every ladder…","sub":"Every 1A, 2A and Group 3 program, both genders, plus every destination in reach."}'>
-      <input type="hidden" name="u" value="{{ u }}">
+      <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="g" value="{{ view.gender }}"><input type="hidden" name="group" value="{{ view.group }}">
       <button class="bl-btn" type="submit">Run portal now</button>
     </form>
     {% else %}
     <form method="post" action="{{ url_for('jhsaa_portal_run') }}"
-          data-loading='{"title":"Rebuilding the proposal…","sub":"Your redirects and drops are kept."}'>
-      <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="rebuild" value="1">
+          data-loading='{"title":"Rebuilding the proposal…","sub":"Your redirects and drops are reprojected onto today’s ladders."}'>
+      <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="g" value="{{ view.gender }}"><input type="hidden" name="group" value="{{ view.group }}"><input type="hidden" name="rebuild" value="1">
       <button class="bl-btn" type="submit">Rebuild proposal</button>
     </form>
     <form method="post" action="{{ url_for('jhsaa_portal_commit') }}"
-          data-loading='{"title":"Committing the portal…","sub":"Writing each move as a transfer effective this season."}'>
-      <input type="hidden" name="u" value="{{ u }}">
-      <button class="bl-run-big" type="submit" style="width:auto;height:34px;margin:0;padding:0 16px">Commit {{ view.kept }} moves</button>
+          data-loading='{"title":"Committing the portal…","sub":"Reprojecting the slate, then writing each move as a transfer effective this season."}'>
+      <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="g" value="{{ view.gender }}"><input type="hidden" name="group" value="{{ view.group }}">
+      <button class="bl-run-big" type="submit" style="width:auto;height:34px;margin:0;padding:0 16px" title="The whole slate, both sports, every class">Commit {{ view.kept }} moves</button>
     </form>
     <form method="post" action="{{ url_for('jhsaa_portal_dismiss') }}">
-      <input type="hidden" name="u" value="{{ u }}">
+      <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="g" value="{{ view.gender }}"><input type="hidden" name="group" value="{{ view.group }}">
       <button class="bl-btn" type="submit" title="Nobody moves; the season plays">Dismiss</button>
     </form>
+    {% endif %}
+    {% if view.pending %}
+    <span class="bl-panel-meta" style="margin-left:auto">{% for c in view.groups %}{{ c }} {{ view.class_counts[c] }}{% if not loop.last %} · {% endif %}{% endfor %} ({{ view.gender }})</span>
     {% endif %}
   </div>
 </div>
 
 {% if view.pending %}
-{% for gname in ['girls', 'boys'] %}
-{% set rows = view.moves|selectattr('gender', 'equalto', gname)|list %}
-{% if rows %}
+{% if not view.districts %}
+<div class="bl-panel"><div class="bl-panel-body" style="padding:12px"><span class="bl-panel-meta">Nobody in {{ view.gender }} {{ view.group }} needs a move this season.</span></div></div>
+{% endif %}
+{% for d in view.districts %}
 <div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">{{ gname|capitalize }}</span>
-    <span class="bl-panel-meta">{{ rows|length }} proposed</span></div>
+  <div class="bl-panel-head"><span class="bl-panel-title"><a href="{{ url_for('jhsaa_district', group=view.group, district=d.district, u=u, g=view.gender) }}">{{ d.district }}</a></span>
+    <span class="bl-panel-meta">{{ d.moves|length }} proposed{% if d.stays %} · {{ d.stays|length }} stay{% endif %}</span></div>
+  {% if d.moves %}
   <div class="tbl-scroll">
     <table class="jh-ledger nowrap figures">
       <tr>
-        <th class="nm">Player</th><th>OVR</th><th title="Staff estimate">Pot est.</th>
-        <th class="nm">From</th><th>Class</th><th class="nm">To</th><th>Class</th>
-        <th>Tier</th><th title="Projected V1 seat at the destination">Seat</th><th></th>
+        <th class="nm">Player</th><th class="nm">From</th>
+        <th title="Projected ladder position at the origin against its V1 lineup">Ladder</th>
+        <th title="Last season, as an 8th-grader: record in varsity duals · ladder finish">8th grade</th>
+        <th class="nm">To</th><th>Class</th>
+        <th>Tier</th><th title="Projected V1 seat at the destination, with the whole slate applied">Seat</th><th></th>
       </tr>
-      {% for m in rows %}
-      <tr {% if m.dropped %}style="opacity:.45"{% endif %}>
-        <td class="nm"><a href="{{ url_for('jhsaa_player', school=m.from, pid=m.pid, u=u, g=gname) }}">{{ m.name }}</a>
-          {% if m.dropped %} <span class="jh-chip">dropped</span>{% elif m.redirected %} <span class="jh-chip">redirected</span>{% endif %}</td>
-        <td>{{ '%.1f'|format(m.ovr) }}</td>
-        <td>{{ '%.1f'|format(m.pot) }}</td>
-        <td class="nm"><a href="{{ url_for('jhsaa_school', school=m.from, u=u, g=gname) }}">{{ m.from }}</a></td>
-        <td>{{ m.from_class|jh_group_short }}</td>
-        <td class="nm"><a href="{{ url_for('jhsaa_school', school=m.to, u=u, g=gname) }}">{{ m.to }}</a></td>
+      {% for m in d.moves %}
+      <tr>
+        <td class="nm"><a href="{{ url_for('jhsaa_player', school=m.from, pid=m.pid, u=u, g=view.gender) }}">{{ m.name }}</a>
+          {% if m.redirected %} <span class="jh-chip">redirected</span>{% endif %}
+          {% if m.redirect_failed %} <span class="jh-chip" title="{{ m.redirect_failed }} no longer projects a V1 seat; placed automatically instead">redirect not held</span>{% endif %}
+          {% if m.early_years == 2 %} <span class="jh-chip" title="Played 7th and 8th grade">2 yrs</span>{% endif %}</td>
+        <td class="nm"><a href="{{ url_for('jhsaa_school', school=m.from, u=u, g=view.gender) }}">{{ m.from }}</a></td>
+        <td>{{ ladder(m) }}</td>
+        <td>{{ record(m) }}</td>
+        <td class="nm"><a href="{{ url_for('jhsaa_school', school=m.to, u=u, g=view.gender) }}">{{ m.to }}</a></td>
         <td>{{ m.to_class|jh_group_short }}</td>
         <td style="font-variant-numeric:normal">{{ view.tier_label[m.tier] }}</td>
         <td>{{ m.rank }} of {{ m.v1 }}</td>
         <td style="white-space:nowrap">
-          <form method="post" action="{{ url_for('jhsaa_portal_edit') }}" style="display:inline-flex;gap:4px;align-items:center">
-            <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="pid" value="{{ m.pid }}">
+          <form method="post" action="{{ url_for('jhsaa_portal_edit') }}" style="display:inline-flex;gap:4px;align-items:center"
+                data-loading='{"title":"Reprojecting the slate…","sub":"Every redirect and drop is placed against today’s ladders."}'>
+            <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="g" value="{{ view.gender }}"><input type="hidden" name="group" value="{{ view.group }}"><input type="hidden" name="pid" value="{{ m.pid }}">
             {% if m.edited %}
             <button class="bl-btn" name="action" value="reset" type="submit" title="Back to the proposal">undo</button>
             {% else %}
             <button class="bl-btn" name="action" value="drop" type="submit" title="Stay at {{ m.from }}">drop</button>
             {% if m.options|length > 1 %}
-            <select class="bl-select" name="to" style="width:180px">
+            <select class="bl-select" name="to" style="width:200px">
               {% for o in m.options %}<option value="{{ o.school }}" {% if o.school == m.to %}selected{% endif %}>{{ o.school }} · {{ o.class|jh_group_short }} · seat {{ o.rank }}</option>{% endfor %}
             </select>
-            <button class="bl-btn" name="action" value="to" type="submit" title="Send to the chosen V1 seat">redirect</button>
+            <button class="bl-btn" name="action" value="to" type="submit" title="Send to the chosen V1 seat — reprojected before it is kept">redirect</button>
             {% endif %}
             {% endif %}
           </form>
@@ -90,53 +107,59 @@
       {% endfor %}
     </table>
   </div>
-</div>
-{% endif %}
-{% endfor %}
-
-{% if view.stays %}
-<div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">No V1 seat in reach</span>
-    <span class="bl-panel-meta">{{ view.stays|length }} stay where they are</span></div>
+  {% endif %}
+  {% if d.stays %}
   <div class="tbl-scroll">
     <table class="jh-ledger nowrap figures">
-      <tr><th class="nm">Player</th><th></th><th>OVR</th><th class="nm">School</th><th>Class</th></tr>
-      {% for s in view.stays %}
-      <tr>
-        <td class="nm"><a href="{{ url_for('jhsaa_player', school=s.school, pid=s.pid, u=u, g=s.gender) }}">{{ s.name }}</a></td>
-        <td style="font-variant-numeric:normal">{{ s.gender }}</td>
-        <td>{{ '%.1f'|format(s.ovr) }}</td>
-        <td class="nm">{{ s.school }}</td>
-        <td>{{ s.class|jh_group_short }}</td>
+      <tr><th class="nm">Stays</th><th class="nm">School</th><th title="Projected ladder position at the origin against its V1 lineup">Ladder</th><th title="Last season, as an 8th-grader">8th grade</th><th class="nm">Why</th><th></th></tr>
+      {% for s in d.stays %}
+      <tr style="opacity:.75">
+        <td class="nm"><a href="{{ url_for('jhsaa_player', school=s.from, pid=s.pid, u=u, g=view.gender) }}">{{ s.name }}</a></td>
+        <td class="nm">{{ s.from }}</td>
+        <td>{{ ladder(s) }}</td>
+        <td>{{ record(s) }}</td>
+        <td class="nm" style="font-variant-numeric:normal">{% if s.dropped %}dropped by you{% elif s.redirect_failed %}redirect to {{ s.redirect_failed }} projects no V1 seat{% elif s.displaced %}displaced from every seat in reach{% else %}no V1 seat in reach{% endif %}</td>
+        <td style="white-space:nowrap">
+          {% if s.edited %}
+          <form method="post" action="{{ url_for('jhsaa_portal_edit') }}" style="display:inline-flex;gap:4px;align-items:center"
+                data-loading='{"title":"Reprojecting the slate…","sub":"Every redirect and drop is placed against today’s ladders."}'>
+            <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="g" value="{{ view.gender }}"><input type="hidden" name="group" value="{{ view.group }}"><input type="hidden" name="pid" value="{{ s.pid }}">
+            <button class="bl-btn" name="action" value="reset" type="submit" title="Back to the proposal">undo</button>
+          </form>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </table>
   </div>
+  {% endif %}
 </div>
-{% endif %}
+{% endfor %}
 {% endif %}
 
-{% if view.history %}
+{% if view.history_total %}
 <div class="bl-panel">
   <div class="bl-panel-head"><span class="bl-panel-title">Committed moves</span>
-    <span class="bl-panel-meta">{{ view.history_total }} across {{ view.history_seasons|length }} seasons{% if view.history_total > view.history|length %} · newest {{ view.history|length }} shown{% endif %}</span></div>
+    <span class="bl-panel-meta">{{ view.history_in_view }} from {{ view.gender }} {{ view.group }} · {{ view.history_total }} across {{ view.history_seasons|length }} seasons{% if view.history_in_view > view.history|length %} · newest {{ view.history|length }} shown{% endif %}</span></div>
+  {% if view.history %}
   <div class="tbl-scroll">
     <table class="jh-ledger nowrap figures">
-      <tr><th>Season</th><th class="nm">Player</th><th></th><th>OVR</th><th class="nm">From</th><th class="nm">To</th><th>Tier</th><th>Seat</th></tr>
+      <tr><th>Season</th><th class="nm">Player</th><th class="nm">From</th><th class="nm">District</th><th class="nm">To</th><th>Class</th><th>Tier</th><th>Seat</th></tr>
       {% for m in view.history %}
       <tr>
         <td>{{ m.season }}</td>
         <td class="nm"><a href="{{ url_for('jhsaa_player', school=m.from, pid=m.pid, u=u, g=m.gender) }}">{{ m.name }}</a></td>
-        <td style="font-variant-numeric:normal">{{ m.gender }}</td>
-        <td>{{ '%.1f'|format(m.ovr) }}</td>
         <td class="nm">{{ m.from }}</td>
+        <td class="nm">{{ m.from_district or '' }}</td>
         <td class="nm">{{ m.to }}</td>
+        <td>{{ m.to_class|jh_group_short }}</td>
         <td style="font-variant-numeric:normal">{{ view.tier_label[m.tier] }}</td>
         <td>{{ m.rank }} of {{ m.v1 }}</td>
       </tr>
       {% endfor %}
     </table>
   </div>
+  {% endif %}
 </div>
 {% endif %}
 
