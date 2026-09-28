@@ -873,12 +873,16 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                "(absent from jhsaa_committee.json)."]
               if (pilot := [g for g in jhsaa.SIXTEEN_STATE_GROUPS
                             if jhsaa.sixteen_state(g, year)]) else []),
-            "1A crowns from a 24-team field on a fixed recovery shape (Super Regional/"
-            "Semi-State/Divisional/Semi-Conference/Conference all award direct State "
-            "berths, unlike the other classes' dynamic ladder). Every other class, 2A "
-            "included since the 2033 realignment, crowns from 40 on the dynamic ladder. "
-            "The eight Zonal champions are automatic State berths, seeded 1-8, in every "
-            "class and under both shapes.",
+            # The legacy field description, only when no class plays the 16-team
+            # pilot this season — otherwise it contradicts the pilot sentence above.
+            *(["1A crowns from a 24-team field on a fixed recovery shape (Super Regional/"
+               "Semi-State/Divisional/Semi-Conference/Conference all award direct State "
+               "berths, unlike the other classes' dynamic ladder). Every other class, 2A "
+               "included since the 2033 realignment, crowns from 40 on the dynamic ladder. "
+               "The eight Zonal champions are automatic State berths, seeded 1-8, in every "
+               "class and under both shapes."]
+              if not any(jhsaa.sixteen_state(g, year)
+                         for g in jhsaa.SIXTEEN_STATE_GROUPS) else []),
             "Programs and rosters reflect the CURRENT association config (renames/sponsorship/"
             "play-up as they stand today), applied to the archived season's own results and "
             "roster year — a school that has since stopped sponsoring tennis or been renamed "

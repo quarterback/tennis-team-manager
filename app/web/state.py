@@ -7446,7 +7446,9 @@ def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
             "groups": cgroups, "scope": scope,
             "systems": list(SYSTEMS), "members": list(MEMBERS),
             "seats": seats, "road_n": road_n, "field_n": road_n + seats,
-            "season_year": (arc or {}).get("season_year")}
+            # The RESOLVED season, even with no archive: the empty state's blurb
+            # reads it, and None would restore the pre-pilot table.
+            "season_year": sy}
     if not arc or not ratings or not sel:
         return {**base, "ready": False, "rows": [], "ballots": []}
     schools = _jh_schools(g)
