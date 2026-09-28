@@ -5239,11 +5239,15 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
                else jh.STATE_BYES if field_n > jh.STATE_BYES else 0)
     n_byes = n_lines if bye_kind != "none" else 0
     zonal = set(epi.get("field") or ())
+    # ‼️ THE 16-TEAM STATE PILOT (JHSAA rule 2099): lines 1-8 are the Zonal
+    # champions by rule — Epiregional order, never an ATR claim — exactly as in
+    # the Parastate draws. Keyed on the season ON SCREEN, never today's.
+    pilot = jh.sixteen_state(grp, arc.get("season_year"))
 
     def _how(i, nm):
         if nm in winners:
             return "Epiregional"
-        if para and nm in zonal:
+        if (para or pilot) and nm in zonal:
             return "Zonal champion"
         return "ATR"
 
@@ -7416,7 +7420,14 @@ def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
     years = world.jhsaa_years(w["id"], g)
     yr = (years[0] if years else w["year"]) if year is None else year
     arc = world.get_jhsaa(w["id"], yr, g)
-    grp = group if group in jh.ATLARGE_GROUPS else jh.ATLARGE_GROUPS[0]
+    # ‼️ THE 16-TEAM STATE PILOT CLASSES HAVE NO COMMITTEE (JHSAA rule 2099), so
+    # from their era they drop out of the switcher for the season on screen. Keyed
+    # on THAT season (the archive's `season_year`), never today's: a 3A season
+    # archived at 40 still has a committee to show.
+    sy = (arc or {}).get("season_year") or world.jhsaa_season_year(
+        {**w, "year": yr})
+    cgroups = [x for x in jh.ATLARGE_GROUPS if not jh.sixteen_state(x, sy)]
+    grp = group if group in cgroups else cgroups[0]
     scope = _jh_scope(g, grp, list(jh.GROUPS), yr, years,
                       (arc or {}).get("season_year"), arc)
     ratings = ((arc or {}).get("ratings") or {}).get(grp)
@@ -7430,12 +7441,14 @@ def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
     # count (a 7A year selected at sixteen must not read as an eight-bid one).
     seats = ((sel or {}).get("seats") or len((sel or {}).get("selected") or ())
              or jh.at_large_bids(grp) or AT_LARGE)
-    road_n = jh.state_field_size(grp)
+    road_n = jh.state_field_size(grp, sy)
     base = {"gender": g, "year": yr, "years": years, "group": grp,
-            "groups": list(jh.ATLARGE_GROUPS), "scope": scope,
+            "groups": cgroups, "scope": scope,
             "systems": list(SYSTEMS), "members": list(MEMBERS),
             "seats": seats, "road_n": road_n, "field_n": road_n + seats,
-            "season_year": (arc or {}).get("season_year")}
+            # The RESOLVED season, even with no archive: the empty state's blurb
+            # reads it, and None would restore the pre-pilot table.
+            "season_year": sy}
     if not arc or not ratings or not sel:
         return {**base, "ready": False, "rows": [], "ballots": []}
     schools = _jh_schools(g)

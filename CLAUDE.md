@@ -1039,6 +1039,33 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   AGAIN** ("I don't want 5/2 tennis to go away") — the wide classes' 4S/5D early
   window is retired; supersedes the 2070 note below. Pages:
   `/jhsaa/computer-ratings` (all groups), `/jhsaa/committee` (48 groups only).
+- **‼️ THE 16-TEAM STATE PILOT — 4A/3A/2A/1A/GROUP 3, FROM 2099 (JHSAA rule 2099,
+  owner rule 2026-09, `jhsaa.SIXTEEN_STATE_GROUPS` / `sixteen_state(group, year)`,
+  `docs/reports/SPEC-jhsaa-16-team-state-pilot.md`,
+  `docs/AAR-jhsaa-16-team-state-pilot.md`).** State is the 8 Zonal champions (seeds
+  1-8, Epiregional order) + the 8 Semi-State winners (9-16, seed ATR), a plain 16 on
+  STRICT seed lines from the Octofinals. Recovery ENDS at Semi-State (`_recovery`'s
+  explicit pilot return — never the arithmetic, which would reopen the Divisionals
+  on a thin Semi-State; a class too thin to FILL a Semi-State skips it and the
+  Super Regional winners qualify instead, owner rule); no Divisionals, Semi-Conference, Conference, Special
+  Challengers, State Specials, Metastate, Parastate or committee (`committee` None).
+  Everything before Super Regionals, formats, calendar, TOC and JV are untouched.
+  ‼️ **SEASON-GATED, and every shape question takes the season**:
+  `state_field_size`/`at_large_bids`/`metastate_bids`/`parastate_byes`/
+  `recovery_shape`/`sponsor_floor`/`parastate_summary` take `year=`, and `year=None`
+  answers the owner's TABLES without touching the DB (the import asserts rely on
+  it). `sixteen_state_era()` is `_resolve_era` (`jhsaa_sixteen_state_era`, in
+  `ERA_SETTINGS`): first unplayed season, 0 on a fresh save, pinnable. ‼️ Pages key
+  on the ARCHIVED season (`arc["season_year"]`), never today's. ‼️ The tests'
+  conftest REPLACES the resolver (`_sixteen_state_pilot_off`) so every other suite
+  keeps the standing ladder on its season-2027 fixture — a fresh test DB would
+  otherwise resolve the era to 0. ‼️ **NON-PILOT CLASSES ARE NOT BYTE-IDENTICAL
+  AT THE ERA, BY NATURE (owner accepted 2026-09):** the State seeding TOSS
+  (`final_power`) is gender-wide, so removing the pilot classes' later rounds can
+  move a non-pilot class's State SEED ORDER and everything after it (results,
+  records, awards, TOC). Their road, State field membership and committee are
+  identical, and that is what the test pins. `_recovery_24` is still unwired —
+  1A and Group 3 run `_recovery` like everyone else.
 - **‼️ THE EPIREGIONAL — STATE SEED PLACEMENT IS MERIT, THE ZONAL TITLE IS ONLY
   THE BERTH (owner rule 2026-09, `jhsaa.run_epiregional` / `state_seed_order`,
   `docs/AAR-jhsaa-epiregional-seeding.md`).** A Zonal title used to buy seeds 1-8
@@ -1939,7 +1966,11 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     shuffle, so #1 needs no extra bracket protection. The **TOC is the opposite on
     purpose** (`run_toc`, strict seed lines, winner takes the beaten seed's line):
     a tiny championship-of-champions explicitly ordering proven champions. Do not
-    "unify" the two draws in either direction.
+    "unify" the two draws in either direction. ‼️ **ONE EXCEPTION: the 16-team
+    State pilot plays STRICT lines** (owner decision 2026-09, `run_state_sixteen`
+    → `seed_line_slots`, the TOC's own helper) — its field is two defined doors
+    (Zonal champions over Semi-State winners), the TOC's situation, so 1v16 and
+    8v9 are guaranteed there. Every non-pilot State draw stays tiered.
 - **A state finish is TEAMS STILL ALIVE, counted down — never `2**n`.** A field that
   isn't a power of two doesn't halve out of the gate: a 24-team draw plays
   **24 → 16 → 8 → 4 → 2** (eight byes), and saves archived BEFORE the seeding fix hold
