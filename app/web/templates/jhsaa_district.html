@@ -5,7 +5,7 @@
 
 {{ jh_header(view.scope, u, 'districts', view.district,
              view.group ~ ' · a double round-robin decides it, and the champion is protected into Regionals.',
-             [('Season', view.season_year or '—'), ('Class', view.group)]) }}
+             [('Season', view.season_year|cal or '—'), ('Class', view.group)]) }}
 
 <div class="jh-shell">
 <div class="jh-crumb">
@@ -47,7 +47,7 @@
   <div class="jh-metric"><span class="k">State qualifiers</span><span class="v">{{ view.qualifiers|length }}</span>
     <span class="s">of {{ view.members|length }}</span></div>
   <div class="jh-metric"><span class="k">League duals</span><span class="v">{{ view.results|length }}</span>
-    <span class="s">{{ view.season_year }} season</span></div>
+    <span class="s">{{ view.season_year|cal }} season</span></div>
 </div>
 {% endif %}
 

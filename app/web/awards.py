@@ -355,7 +355,7 @@ def honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) -> list[
     import app.seasonmode as sm
     sid = _sid(division, gender, seed)
     yr = world.load_world(seed)["year"] if world.exists(seed) else 0
-    year, season_no = 2026 + yr, yr + 1
+    year, season_no = world.display_base_year() + yr, yr + 1
     conf = {r.school: (r.conf, r.conf_abbr) for r in ranking_rows(division, gender, seed)}
     players = _eligible(division, gender, seed)        # position-weighted-win sorted
     nat = _national_order(players)                     # national honors: near-tie résumé boost
@@ -448,7 +448,7 @@ def coach_honor_records(division: str, gender: str, seed: int = DEFAULT_SEED) ->
     sid = _sid(division, gender, seed)
     rows = ranking_rows(division, gender, seed)
     yr = world.load_world(seed)["year"] if world.exists(seed) else 0
-    year, season_no = 2026 + yr, yr + 1
+    year, season_no = world.display_base_year() + yr, yr + 1
     recs: list[dict] = []
 
     def add_head(school, award, label, sort):
@@ -519,7 +519,7 @@ def record_coach_seasons(division: str, gender: str, seed: int = DEFAULT_SEED) -
     if not _concluded(division, gender, seed):
         return 0
     yr = world.load_world(seed)["year"] if world.exists(seed) else 0
-    year, season_no = 2026 + yr, yr + 1
+    year, season_no = world.display_base_year() + yr, yr + 1
     from app import ncaa
     n = 0
     for prog in ncaa.load_division(division, gender).programs:
@@ -540,7 +540,7 @@ def stamp_world_honors(seed: int = DEFAULT_SEED) -> int:
     import app.honors as honors
     from .state import UNIVERSES
     yr = world.load_world(seed)["year"] if world.exists(seed) else 0
-    year = 2026 + yr
+    year = world.display_base_year() + yr
     total = 0
     for _u, division, gender, _label in UNIVERSES:
         honors.clear_season(year, division, gender)
@@ -560,7 +560,7 @@ def coach_career_table(coach_id: str, seed: int = DEFAULT_SEED) -> dict:
     from .state import team_results
     ROLE = {"head": "Head Coach", "assoc": "Associate Head Coach", "asst": "Assistant Coach"}
     rows = coachreg.history(coach_id)
-    cur_year = 2026 + (world.load_world(seed)["year"] if world.exists(seed) else 0)
+    cur_year = world.display_base_year() + (world.load_world(seed)["year"] if world.exists(seed) else 0)
     # Prepend the live current stint for the coach's present seat. A coach can
     # change programs during a season, so a row at the old school must not hide
     # the new live destination.
@@ -571,7 +571,7 @@ def coach_career_table(coach_id: str, seed: int = DEFAULT_SEED) -> dict:
                    == current_key for r in rows):
             rec = team_results(c["division"], c["gender"], c["school"], seed)
             rows.insert(0, {"coach_id": coach_id, "year": cur_year,
-                            "season_no": (cur_year - 2026) + 1, "division": c["division"],
+                            "season_no": (cur_year - world.display_base_year()) + 1, "division": c["division"],
                             "gender": c["gender"], "school": c["school"], "role": c["role"],
                             "wins": rec["wins"], "losses": rec["losses"], "live": True})
     out, cw, cl = [], 0, 0
@@ -611,7 +611,7 @@ def coach_career_honors(division: str, gender: str, coach_id: str, seed: int = D
     import app.world as world
     import app.honors as honors
     groups = honors.career_by_year(coach_id, "coach")
-    cur_year = 2026 + (world.load_world(seed)["year"] if world.exists(seed) else 0)
+    cur_year = world.display_base_year() + (world.load_world(seed)["year"] if world.exists(seed) else 0)
     if not any(g["year"] == cur_year for g in groups):
         live = [r for r in coach_honor_records(division, gender, seed) if r["subject_id"] == coach_id]
         if live:
@@ -628,7 +628,7 @@ def player_career_honors(division: str, gender: str, pid: str, seed: int = DEFAU
     import app.world as world
     import app.honors as honors
     groups = honors.career_by_year(pid, "player")
-    cur_year = 2026 + (world.load_world(seed)["year"] if world.exists(seed) else 0)
+    cur_year = world.display_base_year() + (world.load_world(seed)["year"] if world.exists(seed) else 0)
     if not any(g["year"] == cur_year for g in groups):
         live = [r for r in honor_records(division, gender, seed) if r["subject_id"] == pid]
         if live:

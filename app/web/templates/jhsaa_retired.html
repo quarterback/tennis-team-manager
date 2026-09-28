@@ -18,7 +18,7 @@
 {% for y in view.years %}
 <div class="bl-panel jh-yearpanel">
   <div class="bl-panel-head">
-    <span class="bl-panel-title">Last played {{ y.season_year }}</span>
+    <span class="bl-panel-title">Last played {{ y.season_year|cal }}</span>
     <span class="bit">{{ y.programs|length }} program{{ '' if y.programs|length == 1 else 's' }}</span>
   </div>
   <div class="jh-yearchamps">

@@ -19,7 +19,7 @@
               program is getting more, or less, out of a position than its opponents and results say it should. The expectation
               is fitted on this season\'s own varsity flights, home court included, so a flight is judged against how the
               association actually converted its matchups this year.',
-             [('Season', view.season_year), ('Flights priced', view.lines - view.unresolved),
+             [('Season', view.season_year|cal), ('Flights priced', view.lines - view.unresolved),
               ('Rows', view.rows|length)] if view.ready else []) }}
 
 <div class="jh-shell">
@@ -54,7 +54,7 @@
 
 <div class="bl-panel">
   <div class="bl-panel-head">
-    <span class="bl-panel-title">{{ view.season_year }} {{ view.group }} — actual vs expected, by flight</span></div>
+    <span class="bl-panel-title">{{ view.season_year|cal }} {{ view.group }} — actual vs expected, by flight</span></div>
   <div class="tbl-scroll">
     <table class="jh-ledger nowrap">
       <tr>

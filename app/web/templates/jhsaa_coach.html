@@ -17,7 +17,7 @@
 <div class="jh-ident" style="margin-bottom:14px">
   <div class="jh-ident-body">
     <h1>{{ c.name }}</h1>
-    <div class="mascot">{% if view.seat %}{{ view.seat.label }} · <a href="{{ url_for('jhsaa_school', school=view.seat.school, u=u, g=view.gender, view='staff') }}">{{ view.seat.school }}</a> ({{ view.gender }}) · since {{ view.seat.since }}{% else %}{{ view.status }}{% endif %}</div>
+    <div class="mascot">{% if view.seat %}{{ view.seat.label }} · <a href="{{ url_for('jhsaa_school', school=view.seat.school, u=u, g=view.gender, view='staff') }}">{{ view.seat.school }}</a> ({{ view.gender }}) · since {{ view.seat.since|cal }}{% else %}{{ view.status }}{% endif %}</div>
     <div class="where">{{ c.hometown }}{% if view.age %} · age {{ view.age }}{% endif %} {% if view.origin %} · {{ view.origin }}{% endif %}{% if view.alma %} · played at {{ view.alma }}{% endif %}</div>
     <div class="now"><span class="rec">{{ view.totals.record or '0-0' }}</span><span class="bit">as a head coach · varsity</span></div>
   </div>
@@ -40,7 +40,7 @@
             <th style="width:92px">District</th><th style="width:130px">Finish</th><th>Honours</th></tr>
           {% for s in view.ledger %}
           <tr{% if not s.head %} style="color:var(--text-secondary)"{% endif %}>
-            <td class="yr"><a href="{{ url_for('jhsaa_school', school=s.school, year=s.world_year, u=u, g=s.gender) }}">{{ s.season_year }}</a></td>
+            <td class="yr"><a href="{{ url_for('jhsaa_school', school=s.school, year=s.world_year, u=u, g=s.gender) }}">{{ s.season_year|cal }}</a></td>
             <td style="font-size:14px"><a href="{{ url_for('jhsaa_school', school=s.school, year=s.world_year, u=u, g=s.gender) }}" style="color:inherit">{{ s.school }}</a></td>
             <td style="font-variant-numeric:normal">{{ s.class }}</td>
             <td style="white-space:nowrap">{% if s.head %}<b>{{ s.role }}</b>{% else %}{{ s.role }}{% endif %}</td>
@@ -71,7 +71,7 @@
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">Awards</span></div>
       {% for a in view.awards %}
-      <div class="jh-honor"><span class="y">{{ a.season_year }}</span><span>{{ a.label }}</span></div>
+      <div class="jh-honor"><span class="y">{{ a.season_year|cal }}</span><span>{{ a.label }}</span></div>
       {% endfor %}
     </div>
     {% endif %}
@@ -81,7 +81,7 @@
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">Transactions</span></div>
       {% for e in view.events %}
-      <div class="jh-kv"><span class="k">{{ e.year }}</span><span class="v">{{ e.label }}{% if e.school %} · <a href="{{ url_for('jhsaa_school', school=e.school, u=u, g=view.gender, view='staff') }}">{{ e.school }}</a>{% endif %}</span></div>
+      <div class="jh-kv"><span class="k">{{ e.year|cal }}</span><span class="v">{{ e.label }}{% if e.school %} · <a href="{{ url_for('jhsaa_school', school=e.school, u=u, g=view.gender, view='staff') }}">{{ e.school }}</a>{% endif %}</span></div>
       {% endfor %}
     </div>
     {% endif %}
