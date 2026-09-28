@@ -1849,6 +1849,25 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     Measured on the fixture: "best seat" often means the WEAKEST program in the county
     (a 68 sent to a 6A whose No. 1 was a 41) and ~70% of rising early participants
     moved — read both off the first real 2100 export before retuning.
+  - **‼️ COACH INVESTMENT — FUTURE VALUE AND PROGRAM INTEREST IN `coach_eval` (owner spec
+    2026-09, `jhsaa.investment_terms`, AAR §9).** The portal could not tell a player a
+    coach is willing to lose from one he wants to KEEP, so the ladder now carries two more
+    bounded judgments in its own units (beside form ±7, proof +8): **Future Value** —
+    `FUTURE_K × future_w × FUTURE_HORIZON[grade] × (pot_est − ovr)`, cap 8, off the STAFF'S
+    ESTIMATE never the true ceiling, horizon HIGH THROUGH SOPHOMORE YEAR (`9: 0.90, 10:
+    0.80`, owner: no rapid fall at 9th) and ~0 at 12th; **Program Interest** (the "senior
+    interest rate") — `INTEREST_K × loyalty_w × INTEREST_CLASS[grade] × tenure/6`, cap 8,
+    tenure DERIVED from early seasons + entry year + the transfer record (six-year senior
+    ≠ four-year ≠ transferred-in this year; a move resets it). Additive and capped IS the
+    collapse: 52 v 55 turns, 52 v 59 is coach-dependent, 52 v 65 never. A forced "hold"
+    seat was designed and rejected — never pin a position. Weights are `StaffEffect.
+    future`/`.loyalty` (Development; Program builder + temperament), **`None` on a
+    no-staff program or a pre-term history row = BOTH OFF** (the Stage B idiom — the era
+    gate, and why standalone seasons are byte-identical). Captains stay separate.
+    Selection only; a senior still develops. The owner's lever is the per-player **coach
+    read** (`/editor/jhsaa-read`, `overrides.set_jhsaa_read`; `jhsaa_read_version` keys
+    the season memo), applied AFTER the captain scaling — it moves the judgment, never a
+    position. Exported as `tenure_years`/`future_value`/`program_interest`.
   - **‼️ `_expo_world_id` NEVER MEMOISES A NO-WORLD ANSWER** (found here, a product bug):
     probed before the world row existed it cached None for the process and the odometer,
     the talent pin and the class-move history all read "no archive", nothing raised.

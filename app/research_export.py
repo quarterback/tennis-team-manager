@@ -302,8 +302,13 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                 # instrumentation the 2100 cohort is evaluated on, owner rule
                 # 2026-09: never guess at calibration from the pages.
                 **_early_cols(p),
+                # COACH INVESTMENT (owner spec 2026-09) — filled below on the
+                # archive path from the season's own staff; blank when injected.
+                "tenure_years": "", "future_value": "", "program_interest": "",
+                "coach_read_override": "",
             })
 
+    _player_rows = {r["player_id"]: r for r in players}
     duals, lines, line_players = [], [], []
     # The ARCHIVE path already delivers JV duals inside each school's schedule
     # (one shared table, labelled by `level`). A LIVE `run_season` dict keeps
@@ -684,6 +689,35 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
     # ledger's rule (archive path only, every season, never just this export's).
     # And the player rows learn their own move, so the 2100 cohort can be read
     # off players.csv alone.
+    # COACH INVESTMENT (owner spec 2026-09): the two terms and the tenure each
+    # player carried into the season's ladder, from the staff that season was
+    # played with (`jhsaa_staff_for_season`, the rung's own converter) — plus the
+    # owner's standing read override. Archive path only.
+    if w and not injected:
+        _staff = wd.jhsaa_staff_for_season(season_year, gender, w["id"])
+        _active, _ = jhsaa.enrolled_transfers(season_year)
+        from app import overrides as _ovr
+        _reads = _ovr.get_jhsaa_reads()
+        _by_key = {t.school.key: t for t in all_teams}
+        for key, team in _by_key.items():
+            eff = _staff.get(key)
+            if eff is None or getattr(eff, "future", None) is None:
+                continue
+            fw = jhsaa._lerp(jhsaa.FUTURE_BAND, eff.future)
+            lw = jhsaa._lerp(jhsaa.LOYALTY_BAND, eff.loyalty)
+            fut, itr, ten = jhsaa.investment_terms(team.roster, team.school.name,
+                                                   season_year, fw, lw, _active)
+            for p in team.roster:
+                pid = player_lookup.get((team.school.name, p.name))
+                row = _player_rows.get(pid)
+                if row is None:
+                    continue
+                row["tenure_years"] = ten.get(p.pid, "")
+                row["future_value"] = round(fut.get(p.pid, 0.0), 3)
+                row["program_interest"] = round(itr.get(p.pid, 0.0), 3)
+                o = _reads.get(p.pid)
+                if o and o.get("school") == team.school.name:
+                    row["coach_read_override"] = o.get("delta", "")
     portal_rows: list = []
     if w and not injected:
         from app import jhsaa_portal as _jp
@@ -773,6 +807,24 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "portal_move": "players.csv: 1 if the rising-freshman portal moved this player "
                            "(portal_from/portal_to are program_ids, portal_season the freshman "
                            "season); 0 otherwise; empty on an injected season.",
+            "future_value": "players.csv: the coach's FUTURE VALUE term on this player in "
+                            "the season's ladder, in OVR points — investment in what the "
+                            "staff ESTIMATES the player will become (never the true ceiling), "
+                            "strongest through sophomore year (horizon "
+                            + ", ".join(f"{g}th {h:.2f}" for g, h in sorted(jhsaa.FUTURE_HORIZON.items()))
+                            + f"), capped at {jhsaa.FUTURE_MAX:g}. Blank when the program had "
+                            "no staff or the season predates the term.",
+            "program_interest": "players.csv: the coach's PROGRAM INTEREST term, in OVR "
+                                "points — trust earned by seasons IN THIS PROGRAM "
+                                "(tenure_years, out of "
+                                f"{jhsaa.INTEREST_MAX_YEARS}; a transfer's years elsewhere "
+                                "do not count), scaled by class ("
+                                + ", ".join(f"{g}th {c:.2f}" for g, c in sorted(jhsaa.INTEREST_CLASS.items()))
+                                + f") and the staff's loyalty, capped at {jhsaa.INTEREST_MAX:g}. "
+                                "Additive and bounded: it turns a close call, never a clear one.",
+            "coach_read_override": "players.csv: the owner's standing offset on this "
+                                   "program's coach's read of the player (OVR points); "
+                                   "blank if none.",
             "captain": "players.csv: 1 if the player was one of the program's team captains "
                        "this season (named preseason; 1-3 per program), 0 if not. "
                        "captain_order ranks them best-known first (1 = the lead captain) and "

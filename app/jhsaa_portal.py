@@ -124,7 +124,16 @@ def _with(ts, p, prior: dict, season: int, salt: str):
     pr = dict(ts.prior)
     if p.pid in prior:
         pr[p.pid] = prior[p.pid]
-    return dataclasses.replace(ts, roster=list(ts.roster) + [p], prior=pr, read=read)
+    # COACH INVESTMENT (owner spec 2026-09): the destination coach values the
+    # newcomer's future at his own weight; Program Interest is zero there by
+    # construction (no tenure), so a move resets it and the origin keeps it.
+    fut = dict(ts.future)
+    f = jh.future_value(p, ts.future_w)
+    if f:
+        fut[p.pid] = f
+    itr = {k: v for k, v in ts.interest.items() if k != p.pid}
+    return dataclasses.replace(ts, roster=list(ts.roster) + [p], prior=pr, read=read,
+                               future=fut, interest=itr)
 
 
 def _without(ts, pid: str):

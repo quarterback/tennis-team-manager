@@ -2861,6 +2861,14 @@ class TeamSeason:
     prior: dict = field(default_factory=dict)
     lens: "CoachLens" = field(default_factory=lambda: CoachLens())
     read: dict = field(default_factory=dict)
+    # COACH INVESTMENT (owner spec 2026-09): {pid: OVR points} for Future Value and
+    # Program Interest, {pid: seasons here} for tenure, and the staff's two weights
+    # (0.0 = no staff, both terms off). Resolved once in `district_teams`.
+    future: dict = field(default_factory=dict)
+    interest: dict = field(default_factory=dict)
+    tenure: dict = field(default_factory=dict)
+    future_w: float = 0.0
+    loyalty_w: float = 0.0
     # ‼️ CAPTAINS (owner rule 2026-09) — pids, best-known first, named PRESEASON in
     # `district_teams` and never re-picked. They change nothing about any player:
     # their whole effect is that `read` above was drawn at a smaller sd, so this
@@ -7044,6 +7052,109 @@ PROOF_POSTSEASON = 1        # dressed in at least one postseason dual
 PROOF_INDIVIDUAL = 2        # entered an individual state draw
 PROOF_HONORED = 4           # named on any award team (All-State/Region/District/POY)
 
+# --- COACH INVESTMENT — Future Value and Program Interest (owner spec 2026-09) ---
+#
+# The transfer system could not tell a player a coach is WILLING TO LOSE from one
+# the coach wants to KEEP: "no projected varsity seat" read as "the program does not
+# care". A coach does not select on current ability alone — he decides whom to
+# INVEST competitive opportunities in — so the ladder now carries two more bounded
+# judgments, in the same OVR-point units as form (±7) and proof (+8):
+#
+#   FUTURE VALUE — expected return on further development. A younger player is
+#   played a little ahead of current ability because the coach believes he will
+#   matter. Reads the STAFF'S ESTIMATE of the ceiling (`pot_est`), never the true
+#   one, and is strongest through sophomore year — `FUTURE_HORIZON` stays high at
+#   9th and 10th grade on purpose (owner: "I do not want freshman future value
+#   falling rapidly just because they're already in high school") and drops after.
+#
+#   PROGRAM INTEREST (the "senior interest rate") — return on investment the
+#   program has ALREADY made. Trust and reward for years in THIS program, most
+#   valuable in senior year and only decisive in a close call: it is additive and
+#   capped, so a 3-point gap turns, a 7-point gap is coach-dependent, a 13-point
+#   gap never does. Tenure is DERIVED from history — early seasons, the entry year
+#   and the transfer record — so a senior who entered in seventh grade (six years),
+#   one who walked in as a freshman (four) and one who transferred in this year
+#   (one) do not read alike, and staying somewhere accrues a small selection
+#   benefit that a move resets (the new coach can still value you highly).
+#
+# Both weights come off the NAMED STAFF (`jhsaa_coaches.StaffEffect.future` /
+# `.loyalty`), so a program with no staff — a standalone season, a test, an
+# archived season from before this existed — reads NEITHER term and plays exactly
+# as before (the Stage B idiom, which is also the era gate). Captains stay
+# separate; captaincy is not this mechanism. Selection only: nothing here changes
+# how anybody plays, and a senior keeps developing through the ordinary model.
+FUTURE_HORIZON = {7: 1.00, 8: 1.00, 9: 0.90, 10: 0.80, 11: 0.35, 12: 0.00}
+FUTURE_K = 0.20             # share of estimated headroom a coach of weight 1.0 invests
+FUTURE_MAX = 8.0            # OVR points — the proof tier's ceiling
+FUTURE_BAND = (0.4, 1.6)    # the staff's Development quantile → weight
+INTEREST_CLASS = {7: 0.0, 8: 0.0, 9: 0.2, 10: 0.3, 11: 0.6, 12: 1.0}
+INTEREST_K = 5.0            # OVR points for a full-tenure senior under a weight-1.0 coach
+INTEREST_MAX = 8.0          # the outside boundary (owner: ~10-20% of a ~50 OVR gap)
+INTEREST_MAX_YEARS = 6      # seventh grade through senior year
+LOYALTY_BAND = (0.4, 1.6)   # the staff's loyalty quantile → weight
+
+
+def _lerp(band, t: float) -> float:
+    t = min(1.0, max(0.0, t))
+    return band[0] + (band[1] - band[0]) * t
+
+
+def program_tenure(p, school_name: str, season: int, rec: dict | None = None) -> int:
+    """Seasons `p` has been with `school_name` up to and INCLUDING `season` — the
+    early seasons, the high-school years so far, minus any played elsewhere on a
+    transfer record. Derived, never stored."""
+    entry = getattr(p, "entry_year", None)
+    if entry is None:
+        return 0
+    seasons = {sn for sn in ((getattr(p, "jhsaa", None) or {}).get("early") or ())
+               if sn <= season}
+    seasons |= set(range(entry, season + 1))
+    if rec:
+        seasons = {sn for sn in seasons if transfer_school(rec, sn) == school_name}
+    return len(seasons)
+
+
+def future_value(p, future_w: float) -> float:
+    """The coach's investment in what `p` will become, in OVR points."""
+    if future_w <= 0.0:
+        return 0.0
+    h = FUTURE_HORIZON.get(getattr(p, "grade", 0), 0.0)
+    if h <= 0.0:
+        return 0.0
+    meta = getattr(p, "jhsaa", None) or {}
+    pot = meta.get("pot_est")
+    if pot is None:
+        pot = p.ceiling_overall()
+    room = max(0.0, float(pot) - p.current_overall())
+    return min(FUTURE_MAX, FUTURE_K * future_w * h * room)
+
+
+def program_interest(p, tenure: int, loyalty_w: float) -> float:
+    """The coach's return on the program's investment in `p`, in OVR points."""
+    if loyalty_w <= 0.0 or tenure <= 0:
+        return 0.0
+    c = INTEREST_CLASS.get(getattr(p, "grade", 0), 0.0)
+    share = min(1.0, tenure / INTEREST_MAX_YEARS)
+    return min(INTEREST_MAX, INTEREST_K * loyalty_w * c * share)
+
+
+def investment_terms(roster, school_name: str, season: int, future_w: float,
+                     loyalty_w: float, active: dict | None = None) -> tuple:
+    """({pid: future}, {pid: interest}, {pid: tenure}) for a roster — resolved
+    ONCE per team, never per dual. `active` is the enrolled transfer slice
+    (`enrolled_transfers`), so a mover's years elsewhere are not this program's."""
+    fut, itr, ten = {}, {}, {}
+    for p in roster:
+        t = program_tenure(p, school_name, season, (active or {}).get(p.pid))
+        ten[p.pid] = t
+        f = future_value(p, future_w)
+        if f:
+            fut[p.pid] = f
+        i = program_interest(p, t, loyalty_w)
+        if i:
+            itr[p.pid] = i
+    return fut, itr, ten
+
 
 @dataclass(frozen=True)
 class CoachLens:
@@ -7191,7 +7302,8 @@ def varsity_proof(p, st: PriorSeason | None, lens: CoachLens,
 
 def coach_eval(p, record: list[int] | None = None, *,
                prior: PriorSeason | None = None,
-               lens: CoachLens | None = None, read: float = 0.0) -> float:
+               lens: CoachLens | None = None, read: float = 0.0,
+               future: float = 0.0, interest: float = 0.0) -> float:
     """What the COACH thinks `p` is worth to his lineup — NOT what `p` is worth on
     a tennis court. `_order` sorts on this and the match engine never sees it.
 
@@ -7217,6 +7329,9 @@ def coach_eval(p, record: list[int] | None = None, *,
     # RECENT FORM — this season's record, weighted by how much he chases it.
     if n:
         out += ln.form * LADDER_SWING * (w / n - 0.5) * n / (n + LADDER_PRIOR)
+    # FUTURE VALUE + PROGRAM INTEREST (owner spec 2026-09) — resolved per team in
+    # `district_teams` (`investment_terms`), zero for a program with no staff.
+    out += future + interest
     return out
 
 
@@ -7225,10 +7340,16 @@ def _order(ts: TeamSeason) -> list:
     not a ranking of talent. Ties break on STR, which is ability, because two
     players he values identically are separated by the thing he cannot see."""
     prior, lens, read = ts.prior, ts.lens, ts.read
+    # Optional on purpose: a team-like stand-in (a test's, a tool's) without the
+    # investment fields orders exactly as before the terms existed.
+    fut = getattr(ts, "future", None) or {}
+    itr = getattr(ts, "interest", None) or {}
     return sorted(ts.roster,
                   key=lambda p: (-coach_eval(p, ts.records.get(p.pid),
                                              prior=prior.get(p.pid), lens=lens,
-                                             read=read.get(p.pid, 0.0)),
+                                             read=read.get(p.pid, 0.0),
+                                             future=fut.get(p.pid, 0.0),
+                                             interest=itr.get(p.pid, 0.0)),
                                  -p.str_value()))
 
 
@@ -8863,6 +8984,11 @@ def district_teams(schools: list[School], year: int, salt: str = "",
     fam = families()
     st = staff or {}          # resolved ONCE here, never per team and never per dual
     pr = prior or {}
+    # The enrolled transfer slice (tenure) and the owner's coach-read overrides —
+    # each ONE read per call, never per team.
+    active, _inb = enrolled_transfers(year)
+    from app import overrides as _ov
+    reads = _ov.get_jhsaa_reads()
     out = []
     for s in schools:
         roster = build_roster(s, year, salt)
@@ -8929,6 +9055,23 @@ def district_teams(schools: list[School], year: int, salt: str = "",
         if roster and lens.read > 0.0:
             k = max(0.0, lens.read - CAPTAIN_VALUE) / lens.read
             ts.read = {pid: v * k for pid, v in ts.read.items()}
+        # COACH INVESTMENT (owner spec 2026-09): the staff's two weights, then the
+        # per-player terms. `eff.future is None` is a program with no staff or a
+        # history row from before the terms existed — both terms stay off, and the
+        # season plays exactly as it did (the Stage B idiom, and the era gate).
+        if eff is not None and getattr(eff, "future", None) is not None:
+            ts.future_w = _lerp(FUTURE_BAND, eff.future)
+            ts.loyalty_w = _lerp(LOYALTY_BAND, eff.loyalty)
+            ts.future, ts.interest, ts.tenure = investment_terms(
+                roster, s.name, year, ts.future_w, ts.loyalty_w, active)
+        # THE OWNER'S READ (owner spec 2026-09): a per-player offset on THIS coach's
+        # judgment, applied after the captain scaling because it is a decision, not
+        # a misread. It moves the evaluation only — never a position directly.
+        if reads:
+            for p in roster:
+                o = reads.get(p.pid)
+                if o and o.get("school") == s.name:
+                    ts.read[p.pid] = ts.read.get(p.pid, 0.0) + float(o.get("delta", 0.0))
         # ‼️ THE MITIGATION IS APPLIED HERE, THE PICK IS NOT (owner rule 2026-09).
         # `run_season` names captains AFTER the individual state tournaments, so
         # `ts.captains` is empty at this point and stays empty for a standalone
@@ -12546,7 +12689,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     # call (which plays ~10,000 duals), never anything resolved in a loop.
     ck = (salt, gender, year, seed,
           _ov.jhsaa_archetype_version(), _ov.jhsaa_playup_version(),
-          _ov.jhsaa_band_version(), _prior_fingerprint(prior),
+          _ov.jhsaa_band_version(), _ov.jhsaa_read_version(), _prior_fingerprint(prior),
           # ‼️ AND THE COACHING STAFFS (owner spec 2026-09): a season played under a
           # different staff is a different season. Empty (no staff) keys like before.
           _staff_fingerprint(staff),

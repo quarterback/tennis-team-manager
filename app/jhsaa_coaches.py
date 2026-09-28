@@ -319,6 +319,13 @@ class StaffEffect:
     feeder: float = 0.5     # staff Feeder ties quantile (freshman head start)
     tactics: float | None = None      # staff Tactics quantile (style-matchup scale)
     singles: float | None = None      # staff Singles quantile (singles flights)
+    # COACH INVESTMENT (owner spec 2026-09): the Future Value weight (the staff's
+    # Development quantile) and the Program Interest weight (Program builder,
+    # tilted by the head's temperament — Senior-first up, Broad rotation down).
+    # None = a history row from before the terms existed: BOTH off, so an
+    # archived season keeps reading as it was played.
+    future: float | None = None
+    loyalty: float | None = None
 
     def fingerprint(self) -> tuple:
         # Everything that changes how a SEASON plays (rosters read history, not
@@ -329,7 +336,9 @@ class StaffEffect:
                 None if self.changeover is None else round(self.changeover, 9),
                 self.temperament,
                 None if self.tactics is None else round(self.tactics, 9),
-                None if self.singles is None else round(self.singles, 9))
+                None if self.singles is None else round(self.singles, 9),
+                None if self.future is None else round(self.future, 9),
+                None if self.loyalty is None else round(self.loyalty, 9))
 
 
 def lens_of(talent_id: float, adaptability: float):
@@ -373,7 +382,15 @@ def staff_effect(head: Coach | None, assistants: list[Coach]) -> StaffEffect | N
                        changeover=head.grades.get("changeover", 0.5),
                        temperament=head.temperament,
                        builder=eff["builder"], feeder=eff["feeder"],
-                       tactics=eff["tactics"], singles=eff["singles"])
+                       tactics=eff["tactics"], singles=eff["singles"],
+                       future=eff["development"],
+                       loyalty=(0.6 * eff["builder"]
+                                + 0.4 * LOYALTY_TEMPERAMENT.get(head.temperament, 0.5)))
+
+
+#: How the head's participation temperament tilts Program Interest: a
+#: Senior-first head rewards tenure, a Broad-rotation head spreads chances instead.
+LOYALTY_TEMPERAMENT = {"senior": 1.0, "steady": 0.5, "broad": 0.25}
 
 
 def effect_fingerprint(staff: dict | None) -> str:
@@ -719,7 +736,8 @@ def _eff_to_json(e: StaffEffect) -> str:
                        "dev": e.dev, "lean": e.lean, "clutch": e.clutch,
                        "changeover": e.changeover, "temperament": e.temperament,
                        "builder": e.builder, "feeder": e.feeder,
-                       "tactics": e.tactics, "singles": e.singles})
+                       "tactics": e.tactics, "singles": e.singles,
+                       "future": e.future, "loyalty": e.loyalty})
 
 
 def _eff_from_json(s: str) -> StaffEffect:
@@ -736,7 +754,8 @@ def _eff_from_json(s: str) -> StaffEffect:
                        clutch=d.get("clutch"), changeover=d.get("changeover"),
                        temperament=d.get("temperament", "steady"),
                        builder=d.get("builder", 0.5), feeder=d.get("feeder", 0.5),
-                       tactics=d.get("tactics"), singles=d.get("singles"))
+                       tactics=d.get("tactics"), singles=d.get("singles"),
+                       future=d.get("future"), loyalty=d.get("loyalty"))
 
 
 def season_effects(world_id: int, year: int, gender: str) -> dict:

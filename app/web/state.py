@@ -6555,6 +6555,8 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         "jv_matches": sum(s["jv_matches"] for s in seasons),
         # For the transfer form — the identity a `set_jhsaa_transfer` row is keyed on.
         "entry_year": player.entry_year,
+        # THE OWNER'S COACH READ (owner spec 2026-09) — the standing offset, if any.
+        "read_override": __import__("app.overrides", fromlist=["x"]).get_jhsaa_read(pid),
         "transfer": moved,
         # The whole history, each hop reading FROM where they were before it — what
         # the card lists, and what makes a move back to the old school legible.

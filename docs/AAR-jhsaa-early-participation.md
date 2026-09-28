@@ -318,6 +318,100 @@ unasked):
 
 ---
 
+## 9. Coach investment — Future Value and Program Interest (owner spec 2026-09)
+
+### The problem this actually solves
+
+The portal's trigger was "no projected V1 seat", and the ladder it read had no way
+to represent a coach saying *I know he's outside my lineup today, but I'm invested
+in this kid and I'll find him a role so the family doesn't leave*. So every young
+player outside V1 read as somebody the program was willing to lose — ~70% of rising
+early participants moved on the fixture. A forced "hold" seat was designed and
+rejected (a seat mechanic, a freeze special case at every postseason width, and a
+guarantee no coach actually gives). What shipped instead makes `coach_eval` able to
+represent two real biases in lineup judgment, and lets the projected ladder — which
+the portal already reads — carry the coach's answer.
+
+### The two terms (`future_value`, `program_interest`, `investment_terms`)
+
+Both are in the ladder's own units (OVR points, beside form ±7 and proof +8),
+additive, capped, and resolved once per team in `district_teams`. Neither changes
+how anybody plays.
+
+- **Future Value — return on further development.**
+  `FUTURE_K (0.20) × future_w × FUTURE_HORIZON[grade] × max(0, pot_est − ovr)`,
+  capped at `FUTURE_MAX` 8. It reads the **staff's estimate** of the ceiling
+  (`pot_est`), never the true one. The horizon is the owner's shape —
+  `7: 1.00 · 8: 1.00 · 9: 0.90 · 10: 0.80 · 11: 0.35 · 12: 0.00` — high through
+  sophomore year on purpose ("I do not want freshman future value falling rapidly
+  just because they're already in high school"), then a substantial decline. A
+  senior's future is worth nothing to a lineup; his *development* is untouched.
+- **Program Interest — the "senior interest rate", return on investment already
+  made.** `INTEREST_K (5.0) × loyalty_w × INTEREST_CLASS[grade] × tenure / 6`,
+  capped at `INTEREST_MAX` 8. Class `7: 0 · 8: 0 · 9: 0.2 · 10: 0.3 · 11: 0.6 ·
+  12: 1.0` — it accumulates (a three-year junior beats a brand-new freshman in a
+  close call) and senior year is where it is most valuable. **Tenure is derived,
+  never stored** (`program_tenure`): the early seasons, the entry year and the
+  transfer record, so a senior who entered in seventh grade (six years), one who
+  walked in as a freshman (four) and one who transferred in this year (one) do not
+  read alike. A move resets it; the new coach can still value the player highly
+  through the other terms.
+- **Why additive and capped is the whole design.** The owner's boundary was a
+  10–20% competitive gap, in evaluation units. With a six-year senior: at 52 vs 55
+  he wins; at 52 vs 59 it is coach-dependent (a loyalty weight of 1.6 bridges 7
+  points, 0.4 does not); at 52 vs 65 the interest rate collapses — nobody benches a
+  dramatically better player as a sentimental gesture. That is a property of an
+  8-point cap, not a separate "competitiveness" formula.
+
+### Where the weights come from
+
+Off the **named staff**, so they vary by coach: `StaffEffect.future` is the
+staff's Development quantile, `StaffEffect.loyalty` is `0.6 × Program builder +
+0.4 × temperament` (Senior-first 1.0 · Steady 0.5 · Broad rotation 0.25), each
+mapped through a `(0.4, 1.6)` band. **Both default to `None`** on a history row
+written before they existed and on a program with no staff — and `None` means
+both terms are OFF, so an archived season keeps reading exactly as it was played
+and a standalone season or test is byte-identical. That is the era gate, with no
+setting (the Stage B idiom). The fingerprint carries them, so a season played under
+them is a different memo key.
+
+### The lifecycle this gives the coach model
+
+- **Early career (7th–10th):** future value dominates; maturity may fire through
+  9th; tenure is accumulating.
+- **Middle (10th–11th):** ability and proof dominate.
+- **Late (12th):** ability + proof + accumulated program interest; future ≈ 0;
+  ordinary development still active.
+
+Age itself is never a bonus; what changes is *what the coach is paying for*.
+
+### Retention, and the owner's lever
+
+The portal reads `jhsaa._order` on the team `district_teams` builds, so the terms
+are in the projected V1 automatically: a young player the coach's future value
+puts inside the lineup is **not proposed** — the coach is saying "I want to keep
+this kid, so I'm going to play them". One the coach does not value enough stays
+outside V1 and the family may look elsewhere. A destination projects the
+newcomer's future at *its* coach's weight and zero program interest (`_with`).
+
+**The owner's coach read** (`overrides.set_jhsaa_read`, `/editor/jhsaa-read`,
+the form on the player page): a per-player offset, in OVR points, on ONE
+program's coach evaluation. It is added to `TeamSeason.read` after the captain
+scaling (it is a decision, not a misread), it modifies the judgment and never
+pins a position, and its table version keys the season memo. Captains remain
+separate; captaincy is not this mechanism.
+
+### Instrumentation
+
+`players.csv`: `tenure_years`, `future_value`, `program_interest`,
+`coach_read_override`, computed on the archive path from the staff that season
+was played with (`jhsaa_staff_for_season`). Read the 2100 cohort's move rate
+against `future_value` before retuning any constant.
+
+`tests/test_jhsaa_coach_investment.py` pins the caps, the horizon shape, the
+derived tenure (natural / early / transfer), the 55-59-65 collapse, the neutral
+no-staff path and the override round trip.
+
 ## 8. Open items
 
 - **Owner decisions**: the option sort in the portal (§5.1); `MATURITY_RATE`,

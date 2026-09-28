@@ -4659,6 +4659,40 @@ def create_app() -> Flask:
             reset_all()
         return _editor_redirect()
 
+    @app.route("/editor/jhsaa-read", methods=["POST"])
+    def editor_jhsaa_read():
+        """THE OWNER'S COACH READ (owner spec 2026-09): an offset, in OVR points, on
+        how THIS program's coach evaluates one player — the way the owner says "I
+        want this coach to value this kid more and keep them". It modifies the
+        judgment (`coach_eval`'s read) and never pins a position; the projected
+        ladder, and so the rising-freshman portal, read the result."""
+        from app import overrides as ov
+        gender = request.form.get("gender", "")
+        school = request.form.get("jh_school", "")
+        pid = request.form.get("jh_pid", "")
+        if pid and school:
+            if request.form.get("do") == "clear":
+                ov.clear_jhsaa_read(pid)
+                result = "Coach's read cleared."
+            else:
+                try:
+                    delta = float(request.form.get("jh_read", ""))
+                except ValueError:
+                    delta = None
+                if delta is None:
+                    result = "Enter a number of OVR points (e.g. 4 or -3)."
+                else:
+                    delta = max(-15.0, min(15.0, delta))
+                    ov.set_jhsaa_read(pid, school, delta)
+                    result = f"{school}'s coach now reads this player {delta:+.1f}."
+            reset_all()              # the ladder (and the season memo) moved
+        else:
+            result = "Missing information — read not saved."
+        resp = redirect(url_for("jhsaa_player", school=school, pid=pid,
+                                u=request.form.get("u", "D1-men"), g=gender))
+        resp.set_cookie("jh_transfer_result", result, max_age=30, samesite="Lax")
+        return resp
+
     @app.route("/editor/jhsaa-transfer", methods=["POST"])
     def editor_jhsaa_transfer():
         """Move a JHSAA player to another program, effective an offseason. No
