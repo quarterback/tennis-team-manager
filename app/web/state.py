@@ -6261,7 +6261,8 @@ def _family_row(fam_map: dict, pid: str, p=None, roster=()) -> dict | None:
 #: Grade -> class year, the name a results line calls a player by. The same four
 #: labels the college side already uses (`scout_intel._CLASS_ORD`); high school has
 #: no fifth year, so there is no RS- case to strip here.
-_JH_CLASS_YEAR = {9: "Fr", 10: "So", 11: "Jr", 12: "Sr"}
+# 7th/8th: early participation (JHSAA rule 2100) — named by grade, there is no class year.
+_JH_CLASS_YEAR = {7: "7th", 8: "8th", 9: "Fr", 10: "So", 11: "Jr", 12: "Sr"}
 
 
 def _jh_years_abbr(years: list[int]) -> str:
@@ -6580,7 +6581,7 @@ def jhsaa_players_search(seed: int, gender: str, group: str = "All", district: s
         "gender": gender, "rows": rows, "total": len(rows),
         "groups": ["All"] + list(jh.GROUPS),
         "districts": districts,
-        "grades": ["All", "9", "10", "11", "12"],
+        "grades": ["All", "7", "8", "9", "10", "11", "12"],
         "group": group, "district": district, "grade": grade, "sort": sort, "q": q,
     }
 
@@ -6756,14 +6757,14 @@ def jhsaa_misapplied_players(seed: int, gender: str, group: str = "All",
 
     return {"gender": gender, "rows": flagged, "total": len(flagged),
             "groups": ["All"] + list(jh.GROUPS), "group": group, "sort": sort,
-            "grades": ["All", "9", "10", "11", "12"], "grade": grade}
+            "grades": ["All", "7", "8", "9", "10", "11", "12"], "grade": grade}
 
 
 #: Lineup Lab grade-pool options: which grades a hypothetical squad may draw
 #: from. A scouting squad built around seniors is a one-year mirage, so the lab
 #: can exclude them (or go younger still) — label beside the set it keeps.
 JHSAA_LAB_GRADE_POOLS = {
-    "all":   ("All grades", (9, 10, 11, 12)),
+    "all":   ("All grades", (7, 8, 9, 10, 11, 12)),
     "no12":  ("Exclude seniors", (9, 10, 11)),
     "under": ("Underclassmen (9-10)", (9, 10)),
 }

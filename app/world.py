@@ -5802,7 +5802,9 @@ def jhsaa_career_wins(world_id: int, gender: str, salt: str = "",
         tot = [0] * 8
         for year in sorted(years):
             sy = BASE_YEAR + year + 1
-            if not (entry <= sy <= entry + 3):
+            # From 7th grade: an early participant's pre-HS seasons (rule 2100)
+            # are this career too.
+            if not (entry - 2 <= sy <= entry + 3):
                 continue
             school = alias.get(_jh.transfer_school(rec, sy), "") or ""
             school = alias.get(school, school)

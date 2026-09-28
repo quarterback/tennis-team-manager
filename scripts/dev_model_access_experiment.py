@@ -152,8 +152,11 @@ SHORTFALL = {"varsity": 0.00, "jv": 0.35, "none": 0.70}
 
 
 def load(root: str, year: int, gender: str) -> list[dict]:
+    # High school only: the access models are defined over grades 9-12, and an
+    # early participant (7th/8th grade, JHSAA rule 2100) would feed a negative
+    # grade offset into a fractional power.
     with open(os.path.join(root, str(year), gender, "players.csv"), newline="") as f:
-        return list(csv.DictReader(f))
+        return [r for r in csv.DictReader(f) if int(r.get("grade") or 9) >= 9]
 
 
 def _rank(rows: list[dict], cur: dict, year: int) -> tuple[dict, dict, dict]:
