@@ -173,6 +173,45 @@ chance.
 Entering at the Conference is a chance to **play, never a berth**. You still
 have to win.
 
+## The 16-team State pilot (4A, 3A, 2A, 1A, Group 3 — from 2099)
+
+A pilot, JHSAA rule 2099, for **4A, 3A, 2A, 1A and Group 3**, both genders,
+from the first unplayed season (2099) on. Every other class keeps everything
+above unchanged. The spec and the data behind it are in
+`docs/reports/SPEC-jhsaa-16-team-state-pilot.md` and
+`docs/reports/REPORT-jhsaa-zonal-champions-and-the-recovery-road.md`.
+
+**State is sixteen teams: the eight Zonal champions and the eight Semi-State
+winners.** Nothing else qualifies.
+
+| Stage | Pilot classes |
+|---|---|
+| Areas → Zonals | unchanged, protected seats and all |
+| Epiregionals | unchanged — they still order the Zonal champions 1–8 |
+| **Super Regionals** | Regional losers, unchanged |
+| **Semi-State** | Super Regional winners + Zonal losers — **winners take the 8 berths** |
+| Divisionals, Semi-Conference, Conference, Special Challengers, State Specials | **do not run** |
+| Metastate, Parastate, at-large committee | **do not run** — no at-large bids |
+| **State** | a plain 16 draw: seeds 1–8 the Zonal champions in Epiregional order, 9–16 the Semi-State winners |
+
+What that means for a team:
+
+- **Lose at Semi-State and you are done** — your finish reads *Semi-State*.
+- **Lose at Super Regionals and you are done** — *Super Regionals*. Nobody is
+  readmitted anywhere.
+- **Lose at Wards, Sectionals or Areas and you are done** at that round; there
+  is no Semi-Conference to call you back.
+- **A district champion keeps its protected seat and nothing else.** Lose your
+  Regional and you go to Super Regionals like any Regional loser.
+- **State opens at the Octofinals** — no byes, no Qualifiers Round — then
+  Quarterfinals, Semifinals and the Final. Nobody in a pilot class can finish
+  "Round of 32", "Round of 24" or "Parastate".
+
+A State appearance still means the same thing — a team in the State draw's
+field — so the pilot only makes it harder to make. If a thin Semi-State ever
+produced fewer than eight winners, State would run short with byes to the top
+seeds; the removed rounds are never reopened to fill it.
+
 ## TOSS's role
 
 TOSS (0.40 adjusted performance + 0.40 field quality + 0.20 opponent game share)

@@ -20,7 +20,7 @@
 <div class="jh-shell">
 {% if not view.ready %}
 <div class="bl-panel"><div class="jh-empty">No committee archived — the at-large
-committee runs for the Parastate classes only ({{ jh_parastate_blurb() }}), from
+committee runs for the Parastate classes only ({{ jh_parastate_blurb(view.season_year) }}), from
 the season each class's expanded field began.</div></div>
 {% else %}
 

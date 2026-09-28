@@ -26,6 +26,26 @@ def _fast_junior_season():
     wc.set("jr_season_weeks", prev)
 
 
+@pytest.fixture(autouse=True, scope="session")
+def _sixteen_state_pilot_off():
+    """Keep every suite on the association's standing postseason unless it opts
+    into the 16-team State pilot (JHSAA rule 2099).
+
+    `jhsaa.sixteen_state_era()` self-configures like every era: a database with no
+    archived season resolves it to 0, i.e. the pilot from the first season — which
+    is right for a fresh save and wrong for this suite, whose ladder, TOC, awards
+    and committee tests all assert the full 4A/3A/2A/1A/Group 3 ladder on a
+    season-2027 fixture. The resolver is REPLACED rather than pinned in
+    worldconfig because `world.reset()` (the `played_season` fixture) clears every
+    era setting mid-run. `tests/test_jhsaa_sixteen_state.py` opts in by swapping
+    it back, and tests the real resolver directly."""
+    from app import jhsaa as jh
+    real = jh.sixteen_state_era
+    jh.sixteen_state_era = lambda: 10 ** 6
+    yield
+    jh.sixteen_state_era = real
+
+
 @pytest.fixture
 def legacy_talent_draw():
     """Pin the CLASSIFICATION talent draw (pre-`jhsaa.band_era()` cohorts) for a

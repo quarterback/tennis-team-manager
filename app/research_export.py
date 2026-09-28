@@ -848,13 +848,13 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             # so a consumer of a 6A-1A export was handed the wrong field
             # semantics. Each shape states its own seat count and seed range.
             "jhsaa_committee.json is the at-large selection committee, which runs for "
-            f"{jhsaa.parastate_blurb()}: the five members' full ballots and published "
+            f"{jhsaa.parastate_blurb(year)}: the five members' full ballots and published "
             "weights, the per-member at-large ranges, locks, automatic bids (district "
             "champions who missed the road), bubble and seeding Borda totals, statuses, "
             "and the selections in seed order — "
             + "; ".join(f"{lbl.split(' ')[0]}-team: {bids} selections seeded "
                         f"{road + 1}-{road + bids}"
-                        for lbl, _gs, road, bids in jhsaa.parastate_summary())
+                        for lbl, _gs, road, bids in jhsaa.parastate_summary(year))
             + ". The road's qualifiers are unchanged and an at-large is NEVER seeded "
             "above the whole road. Their State bracket opens with the Parastate (the "
             "2 x bids lowest seeds, paired high-low) in jhsaa_championships.json, its "
@@ -862,6 +862,17 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "Regular duals use 3 singles/4 doubles; early-window dates use 5/2; showcases and postseason use 1/4. "
             "7A, 8A, 9A and Group 1 play 4S/5D on the road to State and in the early window.",
             "Every court finishes. JHSAA has no clinch abandonment.",
+            # THE 16-TEAM STATE PILOT (JHSAA rule 2099) — stated only for a season
+            # it applies to, and the class list is DERIVED from the gate.
+            *([f"{jhsaa._and_list(pilot)} play the 16-team State pilot this season: "
+               "State is the eight Zonal champions (seeds 1-8, Epiregional order) and "
+               "the eight Semi-State winners (seeds 9-16), a plain 16 draw from the "
+               "Octofinals. Recovery ends at Semi-State — no Divisionals, "
+               "Semi-Conference, Conference, Special Challengers, State Specials, "
+               "Metastate or Parastate — and the committee selects nothing for them "
+               "(absent from jhsaa_committee.json)."]
+              if (pilot := [g for g in jhsaa.SIXTEEN_STATE_GROUPS
+                            if jhsaa.sixteen_state(g, year)]) else []),
             "1A crowns from a 24-team field on a fixed recovery shape (Super Regional/"
             "Semi-State/Divisional/Semi-Conference/Conference all award direct State "
             "berths, unlike the other classes' dynamic ladder). Every other class, 2A "

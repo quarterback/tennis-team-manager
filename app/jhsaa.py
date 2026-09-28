@@ -334,20 +334,64 @@ METASTATE_NAME = "Metastate"
 METASTATE_FINISH = METASTATE_NAME
 METASTATE_PHASE = "metastate"
 
+#: ‼️ THE 16-TEAM STATE PILOT (JHSAA rule 2099, owner rule 2026-09 —
+#: docs/reports/SPEC-jhsaa-16-team-state-pilot.md, background in
+#: docs/reports/REPORT-jhsaa-zonal-champions-and-the-recovery-road.md). In these
+#: classes State is SIXTEEN teams: the eight Zonal champions and the eight
+#: Semi-State winners, and nobody else. Recovery ends at Semi-State — the
+#: Divisionals, Semi-Conference, Conference, Special Challengers, State Specials,
+#: Metastate and Parastate do not run, and the at-large committee selects nothing.
+#: Across 2093-2096 those two doors produced every State champion and all but two
+#: semifinalists in these five classes; the pilot tests whether a smaller, harder
+#: State works before anything moves association-wide.
+#:
+#: ‼️ MEMBERSHIP IS AN EXPLICIT TUPLE, never a derivation off the road or field
+#: size (the `METASTATE_GROUPS` reason: "road == 24" or "field <= 32" happens to
+#: describe some of these today and would silently enrol a class the day its
+#: table moved). And it is SEASON-GATED (`sixteen_state_era`): every question
+#: about the shape goes through `sixteen_state(group, year)`, never through
+#: membership alone, so an archived season keeps the shape it was played at.
+SIXTEEN_STATE_GROUPS = ("4A", "3A", "2A", "1A", "Group 3")
+#: The pilot field: the Zonal champions (`STATE_BYES`, seeds 1-8) plus the
+#: Semi-State winners (seeds 9-16). A full bracket, so no byes and no
+#: Qualifiers Round — the first round is the Octofinals.
+SIXTEEN_STATE_FIELD = 16
 
-def metastate_bids(group: str | None) -> int:
+
+def sixteen_state(group: str | None, year: int | None) -> bool:
+    """Is `group`'s `year` season played on the 16-team State pilot shape?
+
+    THE ONE QUESTION every pilot branch asks — membership AND the season, never
+    membership alone. `year` None means "no particular season" and answers False
+    without touching the database, which is what keeps the module-level table
+    asserts (and every pre-pilot caller) reading the owner's tables exactly as
+    written."""
+    if year is None or group not in SIXTEEN_STATE_GROUPS:
+        return False
+    return year >= sixteen_state_era()
+
+
+
+def metastate_bids(group: str | None, year: int | None = None) -> int:
     """How many of the field's LOWEST seeds play the metas — the group's whole
     at-large allocation, or 0 where the class does not play them. The `bids / 2`
-    winners go on to the Parastate."""
+    winners go on to the Parastate. 0 for a 16-team State pilot class from its
+    era (`sixteen_state`), which plays no metas at all."""
+    if sixteen_state(group, year):
+        return 0
     return AT_LARGE_BIDS.get(group or "", 0) if group in METASTATE_GROUPS else 0
 
 
-def parastate_byes(group: str | None) -> int:
+def parastate_byes(group: str | None, year: int | None = None) -> int:
     """How many top seeds sit the Parastate out. Without the metas that is the
     road less the bids (1A: 24 − 8 = 16). With them the metas have already halved
     the at-large allocation, so only `bids / 2` road seeds are drawn into the
     Parastate and the byes rise to `road − bids / 2` (a 48: 32 − 8 = 24; a 40:
-    32 − 4 = 28). Off the TABLE size, never a played field's length."""
+    32 − 4 = 28). Off the TABLE size, never a played field's length. A 16-team
+    State pilot class (`sixteen_state`) has no Parastate: every entrant "byes" it,
+    so this is its whole field."""
+    if sixteen_state(group, year):
+        return state_field_size(group, year)
     bids = AT_LARGE_BIDS.get(group or "", 0)
     return state_field_size(group) - (bids // 2 if group in METASTATE_GROUPS else bids)
 
@@ -369,7 +413,7 @@ assert all(g in ATLARGE_GROUPS for g in METASTATE_GROUPS), \
         tuple(g for g in METASTATE_GROUPS if g not in ATLARGE_GROUPS),)
 
 
-def parastate_summary() -> list[tuple[str, list[str], int, int]]:
+def parastate_summary(year: int | None = None) -> list[tuple[str, list[str], int, int]]:
     """The Parastate classes grouped by the SHAPE they play, in `GROUPS` order:
     `[(label, [classes], road, bids), …]`.
 
@@ -377,21 +421,24 @@ def parastate_summary() -> list[tuple[str, list[str], int, int]]:
     stale. Three surfaces described the committee as running for "7A and Group 1"
     / "the 48-team groups" / "16 selections seeded 33-48" long after the tables
     said otherwise, and a reader of a 6A archive was told their class never uses
-    the committee. A description of a table belongs to the table."""
+    the committee. A description of a table belongs to the table.
+
+    `year` is the season described: from `sixteen_state_era` the 16-team State
+    pilot classes have no committee and drop out (`at_large_bids` is 0)."""
     shapes: dict[tuple[int, int], list[str]] = {}
     for g in GROUPS:
-        b = at_large_bids(g)
+        b = at_large_bids(g, year)
         if b:
             shapes.setdefault((state_field_size(g), b), []).append(g)
     return [(f"{road + bids} ({road} road + {bids})", gs, road, bids)
             for (road, bids), gs in shapes.items()]
 
 
-def parastate_blurb() -> str:
+def parastate_blurb(year: int | None = None) -> str:
     """`parastate_summary` as one sentence for a tooltip, an empty state or an
     export manifest — "8A, 9A, Group 1 at 48 (32 road + 16); …"."""
     return "; ".join(f"{_and_list(gs)} at {label}"
-                     for label, gs, _r, _b in parastate_summary())
+                     for label, gs, _r, _b in parastate_summary(year))
 
 
 def _and_list(names: list[str]) -> str:
@@ -401,9 +448,13 @@ def _and_list(names: list[str]) -> str:
     return f"{', '.join(names[:-1])} and {names[-1]}"
 
 
-def at_large_bids(group: str | None) -> int:
+def at_large_bids(group: str | None, year: int | None = None) -> int:
     """How many committee at-larges `group` adds on top of its road
-    qualifiers — 0 for every class outside the Parastate groups."""
+    qualifiers — 0 for every class outside the Parastate groups, and 0 for a
+    16-team State pilot class from its era (`sixteen_state`): the committee
+    selects, seeds and publishes nothing for it."""
+    if sixteen_state(group, year):
+        return 0
     return AT_LARGE_BIDS.get(group or "", 0)
 
 # THE LEAGUE CARD PLAYS 3S/4D (owner rule 2027-08, swapped from the original 5S/2D so
@@ -1226,11 +1277,19 @@ STATE_FIELD_DEFAULT = 24
 QUALIFIER_NAME = "Qualifiers Round"
 
 
-def state_field_size(group: str) -> int:
+def state_field_size(group: str, year: int | None = None) -> int:
     """The classification's State field — in a Parastate class (`ATLARGE_GROUPS`)
     the ROAD's half of it, which the committee's `at_large_bids(group)` sit on top
     of. There is no scaling: every class plays the owner's table at full size, and
-    a pool too small for it is a broken fixture, not a format to accommodate."""
+    a pool too small for it is a broken fixture, not a format to accommodate.
+
+    `year` is the SEASON being asked about. From `sixteen_state_era()` a pilot
+    class (`SIXTEEN_STATE_GROUPS`) crowns from `SIXTEEN_STATE_FIELD`; with no year
+    the answer is the table, which is what every pre-pilot season was played at.
+    ‼️ Pass the season whenever there is one — the table is not the pilot's
+    field, and a caller that drops the year describes the wrong event."""
+    if sixteen_state(group, year):
+        return SIXTEEN_STATE_FIELD
     return STATE_FIELD.get(group, STATE_FIELD_DEFAULT)
 
 
@@ -1254,9 +1313,10 @@ def _even(n: int) -> int:
     return max(0, n - (n % 2))
 
 
-def recovery_shape(group: str) -> dict:
+def recovery_shape(group: str, year: int | None = None) -> dict:
     """The PROJECTED size of every recovery round for `group`, from the constants
-    alone — no season required.
+    alone — no season required (`year`, when given, only decides whether the
+    16-team State pilot applies — `sixteen_state`).
 
     ‼️ This is a projection, not the live computation. `_recovery` sizes its rounds
     off the pools it is actually handed, because it must degrade rather than crash
@@ -1270,10 +1330,20 @@ def recovery_shape(group: str) -> dict:
     regional_field = PROTECTED + ward_champs
     reg_losers = regional_field // 2                  # Regionals halve
     champions = zon_losers = reg_losers // 2          # Zonals halve again
-    berths = max(0, state_field_size(group) - champions)
+    berths = max(0, state_field_size(group, year) - champions)
 
     sr = _even(reg_losers)
     sr_w, sr_l = sr // 2, sr - sr // 2
+    if sixteen_state(group, year):
+        # ‼️ THE 16-TEAM STATE PILOT (JHSAA rule 2099): recovery ENDS at
+        # Semi-State. Super Regionals and Semi-State run exactly as below; the
+        # Semi-State winners are the only recovery qualifiers and nothing after
+        # them convenes — no Divisionals, no Semi-Conference, no Conference,
+        # and therefore no body reservoir. 8 Zonal + 8 Semi-State = 16.
+        ss = _even(sr_w + zon_losers)
+        return {"berths": berths, "champions": champions,
+                "super_regional": sr, "semi_state": ss, "divisional": 0,
+                "semi_conference": 0, "conference": 0, "body_seats": 0}
     # ‼️ THE RECOVERY BLOCKS ARE EQUAL, AND THE LADDER'S OWN GEOMETRY MAKES THEM
     # SO (owner rule 2026-08, the rebalance the Specials were supposed to bring
     # and never got). Semi-State is EXACTLY the Super Regional winners plus the
@@ -1312,7 +1382,7 @@ def recovery_shape(group: str) -> dict:
             "body_seats": body_seats}
 
 
-def sponsor_floor(group: str) -> int:
+def sponsor_floor(group: str, year: int | None = None) -> int:
     """The fewest sponsors per gender a classification needs to play its own format.
 
     ‼️ THE SEMI-CONFERENCE IS WHAT SETS THIS, and it is a DATA invariant, not a
@@ -1330,7 +1400,12 @@ def sponsor_floor(group: str) -> int:
     to run dry. They now run the same dynamic ladder as everyone else, so they
     take the same two gates — and the answer is unchanged at 48, because a
     24-field Semi-Conference wants only 8 bodies and the ward gate dominates."""
-    shape = recovery_shape(group)
+    shape = recovery_shape(group, year)
+    if sixteen_state(group, year):
+        # The pilot convenes no Conference, so there is no body reservoir to run
+        # dry — but Wards must still fill, which is the ward gate below on its
+        # own. Returning 0 here (the "no Conference" branch) would drop it.
+        return PROTECTED + WARD_FIELD
     # ‼️ THE WARD GATE IS A FLOOR OF ITS OWN (2026-08). The body-reservoir term
     # alone returned 44 for a 32-field class — but 44 sponsors minus PROTECTED
     # leaves 28 Sectional entrants for a 32-team Ward field, so Wards ran SHORT
@@ -3147,6 +3222,7 @@ def reset_schools() -> None:
     _intl_era_cache.clear()
     _jv_parastate_era_cache.clear()
     _jv_qualifying_era_cache.clear()
+    _sixteen_state_era_cache.clear()
     _sibling_era_cache.clear()
     _town_cache.clear()
     _expo_cache.clear()
@@ -3423,6 +3499,26 @@ def jv_qualifying_era() -> int:
     return _resolve_era("jhsaa_jv_qualifying_era", _jv_qualifying_era_cache)
 
 
+_sixteen_state_era_cache: dict = {}
+
+
+def sixteen_state_era() -> int:
+    """The first SEASON the 16-team State pilot is played (JHSAA rule 2099) — the
+    `jv_qualifying_era` idiom, gating on the SEASON.
+
+    A year gate rather than a flag because the postseason is ARCHIVED: a save
+    holding seasons played at 32, 40 or 48 must keep reading them as the years
+    they were. `_resolve_era` resolves to the first season the save has not
+    archived — on the owner's save, which is through 2098, that is 2099 — so the
+    pilot applies from the next unplayed season and never behind it. A fresh save
+    gets 0 and plays the pilot from its first season. An explicit `worldconfig`
+    value (`jhsaa_sixteen_state_era`) pins it, like every other era.
+
+    ‼️ Resolve it once per season, never per dual or per team: a miss opens a
+    SQLite connection (the fingerprint-in-a-loop trap)."""
+    return _resolve_era("jhsaa_sixteen_state_era", _sixteen_state_era_cache)
+
+
 def exchange_era() -> int:
     """The first SEASON that has exchange students in this save — the `name_era`
     idiom (`_resolve_era`), and load-bearing for the same reason.
@@ -3678,7 +3774,7 @@ ERA_SETTINGS = ("jhsaa_name_era", "jhsaa_dev_era", "jhsaa_talent_era",
                 "jhsaa_career_era", "jhsaa_exchange_era", "jhsaa_intl_era",
                 "jhsaa_band_era", "jhsaa_style_era", "jhsaa_jv_parastate_era",
                 "jhsaa_jv_qualifying_era",
-                "jhsaa_sibling_era")
+                "jhsaa_sibling_era", "jhsaa_sixteen_state_era")
 
 
 def reset_eras() -> None:
@@ -9976,8 +10072,8 @@ def _recovery_round(pool: list[TeamSeason], *, phase: str,
 def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
               prestate: dict, zonal_champs: list, district_champs: list[str],
               power: dict, *,
-              seed: int) -> tuple[dict, dict, dict, dict, dict,
-                                  list, list[str], dict]:
+              seed: int, year: int | None = None) -> tuple[dict, dict, dict, dict, dict,
+                                                          list, list[str], dict]:
     """The whole recovery path for one group: who still needs a berth, who gets
     another chance, and the FOUR rounds that decide it.
 
@@ -10033,7 +10129,8 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     # every reader (`jhsaa_postseason_result`, the ledger chip) already handles
     # the key, so retiring the rule does not have to rewrite history.
     district_qualifiers: list[str] = []
-    berths = max(0, state_field_size(group) - len(zonal_champs))
+    pilot = sixteen_state(group, year)
+    berths = max(0, state_field_size(group, year) - len(zonal_champs))
     reg_losers = [by_name[n] for n in _losers(prestate, 0)]
     zon_losers = [by_name[n] for n in _losers(prestate, 1)]
     # Walk back down the ladder for bodies: Ward, then Sectional, then Area
@@ -10086,6 +10183,33 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     if len(ss_pool) % 2:
         ss_pool = ss_pool[:-1]
     ss_arc, ss_winners = _recovery_round(ss_pool, phase="semi_state", rng=rng)
+
+    if pilot:
+        # ‼️ THE 16-TEAM STATE PILOT (JHSAA rule 2099): RECOVERY ENDS HERE. The
+        # Semi-State winners are the only recovery qualifiers; Semi-State losers,
+        # Super Regional losers and every Ward/Sectional/Area loser are done, and
+        # a district champion has had its protected seat and nothing more.
+        #
+        # ‼️ AN EXPLICIT RETURN, NOT THE ARITHMETIC. With 8 berths the equations
+        # below happen to size the Divisionals and the Conference at zero — but
+        # only while Semi-State delivers all eight. A thin Semi-State (fewer than
+        # eight winners) would leave berths outstanding and the formulas would
+        # quietly reopen the Divisionals to fill them. The pilot runs short with
+        # byes to the top seeds instead; nothing reopens a removed round.
+        # The arcs keep their "did not convene" shape, so no caller branches.
+        atr_used = {t.school.name: atr(t, power) for t in by_name.values()}
+        if len(ss_winners) != berths:
+            log.warning("JHSAA %s 16-team State pilot: Semi-State delivered %d "
+                        "of %d berths — State runs short", group,
+                        len(ss_winners), berths)
+        return (sr_arc, ss_arc,
+                {"field": [], "rounds": [[]], "survivors": [],
+                 "round_names": [_RECOVERY_NAMES["divisional"]]},
+                {"field": [], "rounds": [[]], "survivors": [],
+                 "round_names": [_RECOVERY_NAMES["semi_conference"]]},
+                {"field": [], "rounds": [[]], "survivors": [],
+                 "round_names": [_RECOVERY_NAMES["conference"]]},
+                list(ss_winners), district_qualifiers, atr_used)
 
     # Divisionals: the berths Semi-State could not fill, contested by the best
     # Semi-State losers. `L = 0` is legal and means the round did not convene.
@@ -10787,6 +10911,73 @@ def run_state(field: list[TeamSeason], *, seed: int, champions: int = 8) -> dict
             "field": [t.school.name for t in field]}
 
 
+def sixteen_state_seeds(zonal_champs: list[TeamSeason],
+                        epi_winners: list[TeamSeason], semi_state: list[TeamSeason],
+                        power: dict | None) -> list[TeamSeason]:
+    """The 16-team State pilot's field in SEED ORDER (JHSAA rule 2099).
+
+    Seeds 1-8 are the Zonal champions in Epiregional order — the four winners,
+    then the four losers, each block ordered on the seeding ATR — exactly the
+    first eight lines the Parastate classes' road already takes. Seeds 9-16 are
+    the Semi-State winners, ordered the way the current seeding orders them
+    (`seed_atr` over the whole field). Unlike `state_seed_order`, a non-champion
+    can never take a top-eight line here: the pilot's two doors ARE its seeding.
+    """
+    field = list(zonal_champs) + list(semi_state)
+    key = _seed_atr_key(seed_atr(field, power))
+    win_names = {t.school.name for t in epi_winners}
+    epi_w = sorted((t for t in zonal_champs if t.school.name in win_names), key=key)
+    epi_l = sorted((t for t in zonal_champs if t.school.name not in win_names),
+                   key=key)
+    return epi_w + epi_l + sorted(semi_state, key=key)
+
+
+def run_state_sixteen(zonal_champs: list[TeamSeason], epi_winners: list[TeamSeason],
+                      semi_state: list[TeamSeason], power: dict | None, *,
+                      seed: int) -> dict:
+    """The 16-team State pilot's draw (JHSAA rule 2099): `sixteen_state_seeds` on
+    STRICT seed lines — 1v16, 8v9, 4v13, 5v12 | 2v15, 7v10, 3v14, 6v11 — and FIXED
+    (a winner takes the beaten seed's line; nothing is re-paired).
+
+    ‼️ STRICT, NOT TIERED, AND ONLY HERE (owner decision 2026-09). Every other
+    State draw goes through `run_state` → `seeded_draw`, which fixes seeds 1-2 and
+    shuffles the rest within their tiers because a class's seeding is an estimated
+    ordering. The pilot's field is two defined doors — eight Zonal champions over
+    eight Semi-State winners — which is the TOC's situation (ordering proven
+    teams), so it takes the TOC's lines (`seed_line_slots`). The standing
+    "State stays tiered" rule is untouched for every non-pilot class.
+
+    A full 16 is a byeless bracket: no Qualifiers Round, no `round_names`, and the
+    first round is the Octofinals (16 alive — `world._round_label`). A SHORT field
+    (a thin Semi-State) leaves the highest seed lines empty, so the byes fall to
+    the TOP seeds; nothing is reopened to fill it. Returned in `run_state`'s shape,
+    so it renders on the shared bracket tree unchanged."""
+    field = sixteen_state_seeds(zonal_champs, epi_winners, semi_state, power)
+    rng = random.Random(seed)
+    slots = seed_line_slots(field)
+    rounds: list[list[dict]] = []
+    while len(slots) > 1:
+        games, nxt = [], []
+        for i in range(0, len(slots), 2):
+            a, b = slots[i], slots[i + 1]
+            if a is None or b is None:
+                nxt.append(a or b)          # a missing seed line is the top seed's bye
+                continue
+            res = play_dual(a, b, seed=rng.randrange(1 << 30), phase="state")
+            win = a if res.winner == 0 else b
+            games.append({"home": a.school.name, "away": b.school.name,
+                          "home_points": res.home_points,
+                          "away_points": res.away_points,
+                          "winner": win.school.name})
+            nxt.append(win)
+        if games:
+            rounds.append(games)
+        slots = nxt
+    return {"champion": slots[0].school.name if slots and slots[0] else None,
+            "rounds": rounds, "round_names": [],
+            "field": [t.school.name for t in field]}
+
+
 def run_state_parastate(seeds: list[TeamSeason], *, byes: int, seed: int,
                         meta: int = 0) -> dict:
     """The Parastate State event for `ATLARGE_GROUPS` (owner spec 2026-09;
@@ -10914,6 +11105,24 @@ def run_state_48(seeds: list[TeamSeason], *, seed: int) -> dict:
     return run_state_parastate(seeds, byes=16, seed=seed)
 
 
+def seed_line_slots(field: list) -> list:
+    """`field` (in SEED ORDER) on the standard STRICT seed lines of the next power
+    of two, `None` where a seed does not exist — the TOC's draw, and the 16-team
+    State pilot's (JHSAA rule 2099).
+
+    Seed s meets seed (m+1-s) in round one and the quarters/halves nest so 1 and
+    2 can only meet in the final. For 16: (1,16)(8,9)(4,13)(5,12) |
+    (2,15)(7,10)(3,14)(6,11). A missing seed is always one of the HIGHEST
+    numbers, so the byes it leaves fall to the TOP seeds by construction — the
+    same rule at every count, never a special case. Unlike `seeded_draw` nothing
+    is shuffled within a tier: this is rank for rank."""
+    order = [1]
+    while len(order) < len(field):
+        m = 2 * len(order)
+        order = [s for a in order for s in (a, m + 1 - a)]
+    return [field[s - 1] if s <= len(field) else None for s in order]
+
+
 def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
     """The TOURNAMENT OF CHAMPIONS — one dual-team champion for all of Jefferson.
 
@@ -10960,15 +11169,7 @@ def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
                      "home_points": res.home_points, "away_points": res.away_points,
                      "winner": win.school.name}
 
-    # The standard seed-line order: seed s meets seed (m+1-s) in round one, and
-    # the quarters/halves nest so 1 and 2 can only meet in the final. For 16:
-    # (1,16)(8,9)(4,13)(5,12) | (2,15)(7,10)(3,14)(6,11).
-    order = [1]
-    while len(order) < len(field):
-        m = 2 * len(order)
-        order = [s for a in order for s in (a, m + 1 - a)]
-    slots: list[TeamSeason | None] = [
-        field[s - 1] if s <= len(field) else None for s in order]
+    slots = seed_line_slots(field)
     rounds: list[list[dict]] = []
     while len(slots) > 1:
         games, nxt = [], []
@@ -11970,7 +12171,11 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
           _ov.jhsaa_band_version(), _prior_fingerprint(prior),
           # ‼️ AND THE COACHING STAFFS (owner spec 2026-09): a season played under a
           # different staff is a different season. Empty (no staff) keys like before.
-          _staff_fingerprint(staff))
+          _staff_fingerprint(staff),
+          # ‼️ AND THE 16-TEAM STATE PILOT'S GATE (JHSAA rule 2099): the same
+          # season played on either side of `sixteen_state_era` is two different
+          # postseasons, and the era is a worldconfig value a save can re-pin.
+          sixteen_state(SIXTEEN_STATE_GROUPS[0], year))
     hit = _season_cache.get(ck)
     if hit is not None:
         return hit
@@ -12164,7 +12369,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
         sr, ss, dv, sc, cf, quals, dq, atr_used = _recovery(
             group, by_name_g, sectionals[group], wards[group], prestates[group],
             zonal_champs[group], district_champs[group], post_power,
-            seed=seed + hash(group) % 9973 + 16223)
+            seed=seed + hash(group) % 9973 + 16223, year=year)
         super_regionals[group], semi_states[group] = sr, ss
         divisionals[group], semi_conferences[group] = dv, sc
         conferences[group] = cf
@@ -12174,6 +12379,21 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     special_challengers: dict[str, dict] = {}
     state_pools: dict[str, list] = {}
     for group in GROUPS:
+        if sixteen_state(group, year):
+            # ‼️ THE 16-TEAM STATE PILOT (JHSAA rule 2099): no Special
+            # Challengers, no State Specials and no emergency reconciliation.
+            # The road's recovery qualifiers ARE the Semi-State winners, and a
+            # Semi-State that delivered fewer than eight leaves State short —
+            # the draw byes its top seeds rather than reopening a removed round.
+            # Both arcs keep their "did not convene" shape for every reader.
+            special_challengers[group] = {
+                "field": [], "rounds": [[]], "survivors": [],
+                "round_names": [SPECIAL_CHALLENGER_NAME], "head": []}
+            state_specials[group] = {
+                "field": [], "rounds": [[]], "survivors": [],
+                "round_names": [STATE_SPECIAL_NAME], "head": []}
+            state_pools[group] = list(recovery_q[group])
+            continue
         by_name_g = {t.school.name: t
                      for ts in by_group[group].values() for t in ts}
         # ‼️ CONFERENCE WINNERS DO NOT QUALIFY (owner rule 2026-08): they advance
@@ -12288,6 +12508,16 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
         # `champions=STATE_BYES` keeps `run_state`'s bye budget and expansion
         # rule exactly where they were, so every draw keeps its shape: 8 single
         # byes in a 24, 8 double byes in a 40, placement only in a 32.
+        if sixteen_state(group, year):
+            # ‼️ THE 16-TEAM STATE PILOT (JHSAA rule 2099): no committee, no
+            # Metastate, no Parastate. The committee selects, seeds and
+            # publishes NOTHING for a pilot class (`committee` None, the
+            # archive's "this class has no committee" value).
+            committee_by_group[group] = None
+            states[group] = run_state_sixteen(
+                zonal_champs[group], epi_winners[group], state_pools[group],
+                final_power, seed=seed + hash(group) % 9973 + 12281)
+            continue
         if group in ATLARGE_GROUPS:
             # THE PARASTATE FIELD (owner spec 2026-09; 8A/9A joined and 7A went
             # to 8 bids 2026-09). The road is untouched — its 32 qualifiers are
