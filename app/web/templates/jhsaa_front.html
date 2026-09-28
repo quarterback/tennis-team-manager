@@ -18,7 +18,7 @@
 {%- endmacro %}
 
 {{ jh_header(view.scope, u, 'front', 'The ' ~ view.season_year|cal ~ ' Season', '',
-             [('Season', view.season_year)] if view.ready else [], classless=true) }}
+             [('Season', view.season_year|cal)] if view.ready else [], classless=true) }}
 
 <div class="jh-shell jh-front">
 {% if not view.ready %}

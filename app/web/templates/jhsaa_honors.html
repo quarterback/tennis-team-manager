@@ -6,7 +6,7 @@
 {{ jh_header(view.scope, u, 'honors', view.group ~ ' Honors',
              'Player of the Year, All-State, All-Region and All-District — selected on
               this season\'s résumé, not on ability ratings. Every season is archived.',
-             [('Season', view.season_year),
+             [('Season', view.season_year|cal),
               ('All-State', view.teams|map(attribute='players')|map('length')|sum),
               ('Regions', view.regions|length),
               ('All-Region', view.regions|sum(attribute='n')),

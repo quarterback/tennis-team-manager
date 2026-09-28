@@ -424,13 +424,13 @@
         {% if view.transfer_moves %}
         {% for m in view.transfer_moves %}
         <div class="bit" style="display:flex;align-items:center;gap:8px">
-          <span>{{ m.from }} → <b>{{ m.to }}</b>, effective the {{ m.year }} offseason</span>
+          <span>{{ m.from }} → <b>{{ m.to }}</b>, effective the {{ m.year|cal }} offseason</span>
           <form method="post" action="{{ url_for('editor_jhsaa_transfer') }}" style="display:inline">
             <input type="hidden" name="gender" value="{{ view.gender }}">
             <input type="hidden" name="jh_pid" value="{{ view.pid }}">
             <input type="hidden" name="jh_from_school" value="{{ view.school }}">
             <input type="hidden" name="do" value="undo">
-            <input type="hidden" name="jh_undo_year" value="{{ m.year }}">
+            <input type="hidden" name="jh_undo_year" value="{{ m.year|cal }}">
             <input type="hidden" name="u" value="{{ u }}">
             <button type="submit" class="bl-pill" style="cursor:pointer">Undo</button>
           </form>

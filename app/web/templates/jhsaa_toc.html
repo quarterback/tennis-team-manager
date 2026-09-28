@@ -8,7 +8,7 @@
              'Every classification champion in one draw, seeded on the TOSS Power Index
               rather than on the size of the school — the bottom four play in, and the
               winner is the overall champion of Jefferson.',
-             [('Season', view.season_year), ('Field', view.field_n)] if view.ready else []) }}
+             [('Season', view.season_year|cal), ('Field', view.field_n)] if view.ready else []) }}
 
 <div class="jh-shell">
 {% if not view.ready %}

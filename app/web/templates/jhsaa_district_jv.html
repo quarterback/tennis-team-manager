@@ -10,8 +10,8 @@
    every level, so "Halbrook Basin District" alone is five different leagues. #}
 {{ jh_header(view.scope, u, 'districts',
              view.ident ~ ' ' ~ view.flight_name, '',
-             [('Season', view.season_year), ('Draw', view.field_n)] if view.ready
-             else [('Season', view.season_year)]) }}
+             [('Season', view.season_year|cal), ('Draw', view.field_n)] if view.ready
+             else [('Season', view.season_year|cal)]) }}
 
 <div class="jh-shell">
 

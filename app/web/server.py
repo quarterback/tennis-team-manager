@@ -1441,17 +1441,19 @@ def create_app() -> Flask:
                                    default_year=default_year)
         from app.research_export import ExportError, export_zip, export_zip_bulk
         family = request.form.get("scope", "jhsaa").strip().lower()
+        # The form speaks DISPLAYED years (a backdated save's user thinks in
+        # them); the export engine and its zips stay on identity calendar years,
+        # so the corpus stays continuous across the lab-to-college integration.
+        # A backdated save's earliest seasons display well before 2020, so the
+        # sanity bounds apply to the IDENTITY year (displayed + offset), never
+        # the typed number. The download filename keeps the year the user typed.
+        _off = wd.display_offset()
         try:
             year = int(request.form.get("year", ""))
-            if not 2020 <= year <= 2200:
+            if not 2020 <= year + _off <= 2200:
                 raise ValueError
         except ValueError:
-            abort(400, "Year must be between 2020 and 2200.")
-        # The form speaks DISPLAYED years (a backdated save's user thinks in them);
-        # the export engine and its zips stay on identity calendar years, so the
-        # corpus stays continuous across the lab-to-college integration. Convert
-        # once here; the download filename keeps the year the user typed.
-        _off = wd.display_offset()
+            abort(400, "Year is outside this save's archive range.")
         gender = request.form.get("gender", "girls" if family == "jhsaa" else "men")
         both_genders = request.form.get("both_genders") == "on"
         year_to_raw = request.form.get("year_to", "").strip()
@@ -1473,7 +1475,7 @@ def create_app() -> Flask:
         if year_to_raw:
             try:
                 year_to = int(year_to_raw)
-                if not year <= year_to <= 2200:
+                if not (year <= year_to and 2020 <= year_to + _off <= 2200):
                     raise ValueError
             except ValueError:
                 abort(400, "End year must be a valid year on or after the start year.")

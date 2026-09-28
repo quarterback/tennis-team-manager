@@ -80,3 +80,35 @@ def test_attach_college_builds_at_the_current_year_and_sets_the_offset(monkeypat
         world.attach_college()
     world.reset()
     assert world.display_offset() == 0        # reset clears the backdate
+
+
+def test_a_rendered_page_shows_the_backdated_calendar(monkeypatch):
+    """The reviewer-grade check: helpers alone cannot see a template that
+    renders an identity year raw. Under a nonzero offset the JHSAA front page's
+    title must carry the DISPLAYED season, never the identity one."""
+    world.reset()
+    _clear_offset()
+    world.get_or_create_jhsaa_only(salt="render-offset-test")
+    # A jhsaa-only world through the plain route serves the wrong-database
+    # diagnostic by design — attach a (stubbed) college so the page renders.
+    monkeypatch.setattr(world, "UNIVERSES", [("D1", "men")])
+    monkeypatch.setattr(
+        world, "_build_universe",
+        lambda args: (args[2], args[3],
+                      {"Testville": [{"pid": "p1", "name": "A Tester"}]}))
+    world.attach_college()
+    try:
+        world.set_display_offset(66)          # identity season 2027 → shows 1961
+        from app.web.server import create_app
+        app = create_app()
+        app.config["TESTING"] = True
+        r = app.test_client().get("/jhsaa")
+        assert r.status_code == 200
+        html = r.data.decode()
+        # The masthead's HS-season chip and the header carry the displayed
+        # season; the identity year must never render raw anywhere on the page.
+        assert "1961" in html
+        assert "2027" not in html
+    finally:
+        _clear_offset()
+        world.reset()

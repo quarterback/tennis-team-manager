@@ -21,7 +21,7 @@
              'Nine independent rating systems and their composite — parallel to TOSS and
               the seeding ATR, never a replacement. σ is the disagreement measure: a
               high-σ team is controversial by construction, not by opinion.',
-             [('Season', view.season_year), ('Teams', view.rows|length),
+             [('Season', view.season_year|cal), ('Teams', view.rows|length),
               ('Systems', view.systems|length)] if view.ready else []) }}
 
 <div class="jh-shell">

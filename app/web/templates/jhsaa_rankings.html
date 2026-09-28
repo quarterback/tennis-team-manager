@@ -18,7 +18,7 @@
 {{ jh_header(view.scope, u, 'rankings', view.group ~ ' Rankings',
              'Every program in the classification, in the order the association itself
               ranks them — the TOSS Power Index, with the ATR the postseason is seeded on beside it.',
-             [('Season', view.season_year), ('Programs', view.rows|length),
+             [('Season', view.season_year|cal), ('Programs', view.rows|length),
               ('Qualified', view.qualified)] if view.ready else []) }}
 
 <div class="jh-shell">

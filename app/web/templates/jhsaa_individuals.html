@@ -15,7 +15,7 @@
    other flight on this page. The class rail stays live for the varsity flights
    you would switch back to. #}
 {{ jh_header(view.scope, u, 'individuals', view.heading, '',
-             [('Season', view.season_year), ('Draw', view.field_n), ('Seeds', view.n_seeds)] if view.ready else []) }}
+             [('Season', view.season_year|cal), ('Draw', view.field_n), ('Seeds', view.n_seeds)] if view.ready else []) }}
 
 <div class="jh-shell">
 

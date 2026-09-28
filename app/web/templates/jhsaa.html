@@ -7,7 +7,7 @@
 {{ jh_header(view.scope, u, 'state',
              'JHSAA ' ~ view.group,
              '',
-             [('Season', view.season_year), ('Class', view.group)] if view.ready else []) }}
+             [('Season', view.season_year|cal), ('Class', view.group)] if view.ready else []) }}
 
 <div class="jh-shell">
 {% if not view.ready %}

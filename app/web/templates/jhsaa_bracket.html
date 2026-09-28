@@ -7,7 +7,7 @@
 {{ jh_header(view.scope, u, 'bracket',
              view.group ~ ' State Tournament',
              '',
-             [('Season', view.season_year), ('Field', view.field_n)] if view.ready else []) }}
+             [('Season', view.season_year|cal), ('Field', view.field_n)] if view.ready else []) }}
 {# no format microcopy under the title (owner, 2026-09): the dual format varies
    by class (8A/9A play 4S/5D) and moves by owner decision — a hardcoded line
    here was inaccurate and would rot again. #}

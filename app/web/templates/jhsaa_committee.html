@@ -13,7 +13,7 @@
               ~ view.seats ~ ' committee at-larges, always seeded ' ~ (view.road_n + 1) ~ '-'
               ~ view.field_n ~ '. Five members, each a fixed published philosophy over the nine
               computer systems — every selection traces to five ballots, never a coin flip.',
-             [('Season', view.season_year), ('At-larges', view.selected|length),
+             [('Season', view.season_year|cal), ('At-larges', view.selected|length),
               ('Auto bids', view.auto|length), ('Locks', view.locks|length)]
              if view.ready else []) }}
 

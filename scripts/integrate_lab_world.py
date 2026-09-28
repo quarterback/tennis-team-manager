@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import argparse
 import os
-import shutil
 import sqlite3
 import sys
 
@@ -83,8 +82,17 @@ def main() -> int:
         print("read-only preflight — re-run with --apply to integrate.")
         return 0
 
-    print("copying …")
-    shutil.copy2(src, dst)
+    print("copying (SQLite backup API — a consistent snapshot even if the lab "
+          "server is open or the last advance left WAL pages unmerged) …")
+    # NEVER a plain file copy: under WAL, committed rows live in the -wal file
+    # until a checkpoint, so copying only the main database file can hand the
+    # target FEWER archive rows than the preflight just reported — an
+    # incomplete integrated save with nothing raised. The backup API reads a
+    # single consistent snapshot of the whole database, side files included.
+    with sqlite3.connect(f"file:{src}?mode=ro", uri=True) as sconn, \
+         sqlite3.connect(dst) as dconn:
+        sconn.backup(dconn)
+    sconn.close(); dconn.close()
     # Bind the app to the COPY before any app import resolves the db path.
     os.environ["TENNIS_DB_PATH"] = dst
     os.environ.pop("JHSAA_LAB_MODE", None)

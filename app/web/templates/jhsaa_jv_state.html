@@ -19,7 +19,7 @@
              'The JV team championship — statewide, no classifications. Districts earn
               berths on their JV record, twenty regions crown champions, and sixteen
               at-large selections play a Parastate round to join them.',
-             ([('Season', view.season_year), ('Entered', view.field_n),
+             ([('Season', view.season_year|cal), ('Entered', view.field_n),
                ('Regions', view.region_n)]
               + ([('At-large', view.at_large_n)] if view.at_large_n else [])
               + [('Draw', view.state_field_n)])
