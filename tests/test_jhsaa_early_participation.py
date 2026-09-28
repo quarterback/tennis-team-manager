@@ -110,8 +110,10 @@ def test_an_early_participant_is_the_same_person_as_the_freshman_they_become(arc
     for pid, p in eighth.items():
         q = ninth[pid]
         assert q.name == p.name and q.entry_year == p.entry_year == 2028
-        # they grew, and the displayed ceiling never fell
-        assert q.current_overall() > p.current_overall()
+        # they grew (on the unrounded grade — the salt is fresh per world, and a
+        # year's growth can sit inside one rounding step of the displayed OVR),
+        # and the displayed ceiling never fell
+        assert q._attrs().overall_grade() > p._attrs().overall_grade()
         assert q.ceiling_overall() >= p.ceiling_overall() - 1e-9
 
 
@@ -246,8 +248,74 @@ def test_the_cascade_stops_at_the_first_tier_with_a_seat(proposal):
     for m in proposal["moves"]:
         tiers = {o["tier"] for o in m["options"]}
         assert tiers == {m["tier"]}, m
-        assert m["rank"] == min(o["rank"] for o in m["options"])
+        # the row's seat is the FINAL projection: a later mover may have pushed
+        # him down the ladder, never off it, so it is at best the seat he took
+        assert m["rank"] >= min(o["rank"] for o in m["options"])
         assert order[m["tier"]] >= 0
+
+
+def _slate_teams(archived, data, gender):
+    """Every team of `gender` with the slate's moves applied, the way the roster
+    build will apply them once committed."""
+    w, salt = archived["world"], archived["salt"]
+    prior = wd.jhsaa_prior_for_season(2028, gender, w["id"])
+    staff = wd.jhsaa_staff_for_season(2028, gender, w["id"])
+    teams = {t.school.name: t for t in jh.district_teams(jh.load_schools(gender), 2028, salt,
+                                                       prior=prior, staff=staff)}
+    for m in [x for x in data["moves"] if x["gender"] == gender]:
+        p = next(x for x in teams[m["from"]].roster if x.pid == m["pid"])
+        teams[m["from"]] = jp._without(teams[m["from"]], m["pid"])
+        teams[m["to"]] = jp._with(teams[m["to"]], p, prior, 2028, salt)
+    return teams
+
+
+def test_every_emitted_mover_holds_a_v1_seat_with_the_whole_slate_applied(archived, proposal):
+    """The finding: a mover pushed off his seat by a later placement was still
+    proposed to it. Now a row is emitted only if the FINAL ladder seats him."""
+    for gender in ("girls", "boys"):
+        teams = _slate_teams(archived, proposal, gender)
+        for m in [x for x in proposal["moves"] if x["gender"] == gender]:
+            r = jp.v1_rank(teams[m["to"]], m["pid"])
+            assert r is not None, m
+            assert m["rank"] == r + 1
+    for s in proposal["stays"]:
+        assert s["pid"] not in {m["pid"] for m in proposal["moves"]}
+        assert "ovr" in s and "ladder" in s        # export keeps the number; the page never shows it
+
+
+def test_a_redirect_is_reprojected_and_a_bad_one_is_refused(archived, proposal):
+    w, salt = archived["world"], archived["salt"]
+    m = next(x for x in proposal["moves"] if len(x["options"]) > 1)
+    alt = next(o for o in m["options"] if o["school"] != m["to"])
+    data = jp.build(w["id"], 2028, salt, {m["pid"]: {"to": alt["school"]}})
+    r = next(x for x in data["moves"] if x["pid"] == m["pid"])
+    assert r["to"] == alt["school"] and r["redirected"]
+    teams = _slate_teams(archived, data, m["gender"])
+    assert jp.v1_rank(teams[alt["school"]], m["pid"]) == r["rank"] - 1
+    # two redirects onto one seat: both must still project, or the second fails
+    others = [x for x in data["moves"] if x["pid"] != m["pid"] and x["gender"] == m["gender"]]
+    if others:
+        o2 = others[0]
+        data2 = jp.build(w["id"], 2028, salt, {m["pid"]: {"to": alt["school"]},
+                                               o2["pid"]: {"to": alt["school"]}})
+        teams2 = _slate_teams(archived, data2, m["gender"])
+        # one gender: a school NAME is shared by its boys' and girls' teams
+        for x in [y for y in data2["moves"] if y["gender"] == m["gender"]]:
+            assert jp.v1_rank(teams2[x["to"]], x["pid"]) is not None
+    # a school outside every tier is refused, and the row says so
+    home_area = teams[m["from"]].school.area
+    out_of_reach = {home_area, *proposal["neighbors"].get(home_area, ())}
+    far = next((s.name for s in jh.load_schools(m["gender"])
+                if s.area not in out_of_reach), None)
+    if far:
+        data3 = jp.build(w["id"], 2028, salt, {m["pid"]: {"to": far}})
+        rows = [x for x in data3["moves"] + data3["stays"] if x["pid"] == m["pid"]]
+        assert rows and rows[0].get("redirect_failed") == far
+        assert rows[0].get("to") != far
+    # a drop never enters placement
+    data4 = jp.build(w["id"], 2028, salt, {m["pid"]: {"drop": True}})
+    assert m["pid"] not in {x["pid"] for x in data4["moves"]}
+    assert next(x for x in data4["stays"] if x["pid"] == m["pid"])["dropped"]
 
 
 def test_the_hold_opens_edits_apply_and_a_commit_moves_the_player(archived):
@@ -272,9 +340,19 @@ def test_the_hold_opens_edits_apply_and_a_commit_moves_the_player(archived):
     if redirected:
         r = next(m for m in final if m["pid"] == redirected["pid"])
         assert r["to"] == alt["school"] and r["redirected"]
-    # the page renders the open proposal
-    html = archived["client"].get("/jhsaa/portal").get_data(as_text=True)
-    assert "Commit" in html and victim["name"] in html
+    # the page renders the open proposal — SCOPED to the victim's sport and class,
+    # grouped by origin district, and with no rating on it
+    html = archived["client"].get(f"/jhsaa/portal?g={victim['gender']}"
+                                  f"&group={victim['from_class']}").get_data(as_text=True)
+    assert "Commit" in html and victim["name"] in html and "dropped by you" in html
+    assert victim["from_district"] in html
+    assert "Pot est." not in html and ">OVR<" not in html
+    other_class = [m for m in moves if m["from_class"] != victim["from_class"]
+                   and m["gender"] == victim["gender"]]
+    if other_class:
+        assert other_class[0]["name"] not in html
+    for cls in GATED:                      # the rail is the three gated classes
+        assert cls in html
     res = jp.commit(w)
     assert res["ok"] and res["moves"] == len(final)
     assert jp.pending(w["id"]) is None
@@ -292,6 +370,37 @@ def test_the_hold_opens_edits_apply_and_a_commit_moves_the_player(archived):
     assert [x["pid"] for x in jp.applied(w["id"])] == [x["pid"] for x in final]
     # released: the lab advance no longer holds on the portal
     assert not jp.due(fake)
+
+
+def test_an_early_graders_transfer_record_moves_them_only_where_they_may_go(archived):
+    """P2: transfer records apply to 7th/8th-grade rosters. A move to another
+    gated program takes effect; a move to a program that cannot roster an early
+    participant is ignored for that season — the player stays, never vanishes."""
+    salt = archived["salt"]
+    origin = _one("girls", "Group 3")
+    p = next(x for x in jh.build_roster(origin, 2027, salt) if x.grade == 7)
+    gated = next(s for s in jh.load_schools("girls")
+                 if s.classification in GATED and s.name != origin.name)
+    opened = _one("girls", OPEN)
+    rec = {"entry": p.entry_year}
+    assert jh.is_enrolled(rec, 2027) and jh.is_enrolled(rec, p.entry_year + 3)
+    assert not jh.is_enrolled(rec, 2026) and not jh.is_enrolled(rec, p.entry_year + 4)
+    try:
+        ov.set_jhsaa_transfer(p.pid, origin.name, "girls", p.entry_year,
+                              p.jhsaa["seat"], gated.name, 2027)
+        jh.reset_schools()
+        assert p.pid not in {x.pid for x in jh.build_roster(origin, 2027, salt)}
+        moved = next(x for x in jh.build_roster(gated, 2027, salt) if x.pid == p.pid)
+        assert moved.grade == 7 and moved.name == p.name
+        ov.clear_jhsaa_transfer(p.pid)
+        ov.set_jhsaa_transfer(p.pid, origin.name, "girls", p.entry_year,
+                              p.jhsaa["seat"], opened.name, 2027)
+        jh.reset_schools()
+        assert p.pid in {x.pid for x in jh.build_roster(origin, 2027, salt)}
+        assert p.pid not in {x.pid for x in jh.build_roster(opened, 2027, salt)}
+    finally:
+        ov.clear_jhsaa_transfer(p.pid)
+        jh.reset_schools()
 
 
 def test_pages_render_for_a_7th_grader(archived):

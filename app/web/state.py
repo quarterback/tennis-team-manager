@@ -5884,33 +5884,60 @@ def jhsaa_reclass_view(seed: int, gender: str, group: str | None = None,
 def jhsaa_portal_view(seed: int, gender: str, group: str | None = None,
                       year: int | None = None) -> dict:
     """The rising-freshman portal page (JHSAA rule 2100, `app/jhsaa_portal.py`):
-    the open proposal with the owner's edits applied, every mover's V1 options,
-    the players who had no V1 destination in reach, and the committed history.
-    BOTH genders on one page — the hold is one event, not one per gender."""
+    the open proposal — already built WITH the owner's edits — the players who
+    had no V1 destination in reach, and the committed history.
+
+    ‼️ SCOPED LIKE THE REST OF THE SECTION (owner review 2026-09): the page shows
+    ONE gender and ONE classification, its rows grouped by ORIGIN DISTRICT — the
+    classification → district hierarchy every other JHSAA surface reads in — never
+    the whole association on one screen. The class rail carries only the three
+    gated classes, since only their programs field early participants. The
+    proposal itself is still ONE event: the commit button commits the whole
+    slate, and the meta line says how much of it is in view."""
+    import app.jhsaa as jh
     import app.jhsaa_portal as jp
     import app.world as world
-    base = jhsaa_scope_view(seed, gender, group, year)
     w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    years = world.jhsaa_years(w["id"], g)
+    yr = (years[0] if years else w["year"]) if year is None else year
     pend = jp.pending(w["id"])
     moves, stays = [], []
     if pend:
         edits = pend.get("edits") or {}
-        final = {m["pid"]: m for m in jp.final_moves(pend)}
         for m in pend["data"]["moves"]:
-            e = edits.get(m["pid"]) or {}
-            f = final.get(m["pid"])
-            moves.append({**(f or m), "dropped": bool(e.get("drop")),
-                          "edited": bool(e), "proposed_to": m["to"]})
-        stays = pend["data"].get("stays") or []
-    moves.sort(key=lambda m: (m["gender"], -m["ovr"]))
+            moves.append({**m, "dropped": False, "edited": m["pid"] in edits})
+        for st in pend["data"].get("stays") or []:
+            stays.append({**st, "edited": st["pid"] in edits})
     hist = jp.applied(w["id"])
+    groups = list(jh.EARLY_CLASSES)
+    mine = [m for m in moves if m["gender"] == g]
+    mine_st = [s for s in stays if s["gender"] == g]
+    if group not in groups:
+        # the first gated class with anything to show for this gender, else the first
+        group = next((c for c in groups
+                      if any(r["from_class"] == c for r in mine + mine_st)), groups[0])
+    in_view = [m for m in mine if m["from_class"] == group]
+    st_view = [s for s in mine_st if s["from_class"] == group]
+    districts: dict = {}
+    for m in in_view:
+        districts.setdefault(m["from_district"], {"district": m["from_district"],
+                                                  "moves": [], "stays": []})["moves"].append(m)
+    for st in st_view:
+        districts.setdefault(st["from_district"], {"district": st["from_district"],
+                                                   "moves": [], "stays": []})["stays"].append(st)
+    hist_view = [m for m in hist if m["gender"] == g and m.get("from_class") == group]
     seasons = sorted({m["season"] for m in hist}, reverse=True)
-    return {**base, "pending": pend, "moves": moves, "stays": stays,
-            "kept": sum(1 for m in moves if not m["dropped"]),
+    scope = _jh_scope(g, group, groups, yr, years, None, None)
+    return {"gender": g, "group": group, "groups": groups, "year": yr, "years": years,
+            "scope": scope, "pending": pend, "moves": moves, "stays": stays,
+            "kept": len(moves), "in_view": len(in_view), "stays_in_view": len(st_view),
+            "districts": [districts[k] for k in sorted(districts)],
+            "class_counts": {c: sum(1 for m in mine if m["from_class"] == c) for c in groups},
             "due": (jp.due(w) if not pend else False),
             "season": pend["season"] if pend else jp.upcoming_season(w),
-            "history": hist[-200:][::-1], "history_seasons": seasons,
-            "history_total": len(hist),
+            "history": hist_view[-200:][::-1], "history_seasons": seasons,
+            "history_total": len(hist), "history_in_view": len(hist_view),
             "tier_label": {"county": "same county", "area": "same area",
                            "neighbor": "neighbouring area"}}
 

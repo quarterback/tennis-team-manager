@@ -741,6 +741,13 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                 "maturity": m.get("maturity", ""),
                 "owner_redirected": int(bool(m.get("redirected"))),
                 "options": len(m.get("options") or ()),
+                # what the PAGE describes the player by (review 2026-09): the
+                # origin's projected ladder position vs its V1, and the 8th-grade
+                # season off `PriorSeason`
+                "from_district": m.get("from_district", ""),
+                "origin_ladder": m.get("ladder", ""), "origin_roster": m.get("roster_n", ""),
+                "grade8_apps": m.get("apps", ""), "grade8_wins": m.get("wins", ""),
+                "grade8_losses": m.get("losses", ""), "grade8_rank": m.get("prior_rank", ""),
             })
         for row in players:
             m = moved_pids.get(row["player_id"])
