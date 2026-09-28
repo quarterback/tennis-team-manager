@@ -573,7 +573,11 @@ def test_moving_a_head_sends_the_incumbent_to_the_free_pool(world_season):
 def test_a_staff_never_exceeds_four_seats(world_season):
     wid = world_season["world"]["id"]
     s = jh.load_schools("girls")[2]
-    have = [r["slot"] for r in jc.seats(wid, "girls", s.ident)]
+    # FILLED seats, not seat rows: an earlier test's carousel can leave a seat
+    # row vacant, and `resolve_slot` hands a vacant seat out before it counts.
+    def filled():
+        return [r["slot"] for r in jc.seats(wid, "girls", s.ident) if r["coach"]]
+    have = filled()
     while len(have) < 4:
         pool = jc.free_pool(wid)
         slot = jc.resolve_slot(wid, s.ident, "girls", "asst")
@@ -582,7 +586,7 @@ def test_a_staff_never_exceeds_four_seats(world_season):
                           world_season["season_year"])
         else:
             break
-        have = [r["slot"] for r in jc.seats(wid, "girls", s.ident)]
+        have = filled()
     if len(have) == 4:
         with pytest.raises(jc.StaffError):
             jc.resolve_slot(wid, s.ident, "girls", "asst")
