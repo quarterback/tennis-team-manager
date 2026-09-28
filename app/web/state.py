@@ -5872,6 +5872,40 @@ def jhsaa_reclass_view(seed: int, gender: str, group: str | None = None,
                             f"every {cfg['cycle']} seasons")}
 
 
+def jhsaa_portal_view(seed: int, gender: str, group: str | None = None,
+                      year: int | None = None) -> dict:
+    """The rising-freshman portal page (JHSAA rule 2100, `app/jhsaa_portal.py`):
+    the open proposal with the owner's edits applied, every mover's V1 options,
+    the players who had no V1 destination in reach, and the committed history.
+    BOTH genders on one page — the hold is one event, not one per gender."""
+    import app.jhsaa_portal as jp
+    import app.world as world
+    base = jhsaa_scope_view(seed, gender, group, year)
+    w = world.get_or_create(seed)
+    pend = jp.pending(w["id"])
+    moves, stays = [], []
+    if pend:
+        edits = pend.get("edits") or {}
+        final = {m["pid"]: m for m in jp.final_moves(pend)}
+        for m in pend["data"]["moves"]:
+            e = edits.get(m["pid"]) or {}
+            f = final.get(m["pid"])
+            moves.append({**(f or m), "dropped": bool(e.get("drop")),
+                          "edited": bool(e), "proposed_to": m["to"]})
+        stays = pend["data"].get("stays") or []
+    moves.sort(key=lambda m: (m["gender"], -m["ovr"]))
+    hist = jp.applied(w["id"])
+    seasons = sorted({m["season"] for m in hist}, reverse=True)
+    return {**base, "pending": pend, "moves": moves, "stays": stays,
+            "kept": sum(1 for m in moves if not m["dropped"]),
+            "due": (jp.due(w) if not pend else False),
+            "season": pend["season"] if pend else jp.upcoming_season(w),
+            "history": hist[-200:][::-1], "history_seasons": seasons,
+            "history_total": len(hist),
+            "tier_label": {"county": "same county", "area": "same area",
+                           "neighbor": "neighbouring area"}}
+
+
 def jhsaa_realignments_view(seed: int, gender: str, group: str | None = None,
                             cycle: int | None = None) -> dict:
     """The Realignments page: the INDEX of committed cycles (one line each) and

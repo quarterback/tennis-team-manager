@@ -1798,6 +1798,62 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     them (`_JH_NO_SQUAD`). The research export writes each squad dual ONCE from the
     V1 row with a `squad` column; the analytics sidecar drops `squad != ''` like JV.
     `tests/test_jhsaa_split_squads.py`.
+- **‼️ EARLY PARTICIPATION — 7th/8th-GRADERS AT 1A, 2A AND GROUP 3, FROM 2100 (JHSAA rule
+  2100, owner spec 2026-09, `jhsaa.EARLY_PARTICIPATION_FROM` / `EARLY_CLASSES` /
+  `early_seasons`, `docs/AAR-jhsaa-early-participation.md`).** NOT a middle-school
+  system: an early participant is a seat of a FUTURE freshman class of the same school,
+  rostered one or two seasons early — same pid, name and ceiling for six seasons, no
+  redshirt, no hand-off, no intake board (all three considered and rejected). The gate
+  reads `classification` (what the school IS), never `group`; Group 1/2 are 6A-9A and
+  3A-5A sized and deliberately OUT. Every squad level is open — the coach's ladder decides
+  V1/V2/V3/JV — and they COUNT toward `ROSTER_FLOOR` (owner). ‼️ Eligibility is read off
+  the class the school held THAT SEASON (`classification_in`, rewound through committed
+  reclass cycles) and GRANDFATHERED from 7th to 8th grade — archived rosters are rebuilt,
+  so a rule read off today's map would add or delete an old season's 7th-graders under
+  box scores that name them. Era-gated on the SEASON (`early_era`, the `exchange_era`
+  idiom). ‼️ `GRADES` STAYS `(9, 10, 11, 12)` — it sizes every cohort; early grades are
+  `EARLY_GRADES`, looped separately. `_gen_seat` reads its maturity tables at
+  `max(9, grade)` (rng draw only; the career model sets ability). `career_ability(early=)`
+  puts the pre-HS years BELOW the freshman start, realised at the odometer's rate, so a
+  kid who never dressed arrives exactly at the baseline start and one who played arrives
+  `Σ cap × (x − EXPO_FLOOR)` ahead. `cohort_size` sizes an early cohort at its FIRST early
+  season (`cohort_horizon`) or the roster changes between the 8th-grade and freshman
+  builds. `PROOF_GRADE` counts seasons IN the program.
+  - **‼️ MATURITY — every player, fires ONLY in archived 7th/8th/9th-grade seasons
+    (`player_maturity`, `maturity_events`, `career_ability(bloom=)`).** Hidden 0-1 draw
+    (u², most low). `P(fire) = MATURITY_RATE × maturity × played` — PLAYING TIME MOVES
+    THE ODDS AND NOTHING ELSE (varsity counts double JV, the odometer's own unit;
+    results never enter). An event is TWO INDEPENDENT draws (owner rule: POT and OVR
+    are not mechanically coupled): a **POT REVEAL** of `MATURITY_POT_CAP[grade] × u²`
+    to the hundredth of a percent (**7th→8th capped at 6.00%**, 8th/9th 15%), realised
+    into ability over the growth years left at `MATURITY_REALISE`; and a smaller
+    **growth spurt** on OVR at once. Never reads talent — an elite freshman blooms as
+    readily as a 30. HISTORY ONLY (read off the archived season, moves later builds).
+    Do NOT re-couple the two by scaling the ceiling and letting `_apply_career` scale
+    ability with it — that was the first draft. Instrument before retuning:
+    `players.csv` `maturity`/`bloom_*`; a whole-roster ceiling shift is still
+    regeneration, never a bloom.
+  - **‼️ THE RISING-FRESHMAN PORTAL IS HELD, and V1 is the GAME'S projection
+    (`app/jhsaa_portal.py`, `/jhsaa/portal`).** An early participant with NO projected V1
+    seat at the program they played for (`jhsaa._order` on `district_teams`' team with the
+    rung's own `prior`/`staff`, cut at `lineup_need("regular", group)` — never top-N by
+    OVR) is proposed a program that projects them ONTO its V1: same **county**, then same
+    **area**, then **neighbouring areas** (`area_neighbors`, off `coords.json`); NO league
+    preference; best seat in the first tier with one; any classification. ‼️ The trigger
+    reads the origin's ladder with NO portal move applied (a mover sent into a program
+    must never push a home kid into the portal — that churned the slate); destinations DO
+    see moves already sent to them; only movers are re-checked. Holds BOTH advances
+    (`advance_week` after the reclass hold; `advance_jhsaa_lab` raises `PortalHold`); an
+    empty slate never holds. A commit writes ordinary `set_jhsaa_transfer` rows;
+    `world_jhsaa_portal` is the portal's own record and feeds `jhsaa_portal.csv`.
+    Measured on the fixture: "best seat" often means the WEAKEST program in the county
+    (a 68 sent to a 6A whose No. 1 was a 41) and ~70% of rising early participants
+    moved — read both off the first real 2100 export before retuning.
+  - **‼️ `_expo_world_id` NEVER MEMOISES A NO-WORLD ANSWER** (found here, a product bug):
+    probed before the world row existed it cached None for the process and the odometer,
+    the talent pin and the class-move history all read "no archive", nothing raised.
+    `run_jhsaa` clears `_expo_cache` after archiving. A test fixture must resolve
+    `dbpath.resolve_db_path()` and `wd.WORLD_DB` to ONE file — the test asserts it.
 - **‼️ THE JV INDIVIDUAL STATE TOURNAMENTS — two CLASSLESS draws a gender (owner rule
   2026-08, `app/jhsaa_jv_individuals.py`).** JV Singles and JV Doubles, four state
   draws in all, and a VARIANT of `jhsaa_individuals` rather than a second engine —

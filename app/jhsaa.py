@@ -3988,20 +3988,32 @@ EARLY_CLASSES = ("1A", "2A", "Group 3")
 EARLY_GRADES = (7, 8)
 
 #: ‼️ MATURITY — the late bloomer (owner rule 2026-09). Every player carries a
-#: hidden `maturity` (0-1, most low: the square of a uniform), and in each of their
-#: 7th, 8th and 9th-grade seasons that is ARCHIVED — so for every program in the
-#: association the freshman year, and for an early participant all three — it may
-#: FIRE: chance `MATURITY_RATE × maturity × played`, where `played` is that season's
-#: exposure-odometer share (varsity appearances count double a JV one, which is the
-#: odometer's own `EXPO_JV_UNIT`). A fire lifts the CEILING by a draw from
-#: `MATURITY_BOOST`, the total capped at `MATURITY_CAP`, and because the career model
-#: is a share of the ceiling the current ability rises with it — the 30 who becomes a
-#: 60. HISTORY ONLY: a fire is read off the archived season, so it moves builds of the
-#: seasons AFTER it and never the season it happened in. Fires begin at `early_era()`.
+#: hidden `maturity` (0-1, most low: the square of a uniform). In each of their
+#: 7th, 8th and 9th-grade seasons that is ARCHIVED — for every program in the
+#: association the freshman year, and for an early participant all three — a
+#: MATURITY EVENT may fire. Only PLAYING TIME moves the odds: chance
+#: `MATURITY_RATE × maturity × played`, `played` being that season's exposure-
+#: odometer share (varsity appearances count double a JV one — the odometer's own
+#: `EXPO_JV_UNIT`). Results never enter it. An event does two INDEPENDENT things
+#: (owner rule: POT and OVR are not mechanically coupled):
+#:   * a POT REVEAL — the ceiling rises by a share of the base ceiling, capped PER
+#:     GRADE (`MATURITY_POT_CAP`, owner rule 2026-09): the 7th-grade event (7th→8th)
+#:     at 6.00%, the 8th- and 9th-grade events (8th→9th, 9th→10th) higher. Drawn to
+#:     the hundredth of a percent and skewed LOW (cap × u²) — modest for most, a lot
+#:     for a few — and it never reads the player's talent, so an elite freshman can
+#:     bloom as readily as a 30. `MATURITY_REALISE` of the new headroom joins the
+#:     player's yearly capacity over the growth years left, realised at the
+#:     odometer's rate like every capacity (the 30 who becomes a 60 over years);
+#:   * a GROWTH SPURT — a smaller immediate OVR gain, its own draw: a
+#:     `MATURITY_SPURT` share of that grade's cap, as a share of the base career
+#:     peak — so it stays under what the reveal can reach, without tracking it.
+#: HISTORY ONLY: an event is read off the archived season, so it moves builds of
+#: the seasons AFTER it and never the season it happened in. From `early_era()`.
 MATURITY_GRADES = (7, 8, 9)
 MATURITY_RATE = 0.35
-MATURITY_BOOST = (0.10, 0.30)
-MATURITY_CAP = 0.50
+MATURITY_POT_CAP = {7: 0.06, 8: 0.15, 9: 0.15}
+MATURITY_REALISE = 0.50
+MATURITY_SPURT = (0.10, 0.50)
 MATURITY_ENABLED = True
 
 #: A 7th-grader's ability never falls below this share of their career peak (the
@@ -4100,29 +4112,33 @@ def early_seasons(school: School, entry: int) -> tuple:
     return (s8,) if classification_in(school, s8) in EARLY_CLASSES else ()
 
 
-def maturity(school_key: str, entry: int, seat: int, salt: str) -> float:
-    """The player's hidden maturity (0-1), on its own rng stream."""
+def player_maturity(school_key: str, entry: int, seat: int, salt: str) -> float:
+    """The player's hidden maturity (0-1), on its own rng stream. (`player_`
+    because `_gen_seat` has a legacy local called `maturity`.)"""
     return random.Random(f"{salt}|jhsaa-maturity|{school_key}|{entry}|{seat}").random() ** 2
 
 
-def maturity_boost(school_key: str, entry: int, seat: int, grade: int, salt: str,
-                   played: dict) -> float:
-    """The ceiling lift banked by the player's archived 7th/8th/9th-grade seasons
-    BEFORE `grade`. `played` maps a grade to that season's played share (0-1); a
-    grade absent from it (not rostered, not archived, before the era) never fires.
-    Each grade rolls on its own stream, so one season's result never moves
-    another's roll."""
+def maturity_events(school_key: str, entry: int, seat: int, grade: int, salt: str,
+                    played: dict) -> dict:
+    """{grade: (pot, spurt)} — the maturity events of the player's archived
+    7th/8th/9th-grade seasons BEFORE `grade`. `played` maps a grade to that
+    season's played share (0-1); a grade absent from it (not rostered, not
+    archived, before the era) never fires. Each grade rolls on its own stream, and
+    the reveal and the spurt are separate draws off it."""
     if not MATURITY_ENABLED or not played:
-        return 0.0
-    m = maturity(school_key, entry, seat, salt)
-    total = 0.0
+        return {}
+    m = player_maturity(school_key, entry, seat, salt)
+    out: dict = {}
     for g in MATURITY_GRADES:
         if g >= grade or g not in played:
             continue
         r = random.Random(f"{salt}|jhsaa-bloom|{school_key}|{entry}|{seat}|{g}")
-        if r.random() < MATURITY_RATE * m * played[g]:
-            total += r.uniform(*MATURITY_BOOST)
-    return min(MATURITY_CAP, total)
+        hit = r.random() < MATURITY_RATE * m * played[g]
+        pot = round(MATURITY_POT_CAP[g] * r.random() ** 2, 4)
+        spurt = MATURITY_POT_CAP[g] * r.uniform(*MATURITY_SPURT)
+        if hit and pot > 0:
+            out[g] = (pot, spurt)
+    return out
 
 
 def cohort_horizon(school: School, entry: int) -> int:
@@ -4228,7 +4244,7 @@ def career_ability(school_key: str, entry: int, seat: int, grade: int,
                    salt: str, ceiling: float,
                    exposure: dict | None = None, coach: float = 1.0,
                    start_lift: float = 0.0, staff: dict | None = None,
-                   early: dict | None = None) -> float:
+                   early: dict | None = None, bloom: dict | None = None) -> float:
     """This player's ability at `grade` under the career model.
 
     `exposure` maps a GRADE to how much of that year's capacity the player
@@ -4250,9 +4266,30 @@ def career_ability(school_key: str, entry: int, seat: int, grade: int,
     the odometer's own rate, and a player who PLAYED arrives at ninth grade
     `Σ cap × (x − EXPO_FLOOR)` ahead of it — the same formula every high-school
     year uses, nothing new. Never behind it: a rostered kid who never dressed
-    realises the floor, which is the baseline."""
+    realises the floor, which is the baseline.
+
+    `bloom` is MATURITY (rule 2100): {grade: (pot, spurt)} for each archived
+    7th/8th/9th-grade season whose maturity event fired, None otherwise. `ceiling`
+    is always the player's BASE ceiling. An event at grade g, applied as that
+    season turns into the next: (1) the POT REVEAL raises the career peak by `pot`
+    × the base peak and adds `MATURITY_REALISE` of that new headroom to the
+    player's yearly capacity, spread evenly over the growth years left through
+    grade 12 — so it is realised the way every capacity is, at the odometer's
+    rate; (2) the GROWTH SPURT adds `spurt` OVR at once. The two are independent
+    draws — a large reveal can come with a small spurt and vice versa."""
     start, peak, caps = _career_plan(school_key, entry, seat, salt, ceiling,
                                      start_lift)
+    bloom = bloom or {}
+    base_peak = peak
+    bonus = 0.0                     # revealed headroom realised per growth year
+
+    def fire(g, v):
+        nonlocal peak, bonus
+        pot, spurt = bloom[g]
+        peak += pot * base_peak
+        bonus += pot * base_peak * MATURITY_REALISE / (12 - g)
+        return v + spurt * base_peak
+
     if early is not None:
         pre = _early_caps(school_key, entry, seat, salt)
         total = EXPO_FLOOR * sum(pre.values())
@@ -4262,22 +4299,26 @@ def career_ability(school_key: str, entry: int, seat: int, grade: int,
         if total > 0 and start - total < EARLY_FLOOR * peak:
             k = max(0.0, (start - EARLY_FLOOR * peak) / total)
         st = staff or {}
-        if grade < 9:
-            v = start - total * k
-            for g in EARLY_GRADES:
-                if g < grade:
-                    v += pre[g] * k * early.get(g, EXPO_FLOOR) * st.get(g, 1.0)
-            return v
-        credit = sum(pre[g] * k * (early.get(g, EXPO_FLOOR) * st.get(g, 1.0)
-                                   - EXPO_FLOOR)
-                     for g in EARLY_GRADES)
-        start = min(peak, start + max(0.0, credit))
+        v = start - total * k
+        for g in EARLY_GRADES:
+            if g >= grade:
+                return v
+            if g in bloom:
+                v = fire(g, v)
+            x = early.get(g, EXPO_FLOOR)
+            v += (pre[g] * k * st.get(g, 1.0) + bonus) * x
+        # Never behind the baseline start (a rostered kid who never dressed
+        # realised exactly the floor), never past the peak on arrival.
+        start = min(peak, max(start, v))
     # A `feeder` head start is partly given back over the four years (see
     # `FEEDER_FADE`): zero for everyone else, so nothing below changes for them.
-    fade = start_lift * peak * FEEDER_FADE / 4.0
+    fade = start_lift * base_peak * FEEDER_FADE / 4.0
     v = start
     for i, g in enumerate(range(10, grade + 1)):
-        base = max(0.0, caps[i] * ((exposure or {}).get(g - 1, 1.0)) - fade)
+        if g - 1 in bloom:
+            v = fire(g - 1, v)
+        x = (exposure or {}).get(g - 1, 1.0)
+        base = max(0.0, (caps[i] + bonus) * x - fade)
         # ‼️ COACHING ACCELERATES TOWARD THE PEAK AND NEVER PAST IT. The multiplier
         # is applied to the run UP to `peak`; the overflow a year earns beyond it is
         # the UNCOACHED amount. Applied to the whole gain instead, a coaching program
@@ -4340,7 +4381,13 @@ def _expo_world_id(db_path: str):
     same reason: any later row is a stray artifact and must never be read as the
     player's game. Resolved once per save."""
     got = _expo_world.get(db_path, _EXPO_MISS)
-    if got is not _EXPO_MISS:
+    # ‼️ A "no world" answer is NEVER memoised: a save's world row can be created
+    # later in the same process (a fresh save, the lab's generate, a test
+    # fixture), and a cached None would leave the odometer, the talent pin and
+    # the class-move history reading "no archive" for the life of the process.
+    # Re-probing costs one indexed row and only ever happens while there is no
+    # world — the cold path, where there is nothing to read anyway.
+    if got is not _EXPO_MISS and got is not None:
         return got
     import sqlite3
     wid = None
@@ -4355,7 +4402,8 @@ def _expo_world_id(db_path: str):
             conn.close()
     except sqlite3.Error:
         wid = None
-    _expo_world[db_path] = wid
+    if wid is not None:
+        _expo_world[db_path] = wid
     return wid
 
 
@@ -6102,7 +6150,8 @@ def _ceiling(rng: random.Random, group: str, gender: str,
 def _apply_career(p: Prospect, school_key: str, entry: int, seat: int,
                   grade: int, salt: str, exposure: dict | None = None,
                   coach: float = 1.0, start_lift: float = 0.0,
-                  staff: dict | None = None, early: dict | None = None) -> Prospect:
+                  staff: dict | None = None, early: dict | None = None,
+                  bloom: dict | None = None, reveal: float = 1.0) -> Prospect:
     """Set a career-era player's CURRENT ability from their career plan.
 
     The prospect arrives generated AT its ceiling (maturity 1.0), so this scales
@@ -6119,8 +6168,11 @@ def _apply_career(p: Prospect, school_key: str, entry: int, seat: int,
                   for a, v in p.potential.items()) / _WEIGHT_TOTAL
     if ceiling <= 0:
         return p
-    target = career_ability(school_key, entry, seat, grade, salt, ceiling,
-                            exposure, coach, start_lift, staff, early)
+    # `reveal` is the MATURITY POT reveal the prospect was generated with: the
+    # career model runs off the BASE ceiling (the events reach it through
+    # `bloom`), and the attributes are scaled against the displayed one.
+    target = career_ability(school_key, entry, seat, grade, salt, ceiling / reveal,
+                            exposure, coach, start_lift, staff, early, bloom)
     factor = target / ceiling
     for a, ceil_v in p.potential.items():
         p.current[a] = clamp_grade(ceil_v * factor)
@@ -6363,10 +6415,12 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
                 f = _expo_factor((fexpo or {}).get(season), nm)
                 if f is not None:                 # never fires off an unplayed year
                     bloom[g] = (f - EXPO_FLOOR) / (1.0 - EXPO_FLOOR)
-    boost = maturity_boost(school.key, entry, seat, grade, salt, bloom) if bloom else 0.0
-    # The lift is on the CEILING the prospect is generated at (the career model
-    # is a share of it, so current ability rises too); `talent` itself stays the
-    # creation value the pin records.
+    events = maturity_events(school.key, entry, seat, grade, salt, bloom) if bloom else {}
+    boost = sum(pot for pot, _ in events.values())
+    # The POT reveal is on the CEILING the prospect is generated at, so the
+    # displayed potential shows it; the career model is handed the BASE ceiling
+    # and the events separately (`_apply_career`), so OVR is not simply scaled
+    # with it. `talent` itself stays the creation value the pin records.
     gen_talent = min(cap, talent * (1.0 + boost)) if boost else talent
     p = generate_prospect(rng, nm, "US", gender=sex,
                           talent=gen_talent,
@@ -6435,7 +6489,8 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
                     staff_mult[pg] = f
         _apply_career(p, school.key, entry, seat, grade, salt,
                       exposure or None, coach_factor(mod.get("mature", 0.0)),
-                      start_lift, staff_mult or None, early)
+                      start_lift, staff_mult or None, early, events or None,
+                      gen_talent / talent if boost and talent else 1.0)
     elif compress:
         # The guarantee half: attribute noise lifts displayed ceilings past the
         # squashed centre, so the visible number is trimmed after generation.
@@ -6473,8 +6528,9 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
     p.jhsaa["start"] = float(start_lift)
     if early_s:
         p.jhsaa["early"] = list(early_s)
-    if boost:
-        p.jhsaa["bloom"] = round(boost, 4)
+    p.jhsaa["maturity"] = round(player_maturity(school.key, entry, seat, salt), 4)
+    if events:
+        p.jhsaa["bloom"] = {str(g): [round(a, 4), round(b, 4)] for g, (a, b) in events.items()}
     if pinned is None and centre is not None and mod.get("band"):
         try:
             p.jhsaa["tier"] = band_tier_for(mod["band"], entry)["key"]

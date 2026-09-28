@@ -202,6 +202,30 @@ COACH_FILES = ("jhsaa_coaches.csv", "jhsaa_coach_seasons.csv", "jhsaa_coach_even
                "jhsaa_coach_awards.csv", "jhsaa_coach_records.csv")
 
 
+def _early_cols(p) -> dict:
+    """players.csv's early-participation and maturity columns for one player.
+
+    `maturity` is the HIDDEN 0-1 draw (owner's analysis copy — the pages never
+    show it). `bloom_*` fold the maturity events already banked by this build:
+    the grades that fired, the summed POT reveal (share of the base ceiling) and
+    the summed growth spurt (share of the base career peak). `early_seasons` are
+    the pre-high-school seasons this player was rostered for; a player is an
+    early participant if it is non-empty, whatever grade they are now."""
+    meta = getattr(p, "jhsaa", None) or {}
+    bloom = meta.get("bloom") or {}
+    early = meta.get("early") or []
+    return {
+        "maturity": meta.get("maturity", ""),
+        "bloom_grades": ";".join(sorted(bloom)) if bloom else "",
+        "bloom_pot": round(sum(v[0] for v in bloom.values()), 4) if bloom else "",
+        "bloom_spurt": round(sum(v[1] for v in bloom.values()), 4) if bloom else "",
+        "early_participant": int(bool(early)),
+        "early_seasons": ";".join(str(y) for y in early),
+        # filled from the portal ledger once it is read (archive path only)
+        "portal_move": "", "portal_from": "", "portal_to": "", "portal_season": "",
+    }
+
+
 def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=None) -> dict[str, bytes]:
     """Build JHSAA files. ``season`` is injectable for tests and archive adapters;
     otherwise READ from the persisted archive (see ``_load_archived_jhsaa_season``
@@ -274,6 +298,10 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                 # The GENERATED older sibling's player_id (`jhsaa.sibling_link`),
                 # blank for most rows. Authored families are not exported here.
                 "sibling_id": (getattr(p, "jhsaa", None) or {}).get("sibling", ""),
+                # EARLY PARTICIPATION + MATURITY (JHSAA rule 2100) — the
+                # instrumentation the 2100 cohort is evaluated on, owner rule
+                # 2026-09: never guess at calibration from the pages.
+                **_early_cols(p),
             })
 
     duals, lines, line_players = [], [], []
@@ -651,6 +679,44 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
     # archived season. Archive path only (the realignment ledger's rule). The
     # scores are here on purpose: the names-and-rank-only rule governs the pages,
     # and this file is the owner's analysis copy.
+    # THE RISING-FRESHMAN PORTAL (JHSAA rule 2100): every committed move of every
+    # portal the save has held, both genders, cut to this gender — the realignment
+    # ledger's rule (archive path only, every season, never just this export's).
+    # And the player rows learn their own move, so the 2100 cohort can be read
+    # off players.csv alone.
+    portal_rows: list = []
+    if w and not injected:
+        from app import jhsaa_portal as _jp
+        key_of = {sc.name: sc.key for sc in jhsaa.load_schools(gender)}
+        moved_pids: dict = {}
+        for m in _jp.applied(w["id"]):
+            if m.get("gender") != gender:
+                continue
+            moved_pids.setdefault(m["pid"], m)
+            portal_rows.append({
+                "season_year": m["season"], "player_id": m["pid"], "name": m["name"],
+                "gender": gender,
+                "from_program_id": key_of.get(m["from"], ""), "from_school": m["from"],
+                "from_class": m.get("from_class", ""),
+                "to_program_id": key_of.get(m["to"], ""), "to_school": m["to"],
+                "to_class": m.get("to_class", ""),
+                "tier": m.get("tier", ""), "projected_seat": m.get("rank", ""),
+                "v1_size": m.get("v1", ""), "from_v1_size": m.get("from_v1", ""),
+                "current_grade_at_move": m.get("ovr", ""),
+                "potential_grade_at_move": m.get("pot", ""),
+                "maturity": m.get("maturity", ""),
+                "owner_redirected": int(bool(m.get("redirected"))),
+                "options": len(m.get("options") or ()),
+            })
+        for row in players:
+            m = moved_pids.get(row["player_id"])
+            if m is not None:
+                row.update({"portal_move": 1, "portal_from": key_of.get(m["from"], ""),
+                            "portal_to": key_of.get(m["to"], ""),
+                            "portal_season": m["season"]})
+        for row in players:
+            if row["portal_move"] == "":
+                row["portal_move"] = 0
     from app import jhsaa_coaches as _jc
     coach_tables = {name: [] for name in COACH_FILES}
     if w and not injected:
@@ -663,6 +729,7 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
               "jhsaa_coefficient.csv": coefficient_rows,
               "jhsaa_flights.csv": flight_rows,
               "jhsaa_realignments.csv": realignments,
+              "jhsaa_portal.csv": portal_rows,
               "jhsaa_jv_state.csv": jv_state_rows,
               "jhsaa_program_history.csv": history,
               "jhsaa_individual_history.csv": individual_history,
@@ -684,6 +751,28 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "ceiling_grade": "The fixed hidden ceiling (pinned at generation; never changes for an enrolled player). Use this, not potential_grade, for any talent analysis.",
             "toss_power_raw": "JHSAA opponent-adjusted team power used for selection/seeding; compare only within this season and gender.",
             "expected_pct": "jhsaa_flights: win rate the flight's matchups were expected to return, fitted on this season's varsity flights with home court; delta_pct is actual minus expected in points.",
+            "maturity": "players.csv: the player's HIDDEN maturity draw (0-1, most low). In each "
+                        "ARCHIVED 7th/8th/9th-grade season a maturity event fires with chance "
+                        f"{jhsaa.MATURITY_RATE} × maturity × played share (varsity appearances "
+                        "count double a JV one; results never enter). Empty for a legacy-era "
+                        "player.",
+            "bloom_grades": "players.csv: the grades whose maturity event fired for this player "
+                            "so far, ';'-joined (e.g. '7;9'); empty if none.",
+            "bloom_pot": "players.csv: the summed POT REVEAL those events banked, as a share of "
+                         "the base ceiling (per-grade caps "
+                         + ", ".join(f"{g}th {c:.0%}" for g, c in sorted(jhsaa.MATURITY_POT_CAP.items()))
+                         + "); ceiling_grade already includes it. Realised into ability over the "
+                         "growth years left, at the odometer's rate.",
+            "bloom_spurt": "players.csv: the summed immediate GROWTH SPURT those events added, as "
+                           "a share of the base career peak — an independent draw from the "
+                           "reveal, never derived from it.",
+            "early_participant": "players.csv: 1 if the player was rostered by a 1A/2A/Group 3 "
+                                 "program before ninth grade (rule 2100); early_seasons lists "
+                                 "those seasons. grade 7/8 rows ARE the early participants of "
+                                 "this season.",
+            "portal_move": "players.csv: 1 if the rising-freshman portal moved this player "
+                           "(portal_from/portal_to are program_ids, portal_season the freshman "
+                           "season); 0 otherwise; empty on an injected season.",
             "captain": "players.csv: 1 if the player was one of the program's team captains "
                        "this season (named preseason; 1-3 per program), 0 if not. "
                        "captain_order ranks them best-known first (1 = the lead captain) and "
@@ -829,6 +918,17 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "jhsaa_coach_records.csv is each head coach's career in this sport: head "
             "seasons, W-L-T, pct, programs, state_titles and Coach of the Year counts. "
             "coach_id joins across all five files.",
+            "jhsaa_portal.csv is the RISING-FRESHMAN PORTAL ledger (JHSAA rule 2100): one "
+            "row per committed move, EVERY season the save has held a portal, this gender. "
+            "A move is proposed only for an early participant (7th/8th grade at a 1A, 2A or "
+            "Group 3 program) with NO projected V1 seat at that program going into ninth "
+            "grade — V1 is the coach's own preseason ladder cut at the league lineup, never "
+            "a top-N by rating — and only to a program that projects them ONTO its V1: same "
+            "county first, then same area, then neighbouring areas (tier), the best seat in "
+            "the first tier with one (projected_seat of v1_size). owner_redirected=1 means "
+            "the owner sent them to another of their V1 options; options counts how many "
+            "there were. A dropped proposal is not a row. Empty on an injected season or "
+            "before the first portal.",
             "jhsaa_realignments.csv is the reclassification LEDGER: one row per school per "
             "committed realignment cycle, EVERY cycle the save has committed (newest first), "
             "not just this export's season, and identical in the girls' and boys' bundles — a "
