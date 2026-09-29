@@ -17373,25 +17373,6 @@
       "boys_district": "Olympic League"
     },
     {
-      "name": "St. Genevieve",
-      "city": "Benchton",
-      "county": "Barlowe",
-      "area": "Boise Frontier",
-      "classification": "1A",
-      "group": "1A",
-      "enrollment": 129,
-      "private": true,
-      "mascot": "Crimson Hurricanes",
-      "colors": [
-        "#167339",
-        "#e8e6df"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Hacienda League",
-      "boys_district": "Hacienda League"
-    },
-    {
       "name": "St. Ignatius",
       "source": "St. Basil School",
       "city": "Belmonte",
@@ -19635,6 +19616,26 @@
       "boys_district": "Narpes Interscholastic League",
       "source": "Anneliese Halvorsen",
       "locality": "Taunton"
+    },
+    {
+      "name": "Washington San Cordero",
+      "city": "Benchton",
+      "county": "Barlowe",
+      "area": "Boise Frontier",
+      "classification": "1A",
+      "group": "1A",
+      "enrollment": 129,
+      "private": true,
+      "mascot": "Crimson Hurricanes",
+      "colors": [
+        "#167339",
+        "#e8e6df"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Hacienda League",
+      "boys_district": "Hacienda League",
+      "source": "St. Genevieve"
     },
     {
       "name": "Websterfield",

@@ -96,7 +96,6 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
 
     6A  1151  St. Ignatius                           Belmonte               St. Basil School
     1A   105  St. Lucia Academy                      Belmonte               St. Lucia Academy
-    1A   129  St. Genevieve                          Benchton               St. Genevieve
    Group 2   597  St. Gabriel Academy                    Cañada Grande          St. Gabriel Academy
     3A   312  St. Lucy                               Furrow Crossing        St. Lucy
    Group 1  2150  St. Teresa                             Harriman               St. Teresa High School
@@ -115,7 +114,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     3A   430  Vesper Polytech                        Vesper                 Vesper Polytechnic Institute
 
 
--- SAME LEADING WORD, DIFFERENT CITIES (78 groups)
+-- SAME LEADING WORD, DIFFERENT CITIES (79 groups)
     7A  1444  Alder Crossing                         Boyerstown             Boyerstown North
     3A   438  Alder Co-op                            Monte Blanco           Claudette Freeman
 
@@ -399,6 +398,9 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
 
     6A  1260  Valley Christian                       New Leiden             Valley Christian
     6A  1247  Valley Forge                           Valderra               Valley Forge
+
+    1A   129  Washington San Cordero                 Benchton               St. Genevieve
+    8A  1947  Washington                             Port Veles             Anneliese Halvorsen
 
    Group 3   393  West Burlington                        Homecroft              Homecroft Manufacturing and Technology Academy
    Group 1  1250  West Oberlin                           Smithfield             West Oberlin
@@ -688,7 +690,7 @@ Bench Head — 1 program (Barlowe County, Boise Frontier)
 
 Benchton — 2 programs (Barlowe County, Boise Frontier)
     5A   965 pub  Benchton                                                  Twin Counties Athletic Association Benchton
-    1A   129 priv St. Genevieve                                             Hacienda League                    St. Genevieve
+    1A   129 priv Washington San Cordero                                    Hacienda League                    St. Genevieve
 
 Bend — 4 programs (Deschutes County, Cascade Divide)
     7A  1547 pub  Caldera                                                   Sunkist League                     Caldera High
