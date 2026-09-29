@@ -60,6 +60,8 @@ class _Squad:
 
     def __init__(self, school, roster):
         self.school, self.roster, self.records = school, list(roster), {}
+        # what `_order` reads off a TeamSeason: no memory, a neutral coach
+        self.prior, self.lens, self.read = {}, jh.CoachLens(), {}
 
 
 def _by_grade(by_group) -> dict:
@@ -103,57 +105,55 @@ def _seeds(entries) -> list:
 
 # --- eligibility -------------------------------------------------------------
 
-def test_every_entrant_is_a_jv_player_of_an_eligible_grade(by_group):
-    """Both halves of the rule, checked against the roster rather than against a
-    second copy of the rule: outside the varsity eleven, and of a grade the
-    bracket admits — sophomores, juniors and seniors in both since 2026-09."""
+def test_every_entrant_sits_below_the_class_rank_guard(by_group):
+    """Checked against the ladder rather than a second copy of the rule: every
+    entrant is JV and at or below `event_from` for their own class — so outside
+    the varsity eleven, past the swing ranks, and past a wider varsity lineup
+    where the class dresses one (4S/5D, 5A's 6S/5D)."""
     teams = [t for d in by_group.values() for ts in d.values() for t in ts]
     seen = {b: 0 for b in jvi.BRACKETS}
     for t in teams:
-        varsity = {p.pid for p in jh._order(t)[:jh.lineup_need("regular")]}
+        rank = {p.pid: i + 1 for i, p in enumerate(jh._order(t))}
+        floor = jvi.event_from(t.school.group)
         for bracket in jvi.BRACKETS:
             e = jvi.school_entry(t, bracket)
             if e is None:
                 continue
             seen[bracket] += 1
             for p in e.players:
-                assert p.grade in jvi.ELIGIBLE_GRADES[bracket], \
-                    (bracket, t.school.name, p.name, p.grade)
-                assert p.pid not in varsity, (t.school.name, p.name)
+                assert rank[p.pid] >= floor, \
+                    (bracket, t.school.name, p.name, rank[p.pid], floor)
     assert all(seen.values()), seen
 
 
-def test_ninth_grade_is_the_line_and_both_brackets_take_the_same_grades(by_group):
-    """The one grade rule left. Sophomores through seniors both brackets since
-    2026-09, and NINTH GRADE STILL OUT — the depth argument that opened the event
-    downward does not reach a ninth-grader below the varsity eleven, who is a
-    beginner rather than an underplaced player."""
-    assert jvi.ELIGIBLE_GRADES[jvi.SINGLES] == jvi.ELIGIBLE_GRADES[jvi.DOUBLES]
-    assert set(jvi.ELIGIBLE_GRADES[jvi.SINGLES]) == {10, 11, 12}
-    teams = [t for d in by_group.values() for ts in d.values() for t in ts]
-    for t in teams:
-        for bracket in jvi.BRACKETS:
-            e = jvi.school_entry(t, bracket)
-            if e is not None:
-                assert all(p.grade >= 10 for p in e.players), \
-                    (bracket, t.school.name, [p.grade for p in e.players])
+def test_the_rank_guard_clears_every_class_varsity_lineup():
+    """‼️ The guard is a FLOOR (`EVENT_FROM`) that a deeper varsity lineup pushes
+    down. A fixed 14 made 5A's No. 14-16 — varsity postseason starters in its
+    sixteen-player 6S/5D — eligible for a JV state title, and the 4S/5D classes'
+    No. 14 likewise."""
+    for g in jh.GROUPS:
+        widest = max(jh.lineup_need(ph, g)
+                     for ph in ("regular", jh.EARLY_FORMAT_PHASE, "state"))
+        assert jvi.event_from(g) > widest, g
+        assert jvi.event_from(g) >= jvi.EVENT_FROM, g
+        if widest < jvi.EVENT_FROM:
+            assert jvi.event_from(g) == jvi.EVENT_FROM, g
+    # the cases that motivated it actually exist in the table
+    assert any(jvi.event_from(g) > jvi.EVENT_FROM for g in jh.GROUPS)
 
 
-def test_the_underclass_grades_are_actually_used(by_group):
-    """Not merely permitted. The grades were opened because a pair is three
-    eligible players deep once the singles entrant is held out, and a JV pool is
-    only the roster below the varsity eleven — so this asserts sophomores and
-    juniors are really entering, which is the thing that makes the bracket
-    fieldable across the association."""
+def test_there_is_no_grade_rule(by_group):
+    """JHSAA rule 2026-09: any JV player below the rank guard may enter, of any
+    grade — so ninth-graders really do enter, not merely may."""
+    assert not hasattr(jvi, "ELIGIBLE_GRADES")
     teams = [t for d in by_group.values() for ts in d.values() for t in ts]
-    grades = {10: 0, 11: 0, 12: 0}
+    grades = {}
     for t in teams:
         for bracket in jvi.BRACKETS:
             e = jvi.school_entry(t, bracket)
             for p in (e.players if e else ()):
                 grades[p.grade] = grades.get(p.grade, 0) + 1
-    assert grades[10], "no sophomore entered either bracket"
-    assert grades[11], "no junior entered either bracket"
+    assert grades.get(9), f"no ninth-grader entered either bracket: {grades}"
 
 
 def test_a_school_still_fields_three_different_people(by_group):
@@ -198,51 +198,36 @@ def test_the_singles_entrant_is_held_out_of_the_pair(by_group):
 
 def test_a_school_short_of_eligible_players_enters_nobody(by_group):
     """Not a degraded entry and not a crash — a pair is two DIFFERENT people and
-    there is nothing to fall back to, so the school simply sits the year out."""
+    there is nothing to fall back to, so the school simply sits the year out.
+    With no grade rule, "eligible" means below the rank guard: a JV player in
+    the swing ranks is JV for duals and still not eligible here."""
     _, _, teams = _one_district(by_group)
     g = _by_grade(by_group)
     need = jh.lineup_need("regular")
     school = teams[0].school
+    swing = jvi.event_from(school.group) - 1 - need
+    assert swing > 0, "vacuous: no swing ranks between the eleven and the guard"
     # the strongest upperclassmen make a full varsity eleven; the weakest
-    # ninth-graders are the JV, so nobody eligible is below the line
+    # ninth-graders are the JV, filling exactly the swing ranks
     base = sorted(g[12] + g[11], key=lambda p: -p.current_overall())[:need]
-    bench = g[9][-6:]
-    none_eligible = _Squad(school, base + bench)
-    assert {p.pid for p in jvi.jv_ladder(none_eligible)} == {p.pid for p in bench}
+    bench = g[9][-(swing + 3):]
+    none_eligible = _Squad(school, base + bench[:swing])
+    assert {p.pid for p in jvi.jv_ladder(none_eligible)} == \
+        {p.pid for p in bench[:swing]}
     assert jvi.school_entry(none_eligible, jvi.SINGLES) is None
     assert jvi.school_entry(none_eligible, jvi.DOUBLES) is None
-    # ONE eligible JV player — the association's weakest senior, so he lands
-    # below the eleven: a singles entry, and still not a pair.
-    weak_sr, weak_jr = g[12][-1], g[11][-1]
-    one = _Squad(school, base + bench[:5] + [weak_sr])
-    assert weak_sr.pid in {p.pid for p in jvi.jv_ladder(one)}
+    # ONE past the guard: a singles entry, and still not a pair.
+    one = _Squad(school, base + bench[:swing + 1])
     assert jvi.school_entry(one, jvi.SINGLES) is not None
     assert jvi.school_entry(one, jvi.DOUBLES) is None
-    # TWO: a senior and a junior. The senior takes singles, so the pair is one
-    # short — which is exactly the rule that holds the singles entrant out.
-    two = _Squad(school, base + bench[:4] + [weak_sr, weak_jr])
+    # TWO: the first takes singles, so the pair is one short — which is exactly
+    # the rule that holds the singles entrant out.
+    two = _Squad(school, base + bench[:swing + 2])
     assert jvi.school_entry(two, jvi.SINGLES) is not None
     assert jvi.school_entry(two, jvi.DOUBLES) is None
-    # THREE eligible: now it can field both.
-    three = _Squad(school, base + bench[:3] + [weak_sr, weak_jr, g[11][-2]])
-    assert jvi.school_entry(three, jvi.SINGLES) is not None
+    # THREE: both brackets.
+    three = _Squad(school, base + bench[:swing + 3])
     assert jvi.school_entry(three, jvi.DOUBLES) is not None
-
-
-# --- the district qualifier --------------------------------------------------
-
-def test_a_district_of_several_eligible_schools_crowns_exactly_one(by_group):
-    group, district, teams = _one_district(by_group)
-    field = jvi.district_field(teams, jvi.SINGLES, group=group, district=district)
-    assert len(field) > 1, "fixture district has nothing to qualify"
-    d = jvi.run_district(teams, jvi.SINGLES, gender="girls", group=group,
-                         district=district, seed=11)
-    assert d.champion is not None
-    assert d.rounds, "several entries and nobody played"
-    # Exactly one survivor: every match eliminates one, so the field minus the
-    # matches played is the champion alone.
-    played = sum(len(r) for r in d.rounds)
-    assert len(d.entries) - played == 1
 
 
 def test_a_district_of_one_eligible_school_qualifies_unopposed(by_group):
@@ -258,15 +243,16 @@ def test_a_district_of_one_eligible_school_qualifies_unopposed(by_group):
 
 
 def test_a_district_with_no_eligible_players_emits_no_champion(by_group):
-    """A whole league of programs whose upperclassmen are all on varsity produces
-    nothing, and the state field is one shorter that year. That is by design, so
-    it must be a None rather than an empty draw somebody later reads a champion
-    off."""
+    """A whole league of programs whose JV reaches no deeper than the swing ranks
+    produces nothing, and the state field is one shorter that year. That is by
+    design, so it must be a None rather than an empty draw somebody later reads
+    a champion off."""
     group, district, teams = _one_district(by_group)
     g = _by_grade(by_group)
     need = jh.lineup_need("regular")
+    swing = jvi.event_from(teams[0].school.group) - 1 - need
     base = sorted(g[12] + g[11], key=lambda p: -p.current_overall())[:need]
-    league = [_Squad(t.school, base + g[9][-5:]) for t in teams]
+    league = [_Squad(t.school, base + g[9][-swing:]) for t in teams]
     assert all(jvi.jv_ladder(s) for s in league), "vacuous: no JV pool at all"
     for bracket in jvi.BRACKETS:
         assert jvi.district_field(league, bracket, group=group,

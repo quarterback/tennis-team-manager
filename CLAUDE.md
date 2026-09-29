@@ -1920,36 +1920,31 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   - **‼️ TWO CUTS, AND THE DUAL POOL MUST NOT MOVE** (owner rule 2026-09: "I do not
     want to kill JV duals … for JV duals 12 and below counts"). JV DUALS staff from
     `jhsaa.jv_pool`, rank 12 down, unchanged. The TOURNAMENT starts at
-    `jvi.EVENT_FROM` (**14**), because measured varsity appearances show ranks 12-13
-    are swing players, not JV (median 14 / 7 / 4 / 2 at ranks 11-14; "played 5+
-    varsity" 97% / 73% / 36% / 17% — the knee is 13→14). ‼️ Raising `jv_pool` itself
-    was tried and MEASURED first: it puts **43 of 114 programs (38%) below
-    `JV_MIN_SPARE`**, i.e. no JV duals at all for a third of the association, and
-    `ROSTER_FLOOR` is derived from that cut so every roster would have had to grow to
-    fix an eligibility rule. The event filters its own field instead — a filter on the
-    pool, never a second pool.
-  - **‼️ ELIGIBILITY IS SOPHOMORES, JUNIORS AND SENIORS — BOTH BRACKETS (JHSAA rule
-    2026-09, `ELIGIBLE_GRADES`).** The event opened seniors-only in singles and
-    juniors-and-up in doubles; both were widened because **the event is a competitive
-    opportunity, not a capstone**, and because at **2A/1A a program often had too few
-    seniors or juniors to stage rounds at all**. Measured, 40 programs a class,
-    share able to ENTER before → after: singles 1A **30% → 78%**, 2A 40% → 88%,
-    Group 3 38% → 88%, 5A 70% → 100%, 9A 85% → 100%. ‼️ **Doubles at 1A barely moves
-    (18% → 20%) and grade is NOT why** — `EVENT_FROM` 14 plus the singles hold-out
-    leaves a 16-player 1A roster about three eligible bodies deep, so the rank cut is
-    the binding constraint down there, not the grade rule. Do not "fix" 1A doubles by
-    reaching into ninth grade: a ninth-grader below the varsity eleven is a beginner,
-    not an underplaced player, which is the one line the depth argument does not reach.
-    ‼️ **The two pools are now IDENTICAL, so the singles hold-out is the ONLY thing
-    keeping a school's JV No. 1 out of its own pair** — while the grade rules differed
-    that fell out of the pools, and it must never be allowed to again. The mapping stays
-    keyed per bracket rather than collapsed to one tuple: which grades enter which event
-    has already moved twice. `jv_seniors` was renamed `jv_singles_pool` for the same
-    reason — a helper named for the current rule goes quietly wrong when the rule moves.
-    The historical arithmetic that set the original split: a pair is three eligible
-    players deep once the singles entrant is held out, and only **~14% of programs had
-    three JV seniors** (~72% had one), so a seniors-only doubles bracket left most
-    districts with no champion to send. "JV" is
+    `jvi.event_from(group)`: the floor `jvi.EVENT_FROM` (**14**), because measured
+    varsity appearances show ranks 12-13 are swing players, not JV (median 14 / 7 / 4 /
+    2 at ranks 11-14; "played 5+ varsity" 97% / 73% / 36% / 17% — the knee is 13→14).
+    ‼️ Raising `jv_pool` itself was tried and MEASURED first: it puts **43 of 114
+    programs (38%) below `JV_MIN_SPARE`**, i.e. no JV duals at all for a third of the
+    association, and `ROSTER_FLOOR` is derived from that cut so every roster would have
+    had to grow to fix an eligibility rule. The event filters its own field instead — a
+    filter on the pool, never a second pool.
+  - **‼️ THE RANK GUARD IS CLASS-AWARE (owner rule 2026-09, `jvi.event_from`).** 14 was
+    measured against the eleven-player league lineup, but 7A/8A/9A/Group 1 dress 14 on
+    the road (4S/5D) and 5A dresses 16 (6S/5D), so a fixed 14 made varsity postseason
+    starters eligible for a JV state title. The guard is `max(EVENT_FROM,
+    jhsaa.jv_postseason_cut(group) + 1)` — derived from `lineup_need`, never typed: 14
+    for most classes, 15 for the 4S/5D classes, 17 for 5A. Keyed on `group` (the
+    championship a program plays in), which is what sets its varsity lineup.
+  - **‼️ THERE IS NO GRADE RULE (JHSAA rule 2026-09).** Any JV player below the rank
+    guard enters either bracket, ninth-graders and early participants included. The
+    grade rule moved three times — singles seniors-only and doubles juniors-and-up
+    (2026-08), then sophomores-and-up in both — and the association approved removing
+    it; `ELIGIBLE_GRADES` is gone. **Mixed doubles was never grade-gated** and is
+    untouched. The RANK guard is what keeps varsity out, and it stays. Because both
+    brackets draw on the same pool, **the singles hold-out is the ONLY thing keeping a
+    school's JV No. 1 out of its own pair** — it must never be allowed to lapse.
+    `jv_seniors` was renamed `jv_singles_pool` because a helper named for the current
+    rule goes quietly wrong when the rule moves. "JV" is
     `jhsaa.jv_pool` and NOTHING else — the one ladder cut below `lineup_need("regular")`
     — so no second roster split exists to drift. Entries are the top of each pool by
     `coach_eval` (established position, not a coach's pick — the varsity event's own
