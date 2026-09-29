@@ -342,6 +342,46 @@ unasked):
 
 ---
 
+## 6b. The edit path — overlay, never rebuild (owner, 2026-09)
+
+**Report:** "the middle schoolers transfer page is very long with too many items and
+if i remove a kid it repolls for each single kid."
+
+Both halves were true. `edit()` called `build(edits=)` on every drop, redirect and
+undo — the reprojection rule (§ review pass) read "every edit reprojects", so one
+struck row cost a full slate: every origin built, every destination consulted, ~14s
+on the fixture and minutes on the real save, for a decision that removes one row. And
+the page stacked every league of the class as its own panel, so a class with a dozen
+origin districts was a dozen tables long.
+
+**Now.** `edit()` stores the decision and nothing else; `jhsaa_portal.effective(cur)`
+lays the edits over the stored proposal on read:
+
+- a **drop** moves the row to the stays ("dropped by you"), 0.02s;
+- a **redirect** is checked against the ONE destination it names —
+  `_check_redirect` builds the origin, that school and the origins of the other movers
+  the slate already sends there (one `district_teams` call, a handful of programs),
+  applies those movers with `_with`, and asks the real `v1_rank`. Held, the edit stores
+  its validated row (`{"to", "row"}`); not held, it stores `failed` and the automatic
+  row stands with the "redirect not held" chip — exactly what `build(edits=)` would
+  have said. 0.16s on the fixture;
+- an **undo** pops the edit. The one rebuild left is undoing a drop the LAST FULL
+  BUILD baked in (a "Rebuild proposal" or commit after the drop): that player is in no
+  move row to restore, so nothing but a rebuild can bring him back.
+
+"Rebuild proposal" and the commit still reproject the whole slate with the edits, so
+what is committed is what the ladders say — the overlay is the page's answer, the
+rebuild the commit's. `final_moves` reads the overlay, and the commit's count agreed
+with it on the fixture (396 of 397 after one drop and one held redirect).
+
+The page renders ONE district — the class's leagues are a `<select>` switcher with each
+league's counts, the sibling-page idiom the section already uses — and every edit form
+carries `district` so a decision returns you to the league you were reading.
+
+Measured on the fixture copy: open 14.2s (unchanged, a full build) · drop 0.02s ·
+redirect 0.16s · out-of-reach redirect 0.05s (fails, no build) · undo 0.01s · page
+0.15s · commit 26.9s (the reprojection plus the transfer writes).
+
 ## 7. Traps hit (each cost a run)
 
 - **A local shadowed the module function.** `_gen_seat` has a legacy local

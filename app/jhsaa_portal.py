@@ -572,29 +572,137 @@ def check_hold(world: dict, lab: bool = False) -> dict | None:
     return cur
 
 
+def effective(cur: dict, skip: str = "") -> tuple:
+    """The slate AS THE OWNER HAS EDITED IT — `(moves, stays)` — laid over the
+    stored proposal without rebuilding anything (owner rule 2026-09: a drop is
+    a row struck off, not a reprojection of every ladder in the state).
+
+    The stored `data` is the last FULL build (the automatic pass, or a "Rebuild
+    proposal" / commit that reprojected every edit). Each edit overlays it:
+    a DROP moves the row to the stays; a REDIRECT the portal has checked against
+    that one destination's ladder (`edit`) replaces the row with its validated
+    row, or — when the seat was not there — leaves the automatic row standing,
+    flagged `redirect_failed`, exactly what `build(edits=)` would say. An edit
+    the last full build already baked in (its row carries `redirected` /
+    `redirect_failed` for the same school) keeps the built row, which saw the
+    whole slate. `skip` leaves one player's own edit out, for re-checking it."""
+    edits = cur.get("edits") or {}
+    moves, stays = [], list(cur["data"].get("stays") or [])
+    for m in cur["data"]["moves"]:
+        e = edits.get(m["pid"]) if m["pid"] != skip else None
+        e = e or {}
+        if e.get("drop"):
+            stays.append({**{k: v for k, v in m.items()
+                             if k not in ("to", "to_class", "tier", "rank", "v1",
+                                          "options", "redirected", "redirect_failed")},
+                          "dropped": True})
+            continue
+        to = e.get("to")
+        if to and not (m.get("redirected") and m.get("to") == to) \
+                and m.get("redirect_failed") != to:
+            if e.get("row"):
+                moves.append(dict(e["row"]))
+                continue
+            if e.get("failed"):
+                moves.append({**m, "redirect_failed": to})
+                continue
+        moves.append(m)
+    return moves, stays
+
+
 def final_moves(cur: dict) -> list:
-    """The slate as it will be committed. The stored proposal is already built
-    WITH the owner's edits (`build(edits=)` reprojects every redirect and leaves
-    every drop at home), so this is the move list itself — kept as the one name
-    both the page and the commit read it by."""
-    return [m for m in cur["data"]["moves"] if not m.get("dropped")]
+    """The slate as it will be committed — the edited overlay's moves. The
+    commit still reprojects the whole slate with the edits first; this is what
+    the page counts and what a test reads."""
+    return [m for m in effective(cur)[0] if not m.get("dropped")]
+
+
+def _tier_of(origin, dest, neighbors: dict) -> str | None:
+    if dest.county == origin.county:
+        return "county"
+    if dest.area == origin.area:
+        return "area"
+    if dest.area in neighbors.get(origin.area, ()):
+        return "neighbor"
+    return None
+
+
+def _check_redirect(world_id: int, season: int, salt: str, cur: dict,
+                    pid: str, dest: str) -> dict:
+    """Validate ONE redirect: does `dest`'s ladder — carrying the other movers
+    this slate already sends there — seat the player on V1? Builds the origin,
+    the destination and those movers' origins (a handful of programs, one
+    `district_teams` call), never the slate. Returns the edit to store:
+    `{"to", "row"}` with the validated move row, or `{"to", "failed": True}`."""
+    from . import world as wd
+    row = next((m for m in cur["data"]["moves"] if m["pid"] == pid), None)
+    if row is None:
+        return {"to": dest, "failed": True}
+    gender, origin = row["gender"], row["from"]
+    if dest == origin:
+        return {"to": dest, "failed": True}
+    schools = jh.load_schools(gender)
+    prior = wd.jhsaa_prior_for_season(season, gender, world_id)
+    staff = wd.jhsaa_staff_for_season(season, gender, world_id)
+    teams = _Teams(schools, season, salt, prior, staff)
+    if dest not in teams or origin not in teams:
+        return {"to": dest, "failed": True}
+    tier = _tier_of(teams.schools[origin], teams.schools[dest], area_neighbors())
+    if tier is None:
+        return {"to": dest, "failed": True}
+    others = [m for m in effective(cur, skip=pid)[0]
+              if m["gender"] == gender and m["to"] == dest and m["pid"] != pid]
+    teams.ensure({origin, dest, *[m["from"] for m in others]})
+    p = next((q for q in teams[origin].roster if q.pid == pid), None)
+    if p is None:
+        return {"to": dest, "failed": True}
+    ts = teams[dest]
+    for m in others:
+        q = next((x for x in teams[m["from"]].roster if x.pid == m["pid"]), None)
+        if q is not None:
+            ts = _with(ts, q, prior, season, salt)
+    r = v1_rank(_with(ts, p, prior, season, salt), pid)
+    if r is None:
+        return {"to": dest, "failed": True}
+    new = {k: v for k, v in row.items() if k != "redirect_failed"}
+    options = list(row.get("options") or [])
+    if all(o["school"] != dest for o in options):
+        options.append({"school": dest, "class": ts.school.classification,
+                        "tier": tier, "rank": r + 1, "v1": v1_size(ts)})
+    new.update({"to": dest, "to_class": ts.school.classification, "tier": tier,
+                "rank": r + 1, "v1": v1_size(ts), "options": options, "redirected": True})
+    return {"to": dest, "row": new}
 
 
 def edit(world: dict, pid: str, action: str, to: str = "") -> None:
-    """Record one owner decision and REBUILD the proposal around it — a redirect
-    is a projection the portal makes, never a row rewritten from a cached option."""
+    """Record one owner decision. ‼️ NEVER A FULL REBUILD (owner rule 2026-09:
+    "if i remove a kid it repolls for each single kid"): a drop and an undo are
+    stored and overlaid (`effective`); a redirect is checked against the ONE
+    destination it names (`_check_redirect`) and stored with its validated row.
+    The whole slate is reprojected only by "Rebuild proposal" and the commit.
+    The one exception: undoing a drop the last full build already baked in
+    (the player is in no move row to restore) rebuilds, since nothing else can
+    bring the row back."""
     from . import world as wd
     cur = pending(world["id"])
     if cur is None:
         return
     edits = cur["edits"]
+    salt = wd.active_salt(world["seed"])
+    rebuild = False
     if action == "drop":
         edits[pid] = {"drop": True}
     elif action == "to" and to:
-        edits[pid] = {"to": to}
+        edits[pid] = _check_redirect(world["id"], cur["season"], salt, cur, pid, to)
     elif action == "reset":
-        edits.pop(pid, None)
-    data = build(world["id"], cur["season"], wd.active_salt(world["seed"]), edits)
+        was = edits.pop(pid, None)
+        in_moves = any(m["pid"] == pid for m in cur["data"]["moves"])
+        rebuild = bool(was) and not in_moves
+    else:
+        return
+    data = cur["data"]
+    if rebuild:
+        data = build(world["id"], cur["season"], salt, edits)
     _store(world["id"], cur["season"], "proposed", data, edits)
 
 

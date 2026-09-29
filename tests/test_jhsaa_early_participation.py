@@ -330,11 +330,25 @@ def test_the_hold_opens_edits_apply_and_a_commit_moves_the_player(archived):
         wd.advance_jhsaa_lab(wd.DEFAULT_SEED)
     moves = cur["data"]["moves"]
     victim, kept = moves[0], moves[1:]
-    jp.edit(w, victim["pid"], "drop")
-    redirected = next((m for m in kept if len(m["options"]) > 1), None)
-    if redirected:
-        alt = next(o for o in redirected["options"] if o["school"] != redirected["to"])
-        jp.edit(w, redirected["pid"], "to", alt["school"])
+    # ‼️ AN EDIT NEVER REBUILDS THE SLATE (owner, 2026-09: "if i remove a kid it
+    # repolls for each single kid"): a drop, a redirect and an undo are overlaid
+    # on the stored proposal; only "Rebuild proposal" and the commit call `build`.
+    real_build = jp.build
+
+    def no_build(*a, **k):
+        raise AssertionError("an edit rebuilt the whole slate")
+    jp.build = no_build
+    try:
+        jp.edit(w, victim["pid"], "drop")
+        redirected = next((m for m in kept if len(m["options"]) > 1), None)
+        if redirected:
+            alt = next(o for o in redirected["options"] if o["school"] != redirected["to"])
+            jp.edit(w, redirected["pid"], "to", alt["school"])
+            jp.edit(w, redirected["pid"], "reset")
+            assert redirected["pid"] not in jp.pending(w["id"])["edits"]
+            jp.edit(w, redirected["pid"], "to", alt["school"])
+    finally:
+        jp.build = real_build
     final = jp.final_moves(jp.pending(w["id"]))
     assert victim["pid"] not in {m["pid"] for m in final}
     if redirected:

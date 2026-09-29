@@ -2852,6 +2852,9 @@ def create_app() -> Flask:
             args["g"] = g
         if group:
             args["group"] = group        # the page is scoped by class; stay in it
+        district = request.form.get("district") or request.args.get("district") or ""
+        if district:
+            args["district"] = district  # and to the league that was on screen
         if msg:
             args["msg"] = msg
         return redirect(url_for("jhsaa_portal", **args))
@@ -2863,7 +2866,8 @@ def create_app() -> Flask:
         same tier; redirect / drop per row; commit, dismiss, run now."""
         gender, label, u, g, group, year = _jh_scope_args()
         return render_template("jhsaa_portal.html", active="High School",
-                               view=jhsaa_portal_view(DEFAULT_SEED, g, group, year),
+                               view=jhsaa_portal_view(DEFAULT_SEED, g, group, year,
+                                                      request.args.get("district")),
                                gender=gender, u=u, uni_label=label)
 
     @app.route("/jhsaa/portal/run", methods=["POST"])

@@ -5889,7 +5889,7 @@ def jhsaa_reclass_view(seed: int, gender: str, group: str | None = None,
 
 
 def jhsaa_portal_view(seed: int, gender: str, group: str | None = None,
-                      year: int | None = None) -> dict:
+                      year: int | None = None, district: str | None = None) -> dict:
     """The rising-freshman portal page (JHSAA rule 2100, `app/jhsaa_portal.py`):
     the open proposal — already built WITH the owner's edits — the players who
     had no V1 destination in reach, and the committed history.
@@ -5900,7 +5900,14 @@ def jhsaa_portal_view(seed: int, gender: str, group: str | None = None,
     the whole association on one screen. The class rail carries only the three
     gated classes, since only their programs field early participants. The
     proposal itself is still ONE event: the commit button commits the whole
-    slate, and the meta line says how much of it is in view."""
+    slate, and the meta line says how much of it is in view.
+
+    ‼️ ONE DISTRICT ON SCREEN (owner, 2026-09: "very long with too many items").
+    The class's districts are a `<select>` switcher — the section's sibling-page
+    idiom — and only the chosen league's movers and stays render; `district_index`
+    carries every league's counts so the switcher reads as an index. The rows
+    are the EDITED overlay (`jp.effective`): a drop or a redirect is laid over
+    the stored proposal, never a rebuild of it."""
     import app.jhsaa as jh
     import app.jhsaa_portal as jp
     import app.world as world
@@ -5912,10 +5919,13 @@ def jhsaa_portal_view(seed: int, gender: str, group: str | None = None,
     moves, stays = [], []
     if pend:
         edits = pend.get("edits") or {}
-        for m in pend["data"]["moves"]:
+        eff_moves, eff_stays = jp.effective(pend)
+        for m in eff_moves:
             moves.append({**m, "dropped": False, "edited": m["pid"] in edits})
-        for st in pend["data"].get("stays") or []:
-            stays.append({**st, "edited": st["pid"] in edits})
+        for st in eff_stays:
+            # a drop the last full build baked in has no edit left to undo by
+            # overlay; `jp.edit(reset)` rebuilds for it, so it still gets the button
+            stays.append({**st, "edited": st["pid"] in edits or bool(st.get("dropped"))})
     hist = jp.applied(w["id"])
     groups = list(jh.EARLY_CLASSES)
     mine = [m for m in moves if m["gender"] == g]
@@ -5936,10 +5946,15 @@ def jhsaa_portal_view(seed: int, gender: str, group: str | None = None,
     hist_view = [m for m in hist if m["gender"] == g and m.get("from_class") == group]
     seasons = sorted({m["season"] for m in hist}, reverse=True)
     scope = _jh_scope(g, group, groups, yr, years, None, None)
+    index = [{"district": k, "moves": len(districts[k]["moves"]),
+              "stays": len(districts[k]["stays"])} for k in sorted(districts)]
+    if district not in districts:
+        district = next((d["district"] for d in index if d["moves"]),
+                        index[0]["district"] if index else None)
     return {"gender": g, "group": group, "groups": groups, "year": yr, "years": years,
             "scope": scope, "pending": pend, "moves": moves, "stays": stays,
             "kept": len(moves), "in_view": len(in_view), "stays_in_view": len(st_view),
-            "districts": [districts[k] for k in sorted(districts)],
+            "district": districts.get(district), "district_index": index,
             "class_counts": {c: sum(1 for m in mine if m["from_class"] == c) for c in groups},
             "due": (jp.due(w) if not pend else False),
             "season": pend["season"] if pend else jp.upcoming_season(w),
