@@ -726,12 +726,18 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
 - **‼️ HONOURS ANNOTATE SEASONS; the SEASONS are the history.** `jhsaa_school_history`
   returns TWO things — `totals` (the career) and `seasons` (one row per archived year) —
   and every number in `totals` is a FOLD OVER `seasons`, so the two halves of a program
-  page cannot disagree and a new season moves the totals only by being appended. Do NOT
-  add a `world_jhsaa_school_season` table: the postseason record, courts won/lost, state
-  seed and state finish are all DERIVED from `world_jhsaa` + `world_jhsaa_dual` (one
-  indexed read of ~26 rows per season), and a second store would be a second source of
-  truth for numbers the archive already determines. Before persisting, check whether the
-  thing is a PROJECTION of a layer you already have.
+  page cannot disagree and a new season moves the totals only by being appended.
+  ‼️ **SUPERSEDED IN PART (owner directive 2026-09, read-path fix #2):** the rows ARE
+  now stored — `world_jhsaa_season_row`, `_season_row`'s output per program per
+  season, written by the rung (`_write_season_rows`) and backfilled ONCE per older
+  season on first read — because deriving them meant parsing the whole gender-season
+  blob once per archived season per click (a 100-season program page was minutes).
+  What survives of the old rule: it is a MATERIALISATION of the one fold, versioned
+  (`_SEASON_ROW_VERSION`; bump it when `_season_row` changes and rows re-derive),
+  keyed on the archive-time school name and relabelled on read, droppable and
+  rebuildable from `world_jhsaa` + `world_jhsaa_dual` — never a second thing to edit.
+  Every reader (`jhsaa_school_seasons`, `jhsaa_season_rows_at`, `jhsaa_history_rows`)
+  goes through it; none parses a blob.
 - **‼️ TOSS RATES; ATR SEEDS THE POSTSEASON (owner rule 2070, superseding "seeding
   runs on TOSS").** With 1A's road at 2S/3D and 8A/9A's postseason + early window at
   4S/5D, three dual shapes feed one TOSS graph, and an opponent-strength composite
@@ -3488,6 +3494,35 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   on the plain page load. See `docs/AAR-jhsaa-scoreline-realism.md`.
 - **`Prospect.jhsaa` is a real dataclass field** — `prospect_to_dict` is `asdict()`, so an
   ad-hoc attribute would erase a recruit's entire high-school past the moment they sign.
+
+## ⚠️ A READ-ONLY JHSAA PAGE NEVER SIMULATES OR RECONSTRUCTS THE ASSOCIATION (owner directive 2026-09)
+`docs/reports/AUDIT-jhsaa-read-paths-2026-09.md` is the audit; `scripts/jhsaa_read_audit.py
+--db <copy of a save>` re-measures it (count, don't guess). The rule: opening a program,
+player, coach, rankings or portal page reads what the SEASON RUNG already derived; the
+rung is where roster and coach calculations happen. Four stores/fixes carry it:
+1. **`world.get_jhsaa` is memoised** per (world, year, gender), bounded (`_ARC_CACHE_MAX`),
+   invalidated by the rung's write, `reset()` and `jhsaa.reset_schools()` (the relabel
+   reads today's names). The returned dict is SHARED — never mutate it.
+2. **Per-program season rows** (`world_jhsaa_season_row`, above).
+3. **The preseason state** (`app/jhsaa_preseason.py`, `world_jhsaa_preseason_state`): per
+   program per season, the roster in COACH ORDER with display fields, each seat's ladder
+   `eval` and its parts, the V1 cut and **V1 FLOOR**, and the staff effect. Written by
+   the rung for the played season (`record`, in its transaction) AND for the NEXT
+   season as `provisional=1` (`write_provisional`, after the commit — the one
+   whole-association build the rising-freshman portal needs, paid at the rung).
+   The program page renders an archived roster from it (`stored_roster`/`StoredPlayer`;
+   a season archived before the store still builds). ‼️ The portal is PLAYER-FIRST:
+   origins built live, every destination eliminated against its stored floor with one
+   key and a bisect (`newcomer_key`/`seat_on`), only a program that seats the player on
+   the stored ladder is built and confirmed live, and a placement's live ladder
+   replaces the stored one for that school. The store is a filter, never the answer.
+4. **The sibling index** (`world_jhsaa_sibling` + `_cover`): the rung writes every
+   generated tie younger→older; `generated_siblings` reads it and scans (builds the
+   town's next cohorts) only for a cohort season the index does not cover.
+Also: `dbpath.connect` sets WAL once per path per process (a page opens 40-160
+connections). Never add a page-side fold over every season or every program without
+asking what it costs on FIFTY seasons and ~860 programs; if the rung can write it,
+the rung writes it.
 
 ## ⚠️ THE SUITE MUST NOT SHARE A DATABASE WITH THE APP (it isn't about the save)
 `app.dbpath.resolve_db_path()` returns `$TENNIS_DB_PATH` or the repo's `./tennis.db`, and

@@ -107,11 +107,20 @@ def connect(path: str, *, row: bool = True, timeout: float = 5.0) -> sqlite3.Con
     if row:
         conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA busy_timeout=5000")
-    try:
-        conn.execute("PRAGMA journal_mode=WAL")
-    except sqlite3.OperationalError:
-        pass            # e.g. a filesystem that can't do WAL — degrade, don't crash
+    # The journal mode is a property of the FILE and persists once set, so it is
+    # asked for once per path per process: a page opens 40-160 connections and
+    # `PRAGMA journal_mode=WAL` is a write-locking statement on every one of them
+    # (read-path audit 2026-09).
+    if path not in _wal_set:
+        try:
+            conn.execute("PRAGMA journal_mode=WAL")
+            _wal_set.add(path)
+        except sqlite3.OperationalError:
+            pass            # e.g. a filesystem that can't do WAL — degrade, don't crash
     return conn
+
+
+_wal_set: set = set()
 
 
 def resolve_db_path() -> str:
