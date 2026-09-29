@@ -28,7 +28,7 @@ def archived(tmp_path_factory):
     """One JHSAA season (2027) archived with early participation LIVE from 2027."""
     db = str(tmp_path_factory.mktemp("jhsaa") / "early.db")
     real_load, real_db, real_ready = jh.load_schools, wd.WORLD_DB, wd._schema_ready_for
-    real_era = jh.early_era
+    real_era, real_seat_era = jh.early_era, jh.early_seat_era
     # ‼️ ONE FILE for the archive (`wd.WORLD_DB`), the exposure odometer and the
     # transfer ledger (both resolve through `dbpath.resolve_db_path`): split across
     # two, the odometer reads "no world" and every early season realises as if
@@ -57,6 +57,10 @@ def archived(tmp_path_factory):
         jh.STATE_FIELD[grp] = {24: 24, 32: 16, 40: 20}[real]
     jh.load_schools = small
     jh.early_era = lambda: 2027            # the `exchange_era` idiom
+    # The fixture plays WHOLE cohorts (the rule's first shape, and what every
+    # season archived before `early_seat_era()` keeps); the per-seat cut has its
+    # own tests below, off rosters alone.
+    jh.early_seat_era = lambda: 9999
     jh._season_cache.clear()
     wd.WORLD_DB = db
     wd._schema_ready_for = None
@@ -72,7 +76,7 @@ def archived(tmp_path_factory):
                "client": create_app().test_client()}
     finally:
         jh.load_schools = real_load
-        jh.early_era = real_era
+        jh.early_era, jh.early_seat_era = real_era, real_seat_era
         jh.STATE_FIELD.clear()
         jh.STATE_FIELD.update(real_fields)
         jh._season_cache.clear()
@@ -164,6 +168,92 @@ def test_early_participants_dress_and_their_seasons_reach_the_archive(archived):
     p = next(x for x in early if x.grade == 7)
     rows = jh.career(s.name, "girls", p.name, 2029 + 3, salt)
     assert [r["grade"] for r in rows][:3] == [7, 8, 9]
+
+
+# --- the per-seat cut (owner rule 2026-09: "too many middle schoolers") -------
+
+@pytest.fixture
+def seat_cut(monkeypatch):
+    """Both eras live from 2027 on the REAL association, no archive needed."""
+    monkeypatch.setattr(jh, "early_era", lambda: 2027)
+    monkeypatch.setattr(jh, "early_seat_era", lambda: 2027)
+    jh._season_cache.clear()
+    yield "share-salt"
+    jh._season_cache.clear()
+
+
+def _gated(gender):
+    return [s for s in jh.load_schools(gender) if s.classification in GATED]
+
+
+def test_early_participants_are_a_small_share_of_a_gated_roster(seat_cut):
+    """~5% of the roster, 0-2 on most of them — not the whole next two classes."""
+    salt = seat_cut
+    total = early = 0
+    per_roster = []
+    for gender in ("girls", "boys"):
+        for s in _gated(gender):
+            r = jh.build_roster(s, 2027, salt)
+            n = sum(1 for p in r if p.grade < 9)
+            per_roster.append(n)
+            total += len(r)
+            early += n
+    share = early / total
+    assert 0.02 <= share <= 0.09, share
+    assert 0.4 <= sum(per_roster) / len(per_roster) <= 2.0
+    assert sum(1 for n in per_roster if n <= 2) / len(per_roster) >= 0.85
+    assert any(n == 0 for n in per_roster) and any(n >= 1 for n in per_roster)
+
+
+def test_the_cut_is_per_seat_same_odds_and_grandfathered(seat_cut):
+    salt = seat_cut
+    s = _gated("girls")[0]
+    entry = 2029
+    whole = jh.early_seasons(s, entry)
+    assert whole == (2027, 2028)
+    n = jh._freshman_class_size(s.key, entry, s.classification, salt)
+    kept = [jh.early_seat_seasons(s, entry, seat, salt) for seat in range(n)]
+    for k in kept:
+        assert set(k) <= set(whole)
+        assert 2027 not in k or 2028 in k          # a 7th-grader plays 8th too
+    assert kept == [jh.early_seat_seasons(s, entry, seat, salt) for seat in range(n)]
+    # the two grades roll at the same rate, on their own stream
+    import random
+    hits7 = hits8 = 0
+    for seat in range(4000):
+        r = random.Random(f"{salt}|jhsaa-early-seat|{s.key}|{entry}|{seat}")
+        a, b = r.random() < jh.EARLY_SEAT_RATE, r.random() < jh.EARLY_SEAT_RATE
+        hits7 += a
+        hits8 += b
+    assert abs(hits7 - hits8) < 0.25 * jh.EARLY_SEAT_RATE * 4000
+    # the roster carries exactly the seats whose roll came up
+    on_8th = {p.jhsaa["seat"] for p in jh.build_roster(s, 2028, salt)
+              if p.grade == 8 and p.entry_year == entry}
+    assert on_8th == {i for i, k in enumerate(kept) if 2028 in k}
+    on_7th = {p.jhsaa["seat"] for p in jh.build_roster(s, 2027, salt)
+              if p.grade == 7 and p.entry_year == entry}
+    assert on_7th == {i for i, k in enumerate(kept) if 2027 in k}
+    assert on_7th <= on_8th
+
+
+def test_seasons_before_the_seat_era_keep_the_whole_cohort(seat_cut, monkeypatch):
+    """The gate is on the SEASON: an archived whole-cohort season rebuilds
+    byte-identical, and a cohort that played 7th grade whole plays 8th whole."""
+    salt = seat_cut
+    s = _gated("boys")[0]
+    sig = lambda r: [(p.pid, p.name, p.grade, round(p.current_overall(), 9)) for p in r]
+    monkeypatch.setattr(jh, "early_seat_era", lambda: 9999)
+    whole_27 = sig(jh.build_roster(s, 2027, salt))
+    monkeypatch.setattr(jh, "early_seat_era", lambda: 2028)
+    assert sig(jh.build_roster(s, 2027, salt)) == whole_27
+    # entry 2029 played 7th in 2027 (whole) -> every seat is an 8th-grader in 2028
+    n = jh._freshman_class_size(s.key, 2029, s.classification, salt)
+    assert all(jh.early_seat_seasons(s, 2029, seat, salt) == (2027, 2028)
+               for seat in range(n))
+    # entry 2030's first early season is 2028 -> rolled
+    m = jh._freshman_class_size(s.key, 2030, s.classification, salt)
+    assert any(jh.early_seat_seasons(s, 2030, seat, salt) != (2028, 2029)
+               for seat in range(m))
 
 
 # --- maturity ------------------------------------------------------------------

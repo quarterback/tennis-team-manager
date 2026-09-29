@@ -1819,6 +1819,21 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   `Σ cap × (x − EXPO_FLOOR)` ahead. `cohort_size` sizes an early cohort at its FIRST early
   season (`cohort_horizon`) or the roster changes between the 8th-grade and freshman
   builds. `PROOF_GRADE` counts seasons IN the program.
+  - **‼️ NOT THE WHOLE COHORT (owner rule 2026-09, `EARLY_SEAT_RATE` 0.07 /
+    `early_seat_seasons` / `early_seat_era`).** Rule 2100 first rostered EVERY seat of
+    the next two classes early — a third of a small-class roster in middle school.
+    Now each seat rolls per early grade at the same odds (7th grandfathered into 8th),
+    ~1 per gated roster (~5%), SEASON-gated so archived whole-cohort seasons rebuild
+    identically. The cohort is still sized at `cohort_horizon` whatever the roll.
+  - **‼️ THE PARTICIPATION RULE (JHSAA rule 2101, `PARTICIPATION_LIMIT` 24,
+    `docs/AAR-jhsaa-participation-limit.md`).** 24 regular-season competition DATES
+    per player across V1/V2/V3/JV, one level per date, postseason exempt. ONE budget
+    (`TeamSeason.dates`), charged by every level's play function (`_use_date`, a
+    showcase day = one date via `date_key`) and read by every level's staffing
+    (`_within_limit`, `jv_available`, `squad_pool`); starters rest toward the limit
+    against weaker sides (`dates_planned`). One-level-per-date is a CALENDAR rule
+    (`world._jh_jv_dates` avoids the school's varsity dates; a squad shares its
+    school's cursor). `PARTICIPATION_ENABLED` is the kill switch.
   - **‼️ MATURITY — every player, fires ONLY in archived 7th/8th/9th-grade seasons
     (`player_maturity`, `maturity_events`, `career_ability(bloom=)`).** Hidden 0-1 draw
     (u², most low). `P(fire) = MATURITY_RATE × maturity × played` — PLAYING TIME MOVES

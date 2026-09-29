@@ -751,6 +751,32 @@ def jv_dual_format(a_spare: int, b_spare: int) -> DualFormat | None:
 #: plays fewer. The showcase weekend is NOT counted here.
 JV_DUAL_CAP = 16
 
+# --- THE INDIVIDUAL PARTICIPATION RULE (JHSAA rule 2101, owner spec 2026-09) ------
+#
+#   "A player may participate on no more than 24 regular-season competition dates
+#    across all JHSAA team levels combined. Participation at V1, V2, V3 or JV counts
+#    toward the same limit. A player may represent only one team level on a
+#    competition date. Postseason competition does not count toward the
+#    regular-season limit."
+#
+# Measured on the owner's 2100 export before the rule existed: ~27% of the early
+# participants played more than 16 regular-season duals, the maximum was 34, and a
+# player could take 21 V1 duals AND 21 JV duals because nothing joined the two
+# ledgers. The limit is ONE SHARED BUDGET per player (`TeamSeason.dates`), spent by
+# every level's staffing (`_lineup`, `squad_pool`, `jv_available`) and charged by
+# every level's play function (`_use_date`). A COMPETITION DATE, not a dual: a
+# showcase event's duals on one day are one date (`date_key`), which is also why the
+# rule cannot be a dual count. Postseason (`POSTSEASON`, the JV State event, the
+# individual draws) neither charges nor excludes — hitting 24 ends a player's
+# REGULAR season and nothing else; they dress for the road like anyone.
+# The one-level-per-date half is a CALENDAR guarantee (`world._jh_jv_dates` keeps a
+# program's JV dates off its varsity dates; a squad shares its school's varsity
+# cursor) — the sim has no clock, so "the same date" only exists there.
+# `PARTICIPATION_ENABLED` is the kill switch: off, nothing is excluded (the
+# counters still fill, they touch no rng).
+PARTICIPATION_LIMIT = 24
+PARTICIPATION_ENABLED = True
+
 #: ‼️ THE JV TEAM STATE TOURNAMENT IS A PILOT, and this is the season it starts
 #: (JHSAA 2068). A year gate rather than a feature flag, for the reason the 1A
 #: 2S/3D pilot is gated on its class: archived seasons must keep reading as the
@@ -2839,6 +2865,16 @@ class TeamSeason:
     # globally-shared Prospects.
     injuries: dict = field(default_factory=dict)
     injury_log: list = field(default_factory=list)
+    # THE PARTICIPATION BUDGET (rule 2101): pid -> regular-season competition dates
+    # used at ANY level, and the last date key charged (a multi-dual showcase day is
+    # one date). Team-level: dates the program has played / expects to play this
+    # regular season, which is what lets a coach rest a starter toward the limit
+    # against a weaker side instead of losing them for the last duals.
+    dates: dict = field(default_factory=dict)
+    date_keys: dict = field(default_factory=dict)
+    last_date_key: object = None
+    dates_played: int = 0
+    dates_planned: int = 0
     # ‼️ THE COACH EVALUATION LAYER's three inputs (owner rule 2026-09), read by
     # `_order` and by nothing else — and by NOTHING in the match engine, which is
     # the whole separation. `prior` is {pid: PriorSeason} for LAST season, the one
@@ -3011,9 +3047,71 @@ def jv_state_pool(ts: TeamSeason) -> list:
     return _order(ts)[jv_postseason_cut(ts.school.group):]
 
 
+def dates_left(ts: TeamSeason, p) -> int:
+    """Regular-season competition dates this player may still use (rule 2101)."""
+    return PARTICIPATION_LIMIT - ts.dates.get(p.pid, 0)
+
+
+def _use_date(ts: TeamSeason, dressed: list, key=None) -> None:
+    """Charge one regular-season competition date to every player in `dressed`
+    (rule 2101). `key` names a multi-dual DATE (a showcase day): a player already
+    charged under the same key is not charged again. Never called for a
+    postseason dual — the rule is regular season only."""
+    if key is None or ts.last_date_key != key:
+        ts.dates_played += 1
+        ts.last_date_key = key
+    for p in dressed:
+        if key is not None and ts.date_keys.get(p.pid) == key:
+            continue
+        ts.dates[p.pid] = ts.dates.get(p.pid, 0) + 1
+        ts.date_keys[p.pid] = key
+
+
+def _within_limit(ts: TeamSeason, order: list, opp=None, need: int = 0) -> list:
+    """`order` with the participation rule applied (rule 2101) — a SUBSTITUTION,
+    never a re-rank, like `_healthy`. Two things: a player with no dates left is
+    skipped (their regular season is over); and against a WEAKER side a coach rests
+    a player whose remaining budget is short of the program's remaining slate
+    (`dates_planned - dates_played`), most-short first, never below `need` — that
+    is the owner's "rest players against inferior competition to stay under the
+    limit", and it is what keeps a starter available for the season's last duals
+    rather than exhausted before them."""
+    if not PARTICIPATION_ENABLED:
+        return order
+    order = [p for p in order if dates_left(ts, p) > 0]
+    if opp is None or not need or ts.dates_planned <= 0:
+        return order
+    remaining = ts.dates_planned - ts.dates_played          # this dual included
+    if remaining <= 0:
+        return order
+    weaker = _strength(ts) >= _strength(opp)
+    if not weaker:
+        n = opp.wins + opp.losses
+        weaker = n >= REST_MIN_SAMPLE and opp.win_pct < 0.5
+    if not weaker:
+        return order
+    short = sorted((p for p in order[:need] if dates_left(ts, p) < remaining),
+                   key=lambda p: dates_left(ts, p))
+    sit = set()
+    for p in short:
+        if len(order) - len(sit) <= need:
+            break
+        sit.add(p.pid)
+    return [p for p in order if p.pid not in sit] if sit else order
+
+
+def jv_available(ts: TeamSeason) -> list:
+    """`jv_pool`, less anyone whose regular-season budget is spent (rule 2101) —
+    the pool every JV and squad dual is STAFFED from. A varsity call-up costs a
+    JV date, and that is the whole point of one budget."""
+    if not PARTICIPATION_ENABLED:
+        return jv_pool(ts)
+    return [p for p in jv_pool(ts) if dates_left(ts, p) > 0]
+
+
 def jv_spare(ts: TeamSeason) -> int:
     """How many players a program has for JV — the size input to `jv_format`."""
-    return len(jv_pool(ts))
+    return len(jv_available(ts))
 
 
 @dataclass(eq=False)
@@ -3076,7 +3174,7 @@ def field_squads(teams: list[TeamSeason], year: int) -> list[SquadTeam]:
 def squad_pool(ts: TeamSeason, squad: str) -> list:
     """Who dresses for a squad dual: V2 = the first eleven HEALTHY players below the
     varsity eleven, V3 = the next seven. Read off the live ladder at the dual."""
-    healthy = [p for p in jv_pool(ts) if p.pid not in ts.injuries]
+    healthy = [p for p in jv_available(ts) if p.pid not in ts.injuries]
     lo = 0 if squad == "V2" else SQUAD_DEPTH["V2"]
     return healthy[lo:lo + jv_lineup_need(SQUAD_FORMATS[squad])]
 
@@ -3228,6 +3326,7 @@ def reset_schools() -> None:
     _band_ident_cache.clear()
     _exchange_era_cache.clear()
     _early_era_cache.clear()
+    _early_seat_era_cache.clear()
     _class_moves_cache.clear()
     _intl_era_cache.clear()
     _jv_parastate_era_cache.clear()
@@ -3787,7 +3886,7 @@ ERA_SETTINGS = ("jhsaa_name_era", "jhsaa_dev_era", "jhsaa_talent_era",
                 "jhsaa_band_era", "jhsaa_style_era", "jhsaa_jv_parastate_era",
                 "jhsaa_jv_qualifying_era",
                 "jhsaa_sibling_era", "jhsaa_sixteen_state_era",
-                "jhsaa_early_era")
+                "jhsaa_early_era", "jhsaa_early_seat_era")
 
 
 def reset_eras() -> None:
@@ -3995,6 +4094,20 @@ EARLY_CLASSES = ("1A", "2A", "Group 3")
 
 EARLY_GRADES = (7, 8)
 
+#: ‼️ NOT THE WHOLE COHORT (owner rule 2026-09). The first season of the rule
+#: rostered EVERY seat of the next two freshman classes early, which put about
+#: a third of a 1A/2A/Group 3 roster in middle school — "too many middle
+#: schoolers". From `early_seat_era()` on, each seat of a gated cohort rolls
+#: ONCE PER EARLY GRADE at this rate (the same odds in 7th and 8th, owner
+#: decision) on its own rng stream (`jhsaa-early-seat`), and only a hit is
+#: rostered that season; the rest of the class arrives as ordinary freshmen. A
+#: 7th-grade hit is GRANDFATHERED into 8th grade (the `early_seasons` rule), so
+#: 8th-graders outnumber 7th-graders by construction. Measured on the real
+#: association: ~1 early participant per gated roster, ~5% of it, 0-2 typical.
+#: The cohort is still SIZED at its first early season (`cohort_horizon`) whether
+#: or not any seat comes — the size must not depend on the roll.
+EARLY_SEAT_RATE = 0.07
+
 #: ‼️ MATURITY — the late bloomer (owner rule 2026-09). Every player carries a
 #: hidden `maturity` (0-1, most low: the square of a uniform). In each of their
 #: 7th, 8th and 9th-grade seasons that is ARCHIVED — for every program in the
@@ -4030,6 +4143,7 @@ MATURITY_ENABLED = True
 EARLY_FLOOR = 0.30
 
 _early_era_cache: dict = {}
+_early_seat_era_cache: dict = {}
 _class_moves_cache: dict = {}
 
 
@@ -4147,6 +4261,37 @@ def maturity_events(school_key: str, entry: int, seat: int, grade: int, salt: st
         if hit and pot > 0:
             out[g] = (pot, spurt)
     return out
+
+
+def early_seat_era() -> int:
+    """The first SEASON the per-seat cut (`EARLY_SEAT_RATE`) is live in this
+    save — the `exchange_era` idiom, gated on the season: an early participant
+    is a roster ingredient, and every archived season is rebuilt from seed, so
+    a save that already played whole cohorts keeps them under the box scores
+    that name them and thins its rosters from the first unplayed season."""
+    return _resolve_era("jhsaa_early_seat_era", _early_seat_era_cache)
+
+
+def early_seat_seasons(school: School, entry: int, seat: int, salt: str) -> tuple:
+    """`early_seasons`, for ONE seat: the pre-HS seasons THIS player is rostered
+    for. A season before `early_seat_era()` keeps the whole cohort; from the era
+    on, each early grade rolls at `EARLY_SEAT_RATE`, and a kept 7th-grade season
+    keeps the 8th (grandfathered, like the class gate). Both draws are always
+    consumed, in grade order, so a roll never moves another seat's or grade's."""
+    ss = early_seasons(school, entry)
+    if not ss:
+        return ss
+    era = early_seat_era()
+    if ss[-1] < era:
+        return ss
+    r = random.Random(f"{salt}|jhsaa-early-seat|{school.key}|{entry}|{seat}")
+    hit = {g: r.random() < EARLY_SEAT_RATE for g in EARLY_GRADES}
+    out, keep = [], False
+    for sn in ss:
+        keep = keep or sn < era or hit[9 - (entry - sn)]
+        if keep:
+            out.append(sn)
+    return tuple(out)
 
 
 def cohort_horizon(school: School, entry: int) -> int:
@@ -6670,8 +6815,12 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
         if grade == 9:
             fresh9_seats = n_seats
         for seat in range(n_seats):
+            # The seasons THIS seat was rostered early (per-seat from
+            # `early_seat_era()`; the cohort dict above is only the gate).
+            es = (early_seat_seasons(school, entry, seat, salt)
+                  if entry in early else ())
             p = _gen_seat(school, mod, entry, seat, grade, salt, expo_years, pins,
-                          staff_years, early.get(entry, ()))
+                          staff_years, es)
             rec = tmap.get(p.pid)
             # Somewhere else THIS season — `transfer_school` walks every recorded
             # move and returns where they actually are, so a player who moved away
@@ -6685,13 +6834,19 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     # comes: there is no tryout, the coach's ladder decides who plays. They COUNT
     # toward the floor below (owner rule 2026-09) — a program that fields 7th- and
     # 8th-graders tops up fewer freshmen, because it is not short of players.
+    # ‼️ From `early_seat_era()` on, only the seats whose roll came up
+    # (`early_seat_seasons`) are rostered — most of the class arrives at ninth
+    # grade like everywhere else. The cohort is sized the same either way.
     for grade in EARLY_GRADES:
         entry = year + (9 - grade)
         if year not in early.get(entry, ()):
             continue
         for seat in range(cohort_size(entry)):
+            es = early_seat_seasons(school, entry, seat, salt)
+            if year not in es:
+                continue
             p = _gen_seat(school, mod, entry, seat, grade, salt, expo_years,
-                          pins, staff_years, early[entry])
+                          pins, staff_years, es)
             # An early participant's transfer record applies here too — `tmap`
             # carries the two early cohorts (`is_enrolled`) — through the ONE
             # authority that also knows a 7th-grader can only go where the
@@ -6730,12 +6885,15 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
                        if s.name == rec.get("from")), None)
         if origin is None:
             continue                       # origin school renamed/removed since the move
+        # The seasons THIS seat was rostered early at its origin (per-seat from
+        # `early_seat_era()`), read here for the guard and the head start alike.
+        es = early_seat_seasons(origin, entry, rec.get("seat"), salt)
         if grade in EARLY_GRADES:
             # A 7th/8th-grade mover: only a seat that EXISTS (the origin rosters
-            # that cohort early this season) and only where THIS program may
+            # THAT SEAT early this season) and only where THIS program may
             # take an early participant — the same test the origin's skip ran,
             # so the two sides of the build cannot disagree.
-            if (year not in early_seasons(origin, entry)
+            if (year not in es
                     or early_transfer_effective(rec, origin.name, school.gender,
                                                 year) != school.name):
                 continue
@@ -6743,7 +6901,6 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
         # EARLY PARTICIPATION + MATURITY read the seasons the mover actually
         # played, at whichever school `transfer_school` puts them in each — the
         # HS odometer keeps its "transfers realise in full" rule untouched.
-        es = early_seasons(origin, entry)
         fire_expo = {}
         for sn in (*es, entry):
             if sn < year and sn >= early_era():
@@ -8328,7 +8485,10 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None,
         # ...at the DUAL's shape (`shape_group`): a showcase plays the class's own
         # state format (owner rule 2026-09), and a pod mixes classes.
         g = ts.school.group if group is _OWN_GROUP else group
-        order = _healthy(ts, _order(ts))
+        # A showcase is a regular-season date (rule 2101): a spent player sits,
+        # but nobody is rested toward the limit here — it is the weekend a
+        # program plays for.
+        order = _within_limit(ts, _healthy(ts, _order(ts)))
         need = lineup_need(phase, g)
         nine, bench = order[:need], order[need:]
         if bench and rng.random() < min(0.95, _ROTATE_ONE * ts.rotate_mult):
@@ -8341,6 +8501,11 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None,
     order = _healthy(ts, _order(ts))
     g = ts.school.group if group is _OWN_GROUP else group
     need = lineup_need(phase, g)
+    # THE PARTICIPATION RULE (2101): a spent player is out of the regular season,
+    # and a starter short of dates for the remaining slate is rested against a
+    # weaker side — before the talent-aware rest below, so that rest still reads
+    # its `spare` off who is actually available.
+    order = _within_limit(ts, order, opp, need)
     # Talent-aware staffing: sit a run of starters from the TOP against a truly
     # weaker side and shift everyone up a rung — the ladder ORDER is untouched, so
     # the card still reads as the ladder. Regular-season phases only (this branch).
@@ -8554,7 +8719,7 @@ def _deciding_tiebreaks(home: Team, away: Team, la: list, lb: list, phase: str,
 
 
 def play_jv_dual(a: JVTeam, b: JVTeam, *, seed: int, phase: str = "regular",
-                 district: bool = False) -> None:
+                 district: bool = False, date_key=None) -> None:
     """One JV dual. The shape is the SMALLER side's capacity (`jv_dual_format`); a
     side that cannot field five spare never reaches here.
 
@@ -8578,7 +8743,11 @@ def play_jv_dual(a: JVTeam, b: JVTeam, *, seed: int, phase: str = "regular",
     if fmt is None:
         return
     need = jv_lineup_need(fmt)
-    la, lb = jv_pool(a.team)[:need], jv_pool(b.team)[:need]
+    # Staffed from the players with dates LEFT (rule 2101) — `jv_spare` above
+    # sized the format off the same pool, so both sides can dress it.
+    la, lb = jv_available(a.team)[:need], jv_available(b.team)[:need]
+    _use_date(a.team, la, date_key)
+    _use_date(b.team, lb, date_key)
     mf = match_format(phase)
     # The JV season is hosted like the varsity one — its own league round robin and
     # invitationals have a home side — so it takes the same lift. Its one showcase is
@@ -8672,7 +8841,7 @@ def _injury_tick_and_roll(ts: TeamSeason, dressed: list, dual_index: int) -> Non
 
 def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular",
               district: bool = False, challenge: bool = False,
-              group: str | None = _OWN_GROUP):
+              group: str | None = _OWN_GROUP, date_key=None):
     """One dual. Always to completion — high school has no clinch. `district` marks it
     as counting toward district place as well as the overall record.
 
@@ -8703,6 +8872,12 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
            if group is _OWN_GROUP else group)
     shape = dual_format(phase, grp)
     la, lb = _lineup(a, phase, lrng, b, grp), _lineup(b, phase, lrng, a, grp)
+    # THE PARTICIPATION RULE (2101): a regular-season dual charges a competition
+    # date to everyone who dressed; `date_key` folds a showcase day's duals into
+    # one. The postseason charges nothing — it does not count toward the limit.
+    if phase not in POSTSEASON:
+        _use_date(a, la, date_key)
+        _use_date(b, lb, date_key)
     fmt = match_format(phase)
     # `a` is the home side by construction (it is `a` whose schedule row says so a few
     # lines down), so the host's lift goes on `a` and nothing goes on `b`. The two
@@ -8802,7 +8977,7 @@ def _squad_v1_lineup(ts: TeamSeason, fmt: DualFormat, rng: random.Random) -> lis
     the healthy top of the live ladder dresses, captains seated, in the league's
     arrangement when the format is the 3S/4D one and in plain ladder order for
     V3's 3S/2D (S1-S3 = #1-#3, D1-D2 = #4-#7)."""
-    order = _healthy(ts, _order(ts))
+    order = _within_limit(ts, _healthy(ts, _order(ts)))
     need = jv_lineup_need(fmt)
     nine = _seat_captains(ts, order[:need], order)
     if (fmt.n_singles, fmt.n_doubles) == (3, 4):
@@ -8834,6 +9009,8 @@ def play_squad_dual(a, b, *, seed: int) -> None:
         return                              # injuries thinned the squad: not played
     lrng = random.Random(f"squad-lineup|{seed}")
     lv1 = _squad_v1_lineup(v1, fmt, lrng)
+    _use_date(v1, lv1)                      # rule 2101: a V1 date for the V1 side...
+    _use_date(sq.team, lsq)                 # ...and a squad date for the squad
     if (fmt.n_singles, fmt.n_doubles) == (3, 4):
         strategy = sq.team.strategy or _coach_strategy(sq.school.key)
         lsq = _arrange_regular(lsq, strategy, sq.team.sibling_ids,
@@ -8896,6 +9073,8 @@ def _play_squad_vs_squad(a: SquadTeam, b: SquadTeam, *, seed: int) -> None:
     la, lb = squad_pool(a.team, a.squad)[:need], squad_pool(b.team, b.squad)[:need]
     if len(la) < need or len(lb) < need:
         return
+    _use_date(a.team, la)                   # rule 2101
+    _use_date(b.team, lb)
     phase = "regular"
     mf = match_format(phase)
     res = simulate_dual(_squad(a.team, phase, la, fmt, lift=home_court(seed, phase)),
@@ -12117,6 +12296,12 @@ def play_regular_season(by_group: dict, year: int, gender: str,
                     league_duals[id(a)] = league_duals.get(id(a), 0) + 1
                     league_duals[id(b)] = league_duals.get(id(b), 0) + 1
     quota = {id(t): nondistrict_quota(league_duals.get(id(t), 0)) for t in every_team}
+    # The program's expected regular-season DATES (rule 2101): league + allowance +
+    # one for a likely showcase weekend. What `_within_limit` measures a player's
+    # remaining budget against — an estimate, since the showcase draw is not made
+    # yet; a date over or under only moves WHICH weak-side dual a starter sits.
+    for t in every_team:
+        t.dates_planned = league_duals.get(id(t), 0) + quota[id(t)] + 1
     played: dict[int, set[str]] = {id(t): set() for t in every_team}
     reserved = MID_NONDISTRICT + (1 if CHALLENGE_ENABLED else 0)
     owed = {k: max(1, round((v - reserved) * EARLY_SHARE)) for k, v in quota.items()}
@@ -12323,7 +12508,8 @@ def jv_showcase(jv: dict[str, JVTeam], year: int, salt: str,
                 # an EVENT, and without it a showcase dual is indistinguishable from an
                 # invitational on the card and in the cap arithmetic. It also picks up
                 # `match_format`'s 8-game pro set, which is what a pod plays.
-                play_jv_dual(a, b, seed=seed, phase="showcase_pod", district=False)
+                play_jv_dual(a, b, seed=seed, phase="showcase_pod", district=False,
+                             date_key=("jvsc", year, tuple(t.school.name for t in grp)))
 
 
 def play_jv_season(by_group: dict, year: int, gender: str,
@@ -12647,9 +12833,13 @@ def play_showcases(events: list[dict], rng: random.Random) -> dict[int, int]:
                 if s >= len(e["rounds"]):
                     continue
                 host = e.get("host") or e["teams"][0]
+                # One competition DATE per event day (rule 2101): a pod is one
+                # Saturday, a tiered event two sessions a day over two days.
+                day = s // 2 if e["kind"] == "tiered" else 0
                 for a, b in e["rounds"][s]:
                     play_dual(a, b, seed=rng.randrange(1 << 30), phase=e["phase"],
-                              district=False, group=host.school.group)
+                              district=False, group=host.school.group,
+                              date_key=("sc", w, id(e), day))
         for e in win:
             if e["kind"] == "tiered":
                 for t in e["teams"]:

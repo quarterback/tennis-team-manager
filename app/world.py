@@ -6374,6 +6374,17 @@ _JH_JV_OPEN = {"boys": (9, 1), "girls": (4, 1)}
 _JH_JV_DAYS = (1, 3, 5, 6)
 
 
+def _jh_busy(out: dict) -> dict[str, set]:
+    """{school -> dates it already has a NON-JV dual on} off the varsity calendar —
+    a squad's `School#V2` key counts for the school. The JV pass keeps a program's
+    JV dates off these (rule 2101: one team level per competition date)."""
+    busy: dict[str, set] = {}
+    for key, d in out.items():
+        for s in (key[3], key[4]):
+            busy.setdefault(s.split("#", 1)[0], set()).add(d)
+    return busy
+
+
 def _jh_jv_dates(out: dict, by_school: dict[str, list[tuple]],
                  seen: dict[tuple, int], gender: str,
                  season_year: int) -> None:
@@ -6391,10 +6402,23 @@ def _jh_jv_dates(out: dict, by_school: dict[str, list[tuple]],
     opening = _dt.date(season_year, mon, day)
     opening += _dt.timedelta(days=-opening.weekday() % 7)          # first Monday
     order = _jh_global_order(by_school, seen)
+    # ‼️ ONE TEAM LEVEL PER COMPETITION DATE (JHSAA rule 2101). The varsity calendar
+    # is already laid (`out`), so a JV dual is never dated on a day either program
+    # has a varsity or squad dual: the round slips to the next JV day. Cheap and
+    # exact — the two patterns only meet on Saturdays — and it is what makes the
+    # rule TRUE rather than merely stated, since the sim itself has no clock.
+    busy = _jh_busy(out)
+
+    def free(key, d):
+        # a squad-vs-squad row names `School#V2`; the busy set is by school
+        return not any(d in busy.get(x.split("#", 1)[0], ()) for x in key[3:5])
+
     nxt: dict[str, int] = {}
     for key in order:
         a_s, b_s = key[3], key[4]
         r = max(nxt.get(a_s, 0), nxt.get(b_s, 0))
+        while not free(key, _jh_day(opening, r, _JH_JV_DAYS)):
+            r += 1
         nxt[a_s] = nxt[b_s] = r + 1
         out[key] = _jh_day(opening, r, _JH_JV_DAYS)
     # Same monotonic guarantee the varsity card gets: a program's JV schedule reads in
@@ -6403,7 +6427,12 @@ def _jh_jv_dates(out: dict, by_school: dict[str, list[tuple]],
     for key in order:
         floor = max((last[x] for x in (key[3], key[4]) if x in last), default=None)
         if floor is not None and out[key] < floor:
-            out[key] = floor
+            # ...to the first JV day on/after the floor that is free of BOTH
+            # programs' varsity dates (rule 2101 again — the floor is one team's).
+            d = floor
+            while d.weekday() not in _JH_JV_DAYS or not free(key, d):
+                d += _dt.timedelta(days=1)
+            out[key] = d
         last[key[3]] = last[key[4]] = out[key]
 
 
@@ -6511,6 +6540,9 @@ def jhsaa_match_dates(world_id: int, year: int, gender: str,
     post_base: int | None = None
     for key in order:
         _lvl, phase, _dist, a_s, b_s = key
+        # A SQUAD shares its school's cursor (rule 2101): dated apart from the V1,
+        # a bench player the V1 rotated in could stand on two courts on one day.
+        a_s, b_s = a_s.split("#", 1)[0], b_s.split("#", 1)[0]
         r_rank = rank.get(phase, 0)
         if not r_rank:                                     # regular season, one queue
             r = max(reg_floor, nxt.get(a_s, 0), nxt.get(b_s, 0))
