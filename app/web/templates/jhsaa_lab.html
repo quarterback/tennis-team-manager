@@ -54,7 +54,7 @@
   <div class="bl-panel-body" style="padding:12px">
     {% if exists %}
     <p class="bit"><b>{{ years_archived }}</b> season{{ '' if years_archived == 1 else 's' }}
-      archived here, latest is {{ season_year }}.
+      archived here, latest is {{ season_year|cal }}.
       <a href="{{ url_for('jhsaa_front') }}">Browse it at /jhsaa</a> ·
       <a href="{{ url_for('research_export') }}">Export any of them as CSV/JSON</a>.
       Program history, honours and records accumulate across every season

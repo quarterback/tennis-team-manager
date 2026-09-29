@@ -3344,8 +3344,60 @@ def reset_schools() -> None:
     if _w is not None:
         _w._arc_cache.clear()
     _transfer_name_cache.clear()
+    _run_salt_cache.clear()
     global _former_cache
     _former_cache = None
+
+
+# --- the per-RUN dice salt (owner rule 2026-09, the canonical-history reset) ---------
+#
+# The owner's 73-season lab history is FROZEN as the canonical past
+# (`scripts/jhsaa_canonical.py`): a "new run" restores that snapshot and sims a new
+# future from it, and each run must diverge — otherwise every re-run replays the same
+# deterministic seasons and there is nothing to re-run FOR. The world salt cannot
+# change (it keys `build_roster`/`make_pid`, so a new salt is a whole new association
+# of strangers), so a second, per-run salt re-rolls ONLY the season's MATCH DICE:
+# `run_season` folds it into the dice-salt string and the postseason seed offset,
+# and NEVER into `district_teams`' salt. Rosters, pids, names, ceilings, coach
+# staffs and every archived season are identical across runs; who WINS is not.
+#
+# Empty ("" — every save that never ran the reset) is byte-identical to the
+# pre-feature behaviour, which is pinned. Memoised per DB path (the era idiom) and
+# cleared by `reset_schools()`; stamped only by the new-run reset, never mid-save —
+# the recruit hand-off relies on `run_season`'s memo serving the SAME season the
+# rung archived, so the salt must not move between the two.
+
+RUN_SALT_SETTING = "jhsaa_run_salt"
+_run_salt_cache: dict = {}
+
+
+def run_salt() -> str:
+    """The per-run dice salt — "" on every save that never ran a canonical reset."""
+    from .dbpath import resolve_db_path
+    key = resolve_db_path()
+    got = _run_salt_cache.get(key)
+    if got is not None:
+        return got
+    try:
+        from . import worldconfig
+        val = str(worldconfig.get(RUN_SALT_SETTING) or "").strip()
+    except Exception:
+        val = ""
+    _run_salt_cache[key] = val
+    return val
+
+
+def run_seed_offset() -> int:
+    """The run salt as a seed offset, for the seed-parameterised draw paths (the
+    postseason's `gseed` family, the individual tournaments, the world rung's
+    mixed doubles). 0 when no run salt is set, so `seed + run_seed_offset()` is
+    the identity on an ordinary save. blake2s, never `hash()` — these seasons
+    are archived and must reproduce across restarts."""
+    rs = run_salt()
+    if not rs:
+        return 0
+    return int.from_bytes(hashlib.blake2s(
+        f"jh-run|{rs}".encode(), digest_size=4).digest(), "big")
 
 
 # --- name-generation era (owner rule 2026-08, mid-save cutover) ----------------------
@@ -12942,7 +12994,16 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     # every year after. Digested rather than carried whole because the map is ~10k
     # rows — a cache KEY has to be small, and this is one digest per `run_season`
     # call (which plays ~10,000 duals), never anything resolved in a loop.
-    ck = (salt, gender, year, seed,
+    # ‼️ FRESH DICE PER RUN (owner rule 2026-09, the canonical-history reset).
+    # A run salt re-rolls the season's MATCH DICE — the dice-salt string every
+    # play path seeds from, and the seed offset the postseason draws add — while
+    # `district_teams` keeps the bare world salt, so the rosters, pids, names and
+    # staffs of two runs are identical and only the results diverge. Empty run
+    # salt ⇒ `dice == salt` and `run_seed_offset() == 0`: byte-identical (pinned).
+    rs = run_salt()
+    dice = f"{salt}|run|{rs}" if rs else salt
+    seed = seed + run_seed_offset()
+    ck = (salt, rs, gender, year, seed,
           _ov.jhsaa_archetype_version(), _ov.jhsaa_playup_version(),
           _ov.jhsaa_band_version(), _ov.jhsaa_read_version(), _prior_fingerprint(prior),
           # ‼️ AND THE COACHING STAFFS (owner spec 2026-09): a season played under a
@@ -13031,8 +13092,8 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     for group in GROUPS:
         for teams_in in by_group[group].values():
             for t in teams_in:
-                t.captains = pick_captains(t, salt, year)
-    every_team, power = play_regular_season(by_group, year, gender, salt)
+                t.captains = pick_captains(t, dice, year)
+    every_team, power = play_regular_season(by_group, year, gender, dice)
     # THE JV SEASON, played here and nowhere else. It runs BEFORE the postseason
     # because that is where it sits on the calendar (April-May against the varsity
     # league season) — and because the postseason FREEZES the Order of Ability, which
@@ -13052,7 +13113,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     #
     # It writes nothing any line below this can see: no `records`, no `matches`, no
     # `power`, no standings row. That is `JVTeam`'s doing, not this call's.
-    out["jv"] = play_jv_season(by_group, year, gender, salt)
+    out["jv"] = play_jv_season(by_group, year, gender, dice)
     # ‼️ THE JV TEAM STATE TOURNAMENT — a PILOT from `JV_STATE_FROM` (JHSAA 2068).
     # Gated on the season year exactly as the 1A 2S/3D postseason pilot is gated on
     # its class: a world that has already archived earlier seasons must keep reading
@@ -13067,7 +13128,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
         # ‼️ blake2s, never `hash()` — Python salts str hashes per process and this
         # event is ARCHIVED, so "the same season" has to survive a restart.
         jvs_seed = int(hashlib.blake2s(
-            f"{salt}|jvstate|{gender}|{year}".encode(), digest_size=8).hexdigest(), 16)
+            f"{dice}|jvstate|{gender}|{year}".encode(), digest_size=8).hexdigest(), 16)
         out["jv_state"] = run_jv_state(out["jv"], gender=gender, year=year,
                                        seed=jvs_seed % (1 << 30))
     # TOSS was computed over the whole gender inside `play_regular_season` — once, on the
@@ -13122,7 +13183,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
             f"jh-epiregional|{group}".encode(), digest_size=4).digest(), "big")
         epiregionals[group], epi_winners[group], _ = run_epiregional(
             zonal_champs[group], power, prestates[group],
-            epiregional_names(gender, year, group, salt), seed=epi_seed)
+            epiregional_names(gender, year, group, dice), seed=epi_seed)
     post_power = power_index(every_team, prestate=True)
     # The RECOVERY rounds (Super Regionals -> Semi-State), every group, before
     # any State draw: the remaining berths are earned on court, and the State

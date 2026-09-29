@@ -33,7 +33,13 @@ def _world_rows(path: str) -> list[dict]:
         rows = [dict(r) for r in conn.execute("SELECT * FROM world ORDER BY id")]
         arch = conn.execute("SELECT MAX(year) y, COUNT(DISTINCT year) n FROM world_jhsaa"
                             ).fetchone()
-        return rows, (arch["y"], arch["n"])
+        try:
+            off = conn.execute("SELECT value FROM world_setting WHERE"
+                               " key='display_year_offset'").fetchone()
+            off = int(off[0]) if off and str(off[0]).strip() else 0
+        except sqlite3.OperationalError:
+            off = 0
+        return rows, (arch["y"], arch["n"]), off
     finally:
         conn.close()
 
@@ -57,7 +63,7 @@ def main() -> int:
               "Move it aside or pass a different --to.")
         return 1
 
-    rows, (max_idx, n_years) = _world_rows(src)
+    rows, (max_idx, n_years), lab_off = _world_rows(src)
     if len(rows) != 1:
         print(f"‼️ expected exactly ONE world row in {src}, found {len(rows)} — "
               "run scripts/cleanup_stray_worlds.py against it first.")
@@ -78,6 +84,14 @@ def main() -> int:
     print(f"plan: copy → {dst}, build college rosters at world year {w['year']}, "
           f"display offset {w['year']} (world year {w['year']} renders as {base}, "
           f"season {season} renders as {base + 1}).")
+    if lab_off and lab_off != w["year"]:
+        # A frozen lab save (scripts/jhsaa_canonical.py) already carries a
+        # backdate anchored on ITS newest season. The college anchor supersedes
+        # it — the first college season is 2026-27 by design — so seasons the
+        # run added after the freeze push the displayed history further back.
+        print(f"note: this save carries display offset {lab_off} from a lab "
+              f"freeze; the attach re-anchors it to {w['year']} so the FINAL "
+              "season is 2026-27 (the canonical seasons shift back accordingly).")
     if not args.apply:
         print("read-only preflight — re-run with --apply to integrate.")
         return 0
