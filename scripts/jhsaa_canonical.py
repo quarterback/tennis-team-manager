@@ -128,6 +128,20 @@ def freeze(args) -> int:
     return 0
 
 
+def _free_aside(lab: str, stamp: str) -> str:
+    """A destination for the kept run that overwrites NOTHING. `os.rename`
+    replaces an existing file on POSIX, so two `new-run --apply` calls landing
+    on the same second — or a leftover archive with that name — would silently
+    delete a previously preserved run. Probe the db name AND its -wal/-shm
+    sidecars and take the first fully-free candidate."""
+    n = 0
+    while True:
+        cand = f"{lab}.{stamp}" + (f"-{n}" if n else "")
+        if not any(os.path.exists(cand + sfx) for sfx in ("", "-wal", "-shm")):
+            return cand
+        n += 1
+
+
 def new_run(args) -> int:
     if not os.path.exists(args.canonical):
         print(f"‼️ no canonical snapshot at {args.canonical} — run `freeze --apply` "
@@ -136,7 +150,7 @@ def new_run(args) -> int:
     w, max_idx, n_years, off, _ = _inspect(args.canonical)
     stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     run_salt = args.run_salt or f"run-{stamp}"
-    aside = f"{args.lab}.{stamp}" if os.path.exists(args.lab) else None
+    aside = _free_aside(args.lab, stamp) if os.path.exists(args.lab) else None
     print(f"canonical: world year {w['year']}, {n_years} season(s), display offset "
           f"{off} (newest season shows as {BASE + w['year'] + 1 - off}).")
     print(f"plan: {'move current lab db aside to ' + aside + ', then ' if aside else ''}"

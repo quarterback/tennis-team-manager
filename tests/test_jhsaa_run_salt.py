@@ -125,3 +125,25 @@ def test_run_salt_reads_worldconfig_and_reset_clears_the_memo(tmp_path, monkeypa
     # ... and `reset_schools()` is what drops them (the era idiom).
     jh._run_salt_cache.clear()
     assert jh.run_salt() == ""
+
+
+def test_a_failed_run_salt_read_raises_and_is_never_cached(tmp_path, monkeypatch):
+    """‼️ FAIL CLOSED. A transient read error swallowed into "" would cache the
+    IDENTITY dice for the life of the process and archive a canonical run's
+    future under the wrong salt — the graceful-fallback trap CLAUDE.md's world
+    section forbids. The lookup raises, and nothing is memoised, so a later
+    read can still succeed."""
+    from app import dbpath, worldconfig
+    monkeypatch.setattr(dbpath, "resolve_db_path", lambda: str(tmp_path / "rf.db"))
+    jh._run_salt_cache.clear()
+
+    def boom(k):
+        raise RuntimeError("transient")
+    monkeypatch.setattr(worldconfig, "get", boom)
+    with pytest.raises(RuntimeError):
+        jh.run_salt()
+    assert not jh._run_salt_cache, "a failure must not be memoised"
+    monkeypatch.setattr(worldconfig, "get",
+                        lambda k: "run-9" if k == jh.RUN_SALT_SETTING else "")
+    assert jh.run_salt() == "run-9", "recovers without a restart"
+    jh._run_salt_cache.clear()

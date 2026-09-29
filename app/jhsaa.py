@@ -3378,11 +3378,13 @@ def run_salt() -> str:
     got = _run_salt_cache.get(key)
     if got is not None:
         return got
-    try:
-        from . import worldconfig
-        val = str(worldconfig.get(RUN_SALT_SETTING) or "").strip()
-    except Exception:
-        val = ""
+    # ‼️ NO fallback and no memoised failure: swallowing a transient read error
+    # into "" would cache the IDENTITY dice for the life of the process and
+    # archive a canonical run's future under the wrong salt, unrecoverably.
+    # A missing key legitimately reads back "" from `worldconfig.get`; anything
+    # else raising is the fail-loudly rule (CLAUDE.md, world resolution).
+    from . import worldconfig
+    val = str(worldconfig.get(RUN_SALT_SETTING) or "").strip()
     _run_salt_cache[key] = val
     return val
 
