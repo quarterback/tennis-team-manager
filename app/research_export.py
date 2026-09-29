@@ -694,8 +694,12 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
     # played with (`jhsaa_staff_for_season`, the rung's own converter) — plus the
     # owner's standing read override. Archive path only.
     if w and not injected:
-        _staff = wd.jhsaa_staff_for_season(season_year, gender, w["id"])
-        _active, _ = jhsaa.enrolled_transfers(season_year)
+        # `year` IS the season year here (`build_jhsaa(year=<season>)`); the
+        # `season_year` local belongs to `_load_archived_jhsaa_season`, not this
+        # function — the archive path raised NameError on the owner's first
+        # export after the coach-investment columns landed (2026-09).
+        _staff = wd.jhsaa_staff_for_season(year, gender, w["id"])
+        _active, _ = jhsaa.enrolled_transfers(year)
         from app import overrides as _ovr
         _reads = _ovr.get_jhsaa_reads()
         _by_key = {t.school.key: t for t in all_teams}
@@ -706,7 +710,7 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             fw = jhsaa._lerp(jhsaa.FUTURE_BAND, eff.future)
             lw = jhsaa._lerp(jhsaa.LOYALTY_BAND, eff.loyalty)
             fut, itr, ten = jhsaa.investment_terms(team.roster, team.school.name,
-                                                   season_year, fw, lw, _active)
+                                                   year, fw, lw, _active)
             for p in team.roster:
                 pid = player_lookup.get((team.school.name, p.name))
                 row = _player_rows.get(pid)
