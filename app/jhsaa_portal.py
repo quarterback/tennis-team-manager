@@ -140,6 +140,120 @@ def _without(ts, pid: str):
     return dataclasses.replace(ts, roster=[q for q in ts.roster if q.pid != pid])
 
 
+class _Teams:
+    """The gender's teams, BUILT ON DEMAND. `district_teams` on every program of
+    a gender is the season rung's own cost (~860 roster builds a gender on a real
+    save, none of them memoised) — the first portal built all of them, both
+    genders, before it had looked at a single ladder, and again on every edit
+    and at the commit. The portal only ever needs the gated ORIGINS and the
+    destinations it actually consults, tier by tier; most candidates resolve in
+    their own county. `ensure()` builds a batch in ONE `district_teams` call
+    (each call resolves the family / transfer / read fingerprints — the
+    query-storm rule — so never build one school per call)."""
+
+    def __init__(self, schools, season, salt, prior, staff):
+        self.schools = {s.name: s for s in schools}
+        self.season, self.salt, self.prior, self.staff = season, salt, prior, staff
+        self.built: dict = {}
+
+    def ensure(self, names) -> None:
+        todo = [self.schools[n] for n in names if n not in self.built and n in self.schools]
+        if not todo:
+            return
+        for ts in jh.district_teams(todo, self.season, self.salt,
+                                    prior=self.prior, staff=self.staff):
+            self.built[ts.school.name] = ts
+
+    def __getitem__(self, name):
+        if name not in self.built:
+            self.ensure([name])
+        return self.built[name]
+
+    def __setitem__(self, name, ts):
+        self.built[name] = ts
+
+    def __contains__(self, name):
+        return name in self.schools
+
+
+class _Ladders:
+    """Each built team's ladder as a SORTED KEY LIST, kept incrementally.
+
+    `v1_rank(_with(ts, p))` re-sorts the whole roster — every entry's
+    `coach_eval`, each recomputing the player's overall from 49 attributes — to
+    learn where ONE newcomer lands. Measured on the fixture: 1.05M coach_eval
+    calls and 2.2M overall recomputes for ~700 candidates, and the real save's
+    tiers are wider. The ladder is a sorted list on `_order`'s own key, so a
+    trial is one key for the newcomer and a bisect; a placement inserts, a
+    removal deletes, and nothing is ever re-sorted. ‼️ The EMIT step still asks
+    the real `v1_rank` on the real team — this cache only steers the search, so
+    a key that disagreed with `_order` (a float tie, say) could cost a proposal
+    a row, never hand a player a seat the ladder does not give."""
+
+    def __init__(self, teams: _Teams, season: int, salt: str, prior: dict):
+        self.teams, self.season, self.salt, self.prior = teams, season, salt, prior
+        self.rows: dict = {}          # name -> [(key, pid)] ascending on key
+
+    @staticmethod
+    def _key(ts, p, read, future, interest):
+        return (-jh.coach_eval(p, ts.records.get(p.pid), prior=ts.prior.get(p.pid),
+                               lens=ts.lens, read=read, future=future,
+                               interest=interest), -p.str_value())
+
+    def rows_for(self, name):
+        got = self.rows.get(name)
+        if got is None:
+            ts = self.teams[name]
+            fut, itr = ts.future or {}, ts.interest or {}
+            got = sorted((self._key(ts, p, ts.read.get(p.pid, 0.0), fut.get(p.pid, 0.0),
+                                    itr.get(p.pid, 0.0)), p.pid) for p in ts.roster)
+            self.rows[name] = got
+        return got
+
+    def newcomer_key(self, name, p):
+        """`p`'s key on `name`'s ladder, as `_with` would give them: this coach's
+        read, their own prior, his future weight, no program interest."""
+        ts = self.teams[name]
+        read = (jh.coach_read(p.pid, ts.school.name, self.season, ts.lens, self.salt)
+                if ts.lens.read > 0.0 else 0.0)
+        pr = self.prior.get(p.pid)
+        return (-jh.coach_eval(p, None, prior=pr, lens=ts.lens, read=read,
+                               future=jh.future_value(p, ts.future_w), interest=0.0),
+                -p.str_value())
+
+    def trial(self, name, p, held=()) -> int | None:
+        """Where `p` would land on `name`'s ladder (0-based), or None when that
+        is off V1 — or when landing there would push a HELD player off it."""
+        import bisect
+        rows = self.rows_for(name)
+        v1 = v1_size(self.teams[name])
+        idx = bisect.bisect_right(rows, (self.newcomer_key(name, p), p.pid))
+        if idx >= v1:
+            return None
+        if held:
+            pos = {pid: i for i, (_k, pid) in enumerate(rows)}
+            for q in held:
+                j = pos.get(q)
+                if j is not None and idx <= j and j + 1 >= v1:
+                    return None
+        return idx
+
+    def rank(self, name, pid) -> int | None:
+        for i, (_k, q) in enumerate(self.rows_for(name)):
+            if q == pid:
+                return i if i < v1_size(self.teams[name]) else None
+        return None
+
+    def add(self, name, p) -> None:
+        import bisect
+        rows = self.rows_for(name)
+        bisect.insort_right(rows, (self.newcomer_key(name, p), p.pid))
+
+    def remove(self, name, pid) -> None:
+        rows = self.rows_for(name)
+        self.rows[name] = [r for r in rows if r[1] != pid]
+
+
 def _rising(ts, season: int) -> list:
     """This team's rising freshmen who played here as 8th-graders."""
     return [p for p in ts.roster
@@ -188,31 +302,34 @@ def build(world_id: int, season: int, salt: str, edits: dict | None = None) -> d
         schools = jh.load_schools(gender)
         prior = wd.jhsaa_prior_for_season(season, gender, world_id)
         staff = wd.jhsaa_staff_for_season(season, gender, world_id)
-        teams = {t.school.name: t for t in jh.district_teams(schools, season, salt,
-                                                           prior=prior, staff=staff)}
+        teams = _Teams(schools, season, salt, prior, staff)
+        ladders = _Ladders(teams, season, salt, prior)
+        # ORIGINS: the programs that could have rostered an 8th-grader last
+        # season (the gate rewound to that season, `early_seasons`) — a school
+        # list question, no roster needed. Built in ONE batch.
+        origins = [s.name for s in schools if (season - 1) in jh.early_seasons(s, season)]
+        teams.ensure(origins)
         origin_of: dict = {}          # pid -> origin team name (never changes)
         where: dict = {}              # pid -> the team they are on now
         player: dict = {}
-        for name, ts in teams.items():
-            if ts.school.classification not in jh.EARLY_CLASSES and not any(
-                    (p.jhsaa or {}).get("early") for p in ts.roster):
-                continue
-            for p in _rising(ts, season):
+        for name in origins:
+            for p in _rising(teams[name], season):
                 if p.pid in active:           # an owner-authored move already
                     continue
                 origin_of[p.pid] = where[p.pid] = name
                 player[p.pid] = p
         by_county: dict = {}
         by_area: dict = {}
-        for name, ts in teams.items():
-            by_county.setdefault(ts.school.county, []).append(name)
-            by_area.setdefault(ts.school.area, []).append(name)
+        for sc in schools:
+            by_county.setdefault(sc.county, []).append(sc.name)
+            by_area.setdefault(sc.area, []).append(sc.name)
+        county_of = {sc.name: sc.county for sc in schools}
 
         def tiers(origin):
             """Destination names tier by tier — county, area, neighbouring areas."""
             county = [n for n in by_county.get(origin.county, ()) if n != origin.name]
             area = [n for n in by_area.get(origin.area, ())
-                    if n != origin.name and teams[n].school.county != origin.county]
+                    if n != origin.name and county_of[n] != origin.county]
             near = [n for a in neighbors.get(origin.area, ()) for n in by_area.get(a, ())]
             return (("county", sorted(county)), ("area", sorted(area)),
                     ("neighbor", sorted(near)))
@@ -223,7 +340,7 @@ def build(world_id: int, season: int, salt: str, edits: dict | None = None) -> d
         # cascade pushed home kids into the portal and the slate churned). The
         # destinations DO see the moves already sent to them, so nobody is
         # projected onto a seat somebody in this same slate already took.
-        need = [pid for pid in player if v1_rank(teams[origin_of[pid]], pid) is None]
+        need = [pid for pid in player if ladders.rank(origin_of[pid], pid) is None]
         desc = {pid: _describe(player[pid], teams[origin_of[pid]], prior) for pid in need}
         by_ovr = lambda pid: (-player[pid].current_overall(), pid)   # noqa: E731
 
@@ -245,27 +362,23 @@ def build(world_id: int, season: int, salt: str, edits: dict | None = None) -> d
         def seats(pid, dname):
             """The player's V1 rank at `dname`, or None — and None too when the
             trial would push a REDIRECTED player at that school off V1."""
-            trial = _with(teams[dname], player[pid], prior, season, salt)
-            r = v1_rank(trial, pid)
-            if r is None:
-                return None, trial
-            if any(v1_rank(trial, q) is None for q in held.get(dname, ())):
-                return None, trial
-            return r, trial
+            return ladders.trial(dname, player[pid], held.get(dname, ()))
 
         def options_for(pid):
-            """The first tier with any V1 seat, as option rows; () when none."""
+            """The first tier with any V1 seat, as option rows; () when none.
+            A tier's destinations are BUILT only when the tier is consulted."""
             origin = teams[origin_of[pid]].school
             for tier, names in tiers(origin):
+                names = [n for n in names if n != where[pid]]
+                teams.ensure(names)
                 out = []
                 for dname in names:
-                    if dname == where[pid]:
-                        continue
-                    r, trial = seats(pid, dname)
+                    r = seats(pid, dname)
                     if r is not None:
                         out.append({"school": dname,
                                     "class": teams[dname].school.classification,
-                                    "tier": tier, "rank": r + 1, "v1": v1_size(trial)})
+                                    "tier": tier, "rank": r + 1,
+                                    "v1": v1_size(teams[dname])})
                 if out:
                     out.sort(key=lambda o: (o["rank"], o["school"]))
                     return out
@@ -274,7 +387,9 @@ def build(world_id: int, season: int, salt: str, edits: dict | None = None) -> d
         def place(pid, dname, tier, r, options, **flags):
             p = player[pid]
             teams[where[pid]] = _without(teams[where[pid]], pid)
+            ladders.remove(where[pid], pid)
             teams[dname] = _with(teams[dname], p, prior, season, salt)
+            ladders.add(dname, p)
             where[pid] = dname
             placed[pid] = {**base_row(pid), "to": dname,
                            "to_class": teams[dname].school.classification,
@@ -295,8 +410,9 @@ def build(world_id: int, season: int, salt: str, edits: dict | None = None) -> d
             origin = teams[origin_of[pid]].school
             tier = next((t for t, names in tiers(origin) if dest in names), None)
             r = None
-            if tier is not None and dest != origin.name:
-                r, _trial = seats(pid, dest)
+            if tier is not None and dest != origin.name and dest in teams:
+                teams.ensure([dest])
+                r = seats(pid, dest)
             if r is None:
                 failed[pid] = dest
                 continue
@@ -325,8 +441,7 @@ def build(world_id: int, season: int, salt: str, edits: dict | None = None) -> d
             # Only MOVERS are re-checked: an earlier mover a later one pushed off
             # V1 at the same destination is placed again (his old destination no
             # longer projects him, so he goes elsewhere or is stuck).
-            todo = [pid for pid in placed
-                    if v1_rank(teams[where[pid]], pid) is None]
+            todo = [pid for pid in placed if ladders.rank(where[pid], pid) is None]
         # 4. emit only what still holds; the rest stay where they are
         for pid in list(placed):
             m = placed[pid]
