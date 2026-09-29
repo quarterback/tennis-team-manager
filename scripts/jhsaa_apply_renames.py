@@ -140,6 +140,13 @@ def apply(rows: list[dict], m) -> list[tuple[str, str]]:
         # (63 rows, measured, against the 2 actually keyed). A full import never
         # creates those rows, so recomputing them is outside this script's
         # jurisdiction; a name with no RENAMES entry stands as committed.
+        # ‼️ TOWNS RENAME TOO, and for EVERY row — a town holds more schools than
+        # the one being renamed (Dutchfork keeps Cassius and King; Quartz City keeps
+        # five). Keyed on the SOURCE town, so it is idempotent only because a town
+        # already renamed is no longer a key. Applied here rather than left to a
+        # full import, which is not the path this file takes. It sat below the
+        # RENAMES gate once and moved only the renamed school's own row.
+        r["city"] = m.CITY_RENAMES.get(r["city"], r["city"])
         if src not in m.RENAMES:
             continue
         display = m._display_name(m.RENAMES.get(src, src))
@@ -153,10 +160,6 @@ def apply(rows: list[dict], m) -> list[tuple[str, str]]:
             r["source"] = src
         else:
             r.pop("source", None)
-        # ‼️ TOWNS RENAME TOO, and the key is the SOURCE town — so this is idempotent
-        # only because a town already renamed is no longer a key. Applied here rather
-        # than left to a full import, which is not the path this file takes.
-        r["city"] = m.CITY_RENAMES.get(r["city"], r["city"])
         r["private"] = bool(r.get("private")) or display in m.PRIVATE_SCHOOLS
         if display in m.MASCOTS:
             r["mascot"] = m.MASCOTS[display]

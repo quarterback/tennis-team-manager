@@ -139,7 +139,7 @@ _UNANCHORED_PLACES = [
     ("Jackson",         "Teton",      "Bear River Country", "Teton County, WY",       43.479, -110.762,  10500),
     ("Lower Lake",      "Lake",       "Cascade Divide",     "Lake County, CA",        38.911, -122.611,   1300),
     ("Ukiah",           "Mendocino",  "Cascade Divide",     "Mendocino County, CA",   39.150, -123.208,  16600),
-    ("Money",           "Box Elder",  "Bear River Country", "Box Elder County, UT",   41.640, -112.500,    300),
+    ("Corinne",         "Box Elder",  "Bear River Country", "Box Elder County, UT",   41.640, -112.500,    300),
     ("Spring Harvest",  "Box Elder",  "Bear River Country", "Box Elder County, UT",   41.780, -112.150,    900),
     # --- Minidoka county: Rupert / Paul / Heyburn ground, south-central Idaho -
     ("Wyalusing",       "Minidoka",   "Snake River Plain",  "Minidoka County, ID",    42.619, -113.677,   3100),
