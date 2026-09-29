@@ -519,7 +519,12 @@ def create_app() -> Flask:
     # only) and name the season that world actually plays.
     _season = ""
     if _w:
-        _season = (f"JHSAA season {_wd.jhsaa_season_year(_w)}"
+        # `display_year`: a backdated lab save (a canonical-history reset, or one
+        # awaiting `attach_college`) must have its boot line agree with its pages —
+        # this is the line the repo says to read FIRST when a save looks wrong,
+        # and an identity year here beside displayed years everywhere else IS the
+        # forked-universe scare it exists to prevent. Offset 0 is the identity.
+        _season = (f"JHSAA season {_wd.display_year(_wd.jhsaa_season_year(_w))}"
                    if _wd.is_jhsaa_only(_wd.DEFAULT_SEED)
                    else f"season {_wd.display_base_year() + _w['year']}")
     logging.getLogger("baseline.server").warning(

@@ -807,6 +807,9 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     # The display-year offset is the same shape of leftover: a backdated lab-grown
     # save's offset carried into a fresh league would relabel 2026 as something else.
     worldconfig.set(_DISPLAY_OFFSET_KEY, "")
+    # And so is the per-run dice salt — a fresh world has no canonical past to be
+    # a "run" of. `reset_eras()` above already dropped the memo (`reset_schools`).
+    worldconfig.set(_jhsaa.RUN_SALT_SETTING, "")
     from . import jhsaa_desk as _desk
     _desk.reset()
     # Stored individual championships AND the national-team cups (Davis / BJK) are
@@ -4590,8 +4593,10 @@ def run_jhsaa(seed: int, world: dict) -> dict:
         # spring girls, so this is the FIRST event of the year and its pool must be
         # cut from the preseason ability ladder, not from one moved by seasons that
         # on this calendar have not been played yet. See `run_mixed_season`.
+        # `run_seed_offset()`: mixed runs at the world rung, outside `run_season`,
+        # so the per-run dice salt has to reach it here — 0 on an ordinary save.
         mixed = jhsaa_individuals.run_mixed_season(
-            season_year, salt=salt, seed=0,
+            season_year, salt=salt, seed=jhsaa.run_seed_offset(),
             staff=staffs)
         conn.executemany(
             "INSERT INTO world_jhsaa_individual"
