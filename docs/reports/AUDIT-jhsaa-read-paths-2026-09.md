@@ -126,3 +126,21 @@ opening (and `PRAGMA`-ing) 40–160 per page.
 - The page numbers here are second-hit; first hits on this fixture were 2.2 s (program)
   and 6.1 s (player), the difference being caches that are honestly warm after one hit
   (`_upstart_cache`, `_town_index`, era gates).
+
+## After the fixes (same fixture, second hit, one archived season materialised)
+
+| page | before | after | roster builds after |
+|---|---:|---:|---:|
+| program page | 0.42 s | 0.13 s | 0 (stored roster) |
+| rankings | 0.19 s | 0.05 s | 0 |
+| coach page | 0.21 s | 0.05 s | 0 |
+| player page | 0.81 s | 0.45 s | 7 (uncovered cohort seasons still scan; 0 once the rung has indexed them) |
+| portal build (with stored floors) | 55.8 s → 20.7 s (lazy) | 14.3 s | 394 of 688 (origins + confirmed finalists) |
+
+The season-blob parse and relabel are gone from every page (fix #1); the program
+and coach pages read stored rows (fix #2, #3); stored-ladder seats agreed with the
+live projection in 300 of 300 random trials, and the portal's slate is byte-identical.
+The one-time backfill of season rows on this fixture cost 1.5 s a gender; the
+provisional next-season state costs the rung one more whole-gender build (22 s here).
+Found on the way: the bulk history fold used by the export left `won` out of its
+schedule rows, so every exported JV record read 0-N; the stored rows fixed it.

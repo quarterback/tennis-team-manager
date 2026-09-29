@@ -369,6 +369,40 @@ CREATE INDEX IF NOT EXISTS ix_jhsaa_standing
 -- ENTRANTS ONLY. One row per (world, pid); `ident` is the ORIGIN program (the
 -- roster identity that regenerates the seat), so a transfer's pin is found by
 -- the program that generates them. ~9k rows a season, never updated.
+-- THE PER-PROGRAM SEASON ROW (read-path fix #2, owner directive 2026-09,
+-- docs/reports/AUDIT-jhsaa-read-paths-2026-09.md): `_season_row`'s output for
+-- every program of an archived season, written by the rung beside the archive
+-- (and backfilled ONCE per older season on first read). A program history used
+-- to parse the whole gender-season blob (~3 MB, ~180k relabel nodes on a real
+-- save) once per archived season to answer for ONE school — a hundred-season
+-- program page was minutes. This is a MATERIALISATION of the same fold, not a
+-- second source of truth: `v` is `_SEASON_ROW_VERSION`, a row at an older
+-- version is re-derived, and the table can be dropped and rebuilt from
+-- `world_jhsaa` + `world_jhsaa_dual` at any time. Keyed on the school name AS
+-- ARCHIVED (the archive identity); relabelled into today's names on read.
+CREATE TABLE IF NOT EXISTS world_jhsaa_season_row (
+  world_id INTEGER, year INTEGER, gender TEXT, school TEXT, v INTEGER, data TEXT,
+  PRIMARY KEY (world_id, year, gender, school)
+);
+CREATE INDEX IF NOT EXISTS ix_jhsaa_season_row_school
+  ON world_jhsaa_season_row(world_id, gender, school);
+-- THE PRESEASON STATE (read-path fix #3): see app/jhsaa_preseason.py.
+CREATE TABLE IF NOT EXISTS world_jhsaa_preseason_state (
+  world_id INTEGER, year INTEGER, gender TEXT, school TEXT,
+  provisional INTEGER DEFAULT 0, v INTEGER, data TEXT,
+  PRIMARY KEY (world_id, year, gender, school)
+);
+CREATE INDEX IF NOT EXISTS ix_jhsaa_preseason_state
+  ON world_jhsaa_preseason_state(world_id, year, gender);
+CREATE TABLE IF NOT EXISTS world_jhsaa_sibling (
+  world_id INTEGER, younger_pid TEXT, older_pid TEXT, gender TEXT, school TEXT,
+  name TEXT, entry INTEGER, year INTEGER,
+  PRIMARY KEY (world_id, younger_pid)
+);
+CREATE INDEX IF NOT EXISTS ix_jhsaa_sibling_older ON world_jhsaa_sibling(world_id, older_pid);
+CREATE TABLE IF NOT EXISTS world_jhsaa_sibling_cover (
+  world_id INTEGER, gender TEXT, year INTEGER, PRIMARY KEY (world_id, gender, year)
+);
 CREATE TABLE IF NOT EXISTS world_jhsaa_talent (
   world_id INTEGER, pid TEXT, gender TEXT, ident TEXT, entry INTEGER,
   seat INTEGER, talent REAL, tier TEXT, year INTEGER,
@@ -786,6 +820,9 @@ def reset(seed: int = DEFAULT_SEED) -> None:
                        " DELETE FROM world_jhsaa; DELETE FROM world_jhsaa_dual;"
                        " DELETE FROM world_jhsaa_individual; DELETE FROM world_jhsaa_injury; DELETE FROM world_jhsaa_jv_state;"
                        " DELETE FROM world_jhsaa_standing;"
+                       " DELETE FROM world_jhsaa_season_row;"
+                       " DELETE FROM world_jhsaa_preseason_state;"
+                       " DELETE FROM world_jhsaa_sibling; DELETE FROM world_jhsaa_sibling_cover;"
                        " DELETE FROM world_jhsaa_talent;")
     # The reclassification cycle's own tables (app/jhsaa_reclass.py) — created
     # here if absent, since the reset can run before that module ever opened them.
@@ -812,6 +849,7 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     # reuses world_id=1 after this reset, so the next save's year 0 would read the
     # prior save's histogram. The archive rows it folds were deleted above.
     _scoreline_cache.clear()
+    _arc_cache.clear()
     from app import jhsaa_coefficient as _coef
     _coef.reset()
     _context_cache.clear()
@@ -4381,6 +4419,7 @@ def run_jhsaa(seed: int, world: dict) -> dict:
             conn.execute("INSERT INTO world_jhsaa (world_id, year, gender, data)"
                          " VALUES (?,?,?,?)",
                          (world["id"], year, gender, json.dumps(summary)))
+            _arc_forget(world["id"], year, gender)      # the read memo (fix #1)
             # Match by match, so a school's season reads like a college schedule
             # without replaying it. Its own table, not a blob on the summary row:
             # ~10k duals a year per gender would make every summary read heavy.
@@ -4524,6 +4563,21 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                     honored.update(_jaw.row_pids(row))
             jhsaa_coaches.record_alumni(conn, world["id"], gender,
                                         season["teams"].values(), season_year, honored)
+            # THE PER-PROGRAM SEASON ROWS (read-path fix #2): every program's
+            # ledger row for this season, folded ONCE here where the archive is
+            # written, so no page ever parses the whole season to show one school.
+            _write_season_rows(conn, world["id"], year, gender)
+            # THE PRESEASON STATE (read-path fix #3): the coach ladder, V1 cut
+            # and floor, staff and investment terms of every program, as this
+            # season was entered — so a page reads them instead of rebuilding.
+            from . import jhsaa_preseason as _jps
+            _jps.record(conn, world["id"], year, gender, season["teams"].values(),
+                        season_year)
+            # THE SIBLING INDEX (read-path fix #4): every generated tie on this
+            # season's rosters, written younger -> older, so the player page reads
+            # it instead of building the town's next three cohorts.
+            _jps.record_siblings(conn, world["id"], year, gender,
+                                 (t.roster for t in season["teams"].values()))
         # MIXED DOUBLES — run here because a mixed pair is one player from each
         # gender and `run_season` only ever sees one. It is archived under gender
         # 'mixed': it belongs to neither field, so storing it on one gender's rows
@@ -4555,6 +4609,16 @@ def run_jhsaa(seed: int, world: dict) -> dict:
         # The exposure odometer's memo too: the season just archived is the one
         # every roster built from here reads as "last season".
         jhsaa._expo_cache.clear()
+    # NEXT SEASON'S PRESEASON STATE, PROVISIONAL (read-path fix #3): the one
+    # whole-association roster build the rising-freshman portal needs, paid HERE
+    # at the rung rather than on the request thread each time the portal opens.
+    # After the commit, because it reads the standing this rung just wrote.
+    from . import jhsaa_preseason as _jps
+    for gender in ("girls", "boys"):
+        try:
+            _jps.write_provisional(world["id"], year + 1, gender, season_year + 1, salt)
+        except Exception as exc:                    # never fail a played season on it
+            print(f"JHSAA preseason state ({gender}, {season_year + 1}) not written: {exc}")
     # COACH OF THE YEAR — selected once, off the committed archive (owner spec
     # 2026-09). After the commit, so it reads the season exactly as stored; a
     # failure here leaves the season intact and the award is selected on the
@@ -4637,16 +4701,48 @@ def _relabel(obj, key=None, _map=None):
     return obj
 
 
+#: The relabelled season blob, memoised per (world_id, year, gender) — READ-PATH
+#: FIX #1 (owner directive 2026-09, docs/reports/AUDIT-jhsaa-read-paths-2026-09.md).
+#: Every single-entity JHSAA page paid for the WHOLE gender-season document on
+#: every click: a ~3 MB JSON parse plus a ~180k-node `_relabel`, once per season
+#: shown, with no memo. An archived season is immutable, so the parsed result is
+#: too; it is invalidated where the row is written (`run_jhsaa`), wiped by
+#: `reset()`, and dropped when the school map changes (`jhsaa.reset_schools`,
+#: because the relabel reads today's names). BOUNDED — a parsed season is tens of
+#: MB of Python objects on a real save — so a page that walks a hundred seasons
+#: still parses a hundred blobs; that walk is what the per-program season rows
+#: (fix #2) remove. Threaded-worker rules apply: compute into a local, publish,
+#: return the local; never `return cache[key]`; never a global clear per season.
+_arc_cache: dict = {}
+_ARC_CACHE_MAX = 8
+
+
+def _arc_forget(world_id: int, year: int, gender: str) -> None:
+    _arc_cache.pop((world_id, year, gender), None)
+
+
 def get_jhsaa(world_id: int, year: int, gender: str) -> dict | None:
-    """The archived JHSAA season for a world-year, or None."""
+    """The archived JHSAA season for a world-year, or None. ‼️ The returned dict
+    is SHARED between callers — read it, never mutate it."""
+    key = (world_id, year, gender)
+    got = _arc_cache.get(key)
+    if got is not None:
+        return got
     conn = _db()
     try:
         r = conn.execute("SELECT data FROM world_jhsaa WHERE world_id=? AND year=?"
                          " AND gender=?", (world_id, year, gender)).fetchone()
     finally:
         conn.close()
+    if not r:
+        return None
     # Relabelled into today's names so a renamed program keeps every row it earned.
-    return _relabel(json.loads(r["data"])) if r else None
+    arc = _relabel(json.loads(r["data"]))
+    if len(_arc_cache) >= _ARC_CACHE_MAX:
+        for k in list(_arc_cache)[:max(1, len(_arc_cache) - _ARC_CACHE_MAX + 1)]:
+            _arc_cache.pop(k, None)           # oldest first; a season is never re-keyed
+    _arc_cache[key] = arc
+    return arc
 
 
 def jhsaa_jv_state(world_id: int, year: int, gender: str) -> dict | None:
@@ -7564,65 +7660,158 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
     return row
 
 
+#: Bump when `_season_row` changes shape or meaning: rows stored at an older
+#: version are re-derived on their next read (per season, never per page).
+_SEASON_ROW_VERSION = 1
+
+
+def _fold_season_rows(conn, world_id: int, year: int, gender: str) -> dict[str, dict]:
+    """`{school AS ARCHIVED: season row}` for one archived season — the blob parsed
+    once, the dual table read once and grouped by school, `_season_row` per
+    program. RAW names throughout (the archive identity): relabelling into
+    today's names is the READER's job, so a rename after the fold still finds
+    these rows through `known_names`."""
+    from collections import defaultdict
+    r = conn.execute("SELECT data FROM world_jhsaa WHERE world_id=? AND year=?"
+                     " AND gender=?", (world_id, year, gender)).fetchone()
+    if not r:
+        return {}
+    arc = json.loads(r["data"])
+    sched: dict[str, list[dict]] = defaultdict(list)
+    # ‼️ `level` AND `tied` COME TOO. `_season_row` scopes its court counts to
+    # varsity by `level` and folds the JV record off `level`/`tied`, so a row
+    # dict missing them reads as varsity-with-no-tie: JV courts join the
+    # program's varsity court totals and its JV record comes back empty. Both
+    # are silent — the numbers are all plausible.
+    # ‼️ EVERY row is still walked — `_season_row` counts a program's duals,
+    # so dropping the away rows would halve every record. Only the BOX SCORE
+    # moved: it lives on the home row (see `_archive_lines`), so the away
+    # rows take theirs from the home counterpart, matched on `jh_match_key`
+    # (the same tuple from either side). Materialised in ONE pass, because a
+    # cursor can hand back an away row before its home row.
+    drows = conn.execute(
+        # squad tags too, for the same `jh_match_key` reason (rule 2097).
+        # ‼️ `won` TOO: `jhsaa_jv_record` reads it, and the bulk fold this was
+        # lifted from (`jhsaa_history_rows`) left it out, so every exported
+        # JV record read 0-N — found by comparing these rows to the per-school
+        # fold, which reads `_schedule_rows` and had it.
+        "SELECT school, opp, home, phase, district, lines, level, tied, won,"
+        " squad, opp_squad"
+        " FROM world_jhsaa_dual"
+        " WHERE world_id=? AND year=? AND gender=?",
+        (world_id, year, gender)).fetchall()
+    # `dict(d)` because `jh_match_key` reads with `.get()` and a
+    # `sqlite3.Row` has no such method — it would raise, not degrade.
+    home_lines = {jh_match_key(dict(d)): unpack_lines(d["lines"])
+                  for d in drows if d["home"]}
+    for d in drows:
+        # Own lines FIRST: a pre-dedup archive carries them on both rows,
+        # so it never depends on the map resolving.
+        lines = unpack_lines(d["lines"]) or home_lines.get(jh_match_key(dict(d)), [])
+        sched[d["school"]].append({"home": bool(d["home"]), "level": d["level"] or "v",
+                                   "tied": bool(d["tied"]), "won": d["won"],
+                                   "lines": lines})
+    schools = {row["school"]
+               for dists in (arc.get("standings") or {}).values()
+               for rows_ in (dists or {}).values() for row in rows_}
+    out = {}
+    for school in schools:
+        row = _season_row(arc, year, school, sched.get(school, []))
+        if row:
+            out[school] = row
+    return out
+
+
+def _write_season_rows(conn, world_id: int, year: int, gender: str) -> None:
+    """Fold one season and store its rows (replacing any older-version rows)."""
+    rows = _fold_season_rows(conn, world_id, year, gender)
+    conn.execute("DELETE FROM world_jhsaa_season_row WHERE world_id=? AND year=?"
+                 " AND gender=?", (world_id, year, gender))
+    conn.executemany(
+        "INSERT OR REPLACE INTO world_jhsaa_season_row"
+        " (world_id, year, gender, school, v, data) VALUES (?,?,?,?,?,?)",
+        [(world_id, year, gender, school, _SEASON_ROW_VERSION, json.dumps(row))
+         for school, row in rows.items()])
+
+
+def _ensure_season_rows(conn, world_id: int, gender: str, years=None) -> None:
+    """Backfill: every archived season of `gender` (or just `years`) that has no
+    rows at the current version gets folded ONCE and stored — the first read of
+    a save archived before the table existed pays what the old program page paid
+    per click, once, and never again. Commits on the caller's connection."""
+    have = {r["year"]: r["v"] for r in conn.execute(
+        "SELECT year, MIN(v) AS v FROM world_jhsaa_season_row"
+        " WHERE world_id=? AND gender=? GROUP BY year", (world_id, gender)).fetchall()}
+    if years is None:
+        years = [r["year"] for r in conn.execute(
+            "SELECT DISTINCT year FROM world_jhsaa WHERE world_id=? AND gender=?",
+            (world_id, gender)).fetchall()]
+    todo = [y for y in years if have.get(y) is None or have[y] < _SEASON_ROW_VERSION]
+    for y in todo:
+        _write_season_rows(conn, world_id, y, gender)
+    if todo:
+        conn.commit()
+
+
 def jhsaa_school_seasons(world_id: int, gender: str, school: str) -> list[dict]:
     """A program's season ledger, newest first — one row per archived world-year.
 
     EVERY archived year produces a row, trophy or not: a program history is how a
     program did year over year, so the losing seasons have to show. (It once returned
     only the years carrying a title or an honour, which made a school look like it had
-    never played in between.)"""
+    never played in between.)
+
+    READS THE STORED ROWS (fix #2): one indexed query over every name this program
+    has ever carried (`known_names` — a renamed school's older seasons sit under
+    the old string), relabelled into today's names row by row. Never the blob."""
+    from . import jhsaa as _jh
+    names = _jh.known_names(school, gender)
     conn = _db()
     try:
-        years = [r["year"] for r in conn.execute(
-            "SELECT DISTINCT year FROM world_jhsaa WHERE world_id=? AND gender=?"
-            " ORDER BY year DESC", (world_id, gender)).fetchall()]
-        out = []
-        for year in years:
-            r = conn.execute("SELECT data FROM world_jhsaa WHERE world_id=? AND year=?"
-                             " AND gender=?", (world_id, year, gender)).fetchone()
-            if not r:
-                continue
-            # Relabelled, so a season this program played under an older name is
-            # still ITS season — the whole point of the fix.
-            row = _season_row(_relabel(json.loads(r["data"])), year, school,
-                              _schedule_rows(conn, world_id, year, gender, school))
-            if row:
-                out.append(row)
+        _ensure_season_rows(conn, world_id, gender)
+        rows = conn.execute(
+            "SELECT year, data FROM world_jhsaa_season_row WHERE world_id=? AND gender=?"
+            " AND school IN (%s) ORDER BY year DESC" % ",".join("?" * len(names)),
+            (world_id, gender, *names)).fetchall()
     finally:
         conn.close()
+    out, seen = [], set()
+    for r in rows:
+        if r["year"] in seen:          # two names in one year cannot be one program
+            continue
+        seen.add(r["year"])
+        out.append(_relabel(json.loads(r["data"])))
     return out
 
 
 def jhsaa_season_rows_at(world_id: int, wanted) -> dict:
     """`{(year, gender, school): season row}` for exactly the seasons named — the
     coach page's ledger (owner, 2026-09: mirror the player page, by season).
-
-    `jhsaa_school_seasons` builds a program's WHOLE history; a coach needs only the
-    years they coached, possibly at several programs. So each (year, gender)
-    archive is loaded ONCE here and every program wanted from it is read off the
-    same parse — the cost is bounded by the career, never by the save's length.
-    `school` is today's display name (the archive is relabelled into today's
-    names, so a renamed program still finds its own seasons)."""
+    `school` is today's display name. Reads the stored rows (fix #2): a career
+    costs one small query per (year, gender), never a whole-season parse."""
+    from . import jhsaa as _jh
     by_arc: dict = {}
     for year, gender, school in wanted:
         by_arc.setdefault((year, gender), set()).add(school)
     out: dict = {}
     conn = _db()
     try:
+        for gender in {g for _y, g in by_arc}:
+            _ensure_season_rows(conn, world_id, gender,
+                                sorted({y for y, g in by_arc if g == gender}))
         for (year, gender), schools in sorted(by_arc.items()):
-            r = conn.execute("SELECT data FROM world_jhsaa WHERE world_id=? AND year=?"
-                             " AND gender=?", (world_id, year, gender)).fetchone()
-            if not r:
-                continue
-            arc = _relabel(json.loads(r["data"]))
             for school in schools:
-                row = _season_row(arc, year, school,
-                                  _schedule_rows(conn, world_id, year, gender, school))
-                if row:
-                    out[(year, gender, school)] = row
+                names = _jh.known_names(school, gender)
+                r = conn.execute(
+                    "SELECT data FROM world_jhsaa_season_row WHERE world_id=? AND year=?"
+                    " AND gender=? AND school IN (%s) LIMIT 1" % ",".join("?" * len(names)),
+                    (world_id, year, gender, *names)).fetchone()
+                if r:
+                    out[(year, gender, school)] = _relabel(json.loads(r["data"]))
     finally:
         conn.close()
     return out
+
 
 
 def jh_road_ladder() -> tuple[str, ...]:
@@ -7744,70 +7933,25 @@ def jhsaa_program_totals(seasons: list[dict]) -> dict:
 
 
 def jhsaa_history_rows(world_id: int, gender: str) -> dict[str, list[dict]]:
-    """EVERY program's season ledger for every archived year, in ONE pass over
-    the archive — the bulk counterpart of `jhsaa_school_seasons` for the research
-    export. Per archived year the season blob is parsed once and the dual table
-    read once (grouped by school), then `_season_row` runs per program over
-    those parsed structures — never one blob parse per (school, year), which is
-    what looping `jhsaa_school_seasons` over ~850 programs would cost. Rows per
-    school come newest-first, matching `jhsaa_school_seasons`."""
-    from collections import defaultdict
+    """EVERY program's season ledger for every archived year — the bulk
+    counterpart of `jhsaa_school_seasons` for the research export and the
+    retired-programs page. Reads the stored per-program rows (fix #2), grouped
+    under each program's CURRENT name (a renamed program's older seasons meet its
+    newer ones), newest first per school."""
     from . import jhsaa as _jh
     _alias = _jh.former_names()
     conn = _db()
     out: dict[str, list[dict]] = {}
     try:
-        years = [r["year"] for r in conn.execute(
-            "SELECT DISTINCT year FROM world_jhsaa WHERE world_id=? AND gender=?"
-            " ORDER BY year DESC", (world_id, gender)).fetchall()]
-        for year in years:
-            r = conn.execute("SELECT data FROM world_jhsaa WHERE world_id=? AND year=?"
-                             " AND gender=?", (world_id, year, gender)).fetchone()
-            if not r:
-                continue
-            arc = _relabel(json.loads(r["data"]))
-            sched: dict[str, list[dict]] = defaultdict(list)
-            # ‼️ `level` AND `tied` COME TOO. `_season_row` scopes its court counts to
-            # varsity by `level` and folds the JV record off `level`/`tied`, so a row
-            # dict missing them reads as varsity-with-no-tie: JV courts join the
-            # program's varsity court totals and its JV record comes back empty. Both
-            # are silent — the numbers are all plausible.
-            # ‼️ EVERY row is still walked — `_season_row` counts a program's duals,
-            # so dropping the away rows would halve every record. Only the BOX SCORE
-            # moved: it lives on the home row (see `_archive_lines`), so the away
-            # rows take theirs from the home counterpart, matched on `jh_match_key`
-            # (the same tuple from either side). Materialised in ONE pass, because a
-            # cursor can hand back an away row before its home row.
-            drows = conn.execute(
-                # squad tags too, for the same `jh_match_key` reason (rule 2097).
-                "SELECT school, opp, home, phase, district, lines, level, tied,"
-                " squad, opp_squad"
-                " FROM world_jhsaa_dual"
-                " WHERE world_id=? AND year=? AND gender=?",
-                (world_id, year, gender)).fetchall()
-            # `dict(d)` because `jh_match_key` reads with `.get()` and a
-            # `sqlite3.Row` has no such method — it would raise, not degrade.
-            home_lines = {jh_match_key(dict(d)): unpack_lines(d["lines"])
-                          for d in drows if d["home"]}
-            for d in drows:
-                # Own lines FIRST: a pre-dedup archive carries them on both rows,
-                # so it never depends on the map resolving.
-                lines = unpack_lines(d["lines"]) or home_lines.get(
-                    jh_match_key(dict(d)), [])
-                # Grouped under the CURRENT name, matching the relabelled standings —
-                # otherwise a renamed program's duals never meet its own season row.
-                sched[_alias.get(d["school"], d["school"])].append(
-                    {"home": bool(d["home"]), "level": d["level"] or "v",
-                     "tied": bool(d["tied"]), "lines": lines})
-            schools = {row["school"]
-                       for dists in (arc.get("standings") or {}).values()
-                       for rows_ in (dists or {}).values() for row in rows_}
-            for school in schools:
-                row = _season_row(arc, year, school, sched.get(school, []))
-                if row:
-                    out.setdefault(school, []).append(row)
+        _ensure_season_rows(conn, world_id, gender)
+        rows = conn.execute(
+            "SELECT year, school, data FROM world_jhsaa_season_row"
+            " WHERE world_id=? AND gender=? ORDER BY year DESC", (world_id, gender)).fetchall()
     finally:
         conn.close()
+    for r in rows:
+        out.setdefault(_alias.get(r["school"], r["school"]), []).append(
+            _relabel(json.loads(r["data"])))
     return out
 
 

@@ -37,6 +37,7 @@ import math
 import time
 
 from . import jhsaa as jh
+from . import jhsaa_preseason as jps
 
 MAX_PASSES = 4
 #: Two areas neighbour when any of their towns lie within this many miles of each
@@ -304,6 +305,14 @@ def build(world_id: int, season: int, salt: str, edits: dict | None = None) -> d
         staff = wd.jhsaa_staff_for_season(season, gender, world_id)
         teams = _Teams(schools, season, salt, prior, staff)
         ladders = _Ladders(teams, season, salt, prior)
+        # THE STORED PRESEASON STATE (read-path fix #3): the rung wrote every
+        # program's projected ladder and V1 FLOOR for this season, provisionally,
+        # when it archived the last one. A destination is eliminated against its
+        # stored floor with one key and a bisect — no roster built — and only a
+        # program that seats the player on the STORED ladder is built live and
+        # confirmed. Empty on a save whose last rung predates the store, in which
+        # case every destination is built live (the old cost, once).
+        stored = jps.load(world_id, season - wd.BASE_YEAR - 1, gender)
         # ORIGINS: the programs that could have rostered an 8th-grader last
         # season (the gate rewound to that season, `early_seasons`) — a school
         # list question, no roster needed. Built in ONE batch.
@@ -364,12 +373,31 @@ def build(world_id: int, season: int, salt: str, edits: dict | None = None) -> d
             trial would push a REDIRECTED player at that school off V1."""
             return ladders.trial(dname, player[pid], held.get(dname, ()))
 
+        def plausible(pid, names):
+            """The destinations worth BUILDING: already live, or seating the
+            player on their stored ladder, or with no stored state to ask."""
+            p = player[pid]
+            keep = []
+            for dname in names:
+                if dname in teams.built:
+                    keep.append(dname)
+                    continue
+                st = stored.get(dname)
+                if st is None or st.get("floor") is None:
+                    keep.append(dname)                     # nothing to eliminate on
+                    continue
+                if jps.seat_on(st, jps.newcomer_key(st, p, season, salt,
+                                                    prior.get(pid))) is not None:
+                    keep.append(dname)
+            return keep
+
         def options_for(pid):
             """The first tier with any V1 seat, as option rows; () when none.
-            A tier's destinations are BUILT only when the tier is consulted."""
+            A tier's destinations are BUILT only when the tier is consulted, and
+            only the ones the stored floors do not eliminate."""
             origin = teams[origin_of[pid]].school
             for tier, names in tiers(origin):
-                names = [n for n in names if n != where[pid]]
+                names = plausible(pid, [n for n in names if n != where[pid]])
                 teams.ensure(names)
                 out = []
                 for dname in names:

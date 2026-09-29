@@ -5522,7 +5522,13 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     jv_dates = _jh_dates(jv_sched, season_year, cal)
     jv_w, jv_l, jv_t = world.jhsaa_jv_record(all_sched)
     lines = _jh_line_records(sched)
-    roster = jh.build_roster(sc, season_year, salt)
+    # THE ROSTER, AS STORED (read-path fix #3): an archived season's roster in
+    # coach order comes off `world_jhsaa_preseason_state`, written by the rung
+    # that played it. Only a season archived before the store rebuilds it here.
+    import app.jhsaa_preseason as _jps
+    roster = _jps.stored_roster(w["id"], yr, g, school) if yr is not None else None
+    if roster is None:
+        roster = jh.build_roster(sc, season_year, salt)
     br = (arc or {}).get("brackets", {}).get(sc.group) or {}
     seeds = _jh_seeds(br)
     # Every stage is its own draw with its own seed order — a team's Sectional seed,
@@ -5826,7 +5832,8 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                     # star rating were already computed by `Prospect` (the same
                     # methods the college recruit board reads), just never surfaced
                     # here. Pure display: no new simulation.
-                    "ceiling": round(jh.pot_display(p), 1),
+                    "ceiling": round(p.ceiling_estimate if isinstance(p, _jps.StoredPlayer)
+                                     else jh.pot_display(p), 1),
                     "stars": p.star_rating(),
                     "str": p.str_value(),
                     "singles": "{}-{}".format(*lines.get(p.name, {}).get("s", (0, 0))),

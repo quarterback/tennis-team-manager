@@ -3238,6 +3238,12 @@ def reset_schools() -> None:
     _expo_cache.clear()
     _expo_world.clear()
     _pins_cache.clear()
+    # The archived-season read memo relabels into TODAY'S names (read-path fix #1),
+    # so a school-map change drops it too.
+    import sys as _sys
+    _w = _sys.modules.get("app.world")
+    if _w is not None:
+        _w._arc_cache.clear()
     _transfer_name_cache.clear()
     global _former_cache
     _former_cache = None
@@ -3759,16 +3765,35 @@ def generated_siblings(school: School, year: int, pid: str, salt: str) -> list[d
                     "school": me.jhsaa.get("sibling_school", ""),
                     "entry": me.jhsaa.get("sibling_entry"), "relation": "sibling"})
     entry = me.entry_year
+    # THE SIBLING INDEX FIRST (read-path fix #4, `jhsaa_preseason.record_siblings`):
+    # the rung writes every rostered player's tie younger -> older, so the
+    # younger siblings are one indexed query. The SCAN below — every program in
+    # the town, three cohorts, both genders, each a roster build — runs only for
+    # a cohort season the index does not cover (archived before it existed).
+    from . import jhsaa_preseason as _jps
+    from .world import BASE_YEAR, _active_world_id
+    wid = _active_world_id()
+    covered = _jps.sibling_cover(wid) if wid is not None else set()
+    seen = set()
+    if wid is not None:
+        for m in _jps.younger_siblings(wid, pid):
+            seen.add(m["pid"])
+            out.append(m)
     from app import overrides as ov
     pool = _town_index(ov.jhsaa_playup_version()).get(school.city) or [school]
     for sc in pool:
         for e in range(entry + 1, entry + SIBLING_MAX_GAP + 1):
             if e < sibling_era():
                 continue
+            # A cohort's first season is its entry year (or two earlier for an
+            # early participant); covered by the index, nothing to scan for.
+            first = min((e,) + tuple(early_seasons(sc, e) or ()))
+            if (sc.gender, first - BASE_YEAR - 1) in covered:
+                continue
             # The cohort as it was generated for ITS OWN freshman season: base
             # seats and floor top-ups alike, every one carrying its link.
             for q in build_roster(sc, e, salt):
-                if q.entry_year == e and q.jhsaa.get("sibling") == pid:
+                if q.entry_year == e and q.jhsaa.get("sibling") == pid and q.pid not in seen:
                     out.append({"pid": q.pid, "name": q.name, "gender": sc.gender,
                                 "school": sc.name, "entry": e, "relation": "sibling"})
     return out
