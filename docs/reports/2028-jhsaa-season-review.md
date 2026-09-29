@@ -74,7 +74,9 @@ Mt Jacqueline illustrates why school-level reclassification should not be read a
 
 ## Historical results and program movement
 
-Perry Green boys won their first title in the available archive. Frontier boys ended a 21-season drought, Klickitat 12 and Elgin nine.
+Perry Green boys won their first State championship in the available archive. L.B. Johnson girls supplied the other major first: the program reached a State final for the first time in the full 76-season record, entering 9A as the No. 2 seed before losing 6-3 to Mater Dei. Sophomore Savannah Pettit was the 9A player of the year during that run.
+
+Frontier boys ended a 21-season title drought, Klickitat 12 and Elgin nine. Levee Bluff boys reached a State semifinal for the first time in 31 seasons, Trout Lake boys for the first time in 24 and Morne Caribou boys for the first time in 16. Arthur girls reached a State semifinal for the first time in the available record.
 
 The girls produced the longest waits. Ninemile won Group 3 for the first time since **1958**, a 70-season drought. Cheney had not won since 1992; Christ the King since 1998; Jackson Hole since 2008; Mirage Crossing since 2014.
 
@@ -82,9 +84,13 @@ Important 2027→28 gains included Borough Beach boys 5-21→18-10 and State; Po
 
 Large reversals included Delbarton boys 18-11→5-18, Kernwood County 21-5→12-16, Marlow girls 18-7→3-20, Clinton 21-5→8-18 and Singleton 30-4→13-14.
 
-## Tournament of Champions
+## Repeat champions and Tournament of Champions
 
-Hazel Country Day swept the TOCs. The boys completed a 33-0 season by beating Gottschalk-Herman in the final; the girls finished 32-1 and beat Jackson Hole. The TOC is reported as its own cross-classification championship, not as a universal ranking that retroactively supersedes the class tournaments.
+Hazel Country Day's boys won 8A for a third consecutive season. Their canonical 2026–28 records were 40-1, 33-1 and 33-0, and 2028 gave them a second Tournament of Champions title in that span. The girls won 8A as well, making 2028 the first season in the available program history in which Hazel Country Day won both boys and girls team championships in the same class.
+
+Mt Jacqueline swept 1A in both genders for the second consecutive season. The boys went 30-3-1 and 16-0 in league play; the girls repeated from the No. 9 State seed. The paired repeat is more informative than either championship alone because both teams survived the 2027 move from 2A to 1A and immediately repeated in their new class.
+
+Hazel Country Day then swept the TOCs. The boys completed a 33-0 season by beating Gottschalk-Herman in the final; the girls finished 32-1 and beat Jackson Hole. The TOC is reported as its own cross-classification championship, not as a universal ranking that retroactively supersedes the class tournaments.
 
 ## Rising-freshman portal
 
@@ -152,6 +158,14 @@ Not established:
 - a new salt changes realized history, not the competitive rules;
 - same-season `bloom_grades` cannot be used to declare maturity success or failure because events affect subsequent builds;
 - portal playing-time conversion is better established than long-term developmental effect.
+
+## What carries into 2029
+
+The strongest returning flight-record cores are concentrated among programs that were already deep in the 2028 postseason. Boys groups to watch include Jesuit/Pacific Gate/Notre Dame in 9A; Hazel Country Day/Orchard Union/Caldera in 8A; Canyonlands/Glen Park/Star City in 7A; and Clover/Perry Green/Morne Caribou in 6A. Girls include L.B. Johnson/Mater Dei/Wells in 9A; Hazel Country Day/Oakhaven/Chaminade in 8A; Canyonlands/Metropolitan Country Day/Blackpine in 7A; and Foxtail Meadows/Cheney/Arthur in 6A.
+
+The same measure identifies Quarmont and Barclay boys in 4A, Tunnelton and Villard in 3A, Cassius and Gottschalk-Herman in 2A, Coastal Christian and Mt Jacqueline in 1A, Joseph and Frontier in Group 1, Riverview and Elgin in Group 2, and Irrigon and Klickitat in Group 3. On the girls side, California Canyons/Biloxi Heights, Monte Blanco/Draybrook Union, Christ the King/Texas Beach, Jamaica/Mt Jacqueline, La Grande/Jackson Hole, Spring Harvest/Elgin and Riviere Salee/Ninemile lead the corresponding returning groups.
+
+These are returning-production observations, not 2029 predictions.
 
 ## 2029 measures
 
