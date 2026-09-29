@@ -578,9 +578,9 @@ FORMER_NAMES = {
     "Fort Salish Independent":                     "Bayside Christian",
     "Fort Salish Independent School":              "Bayside Christian",
     "Fort Valois Design":                          "Valois Bluffs",
-    "Fort Valois Public Service":                  "Sagebrush",
+    "Fort Valois Public Service":                  "Franklin Fort Valois",
     "Fort Valois School of Design and Engineering": "Valois Bluffs",
-    "Fort Valois School of Public Service":        "Sagebrush",
+    "Fort Valois School of Public Service":        "Franklin Fort Valois",
     "Foundry High":                                "Esperanza",
     "Frances Gaines":                              "North Carroway",
     "Friendship City":                             "Friendship",
@@ -648,6 +648,7 @@ FORMER_NAMES = {
     "Homecroft Manufacturing and Technology Academy": "West Burlington",
     "Homeland":                                    "Garmendia",
     "Homestead North":                             "Garden Plain",
+    "Horseshoe Bend":                              "Cedarbrook",
     "Housatonic HS":                               "Housatonic",
     "Huckle Lake":                                 "Mount Dylan Lake",
     "Hydraulicwood":                               "Gold Run",
@@ -703,7 +704,7 @@ FORMER_NAMES = {
     "Katya Moroz":                                 "Emigrant",
     "Katya Moroz North":                           "Pinyon Ridge",
     "Keldale":                                     "Espoo",
-    "Kelford Northwest":                           "Horseshoe Bend",
+    "Kelford Northwest":                           "Cedarbrook",
     "Kelview Union":                               "Iisalmi",
     "Kilbride Switch South":                       "Switchback",
     "Klara Marchand":                              "Meriwether",
@@ -905,6 +906,7 @@ FORMER_NAMES = {
     "Sage Lake":                                   "Sage Village",
     "Sage Meadows":                                "Galactica Plains",
     "Sage Point":                                  "California Canyons",
+    "Sagebrush":                                   "Franklin Fort Valois",
     "Saint Francis":                               "Kingsley",
     "Saltbush Reach":                              "Saltbush",
     "Salvador Figueroa":                           "Vesper",
@@ -1423,7 +1425,7 @@ RENAMES = {
     "Calderwood School": "Calderwood",
     "Carroway School of Public Service": "Liberty Hill",
     "Dahlberg School of Science and Industry": "Hartford City",
-    "Fort Valois School of Public Service": "Sagebrush",
+    "Fort Valois School of Public Service": "Franklin Fort Valois",
     "Galina Markov": "Monroe",
     "Harbor Gate North": "Van Buren",
     "Harrow School of Design and Engineering": "New Boston",
@@ -1639,7 +1641,7 @@ RENAMES = {
     "Hawk Lake Eastgate": "Oakhaven",                          # 6A Hawk Lake
     "Hawk Lake Southeast": "Pine Barrens",                     # 5A Hawk Lake
     "Homestead North": "Garden Plain",                         # 7A Harriman
-    "Kelford Northwest": "Horseshoe Bend",                     # 3A Kelford
+    "Kelford Northwest": "Cedarbrook",                     # 3A Kelford
     "Kilbride Switch South": "Switchback",                     # 3A Kilbride Switch
     "Lake Esperanza South": "Malheur Flat",                    # 7A Lake Esperanza
     "Llerena East": "Juniper Well",                            # 5A Llerena

@@ -114,7 +114,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     3A   430  Vesper Polytech                        Vesper                 Vesper Polytechnic Institute
 
 
--- SAME LEADING WORD, DIFFERENT CITIES (79 groups)
+-- SAME LEADING WORD, DIFFERENT CITIES (80 groups)
     7A  1444  Alder Crossing                         Boyerstown             Boyerstown North
     3A   438  Alder Co-op                            Monte Blanco           Claudette Freeman
 
@@ -193,6 +193,9 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     4A   729  Fort Weller                            Fort Weller            Fort Salish
     1A   118  Fort Wren                              Fort Wren              Silvale
     2A   238  Fort Paynes                            Jessup Bar             Jessup Bar
+
+   Group 1  2551  Franklin Fort Valois                   Fort Valois            Fort Valois School of Public Service
+    8A  1957  Franklin                               Mercer City            Lillian Stokes
 
    Group 2   950  Garden City                            Garden City            Burdensome
    Group 1  1543  Garden Plain                           Harriman               Homestead North
@@ -1095,7 +1098,7 @@ Fort Tabor — 1 program (Goldbank County, Southern Jefferson)
     2A   288 pub  Fort Tabor                                                Sluice League                      Ewartville
 
 Fort Valois — 6 programs (Stagewater County, Kangas)
-   Group 1  2551 pub  Sagebrush                                                 Far West League                    Fort Valois School of Public Service
+   Group 1  2551 pub  Franklin Fort Valois                                      Far West League                    Fort Valois School of Public Service
    Group 1  2528 pub  Cole Valley                                               Far West League                    Lev Voronin
    Group 1  2469 pub  Fort Valois                                               Far West League                    Fort Valois
    Group 1  2447 pub  Stagewater                                                Far West League                    Galina Romanov
@@ -1332,7 +1335,7 @@ Kelford — 4 programs (Ferris County, Gold Valley)
     5A   813 pub  Kelford                                                   Valley Coast Interscholastic League Kelford
     3A   486 priv Mercy Academy Valley                                      Mission League                     Mercy Academy Valley
     3A   464 pub  Crane                                                     Gold Valley League                 Crane
-    3A   379 pub  Horseshoe Bend                                            Gold Valley League                 Kelford Northwest
+    3A   379 pub  Cedarbrook                                                Gold Valley League                 Kelford Northwest
 
 Kemmerer — 1 program (Star Valley County, Bear River Country)
    Group 2  1000 pub  Star Valley                                               Forks League                       Star Valley Regional

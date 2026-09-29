@@ -3619,6 +3619,26 @@
       "source": "Viktor Kareva"
     },
     {
+      "name": "Cedarbrook",
+      "city": "Kelford",
+      "county": "Ferris",
+      "area": "Gold Valley",
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 379,
+      "private": false,
+      "mascot": "Hardrockers",
+      "colors": [
+        "#167339",
+        "#e8e6df"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Gold Valley League",
+      "boys_district": "Gold Valley League",
+      "source": "Kelford Northwest"
+    },
+    {
       "name": "Central West End",
       "city": "Telfair",
       "county": "Rimrock",
@@ -6729,6 +6749,26 @@
       "source": "Lillian Stokes"
     },
     {
+      "name": "Franklin Fort Valois",
+      "source": "Fort Valois School of Public Service",
+      "city": "Fort Valois",
+      "county": "Stagewater",
+      "area": "Kangas",
+      "classification": "Group 1",
+      "group": "Group 1",
+      "enrollment": 2551,
+      "private": false,
+      "mascot": "Bluejays",
+      "colors": [
+        "#204e39",
+        "#c8a24a"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Far West League",
+      "boys_district": "Far West League"
+    },
+    {
       "name": "Free Hill",
       "source": "Free Hill",
       "city": "Free Hill",
@@ -8455,26 +8495,6 @@
       "girls_district": "Millworks Athletic Association",
       "boys_district": "Millworks Athletic Association",
       "source": "Herbert Hoover"
-    },
-    {
-      "name": "Horseshoe Bend",
-      "city": "Kelford",
-      "county": "Ferris",
-      "area": "Gold Valley",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 379,
-      "private": false,
-      "mascot": "Hardrockers",
-      "colors": [
-        "#167339",
-        "#e8e6df"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Gold Valley League",
-      "boys_district": "Gold Valley League",
-      "source": "Kelford Northwest"
     },
     {
       "name": "Housatonic",
@@ -15797,26 +15817,6 @@
       "girls_district": "Big Sky League",
       "boys_district": "Big Sky League",
       "source": "Sage Lake"
-    },
-    {
-      "name": "Sagebrush",
-      "source": "Fort Valois School of Public Service",
-      "city": "Fort Valois",
-      "county": "Stagewater",
-      "area": "Kangas",
-      "classification": "Group 1",
-      "group": "Group 1",
-      "enrollment": 2551,
-      "private": false,
-      "mascot": "Bluejays",
-      "colors": [
-        "#204e39",
-        "#c8a24a"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Far West League",
-      "boys_district": "Far West League"
     },
     {
       "name": "Sally Ride",
