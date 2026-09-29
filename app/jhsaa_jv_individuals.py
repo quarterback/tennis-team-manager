@@ -16,12 +16,13 @@ WHAT IS DIFFERENT FROM THE VARSITY INDIVIDUAL EVENT, and why:
     one statewide field, so there is exactly ONE JV Singles State Champion and
     ONE JV Doubles State Champion per gender. That is why the archive's group
     key is `GROUP_KEY` rather than a class: there is no class to store.
-  * **UPPERCLASSMEN, AND JV ONLY.** Sophomores, juniors and seniors who are not
-    in the varsity eleven (JHSAA rule 2026-09; the event opened seniors-only in
-    singles and juniors-and-up in doubles — see `ELIGIBLE_GRADES`). The JV half
-    comes off `jhsaa.jv_pool` — the ONE ladder, cut below
-    `lineup_need("regular")` — so this invents no roster split of its own and a
-    player who played their way onto varsity is, correctly, not JV any more.
+  * **JV ONLY, ANY GRADE.** Every JV player below the class's rank guard
+    (`event_from`), whatever their grade (JHSAA rule 2026-09 removed the grade
+    rule — the event opened seniors-only in singles, juniors-and-up in doubles,
+    then sophomores-and-up in both). The JV half comes off `jhsaa.jv_pool` — the
+    ONE ladder, cut below `lineup_need("regular")` — so this invents no roster
+    split of its own and a player who played their way onto varsity is,
+    correctly, not JV any more.
   * **QUALIFIED, NOT OPEN.** The varsity flights take every school's holder with
     no cut (talent is not evenly distributed geographically, so a quota would
     send the wrong players). Here the field is small by construction — one
@@ -109,30 +110,13 @@ PHASE = "jv_individual"
 #: serving a JV draw under a class heading.
 GROUP_KEY = "ALL"
 
-#: Twelfth grade. `jhsaa` keys graduation off exactly this comparison.
-SENIOR_GRADE = 12
-
-#: Who may enter, PER BRACKET. **Sophomores, juniors and seniors, both brackets**
-#: (JHSAA rule 2026-09). The event opened in 2026-08 as singles-for-seniors and
-#: doubles-for-juniors-and-seniors, and that asymmetry was never sentiment — it was
-#: arithmetic. A school fields three different people (its JV No. 1 in singles, the
-#: next two as the pair), and a JV pool is only the roster below the varsity eleven:
-#: measured across three classifications, ~72% of programs had a JV senior at all
-#: and just ~14% had three, so a seniors-only doubles bracket left most of the
-#: association unable to enter and some districts with no champion to send. Opening
-#: doubles to eleventh grade fixed that without touching singles.
-#:
-#: Tenth grade now opens both, so the two pools are IDENTICAL — and the mapping is
-#: deliberately kept per-bracket rather than collapsed to one tuple, because which
-#: grades may enter which event is an association decision that has already moved
-#: twice and will move again. A single shared constant would have to be re-split
-#: the next time they diverge.
-#:
-#: ‼️ NINTH GRADE IS STILL OUT, and that is the one line the depth argument does
-#: NOT reach: a ninth-grader below the varsity eleven is a beginner, not an
-#: underplaced player, and the event exists to give the latter a draw.
-_JV_GRADES = (10, 11, SENIOR_GRADE)
-ELIGIBLE_GRADES = {SINGLES: _JV_GRADES, DOUBLES: _JV_GRADES}
+#: ‼️ THERE IS NO GRADE RULE (JHSAA rule 2026-09). Any JV player below the rank
+#: guard (`event_from`) may enter either bracket, ninth-graders and early
+#: participants included. The grade rule moved three times — singles seniors-only
+#: and doubles juniors-and-up (2026-08), then sophomores-and-up in both — before
+#: the association approved removing it. MIXED DOUBLES was never grade-gated and is
+#: untouched (`jhsaa_individuals.mixed_entry`). The rank guard is what keeps varsity
+#: players out; it stays.
 
 #: ‼️ A FULL 128 DRAW (owner rule 2026-09, the association having judged the event
 #: a success). Not a cap on a smaller field any more — an EXACT size the three entry
@@ -143,7 +127,7 @@ STATE_FIELD = 128
 #: Berths the defending champion's PROGRAM receives on top of its district entry.
 #: One, and it belongs to the school rather than to the player who won it. That
 #: was FORCED while singles was seniors-only (the champion had always graduated by
-#: the time the bid was used); with tenth grade eligible a champion can return, so
+#: the time the bid was used); with every grade eligible a champion can return, so
 #: it is now a CHOICE — the bid is the program's reward, and a returning champion
 #: simply takes their district seat while the bid buys the school's next entry
 #: (`school_entry(exclude=...)`, which already handled this).
@@ -162,9 +146,8 @@ QUAL_NAMES = {QUAL_SINGLES: "JV Singles Qualifying",
 
 #: How many players an entry is. `jhsaa_individuals` states this as fixed RANKS
 #: because all six of its flights draw from one pool; here the rule is stated as a
-#: SIZE and `school_entry` takes the top of each bracket's own pool
-#: (`ELIGIBLE_GRADES`), which is what lets the two brackets' pools differ — they
-#: have before and may again, even though they are identical today.
+#: SIZE and `school_entry` takes the top of the eligible pool (`jv_eligible`),
+#: holding the singles entrant out of the pair.
 ENTRY_SIZE = {SINGLES: 1, DOUBLES: 2}
 
 
@@ -188,6 +171,15 @@ ENTRY_SIZE = {SINGLES: 1, DOUBLES: 2}
 #: and "played five varsity matches" falls off a cliff (36% → 17%). Move it to 15 by
 #: changing this one number.
 #:
+#: ‼️ IT IS A FLOOR, AND THE CLASS'S VARSITY DEPTH CAN PUSH IT DOWN (owner rule
+#: 2026-09, `event_from`). 14 was measured against the eleven-player league
+#: lineup, but some classes dress more for varsity: 7A/8A/9A/Group 1 play the road
+#: at 4S/5D (14 players) and 5A at 6S/5D (16). A fixed 14 made a 5A No. 14-16 —
+#: a varsity postseason starter — eligible for a JV state title. The guard is
+#: therefore the deeper of this floor and the rank below the class's widest
+#: varsity lineup (`jhsaa.jv_postseason_cut`, derived from `lineup_need`, never
+#: typed): 14 for most classes, 15 for the 4S/5D classes, 17 for 5A.
+#:
 #: ‼️ TWO CUTS, DELIBERATELY, AND THE DUAL POOL IS THE ONE THAT MUST NOT MOVE (owner,
 #: 2026-09: "I do not want to kill JV duals ... for JV duals 12 and below counts").
 #: Raising `jhsaa.jv_pool` itself to 14 was tried and measured first: it puts **43 of
@@ -197,6 +189,14 @@ ENTRY_SIZE = {SINGLES: 1, DOUBLES: 2}
 #: association to fix an eligibility rule. So the event narrows its OWN field and
 #: leaves the season's alone: this is a filter on the pool, never a second pool.
 EVENT_FROM = 14
+
+
+def event_from(group: str | None) -> int:
+    """The 1-based ladder rank where JV individual eligibility starts for a program
+    in `group`: `EVENT_FROM`, or one below the class's widest varsity lineup when
+    that is deeper (see `EVENT_FROM`)."""
+    from .jhsaa import jv_postseason_cut
+    return max(EVENT_FROM, jv_postseason_cut(group) + 1)
 
 
 def jv_ladder(ts) -> list:
@@ -218,18 +218,20 @@ def jv_ladder(ts) -> list:
 
 
 def jv_eligible(ts, bracket: str, ladder: list | None = None) -> list:
-    """The JV players a school may enter in `bracket`, in ladder order — of an
-    eligible grade (`ELIGIBLE_GRADES`) and at or below `EVENT_FROM` on the ladder.
+    """The JV players a school may enter in `bracket`, in ladder order — every
+    player at or below the class's rank guard (`event_from`), of ANY grade (the
+    grade rule is gone, JHSAA rule 2026-09). `bracket` is kept so each bracket
+    still asks one place, should the association split them again.
 
     ‼️ THE RANK CUT IS THE EVENT'S, NOT THE SEASON'S. `jv_ladder` is the whole JV
-    pool, which staffs JV duals from rank 12 down; the tournament drops ranks 12-13
-    on top of that because they are varsity swing players (see `EVENT_FROM`). The
-    filter lives here so both brackets and every caller get it from one place."""
-    grades = ELIGIBLE_GRADES[bracket]
+    pool, which staffs JV duals from rank 12 down; the tournament drops the
+    varsity swing ranks and, in a class that dresses more than eleven for
+    varsity, everyone in that wider lineup (see `EVENT_FROM`). The filter lives
+    here so both brackets and every caller get it from one place."""
     pool = jv_ladder(ts) if ladder is None else ladder
     from .jhsaa import lineup_need
-    skip = max(0, EVENT_FROM - 1 - lineup_need("regular"))
-    return [p for p in pool[skip:] if p.grade in grades]
+    skip = max(0, event_from(ts.school.group) - 1 - lineup_need("regular"))
+    return pool[skip:]
 
 
 
@@ -269,9 +271,9 @@ def school_entry(ts, bracket: str, *, district: str = "",
     event, so a school fields three different people exactly as the varsity
     flights do — its JV No. 1 in singles, then the best two of what is left. This
     is now the ONLY thing separating the two brackets: since 2026-09 both pools
-    are the same grades, so a school's JV No. 1 tops BOTH and would enter twice
+    are the same players, so a school's JV No. 1 tops BOTH and would enter twice
     if the hold-out were not explicit. It must never be allowed to fall out of
-    disjoint pools again — that was true only while the grade rules differed.
+    disjoint pools again — that was true only while grade rules split them.
 
     `exclude` drops players who already hold a seat in this event's field, so the
     caller can ask for the school's best REMAINING entry. That is what the
@@ -563,7 +565,7 @@ def defending_program(gender: str, bracket: str, season_year: int) -> str:
 
     ‼️ THE BID BELONGS TO THE PROGRAM, NOT THE PLAYER. That used to be forced —
     singles was seniors-only, so the champion had always graduated by the time the
-    bid was used — and since tenth grade became eligible (2026-09) a champion can
+    bid was used — and since the grade rule was relaxed (2026-09) a champion can
     still be enrolled. The rule is unchanged and the mechanism needed nothing: the
     school spends the bid on its best eligible entry, and `school_entry(exclude=)`
     already skips whoever holds a seat, so a returning champion takes the district
