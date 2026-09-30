@@ -72,6 +72,14 @@ def archived(tmp_path_factory):
         wd.is_primed, wd.prime = real_primed, real_prime
 
 
+def ru_of(arc, name):
+    """The class whose State final `name` lost."""
+    for g in jh.ROAD_GROUPS:
+        if jh.state_runner_up(arc["brackets"].get(g)) == name:
+            return g
+    raise AssertionError(name)
+
+
 def _stage_names(arc, group):
     """Every program that appears in ANY road/State key of `group`."""
     out = set()
@@ -150,9 +158,14 @@ def test_a_full_ladder_onto_a_24_team_state_and_a_16_team_toc(archived):
     assert set(q["survivors"]) <= set(toc["field"])
     losers = sides - set(q["survivors"])
     assert not losers & set(toc["field"])
-    for name in losers:                       # a qualifier exit is NOT a TOC appearance
+    # Owner rule: a qualifier loser is treated like the other TOC entrants — a TOC
+    # appearance with the finish "TOC Qualifier", ranked below everyone in the draw,
+    # beside its State finalist honour.
+    for name in losers:
         r = wd.jhsaa_toc_result(toc, name)
-        assert not r["made_toc"] and r["toc_qualifier"] and r["toc_finish"] == "TOC Qualifier"
+        assert r["made_toc"] and r["toc_qualifier"] and r["toc_finish"] == "TOC Qualifier"
+        assert r["toc_place"] == 17 and r["toc_seed"] == 0
+        assert wd.jhsaa_state_result(arc["brackets"][ru_of(arc, name)], name)["place"] == 2
     for name in q["survivors"]:
         r = wd.jhsaa_toc_result(toc, name)
         assert r["made_toc"] and r["toc_qualifier"] and r["toc_finish"] != "TOC Qualifier"

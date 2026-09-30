@@ -1204,9 +1204,11 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   in `WIDE_GROUPS` (4S/5D); 11B plays 1S/4D; neither has a committee or metas;
   the TOC is a byeless SIXTEEN: fourteen champions plus the two **TOC Qualifier**
   winners (JHSAA rule 2026-09, `TOC_QUALIFIER_PAIRS`: 9A v 8A and 10B v 11B State
-  runners-up, one dual each, phase `toc_qualifier`; a qualifier LOSS is not a TOC
-  appearance — `jhsaa_toc_result` finish "TOC Qualifier"; every "is this the TOC"
-  branch reads `TOC_PHASES`, never `"toc"`). `run_season` re-deals `by_group` into `road_by_group`
+  runners-up, one dual each, phase `toc_qualifier`; a qualifier LOSER is treated
+  like every other TOC entrant — State finalist honour PLUS a TOC appearance with
+  finish "TOC Qualifier", place field+1, no seed (owner reversed the "not a TOC
+  appearance" draft); every "is this the TOC" branch reads `TOC_PHASES`, never
+  `"toc"`). `run_season` re-deals `by_group` into `road_by_group`
   after the regular season; a private league champion's PROTECTED seat goes to
   the league's best public finisher (the filtered list's `ts[0]`). ‼️ 10B/11B are
   NEVER in `GROUPS` (no leagues, talent row, roster band or awards slate) and

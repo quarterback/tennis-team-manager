@@ -7176,14 +7176,20 @@ def jhsaa_toc_result(toc: dict, school: str) -> dict:
     out = {"made_toc": st["made_state"], "toc_seed": st["seed"],
            "toc_place": st["place"], "toc_finish": _toc_finish_label(st["place"]),
            "toc_champion": st["champion"], "toc_qualifier": False}
-    # THE FINALIST QUALIFIER (JHSAA rule 2026-09): a runner-up who played for a
-    # TOC seat and lost has NO TOC appearance (`made_toc` stays False, the
-    # Metastate posture) — the finish names the round it ended at instead.
+    # THE FINALIST QUALIFIER (JHSAA rule 2026-09). Owner rule: a program that played
+    # the qualifier is treated like the other twelve TOC entrants — its State
+    # finalist appearance stays its State honour and it carries a TOC tag beside it.
+    # A LOSER is therefore a TOC appearance with the finish "TOC Qualifier", placed
+    # one rung below everyone in the draw (place = field + 1, no seed); a WINNER is an
+    # ordinary entrant whose finish comes off the draw. `toc_qualifier` marks anyone
+    # who played the round.
     q = (toc or {}).get("qualifier") or {}
     if school in (q.get("field") or ()):
         out["toc_qualifier"] = True
         if not out["made_toc"]:
-            out["toc_finish"] = "TOC Qualifier"
+            out.update(made_toc=True, toc_seed=0,
+                       toc_place=len((toc or {}).get("field") or ()) + 1,
+                       toc_finish="TOC Qualifier")
     return out
 
 
@@ -7660,12 +7666,11 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
     # files "Tournament of Champions — Semifinal" under the PLAYERS and drops it
     # from the team side entirely. `honors` is individual awards, full stop.
     if row["made_toc"] and not row["toc_champion"]:
+        # A qualifier loser (owner rule 2026-09) is a TOC entrant like the rest: the
+        # same line, minus a seed it never held.
+        seed = f" (No. {row['toc_seed']} seed)" if row["toc_seed"] else ""
         row["team_honors"].append(
-            f"Tournament of Champions — {row['toc_finish'].removeprefix('TOC ')}"
-            f" (No. {row['toc_seed']} seed)")
-    elif row.get("toc_qualifier"):
-        # Lost the finalist qualifier: a team result, never a TOC appearance.
-        row["team_honors"].append("Tournament of Champions Qualifier — lost")
+            f"Tournament of Champions — {row['toc_finish'].removeprefix('TOC ')}{seed}")
     aw = (arc.get("awards") or {}).get(row["group"]) or {}
     poy = aw.get("poy")
     if poy and poy.get("school") == school:
@@ -7733,7 +7738,7 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
 
 #: Bump when `_season_row` changes shape or meaning: rows stored at an older
 #: version are re-derived on their next read (per season, never per page).
-_SEASON_ROW_VERSION = 2   # 2: `road_group` and the road-class stage walk (2026-09)
+_SEASON_ROW_VERSION = 3   # 2: `road_group` and the road-class stage walk (2026-09)
 
 
 def _fold_season_rows(conn, world_id: int, year: int, gender: str) -> dict[str, dict]:

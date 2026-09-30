@@ -335,4 +335,4 @@ This report records the policy discussion, its historical basis, and the subsequ
 
 ## Implementation note
 
-Implemented as `jhsaa.run_toc_qualifier` (phase `toc_qualifier`, archived under `toc["qualifier"]`, round name "TOC Qualifier"), season-gated with the Non-Public split. A qualifier loss is not a TOC appearance; the finish reads "TOC Qualifier".
+Implemented as `jhsaa.run_toc_qualifier` (phase `toc_qualifier`, archived under `toc["qualifier"]`, round name "TOC Qualifier"), season-gated with the Non-Public split. A qualifier loser is credited like every other TOC entrant: its State finalist honour, plus a TOC appearance with the finish "TOC Qualifier".

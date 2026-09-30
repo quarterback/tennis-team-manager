@@ -89,13 +89,19 @@ the last two TOC seats — a byeless sixteen, one more public and one more priva
   `toc["qualifier"]` (`field`, one round, `survivors`, `round_names`), read with
   `.get` so a 14-team season still renders. A missing side (a class with no final
   in a small world) skips that pair; nothing is padded.
-- **A qualifier exit is NOT a TOC appearance** (the Metastate posture):
-  `jhsaa_toc_result` keeps `made_toc` False for a loser, sets `toc_qualifier` True
-  for anyone who PLAYED the round (winners included — it says how they got in) and
-  the finish string **"TOC Qualifier"** for a loser. `_season_row` carries
-  `toc_qualifier` and the team honour "Tournament of Champions Qualifier — lost".
+- **A qualifier loser is treated like the other TOC entrants (owner rule 2026-09:
+  "why would we treat those teams any different than the other 12?").** Its State
+  finalist appearance stays its State honour, and beside it `jhsaa_toc_result`
+  gives a TOC appearance (`made_toc` True) with the finish **"TOC Qualifier"**,
+  placed one rung below everyone in the draw (`toc_place` = field + 1, no seed).
+  `toc_qualifier` is True for anyone who PLAYED the round, winners included (it
+  says how they got in). The team honour is the ordinary "Tournament of Champions
+  — Qualifier" line without a seed; the school page shows the TOC chip. A first
+  draft used the Metastate posture (a qualifier exit is not a TOC appearance) and
+  the owner reversed it. `_SEASON_ROW_VERSION` 3.
 - Winners enter the TOC seeded on TOSS with everyone else (measured in the smoke
   season: seeds 7-10), so the qualifier buys a seat, never a line.
 - Smoke (scaled season, both genders): two qualifier duals among exactly the four
   runners-up, TOC field 16 with eight first-round games and no byes, losers off
-  the field with finish "TOC Qualifier", schedule rows at phase `toc_qualifier`.
+  the draw with finish "TOC Qualifier" (a TOC appearance, place 17), schedule
+  rows at phase `toc_qualifier`.
