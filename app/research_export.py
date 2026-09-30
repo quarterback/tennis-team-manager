@@ -261,6 +261,9 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             # league class. `championship_group` stays the league class.
             "road_group": (season.get("road") or {}).get(s.name) or s.group,
             "district": s.district, "enrollment": s.enrollment, "private": int(s.private),
+            # A private's OLD LEAGUE (owner rule 2026-09): the public class and
+            # league it plays once-each as non-conference duals. Empty on a public.
+            "old_group": s.old_group, "old_league": s.old_league,
             "mascot": s.mascot, "colors_json": json.dumps(s.colors, ensure_ascii=False),
             "scope_member": int(s.name in selected_names),
         })

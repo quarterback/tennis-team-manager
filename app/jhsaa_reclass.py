@@ -54,6 +54,7 @@ import os
 import time
 
 from . import jhsaa as jh
+from . import jhsaa_districting as jd
 
 CYCLE_SEASONS = 4
 POOL_A = ("9A", "8A", "7A", "6A", "5A")
@@ -359,7 +360,7 @@ def build_proposal(world_id: int, years: list[int], cfg: dict | None = None,
         for r in draft:
             p = proposed.get(r["name"])
             if p:
-                r["classification"] = r["group"] = p
+                _move(r, p)
         notes = jd.redraw_classes(draft, touched)
         league_after = {r["name"]: r["girls_district"] for r in draft
                         if r["name"] in proposed}
@@ -527,7 +528,7 @@ def commit(world: dict) -> dict:
     for r in doc["schools"]:
         p = proposed.get(r["name"])
         if p and p != r["classification"]:
-            r["classification"] = r["group"] = p
+            _move(r, p)
             r.pop("play_up", None)          # the sort now places it
     from . import jhsaa_districting as jd
     from . import overrides as ov
@@ -584,6 +585,18 @@ def commit(world: dict) -> dict:
             "ledger": paths}
 
 
+def _move(r: dict, p: str) -> None:
+    """Put row `r` in class `p`. A public program's `group` follows; a private's
+    `group` is its Non-Public class and stays (owner rule 2026-09) — its OLD
+    GROUP moves instead, and `redraw_classes` then re-seats it in an old league
+    of that class."""
+    r["classification"] = p
+    if r.get("group") in jd.NONPUBLIC:
+        r["old_group"] = p
+    else:
+        r["group"] = p
+
+
 def _snapshot(rows: list[dict], before_cls: dict) -> dict:
     """{name: {before, cls, grp, gd, bd, pu}} — every school's post-commit class,
     championship group, both league names and play-up flag, beside the class it
@@ -592,6 +605,7 @@ def _snapshot(rows: list[dict], before_cls: dict) -> dict:
                         "cls": r["classification"], "grp": r.get("group", r["classification"]),
                         "gd": r.get("girls_district"), "bd": r.get("boys_district"),
                         "pu": bool(r.get("play_up")),
+                        "og": r.get("old_group", ""), "ol": r.get("old_league", ""),
                         "id": r.get("source") or r["name"]}
             for r in rows}
 
@@ -642,7 +656,7 @@ def committed_map(file_rows: list[dict]) -> dict | None:
         before_cls[x["name"]] = current.get(x["name"], x["classification"])
         p = proposed.get(x["name"])
         if p and p != x["classification"]:        # exactly what the commit did
-            x["classification"] = x["group"] = p
+            _move(x, p)
             x.pop("play_up", None)
     if data.get("touched"):
         jd.redraw_classes(rows, data["touched"])
@@ -718,6 +732,8 @@ def reapply(rows: list[dict]) -> int:
             r["play_up"] = True
         else:
             r.pop("play_up", None)
+        if e.get("og"):
+            r["old_group"], r["old_league"] = e["og"], e.get("ol", "")
     return len(reverted)
 
 

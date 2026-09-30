@@ -1228,6 +1228,19 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   never the importer's `draw_districts`, which scattered the 2052 affiliate
   leagues. `tests/conftest.py` keeps the split OFF for every suite;
   `tests/test_jhsaa_nonpublic.py` opts in.
+  ‼️ **PODS (owner rule 2026-09, supersedes the league-class reading above):** a
+  private's `group` IS 10B/11B in `schools.json` and its district is a POD
+  (owner-drawn membership, 8-10 each, `scripts/jhsaa_nonpublic_pods.py`); public
+  leagues are publics only. Standings, league titles, All-District, the
+  individual flights and JV are the class's own; the slate is two **All-Star**
+  teams (`jhsaa_awards.AS_TIERS` / `slate_label`). Each private keeps an
+  `old_group`/`old_league` (the public league it would sit in) and plays every
+  public in it ONCE as a non-conference dual (`_old_league_pairs`: record and
+  TOSS, never standings; reserved before the first draw, played after pass 1 and
+  pass 2). `redraw_classes` resets the old league at every realignment by lending
+  the private into the draw; `jhsaa_reclass._move` never moves a private's
+  `group`. The pooled ranking / pseudo-district / road re-deal paths remain ONLY
+  for a pre-pod seed file. See the AAR's pods addendum.
 - **‼️ ONE LADDER, THREE BERTH SHAPES (owner spec 2026-08 — supersedes the
   fixed-24 section below, which is kept for the seasons archived under it).**
   Every class runs the SAME rungs — Areas → Sectionals → Wards → Regionals →

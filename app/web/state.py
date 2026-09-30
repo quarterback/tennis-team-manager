@@ -4402,7 +4402,7 @@ def jhsaa_rankings_view(seed: int, gender: str, group: str | None = None,
         rows = present + missing
     return {
         "ready": True, "gender": g, "year": yr, "years": years,
-        "group": grp, "groups": list(jh.GROUPS), "scope": scope,
+        "group": grp, "groups": list(jh.ROAD_GROUPS), "scope": scope,
         "season_year": arc.get("season_year", world.jhsaa_season_year(w)),
         # `rated` says whether the order is the archived TOSS index or the pre-TOSS
         # win-rate fallback, so the page can label the column it is actually sorting on
@@ -4435,8 +4435,10 @@ def jhsaa_honors_view(seed: int, gender: str, group: str | None = None,
     years = world.jhsaa_years(w["id"], g)
     yr = (years[0] if years else w["year"]) if year is None else year
     arc = world.get_jhsaa(w["id"], yr, g) or {}
-    grp = group if group in jh.GROUPS else jh.GROUPS[0]
-    scope = _jh_scope(g, grp, list(jh.GROUPS), yr, years,
+    # Every road class: a Non-Public class's slate is its All-Star teams (owner
+    # rule 2026-09), read off the same archive key as every class's.
+    grp = group if group in jh.ROAD_GROUPS else jh.GROUPS[0]
+    scope = _jh_scope(g, grp, list(jh.ROAD_GROUPS), yr, years,
                       arc.get("season_year"), arc)
     schools = _jh_schools(g)
     aw = (arc.get("awards") or {}).get(grp) or {}
@@ -4471,7 +4473,7 @@ def jhsaa_honors_view(seed: int, gender: str, group: str | None = None,
         "coy_pending": coy.needs_awards(w["id"], yr, g),
         "world_id": w["id"],
         "ready": bool(arc), "gender": g, "year": yr, "years": years,
-        "group": grp, "groups": list(jh.GROUPS), "scope": scope,
+        "group": grp, "groups": list(jh.ROAD_GROUPS), "scope": scope,
         "season_year": arc.get("season_year", world.jhsaa_season_year(w)),
         # Sizes come off the awards module so the page cannot state a shape the
         # selector does not use.
@@ -4488,6 +4490,7 @@ def jhsaa_honors_view(seed: int, gender: str, group: str | None = None,
                          **({"region": arc["all_region_flight_check"]}
                             if arc.get("all_region_flight_check") else {})},
         "poy": deco(aw["poy"]) if aw.get("poy") else None,
+        "slate_label": jaw.slate_label(grp),
         "teams": [{"name": t["name"], "players": [deco(r) for r in t["players"]]}
                   for t in tiers],
         "honorable_mention": [deco(r) for r in aw.get("honorable_mention") or ()],
@@ -4674,7 +4677,7 @@ def jhsaa_individual_view(seed: int, gender: str, group: str | None = None,
     g = _jh_g(gender)
     years = world.jhsaa_years(w["id"], g)
     yr = (years[0] if years else w["year"]) if year is None else year
-    grp = group if group in jh.GROUPS else jh.GROUPS[0]
+    grp = group if group in jh.ROAD_GROUPS else jh.ROAD_GROUPS[0]
     fl = (flight if flight in ji.FLIGHTS or flight == "XD"
           or flight in jvi.BRACKETS or flight in jvi.QUAL_BRACKETS
           else ji.FLIGHTS[0])
@@ -4686,10 +4689,10 @@ def jhsaa_individual_view(seed: int, gender: str, group: str | None = None,
     # everything varsity keeps it, unchanged.
     is_jv = fl in jvi.BRACKETS or fl in jvi.QUAL_BRACKETS
     arc = world.get_jhsaa(w["id"], yr, g)
-    scope = _jh_scope(g, grp, list(jh.GROUPS), yr, years,
+    scope = _jh_scope(g, grp, list(jh.ROAD_GROUPS), yr, years,
                       (arc or {}).get("season_year"), arc)
     base = {"gender": g, "year": yr, "years": years, "group": grp,
-            "groups": list(jh.GROUPS), "flight": fl,
+            "groups": list(jh.ROAD_GROUPS), "flight": fl,
             "flights": [(f, ji.FLIGHT_NAMES[f]) for f in ji.FLIGHTS],
             "flight_name": _jv_name(fl) if is_jv else ji.FLIGHT_NAMES[fl],
             "mixed_flight": "XD", "mixed_name": ji.FLIGHT_NAMES["XD"],
@@ -5117,7 +5120,7 @@ def jhsaa_district_jv_view(seed: int, gender: str, group: str, district: str,
     years = world.jhsaa_years(w["id"], g)
     yr = (years[0] if years else w["year"]) if year is None else year
     arc = world.get_jhsaa(w["id"], yr, g)
-    scope = _jh_scope(g, group, list(jh.GROUPS), yr, years,
+    scope = _jh_scope(g, group, list(jh.ROAD_GROUPS), yr, years,
                       (arc or {}).get("season_year"), arc)
     base = {"gender": g, "year": yr, "years": years, "group": group,
             "district": district, "flight": fl,
@@ -5734,7 +5737,7 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
 
     badge(awards.get("poy"), f"{sc.group} Player of the Year")
     for r in awards.get("all_state", ()):
-        badge(r, "All-State")
+        badge(r, jaw.slate_label(sc.group))
     for _rn, tier, r in jaw.region_rows((arc or {}).get("all_region")
                                         or awards.get("all_region")):
         badge(r, f"All-Region {tier}".strip())
@@ -5789,7 +5792,7 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         # last one they played.
         "former": former,
         "last_season": (hist["seasons"][0]["season_year"] if hist["seasons"] else None),
-        "scope": _jh_scope(g, sc.group, list(jh.GROUPS), yr, years, season_year, arc),
+        "scope": _jh_scope(g, sc.group, list(jh.ROAD_GROUPS), yr, years, season_year, arc),
         # --- identity ---
         "mark": jh.mark(sc, 76), "city": sc.city, "county": sc.county, "area": sc.area,
         "locality": sc.locality,
@@ -5803,6 +5806,10 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         # the Non-Public split on, else its league class. The header shows it as a
         # second chip only when it differs.
         "road_group": road_g if arc else jh.road_group(sc, season_year),
+        # THE OLD LEAGUE (owner rule 2026-09): the public league a private plays
+        # once-each as non-conference duals. Empty on a public program.
+        "old_group": sc.old_group, "old_league": sc.old_league,
+        "slate_label": __import__("app.jhsaa_awards", fromlist=["slate_label"]).slate_label(sc.group),
         "colors": sc.colors,
         # --- this season ---
         "season": season,
@@ -6090,7 +6097,7 @@ def jhsaa_district_view(seed: int, gender: str, group: str, district: str,
     return {
         "found": True, "district": district, "gender": g, "group": grp, "year": yr,
         "years": years, "season_year": (arc or {}).get("season_year"),
-        "scope": _jh_scope(g, grp, list(jh.GROUPS), yr, years,
+        "scope": _jh_scope(g, grp, list(jh.ROAD_GROUPS), yr, years,
                            (arc or {}).get("season_year"), arc),
         "ready": bool(arc), "standings": standings,
         "champion": standings[0] if standings else None,
@@ -6113,7 +6120,7 @@ def jhsaa_districts_view(seed: int, gender: str, group: str | None = None,
     import app.world as world
     w = world.get_or_create(seed)
     g = _jh_g(gender)
-    grp = group if group in jh.GROUPS else jh.GROUPS[0]
+    grp = group if group in jh.ROAD_GROUPS else jh.ROAD_GROUPS[0]
     years = world.jhsaa_years(w["id"], g)
     yr = (years[0] if years else w["year"]) if year is None else year
     arc = world.get_jhsaa(w["id"], yr, g)
@@ -6132,10 +6139,10 @@ def jhsaa_districts_view(seed: int, gender: str, group: str | None = None,
             "qualifiers": [{**_jh_deco(schools, r["school"], 20), "seed": seeds[r["school"]]}
                            for r in table if r["school"] in seeds],
         })
-    return {"ready": bool(arc), "gender": g, "group": grp, "groups": list(jh.GROUPS),
+    return {"ready": bool(arc), "gender": g, "group": grp, "groups": list(jh.ROAD_GROUPS),
             "year": yr, "years": years,
             "season_year": (arc or {}).get("season_year", world.jhsaa_season_year(w)),
-            "scope": _jh_scope(g, grp, list(jh.GROUPS), yr, years,
+            "scope": _jh_scope(g, grp, list(jh.ROAD_GROUPS), yr, years,
                                (arc or {}).get("season_year")),
             "districts": rows}
 

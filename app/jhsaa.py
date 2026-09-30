@@ -2793,6 +2793,13 @@ class School:
     # districts, rankings, honors, postseason, TOSS) -- only their GEOGRAPHY
     # display differs. See `scripts/jhsaa_promotions_and_affiliates.py`.
     state: str = ""
+    # ‼️ THE OLD LEAGUE (owner rule 2026-09). A private program's `group` is its
+    # Non-Public class (10B/11B) and `district` its POD; `old_group`/`old_league`
+    # name the PUBLIC league it would sit in under the current map, whose members
+    # it plays once each as non-conference duals (`_old_league_pairs`). Reset at
+    # every realignment (`jhsaa_districting.redraw_classes`). Empty on a public.
+    old_group: str = ""
+    old_league: str = ""
 
     @property
     def ident(self) -> str:
@@ -3775,6 +3782,10 @@ def road_group(school: "School", year: int | None) -> str:
     `nonpublic_era()` on, is 10B at or above `NONPUBLIC_CUT` (or by name, via
     `NONPUBLIC_PLAYUP`) and 11B below it. Enrollment only moves at a
     reclassification commit, so "re-read the cut each cycle" is free."""
+    # From the pods on (owner rule 2026-09) a private's `group` IS its Non-Public
+    # class — the seed file says so — and the era gate has nothing left to gate.
+    if school.group in NONPUBLIC_GROUPS:
+        return school.group
     if not school.private or not nonpublic_active(year):
         return school.group
     if school.ident in NONPUBLIC_PLAYUP or school.enrollment >= NONPUBLIC_CUT:
@@ -6150,7 +6161,9 @@ def load_schools(gender: str) -> list[School]:
         # actually is, which is what `School.talent_group` generates from. A school
         # that plays up gets a HARDER FIELD, never better players.
         group = r["group"]
-        target = _plays_up_row(r, pmap)
+        # A private program's group is its Non-Public class, which nobody plays up
+        # from — the play-up rule is a public-ladder rule.
+        target = None if group in NONPUBLIC_GROUPS else _plays_up_row(r, pmap)
         if target:
             group = target
         out.append(School(
@@ -6166,6 +6179,7 @@ def load_schools(gender: str) -> list[School]:
             gender=gender, source=r.get("source", ""),
             locality=r.get("locality", ""),
             state=r.get("state", ""),
+            old_group=r.get("old_group", ""), old_league=r.get("old_league", ""),
         ))
     _merge_orphan_districts(out)
     # Compute into a local, publish, return the LOCAL (the gthread rule): a sibling
@@ -6211,7 +6225,8 @@ def former_school(name: str, gender: str) -> School | None:
             # this is only what the header prints beside the town.
             district=r.get(f"{gender}_district") or _row_league(r) or "",
             gender=gender, source=r.get("source", ""),
-            locality=r.get("locality", ""), state=r.get("state", ""))
+            locality=r.get("locality", ""), state=r.get("state", ""),
+            old_group=r.get("old_group", ""), old_league=r.get("old_league", ""))
     return None
 
 
@@ -12171,6 +12186,14 @@ _GROUP_IX["Group 1"] = 2.5
 _GROUP_IX["Group 2"] = 3.5
 _GROUP_IX["Group 3"] = 4.5
 
+
+def _class_ix(s: "School") -> float:
+    """A school's rung on the size ladder for the town-rivalry gap. A Non-Public
+    class is not a size (owner rule 2026-09: pods hold 9A and 1A privates alike),
+    so a private reads its `classification`, the size it actually is."""
+    ix = _GROUP_IX.get(s.group)
+    return ix if ix is not None else _GROUP_IX[s.classification]
+
 # How a non-district opponent is chosen (owner rule 2027-08): geography first — you do
 # not bus across Jefferson for a non-league dual — then talent, so a weak program isn't
 # fed to teams that beat it every week. Because talent is read off THIS year's roster,
@@ -12301,7 +12324,7 @@ def _rival_priority(a: School, b: School) -> tuple:
     stem = _name_stem(a.name)
     return (0 if stem and stem == _name_stem(b.name) else 1,
             0 if a.locality and a.locality == b.locality else 1,
-            abs(_GROUP_IX[a.group] - _GROUP_IX[b.group]),
+            abs(_class_ix(a) - _class_ix(b)),
             *sorted((a.name, b.name)))
 
 
@@ -12334,7 +12357,7 @@ def rival_map(schools: list[School]) -> dict[str, frozenset[str]]:
         town = sorted(town, key=lambda s: s.name)
         for i, a in enumerate(town):
             for b in town[i + 1:]:
-                if abs(_GROUP_IX[a.group] - _GROUP_IX[b.group]) > RIVAL_MAX_GAP:
+                if abs(_class_ix(a) - _class_ix(b)) > RIVAL_MAX_GAP:
                     continue
                 cands.append((_rival_priority(a, b), a.name, b.name))
     for _p, a, b in sorted(cands):
@@ -12385,6 +12408,38 @@ def _rivalry_pairs(teams: list[TeamSeason], year: int,
             for x, y in ((t, o), (o, t)):
                 played[id(x)].add(y.school.name)
     return pairs
+
+
+def _old_league_pairs(teams: list[TeamSeason], year: int,
+                      played: dict[int, set[str]]) -> tuple[list[tuple], list[tuple]]:
+    """RESERVE the OLD-LEAGUE duals (owner rule 2026-09) — a private program plays
+    every public program of its `old_league` ONCE as a non-conference dual: it
+    counts to the record and to TOSS, never to either side's standings. The date
+    a public school lost from its league schedule when the private left is where
+    this dual goes, so the fixtures are returned in TWO halves — one played after
+    league pass 1, one after pass 2 — and marked in `played` here, before the
+    first draw, so the ordinary matcher cannot pre-empt one (the rivalry rule).
+    Venue alternates on the year and on the pairing's order, so neither school
+    hosts the series two seasons running. Never drawn from `owed`: the `spent`
+    fold counts them, so a program's allowance backfills around them."""
+    by_league: dict[tuple, list[TeamSeason]] = defaultdict(list)
+    for t in teams:
+        if t.school.group not in NONPUBLIC_GROUPS:
+            by_league[(t.school.group, t.school.district)].append(t)
+    pairs = []
+    for t in sorted(teams, key=lambda t: t.school.name):
+        if t.school.group not in NONPUBLIC_GROUPS or not t.school.old_league:
+            continue
+        mates = sorted(by_league.get((t.school.old_group, t.school.old_league), ()),
+                       key=lambda o: o.school.name)
+        for i, o in enumerate(mates):
+            if o.school.name in played[id(t)]:
+                continue
+            home_private = (i + year) % 2 == 0
+            pairs.append((t, o) if home_private else (o, t))
+            played[id(t)].add(o.school.name)
+            played[id(o)].add(t.school.name)
+    return pairs[0::2], pairs[1::2]
 
 
 def _nd_ok(a, t) -> bool:
@@ -12540,6 +12595,15 @@ def play_regular_season(by_group: dict, year: int, gender: str,
     # first, so the venue could stay with one school two seasons running. A fixture
     # that the draw can pre-empt is a fixture only when the draw does not.
     rival_pairs = _rivalry_pairs(every_team, year, played)
+    # THE OLD-LEAGUE DUALS (owner rule 2026-09), reserved the same way and for the
+    # same reason; fixed dates, so the early allowance shrinks by what they take.
+    old_first, old_second = _old_league_pairs(every_team, year, played)
+    fixed: dict[int, int] = {}
+    for a, b in old_first + old_second:
+        fixed[id(a)] = fixed.get(id(a), 0) + 1
+        fixed[id(b)] = fixed.get(id(b), 0) + 1
+    for k, n in fixed.items():
+        owed[k] = max(0, round((quota[k] - reserved - n) * EARLY_SHARE))
     # SPLIT SQUADS (rule 2097) — fielded before the first draw, each carrying its
     # school's own non-district allowance, window by window. Empty before 2097, so
     # `pool` IS `every_team` and every draw below is byte-identical.
@@ -12575,6 +12639,7 @@ def play_regular_season(by_group: dict, year: int, gender: str,
     # Not drawn from `owed`: the `spent` fold at the tune-up counts them, so a rivalry
     # does not lengthen anybody's card.
     _play_pairs(rival_pairs, xrng)
+    _play_pairs(old_first, xrng)
 
     # --- the mid-season window: a non-district date, then the challenge ---
     owed = {id(t): MID_NONDISTRICT for t in pool}
@@ -12591,6 +12656,7 @@ def play_regular_season(by_group: dict, year: int, gender: str,
 
     for key, rr in rounds.items():
         play_rounds(rr[half[key]:], year, salt, key[1])
+    _play_pairs(old_second, xrng)
 
     # --- the late tune-up: whatever the allowance has left ---
     # ‼️ SPENT COUNTS INVITATIONALS, NOT SHOWCASES. Both are non-district, but the
@@ -13188,9 +13254,14 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     # Non-district pairing still seeds on ROSTER STRENGTH, not results, so the early
     # window can lead. The one exception is the mid-season challenge, which is paired at
     # the break precisely because by then there are results worth pairing on.
+    # ‼️ EVERY ROAD CLASS, PODS INCLUDED (owner rule 2026-09): a private program's
+    # league is its pod under 10B/11B, so the Non-Public classes are ordinary
+    # keys here — standings, league titles, All-District, the individual flights
+    # and the JV season all read them like any class. A class with no members
+    # (a save whose seed file predates the pods) is an empty dict.
     by_group = {group: {dname: district_teams(schools, year, salt, prior, staff)
                         for dname, schools in sorted(districts(gender, group).items())}
-                for group in GROUPS}
+                for group in ROAD_GROUPS}
     # THE INDIVIDUAL STATE TOURNAMENTS — six flighted draws (No. 1-3 singles,
     # No. 1-3 doubles) per classification, played HERE: before a league dual, and
     # for exactly that reason. Entries are selected off the ability ladder, which
@@ -13240,7 +13311,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     # `ts.records`), so the ladder these are named off carries real evidence rather
     # than a preseason ability sort — a coach naming captains knows who just won the
     # No. 1 singles draw. From this line forward, captains dress (`_seat_captains`).
-    for group in GROUPS:
+    for group in by_group:
         for teams_in in by_group[group].values():
             for t in teams_in:
                 t.captains = pick_captains(t, dice, year)
@@ -13298,20 +13369,24 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     # tier is the best 16 on ATR (no district champions). Awards, standings, the
     # individual flights and the JV season above and below keep reading
     # `by_group` — the split is the road ONLY.
+    # ‼️ SINCE THE PODS (owner rule 2026-09) the road classes ARE `by_group`: a
+    # private's league is its pod under its Non-Public class, so nothing is
+    # re-dealt. `road_group` still stamps each team (a pre-pod seed file, where a
+    # private still sits in a public league, keeps the old re-deal below).
     road_by_group: dict[str, dict[str, list]] = {g: {} for g in ROAD_GROUPS}
-    for group in GROUPS:
-        for dname, teams in by_group[group].items():
+    for group, st in by_group.items():
+        for dname, teams in st.items():
             for t in teams:
                 t.road_group = road_group(t.school, year)
-            pub = [t for t in teams if t.road_group == group]
-            if pub:
-                road_by_group[group][dname] = pub
+            mine = [t for t in teams if t.road_group == group]
+            if mine:
+                road_by_group[group][dname] = mine
             for t in teams:
                 if t.road_group != group:
                     road_by_group[t.road_group].setdefault("", []).append(t)
     for g in NONPUBLIC_GROUPS:
-        for teams in road_by_group[g].values():
-            teams.sort(key=lambda t: (-t.power, t.school.name))
+        if "" in road_by_group[g]:
+            road_by_group[g][""].sort(key=lambda t: (-t.power, t.school.name))
     out["road"] = {t.school.name: t.road_group
                    for g in NONPUBLIC_GROUPS for teams in road_by_group[g].values()
                    for t in teams}
@@ -13337,9 +13412,10 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     epi_winners: dict[str, list] = {}
     for group in ROAD_GROUPS:
         standings = road_by_group[group]
-        if group in NONPUBLIC_GROUPS:
-            # No leagues, so no district champions: the 16 protected seats go
-            # to the best 16 on ATR and everyone else enters Sectionals.
+        if group in NONPUBLIC_GROUPS and set(standings) <= {""}:
+            # A pre-pod seed file: no leagues, so no district champions — the 16
+            # protected seats go to the best 16 on ATR and everyone else enters
+            # Sectionals. With pods the class takes the ordinary branch below.
             pool = sorted((t for ts in standings.values() for t in ts),
                           key=_atr_key(power))
             protected, entrants = pool[:PROTECTED], pool[PROTECTED:]
@@ -13644,8 +13720,10 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     # computed gender-wide. It is also what All-Region needs, because that honour
     # is REGION-WIDE AND CLASS-BLIND: there is no 7A All-Region team, there is a
     # Gold Valley All-Region team, drawn from every program in Gold Valley.
-    pool = build_pool([t for g in GROUPS for ts in by_group[g].values() for t in ts])
-    for group in GROUPS:
+    pool = build_pool([t for g in by_group for ts in by_group[g].values() for t in ts])
+    for group in by_group:
+        # A Non-Public class's slate is its ALL-STAR teams (owner rule 2026-09):
+        # `jhsaa_awards.AS_TIERS` sizes it at two, the label is `slate_label`.
         out["awards"][group] = season_awards(
             [t for ts in by_group[group].values() for t in ts], pool=pool)
     region = region_awards(pool)
@@ -13657,7 +13735,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
         # league row lives under its league class) and a `members` list instead,
         # which is how a reader tells the two apart. Every road key below is the
         # same shape for all fourteen.
-        standings = by_group.get(group, {})
+        standings = {d: ts for d, ts in by_group.get(group, {}).items() if d}
         state = states[group]
         out["groups"][group] = {
             "members": ([t.school.name for ts in road_by_group[group].values()

@@ -68,6 +68,7 @@
     <span class="jh-chip c-{{ view.group|replace(' ','') }}">{{ view.classification }}</span>
     {% if view.private %}<span class="jh-chip ghost">PRIVATE</span>{% endif %}
     {% if view.road_group and view.road_group != view.group %}<span class="jh-chip c-{{ view.road_group }}" title="team championship class (Non-Public)">{{ view.road_group }}</span>{% endif %}
+    {% if view.old_league %}<span class="jh-chip ghost" title="old league — every public program in it is played once as a non-conference dual">OLD LEAGUE · {{ view.old_group }} {{ view.old_league }}</span>{% endif %}
     {% if view.former %}<span class="jh-chip ghost" title="no longer sponsors this sport">FORMER PROGRAM</span>{% endif %}
     <h1>{{ view.school }}</h1>
     <div class="mascot">{{ view.mascot }}</div>
@@ -214,7 +215,7 @@
           <td class="pl">{% if p.country and p.country != 'US' %}<span class="player-flag" title="{{ p.country|country_name }}">{{ p.country|flags }}</span> {% endif %}<a href="{{ url_for('jhsaa_player', school=view.school, pid=p.pid, u=u, g=view.gender) }}">{{ p.name }}</a>
             {% if p.captain %}<span class="jh-chip cap" style="margin-left:4px"
             title="Team captain — dresses for every dual from the naming point on">C</span>{% endif %}
-            {% for h in p.honors %}<span class="jh-chip {{ 'gold' if 'Player of the Year' in h }}" style="margin-left:4px">{{ 'POY' if 'Player of the Year' in h else 'A-S' if h == 'All-State' else 'A-D' }}</span>{% endfor %}
+            {% for h in p.honors %}<span class="jh-chip {{ 'gold' if 'Player of the Year' in h }}" style="margin-left:4px">{{ 'POY' if 'Player of the Year' in h else 'A-S' if h in ('All-State', 'All-Star') else 'A-D' }}</span>{% endfor %}
             {# The injury chip rides here too: this snippet shows the top SIX, which
                is exactly where a short record on a strong player is most visible. #}
             {% if p.injury %}<span class="jh-chip inj {{ 'out' if p.injury.season_ending }}" style="margin-left:4px"
@@ -279,7 +280,7 @@
           <a href="{{ url_for('jhsaa_player', school=view.school, pid=p.pid, u=u, g=view.gender) }}">{{ p.name }}</a>
           {% if p.captain %}<span class="jh-chip cap" style="margin-left:4px"
           title="Team captain — dresses for every dual from the naming point on">C</span>{% endif %}
-          {% for h in p.honors %}<span class="jh-chip {{ 'gold' if 'Player of the Year' in h }}" style="margin-left:4px">{{ 'POY' if 'Player of the Year' in h else 'A-S' if h == 'All-State' else 'A-D' }}</span>{% endfor %}
+          {% for h in p.honors %}<span class="jh-chip {{ 'gold' if 'Player of the Year' in h }}" style="margin-left:4px">{{ 'POY' if 'Player of the Year' in h else 'A-S' if h in ('All-State', 'All-Star') else 'A-D' }}</span>{% endfor %}
           {# A family tie, if the owner has recorded one. `title` carries the
              detail so the row itself stays one short chip wide. #}
           {% if p.family %}<span class="jh-chip unit" style="margin-left:4px"
@@ -674,10 +675,10 @@
           {% endfor %}
           {% for r in (s.all_state or []) %}
           <div class="jh-honor" style="border-bottom:0;padding-left:0"><span class="y"></span>
-            <span>All-State {{ jh_award_names(r, u, view.gender) }}</span></div>
+            <span>{{ view.slate_label or 'All-State' }} {{ jh_award_names(r, u, view.gender) }}</span></div>
           {% endfor %}
           {% for line in (s.honor_lines or []) %}
-          {% if not (line.label.startswith('All-State') or line.label == s.group ~ ' Player of the Year') %}
+          {% if not (line.label.startswith('All-State') or line.label.startswith('All-Star') or line.label == s.group ~ ' Player of the Year') %}
           <div class="jh-honor" style="border-bottom:0;padding-left:0"><span class="y"></span>
             <span>{% if line.label %}{{ line.label }} — {% endif %}{% for n in line.names %}<strong>{{ n }}</strong>{% if not loop.last %} · {% endif %}{% endfor %}</span></div>
           {% endif %}
