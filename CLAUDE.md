@@ -1239,7 +1239,14 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   TOSS, never standings; reserved before the first draw, played after pass 1 and
   pass 2). `redraw_classes` resets the old league at every realignment by lending
   the private into the draw; `jhsaa_reclass._move` never moves a private's
-  `group`. The pooled ranking / pseudo-district / road re-deal paths remain ONLY
+  `group`, and `rc.reapply` keeps its Non-Public group and POD when it re-applies
+  a map committed before the pods (written back as recorded, it put the privates
+  into public leagues and left 10B/11B with districts of 2-4). ‼️ A public league
+  the split left thin is FOLDED into its neighbour by a standing rule in
+  `districting.json` (`consolidated_leagues`), applied by `_rows()` after the
+  re-apply and dropped from the naming bank — a seed-file edit alone is reverted by
+  any committed cycle, and narrowing the re-apply instead leaves a touched class
+  holding two league names at once. The pooled ranking / pseudo-district / road re-deal paths remain ONLY
   for a pre-pod seed file. See the AAR's pods addendum.
 - **‼️ ONE LADDER, THREE BERTH SHAPES (owner spec 2026-08 — supersedes the
   fixed-24 section below, which is kept for the seasons archived under it).**

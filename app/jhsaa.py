@@ -6267,8 +6267,42 @@ def _rows() -> list[dict]:
                     fh.write("\n")
             except OSError as exc:
                 log.warning("could not rewrite %s: %s", _DATA, exc)
+        # ‼️ A CONSOLIDATION IS A STANDING RULE, NOT AN EDIT THE MAP CAN OUTVOTE
+        # (owner rule 2026-09). The Non-Public split left three public leagues
+        # under six programs and the owner chose to fold two of them into their
+        # neighbours — but a committed cycle remembers every league as it stood
+        # BEFORE that, so a re-apply put all 33 schools back in the leagues that
+        # no longer exist (measured). Writing the fold into the seed file alone
+        # could not survive, and narrowing the re-apply to moved schools only left
+        # a touched class carrying BOTH league names at once — worse than the
+        # problem. So the fold lives in `districting.json`, is applied after the
+        # map, and is idempotent: whatever a cycle or a checkout remembers, a
+        # retired league has no members.
+        _apply_consolidations(rows)
         _schools_cache = rows
     return _schools_cache
+
+
+def _apply_consolidations(rows: list[dict]) -> None:
+    """Fold every retired league into its surviving neighbour, in place. Reads
+    `consolidated_leagues` from the districting data — `(class, retired, keep)` —
+    so the app and `scripts/jhsaa_nonpublic_pods.py` state the fold once each and
+    the app's copy is the one a save cannot lose."""
+    from . import jhsaa_districting as _jd
+    try:
+        folds = _jd.consolidations()
+    except Exception as exc:                          # data problem must not break a load
+        log.warning("JHSAA league consolidation skipped: %s", exc)
+        return
+    if not folds:
+        return
+    for r in rows:
+        keep = folds.get((r.get("group"), r.get("girls_district")))
+        if keep:
+            r["girls_district"] = keep
+        keep = folds.get((r.get("group"), r.get("boys_district")))
+        if keep:
+            r["boys_district"] = keep
 
 
 def _row_league(row: dict) -> str | None:

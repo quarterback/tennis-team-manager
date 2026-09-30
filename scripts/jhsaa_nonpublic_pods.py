@@ -83,18 +83,13 @@ POD_MAP = {
 }
 
 
-#: THE PUBLIC LEAGUES THE SPLIT LEFT THIN, CONSOLIDATED (owner rule 2026-09): a
-#: league the privates' departure took under six folds into its geographic
-#: neighbour in the same class; the merged league keeps the larger side's name.
-#: (class, absorbed league) -> surviving league.
-CONSOLIDATE = {
-    ("1A", "Marble Valley League"): "Old Jefferson Athletic Association",   # 5 + 5
-    ("7A", "River Valley League"): "Three Rivers League",                   # 4 + 5
-}
-
-
 def consolidate(rows: list[dict], log=print) -> None:
-    for (cls, gone), keep in CONSOLIDATE.items():
+    """Fold every league the split left thin into its neighbour. The pairs live in
+    `data/jhsaa/districting.json` (`jhsaa_districting.consolidations`), NOT here:
+    the app applies the same fold on every load, because a committed realignment
+    cycle remembers the pre-fold leagues and would otherwise put all 33 schools
+    back in leagues that no longer exist."""
+    for (cls, gone), keep in sorted(jd.consolidations().items()):
         moved = [r for r in rows if r["group"] == cls and r.get("girls_district") == gone]
         for r in moved:
             r["girls_district"] = r["boys_district"] = keep

@@ -77,7 +77,12 @@ def test_the_districting_data_matches_the_importer():
     spec.loader.exec_module(m)
     cfg = jd.districting_config()
     assert cfg.MAX_DISTRICT == m.MAX_DISTRICT and cfg.DISTRICT_TARGET == m.DISTRICT_TARGET
-    assert cfg.LEAGUE_NAMES == [(n, a) for n, a in m.LEAGUE_NAMES]
+    # The app drops a CONSOLIDATED league's name from the bank (a redraw re-issuing
+    # it would have the new league swallowed by the fold); the importer's list is
+    # otherwise the same, name for name and affinity for affinity.
+    retired = {gone for _cls, gone in jd.consolidations()}
+    assert cfg.LEAGUE_NAMES == [(n, a) for n, a in m.LEAGUE_NAMES if n not in retired]
+    assert retired and retired <= {n for n, _a in m.LEAGUE_NAMES}
     assert cfg.RIVALRIES == [tuple(p) for p in m.RIVALRIES]
     for n in (5, 10, 25, 85, 120):
         assert cfg.district_count(n) == m.district_count(n)
@@ -250,7 +255,16 @@ def test_commit_rewrites_the_seed_file_redraws_leagues_and_records_moves(scored,
     doc = json.load(open(copy_path))
     rows = {r["name"]: r for r in doc["schools"]}
     for name, x in moves.items():
-        assert rows[name]["classification"] == rows[name]["group"] == x["proposed"], name
+        r = rows[name]
+        assert r["classification"] == x["proposed"], name
+        if r.get("private"):
+            # ‼️ A PRIVATE KEEPS ITS NON-PUBLIC GROUP AND POD (owner rule 2026-09):
+            # the cycle moves the class it is SIZED in, and the public class it
+            # would have played in becomes its OLD group.
+            assert r["group"] in jh.NONPUBLIC_GROUPS, name
+            assert r.get("old_group") == x["proposed"], name
+        else:
+            assert r["group"] == x["proposed"], name
         assert "play_up" not in rows[name]
     # The leagues of a touched class were redrawn and stay legal.
     from collections import Counter
@@ -395,6 +409,7 @@ def test_a_committed_map_is_reapplied_when_the_seed_file_reverts(scored, monkeyp
     w = clean_archive
     copy_path, original, moves = _commit_on_a_copy(tmp_path, monkeypatch, w)
     committed = _shape(copy_path)
+    pod_before = {s.name: s.district for s in jh.load_schools("girls")}["Baptist"]
     # the file comes back at the repo's version, as a fresh checkout leaves it
     copy_path.write_text(original)
     jh.reset_schools()
@@ -403,11 +418,90 @@ def test_a_committed_map_is_reapplied_when_the_seed_file_reverts(scored, monkeyp
     for name, x in moves.items():
         assert loaded[name] == x["proposed"], name
     assert _shape(copy_path) == committed          # rewritten on disk, leagues included
-    assert {s.name: s.group for s in jh.load_schools("girls")}["Baptist"] == moves["Baptist"]["proposed"]
+    # ‼️ A PRIVATE PROGRAM KEEPS ITS NON-PUBLIC GROUP AND POD (owner rule 2026-09).
+    # Baptist is private, so the cycle moves its CLASSIFICATION while its group
+    # stays 10B and its district stays the pod; the public league the cycle seated
+    # it in becomes its OLD league, which is what its non-conference duals read.
+    bap = {s.name: s for s in jh.load_schools("girls")}["Baptist"]
+    assert bap.classification == moves["Baptist"]["proposed"]
+    assert bap.group == "10B" and bap.district == pod_before
+    assert bap.old_group and bap.old_league
     # idempotent: a file that already carries the map is not touched again
     assert rc.reapply(json.load(open(copy_path))["schools"]) == 0
     # the cycle's recorded first season is the season the map applies from
     assert rc.cycle_index(w["id"])[0]["season_year"] == wd.BASE_YEAR + w["year"] + 1
+    jh.reset_schools()
+
+
+def test_a_map_committed_before_the_pods_never_moves_a_private_out_of_one(
+        scored, monkeypatch, tmp_path, clean_archive):
+    """A cycle committed BEFORE the Non-Public pods recorded each private in the
+    PUBLIC league it then sat in. Re-applied as written, that put the privates back
+    into public leagues and left 10B/11B with districts of two to four schools on a
+    real save. The class still moves; the group and the pod are the seed file's, and
+    the cycle's public league becomes the OLD league."""
+    w = clean_archive
+    copy_path, original, moves = _commit_on_a_copy(tmp_path, monkeypatch, w)
+    privates = {s.name: s for s in jh.load_schools("girls") if s.private}
+    assert privates, "the fixture has no private programs"
+    # rewrite the stored map into what a PRE-POD commit would have recorded
+    conn = wd._db()
+    try:
+        row = conn.execute("SELECT data FROM world_jhsaa_reclass WHERE world_id=?"
+                           " AND status='committed'", (w["id"],)).fetchone()
+        data = json.loads(row["data"])
+        for name in privates:
+            e = data["map"].get(name)
+            if e is None:
+                continue
+            e["grp"] = "7A"
+            e["gd"] = e["bd"] = "A Public League"
+            e.pop("og", None)
+            e.pop("ol", None)
+        conn.execute("UPDATE world_jhsaa_reclass SET data=? WHERE world_id=? AND"
+                     " status='committed'", (json.dumps(data), w["id"]))
+        conn.commit()
+    finally:
+        conn.close()
+    copy_path.write_text(original)
+    jh.reset_schools()
+    after = {s.name: s for s in jh.load_schools("girls")}
+    for name, was in privates.items():
+        now = after[name]
+        assert now.group in jh.NONPUBLIC_GROUPS, (name, now.group)
+        assert now.district == was.district, (name, now.district)
+        assert now.old_league == "A Public League" and now.old_group == "7A", name
+        if name in moves:
+            assert now.classification == moves[name]["proposed"], name
+    jh.reset_schools()
+
+
+def test_a_consolidated_league_stays_folded_through_a_reapply(
+        scored, monkeypatch, tmp_path, clean_archive):
+    """The fold is a STANDING RULE in the districting data, not an edit to the seed
+    file: a committed cycle remembers the pre-fold leagues, so a re-apply used to
+    put every one of those schools back into a league that no longer exists."""
+    w = clean_archive
+    copy_path, original, _moves = _commit_on_a_copy(tmp_path, monkeypatch, w)
+    folds = jd.consolidations()
+    assert folds, "no consolidation is recorded"
+    # put the retired names back on disk, exactly as a pre-fold checkout would
+    doc = json.load(open(copy_path))
+    hits = 0
+    for r in doc["schools"]:
+        for (cls, gone), keep in folds.items():
+            if r.get("group") == cls and r.get("girls_district") == keep:
+                r["girls_district"] = r["boys_district"] = gone
+                hits += 1
+    assert hits, "the fold names no live school"
+    with open(copy_path, "w", encoding="utf-8") as fh:
+        json.dump(doc, fh, indent=2, ensure_ascii=False)
+    jh.reset_schools()
+    live = {(s.group, s.district) for s in jh.load_schools("girls")}
+    for (cls, gone) in folds:
+        assert (cls, gone) not in live, (cls, gone)
+    # and the surviving league is never offered again as a NEW name
+    assert not ({g for _c, g in folds} & {n for n, _a in jd.districting_config().LEAGUE_NAMES})
     jh.reset_schools()
 
 
