@@ -42,6 +42,29 @@ Owner refinements, all applied:
   game margin per dual (raw games would hand long three-set duals more
   statistical mass for merely lasting longer). A 5-0, 7-0 and 9-0 are all
   +1.0 — format length is never a rating input.
+- **‼️ SRS CAPS ITS MARGIN, AND UNCAPPED IT WAS NOT A SYSTEM AT ALL (owner rule
+  2026-09, `SRS_MARGIN_CAP` 0.5).** `srs` and `massey_dual` were the SAME RATING,
+  and not approximately: divide Massey's normal equations by a team's dual count
+  and you get exactly SRS's fixed point (`r = avg margin + mean opponent
+  rating`), with the same zero-centring, off the same `_flight_margin`. Measured:
+  agreement to 1.7e-10 and an identical rank order on a 400-dual synthetic
+  schedule, and on the owner's real 2029 pages the two columns matched in **all
+  57 rows of 10B and all 55 of 11B**. Two costs, both invisible on a page that
+  looked tidy: the composite counted margin-plus-schedule in **two of nine**
+  columns, and **σ — sold on the page as the disagreement measure — averaged in a
+  pair that can never disagree**, so every team's σ read low, worst where margin
+  was the outlier view. Capping answers the weakness the glossary already names
+  in `massey_dual` (running up flight margins), so the two now differ exactly
+  where that is what separated them: 13 of 24 teams move rank on the synthetic
+  schedule, largest move 4 places. ‼️ **A DUPLICATE SYSTEM IS THE ONE DEFECT THIS
+  PAGE CANNOT SHOW YOU** — nine columns of plausible numbers, a composite, and a
+  σ that is confidently wrong; it was found by reading two columns down, not by
+  any check. Pinned three ways: a capped known answer, an UNDER-the-cap case
+  where the two must still agree exactly (so the cap is provably the only
+  difference), and a ranking-inequality test that fails if SRS is ever un-capped.
+  ‼️ Ratings are ARCHIVED and never refit on read (the `pi` rule), so seasons
+  played before this keep identical columns — the honest record of what the
+  association published, not a migration.
 - **Same-group input only** — `dual_rows` keeps duals where BOTH sides are in
   the group; cross-group showcases stay on the résumé but never enter the fit,
   or the independence premise dies.

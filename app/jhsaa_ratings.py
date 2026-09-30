@@ -364,9 +364,39 @@ def massey_dual(rows: list[dict]) -> dict[str, float]:
     return _massey(rows, _flight_margin)
 
 
+#: ‼️ SRS CAPS THE MARGIN, AND THE CAP IS WHAT MAKES IT A SYSTEM (owner rule
+#: 2026-09). Uncapped, SRS is not a second opinion — it is `massey_dual` under
+#: another name, and not by coincidence: dividing Massey's normal equations by a
+#: team's dual count gives exactly SRS's fixed point (`r = avg margin + mean
+#: opponent rating`), with the same zero-centring, and both read the same
+#: `_flight_margin`. Measured on a 400-dual synthetic schedule the two agreed to
+#: 1.7e-10 and ranked every team identically, and on the owner's real 2029 pages
+#: the two columns matched in all 57 rows of 10B and all 55 of 11B. That cost the
+#: composite twice: margin-plus-schedule was counted in two of nine columns, and
+#: σ — sold on the page as the DISAGREEMENT measure — averaged in a pair that can
+#: never disagree, so every team's σ read low.
+#: Capping the normalised margin answers the weakness the glossary already names
+#: in `massey_dual` ("over-rates teams that run up flight margins"): past the cap
+#: a wider sweep adds nothing, so the two now differ exactly where running up the
+#: score is what separated them. Real associations publish capped-MOV SRS for the
+#: same reason. 0.5 = "won by more than half the flights contested" — a 5-flight
+#: 4-1, a 7-flight 6-1 and a 9-flight 9-0 all count the same.
+#: ‼️ A RATING IS ARCHIVED AND NEVER REFIT ON READ (the `pi` rule), so seasons
+#: played before this keep the values they were rated with — their two columns
+#: stay identical, which is the honest record of what the association published.
+SRS_MARGIN_CAP = 0.5
+
+
+def _capped_flight_margin(r: dict) -> float:
+    """`_flight_margin` clamped to ±`SRS_MARGIN_CAP` — see that constant."""
+    m = _flight_margin(r)
+    return max(-SRS_MARGIN_CAP, min(SRS_MARGIN_CAP, m))
+
+
 def srs(rows: list[dict]) -> dict[str, float]:
-    """System 5 — SRS: average flight margin plus average opponent rating,
-    iterated to convergence and centred at zero."""
+    """System 5 — SRS: average CAPPED flight margin plus average opponent
+    rating, iterated to convergence and centred at zero. The cap is the whole
+    difference from `massey_dual` — see `SRS_MARGIN_CAP`."""
     names, idx = _index(rows)
     n = len(names)
     if not n:
@@ -376,7 +406,7 @@ def srs(rows: list[dict]) -> dict[str, float]:
     opps: list[list[int]] = [[] for _ in range(n)]
     for r in rows:
         hi, ai = idx[r["home"]], idx[r["away"]]
-        m = _flight_margin(r)                 # normalised — see `_flight_margin`
+        m = _capped_flight_margin(r)          # capped — see `SRS_MARGIN_CAP`
         msum[hi] += m
         msum[ai] -= m
         count[hi] += 1
@@ -578,7 +608,10 @@ GLOSSARY = {
                     "teams that win tight duals against good ones."),
     "srs": ("SRS — average flight margin plus average opponent rating, iterated "
             "until stable. The simplest margin-plus-schedule blend; shares "
-            "Massey-dual's blowout appetite but is easier to read."),
+            "Massey-dual's schedule adjustment, but the margin is CAPPED at "
+            "half the flights contested, so beyond a comfortable win a wider "
+            "sweep adds nothing: where this and Massey-dual disagree, running "
+            "up the score is the difference."),
     "massey_game": ("Massey (game) — the same least squares built from total "
                     "GAME differential across every flight, ~1.1M games rather "
                     "than ~12k duals. Least sensitive to which close flights "

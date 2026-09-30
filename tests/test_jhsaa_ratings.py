@@ -36,13 +36,48 @@ def test_colley_two_team_known_answer():
     assert abs(vals["B"] - 0.375) < 1e-9
 
 
-def test_massey_and_srs_two_team_known_answer():
+def test_massey_two_team_known_answer():
     """A beats B 6-1: NORMALISED margin 5/7 (owner rule — a 5-0, 7-0 and 9-0
     are all +1.0), so the relative ratings are +-(5/7)/2, centred at zero."""
     m = jr.massey_dual([_row("A", "B", 6, 1)])
     assert abs(m["A"] - 5 / 14) < 1e-6 and abs(m["B"] + 5 / 14) < 1e-6
-    s = jr.srs([_row("A", "B", 6, 1)])
-    assert abs(s["A"] - 5 / 14) < 1e-6 and abs(s["B"] + 5 / 14) < 1e-6
+
+
+def test_srs_caps_the_margin_and_that_is_its_whole_difference():
+    """‼️ UNCAPPED, SRS IS `massey_dual` UNDER ANOTHER NAME — dividing Massey's
+    normal equations by a team's dual count IS SRS's fixed point, so the two
+    agreed to 1e-10 and ranked every team identically (measured; on the owner's
+    real 2029 pages all 57 rows of 10B and all 55 of 11B matched, and σ averaged
+    in a pair that could never disagree). The CAP is what makes it a system.
+
+    Below the cap the two still agree exactly — that is what proves the cap is
+    the ONLY difference, so a future edit to either one is caught here."""
+    under = [_row("A", "B", 4, 3)]                     # margin 1/7, under 0.5
+    m, s = jr.massey_dual(under), jr.srs(under)
+    assert abs(m["A"] - s["A"]) < 1e-9 and abs(m["B"] - s["B"]) < 1e-9
+    over = [_row("A", "B", 6, 1)]                      # margin 5/7, over 0.5
+    m, s = jr.massey_dual(over), jr.srs(over)
+    assert abs(m["A"] - 5 / 14) < 1e-6                 # uncapped
+    assert abs(s["A"] - jr.SRS_MARGIN_CAP / 2) < 1e-6  # capped, and so lower
+    assert s["A"] < m["A"]
+    # A sweep past the cap is worth no more than a comfortable win.
+    assert abs(jr.srs([_row("A", "B", 9, 0)])["A"] - s["A"]) < 1e-9
+
+
+def test_srs_and_massey_dual_are_not_the_same_ranking():
+    """The composite counts margin-plus-schedule ONCE. A regression that
+    un-caps SRS makes two of the nine columns identical again, which reads as a
+    tidy page rather than as a fault."""
+    import random
+    rng = random.Random(7)
+    teams = [f"T{i}" for i in range(16)]
+    rows = []
+    for _ in range(240):
+        h, a = rng.sample(teams, 2)
+        hp, ap = rng.choice([(5, 0), (4, 1), (3, 2), (7, 2), (5, 4), (9, 0)])
+        rows.append(_row(h, a, hp, ap))
+    order = lambda d: [n for n in sorted(d, key=lambda n: -d[n])]
+    assert order(jr.massey_dual(rows)) != order(jr.srs(rows))
 
 
 def test_margins_are_format_normalised():
