@@ -734,6 +734,15 @@ def reapply(rows: list[dict]) -> int:
                 r["old_group"], r["old_league"] = e["grp"] or e["cls"], e["gd"]
             r.pop("play_up", None)
             continue
+        # ‼️ ONLY A SCHOOL THE CYCLE ACTUALLY MOVED HAS ITS LEAGUE RESTORED (owner
+        # rule 2026-09). The map records every school's league as it stood at
+        # commit time, so writing all of them back reverts any league edit made
+        # SINCE — which is indistinguishable from an old checkout, and which undid
+        # the two thin-league consolidations the Non-Public split called for (33
+        # schools, measured). Restoring the CLASS MOVES is this function's job;
+        # the seed file keeps the leagues of everyone the cycle left alone.
+        if e["before"] == e["cls"]:
+            continue
         # `group` is kept apart: an affiliate or competitive move can hold a
         # school in a championship other than its classification's.
         r["group"] = e.get("grp") or e["cls"]
