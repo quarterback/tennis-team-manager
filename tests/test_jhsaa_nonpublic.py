@@ -188,9 +188,19 @@ def test_the_road_shape_is_the_road_class_not_the_league_class(archived):
             elif phase in jh.TOC_PHASES:
                 counts.setdefault("toc", set()).add(len(wd.unpack_lines(lines) or ()))
     conn.close()
-    assert counts.get("10B") == {9}, counts
-    assert counts.get("11B") == {5}, counts
-    assert counts.get("toc", {5}) == {5}, counts
+    # ‼️ DERIVED FROM `dual_format`, NEVER TYPED. 11B moved from the bare 1S/4D
+    # default onto 6A's continuity pilot (owner rule 2026-09, `LEAGUE_SHAPE_GROUPS`)
+    # and this assertion was a literal 5, so a membership change — which is the whole
+    # mechanism every one of these pilots uses — broke a test that was only ever
+    # meant to check that the road plays the class's OWN shape.
+    def flights(g):
+        f = jh.dual_format("state", g)
+        return {f.n_singles + f.n_doubles}
+    assert counts.get("10B") == flights("10B"), counts        # 4S/5D, nine
+    assert counts.get("11B") == flights("11B"), counts        # 3S/4D, seven
+    # the TOC fields every champion at ONE shape whatever their road played
+    toc = jh.dual_format("toc", "11B")
+    assert counts.get("toc", {5}) == {toc.n_singles + toc.n_doubles}, counts
 
 
 def test_the_pods_are_the_privates_leagues_and_publics_keep_their_own(archived):

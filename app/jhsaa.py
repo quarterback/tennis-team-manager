@@ -193,7 +193,17 @@ PILOT_GROUPS = ("1A",)          # groups whose road-to-State plays `state_1a`
 #: doubles-forward fixed allocation: the Order of Ability binds in the postseason and
 #: the awards deflate S2/S3 only under `phase == "regular"`, so a #10 at postseason
 #: S2 would be credited as a genuine No. 2. Membership is the whole change.
-LEAGUE_SHAPE_GROUPS = ("6A",)
+#:
+#: ‼️ 11B JOINED THE CONTINUITY PILOT (owner rule 2026-09). The small Non-Public
+#: class played the bare 1S/4D default — it was the ONE class on it that nobody had
+#: decided, left there because 10B went into `WIDE_GROUPS` and 11B was simply what
+#: fell out. It now carries its league 3S/4D through the road and State like 6A; the
+#: TOC stays 1S/4D (`dual_format`'s `road` excludes it) and the early window stays
+#: 5S/2D. Nothing else moved: `_arrange_postseason` dispatches on the FORMAT
+#: (`n_singles == 1` -> `_arrange_state`, else `_arrange_wide`), so the anti-stacking
+#: arrangement follows the shape with no list to join, and `jv_postseason_cut`
+#: is unchanged because the league's eleven already dominated 1S/4D's nine.
+LEAGUE_SHAPE_GROUPS = ("6A", "11B")
 #: Groups whose road-to-State plays `state_3s3d` (JHSAA rule 2026-09). Scoped like
 #: the 1A pilot: the road only (never the TOC, which fields every champion at one
 #: shape), never the league season, the early window or the showcases.
@@ -208,10 +218,12 @@ DECIDER_TARGET = 10
 # (JHSAA-approved 7A pilot, owner rule 2026-09 — membership in `WIDE_GROUPS` is the
 # whole change; every consumer keys off it). The association's deepest
 # classifications play a wider dual than the rest: their whole road to State (and the
-# State draw itself) plays 4 singles / 5 doubles instead of 1S/4D, and their EARLY
-# non-district window plays it too instead of 5S/2D — the same reasoning that put the
-# early window on a different shape in the first place, which is that the window is
-# where a program rehearses the card it will have to win with. Fourteen on court.
+# State draw itself) plays 4 singles / 5 doubles instead of 1S/4D. Fourteen on court.
+# ‼️ THE EARLY WINDOW IS NO LONGER PART OF THIS (owner rule 2026-09: "I don't want
+# 5/2 tennis to go away"). It moved to 4S/5D with the road in 2070 and came back to
+# 5S/2D for EVERY class when the showcases became the rehearsal instead; `rehearsal`
+# in `dual_format` is `road or SHOWCASE` and does not include `EARLY_FORMAT_PHASE`,
+# so this comment claimed a shape the code had already stopped playing.
 #
 # Everything else about these two classes is untouched: the league season is still
 # 3S/4D, the mid-season showcases are still 1S/4D, the TOC is still 1S/4D (it fields
@@ -220,10 +232,14 @@ DECIDER_TARGET = 10
 # format at all. Nine courts is odd, so a 4S/5D dual cannot tie and no tie-breaking
 # logic is needed anywhere; high school has no clinch, so all nine are always played.
 WIDE_GROUPS = ("7A", "8A", "9A", "Group 1",
-               # 10B, the large Non-Public class: most of it is 7A-9A privates,
-               # so its road plays the wide classes' 4S/5D. 11B plays the 1S/4D
-               # default (owner rule 2026-09).
-               "10B")  # groups whose road-to-State AND early window play 4S/5D
+               # 10B, the large Non-Public class. ‼️ THIS ONE WAS AN AGENT'S
+               # INFERENCE, NOT AN OWNER RULE (corrected 2026-09): the reasoning
+               # was "most of 10B is 7A-9A privates", and the comment credited it
+               # to the owner, who had not been asked. It STANDS as the shape 10B
+               # plays, and it is open — 10B's membership is an enrollment cut at
+               # 550, so its smallest member is nothing like a 9A, and 4S/5D was
+               # chosen for the association's DEEPEST classes.
+               "10B")  # groups whose road-to-State plays 4S/5D
 
 # ‼️ 5A PLAYS 6S/5D — ELEVEN FLIGHTS, AND IT IS THE SINGLES CLASS (JHSAA rule 2094,
 # on the 5A schools' own petition). The association's widest format by two flights:

@@ -191,3 +191,48 @@ a season archived before them).
   league duals all against pod mates and one dual against each old-league public;
   every public league dual public-vs-public; All-Star First and Second Team and a
   POY in both Non-Public classes; TOC still a byeless sixteen with the qualifier.
+
+
+## Addendum — the two classes' dual formats (owner rule 2026-09)
+
+Asked "we never said what format 10B/11B would play, what are they set to do right
+now", and the honest answer was that one of the two had been decided by an agent and
+the other had not been decided at all.
+
+**What was running:** 10B's road and State at 4S/5D (in `WIDE_GROUPS`), 11B's at the
+bare 1S/4D default. Both on the universal 5S/2D early window, both on 3S/4D in the
+pod/league season, both reverting to 1S/4D at the TOC — those three fall out of rules
+that already existed and were never a Non-Public decision.
+
+**11B moved to 6A's continuity pilot** (`LEAGUE_SHAPE_GROUPS`): its league 3S/4D now
+carries through the road and State. Eleven on court from the first dual to the last,
+the TOC excepted.
+
+- **Membership is the whole change, and this time that is verifiable rather than
+  asserted.** `_arrange_postseason` dispatches on the FORMAT — `n_singles == 1` goes
+  to `_arrange_state`, everything else to `_arrange_wide(pool, fmt.n_singles)` — so
+  the anti-stacking arrangement follows the shape with no second list to join. 11B's
+  postseason gets `_arrange_wide(pool, 3)`, byte-for-byte what 6A gets.
+- **`jv_postseason_cut` did not move** (11 before and after): it is derived from
+  `lineup_need`, and the league's eleven already dominated 1S/4D's nine. The JV
+  individual rank guard stays 14.
+- **The flight weights needed nothing**: 3S/4D's S1-S3 / D1-D4 are the league
+  season's own flights, already priced and already rated.
+
+> ‼️ **A LITERAL IN A TEST DEFEATS THE MECHANISM EVERY ONE OF THESE PILOTS USES.**
+> `test_the_road_shape_is_the_road_class_not_the_league_class` pinned 11B's road at `{5}` flights, so
+> a membership change — the *only* thing any of these pilots ever changes — broke a
+> test whose actual claim is "the road plays the class's OWN shape". It now derives the
+> count from `dual_format`, and the next move needs no test edit.
+
+> ‼️ **AND TWO COMMENTS WERE WRONG IN THE SAME NEIGHBOURHOOD.** `WIDE_GROUPS` credited
+> 10B's 4S/5D to the owner, who had not been asked — it was an agent's inference from
+> "most of 10B is 7A-9A privates", and it is now labelled as one. It STANDS as the
+> shape 10B plays and it is flagged as open: 10B's membership is an enrollment cut at
+> 550, so its smallest member is nothing like a 9A, while 4S/5D was chosen for the
+> association's deepest classes. The same block also still claimed the wide classes'
+> EARLY window plays 4S/5D, which the 2026-09 reversal ("I don't want 5/2 tennis to go
+> away") had already ended — `rehearsal` in `dual_format` is `road or SHOWCASE` and
+> excludes `EARLY_FORMAT_PHASE`, so the comment described a shape the code had stopped
+> playing. **A stale comment inside a format explanation is the one this section keeps
+> paying for.**
