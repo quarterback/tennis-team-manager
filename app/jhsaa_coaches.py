@@ -1537,7 +1537,7 @@ HEAD_RECORD_EDGE = 30.0       # … ± this per unit of record quality from .500
 HEAD_RECORD_SHRINK = 20       # phantom .500 matches (a thin record means less)
 
 
-def propose_cycle(world_id: int, season_year: int) -> dict:
+def propose_cycle(world_id: int, season_year: int, salt: str = "") -> dict:
     """Build (and store as PENDING) one coaching cycle, deterministic for
     (world, season).
 
@@ -1614,6 +1614,23 @@ def propose_cycle(world_id: int, season_year: int) -> dict:
                                              f" against the program's {norm:.3f}"})
                         taken.add(c.coach_id)
                         vacancies.append((ident, "head"))
+
+            # ‼️ A PROGRAM WITH NO STAFF AT ALL IS FULLY VACANT (owner rule 2026-09:
+            # "a bunch of assistants across the state [should] consider taking these
+            # jobs … or other head coaches to leave and create a cascade"). Programs
+            # added to the association after the seats were written — the expansion
+            # clubs — have NO seat rows, and the market only ever filled seats that
+            # exist, so the season rung seated them with brand-new random coaches and
+            # nobody already working in the state ever got the job. Their head and
+            # assistant seats (the assistant count their roster size earns) join the
+            # ordinary vacancies here — best job first, cascading down — and
+            # `commit_cycle` writes the seat rows. Nothing is written by a PROPOSAL.
+            _has_seats = {r["ident"] for r in seat_rows}
+            for _ident, _sc in sorted(schools.items()):
+                if _ident in _has_seats:
+                    continue
+                _n = assistants_for(jhsaa.roster_size(_sc.classification, _sc.key, salt))
+                vacancies.extend((_ident, SLOTS[i]) for i in range(1 + _n))
 
             # Who is looking this cycle — one roll per coach, so a coach is either
             # on the market or not, whichever job is open.
@@ -1799,6 +1816,57 @@ def dismiss_cycle(world_id: int) -> None:
         conn.close()
 
 
+def _open_seatless(world_id: int, prop: dict, sy: int) -> list:
+    """SEAT-LESS PROGRAMS (see `propose_cycle`): the seats a proposal names for a
+    program that has none are opened VACANT here, in slot order, vetoed lines
+    included — a vetoed fill leaves its seat empty and `_backfill_opened` fills it,
+    so no program ever plays with an empty seat. Returns [(gender, ident)] opened."""
+    conn = _conn()
+    try:
+        named: dict = {}
+        for ln in prop["lines"]:
+            if ln["kind"] not in ("retire", "fire") and ln.get("slot"):
+                named.setdefault((ln["gender"], ln["ident"]), set()).add(ln["slot"])
+        opened = []
+        for (g, i), slots in sorted(named.items()):
+            if _seat_rows(conn, world_id, i, g):
+                continue                        # an ordinary program: seats exist
+            for slot in SLOTS:
+                if slot in slots:
+                    conn.execute("INSERT OR IGNORE INTO jhsaa_coach_seat (world_id, ident,"
+                                 " gender, slot, coach_id, since, jv_head)"
+                                 " VALUES (?,?,?,?,NULL,?,?)",
+                                 (world_id, i, g, slot, sy, int(slot == "asst1")))
+            opened.append((g, i))
+        conn.commit()
+        return opened
+    finally:
+        conn.close()
+
+
+def _backfill_opened(world_id: int, opened: list, sy: int) -> None:
+    """A newly opened seat a veto (or a skipped move) left vacant gets a rolled
+    candidate, exactly as the market's own last resort does."""
+    if not opened:
+        return
+    from . import jhsaa
+    towns = {(g, sc.ident): sc.city for g in ("girls", "boys")
+             for sc in jhsaa.load_schools(g)}
+    for g, i in opened:
+        conn = _conn()
+        try:
+            empty = [sl for sl, cid in sorted(_seat_rows(conn, world_id, i, g).items(),
+                                              key=lambda kv: SLOTS.index(kv[0]))
+                     if cid is None]
+            for sl in empty:
+                c = _new_candidate(world_id, sy, g, towns.get((g, i), ""), f"open-{i}-{sl}")
+                save_coach(conn, world_id, c)
+                _place(conn, world_id, c.coach_id, i, g, sl, sy, "hired")
+            conn.commit()
+        finally:
+            conn.close()
+
+
 def commit_cycle(world_id: int) -> int:
     """Apply every line not vetoed, in proposal order. A fill whose incoming coach
     was vetoed out of their old seat still applies (the seat is the proposal's
@@ -1830,6 +1898,7 @@ def commit_cycle(world_id: int) -> int:
                     and src not in kept_seat):
                 kept_seat.add(src)
                 grew = True
+    opened = _open_seatless(world_id, prop, sy)
     applied = 0
     for ln in prop["lines"]:
         if ln["veto"]:
@@ -1872,6 +1941,7 @@ def commit_cycle(world_id: int) -> int:
             applied += 1
         except StaffError:
             continue
+    _backfill_opened(world_id, opened, sy)
     conn = _cconn()
     try:
         conn.execute("UPDATE jhsaa_coach_carousel SET status='committed' WHERE world_id=?"
