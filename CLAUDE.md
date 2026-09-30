@@ -1277,8 +1277,22 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   district honours, TOSS, All-State/District/Region, individual flights, JV all
   read `School.group` — and from `nonpublic_era()` leave the public bracket to
   play the SAME full ladder onto a 24-team State in 10B (enrollment ≥ 550 or in
-  `NONPUBLIC_PLAYUP`: Condotti Vanguard Academy, Romero-Finniski) or 11B. 10B is
-  in `WIDE_GROUPS` (4S/5D); 11B plays 1S/4D; neither has a committee or metas;
+  `NONPUBLIC_PLAYUP`: Condotti Vanguard Academy, Romero-Finniski) or 11B.
+  ‼️ **FORMATS (owner rule 2026-09): 10B's road plays 4S/5D (`WIDE_GROUPS`), 11B's
+  plays its league 3S/4D through the postseason (`LEAGUE_SHAPE_GROUPS`, 6A's
+  continuity pilot).** Both keep the universal 5S/2D early window and the 1S/4D TOC,
+  and a showcase either HOSTS plays its own road shape. ‼️ 11B was on the bare 1S/4D
+  DEFAULT and nobody had decided that — it was what fell out of putting 10B in
+  `WIDE_GROUPS`; the owner moved it when asked what the two classes were set to play.
+  10B's 4S/5D is likewise an agent's inference ("most of 10B is 7A-9A privates")
+  that was written into the code AS AN OWNER RULE and is corrected in place: it
+  stands, and it is open, because 10B's membership is an enrollment cut at 550 and
+  4S/5D was chosen for the association's DEEPEST classes. Membership in the tuple is
+  the whole change in both cases — `_arrange_postseason` dispatches on the FORMAT
+  (`n_singles == 1` → `_arrange_state`, else `_arrange_wide`), so the anti-stacking
+  arrangement follows the shape with no list to join, and `jv_postseason_cut` did not
+  move for 11B because the league's eleven already dominated 1S/4D's nine. Neither
+  class has a committee or metas;
   the TOC is a byeless SIXTEEN: fourteen champions plus the two **TOC Qualifier**
   winners (JHSAA rule 2026-09, `TOC_QUALIFIER_PAIRS`: 9A v 8A and 10B v 11B State
   runners-up, one dual each, phase `toc_qualifier`; a qualifier LOSER is treated
@@ -1484,7 +1498,7 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   report and `docs/AAR-jhsaa-6a-format-continuity-and-record-over-expected.md`).**
   The road, State and a 6A-hosted showcase play `FORMATS["regular"]` (eleven on
   court all year); the TOC stays 1S/4D like every pilot's entrant. Membership is the
-  whole change. ‼️ The postseason ARRANGEMENT is `_arrange_wide` (top five pooled for
+  whole change — **11B joined it in 2026-09** (see the Non-Public bullet). ‼️ The postseason ARRANGEMENT is `_arrange_wide` (top five pooled for
   three singles seats + D1), NOT the league's doubles-forward fixed allocation: the
   Order of Ability binds in the postseason, and `jhsaa_awards.FLIGHT_S2S3_REGULAR`
   deflates S2/S3 only under `phase == "regular"`, so a #10 seated at postseason S2
