@@ -7537,6 +7537,42 @@ def jhsaa_coefficient_view(seed: int, gender: str, group: str | None = None,
             "min_history": coef.MIN_HISTORY, "window_n": coef.WINDOW}
 
 
+def _voter_identity(name: str) -> dict:
+    """The identity fields for a committee member the ARCHIVE did not describe:
+    today's roster when the name is still on it, otherwise the name alone. A
+    member archived before the outlets existed (the five original philosophies)
+    resolves here and carries no tendency, which `_jh_ballot_groups` renders as
+    its own group — never as a member that vanished."""
+    from app.jhsaa_committee import BY_NAME
+    v = BY_NAME.get(name)
+    if v is None:
+        return {"name": name, "kind": "", "home": "", "area": "", "beat": "",
+                "tendency": ""}
+    return {"name": v.name, "kind": v.kind, "home": v.home, "area": v.area,
+            "beat": v.beat, "tendency": v.tendency}
+
+
+def _jh_ballot_groups(ballots: list, blurb: dict) -> list:
+    """The ballots tab's blocks, in tendency order, then ONE trailing block for
+    ballots whose tendency this build does not know (a pre-outlets selection).
+    Built here rather than filtered in the template so no ballot can be dropped
+    by a grouping the archive predates."""
+    from app.jhsaa_committee import TENDENCIES
+    out = []
+    for t in TENDENCIES:
+        bs = [b for b in ballots if b.get("tendency") == t]
+        if bs:
+            out.append({"key": t, "label": t.capitalize(),
+                        "blurb": blurb.get(t, ""), "ballots": bs})
+    rest = [b for b in ballots if b.get("tendency") not in set(TENDENCIES)]
+    if rest:
+        out.append({"key": "", "label": "The committee",
+                    "blurb": "Archived before the voters carried a published "
+                             "tendency — their weights are in the column "
+                             "tooltips.", "ballots": rest})
+    return out
+
+
 def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
                          year: int | None = None) -> dict:
     """The at-large tracking page for the Parastate groups (`ATLARGE_GROUPS` —
@@ -7548,7 +7584,7 @@ def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
     import app.jhsaa as jh
     import app.world as world
     from app.jhsaa_ratings import SYSTEMS
-    from app.jhsaa_committee import (MEMBERS, AT_LARGE, VOTERS, TENDENCIES,
+    from app.jhsaa_committee import (MEMBERS, AT_LARGE, TENDENCIES,
                                      TENDENCY_BLURB, lock_threshold,
                                      bubble_threshold)
     w = world.get_or_create(seed)
@@ -7584,19 +7620,22 @@ def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
     # weights; one selected by the twenty-four outlets renders with those. The
     # module is only the fallback for a season archived before `weights`.
     members = list((sel or {}).get("weights") or MEMBERS)
-    voters = ((sel or {}).get("voters")
-              or [{"name": v.name, "kind": v.kind, "home": v.home,
-                   "area": v.area, "beat": v.beat, "tendency": v.tendency}
-                  for v in VOTERS])
-    voters = [v for v in voters if v["name"] in set(members)]
+    # ‼️ ONE IDENTITY ROW PER ARCHIVED MEMBER, and never a filter over today's
+    # roster. A season selected before `voters` existed carries the five ORIGINAL
+    # member names, which match none of the twenty-four outlets — intersecting the
+    # two emptied the list, which emptied `tendencies`, and the ballots tab
+    # renders BY tendency, so the whole historical tab went blank while the
+    # archive still held every ballot and weight. An unmatched member keeps its
+    # name and carries no tendency; `_jh_ballot_groups` puts those in a group of
+    # their own rather than dropping them.
+    _arch = {v["name"]: v for v in ((sel or {}).get("voters") or ())}
+    voters = [dict(_arch.get(m) or _voter_identity(m), name=m) for m in members]
     systems = list(((arc or {}).get("ratings") or {}).get(grp, {}).get("systems")
                    or SYSTEMS)
     base = {"gender": g, "year": yr, "years": years, "group": grp,
             "groups": cgroups, "scope": scope,
             "systems": systems, "members": members,
             "voters": voters, "n_voters": len(members),
-            "tendencies": [t for t in TENDENCIES
-                           if any(v["tendency"] == t for v in voters)],
             "tendency_blurb": dict(TENDENCY_BLURB),
             "lock_at": (sel or {}).get("lock_at") or lock_threshold(len(members)),
             "bubble_at": ((sel or {}).get("bubble_at")
@@ -7653,11 +7692,10 @@ def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
     # arguments rather than twenty-four lists, and every entry names its market:
     # an outlet a reader cannot place is an anonymous number again.
     ident = {v["name"]: v for v in voters}
+    _order = {t: i for i, t in enumerate(TENDENCIES)}
     ballots = []
     for m in sorted(members, key=lambda n: (
-            base["tendencies"].index(ident[n]["tendency"])
-            if n in ident and ident[n]["tendency"] in base["tendencies"] else 99,
-            n)):
+            _order.get((ident.get(n) or {}).get("tendency"), 99), n)):
         top = (sel["ballots"].get(m) or [])[:base["field_n"]]
         wt = sel.get("weights", {}).get(m, {})
         iv = ident.get(m) or {}
@@ -7673,6 +7711,7 @@ def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
                                  "status": sel["status"].get(n, "Out")}
                                 for n in top]})
     return {**base, "ready": True, "rows": rows, "ballots": ballots,
+            "ballot_groups": _jh_ballot_groups(ballots, TENDENCY_BLURB),
             "has_context": bool(context),
             "selected": sel.get("selected") or [],
             "auto": sel.get("auto") or [], "locks": sel.get("locks") or []}

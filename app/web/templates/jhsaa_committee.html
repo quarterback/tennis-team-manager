@@ -14,9 +14,9 @@
 {{ jh_header(view.scope, u, 'committee', view.group ~ ' At-Large Committee',
              'The ' ~ view.field_n ~ '-team field: ' ~ view.road_n ~ ' road qualifiers plus '
               ~ view.seats ~ ' committee at-larges, always seeded ' ~ (view.road_n + 1) ~ '-'
-              ~ view.field_n ~ '. ' ~ view.n_voters ~ ' voters — Jefferson TV stations,
-              newspapers and radio, each a fixed published philosophy over the computer
-              systems. Every selection traces to those ballots, never a coin flip.',
+              ~ view.field_n ~ '. ' ~ view.n_voters ~ ' voters, each a fixed published
+              philosophy over the computer systems. Every selection traces to those
+              ballots, never a coin flip.',
              [('Season', view.season_year|cal), ('At-larges', view.selected|length),
               ('Auto bids', view.auto|length), ('Locks', view.locks|length)]
              if view.ready else []) }}
@@ -100,12 +100,11 @@ the season each class's expanded field began.</div></div>
     {# One block per TENDENCY, so the tab reads as a handful of arguments rather
        than two dozen parallel lists. Each block's columns are the outlets that
        vote that way; a market's paper, station and radio never share one. #}
-    {% for t in view.tendencies %}
-    {% set bs = view.ballots|selectattr('tendency', 'equalto', t)|list %}
-    {% if bs %}
+    {% for grp in view.ballot_groups %}
+    {% set bs = grp.ballots %}
     <div style="padding:10px 14px 4px">
-      <b>{{ t|capitalize }}</b>
-      <span style="color:var(--text-faint)"> — {{ view.tendency_blurb.get(t, '') }}</span>
+      <b>{{ grp.label }}</b>
+      <span style="color:var(--text-faint)"> — {{ grp.blurb }}</span>
     </div>
     <div class="tbl-scroll">
       <table class="jh-ledger nowrap">
@@ -130,13 +129,12 @@ the season each class's expanded field began.</div></div>
         {% endfor %}
       </table>
     </div>
-    {% endif %}
     {% endfor %}
     <div style="padding:8px 14px;color:var(--text-faint)">
-      {{ view.n_voters }} outlets, seven philosophies. Each voter is a fixed set of
-      weights over the computer systems — published in the column tooltips, with no
-      hidden judgement — so every ranking on this tab can be explained exactly. A
-      coach reading which voter keeps them out is the point of it.
+      {{ view.n_voters }} voters. Each is a fixed set of weights over the computer
+      systems — published in the column tooltips, with no hidden judgement — so every
+      ranking on this tab can be explained exactly. A coach reading which voter keeps
+      them out is the point of it.
     </div>
   </div>
 

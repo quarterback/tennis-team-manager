@@ -277,3 +277,52 @@ lines through the Borda count.
   the module here would blank a retired column and print an empty new one across
   every season ever played, so `select` archives `voters`/`weights`/`lock_at` and
   `group_ratings` archives `systems`, and both views read from there.
+
+### 4. Two readers the first pass missed, and why each failed silently
+
+Both are the same rule — *the columns and the electorate are the archived
+season's, never today's module* — and both were caught in review rather than by a
+test, because neither raises.
+
+**‼️ THE RESEARCH EXPORT IS A THIRD READER OF `SYSTEMS`.** The two web views were
+fixed to read `ratings["systems"]`; `research_export.build_jhsaa` still iterated
+`jhsaa_ratings.SYSTEMS`, so exporting any pre-Markov season **dropped its
+`rank_colley` / `value_colley` and emitted empty `rank_markov` / `value_markov`
+in their place**. The table stays exactly the right shape with the historical
+data gone, which is the worst possible outcome for a file whose whole purpose is
+analysis. Fixed by taking the union of the season's own layers' `systems` (module
+order first, so a current season's header is byte-identical, then any retired
+system the archive still carries) — a union, not a per-layer list, because `_csv`
+derives its header from `rows[0]` and every row must carry every key. The
+manifest sentence names the season's columns from that list instead of a typed
+"(Colley, Bradley-Terry, …)". A layer with no `systems` key at all falls back to
+the keys its own `ranks` carry — the same fact read off the data rather than the
+header.
+> **The lesson is the sweep, not the site.** When a module-level list becomes
+> per-season, `grep` every importer of it. Three readers existed; the first pass
+> found two, and the one it missed is the only one that writes a file the owner
+> keeps.
+
+**‼️ AN INTERSECTION WITH TODAY'S ROSTER IS NOT A FILTER, IT IS A DELETION.** The
+committee view resolved its identities as *"the archived `voters`, else today's
+`VOTERS`, then keep only those in `members`"*. On a selection archived before
+`voters` existed, `members` holds the five ORIGINAL member names and the fallback
+holds the twenty-four outlets — the intersection is **empty**, which emptied the
+tendency list, and the ballots tab renders BY tendency, so the entire historical
+tab went blank while the archive still held every ballot and every weight.
+- Identities are now built **one row per archived member**, in `members` order:
+  the archive's row if it has one, else `_voter_identity(name)` (today's roster
+  when the name is still on it, otherwise the name alone with no tendency).
+  Nothing is ever intersected away.
+- The blocks are built in `_jh_ballot_groups`, not filtered in the template, and
+  it emits **one trailing block for ballots whose tendency this build does not
+  know**, labelled "The committee". A pre-outlets season therefore renders its
+  five ballots in one group; verified by rendering both shapes (current: 7 groups,
+  24 of 24 columns; legacy five: 1 group, 5 of 5).
+- The page's own wording stopped claiming the roster too — the header says
+  "N voters", not "Jefferson TV stations, newspapers and radio", because that
+  sentence is false for a season selected before they existed.
+> **A grouping is a chance to drop a row.** Whenever a view renders a list only
+> through a grouping derived from today's constants, an archive that predates the
+> grouping renders as nothing at all — so the grouping owes the ungrouped
+> remainder a home, and the check is to render the old shape, not to read the code.

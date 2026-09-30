@@ -482,12 +482,33 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
     # disconnected flag. Joined on program_id like every other table (display
     # names repeat across renames; ids do not). Archived seasons predating the
     # layer simply emit an empty table.
+    # ‼️ THE COLUMNS ARE THE ARCHIVED SEASON'S OWN SYSTEMS, NEVER THIS MODULE'S
+    # (the `pi` rule, and the same correction the two web readers carry). The
+    # layer archives its `systems` list beside the values, and the roster has
+    # moved — Colley was retired for the Markov chain in 2026-09 — so iterating
+    # `jhsaa_ratings.SYSTEMS` here drops a pre-Markov season's `rank_colley` /
+    # `value_colley` on the floor and emits empty Markov columns in their place.
+    # Nothing raises: the table is the right shape with the historical data
+    # silently gone, which is the worst outcome for a research export.
+    # The UNION across the season's layers, in the module's order first so a
+    # current season's header is unchanged, then any retired system the archive
+    # still carries — `_csv` takes its header from `rows[0]`, so every row must
+    # carry every key.
     from app.jhsaa_ratings import SYSTEMS as _rating_systems
+    _layers = [(g, ly) for g, ly in sorted((season.get("ratings") or {}).items())
+               if ly and (classification == "all" or g == classification)]
+    # A layer with no `systems` key (only a hand-built fixture — the real layer
+    # has archived it since it shipped) falls back to the keys its own ranks
+    # carry, which is the same fact read off the data instead of the header.
+    _archived = {s for _, ly in _layers
+                 for s in ((ly.get("systems") or ())
+                           or {k for t in (ly.get("teams") or {}).values()
+                               for k in (t.get("ranks") or {})})}
+    _systems = ([s for s in _rating_systems if s in _archived or not _archived]
+                + sorted(_archived - set(_rating_systems)))
     name_to_id = {t.school.name: t.school.key for t in all_teams}
     computer_ratings = []
-    for group, layer in sorted((season.get("ratings") or {}).items()):
-        if not layer or (classification != "all" and group != classification):
-            continue
+    for group, layer in _layers:
         for name, t in sorted((layer.get("teams") or {}).items()):
             row = {"program_id": name_to_id.get(name, ""), "name": name,
                    "gender": gender, "championship_group": group,
@@ -498,7 +519,7 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                    "sigma": t.get("sigma", ""),
                    "disconnected": int(bool(layer.get("disconnected"))),
                    "sor_bench": layer.get("sor_bench", "")}
-            for s in _rating_systems:
+            for s in _systems:
                 row[f"rank_{s}"] = (t.get("ranks") or {}).get(s, "")
                 row[f"value_{s}"] = (t.get("values") or {}).get(s, "")
             computer_ratings.append(row)
@@ -912,8 +933,11 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "duals.date is the game's own display calendar (world.jhsaa_match_dates — one date "
             "per dual, identical from both sides); empty on seasons archived before dates existed. "
             "It is the play order: there is no clock inside a JHSAA season.",
-            "jhsaa_computer_ratings.csv is the nine-system computer-ratings layer (Colley, "
-            "Bradley-Terry, Win%, Massey dual, SRS, Massey game, Set share, SOR, Elo) plus the "
+            "jhsaa_computer_ratings.csv is the computer-ratings layer of THIS season — its own "
+            "systems, not today's roster of them (the layer archives the list it was fitted "
+            "with, and the association has retired and added systems: Colley gave way to the "
+            "Markov chain in 2026-09). This season's columns are "
+            + ", ".join(_systems) + " — plus the "
             "composite mean/median/sigma of the system RANKS, per championship_group — fitted "
             "on same-group varsity duals only, margins format-normalised, State/TOC excluded. "
             "sor_bench is the published SOR benchmark (median Bradley-Terry rating of the "

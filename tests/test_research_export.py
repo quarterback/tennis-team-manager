@@ -22,7 +22,14 @@ def _prospect(pid, name, grade):
 def _team(name, group, home):
     school = SimpleNamespace(name=name, key=f"{name}|girls", city="Aurora", locality="",
         county="Gold", area="North", classification=group, group=group, district="7A-1",
-        enrollment=1200, private=False, mascot="Aces", colors=["#123456"])
+        enrollment=1200, private=False, mascot="Aces", colors=["#123456"],
+        # ‼️ A real `jhsaa.School` carries these (owner rule 2026-09, the
+        # Non-Public pods) and the export reads them, so a stub that omits one
+        # raises AttributeError for every injected season — which is how the
+        # pods change broke five tests in this file at once. Keep this stub a
+        # complete School: the export is deliberately strict, and a `getattr`
+        # default there would hide the next field the same way.
+        old_group="", old_league="")
     line = {"slot": "S1", "home": ["Ana Ace"], "away": ["Bea Ball"],
             "score": "6-3 6-4", "home_won": True}
     schedule = [{"opp": "Ball High" if home else "Ace High", "home": home,

@@ -922,10 +922,27 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   groups there is nothing to order them by.
   ‼️ **THE COLUMNS AND THE ELECTORATE ARE THE ARCHIVED SEASON'S, NEVER TODAY'S
   MODULE** (the `pi` rule, the seat-count idiom): `group_ratings` archives its
-  own `systems` list and `select` archives `voters`/`weights`/`lock_at`, and both
-  views read from there — off the module, a retired column blanks and an empty new
-  one prints across every season ever played. `GLOSSARY` keeps its Colley
-  paragraph for good. **THE PARASTATE CLASSES — EVERY class since the 2080
+  own `systems` list and `select` archives `voters`/`weights`/`lock_at`, and every
+  reader takes them from there — off the module, a retired column blanks and an
+  empty new one prints across every season ever played. `GLOSSARY` keeps its
+  Colley paragraph for good. ‼️ **THERE ARE THREE READERS, and the third writes a
+  FILE**: `research_export.build_jhsaa` iterated `SYSTEMS` after the two views
+  were fixed, so every pre-Markov export lost its `rank_colley`/`value_colley`
+  and emitted empty Markov columns — right shape, history gone, nothing raised.
+  It now unions the season's layers' own `systems` (module order first, so a
+  current header is byte-identical) because `_csv` takes its header from
+  `rows[0]`; the manifest sentence names them from that list, never typed. When a
+  module-level list becomes per-season, GREP EVERY IMPORTER.
+  ‼️ **AND AN INTERSECTION WITH TODAY'S ROSTER IS A DELETION, NOT A FILTER.** The
+  committee view kept only the members that were also in today's `VOTERS`, so a
+  selection archived before `voters` existed (the five ORIGINAL names) intersected
+  to EMPTY — which emptied the tendency list, and the ballots tab renders BY
+  tendency, so the whole historical tab went blank with every ballot and weight
+  still in the archive. Identities are built one row per ARCHIVED member
+  (`_voter_identity` falls back to the name alone), and `_jh_ballot_groups` emits
+  a trailing "The committee" block for ballots whose tendency this build does not
+  know. **A grouping derived from today's constants owes the ungrouped remainder a
+  home**, and the check is rendering the old shape. **THE PARASTATE CLASSES — EVERY class since the 2080
   expansion (JHSAA rule 2026-09, EXPANDED 2026-09, EXPANDED AGAIN for 2080,
   `docs/AAR-jhsaa-playoff-expansion-parastate.md` +
   `docs/AAR-jhsaa-2080-group2-group3-playoff-expansion.md`): 8A, 9A and Group 1
