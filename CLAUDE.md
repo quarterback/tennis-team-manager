@@ -1919,12 +1919,25 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     (a 68 sent to a 6A whose No. 1 was a 41) and ~70% of rising early participants
     moved — read both off the first real 2100 export before retuning.
     ‼️ **EDITS ARE REPROJECTED, NEVER PASTED FROM A CACHED OPTION (review 2026-09):**
-    every edit and the commit REBUILD the slate (`build(edits=)`) — redirects placed
-    first, strongest first, each re-checked with `_with`/`v1_rank` against a ladder
-    carrying the earlier redirects (`held`; the cascade never takes a seat that would
-    push one off), a failing redirect falls to the cascade and is flagged
+    "Rebuild proposal" and the commit REBUILD the slate (`build(edits=)`) — redirects
+    placed first, strongest first, each re-checked with `_with`/`v1_rank` against a
+    ladder carrying the earlier redirects (`held`; the cascade never takes a seat that
+    would push one off), a failing redirect falls to the cascade and is flagged
     `redirect_failed`; and a mover is EMITTED only if the FINAL ladder of his final
-    destination seats him, else he is pulled back and listed `displaced`. **NO RATINGS
+    destination seats him, else he is pulled back and listed `displaced`.
+    ‼️ **BUT AN EDIT IS AN OVERLAY, NEVER A REBUILD (owner, 2026-09: "if i remove a
+    kid it repolls for each single kid").** `edit()` stores the decision and
+    `jp.effective(cur)` lays the edits over the stored proposal: a drop strikes the
+    row (0.02s, was a ~14s full build on the fixture and minutes on the real save);
+    a redirect is checked against the ONE destination it names (`_check_redirect`
+    builds the origin, that school and the origins of the movers already headed
+    there, applies them with `_with`, asks the real `v1_rank`) and is stored WITH
+    its validated row, or `failed` (the automatic row stands, chipped "redirect not
+    held"); undo pops the edit. The one rebuild left in `edit()` is undoing a drop
+    the last full build baked in — there is no row to restore otherwise. The page
+    shows ONE DISTRICT at a time (`<select>` switcher, `district_index` carries the
+    counts; `_jp_back` carries `district`) — the association's movers were "very
+    long with too many items" as a stack of league panels. **NO RATINGS
     ON THE PAGE**: rows carry the origin's projected ladder position vs its V1, the
     8th-grade record (`PriorSeason`) and the destination seat (`_describe`);
     `ovr`/`pot` stay on the stored row for the export only. **SCOPED like the

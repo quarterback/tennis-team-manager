@@ -9,7 +9,11 @@
    grouped by origin district. The class rail carries the three gated classes only.
    ‼️ NO RATINGS HERE: a candidate is described by where the origin's projected
    ladder puts them against its V1, what they did as an 8th-grader, and the seat
-   the destination projects — never OVR or a potential estimate. #}
+   the destination projects — never OVR or a potential estimate.
+   ‼️ ONE DISTRICT ON SCREEN (owner, 2026-09): the class's leagues are a <select>
+   switcher and only the chosen one renders. A drop / undo / redirect is an
+   OVERLAY on the stored proposal (jp.effective) — never a rebuild of the slate;
+   only "Rebuild proposal" and the commit reproject everything. #}
 {{ jh_header(view.scope, u, 'portal', 'Rising-freshman portal',
              'Early participants going into ninth grade with no projected V1 seat at the school they played for. Same county, then same area, then neighbouring areas; the best V1 seat in the first tier that has one.',
              [('Season', view.season), ('Sport', view.gender|capitalize), ('Class', view.group)]) }}
@@ -36,7 +40,7 @@
     {% else %}
     <form method="post" action="{{ url_for('jhsaa_portal_run') }}"
           data-loading='{"title":"Rebuilding the proposal…","sub":"Your redirects and drops are reprojected onto today’s ladders."}'>
-      <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="g" value="{{ view.gender }}"><input type="hidden" name="group" value="{{ view.group }}"><input type="hidden" name="rebuild" value="1">
+      <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="g" value="{{ view.gender }}"><input type="hidden" name="group" value="{{ view.group }}"><input type="hidden" name="district" value="{{ view.district.district if view.district else '' }}"><input type="hidden" name="rebuild" value="1">
       <button class="bl-btn" type="submit">Rebuild proposal</button>
     </form>
     <form method="post" action="{{ url_for('jhsaa_portal_commit') }}"
@@ -56,13 +60,20 @@
 </div>
 
 {% if view.pending %}
-{% if not view.districts %}
+{% if not view.district_index %}
 <div class="bl-panel"><div class="bl-panel-body" style="padding:12px"><span class="bl-panel-meta">Nobody in {{ view.gender }} {{ view.group }} needs a move this season.</span></div></div>
-{% endif %}
-{% for d in view.districts %}
+{% else %}
+{% set d = view.district %}
 <div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title"><a href="{{ url_for('jhsaa_district', group=view.group, district=d.district, u=u, g=view.gender) }}">{{ d.district }}</a></span>
-    <span class="bl-panel-meta">{{ d.moves|length }} proposed{% if d.stays %} · {{ d.stays|length }} stay{% endif %}</span></div>
+  <div class="bl-panel-head" style="gap:10px;flex-wrap:wrap">
+    <span class="bl-panel-title"><a href="{{ url_for('jhsaa_district', group=view.group, district=d.district, u=u, g=view.gender) }}">{{ d.district }}</a></span>
+    <span class="bl-panel-meta">{{ d.moves|length }} proposed{% if d.stays %} · {{ d.stays|length }} stay{% endif %} · {{ view.in_view }} proposed across {{ view.district_index|length }} leagues in {{ view.gender }} {{ view.group }}</span>
+    <select class="bl-select" style="margin-left:auto;max-width:320px" onchange="if(this.value)window.location=this.value" title="Another league in this class">
+      {% for x in view.district_index %}
+      <option value="{{ url_for('jhsaa_portal', u=u, g=view.gender, group=view.group, district=x.district) }}" {% if x.district == d.district %}selected{% endif %}>{{ x.district }} · {{ x.moves }} proposed{% if x.stays %} · {{ x.stays }} stay{% endif %}</option>
+      {% endfor %}
+    </select>
+  </div>
   {% if d.moves %}
   <div class="tbl-scroll">
     <table class="jh-ledger nowrap figures">
@@ -77,7 +88,7 @@
       <tr>
         <td class="nm"><a href="{{ url_for('jhsaa_player', school=m.from, pid=m.pid, u=u, g=view.gender) }}">{{ m.name }}</a>
           {% if m.redirected %} <span class="jh-chip">redirected</span>{% endif %}
-          {% if m.redirect_failed %} <span class="jh-chip" title="{{ m.redirect_failed }} no longer projects a V1 seat; placed automatically instead">redirect not held</span>{% endif %}
+          {% if m.redirect_failed %} <span class="jh-chip" title="{{ m.redirect_failed }} no longer projects a V1 seat; the proposed seat stands">redirect not held</span>{% endif %}
           {% if m.early_years == 2 %} <span class="jh-chip" title="Played 7th and 8th grade">2 yrs</span>{% endif %}</td>
         <td class="nm"><a href="{{ url_for('jhsaa_school', school=m.from, u=u, g=view.gender) }}">{{ m.from }}</a></td>
         <td>{{ ladder(m) }}</td>
@@ -88,8 +99,8 @@
         <td>{{ m.rank }} of {{ m.v1 }}</td>
         <td style="white-space:nowrap">
           <form method="post" action="{{ url_for('jhsaa_portal_edit') }}" style="display:inline-flex;gap:4px;align-items:center"
-                data-loading='{"title":"Reprojecting the slate…","sub":"Every redirect and drop is placed against today’s ladders."}'>
-            <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="g" value="{{ view.gender }}"><input type="hidden" name="group" value="{{ view.group }}"><input type="hidden" name="pid" value="{{ m.pid }}">
+                data-loading='{"title":"Updating the slate…","sub":"A redirect is checked against that one school’s ladder; a drop or undo is recorded at once."}'>
+            <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="g" value="{{ view.gender }}"><input type="hidden" name="group" value="{{ view.group }}"><input type="hidden" name="district" value="{{ d.district }}"><input type="hidden" name="pid" value="{{ m.pid }}">
             {% if m.edited %}
             <button class="bl-btn" name="action" value="reset" type="submit" title="Back to the proposal">undo</button>
             {% else %}
@@ -98,7 +109,7 @@
             <select class="bl-select" name="to" style="width:200px">
               {% for o in m.options %}<option value="{{ o.school }}" {% if o.school == m.to %}selected{% endif %}>{{ o.school }} · {{ o.class|jh_group_short }} · seat {{ o.rank }}</option>{% endfor %}
             </select>
-            <button class="bl-btn" name="action" value="to" type="submit" title="Send to the chosen V1 seat — reprojected before it is kept">redirect</button>
+            <button class="bl-btn" name="action" value="to" type="submit" title="Send to the chosen V1 seat — checked against that school’s ladder before it is kept">redirect</button>
             {% endif %}
             {% endif %}
           </form>
@@ -122,8 +133,8 @@
         <td style="white-space:nowrap">
           {% if s.edited %}
           <form method="post" action="{{ url_for('jhsaa_portal_edit') }}" style="display:inline-flex;gap:4px;align-items:center"
-                data-loading='{"title":"Reprojecting the slate…","sub":"Every redirect and drop is placed against today’s ladders."}'>
-            <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="g" value="{{ view.gender }}"><input type="hidden" name="group" value="{{ view.group }}"><input type="hidden" name="pid" value="{{ s.pid }}">
+                data-loading='{"title":"Updating the slate…","sub":"An undo is recorded at once."}'>
+            <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="g" value="{{ view.gender }}"><input type="hidden" name="group" value="{{ view.group }}"><input type="hidden" name="district" value="{{ d.district }}"><input type="hidden" name="pid" value="{{ s.pid }}">
             <button class="bl-btn" name="action" value="reset" type="submit" title="Back to the proposal">undo</button>
           </form>
           {% endif %}
@@ -134,7 +145,7 @@
   </div>
   {% endif %}
 </div>
-{% endfor %}
+{% endif %}
 {% endif %}
 
 {% if view.history_total %}
