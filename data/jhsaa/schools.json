@@ -902,7 +902,7 @@
       "source": "Summervale Heights"
     },
     {
-      "name": "Aspen Spur Union",
+      "name": "Aspen Spur",
       "source": "Aspen Spur Union",
       "city": "Aspen Spur",
       "county": "Antler",
@@ -12512,6 +12512,26 @@
       "boys_district": "Gateway League"
     },
     {
+      "name": "Mount Ruth",
+      "city": "Mount Ruth",
+      "county": "Antler",
+      "area": "Alderwold",
+      "classification": "1A",
+      "group": "1A",
+      "enrollment": 140,
+      "private": false,
+      "mascot": "Skookums",
+      "colors": [
+        "#0f6a70",
+        "#f4f1ea"
+      ],
+      "girls": false,
+      "boys": false,
+      "girls_district": "Orchard League",
+      "boys_district": "Orchard League",
+      "source": "Sablewood Union"
+    },
+    {
       "name": "Mountain Gate",
       "city": "Orlova",
       "county": "Tamarack",
@@ -16287,25 +16307,6 @@
       "girls_district": "Marble Valley League",
       "boys_district": "Marble Valley League",
       "source": "Fig Gap"
-    },
-    {
-      "name": "Sablewood Union",
-      "city": "Mount Ruth",
-      "county": "Antler",
-      "area": "Alderwold",
-      "classification": "1A",
-      "group": "1A",
-      "enrollment": 140,
-      "private": false,
-      "mascot": "Skookums",
-      "colors": [
-        "#0f6a70",
-        "#f4f1ea"
-      ],
-      "girls": false,
-      "boys": false,
-      "girls_district": "Orchard League",
-      "boys_district": "Orchard League"
     },
     {
       "name": "Sacred Heart",

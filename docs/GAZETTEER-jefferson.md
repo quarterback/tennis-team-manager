@@ -697,7 +697,7 @@ class, enrollment, and locality where the school carries one.
 - **Whistle Stop** — 3,300 · 43.64N 123.57W
     - Whistle Stop — 1A, 152 · Orchard League
 - **Mount Ruth** — 3,100 · 43.37N 123.47W
-    - Sablewood Union — 1A, 140 · Orchard League
+    - Mount Ruth — 1A, 140 · Orchard League
 - **Camas Crossing** — 2,800 · 43.71N 123.22W
     - Elk Run — 2A, 308 · Foundry League
     - Camas Valley — 1A, 128 · Orchard League
@@ -714,7 +714,7 @@ class, enrollment, and locality where the school carries one.
 - **Harmons Landing** — 1,900 · 43.55N 123.85W
     - Redwood Glen — 1A, 90 · Orchard League
 - **Aspen Spur** — 1,400 · 43.03N 123.67W
-    - Aspen Spur Union — 1A, 188 · Orchard League
+    - Aspen Spur — 1A, 188 · Orchard League
 
 ## Selquah
 

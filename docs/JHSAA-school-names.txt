@@ -147,7 +147,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     9A  2417  Arroyo Verde                           Santa Michaela         Irina Kovalenko North
     9A  2583  Arroyo Seco                            Serrano                Serrano Applied Sciences Institute
 
-    1A   188  Aspen Spur Union                       Aspen Spur             Aspen Spur Union
+    1A   188  Aspen Spur                             Aspen Spur             Aspen Spur Union
     1A   105  Aspen Hollow                           Summervale             Summervale Heights
 
     7A  1384  Bahía Leal                             Bahía Leal             Bahía Leal
@@ -317,6 +317,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
 
     1A    76  Mount Dylan Lake                       Mount Dylan Lake       Huckle Lake
     4A   593  Mount Horeb                            Mount Horeb            Mount Horeb
+    1A   140  Mount Ruth                             Mount Ruth             Sablewood Union
 
     6A  1150  Mountain View                          Bend                   Mountain View High
     3A   500  Mountain Gate                          Orlova                 Mountain Gate
@@ -610,7 +611,7 @@ Ashstead — 1 program (Cinder County, Cascade Divide)
     1A   177 pub  Ashstead                                                  Hacienda League                    Ashstead
 
 Aspen Spur — 1 program (Antler County, Alderwold)
-    1A   188 pub  Aspen Spur Union                                          Orchard League                     Aspen Spur Union
+    1A   188 pub  Aspen Spur                                                Orchard League                     Aspen Spur Union
 
 Assay — 1 program (Windrow County, Millersylvania)
    Group 3   100 pub  Assay                                                     Basalt League                      Assay
@@ -1658,7 +1659,7 @@ Mount Horeb — 3 programs (Marlow County, Ashbury Metro)
     4A   560 pub  Taft                                                      Gateway League                     Evelyn Booker
 
 Mount Ruth — 1 program (Antler County, Alderwold)
-    1A   140 pub  Sablewood Union                                           Orchard League                     Sablewood Union
+    1A   140 pub  Mount Ruth                                                Orchard League                     Sablewood Union
 
 Mountain View — 1 program (Bridger County, Bear River Country)
    Group 2   460 priv Bridger County Christian                                  Olympic League                     Bridger County Christian
