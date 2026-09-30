@@ -462,6 +462,11 @@ CREATE TABLE IF NOT EXISTS jhsaa_coach_history (
 );
 CREATE INDEX IF NOT EXISTS ix_jhsaa_coach_hist ON jhsaa_coach_history(world_id, year, gender);
 CREATE INDEX IF NOT EXISTS ix_jhsaa_coach_hist_coach ON jhsaa_coach_history(world_id, coach_id);
+-- ‼️ THE CAROUSEL ASKS ONE PROGRAM'S HEAD RUN PER HEAD (`_head_run`): (world, gender,
+-- ident) narrows it to that program's rows. Without this the only usable index was
+-- `(world_id, …)`, so every one of ~1,700 head queries scanned the WHOLE world's
+-- coaching history — cost that grows with every season the save has played.
+CREATE INDEX IF NOT EXISTS ix_jhsaa_coach_hist_seat ON jhsaa_coach_history(world_id, gender, ident, slot, year);
 CREATE TABLE IF NOT EXISTS jhsaa_coach_event (
   world_id INTEGER, year INTEGER, coach_id TEXT, ident TEXT, gender TEXT,
   slot TEXT, event TEXT, note TEXT
