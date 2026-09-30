@@ -489,3 +489,43 @@ W-L-T, programs, state titles, COY counts). `coach_id` joins all five; `program_
 joins programs.csv on the roster identity. The scores are in the export ON PURPOSE:
 the names-and-rank-only rule governs the pages, and the export is the owner's
 analysis copy.
+
+
+## Addendum — the carousel's per-head query, and staffing programs that have no seats (2026-09)
+
+**The index is an invariant.** `propose_cycle` calls `_head_run` once per head coach
+(~1,700 across both genders), and each call is
+`WHERE world_id=? AND gender=? AND ident=? AND slot='head' ORDER BY year`. The only
+index on `jhsaa_coach_history` was `(world_id, year, gender)`, which the planner
+also preferred because it delivers `ORDER BY year` for free — so every query scanned
+the whole world's coaching history and the cost grew with every season played.
+`ix_jhsaa_coach_hist_seat (world_id, gender, ident, slot, year)` fixes it, and
+**the column order is what makes it work**: the four equality columns first, `year`
+last so the same index also serves the `ORDER BY`. Put `year` earlier, or drop it,
+and the planner falls back to the scan silently — nothing errors, the carousel just
+gets slow again. Measured on a synthetic 50-season table (186,700 rows): 600 head
+queries 15.84 s → 0.10 s. `EXPLAIN QUERY PLAN` must read
+`USING INDEX ix_jhsaa_coach_hist_seat (world_id=? AND gender=? AND ident=? AND slot=?)`.
+Tradeoff: one more index to maintain on a table written once per program per season.
+No plan-regression test exists for it (owner declined tests for now); check the plan
+by hand after any schema edit here.
+
+**A program with no seats is fully vacant to the market (owner rule 2026-09).**
+Programs added after the seats were written (the 30+ expansion clubs) have no
+`jhsaa_coach_seat` rows. The market only ever filled seats that existed, and
+`ensure_seated` skips a world that has any seat, so the season rung seated those clubs
+with brand-new random coaches and no working assistant or head ever got the job. Now
+`propose_cycle(world_id, year, salt)` adds each seat-less sponsoring program's head
+plus the assistants its roster size earns (`assistants_for(roster_size(...))`, the
+same count `inaugural_staff` uses) to the ordinary vacancies — best job first,
+cascading down, a rolled candidate only as the last resort — and **a proposal writes
+nothing**. `commit_cycle` opens the named seats vacant (`_open_seatless`) just before
+applying, because `_place` refuses a head slot with no row and any assistant slot
+but the next one, and backfills any seat a veto left empty (`_backfill_opened`), so
+no program plays with an empty seat. Pass the salt: the assistant count depends on it.
+Run the carousel BEFORE advancing after an expansion — the rung seats seat-less
+programs with random staffs the moment it runs. Verified by hand on a copy of the
+test world (six programs' staffs removed): 8 of 9 head seats went to working coaches
+(assistants stepping up and a head hired away), every club ended with a full staff, no
+coach in two seats, no vacant seat anywhere. The existing commit-path unit test stubs
+the two new database steps; it was edited but not run this session.
