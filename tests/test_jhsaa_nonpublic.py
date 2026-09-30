@@ -5,7 +5,8 @@ league season, district honours, TOSS, All-State, All-District, All-Region, the
 individual flights and the JV season — and leave the public bracket when the
 TEAM championship road begins, playing the same full ladder onto a 24-team State
 in one of two road classes: 10B (enrollment >= `NONPUBLIC_CUT`, or a named
-play-up) and 11B (below it). The TOC takes all fourteen champions.
+play-up) and 11B (below it). The TOC takes all fourteen champions plus the two
+TOC Qualifier winners (9A v 8A and 10B v 11B State runners-up), a byeless sixteen.
 
 `tests/conftest.py` keeps the split OFF for every other suite (the 16-team
 pilot's idiom); this file opts in. The association is the TOC test's scaled
@@ -124,7 +125,7 @@ def test_the_bands_are_the_cut_plus_the_named_playups(archived):
         n for n, g in arc["road"].items() if g == "10B"}
 
 
-def test_a_full_ladder_onto_a_24_team_state_and_a_14_team_toc(archived):
+def test_a_full_ladder_onto_a_24_team_state_and_a_16_team_toc(archived):
     arc = archived["arc"]
     for g in jh.NONPUBLIC_GROUPS:
         br = arc["brackets"][g]
@@ -135,8 +136,26 @@ def test_a_full_ladder_onto_a_24_team_state_and_a_14_team_toc(archived):
             assert (arc[key][g] or {}).get("rounds"), (g, key)
         assert arc["committee"][g] is None                  # no at-large committee
     toc = arc["toc"]
-    assert len(toc["field"]) == len(jh.ROAD_GROUPS) == 14
+    assert len(jh.ROAD_GROUPS) == 14
     assert {arc["brackets"][g]["champion"] for g in jh.NONPUBLIC_GROUPS} <= set(toc["field"])
+    # THE TOC QUALIFIER (JHSAA rule 2026-09): the 9A/8A and 10B/11B State runners-up
+    # play one dual each for the last two seats, so the TOC is a byeless sixteen.
+    q = toc["qualifier"]
+    games = q["rounds"][0]
+    assert len(games) == 2 and q["round_names"] == [jh.TOC_QUALIFIER_NAME]
+    sides = {gm["home"] for gm in games} | {gm["away"] for gm in games}
+    assert sides == {jh.state_runner_up(arc["brackets"][g]) for g in ("9A", "8A", "10B", "11B")}
+    assert len(toc["field"]) == 16 and len(toc["rounds"][0]) == 8
+    assert all(gm["home"] and gm["away"] for gm in toc["rounds"][0])   # no byes
+    assert set(q["survivors"]) <= set(toc["field"])
+    losers = sides - set(q["survivors"])
+    assert not losers & set(toc["field"])
+    for name in losers:                       # a qualifier exit is NOT a TOC appearance
+        r = wd.jhsaa_toc_result(toc, name)
+        assert not r["made_toc"] and r["toc_qualifier"] and r["toc_finish"] == "TOC Qualifier"
+    for name in q["survivors"]:
+        r = wd.jhsaa_toc_result(toc, name)
+        assert r["made_toc"] and r["toc_qualifier"] and r["toc_finish"] != "TOC Qualifier"
 
 
 def test_the_road_shape_is_the_road_class_not_the_league_class(archived):
@@ -151,9 +170,9 @@ def test_the_road_shape_is_the_road_class_not_the_league_class(archived):
                 "SELECT phase, lines FROM world_jhsaa_dual WHERE world_id=? AND year=?"
                 " AND gender='girls' AND school=? AND home=1 AND COALESCE(level,'v')='v'",
                 (w["id"], w["year"], school)):
-            if phase in jh.POSTSEASON and phase != "toc":
+            if phase in jh.POSTSEASON and phase not in jh.TOC_PHASES:
                 counts.setdefault(g, set()).add(len(wd.unpack_lines(lines) or ()))
-            elif phase == "toc":
+            elif phase in jh.TOC_PHASES:
                 counts.setdefault("toc", set()).add(len(wd.unpack_lines(lines) or ()))
     conn.close()
     assert counts.get("10B") == {9}, counts

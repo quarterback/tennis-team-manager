@@ -214,7 +214,7 @@ XW_EXPONENT = 1.83
 #: |ROE| at which the page shows a flag. Descriptive only — no committee points.
 ROE_FLAG = 0.10
 #: Phases NOT yet played when the committee sits.
-_STATE_PHASES = ("state", "toc")
+_STATE_PHASES = ("state", "toc_qualifier", "toc")   # keep in step with `jhsaa.TOC_PHASES`
 
 
 def flight_record(schedule: list) -> dict:

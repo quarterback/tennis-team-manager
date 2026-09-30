@@ -6662,9 +6662,9 @@ def jhsaa_match_dates(world_id: int, year: int, gender: str,
             continue
         if post_base is None:                              # every lane opens together
             post_base = reg_top + 1
-        lane = "" if phase == "toc" else (group_of.get(a_s) or group_of.get(b_s) or "")
+        lane = "" if phase in _jh.TOC_PHASES else (group_of.get(a_s) or group_of.get(b_s) or "")
         if lane_rank.get(lane) != r_rank:                  # this LANE's next stage
-            base = (max(lane_top.values(), default=post_base - 1) if phase == "toc"
+            base = (max(lane_top.values(), default=post_base - 1) if phase in _jh.TOC_PHASES
                     else lane_top.get(lane, post_base - 1))
             lane_floor[lane], lane_rank[lane] = base + 1, r_rank
         r = max(lane_floor[lane], post_base, nxt.get(a_s, 0), nxt.get(b_s, 0))
@@ -7173,9 +7173,18 @@ def jhsaa_toc_result(toc: dict, school: str) -> dict:
     reuses the state draw's arithmetic wholesale rather than walking the rounds a
     second time. Only the labels are the event's own."""
     st = jhsaa_state_result(toc, school)
-    return {"made_toc": st["made_state"], "toc_seed": st["seed"],
-            "toc_place": st["place"], "toc_finish": _toc_finish_label(st["place"]),
-            "toc_champion": st["champion"]}
+    out = {"made_toc": st["made_state"], "toc_seed": st["seed"],
+           "toc_place": st["place"], "toc_finish": _toc_finish_label(st["place"]),
+           "toc_champion": st["champion"], "toc_qualifier": False}
+    # THE FINALIST QUALIFIER (JHSAA rule 2026-09): a runner-up who played for a
+    # TOC seat and lost has NO TOC appearance (`made_toc` stays False, the
+    # Metastate posture) — the finish names the round it ended at instead.
+    q = (toc or {}).get("qualifier") or {}
+    if school in (q.get("field") or ()):
+        out["toc_qualifier"] = True
+        if not out["made_toc"]:
+            out["toc_finish"] = "TOC Qualifier"
+    return out
 
 
 def jhsaa_title_stages() -> list[tuple[str, str, str]]:
@@ -7541,7 +7550,7 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
            "state_rank": 0, "pi": None, "made_state": False, "seed": 0, "state_place": 0,
            "state_finish": "", "champion": False, "district_title": False,
            "made_toc": False, "toc_seed": 0, "toc_place": 0, "toc_finish": "",
-           "toc_champion": False, "honoured": False, "unit_wins": [],
+           "toc_champion": False, "toc_qualifier": False, "honoured": False, "unit_wins": [],
            # The JV season's record, folded off this program's JV rows. A RECORD, not a
            # rating (owner rule 2026-08): JV has no TOSS, no ranking, no seed and no
            # postseason, and it exists here because a program whose varsity is poor
@@ -7654,6 +7663,9 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
         row["team_honors"].append(
             f"Tournament of Champions — {row['toc_finish'].removeprefix('TOC ')}"
             f" (No. {row['toc_seed']} seed)")
+    elif row.get("toc_qualifier"):
+        # Lost the finalist qualifier: a team result, never a TOC appearance.
+        row["team_honors"].append("Tournament of Champions Qualifier — lost")
     aw = (arc.get("awards") or {}).get(row["group"]) or {}
     poy = aw.get("poy")
     if poy and poy.get("school") == school:

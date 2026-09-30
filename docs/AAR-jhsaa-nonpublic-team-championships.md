@@ -7,7 +7,8 @@ JV season. When the TEAM championship road begins they leave the public bracket
 and play the same full ladder (Areas → Sectionals → Wards → Regionals → Zonals →
 Epiregional → recovery → Specials → a 24-team State) in one of two ROAD classes:
 **10B** (enrollment ≥ `NONPUBLIC_CUT` 550, or a named play-up) and **11B** (below
-it). The TOC takes all fourteen champions. Owner decisions, in order: split only the
+it). The TOC takes all fourteen champions plus two TOC Qualifier winners (below).
+Owner decisions, in order: split only the
 team road; cut at 550; `NONPUBLIC_PLAYUP` forces Condotti Vanguard Academy and
 Romero-Finniski into 10B ("as they've done their entire lives"); full ladder, the
 24-team State 1A plays ("the talent in this classification justifies a real road,
@@ -68,6 +69,33 @@ Honorable Mention in both genders; the next region is 66.
   a named play-up, not a different cut.
 - Smoke, not the suite (owner): one scaled season with every private included —
   privates on no public road, each on exactly one Non-Public road, 24-team States,
-  every rung played, 14-team TOC, nine flights in 10B and five in 11B, ledger/title
+  every rung played, 16-team TOC, nine flights in 10B and five in 11B, ledger/title
   board/coefficient/export reading the road class. `tests/conftest.py` keeps the
   split OFF for every other suite; `tests/test_jhsaa_nonpublic.py` opts in.
+
+## Addendum — the TOC Qualifier (JHSAA rule 2026-09, adopted)
+A 14-team TOC gave seeds 1-2 a bye. The association adopted the finalist-qualifier
+compromise (`docs/reports/REPORT-jhsaa-toc-16-team-finalist-qualifier-proposal.md`,
+"hotly debated, but ultimately passed"): the **9A and 8A State runners-up** play one
+dual, the **10B and 11B State runners-up** play one dual, and the two winners take
+the last two TOC seats — a byeless sixteen, one more public and one more private.
+- `TOC_QUALIFIER_PAIRS`, `TOC_QUALIFIER_PHASE` (`"toc_qualifier"`, in `POSTSEASON`
+  directly before `"toc"`), `TOC_PHASES`. Every "is this the TOC?" branch reads
+  `TOC_PHASES`, never the string `"toc"`: the road-shape check in `dual_format`/
+  `play_dual`, `NEUTRAL_PHASES` (played at the TOC site, no host), `rating_duals`
+  (excluded from TOSS like the TOC), the calendar lanes, the schedule tag.
+- The round is played at the TOC's 1S/4D, the higher-TOSS side listed first,
+  `run_toc_qualifier` — the `_state_specials_round` archive shape under
+  `toc["qualifier"]` (`field`, one round, `survivors`, `round_names`), read with
+  `.get` so a 14-team season still renders. A missing side (a class with no final
+  in a small world) skips that pair; nothing is padded.
+- **A qualifier exit is NOT a TOC appearance** (the Metastate posture):
+  `jhsaa_toc_result` keeps `made_toc` False for a loser, sets `toc_qualifier` True
+  for anyone who PLAYED the round (winners included — it says how they got in) and
+  the finish string **"TOC Qualifier"** for a loser. `_season_row` carries
+  `toc_qualifier` and the team honour "Tournament of Champions Qualifier — lost".
+- Winners enter the TOC seeded on TOSS with everyone else (measured in the smoke
+  season: seeds 7-10), so the qualifier buys a seat, never a line.
+- Smoke (scaled season, both genders): two qualifier duals among exactly the four
+  runners-up, TOC field 16 with eight first-round games and no byes, losers off
+  the field with finish "TOC Qualifier", schedule rows at phase `toc_qualifier`.

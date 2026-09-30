@@ -3648,6 +3648,7 @@ def _jh_reported_tiebreak(d: dict) -> list[dict]:
 
 _JH_PHASE_LABEL = {"showcase_pod": "Showcase (Pod)", "showcase_tiered": "Showcase (Tiered)",
                    "toc": "Tournament of Champions", "state": "State Tournament",
+                   "toc_qualifier": "Tournament of Champions Qualifier",
                    "state_special": "State Specials",
                    "special_challenger": "Special Challengers",
                    "conference": "Conference",
@@ -3947,6 +3948,13 @@ def jhsaa_toc_view(seed: int, gender: str, year: int | None = None,
     champ_of = {br.get("champion"): grp
                 for grp, br in (arc.get("brackets") or {}).items() if br.get("champion")}
     seeds = toc.get("seeds") or {n: i + 1 for i, n in enumerate(toc.get("field") or ())}
+    ru_of = {jh.state_runner_up(br): grp
+             for grp, br in (arc.get("brackets") or {}).items() if jh.state_runner_up(br)}
+    # A qualifier winner is in the field without being a champion: label it by the
+    # class it was runner-up in, so the field list and the cards still say where it
+    # came from.
+    for n in toc.get("field") or ():
+        champ_of.setdefault(n, ru_of.get(n, ""))
     return {
         "ready": True, "gender": g, "year": yr, "years": years, "scope": scope,
         "season_year": arc.get("season_year"),
@@ -3973,6 +3981,17 @@ def jhsaa_toc_view(seed: int, gender: str, year: int | None = None,
                                   card_w=232, card_h=60, gutter=56, leaf_gap=18),
         **_jh_final_four(toc, schools),
         "champion_group": champ_of.get(toc.get("champion"), ""),
+        # THE FINALIST QUALIFIER (JHSAA rule 2026-09): the two duals that filled
+        # the last two seats, rendered as their own panel above the draw — four
+        # runners-up into two seats is not a column of the tree. Class comes off
+        # the archived brackets' runner-up, the way the champions' does.
+        "qualifier": [
+            {**gm, "home_deco": _jh_deco(schools, gm["home"], 20),
+             "away_deco": _jh_deco(schools, gm["away"], 20),
+             "home_group": ru_of.get(gm["home"], ""), "away_group": ru_of.get(gm["away"], ""),
+             "win_points": max(gm["home_points"], gm["away_points"]),
+             "lose_points": min(gm["home_points"], gm["away_points"])}
+            for rd in ((toc.get("qualifier") or {}).get("rounds") or []) for gm in rd],
     }
 
 
@@ -5563,6 +5582,9 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     # guardrail); it was only ever wrong as a label on a match.
     _KIND = {"showcase_pod": "SHOWCASE", "showcase_tiered": "SHOWCASE",
              "toc": "TOC", "state": "STATE",
+             # The finalist qualifier for the last two TOC seats (JHSAA rule
+             # 2026-09): its own chip, since a loss there is not a TOC appearance.
+             "toc_qualifier": "TOC QUALIFIER",
              # The at-larges' first qualifying layer (owner rule 2026-09), and
              # its own chip because it is its own event: a meta exit is NOT a
              # State appearance, so a STATE chip on the row would say the
@@ -5644,6 +5666,7 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                     jv_round[other] = nm
 
     _SEEDS = {"TOC": toc_seeds, "STATE": seeds, "META": meta_seeds,
+              "TOC QUALIFIER": _jh_seeds(((arc or {}).get("toc") or {}).get("qualifier") or {}),
               "STATE SPECIAL": sp_seeds, "CHALLENGE": ch_seeds,
               "CONFERENCE": cf_seeds,
               "SEMI-CONFERENCE": sc_seeds,

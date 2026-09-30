@@ -126,6 +126,23 @@ ROAD_GROUPS = GROUPS + NONPUBLIC_GROUPS
 NONPUBLIC_CUT = 550
 NONPUBLIC_PLAYUP = frozenset({"Condotti Vanguard Academy", "Romero-Finniski"})
 
+# --- THE TOC FINALIST QUALIFIER (JHSAA rule 2026-09, adopted with the split) -----
+#
+# Fourteen champions leave a 16-team Tournament of Champions two short and two byes
+# over. The association adopted the finalist-qualifier compromise brought by the
+# large-school coaches, a media consortium and the event's sponsors
+# (`docs/reports/REPORT-jhsaa-toc-16-team-finalist-qualifier-proposal.md`): the
+# 9A runner-up plays the 8A runner-up and the 10B runner-up plays the 11B runner-up,
+# and the two winners complete a 16-team TOC with NO byes. One more public, one more
+# private, and nothing further down the ladder. "Champion" stays a term of art — a
+# qualifier winner is a TOC entrant, never a State champion; a qualifier loser has
+# NO TOC appearance (the Metastate posture: its own PHASE, its own archive key).
+# Season-gated with the split itself (`nonpublic_active`), since it is part of it.
+TOC_QUALIFIER_PHASE = "toc_qualifier"
+TOC_PHASES = (TOC_QUALIFIER_PHASE, "toc")
+TOC_QUALIFIER_PAIRS = (("9A", "8A"), ("10B", "11B"))
+TOC_QUALIFIER_NAME = "TOC Qualifier"
+
 
 def group_short(group: str) -> str:
     """The short form for a tight space (a table column, a chip). Any ladder class
@@ -528,7 +545,7 @@ EARLY_FORMAT_PHASE = "early"
 POSTSEASON = ("sectional", "ward", "regional", "zonal", "epiregional",
               "super_regional", "semi_state", "divisional", "semi_conference",
               "conference", "special_challenger", "state_special",
-              "metastate", "state", "toc")
+              "metastate", "state", TOC_QUALIFIER_PHASE, "toc")
 
 # The mid-season MATCH SHOWCASES (owner spec 2027-08) — see the INVITATIONALS section
 # below for the scheduling rules. Two phases rather than one, because the phase is the
@@ -563,7 +580,7 @@ def dual_format(phase: str, group: str | None = None) -> DualFormat:
     A dual has one shape, so resolve it with `shape_group` and pass THAT — never
     one side's own group — anywhere a real dual is being played."""
     wide = group in WIDE_GROUPS
-    road = phase in POSTSEASON and phase != "toc"
+    road = phase in POSTSEASON and phase not in TOC_PHASES
     # ‼️ A SHOWCASE PLAYS THE HOST CLASS'S STATE FORMAT (owner rule 2026-09): the
     # showcases exist to rehearse the lineup a program must win with, so a 9A-hosted
     # showcase is 4S/5D, a 1A-hosted one 2S/3D, a Group 2-hosted one 3S/3D, and the
@@ -7141,7 +7158,7 @@ HOME_COURT = (1.0, 4.0)
 #: invitationals, and the whole road to State — IS hosted (the association's own rules
 #: say so: the Specials' winner hosts, the Challengers' holder hosts), so those keep
 #: the advantage a real host has.
-NEUTRAL_PHASES = frozenset(SHOWCASE) | {"state", "toc"}
+NEUTRAL_PHASES = frozenset(SHOWCASE) | {"state", *TOC_PHASES}   # a qualifier is played at the TOC site
 
 
 def home_court(seed: int, phase: str = "regular") -> float:
@@ -9032,7 +9049,7 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     # crosses one), so `shape_group` returns it; a public class's road is
     # unchanged (`road_group == school.group`); the TOC is not road and keeps
     # every entrant at 1S/4D; every regular-season phase still reads the league.
-    road = phase in POSTSEASON and phase != "toc"
+    road = phase in POSTSEASON and phase not in TOC_PHASES
     grp = (shape_group(phase, (a.road_group or a.school.group) if road else a.school.group,
                        (b.road_group or b.school.group) if road else b.school.group)
            if group is _OWN_GROUP else group)
@@ -10020,7 +10037,7 @@ def rating_duals(teams, prestate: bool = False) -> list[dict]:
     # event's own qualifying, so they must never feed a recompute that seeds it.
     # (No recompute runs after them today — they are the last thing before the
     # draw — so this costs nothing and stops a reordering from mattering.)
-    drop = ("state", "toc", METASTATE_PHASE) if prestate else POSTSEASON
+    drop = ("state", *TOC_PHASES, METASTATE_PHASE) if prestate else POSTSEASON
     if not SHOWCASE_RATED:
         drop = tuple(drop) + SHOWCASE
     out = []
@@ -12029,15 +12046,56 @@ def seed_line_slots(field: list) -> list:
     return [field[s - 1] if s <= len(field) else None for s in order]
 
 
+def state_runner_up(bracket: dict) -> str | None:
+    """The losing side of an archived State final, or None (no final played)."""
+    rounds = (bracket or {}).get("rounds") or []
+    if not rounds or not rounds[-1]:
+        return None
+    gm = rounds[-1][-1]
+    if not gm.get("home") or not gm.get("away") or not gm.get("winner"):
+        return None
+    return gm["away"] if gm["winner"] == gm["home"] else gm["home"]
+
+
+def run_toc_qualifier(finalists: dict[str, TeamSeason], *, seed: int
+                      ) -> tuple[dict, list[TeamSeason]]:
+    """THE TOC FINALIST QUALIFIER (JHSAA rule 2026-09): `TOC_QUALIFIER_PAIRS`, each a
+    single dual between two State runners-up (`finalists`: {group: TeamSeason}), the
+    higher TOSS side listed first. Returns the archived round (the `_state_specials_
+    round` shape — `field` in seed order, one round of games, `survivors`,
+    `round_names`) and the winners in field order. A pair with a side missing (a
+    small world, a class that played no final) is skipped, never padded: the TOC
+    simply fields the champions it has plus whoever qualified."""
+    rng = random.Random(seed)
+    games, survivors, field = [], [], []
+    for ga, gb in TOC_QUALIFIER_PAIRS:
+        a, b = finalists.get(ga), finalists.get(gb)
+        if a is None or b is None:
+            continue
+        if (b.power, b.school.name) > (a.power, a.school.name):
+            a, b = b, a
+        field += [a, b]
+        res = play_dual(a, b, seed=rng.randrange(1 << 30), phase=TOC_QUALIFIER_PHASE)
+        win = a if res.winner == 0 else b
+        survivors.append(win)
+        games.append({"home": a.school.name, "away": b.school.name,
+                      "home_points": res.home_points, "away_points": res.away_points,
+                      "winner": win.school.name, "unit": f"{ga}/{gb} {TOC_QUALIFIER_NAME}"})
+    return ({"field": [t.school.name for t in field], "rounds": [games],
+             "survivors": [t.school.name for t in survivors],
+             "round_names": [TOC_QUALIFIER_NAME]}, survivors)
+
+
 def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
     """The TOURNAMENT OF CHAMPIONS — one dual-team champion for all of Jefferson.
 
-    ONE champion per classification and nobody else — twelve teams once every
-    classification, the Great Basin groups included, crowned separately, and
-    FOURTEEN from the Non-Public split on (owner rule 2026-09: 10B and 11B's
-    champions join). The field is not a `FIELD` size and never has been: it is
-    exactly `len(ROAD_GROUPS)` in a season that plays every road, and it grows or
-    shrinks only when the association adds or merges a championship. (`FIELD` is the STATE tournament's bracket size per classification and
+    ONE champion per classification — twelve teams once every classification, the
+    Great Basin groups included, crowned separately; FOURTEEN champions from the
+    Non-Public split on (owner rule 2026-09: 10B and 11B's champions join) PLUS the
+    two finalist-qualifier winners (JHSAA rule 2026-09, `run_toc_qualifier`), a
+    byeless SIXTEEN. The field is not a `FIELD` size and never has been: it is the
+    champions plus whoever qualified, and it grows or shrinks only when the
+    association adds or merges a championship or a qualifying route. (`FIELD` is the STATE tournament's bracket size per classification and
     has nothing to do with this event.)
 
     Seeded on the TOSS Power Index they finished the regular season with (`t.power`,
@@ -13549,7 +13607,26 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     champs = [t for group, st in states.items()
               for ts in road_by_group[group].values() for t in ts
               if t.school.name == st["champion"]]
-    out["toc"] = run_toc(champs, seed=seed + 7717)
+    # THE TOC FINALIST QUALIFIER (JHSAA rule 2026-09, part of the Non-Public
+    # settlement): the 9A/8A and 10B/11B State runners-up play one dual each for
+    # the two seats that make the TOC a byeless sixteen. Its own phase and its
+    # own key under `toc`, so a qualifier loser has no TOC appearance.
+    entrants = list(champs)
+    qualifier = None
+    if nonpublic_active(year):
+        finalists = {}
+        for g in {x for pair in TOC_QUALIFIER_PAIRS for x in pair}:
+            ru = state_runner_up(states.get(g))
+            if ru:
+                t = next((t for ts in road_by_group.get(g, {}).values() for t in ts
+                          if t.school.name == ru), None)
+                if t is not None:
+                    finalists[g] = t
+        qualifier, q_winners = run_toc_qualifier(finalists, seed=seed + 7719)
+        entrants += q_winners
+    out["toc"] = run_toc(entrants, seed=seed + 7717)
+    if qualifier is not None:
+        out["toc"]["qualifier"] = qualifier
 
     # ‼️ AWARDS ARE SELECTED AFTER EVERY DUAL HAS BEEN PLAYED — the same rule the
     # RECORD snapshot below runs on, and it was broken here in the same way. The
