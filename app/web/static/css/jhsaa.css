@@ -74,6 +74,11 @@ a.jh-eyebrow:hover { color: var(--brand-strong); }
    `c-{{ group|replace(' ','') }}`) — a raw two-word group would put a space in
    the class attribute. Group 1 is the pair's big class (≈5A-9A blend), Group 2
    the small one, so they reuse the brand/bronze slots the mid-ladder carries. */
+/* The Non-Public road classes (owner rule 2026-09): 10B the large, 11B the small.
+   They sit on the rail only on the Championship pages — a private's LEAGUE class
+   chip is still its 7A/3A one. */
+.jh-class a.on.c-10B { background: var(--cat-6a); }
+.jh-class a.on.c-11B { background: var(--gray-700); }
 .jh-class a.on.c-Group1 { background: var(--brand); }
 .jh-class a.on.c-Group2 { background: var(--rank-bronze); }
 /* Group 3 is the smallest of the trio (it crowns on the 24 shape beside 1A), so
@@ -690,6 +695,8 @@ a.jh-eyebrow:hover { color: var(--brand-strong); }
 .jh-chip.c-Group1 { background: var(--brand); }
 .jh-chip.c-Group2 { background: var(--rank-bronze); }
 .jh-chip.c-Group3 { background: var(--gray-600); }
+.jh-chip.c-10B { background: var(--cat-6a); }
+.jh-chip.c-11B { background: var(--gray-700); }
 .jh-chip.gold { background: var(--rank-gold); }
 /* Honours tiers (owner rule 2027-08): gold = the title, silver = finalist,
    bronze = semifinalist, BLUE = every other State finish — reaching State is an

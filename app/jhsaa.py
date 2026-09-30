@@ -99,6 +99,30 @@ assert LADDER_GROUPS[-1] == "1A" and GB_GROUPS == ("Group 1", "Group 2", "Group 
 #: off a pill-shaped chip. `group_short` is read at RENDER time only.
 GROUP_SHORT = {"Group 1": "G1", "Group 2": "G2", "Group 3": "G3"}
 
+# --- THE NON-PUBLIC TEAM CHAMPIONSHIPS (owner rule 2026-09) -------------------
+#
+# Private programs stay in the ordinary association for EVERYTHING but the team
+# championship road: their league, their district honours, TOSS, All-State, All-
+# District, All-Region, the individual flights and the JV season are all their
+# league class's (`School.group`). When the road to State begins they leave the
+# public bracket and play their own FULL ladder — the same rungs every class plays,
+# a 24-team State — in one of two ROAD classes: 10B (enrollment >= `NONPUBLIC_CUT`)
+# and 11B (below it). `road_group(school, year)` is the ONE authority on which; the
+# two are NEVER in `GROUPS` (no leagues, no talent row, no roster band, no awards
+# slate of their own) and ALWAYS in `ROAD_GROUPS`, which is what the championship
+# loops, the TOC and the Championship pages iterate. Season-gated on
+# `nonpublic_era()` so archived seasons keep reading as the years they were.
+#
+# ‼️ `NONPUBLIC_PLAYUP` forces a named private UP a band, never down (owner rule
+# 2026-09): Condotti Vanguard Academy and Romero-Finniski are 3A-sized programs
+# that have played up to 7A their whole lives with 9A talent, and at a 550 cut
+# they would otherwise be the strongest programs in the SMALL class. The cut
+# itself is 550 rather than 500 because it lands the two bands nearly even.
+NONPUBLIC_GROUPS = ("10B", "11B")
+ROAD_GROUPS = GROUPS + NONPUBLIC_GROUPS
+NONPUBLIC_CUT = 550
+NONPUBLIC_PLAYUP = frozenset({"Condotti Vanguard Academy", "Romero-Finniski"})
+
 
 def group_short(group: str) -> str:
     """The short form for a tight space (a table column, a chip). Any ladder class
@@ -175,7 +199,11 @@ DECIDER_TARGET = 10
 # same reason), and the individual state tournaments are still 3S+3D and read no dual
 # format at all. Nine courts is odd, so a 4S/5D dual cannot tie and no tie-breaking
 # logic is needed anywhere; high school has no clinch, so all nine are always played.
-WIDE_GROUPS = ("7A", "8A", "9A", "Group 1")  # groups whose road-to-State AND early window play 4S/5D
+WIDE_GROUPS = ("7A", "8A", "9A", "Group 1",
+               # 10B, the large Non-Public class: most of it is 7A-9A privates,
+               # so its road plays the wide classes' 4S/5D. 11B plays the 1S/4D
+               # default (owner rule 2026-09).
+               "10B")  # groups whose road-to-State AND early window play 4S/5D
 
 # ‼️ 5A PLAYS 6S/5D — ELEVEN FLIGHTS, AND IT IS THE SINGLES CLASS (JHSAA rule 2094,
 # on the 5A schools' own petition). The association's widest format by two flights:
@@ -1514,6 +1542,10 @@ _TALENT = {
     ("Group 2", "boys"): (48.5, 18.5), ("Group 2", "girls"): (44.0, 17.5),
     ("Group 3", "boys"): (38.5, 21.5), ("Group 3", "girls"): (34.5, 20.5),
 }
+# The Non-Public classes (owner rule 2026-09): a FULL ladder onto a 24-team State,
+# the shape 1A plays — "the talent in this classification justifies a real road".
+# No committee, no Metastate (neither is in `AT_LARGE_BIDS`), no 16-team pilot.
+STATE_FIELD["10B"] = STATE_FIELD["11B"] = 24
 # --- PROGRAM ARCHETYPES (owner rule 2027-08) ---------------------------------
 #
 # A school-level modifier ON TOP of the classification bands above, never a replacement
@@ -2915,6 +2947,13 @@ class TeamSeason:
     # before the first dual by `field_squads`. Empty before 2097 and for every
     # program that fails either gate.
     squads: list = field(default_factory=list)
+    # THE ROAD CLASS (owner rule 2026-09): the class whose team-championship road
+    # this program enters — its league class for a public program, 10B/11B for a
+    # private one from `nonpublic_era()`. Stamped once by `run_season` after the
+    # regular season (`road_group`); "" until then and in any standalone caller.
+    # `play_dual` resolves a POSTSEASON dual's shape from it, since a Non-Public
+    # bracket pairs programs whose league classes differ.
+    road_group: str = ""
 
     @property
     def record(self) -> str:
@@ -3332,6 +3371,7 @@ def reset_schools() -> None:
     _jv_parastate_era_cache.clear()
     _jv_qualifying_era_cache.clear()
     _sixteen_state_era_cache.clear()
+    _nonpublic_era_cache.clear()
     _sibling_era_cache.clear()
     _town_cache.clear()
     _expo_cache.clear()
@@ -3688,6 +3728,40 @@ def sixteen_state_era() -> int:
     return _resolve_era("jhsaa_sixteen_state_era", _sixteen_state_era_cache)
 
 
+_nonpublic_era_cache: dict = {}
+
+
+def nonpublic_era() -> int:
+    """The first SEASON the Non-Public team championships (10B/11B) are played
+    (owner rule 2026-09) — the `sixteen_state_era` idiom, gating on the SEASON.
+    Every archived season keeps its brackets as played; a fresh save plays the
+    split from its first season; `worldconfig` `jhsaa_nonpublic_era` pins it.
+    Resolve once per season, never per team or per dual."""
+    return _resolve_era("jhsaa_nonpublic_era", _nonpublic_era_cache)
+
+
+def nonpublic_active(year: int | None) -> bool:
+    """Whether season `year` splits the team championship road by public/private.
+    `year=None` answers the owner's tables (False) without touching the DB."""
+    return year is not None and year >= nonpublic_era()
+
+
+def road_group(school: "School", year: int | None) -> str:
+    """The class whose TEAM CHAMPIONSHIP ROAD `school` enters in season `year` —
+    the ONE authority, so the regrouping in `run_season`, the archive's `road` map,
+    the coefficient and every page ask it rather than reading `private` themselves.
+
+    A public program's road class is its league class. A private one's, from
+    `nonpublic_era()` on, is 10B at or above `NONPUBLIC_CUT` (or by name, via
+    `NONPUBLIC_PLAYUP`) and 11B below it. Enrollment only moves at a
+    reclassification commit, so "re-read the cut each cycle" is free."""
+    if not school.private or not nonpublic_active(year):
+        return school.group
+    if school.name in NONPUBLIC_PLAYUP or school.enrollment >= NONPUBLIC_CUT:
+        return NONPUBLIC_GROUPS[0]
+    return NONPUBLIC_GROUPS[1]
+
+
 def exchange_era() -> int:
     """The first SEASON that has exchange students in this save — the `name_era`
     idiom (`_resolve_era`), and load-bearing for the same reason.
@@ -3965,7 +4039,8 @@ ERA_SETTINGS = ("jhsaa_name_era", "jhsaa_dev_era", "jhsaa_talent_era",
                 "jhsaa_band_era", "jhsaa_style_era", "jhsaa_jv_parastate_era",
                 "jhsaa_jv_qualifying_era",
                 "jhsaa_sibling_era", "jhsaa_sixteen_state_era",
-                "jhsaa_early_era", "jhsaa_early_seat_era")
+                "jhsaa_early_era", "jhsaa_early_seat_era",
+                "jhsaa_nonpublic_era")
 
 
 def reset_eras() -> None:
@@ -8947,7 +9022,16 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     # rule 2026-09), which is neither side's own — `play_showcases` passes the event
     # host's group. The group the dual was played at is archived on the row
     # (`shape_group`) so `rating_duals` prices its flights on the right table.
-    grp = (shape_group(phase, a.school.group, b.school.group)
+    # ‼️ A ROAD DUAL IS SHAPED BY THE ROAD CLASS (owner rule 2026-09). In a
+    # Non-Public bracket a 7A private meets a 1A private; read off their league
+    # classes the "wider card wins" rule would hand the pair 4S/5D by accident.
+    # Both sides of a road dual carry the same `road_group` (a bracket never
+    # crosses one), so `shape_group` returns it; a public class's road is
+    # unchanged (`road_group == school.group`); the TOC is not road and keeps
+    # every entrant at 1S/4D; every regular-season phase still reads the league.
+    road = phase in POSTSEASON and phase != "toc"
+    grp = (shape_group(phase, (a.road_group or a.school.group) if road else a.school.group,
+                       (b.road_group or b.school.group) if road else b.school.group)
            if group is _OWN_GROUP else group)
     shape = dual_format(phase, grp)
     la, lb = _lineup(a, phase, lrng, b, grp), _lineup(b, phase, lrng, a, grp)
@@ -10681,7 +10765,7 @@ def renumber_divisions(season: dict, start: int = 1) -> int:
     # "Division {n}" renders as ROMAN numerals on honours chips via
     # `world._unit_honour` — "Division XI" — so it stays visually distinct from
     # the GROUP names "Group 1"/"Group 2", which keep arabic digits.)
-    for g in reversed(GROUPS):
+    for g in reversed(ROAD_GROUPS):
         dv = ((season.get("groups") or {}).get(g) or {}).get("divisional") or {}
         for games in dv.get("rounds") or ():
             for gm in games:
@@ -10702,7 +10786,7 @@ def renumber_state_specials(season: dict, start: int = 1) -> int:
 
     Idempotent: recomputed and overwritten, so a re-run cannot double-count."""
     n = start
-    for g in reversed(GROUPS):
+    for g in reversed(ROAD_GROUPS):
         sp = ((season.get("groups") or {}).get(g) or {}).get("state_special") or {}
         for games in sp.get("rounds") or ():
             for gm in games:
@@ -10721,7 +10805,7 @@ def renumber_special_challenges(season: dict, start: int = 1) -> int:
 
     Idempotent: recomputed and overwritten, so a re-run cannot double-count."""
     n = start
-    for g in reversed(GROUPS):
+    for g in reversed(ROAD_GROUPS):
         ch = ((season.get("groups") or {}).get(g) or {}).get("special_challenger") or {}
         for games in ch.get("rounds") or ():
             for gm in games:
@@ -10756,7 +10840,7 @@ def reletter_conferences(season: dict, start: int = 0) -> int:
     reason exactly; idempotent the same way (always recomputed, memoised season
     safe)."""
     n = start
-    for g in reversed(GROUPS):        # Group 2, Group 1, then 1A up to 9A
+    for g in reversed(ROAD_GROUPS):        # Group 2, Group 1, then 1A up to 9A
         cf = ((season.get("groups") or {}).get(g) or {}).get("conference") or {}
         for games in cf.get("rounds") or ():
             for gm in games:
@@ -11945,11 +12029,12 @@ def seed_line_slots(field: list) -> list:
 def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
     """The TOURNAMENT OF CHAMPIONS — one dual-team champion for all of Jefferson.
 
-    ONE champion per classification and nobody else — twelve teams now that every
-    classification, the Great Basin groups included, crowns separately. The field
-    is not a `FIELD` size and never has been: it is exactly
-    `len(GROUPS)`, and it grows or shrinks only when the association adds or merges a
-    championship. (`FIELD` is the STATE tournament's bracket size per classification and
+    ONE champion per classification and nobody else — twelve teams once every
+    classification, the Great Basin groups included, crowned separately, and
+    FOURTEEN from the Non-Public split on (owner rule 2026-09: 10B and 11B's
+    champions join). The field is not a `FIELD` size and never has been: it is
+    exactly `len(ROAD_GROUPS)` in a season that plays every road, and it grows or
+    shrinks only when the association adds or merges a championship. (`FIELD` is the STATE tournament's bracket size per classification and
     has nothing to do with this event.)
 
     Seeded on the TOSS Power Index they finished the regular season with (`t.power`,
@@ -13014,7 +13099,10 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
           # ‼️ AND THE 16-TEAM STATE PILOT'S GATE (JHSAA rule 2099): the same
           # season played on either side of `sixteen_state_era` is two different
           # postseasons, and the era is a worldconfig value a save can re-pin.
-          sixteen_state(SIXTEEN_STATE_GROUPS[0], year))
+          sixteen_state(SIXTEEN_STATE_GROUPS[0], year),
+          # ‼️ AND THE NON-PUBLIC SPLIT'S GATE (owner rule 2026-09): the same
+          # season on either side of `nonpublic_era` is two different roads.
+          nonpublic_active(year))
     hit = _season_cache.get(ck)
     if hit is not None:
         return hit
@@ -13139,6 +13227,33 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     # because non-district play crosses them: rating a class in isolation would cut those
     # edges out of the results graph.
     out["power"] = power
+    # ‼️ THE ROAD CLASSES (owner rule 2026-09). From here down the season is the
+    # TEAM CHAMPIONSHIP, and a private program leaves its league class for 10B or
+    # 11B (`road_group`). `road_by_group` is `by_group` re-dealt by road class:
+    # a public class keeps its districts (lists still in district-place order,
+    # minus the privates — so `ts[0]` is the best PUBLIC finisher and takes the
+    # protected seat, owner rule 2026-09); a Non-Public class holds every private
+    # in its band under ONE pseudo-district (it has no leagues), and its protected
+    # tier is the best 16 on ATR (no district champions). Awards, standings, the
+    # individual flights and the JV season above and below keep reading
+    # `by_group` — the split is the road ONLY.
+    road_by_group: dict[str, dict[str, list]] = {g: {} for g in ROAD_GROUPS}
+    for group in GROUPS:
+        for dname, teams in by_group[group].items():
+            for t in teams:
+                t.road_group = road_group(t.school, year)
+            pub = [t for t in teams if t.road_group == group]
+            if pub:
+                road_by_group[group][dname] = pub
+            for t in teams:
+                if t.road_group != group:
+                    road_by_group[t.road_group].setdefault("", []).append(t)
+    for g in NONPUBLIC_GROUPS:
+        for teams in road_by_group[g].values():
+            teams.sort(key=lambda t: (-t.power, t.school.name))
+    out["road"] = {t.school.name: t.road_group
+                   for g in NONPUBLIC_GROUPS for teams in road_by_group[g].values()
+                   for t in teams}
     # THE POSTSEASON IS PLAYED OUT BEFORE ANY RECORD IS WRITTEN DOWN. A record is a
     # record — the NCAA and the NFHS both carry the postseason in the season total, and
     # nobody publishes a program's regular season as though it were the year. So every
@@ -13159,12 +13274,20 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     district_champs = {}
     epiregionals: dict[str, dict] = {}
     epi_winners: dict[str, list] = {}
-    for group in GROUPS:
-        standings = by_group[group]
-        protected, entrants = sectional_field(group, standings, power)
+    for group in ROAD_GROUPS:
+        standings = road_by_group[group]
+        if group in NONPUBLIC_GROUPS:
+            # No leagues, so no district champions: the 16 protected seats go
+            # to the best 16 on ATR and everyone else enters Sectionals.
+            pool = sorted((t for ts in standings.values() for t in ts),
+                          key=_atr_key(power))
+            protected, entrants = pool[:PROTECTED], pool[PROTECTED:]
+            district_champs[group] = []
+        else:
+            protected, entrants = sectional_field(group, standings, power)
+            district_champs[group] = [ts[0].school.name
+                                      for ts in standings.values() if ts]
         protecteds[group] = [t.school.name for t in protected]
-        district_champs[group] = [ts[0].school.name
-                                  for ts in standings.values() if ts]
         gseed = seed + hash(group) % 9973
         sectionals[group], ward_field = run_sectional(entrants, WARD_FIELD,
                                                        seed=gseed)
@@ -13194,9 +13317,9 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     semi_conferences, conferences = {}, {}
     atr_snap: dict[str, float] = {}
     recovery_q, district_q = {}, {}
-    for group in GROUPS:
+    for group in ROAD_GROUPS:
         by_name_g = {t.school.name: t
-                     for ts in by_group[group].values() for t in ts}
+                     for ts in road_by_group[group].values() for t in ts}
         # ‼️ ONE LADDER FOR EVERY CLASS (owner rule 2026-08). The 24-field
         # classes used to branch to `_recovery_24`, whose berths came out of
         # SUPER REGIONALS while Semi-State awarded none. The owner's pathway
@@ -13217,7 +13340,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     states, state_specials, metas = {}, {}, {}
     special_challengers: dict[str, dict] = {}
     state_pools: dict[str, list] = {}
-    for group in GROUPS:
+    for group in ROAD_GROUPS:
         if sixteen_state(group, year):
             # ‼️ THE 16-TEAM STATE PILOT (JHSAA rule 2099): no Special
             # Challengers, no State Specials and no emergency reconciliation.
@@ -13234,7 +13357,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
             state_pools[group] = list(recovery_q[group])
             continue
         by_name_g = {t.school.name: t
-                     for ts in by_group[group].values() for t in ts}
+                     for ts in road_by_group[group].values() for t in ts}
         # ‼️ CONFERENCE WINNERS DO NOT QUALIFY (owner rule 2026-08): they advance
         # to the STATE SPECIALS and must beat a challenger — the best remaining
         # regular-season teams from the WHOLE classification — for the berth.
@@ -13316,11 +13439,14 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     # Parallel to TOSS/ATR, feeding neither.
     from .jhsaa_ratings import group_ratings as _group_ratings
     from . import jhsaa_committee as _jc
+    # ...per ROAD class: a public class's ratings are over its public members
+    # (the committee's at-larges come from them), and the Non-Public classes are
+    # rated among themselves (owner rule 2026-09).
     ratings_by_group = {
-        group: _group_ratings([t for ts in by_group[group].values() for t in ts])
-        for group in GROUPS}
+        group: _group_ratings([t for ts in road_by_group[group].values() for t in ts])
+        for group in ROAD_GROUPS}
     committee_by_group: dict[str, dict | None] = {}
-    for group in GROUPS:
+    for group in ROAD_GROUPS:
         # ‼️ ZONAL CHAMPIONS ARE THE TOP SEEDS — the whole privileged path, and
         # it is a SEEDING guarantee in its own right, not a side effect of byes
         # (owner clarification 2027-08). Winning a Zonal buys seeds 1-8 in every
@@ -13380,7 +13506,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
             others = sorted(state_pools[group], key=key)
             road_seeds = epi_w + epi_l + others
             road_names = {t.school.name for t in road_seeds}
-            g_teams = [t for ts in by_group[group].values() for t in ts]
+            g_teams = [t for ts in road_by_group[group].values() for t in ts]
             atr_map = {t.school.name: atr(t, final_power) for t in g_teams}
             sel = _jc.select(ratings_by_group[group], road_names,
                              district_champs[group], atr=atr_map, seats=bids)
@@ -13392,7 +13518,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
             sel["context"] = _jc.record_context(g_teams)
             committee_by_group[group] = sel
             by_name_g = {t.school.name: t
-                         for ts in by_group[group].values() for t in ts}
+                         for ts in road_by_group[group].values() for t in ts}
             at_large = [by_name_g[n] for n in sel["selected"] if n in by_name_g]
             # THE METAS then the Parastate (owner rule 2026-09). `metastate_bids`
             # is the group's whole allocation in a `METASTATE_GROUPS` class and 0 in
@@ -13415,8 +13541,10 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
                                           state_pools[group], final_power)
         states[group] = run_state(ordered, champions=STATE_BYES,
                                   seed=seed + hash(group) % 9973 + 12281)
+    # Fourteen champions from the 2026-09 season on: every class's plus 10B and
+    # 11B (owner rule 2026-09), on the same strict seed lines at any count.
     champs = [t for group, st in states.items()
-              for ts in by_group[group].values() for t in ts
+              for ts in road_by_group[group].values() for t in ts
               if t.school.name == st["champion"]]
     out["toc"] = run_toc(champs, seed=seed + 7717)
 
@@ -13444,10 +13572,16 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     out["all_region"] = region["teams"]
     out["all_region_flight_check"] = region["flight_check"]
 
-    for group in GROUPS:
-        standings = by_group[group]
+    for group in ROAD_GROUPS:
+        # A Non-Public class archives NO standings (it has no leagues; a private's
+        # league row lives under its league class) and a `members` list instead,
+        # which is how a reader tells the two apart. Every road key below is the
+        # same shape for all fourteen.
+        standings = by_group.get(group, {})
         state = states[group]
         out["groups"][group] = {
+            "members": ([t.school.name for ts in road_by_group[group].values()
+                         for t in ts] if group in NONPUBLIC_GROUPS else []),
             # `drecord`/`place` are archived alongside the overall record so a program's
             # year-by-year history reads like a college team's, without re-simulating.
             # `pi` is the TOSS Power Index the season was SEEDED on — archived, never

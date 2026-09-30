@@ -5148,11 +5148,11 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
     years = world.jhsaa_years(w["id"], g)
     yr = (years[0] if years else w["year"]) if year is None else year
     arc = world.get_jhsaa(w["id"], yr, g)
-    grp = group if group in jh.GROUPS else jh.GROUPS[0]
+    grp = group if group in jh.ROAD_GROUPS else jh.ROAD_GROUPS[0]
     if not arc:
         return {"ready": False, "gender": g, "year": yr, "group": grp,
-                "groups": list(jh.GROUPS), "years": years,
-                "scope": _jh_scope(g, grp, list(jh.GROUPS), yr, years, None, None)}
+                "groups": list(jh.ROAD_GROUPS), "years": years,
+                "scope": _jh_scope(g, grp, list(jh.ROAD_GROUPS), yr, years, None, None)}
     schools = _jh_schools(g)
     br = (arc.get("brackets") or {}).get(grp) or {}
     seeds = _jh_seeds(br)
@@ -5282,9 +5282,9 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
             stages.append({"name": "Areas", "rounds": deco[:-1]})
     return {
         "ready": True, "gender": g, "year": yr, "years": years, "group": grp,
-        "groups": list(jh.GROUPS),
+        "groups": list(jh.ROAD_GROUPS),
         "season_year": arc.get("season_year", world.jhsaa_season_year(w)),
-        "scope": _jh_scope(g, grp, list(jh.GROUPS), yr, years, arc.get("season_year"), arc),
+        "scope": _jh_scope(g, grp, list(jh.ROAD_GROUPS), yr, years, arc.get("season_year"), arc),
         **_jh_final_four(br, schools),
         "field": [{**_jh_deco(schools, nm, 22), "seed": seeds[nm]}
                   for nm in (br.get("field") or ())],
@@ -5766,6 +5766,10 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         "state": sc.state,
         "classification": sc.classification, "group": sc.group, "district": sc.district,
         "mascot": sc.mascot, "enrollment": sc.enrollment, "private": sc.private,
+        # The ROAD class (owner rule 2026-09): 10B/11B for a private program from
+        # the Non-Public split on, else its league class. The header shows it as a
+        # second chip only when it differs.
+        "road_group": jh.road_group(sc, season_year),
         "colors": sc.colors,
         # --- this season ---
         "season": season,
@@ -7417,11 +7421,11 @@ def jhsaa_computer_ratings_view(seed: int, gender: str, group: str | None = None
     years = world.jhsaa_years(w["id"], g)
     yr = (years[0] if years else w["year"]) if year is None else year
     arc = world.get_jhsaa(w["id"], yr, g)
-    grp = group if group in jh.GROUPS else jh.GROUPS[0]
-    scope = _jh_scope(g, grp, list(jh.GROUPS), yr, years,
+    grp = group if group in jh.ROAD_GROUPS else jh.ROAD_GROUPS[0]
+    scope = _jh_scope(g, grp, list(jh.ROAD_GROUPS), yr, years,
                       (arc or {}).get("season_year"), arc)
     base = {"gender": g, "year": yr, "years": years, "group": grp,
-            "groups": list(jh.GROUPS), "scope": scope,
+            "groups": list(jh.ROAD_GROUPS), "scope": scope,
             "systems": list(SYSTEMS), "glossary": GLOSSARY,
             "sort": sort or "mean", "dir": dir,
             "season_year": (arc or {}).get("season_year")}

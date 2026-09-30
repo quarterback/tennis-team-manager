@@ -1193,6 +1193,31 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     a PARAMETER — the bridge reorders that list, so it cannot live downstream
     of the selection. `tests/test_jhsaa_special_challengers.py`;
     `docs/AAR-jhsaa-special-challengers.md`.
+- **‼️ THE NON-PUBLIC TEAM CHAMPIONSHIPS — 10B / 11B (owner rule 2026-09,
+  `jhsaa.road_group` / `NONPUBLIC_GROUPS` / `ROAD_GROUPS` / `nonpublic_era`,
+  `docs/AAR-jhsaa-nonpublic-team-championships.md`).** Private programs stay in
+  their league class for EVERYTHING but the team-championship road — league,
+  district honours, TOSS, All-State/District/Region, individual flights, JV all
+  read `School.group` — and from `nonpublic_era()` leave the public bracket to
+  play the SAME full ladder onto a 24-team State in 10B (enrollment ≥ 550 or in
+  `NONPUBLIC_PLAYUP`: Condotti Vanguard Academy, Romero-Finniski) or 11B. 10B is
+  in `WIDE_GROUPS` (4S/5D); 11B plays 1S/4D; neither has a committee or metas;
+  the TOC is fourteen. `run_season` re-deals `by_group` into `road_by_group`
+  after the regular season; a private league champion's PROTECTED seat goes to
+  the league's best public finisher (the filtered list's `ts[0]`). ‼️ 10B/11B are
+  NEVER in `GROUPS` (no leagues, talent row, roster band or awards slate) and
+  ALWAYS in `ROAD_GROUPS` — the championship loops, the renumbering helpers, the
+  archive's road keys, the TOC and the Championship-page rails iterate that.
+  ‼️ A reader resolves a private's bracket class through `world.jh_road_group(arc,
+  school, league_group)` (the archive's `road` map), never off its standings row
+  alone: `_season_row` keeps `group` (league) and adds `road_group`. `play_dual`
+  shapes a ROAD dual from `TeamSeason.road_group`, because a Non-Public bracket
+  pairs 7A and 1A privates and "wider card wins" would otherwise decide by
+  accident. Membership expansion (33 added, 15 switched on) went through
+  `scripts/jhsaa_nonpublic_expansion.py` — ‼️ redraw with `app.jhsaa_districting`,
+  never the importer's `draw_districts`, which scattered the 2052 affiliate
+  leagues. `tests/conftest.py` keeps the split OFF for every suite;
+  `tests/test_jhsaa_nonpublic.py` opts in.
 - **‼️ ONE LADDER, THREE BERTH SHAPES (owner spec 2026-08 — supersedes the
   fixed-24 section below, which is kept for the seasons archived under it).**
   Every class runs the SAME rungs — Areas → Sectionals → Wards → Regionals →
