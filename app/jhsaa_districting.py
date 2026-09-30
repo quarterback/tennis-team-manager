@@ -204,7 +204,7 @@ def spill(groups, items, cap):
     return groups
 
 
-def redistrict(rows, cls, pos, m, rng, cap=None, log=None):
+def redistrict(rows, cls, pos, m, rng, cap=None, log=None, extra_foreign=()):
     """Redraw the leagues of one class over `rows` (the schools.json rows, with
     `group` already holding the class each school ENTERS). Returns
     `(assign, members, notes)` — `assign` is {school name: league name} for every
@@ -258,15 +258,18 @@ def redistrict(rows, cls, pos, m, rng, cap=None, log=None):
     foreign = {r["girls_district"] for r in rows
                if r.get("group") != cls and (r.get("girls") or r.get("boys"))
                and r.get("girls_district")} - set(names)
+    # Names a caller knows are claimed but has hidden from `rows` for this draw —
+    # the pod names of the privates `redraw_classes` lends to a public class.
+    foreign |= set(extra_foreign) - set(names)
     taken, out = set(), {}
-    heads = {n.split()[0] for n in names} | {n.split()[0] for n in foreign}
+    heads = {n.split()[0] for n in names if n} | {n.split()[0] for n in foreign if n}
     bank = m.LEAGUE_NAMES[:]
     rng.shuffle(bank)
     order = sorted(groups.items(), key=lambda kv: -len(kv[1]))
     for ci, idx in order:
         counts = collections.Counter(by_name[items[i][0]] for i in idx)
         pick = next((n for n, _ in counts.most_common()
-                     if n not in taken and n not in foreign), None)
+                     if n and n not in taken and n not in foreign), None)
         if pick is None:
             area = collections.Counter(
                 by_area[items[i][0]] for i in idx).most_common(1)[0][0]
@@ -290,29 +293,120 @@ def redistrict(rows, cls, pos, m, rng, cap=None, log=None):
             members, notes)
 
 
+#: The Non-Public classes' districts are PODS of 8-10 (owner rule 2026-09): a home
+#: and away round robin of 14-18 league duals. `redistrict` runs with this cap.
+POD_CAP = 10
+
+#: The Non-Public class keys, mirrored from `jhsaa` (this module must not import
+#: it — `jhsaa` imports `jhsaa_reclass`, which imports this).
+NONPUBLIC = ("10B", "11B")
+
+
+def _is_private_road(r: dict) -> bool:
+    return r.get("group") in NONPUBLIC
+
+
 def redraw_classes(rows: list[dict], classes: list[str], cap: int | None = None,
                    seed: int = SEED) -> dict:
     """Redraw every class in `classes` over `rows` IN PLACE (both gender district
     fields) and return {class: notes}. The app's entry point; the script's `main`
-    is the same loop with printing."""
+    is the same loop with printing.
+
+    ‼️ THE OLD LEAGUE RESETS AT EVERY REALIGNMENT (owner rule 2026-09). A private
+    program's `group` is its Non-Public class (10B/11B) and its district is a pod,
+    but it keeps an OLD LEAGUE — the public league it would sit in under the
+    current map, whose members it plays once each as non-conference duals. So a
+    public class is drawn WITH its privates in the pool (each private temporarily
+    wearing `old_group`/`old_league`), the league each private lands in is written
+    to `old_league`, and the private is pulled back out: the public league's
+    membership is publics only, and the private's league-shaped ties to it are
+    recorded on the row. A private whose `old_group` is not being redrawn keeps
+    the old league it has."""
     m = districting_config()
     pos = coords()
     rng = random.Random(seed)
     out = {}
     for cls in classes:
         notes: list[str] = []
-        assign, members, more = redistrict(rows, cls, pos, m, rng, cap=cap,
-                                           log=notes.append)
+        borrowed = []
+        if cls not in NONPUBLIC:
+            for r in rows:
+                if _is_private_road(r) and r.get("old_group") == cls:
+                    borrowed.append((r, r["group"], r.get("girls_district"),
+                                     r.get("boys_district")))
+                    r["group"] = cls
+                    r["girls_district"] = r["boys_district"] = r.get("old_league") or ""
+        try:
+            assign, members, more = redistrict(
+                rows, cls, pos, m, rng, cap=cap, log=notes.append,
+                extra_foreign=[gd for _, _, gd, _ in borrowed if gd])
+        finally:
+            for r, g, gd, bd in borrowed:
+                r["group"], r["girls_district"], r["boys_district"] = g, gd, bd
+        notes += more
+        lent = {id(r) for r, *_ in borrowed}
+        for r in members:
+            new = assign.get(r["name"])
+            if not new:
+                continue
+            if id(r) in lent:
+                r["old_league"] = new
+            else:
+                r["girls_district"] = r["boys_district"] = new
+        over = {}
+        for r in members:
+            if id(r) in lent:
+                continue
+            over[r["girls_district"]] = over.get(r["girls_district"], 0) + 1
+        big = {k: v for k, v in over.items() if v > m.MAX_DISTRICT}
+        if big:
+            raise ValueError(f"{cls}: league over MAX_DISTRICT after redraw: {big}")
+        out[cls] = notes
+    return out
+
+
+def pod_nonpublic(rows: list[dict], seed: int = SEED, cap: int = POD_CAP) -> dict:
+    """Deal every Non-Public class's members into geographic PODS of about `cap`
+    IN PLACE (both gender district fields) and return {class: notes}. The pod IS
+    the private's district — standings, league title, All-District, District POY
+    — drawn by the same clusterer and named from the same league bank as every
+    public league (`redistrict`), only capped at nine. Deterministic on `seed`
+    and the membership, so a redraw over an unchanged class reproduces itself."""
+    m = districting_config()
+    pos = coords()
+    rng = random.Random(seed)
+    out = {}
+    for cls in NONPUBLIC:
+        if not any(_is_private_road(r) and r["group"] == cls
+                   and (r.get("girls") or r.get("boys")) for r in rows):
+            continue
+        notes: list[str] = []
+        # A private arriving from a public league still carries that league's
+        # name, which is NOT this class's to inherit or retire: blank it for the
+        # draw so every pod is named fresh from the bank (or keeps a pod name the
+        # class already holds) and no public league's name is taken.
+        mine = [r for r in rows if _is_private_road(r) and r["group"] == cls]
+        pods = {r.get("girls_district") for r in mine} & {
+            r.get("girls_district") for r in rows if not _is_private_road(r)}
+        saved = [(r, r.get("girls_district"), r.get("boys_district")) for r in mine]
+        for r in mine:
+            if r.get("girls_district") in pods or r.get("old_group") and \
+                    r.get("old_league") == r.get("girls_district"):
+                r["girls_district"] = r["boys_district"] = ""
+        try:
+            assign, members, more = redistrict(rows, cls, pos, m, rng, cap=cap,
+                                               log=notes.append)
+        finally:
+            for r, gd, bd in saved:
+                r["girls_district"], r["boys_district"] = gd, bd
         notes += more
         for r in members:
             new = assign.get(r["name"])
             if new:
                 r["girls_district"] = r["boys_district"] = new
-        over = {}
-        for r in members:
-            over[r["girls_district"]] = over.get(r["girls_district"], 0) + 1
-        big = {k: v for k, v in over.items() if v > m.MAX_DISTRICT}
-        if big:
-            raise ValueError(f"{cls}: league over MAX_DISTRICT after redraw: {big}")
+        sizes = collections.Counter(r["girls_district"] for r in members)
+        if any(v > cap for v in sizes.values()):
+            raise ValueError(f"{cls}: pod over {cap} after redraw: {dict(sizes)}")
+        notes.append("   pods    " + ", ".join(f"{k} ({v})" for k, v in sorted(sizes.items())))
         out[cls] = notes
     return out

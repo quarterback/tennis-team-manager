@@ -193,27 +193,54 @@ def test_the_road_shape_is_the_road_class_not_the_league_class(archived):
     assert counts.get("toc", {5}) == {5}, counts
 
 
-def test_a_league_title_won_by_a_private_protects_the_best_public(archived):
-    arc = archived["arc"]
-    road = arc["road"]
-    checked = 0
+def test_the_pods_are_the_privates_leagues_and_publics_keep_their_own(archived):
+    """Owner rule 2026-09: a private program's league is a POD under its Non-Public
+    class — standings, a league title, All-District — and no private sits in a
+    public league's standings. The public league is publics only, home and away."""
+    arc, schools = archived["arc"], archived["schools"]
     for g in jh.GROUPS:
-        protected = set(arc["protected"][g])
         for rows in (arc["standings"][g] or {}).values():
-            if not rows or rows[0]["school"] not in road:
-                continue
-            best_pub = next((r["school"] for r in rows if r["school"] not in road), None)
-            if best_pub:
-                assert best_pub in protected, (g, rows[0]["school"], best_pub)
-                checked += 1
-    assert checked, "the fixture has no league a private won — widen it"
+            assert not [r["school"] for r in rows if schools[r["school"]].private], g
+    for g in jh.NONPUBLIC_GROUPS:
+        pods = arc["standings"][g]
+        assert pods, g
+        for pod, rows in pods.items():
+            assert pod and 2 <= len(rows) <= 10, (g, pod, len(rows))
+            assert all(schools[r["school"]].private for r in rows), pod
+            assert rows[0]["place"] == 1
+        # the pod champions take the protected seats, like every league champion
+        assert {rows[0]["school"] for rows in pods.values()} <= set(arc["protected"][g])
+        assert arc["all_district"][g] and set(arc["all_district"][g]) <= set(pods)
+        # the class's own slate is two All-Star teams
+        names = [t["name"] for t in arc["awards"][g]["teams"]]
+        assert names[:2] == ["First Team", "Second Team"] and len(names) <= 2
+
+
+def test_a_private_plays_every_old_league_public_once_outside_the_standings(archived):
+    arc, schools, w = archived["arc"], archived["schools"], archived["world"]
+    checked = 0
+    for name, s in schools.items():
+        if not s.private or not s.old_league:
+            continue
+        mates = [n for n, o in schools.items()
+                 if not o.private and (o.group, o.district) == (s.old_group, s.old_league)]
+        if not mates:
+            continue
+        from app import dbpath
+        with dbpath.connect(archived["db"]) as conn:
+            sched = wd._schedule_rows(conn, w["id"], w["year"], "girls", name)
+        played = [d for d in sched if d["opp"] in mates and d["phase"] == "regular"
+                  and not d["district"] and (d.get("level") or "v") == "v"]
+        assert sorted(d["opp"] for d in played) == sorted(mates), (name, mates)
+        checked += 1
+    assert checked
 
 
 def test_the_ledger_row_keeps_the_league_class_and_reads_the_road_class(archived):
     arc, w = archived["arc"], archived["world"]
     name, g = next(iter(arc["road"].items()))
     row = wd._season_row(arc, w["year"], name, [])
-    assert row["group"] in jh.GROUPS            # standings, ranking, awards: the league
+    assert row["group"] == g                    # the pod's class IS the league class
     assert row["road_group"] == g               # brackets: the road
     assert row["state_finish"]                  # every private played a road dual
     assert wd.jh_road_group(arc, name, row["group"]) == g
@@ -252,3 +279,30 @@ def test_before_the_era_nothing_moves():
     finally:
         jh.nonpublic_era = real
     assert "jhsaa_nonpublic_era" in jh.ERA_SETTINGS
+
+
+def test_a_nonpublic_class_has_a_ranking_over_its_pods(archived):
+    """The 10B/11B ranking is the class's own pod rows on the archived TOSS —
+    every member, in TOSS order, nothing recomputed — and the Rankings page and
+    class hub list the Non-Public classes on their rail."""
+    arc, client = archived["arc"], archived["client"]
+    for grp in jh.NONPUBLIC_GROUPS:
+        rows = wd.jhsaa_group_ranking(arc, grp)
+        members = {s for s, rg in arc["road"].items() if rg == grp}
+        assert {r["school"] for r in rows} == members and members
+        pis = [r["pi"] for r in rows]
+        assert None not in pis and pis == sorted(pis, reverse=True)
+        assert [r["rank"] for r in rows] == list(range(1, len(rows) + 1))
+        assert {r["district"] for r in rows} == set(arc["standings"][grp])
+        for path in (f"/jhsaa/rankings?g=girls&group={grp}", f"/jhsaa/class?g=girls&group={grp}"):
+            html = client.get(path).get_data(as_text=True)
+            assert rows[0]["school"] in html, path
+
+
+def test_a_pre_pod_archive_still_pools_a_ranking_from_league_rows():
+    arc = {"road": {"P": "10B"},
+           "standings": {"7A": {"Metro League": [{"school": "P", "record": "3-1", "pi": 0.5},
+                                                 {"school": "Q", "record": "1-3", "pi": 0.2}]},
+                         "10B": {}}}
+    rows = wd.jhsaa_group_ranking(arc, "10B")
+    assert [r["school"] for r in rows] == ["P"] and rows[0]["district"] == "7A Metro League"

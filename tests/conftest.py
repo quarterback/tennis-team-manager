@@ -48,12 +48,10 @@ def _sixteen_state_pilot_off():
 
 @pytest.fixture(autouse=True, scope="session")
 def _nonpublic_split_off():
-    """Keep every suite on the ONE-road postseason unless it opts into the
-    Non-Public team championships (owner rule 2026-09) — the pilot fixture's
-    reason exactly: a fresh database resolves `jhsaa.nonpublic_era()` to 0, which
-    would move every private program in the season-2027 fixtures out of the
-    brackets the ladder, TOC, awards and committee tests assert on.
-    `tests/test_jhsaa_nonpublic.py` opts in by swapping it back."""
+    """Keep the era gate off for every suite but the Non-Public one. Since the
+    pods (owner rule 2026-09) a private's `group` IS 10B/11B in the seed file and
+    `road_group` ignores the era for it, so this only matters for a School built
+    by hand in a public class; `tests/test_jhsaa_nonpublic.py` swaps it back."""
     from app import jhsaa as jh
     real = jh.nonpublic_era
     jh.nonpublic_era = lambda: 10 ** 6

@@ -4336,7 +4336,7 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                                # re-running a selector that may have moved on.
                                "flight_check":
                                    season["awards"][g].get("flight_check", {})}
-                           for g in jhsaa.GROUPS},
+                           for g in jhsaa.ROAD_GROUPS if g in season["awards"]},
                 # ‼️ ALL-REGION IS GENDER-WIDE, NOT PER CLASSIFICATION (owner rule
                 # 2027-08). There is no 7A All-Region team — there is a Gold Valley
                 # All-Region team, drawn from every program in Gold Valley whatever
@@ -4347,7 +4347,10 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                 # and it was a district by another name.
                 "all_region": season.get("all_region", {}),   # {region: {tiers, honorable_mention, programs}}
                 "all_region_flight_check": season.get("all_region_flight_check", {}),
-                "standings": {g: season["groups"][g]["standings"] for g in jhsaa.GROUPS},
+                # Every road class — a Non-Public class's standings are its PODS
+                # (owner rule 2026-09); empty on a pre-pod season.
+                "standings": {g: season["groups"][g]["standings"] for g in jhsaa.ROAD_GROUPS
+                              if g in season["groups"]},
                 # One dict per postseason stage, all in `run_state`'s archive shape:
                 # "sectionals" / "wards" / "prestate" (Regionals+Zonals) feed the
                 # RECOVERY rounds ("super_regional" / "semi_state"), which feed
@@ -4412,7 +4415,7 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                 # class through `jh_road_group`, never off its standings row alone.
                 "road": season.get("road") or {},
                 "all_district": {g: season["awards"][g].get("all_district", {})
-                                 for g in jhsaa.GROUPS},
+                                 for g in jhsaa.ROAD_GROUPS if g in season["awards"]},
                 # THE COMPUTER-RATINGS LAYER + AT-LARGE COMMITTEE (owner spec
                 # 2026-09): archived per group like `pi` — the ratings and the
                 # committee's ballots/selection are the DECISION the 48-team
@@ -7368,8 +7371,30 @@ def jhsaa_group_ranking(arc: dict, group: str) -> list[dict]:
     page shows and the seed it carries into the bracket cannot disagree. Seasons
     archived before TOSS existed carry no `pi`, and fall back to the win rate and point
     differential they were actually ordered on at the time."""
+    from . import jhsaa as _jh
     rows, rated = [], True
-    for dname, teams in (((arc or {}).get("standings") or {}).get(group) or {}).items():
+    standings = (arc or {}).get("standings") or {}
+    if group in _jh.NONPUBLIC_GROUPS and not standings.get(group):
+        # A NON-PUBLIC CLASS ARCHIVED BEFORE THE PODS HAS NO LEAGUES: its members play
+        # their league season in their league class, so their standings rows — and
+        # the TOSS/ATR archived on them, computed gender-wide like everyone's — live
+        # under that class. The 10B/11B ranking is those rows pooled and re-ranked
+        # on the same archived index; nothing is recomputed. The row's `district`
+        # is prefixed with the league class ("7A Metro League") so the pooled table
+        # says where each program's league season was played.
+        # Membership is the archive's `road` map (the season summary keeps that,
+        # not the per-group `members` list `run_season` also returns).
+        members = {s for s, rg in ((arc or {}).get("road") or {}).items() if rg == group}
+        pooled = {}
+        for lg in _jh.GROUPS:
+            for dname, teams in (standings.get(lg) or {}).items():
+                for r in teams:
+                    if r.get("school") in members:
+                        pooled[r["school"]] = (f"{lg} {dname}", r)
+        items = [(d, [r]) for d, r in pooled.values()]
+    else:
+        items = list((standings.get(group) or {}).items())
+    for dname, teams in items:
         for r in teams:
             w, l = _wl(r.get("record"))
             if r.get("pi") is None:
@@ -7691,23 +7716,25 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
     # Honorable Mention). `teams` is the SOP shape; the flat `all_state` list is
     # the fallback for seasons archived before the tiers existed.
     tiers = aw.get("teams") or []
+    from .jhsaa_awards import slate_label as _slate_label
+    _slate = _slate_label(row["group"])       # "All-Star" in a Non-Public class
     if tiers:
         for tier in tiers:
             for r in tier["players"]:
                 if r.get("school") == school:
                     row["all_state"].append(r)
                     row["honors"].append(
-                        f"All-State {tier['name']} ({row['group']}) — {r['name']}")
+                        f"{_slate} {tier['name']} ({row['group']}) — {r['name']}")
         for r in aw.get("honorable_mention") or ():
             if r.get("school") == school:
                 row["all_state"].append(r)
                 row["honors"].append(
-                    f"All-State Honorable Mention ({row['group']}) — {r['name']}")
+                    f"{_slate} Honorable Mention ({row['group']}) — {r['name']}")
     else:
         for r in aw.get("all_state", ()):
             if r.get("school") == school:
                 row["all_state"].append(r)
-                row["honors"].append(f"All-State ({row['group']}) — {r['name']}")
+                row["honors"].append(f"{_slate} ({row['group']}) — {r['name']}")
     for dname, rs in ((arc.get("all_district") or {}).get(row["group"]) or {}).items():
         if dname != row["district"]:
             continue
@@ -7738,7 +7765,7 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
 
 #: Bump when `_season_row` changes shape or meaning: rows stored at an older
 #: version are re-derived on their next read (per season, never per page).
-_SEASON_ROW_VERSION = 3   # 2: `road_group` and the road-class stage walk (2026-09)
+_SEASON_ROW_VERSION = 4   # 3: TOC Qualifier; 4: All-Star honour lines for 10B/11B (2026-09)
 
 
 def _fold_season_rows(conn, world_id: int, year: int, gender: str) -> dict[str, dict]:

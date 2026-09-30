@@ -101,7 +101,7 @@
 
     {% for t in view.teams %}
     <div class="jh-awardsec">
-      <div class="jh-awardsec-head">All-State {{ t.name }}</div>
+      <div class="jh-awardsec-head">{{ view.slate_label or 'All-State' }} {{ t.name }}</div>
       {{ award_team(t.players) }}
     </div>
     {% endfor %}

@@ -105,3 +105,74 @@ the last two TOC seats — a byeless sixteen, one more public and one more priva
   runners-up, TOC field 16 with eight first-round games and no byes, losers off
   the draw with finish "TOC Qualifier" (a TOC appearance, place 17), schedule
   rows at phase `toc_qualifier`.
+
+## Addendum — the Non-Public RANKING (owner question 2026-09)
+"Despite them playing matches in their regular class schedules, you do have the
+rankings still be calculated for these classes correct?" TOSS and ATR were always
+there — computed gender-wide, archived on each private's LEAGUE-class standings row
+— but nothing showed a 10B or 11B ranking: `jhsaa_group_ranking` read
+`standings[group]`, which a Non-Public class does not have, and the Rankings page and
+class hub listed `GROUPS` only. Now `jhsaa_group_ranking` recognises a
+`NONPUBLIC_GROUPS` key, takes the members off the archive's `road` map, pools their
+league rows and re-ranks them on the archived `pi` (nothing recomputed; the row's
+`district` reads "7A Metro League" so the pooled table says where the league season
+was played), and both pages take `ROAD_GROUPS` on their rail. A 10B hub shows its
+State draw, ranking and champion with an empty district index (no leagues) and blank
+award panels (All-State is a league-class honour). Pinned by
+`test_a_nonpublic_class_has_a_ranking_pooled_from_its_members_league_rows`.
+
+## Addendum — PODS, the OLD LEAGUE and the All-Star teams (owner rule 2026-09)
+The owner's second pass on the split: "remove the privates from the All-State teams
+in their classes and start All-Star teams, 1st and 2nd, for both 10B and 11B", and
+"give them their own districts". This supersedes the pooled-ranking addendum above
+for every season played from the pods on (that read path stays as the fallback for
+a season archived before them).
+
+- **A private program's `group` IS its Non-Public class now, in the seed file.**
+  `scripts/jhsaa_nonpublic_pods.py` moved all 116 private rows: `group` 10B/11B
+  (the 550 cut plus the two named play-ups), `old_group`/`old_league` recording the
+  public class and league each row held, and both gender district fields set to
+  the POD. The pods' MEMBERSHIP is the owner's (`POD_MAP`, 8-10 schools each — 7
+  pods in 10B, 6 in 11B; a first draft at target six was too small and was
+  resubmitted); only the pod NAMES were drawn here, from the league bank under
+  `redistrict`'s rules. So `districts(gender, "10B")` returns pods, `run_season`
+  builds `by_group` over `ROAD_GROUPS`, and standings, a league title, All-District,
+  a District POY, the individual flights and the JV season all fall out of the
+  ordinary class machinery — the pseudo-district branch and the road re-deal now
+  only fire on a pre-pod seed file (a class with no leagues).
+- **Public leagues are publics only, home and away.** No redraw: they keep their
+  names and their remaining members. Three came out thin — 1A Marble Valley League
+  (5), 1A Old Jefferson Athletic Association (5), 7A River Valley League (4) — and
+  the owner chose CONSOLIDATION (`CONSOLIDATE` in the script): Marble Valley folds
+  into Old Jefferson Athletic Association (10), River Valley into Three Rivers
+  League (12, the cap). No public league is under five in either gender.
+- **The old-league duals** (`_old_league_pairs`): every private plays every public
+  in its old league ONCE — `phase="regular"`, `district=False`, so it counts to the
+  record and to TOSS and to neither side's standings. Reserved before the first
+  draw (the rivalry rule, so the early matcher cannot pre-empt one), played in two
+  halves after league pass 1 and pass 2 — the dates the public school lost from its
+  league schedule when the private left — venue alternating on the year. Not drawn
+  from the allowance: the `spent` fold counts them, and the early window's share
+  shrinks by what they take. A public league that lost a private plays that private
+  once instead of twice, and its `SEASON_DUAL_TARGET` backfill covers the rest.
+- **The old league resets at every realignment.** `jhsaa_districting.redraw_classes`
+  lends each private whose `old_group` is the class being drawn into that draw
+  (wearing its old league name; its pod name is passed as `extra_foreign` so no
+  public league can take it), writes the league it lands in to `old_league`, and
+  pulls it back out. `jhsaa_reclass._move` moves a private's `classification` and
+  `old_group` and never its `group`; `_snapshot`/`reapply` carry `og`/`ol`. The
+  pods themselves are not redrawn by a cycle (`pod_nonpublic` exists for when the
+  owner wants that — it clusters at `POD_CAP` 10 and names from the bank).
+- **All-Star, not All-State.** `jhsaa_awards.AS_TIERS["10B"/"11B"] = 2` and
+  `slate_label(group)` is the one place the word lives: the honour line
+  (`_season_row`), the Honors page heading and the school page read it. The
+  Honors, Individual State, District and school pages take `ROAD_GROUPS` on their
+  class rail; the school header shows an OLD LEAGUE chip; `programs.csv` carries
+  `old_group`/`old_league`.
+- **The 10B/11B ranking is its pod rows** on the archived TOSS, like any class;
+  `jhsaa_group_ranking` pools league rows only when the class has no standings.
+- Smoke (scaled season, both genders, `smoke_pods.py`): no private on any public
+  standings row; every pod's champion in the protected tier; every private's
+  league duals all against pod mates and one dual against each old-league public;
+  every public league dual public-vs-public; All-Star First and Second Team and a
+  POY in both Non-Public classes; TOC still a byeless sixteen with the qualifier.
