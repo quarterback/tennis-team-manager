@@ -310,6 +310,9 @@ def test_a_vetoed_departure_keeps_every_seat_its_skipped_moves_would_have_left(
         def commit(self): pass
         def close(self): pass
     monkeypatch.setattr(jc, "_cconn", lambda: _Fake())
+    # the seat-less-program steps read the database; none of these programs is one
+    monkeypatch.setattr(jc, "_open_seatless", lambda *a: [])
+    monkeypatch.setattr(jc, "_backfill_opened", lambda *a: None)
     assert jc.commit_cycle(1) == 1
     assert moved == ["d"]
 

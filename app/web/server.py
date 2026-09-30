@@ -3927,7 +3927,8 @@ def create_app() -> Flask:
         msg = ""
         try:
             if do == "run":
-                prop = jc.propose_cycle(w["id"], wd.jhsaa_season_year(w))
+                prop = jc.propose_cycle(w["id"], wd.jhsaa_season_year(w),
+                                       wd.active_salt(DEFAULT_SEED))
                 msg = f"{len(prop['lines'])} proposed changes."
             elif do in ("save", "commit"):
                 jc.set_vetoes(w["id"], {int(x) for x in request.form.getlist("veto")})
