@@ -19,7 +19,14 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _REPO = os.path.dirname(_HERE)
 _DOC = os.path.join(_REPO, "docs", "GAZETTEER-jefferson.md")
 _OUT = os.path.join(_REPO, "data", "jhsaa", "coords.json")
-_LINE = re.compile(r"^- \*\*(?P<town>.+?)\*\* — .*?(?P<lat>\d+\.\d+)([NS]) (?P<lon>\d+\.\d+)([EW])\s*$")
+# ‼️ THE COORDINATE NEED NOT END THE LINE. The gazetteer now tags a town with no
+# sponsoring program ("· *no tennis programs*") AFTER its coordinate, and the
+# pattern used to anchor on the coordinate — so a rebuild silently DROPPED every
+# such town (Pellburg and Windrow, 2026-09: both still carry a school row in
+# schools.json under their county, so the reclass clustering lost two positions).
+# A town with no programs still gets a coordinate: the entry costs nothing and a
+# school row can name it.
+_LINE = re.compile(r"^- \*\*(?P<town>.+?)\*\* — .*?(?P<lat>\d+\.\d+)([NS]) (?P<lon>\d+\.\d+)([EW])(?:\s*·.*)?\s*$")
 
 
 def build() -> dict:
