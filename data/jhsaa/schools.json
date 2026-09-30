@@ -23,8 +23,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Valle Vista League",
-      "boys_district": "Valle Vista League",
+      "girls_district": "Cowapa League",
+      "boys_district": "Cowapa League",
       "source": "Ashwood"
     },
     {
@@ -242,8 +242,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Foundry League",
-      "boys_district": "Foundry League"
+      "girls_district": "Del Rey Athletic Association",
+      "boys_district": "Del Rey Athletic Association"
     },
     {
       "name": "Alfalfa City",
@@ -261,8 +261,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Orchard League",
-      "boys_district": "Orchard League",
+      "girls_district": "Placer League",
+      "boys_district": "Placer League",
       "source": "Bidwell City"
     },
     {
@@ -397,10 +397,10 @@
         "#4b2e83",
         "#b7a57a"
       ],
-      "girls": false,
-      "boys": false,
-      "girls_district": "Foundry League",
-      "boys_district": "Foundry League",
+      "girls": true,
+      "boys": true,
+      "girls_district": "Del Rey Athletic Association",
+      "boys_district": "Del Rey Athletic Association",
       "source": "Harmon"
     },
     {
@@ -497,10 +497,10 @@
         "#0f3d3e",
         "#f2c14e"
       ],
-      "girls": false,
-      "boys": false,
-      "girls_district": "Millworks Athletic Association",
-      "boys_district": "Millworks Athletic Association"
+      "girls": true,
+      "boys": true,
+      "girls_district": "Valle Vista League",
+      "boys_district": "Valle Vista League"
     },
     {
       "name": "Antler Falls",
@@ -639,8 +639,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Columbia Gorge District",
-      "boys_district": "Columbia Gorge District"
+      "girls_district": "Columbia Range League",
+      "boys_district": "Columbia Range League"
     },
     {
       "name": "Armour Fields",
@@ -916,10 +916,10 @@
         "#5e2129",
         "#dcd6c9"
       ],
-      "girls": false,
-      "boys": false,
-      "girls_district": "Orchard League",
-      "boys_district": "Orchard League"
+      "girls": true,
+      "boys": true,
+      "girls_district": "Placer League",
+      "boys_district": "Placer League"
     },
     {
       "name": "Assay",
@@ -1473,8 +1473,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Del Rey Athletic Association",
-      "boys_district": "Del Rey Athletic Association",
+      "girls_district": "Surf League",
+      "boys_district": "Surf League",
       "source": "Alder Landing Beacon Hill"
     },
     {
@@ -1985,8 +1985,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League"
+      "girls_district": "Tailings League",
+      "boys_district": "Tailings League"
     },
     {
       "name": "Bianchi",
@@ -2005,8 +2005,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Foundry League",
-      "boys_district": "Foundry League"
+      "girls_district": "Cowapa League",
+      "boys_district": "Cowapa League"
     },
     {
       "name": "Biden",
@@ -3391,8 +3391,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Del Rey Athletic Association",
-      "boys_district": "Del Rey Athletic Association",
+      "girls_district": "Surf League",
+      "boys_district": "Surf League",
       "source": "Aldermont"
     },
     {
@@ -3549,8 +3549,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Placer League",
-      "boys_district": "Placer League",
+      "girls_district": "South Coast League",
+      "boys_district": "South Coast League",
       "source": "Elk Prairie"
     },
     {
@@ -4611,8 +4611,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Columbia Gorge District",
-      "boys_district": "Columbia Gorge District"
+      "girls_district": "Columbia Range League",
+      "boys_district": "Columbia Range League"
     },
     {
       "name": "Condotti Vanguard Academy",
@@ -4869,8 +4869,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Valle Vista League",
-      "boys_district": "Valle Vista League"
+      "girls_district": "Cowapa League",
+      "boys_district": "Cowapa League"
     },
     {
       "name": "Corinne",
@@ -5066,8 +5066,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Sluice League",
-      "boys_district": "Sluice League",
+      "girls_district": "Marble Valley League",
+      "boys_district": "Marble Valley League",
       "source": "Cradle Reach"
     },
     {
@@ -5461,8 +5461,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Surf League",
-      "boys_district": "Surf League"
+      "girls_district": "Foundry League",
+      "boys_district": "Foundry League"
     },
     {
       "name": "Drayfield",
@@ -6000,8 +6000,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Foundry League",
-      "boys_district": "Foundry League"
+      "girls_district": "Valle Vista League",
+      "boys_district": "Valle Vista League"
     },
     {
       "name": "Elkhorn",
@@ -6917,8 +6917,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Sluice League",
-      "boys_district": "Sluice League",
+      "girls_district": "Marble Valley League",
+      "boys_district": "Marble Valley League",
       "source": "Ewartville"
     },
     {
@@ -7872,8 +7872,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Foundry League",
-      "boys_district": "Foundry League"
+      "girls_district": "Cowapa League",
+      "boys_district": "Cowapa League"
     },
     {
       "name": "Grant",
@@ -8249,10 +8249,10 @@
         "#2d4a2d",
         "#f0e6c8"
       ],
-      "girls": false,
-      "boys": false,
-      "girls_district": "Foundry League",
-      "boys_district": "Foundry League"
+      "girls": true,
+      "boys": true,
+      "girls_district": "Del Rey Athletic Association",
+      "boys_district": "Del Rey Athletic Association"
     },
     {
       "name": "Harmony",
@@ -8529,8 +8529,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Foundry League",
-      "boys_district": "Foundry League"
+      "girls_district": "Cowapa League",
+      "boys_district": "Cowapa League"
     },
     {
       "name": "Helena Academy",
@@ -8705,10 +8705,10 @@
         "#0f3d3e",
         "#f2c14e"
       ],
-      "girls": false,
-      "boys": false,
-      "girls_district": "Orchard League",
-      "boys_district": "Orchard League"
+      "girls": true,
+      "boys": true,
+      "girls_district": "Placer League",
+      "boys_district": "Placer League"
     },
     {
       "name": "Highland Park",
@@ -8925,8 +8925,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Snake River District",
-      "boys_district": "Snake River District"
+      "girls_district": "Desert Sky League",
+      "boys_district": "Desert Sky League"
     },
     {
       "name": "Hurston",
@@ -9491,8 +9491,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Columbia Range League",
-      "boys_district": "Columbia Range League"
+      "girls_district": "Hacienda League",
+      "boys_district": "Hacienda League"
     },
     {
       "name": "Junction",
@@ -9747,10 +9747,10 @@
         "#2b2d42",
         "#edf2f4"
       ],
-      "girls": false,
-      "boys": false,
-      "girls_district": "Foundry League",
-      "boys_district": "Foundry League"
+      "girls": true,
+      "boys": true,
+      "girls_district": "Cowapa League",
+      "boys_district": "Cowapa League"
     },
     {
       "name": "Kennedy",
@@ -9847,8 +9847,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Tailings League",
-      "boys_district": "Tailings League"
+      "girls_district": "Old Jefferson Athletic Association",
+      "boys_district": "Old Jefferson Athletic Association"
     },
     {
       "name": "Kettle Ridge",
@@ -10409,8 +10409,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Sluice League",
-      "boys_district": "Sluice League"
+      "girls_district": "Marble Valley League",
+      "boys_district": "Marble Valley League"
     },
     {
       "name": "Larchmont Ridge",
@@ -10623,8 +10623,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Valle Vista League",
-      "boys_district": "Valle Vista League",
+      "girls_district": "Foundry League",
+      "boys_district": "Foundry League",
       "source": "John Lewis"
     },
     {
@@ -10743,8 +10743,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Placer League",
-      "boys_district": "Placer League",
+      "girls_district": "Columbia Gorge District",
+      "boys_district": "Columbia Gorge District",
       "source": "Alderfield"
     },
     {
@@ -10920,8 +10920,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Tailings League",
-      "boys_district": "Tailings League",
+      "girls_district": "Old Jefferson Athletic Association",
+      "boys_district": "Old Jefferson Athletic Association",
       "source": "Heritage Christian"
     },
     {
@@ -10998,8 +10998,8 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "Valle Vista League",
-      "boys_district": "Valle Vista League"
+      "girls_district": "Del Rey Athletic Association",
+      "boys_district": "Del Rey Athletic Association"
     },
     {
       "name": "Los Remolinos",
@@ -11913,8 +11913,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Del Rey Athletic Association",
-      "boys_district": "Del Rey Athletic Association",
+      "girls_district": "Surf League",
+      "boys_district": "Surf League",
       "source": "Halfway House"
     },
     {
@@ -12170,8 +12170,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Millworks Athletic Association",
-      "boys_district": "Millworks Athletic Association"
+      "girls_district": "Foundry League",
+      "boys_district": "Foundry League"
     },
     {
       "name": "Mission Terrace",
@@ -12525,8 +12525,8 @@
         "#0f6a70",
         "#f4f1ea"
       ],
-      "girls": false,
-      "boys": false,
+      "girls": true,
+      "boys": true,
       "girls_district": "Orchard League",
       "boys_district": "Orchard League",
       "source": "Sablewood Union"
@@ -12793,8 +12793,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Millworks Athletic Association",
-      "boys_district": "Millworks Athletic Association"
+      "girls_district": "Foundry League",
+      "boys_district": "Foundry League"
     },
     {
       "name": "Naylors Landing",
@@ -12832,8 +12832,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Foundry League",
-      "boys_district": "Foundry League"
+      "girls_district": "Valle Vista League",
+      "boys_district": "Valle Vista League"
     },
     {
       "name": "New Ballard",
@@ -12989,8 +12989,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Orchard League",
-      "boys_district": "Orchard League",
+      "girls_district": "Placer League",
+      "boys_district": "Placer League",
       "source": "Granite Bar"
     },
     {
@@ -13009,8 +13009,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Del Rey Athletic Association",
-      "boys_district": "Del Rey Athletic Association"
+      "girls_district": "Surf League",
+      "boys_district": "Surf League"
     },
     {
       "name": "Nicodemus",
@@ -13168,8 +13168,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Foundry League",
-      "boys_district": "Foundry League"
+      "girls_district": "Del Rey Athletic Association",
+      "boys_district": "Del Rey Athletic Association"
     },
     {
       "name": "North Averill",
@@ -13709,8 +13709,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League"
+      "girls_district": "Tailings League",
+      "boys_district": "Tailings League"
     },
     {
       "name": "Olivet County",
@@ -14004,8 +14004,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League",
+      "girls_district": "Millworks Athletic Association",
+      "boys_district": "Millworks Athletic Association",
       "source": "Paddock Institute"
     },
     {
@@ -14204,8 +14204,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Desert Sky League",
-      "boys_district": "Desert Sky League"
+      "girls_district": "Sluice League",
+      "boys_district": "Sluice League"
     },
     {
       "name": "Pellmont",
@@ -14222,8 +14222,8 @@
         "#3c1518",
         "#a9927d"
       ],
-      "girls": false,
-      "boys": false,
+      "girls": true,
+      "boys": true,
       "girls_district": "Orchard League",
       "boys_district": "Orchard League"
     },
@@ -14755,8 +14755,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Millworks Athletic Association",
-      "boys_district": "Millworks Athletic Association"
+      "girls_district": "Foundry League",
+      "boys_district": "Foundry League"
     },
     {
       "name": "Pope Leo XIV",
@@ -14893,8 +14893,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Surf League",
-      "boys_district": "Surf League"
+      "girls_district": "Millworks Athletic Association",
+      "boys_district": "Millworks Athletic Association"
     },
     {
       "name": "Portola-Caverly",
@@ -15189,8 +15189,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Foundry League",
-      "boys_district": "Foundry League"
+      "girls_district": "Valle Vista League",
+      "boys_district": "Valle Vista League"
     },
     {
       "name": "Quail Hollow",
@@ -15623,8 +15623,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Tailings League",
-      "boys_district": "Tailings League",
+      "girls_district": "Old Jefferson Athletic Association",
+      "boys_district": "Old Jefferson Athletic Association",
       "source": "Tule Flat Lutheran"
     },
     {
@@ -16443,10 +16443,10 @@
         "#1a1a2e",
         "#c0392b"
       ],
-      "girls": false,
-      "boys": false,
-      "girls_district": "Millworks Athletic Association",
-      "boys_district": "Millworks Athletic Association"
+      "girls": true,
+      "boys": true,
+      "girls_district": "Valle Vista League",
+      "boys_district": "Valle Vista League"
     },
     {
       "name": "Saltbush",
@@ -16856,8 +16856,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Millworks Athletic Association",
-      "boys_district": "Millworks Athletic Association",
+      "girls_district": "Foundry League",
+      "boys_district": "Foundry League",
       "source": "Gold Junction"
     },
     {
@@ -17099,8 +17099,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Snake River District",
-      "boys_district": "Snake River District"
+      "girls_district": "Valle Vista League",
+      "boys_district": "Valle Vista League"
     },
     {
       "name": "Sherwood Bench",
@@ -17616,10 +17616,10 @@
         "#5c1a1a",
         "#e0dcd0"
       ],
-      "girls": false,
-      "boys": false,
-      "girls_district": "Foundry League",
-      "boys_district": "Foundry League"
+      "girls": true,
+      "boys": true,
+      "girls_district": "Cowapa League",
+      "boys_district": "Cowapa League"
     },
     {
       "name": "South Pomar",
@@ -17697,8 +17697,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League",
+      "girls_district": "Millworks Athletic Association",
+      "boys_district": "Millworks Athletic Association",
       "source": "Walnut Yard"
     },
     {
@@ -18776,8 +18776,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Del Rey Athletic Association",
-      "boys_district": "Del Rey Athletic Association",
+      "girls_district": "Surf League",
+      "boys_district": "Surf League",
       "source": "Garrity"
     },
     {
@@ -19860,8 +19860,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Hacienda League",
-      "boys_district": "Hacienda League",
+      "girls_district": "Desert Sky League",
+      "boys_district": "Desert Sky League",
       "source": "Salvador Figueroa"
     },
     {
@@ -19999,8 +19999,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Millworks Athletic Association",
-      "boys_district": "Millworks Athletic Association"
+      "girls_district": "Foundry League",
+      "boys_district": "Foundry League"
     },
     {
       "name": "Villaseñor",
@@ -20579,8 +20579,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Placer League",
-      "boys_district": "Placer League"
+      "girls_district": "Marble Valley League",
+      "boys_district": "Marble Valley League"
     },
     {
       "name": "Wheeler Academy",
@@ -20957,8 +20957,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Valle Vista League",
-      "boys_district": "Valle Vista League"
+      "girls_district": "Cowapa League",
+      "boys_district": "Cowapa League"
     },
     {
       "name": "Yarmere",

@@ -128,7 +128,12 @@ MIN_REGION_PROGRAMS = 4
 # `import_jhsaa.split_area`) land with no change here: each of the four measures
 # 50-58 girls' / 50-55 boys' programs, so all four clear this bar in both genders
 # and crown two teams, matching the other big regions' density.
-AR_TIER2_MIN_PROGRAMS = 45
+# ‼️ 38, NOT 45 (owner rule 2026-09, with the Alderwold expansion): Alderwold sat
+# at 41 a gender, "only 4 shy", and the owner wants it on two teams. 38 rather
+# than 40 because Juniper Highlands is 41 girls / 38 boys — at 40 its girls would
+# crown two teams and its boys one, the gender split the HM change just removed.
+# Next region down is Southern Jefferson at 32, so the bar is still a bar.
+AR_TIER2_MIN_PROGRAMS = 38
 
 # ‼️ AND THE BIGGEST REGION GETS AN HONORABLE MENTION TOO (owner rule 2027-08):
 # "Halbrook should have honorable mention too, it's so much bigger than everywhere

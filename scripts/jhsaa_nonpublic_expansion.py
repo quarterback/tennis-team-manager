@@ -95,7 +95,8 @@ def main() -> None:
     # league that is 9A's now), in which case its class is redrawn too.
     counts = collections.Counter((r["group"], r.get("girls_district", "")) for r in rows if r.get("girls"))
     for r, _ in gained:
-        if counts[(r["group"], r["girls_district"])] < 4:
+        n = counts[(r["group"], r.get("girls_district", ""))]
+        if n < 4 or n > 11:              # a dead league, or one the flips overflow
             groups.add(r["group"])
     sys.path.insert(0, _REPO)
     os.environ.setdefault("TENNIS_DB_PATH", os.path.join(_REPO, ".jhsaa_expansion_scratch.db"))
