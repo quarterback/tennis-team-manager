@@ -141,9 +141,11 @@ a season archived before them).
   ordinary class machinery — the pseudo-district branch and the road re-deal now
   only fire on a pre-pod seed file (a class with no leagues).
 - **Public leagues are publics only, home and away.** No redraw: they keep their
-  names and their remaining members. Three are now thin — 1A Marble Valley League
+  names and their remaining members. Three came out thin — 1A Marble Valley League
   (5), 1A Old Jefferson Athletic Association (5), 7A River Valley League (4) — and
-  are reported by the script for the owner to decide on, not merged by an agent.
+  the owner chose CONSOLIDATION (`CONSOLIDATE` in the script): Marble Valley folds
+  into Old Jefferson Athletic Association (10), River Valley into Three Rivers
+  League (12, the cap). No public league is under five in either gender.
 - **The old-league duals** (`_old_league_pairs`): every private plays every public
   in its old league ONCE — `phase="regular"`, `district=False`, so it counts to the
   record and to TOSS and to neither side's standings. Reserved before the first

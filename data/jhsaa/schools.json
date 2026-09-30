@@ -1347,8 +1347,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League"
+      "girls_district": "Old Jefferson Athletic Association",
+      "boys_district": "Old Jefferson Athletic Association"
     },
     {
       "name": "Barley Point",
@@ -5367,8 +5367,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "River Valley League",
-      "boys_district": "River Valley League",
+      "girls_district": "Three Rivers League",
+      "boys_district": "Three Rivers League",
       "source": "Halbrook Union"
     },
     {
@@ -9162,8 +9162,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "River Valley League",
-      "boys_district": "River Valley League"
+      "girls_district": "Three Rivers League",
+      "boys_district": "Three Rivers League"
     },
     {
       "name": "Industrial City",
@@ -13925,8 +13925,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League",
+      "girls_district": "Old Jefferson Athletic Association",
+      "boys_district": "Old Jefferson Athletic Association",
       "source": "St. Gabriel Preparatory"
     },
     {
@@ -14555,8 +14555,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "River Valley League",
-      "boys_district": "River Valley League",
+      "girls_district": "Three Rivers League",
+      "boys_district": "Three Rivers League",
       "source": "Amalia Escobedo",
       "locality": "Petoskey"
     },
@@ -15066,8 +15066,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League",
+      "girls_district": "Old Jefferson Athletic Association",
+      "boys_district": "Old Jefferson Athletic Association",
       "source": "Serra Caverly"
     },
     {
@@ -16432,8 +16432,8 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League",
+      "girls_district": "Old Jefferson Athletic Association",
+      "boys_district": "Old Jefferson Athletic Association",
       "source": "Basalt Fork"
     },
     {
@@ -19428,8 +19428,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "River Valley League",
-      "boys_district": "River Valley League",
+      "girls_district": "Three Rivers League",
+      "boys_district": "Three Rivers League",
       "source": "José Martí",
       "locality": "Trois Ilets"
     },
@@ -20802,8 +20802,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Marble Valley League",
-      "boys_district": "Marble Valley League"
+      "girls_district": "Old Jefferson Athletic Association",
+      "boys_district": "Old Jefferson Athletic Association"
     },
     {
       "name": "Wheeler Academy",

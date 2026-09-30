@@ -83,6 +83,26 @@ POD_MAP = {
 }
 
 
+#: THE PUBLIC LEAGUES THE SPLIT LEFT THIN, CONSOLIDATED (owner rule 2026-09): a
+#: league the privates' departure took under six folds into its geographic
+#: neighbour in the same class; the merged league keeps the larger side's name.
+#: (class, absorbed league) -> surviving league.
+CONSOLIDATE = {
+    ("1A", "Marble Valley League"): "Old Jefferson Athletic Association",   # 5 + 5
+    ("7A", "River Valley League"): "Three Rivers League",                   # 4 + 5
+}
+
+
+def consolidate(rows: list[dict], log=print) -> None:
+    for (cls, gone), keep in CONSOLIDATE.items():
+        moved = [r for r in rows if r["group"] == cls and r.get("girls_district") == gone]
+        for r in moved:
+            r["girls_district"] = r["boys_district"] = keep
+        n = sum(1 for r in rows if r["group"] == cls and r.get("girls_district") == keep
+                and (r.get("girls") or r.get("boys")))
+        log(f"{cls}: {gone} ({len(moved)}) folded into {keep} -> {n} programs")
+
+
 def name_pods(rows: list[dict], log=print) -> None:
     """Name every pod in `POD_MAP` from the league bank and write it onto its
     members' district fields — the `redistrict` naming rules, without the draw."""
@@ -136,6 +156,7 @@ def apply(rows: list[dict], log=print) -> None:
                     log(f"note: {n} sits in the owner's {cls} pod; the cut alone says {want}")
     log(f"{moved} private rows left their public league for the Non-Public classes")
     name_pods(rows, log)
+    consolidate(rows, log)
     # The public leagues after the privates leave — a reader's check, no redraw.
     sizes = collections.Counter()
     for r in rows:
