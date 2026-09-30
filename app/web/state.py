@@ -7481,12 +7481,18 @@ def jhsaa_computer_ratings_view(seed: int, gender: str, group: str | None = None
     grp = group if group in jh.ROAD_GROUPS else jh.ROAD_GROUPS[0]
     scope = _jh_scope(g, grp, list(jh.ROAD_GROUPS), yr, years,
                       (arc or {}).get("season_year"), arc)
+    ratings = ((arc or {}).get("ratings") or {}).get(grp)
+    # ‼️ THE COLUMNS ARE THE ARCHIVED SEASON'S, NOT TODAY'S MODULE (the `pi`
+    # rule). The layer writes its own `systems` list beside the values, so a
+    # season rated with Colley still renders a Colley column and a season rated
+    # before the Markov chain shows none — reading `SYSTEMS` here would blank a
+    # retired column and print an empty new one across every old season.
+    systems = list((ratings or {}).get("systems") or SYSTEMS)
     base = {"gender": g, "year": yr, "years": years, "group": grp,
             "groups": list(jh.ROAD_GROUPS), "scope": scope,
-            "systems": list(SYSTEMS), "glossary": GLOSSARY,
+            "systems": systems, "glossary": GLOSSARY,
             "sort": sort or "mean", "dir": dir,
             "season_year": (arc or {}).get("season_year")}
-    ratings = ((arc or {}).get("ratings") or {}).get(grp)
     if not arc or not ratings:
         return {**base, "ready": False, "rows": []}
     schools = _jh_schools(g)
@@ -7499,7 +7505,7 @@ def jhsaa_computer_ratings_view(seed: int, gender: str, group: str | None = None
                      "mean": t["mean"], "median": t["median"],
                      "sigma": t["sigma"], "ranks": t["ranks"]})
     key = sort if sort in ("school", "mean", "median", "sigma") else \
-        (sort if sort in SYSTEMS else "mean")
+        (sort if sort in systems else "mean")
     def _k(r):
         if key in ("school",):
             return r["school"]
@@ -7546,6 +7552,42 @@ def jhsaa_coefficient_view(seed: int, gender: str, group: str | None = None,
             "min_history": coef.MIN_HISTORY, "window_n": coef.WINDOW}
 
 
+def _voter_identity(name: str) -> dict:
+    """The identity fields for a committee member the ARCHIVE did not describe:
+    today's roster when the name is still on it, otherwise the name alone. A
+    member archived before the outlets existed (the five original philosophies)
+    resolves here and carries no tendency, which `_jh_ballot_groups` renders as
+    its own group — never as a member that vanished."""
+    from app.jhsaa_committee import BY_NAME
+    v = BY_NAME.get(name)
+    if v is None:
+        return {"name": name, "kind": "", "home": "", "area": "", "beat": "",
+                "tendency": ""}
+    return {"name": v.name, "kind": v.kind, "home": v.home, "area": v.area,
+            "beat": v.beat, "tendency": v.tendency}
+
+
+def _jh_ballot_groups(ballots: list, blurb: dict) -> list:
+    """The ballots tab's blocks, in tendency order, then ONE trailing block for
+    ballots whose tendency this build does not know (a pre-outlets selection).
+    Built here rather than filtered in the template so no ballot can be dropped
+    by a grouping the archive predates."""
+    from app.jhsaa_committee import TENDENCIES
+    out = []
+    for t in TENDENCIES:
+        bs = [b for b in ballots if b.get("tendency") == t]
+        if bs:
+            out.append({"key": t, "label": t.capitalize(),
+                        "blurb": blurb.get(t, ""), "ballots": bs})
+    rest = [b for b in ballots if b.get("tendency") not in set(TENDENCIES)]
+    if rest:
+        out.append({"key": "", "label": "The committee",
+                    "blurb": "Archived before the voters carried a published "
+                             "tendency — their weights are in the column "
+                             "tooltips.", "ballots": rest})
+    return out
+
+
 def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
                          year: int | None = None) -> dict:
     """The at-large tracking page for the Parastate groups (`ATLARGE_GROUPS` —
@@ -7557,7 +7599,9 @@ def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
     import app.jhsaa as jh
     import app.world as world
     from app.jhsaa_ratings import SYSTEMS
-    from app.jhsaa_committee import MEMBERS, AT_LARGE
+    from app.jhsaa_committee import (MEMBERS, AT_LARGE, TENDENCIES,
+                                     TENDENCY_BLURB, lock_threshold,
+                                     bubble_threshold)
     w = world.get_or_create(seed)
     g = _jh_g(gender)
     years = world.jhsaa_years(w["id"], g)
@@ -7585,9 +7629,32 @@ def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
     seats = ((sel or {}).get("seats") or len((sel or {}).get("selected") or ())
              or jh.at_large_bids(grp) or AT_LARGE)
     road_n = jh.state_field_size(grp, sy)
+    # ‼️ THE ELECTORATE IS THE ARCHIVED SELECTION'S, NOT TODAY'S (the `pi` rule,
+    # the same reason the seat count is read off the archive above). A season
+    # selected by the five original members renders with those five and their
+    # weights; one selected by the twenty-four outlets renders with those. The
+    # module is only the fallback for a season archived before `weights`.
+    members = list((sel or {}).get("weights") or MEMBERS)
+    # ‼️ ONE IDENTITY ROW PER ARCHIVED MEMBER, and never a filter over today's
+    # roster. A season selected before `voters` existed carries the five ORIGINAL
+    # member names, which match none of the twenty-four outlets — intersecting the
+    # two emptied the list, which emptied `tendencies`, and the ballots tab
+    # renders BY tendency, so the whole historical tab went blank while the
+    # archive still held every ballot and weight. An unmatched member keeps its
+    # name and carries no tendency; `_jh_ballot_groups` puts those in a group of
+    # their own rather than dropping them.
+    _arch = {v["name"]: v for v in ((sel or {}).get("voters") or ())}
+    voters = [dict(_arch.get(m) or _voter_identity(m), name=m) for m in members]
+    systems = list(((arc or {}).get("ratings") or {}).get(grp, {}).get("systems")
+                   or SYSTEMS)
     base = {"gender": g, "year": yr, "years": years, "group": grp,
             "groups": cgroups, "scope": scope,
-            "systems": list(SYSTEMS), "members": list(MEMBERS),
+            "systems": systems, "members": members,
+            "voters": voters, "n_voters": len(members),
+            "tendency_blurb": dict(TENDENCY_BLURB),
+            "lock_at": (sel or {}).get("lock_at") or lock_threshold(len(members)),
+            "bubble_at": ((sel or {}).get("bubble_at")
+                          or bubble_threshold(len(members))),
             "seats": seats, "road_n": road_n, "field_n": road_n + seats,
             # The RESOLVED season, even with no archive: the empty state's blurb
             # reads it, and None would restore the pre-pilot table.
@@ -7595,12 +7662,19 @@ def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
     if not arc or not ratings or not sel:
         return {**base, "ready": False, "rows": [], "ballots": []}
     schools = _jh_schools(g)
-    order = {"Qualified": 0, "Lock": 1, "In": 2, "Bubble": 3, "Out": 4}
-    # Each member's read of every candidate — the ballot POSITION columns the
-    # owner asked for beside the composite (road teams have no candidate
-    # position; they show a dash).
-    positions = {m: {n: i + 1 for i, n in enumerate(sel["ballots"].get(m) or ())}
-                 for m in MEMBERS}
+    order = {"Qualified": 0, "Lock": 1, "In": 2, "Bubble": 3, "Fringe": 4,
+             "Out": 5}
+    # ‼️ THE BOARD REPORTS A BALLOT COUNT, NOT ONE COLUMN PER VOTER. Five voters
+    # fitted beside nine system columns; twenty-four do not — thirty-three
+    # columns is the horizontal-scroll table this section's own layout rules
+    # exist to prevent, and "on 21 of 24 ballots" is the number the larger
+    # electorate was grown to produce anyway. The per-voter detail lives in the
+    # ballots tab, which is where a coach goes to see WHICH voter left them out.
+    # A season archived before `appearances` folds it from the ranges.
+    appearances = (sel.get("appearances")
+                   or {n: sum(1 for m in members
+                              if n in (sel.get("ranges") or {}).get(m, ()))
+                       for n in ratings["teams"]})
     seed_borda = sel.get("seed_borda") or {}
     # Record Over Expected (owner rule 2026-09) — read off the archived
     # selection (`context`, written beside it from 2080 on); a season archived
@@ -7622,25 +7696,37 @@ def jhsaa_committee_view(seed: int, gender: str, group: str | None = None,
                      "median": t["median"], "sigma": t["sigma"],
                      "ranks": t["ranks"],
                      "borda": borda,
-                     "positions": {m: positions[m].get(name) for m in MEMBERS},
+                     "ballots_on": appearances.get(name),
                      "auto": name in set(sel.get("auto") or ()),
                      "status": sel["status"].get(name, "Out")})
     rows.sort(key=lambda r: (order.get(r["status"], 9),
                              -(r["borda"] or 0), r["mean"], r["school"]))
-    # Ballot view: each member's current top `seats + road` (their read of the
-    # whole field question — 48 or 40), with the weights they are known by.
+    # Ballot view: each voter's current top `seats + road` (their read of the
+    # whole field question — 48 or 40), with the outlet's identity and the
+    # weights it is known by. Ordered by TENDENCY so the tab reads as seven
+    # arguments rather than twenty-four lists, and every entry names its market:
+    # an outlet a reader cannot place is an anonymous number again.
+    ident = {v["name"]: v for v in voters}
+    _order = {t: i for i, t in enumerate(TENDENCIES)}
     ballots = []
-    for m in MEMBERS:
+    for m in sorted(members, key=lambda n: (
+            _order.get((ident.get(n) or {}).get("tendency"), 99), n)):
         top = (sel["ballots"].get(m) or [])[:base["field_n"]]
+        wt = sel.get("weights", {}).get(m, {})
+        iv = ident.get(m) or {}
         ballots.append({"member": m,
-                        "weights": sel.get("weights", {}).get(m, {}),
-                        "heavy": sorted(s for s, wgt in
-                                        sel.get("weights", {}).get(m, {}).items()
-                                        if wgt > 1.0),
+                        "kind": iv.get("kind", ""), "home": iv.get("home", ""),
+                        "area": iv.get("area", ""), "beat": iv.get("beat", ""),
+                        "tendency": iv.get("tendency", ""),
+                        "weights": wt,
+                        # The systems this voter actually reads, heaviest first
+                        # — the published philosophy in one line.
+                        "reads": sorted(wt, key=lambda k: (-wt[k], k)),
                         "top": [{**_jh_deco(schools, n, 20), "school": n,
                                  "status": sel["status"].get(n, "Out")}
                                 for n in top]})
     return {**base, "ready": True, "rows": rows, "ballots": ballots,
+            "ballot_groups": _jh_ballot_groups(ballots, TENDENCY_BLURB),
             "has_context": bool(context),
             "selected": sel.get("selected") or [],
             "auto": sel.get("auto") or [], "locks": sel.get("locks") or []}

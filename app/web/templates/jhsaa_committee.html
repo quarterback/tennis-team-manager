@@ -3,7 +3,10 @@
 {% block title %}JHSAA {{ view.group }} At-Large Committee{% endblock %}
 {% block content %}
 
-{% set LABELS = {'colley': 'Colley', 'bt': 'BT', 'win_pct': 'Win%',
+{# Colley is a RETIRED column and stays in the table: a season rated with it
+   still renders that column, and `view.systems` is the archived season's list. #}
+{% set LABELS = {'markov': 'Markov', 'colley': 'Colley', 'bt': 'BT',
+                 'win_pct': 'Win%',
                  'massey_dual': 'Massey-D', 'srs': 'SRS',
                  'massey_game': 'Massey-G', 'set_share': 'SetShare',
                  'sor': 'SOR', 'elo': 'Elo'} %}
@@ -11,8 +14,9 @@
 {{ jh_header(view.scope, u, 'committee', view.group ~ ' At-Large Committee',
              'The ' ~ view.field_n ~ '-team field: ' ~ view.road_n ~ ' road qualifiers plus '
               ~ view.seats ~ ' committee at-larges, always seeded ' ~ (view.road_n + 1) ~ '-'
-              ~ view.field_n ~ '. Five members, each a fixed published philosophy over the nine
-              computer systems — every selection traces to five ballots, never a coin flip.',
+              ~ view.field_n ~ '. ' ~ view.n_voters ~ ' voters, each a fixed published
+              philosophy over the computer systems. Every selection traces to those
+              ballots, never a coin flip.',
              [('Season', view.season_year|cal), ('At-larges', view.selected|length),
               ('Auto bids', view.auto|length), ('Locks', view.locks|length)]
              if view.ready else []) }}
@@ -36,7 +40,7 @@ the season each class's expanded field began.</div></div>
 
 <div class="bl-panel">
   {{ jh_tabs([('board', 'Selection board', view.rows|length),
-              ('ballots', 'The five ballots', view.ballots|length)], 'jhcomm') }}
+              ('ballots', 'The ballots', view.ballots|length)], 'jhcomm') }}
 
   <div class="jh-pane" data-pane="board">
   <div class="tbl-scroll">
@@ -50,12 +54,12 @@ the season each class's expanded field began.</div></div>
         <th style="width:56px" title="Record Over Expected — actual W% minus expected W%. Negative: the record may underrate the team; positive: it may overstate it. Context only, never a ballot">ROE</th>
         <th style="width:48px" title="Record in duals decided by one flight">1-flt</th>
         {% endif %}
-        <th style="width:52px" title="Mean rank across the nine systems">Mean</th>
+        <th style="width:52px" title="Mean rank across the season&#39;s rating systems">Mean</th>
         <th style="width:44px" title="Median rank">Med</th>
         <th style="width:44px" title="Rank disagreement — the controversy measure">σ</th>
         {% for s in view.systems %}<th style="width:60px">{{ LABELS[s] }}</th>{% endfor %}
-        {% for m in view.members %}<th style="width:52px" title="{{ m }} — this member's ballot position among at-large candidates">{{ m.replace('The ', '') }}</th>{% endfor %}
-        <th style="width:56px" title="Borda count across the five ballots (seed Borda for the selected at-larges, bubble Borda otherwise)">Borda</th>
+        <th style="width:64px" title="How many of the {{ view.n_voters }} at-large ranges this team appears on. {{ view.lock_at }} of {{ view.n_voters }} is a Lock; {{ view.bubble_at }} is serious consideration. Which voters is in the ballots tab">Ballots</th>
+        <th style="width:56px" title="Borda count across all {{ view.n_voters }} ballots (seed Borda for the selected at-larges, bubble Borda otherwise)">Borda</th>
         <th style="width:76px">Status</th>
       </tr>
       {% for r in view.rows %}
@@ -76,13 +80,14 @@ the season each class's expanded field began.</div></div>
         <td>{{ '%.1f'|format(r.median) }}</td>
         <td>{{ '%.1f'|format(r.sigma) }}</td>
         {% for s in view.systems %}<td>{{ r.ranks.get(s, '—') }}</td>{% endfor %}
-        {% for m in view.members %}<td>{{ r.positions.get(m) or '—' }}</td>{% endfor %}
+        <td class="num">{% if r.ballots_on %}{{ r.ballots_on }}<span style="color:var(--text-faint)">/{{ view.n_voters }}</span>{% else %}—{% endif %}</td>
         <td class="num">{{ r.borda if r.borda is not none else '—' }}</td>
         <td>
           {% if r.status == 'Qualified' %}<span class="jh-chip" title="In the road-to-State field — at-large irrelevant">Qualified</span>
-          {% elif r.status == 'Lock' %}<span class="jh-chip gold" title="In the at-large range on all five ballots">Lock</span>
+          {% elif r.status == 'Lock' %}<span class="jh-chip gold" title="On the at-large range of at least {{ view.lock_at }} of the {{ view.n_voters }} ballots">Lock</span>
           {% elif r.status == 'In' %}<span class="jh-chip green" title="Above the Borda cut">In</span>
-          {% elif r.status == 'Bubble' %}<span class="jh-chip" title="Within the Borda window of the cut">Bubble</span>
+          {% elif r.status == 'Bubble' %}<span class="jh-chip" title="Serious consideration — on {{ view.bubble_at }} or more of the {{ view.n_voters }} ranges, below the cut">Bubble</span>
+          {% elif r.status == 'Fringe' %}<span class="jh-chip" style="opacity:.62" title="Some voter had this team in; most did not. Still scored by the Borda count — nothing is pre-cut">Fringe</span>
           {% else %}<span style="color:var(--text-faint)">Out</span>{% endif %}
         </td>
       </tr>
@@ -92,30 +97,44 @@ the season each class's expanded field began.</div></div>
   </div>
 
   <div class="jh-pane" data-pane="ballots" hidden>
+    {# One block per TENDENCY, so the tab reads as a handful of arguments rather
+       than two dozen parallel lists. Each block's columns are the outlets that
+       vote that way; a market's paper, station and radio never share one. #}
+    {% for grp in view.ballot_groups %}
+    {% set bs = grp.ballots %}
+    <div style="padding:10px 14px 4px">
+      <b>{{ grp.label }}</b>
+      <span style="color:var(--text-faint)"> — {{ grp.blurb }}</span>
+    </div>
     <div class="tbl-scroll">
       <table class="jh-ledger nowrap">
         <tr>
           <th style="width:36px">#</th>
-          {% for b in view.ballots %}
-          <th title="Heavy on: {{ b.heavy|map('upper')|join(', ') }} — weights {{ b.weights }}">{{ b.member }}</th>
+          {% for b in bs %}
+          <th title="{{ b.kind }}, {{ b.home }} ({{ b.area }}) — beat: {{ b.beat }}. Reads {% for s in b.reads %}{{ LABELS.get(s, s) }} {{ '%.0f'|format(b.weights[s] * 100) }}%{{ ', ' if not loop.last }}{% endfor %}">
+            {{ b.member }}
+            <span style="display:block;font-weight:400;color:var(--text-faint)">{{ b.home }}{% if b.beat and b.beat != b.area %} · {{ b.beat }}{% endif %}</span>
+          </th>
           {% endfor %}
         </tr>
         {% for i in range(view.field_n) %}
         <tr>
           <td>{{ i + 1 }}</td>
-          {% for b in view.ballots %}
-          {% set t = b.top[i] if i < b.top|length else none %}
-          <td>{% if t %}<span class="jh-schoolcell">{{ t.mark|safe }}
-              <span title="{{ t.status }}">{{ t.school }}</span></span>{% else %}—{% endif %}</td>
+          {% for b in bs %}
+          {% set tm = b.top[i] if i < b.top|length else none %}
+          <td>{% if tm %}<span class="jh-schoolcell">{{ tm.mark|safe }}
+              <span title="{{ tm.status }}">{{ tm.school }}</span></span>{% else %}—{% endif %}</td>
           {% endfor %}
         </tr>
         {% endfor %}
       </table>
     </div>
+    {% endfor %}
     <div style="padding:8px 14px;color:var(--text-faint)">
-      Each member is a fixed philosophy over the nine systems, published in the
-      column tooltips. A coach reading which member keeps them out is the point
-      of this tab.
+      {{ view.n_voters }} voters. Each is a fixed set of weights over the computer
+      systems — published in the column tooltips, with no hidden judgement — so every
+      ranking on this tab can be explained exactly. A coach reading which voter keeps
+      them out is the point of it.
     </div>
   </div>
 

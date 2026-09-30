@@ -20,7 +20,7 @@ CHAIN = [_row("A", "B", 5, 2, idx=0), _row("B", "C", 6, 1, idx=1),
 
 def test_every_system_orders_the_unambiguous_chain():
     systems = {
-        "colley": jr.colley(CHAIN), "bt": jr.bradley_terry(CHAIN),
+        "markov": jr.markov(CHAIN), "bt": jr.bradley_terry(CHAIN),
         "win_pct": jr.win_pct(CHAIN), "massey_dual": jr.massey_dual(CHAIN),
         "srs": jr.srs(CHAIN), "elo": jr.elo(CHAIN),
     }
@@ -29,20 +29,115 @@ def test_every_system_orders_the_unambiguous_chain():
         assert vals["A"] > vals["B"] > vals["C"], (name, vals)
 
 
-def test_colley_two_team_known_answer():
-    """One dual, A beats B: the standard Colley 2x2 solves to 0.625 / 0.375."""
-    vals = jr.colley([_row("A", "B", 4, 3)])
+def test_the_colley_matrix_survives_as_the_set_share_adjustment():
+    """Colley was RETIRED AS A COLUMN (owner rule 2026-09, replaced by the Markov
+    chain) and the MATRIX is still in the layer: `set_share` is a fractional-win
+    Colley, which is where the method earns its place. One dual, A beats B, and
+    the standard 2x2 still solves to 0.625 / 0.375."""
+    assert not hasattr(jr, "colley"), "the retired column is back"
+    assert "colley" not in jr.SYSTEMS
+    vals = jr._colley_frac([_row("A", "B", 4, 3)],
+                           lambda r: 1.0 if jr.home_won(r) else 0.0)
     assert abs(vals["A"] - 0.625) < 1e-9
     assert abs(vals["B"] - 0.375) < 1e-9
+    # ‼️ And its paragraph stays, because a season rated with it renders it.
+    assert "colley" in jr.GLOSSARY
 
 
-def test_massey_and_srs_two_team_known_answer():
+def test_markov_two_team_known_answer():
+    """One dual, A beats B. B's voter walks to A; A has no loss to walk along, so
+    it is a dangling row and spreads its mass uniformly. The pair is pinned by the
+    balance equations themselves rather than by a copied number, and A must hold
+    more than half of the distribution either way."""
+    d = jr.MARKOV_DAMPING
+    v = jr.markov([_row("A", "B", 4, 3)])
+    a, b = v["A"], v["B"]
+    assert abs(a + b - 1.0) < 1e-9, "a stationary distribution sums to one"
+    # Balance: A receives (1-d)/2 + d*b (B's whole vote) + d*a/2 (A's dangling
+    # half); B receives (1-d)/2 + d*a/2.
+    assert abs(a - ((1 - d) / 2 + d * b + d * a / 2)) < 1e-9
+    assert abs(b - ((1 - d) / 2 + d * a / 2)) < 1e-9
+    assert a > 0.5 > b
+
+
+def test_markov_is_defined_on_a_broken_schedule_but_cannot_bridge_it():
+    """It rates a disconnected graph — no singular matrix, no withheld column,
+    because the damping links every pair. ‼️ AND IT DOES NOT MAKE THE COMPONENTS
+    COMPARABLE, which a first draft of the docstring claimed: mass crosses
+    between components, evidence does not, so a strong island and a weak one
+    overlap. Nothing can do better — with no dual between them there is nothing
+    to order them by — and this test exists so the stronger claim cannot creep
+    back in."""
+    rows = [_row("A", "B", 5, 2, idx=0), _row("C", "D", 6, 1, idx=1)]
+    v = jr.markov(rows)
+    assert set(v) == {"A", "B", "C", "D"}
+    assert v["A"] > v["B"] and v["C"] > v["D"]      # ordered inside a component
+    assert abs(sum(v.values()) - 1.0) < 1e-9
+    # The two islands are structurally identical — one dual, one winner — so the
+    # chain rates A and C the same and B and D the same, however lopsided the
+    # flights inside each were (5-2 against 6-1). That is the bridge it cannot
+    # build, and it is margin-blind besides.
+    assert abs(v["A"] - v["C"]) < 1e-12
+    assert abs(v["B"] - v["D"]) < 1e-12
+
+
+def test_markov_carries_a_win_transitively_where_bradley_terry_cannot():
+    """What the chain adds to the record family: beating a team that beat good
+    teams pays. Two 1-1 teams, and the one whose win came over the chain's top
+    team rates higher — a distinction Win% cannot make at all."""
+    rows = [_row("T", "U", 6, 1, idx=0),     # T is the field's best
+            _row("X", "T", 4, 3, idx=1),     # X beat the best
+            _row("V", "X", 5, 2, idx=2),     # X also lost once
+            _row("Y", "W", 4, 3, idx=3),     # Y beat a nobody
+            _row("V", "Y", 5, 2, idx=4)]     # Y also lost once
+    v = jr.markov(rows)
+    w = jr.win_pct(rows)
+    assert w["X"] == w["Y"], "the records are identical by construction"
+    assert v["X"] > v["Y"]
+
+
+def test_massey_two_team_known_answer():
     """A beats B 6-1: NORMALISED margin 5/7 (owner rule — a 5-0, 7-0 and 9-0
     are all +1.0), so the relative ratings are +-(5/7)/2, centred at zero."""
     m = jr.massey_dual([_row("A", "B", 6, 1)])
     assert abs(m["A"] - 5 / 14) < 1e-6 and abs(m["B"] + 5 / 14) < 1e-6
-    s = jr.srs([_row("A", "B", 6, 1)])
-    assert abs(s["A"] - 5 / 14) < 1e-6 and abs(s["B"] + 5 / 14) < 1e-6
+
+
+def test_srs_caps_the_margin_and_that_is_its_whole_difference():
+    """‼️ UNCAPPED, SRS IS `massey_dual` UNDER ANOTHER NAME — dividing Massey's
+    normal equations by a team's dual count IS SRS's fixed point, so the two
+    agreed to 1e-10 and ranked every team identically (measured; on the owner's
+    real 2029 pages all 57 rows of 10B and all 55 of 11B matched, and σ averaged
+    in a pair that could never disagree). The CAP is what makes it a system.
+
+    Below the cap the two still agree exactly — that is what proves the cap is
+    the ONLY difference, so a future edit to either one is caught here."""
+    under = [_row("A", "B", 4, 3)]                     # margin 1/7, under 0.5
+    m, s = jr.massey_dual(under), jr.srs(under)
+    assert abs(m["A"] - s["A"]) < 1e-9 and abs(m["B"] - s["B"]) < 1e-9
+    over = [_row("A", "B", 6, 1)]                      # margin 5/7, over 0.5
+    m, s = jr.massey_dual(over), jr.srs(over)
+    assert abs(m["A"] - 5 / 14) < 1e-6                 # uncapped
+    assert abs(s["A"] - jr.SRS_MARGIN_CAP / 2) < 1e-6  # capped, and so lower
+    assert s["A"] < m["A"]
+    # A sweep past the cap is worth no more than a comfortable win.
+    assert abs(jr.srs([_row("A", "B", 9, 0)])["A"] - s["A"]) < 1e-9
+
+
+def test_srs_and_massey_dual_are_not_the_same_ranking():
+    """The composite counts margin-plus-schedule ONCE. A regression that
+    un-caps SRS makes two of the nine columns identical again, which reads as a
+    tidy page rather than as a fault."""
+    import random
+    rng = random.Random(7)
+    teams = [f"T{i}" for i in range(16)]
+    rows = []
+    for _ in range(240):
+        h, a = rng.sample(teams, 2)
+        hp, ap = rng.choice([(5, 0), (4, 1), (3, 2), (7, 2), (5, 4), (9, 0)])
+        rows.append(_row(h, a, hp, ap))
+    order = lambda d: [n for n in sorted(d, key=lambda n: -d[n])]
+    assert order(jr.massey_dual(rows)) != order(jr.srs(rows))
 
 
 def test_margins_are_format_normalised():
@@ -147,7 +242,8 @@ def test_disconnected_schedule_is_reported_not_fit():
         assert "massey_dual" not in t["ranks"]
         assert "srs" not in t["ranks"]
         assert "massey_game" not in t["ranks"]
-        assert "colley" in t["ranks"]           # the record family still rates
+        assert "markov" in t["ranks"]           # ‼️ never withheld — see `markov`
+        assert "bt" in t["ranks"]               # the record family still rates
 
 
 def test_composite_sigma_measures_engineered_disagreement():
