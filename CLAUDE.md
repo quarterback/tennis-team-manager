@@ -902,7 +902,30 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   `docs/AAR-jhsaa-computer-ratings-and-at-large-committee.md`).** Nine
   independent systems + composite per (group, gender), archived on the season
   (`ratings` key, the `pi` rule — never refit on read), PARALLEL to TOSS/ATR
-  and feeding neither. **THE PARASTATE CLASSES — EVERY class since the 2080
+  and feeding neither. ‼️ **COLLEY IS A RETIRED COLUMN, REPLACED BY A DAMPED
+  MARKOV CHAIN (owner rule 2026-09)** — the random-walk family (Callaghan-
+  Mucha-Porter / GeM), the one thing the other eight do not do, which is carry a
+  win TRANSITIVELY along the chain of results (measured: moves 73 of 80 ranks
+  against the Colley column it replaced). The Colley MATRIX stayed: `set_share`
+  IS a fractional-win Colley (`_colley_frac`), so a column went and not a
+  technique. Keener (needs an irreducible matrix, so it fails on the thin pod
+  graphs it would be wanted for), KRACH (an alias of Bradley-Terry — the
+  duplication the SRS cap had just removed), Glicko/TrueSkill/WHR (Elo plus a
+  variance an archived rating can never use) and minimum-violations (NP-hard, so
+  a heuristic's answer) were all surveyed and rejected; **offence-defence**
+  (Govan-Langville-Meyer — the only family returning TWO numbers per team) is the
+  live candidate if a tenth is ever wanted. ‼️ Markov IS defined on a
+  disconnected schedule and that does NOT make the components comparable — a
+  first draft claimed it did, and a measurement on two isolated pods (strong
+  0.025-0.153, weak 0.032-0.139, overlapping) says the damping carries mass
+  between components and no EVIDENCE. Nothing can: with no dual between two
+  groups there is nothing to order them by.
+  ‼️ **THE COLUMNS AND THE ELECTORATE ARE THE ARCHIVED SEASON'S, NEVER TODAY'S
+  MODULE** (the `pi` rule, the seat-count idiom): `group_ratings` archives its
+  own `systems` list and `select` archives `voters`/`weights`/`lock_at`, and both
+  views read from there — off the module, a retired column blanks and an empty new
+  one prints across every season ever played. `GLOSSARY` keeps its Colley
+  paragraph for good. **THE PARASTATE CLASSES — EVERY class since the 2080
   expansion (JHSAA rule 2026-09, EXPANDED 2026-09, EXPANDED AGAIN for 2080,
   `docs/AAR-jhsaa-playoff-expansion-parastate.md` +
   `docs/AAR-jhsaa-2080-group2-group3-playoff-expansion.md`): 8A, 9A and Group 1
@@ -913,9 +936,10 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   Parastate plays its own 3S/3D and a level dual is settled by the deciders like
   any other Group 2 postseason dual) (`AT_LARGE_BIDS`, `ATLARGE_GROUPS` derived from it,
   `run_state_parastate(byes= road − bids)`): the road qualifies its own
-  `state_field_size` untouched — the TABLE never says 48/40 — and a five-member
-  deterministic committee (`select(seats=)`) picks the bids from EVERY non-road
-  team (a district champion who missed the road is automatic and CONSUMES a bid)
+  `state_field_size` untouched — the TABLE never says 48/40 — and a **TWENTY-FOUR
+  member** deterministic committee (`select(seats=)`) picks the bids from EVERY
+  non-road team (a district champion who missed the road is automatic and
+  CONSUMES a bid)
   — and **an at-large is ALWAYS seeded below every road qualifier**,
   structurally. The Parastate is the `2 × bids` lowest seeds high-low
   (17v48…32v33; 25v40…32v33 at a 32 road; 17v32…24v25 in 1A), winners keep their
@@ -925,7 +949,43 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   40 ROAD and no class is on one. Margins in the margin systems are
   FORMAT-NORMALISED (a 5-0, 7-0 and 9-0 are all +1.0) — never feed raw margins
   across mixed formats.
-  **‼️ THE METASTATE — a SECOND qualifying layer in FRONT of the Parastate
+  **‼️ THE ELECTORATE IS 24 NAMED JEFFERSON MEDIA OUTLETS OVER 7 PHILOSOPHIES
+  (owner rule 2026-09, `jhsaa_committee.VOTERS` / `TENDENCIES` /
+  `TENDENCY_SEATS`).** Two questions that had been conflated: how many
+  PHILOSOPHIES the committee needs (seven — enough not to be a few formulas
+  wearing human names) and how big the ELECTORATE is (twenty-four — enough to be
+  a state). Five was too small arithmetically: one voter WAS 20% of it, a 3-2
+  split was the narrowest possible majority, the whole look-at-everything
+  position was one member, and a new rating could only reach the committee
+  through whichever member read it. At 24 a team appears on 21 ballots or 14 or
+  8 — granularity 5/5, 4/5, 3/5 cannot express — and one strange ballot cannot
+  throw a team ten seed lines through the Borda count. ‼️ **THE OUTLETS, CALL
+  SIGNS, MASTHEADS AND MARKETS ARE THE OWNER'S OWN LIST** and are not an agent's
+  to rename (an agent drafted its own roster first and it was discarded — the
+  private-school-layer rule holds for a TV station as firmly as for a school);
+  only the tendency each votes on and its weights are the module's. Seats follow
+  the owner's shape: FOUR voters each for the frames a selection argument is
+  fought over (record, schedule, margin), three each for resume, network, form
+  and consensus. ‼️ **A market never casts one opinion twice** — three outlets
+  share Port Veles and two share four other markets, so a city's paper, station
+  and radio sit in three DIFFERENT tendencies, asserted at import — and **every
+  market is a real Jefferson city**, verified against `schools.json` with its
+  area on the voter. ‼️ **A LOCK IS A SHARE, NEVER A COUNT** (`LOCK_SHARE` 6/7 →
+  **21 of 24**): at five voters a lock was literal unanimity, but with seven
+  divergent philosophies one specialist erases almost every lock, and 21 of 24 is
+  stronger evidence in absolute terms than the old 5 of 5 while allowing three
+  principled dissents — written as the fraction so the bar tracks the roster. A
+  **`Fringe`** band sits under the bubble (`bubble_threshold()`, 12 of 24) and is
+  a LABEL, NEVER A CUT: nothing pre-cuts the pool, so a team on one ballot is
+  still Borda-scored. Both thresholds are provisional by owner note — calibrate
+  them off real seasons. The `consensus` vector is DERIVED from
+  `jhsaa_ratings.SYSTEMS` (`_consensus`), so dropping a system cannot leave a
+  stale hand-typed tuple — which is exactly what the old Balancer was. ‼️ **The
+  board reports a COUNT ("21 of 24"), never a column per voter**: five member
+  columns fitted beside nine system ones and 24 do not, and a 33-column table is
+  what this section's layout rules exist to prevent — the per-voter detail is the
+  ballots tab, grouped by tendency so it reads as seven arguments.
+    **‼️ THE METASTATE — a SECOND qualifying layer in FRONT of the Parastate
   (owner rule 2026-09, `jhsaa.METASTATE_GROUPS`, `docs/AAR-jhsaa-metastate.md`).**
   Shortened **metas**, as epis and supers are. The Parastate paired the `2 × bids`
   lowest seeds, so a 48's seeds 17-24 drew 41-48 and **won 279 of 288 over six

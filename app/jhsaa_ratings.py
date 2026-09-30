@@ -44,7 +44,19 @@ import math
 import statistics
 
 #: The nine systems, in the page's column order. Keys are stable archive keys.
-SYSTEMS = ("colley", "bt", "win_pct", "massey_dual", "srs",
+#:
+#: ‼️ COLLEY WAS DROPPED FOR THE MARKOV CHAIN (owner rule 2026-09), and the
+#: COLUMN is all that went: the Colley matrix is still in the layer, because
+#: `set_share` IS a fractional-win Colley (`_colley_frac`) and that is where the
+#: method earns its place. What the column was — margin-blind, schedule-adjusted,
+#: closest neighbour of Bradley-Terry — the Markov chain does too, and it does it
+#: on a schedule graph that Colley, Massey and SRS all need to be connected.
+#: ‼️ A SEASON KEEPS THE SYSTEMS IT WAS RATED WITH. The layer archives its own
+#: `systems` list beside the values (`group_ratings`) and every reader takes the
+#: columns from THERE, so a season rated with Colley still renders a Colley
+#: column and a pre-Markov season shows no Markov one — the `pi` rule, never a
+#: refit on read. `GLOSSARY` therefore keeps its Colley paragraph for good.
+SYSTEMS = ("markov", "bt", "win_pct", "massey_dual", "srs",
            "massey_game", "set_share", "sor", "elo")
 
 #: Elo constants — viperball's, minus home-field (JHSAA hosting alternates and
@@ -264,9 +276,93 @@ def home_won(r: dict) -> bool | None:
     return r["hp"] > r["ap"]
 
 
-def colley(rows: list[dict]) -> dict[str, float]:
-    """System 1 — Colley: wins and losses with schedule adjustment."""
-    return _colley_frac(rows, lambda r: {True: 1.0, False: 0.0}.get(home_won(r), 0.5))
+#: The damping weight of the Markov chain — PageRank's canonical 0.85. Every
+#: iteration sends 15% of the mass uniformly across the field instead of along a
+#: result, which is what makes the chain irreducible on ANY schedule and so what
+#: makes the system answer where the least-squares family cannot.
+MARKOV_DAMPING = 0.85
+
+
+def markov(rows: list[dict]) -> dict[str, float]:
+    """System 1 — a damped random walk on the results graph (the Callaghan-
+    Mucha-Porter random walker, and GeM's family): every team holds one voter,
+    each voter hands its vote to whoever beat it, and a rating is where the votes
+    settle. Margin-blind like the record family — a win is a win — but the vote
+    travels TRANSITIVELY: beating a team that beat good teams pays, however many
+    links down the chain the evidence sits, which is the one thing none of the
+    other eight do.
+
+    ‼️ WHAT IT ADDS IS TRANSITIVITY, AND THAT IS THE MEASURED CLAIM. Against the
+    Colley column it replaced, on a pod-shaped 80-team schedule, it moved 73 of
+    80 teams' ranks (mean 5.1 places, max 19) at a rank correlation of +0.96 — a
+    genuinely different ordering rather than a third view of the record. It is
+    also, on a connected graph, marginally the WEAKEST of the record family at
+    recovering true strength (correlation with the generator's own skill: BT
+    +0.92, Colley +0.90, Markov +0.88, Win% +0.87), which is not a defect of the
+    system: this page exists to show nine honest disagreements, not to crown one
+    best rating, and the Borda committee reads ranks from every one of them.
+
+    ‼️ IT IS ALSO DEFINED ON A DISCONNECTED SCHEDULE — no singular matrix, no
+    withheld column, because `MARKOV_DAMPING` puts a small uniform link between
+    every pair and the chain is irreducible whatever the schedule looks like. ‼️
+    THAT IS NOT THE SAME AS COMPARING ACROSS COMPONENTS, and a first draft of
+    this docstring claimed it was. MEASURED on two isolated pods, one built far
+    stronger than the other: the strong pod rates 0.025-0.153 and the weak pod
+    0.032-0.139 — overlapping, so the damping carries mass between components but
+    no EVIDENCE, and it cannot. Nothing can: with no dual between two groups of
+    teams there is nothing in the results to order them by. Colley answers on a
+    broken graph too (per component, each floating around 0.5). The honest
+    statement is that Markov is defined there and that its answer inside a
+    component is transitive; `group_ratings` still REPORTS `disconnected` and the
+    page still says so.
+
+    Two edge rules, both deliberate. A drawn dual (Group 2's 3S/3D league ties)
+    SPLITS the vote. An undefeated team has no result to vote along — a dangling
+    row — and spreads its mass uniformly instead: PageRank's own treatment, and
+    never a self-loop, which would make it an absorbing sink and hand it the
+    whole distribution however thin its schedule.
+    """
+    names, idx = _index(rows)
+    n = len(names)
+    if not n:
+        return {}
+    # Sparse vote lists: `out_edges[loser] = [(winner, votes), ...]`. Sparse
+    # rather than an n x n matrix because a class runs to ~130 programs and the
+    # iteration is per edge, not per pair.
+    tally: dict[tuple[int, int], float] = {}
+    for r in rows:
+        hi, ai = idx[r["home"]], idx[r["away"]]
+        hw = home_won(r)
+        if hw is None:                         # a level dual: half a vote each way
+            tally[(hi, ai)] = tally.get((hi, ai), 0.0) + 0.5
+            tally[(ai, hi)] = tally.get((ai, hi), 0.0) + 0.5
+        else:
+            lo, wi = (ai, hi) if hw else (hi, ai)
+            tally[(lo, wi)] = tally.get((lo, wi), 0.0) + 1.0
+    out_edges: list[list[tuple[int, float]]] = [[] for _ in range(n)]
+    for (lo, wi), v in sorted(tally.items()):
+        out_edges[lo].append((wi, v))
+    out_sum = [sum(v for _, v in e) for e in out_edges]
+    d, u = MARKOV_DAMPING, 1.0 / n
+    val = [u] * n
+    for _ in range(1000):
+        new = [(1.0 - d) * u] * n
+        leak = 0.0
+        for i in range(n):
+            if out_sum[i]:
+                share = d * val[i] / out_sum[i]
+                for j, v in out_edges[i]:
+                    new[j] += share * v
+            else:
+                leak += d * val[i]             # dangling — uniform, never a sink
+        if leak:
+            for j in range(n):
+                new[j] += leak * u
+        delta = max(abs(new[i] - val[i]) for i in range(n))
+        val = new
+        if delta < 1e-13:
+            break
+    return {names[i]: val[i] for i in range(n)}
 
 
 def bradley_terry(rows: list[dict]) -> dict[str, float]:
@@ -556,7 +652,9 @@ def group_ratings(teams: list) -> dict:
     names = sorted(t.school.name for t in teams)
     disconnected = not connected(rows, teams)
     values: dict[str, dict] = {
-        "colley": colley(rows),
+        # ‼️ MARKOV IS NEVER WITHHELD — being defined on a disconnected graph is
+        # the reason it is here (see `markov`).
+        "markov": markov(rows),
         "bt": bradley_terry(rows),
         "win_pct": win_pct(rows),
         "set_share": set_share(rows),
@@ -590,6 +688,18 @@ def group_ratings(teams: list) -> dict:
 
 #: One-paragraph glossary per system (spec 1.5), rendered on the ratings page.
 GLOSSARY = {
+    "markov": ("Markov — a voter at every team, handing its vote to whoever beat "
+               "it, over and over until the votes settle. Margin-blind like the "
+               "record systems, but a win travels: beating a team that beat good "
+               "teams pays however far down the chain that evidence sits. The "
+               "only system that still answers when the schedule graph breaks "
+               "into pieces, so on a class whose card is mostly inside its own "
+               "pod this is the schedule-adjusted column that survives. "
+               "Over-rates a team whose one good win came against a team with a "
+               "huge résumé; under-rates an undefeated team nobody tested."),
+    # Retired as a column (owner rule 2026-09, replaced by Markov) and KEPT
+    # here: seasons rated with it still render a Colley column, and the readers
+    # take their column list off the archive.
     "colley": ("Colley — wins and losses run through a schedule adjustment: "
                "beating teams that themselves win is worth more. Ignores margin "
                "entirely, so it over-rates teams that win close and under-rates "

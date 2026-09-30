@@ -152,3 +152,128 @@ disconnected report, engineered-σ composite, State/TOC exclusion) and
 under a top-ranked at-large, automatic bids, ballot independence,
 full-ordering bubble Borda, Parastate pairings + seed retention + 48→32→…→2).
 Plus the two routes in the empty-state route sweep.
+
+---
+
+## Addendum — Colley out, Markov in, and a 24-outlet electorate (owner rules 2026-09)
+
+Two changes in one pass, and they belong together: adding a tenth measurement
+while leaving five voters in place would only have nudged one Balancer's average.
+
+### 1. The Markov chain replaced Colley
+
+Surveyed the field first rather than answering from memory (an earlier draft of
+this answer did, and the owner caught it). Massey's own comparison roster —
+Dickinson, Houlgate, Dunkel, Boand, Williamson, Litkenhous, Poling, Berryman,
+Billingsley, Anderson-Hester, Wolfe, Sagarin, Congrove, ARGH — is almost entirely
+*parameterisations*, not new mathematics; Wikipedia's survey collapses the whole
+field into three families (permutation of standings, trading skill points,
+solving equations) and the nine already covered all three. Four families were
+genuinely absent:
+
+| Family | Representative | Verdict |
+|---|---|---|
+| Markov / random walk | Callaghan-Mucha-Porter; LRMC; GeM | **Added** |
+| Offence-defence | Govan-Langville-Meyer (Sinkhorn-Knopp) | Best second candidate — the only family returning TWO numbers per team, and tennis supplies the currency natively (flights taken vs conceded). Not built: a team that wins no flight all season is an all-zero row needing smoothing, and the flight-efficiency page answers part of it. |
+| Keener eigenvector | Keener, *SIAM Review* 35 (1993) | Rejected — the preference matrix must be irreducible, so it fails exactly on the thin pod graphs where it would be wanted. |
+| Rating uncertainty | Glicko, TrueSkill, WHR | Rejected — Elo plus a variance term, and a rating archived and never refit has nowhere to use the variance. |
+
+Also rejected: **KRACH** (an alias of Bradley-Terry — adding it would reinstate
+exactly the duplication the SRS cap had just removed), **Billingsley-style
+recency** (a weighting of a model already present, and Elo is the system where
+*when* you won counts), and **minimum-violations / retrodictive** ranking
+(distinctive output, but exactly NP-hard, so it ships as a heuristic whose answer
+depends on the heuristic — wrong for a determinism-first module).
+
+Colley was the column dropped because the layer carried three record-only
+systems and Colley's reading is Bradley-Terry's near neighbour. **The Colley
+MATRIX did not leave**: `set_share` *is* a fractional-win Colley (`_colley_frac`),
+which is where the method earns its place. A column went, not a technique —
+pinned by `test_the_colley_matrix_survives_as_the_set_share_adjustment`.
+
+**Measured** on a pod-shaped 80-team, 415-dual schedule: Markov moved 73 of 80
+teams' ranks against the Colley column (mean 5.1 places, max 19) at a rank
+correlation of +0.96 — a different ordering, not a third view of the record.
+Correlation with the generator's own skill: BT +0.92, Colley +0.90, **Markov
++0.88**, Win% +0.87, so on a connected graph it is marginally the weakest of the
+four at recovering strength. That is not a defect. The page exists to publish
+nine honest disagreements, and what Markov contributes is transitivity: two teams
+with identical records separate when one's win came over the chain's best team
+(`test_markov_carries_a_win_transitively_where_bradley_terry_cannot`).
+
+> ‼️ **A CLAIM WRITTEN INTO A DOCSTRING BEFORE IT WAS MEASURED, AND IT WAS
+> WRONG.** The first draft said Markov made a disconnected class comparable —
+> "the schedule-adjusted column that survives" — and the template said so on the
+> page. It is defined on a broken graph (no singular matrix, no withheld column),
+> but that is a different statement. Measured on two isolated pods, one built far
+> stronger: strong pod 0.025-0.153, weak pod 0.032-0.139, overlapping. The
+> damping carries MASS between components and no EVIDENCE, and nothing can do
+> better — with no dual between two groups of teams there is nothing in the
+> results to order them by. Colley answered on a broken graph too, per component.
+> `test_markov_is_defined_on_a_broken_schedule_but_cannot_bridge_it` exists so
+> the stronger claim cannot creep back.
+
+### 2. Five voters became twenty-four
+
+Owner rule 2026-09, separating two questions that had been conflated: how many
+PHILOSOPHIES the committee needs, and how big the ELECTORATE is. It needs enough
+philosophies not to be a few formulas wearing human names — seven — and an
+electorate big enough to be a state.
+
+Why five was too small, arithmetically: one voter *was* 20% of the electorate, a
+3-2 split was the narrowest possible majority, a "unanimous lock" meant five
+perspectives agreeing, the entire look-at-everything position was one member, and
+a new rating could only reach the committee through whichever member read it. At
+twenty-four a team appears on 21 ballots or 14 or 8 — granularity 5/5, 4/5, 3/5
+cannot express — and one idiosyncratic ballot can no longer throw a team ten seed
+lines through the Borda count.
+
+- **The 24 outlets are the OWNER'S OWN LIST** — call signs, mastheads, types and
+  markets exactly as handed over. An agent drafted a roster of its own first and
+  it was discarded: names are the owner's to pick, and that holds for a TV station
+  as firmly as for a school. What this module chose is only which philosophy each
+  outlet votes on, and its weights.
+- **Seats per tendency** follow the owner's own shape (`TENDENCY_SEATS`): four
+  voters each for the three frames a selection argument is actually fought over —
+  record, schedule, margin — and three each for resume, network, form and
+  consensus. 24 in all.
+- **A market never casts one opinion twice.** Three outlets share Port Veles and
+  two share four other markets; a city's paper, station and radio sit in three
+  different tendencies, asserted at import. Ten of the twenty areas carry an
+  outlet, weighted to the populous ones, which is how media markets fall.
+- **Every market is a real Jefferson city**, verified against
+  `data/jhsaa/schools.json` with its area recorded on the voter and pinned by
+  `test_every_market_is_a_real_jefferson_city`.
+- **A LOCK IS A SHARE, NEVER A COUNT** (`LOCK_SHARE` = 6/7 → **21 of 24**). At
+  five voters a lock was literal unanimity, a fair reading of "every reasonable
+  interpretation thinks this team belongs". With seven deliberately divergent
+  philosophies unanimity is brittle — one specialist erases almost every lock —
+  and 21 of 24 is stronger evidence in absolute terms than the old 5 of 5 while
+  allowing three principled dissents. Written as the fraction so the bar tracks
+  the roster: `lock_threshold(7) == 6`, `lock_threshold(5) == 5`.
+- **A `Fringe` band** under the bubble (`bubble_threshold()`, 12 of 24 — the
+  owner's "serious consideration" line). ‼️ It is a LABEL and never a cut: the
+  spec's rule is that nothing pre-cuts the pool, so a team on one ballot is still
+  scored by the Borda count. Pinned.
+- **The `consensus` vector is DERIVED from `jhsaa_ratings.SYSTEMS`** (`_consensus`),
+  so dropping Colley could not leave a stale hand-typed nine-tuple behind — which
+  is exactly what the old Balancer was.
+- **Thresholds are provisional.** The owner's own note: calibrate them from real
+  seasons rather than choosing them now. They are two named constants.
+
+### 3. What the page does with two dozen voters
+
+- **The board reports a COUNT, not a column per voter.** Five member columns fitted
+  beside nine system columns; twenty-four do not — 33 columns is the
+  horizontal-scroll table this section's layout rules exist to prevent, and "on 21
+  of 24 ballots" is the number the larger electorate was grown to produce anyway.
+- **The ballots tab is grouped by tendency**, seven blocks of three or four
+  columns, each column naming its outlet, market and beat, with the published
+  weights in the tooltip. Seven arguments, not twenty-four parallel lists.
+- ‼️ **THE ELECTORATE AND THE SYSTEM COLUMNS ARE THE ARCHIVED SEASON'S** (the `pi`
+  rule, the same reason the seat count already was). A season selected by the
+  original five renders with those five and their weights; a season rated with
+  Colley renders a Colley column and a pre-Markov season renders none. Reading
+  the module here would blank a retired column and print an empty new one across
+  every season ever played, so `select` archives `voters`/`weights`/`lock_at` and
+  `group_ratings` archives `systems`, and both views read from there.

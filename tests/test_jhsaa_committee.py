@@ -8,6 +8,7 @@ import pytest
 from app import jhsaa as jh
 from app import jhsaa_committee as jc
 from app.jhsaa_ratings import SYSTEMS
+from app import jhsaa_ratings as jr
 
 
 def _ratings(n=60, twist=None):
@@ -72,19 +73,83 @@ def test_a_district_champion_who_missed_the_road_is_automatic():
 
 
 def test_ballot_independence():
-    """Changing one member's weights changes only that member's ballot."""
+    """Changing one voter's weights changes only that voter's ballot."""
+    who = "KBYK 4"                                  # a `form` voter, Elo-led
     r = _ratings(twist={"elo": {f"T{i:02d}": 61 - i for i in range(1, 61)}})
     before = jc.ballots(r)
-    saved = jc.MEMBERS["The Eye Test"]
+    saved = jc.MEMBERS[who]
     try:
-        jc.MEMBERS["The Eye Test"] = {"elo": 1.0}
+        jc.MEMBERS[who] = {"elo": 1.0}
         after = jc.ballots(r)
     finally:
-        jc.MEMBERS["The Eye Test"] = saved
-    assert after["The Eye Test"] != before["The Eye Test"]
+        jc.MEMBERS[who] = saved
+    assert after[who] != before[who]
     for m in jc.MEMBERS:
-        if m != "The Eye Test":
+        if m != who:
             assert after[m] == before[m], m
+
+
+def test_the_electorate_is_twenty_four_named_outlets_over_seven_philosophies():
+    """‼️ The two questions the owner separated (rule 2026-09): how many
+    PHILOSOPHIES, and how many VOTERS. Seven tendencies, twenty-four outlets,
+    three or four per tendency, and no market casting one opinion twice."""
+    assert len(jc.VOTERS) == len(jc.MEMBERS) == 24
+    assert len(jc.TENDENCIES) == 7
+    assert sum(jc.TENDENCY_SEATS.values()) == 24
+    for t, n in jc.TENDENCY_SEATS.items():
+        assert sum(1 for v in jc.VOTERS if v.tendency == t) == n, t
+    for city in {v.home for v in jc.VOTERS}:
+        ts = [v.tendency for v in jc.VOTERS if v.home == city]
+        assert len(set(ts)) == len(ts), city
+    # Every voter reads real systems, and only the `consensus` seats read all.
+    for v in jc.VOTERS:
+        assert set(v.weights) <= set(jr.SYSTEMS), v.name
+        assert abs(sum(v.weights.values()) - 1.0) < 1e-9, v.name
+        assert (len(v.weights) == len(jr.SYSTEMS)) == (v.tendency == "consensus")
+
+
+def test_every_market_is_a_real_jefferson_city():
+    """The outlets are the owner's own list and each sits in a city that exists
+    in `schools.json`, with the area recorded on the voter. A committee covering
+    nowhere in particular would be the one part of this association that did."""
+    import json
+    rows = json.load(open("data/jhsaa/schools.json"))["schools"]
+    where = {}
+    for r in rows:
+        where.setdefault(r.get("city", ""), set()).add(r.get("area", ""))
+    for v in jc.VOTERS:
+        assert v.home in where, f"{v.name}: {v.home} is not a Jefferson city"
+        assert v.area in where[v.home], f"{v.name}: {v.home} is not in {v.area}"
+
+
+def test_a_lock_is_a_share_of_the_electorate_not_unanimity():
+    """‼️ At five voters a lock WAS unanimity; with seven divergent philosophies
+    one specialist erases almost every lock, so the bar is `LOCK_SHARE` — six of
+    seven, which is 21 of 24 — and it tracks the roster size rather than being
+    typed."""
+    assert jc.lock_threshold(24) == 21
+    assert jc.lock_threshold(7) == 6
+    assert jc.lock_threshold(5) == 5                # the old committee's own bar
+    assert jc.lock_threshold(24) < len(jc.MEMBERS), "unanimity is back"
+    # A team one voter left out is still a Lock.
+    twist = {"elo": {"T33": 60}}
+    sel = jc.select(_ratings(twist=twist), ROAD, [])
+    assert sel["lock_at"] == 21
+    assert "T33" in sel["locks"]
+
+
+def test_the_board_reports_how_many_ballots_and_labels_the_fringe():
+    """The granularity the bigger electorate was grown for: a count out of 24,
+    and a `Fringe` band under the bubble. ‼️ `Fringe` is a LABEL — nothing
+    pre-cuts the pool, so a fringe team is still scored by the Borda count."""
+    twist = {"massey_game": {"T55": 1}, "set_share": {"T55": 1}}
+    sel = jc.select(_ratings(twist=twist), ROAD, [])
+    assert sel["appearances"], "the count the page prints"
+    assert max(sel["appearances"].values()) <= len(jc.MEMBERS)
+    fringe = [n for n, st in sel["status"].items() if st == "Fringe"]
+    for n in fringe:
+        assert 1 <= sel["appearances"][n] < sel["bubble_at"]
+        assert n in sel["borda"], f"{n} was pre-cut from the Borda count"
 
 
 def test_the_bubble_borda_reads_the_full_bubble_ordering():
@@ -106,7 +171,7 @@ def test_statuses_partition_the_group():
     twist = {"elo": {"T45": 1, "T33": 55}}          # some disagreement
     sel = jc.select(_ratings(twist=twist), ROAD, [])
     seen = set(sel["status"].values())
-    assert seen <= {"Qualified", "Lock", "In", "Bubble", "Out"}
+    assert seen <= {"Qualified", "Lock", "In", "Bubble", "Fringe", "Out"}
     assert "Qualified" in seen and ("Lock" in seen or "In" in seen)
 
 

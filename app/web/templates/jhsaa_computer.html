@@ -3,7 +3,9 @@
 {% block title %}JHSAA {{ view.group }} Computer Ratings{% endblock %}
 {% block content %}
 
-{% set LABELS = {'colley': 'Colley', 'bt': 'BT', 'win_pct': 'Win%',
+{# Colley is a RETIRED column (replaced by Markov) and stays here: `view.systems`
+   is the ARCHIVED season's list, so a season rated with Colley renders it. #}
+{% set LABELS = {'markov': 'Markov', 'colley': 'Colley', 'bt': 'BT', 'win_pct': 'Win%',
                  'massey_dual': 'Massey-D', 'srs': 'SRS',
                  'massey_game': 'Massey-G', 'set_share': 'SetShare',
                  'sor': 'SOR', 'elo': 'Elo'} %}
@@ -42,7 +44,9 @@
 {% if view.disconnected %}
 <div class="bl-panel"><div class="jh-empty">This group's schedule graph is
 disconnected, so the least-squares systems (Massey-D, Massey-G, SRS) are withheld
-rather than fit per component — the composite folds the systems that remain.</div></div>
+rather than fit per component — the composite folds the systems that remain. Markov and the
+record systems still rate, but within each component only: with no dual between two
+groups of teams, nothing in the results can order one against the other.</div></div>
 {% endif %}
 
 <div class="bl-panel">
@@ -54,8 +58,8 @@ rather than fit per component — the composite folds the systems that remain.</
         <th style="width:40px">#</th>
         {{ th('school', 'Team') }}
         <th style="width:72px">Rec</th>
-        {{ th('mean', 'Mean', 52, 'Mean rank across the nine systems — the composite order') }}
-        {{ th('median', 'Med', 44, 'Median rank across the nine systems') }}
+        {{ th('mean', 'Mean', 52, 'Mean rank across the season\'s systems — the composite order') }}
+        {{ th('median', 'Med', 44, 'Median rank across the season\'s systems') }}
         {{ th('sigma', 'σ', 44, 'Standard deviation of the nine ranks — the disagreement measure. Sort it both ways: high σ is the controversy list.') }}
         {% for s in view.systems %}{{ th(s, LABELS[s], 62, view.glossary[s]) }}{% endfor %}
       </tr>
@@ -78,7 +82,7 @@ rather than fit per component — the composite folds the systems that remain.</
 </div>
 
 <div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">The nine systems — a glossary</span></div>
+  <div class="bl-panel-head"><span class="bl-panel-title">The {{ view.systems|length }} systems — a glossary</span></div>
   <div style="padding:10px 14px">
     {% for s in view.systems %}
     <p style="margin:6px 0"><b>{{ LABELS[s] }}</b> — {{ view.glossary[s] }}</p>
