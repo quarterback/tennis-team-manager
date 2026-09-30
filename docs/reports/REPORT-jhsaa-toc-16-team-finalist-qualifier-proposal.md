@@ -35,7 +35,7 @@ The TOC field has been a full 12 teams every year since 2080. The existing 12-te
 
 Adding the 10B and 11B State champions increases the automatic field to 14. A 14-team bracket would require two byes.
 
-The finalist qualifier proposal instead produces:
+The approved finalist qualifiers instead produce:
 
 | Entry route | Teams |
 |---|---:|
@@ -93,7 +93,7 @@ The creation of 10B and 11B changes that representation. Private schools that pr
 
 The 10B/11B finalist qualifier would allow one additional private school into the TOC, for a maximum of three through the private-class route.
 
-This is central to the political argument for the proposal.
+This became central to the political argument that produced the adopted rule.
 
 ---
 
@@ -235,7 +235,7 @@ The historical justification is not simply enrollment size:
 - 8A: 22 public TOC titles;
 - together: **43 public TOC titles**.
 
-The proposal therefore gives one additional TOC opportunity to each of the two populations most strongly represented in the tournament's history:
+The adopted rule therefore gives one additional TOC opportunity to each of the two populations most strongly represented in the tournament's history:
 
 1. the large-public-school tier;
 2. the private-school tier now consolidated into 10B/11B.
@@ -244,58 +244,54 @@ The two qualifying games have parallel structure even though their institutional
 
 ---
 
-## 10. “Tournament of Champions” under the proposal
+## 10. “Tournament of Champions” under the adopted rule
 
 Within JHSAA, **champion** is a term of art referring to a State champion.
 
-The proposal would not redefine the 10B, 11B, 9A or 8A runners-up as champions.
+The rule does not redefine the 10B, 11B, 9A or 8A runners-up as champions.
 
-Fourteen State champions would remain the automatic TOC field. The four runners-up would be eligible only for a separate qualifying round, and only two would reach the tournament proper.
+Fourteen State champions remain the automatic TOC field. The four runners-up are eligible only for a separate qualifying round, and only two reach the tournament proper.
 
 The underlying competitive argument is that classification championships and statewide team strength are not the same thing. A losing finalist from 9A, 8A, 10B or 11B may still be stronger than many State champions from other classifications in a given season.
 
-The TOC already exists to put classification champions into a common tournament after the separate State championships have been decided. The proposed qualifiers would extend that statewide comparison without altering any State championship result.
+The TOC already exists to put classification champions into a common tournament after the separate State championships have been decided. The qualifiers extend that statewide comparison without altering any State championship result.
 
 ---
 
-## 11. Alternatives raised by the same 14-team problem
+## 11. The vote and political settlement
 
-Three general solutions exist once 10B/11B create 14 automatic champions.
+The measure was hotly debated before passage.
 
-### A. Champions only
+The central private-school objection to 10B/11B was straightforward: consolidation makes the private State championships harder to win and reduces the number of State titles available to private programs that had previously been spread across several enrollment classifications.
 
-All 14 State champions enter. Two receive byes.
+JHSAA approved the finalist qualifier as a concession to that concern without creating additional State championships. The 10B and 11B State finalists now play for one additional TOC place.
 
-This preserves the strictest interpretation of TOC qualification and requires no additional games.
+Coaches, a media consortium and sponsors representing the larger-school side also supported an expanded TOC. The public counterpart gives the 9A and 8A State finalists a qualifying dual for the other open berth.
 
-### B. Classification finalist qualifiers
+The adopted compromise therefore changes the TOC field by only two teams:
 
-The proposal recorded here:
+- at most one additional private school;
+- one additional large-class public school.
 
-- 9A runner-up vs. 8A runner-up;
-- 10B runner-up vs. 11B runner-up.
+JHSAA also favored two practical effects of the change:
 
-The winners complete a 16-team bracket.
+- the 16-team TOC eliminates all byes;
+- the two qualifying duals and full 16-team bracket create additional sponsor and media inventory around the event.
 
-### C. General finalist wildcards
+Sponsorship was part of the support for passage, not the competitive justification for private-school consolidation itself.
 
-All State runners-up become eligible and two are selected by ATR or another statewide measure.
+The final structure preserves all 14 State champions as automatic entrants and uses two head-to-head qualifying matches rather than committee or computer-selected wildcards.
 
-This is broader and treats all classifications identically, but it changes the premise from defined classification pathways to general at-large selection. It would also make the annual debate partly a debate over cross-classification computer ratings.
+## 12. Adopted rule
 
-No alternative has been adopted.
+Beginning with the expanded 14-champion TOC era:
 
----
-
-## 12. Open questions
-
-With the format approved, implementation questions include:
-
-1. whether the qualifying duals are formally recorded as part of the TOC or as a separate qualification stage;
-2. how the 16-team TOC is seeded once the two qualifiers are known;
-3. whether the qualifying games are reviewed after an initial cycle of 10B/11B competition.
-
----
+1. Every 9A–1A, Group 1–3, 10B and 11B State champion qualifies automatically.
+2. The 10B and 11B State runners-up play one TOC qualifying dual.
+3. The 9A and 8A State runners-up play one TOC qualifying dual.
+4. The two qualifier winners join the 14 champions.
+5. The Tournament of Champions is a 16-team bracket with no byes.
+6. No other State finalist receives a TOC qualification path under this rule.
 
 ## 13. Historical interpretation
 
@@ -305,9 +301,9 @@ The historical 7A and 6A totals substantially reflect private-school success. Si
 
 The 10B/11B split therefore does more than add two classifications. It reorganizes one of the populations that has driven TOC results for decades.
 
-The finalist-qualifier proposal is best understood in that context.
+The finalist-qualifier rule is best understood in that context.
 
-It is not primarily an attempt to identify the 15th- and 16th-best teams by formula. It is a proposed compromise around the new structure:
+It is not primarily an attempt to identify the 15th- and 16th-best teams by formula. It is the compromise JHSAA adopted around the new structure:
 
 - every State champion keeps an automatic TOC bid;
 - private schools accept that their State-title opportunities are being compressed into 10B and 11B;
