@@ -118,6 +118,9 @@ GROUP_SHORT = {"Group 1": "G1", "Group 2": "G2", "Group 3": "G3"}
 # that have played up to 7A their whole lives with 9A talent, and at a 550 cut
 # they would otherwise be the strongest programs in the SMALL class. The cut
 # itself is 550 rather than 500 because it lands the two bands nearly even.
+# ‼️ KEYED ON `School.ident` (the stable roster identity, `source or name`), never
+# the display name: a rename stamps `source` and keeps the ident, so the play-up
+# survives it; keyed on the name it would silently fall back to the cut.
 NONPUBLIC_GROUPS = ("10B", "11B")
 ROAD_GROUPS = GROUPS + NONPUBLIC_GROUPS
 NONPUBLIC_CUT = 550
@@ -3757,7 +3760,7 @@ def road_group(school: "School", year: int | None) -> str:
     reclassification commit, so "re-read the cut each cycle" is free."""
     if not school.private or not nonpublic_active(year):
         return school.group
-    if school.name in NONPUBLIC_PLAYUP or school.enrollment >= NONPUBLIC_CUT:
+    if school.ident in NONPUBLIC_PLAYUP or school.enrollment >= NONPUBLIC_CUT:
         return NONPUBLIC_GROUPS[0]
     return NONPUBLIC_GROUPS[1]
 
