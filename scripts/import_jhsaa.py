@@ -1099,6 +1099,29 @@ FORMER_NAMES = {
 }
 
 RENAMES = {
+    # --- 2026-09 Non-Public expansion (10B/11B): owner-named on the way in. Person
+    # names keep the surname only; "Classical", "County X", "Institute", "Mesa" and
+    # "Hall" go, per owner. `Madison` and `St. Isidore` were already live names, so
+    # James Madison is not imported and St. Isidore keeps "Academy".
+    "Los Robles Classical School":                 "Ashbury Latin",
+    "Jefferson Methodist School":                  "Leidesdorff Country Day",
+    "St. Francis Catholic":                        "St. Francis",
+    "Tunnel Diggings Hall":                        "Quartz City Collegiate",
+    "Evans Western Institute":                     "Evans",
+    "Kernwood County Christian":                   "Kernwood Christian",
+    "Kernwood County Catholic":                    "Holy Family",
+    "Barlowe County Christian":                    "Barlowe Christian",
+    "Paddock County Catholic":                     "Paddock Episcopal",
+    "Olivet County Christian":                     "Olivet",
+    "Benjamin F. Harding":                         "Harding",
+    "Gabriel Villaseñor":                          "Villaseñor",
+    "Astrid Bianchi":                              "Bianchi",
+    "Alderwell Union":                             "Alderwell",
+    "Corey Canyon International":                  "Corey Canyon North",
+    "Black Springs Classical Academy":             "Black Springs East",
+    "Camas Crossing":                              "Camas Valley",
+    "Elena Mendoza":                               "Mendoza",
+    "Lonepine Mesa":                               "Lonepine",
     # ── owner renames 2026-09 (named by the owner, applied exactly) ──────────
     # Rows whose identity IS their current name: the key is that name, and the
     # apply script stamps it as `source` so the roster identity does not move.
@@ -2144,6 +2167,14 @@ INSTITUTION_NAMES = [
 # therefore read as private, whatever the source record said. Keyed on the display
 # name, like `MASCOTS` and `COLORS` — see the emit block in `build`.
 PRIVATE_SCHOOLS = {
+    # 2026-09 Non-Public expansion — private by owner decision, whatever prep-network's
+    # flag says (it marks Bishop Valera, St. Francis, Belmonte Catholic and Pope
+    # Francis public; the owner: "they actually are" private).
+    "St. Isidore Academy", "Bishop Valera", "St. Francis", "Belmonte Catholic",
+    "Ashbury Latin", "Leidesdorff Country Day", "Quartz City Collegiate",
+    "Calvary Chapel Kernwood", "Evans", "Kernwood Christian", "Holy Family",
+    "Barlowe Christian", "Veritas Academy", "Pope Francis", "Paddock Episcopal",
+    "Monsignor Barrow", "Sage Summit", "Olivet",
     "Mater Dei", "Jesuit", "Notre Dame", "Archbishop Gregory",
     "Sacred Heart", "Bellarmine Prep", "Xavier College Prep", "Robledo", "Christian Brothers",
     "Cardinal Mercier", "Pope Leo XIV",
@@ -2192,6 +2223,27 @@ NEVER_SPONSOR = frozenset()
 # to the earlier affiliate batches (Baker, the Bend cluster, the Great Basin).
 
 EXTRA_SPONSORS = frozenset({
+    # --- 2026-09 Non-Public expansion (10B/11B), owner-approved list. Keyed on the
+    # prep-network SOURCE name. (a) every private row that was not sponsoring;
+    # (b) 19 private schools new to the association; (c) public gap-fill in the two
+    # underserved areas, Alderwold (big-school hole) and Belmonte Metro (small-school
+    # hole). Display names for (b)/(c) come from RENAMES.
+    "Abbey Prep", "Belmonte International School", "Bridger County Christian",
+    "Ralph Booker North", "Goldbank Hall", "High Desert Christian",
+    "Laketown County Christian", "Mercy Academy Valley", "Northside Christian",
+    "Olive Reach Baptist", "Belmonte Collegiate Academy", "Nathaniel Gaines",
+    "St. Gabriel Academy", "St. Lucia Academy", "St. Norbert Abbey",
+    "St. Isidore Academy", "Bishop Valera", "St. Francis Catholic", "Belmonte Catholic",
+    "Cardinal Echevarria", "Los Robles Classical School", "Jefferson Methodist School",
+    "Tunnel Diggings Hall", "Calvary Chapel Kernwood", "Evans Western Institute",
+    "Kernwood County Christian", "Kernwood County Catholic", "Barlowe County Christian",
+    "Veritas Academy", "Pope Francis", "Paddock County Catholic", "Monsignor Barrow",
+    "Sage Summit", "Olivet County Christian",
+    "Benjamin F. Harding", "Gabriel Villaseñor", "Bear Flat", "Bluewater",
+    "Black Springs Classical Academy", "Astrid Bianchi", "Alderwell Union",
+    "Purcell Crossing", "Corey Canyon International", "Camas Crossing",
+    "Elena Mendoza", "Caswell North", "Lonepine Mesa",
+    "Vernal Falls", "Javier Alvarado North", "Salvador Montalvo North",
     "Whistle Stop",       # 1A 152 — Whistle Stop, Antler. The town's only school, and
                           # the town had no tennis at all.
     "Plainfield Science",  # 6A 1297 — Plainfield, Antler. Owner add (2026-08),
