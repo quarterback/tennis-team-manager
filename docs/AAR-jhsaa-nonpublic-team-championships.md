@@ -143,9 +143,24 @@ a season archived before them).
 - **Public leagues are publics only, home and away.** No redraw: they keep their
   names and their remaining members. Three came out thin — 1A Marble Valley League
   (5), 1A Old Jefferson Athletic Association (5), 7A River Valley League (4) — and
-  the owner chose CONSOLIDATION (`CONSOLIDATE` in the script): Marble Valley folds
-  into Old Jefferson Athletic Association (10), River Valley into Three Rivers
-  League (12, the cap). No public league is under five in either gender.
+  the owner chose CONSOLIDATION: Marble Valley folds into Old Jefferson Athletic
+  Association (10), River Valley into Three Rivers League (12, the cap). No public
+  league is under five in either gender.
+  ‼️ **THE FOLD IS A STANDING RULE, NOT AN EDIT THE MAP CAN OUTVOTE.** It lives in
+  `data/jhsaa/districting.json` (`consolidated_leagues`, read by
+  `jhsaa_districting.consolidations`) and `jhsaa._rows()` applies it on every load,
+  AFTER the realignment re-apply. Written into the seed file alone it could not
+  survive: a committed reclassification cycle records every school's league as it
+  stood at commit time, so `rc.reapply` put all 33 schools back into leagues that no
+  longer exist (measured on the owner's save — it read as the 10B/11B districts
+  being broken). ‼️ Narrowing the re-apply to MOVED schools only was tried first and
+  is worse: a touched class then carried BOTH league names at once, because a redraw
+  legitimately moves the leagues of members whose class never changed. ‼️ A retired
+  name also leaves the naming bank (`districting_config`) — re-issued to a new
+  league, the fold would swallow it the moment it was drawn and the class would
+  silently lose a league. The script states the pairs once by READING that data, so
+  there is one authority; `tests/test_jhsaa_reclass.py` pins the fold surviving a
+  re-apply and the bank exclusion.
 - **The old-league duals** (`_old_league_pairs`): every private plays every public
   in its old league ONCE — `phase="regular"`, `district=False`, so it counts to the
   record and to TOSS and to neither side's standings. Reserved before the first

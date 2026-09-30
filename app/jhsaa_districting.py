@@ -58,13 +58,34 @@ def districting_config() -> SimpleNamespace:
         k = max(round(n / target), -(-n // max_d), 1)
         return max(1, min(k, n // min_size)) if n >= min_size else 1
 
+    # ‼️ A RETIRED LEAGUE'S NAME LEAVES THE BANK. `consolidated_leagues` folds a
+    # league into a neighbour and `jhsaa._rows()` applies that on every load, so a
+    # redraw re-issuing the retired name would have its brand-new league swallowed
+    # by the fold the moment it was drawn — the class would silently lose a league.
+    retired = {gone for _c, gone, _k in doc.get("consolidated_leagues", ())}
     cfg = SimpleNamespace(MAX_DISTRICT=max_d, DISTRICT_TARGET=target,
                           MIN_DISTRICT_SIZE=min_size,
                           RIVALRIES=[tuple(p) for p in doc["rivalries"]],
-                          LEAGUE_NAMES=[(n, a) for n, a in doc["league_names"]],
+                          LEAGUE_NAMES=[(n, a) for n, a in doc["league_names"]
+                                        if n not in retired],
                           district_count=district_count)
     _cfg_cache["cfg"] = cfg
     return cfg
+
+
+def consolidations() -> dict:
+    """`{(class, retired league): surviving league}` — the leagues the owner folded
+    into a neighbour (owner rule 2026-09, after the Non-Public split left them
+    short). Read from the districting data so `jhsaa._rows()` can apply it on
+    every load; `scripts/jhsaa_nonpublic_pods.py` writes the same fold into the
+    seed file."""
+    hit = _cfg_cache.get("consol")
+    if hit is None:
+        with open(_DISTRICTING, encoding="utf-8") as fh:
+            doc = json.load(fh)
+        hit = {(c, gone): keep for c, gone, keep in doc.get("consolidated_leagues", ())}
+        _cfg_cache["consol"] = hit
+    return hit
 
 
 def coords() -> dict:

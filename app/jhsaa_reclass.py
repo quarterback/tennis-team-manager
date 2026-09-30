@@ -721,6 +721,19 @@ def reapply(rows: list[dict]) -> int:
         if r is None:
             continue
         r["classification"] = e["cls"]
+        if r.get("group") in jd.NONPUBLIC:
+            # ‼️ A PRIVATE PROGRAM'S GROUP AND DISTRICT ARE ITS NON-PUBLIC CLASS AND
+            # POD (owner rule 2026-09) — the seed file owns them. A map committed
+            # BEFORE the pods records the public league the private then sat in, and
+            # writing that back put most privates out of their pods (10B/11B
+            # districts of 2-4 schools on a real save). The class moves; the pod
+            # stays; the league the cycle seated it in becomes its OLD league.
+            if e.get("og"):
+                r["old_group"], r["old_league"] = e["og"], e.get("ol", "")
+            elif e.get("grp") not in jd.NONPUBLIC and e.get("gd"):
+                r["old_group"], r["old_league"] = e["grp"] or e["cls"], e["gd"]
+            r.pop("play_up", None)
+            continue
         # `group` is kept apart: an affiliate or competitive move can hold a
         # school in a championship other than its classification's.
         r["group"] = e.get("grp") or e["cls"]
@@ -732,8 +745,6 @@ def reapply(rows: list[dict]) -> int:
             r["play_up"] = True
         else:
             r.pop("play_up", None)
-        if e.get("og"):
-            r["old_group"], r["old_league"] = e["og"], e.get("ol", "")
     return len(reverted)
 
 
