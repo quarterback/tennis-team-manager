@@ -2815,7 +2815,14 @@ class School:
         """True when the program has chosen to compete a classification above its
         enrollment class (owner rule 2027-08). Real associations let a school play
         up; here it is a durable property of strong-at-tennis programs, seeded at
-        import and editable like an archetype."""
+        import and editable like an archetype.
+
+        ‼️ A NON-PUBLIC PROGRAM IS NOT PLAYING UP (owner rule 2026-09). Since the
+        pods a private's `group` is 10B or 11B while its `classification` stays its
+        enrollment class, so the bare comparison called all 127 of them play-ups —
+        on the explorer's Plays-up column and facet as well as in the counts."""
+        if self.group in NONPUBLIC_GROUPS:
+            return False
         return champ_group(self.classification) != self.group
 
     @property
