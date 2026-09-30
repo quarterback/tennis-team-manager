@@ -4259,13 +4259,14 @@ def jhsaa_view(seed: int, gender: str, group: str | None = None,
     years = world.jhsaa_years(w["id"], g)
     yr = (years[0] if years else w["year"]) if year is None else year
     arc = world.get_jhsaa(w["id"], yr, g)
+    # ROAD_GROUPS: a 10B/11B hub shows its State draw, its pooled ranking and its
+    # champion; the district index is simply empty (no leagues) and the awards
+    # panels are blank (All-State is a league-class honour).
+    grp = group if group in jh.ROAD_GROUPS else jh.ROAD_GROUPS[0]
     if not arc:
-        return {"ready": False, "gender": g, "year": yr, "groups": list(jh.GROUPS),
-                "group": group if group in jh.GROUPS else jh.GROUPS[0],
-                "years": years,
-                "scope": _jh_scope(g, group if group in jh.GROUPS else jh.GROUPS[0],
-                                   list(jh.GROUPS), yr, years, None, None)}
-    grp = group if group in jh.GROUPS else jh.GROUPS[0]
+        return {"ready": False, "gender": g, "year": yr, "groups": list(jh.ROAD_GROUPS),
+                "group": grp, "years": years,
+                "scope": _jh_scope(g, grp, list(jh.ROAD_GROUPS), yr, years, None, None)}
     schools = _jh_schools(g)
     br = (arc.get("brackets") or {}).get(grp) or {}
     ranking = world.jhsaa_group_ranking(arc, grp)
@@ -4292,8 +4293,8 @@ def jhsaa_view(seed: int, gender: str, group: str | None = None,
     return {
         "ready": True, "gender": g, "year": yr, "years": years,
         "season_year": arc.get("season_year", world.jhsaa_season_year(w)),
-        "group": grp, "groups": list(jh.GROUPS),
-        "scope": _jh_scope(g, grp, list(jh.GROUPS), yr, years,
+        "group": grp, "groups": list(jh.ROAD_GROUPS),
+        "scope": _jh_scope(g, grp, list(jh.ROAD_GROUPS), yr, years,
                            arc.get("season_year"), arc),
         # --- the state tournament, the page's dominant object ---
         "state": {**_jh_final_four(br, schools),
@@ -4340,12 +4341,16 @@ def jhsaa_rankings_view(seed: int, gender: str, group: str | None = None,
     years = world.jhsaa_years(w["id"], g)
     yr = (years[0] if years else w["year"]) if year is None else year
     arc = world.get_jhsaa(w["id"], yr, g)
-    grp = group if group in jh.GROUPS else jh.GROUPS[0]
-    scope = _jh_scope(g, grp, list(jh.GROUPS), yr, years,
+    # ROAD_GROUPS, not GROUPS: 10B/11B have no leagues, but their members carry a
+    # gender-wide TOSS on their league rows, and `jhsaa_group_ranking` pools those
+    # into a Non-Public ranking (owner question 2026-09: "you do have the rankings
+    # still be calculated for these classes correct?").
+    grp = group if group in jh.ROAD_GROUPS else jh.ROAD_GROUPS[0]
+    scope = _jh_scope(g, grp, list(jh.ROAD_GROUPS), yr, years,
                       (arc or {}).get("season_year"), arc)
     if not arc:
         return {"ready": False, "gender": g, "year": yr, "years": years,
-                "group": grp, "groups": list(jh.GROUPS), "scope": scope}
+                "group": grp, "groups": list(jh.ROAD_GROUPS), "scope": scope}
     schools = _jh_schools(g)
     br = (arc.get("brackets") or {}).get(grp) or {}
     seeds = _jh_seeds(br)

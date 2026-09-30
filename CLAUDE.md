@@ -1213,7 +1213,11 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   the league's best public finisher (the filtered list's `ts[0]`). ‼️ 10B/11B are
   NEVER in `GROUPS` (no leagues, talent row, roster band or awards slate) and
   ALWAYS in `ROAD_GROUPS` — the championship loops, the renumbering helpers, the
-  archive's road keys, the TOC and the Championship-page rails iterate that.
+  archive's road keys, the TOC and the Championship-page rails iterate that —
+  and so do the Rankings page and the class hub: `jhsaa_group_ranking` POOLS a
+  Non-Public class's members (the archive's `road` map) from their league-class
+  rows and re-ranks on the archived TOSS, nothing recomputed (owner question
+  2026-09).
   ‼️ A reader resolves a private's bracket class through `world.jh_road_group(arc,
   school, league_group)` (the archive's `road` map), never off its standings row
   alone: `_season_row` keeps `group` (league) and adds `road_group`. `play_dual`

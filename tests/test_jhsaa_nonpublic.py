@@ -252,3 +252,24 @@ def test_before_the_era_nothing_moves():
     finally:
         jh.nonpublic_era = real
     assert "jhsaa_nonpublic_era" in jh.ERA_SETTINGS
+
+
+def test_a_nonpublic_class_has_a_ranking_pooled_from_its_members_league_rows(archived):
+    """Owner question 2026-09: privates play their league season in their league
+    class, so their TOSS lives on that class's standings row; the 10B/11B ranking is
+    those rows pooled and re-ranked on the SAME archived index — every member, in
+    TOSS order, nothing recomputed. And the Rankings page and class hub list the
+    Non-Public classes on their rail."""
+    arc, client = archived["arc"], archived["client"]
+    for grp in jh.NONPUBLIC_GROUPS:
+        rows = wd.jhsaa_group_ranking(arc, grp)
+        members = {s for s, rg in arc["road"].items() if rg == grp}
+        assert {r["school"] for r in rows} == members and members
+        pis = [r["pi"] for r in rows]
+        assert None not in pis and pis == sorted(pis, reverse=True)
+        assert [r["rank"] for r in rows] == list(range(1, len(rows) + 1))
+        # Each pooled row names the league class its league season was played in.
+        assert all(r["district"].split(" ", 1)[0] in jh.GROUPS for r in rows)
+        for path in (f"/jhsaa/rankings?g=girls&group={grp}", f"/jhsaa/class?g=girls&group={grp}"):
+            html = client.get(path).get_data(as_text=True)
+            assert rows[0]["school"] in html, path

@@ -7368,8 +7368,30 @@ def jhsaa_group_ranking(arc: dict, group: str) -> list[dict]:
     page shows and the seed it carries into the bracket cannot disagree. Seasons
     archived before TOSS existed carry no `pi`, and fall back to the win rate and point
     differential they were actually ordered on at the time."""
+    from . import jhsaa as _jh
     rows, rated = [], True
-    for dname, teams in (((arc or {}).get("standings") or {}).get(group) or {}).items():
+    standings = (arc or {}).get("standings") or {}
+    if group in _jh.NONPUBLIC_GROUPS:
+        # A NON-PUBLIC CLASS HAS NO LEAGUES (owner rule 2026-09): its members play
+        # their league season in their league class, so their standings rows — and
+        # the TOSS/ATR archived on them, computed gender-wide like everyone's — live
+        # under that class. The 10B/11B ranking is those rows pooled and re-ranked
+        # on the same archived index; nothing is recomputed. The row's `district`
+        # is prefixed with the league class ("7A Metro League") so the pooled table
+        # says where each program's league season was played.
+        # Membership is the archive's `road` map (the season summary keeps that,
+        # not the per-group `members` list `run_season` also returns).
+        members = {s for s, rg in ((arc or {}).get("road") or {}).items() if rg == group}
+        pooled = {}
+        for lg in _jh.GROUPS:
+            for dname, teams in (standings.get(lg) or {}).items():
+                for r in teams:
+                    if r.get("school") in members:
+                        pooled[r["school"]] = (f"{lg} {dname}", r)
+        items = [(d, [r]) for d, r in pooled.values()]
+    else:
+        items = list((standings.get(group) or {}).items())
+    for dname, teams in items:
         for r in teams:
             w, l = _wl(r.get("record"))
             if r.get("pi") is None:

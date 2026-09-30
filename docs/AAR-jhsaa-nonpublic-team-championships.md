@@ -105,3 +105,18 @@ the last two TOC seats — a byeless sixteen, one more public and one more priva
   runners-up, TOC field 16 with eight first-round games and no byes, losers off
   the draw with finish "TOC Qualifier" (a TOC appearance, place 17), schedule
   rows at phase `toc_qualifier`.
+
+## Addendum — the Non-Public RANKING (owner question 2026-09)
+"Despite them playing matches in their regular class schedules, you do have the
+rankings still be calculated for these classes correct?" TOSS and ATR were always
+there — computed gender-wide, archived on each private's LEAGUE-class standings row
+— but nothing showed a 10B or 11B ranking: `jhsaa_group_ranking` read
+`standings[group]`, which a Non-Public class does not have, and the Rankings page and
+class hub listed `GROUPS` only. Now `jhsaa_group_ranking` recognises a
+`NONPUBLIC_GROUPS` key, takes the members off the archive's `road` map, pools their
+league rows and re-ranks them on the archived `pi` (nothing recomputed; the row's
+`district` reads "7A Metro League" so the pooled table says where the league season
+was played), and both pages take `ROAD_GROUPS` on their rail. A 10B hub shows its
+State draw, ranking and champion with an empty district index (no leagues) and blank
+award panels (All-State is a league-class honour). Pinned by
+`test_a_nonpublic_class_has_a_ranking_pooled_from_its_members_league_rows`.
