@@ -394,7 +394,11 @@ def coefficient(world_id: int, gender: str, as_of: int | None = None) -> dict:
         for school in _season(world_id, y, gender):
             hist[school] = hist.get(school, 0) + 1
     schools = jh.load_schools(gender)
-    current = {s.ident: s.group for s in schools}
+    # A private program is ranked in its ROAD class (10B/11B) from the Non-Public
+    # split on (owner rule 2026-09): the coefficient prices road and State results
+    # only, and those are earned against the other privates, not against 7A.
+    sy = world.BASE_YEAR + years[0] + 1
+    current = {s.ident: jh.road_group(s, sy) for s in schools}
     groups = fold(seasons, current, hist)
     # A live program reads under TODAY's name; a former one under the last it played.
     today = {s.ident: s.name for s in schools}

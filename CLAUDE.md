@@ -1193,6 +1193,37 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     a PARAMETER — the bridge reorders that list, so it cannot live downstream
     of the selection. `tests/test_jhsaa_special_challengers.py`;
     `docs/AAR-jhsaa-special-challengers.md`.
+- **‼️ THE NON-PUBLIC TEAM CHAMPIONSHIPS — 10B / 11B (owner rule 2026-09,
+  `jhsaa.road_group` / `NONPUBLIC_GROUPS` / `ROAD_GROUPS` / `nonpublic_era`,
+  `docs/AAR-jhsaa-nonpublic-team-championships.md`).** Private programs stay in
+  their league class for EVERYTHING but the team-championship road — league,
+  district honours, TOSS, All-State/District/Region, individual flights, JV all
+  read `School.group` — and from `nonpublic_era()` leave the public bracket to
+  play the SAME full ladder onto a 24-team State in 10B (enrollment ≥ 550 or in
+  `NONPUBLIC_PLAYUP`: Condotti Vanguard Academy, Romero-Finniski) or 11B. 10B is
+  in `WIDE_GROUPS` (4S/5D); 11B plays 1S/4D; neither has a committee or metas;
+  the TOC is a byeless SIXTEEN: fourteen champions plus the two **TOC Qualifier**
+  winners (JHSAA rule 2026-09, `TOC_QUALIFIER_PAIRS`: 9A v 8A and 10B v 11B State
+  runners-up, one dual each, phase `toc_qualifier`; a qualifier LOSER is treated
+  like every other TOC entrant — State finalist honour PLUS a TOC appearance with
+  finish "TOC Qualifier", place field+1, no seed (owner reversed the "not a TOC
+  appearance" draft); every "is this the TOC" branch reads `TOC_PHASES`, never
+  `"toc"`). `run_season` re-deals `by_group` into `road_by_group`
+  after the regular season; a private league champion's PROTECTED seat goes to
+  the league's best public finisher (the filtered list's `ts[0]`). ‼️ 10B/11B are
+  NEVER in `GROUPS` (no leagues, talent row, roster band or awards slate) and
+  ALWAYS in `ROAD_GROUPS` — the championship loops, the renumbering helpers, the
+  archive's road keys, the TOC and the Championship-page rails iterate that.
+  ‼️ A reader resolves a private's bracket class through `world.jh_road_group(arc,
+  school, league_group)` (the archive's `road` map), never off its standings row
+  alone: `_season_row` keeps `group` (league) and adds `road_group`. `play_dual`
+  shapes a ROAD dual from `TeamSeason.road_group`, because a Non-Public bracket
+  pairs 7A and 1A privates and "wider card wins" would otherwise decide by
+  accident. Membership expansion (33 added, 15 switched on) went through
+  `scripts/jhsaa_nonpublic_expansion.py` — ‼️ redraw with `app.jhsaa_districting`,
+  never the importer's `draw_districts`, which scattered the 2052 affiliate
+  leagues. `tests/conftest.py` keeps the split OFF for every suite;
+  `tests/test_jhsaa_nonpublic.py` opts in.
 - **‼️ ONE LADDER, THREE BERTH SHAPES (owner spec 2026-08 — supersedes the
   fixed-24 section below, which is kept for the seasons archived under it).**
   Every class runs the SAME rungs — Areas → Sectionals → Wards → Regionals →
@@ -2349,10 +2380,10 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   has crept back in — pinned by `tests/test_jhsaa_awards.py`.
   - **‼️ REGIONS ARE NOT THE SAME SIZE, so the honour scales with them** (owner rule
     2027-08). Halbrook Basin has 199 boys'/219 girls' programs; Millersylvania has 25.
-    A region of **`AR_TIER2_MIN_PROGRAMS` (45)+** crowns a **First AND Second
+    A region of **`AR_TIER2_MIN_PROGRAMS` (38, was 45 — owner 2026-09, so Alderwold and Juniper Highlands crown two in both genders)+** crowns a **First AND Second
     Team**; below that, ONE unnumbered team (calling it "First" with no second
     promises a tier that does not exist). Halbrook alone clears
-    **`AR_HM_MIN_PROGRAMS` (100)** and adds an **Honorable Mention** — All-State's
+    **`AR_HM_MIN_PROGRAMS` (90, was 100 — owner 2026-09: "the 100 was arbitrary"; Gold Valley AND Selquah, both genders, clear it)** and adds an **Honorable Mention** — All-State's
     threshold logic exactly (no slot count, same criteria and flight weighting)
     but capped at **ONE entry per school** (`AR_HM_PER_SCHOOL`), an entry being a
     singles player OR a pairing. **Thresholds are on the PROGRAM COUNT, never a

@@ -6,8 +6,9 @@
 
 {{ jh_header(view.scope, u, 'toc', 'Tournament of Champions',
              'Every classification champion in one draw, seeded on the TOSS Power Index
-              rather than on the size of the school — the bottom four play in, and the
-              winner is the overall champion of Jefferson.',
+              rather than on the size of the school, plus the two finalist-qualifier
+              winners that make it a byeless sixteen — the winner is the overall
+              champion of Jefferson.',
              [('Season', view.season_year|cal), ('Field', view.field_n)] if view.ready else []) }}
 
 <div class="jh-shell">
@@ -34,6 +35,35 @@
 </div>
 {% endif %}
 
+{% if view.qualifier %}
+{# THE FINALIST QUALIFIER (JHSAA rule 2026-09): 9A v 8A and 10B v 11B runners-up
+   for the last two seats. Its own panel, never a column of the tree — four teams
+   into two seats is not a halving of the draw. #}
+<div class="bl-panel" style="margin-bottom:12px">
+  <div class="bl-panel-head"><span class="bl-panel-title">Finalist qualifier · two seats</span></div>
+  <div class="bl-panel-body" style="padding:12px">
+    <div class="jh-cols2">
+      {% for gm in view.qualifier %}
+      <div class="jh-mgame">
+        <div class="jh-mside {{ 'win' if gm.winner == gm.home else 'out' }}">
+          <span class="sd"></span>
+          <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.home, u=u, g=view.gender, year=view.scope.pin) }}">{{ gm.home }}</a>
+            {% if gm.home_group %}<span class="jh-chip c-{{ gm.home_group|replace(' ','') }}">{{ gm.home_group|jh_group_short }}</span>{% endif %}</span>
+          <span class="pt">{{ gm.home_points|int }}</span>
+        </div>
+        <div class="jh-mside {{ 'win' if gm.winner == gm.away else 'out' }}">
+          <span class="sd"></span>
+          <span class="nm"><a href="{{ url_for('jhsaa_school', school=gm.away, u=u, g=view.gender, year=view.scope.pin) }}">{{ gm.away }}</a>
+            {% if gm.away_group %}<span class="jh-chip c-{{ gm.away_group|replace(' ','') }}">{{ gm.away_group|jh_group_short }}</span>{% endif %}</span>
+          <span class="pt">{{ gm.away_points|int }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {# The SAME server-positioned tree the state draw, the NCAA bracket and the Preseason
    NIT draw on. `brk_canvas` takes a `_bracket_canvas` RESULT, never a column list —
    handed the raw columns it resolves cv.width/cards/links to Undefined and silently
@@ -43,7 +73,7 @@
   <div class="brk-stage" id="brkstage">
     <section class="brk-region" data-view="all">
       <div class="brk-region-head">
-        <h2>{{ view.season_year|cal }} TOC · {{ view.field_n }} state champions</h2>
+        <h2>{{ view.season_year|cal }} TOC · {{ view.field_n }} teams</h2>
         <span class="brk-region-champ">
           {% if view.champion %}{{ view.champion.name }} def. {{ view.runner_up.name }}{% else %}in progress{% endif %}</span>
       </div>

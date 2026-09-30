@@ -182,7 +182,9 @@ def _load_archived_jhsaa_season(year: int, gender: str) -> dict:
                       else list(captains.get(school.name) or ())),
             schedule=schedule_by_school.get(school.name, []))
     return {"teams": teams, "groups": {g: {"state": data.get("brackets", {}).get(g, {})}
-                                       for g in jhsaa.GROUPS},
+                                       for g in jhsaa.ROAD_GROUPS},
+            # The Non-Public road map (owner rule 2026-09); empty before the split.
+            "road": data.get("road") or {},
             "awards": data.get("awards", {}), "individuals": individuals,
             # THE COMPUTER-RATINGS LAYER + AT-LARGE COMMITTEE (owner spec
             # 2026-09): archived on the summary blob per group, relabelled on
@@ -254,6 +256,10 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "program_id": s.key, "name": s.name, "gender": gender, "city": s.city,
             "locality": s.locality, "county": s.county, "area": s.area,
             "classification": s.classification, "championship_group": s.group,
+            # The class whose TEAM-CHAMPIONSHIP road this program plays (owner
+            # rule 2026-09): 10B/11B for a private from the split on, else the
+            # league class. `championship_group` stays the league class.
+            "road_group": (season.get("road") or {}).get(s.name) or s.group,
             "district": s.district, "enrollment": s.enrollment, "private": int(s.private),
             "mascot": s.mascot, "colors_json": json.dumps(s.colors, ensure_ascii=False),
             "scope_member": int(s.name in selected_names),
@@ -428,7 +434,7 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                 })
 
     json_files = {
-        "jhsaa_championships.json": {g: season["groups"][g].get("state", {}) for g in jhsaa.GROUPS},
+        "jhsaa_championships.json": {g: (season["groups"].get(g) or {}).get("state", {}) for g in jhsaa.ROAD_GROUPS},
         "jhsaa_awards.json": season.get("awards", {}),
         # Keep the draw's native archive representation: entries, rounds,
         # champion/runner-up indices and match scorelines are all research data.

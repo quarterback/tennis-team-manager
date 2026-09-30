@@ -67,6 +67,7 @@
   <div class="jh-ident-body">
     <span class="jh-chip c-{{ view.group|replace(' ','') }}">{{ view.classification }}</span>
     {% if view.private %}<span class="jh-chip ghost">PRIVATE</span>{% endif %}
+    {% if view.road_group and view.road_group != view.group %}<span class="jh-chip c-{{ view.road_group }}" title="team championship class (Non-Public)">{{ view.road_group }}</span>{% endif %}
     {% if view.former %}<span class="jh-chip ghost" title="no longer sponsors this sport">FORMER PROGRAM</span>{% endif %}
     <h1>{{ view.school }}</h1>
     <div class="mascot">{{ view.mascot }}</div>
@@ -174,7 +175,7 @@
             {% if d.opp_squad %}<span class="jh-chip" title="{{ d.opp }} {{ d.opp_squad }}">{{ d.opp_squad }}</span>{% endif %}</span></td>
           <td class="{{ 'W' if d.won else 'L' }}" style="width:34px">{{ 'W' if d.won else 'L' }}</td>
           <td class="sc" style="width:56px">{{ d.pf|int }}–{{ d.pa|int }}</td>
-          <td style="width:150px"><span class="jh-tag {{ 'toc' if d.kind == 'TOC' else 'state' if d.kind == 'STATE' else 'road' }}">{{ d.kind }}</span>
+          <td style="width:150px"><span class="jh-tag {{ 'toc' if d.kind in ('TOC', 'TOC QUALIFIER') else 'state' if d.kind == 'STATE' else 'road' }}">{{ d.kind }}</span>
             {% if d.round %}<span class="jh-tag rd">{{ d.round }}</span>{% endif %}</td>
         </tr>
         {% endfor %}
@@ -342,6 +343,7 @@
             'STATE SPECIAL': view.group ~ ' State Specials',
             'META': view.group ~ ' Metastate',
             'STATE': view.group ~ ' State Tournament',
+            'TOC QUALIFIER': 'Tournament of Champions Qualifier',
             'TOC': 'Tournament of Champions'}[d.kind] }}</td></tr>
       {% endif %}
       {# The dual ROW is the toggle for its line scores. An always-visible
@@ -370,7 +372,7 @@
            tag and a showcase names its event. Everything that is not
            DIST/INVITE/SHOWCASE/STATE/TOC is a road stage, so a new recovery
            round is tagged by construction. #}
-        <td><span class="jh-tag {{ 'toc' if d.kind == 'TOC' else 'dist' if d.kind == 'DIST'
+        <td><span class="jh-tag {{ 'toc' if d.kind in ('TOC', 'TOC QUALIFIER') else 'dist' if d.kind == 'DIST'
                  else 'show' if d.kind == 'SHOWCASE'
                  else 'state' if d.kind == 'STATE' else 'road' if d.kind != 'INVITE' }}">{{ d.kind }}</span>
           {% if d.round %}<span class="jh-tag rd">{{ d.round }}</span>{% endif %}

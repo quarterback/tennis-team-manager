@@ -381,6 +381,7 @@ FORMER_NAMES = {
     "Alder Landing Beacon Hill":                   "Bay Oregon",
     "Alderfield":                                  "Linden",
     "Aldermont":                                   "Cape Angeles",
+    "Alderwell Union":                             "Alderwell",
     "Alejandro Zamora":                            "Morgan Park",
     "Alina Antonov":                               "River Oaks",
     "Alina Belov":                                 "Clear Lake",
@@ -424,12 +425,15 @@ FORMER_NAMES = {
     "Ashfield":                                    "California Beach",
     "Ashwood":                                     "A. Ashe",
     "Aspen Harbor":                                "East Simmons",
+    "Aspen Spur Union":                            "Aspen Spur",
     "Asteroid City":                               "Leal Heights",
+    "Astrid Bianchi":                              "Bianchi",
     "Astrid Ricci":                                "Jesuit",
     "Aurelia Classical Academy":                   "Goodman",
     "Baptist HS":                                  "Baptist",
     "Baptiste":                                    "Point Sable",
     "Barclay Golden Gate":                         "Gate City",
+    "Barlowe County Christian":                    "Barlowe Christian",
     "Barlowe County High":                         "Barlowe County",
     "Basalt Fork":                                 "Río Salado",
     "Basalt Prairie Union":                        "Prairie",
@@ -465,9 +469,11 @@ FORMER_NAMES = {
     "Belyakov Science":                            "Belyakov Vo-Tech",
     "Benjamin Banneker":                           "Banneker",
     "Benjamin Banneker North":                     "Pascagoula",
+    "Benjamin F. Harding":                         "Harding",
     "Bidwell City":                                "Alfalfa City",
     "Bidwell County":                              "County Line",
     "Bishop Ferraro":                              "Ferraro",
+    "Black Springs Classical Academy":             "Black Springs East",
     "Blackbird Canyon":                            "Tallulah Canyon",
     "Blackpine North":                             "Ravenwood",
     "Blue Grama":                                  "Ferris County",
@@ -484,6 +490,7 @@ FORMER_NAMES = {
     "Calvary Chapel Ditch Fork":                   "Cassius",
     "Calvary Chapel Kilbride Switch":              "Gottschalk-Herman",
     "Calvary Chapel Olivet":                       "Banfield Day",
+    "Camas Crossing":                              "Camas Valley",
     "Canaan Bend":                                 "Creswell",
     "Canal View North":                            "Orellana Heights",
     "Carden City West Bench":                      "Buckhorn",
@@ -512,6 +519,7 @@ FORMER_NAMES = {
     "Copper Crossing":                             "Copper Gap",
     "Copper Lake East":                            "Bridgewater",
     "Copper Lake West":                            "Azurite",
+    "Corey Canyon International":                  "Corey Canyon North",
     "Corliss Regional":                            "Corliss",
     "Costa Verde North":                           "Verde Highlands",
     "Coyote Bend":                                 "Rampart",
@@ -547,6 +555,7 @@ FORMER_NAMES = {
     "Eisenhower":                                  "Flume River",
     "Eleanor Cole":                                "Jefferson Park",
     "Eleanor Tillman":                             "Anchor",
+    "Elena Mendoza":                               "Mendoza",
     "Elena Mendoza North":                         "Cahaba",
     "Elena Petrenko":                              "Kingsway",
     "Elena Petrov":                                "Talladega",
@@ -559,6 +568,7 @@ FORMER_NAMES = {
     "Emilia Jansen":                               "Sharpstown",
     "Empire":                                      "South Drayfield",
     "Esteban Téllez":                              "Sawtelle",
+    "Evans Western Institute":                     "Evans",
     "Evelyn Booker":                               "Taft",
     "Evenfall":                                    "Vespertine North",
     "Ewart City":                                  "Cook City",
@@ -589,6 +599,7 @@ FORMER_NAMES = {
     "Furrow":                                      "Industrial City",
     "Furrow Crossing":                             "Industrial City",
     "Gabriel Montoya":                             "Marlow",
+    "Gabriel Villaseñor":                          "Villaseñor",
     "Gabriel Zúñiga":                              "Longfellow",
     "Gagarin Public Service":                      "Star City",
     "Gagarin School of Public Service":            "Star City",
@@ -684,6 +695,8 @@ FORMER_NAMES = {
     "Jean Lindgren":                               "Bridgeport",
     "Jean Lindgren North":                         "Harrisburgh",
     "Jeannette Freeman":                           "Round Mountain",
+    "Jefferson Methodist":                         "Leidesdorff Country Day",
+    "Jefferson Methodist School":                  "Leidesdorff Country Day",
     "Jefferson School of Science and Technology":  "Jefferson Science",
     "Jefferson School of Science and Technology North": "Evans Larsen Day",
     "Jefferson Science North":                     "Evans Larsen Day",
@@ -706,6 +719,8 @@ FORMER_NAMES = {
     "Keldale":                                     "Espoo",
     "Kelford Northwest":                           "Cedarbrook",
     "Kelview Union":                               "Iisalmi",
+    "Kernwood County Catholic":                    "Holy Family",
+    "Kernwood County Christian":                   "Kernwood Christian",
     "Kilbride Switch South":                       "Switchback",
     "Klara Marchand":                              "Meriwether",
     "Kongisburg":                                  "Belyakov Vo-Tech",
@@ -732,10 +747,13 @@ FORMER_NAMES = {
     "Llerena School of Science and Industry":      "Crow Basin",
     "Llerena Science":                             "Crow Basin",
     "Lodestone County High":                       "Lodestone County",
+    "Lonepine Mesa":                               "Lonepine",
     "Loomis City North":                           "Charlotte",
     "Lorna Booker":                                "Ferris County",
     "Lorraine Calder":                             "Morne Rouge",
     "Los Remolinos Mission Bay":                   "Estuary Bay",
+    "Los Robles Classical":                        "Ashbury Latin",
+    "Los Robles Classical School":                 "Ashbury Latin",
     "Lucía Quiñones":                              "Edgewater",
     "Lucía Villaseñor":                            "Glen Park",
     "Madison":                                     "Governor Woods",
@@ -821,6 +839,7 @@ FORMER_NAMES = {
     "Olive Reach":                                 "Mendelssohn",
     "Olive Reach Baptist":                         "Olive Baptist",
     "Olive Reach North":                           "Buckeye Ridge",
+    "Olivet County Christian":                     "Olivet",
     "Opal Avery":                                  "Ford",
     "Opal Avery North":                            "Bush",
     "Opal Stokes":                                 "Dry Creek",
@@ -839,6 +858,7 @@ FORMER_NAMES = {
     "Oskar Weiss":                                 "Waldo",
     "Pacersburg":                                  "Woodside",
     "Pacific Friends School":                      "Pacific Friends",
+    "Paddock County Catholic":                     "Paddock Episcopal",
     "Paddock Institute":                           "Paddock Tech",
     "Paul Robeson":                                "Robeson",
     "Pauli Booker":                                "Vespertine South",
@@ -902,6 +922,7 @@ FORMER_NAMES = {
     "Rumsfeld Hill":                               "Borondón Hills",
     "Rumsfeld Hill School":                        "Borondón Hills",
     "Rye Academy of Arts and Letters":             "Barley Point",
+    "Sablewood Union":                             "Mount Ruth",
     "Sadie Freeman":                               "High Desert",
     "Sage Lake":                                   "Sage Village",
     "Sage Meadows":                                "Galactica Plains",
@@ -970,6 +991,7 @@ FORMER_NAMES = {
     "St. Elias Academy":                           "Port Ainsley",
     "St. Elias College Prep":                      "Aranaz",
     "St. Elias School":                            "Tidewater",
+    "St. Francis Catholic":                        "St. Francis",
     "St. Francis Xavier College Prep":             "South Pomar",
     "St. Francis Xavier Preparatory":              "Clarendon",
     "St. Gabriel Preparatory":                     "Orchardgate",
@@ -1048,6 +1070,7 @@ FORMER_NAMES = {
     "Tungsten":                                    "Cooper",
     "Tungsten Reach":                              "Cooper",
     "Tunnel Diggings":                             "Quartz City",
+    "Tunnel Diggings Hall":                        "Quartz City Collegiate",
     "Valderra Aviation and Engineering Academy":   "Rampart",
     "Valderra Technical Arts Academy":             "D. Eisenhower",
     "Valera":                                      "New Casper",
@@ -1099,6 +1122,31 @@ FORMER_NAMES = {
 }
 
 RENAMES = {
+    # --- 2026-09 Non-Public expansion (10B/11B): owner-named on the way in. Person
+    # names keep the surname only; "Classical", "County X", "Institute", "Mesa" and
+    # "Hall" go, per owner. `Madison` and `St. Isidore` were already live names, so
+    # James Madison is not imported and St. Isidore keeps "Academy".
+    "Los Robles Classical School":                 "Ashbury Latin",
+    "Jefferson Methodist School":                  "Leidesdorff Country Day",
+    "St. Francis Catholic":                        "St. Francis",
+    "Tunnel Diggings Hall":                        "Quartz City Collegiate",
+    "Evans Western Institute":                     "Evans",
+    "Kernwood County Christian":                   "Kernwood Christian",
+    "Kernwood County Catholic":                    "Holy Family",
+    "Barlowe County Christian":                    "Barlowe Christian",
+    "Paddock County Catholic":                     "Paddock Episcopal",
+    "Olivet County Christian":                     "Olivet",
+    "Benjamin F. Harding":                         "Harding",
+    "Gabriel Villaseñor":                          "Villaseñor",
+    "Astrid Bianchi":                              "Bianchi",
+    "Alderwell Union":                             "Alderwell",
+    "Corey Canyon International":                  "Corey Canyon North",
+    "Black Springs Classical Academy":             "Black Springs East",
+    "Camas Crossing":                              "Camas Valley",
+    "Elena Mendoza":                               "Mendoza",
+    "Lonepine Mesa":                               "Lonepine",
+    "Aspen Spur Union":                            "Aspen Spur",       # "Union" is filler
+    "Sablewood Union":                             "Mount Ruth",       # its town; Sablewood is nowhere
     # ── owner renames 2026-09 (named by the owner, applied exactly) ──────────
     # Rows whose identity IS their current name: the key is that name, and the
     # apply script stamps it as `source` so the roster identity does not move.
@@ -2144,6 +2192,14 @@ INSTITUTION_NAMES = [
 # therefore read as private, whatever the source record said. Keyed on the display
 # name, like `MASCOTS` and `COLORS` — see the emit block in `build`.
 PRIVATE_SCHOOLS = {
+    # 2026-09 Non-Public expansion — private by owner decision, whatever prep-network's
+    # flag says (it marks Bishop Valera, St. Francis, Belmonte Catholic and Pope
+    # Francis public; the owner: "they actually are" private).
+    "St. Isidore Academy", "Bishop Valera", "St. Francis", "Belmonte Catholic",
+    "Ashbury Latin", "Leidesdorff Country Day", "Quartz City Collegiate",
+    "Calvary Chapel Kernwood", "Evans", "Kernwood Christian", "Holy Family",
+    "Barlowe Christian", "Veritas Academy", "Pope Francis", "Paddock Episcopal",
+    "Monsignor Barrow", "Sage Summit", "Olivet",
     "Mater Dei", "Jesuit", "Notre Dame", "Archbishop Gregory",
     "Sacred Heart", "Bellarmine Prep", "Xavier College Prep", "Robledo", "Christian Brothers",
     "Cardinal Mercier", "Pope Leo XIV",
@@ -2192,6 +2248,32 @@ NEVER_SPONSOR = frozenset()
 # to the earlier affiliate batches (Baker, the Bend cluster, the Great Basin).
 
 EXTRA_SPONSORS = frozenset({
+    # --- 2026-09 Non-Public expansion (10B/11B), owner-approved list. Keyed on the
+    # prep-network SOURCE name. (a) every private row that was not sponsoring;
+    # (b) 19 private schools new to the association; (c) public gap-fill in the two
+    # underserved areas, Alderwold (big-school hole) and Belmonte Metro (small-school
+    # hole). Display names for (b)/(c) come from RENAMES.
+    "Abbey Prep", "Belmonte International School", "Bridger County Christian",
+    "Ralph Booker North", "Goldbank Hall", "High Desert Christian",
+    "Laketown County Christian", "Mercy Academy Valley", "Northside Christian",
+    "Olive Reach Baptist", "Belmonte Collegiate Academy", "Nathaniel Gaines",
+    "St. Gabriel Academy", "St. Lucia Academy", "St. Norbert Abbey",
+    "St. Isidore Academy", "Bishop Valera", "St. Francis Catholic", "Belmonte Catholic",
+    "Cardinal Echevarria", "Los Robles Classical School", "Jefferson Methodist School",
+    "Tunnel Diggings Hall", "Calvary Chapel Kernwood", "Evans Western Institute",
+    "Kernwood County Christian", "Kernwood County Catholic", "Barlowe County Christian",
+    "Veritas Academy", "Pope Francis", "Paddock County Catholic", "Monsignor Barrow",
+    "Sage Summit", "Olivet County Christian",
+    "Benjamin F. Harding", "Gabriel Villaseñor", "Bear Flat", "Bluewater",
+    "Black Springs Classical Academy", "Astrid Bianchi", "Alderwell Union",
+    "Purcell Crossing", "Corey Canyon International", "Camas Crossing",
+    "Elena Mendoza", "Caswell North", "Lonepine Mesa",
+    "Vernal Falls", "Javier Alvarado North", "Salvador Montalvo North",
+    # (d) Alderwold's remaining 1A/2A rows, owner rule 2026-09 ("expand it"): the
+    # region was 41 programs a gender against the 45 a second All-Region team needs.
+    "Aspen Spur Union", "High Timber", "Pellmont", "Sablewood Union", "Harmon",
+    "Antler County High", "Harmon Siding", "Kendrickville", "Salmonberry Glen",
+    "South Fork",
     "Whistle Stop",       # 1A 152 — Whistle Stop, Antler. The town's only school, and
                           # the town had no tennis at all.
     "Plainfield Science",  # 6A 1297 — Plainfield, Antler. Owner add (2026-08),

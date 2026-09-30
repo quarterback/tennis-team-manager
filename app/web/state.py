@@ -3648,6 +3648,7 @@ def _jh_reported_tiebreak(d: dict) -> list[dict]:
 
 _JH_PHASE_LABEL = {"showcase_pod": "Showcase (Pod)", "showcase_tiered": "Showcase (Tiered)",
                    "toc": "Tournament of Champions", "state": "State Tournament",
+                   "toc_qualifier": "Tournament of Champions Qualifier",
                    "state_special": "State Specials",
                    "special_challenger": "Special Challengers",
                    "conference": "Conference",
@@ -3947,6 +3948,13 @@ def jhsaa_toc_view(seed: int, gender: str, year: int | None = None,
     champ_of = {br.get("champion"): grp
                 for grp, br in (arc.get("brackets") or {}).items() if br.get("champion")}
     seeds = toc.get("seeds") or {n: i + 1 for i, n in enumerate(toc.get("field") or ())}
+    ru_of = {jh.state_runner_up(br): grp
+             for grp, br in (arc.get("brackets") or {}).items() if jh.state_runner_up(br)}
+    # A qualifier winner is in the field without being a champion: label it by the
+    # class it was runner-up in, so the field list and the cards still say where it
+    # came from.
+    for n in toc.get("field") or ():
+        champ_of.setdefault(n, ru_of.get(n, ""))
     return {
         "ready": True, "gender": g, "year": yr, "years": years, "scope": scope,
         "season_year": arc.get("season_year"),
@@ -3973,6 +3981,17 @@ def jhsaa_toc_view(seed: int, gender: str, year: int | None = None,
                                   card_w=232, card_h=60, gutter=56, leaf_gap=18),
         **_jh_final_four(toc, schools),
         "champion_group": champ_of.get(toc.get("champion"), ""),
+        # THE FINALIST QUALIFIER (JHSAA rule 2026-09): the two duals that filled
+        # the last two seats, rendered as their own panel above the draw — four
+        # runners-up into two seats is not a column of the tree. Class comes off
+        # the archived brackets' runner-up, the way the champions' does.
+        "qualifier": [
+            {**gm, "home_deco": _jh_deco(schools, gm["home"], 20),
+             "away_deco": _jh_deco(schools, gm["away"], 20),
+             "home_group": ru_of.get(gm["home"], ""), "away_group": ru_of.get(gm["away"], ""),
+             "win_points": max(gm["home_points"], gm["away_points"]),
+             "lose_points": min(gm["home_points"], gm["away_points"])}
+            for rd in ((toc.get("qualifier") or {}).get("rounds") or []) for gm in rd],
     }
 
 
@@ -5148,11 +5167,11 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
     years = world.jhsaa_years(w["id"], g)
     yr = (years[0] if years else w["year"]) if year is None else year
     arc = world.get_jhsaa(w["id"], yr, g)
-    grp = group if group in jh.GROUPS else jh.GROUPS[0]
+    grp = group if group in jh.ROAD_GROUPS else jh.ROAD_GROUPS[0]
     if not arc:
         return {"ready": False, "gender": g, "year": yr, "group": grp,
-                "groups": list(jh.GROUPS), "years": years,
-                "scope": _jh_scope(g, grp, list(jh.GROUPS), yr, years, None, None)}
+                "groups": list(jh.ROAD_GROUPS), "years": years,
+                "scope": _jh_scope(g, grp, list(jh.ROAD_GROUPS), yr, years, None, None)}
     schools = _jh_schools(g)
     br = (arc.get("brackets") or {}).get(grp) or {}
     seeds = _jh_seeds(br)
@@ -5282,9 +5301,9 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
             stages.append({"name": "Areas", "rounds": deco[:-1]})
     return {
         "ready": True, "gender": g, "year": yr, "years": years, "group": grp,
-        "groups": list(jh.GROUPS),
+        "groups": list(jh.ROAD_GROUPS),
         "season_year": arc.get("season_year", world.jhsaa_season_year(w)),
-        "scope": _jh_scope(g, grp, list(jh.GROUPS), yr, years, arc.get("season_year"), arc),
+        "scope": _jh_scope(g, grp, list(jh.ROAD_GROUPS), yr, years, arc.get("season_year"), arc),
         **_jh_final_four(br, schools),
         "field": [{**_jh_deco(schools, nm, 22), "seed": seeds[nm]}
                   for nm in (br.get("field") or ())],
@@ -5529,28 +5548,33 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     roster = _jps.stored_roster(w["id"], yr, g, school) if yr is not None else None
     if roster is None:
         roster = jh.build_roster(sc, season_year, salt)
-    br = (arc or {}).get("brackets", {}).get(sc.group) or {}
+    # ‼️ THE ROAD CLASS FOR EVERY POSTSEASON KEY (owner rule 2026-09): a private
+    # program's brackets sit under 10B/11B while its standings and awards stay
+    # under its league class. Read off the archive's own `road` map, so an
+    # archived season resolves to the class it was actually played in.
+    road_g = world.jh_road_group(arc or {}, school, sc.group)
+    br = (arc or {}).get("brackets", {}).get(road_g) or {}
     seeds = _jh_seeds(br)
     # Every stage is its own draw with its own seed order — a team's Sectional seed,
     # Ward seed, Regionals seed, State seed and TOC seed are five different numbers —
     # so each dual's opponent seed comes off the field of the stage it was played in.
     toc_seeds = _jh_seeds((arc or {}).get("toc") or {})
-    sec_arc = (arc or {}).get("sectionals", {}).get(sc.group) or {}
+    sec_arc = (arc or {}).get("sectionals", {}).get(road_g) or {}
     sec_seeds = _jh_seeds(sec_arc)
-    ward_seeds = _jh_seeds((arc or {}).get("wards", {}).get(sc.group) or {})
-    pre_seeds = _jh_seeds((arc or {}).get("prestate", {}).get(sc.group) or {})
-    epi_seeds = _jh_seeds((arc or {}).get("epiregional", {}).get(sc.group) or {})
-    sr_seeds = _jh_seeds((arc or {}).get("super_regional", {}).get(sc.group) or {})
-    ss_seeds = _jh_seeds((arc or {}).get("semi_state", {}).get(sc.group) or {})
-    dv_seeds = _jh_seeds((arc or {}).get("divisional", {}).get(sc.group) or {})
-    sc_seeds = _jh_seeds((arc or {}).get("semi_conference", {}).get(sc.group) or {})
-    cf_seeds = _jh_seeds((arc or {}).get("conference", {}).get(sc.group) or {})
-    sp_seeds = _jh_seeds((arc or {}).get("state_special", {}).get(sc.group) or {})
-    ch_seeds = _jh_seeds((arc or {}).get("special_challenger", {}).get(sc.group) or {})
+    ward_seeds = _jh_seeds((arc or {}).get("wards", {}).get(road_g) or {})
+    pre_seeds = _jh_seeds((arc or {}).get("prestate", {}).get(road_g) or {})
+    epi_seeds = _jh_seeds((arc or {}).get("epiregional", {}).get(road_g) or {})
+    sr_seeds = _jh_seeds((arc or {}).get("super_regional", {}).get(road_g) or {})
+    ss_seeds = _jh_seeds((arc or {}).get("semi_state", {}).get(road_g) or {})
+    dv_seeds = _jh_seeds((arc or {}).get("divisional", {}).get(road_g) or {})
+    sc_seeds = _jh_seeds((arc or {}).get("semi_conference", {}).get(road_g) or {})
+    cf_seeds = _jh_seeds((arc or {}).get("conference", {}).get(road_g) or {})
+    sp_seeds = _jh_seeds((arc or {}).get("state_special", {}).get(road_g) or {})
+    ch_seeds = _jh_seeds((arc or {}).get("special_challenger", {}).get(road_g) or {})
     # The metas are their own draw (their own phase, their own archive key), so like
     # every stage above they carry their own seed order — within-round, off the arc's
     # own field, never the State seed the entrant brought in.
-    meta_seeds = _jh_seeds((arc or {}).get(jh.METASTATE_PHASE, {}).get(sc.group) or {})
+    meta_seeds = _jh_seeds((arc or {}).get(jh.METASTATE_PHASE, {}).get(road_g) or {})
     # A non-district dual is an INVITATIONAL (owner rule 2027-08) — that is what the
     # association calls the duals a program arranges outside its league, and the card
     # should say what they are rather than what they are not. "Non-district" is still
@@ -5558,6 +5582,9 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     # guardrail); it was only ever wrong as a label on a match.
     _KIND = {"showcase_pod": "SHOWCASE", "showcase_tiered": "SHOWCASE",
              "toc": "TOC", "state": "STATE",
+             # The finalist qualifier for the last two TOC seats (JHSAA rule
+             # 2026-09): its own chip, since a loss there is not a TOC appearance.
+             "toc_qualifier": "TOC QUALIFIER",
              # The at-larges' first qualifying layer (owner rule 2026-09), and
              # its own chip because it is its own event: a meta exit is NOT a
              # State appearance, so a STATE chip on the row would say the
@@ -5639,6 +5666,7 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
                     jv_round[other] = nm
 
     _SEEDS = {"TOC": toc_seeds, "STATE": seeds, "META": meta_seeds,
+              "TOC QUALIFIER": _jh_seeds(((arc or {}).get("toc") or {}).get("qualifier") or {}),
               "STATE SPECIAL": sp_seeds, "CHALLENGE": ch_seeds,
               "CONFERENCE": cf_seeds,
               "SEMI-CONFERENCE": sc_seeds,
@@ -5766,6 +5794,10 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         "state": sc.state,
         "classification": sc.classification, "group": sc.group, "district": sc.district,
         "mascot": sc.mascot, "enrollment": sc.enrollment, "private": sc.private,
+        # The ROAD class (owner rule 2026-09): 10B/11B for a private program from
+        # the Non-Public split on, else its league class. The header shows it as a
+        # second chip only when it differs.
+        "road_group": road_g if arc else jh.road_group(sc, season_year),
         "colors": sc.colors,
         # --- this season ---
         "season": season,
@@ -7388,7 +7420,9 @@ def jhsaa_past_winners(seed: int, gender: str, group: str | None = None,
             "champions": champs,
             "poy": {grp: (aw.get("poy") or {})
                     for grp, aw in (arc.get("awards") or {}).items()}})
-    return {"gender": g, "groups": list(jh.GROUPS), "years": years,
+    # Every class that has ever crowned a champion, 10B/11B included (owner rule
+    # 2026-09); a season archived before the split simply has no cell for them.
+    return {"gender": g, "groups": list(jh.ROAD_GROUPS), "years": years,
             "layout": layout if layout in ("grid", "stack") else "stack",
             "layouts": [("stack", "By year"), ("grid", "Grid")],
             # class-blind page; `group` rides the scope bar so the class you were
@@ -7417,11 +7451,11 @@ def jhsaa_computer_ratings_view(seed: int, gender: str, group: str | None = None
     years = world.jhsaa_years(w["id"], g)
     yr = (years[0] if years else w["year"]) if year is None else year
     arc = world.get_jhsaa(w["id"], yr, g)
-    grp = group if group in jh.GROUPS else jh.GROUPS[0]
-    scope = _jh_scope(g, grp, list(jh.GROUPS), yr, years,
+    grp = group if group in jh.ROAD_GROUPS else jh.ROAD_GROUPS[0]
+    scope = _jh_scope(g, grp, list(jh.ROAD_GROUPS), yr, years,
                       (arc or {}).get("season_year"), arc)
     base = {"gender": g, "year": yr, "years": years, "group": grp,
-            "groups": list(jh.GROUPS), "scope": scope,
+            "groups": list(jh.ROAD_GROUPS), "scope": scope,
             "systems": list(SYSTEMS), "glossary": GLOSSARY,
             "sort": sort or "mean", "dir": dir,
             "season_year": (arc or {}).get("season_year")}

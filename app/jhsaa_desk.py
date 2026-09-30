@@ -235,12 +235,21 @@ def d_cinderella(data: dict) -> list[dict]:
     return out
 
 
+def _champ_groups(arc: dict) -> list[str]:
+    """The classes whose State bracket this season archived — the twelve league
+    classes plus 10B/11B from the Non-Public split on (owner rule 2026-09). Champion
+    counts must run over the SAME set `_state_duals` reads, or a 12-champion
+    numerator sits over 14 classes' duals."""
+    br = arc.get("brackets") or {}
+    return [gp for gp in jh.ROAD_GROUPS if gp in jh.GROUPS or br.get(gp)]
+
+
 def d_chalk(data: dict) -> list[dict]:
     """How many champions were top-4 seeds, against how often lower seeds won a
     State dual — the two numbers together are the story."""
     out = []
     for g, arc in data["arcs"].items():
-        seeds = [_champ_seed(arc, gp) for gp in jh.GROUPS]
+        seeds = [_champ_seed(arc, gp) for gp in _champ_groups(arc)]
         seeds = [s for s in seeds if s]
         duals = _state_duals(arc)
         if not seeds or not duals:
@@ -459,7 +468,7 @@ DETECTORS = (d_cinderella, d_chalk, d_nailbiter, d_freshman_champ, d_undefeated,
 def facts(data: dict) -> list[dict]:
     """The strip above everything: five counts over the season, no panels."""
     arcs = data["arcs"]
-    seeds = [_champ_seed(arc, gp) for arc in arcs.values() for gp in jh.GROUPS]
+    seeds = [_champ_seed(arc, gp) for arc in arcs.values() for gp in _champ_groups(arc)]
     seeds = [s for s in seeds if s]
     duals = [d for arc in arcs.values() for d in _state_duals(arc)]
     undefeated = sum(1 for arc in arcs.values() for gp in jh.GROUPS
@@ -518,7 +527,8 @@ def chart(data: dict) -> dict:
                       "pct": round(100 * sum(1 for d in sel if d["fav_won"]) / len(sel)) if sel else None}
         bands.append(row)
     champ_seeds = []
-    for gp in jh.GROUPS:
+    played = {gp for arc in data["arcs"].values() for gp in _champ_groups(arc)}
+    for gp in [x for x in jh.ROAD_GROUPS if x in played]:
         champ_seeds.append({"group": gp, "short": jh.group_short(gp),
                             **{g: _champ_seed(arc, gp) for g, arc in data["arcs"].items()}})
     return {"bands": bands, "champ_seeds": champ_seeds,

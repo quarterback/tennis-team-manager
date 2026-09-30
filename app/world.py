@@ -4314,7 +4314,7 @@ def run_jhsaa(seed: int, world: dict) -> dict:
             summary = {
                 "year": year, "season_year": season_year, "gender": gender,
                 "champions": {g: season["groups"][g]["state"]["champion"]
-                              for g in jhsaa.GROUPS},
+                              for g in jhsaa.ROAD_GROUPS},
                 # The full awards slate (owner SOP 2027-08): `teams` is the
                 # numbered All-State tiers (First..Third, plus Fourth in 7A),
                 # `honorable_mention` the merit tier after them, `district_poy`
@@ -4355,56 +4355,62 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                 # entry list; "district_qualifiers" the district-guarantee berths
                 # (pre-2027-expansion archives carry "wildcards" instead — the
                 # readers accept both). See `jhsaa_postseason_result`.
-                "brackets": {g: season["groups"][g]["state"] for g in jhsaa.GROUPS},
-                "sectionals": {g: season["groups"][g]["sectional"] for g in jhsaa.GROUPS},
-                "wards": {g: season["groups"][g]["ward"] for g in jhsaa.GROUPS},
-                "prestate": {g: season["groups"][g]["prestate"] for g in jhsaa.GROUPS},
+                "brackets": {g: season["groups"][g]["state"] for g in jhsaa.ROAD_GROUPS},
+                "sectionals": {g: season["groups"][g]["sectional"] for g in jhsaa.ROAD_GROUPS},
+                "wards": {g: season["groups"][g]["ward"] for g in jhsaa.ROAD_GROUPS},
+                "prestate": {g: season["groups"][g]["prestate"] for g in jhsaa.ROAD_GROUPS},
                 # THE EPIREGIONAL — the Zonal champions' play-in for the State
                 # draw's first four bye lines (owner rule 2026-09). Its own key,
                 # rendered as its own panel, never a column of the tree. `.get`
                 # for seasons archived before it existed.
                 "epiregional": {g: season["groups"][g].get("epiregional")
-                                for g in jhsaa.GROUPS},
+                                for g in jhsaa.ROAD_GROUPS},
                 "super_regional": {g: season["groups"][g]["super_regional"]
-                                   for g in jhsaa.GROUPS},
+                                   for g in jhsaa.ROAD_GROUPS},
                 "divisional": {g: season["groups"][g].get("divisional")
-                                for g in jhsaa.GROUPS},
+                                for g in jhsaa.ROAD_GROUPS},
                 # The CONDITIONAL last rungs — present and empty in a year that did
                 # not need them (owner rule 2027-08), and the Semi-Conference
                 # convenes exactly when the Conference does, because it is the round
                 # that qualifies everyone but the Divisional losers FOR it. `.get`
                 # because seasons archived before they existed have no key at all.
                 "semi_conference": {g: season["groups"][g].get("semi_conference")
-                                    for g in jhsaa.GROUPS},
+                                    for g in jhsaa.ROAD_GROUPS},
                 # STATE SPECIALS — the final reconciliation round (owner rule
                 # 2026-08): played only when the road delivered fewer qualifiers
                 # than STATE_FIELD, present and empty otherwise. `.get` for
                 # seasons archived before it existed.
                 "state_special": {g: season["groups"][g].get("state_special")
-                                  for g in jhsaa.GROUPS},
+                                  for g in jhsaa.ROAD_GROUPS},
                 # THE SPECIAL CHALLENGERS — the bridge round in front of the
                 # Specials (owner rule 2026-08): eligible early exits contest
                 # the weakest challenger seats. Present and empty in a quiet
                 # year; `.get` for seasons archived before it existed.
                 "special_challenger": {g: season["groups"][g].get("special_challenger")
-                                       for g in jhsaa.GROUPS},
+                                       for g in jhsaa.ROAD_GROUPS},
                 # THE METASTATE (owner rule 2026-09) — the at-larges' first
                 # qualifying layer, in front of the Parastate. None in 1A and
                 # Group 3, which do not play them, and in every season archived
                 # before they existed; `.get` on read for exactly that.
                 jhsaa.METASTATE_PHASE: {g: season["groups"][g].get(jhsaa.METASTATE_PHASE)
-                                   for g in jhsaa.GROUPS},
+                                   for g in jhsaa.ROAD_GROUPS},
                 "conference": {g: season["groups"][g].get("conference")
-                                for g in jhsaa.GROUPS},
+                                for g in jhsaa.ROAD_GROUPS},
                 "semi_state": {g: season["groups"][g]["semi_state"]
-                               for g in jhsaa.GROUPS},
-                "protected": {g: season["groups"][g]["protected"] for g in jhsaa.GROUPS},
+                               for g in jhsaa.ROAD_GROUPS},
+                "protected": {g: season["groups"][g]["protected"] for g in jhsaa.ROAD_GROUPS},
                 "district_qualifiers": {g: season["groups"][g]["district_qualifiers"]
-                                        for g in jhsaa.GROUPS},
+                                        for g in jhsaa.ROAD_GROUPS},
                 # The Tournament of Champions — the SIX classification champions, one
                 # winner. Archived beside the brackets it is drawn from, in the same
                 # shape, so it reads back through the same helpers.
                 "toc": season.get("toc") or {},
+                # THE ROAD MAP (owner rule 2026-09): {private school: "10B"/"11B"}
+                # for every program whose team-championship road left its league
+                # class this season. Empty before `jhsaa.nonpublic_era()`. Every
+                # reader that walks a program's postseason keys resolves its bracket
+                # class through `jh_road_group`, never off its standings row alone.
+                "road": season.get("road") or {},
                 "all_district": {g: season["awards"][g].get("all_district", {})
                                  for g in jhsaa.GROUPS},
                 # THE COMPUTER-RATINGS LAYER + AT-LARGE COMMITTEE (owner spec
@@ -4414,9 +4420,9 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                 # refitting nine systems on request. `.get` on read; committee
                 # is None outside `jhsaa.ATLARGE_GROUPS`.
                 "ratings": {g: season["groups"][g].get("ratings")
-                            for g in jhsaa.GROUPS},
+                            for g in jhsaa.ROAD_GROUPS},
                 "committee": {g: season["groups"][g].get("committee")
-                              for g in jhsaa.GROUPS},
+                              for g in jhsaa.ROAD_GROUPS},
             }
             champs[gender] = summary["champions"]
             conn.execute("INSERT INTO world_jhsaa (world_id, year, gender, data)"
@@ -6444,6 +6450,9 @@ def _jh_school_groups(world_id: int, year: int, gender: str) -> dict[str, str]:
                 nm = row.get("school") if isinstance(row, dict) else None
                 if nm:
                     out[nm] = group
+    # A private program's postseason LANE is its road class (owner rule 2026-09):
+    # 10B/11B run their own ladders and must not wait on their league class's.
+    out.update(arc.get("road") or {})
     return out
 
 
@@ -6653,9 +6662,9 @@ def jhsaa_match_dates(world_id: int, year: int, gender: str,
             continue
         if post_base is None:                              # every lane opens together
             post_base = reg_top + 1
-        lane = "" if phase == "toc" else (group_of.get(a_s) or group_of.get(b_s) or "")
+        lane = "" if phase in _jh.TOC_PHASES else (group_of.get(a_s) or group_of.get(b_s) or "")
         if lane_rank.get(lane) != r_rank:                  # this LANE's next stage
-            base = (max(lane_top.values(), default=post_base - 1) if phase == "toc"
+            base = (max(lane_top.values(), default=post_base - 1) if phase in _jh.TOC_PHASES
                     else lane_top.get(lane, post_base - 1))
             lane_floor[lane], lane_rank[lane] = base + 1, r_rank
         r = max(lane_floor[lane], post_base, nxt.get(a_s, 0), nxt.get(b_s, 0))
@@ -7164,9 +7173,24 @@ def jhsaa_toc_result(toc: dict, school: str) -> dict:
     reuses the state draw's arithmetic wholesale rather than walking the rounds a
     second time. Only the labels are the event's own."""
     st = jhsaa_state_result(toc, school)
-    return {"made_toc": st["made_state"], "toc_seed": st["seed"],
-            "toc_place": st["place"], "toc_finish": _toc_finish_label(st["place"]),
-            "toc_champion": st["champion"]}
+    out = {"made_toc": st["made_state"], "toc_seed": st["seed"],
+           "toc_place": st["place"], "toc_finish": _toc_finish_label(st["place"]),
+           "toc_champion": st["champion"], "toc_qualifier": False}
+    # THE FINALIST QUALIFIER (JHSAA rule 2026-09). Owner rule: a program that played
+    # the qualifier is treated like the other twelve TOC entrants — its State
+    # finalist appearance stays its State honour and it carries a TOC tag beside it.
+    # A LOSER is therefore a TOC appearance with the finish "TOC Qualifier", placed
+    # one rung below everyone in the draw (place = field + 1, no seed); a WINNER is an
+    # ordinary entrant whose finish comes off the draw. `toc_qualifier` marks anyone
+    # who played the round.
+    q = (toc or {}).get("qualifier") or {}
+    if school in (q.get("field") or ()):
+        out["toc_qualifier"] = True
+        if not out["made_toc"]:
+            out.update(made_toc=True, toc_seed=0,
+                       toc_place=len((toc or {}).get("field") or ()) + 1,
+                       toc_finish="TOC Qualifier")
+    return out
 
 
 def jhsaa_title_stages() -> list[tuple[str, str, str]]:
@@ -7508,6 +7532,15 @@ def jh_honor_lines(honors: list[str]) -> list[dict]:
     return out
 
 
+def jh_road_group(arc: dict, school: str, league_group: str) -> str:
+    """The class whose TEAM-CHAMPIONSHIP keys hold `school`'s postseason in this
+    archived season — `league_group` (its standings class) for every public
+    program and every season before the Non-Public split, 10B/11B for a private
+    one after it (owner rule 2026-09). The archive's `road` map is the decision
+    as recorded; a reader never re-derives it from `private` or enrollment."""
+    return (arc.get("road") or {}).get(school) or league_group
+
+
 def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | None:
     """One archived season as this program lived it. `None` if the program has no
     standings row that year (it didn't sponsor the sport, or the archive predates
@@ -7523,7 +7556,7 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
            "state_rank": 0, "pi": None, "made_state": False, "seed": 0, "state_place": 0,
            "state_finish": "", "champion": False, "district_title": False,
            "made_toc": False, "toc_seed": 0, "toc_place": 0, "toc_finish": "",
-           "toc_champion": False, "honoured": False, "unit_wins": [],
+           "toc_champion": False, "toc_qualifier": False, "honoured": False, "unit_wins": [],
            # The JV season's record, folded off this program's JV rows. A RECORD, not a
            # rating (owner rule 2026-08): JV has no TOSS, no ranking, no seed and no
            # postseason, and it exists here because a program whose varsity is poor
@@ -7534,7 +7567,7 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
            # Team-level honours that are TEXT rather than a chip (today just a TOC
            # finish short of the title). Kept apart from `honors`, which is
            # individual awards only — the school page renders them in two tabs.
-           "team_honors": []}
+           "team_honors": [], "road_group": ""}
     for grp, dists in (arc.get("standings") or {}).items():
         for dname, rows in (dists or {}).items():
             for r in rows:
@@ -7553,7 +7586,11 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
     # ledger row names the stage a run ended at — "Areas" / "Sectionals" / "Wards"
     # / "Regionals" / "Zonals" / "Super Regionals" / "Semi-State" — instead of
     # going blank for a team that never reached the State bracket.
-    g = row["group"]
+    # ‼️ THE ROAD CLASS, NOT THE LEAGUE CLASS (owner rule 2026-09): a private
+    # program's league row sits under 7A while its brackets sit under 10B/11B.
+    # Standings, ranking, All-State and All-District below stay on `row["group"]`.
+    g = jh_road_group(arc, school, row["group"])
+    row["road_group"] = g
     from . import jhsaa
     st = jhsaa_postseason_result(
         {"sectional": (arc.get("sectionals") or {}).get(g),
@@ -7629,9 +7666,11 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
     # files "Tournament of Champions — Semifinal" under the PLAYERS and drops it
     # from the team side entirely. `honors` is individual awards, full stop.
     if row["made_toc"] and not row["toc_champion"]:
+        # A qualifier loser (owner rule 2026-09) is a TOC entrant like the rest: the
+        # same line, minus a seed it never held.
+        seed = f" (No. {row['toc_seed']} seed)" if row["toc_seed"] else ""
         row["team_honors"].append(
-            f"Tournament of Champions — {row['toc_finish'].removeprefix('TOC ')}"
-            f" (No. {row['toc_seed']} seed)")
+            f"Tournament of Champions — {row['toc_finish'].removeprefix('TOC ')}{seed}")
     aw = (arc.get("awards") or {}).get(row["group"]) or {}
     poy = aw.get("poy")
     if poy and poy.get("school") == school:
@@ -7699,7 +7738,7 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
 
 #: Bump when `_season_row` changes shape or meaning: rows stored at an older
 #: version are re-derived on their next read (per season, never per page).
-_SEASON_ROW_VERSION = 1
+_SEASON_ROW_VERSION = 3   # 2: `road_group` and the road-class stage walk (2026-09)
 
 
 def _fold_season_rows(conn, world_id: int, year: int, gender: str) -> dict[str, dict]:

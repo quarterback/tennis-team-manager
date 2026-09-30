@@ -39,6 +39,7 @@ Scope rules (spec Part 0/1.1):
 from __future__ import annotations
 
 import hashlib
+from app import jhsaa as _jh
 import math
 import statistics
 
@@ -98,7 +99,7 @@ def dual_rows(teams: list) -> list[dict]:
             if not d.get("home"):
                 continue
             phase = d.get("phase") or "regular"
-            if phase in ("state", "toc"):
+            if phase in ("state", *_jh.TOC_PHASES):     # the TOC and its qualifier, like TOSS
                 continue
             if d["opp"] not in names:
                 continue

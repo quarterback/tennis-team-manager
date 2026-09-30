@@ -330,3 +330,9 @@ Key supplied totals:
 - classification TOC dual win rates use the 2087–2102 window shown above.
 
 This report records the policy discussion, its historical basis, and the subsequent JHSAA vote adopting the expanded TOC format.
+
+---
+
+## Implementation note
+
+Implemented as `jhsaa.run_toc_qualifier` (phase `toc_qualifier`, archived under `toc["qualifier"]`, round name "TOC Qualifier"), season-gated with the Non-Public split. A qualifier loser is credited like every other TOC entrant: its State finalist honour, plus a TOC appearance with the finish "TOC Qualifier".

@@ -46,6 +46,21 @@ def _sixteen_state_pilot_off():
     jh.sixteen_state_era = real
 
 
+@pytest.fixture(autouse=True, scope="session")
+def _nonpublic_split_off():
+    """Keep every suite on the ONE-road postseason unless it opts into the
+    Non-Public team championships (owner rule 2026-09) — the pilot fixture's
+    reason exactly: a fresh database resolves `jhsaa.nonpublic_era()` to 0, which
+    would move every private program in the season-2027 fixtures out of the
+    brackets the ladder, TOC, awards and committee tests assert on.
+    `tests/test_jhsaa_nonpublic.py` opts in by swapping it back."""
+    from app import jhsaa as jh
+    real = jh.nonpublic_era
+    jh.nonpublic_era = lambda: 10 ** 6
+    yield
+    jh.nonpublic_era = real
+
+
 @pytest.fixture
 def legacy_talent_draw():
     """Pin the CLASSIFICATION talent draw (pre-`jhsaa.band_era()` cohorts) for a
