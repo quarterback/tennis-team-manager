@@ -1,14 +1,14 @@
-# JHSAA Tournament of Champions — 16-Team Finalist Qualifier Proposal
+# JHSAA Tournament of Champions — 16-Team Expansion and Finalist Qualifiers
 
-**Status:** historical policy discussion; not adopted.
+**Status:** adopted JHSAA policy.
 
 **Context:** discussion following creation of the 10B and 11B private-school classifications. The new classification structure creates 14 State champions, leaving two places in a conventional 16-team Tournament of Champions bracket.
 
-This report records the historical evidence behind a proposal raised by a Jefferson columnist and supported by some fans in large-school markets. JHSAA has not adopted the proposal.
+This report records the historical evidence behind the plan first raised by a Jefferson columnist and supported by fans in large-school markets, and its subsequent adoption by JHSAA.
 
 ---
 
-## 1. The proposal
+## 1. Adopted format
 
 The Tournament of Champions would retain automatic entry for every State champion:
 
@@ -25,7 +25,7 @@ Four State runners-up would then play two TOC qualifying duals:
 
 The two winners would enter the TOC, producing a **16-team bracket with no byes**.
 
-The proposal does not extend farther down the classification ladder and does not create general at-large bids.
+The adopted format does not extend farther down the classification ladder and does not create general at-large bids.
 
 ---
 
@@ -289,14 +289,11 @@ No alternative has been adopted.
 
 ## 12. Open questions
 
-If JHSAA formally considers the proposal, the unresolved issues include:
+With the format approved, implementation questions include:
 
-1. whether the association wants any non-State champion in the TOC;
-2. whether the private-school finalist pathway is an acceptable part of the 10B/11B political settlement;
-3. whether 9A/8A is the appropriate public counterpart;
-4. whether the qualifying duals are formally part of the TOC or a separate qualification stage;
-5. how the 16-team TOC is seeded once the two qualifiers are known;
-6. whether the qualifying games are permanent or reviewed after an initial cycle of 10B/11B competition.
+1. whether the qualifying duals are formally recorded as part of the TOC or as a separate qualification stage;
+2. how the 16-team TOC is seeded once the two qualifiers are known;
+3. whether the qualifying games are reviewed after an initial cycle of 10B/11B competition.
 
 ---
 
@@ -318,7 +315,7 @@ It is not primarily an attempt to identify the 15th- and 16th-best teams by form
 - 9A and 8A receive a parallel finalist route grounded in their historical public-school TOC record;
 - the TOC becomes a full 16-team bracket without expanding beyond four rounds.
 
-**Status remains discussion only. JHSAA has not adopted or voted on the proposal.**
+**JHSAA has voted to adopt the expanded format.** The TOC now has 14 automatic State-champion bids plus two finalist-qualifier winners, producing a 16-team bracket with no byes.
 
 ---
 
@@ -336,4 +333,4 @@ Key supplied totals:
 - 25 of 64 9A/8A State finals from 2087–2102 decided by one position;
 - classification TOC dual win rates use the 2087–2102 window shown above.
 
-This report records the policy discussion and its historical basis. It should not be cited as an adopted JHSAA rule.
+This report records the policy discussion, its historical basis, and the subsequent JHSAA vote adopting the expanded TOC format.
