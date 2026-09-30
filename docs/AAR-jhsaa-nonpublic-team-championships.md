@@ -45,6 +45,13 @@ protected seat passes to the league's best public finisher; 10B plays 4S/5D
   Metro 75 → 89 %; no saturated area touched; one fictional 8A (Antler Valley,
   Blackpine) by owner rule.
 
+## All-Region after the expansion
+No redraw: All-Region is selected per area from whoever plays, and its tiers are
+program-count thresholds. Belmonte Metro (36 → 47) and Halbrook Basin (42 → 46) now
+field a First and Second Team. `AR_HM_MIN_PROGRAMS` moved 100 → 90 (owner: "the
+100 was arbitrary") so Gold Valley (103 / 99) and Selquah (96 / 91) both carry an
+Honorable Mention in both genders; the next region is 66.
+
 ## Lessons
 - **The importer's `draw_districts` scattered the 2052 affiliate leagues.** It
   walks prep-network's geographic ORDER, which the Oregon/Washington/Idaho rows are

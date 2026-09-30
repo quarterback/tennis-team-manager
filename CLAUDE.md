@@ -2377,7 +2377,7 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     A region of **`AR_TIER2_MIN_PROGRAMS` (45)+** crowns a **First AND Second
     Team**; below that, ONE unnumbered team (calling it "First" with no second
     promises a tier that does not exist). Halbrook alone clears
-    **`AR_HM_MIN_PROGRAMS` (100)** and adds an **Honorable Mention** — All-State's
+    **`AR_HM_MIN_PROGRAMS` (90, was 100 — owner 2026-09: "the 100 was arbitrary"; Gold Valley AND Selquah, both genders, clear it)** and adds an **Honorable Mention** — All-State's
     threshold logic exactly (no slot count, same criteria and flight weighting)
     but capped at **ONE entry per school** (`AR_HM_PER_SCHOOL`), an entry being a
     singles player OR a pairing. **Thresholds are on the PROGRAM COUNT, never a

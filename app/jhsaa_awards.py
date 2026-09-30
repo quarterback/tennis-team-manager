@@ -143,7 +143,14 @@ AR_TIER2_MIN_PROGRAMS = 45
 # Same rule as All-State's HM and for the same reason: a THRESHOLD, not a team.
 # No slot count, so the size is an OUTPUT of how deep the region actually was,
 # and at most two ENTRIES per school.
-AR_HM_MIN_PROGRAMS = 100
+#
+# ‼️ 90, NOT 100 (owner rule 2026-09: "the 100 was arbitrary"). After the
+# Non-Public expansion Gold Valley stood at 103 girls / 99 boys and Selquah at
+# 96 / 91, so the girls' half of one region carried an Honorable Mention its
+# boys did not. The owner wants BOTH genders of BOTH regions on First, Second
+# and Honorable Mention; 90 clears all four (the next region is 66) and keeps
+# the bar a bar.
+AR_HM_MIN_PROGRAMS = 90
 AS_TIERS = {"9A": 4}           # the largest class; everyone else gets three
 AS_TIERS_DEFAULT = 3
 
