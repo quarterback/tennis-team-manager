@@ -20,7 +20,7 @@
 {# ---- controls: run / config ------------------------------------------------ #}
 <div class="bl-panel">
   <div class="bl-panel-head"><span class="bl-panel-title">Cycle</span>
-    <span class="bl-panel-meta">{% if view.pending %}proposal open · built from seasons {{ view.pending.data.season_years|join(', ') }}{% elif view.due %}a cycle is due — it opens on the next advance, or now{% else %}no proposal open · last committed {{ view.last_label }}{% endif %}</span></div>
+    <span class="bl-panel-meta">{% if view.pending %}proposal open · built from seasons {{ view.pending.data.season_years|join(', ') }}{% elif view.due %}a cycle is due — it opens on the next advance, or now{% elif not view.config.enabled %}automatic cycles OFF · last closed {{ view.last_label }}{% else %}no proposal open · last closed {{ view.last_label }}{% endif %}</span></div>
   <div class="bl-panel-body" style="padding:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:end">
     {% if not view.pending %}
     <form method="post" action="{{ url_for('jhsaa_reclass_run') }}">
@@ -39,14 +39,16 @@
     </form>
     <form method="post" action="{{ url_for('jhsaa_reclass_dismiss') }}">
       <input type="hidden" name="u" value="{{ u }}">
-      <button class="bl-btn" type="submit">Dismiss</button>
+      <button class="bl-btn" type="submit" title="Skip this cycle: the next is due {{ view.config.cycle }} seasons from now">Dismiss (skip this cycle)</button>
     </form>
     {% endif %}
     <details style="margin-left:auto">
       <summary class="bit" style="cursor:pointer">Coefficients</summary>
       <form method="post" action="{{ url_for('jhsaa_reclass_config') }}" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-top:8px">
         <input type="hidden" name="u" value="{{ u }}">
-        {% for key, label in [('cycle','Seasons per cycle'),('success_pp','Success: enrollment per cycle point (9A–5A)'),('futility_floor','Futility floor: win rate below which a school sinks'),('futility_pu','Futility: enrollment per 1.0 of win rate under the floor (9A–5A)'),('success_pp_b','Success (4A-1A, blank = scaled)'),('futility_pu_b','Futility (4A-1A, blank = scaled)'),('success_pp_g','Success (Groups, blank = 1.5× the 9A–5A value)'),('futility_pu_g','Futility (Groups, blank = 1.5× the 9A–5A value)')] %}
+        <label class="bl-field" style="flex-direction:column;align-items:flex-start"><span class="bl-field-label">Automatic cycles</span>
+          <label class="bit" style="display:flex;gap:6px;align-items:center;height:30px"><input type="checkbox" name="enabled" value="1" {% if view.config.enabled %}checked{% endif %}> hold the advance every cycle (off: only "Run now" opens one)</label></label>
+        {% for key, label in [('cycle','Seasons per cycle'),('success_pp','Success: enrollment per cycle point (9A–5A)'),('futility_floor','Futility floor: win rate below which a school sinks'),('futility_pu','Futility: enrollment per 1.0 of win rate under the floor (9A–5A)'),('success_pp_b','Success (4A-1A, blank = scaled)'),('futility_pu_b','Futility (4A-1A, blank = scaled)'),('success_pp_g','Success (Groups, blank = 1.5× the 9A–5A value)'),('futility_pu_g','Futility (Groups, blank = 1.5× the 9A–5A value)'),('success_pp_n','Success (10B–11B, blank = scaled)'),('futility_pu_n','Futility (10B–11B, blank = scaled)')] %}
         <label class="bl-field" style="flex-direction:column;align-items:flex-start"><span class="bl-field-label">{{ label }}</span>
           <input class="bl-select" name="{{ key }}" value="{{ view.config[key] if view.config[key] is not none else '' }}" style="width:150px"></label>
         {% endfor %}
@@ -91,7 +93,7 @@
         <input class="bl-select" name="school" list="rc-schools" required style="min-width:240px"></label>
       <label class="bl-field"><span class="bl-field-label">Pool</span>
         <select class="bl-select" name="to">
-          <option value="A">9A–5A</option><option value="B">4A–1A</option><option value="G">Groups</option>
+          <option value="A">9A–5A</option><option value="B">4A–1A</option><option value="G">Groups</option><option value="N">10B–11B (privates only)</option>
         </select></label>
       <button class="bl-btn" type="submit">+ Add</button>
     </form>
@@ -99,7 +101,7 @@
 </div>
 
 {# ---- the proposal ---------------------------------------------------------- #}
-{% set pools = [('A','9A – 5A'),('B','4A – 1A'),('G','Group 1 – 3')] %}
+{% set pools = [('A','9A – 5A'),('B','4A – 1A'),('G','Group 1 – 3'),('N','Non-Public 10B – 11B')] %}
 <div class="jh-dirbar">
   <input class="jh-dirfind" id="rc-find" type="search" autocomplete="off" placeholder="Filter by school, class, area or league…" aria-label="Filter">
   <label class="jh-ttfilter"><span class="k">Show</span>
@@ -162,7 +164,7 @@
     <span class="bl-panel-meta">cross-ladder moves, resolved before the sorts</span></div>
   <div class="tbl-scroll"><table class="jh-ledger nowrap">
     <tr><th class="nm">School</th><th>Area</th><th>From</th><th>To pool</th><th>Reason</th></tr>
-    {% for g in p.geo %}<tr><td class="nm">{{ g.school }}</td><td>{{ g.area }}</td><td>{{ g.from|jh_group_short }}</td><td>{{ {'A':'9A–5A','B':'4A–1A','G':'Groups'}[g.pool] }}</td><td>{{ g.reason }}</td></tr>{% endfor %}
+    {% for g in p.geo %}<tr><td class="nm">{{ g.school }}</td><td>{{ g.area }}</td><td>{{ g.from|jh_group_short }}</td><td>{{ {'A':'9A–5A','B':'4A–1A','G':'Groups','N':'Non-Public'}[g.pool] }}</td><td>{{ g.reason }}</td></tr>{% endfor %}
   </table></div>
 </div>
 {% endif %}

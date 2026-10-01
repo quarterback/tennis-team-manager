@@ -128,3 +128,66 @@ the season simply read the old classes.
 The lesson is the one the explorer's action bar already carries from the other
 direction: a seed file and a save disagree the moment either is reset, so a
 decision has to be recoverable from whichever survives.
+
+## Addendum (2026-10): the cycle learns the Non-Public classes
+
+**Report.** "Realignment just doesn't recognize 11B and 10B — it predates those
+classifications." And, in the same breath: "it won't ever let me bypass
+reclassification entirely either; it forces me to pick, dismissing doesn't make it
+not fire again."
+
+**What was wrong.** Two separate faults, both inherited from the cycle's age.
+
+1. *Privates were sorted as publics.* `build_proposal` pooled every live school by
+   `classification`, which for a private is the enrollment class it would hold if
+   it were public. So a 10B private with a 7A-sized enrollment sat in the 9A-5A pool,
+   was sorted against public 7As, and could be proposed into 6A. The commit then
+   moved its `classification` and (via `_move`) its *old group*, and the page and the
+   ledger reported a class change for a program whose championship had not moved.
+   Read from the Non-Public side, the cycle looked like it kept sweeping privates
+   back into the public classes they had come from.
+2. *Dismiss did not close anything.* `due()` counted archived seasons since the last
+   **committed** cycle. A dismissed proposal left that clock untouched, so the very
+   next advance found the cycle still due, built a fresh proposal and held again.
+   The only way past a realignment was to commit one.
+
+**The fix.** The privates are a fourth pool, `N`, beside the ladder pools and the
+Groups, and like the Groups they are *contained*: pooled by `group` (10B/11B), never
+by classification or area; sorted against other privates only, on the same
+effective size (enrollment + success − futility) with the same per-pool
+coefficients (`success_pp_n` / `futility_pu_n`, span-scaled by default); cut into
+two equal bands; the owner's `NONPUBLIC_PLAYUP` names pinned to 10B. `_move` on a
+Non-Public class changes `group` only — a private's `classification` is the
+enrollment class behind roster depth, the early-participation gate and its old
+league, and is not the cycle's to move. One helper, `_cls(r)`, answers "which class
+does the cycle sort this row in", and every count, the snapshot, the `reapply`
+check and the ledger go through it. 10B and 11B appear in the class counts and are
+redrawn when touched, like any class.
+
+A dismissal now closes the cycle: `last_cycle_year` reads committed **or**
+dismissed, so Dismiss means "skip this cycle" and the next is due `cycle` seasons
+later. A kill switch (`jhsaa_reclass_enabled`, a checkbox on the Coefficients form)
+turns automatic cycles off altogether; "Run now" still opens one by hand.
+
+**Two things it shook loose.**
+
+* `ensure_nonpublic` — the standing rule that puts every private in its Non-Public
+  class on every load — re-cut every private to the 550-enrollment rule each time.
+  That was right when the cut was the only thing that placed a private; with the
+  cycle moving them, it undid every committed 10B/11B move the next time the file
+  was read. The cut now seeds a private once (a private found in a public group), and
+  a private already in 10B/11B stays where the cycle put it; the script's `force`
+  path still re-cuts everything.
+* A redraw could hand out the name of a league the owner had folded
+  (`consolidated_leagues`): the name is in the bank and "unused in the class". The
+  load's fold then took it straight back, and the committed map and the loaded map
+  disagreed on two leagues — caught by the reapply test the moment the touched set
+  changed. `redistrict` now treats every folded name as foreign.
+
+**Validation.** Targeted tests only, by the owner's standing edict: the proposal
+pools every private in `N` with both current and proposed in 10B/11B and no
+Non-Public class in any public pool; `_move` on a private touches `group` alone; a
+dismissal advances `last_cycle_year`; `due()` is false with the switch off; the
+commit-and-revert round trips still reproduce the committed map; and the page, the
+proposal, the dismiss, the config toggle and the realignments page render through
+the Flask client.

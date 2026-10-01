@@ -4553,6 +4553,32 @@ was a school marker, shipped "Baptist HS High School".
   from `data/jhsaa/districting.json` — asserted equal to the importer's), and
   records every move with its evidence in `world_jhsaa_reclass_move`. The 2046
   "never cut-line rebands" note is SUPERSEDED. `tests/test_jhsaa_reclass.py`.
+  ‼️ **THE CYCLE KNOWS 10B/11B — A FOURTH POOL, AND PRIVATES ARE CONTAINED IN IT
+  (owner rule 2026-10, `rc.POOL_N` / `_cls`).** The cycle predated the Non-Public
+  classes and pooled every private by its `classification`, so a private read as a
+  7A on the page, was proposed into 6A, and the ledger said it changed class while
+  its championship never moved ("realignment just doesn't recognize 11B and 10B").
+  Like the Groups, the privates are their own pool: pooled by `group` (never
+  classification or area), sorted against privates only on the same effective size,
+  cut into two equal bands, moving between 10B and 11B or not at all;
+  `NONPUBLIC_PLAYUP` pins its names to 10B. `_move` on a Non-Public class touches
+  `group` ONLY — a private's `classification` (roster depth, the early-participation
+  gate, its old league) is never the cycle's to move. `_cls(r)` is the one reader of
+  "which class does the cycle sort this row in"; every count, snapshot, `reapply`
+  check and ledger line goes through it (`ALL_CLASSES` = `GROUPS` + `NONPUBLIC`).
+  ‼️ **THE CUT SEEDS A PRIVATE ONCE; THE CYCLE MOVES IT AFTER.** `ensure_nonpublic`
+  re-cut every private to the 550 rule on EVERY load, which undid each committed
+  10B/11B move the next time the file was read — it now places only a private found
+  in a PUBLIC group (and re-cuts everything under `force`, the script's path).
+  ‼️ **A DISMISSAL CLOSES THE CYCLE** (owner: "dismissing doesn't make it not fire
+  again"): `last_cycle_year` reads committed OR dismissed, so Dismiss means "skip
+  this cycle" and the next is due `cycle` seasons later; `jhsaa_reclass_enabled`
+  (the Coefficients form's checkbox) is the kill switch — off, nothing is ever due
+  and the advance never holds, while "Run now" still opens one by hand.
+  ‼️ **A FOLDED LEAGUE'S NAME IS RETIRED FOR GOOD**: `redistrict` excludes every
+  `consolidated_leagues` name from the bank — handed out again by a redraw, the
+  load's fold took it straight back and the committed map and the loaded map
+  disagreed on two leagues.
   ‼️ **THE HISTORY IS AN INDEX PLUS ONE CYCLE, AND A FILE (owner rule 2026-09).**
   A cycle is ~400 moves; `/jhsaa/realignments` lists cycles (`rc.cycle_index`,
   counts only) and renders ONE (`rc.cycle`, `?cycle=<season>`, newest by default)

@@ -60,7 +60,17 @@ CYCLE_SEASONS = 4
 POOL_A = ("9A", "8A", "7A", "6A", "5A")
 POOL_B = ("4A", "3A", "2A", "1A")
 POOL_G = ("Group 1", "Group 2", "Group 3")
-POOLS = {"A": POOL_A, "B": POOL_B, "G": POOL_G}
+#: ‼️ THE NON-PUBLIC POOL (owner rule 2026-10). The cycle predated 10B/11B and
+#: sorted every private by its `classification` into the PUBLIC pools — so a
+#: private read as a 7A on the page, was proposed into 6A, and the ledger said
+#: it had changed class while its championship never moved. Like the Groups, the
+#: privates are CONTAINED: a private is pooled by its `group` (10B/11B), never its
+#: classification or its area, is sorted against other privates only, and can
+#: move only between the two Non-Public classes. Its `classification` (the
+#: enrollment class behind roster depth and the early-participation gate) is
+#: untouched by the cycle.
+POOL_N = tuple(jd.NONPUBLIC)
+POOLS = {"A": POOL_A, "B": POOL_B, "G": POOL_G, "N": POOL_N}
 #: Finish points per season, by teams alive when eliminated (`jhsaa_state_result`).
 FINISH_POINTS = ((1, 6), (2, 4), (4, 2))
 MADE_STATE_POINTS = 1
@@ -89,6 +99,9 @@ def config() -> dict:
     from . import worldconfig as wc
     cfg = {
         "cycle": wc.get_int(_CFG + "cycle", CYCLE_SEASONS, lo=1, hi=20),
+        # The kill switch (owner rule 2026-10): off, a cycle is never DUE and the
+        # advance never holds; "Run now" still opens one by hand.
+        "enabled": wc.get_int(_CFG + "enabled", 1, lo=0, hi=1) == 1,
         "success_pp": wc.get_float(_CFG + "success_pp", DEFAULTS["success_pp"], hi=1e5),
         "futility_floor": wc.get_float(_CFG + "futility_floor", DEFAULTS["futility_floor"], hi=1.0),
         "futility_pu": wc.get_float(_CFG + "futility_pu", DEFAULTS["futility_pu"], hi=1e6),
@@ -97,7 +110,7 @@ def config() -> dict:
         "join_areas": wc.get_json(_CFG + "join_areas", list(GROUP_JOIN_AREAS)),
         "join_schools": wc.get_json(_CFG + "join_schools", list(GROUP_JOIN_SCHOOLS)),
     }
-    for pool in ("b", "g"):
+    for pool in ("b", "g", "n"):
         for key in ("success_pp", "futility_pu"):
             raw = wc.get(f"{_CFG}{key}_{pool}")
             try:
@@ -194,6 +207,13 @@ def pool_of(cls: str) -> str | None:
     return None
 
 
+def _cls(r: dict) -> str:
+    """The class the cycle SORTS a row in: a private's Non-Public class (`group`,
+    10B/11B), every public program's `classification`."""
+    g = r.get("group")
+    return g if g in jd.NONPUBLIC else r["classification"]
+
+
 def _ladder_pool_for(enrollment: int, rows: list[dict]) -> str:
     """Which A-ladder pool a school entering from the Groups joins: by enrollment
     against the big pool's current floor (rule 7 — the normal A-class process)."""
@@ -255,9 +275,14 @@ def build_proposal(world_id: int, years: list[int], cfg: dict | None = None,
     pool_for: dict[str, str] = {}
     geo: list[dict] = []
     for r in rows:
-        cls = r["classification"]
+        cls = _cls(r)
         p = pool_of(cls)
         if p is None or r["name"] in decreed:
+            continue
+        if p == "N":
+            # a private is CONTAINED in the Non-Public classes: no territory test,
+            # no join table, no ladder — the sort below places it in 10B or 11B
+            pool_for[r["name"]] = "N"
             continue
         if p == "G" and r["area"] not in territory and r["name"] not in join_schools:
             dest = _ladder_pool_for(int(r["enrollment"]), rows)
@@ -281,6 +306,8 @@ def build_proposal(world_id: int, years: list[int], cfg: dict | None = None,
     # Owner additions: a Group school asking back onto the A ladder, or the reverse.
     for name, e in edits.items():
         if e.get("action") == "add" and name in by_name and e.get("to") in POOLS:
+            if (e["to"] == "N") != (_cls(by_name[name]) in POOL_N):
+                continue                 # a private never leaves N; a public never enters it
             pool_for[name] = e["to"]
             geo.append({"school": name, "area": by_name[name]["area"],
                         "from": by_name[name]["classification"], "pool": e["to"],
@@ -303,9 +330,11 @@ def build_proposal(world_id: int, years: list[int], cfg: dict | None = None,
         for r in members:
             e = edits.get(r["name"]) or {}
             if e.get("action") == "veto":
-                pinned[r["name"]] = r["classification"]
+                pinned[r["name"]] = _cls(r)
             elif e.get("action") == "redirect" and e.get("to") in classes:
                 pinned[r["name"]] = e["to"]
+            elif key == "N" and r["name"] in jh.NONPUBLIC_PLAYUP:
+                pinned[r["name"]] = POOL_N[0]        # the owner's named 10B programs
             s = sc.get(r["name"]) or {}
             pts = s.get("pts", 0)
             wr = s.get("wr")
@@ -313,7 +342,7 @@ def build_proposal(world_id: int, years: list[int], cfg: dict | None = None,
             adj = pts * pp - fut
             entries.append({
                 "school": r["name"], "area": r["area"], "city": r["city"],
-                "pool": key, "current": r["classification"], "enrollment": int(r["enrollment"]),
+                "pool": key, "current": _cls(r), "enrollment": int(r["enrollment"]),
                 "points": pts, "wins": s.get("wins", 0), "losses": s.get("losses", 0),
                 "win_rate": wr, "seasons": s.get("seasons", 0),
                 "by_gender": s.get("by_gender", {}),
@@ -347,11 +376,10 @@ def build_proposal(world_id: int, years: list[int], cfg: dict | None = None,
         pooled.extend(entries)
 
     # --- 3. counts, and the leagues the redraw would produce -------------------
-    before = collections.Counter(r["classification"] for r in rows)
-    after = collections.Counter(proposed.get(r["name"], r["classification"]) for r in rows)
+    before = collections.Counter(_cls(r) for r in rows)
+    after = collections.Counter(proposed.get(r["name"], _cls(r)) for r in rows)
     touched = sorted({x["current"] for x in pooled if x["moves"]}
-                     | {x["proposed"] for x in pooled if x["moves"]},
-                     key=lambda c: jh.GROUPS.index(c) if c in jh.GROUPS else 99)
+                     | {x["proposed"] for x in pooled if x["moves"]}, key=_rank)
     league_after: dict[str, str] = {}
     notes: dict[str, list[str]] = {}
     if redraw and touched:
@@ -381,8 +409,11 @@ def build_proposal(world_id: int, years: list[int], cfg: dict | None = None,
     }
 
 
+ALL_CLASSES = tuple(jh.GROUPS) + POOL_N
+
+
 def _rank(cls: str) -> int:
-    return jh.GROUPS.index(cls) if cls in jh.GROUPS else 99
+    return ALL_CLASSES.index(cls) if cls in ALL_CLASSES else 99
 
 
 # ----------------------------------------------------------- persistence ----
@@ -431,10 +462,16 @@ def pending(world_id: int) -> dict | None:
 
 
 def last_cycle_year(world_id: int) -> int | None:
+    """The world-year of the last CLOSED cycle — committed OR dismissed. ‼️ A
+    dismissal closes the cycle (owner rule 2026-10): it used to leave the clock
+    where it was, so the very next advance found the cycle still due, opened a
+    fresh proposal and held again — there was no way past a realignment short of
+    committing one. Dismiss now means "skip this cycle"; the next is due `cycle`
+    seasons later, and "Run now" opens one off-cycle at any time."""
     conn = _conn()
     try:
         r = conn.execute("SELECT MAX(year) y FROM world_jhsaa_reclass WHERE world_id=?"
-                         " AND status='committed'", (world_id,)).fetchone()
+                         " AND status IN ('committed', 'dismissed')", (world_id,)).fetchone()
     finally:
         conn.close()
     return r["y"] if r and r["y"] is not None else None
@@ -444,6 +481,8 @@ def due(world: dict) -> bool:
     """A cycle is due at week 0 once `cycle` seasons have been archived since the last
     commit (or since the save began). The hold only bites while a proposal is open."""
     cfg = config()
+    if not cfg.get("enabled", True):
+        return False
     years = cycle_years(world["id"], 10_000)
     if len(years) < cfg["cycle"]:
         return False
@@ -524,10 +563,10 @@ def commit(world: dict) -> dict:
     # identity a rename never moves) beside its display name: the ledger is
     # meant to be read across seasons, and the name is only the name today.
     ident_of = {r["name"]: (r.get("source") or r["name"]) for r in doc["schools"]}
-    before_cls = {r["name"]: r["classification"] for r in doc["schools"]}
+    before_cls = {r["name"]: _cls(r) for r in doc["schools"]}
     for r in doc["schools"]:
         p = proposed.get(r["name"])
-        if p and p != r["classification"]:
+        if p and p != _cls(r):
             _move(r, p)
             r.pop("play_up", None)          # the sort now places it
     from . import jhsaa_districting as jd
@@ -586,10 +625,16 @@ def commit(world: dict) -> dict:
 
 
 def _move(r: dict, p: str) -> None:
-    """Put row `r` in class `p`. A public program's `group` follows; a private's
-    `group` is its Non-Public class and stays (owner rule 2026-09) — its OLD
-    GROUP moves instead, and `redraw_classes` then re-seats it in an old league
-    of that class."""
+    """Put row `r` in class `p`. A public program moves `classification` and
+    `group` together. A private is moved between the Non-Public classes ONLY
+    (owner rule 2026-10): `p` is 10B/11B and lands on `group`; its
+    `classification` — the enrollment class behind roster depth, the
+    early-participation gate and its old league — is untouched. (A legacy cycle
+    that still names a public class for a private moves its OLD GROUP, the
+    2026-09 reading, so the archived maps keep reconstructing.)"""
+    if p in jd.NONPUBLIC:
+        r["group"] = p
+        return
     r["classification"] = p
     if r.get("group") in jd.NONPUBLIC:
         r["old_group"] = p
@@ -601,7 +646,7 @@ def _snapshot(rows: list[dict], before_cls: dict) -> dict:
     """{name: {before, cls, grp, gd, bd, pu}} — every school's post-commit class,
     championship group, both league names and play-up flag, beside the class it
     held BEFORE the cycle."""
-    return {r["name"]: {"before": before_cls.get(r["name"], r["classification"]),
+    return {r["name"]: {"before": before_cls.get(r["name"], _cls(r)),
                         "cls": r["classification"], "grp": r.get("group", r["classification"]),
                         "gd": r.get("girls_district"), "bd": r.get("boys_district"),
                         "pu": bool(r.get("play_up")),
@@ -653,9 +698,9 @@ def committed_map(file_rows: list[dict]) -> dict | None:
         current[n] = x["current"]
     before_cls = {}
     for x in rows:
-        before_cls[x["name"]] = current.get(x["name"], x["classification"])
+        before_cls[x["name"]] = current.get(x["name"], _cls(x))
         p = proposed.get(x["name"])
-        if p and p != x["classification"]:        # exactly what the commit did
+        if p and p != _cls(x):                    # exactly what the commit did
             _move(x, p)
             x.pop("play_up", None)
     if data.get("touched"):
@@ -712,8 +757,12 @@ def reapply(rows: list[dict]) -> int:
     if not m:
         return 0
     by_name = _resolve_names(m, rows)
-    reverted = [n for n, e in m.items() if e["before"] != e["cls"]
-                and n in by_name and by_name[n]["classification"] == e["before"]]
+    def _after(e):          # the class the cycle put the school in, as `_cls` reads it
+        if e["before"] in jd.NONPUBLIC:          # a private: 10B/11B, or unmoved
+            return e["grp"] if e.get("grp") in jd.NONPUBLIC else e["before"]
+        return e["cls"]
+    reverted = [n for n, e in m.items() if e["before"] != _after(e)
+                and n in by_name and _cls(by_name[n]) == e["before"]]
     if not reverted:
         return 0
     for n, e in m.items():
@@ -722,12 +771,19 @@ def reapply(rows: list[dict]) -> int:
             continue
         r["classification"] = e["cls"]
         if r.get("group") in jd.NONPUBLIC:
-            # ‼️ A PRIVATE PROGRAM'S GROUP AND DISTRICT ARE ITS NON-PUBLIC CLASS AND
-            # POD (owner rule 2026-09) — the seed file owns them. A map committed
-            # BEFORE the pods records the public league the private then sat in, and
-            # writing that back put most privates out of their pods (10B/11B
-            # districts of 2-4 schools on a real save). The class moves; the pod
-            # stays; the league the cycle seated it in becomes its OLD league.
+            # ‼️ A PRIVATE PROGRAM'S GROUP IS ITS NON-PUBLIC CLASS (owner rule
+            # 2026-09/10). A map from a cycle that pooled privates (2026-10) records
+            # its 10B/11B class and league and those are put back; a map committed
+            # BEFORE the split records the public league the private then sat in,
+            # and writing that back put most privates out of 10B/11B (leagues of
+            # 2-4 schools on a real save) — there the class stays and the league
+            # the cycle seated it in becomes its OLD league.
+            if e.get("grp") in jd.NONPUBLIC:
+                r["group"] = e["grp"]
+                if e.get("gd"):
+                    r["girls_district"] = e["gd"]
+                if e.get("bd"):
+                    r["boys_district"] = e["bd"]
             if e.get("og"):
                 r["old_group"], r["old_league"] = e["og"], e.get("ol", "")
             elif e.get("grp") not in jd.NONPUBLIC and e.get("gd"):
@@ -873,7 +929,7 @@ def cycle_markdown(c: dict, depth: int = 1) -> str:
     cycle one level down)."""
     from . import world as wd
     h1, h2, h3 = "#" * depth, "#" * (depth + 1), "#" * (depth + 2)
-    classes = [g for g in jh.GROUPS]
+    classes = list(ALL_CLASSES)
     scored = ", ".join(str(wd.display_base_year() + y + 1) for y in c.get("years", []))
     lines = [f"{h1} JHSAA realignment — {c['season_year']} season",
              "",
@@ -889,7 +945,7 @@ def cycle_markdown(c: dict, depth: int = 1) -> str:
                         ["After", *[c["counts_after"].get(g, 0) for g in classes]]]),
              ""]
     if c.get("geo"):
-        pool_name = {"A": "9A-5A", "B": "4A-1A", "G": "Groups"}
+        pool_name = {"A": "9A-5A", "B": "4A-1A", "G": "Groups", "N": "Non-Public"}
         lines += [f"{h2} Geography pass", "",
                   _md_table(["School", "Area", "From", "To pool", "Reason"],
                             [[g["school"], g.get("area", ""), g["from"],

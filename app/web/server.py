@@ -2816,8 +2816,11 @@ def create_app() -> Flask:
         from app import jhsaa_reclass as rc
         vals = {}
         for key in ("cycle", "success_pp", "futility_floor", "futility_pu",
-                    "success_pp_b", "futility_pu_b", "success_pp_g", "futility_pu_g"):
+                    "success_pp_b", "futility_pu_b", "success_pp_g", "futility_pu_g",
+                    "success_pp_n", "futility_pu_n"):
             vals[key] = (request.form.get(key) or "").strip()
+        # the kill switch is a checkbox: absent from the form means off
+        vals["enabled"] = "1" if request.form.get("enabled") else "0"
         for key in ("group_areas", "repatriate_areas", "join_areas", "join_schools"):
             vals[key] = [x.strip() for x in (request.form.get(key) or "").split(",")]
         rc.set_config(vals)
