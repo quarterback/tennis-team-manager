@@ -39,13 +39,12 @@ was wrong, the same way `AAR-jhsaa-postseason-calendar-lanes.md` hid.
    cursor walk over the postseason keys; a dual's target is its rung.
 3. A dual lands on the later of its two schools' targets and cursors (strictly after
    each school's last dual), so both cards agree and read in order.
-4. Compression (owner rule 2026-10, "omit cosmetic dates from ancillary matches
-   before ever double-booking an ordinary varsity dual"): an ancillary dual — a
-   non-district regular or early-window dual, or a showcase — that lands past the
-   regular span or more than `_JH_LAG` slots behind its school's target is left
-   UNDATED and moves no cursor. League and postseason duals are always dated, each
-   on its own day; a league round may run `_JH_LAG` slots into the tail; nothing is
-   dated past the last slot. There are no doubleheaders for varsity.
+4. Compression, in the owner's order (2026-10): unrelated schools share dates;
+   simulation rounds share dates; a late non-district dual becomes a doubleheader
+   on the school's current non-league date, or goes undated when that date was a
+   league or postseason day; two postseason rounds may share a day where the tail
+   needs it; a league dual is NEVER doubled and never clamped short of the window.
+   District doubleheaders are the hard zero.
 5. Showcases keep their shape through `share` (3 pod duals a date, 2 tiered) and
    `snap` (a pod opens on a Saturday, a tiered block on a Friday).
 6. JV: the same layout from the JV opener on Tue/Thu/Sat/Sun, Saturday doubleheaders
@@ -54,15 +53,13 @@ was wrong, the same way `AAR-jhsaa-postseason-calendar-lanes.md` hid.
 ## Measured (full association, season 2027 fixture)
 | | boys | girls |
 |---|---|---|
-| varsity span | Aug 2 – Oct 30 | Mar 1 – Jun 7 |
-| order faults / same-day collisions | 0 / 0 | 0 / 0 |
-| varsity duals undated (all ancillary) | 1,490 of 13,105 | 1,512 of 13,653 |
+| varsity span | Aug 2 – Nov 1 | Mar 1 – Jun 8 |
+| regular season ends | Oct 13 | May 19 |
+| order faults | 0 | 0 |
+| district doubleheaders | 0 | 0 |
+| non-district doubleheaders / postseason shared days | 564 / ~540 | 563 / ~470 |
+| varsity duals undated (all non-district) | 660 of 13,105 | 752 of 13,653 |
 | Sunday varsity duals | 0 | 0 |
-
-The busiest cards are 33–34 regular duals (16 league + up to 10 showcase duals + the
-non-district allowance); the median is 23. Fewer showcase windows or a smaller
-non-district allowance would date more of the ancillary card — an upstream lever
-the owner has approved in principle; the calendar is not a second scheduling engine.
 
 ## Not done
 Archived seasons re-date on read (the calendar is derived, never stored), so the

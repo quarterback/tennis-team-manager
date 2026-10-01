@@ -2871,19 +2871,21 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     the postseason takes the tail, sized by the ladder's depth (`rung`); a dual lands
     on the LATER of its two schools' targets/cursors, so both cards agree and read in
     order. Unrelated duals share dates statewide freely; thousands of duals on one
-    date is fine. ‼️ THERE ARE NO DOUBLEHEADERS AND NOTHING IS EVER DATED PAST THE
-    WINDOW: an ANCILLARY dual (non-district regular, early window, showcase) that
-    would not fit — past the regular span, or more than `_JH_LAG` slots behind its
-    school's target — is left UNDATED (absent from the map; every reader already
-    renders a missing date as the season alone) and moves no cursor, which is also
-    what stops a long non-district chain dragging the league rounds behind it. A
-    league dual and a postseason dual are always dated, each on its own day
-    (owner: "what matters are district, the road, State; everything else is
-    ancillary"). `_jh_global_order` is used ONLY for the processing order, never to
-    size anything. The day pattern is the loosest that holds the busiest card
-    (`_jh_need`), up to six days a week; never a Sunday for varsity. Measured on a
-    full-size season: boys Aug 2–Oct 30, girls Mar 1–Jun 7, zero order faults, zero
-    same-day collisions, ~11% of varsity duals undated (all ancillary).
+    date is fine, and several simulation rounds may map to one date. ‼️ THE ONE
+    HARD RULE IS ZERO DISTRICT DOUBLEHEADERS (owner rule 2026-10): a league dual is
+    always dated, on its own day, never clamped short of the window. Compression,
+    in the owner's order: unrelated schools share dates → rounds share dates → a
+    late non-district dual becomes a doubleheader on the school's current
+    non-league date (or goes UNDATED when its last date was a league or
+    postseason day; every reader renders a missing date as the season alone) →
+    two postseason rounds may share a day where the tail needs it (realistic
+    tournament behaviour) → never two district duals. An ancillary dual never
+    enters the postseason tail proper. `_jh_global_order` is used ONLY for the
+    processing order, never to size anything. The day pattern is the loosest that
+    holds the busiest card (`_jh_need`), up to six days a week; never a Sunday for
+    varsity. Measured on a full-size season: boys Aug 2–Nov 1, girls Mar 1–Jun 8,
+    zero order faults, zero district doubleheaders, ~5% of varsity duals undated
+    (all non-district).
   - **JV SHARES DATES WITH VARSITY (owner rule 2026-10)** — "they just can't use the
     same players", and that is a lineup rule (2101), not a calendar rule. JV lays out
     the same way from its own opener (`_JH_JV_OPEN`, a month later) on `_JH_JV_DAYS`,

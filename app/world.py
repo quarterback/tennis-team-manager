@@ -6465,6 +6465,7 @@ def _jh_lay_out(order: list, slots: list, stage_rank: dict, share: dict,
     last_i = len(slots) - 1
     last: dict[str, int] = {}
     last_phase: dict[str, str] = {}
+    last_dist: dict[str, bool] = {}
     on_last: dict[str, int] = {}
     out: dict[tuple, _dt.date] = {}
     for k in order:
@@ -6484,6 +6485,12 @@ def _jh_lay_out(order: list, slots: list, stage_rank: dict, share: dict,
             if t in last:
                 day_cap = max(cap, 2 if slots[last[t]].weekday() in double_on else 1)
                 same = last_phase.get(t) == ph and on_last.get(t, 0) < day_cap
+                prev_post = bool(stage_rank.get(last_phase.get(t, ""), 0))
+                if stage_rank.get(ph, 0) and prev_post and on_last.get(t, 0) < 2:
+                    # two postseason rounds on one day where the calendar needs
+                    # it (owner rule 2026-10: realistic tournament behaviour) —
+                    # taken only when the target itself is behind the cursor
+                    same = same or last[t] > tgt
                 nxt = last[t] if same else last[t] + 1
                 floor_i = max(floor_i, last[t])
                 if not same:
@@ -6507,12 +6514,16 @@ def _jh_lay_out(order: list, slots: list, stage_rank: dict, share: dict,
         limit = last_i if ancillary_tail else reg - 1
         late = i > limit or (cap == 1 and any(i - tgt_of[t] > _JH_LAG for t in sides))
         if ancillary and late and not (cap > 1 and not opening_block):
-            continue
-        # Never past the window, and a regular-season dual never into the postseason
-        # tail proper (a league round may run `_JH_LAG` slots into it — the tail is
-        # sized with that much slack).
-        cap_i = last_i if stage_rank.get(ph, 0) or ancillary_tail else (
-            reg + _JH_LAG - 1 if k[2] else reg - 1)
+            if cap > 1 or any(stage_rank.get(last_phase.get(t, ""), 0) or last_dist.get(t)
+                              or (last_phase.get(t) == ph and on_last.get(t, 0) >= 2)
+                              for t in sides):
+                continue       # a showcase, a league date, or no room to double up
+            # a non-district doubleheader on the later school's current date
+            i = max(floor_i, min(max(last.get(t, 0) for t in sides), limit))
+        # Never past the window. A LEAGUE dual is never clamped short of it — two
+        # district duals on one date is the one thing the calendar may not do — and
+        # an ancillary dual never enters the postseason tail proper.
+        cap_i = last_i if stage_rank.get(ph, 0) or ancillary_tail or k[2] else reg - 1
         i = max(floor_i, min(i, cap_i))
         d = slots[i]
         out[k] = d
@@ -6522,6 +6533,7 @@ def _jh_lay_out(order: list, slots: list, stage_rank: dict, share: dict,
             else:
                 last[t], on_last[t] = i, 1
             last_phase[t] = ph
+            last_dist[t] = bool(k[2])
     return out
 
 
