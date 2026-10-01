@@ -39,11 +39,13 @@ was wrong, the same way `AAR-jhsaa-postseason-calendar-lanes.md` hid.
    cursor walk over the postseason keys; a dual's target is its rung.
 3. A dual lands on the later of its two schools' targets and cursors (strictly after
    each school's last dual), so both cards agree and read in order.
-4. Compression, in this order and never past the window: a school more than
-   `_JH_LAG` behind plays a doubleheader (non-district, non-postseason, never onto a
-   showcase weekend); a league round may run `_JH_LAG` slots into the tail; a regular
-   dual is never dated into the postseason tail proper; a postseason dual never past
-   the last slot.
+4. Compression (owner rule 2026-10, "omit cosmetic dates from ancillary matches
+   before ever double-booking an ordinary varsity dual"): an ancillary dual — a
+   non-district regular or early-window dual, or a showcase — that lands past the
+   regular span or more than `_JH_LAG` slots behind its school's target is left
+   UNDATED and moves no cursor. League and postseason duals are always dated, each
+   on its own day; a league round may run `_JH_LAG` slots into the tail; nothing is
+   dated past the last slot. There are no doubleheaders for varsity.
 5. Showcases keep their shape through `share` (3 pod duals a date, 2 tiered) and
    `snap` (a pod opens on a Saturday, a tiered block on a Friday).
 6. JV: the same layout from the JV opener on Tue/Thu/Sat/Sun, Saturday doubleheaders
@@ -52,16 +54,15 @@ was wrong, the same way `AAR-jhsaa-postseason-calendar-lanes.md` hid.
 ## Measured (full association, season 2027 fixture)
 | | boys | girls |
 |---|---|---|
-| varsity span | Aug 2 – Nov 5 | Mar 1 – Jun 14 |
-| order faults | 0 | 0 |
-| district doubleheaders statewide | 85 | 264 |
-| late tune-up doubleheaders | 971 | 881 |
+| varsity span | Aug 2 – Oct 30 | Mar 1 – Jun 7 |
+| order faults / same-day collisions | 0 / 0 | 0 / 0 |
+| varsity duals undated (all ancillary) | 1,490 of 13,105 | 1,512 of 13,653 |
 | Sunday varsity duals | 0 | 0 |
 
 The busiest cards are 33–34 regular duals (16 league + up to 10 showcase duals + the
-non-district allowance); the median is 23. If the owner wants the late tune-up to
-stop compressing, the lever is upstream (fewer showcases or a smaller non-district
-allowance) — the calendar is not a second scheduling engine.
+non-district allowance); the median is 23. Fewer showcase windows or a smaller
+non-district allowance would date more of the ancillary card — an upstream lever
+the owner has approved in principle; the calendar is not a second scheduling engine.
 
 ## Not done
 Archived seasons re-date on read (the calendar is derived, never stored), so the

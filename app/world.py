@@ -6388,7 +6388,7 @@ def _jh_need(order: list, stage_rank: dict) -> int:
 
 def _jh_lay_out(order: list, slots: list, stage_rank: dict, share: dict,
                 busy: dict | None = None, snap: dict | None = None,
-                double_on: tuple = ()) -> dict:
+                double_on: tuple = (), ancillary_tail: bool = False) -> dict:
     """Date every dual in `order` INSIDE `slots`, one date per dual, each school's
     own card in play order (owner rule 2026-10).
 
@@ -6415,7 +6415,8 @@ def _jh_lay_out(order: list, slots: list, stage_rank: dict, share: dict,
     may not use (the JV pass keeps off varsity dates, rule 2101). `snap[phase]` is a
     weekday a new block of that phase opens on (a pod's Saturday, a tiered block's
     Friday). `double_on` are weekdays a school may play a doubleheader of any phase
-    (JV Saturdays)."""
+    (JV Saturdays). `ancillary_tail` lets an ancillary dual use the postseason tail
+    (JV: only twenty schools a gender play `jv_state`)."""
     busy = busy or {}
     snap = snap or {}
     team = lambda x: x.split("#", 1)[0]                                  # noqa: E731
@@ -6472,24 +6473,18 @@ def _jh_lay_out(order: list, slots: list, stage_rank: dict, share: dict,
         cap = share.get(ph, 1)
         i, floor_i = 0, 0
         opening_block = False
+        tgt_of: dict[str, int] = {}
         for t in sides:
             if stage_rank.get(ph, 0):
                 tgt = reg + rung[k]                        # its rung of the ladder
             else:
                 b, j, n = place[(t, k)]
                 tgt = int(start[b] + (j + 0.5) * span[b] / n)
+            tgt_of[t] = tgt
             if t in last:
                 day_cap = max(cap, 2 if slots[last[t]].weekday() in double_on else 1)
                 same = last_phase.get(t) == ph and on_last.get(t, 0) < day_cap
-                # catch up with a doubleheader — never onto or out of a showcase
-                # weekend, whose shape on the calendar is the event's own
-                # — and never a DISTRICT dual: league play is what the season is
-                # for (owner rule 2026-10), so a late league round pushes forward
-                # and the ancillary tune-up behind it is what gets compressed
-                behind = (last[t] - tgt > _JH_LAG and cap == 1 and not k[2]
-                          and not stage_rank.get(ph, 0)
-                          and share.get(last_phase.get(t, ""), 1) == 1)
-                nxt = last[t] if (same or behind) else last[t] + 1
+                nxt = last[t] if same else last[t] + 1
                 floor_i = max(floor_i, last[t])
                 if not same:
                     opening_block = True
@@ -6502,13 +6497,22 @@ def _jh_lay_out(order: list, slots: list, stage_rank: dict, share: dict,
                 i += 1
         while i < last_i and any(slots[i] in busy.get(t, ()) for t in sides):
             i += 1
-        # Never past the window — and a REGULAR-SEASON dual never into the postseason
-        # tail (owner rule 2026-10: district play, the road and State are what
-        # matter; invitationals and showcases are ancillary and compress first, so
-        # a card that runs long doubles up its late tune-up, never its Sectional).
-        # A league round may run `_JH_LAG` slots into the tail (the tail is sized
-        # with that much slack); the ancillary tune-up behind it is what compresses.
-        cap_i = last_i if stage_rank.get(ph, 0) else (reg + _JH_LAG - 1 if k[2] else reg - 1)
+        # ‼️ AN ANCILLARY DUAL THAT WOULD NOT FIT GOES UNDATED (owner rule 2026-10:
+        # "omit cosmetic dates from ancillary matches before ever double-booking an
+        # ordinary varsity dual"). Invitationals and showcases are presentation; a
+        # league dual, a postseason dual and the window are the hard boundaries. An
+        # undated dual does not move either school's cursor, which is also what
+        # stops a long non-district chain dragging the league rounds behind it.
+        ancillary = not k[2] and not stage_rank.get(ph, 0)
+        limit = last_i if ancillary_tail else reg - 1
+        late = i > limit or (cap == 1 and any(i - tgt_of[t] > _JH_LAG for t in sides))
+        if ancillary and late and not (cap > 1 and not opening_block):
+            continue
+        # Never past the window, and a regular-season dual never into the postseason
+        # tail proper (a league round may run `_JH_LAG` slots into it — the tail is
+        # sized with that much slack).
+        cap_i = last_i if stage_rank.get(ph, 0) or ancillary_tail else (
+            reg + _JH_LAG - 1 if k[2] else reg - 1)
         i = max(floor_i, min(i, cap_i))
         d = slots[i]
         out[k] = d
@@ -6645,7 +6649,8 @@ def _jh_jv_dates(out: dict, by_school: dict[str, list[tuple]],
     slots = _jh_choose_slots(opening, close, _jh_need(order, rank),
                              (_JH_JV_DAYS, (0, 1, 2, 3, 4, 5, 6)))
     out.update(_jh_lay_out(order, slots, rank, {"showcase_pod": _jh.POD_DUALS},
-                           snap={"showcase_pod": 5}, double_on=(5,)))
+                           snap={"showcase_pod": 5}, double_on=(5,),
+                           ancillary_tail=True))      # few schools play jv_state
 
 
 def jhsaa_match_dates(world_id: int, year: int, gender: str,
