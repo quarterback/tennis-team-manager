@@ -1336,8 +1336,10 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   an 8A name — and those archives stay as played. A healthy file is a no-op (pinned by
   the idempotency check in the script's own run). `scripts/jhsaa_nonpublic_leagues.py`
   is the forced redraw. Standings, league titles, All-District, the individual flights
-  and JV are the class's own; the slate is still two **All-Star** teams
-  (`jhsaa_awards.AS_TIERS` / `slate_label`). Each private keeps an
+  and JV are the class's own; the slate is **All-State / All-Region / All-District,
+  named and sized exactly like every other class** (owner rule 2026-10 — the 2026-09
+  two-team "All-Star" slate was an agent's mistake; `slate_label` now says All-State
+  for every class and `AS_TIERS` carries no Non-Public entry). Each private keeps an
   `old_group`/`old_league` (the public league it would sit in) and plays every public
   in it ONCE as a non-conference dual (`_old_league_pairs`: record and TOSS, never
   standings; reserved before the first draw, played after pass 1 and pass 2).

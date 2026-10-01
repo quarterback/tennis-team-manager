@@ -4435,8 +4435,8 @@ def jhsaa_honors_view(seed: int, gender: str, group: str | None = None,
     years = world.jhsaa_years(w["id"], g)
     yr = (years[0] if years else w["year"]) if year is None else year
     arc = world.get_jhsaa(w["id"], yr, g) or {}
-    # Every road class: a Non-Public class's slate is its All-Star teams (owner
-    # rule 2026-09), read off the same archive key as every class's.
+    # Every road class: a Non-Public class's slate is All-State like every other
+    # class's (owner rule 2026-10), read off the same archive key.
     grp = group if group in jh.ROAD_GROUPS else jh.GROUPS[0]
     scope = _jh_scope(g, grp, list(jh.ROAD_GROUPS), yr, years,
                       arc.get("season_year"), arc)

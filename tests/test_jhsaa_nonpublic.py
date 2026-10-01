@@ -221,9 +221,9 @@ def test_the_pods_are_the_privates_leagues_and_publics_keep_their_own(archived):
         # the pod champions take the protected seats, like every league champion
         assert {rows[0]["school"] for rows in pods.values()} <= set(arc["protected"][g])
         assert arc["all_district"][g] and set(arc["all_district"][g]) <= set(pods)
-        # the class's own slate is two All-Star teams
+        # the class's own slate is All-State, named like every other class's
         names = [t["name"] for t in arc["awards"][g]["teams"]]
-        assert names[:2] == ["First Team", "Second Team"] and len(names) <= 2
+        assert names[:2] == ["First Team", "Second Team"]
 
 
 def test_a_private_plays_every_old_league_public_once_outside_the_standings(archived):

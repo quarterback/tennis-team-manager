@@ -13983,8 +13983,8 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     # Gold Valley All-Region team, drawn from every program in Gold Valley.
     pool = build_pool([t for g in by_group for ts in by_group[g].values() for t in ts])
     for group in by_group:
-        # A Non-Public class's slate is its ALL-STAR teams (owner rule 2026-09):
-        # `jhsaa_awards.AS_TIERS` sizes it at two, the label is `slate_label`.
+        # A Non-Public class's slate is All-State like every other class's (owner
+        # rule 2026-10; the two-team All-Star slate of 2026-09 was a mistake).
         out["awards"][group] = season_awards(
             [t for ts in by_group[group].values() for t in ts], pool=pool)
     region = region_awards(pool)

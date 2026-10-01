@@ -7717,7 +7717,7 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
     # the fallback for seasons archived before the tiers existed.
     tiers = aw.get("teams") or []
     from .jhsaa_awards import slate_label as _slate_label
-    _slate = _slate_label(row["group"])       # "All-Star" in a Non-Public class
+    _slate = _slate_label(row["group"])       # "All-State" in every class (2026-10)
     if tiers:
         for tier in tiers:
             for r in tier["players"]:
@@ -7765,7 +7765,7 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
 
 #: Bump when `_season_row` changes shape or meaning: rows stored at an older
 #: version are re-derived on their next read (per season, never per page).
-_SEASON_ROW_VERSION = 4   # 3: TOC Qualifier; 4: All-Star honour lines for 10B/11B (2026-09)
+_SEASON_ROW_VERSION = 5   # 3: TOC Qualifier; 4: All-Star lines for 10B/11B; 5: All-State everywhere (2026-10)
 
 
 def _fold_season_rows(conn, world_id: int, year: int, gender: str) -> dict[str, dict]:

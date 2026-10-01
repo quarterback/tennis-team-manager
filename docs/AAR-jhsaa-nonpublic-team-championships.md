@@ -269,3 +269,11 @@ other teams and that should fix all of this once and for all."
   leaves in `schools.json`, the save plays on the right map.
 - Archived seasons are not touched; the 2029 and 2030 standings read as they were
   played.
+- **All-State, not All-Star (owner correction 2026-10).** The 2026-09 addendum's
+  two-team "All-Star" slate was an agent's misreading; the Non-Public classes
+  follow the exact naming conventions of every other classification — All-State,
+  All-Region, All-District — at the default three teams. `slate_label` answers
+  All-State for every class, `AS_TIERS` carries no 10B/11B entry, and
+  `_SEASON_ROW_VERSION` is bumped so archived honour lines re-derive with the
+  right name. Seasons archived with two teams render as All-State First and
+  Second Team.

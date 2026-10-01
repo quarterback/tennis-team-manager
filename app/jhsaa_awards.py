@@ -156,18 +156,19 @@ AR_TIER2_MIN_PROGRAMS = 38
 # and Honorable Mention; 90 clears all four (the next region is 66) and keeps
 # the bar a bar.
 AR_HM_MIN_PROGRAMS = 90
-AS_TIERS = {"9A": 4,           # the largest class; everyone else gets three
-            # THE NON-PUBLIC ALL-STAR TEAMS (owner rule 2026-09): a private
-            # program is honoured in its own class, First and Second Team only.
-            "10B": 2, "11B": 2}
+AS_TIERS = {"9A": 4}           # the largest class; everyone else gets three
 AS_TIERS_DEFAULT = 3
 
 
 def slate_label(group: str) -> str:
-    """What a class's numbered teams are CALLED: "All-State" for a public class,
-    "All-Star" for a Non-Public one (owner rule 2026-09). One place, so the honour
-    line, the Honors page and the school page cannot disagree."""
-    return "All-Star" if group in ("10B", "11B") else "All-State"
+    """What a class's numbered teams are CALLED: "All-State", in EVERY class.
+
+    ‼️ 10B/11B used to answer "All-Star" with two teams (an agent's reading of the
+    2026-09 brief). Owner, 2026-10: that was a mistake — the Non-Public classes
+    follow the exact naming conventions of every other classification: All-State,
+    All-Region, All-District. Kept as the one place the word lives, so the honour
+    line, the Honors page and the school page still cannot disagree."""
+    return "All-State"
 
 # ‼️ HONORABLE MENTION IS A THRESHOLD, NOT A TEAM (owner, 2027-08). There is no
 # slot count: after the numbered teams are filled, HM takes the candidates whose
