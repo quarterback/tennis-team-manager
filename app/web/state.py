@@ -5921,7 +5921,7 @@ def jhsaa_reclass_view(seed: int, gender: str, group: str | None = None,
     label = lambda ys: ", ".join(str(world.display_base_year() + y + 1) for y in ys) if ys else "—"
     return {**base,
             "pending": pend, "due": rc.due(w) if not pend else False,
-            "config": cfg, "groups": list(jh.GROUPS),
+            "config": cfg, "groups": list(rc.ALL_CLASSES),
             "pool_classes": {k: list(v) for k, v in rc.POOLS.items()},
             "all_schools": sorted(r["name"] for r in jh._rows()
                                   if r.get("girls") or r.get("boys")),
@@ -6031,7 +6031,7 @@ def jhsaa_realignments_view(seed: int, gender: str, group: str | None = None,
     matrix = []
     if sel:
         pairs = collections.Counter((m["from_cls"], m["to_cls"]) for m in sel["moves"])
-        order = {g: i for i, g in enumerate(jh.GROUPS)}
+        order = {g: i for i, g in enumerate(rc.ALL_CLASSES)}
         matrix = [{"from_cls": a, "to_cls": b, "n": n}
                   for (a, b), n in sorted(pairs.items(),
                                           key=lambda kv: (order.get(kv[0][0], 99),

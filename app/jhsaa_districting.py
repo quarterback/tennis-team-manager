@@ -282,6 +282,12 @@ def redistrict(rows, cls, pos, m, rng, cap=None, log=None, extra_foreign=()):
     # Names a caller knows are claimed but has hidden from `rows` for this draw —
     # the Non-Public league names of the privates `redraw_classes` lends to a public class.
     foreign |= set(extra_foreign) - set(names)
+    # ‼️ A FOLDED LEAGUE'S NAME IS RETIRED FOR GOOD. `jhsaa._rows()` folds every
+    # `consolidated_leagues` entry into its survivor on EVERY load, so a redraw that
+    # hands the name out again (it is in the bank and "unused in the class") is
+    # undone the moment the file is read back — the committed map and the loaded
+    # map disagreed on two 7A/1A leagues through exactly this.
+    foreign |= {gone for (_c, gone) in consolidations()}
     taken, out = set(), {}
     heads = {n.split()[0] for n in names if n} | {n.split()[0] for n in foreign if n}
     bank = m.LEAGUE_NAMES[:]
@@ -411,7 +417,14 @@ def ensure_nonpublic(rows: list[dict], cut: int, playup: frozenset,
         drawn over schools that sponsor nothing) — the class is redrawn;
       * a private carrying a PUBLIC league's name (the 8A Sunkist League under
         10B) — blanked before the draw so no public name is taken.
-    `force=True` redraws both classes whatever their state (the script's path).
+    ‼️ THE CUT SEEDS A PRIVATE ONCE; THE REALIGNMENT MOVES IT AFTER (owner rule
+    2026-10). `nonpublic_class` decides the class of a private ENTERING the
+    Non-Public classes; one already in 10B/11B was placed by the reclassification
+    cycle (its own pool, sorted on effective size like every other) and is left
+    where the cycle put it — re-cutting it here on enrollment undid every
+    10B/11B move the owner had just committed, on the very next load.
+    `force=True` (the script's path) re-cuts every private to the enrollment rule
+    and redraws both classes whatever their state.
     Returns {"moved": n, "redrawn": [classes], "notes": {cls: [...]}}; nothing
     changed reads as moved 0 / redrawn []."""
     say = log or (lambda s: None)
@@ -421,7 +434,7 @@ def ensure_nonpublic(rows: list[dict], cut: int, playup: frozenset,
         if not r.get("private"):
             continue
         want = nonpublic_class(r, cut, playup)
-        if r.get("group") == want:
+        if r.get("group") == want or (r.get("group") in NONPUBLIC and not force):
             continue
         if r.get("group") not in NONPUBLIC:
             r["old_group"] = r.get("group") or r.get("classification")

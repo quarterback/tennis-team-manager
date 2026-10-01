@@ -318,6 +318,59 @@ def test_due_counts_seasons_since_the_last_commit(monkeypatch):
     assert not rc.due(w)
     monkeypatch.setattr(rc, "last_cycle_year", lambda wid: 4)
     assert rc.due(w)
+    # the kill switch (owner rule 2026-10): off, nothing is ever due
+    cfg = {**rc.config(), "enabled": False}
+    monkeypatch.setattr(rc, "config", lambda: cfg)
+    assert not rc.due(w)
+
+
+def test_a_dismissal_closes_the_cycle(clean_archive):
+    """Owner, 2026-10: "dismissing doesn't make it not fire again" — a dismissed
+    proposal left the clock untouched, so the next advance found the cycle still
+    due and opened a fresh one. A dismissal is a closed cycle: the next is due
+    `cycle` seasons later."""
+    w = clean_archive
+    assert rc.last_cycle_year(w["id"]) is None
+    conn = wd._db()
+    try:
+        conn.executescript(rc._SCHEMA)
+        conn.execute("INSERT INTO world_jhsaa_reclass (world_id, year, status, data, edits,"
+                     " created, committed) VALUES (?,?,?,?,?,?,NULL)",
+                     (w["id"], 7, "proposed", "{}", "{}", 0))
+        conn.commit()
+    finally:
+        conn.close()
+    rc.dismiss({"id": w["id"]})
+    assert rc.pending(w["id"]) is None
+    assert rc.last_cycle_year(w["id"]) == 7
+
+
+def test_privates_are_pooled_in_the_nonpublic_classes_and_never_leave(monkeypatch):
+    """Owner rule 2026-10: the cycle predated 10B/11B and sorted every private by its
+    classification into the public pools. A private is pooled by its GROUP, sorted
+    against privates only, and moves between 10B and 11B or not at all; its
+    classification is never the cycle's to move."""
+    monkeypatch.setattr(rc, "score", lambda wid, years: _scores())
+    data = rc.build_proposal(0, [0], rc.config(), {}, redraw=False)
+    priv = {r["name"]: r for r in jh._rows() if r.get("private")}
+    pooled = {x["school"]: x for x in data["rows"]}
+    for name in priv:
+        x = pooled.get(name)
+        if x is None:                      # a decreed (talent-pinned) school is placed by nobody
+            continue
+        assert x["pool"] == "N" and x["current"] in jd.NONPUBLIC and x["proposed"] in jd.NONPUBLIC, x
+    for x in data["rows"]:
+        if x["pool"] != "N":
+            assert x["school"] not in priv and x["proposed"] not in jd.NONPUBLIC, x
+    assert set(data["counts_after"]) >= set(jd.NONPUBLIC)
+    # the move itself touches `group` only
+    r = {"name": "P", "classification": "7A", "group": "10B", "private": True}
+    rc._move(r, "11B")
+    assert (r["classification"], r["group"]) == ("7A", "11B")
+    # a public program still moves both
+    r = {"name": "Q", "classification": "7A", "group": "7A"}
+    rc._move(r, "6A")
+    assert (r["classification"], r["group"]) == ("6A", "6A")
 
 
 def test_the_history_is_an_index_plus_one_cycle(clean_archive):
@@ -414,17 +467,24 @@ def test_a_committed_map_is_reapplied_when_the_seed_file_reverts(scored, monkeyp
     copy_path.write_text(original)
     jh.reset_schools()
     rows = jh._rows()
-    loaded = {r["name"]: r["classification"] for r in rows}
+    loaded = {r["name"]: rc._cls(r) for r in rows}
     for name, x in moves.items():
         assert loaded[name] == x["proposed"], name
     assert _shape(copy_path) == committed          # rewritten on disk, leagues included
-    # ‼️ A PRIVATE PROGRAM KEEPS ITS NON-PUBLIC GROUP AND POD (owner rule 2026-09).
-    # Baptist is private, so the cycle moves its CLASSIFICATION while its group
-    # stays 10B and its district stays the pod; the public league the cycle seated
-    # it in becomes its OLD league, which is what its non-conference duals read.
+    # ‼️ A PRIVATE PROGRAM IS CONTAINED IN THE NON-PUBLIC CLASSES (owner rule
+    # 2026-10). Baptist is private: the cycle sorts it against other privates only,
+    # so whatever it proposed is 10B or 11B, its classification (the enrollment
+    # class) never moves, and it keeps an old group and old league for its
+    # non-conference duals.
     bap = {s.name: s for s in jh.load_schools("girls")}["Baptist"]
-    assert bap.classification == moves["Baptist"]["proposed"]
-    assert bap.group == "10B" and bap.district == pod_before
+    was = {r["name"]: r for r in json.loads(original)["schools"]}["Baptist"]
+    assert bap.classification == was["classification"]
+    assert bap.group in jh.NONPUBLIC_GROUPS
+    if "Baptist" in moves:
+        assert moves["Baptist"]["proposed"] in jh.NONPUBLIC_GROUPS
+        assert bap.group == moves["Baptist"]["proposed"]
+    else:
+        assert bap.group == was["group"] and bap.district == pod_before
     assert bap.old_group and bap.old_league
     # idempotent: a file that already carries the map is not touched again
     assert rc.reapply(json.load(open(copy_path))["schools"]) == 0
@@ -466,13 +526,16 @@ def test_a_map_committed_before_the_pods_never_moves_a_private_out_of_one(
     copy_path.write_text(original)
     jh.reset_schools()
     after = {s.name: s for s in jh.load_schools("girls")}
+    # such a map knows nothing of 10B/11B, so the file's own Non-Public class and
+    # league stand (the pre-commit ones), and no private leaves the two classes
+    orig = {r["name"]: r for r in json.loads(original)["schools"]}
     for name, was in privates.items():
         now = after[name]
         assert now.group in jh.NONPUBLIC_GROUPS, (name, now.group)
-        assert now.district == was.district, (name, now.district)
+        assert now.group == orig[name]["group"], (name, now.group)
+        assert now.district == orig[name]["girls_district"], (name, now.district)
         assert now.old_league == "A Public League" and now.old_group == "7A", name
-        if name in moves:
-            assert now.classification == moves[name]["proposed"], name
+        assert now.classification == was.classification, name
     jh.reset_schools()
 
 
