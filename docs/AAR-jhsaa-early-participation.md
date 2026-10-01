@@ -225,6 +225,103 @@ reveal, share of base ceiling), `bloom_spurt` (summed, share of base peak),
 
 ---
 
+## 4b. Early participation buys development time; rolls decide how well it converts (owner spec 2026-10)
+
+### What five seasons showed
+
+The 2100-2104 exports (`docs/reports/REPORT-jhsaa-early-participation-and-coaching-
+2100-2104.md`): early participants played and held their own, filled small rosters,
+and finished their careers exactly where their classmates did. Small-school freshmen
+won 48% of flights before and after the rule; early players were not ahead by grade
+11. The pre-HS head start (§3) was OVR only and every path ran to the SAME career
+peak, so it washed out; the only long-term lever was maturity, a 5-6% roll per early
+season with a usually-small prize — 0.4 percentage points of ceiling per early player
+on average. Owner: "the rare is too rare, the rate is too timid and it's … all or
+nothing and even then it doesn't really do much which is not even what I wanted, but
+I was never given a chance to chime in on this."
+
+The design was then set in conversation, and the owner's numbers are the constants.
+
+### The structure
+
+*Early participation buys development time. Events determine how unusually well a
+player converts that time.* Every ARCHIVED early season makes three independent rolls
+(`early_pot_rolls`, stream `jhsaa-early-pot|school|entry|seat|grade`), each a share of
+the base ceiling:
+
+| Roll | When | Size |
+|---|---|---|
+| Development | always | 7th: 0-6% barely dressed → 3-17% full season · 8th: 1-9% → 4-21% |
+| Accelerator | the player's own chance that season, drawn 9-31% | +5-29%, an independent draw |
+| Exception | 4% | +15-44% |
+
+- **Ranges, not numbers.** A first draft was a fixed share per season scaled by playing
+  time; the owner: "the way you're doing it feels too predictable — why can't it be a
+  range and a wider set of rolls?" Playing time moves the development RANGE (the bands
+  interpolate between the barely-dressed and full-season endpoints on the odometer's
+  played share), it never multiplies a fixed number. Two kids with identical seasons
+  land apart; nobody lands on nothing.
+- **The accelerator chance is per player, per season.** It was briefly drawn per
+  class; the owner's rule: "a player might have a 27% chance that year, hit it, and get
+  +8%; another a 12% chance, hit it, and get +26%; another 30% and miss entirely. Do not
+  draw one accelerator probability for the whole class, school, cohort, or season." The
+  hit's size never reads the chance.
+- **Seasons add.** A two-year early participant has six rolls behind them.
+- **Realised like a reveal** (`career_ability(early_pot=)`): the career peak rises by
+  the share × the base peak as that season turns into the next, and `EARLY_POT_REALISE`
+  (0.60) of the new headroom joins yearly capacity over the growth years left, at the
+  odometer's rate. A career that runs higher, not a freshman who arrives higher.
+- **Maturity.** For 7th and 8th grade the accelerator IS the maturity event from
+  `early_pot_era` on (`_gen_seat` no longer passes those grades to `maturity_events`).
+  The 9th-grade roll every freshman in the association gets is unchanged, and an early
+  participant still gets it (owner: "keep the existing lower freshman maturity rate";
+  "early participants still get the normal 9th-grade roll too").
+- **History only, season-gated.** Read off the archived early seasons; `early_pot_era`
+  (`_resolve_era`, in `ERA_SETTINGS`) is the first unplayed season, so archived seasons
+  rebuild byte for byte and every enrolled early participant carries the rolls from the
+  next season (owner: "from the next season", not future classes only).
+
+### The attributes are pegged, never regenerated
+
+The first measurement showed the freshman rating DIPPING 0.84 on average while the
+ceiling rose. Cause: the prospect was generated at the lifted talent, as the maturity
+reveal had always been, and generation is not linear in talent — a different player
+came out. Owner: "have the individual attributes be pegged to any development
+increases." From the era the prospect is generated ONCE at its base ceiling,
+`_apply_career(peg=)` scales every attribute's potential up by the lift, and current
+ability is cut from the BASE potentials. The lifted player is the same person with a
+higher ceiling and a higher-running career; freshman change +0.03.
+
+### Intake
+
+Owner: "intake at 7% is still too low. we should raise the intake or create a range …
+12-21%." From `early_pot_era` the per-seat rate is drawn once per PROGRAM per SEASON
+from `EARLY_SEAT_RATE_BAND` (`early_intake_rate`), so a small school's middle-school
+class runs deep one year and thin the next; the per-seat stream and draws are
+unchanged, only the threshold moves, per season.
+
+### Measured (the owner asked for numbers before anything was committed)
+
+Fixture copy, 855 freshmen of 2028 who played an archived 8th-grade season (one early
+season each; the two-year path is only in the pre-build simulation, which put a
+two-year full-time kid at median 27% / p90 55%):
+
+| | |
+|---|---|
+| Accelerator hit rate | 20.4% |
+| Exception hit rate | 4.6% |
+| Total ceiling lift | p10 5% · median 12% · p90 30% · max ~76% |
+| Freshman rating change | +0.03 (−0.84 before the peg) |
+| Senior rating change | mean +4.8 · p10 +1 · median +4 · p90 +10 · max +26 |
+| Senior rating with vs without | 53.2 vs 48.4 |
+
+Intake on the real association, 513 gated rosters at 12-21%: share 10.2%, mean 2.49 a
+roster, median 2, p90 4, max 10, 7% of rosters with none (was ~1 a roster, ~5%).
+
+Export: `players.csv` gains `early_pot` (summed share) and `early_pot_rolls` (`7:d;8:d+a`).
+
+---
+
 ## 5. The rising-freshman portal (`app/jhsaa_portal.py`, `/jhsaa/portal`)
 
 The first interactive system in the high-school game; the college portal's shape.

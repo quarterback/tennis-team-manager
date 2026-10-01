@@ -3416,6 +3416,7 @@ def reset_schools() -> None:
     _exchange_era_cache.clear()
     _early_era_cache.clear()
     _early_seat_era_cache.clear()
+    _early_pot_era_cache.clear()
     _class_moves_cache.clear()
     _intl_era_cache.clear()
     _jv_parastate_era_cache.clear()
@@ -4093,7 +4094,7 @@ ERA_SETTINGS = ("jhsaa_name_era", "jhsaa_dev_era", "jhsaa_talent_era",
                 "jhsaa_band_era", "jhsaa_style_era", "jhsaa_jv_parastate_era",
                 "jhsaa_jv_qualifying_era",
                 "jhsaa_sibling_era", "jhsaa_sixteen_state_era",
-                "jhsaa_early_era", "jhsaa_early_seat_era",
+                "jhsaa_early_era", "jhsaa_early_seat_era", "jhsaa_early_pot_era",
                 "jhsaa_nonpublic_era")
 
 
@@ -4350,8 +4351,71 @@ MATURITY_ENABLED = True
 #: from 7th grade to the freshman start stays continuous).
 EARLY_FLOOR = 0.30
 
+#: ‼️ EARLY PARTICIPATION BUYS DEVELOPMENT TIME; ROLLS DECIDE HOW WELL IT CONVERTS
+#: (owner spec 2026-10, off the 2100-2104 exports — `docs/reports/REPORT-jhsaa-
+#: early-participation-and-coaching-2100-2104.md`). Five seasons in, the only
+#: long-term lever an early season had was MATURITY: a 5-6% dice roll with a
+#: usually-small prize, so 90% of early players finished their careers exactly
+#: where their classmates did ("too rare, too timid, all or nothing — not even what
+#: I wanted"). The owner's structure, exactly:
+#:
+#:   * EVERY early season banks a DEVELOPMENT ROLL — a share of the base ceiling
+#:     drawn uniformly from a RANGE, and playing time moves the RANGE (the
+#:     barely-dressed band at played 0, the full-season band at played 1,
+#:     interpolated between), never a multiplier on a fixed number. Two kids with
+#:     identical seasons land apart; nobody lands on nothing.
+#:   * an ACCELERATOR ROLL on top — the player's chance is ITSELF A DRAW, made
+#:     independently for every early participant in every early season
+#:     (`EARLY_ACCEL_CHANCE`, owner: "a player might have a 27% chance that
+#:     year, hit it, and get +8%; another a 12% chance, hit it, and get +26%;
+#:     another 30% and miss entirely"), then rolled against; a hit adds an
+#:     INDEPENDENT draw from `EARLY_ACCEL_BAND`. Never one chance for a class,
+#:     school, cohort or season. For 7th and 8th grade this REPLACES the old
+#:     maturity event (`MATURITY_GRADES` 7/8 stop rolling from `early_pot_era`);
+#:   * an EXCEPTION ROLL — `EARLY_EXCEPTION_RATE`, adding a draw from
+#:     `EARLY_EXCEPTION_BAND`: the genuinely unusual early bloomer.
+#:   * the 9th-grade maturity roll every freshman in the association gets is
+#:     UNCHANGED, and an early participant still gets it too.
+#:
+#: Seasons ADD, so a two-year early participant has six rolls behind them.
+#: Each roll is a share of the base ceiling and is realised the way a maturity
+#: reveal is — the peak rises by it and `EARLY_POT_REALISE` of the headroom joins
+#: the yearly capacity over the growth years left, at the odometer's rate — so it
+#: is a career that runs higher, not a freshman who arrives higher. Every roll is
+#: on its own rng stream (`jhsaa-early-pot`), reads no
+#: talent, no result and no maturity draw, and is HISTORY ONLY: read off the
+#: archived early seasons, so it moves the builds AFTER them and never the season
+#: itself. SEASON-GATED (`early_pot_era`, the `exchange_era` idiom): a season
+#: archived before the rule rebuilds byte for byte and every enrolled early
+#: participant carries the rolls from the first unplayed season.
+#: `EARLY_POT_ENABLED` is the kill switch.
+#: Simulated before building (the owner's numbers): a two-year full-time kid's
+#: total lift runs p10 15% / median 27% / p90 55%; 8th grade only, barely
+#: dressed, p10 3% / median 8% / p90 29%.
+EARLY_DEV_BANDS = {7: ((0.00, 0.06), (0.03, 0.17)),    # (barely dressed, full season)
+                   8: ((0.01, 0.09), (0.04, 0.21))}
+EARLY_ACCEL_CHANCE = (0.09, 0.31)       # drawn per player, per early season
+EARLY_ACCEL_BAND = (0.05, 0.29)
+EARLY_EXCEPTION_RATE = 0.04
+EARLY_EXCEPTION_BAND = (0.15, 0.44)
+EARLY_POT_REALISE = 0.60
+EARLY_POT_ENABLED = True
+
+#: Intake (owner rule 2026-10: "intake at 7% is still too low. we should raise
+#: the intake or create a range"): from `early_pot_era` the per-seat rate is
+#: ITSELF A RANGE, drawn once per PROGRAM per SEASON (`early_intake_rate`, its own
+#: stream) — so one year a program brings in a deep middle-school class and the
+#: next almost nobody, the way a real small school's turnout runs — and every
+#: seat rolls against that season's draw. 12-21% a grade (owner's numbers)
+#: against the flat 7%: about two and a half early players a gated roster
+#: instead of one, 0 to 5 or so on any given one. Same per-seat stream, same
+#: draws; only the threshold moves, per season, so an archived season keeps the
+#: roster it played.
+EARLY_SEAT_RATE_BAND = (0.12, 0.21)
+
 _early_era_cache: dict = {}
 _early_seat_era_cache: dict = {}
+_early_pot_era_cache: dict = {}
 _class_moves_cache: dict = {}
 
 
@@ -4442,6 +4506,53 @@ def early_seasons(school: School, entry: int) -> tuple:
     return (s8,) if classification_in(school, s8) in EARLY_CLASSES else ()
 
 
+def early_pot_era() -> int:
+    """The first SEASON the early-participation potential gradient is live in
+    this save — the `exchange_era` idiom, gated on the season. Ability is
+    regenerated from seed on every build, so ungated the lift would re-rate
+    every archived early participant under box scores written without it."""
+    return _resolve_era("jhsaa_early_pot_era", _early_pot_era_cache)
+
+
+def early_pot_rolls(school_key: str, entry: int, seat: int, salt: str,
+                    early: dict | None, grade: int) -> dict:
+    """{early grade: {"dev": x, "accel": y, "exc": z}} — what each ARCHIVED
+    pre-high-school season before `grade` banked, every part a share of the base
+    ceiling (0.0 where a roll missed). `early` is `career_ability`'s own {7: x,
+    8: x} realisation map; a grade absent from it (not rostered) rolls nothing.
+    Five draws per grade in a fixed order on one stream — the development
+    share, the player's own accelerator chance, the roll against it, the
+    accelerator's size, the exception roll and its size — always consumed, so a
+    roll never moves another's."""
+    if not EARLY_POT_ENABLED or not early:
+        return {}
+    out: dict = {}
+    for g in EARLY_GRADES:
+        if g >= grade or g not in early or g not in EARLY_DEV_BANDS:
+            continue
+        played = max(0.0, min(1.0, (early[g] - EXPO_FLOOR) / (1.0 - EXPO_FLOOR)))
+        (lo0, hi0), (lo1, hi1) = EARLY_DEV_BANDS[g]
+        lo, hi = lo0 + (lo1 - lo0) * played, hi0 + (hi1 - hi0) * played
+        r = random.Random(f"{salt}|jhsaa-early-pot|{school_key}|{entry}|{seat}|{g}")
+        dev = r.uniform(lo, hi)
+        chance = r.uniform(*EARLY_ACCEL_CHANCE)        # this player's, this season
+        acc_hit = r.random() < chance
+        acc = r.uniform(*EARLY_ACCEL_BAND)             # independent of the chance
+        exc_hit, exc = r.random() < EARLY_EXCEPTION_RATE, r.uniform(*EARLY_EXCEPTION_BAND)
+        out[g] = {"dev": round(dev, 4), "chance": round(chance, 4),
+                  "accel": round(acc, 4) if acc_hit else 0.0,
+                  "exc": round(exc, 4) if exc_hit else 0.0}
+    return out
+
+
+def early_pot_total(rolls: dict) -> dict:
+    """{early grade: summed share} — what `career_ability(early_pot=)` takes.
+    `chance` is the player's accelerator odds, not a share, and is left out."""
+    parts = ("dev", "accel", "exc")
+    return {g: round(sum(v[k] for k in parts), 4) for g, v in rolls.items()
+            if sum(v[k] for k in parts) > 0}
+
+
 def player_maturity(school_key: str, entry: int, seat: int, salt: str) -> float:
     """The player's hidden maturity (0-1), on its own rng stream. (`player_`
     because `_gen_seat` has a legacy local called `maturity`.)"""
@@ -4493,13 +4604,29 @@ def early_seat_seasons(school: School, entry: int, seat: int, salt: str) -> tupl
     if ss[-1] < era:
         return ss
     r = random.Random(f"{salt}|jhsaa-early-seat|{school.key}|{entry}|{seat}")
-    hit = {g: r.random() < EARLY_SEAT_RATE for g in EARLY_GRADES}
+    pot_era = early_pot_era()
+    # The draw is the same either side of `early_pot_era`; only the threshold
+    # moves, per SEASON, so an archived season keeps the roster it played.
+    hit = {}
+    for g in EARLY_GRADES:
+        season = entry + (g - 9)
+        rate = (early_intake_rate(school, season, salt) if season >= pot_era
+                else EARLY_SEAT_RATE)
+        hit[g] = r.random() < rate
     out, keep = [], False
     for sn in ss:
         keep = keep or sn < era or hit[9 - (entry - sn)]
         if keep:
             out.append(sn)
     return tuple(out)
+
+
+def early_intake_rate(school: School, season: int, salt: str) -> float:
+    """This program's per-seat intake chance for `season` — a draw from
+    `EARLY_SEAT_RATE_BAND` on its own stream, shared by every seat the program
+    rolls that season (both early grades)."""
+    r = random.Random(f"{salt}|jhsaa-early-intake|{school.key}|{season}")
+    return r.uniform(*EARLY_SEAT_RATE_BAND)
 
 
 def cohort_horizon(school: School, entry: int) -> int:
@@ -4605,7 +4732,8 @@ def career_ability(school_key: str, entry: int, seat: int, grade: int,
                    salt: str, ceiling: float,
                    exposure: dict | None = None, coach: float = 1.0,
                    start_lift: float = 0.0, staff: dict | None = None,
-                   early: dict | None = None, bloom: dict | None = None) -> float:
+                   early: dict | None = None, bloom: dict | None = None,
+                   early_pot: dict | None = None) -> float:
     """This player's ability at `grade` under the career model.
 
     `exposure` maps a GRADE to how much of that year's capacity the player
@@ -4637,10 +4765,19 @@ def career_ability(school_key: str, entry: int, seat: int, grade: int,
     player's yearly capacity, spread evenly over the growth years left through
     grade 12 — so it is realised the way every capacity is, at the odometer's
     rate; (2) the GROWTH SPURT adds `spurt` OVR at once. The two are independent
-    draws — a large reveal can come with a small spurt and vice versa."""
+    draws — a large reveal can come with a small spurt and vice versa.
+
+    `early_pot` is what EARLY PARTICIPATION BOUGHT (owner spec 2026-10,
+    `early_pot_rolls` / `early_pot_total`): {early grade: share of the base
+    ceiling} each archived pre-high-school season rolled. Applied as that season
+    turns into the next exactly like a reveal — the peak rises by the share × the
+    base peak and `EARLY_POT_REALISE` of the headroom joins the yearly capacity
+    over the growth years left — with no spurt: the season's own realised growth
+    is the immediate part. None for everyone else (untouched to the bit)."""
     start, peak, caps = _career_plan(school_key, entry, seat, salt, ceiling,
                                      start_lift)
     bloom = bloom or {}
+    early_pot = early_pot or {}
     base_peak = peak
     bonus = 0.0                     # revealed headroom realised per growth year
 
@@ -4668,6 +4805,10 @@ def career_ability(school_key: str, entry: int, seat: int, grade: int,
                 v = fire(g, v)
             x = early.get(g, EXPO_FLOOR)
             v += (pre[g] * k * st.get(g, 1.0) + bonus) * x
+            lift = early_pot.get(g, 0.0)
+            if lift > 0:
+                peak += lift * base_peak
+                bonus += lift * base_peak * EARLY_POT_REALISE / (12 - g)
         # Never behind the baseline start (a rostered kid who never dressed
         # realised exactly the floor), never past the peak on arrival.
         start = min(peak, max(start, v))
@@ -6572,7 +6713,8 @@ def _apply_career(p: Prospect, school_key: str, entry: int, seat: int,
                   grade: int, salt: str, exposure: dict | None = None,
                   coach: float = 1.0, start_lift: float = 0.0,
                   staff: dict | None = None, early: dict | None = None,
-                  bloom: dict | None = None, reveal: float = 1.0) -> Prospect:
+                  bloom: dict | None = None, reveal: float = 1.0,
+                  early_pot: dict | None = None, peg: float = 1.0) -> Prospect:
     """Set a career-era player's CURRENT ability from their career plan.
 
     The prospect arrives generated AT its ceiling (maturity 1.0), so this scales
@@ -6589,13 +6731,23 @@ def _apply_career(p: Prospect, school_key: str, entry: int, seat: int,
                   for a, v in p.potential.items()) / _WEIGHT_TOTAL
     if ceiling <= 0:
         return p
-    # `reveal` is the MATURITY POT reveal the prospect was generated with: the
-    # career model runs off the BASE ceiling (the events reach it through
-    # `bloom`), and the attributes are scaled against the displayed one.
+    # `peg` (owner rule 2026-10, from `early_pot_era`): the prospect was generated
+    # at its BASE ceiling, and the development lift — maturity reveals and the
+    # early-participation rolls — is applied HERE, by pegging every attribute's
+    # potential up by the same share. Current ability is cut from the BASE
+    # potentials, so a lifted player is the same person as the unlifted one with
+    # a higher ceiling and (through `bloom`/`early_pot`) a career that runs
+    # higher; it cannot dip. `reveal` is the pre-era path: the prospect generated
+    # AT the lifted talent, the career model handed the base ceiling back.
+    base_pot = dict(p.potential)
+    if peg > 1.0:
+        for a, v in p.potential.items():
+            p.potential[a] = clamp_grade(v * peg)
     target = career_ability(school_key, entry, seat, grade, salt, ceiling / reveal,
-                            exposure, coach, start_lift, staff, early, bloom)
+                            exposure, coach, start_lift, staff, early, bloom,
+                            early_pot)
     factor = target / ceiling
-    for a, ceil_v in p.potential.items():
+    for a, ceil_v in base_pot.items():
         p.current[a] = clamp_grade(ceil_v * factor)
     # A career peak may sit ABOVE the drawn ceiling (`CAREER_PEAK_BAND` tops out
     # at 1.10) and overflow may carry a player past it, so `factor` can exceed 1.
@@ -6829,20 +6981,42 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
                     early[pg] = 1.0 if f is None else f
         if MATURITY_ENABLED and grade > MATURITY_GRADES[0]:
             era = early_era()
+            pot_era = early_pot_era()
             for g in MATURITY_GRADES:
                 season = entry + (g - 9)
                 if g >= grade or season < era or (g < 9 and season not in early_s):
+                    continue
+                # From `early_pot_era` the 7th/8th-grade maturity event is the
+                # ACCELERATOR roll inside `early_pot_rolls`; 9th grade keeps the
+                # association-wide roll, early participants included.
+                if g < 9 and entry + (grade - 9) >= pot_era:
                     continue
                 f = _expo_factor((fexpo or {}).get(season), nm)
                 if f is not None:                 # never fires off an unplayed year
                     bloom[g] = (f - EXPO_FLOOR) / (1.0 - EXPO_FLOOR)
     events = maturity_events(school.key, entry, seat, grade, salt, bloom) if bloom else {}
-    boost = sum(pot for pot, _ in events.values())
-    # The POT reveal is on the CEILING the prospect is generated at, so the
-    # displayed potential shows it; the career model is handed the BASE ceiling
-    # and the events separately (`_apply_career`), so OVR is not simply scaled
-    # with it. `talent` itself stays the creation value the pin records.
-    gen_talent = min(cap, talent * (1.0 + boost)) if boost else talent
+    # WHAT EARLY PARTICIPATION BOUGHT (owner spec 2026-10): the archived early
+    # seasons' rolls, season-gated so an archived season rebuilds byte for byte.
+    early_rolls = (early_pot_rolls(school.key, entry, seat, salt, early, grade)
+                   if early and entry + (grade - 9) >= early_pot_era() else {})
+    early_pot = early_pot_total(early_rolls)
+    boost = sum(pot for pot, _ in events.values()) + sum(early_pot.values())
+    # The POT reveal is on the displayed CEILING; the career model is handed the
+    # BASE ceiling and the events separately (`_apply_career`), so OVR is not
+    # simply scaled with it. `talent` itself stays the creation value the pin
+    # records. ‼️ FROM `early_pot_era` THE PLAYER IS GENERATED ONCE, AT THE BASE
+    # CEILING, AND EVERY ATTRIBUTE'S POTENTIAL IS PEGGED UP BY THE LIFT AFTER
+    # (owner rule 2026-10: "have the individual attributes be pegged to any
+    # development increases"). Generating at the lifted talent instead drew a
+    # DIFFERENT player — generation is not linear in talent — and the freshman
+    # rating dipped ~0.8 while the ceiling rose. Pegged, the player is the same
+    # person as on the no-lift path to the attribute, and ability can only go up.
+    # Seasons before the era keep the old generate-at-the-lift path, so they
+    # rebuild byte for byte.
+    peg_era = early_pot_era()
+    pegged = bool(boost) and entry + (grade - 9) >= peg_era
+    peg = min(cap / talent, 1.0 + boost) if pegged and talent else 1.0
+    gen_talent = talent if pegged else (min(cap, talent * (1.0 + boost)) if boost else talent)
     p = generate_prospect(rng, nm, "US", gender=sex,
                           talent=gen_talent,
                           # ‼️ The career model derives current ability itself,
@@ -6911,7 +7085,8 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
         _apply_career(p, school.key, entry, seat, grade, salt,
                       exposure or None, coach_factor(mod.get("mature", 0.0)),
                       start_lift, staff_mult or None, early, events or None,
-                      gen_talent / talent if boost and talent else 1.0)
+                      gen_talent / talent if boost and talent else 1.0,
+                      early_pot or None, peg)
     elif compress:
         # The guarantee half: attribute noise lifts displayed ceilings past the
         # squashed centre, so the visible number is trimmed after generation.
@@ -6952,6 +7127,8 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
     p.jhsaa["maturity"] = round(player_maturity(school.key, entry, seat, salt), 4)
     if events:
         p.jhsaa["bloom"] = {str(g): [round(a, 4), round(b, 4)] for g, (a, b) in events.items()}
+    if early_rolls:
+        p.jhsaa["early_pot"] = {str(g): v for g, v in early_rolls.items()}
     if pinned is None and centre is not None and mod.get("band"):
         try:
             p.jhsaa["tier"] = band_tier_for(mod["band"], entry)["key"]

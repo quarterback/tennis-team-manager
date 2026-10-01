@@ -177,6 +177,7 @@ def seat_cut(monkeypatch):
     """Both eras live from 2027 on the REAL association, no archive needed."""
     monkeypatch.setattr(jh, "early_era", lambda: 2027)
     monkeypatch.setattr(jh, "early_seat_era", lambda: 2027)
+    monkeypatch.setattr(jh, "early_pot_era", lambda: 2027)   # the ranged intake, everywhere
     jh._season_cache.clear()
     yield "share-salt"
     jh._season_cache.clear()
@@ -187,7 +188,10 @@ def _gated(gender):
 
 
 def test_early_participants_are_a_small_share_of_a_gated_roster(seat_cut):
-    """~5% of the roster, 0-2 on most of them — not the whole next two classes."""
+    """A handful of a roster, not the whole next two classes: at the ranged
+    intake (`EARLY_SEAT_RATE_BAND` 12-21%, owner 2026-10) about two and a half
+    a gated roster, 0-4 on most of them, and some rosters with none (measured on
+    the real association: share 10.2%, mean 2.49, p90 4, 7% with none)."""
     salt = seat_cut
     total = early = 0
     per_roster = []
@@ -199,9 +203,9 @@ def test_early_participants_are_a_small_share_of_a_gated_roster(seat_cut):
             total += len(r)
             early += n
     share = early / total
-    assert 0.02 <= share <= 0.09, share
-    assert 0.4 <= sum(per_roster) / len(per_roster) <= 2.0
-    assert sum(1 for n in per_roster if n <= 2) / len(per_roster) >= 0.85
+    assert 0.06 <= share <= 0.15, share
+    assert 1.5 <= sum(per_roster) / len(per_roster) <= 3.5
+    assert sum(1 for n in per_roster if n <= 4) / len(per_roster) >= 0.85
     assert any(n == 0 for n in per_roster) and any(n >= 1 for n in per_roster)
 
 
@@ -217,15 +221,19 @@ def test_the_cut_is_per_seat_same_odds_and_grandfathered(seat_cut):
         assert set(k) <= set(whole)
         assert 2027 not in k or 2028 in k          # a 7th-grader plays 8th too
     assert kept == [jh.early_seat_seasons(s, entry, seat, salt) for seat in range(n)]
-    # the two grades roll at the same rate, on their own stream
+    # the two grades roll on their own stream against the program's intake draw
+    # for THAT season (a range, per program per season), the 7th-grade draw first
     import random
+    r7, r8 = (jh.early_intake_rate(s, entry - 2, salt), jh.early_intake_rate(s, entry - 1, salt))
+    for rate in (r7, r8):
+        assert jh.EARLY_SEAT_RATE_BAND[0] <= rate <= jh.EARLY_SEAT_RATE_BAND[1]
     hits7 = hits8 = 0
     for seat in range(4000):
         r = random.Random(f"{salt}|jhsaa-early-seat|{s.key}|{entry}|{seat}")
-        a, b = r.random() < jh.EARLY_SEAT_RATE, r.random() < jh.EARLY_SEAT_RATE
+        a, b = r.random() < r7, r.random() < r8
         hits7 += a
         hits8 += b
-    assert abs(hits7 - hits8) < 0.25 * jh.EARLY_SEAT_RATE * 4000
+    assert abs(hits7 / 4000 - r7) < 0.03 and abs(hits8 / 4000 - r8) < 0.03
     # the roster carries exactly the seats whose roll came up
     on_8th = {p.jhsaa["seat"] for p in jh.build_roster(s, 2028, salt)
               if p.grade == 8 and p.entry_year == entry}
@@ -303,6 +311,74 @@ def test_the_7th_to_8th_reveal_is_capped_at_six_percent():
     assert jh.MATURITY_POT_CAP[7] == 0.06
     assert jh.MATURITY_POT_CAP[8] > jh.MATURITY_POT_CAP[7]
     assert jh.MATURITY_POT_CAP[9] >= jh.MATURITY_POT_CAP[8]
+
+
+# --- what early participation buys (owner spec 2026-10) -----------------------
+
+def test_every_early_season_rolls_a_development_share_on_a_range():
+    """Nobody lands on nothing; playing time moves the RANGE, not a multiplier;
+    two identical seasons can land apart; a grade not rostered rolls nothing."""
+    bench, full = [], []
+    for seat in range(400):
+        b = jh.early_pot_rolls("S", 2104, seat, "", {8: jh.EXPO_FLOOR}, 9)
+        f = jh.early_pot_rolls("S", 2104, seat, "", {8: 1.0}, 9)
+        assert set(b) == {8} and 7 not in b
+        lo, hi = jh.EARLY_DEV_BANDS[8][0]
+        assert lo <= b[8]["dev"] <= hi
+        lo, hi = jh.EARLY_DEV_BANDS[8][1]
+        assert lo <= f[8]["dev"] <= hi
+        assert b == jh.early_pot_rolls("S", 2104, seat, "", {8: jh.EXPO_FLOOR}, 9)
+        bench.append(b[8]["dev"]); full.append(f[8]["dev"])
+    assert min(full) > 0 and len(set(full)) > 100           # a range, not a number
+    assert sum(full) / len(full) > sum(bench) / len(bench)  # playing time lifts the band
+    # a 7th-grade season before the build's grade rolls; the grade itself never does
+    assert set(jh.early_pot_rolls("S", 2104, 1, "", {7: 1.0, 8: 1.0}, 8)) == {7}
+    assert jh.early_pot_rolls("S", 2104, 1, "", {7: 1.0, 8: 1.0}, 7) == {}
+    assert jh.early_pot_rolls("S", 2104, 1, "", None, 12) == {}
+
+
+def test_the_accelerator_chance_is_the_players_own_draw_and_the_exception_is_rare():
+    """Every early participant in every early season draws their OWN chance from
+    the band, rolls against it, and a hit draws its size independently — never
+    one chance for a class, school, cohort or season (owner, 2026-10)."""
+    chances, acc, exc, n = [], 0, 0, 0
+    for seat in range(2000):
+        r = jh.early_pot_rolls("S", 2104, seat, "", {7: 0.8, 8: 0.8}, 9)
+        for g, v in r.items():
+            n += 1
+            assert jh.EARLY_ACCEL_CHANCE[0] <= v["chance"] <= jh.EARLY_ACCEL_CHANCE[1]
+            chances.append(v["chance"])
+            acc += bool(v["accel"]); exc += bool(v["exc"])
+            if v["accel"]:
+                assert jh.EARLY_ACCEL_BAND[0] <= v["accel"] <= jh.EARLY_ACCEL_BAND[1]
+            if v["exc"]:
+                assert jh.EARLY_EXCEPTION_BAND[0] <= v["exc"] <= jh.EARLY_EXCEPTION_BAND[1]
+    assert len(set(chances)) > 1000                    # a draw per player-season
+    # two players on the same roster, same season, hold different chances
+    a = jh.early_pot_rolls("S", 2104, 0, "", {8: 0.8}, 9)[8]["chance"]
+    b = jh.early_pot_rolls("S", 2104, 1, "", {8: 0.8}, 9)[8]["chance"]
+    assert a != b
+    assert 0.15 < acc / n < 0.25          # the band's middle, 20%
+    assert 0.02 < exc / n < 0.07
+    # a high chance can miss and a low one can hit — the size never reads the chance
+    rows = [v for seat in range(2000) for v in jh.early_pot_rolls("S", 2104, seat, "", {8: 0.8}, 9).values()]
+    assert any(v["chance"] > 0.28 and not v["accel"] for v in rows)
+    assert any(v["chance"] < 0.12 and v["accel"] > 0.2 for v in rows)
+
+
+def test_the_rolls_run_the_career_higher_and_the_off_path_is_byte_identical():
+    early = {7: 1.0, 8: 1.0}
+    base = [jh.career_ability("S", 2104, 3, g, "", 60.0, early=early) for g in (9, 10, 11, 12)]
+    same = [jh.career_ability("S", 2104, 3, g, "", 60.0, early=early, early_pot={})
+            for g in (9, 10, 11, 12)]
+    assert base == same
+    lifted = [jh.career_ability("S", 2104, 3, g, "", 60.0, early=early,
+                                early_pot=jh.early_pot_total(
+                                    jh.early_pot_rolls("S", 2104, 3, "", early, g)))
+              for g in (9, 10, 11, 12)]
+    assert all(l >= b for l, b in zip(lifted, base))
+    # realised over the years left, so the senior gap exceeds the freshman gap
+    assert lifted[3] - base[3] > lifted[0] - base[0] > 0
 
 
 # --- the portal ----------------------------------------------------------------

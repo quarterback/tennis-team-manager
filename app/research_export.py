@@ -223,6 +223,15 @@ def _early_cols(p) -> dict:
         "bloom_spurt": round(sum(v[1] for v in bloom.values()), 4) if bloom else "",
         "early_participant": int(bool(early)),
         "early_seasons": ";".join(str(y) for y in early),
+        # what the archived early seasons ROLLED (share of the base ceiling;
+        # ceiling_grade already includes it): the total, and the rolls that hit
+        # per grade ("7:d;8:d+a" — d development, a accelerator, x exception)
+        "early_pot": (round(sum(v.get(k, 0.0) for v in (meta.get("early_pot") or {}).values()
+                                for k in ("dev", "accel", "exc")), 4)
+                      if meta.get("early_pot") else ""),
+        "early_pot_rolls": ";".join(
+            f"{g}:" + "+".join(k[0] for k in ("dev", "accel", "exc") if v.get(k))
+            for g, v in sorted((meta.get("early_pot") or {}).items())),
         # filled from the portal ledger once it is read (archive path only)
         "portal_move": "", "portal_from": "", "portal_to": "", "portal_season": "",
     }
@@ -845,6 +854,19 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                                  "program before ninth grade (rule 2100); early_seasons lists "
                                  "those seasons. grade 7/8 rows ARE the early participants of "
                                  "this season.",
+            "early_pot": "players.csv: what the player's archived pre-high-school seasons ROLLED, "
+                         "summed, as a share of the base ceiling (owner spec 2026-10). Each early "
+                         "season draws a development share from a range playing time moves ("
+                         + "; ".join(f"{g}th {a[0]:.0%}-{a[1]:.0%} barely dressed to {b[0]:.0%}-{b[1]:.0%} full"
+                                     for g, (a, b) in sorted(jhsaa.EARLY_DEV_BANDS.items()))
+                         + f"), an accelerator whose chance is the player's own draw that season from "
+                         f"{jhsaa.EARLY_ACCEL_CHANCE[0]:.0%}-{jhsaa.EARLY_ACCEL_CHANCE[1]:.0%}, a hit adding "
+                         f"{jhsaa.EARLY_ACCEL_BAND[0]:.0%}-{jhsaa.EARLY_ACCEL_BAND[1]:.0%}, and an exception at "
+                         f"{jhsaa.EARLY_EXCEPTION_RATE:.0%} adding {jhsaa.EARLY_EXCEPTION_BAND[0]:.0%}-"
+                         f"{jhsaa.EARLY_EXCEPTION_BAND[1]:.0%}. ceiling_grade already includes it; realised "
+                         "into ability over the growth years left at the odometer's rate. Empty if none.",
+            "early_pot_rolls": "players.csv: which rolls hit per early grade, e.g. '7:d;8:d+a' — "
+                               "d development (always), a accelerator, x exception.",
             "portal_move": "players.csv: 1 if the rising-freshman portal moved this player "
                            "(portal_from/portal_to are program_ids, portal_season the freshman "
                            "season); 0 otherwise; empty on an injected season.",
