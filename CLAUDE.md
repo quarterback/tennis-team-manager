@@ -1974,9 +1974,47 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   - **‼️ NOT THE WHOLE COHORT (owner rule 2026-09, `EARLY_SEAT_RATE` 0.07 /
     `early_seat_seasons` / `early_seat_era`).** Rule 2100 first rostered EVERY seat of
     the next two classes early — a third of a small-class roster in middle school.
-    Now each seat rolls per early grade at the same odds (7th grandfathered into 8th),
-    ~1 per gated roster (~5%), SEASON-gated so archived whole-cohort seasons rebuild
-    identically. The cohort is still sized at `cohort_horizon` whatever the roll.
+    Now each seat rolls per early grade (7th grandfathered into 8th), SEASON-gated so
+    archived whole-cohort seasons rebuild identically. The cohort is still sized at
+    `cohort_horizon` whatever the roll. ‼️ **FROM `early_pot_era` THE RATE IS A RANGE
+    (owner rule 2026-10: "intake at 7% is still too low … create a range"):**
+    `EARLY_SEAT_RATE_BAND` 12-21%, drawn once per PROGRAM per SEASON
+    (`early_intake_rate`, its own stream) so one year's middle-school class is deep
+    and the next thin; measured on the real association 10.2% of gated seats, mean
+    2.5 a roster, 7% of rosters with none (was ~1, ~5%). The flat 7% is the pre-era
+    path only.
+  - **‼️ EARLY PARTICIPATION BUYS DEVELOPMENT TIME; ROLLS DECIDE HOW WELL IT
+    CONVERTS (owner spec 2026-10, `jhsaa.early_pot_rolls` / `EARLY_DEV_BANDS` /
+    `EARLY_ACCEL_CHANCE` / `EARLY_ACCEL_BAND` / `EARLY_EXCEPTION_RATE` /
+    `EARLY_EXCEPTION_BAND` / `EARLY_POT_REALISE` / `early_pot_era`, AAR §4b).** Five
+    seasons of exports (`docs/reports/REPORT-jhsaa-early-participation-and-coaching-
+    2100-2104.md`) showed early players finishing careers exactly where classmates
+    did: the head start was OVR-only to the same peak, and the only long-term lever
+    was a 5-6% maturity roll with a small prize — "too rare, too timid, all or
+    nothing — not even what I wanted". Now EVERY archived early season makes three
+    independent rolls, each a share of the base ceiling: a **development roll,
+    always**, drawn from a RANGE that playing time MOVES (7th 0-6% barely dressed →
+    3-17% a full season, 8th 1-9% → 4-21%; never a multiplier on a fixed number —
+    "like real life where there are small classes and better ones"); an
+    **accelerator** whose CHANCE is the player's own draw that season from 9-31%,
+    rolled against, a hit adding an independent 5-29% (never one chance per class,
+    school, cohort or season — owner, explicitly); an **exception** at 4% adding
+    15-44%. Seasons ADD; the lift raises the career PEAK and `EARLY_POT_REALISE`
+    (0.60) of the headroom joins yearly capacity over the growth years left, at the
+    odometer's rate — a career that runs higher, not a freshman who arrives higher.
+    For 7th/8th grade the accelerator REPLACES the old maturity event; the 9th-grade
+    maturity roll every freshman gets is UNCHANGED and an early participant gets it
+    too. HISTORY ONLY and SEASON-GATED (`early_pot_era`, in `ERA_SETTINGS`).
+    ‼️ **THE LIFT PEGS THE ATTRIBUTES, IT NEVER REGENERATES THE PLAYER** (owner rule
+    2026-10, `_apply_career(peg=)`): from the era the prospect is generated ONCE at
+    its base ceiling and every attribute's potential is scaled up by the lift,
+    current ability cut from the base potentials — generating at the lifted talent
+    drew a DIFFERENT player (generation is not linear in talent) and the freshman
+    rating dipped ~0.8 while the ceiling rose; pegged it is +0.03. Measured on the
+    fixture (one 8th-grade season): accelerator hit 20%, exception 5%, senior rating
+    +4.8 mean (p10 +1 / p50 +4 / p90 +10 / max +26), lift p10 5% / median 12% / p90
+    30%. `players.csv` carries `early_pot` and `early_pot_rolls`.
+    `EARLY_POT_ENABLED` is the kill switch.
   - **‼️ THE PARTICIPATION RULE (JHSAA rule 2101, `PARTICIPATION_LIMIT` 24,
     `docs/AAR-jhsaa-participation-limit.md`).** 24 regular-season competition DATES
     per player across V1/V2/V3/JV, one level per date, postseason exempt. ONE budget
