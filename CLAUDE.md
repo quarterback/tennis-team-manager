@@ -2892,6 +2892,10 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     may play a Saturday doubleheader, and its championship (`jv_state`) takes its tail.
   - **Boys play a fall calendar, girls a spring one** — cosmetic only; both are still
     simulated together in the same rung, with no separate clock, phase or season state.
+    The association's reason (owner, 2026-10): the seasons were set when boys' and
+    girls' golf were split — girls volleyball and soccer draw on the tennis pool, so a
+    fall girls' season cost roster depth, and the many tennis-and-golf athletes can now
+    alternate the two between fall and spring. See the fixed-window AAR.
     Mixed doubles (summer) and the individual tournaments (preseason) carry no date.
   - Classifications deliberately do NOT share stage dates — a 7A Super Regional and a
     3A one can fall on different days. The only invariant is that both sides of one

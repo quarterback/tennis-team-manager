@@ -15,6 +15,25 @@ the regular season needed ~185 rounds, the ladder another ~25, and the window he
 The fault hid because every individual card still read correctly — only the SPAN
 was wrong, the same way `AAR-jhsaa-postseason-calendar-lanes.md` hid.
 
+## Why the seasons sit where they do (owner, 2026-10)
+The JHSAA moved girls tennis to the spring and boys tennis to the fall when it
+split boys and girls golf into separate seasons.
+
+The change was primarily about preserving two-sport participation. Girls
+volleyball and girls soccer draw heavily from the same athlete pool as tennis,
+making a fall girls-tennis season especially costly to roster depth. Boys soccer
+overlaps with tennis less often, while football and cross-country rarely supply
+tennis players.
+
+Separating the seasons also protected the large group of athletes who play both
+tennis and golf. Boys and girls can now alternate tennis and golf between fall and
+spring instead of being forced to choose between them in the same season.
+
+The result is girls tennis in March–June and boys tennis in August–October/early
+November. Seasons archived under the earlier alignment keep their own calendar
+orientation; the display calendar only ever lays dates inside the window the
+sport's season had.
+
 ## Owner rules (2026-10)
 - Dates are cosmetic. Never derive the season's length from statewide dependency
   depth; `_jh_global_order` orders the processing and sizes nothing.
