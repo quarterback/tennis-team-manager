@@ -6740,7 +6740,6 @@ def jhsaa_match_dates(world_id: int, year: int, gender: str,
         {"showcase_pod": _jh.POD_DUALS, "showcase_tiered": 2},
         snap={"showcase_pod": 5, "showcase_tiered": 4}))
     _jh_jv_dates(out, jv_by_school, jv_seen, gender, season_year)
-    _jh_jv_dates(out, jv_by_school, jv_seen, gender, season_year)
 
     if len(_JH_CAL_CACHE) >= _JH_CAL_MAX:      # prune per season, never a global clear
         for k in list(_JH_CAL_CACHE)[:len(_JH_CAL_CACHE) - _JH_CAL_MAX + 1]:
