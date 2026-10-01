@@ -1319,26 +1319,34 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   never the importer's `draw_districts`, which scattered the 2052 affiliate
   leagues. `tests/conftest.py` keeps the split OFF for every suite;
   `tests/test_jhsaa_nonpublic.py` opts in.
-  ‼️ **PODS (owner rule 2026-09, supersedes the league-class reading above):** a
-  private's `group` IS 10B/11B in `schools.json` and its district is a POD
-  (owner-drawn membership, 8-10 each, `scripts/jhsaa_nonpublic_pods.py`); public
-  leagues are publics only. Standings, league titles, All-District, the
-  individual flights and JV are the class's own; the slate is two **All-Star**
-  teams (`jhsaa_awards.AS_TIERS` / `slate_label`). Each private keeps an
-  `old_group`/`old_league` (the public league it would sit in) and plays every
-  public in it ONCE as a non-conference dual (`_old_league_pairs`: record and
-  TOSS, never standings; reserved before the first draw, played after pass 1 and
-  pass 2). `redraw_classes` resets the old league at every realignment by lending
-  the private into the draw; `jhsaa_reclass._move` never moves a private's
-  `group`, and `rc.reapply` keeps its Non-Public group and POD when it re-applies
-  a map committed before the pods (written back as recorded, it put the privates
-  into public leagues and left 10B/11B with districts of 2-4). ‼️ A public league
-  the split left thin is FOLDED into its neighbour by a standing rule in
-  `districting.json` (`consolidated_leagues`), applied by `_rows()` after the
-  re-apply and dropped from the naming bank — a seed-file edit alone is reverted by
-  any committed cycle, and narrowing the re-apply instead leaves a touched class
-  holding two league names at once. The pooled ranking / pseudo-district / road re-deal paths remain ONLY
-  for a pre-pod seed file. See the AAR's pods addendum.
+  ‼️ **THERE ARE NO PODS — 10B/11B ARE ORDINARY CLASSES (owner rule 2026-10,
+  supersedes the pods of 2026-09 and the league-class reading above).** A private's
+  `group` IS 10B/11B in `schools.json` and its district is a LEAGUE drawn exactly like
+  every public class's — `jhsaa_districting.redistrict`, the same `district_count` and
+  cap, over the programs that sponsor a team; public leagues are publics only. The
+  owner-drawn `POD_MAP`, `POD_CAP` and `pod_nonpublic` are GONE. ‼️ **THE SPLIT IS A
+  STANDING RULE APPLIED ON EVERY LOAD** (`jhsaa_districting.ensure_nonpublic`, from
+  `jhsaa._rows()` after the consolidations): a private found in a public group moves to
+  its class (the league it sat in becomes its old league), a Non-Public league under
+  `min_district_size` sponsoring programs or wearing a PUBLIC league's name redraws the
+  class, and the file is rewritten. The owner's real save played 2029 and 2030 on a map
+  an old committed cycle had written back over the split — most privates back in public
+  leagues, 11B boys' leagues of three, and Condotti/Romero-Finniski (the one codified
+  rivalry pair, so the inevitable leftover) alone in a two-team 10B "Sunkist League",
+  an 8A name — and those archives stay as played. A healthy file is a no-op (pinned by
+  the idempotency check in the script's own run). `scripts/jhsaa_nonpublic_leagues.py`
+  is the forced redraw. Standings, league titles, All-District, the individual flights
+  and JV are the class's own; the slate is still two **All-Star** teams
+  (`jhsaa_awards.AS_TIERS` / `slate_label`). Each private keeps an
+  `old_group`/`old_league` (the public league it would sit in) and plays every public
+  in it ONCE as a non-conference dual (`_old_league_pairs`: record and TOSS, never
+  standings; reserved before the first draw, played after pass 1 and pass 2).
+  `redraw_classes` resets the old league at every realignment by lending the private
+  into the draw; `jhsaa_reclass._move` never moves a private's `group`, and
+  `rc.reapply` never touches a private's group or league. A public league the split
+  left thin is FOLDED into its neighbour by a standing rule in `districting.json`
+  (`consolidated_leagues`), applied by `_rows()` after the re-apply and dropped from
+  the naming bank. See the AAR's addenda.
 - **‼️ ONE LADDER, THREE BERTH SHAPES (owner spec 2026-08 — supersedes the
   fixed-24 section below, which is kept for the seasons archived under it).**
   Every class runs the SAME rungs — Areas → Sectionals → Wards → Regionals →
