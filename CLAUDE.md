@@ -2857,53 +2857,46 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   internally plausible and only RECIPROCITY was wrong, which is why it survived. One
   date is now assigned per dual for the whole gender-season and both cards look it up
   (`world.jh_match_key` is the identity, the same from either side).
-  - Matches are packed into **ROUNDS** (a round = duals with no team in common, so
-    everything that can share a day does) over a topological order of the play
-    sequence. Assigning day-by-day in play order instead lets the constraint chain
-    through opponents — A waits on B, B on C — and a 30-dual card sprawled over three
-    months. Ties in the topological sort break on ARCHIVE order, because district play
-    is already generated as rounds and an alphabetical tie-break scrambles that.
+  - **‼️ NOT A ROUND ALLOCATOR, AND NEVER LONGER THAN THE SPORT'S SEASON (owner rule
+    2026-10, `world._jh_lay_out`, `docs/AAR-jhsaa-calendar-fixed-window.md`).** The
+    calendar used to pack the whole gender into statewide ROUNDS off the transitive
+    play-order graph (`_jh_global_order` depth), so a season was as long as the longest
+    dependency chain through the association — ~200 rounds on the owner's real save, a
+    boys' season dated into March, four duals of one school on one day — while every
+    card still read in order. The dates are COSMETIC and the window is FIXED: boys open
+    August 1 and close `_JH_SEASON_CLOSE` (Oct 31 + a week), girls March 1 to early
+    June. Each school's regular-season card is sliced into the season's blocks
+    (`_jh_blocks`: early → pass 1 → mid-season → pass 2 → late tune-up, read off its
+    own district duals) and spread across each block's share of the regular calendar;
+    the postseason takes the tail, sized by the ladder's depth (`rung`); a dual lands
+    on the LATER of its two schools' targets/cursors, so both cards agree and read in
+    order. Unrelated duals share dates statewide freely. A school that falls more than
+    `_JH_LAG` behind plays a DOUBLEHEADER — never a district dual, never a postseason
+    one, never onto a showcase weekend — and nothing is ever dated past the window:
+    what compresses is the ancillary tune-up (owner: "what matters are district,
+    the road, State; everything else is ancillary"). `_jh_global_order` is used ONLY
+    for the processing order, never to size anything. The day pattern is the loosest
+    that holds the busiest card (`_jh_need`), up to six days a week; never a Sunday
+    for varsity. Measured on a full-size season: boys Aug 2–Nov 5, girls Mar 1–Jun 14,
+    zero order faults, district doubleheaders 85/264 statewide, the rest in the late
+    tune-up.
+  - **JV SHARES DATES WITH VARSITY (owner rule 2026-10)** — "they just can't use the
+    same players", and that is a lineup rule (2101), not a calendar rule. JV lays out
+    the same way from its own opener (`_JH_JV_OPEN`, a month later) on `_JH_JV_DAYS`,
+    may play a Saturday doubleheader, and its championship (`jv_state`) takes its tail.
   - **Boys play a fall calendar, girls a spring one** — cosmetic only; both are still
     simulated together in the same rung, with no separate clock, phase or season state.
-    **‼️ THE SEASON IS FITTED TO A WINDOW, NOT RUN UNTIL IT ENDS (owner rule 2026-08).**
-    `_JH_SEASON_CLOSE`: boys are DONE BY END OF OCTOBER (early Nov at the latest),
-    girls by early June. The calendar used to lay four days a week and stop when the
-    rounds ran out — nothing in it knew when a season is meant to be over, and the
-    postseason finished in DECEMBER. `_jh_pattern` now picks the loosest day pattern
-    that fits the rounds in the window: Mon/Wed/Fri/Sat, else + Tue, else + Thu.
-    **Never a Sunday** by construction (6 is in no pattern). One continuous round index
-    runs the whole season — the postseason no longer restarts its count after the
-    regular season, which used to insert a break for nothing.
+    Mixed doubles (summer) and the individual tournaments (preseason) carry no date.
   - Classifications deliberately do NOT share stage dates — a 7A Super Regional and a
     3A one can fall on different days. The only invariant is that both sides of one
     dual show the same date.
-  - **‼️ EACH CLASSIFICATION HAS ITS OWN POSTSEASON LANE (owner rule 2026-08).** The
-    stage floor was GLOBAL (`floor_r = top_r + 1` over the whole gender), so 7A's
-    Regionals waited on 2A-1A's Sectionals: eight classes that never meet were
-    serialised into one queue and the 11-stage ladder cost ~8× what any class plays.
-    **The boys' postseason ran to January and the girls' to July.** A class now waits
-    only on the previous stage of its OWN class; lanes open together and advance
-    independently. The REGULAR season keeps one shared calendar (invitationals and
-    showcases cross classifications). ‼️ The **TOC is NOT a lane** — it fields every
-    class's champion, so it takes `max` over all lanes and still waits on all of them.
-    Lanes key on the classification the season was **ARCHIVED** in
-    (`_jh_school_groups`), never today's school list, since reclassification and
-    play-up both move a program; no archive → one lane → the old behaviour.
-    ‼️ **A change to how many MONTHS a season spans is a product decision, not an
-    implementation detail** — say so before committing it. This shipped unflagged and
-    the owner found it themselves: the calendar is presentation, so no test covers it,
-    and every individual card reads correctly because only the SPAN is wrong.
-  - **‼️ A SHOWCASE WEEKEND IS ANCHORED TO ITS OWN ROUND.** `_jh_showcase_days` kept
-    windows on distinct Saturdays by walking forward from the PREVIOUS window, with no
-    reference to the round it was played in, so the last of seven landed a month past
-    its rounds: October showcases printed between September league duals, and an
-    18-day hole where they belonged. **The "skipped month" was matches moved OUT of
-    it, not a gap in the schedule.** A collision now moves a week at most, within the
-    block's own span. And a final pass in `jhsaa_match_dates` holds every dual on or
-    after the last date either team already has, so a card cannot read backwards
-    whatever dates it — nothing is reordered, only pushed to the next slot.
+  - **A showcase weekend keeps its shape**: a 1-day pod's three duals on ONE Saturday,
+    a tiered block's four as Friday/Friday/Saturday/Saturday (`share`/`snap` in
+    `_jh_lay_out`), and a card can never read backwards because the layout is monotone
+    per school by construction.
   See `docs/AAR-jhsaa-program-history-and-design-pass.md`,
-  `docs/AAR-jhsaa-postseason-calendar-lanes.md` and `docs/AAR-jhsaa-season-window.md`.
+  `docs/AAR-jhsaa-postseason-calendar-lanes.md`, `docs/AAR-jhsaa-season-window.md` and
+  `docs/AAR-jhsaa-calendar-fixed-window.md` (the current design).
 - **The rung runs at week 0, BEFORE anything college**, marked done by the `world_jhsaa`
   rows it writes (the cups' pattern, not a flag). It must simulate the SAME season the
   recruit hand-off does — `world.jhsaa_season_year()` and seed 0, never the world index.

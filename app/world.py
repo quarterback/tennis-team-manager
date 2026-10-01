@@ -6260,14 +6260,6 @@ _JH_CAL_MAX = 8
 # Boys play a fall season, girls a spring one — cosmetic separation only; both
 # are still simulated together in the same rung.
 _JH_SEASON_OPEN = {"boys": (8, 1), "girls": (3, 1)}
-# Weekday offsets from a Monday. A fictional association can play densely — the
-# owner allows roughly 3-4 duals a week including Saturdays — and **never on a
-# Sunday**, which is true by construction here: 6 appears in neither pattern.
-# One pattern for the whole season: Mon / Wed / Fri / Sat. The postseason lands
-# two or three days between stages, which is how a real state series runs and
-# leaves the Road to State progression readable without stretching the calendar.
-_JH_DAYS = (0, 2, 4, 5)
-_JH_DAYS_POST = _JH_DAYS
 
 # ‼️ THE SEASON MUST BE OVER BY THESE DATES (owner rule 2026-08). Boys play a fall
 # season and are DONE BY THE END OF OCTOBER — early November at the absolute latest;
@@ -6281,25 +6273,252 @@ _JH_CLOSE_GRACE = 7          # days of slack before the hard stop (the "at the l
 # Mon/Wed/Fri/Sat; when a season has more rounds than that can hold, the extra days
 # are added rather than letting the season run into December. Never a Sunday: 6 is in
 # no pattern.
-_JH_PATTERNS = ((0, 2, 4, 5), (0, 1, 2, 4, 5), (0, 1, 2, 3, 4, 5))
+_JH_PATTERNS = ((0, 2, 4, 5), (0, 1, 2, 4, 5), (0, 1, 2, 3, 4, 5),
+                (0, 1, 2, 3, 4, 5, 6))      # every day: the last resort, never a Sunday otherwise
 
 
-def _jh_pattern(opening: _dt.date, close: _dt.date, rounds: int) -> tuple:
-    """The loosest day pattern that fits `rounds` between `opening` and `close`.
-
-    Returns the densest one if none fits — a season that genuinely cannot be played
-    in the window still has to render, and a too-long season is visible on the card
-    rather than silently rescheduled into the winter."""
-    weeks = max(1, ((close - opening).days + 6) // 7)
-    for pat in _JH_PATTERNS:
-        if weeks * len(pat) >= rounds:
-            return pat
-    return _JH_PATTERNS[-1]
+def _jh_slots(opening: _dt.date, close: _dt.date, pattern: tuple) -> list:
+    """Every date from `opening` to `close` whose weekday is in `pattern`."""
+    out, d = [], opening
+    while d <= close:
+        if d.weekday() in pattern:
+            out.append(d)
+        d += _dt.timedelta(days=1)
+    return out
 
 
-def _jh_day(start: _dt.date, idx: int, pattern: tuple) -> _dt.date:
-    wk, k = divmod(idx, len(pattern))
-    return start + _dt.timedelta(weeks=wk, days=pattern[k])
+def _jh_choose_slots(opening: _dt.date, close: _dt.date, need: int,
+                     patterns: tuple = _JH_PATTERNS) -> list:
+    """The loosest day pattern whose dates between `opening` and `close` number at
+    least `need`, as a sorted date list. Falls through to every day of the week,
+    and only past THAT extends beyond `close` a day at a time — the sport is never
+    moved into another season for anything short of more duals than there are days."""
+    slots = []
+    for pat in patterns:
+        slots = _jh_slots(opening, close, pat)
+        if len(slots) >= need:
+            return slots
+    while len(slots) < need:
+        slots.append(slots[-1] + _dt.timedelta(days=1))
+    return slots
+
+
+#: The regular season's BLOCKS, in play order (the share beside each is the
+#: nominal one; the layout sizes them off the busiest card in each). `play_regular_season` runs the whole gender through them
+#: in this order — early non-district -> district pass 1 -> the mid-season window
+#: (rivalries, old-league duals, invitationals, the challenge, the showcases) ->
+#: district pass 2 -> the late tune-up — and a school's card is sliced into them off
+#: its own district duals (`_jh_blocks`). Targeting a dual inside its block is what
+#: keeps a slip from relaying down a season: the next block's targets restart.
+_JH_BLOCKS = (("early", 0.11), ("pass1", 0.30), ("mid", 0.22), ("pass2", 0.30), ("late", 0.07))
+
+#: How far behind its own targets a school may fall before it plays two duals on
+#: one date to catch up (a doubleheader) rather than pushing its card — and every
+#: later card — toward the end of the window. Slots, not days.
+_JH_LAG = 6
+
+
+def _jh_blocks(keys: list) -> list:
+    """The block (`_JH_BLOCKS` name) of each regular-season key in ONE school's
+    card, in order. District duals come in two runs — pass 1 and pass 2 — split by
+    the longest run of non-district duals between the first and last of them (the
+    mid-season window); everything before the first is the early window, everything
+    after the last the late tune-up. A card with no district duals is all "mid"."""
+    n = len(keys)
+    dist = [i for i, k in enumerate(keys) if k[2]]
+    if not dist:
+        return ["mid"] * n
+    first, last = dist[0], dist[-1]
+    # the widest non-district gap between two district duals splits the passes
+    cut, best = None, 0
+    for a, b in zip(dist, dist[1:]):
+        if b - a - 1 > best:
+            cut, best = a, b - a - 1
+    if cut is None:                                  # one unbroken run: halve it
+        cut = dist[(len(dist) - 1) // 2]
+    out = []
+    for i, k in enumerate(keys):
+        if i < first:
+            out.append("early")
+        elif i <= cut:
+            out.append("pass1")
+        elif i > last:
+            out.append("late")
+        elif k[2] or i > cut and all(not keys[x][2] for x in range(cut + 1, i + 1)) is False:
+            out.append("pass2")
+        else:
+            out.append("mid")
+    # a non-district dual sitting between pass-2 district duals is pass 2 too
+    seen_p2 = False
+    for i in range(len(out)):
+        if out[i] == "pass2":
+            seen_p2 = True
+        elif out[i] == "mid" and seen_p2:
+            out[i] = "pass2"
+    return out
+
+
+def _jh_need(order: list, stage_rank: dict) -> int:
+    """How many dates `_jh_lay_out` wants for `order`: the busiest regular-season
+    card with room to absorb slips, plus the longest postseason ladder and the
+    doubleheader lag. The chooser then picks the loosest day pattern that holds it;
+    the WINDOW itself never moves."""
+    team = lambda x: x.split("#", 1)[0]                                  # noqa: E731
+    cards: dict[str, list] = {}
+    for k in order:
+        if not stage_rank.get(k[1], 0):
+            for t in (team(k[3]), team(k[4])):
+                cards.setdefault(t, []).append(k)
+    peak: dict[str, int] = {}
+    for keys in cards.values():
+        counts: dict[str, int] = {}
+        for b in _jh_blocks(keys):
+            counts[b] = counts.get(b, 0) + 1
+        for b, n in counts.items():
+            peak[b] = max(peak.get(b, 0), n)
+    cur: dict[str, int] = {}
+    for k in order:
+        if stage_rank.get(k[1], 0):
+            a_t, b_t = team(k[3]), team(k[4])
+            r = max(cur.get(a_t, -1), cur.get(b_t, -1)) + 1
+            cur[a_t] = cur[b_t] = r
+    return (int(sum(peak.values()) * 1.25)
+            + max(cur.values(), default=-1) + 1 + _JH_LAG + 2)
+
+
+def _jh_lay_out(order: list, slots: list, stage_rank: dict, share: dict,
+                busy: dict | None = None, snap: dict | None = None,
+                double_on: tuple = ()) -> dict:
+    """Date every dual in `order` INSIDE `slots`, one date per dual, each school's
+    own card in play order (owner rule 2026-10).
+
+    ‼️ COSMETIC, AND BOUNDED BY THE WINDOW — NOT A SECOND SCHEDULING ENGINE. The
+    calendar used to pack the whole gender into statewide "rounds" off the
+    transitive play-order graph, so every season was as long as the LONGEST
+    DEPENDENCY CHAIN through the association — ~200 rounds on a real save, a fall
+    sport finishing in March — while every individual card still read correctly.
+    These dates display an already-played season plausibly: unrelated duals may
+    share a date statewide, only a SCHOOL's own duals must stay in order and off
+    one date, and the season ends where the sport's season ends.
+
+    How: a school's regular-season card is sliced into the season's blocks
+    (`_jh_blocks`) and each block's duals are spread across that block's share of
+    the regular calendar; the postseason takes the tail, a school's j-th postseason
+    dual targeting the j-th tail slot. A dual lands on the LATER of its two schools'
+    targets and cursors, so both cards agree and read in order. A school that falls
+    more than `_JH_LAG` slots behind its targets plays a doubleheader instead of
+    pushing its card toward the end of the window; and nothing is ever dated past
+    the last slot — a card that still will not fit shares its last date.
+
+    `share[phase]` is how many duals of that phase a school may play on ONE date (a
+    1-day pod's three, a tiered block's two a day). `busy[school]` are dates a school
+    may not use (the JV pass keeps off varsity dates, rule 2101). `snap[phase]` is a
+    weekday a new block of that phase opens on (a pod's Saturday, a tiered block's
+    Friday). `double_on` are weekdays a school may play a doubleheader of any phase
+    (JV Saturdays)."""
+    busy = busy or {}
+    snap = snap or {}
+    team = lambda x: x.split("#", 1)[0]                                  # noqa: E731
+    cards: dict[str, list] = {}
+    for k in order:
+        if not stage_rank.get(k[1], 0):
+            for t in (team(k[3]), team(k[4])):
+                cards.setdefault(t, []).append(k)
+    # The postseason tail is as deep as the LADDER, not as long as any one card:
+    # a State final waits on both finalists' routes, so its slot is the longest
+    # chain of stages through the bracket. That chain is a dozen or two rungs —
+    # bounded by the association's ladder, never by its size — and is measured
+    # here with the same cursor walk the layout below uses.
+    cur: dict[str, int] = {}
+    rung: dict[tuple, int] = {}
+    for k in order:
+        if stage_rank.get(k[1], 0):
+            a_t, b_t = team(k[3]), team(k[4])
+            r = max(cur.get(a_t, -1), cur.get(b_t, -1)) + 1
+            cur[a_t] = cur[b_t] = rung[k] = r
+    post = max(cur.values(), default=-1) + 1
+    reg = max(1, len(slots) - post - _JH_LAG)
+    # Per school: the block of each regular dual, and its index within the block.
+    place: dict[tuple, tuple] = {}            # (school, key) -> (block, j, n_in_block)
+    for t, keys in cards.items():
+        blocks = _jh_blocks(keys)
+        counts: dict[str, int] = {}
+        for b in blocks:
+            counts[b] = counts.get(b, 0) + 1
+        seen: dict[str, int] = {}
+        for k, b in zip(keys, blocks):
+            place[(t, k)] = (b, seen.get(b, 0), counts[b])
+            seen[b] = seen.get(b, 0) + 1
+    # Each block's share of the regular calendar follows the BUSIEST card in it
+    # (`_jh_need` sized the calendar off the same sums), so no school is denser than
+    # ~one dual per 1.25 slots in any block and a slip is absorbed within a few duals.
+    peak = {name: 1 for name, _ in _JH_BLOCKS}
+    for (_t, _k), (b, _j, n) in place.items():
+        peak[b] = max(peak[b], n)
+    total = sum(peak.values())
+    start, span = {}, {}
+    acc = 0.0
+    for name, _frac in _JH_BLOCKS:
+        start[name], span[name] = acc * reg, peak[name] / total * reg
+        acc += peak[name] / total
+    last_i = len(slots) - 1
+    last: dict[str, int] = {}
+    last_phase: dict[str, str] = {}
+    on_last: dict[str, int] = {}
+    out: dict[tuple, _dt.date] = {}
+    for k in order:
+        ph = k[1]
+        sides = (team(k[3]), team(k[4]))
+        cap = share.get(ph, 1)
+        i, floor_i = 0, 0
+        opening_block = False
+        for t in sides:
+            if stage_rank.get(ph, 0):
+                tgt = reg + rung[k]                        # its rung of the ladder
+            else:
+                b, j, n = place[(t, k)]
+                tgt = int(start[b] + (j + 0.5) * span[b] / n)
+            if t in last:
+                day_cap = max(cap, 2 if slots[last[t]].weekday() in double_on else 1)
+                same = last_phase.get(t) == ph and on_last.get(t, 0) < day_cap
+                # catch up with a doubleheader — never onto or out of a showcase
+                # weekend, whose shape on the calendar is the event's own
+                # — and never a DISTRICT dual: league play is what the season is
+                # for (owner rule 2026-10), so a late league round pushes forward
+                # and the ancillary tune-up behind it is what gets compressed
+                behind = (last[t] - tgt > _JH_LAG and cap == 1 and not k[2]
+                          and not stage_rank.get(ph, 0)
+                          and share.get(last_phase.get(t, ""), 1) == 1)
+                nxt = last[t] if (same or behind) else last[t] + 1
+                floor_i = max(floor_i, last[t])
+                if not same:
+                    opening_block = True
+            else:
+                nxt = 0
+                opening_block = True
+            i = max(i, tgt, nxt)
+        if cap > 1 and opening_block and ph in snap:
+            while i < last_i and slots[i].weekday() != snap[ph]:
+                i += 1
+        while i < last_i and any(slots[i] in busy.get(t, ()) for t in sides):
+            i += 1
+        # Never past the window — and a REGULAR-SEASON dual never into the postseason
+        # tail (owner rule 2026-10: district play, the road and State are what
+        # matter; invitationals and showcases are ancillary and compress first, so
+        # a card that runs long doubles up its late tune-up, never its Sectional).
+        # A league round may run `_JH_LAG` slots into the tail (the tail is sized
+        # with that much slack); the ancillary tune-up behind it is what compresses.
+        cap_i = last_i if stage_rank.get(ph, 0) else (reg + _JH_LAG - 1 if k[2] else reg - 1)
+        i = max(floor_i, min(i, cap_i))
+        d = slots[i]
+        out[k] = d
+        for t in sides:
+            if last.get(t) == i:
+                on_last[t] = on_last.get(t, 0) + 1
+            else:
+                last[t], on_last[t] = i, 1
+            last_phase[t] = ph
+    return out
 
 
 def jh_match_key(row: dict) -> tuple:
@@ -6373,92 +6592,6 @@ def _jh_global_order(by_school: dict[str, list[tuple]],
     return out
 
 
-def _jh_showcase_days(slot: dict, opening: _dt.date,
-                      days: tuple = _JH_DAYS) -> dict[tuple, _dt.date]:
-    """{(showcase phase, round) -> date} — the mid-season showcase WEEKENDS.
-
-    A showcase window is played as consecutive SESSIONS across the whole gender
-    (`jhsaa.play_showcases` plays every event's first session before any event's
-    second), so a window occupies a contiguous block of rounds and can be landed on
-    the calendar as the single event it is: a 1-Day Pod's three sessions all on ONE
-    Saturday, a 2-Day Tiered block's four sessions as Friday, Friday, Saturday,
-    Saturday. Left to the ordinary Mon/Wed/Fri/Sat pattern they would read as three
-    duals on three separate days, which is a different event with different USTA
-    daily limits — the pod is scored as a pro set precisely because it is one day.
-
-    A run is cut at the event's own session count, so two windows of the same kind
-    played back to back are two weekends rather than one long one, and the weekends
-    are walked forward in order so no program is shown at two showcases on one day.
-    Still presentation only: nothing reads a date back."""
-    from . import jhsaa as _jh
-    sizes = {"showcase_pod": _jh.POD_DUALS, "showcase_tiered": _jh.TIER_DUALS}
-    rounds: dict[str, set[int]] = {}
-    for key, (_rk, r) in slot.items():
-        # key is (level, PHASE, district, home, away) — the phase is k[1]. Read off
-        # k[0] this matches the level string against showcase phase names, finds
-        # nothing, and every showcase silently reverts to the ordinary weekday pattern.
-        if key[1] in sizes:
-            rounds.setdefault(key[1], set()).add(r)
-    chunks: list[tuple[int, str, list[int]]] = []
-    for phase, rs in rounds.items():
-        run: list[int] = []
-        for r in sorted(rs):
-            if run and r == run[-1] + 1 and len(run) < sizes[phase]:
-                run.append(r)
-                continue
-            if run:
-                chunks.append((run[0], phase, run))
-            run = [r]
-        if run:
-            chunks.append((run[0], phase, run))
-    out: dict[tuple, _dt.date] = {}
-    used: set[_dt.date] = set()
-    for first, phase, rs in sorted(chunks):
-        base = _jh_day(opening, first, days)
-        sat = base + _dt.timedelta(days=(5 - base.weekday()) % 7)
-        # ‼️ A WINDOW IS ANCHORED TO ITS OWN ROUND, never walked forward from the
-        # previous window. This used to step every later window a week past the last
-        # one — with seven windows in a season the seventh landed a month beyond the
-        # rounds it was played in, so a card showed October showcases sitting between
-        # September league duals and the dates ran BACKWARDS. Distinct weekends still
-        # matter (nobody is at two showcases on one day), so a genuine collision is
-        # nudged a week — but only ever within the block's own span, never unbounded.
-        limit = _jh_day(opening, rs[-1], days) + _dt.timedelta(days=6)
-        while sat in used and sat + _dt.timedelta(days=7) <= limit:
-            sat += _dt.timedelta(days=7)
-        used.add(sat)
-        if phase == "showcase_pod":
-            for r in rs:
-                out[(phase, r)] = sat
-        else:
-            fri, cut = sat - _dt.timedelta(days=1), (len(rs) + 1) // 2
-            for i, r in enumerate(rs):
-                out[(phase, r)] = fri if i < cut else sat
-    return out
-
-
-
-def _jh_school_groups(world_id: int, year: int, gender: str) -> dict[str, str]:
-    """{school: classification} for one archived gender-season, read off the ARCHIVE
-    rather than off today's school list.
-
-    A program's classification moves — reclassification, and a play-up changes which
-    championship it entered — so the live map would put an old season's duals in the
-    wrong lane. The standings are what that season was actually played in."""
-    arc = get_jhsaa(world_id, year, gender) or {}
-    out: dict[str, str] = {}
-    for group, dists in (arc.get("standings") or {}).items():
-        for teams in (dists or {}).values():
-            for row in teams or ():
-                nm = row.get("school") if isinstance(row, dict) else None
-                if nm:
-                    out[nm] = group
-    # A private program's postseason LANE is its road class (owner rule 2026-09):
-    # 10B/11B run their own ladders and must not wait on their league class's.
-    out.update(arc.get("road") or {})
-    return out
-
-
 #: The JV season OPENS a month after varsity's (owner rule 2026-08): girls in April,
 #: boys in September. It is a real scheduling reason, not a cosmetic one — varsity's
 #: 5S/2D early-invitational window is played in month 1 (measured on the real 2038 save:
@@ -6487,66 +6620,32 @@ _JH_JV_OPEN = {"boys": (9, 1), "girls": (4, 1)}
 _JH_JV_DAYS = (1, 3, 5, 6)
 
 
-def _jh_busy(out: dict) -> dict[str, set]:
-    """{school -> dates it already has a NON-JV dual on} off the varsity calendar —
-    a squad's `School#V2` key counts for the school. The JV pass keeps a program's
-    JV dates off these (rule 2101: one team level per competition date)."""
-    busy: dict[str, set] = {}
-    for key, d in out.items():
-        for s in (key[3], key[4]):
-            busy.setdefault(s.split("#", 1)[0], set()).add(d)
-    return busy
-
-
 def _jh_jv_dates(out: dict, by_school: dict[str, list[tuple]],
                  seen: dict[tuple, int], gender: str,
                  season_year: int) -> None:
-    """Date the JV season in place, on its own cursor and its own calendar.
+    """Date the JV season in place, on its own calendar: from the JV opener to the
+    SAME season close, on `_JH_JV_DAYS`, each program's JV card spread across the
+    window and the JV championship (`jv_state`) at its tail — the varsity rule
+    (`_jh_lay_out`).
 
-    Deliberately much simpler than the varsity pass: JV has no postseason, so there are
-    no stages to separate and no lanes to keep apart — it is one queue of duals packed
-    into rounds (a round being duals with no team in common) and laid on `_JH_JV_DAYS`
-    from the JV opener. No season-close fitting either: JV cannot overrun a window
-    it does not have to finish inside, and a JV dual slipping past the varsity final is
-    not a fault."""
+    ‼️ JV SHARES DATES WITH VARSITY (owner rule 2026-10): "JV doesn't require
+    separate dates than varsity, they just can't use the same players … in real
+    life they always overlap." Rule 2101 is a PLAYER rule, kept by the lineups, not
+    a calendar rule — so no `busy` set here. JV may play a Saturday doubleheader."""
     if not by_school:
         return
+    from . import jhsaa as _jh
     mon, day = _JH_JV_OPEN.get(gender, _JH_JV_OPEN["girls"])
     opening = _dt.date(season_year, mon, day)
-    opening += _dt.timedelta(days=-opening.weekday() % 7)          # first Monday
+    mon_c, day_c = _JH_SEASON_CLOSE.get(gender, _JH_SEASON_CLOSE["girls"])
+    close = _dt.date(season_year, mon_c, day_c) + _dt.timedelta(days=_JH_CLOSE_GRACE)
     order = _jh_global_order(by_school, seen)
-    # ‼️ ONE TEAM LEVEL PER COMPETITION DATE (JHSAA rule 2101). The varsity calendar
-    # is already laid (`out`), so a JV dual is never dated on a day either program
-    # has a varsity or squad dual: the round slips to the next JV day. Cheap and
-    # exact — the two patterns only meet on Saturdays — and it is what makes the
-    # rule TRUE rather than merely stated, since the sim itself has no clock.
-    busy = _jh_busy(out)
-
-    def free(key, d):
-        # a squad-vs-squad row names `School#V2`; the busy set is by school
-        return not any(d in busy.get(x.split("#", 1)[0], ()) for x in key[3:5])
-
-    nxt: dict[str, int] = {}
-    for key in order:
-        a_s, b_s = key[3], key[4]
-        r = max(nxt.get(a_s, 0), nxt.get(b_s, 0))
-        while not free(key, _jh_day(opening, r, _JH_JV_DAYS)):
-            r += 1
-        nxt[a_s] = nxt[b_s] = r + 1
-        out[key] = _jh_day(opening, r, _JH_JV_DAYS)
-    # Same monotonic guarantee the varsity card gets: a program's JV schedule reads in
-    # date order, whatever dated it.
-    last: dict[str, _dt.date] = {}
-    for key in order:
-        floor = max((last[x] for x in (key[3], key[4]) if x in last), default=None)
-        if floor is not None and out[key] < floor:
-            # ...to the first JV day on/after the floor that is free of BOTH
-            # programs' varsity dates (rule 2101 again — the floor is one team's).
-            d = floor
-            while d.weekday() not in _JH_JV_DAYS or not free(key, d):
-                d += _dt.timedelta(days=1)
-            out[key] = d
-        last[key[3]] = last[key[4]] = out[key]
+    rank = {"jv_state": 1}
+    order.sort(key=lambda k: rank.get(k[1], 0))
+    slots = _jh_choose_slots(opening, close, _jh_need(order, rank),
+                             (_JH_JV_DAYS, (0, 1, 2, 3, 4, 5, 6)))
+    out.update(_jh_lay_out(order, slots, rank, {"showcase_pod": _jh.POD_DUALS},
+                           snap={"showcase_pod": 5}, double_on=(5,)))
 
 
 def jhsaa_match_dates(world_id: int, year: int, gender: str,
@@ -6601,115 +6700,29 @@ def jhsaa_match_dates(world_id: int, year: int, gender: str,
     rank = {p: i + 1 for i, p in enumerate(_jh.POSTSEASON)}
     # Play order first, then STAGE — a topological order alone interleaves the
     # stages across schools (one school's Sectional can sort before another's
-    # last regular dual), and a stage floor that moves forward on every switch
-    # then drags the regular season through the whole calendar. A team's own
-    # matches already run regular -> Sectionals -> ... -> State, so a stable
-    # sort by stage keeps each card in order while separating the stages.
-    # ‼️ `k[1]`, not `k[0]` — `jh_match_key` puts LEVEL first now. Read off k[0] this
-    # sorts every dual by the string "v", i.e. not at all, and the postseason stages
-    # stop being separated from the regular season.
+    # last regular dual). A team's own matches already run regular -> Sectionals
+    # -> ... -> State, so a stable sort by stage keeps each card in order while
+    # separating the stages. `k[1]` is the PHASE (`jh_match_key` puts LEVEL first).
     order = sorted(_jh_global_order(by_school, seen),
                    key=lambda k: rank.get(k[1], 0))
     mon, day = _JH_SEASON_OPEN.get(gender, _JH_SEASON_OPEN["girls"])
     opening = _dt.date(season_year, mon, day)
-    opening += _dt.timedelta(days=-opening.weekday() % 7)          # first Monday
-
-    # Pack matches into ROUNDS: a round is a set of duals with no team in common,
-    # so everything that could be played on one day is. Assigning day-by-day in
-    # play order instead lets the constraint chain through opponents — A waits on
-    # B, B on C — and a ~26-dual card sprawled over three months. A team's round
-    # numbers are strictly increasing, so its card still reads in order.
-    # ‼️ EACH CLASSIFICATION GETS ITS OWN POSTSEASON LANE (owner rule 2026-08).
-    # The stage floor used to be GLOBAL: `floor_r = top_r + 1` over the whole gender,
-    # so 7A's Regionals could not begin until 2A-1A's Sectionals had finished. Eight
-    # classifications that never play each other were serialised into one queue, and
-    # the eleven-stage ladder therefore cost eight times what any one class actually
-    # plays — which is what pushed the boys' postseason into January and the girls'
-    # into July.
-    #
-    # A class's stage now waits only on the PREVIOUS STAGE OF ITS OWN CLASS. Every
-    # lane opens at the same postseason window and advances independently, so the
-    # postseason lasts as long as the longest single class's ladder rather than the
-    # sum of all eight.
-    #
-    # PRESENTATION ONLY. Match order, qualification and results are untouched: this
-    # function reads the finished archive and decides nothing but what day a dual is
-    # printed on.
-    #
-    # The REGULAR season stays on one shared calendar — invitationals and showcases
-    # cross classifications, so those duals genuinely do share a queue.
-    #
-    # ‼️ THE TOC IS NOT A LANE. It fields the champions of every classification, so it
-    # is the one postseason event with a real cross-class dependency: it waits on all
-    # of them. Giving it a lane of its own (keyed on neither school's group) would let
-    # it be dated before a state final it depends on.
-    group_of = _jh_school_groups(world_id, year, gender)
-    slot: dict[tuple, tuple] = {}
-    nxt: dict[str, int] = {}
-    reg_floor, reg_top = 0, -1
-    lane_rank: dict[str, int] = {}
-    lane_floor: dict[str, int] = {}
-    lane_top: dict[str, int] = {}
-    post_base: int | None = None
-    for key in order:
-        _lvl, phase, _dist, a_s, b_s = key
-        # A SQUAD shares its school's cursor (rule 2101): dated apart from the V1,
-        # a bench player the V1 rotated in could stand on two courts on one day.
-        a_s, b_s = a_s.split("#", 1)[0], b_s.split("#", 1)[0]
-        r_rank = rank.get(phase, 0)
-        if not r_rank:                                     # regular season, one queue
-            r = max(reg_floor, nxt.get(a_s, 0), nxt.get(b_s, 0))
-            nxt[a_s] = nxt[b_s] = r + 1
-            reg_top = max(reg_top, r)
-            slot[key] = (0, r)
-            continue
-        if post_base is None:                              # every lane opens together
-            post_base = reg_top + 1
-        lane = "" if phase in _jh.TOC_PHASES else (group_of.get(a_s) or group_of.get(b_s) or "")
-        if lane_rank.get(lane) != r_rank:                  # this LANE's next stage
-            base = (max(lane_top.values(), default=post_base - 1) if phase in _jh.TOC_PHASES
-                    else lane_top.get(lane, post_base - 1))
-            lane_floor[lane], lane_rank[lane] = base + 1, r_rank
-        r = max(lane_floor[lane], post_base, nxt.get(a_s, 0), nxt.get(b_s, 0))
-        nxt[a_s] = nxt[b_s] = r + 1
-        lane_top[lane] = max(lane_top.get(lane, -1), r)
-        slot[key] = (r_rank, r)
-
-    reg_rounds = max((r for (rk, r) in slot.values() if rk == 0), default=-1) + 1
-    # ‼️ ONE CONTINUOUS ROUND INDEX, AND A PATTERN CHOSEN TO FIT THE WINDOW. The
-    # postseason used to restart its own count at the Monday after the regular season,
-    # which inserted a break and — with the count fixed at four days a week — let the
-    # season run wherever it ran. A boys' season finishing in December is wrong on its
-    # face: it is a FALL sport and it is over by the end of October.
-    #
-    # The postseason lanes already continue the same counter, so `r` is a global index
-    # for the whole season; the only choice left is how many days a week it is laid on,
-    # and that is now derived from how many rounds have to fit rather than fixed.
+    # ‼️ THE WINDOW IS FIXED (owner rule 2026-08, restated 2026-10): boys open in
+    # August and are done by the end of October (early November at the latest),
+    # girls open in March and are done by early June. The calendar is fitted INTO
+    # it — the loosest day pattern that holds the busiest card plus the ladder —
+    # never run until the association's dependency graph happens to end.
+    # Presentation only: nothing reads a date back and no result depends on one.
     mon_c, day_c = _JH_SEASON_CLOSE.get(gender, _JH_SEASON_CLOSE["girls"])
     close = _dt.date(season_year, mon_c, day_c) + _dt.timedelta(days=_JH_CLOSE_GRACE)
-    total = max((r for (_rk, r) in slot.values()), default=0) + 1
-    days = _jh_pattern(opening, close, total)
-    weekend = _jh_showcase_days(slot, opening, days)
-    for key, (_r_rank, r) in slot.items():
-        out[key] = weekend.get((key[1], r)) or _jh_day(opening, r, days)
-
-    # ‼️ A CARD READS IN DATE ORDER, and that is a GUARANTEE rather than something
-    # the round arithmetic happens to produce. Anything that dates a dual outside the
-    # ordinary round pattern — the showcase weekends do, and a future event would —
-    # can otherwise land a match before one its own team already played, which is how
-    # October showcases came to sit between September league duals.
-    #
-    # So: walk the play order and hold each dual on or after the last date either of
-    # its teams has been given. Nothing is reordered — the sequence is the archive's
-    # and is not up for revision — only pushed forward to the next available slot in
-    # the same pattern, which is what a real fixture list does when a date slips.
-    seen: dict[str, _dt.date] = {}
-    for key in order:
-        # key is (level, phase, district, home, away) — the schools are the LAST TWO.
-        floor = max((seen[s] for s in (key[3], key[4]) if s in seen), default=None)
-        if floor is not None and out[key] < floor:
-            out[key] = floor
-        seen[key[3]] = seen[key[4]] = out[key]
+    slots = _jh_choose_slots(opening, close, _jh_need(order, rank))
+    # The showcases keep their shape on the calendar: a 1-day pod's three duals on
+    # ONE Saturday, a 2-day tiered block's four as Friday, Friday, Saturday, Saturday.
+    out.update(_jh_lay_out(
+        order, slots, rank,
+        {"showcase_pod": _jh.POD_DUALS, "showcase_tiered": 2},
+        snap={"showcase_pod": 5, "showcase_tiered": 4}))
+    _jh_jv_dates(out, jv_by_school, jv_seen, gender, season_year)
     _jh_jv_dates(out, jv_by_school, jv_seen, gender, season_year)
 
     if len(_JH_CAL_CACHE) >= _JH_CAL_MAX:      # prune per season, never a global clear
