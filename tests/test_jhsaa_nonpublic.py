@@ -18,6 +18,7 @@ import sqlite3
 import pytest
 
 from app import jhsaa as jh
+from app import jhsaa_districting as jd
 from app import world as wd
 from app.web.server import create_app
 
@@ -211,19 +212,21 @@ def test_the_pods_are_the_privates_leagues_and_publics_keep_their_own(archived):
     for g in jh.GROUPS:
         for rows in (arc["standings"][g] or {}).values():
             assert not [r["school"] for r in rows if schools[r["school"]].private], g
+    # a Non-Public league is drawn like every public one, under the SAME cap
+    cap = jd.districting_config().MAX_DISTRICT
     for g in jh.NONPUBLIC_GROUPS:
         pods = arc["standings"][g]
         assert pods, g
         for pod, rows in pods.items():
-            assert pod and 2 <= len(rows) <= 10, (g, pod, len(rows))
+            assert pod and 2 <= len(rows) <= cap, (g, pod, len(rows), cap)
             assert all(schools[r["school"]].private for r in rows), pod
             assert rows[0]["place"] == 1
         # the pod champions take the protected seats, like every league champion
         assert {rows[0]["school"] for rows in pods.values()} <= set(arc["protected"][g])
         assert arc["all_district"][g] and set(arc["all_district"][g]) <= set(pods)
-        # the class's own slate is two All-Star teams
+        # the class's own slate is All-State, named like every other class's
         names = [t["name"] for t in arc["awards"][g]["teams"]]
-        assert names[:2] == ["First Team", "Second Team"] and len(names) <= 2
+        assert names[:2] == ["First Team", "Second Team"]
 
 
 def test_a_private_plays_every_old_league_public_once_outside_the_standings(archived):

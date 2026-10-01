@@ -121,26 +121,44 @@ def test_nobody_exceeds_the_limit_across_levels_and_the_counters_match(season):
     assert any(max(t.dates.values(), default=0) >= 20 for t in teams)
 
 
-# --- the calendar: one level per date ------------------------------------------
+# --- the calendar: JV shares the varsity dates ------------------------------------
 
-def test_the_jv_calendar_keeps_off_a_programs_varsity_dates():
+def test_the_jv_calendar_shares_varsity_dates_and_keeps_each_school_in_order():
+    """Owner rule 2026-10: JV plays on the same days as varsity — "they just can't
+    use the same players", which is the lineup rule (2101), not a calendar rule.
+    So the JV layout takes no varsity busy set; what it owes is a date inside the
+    sport's window, on a JV day, and each school's own JV card in order."""
     year = 2101
     out = {}
-    # two varsity dates for A, one for B (a squad key counts for the school)
-    out[("v", "regular", 1, "A", "X")] = dt.date(year, 4, 4)     # a Saturday
-    out[("v", "regular", 0, "B#V2", "Y")] = dt.date(year, 4, 11)
+    # a varsity Saturday for A — nothing stops a JV dual landing on it
+    out[("v", "regular", 1, "A", "X")] = dt.date(year, 4, 4)
     jv_keys = [("jv", "regular", 1, "A", "B"), ("jv", "regular", 1, "A", "C"),
-               ("jv", "regular", 0, "B", "C")]
+               ("jv", "regular", 0, "B", "C"), ("jv", "regular", 1, "C", "D"),
+               ("jv", "showcase_pod", 0, "A", "D"), ("jv", "showcase_pod", 0, "A", "B"),
+               ("jv", "jv_state", 0, "A", "C")]
     by_school = {}
     for k in jv_keys:
         by_school.setdefault(k[3], []).append(k)
         by_school.setdefault(k[4], []).append(k)
     seen = {k: i for i, k in enumerate(jv_keys)}
     world._jh_jv_dates(out, by_school, seen, "girls", year)
-    busy = world._jh_busy({k: d for k, d in out.items() if k[0] == "v"})
-    assert busy == {"A": {dt.date(year, 4, 4)}, "X": {dt.date(year, 4, 4)},
-                    "B": {dt.date(year, 4, 11)}, "Y": {dt.date(year, 4, 11)}}
+    mon, day = world._JH_JV_OPEN["girls"]
+    mon_c, day_c = world._JH_SEASON_CLOSE["girls"]
+    opening = dt.date(year, mon, day)
+    close = dt.date(year, mon_c, day_c) + dt.timedelta(days=world._JH_CLOSE_GRACE)
     for k in jv_keys:
-        for s in k[3:5]:
-            assert out[k] not in busy.get(s, ()), (k, out[k])
-        assert out[k].weekday() in world._JH_JV_DAYS
+        # a league dual and the championship are always dated; an ancillary dual
+        # (invitational, showcase) may go UNDATED rather than push the window
+        if k[2] or k[1] == "jv_state":
+            assert k in out, k
+        if k in out:
+            assert opening <= out[k] <= close, (k, out[k])
+            assert out[k].weekday() in world._JH_JV_DAYS, (k, out[k])
+    # a school's own card never reads backwards, and the championship is last
+    for s, keys in by_school.items():
+        dates = [out[k] for k in sorted(keys, key=seen.get) if k in out]
+        assert dates == sorted(dates), (s, dates)
+    assert out[("jv", "jv_state", 0, "A", "C")] >= max(
+        out[k] for k in jv_keys if k[1] != "jv_state" and k in out)
+    # the varsity date was never a constraint on the JV layout
+    assert out[("v", "regular", 1, "A", "X")] == dt.date(year, 4, 4)

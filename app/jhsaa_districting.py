@@ -77,7 +77,7 @@ def consolidations() -> dict:
     """`{(class, retired league): surviving league}` — the leagues the owner folded
     into a neighbour (owner rule 2026-09, after the Non-Public split left them
     short). Read from the districting data so `jhsaa._rows()` can apply it on
-    every load; `scripts/jhsaa_nonpublic_pods.py` writes the same fold into the
+    every load; the pods script that preceded `scripts/jhsaa_nonpublic_leagues.py` wrote the same fold into the
     seed file."""
     hit = _cfg_cache.get("consol")
     if hit is None:
@@ -280,7 +280,7 @@ def redistrict(rows, cls, pos, m, rng, cap=None, log=None, extra_foreign=()):
                if r.get("group") != cls and (r.get("girls") or r.get("boys"))
                and r.get("girls_district")} - set(names)
     # Names a caller knows are claimed but has hidden from `rows` for this draw —
-    # the pod names of the privates `redraw_classes` lends to a public class.
+    # the Non-Public league names of the privates `redraw_classes` lends to a public class.
     foreign |= set(extra_foreign) - set(names)
     taken, out = set(), {}
     heads = {n.split()[0] for n in names if n} | {n.split()[0] for n in foreign if n}
@@ -314,10 +314,6 @@ def redistrict(rows, cls, pos, m, rng, cap=None, log=None, extra_foreign=()):
             members, notes)
 
 
-#: The Non-Public classes' districts are PODS of 8-10 (owner rule 2026-09): a home
-#: and away round robin of 14-18 league duals. `redistrict` runs with this cap.
-POD_CAP = 10
-
 #: The Non-Public class keys, mirrored from `jhsaa` (this module must not import
 #: it — `jhsaa` imports `jhsaa_reclass`, which imports this).
 NONPUBLIC = ("10B", "11B")
@@ -334,7 +330,7 @@ def redraw_classes(rows: list[dict], classes: list[str], cap: int | None = None,
     is the same loop with printing.
 
     ‼️ THE OLD LEAGUE RESETS AT EVERY REALIGNMENT (owner rule 2026-09). A private
-    program's `group` is its Non-Public class (10B/11B) and its district is a pod,
+    program's `group` is its Non-Public class (10B/11B) and its district is one of its leagues,
     but it keeps an OLD LEAGUE — the public league it would sit in under the
     current map, whose members it plays once each as non-conference duals. So a
     public class is drawn WITH its privates in the pool (each private temporarily
@@ -386,48 +382,100 @@ def redraw_classes(rows: list[dict], classes: list[str], cap: int | None = None,
     return out
 
 
-def pod_nonpublic(rows: list[dict], seed: int = SEED, cap: int = POD_CAP) -> dict:
-    """Deal every Non-Public class's members into geographic PODS of about `cap`
-    IN PLACE (both gender district fields) and return {class: notes}. The pod IS
-    the private's district — standings, league title, All-District, District POY
-    — drawn by the same clusterer and named from the same league bank as every
-    public league (`redistrict`), only capped at nine. Deterministic on `seed`
-    and the membership, so a redraw over an unchanged class reproduces itself."""
+def nonpublic_class(r: dict, cut: int, playup: frozenset) -> str:
+    """The Non-Public class a private row belongs in: 10B at or above `cut` or by
+    name (`playup`), else 11B. `cut`/`playup` are `jhsaa.NONPUBLIC_CUT` /
+    `NONPUBLIC_PLAYUP`, passed in because this module must not import `jhsaa`."""
+    ident = r.get("source") or r["name"]
+    if ident in playup or int(r.get("enrollment") or 0) >= cut:
+        return NONPUBLIC[0]
+    return NONPUBLIC[1]
+
+
+def ensure_nonpublic(rows: list[dict], cut: int, playup: frozenset,
+                     force: bool = False, log=None) -> dict:
+    """THE NON-PUBLIC SPLIT IS A STANDING RULE, LIKE THE CONSOLIDATIONS (owner rule
+    2026-10): every private program sits in its Non-Public class, and 10B/11B are
+    ordinary classes whose leagues are drawn by `redistrict` like every public
+    class — the same `district_count`, the same cap, over the programs that
+    actually sponsor a team. There are no pods. Applied IN PLACE on `rows` at
+    every load, so a seed file a stale checkout, an old committed cycle or a
+    hand edit has left wrong is put right before anything reads the leagues.
+
+    Three faults it repairs, each seen on the owner's real save:
+      * a private sitting in a public group (an old committed map written back
+        over the split) — it moves to its class, and the public league it sat in
+        becomes its `old_group`/`old_league`;
+      * a Non-Public league thinner than `MIN_DISTRICT_SIZE` sponsoring
+        programs (a two-team "league" of the one codified rivalry pair, or a map
+        drawn over schools that sponsor nothing) — the class is redrawn;
+      * a private carrying a PUBLIC league's name (the 8A Sunkist League under
+        10B) — blanked before the draw so no public name is taken.
+    `force=True` redraws both classes whatever their state (the script's path).
+    Returns {"moved": n, "redrawn": [classes], "notes": {cls: [...]}}; nothing
+    changed reads as moved 0 / redrawn []."""
+    say = log or (lambda s: None)
     m = districting_config()
-    pos = coords()
-    rng = random.Random(seed)
-    out = {}
-    for cls in NONPUBLIC:
-        if not any(_is_private_road(r) and r["group"] == cls
-                   and (r.get("girls") or r.get("boys")) for r in rows):
+    moved = 0
+    for r in rows:
+        if not r.get("private"):
             continue
-        notes: list[str] = []
-        # A private arriving from a public league still carries that league's
-        # name, which is NOT this class's to inherit or retire: blank it for the
-        # draw so every pod is named fresh from the bank (or keeps a pod name the
-        # class already holds) and no public league's name is taken.
-        mine = [r for r in rows if _is_private_road(r) and r["group"] == cls]
-        pods = {r.get("girls_district") for r in mine} & {
-            r.get("girls_district") for r in rows if not _is_private_road(r)}
-        saved = [(r, r.get("girls_district"), r.get("boys_district")) for r in mine]
+        want = nonpublic_class(r, cut, playup)
+        if r.get("group") == want:
+            continue
+        if r.get("group") not in NONPUBLIC:
+            r["old_group"] = r.get("group") or r.get("classification")
+            r["old_league"] = r.get("girls_district") or r.get("boys_district") or ""
+            say(f"  {r['name']}: {r.get('group')} {r['old_league']} -> {want}")
+        else:
+            say(f"  {r['name']}: {r.get('group')} -> {want}")
+        r["group"] = want
+        r.pop("play_up", None)
+        moved += 1
+    public_names = {r.get("girls_district") for r in rows
+                    if r.get("group") not in NONPUBLIC and r.get("girls_district")}
+    public_names |= {r.get("boys_district") for r in rows
+                     if r.get("group") not in NONPUBLIC and r.get("boys_district")}
+    redrawn, notes = [], {}
+    for cls in NONPUBLIC:
+        mine = [r for r in rows if r.get("group") == cls
+                and (r.get("girls") or r.get("boys"))]
+        if not mine:
+            continue
+        sizes = collections.Counter(r.get("girls_district") or "" for r in mine)
+        thin = [k for k, v in sizes.items() if not k or v < m.MIN_DISTRICT_SIZE]
+        taken = [r["name"] for r in mine if (r.get("girls_district") in public_names
+                                             or r.get("boys_district") in public_names)]
+        split = [r["name"] for r in mine if r.get("girls_district") != r.get("boys_district")]
+        if not (force or moved or thin or taken or split):
+            continue
+        reasons = []
+        if thin:
+            reasons.append(f"thin or unnamed leagues {thin}")
+        if taken:
+            reasons.append(f"public league names on {taken}")
+        if split:
+            reasons.append(f"gender halves apart on {split}")
+        if moved:
+            reasons.append(f"{moved} privates moved in")
+        say(f"{cls}: redraw ({'; '.join(reasons) or 'forced'})")
         for r in mine:
-            if r.get("girls_district") in pods or r.get("old_group") and \
-                    r.get("old_league") == r.get("girls_district"):
+            if r.get("girls_district") in public_names or r.get("boys_district") in public_names:
                 r["girls_district"] = r["boys_district"] = ""
-        try:
-            assign, members, more = redistrict(rows, cls, pos, m, rng, cap=cap,
-                                               log=notes.append)
-        finally:
-            for r, gd, bd in saved:
-                r["girls_district"], r["boys_district"] = gd, bd
-        notes += more
+        cls_notes: list[str] = []
+        assign, members, more = redistrict(rows, cls, coords(), m,
+                                           random.Random(SEED), log=cls_notes.append)
+        cls_notes += more
         for r in members:
             new = assign.get(r["name"])
             if new:
                 r["girls_district"] = r["boys_district"] = new
-        sizes = collections.Counter(r["girls_district"] for r in members)
-        if any(v > cap for v in sizes.values()):
-            raise ValueError(f"{cls}: pod over {cap} after redraw: {dict(sizes)}")
-        notes.append("   pods    " + ", ".join(f"{k} ({v})" for k, v in sorted(sizes.items())))
-        out[cls] = notes
-    return out
+        after = collections.Counter(r["girls_district"] for r in members)
+        if any(v > m.MAX_DISTRICT for v in after.values()):
+            raise ValueError(f"{cls}: league over MAX_DISTRICT after redraw: {dict(after)}")
+        cls_notes.append("   leagues " + ", ".join(f"{k} ({v})" for k, v in sorted(after.items())))
+        for line in cls_notes:
+            say(line)
+        redrawn.append(cls)
+        notes[cls] = cls_notes
+    return {"moved": moved, "redrawn": redrawn, "notes": notes}

@@ -6425,12 +6425,6 @@ def _rows() -> list[dict]:
             log.warning("JHSAA seed file read PRE-realignment (%d moved schools back in"
                         " their old class); re-applied the committed map from the save.",
                         restored)
-            try:
-                with open(_DATA, "w", encoding="utf-8") as fh:
-                    json.dump(doc, fh, indent=2, ensure_ascii=False)
-                    fh.write("\n")
-            except OSError as exc:
-                log.warning("could not rewrite %s: %s", _DATA, exc)
         # ‼️ A CONSOLIDATION IS A STANDING RULE, NOT AN EDIT THE MAP CAN OUTVOTE
         # (owner rule 2026-09). The Non-Public split left three public leagues
         # under six programs and the owner chose to fold two of them into their
@@ -6443,14 +6437,47 @@ def _rows() -> list[dict]:
         # map, and is idempotent: whatever a cycle or a checkout remembers, a
         # retired league has no members.
         _apply_consolidations(rows)
+        # ‼️ THE NON-PUBLIC SPLIT IS A STANDING RULE TOO (owner rule 2026-10): every
+        # private sits in 10B/11B and those two are ORDINARY classes whose leagues are
+        # drawn like every public class's, over the programs that sponsor a team. There
+        # are no pods. The owner's real save played two seasons on a map an old
+        # committed cycle had written back over the split — privates back in public
+        # leagues, 11B leagues of three, the rivalry pair alone in a two-team "league"
+        # wearing an 8A name — and the archive is honest about it. Whatever a cycle, a
+        # checkout or a hand edit leaves in the file, the rule is applied here.
+        repaired = _apply_nonpublic(rows)
+        if restored or repaired:
+            try:
+                with open(_DATA, "w", encoding="utf-8") as fh:
+                    json.dump(doc, fh, indent=2, ensure_ascii=False)
+                    fh.write("\n")
+            except OSError as exc:
+                log.warning("could not rewrite %s: %s", _DATA, exc)
         _schools_cache = rows
     return _schools_cache
+
+
+def _apply_nonpublic(rows: list[dict]) -> bool:
+    """`jhsaa_districting.ensure_nonpublic` with this module's rule values; True when
+    it changed anything (the caller then writes the file). A data problem must not
+    break a load, so every failure is logged and swallowed."""
+    from . import jhsaa_districting as _jd
+    try:
+        out = _jd.ensure_nonpublic(rows, NONPUBLIC_CUT, NONPUBLIC_PLAYUP, log=log.warning)
+    except Exception as exc:
+        log.warning("JHSAA Non-Public repair skipped: %s", exc)
+        return False
+    if out["moved"] or out["redrawn"]:
+        log.warning("JHSAA Non-Public repair: %d privates moved to their class, leagues"
+                    " redrawn in %s", out["moved"], out["redrawn"] or "no class")
+        return True
+    return False
 
 
 def _apply_consolidations(rows: list[dict]) -> None:
     """Fold every retired league into its surviving neighbour, in place. Reads
     `consolidated_leagues` from the districting data — `(class, retired, keep)` —
-    so the app and `scripts/jhsaa_nonpublic_pods.py` state the fold once each and
+    so the app and `scripts/jhsaa_nonpublic_leagues.py` state the fold once each and
     the app's copy is the one a save cannot lose."""
     from . import jhsaa_districting as _jd
     try:
@@ -13956,8 +13983,8 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     # Gold Valley All-Region team, drawn from every program in Gold Valley.
     pool = build_pool([t for g in by_group for ts in by_group[g].values() for t in ts])
     for group in by_group:
-        # A Non-Public class's slate is its ALL-STAR teams (owner rule 2026-09):
-        # `jhsaa_awards.AS_TIERS` sizes it at two, the label is `slate_label`.
+        # A Non-Public class's slate is All-State like every other class's (owner
+        # rule 2026-10; the two-team All-Star slate of 2026-09 was a mistake).
         out["awards"][group] = season_awards(
             [t for ts in by_group[group].values() for t in ts], pool=pool)
     region = region_awards(pool)

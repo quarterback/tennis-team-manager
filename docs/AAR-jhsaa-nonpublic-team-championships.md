@@ -236,3 +236,44 @@ the TOC excepted.
 > excludes `EARLY_FORMAT_PHASE`, so the comment described a shape the code had stopped
 > playing. **A stale comment inside a format explanation is the one this section keeps
 > paying for.**
+
+
+## Addendum (2026-10): no pods — 10B/11B are ordinary classes, and the split is a standing rule
+
+The owner's real save played its 2029 and 2030 seasons on a map that an old
+committed realignment cycle had written back over the Non-Public split (the
+`reapply` fault fixed in 0831d8d, after the file had already been rewritten on
+disk). Most privates were back in public leagues; the 11B boys' leagues that
+remained held three to five teams; and Condotti Vanguard Academy and
+Romero-Finniski — the association's one codified rivalry pair, which every
+mechanism keeps together, so any leftover of two is always them — sat alone in a
+two-team 10B district carrying the 8A Sunkist League's name. Nothing raised:
+a district of two clears `MIN_DISTRICT`, and the standings were honest for the
+league they described.
+
+Owner (2026-10): "just remove them as pods and make the real districts like all
+the others and move those programs all to the 11b 10b places they belong like all
+other teams and that should fix all of this once and for all."
+
+- `POD_MAP`, `POD_CAP` and `pod_nonpublic` are gone. 10B and 11B leagues are drawn
+  by `redistrict` with the association's own `district_count` and cap over the
+  programs that sponsor a team — six leagues of 8-11 in each class, same as a
+  public class. `scripts/jhsaa_nonpublic_leagues.py` is the forced redraw.
+- The split is a STANDING RULE applied on every load, the `consolidated_leagues`
+  idiom: `jhsaa_districting.ensure_nonpublic` (called from `jhsaa._rows()`) moves
+  any private found in a public group into its Non-Public class (recording the
+  league it sat in as its old league), redraws a Non-Public class whose leagues are
+  unnamed, thinner than `min_district_size`, split across the gender fields or
+  wearing a public league's name, and the loader rewrites the file. A healthy file
+  is a no-op; the repair is idempotent. Whatever a cycle, a checkout or a hand edit
+  leaves in `schools.json`, the save plays on the right map.
+- Archived seasons are not touched; the 2029 and 2030 standings read as they were
+  played.
+- **All-State, not All-Star (owner correction 2026-10).** The 2026-09 addendum's
+  two-team "All-Star" slate was an agent's misreading; the Non-Public classes
+  follow the exact naming conventions of every other classification — All-State,
+  All-Region, All-District — at the default three teams. `slate_label` answers
+  All-State for every class, `AS_TIERS` carries no 10B/11B entry, and
+  `_SEASON_ROW_VERSION` is bumped so archived honour lines re-derive with the
+  right name. Seasons archived with two teams render as All-State First and
+  Second Team.
