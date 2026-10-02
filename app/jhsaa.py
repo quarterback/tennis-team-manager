@@ -6451,7 +6451,10 @@ def load_schools(gender: str) -> list[School]:
             # name), so a school competing in 6A while carrying its 5A league name
             # lands in a 6A district that holds nobody else — a one-team league,
             # which in a double round robin is a team with no league season at all.
-            district=moved.get(r["name"], r[f"{gender}_district"]),
+            # A private's league is the Non-Public draw's, never the play-up map's
+            # (see `_plays_up_row`); `moved` cannot name one now, and this keeps it so.
+            district=(r[f"{gender}_district"] if group in NONPUBLIC_GROUPS
+                      else moved.get(r["name"], r[f"{gender}_district"])),
             gender=gender, source=r.get("source", ""),
             locality=r.get("locality", ""),
             state=r.get("state", ""),
@@ -6746,7 +6749,19 @@ def _compute_playup_league(rows: list[dict],
 def _plays_up_row(row: dict, pmap: dict | None = None) -> str | None:
     """The resolved target group, or None — see `plays_up`. `pmap` is the resolved
     play-up map. Omit it ONLY for a one-off question about a single school — without
-    it every call costs a database round trip."""
+    it every call costs a database round trip.
+
+    ‼️ A NON-PUBLIC PROGRAM NEVER PLAYS UP (owner incident 2026-10). `load_schools`
+    refused to move a private's GROUP but still took its LEAGUE off the play-up map,
+    and `_compute_playup_league` placed every row the override table named — so a
+    stale `jhsaa_playup` row for Condotti and Romero-Finniski (pinned to 10B by name
+    in 2026-09, long retired) routed both into the closest 8A league by NAME while
+    they stayed in 11B: a two-team "11B Sunkist League", on the owner's save, season
+    after season, through every repair of the map. The repair could not see it
+    because the rows were right; the School objects were wrong. The play-up read is
+    the one place to say no, so every consumer agrees."""
+    if row.get("group") in NONPUBLIC_GROUPS:
+        return None
     return plays_up(row["name"], bool(row.get("play_up")), pmap,
                     row.get("classification"))
 

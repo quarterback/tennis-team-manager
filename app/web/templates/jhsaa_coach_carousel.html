@@ -7,13 +7,20 @@
 {% if msg %}<p class="jh-note" style="margin:0 0 12px">{{ msg }}</p>{% endif %}
 <div class="bl-panel">
   <div class="bl-panel-head"><span class="bl-panel-title">Coaching cycle</span>
-    {% if prop %}<span class="bl-panel-meta">{{ prop.year|cal }} · {{ prop.lines|length }} proposed</span>{% endif %}</div>
-  {% if not prop %}
+    {% if prop %}<span class="bl-panel-meta">{{ prop.year|cal }} · {{ prop.lines|length }} proposed · {{ (prop.genders or ['girls', 'boys'])|join(' + ') }}</span>{% endif %}</div>
+  {# ‼️ A CYCLE IS ONE GENDER — the one on screen (owner report 2026-10). A
+     pending proposal for the other gender keeps its lines and vetoes; running
+     this one joins it, and Commit takes both. #}
+  {% set covered = prop.genders if prop and prop.genders else (['girls', 'boys'] if prop else []) %}
+  {% if view.gender not in covered %}
   <form method="post" class="jh-form-row">
     <input type="hidden" name="do" value="run">
-    <button class="bl-pill" type="submit">Run a coaching cycle</button>
+    <input type="hidden" name="g" value="{{ view.gender }}">
+    <button class="bl-pill" type="submit">Run the {{ view.gender }} coaching cycle</button>
+    {% if prop %}<span class="s">joins the pending {{ covered|join(' + ') }} proposal</span>{% endif %}
   </form>
-  {% else %}
+  {% endif %}
+  {% if prop %}
   <form method="post">
     <div class="tbl-scroll">
     <table class="jh-roster">

@@ -1364,6 +1364,15 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   never the importer's `draw_districts`, which scattered the 2052 affiliate
   leagues. `tests/conftest.py` keeps the split OFF for every suite;
   `tests/test_jhsaa_nonpublic.py` opts in.
+  ‼️ **A PRIVATE IS NEVER ON THE PLAY-UP PATH (owner incident 2026-10, the two-team
+  "11B Sunkist League" that survived every map repair).** `load_schools` overlays
+  the play-up LEAGUE map on the repaired rows, and a stale per-save `jhsaa_playup`
+  override for Condotti/Romero-Finniski routed both into the nearest 8A league by
+  NAME while they stayed in 11B — a league no row carried, so `ensure_nonpublic`
+  could not see it. `_plays_up_row` returns None for a Non-Public `group` and the
+  loader reads a private's league from the row alone. When a league exists that no
+  row carries, look at what `load_schools` ADDS, not at what wrote the rows. See the
+  2026-10 addendum of `docs/AAR-jhsaa-nonpublic-team-championships.md`.
   ‼️ **THERE ARE NO PODS — 10B/11B ARE ORDINARY CLASSES (owner rule 2026-10,
   supersedes the pods of 2026-09 and the league-class reading above).** A private's
   `group` IS 10B/11B in `schools.json` and its district is a LEAGUE drawn exactly like
@@ -3327,6 +3336,18 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   equal) outranks an assistant's; a NEW coach only when nobody applied.
   ‼️ NO TENURE GATE on applying: a two-season minimum closed the whole market
   on a save seated one season earlier, and every opening became a new coach.
+  ‼️ **THE MARKET IS READ ONCE PER GENDER AND A CYCLE IS ONE GENDER (owner report
+  2026-10: "it's doing a statewide search every single time I click it").**
+  `propose_cycle(genders=)` runs the gender on screen (a pending proposal for the
+  other keeps its lines and vetoes; Commit takes both); `_head_history` is the ONE
+  history read (runs, `_head_run`, legacy, recent all derive from it); alumni are
+  grouped once; movers/laterals are `_Ranked` on seat prestige and bisected per
+  job; the fill loop touches no table; `market_outlook(gender=)` is memoised on
+  `_coach_stamp`. It was one alumni query per vacancy, `_head_run` per head,
+  `jhsaa.archetype()` (a fingerprint connect) per program and both genders per
+  click — 6.5 s → 0.9 s on a ten-season fixture, and it scaled with the save's
+  age. Never put a read inside the vacancy loop; the cascade advances on the SAME
+  snapshot. See the 2026-10 addendum of `docs/AAR-jhsaa-named-coaches.md`.
   ‼️ **TURNOVER PRESSURE + THE PROMOTION SIGNAL (owner rule 2026-10,
   `jhsaa_coaches.CHURN_TIER_BAND` / `program_churn` / `ASST_CHURN` /
   `_promotion_signal` / `_mobility` / `_weak_head_firings`).** Retirements and
