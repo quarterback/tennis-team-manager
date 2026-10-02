@@ -22,7 +22,7 @@
 <div class="jh-ident" style="margin-bottom:14px">
   <span class="crest">{{ view.mark|safe }}</span>
   <div class="jh-ident-body">
-    <span class="jh-chip c-{{ view.group|replace(' ','') }}">{{ view.classification }}</span>
+    <span class="jh-chip c-{{ view.group|replace(' ','') }}">{{ view.group }}</span>
     {# A champion's name in gold — set from the same title count the Individual
        State panel header uses (titles, not appearances; mixed included). #}
     <h1{% if view.individual_titles %} class="champ"{% endif %}>{% if view.country and view.country != 'US' %}<span class="player-flag" title="{{ view.country|country_name }}">{{ view.country|flags }}</span> {% endif %}{{ view.name }}</h1>
