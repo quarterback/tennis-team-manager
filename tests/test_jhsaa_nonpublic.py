@@ -134,6 +134,40 @@ def test_the_bands_are_the_cut_and_nothing_is_pinned_by_name(archived):
             assert g == "11B", (name, s.enrollment)
 
 
+
+def test_the_old_two_team_sunkist_failure_self_heals():
+    """Regression: Condotti/Romero can never be stranded together in Sunkist again.
+
+    Recreate the owner's stale-map failure exactly: put the two programs alone in a
+    Non-Public Sunkist League, while the real public Sunkist still exists in 8A.
+    The standing Non-Public repair must redraw the class before a season can read it.
+    """
+    import json
+
+    with open(jh._DATA, encoding="utf-8") as fh:
+        rows = json.load(fh)["schools"]
+
+    pair = {"Condotti Vanguard Academy", "Romero-Finniski"}
+    for r in rows:
+        if r["name"] in pair:
+            r["group"] = "10B"
+            r["girls_district"] = r["boys_district"] = "Sunkist League"
+
+    out = jd.ensure_nonpublic(rows, jh.NONPUBLIC_CUT, jh.NONPUBLIC_PLAYUP)
+    assert "10B" in out["redrawn"]
+
+    members = [r for r in rows if r.get("group") == "10B"
+               and (r.get("girls") or r.get("boys"))]
+    sizes = {}
+    for r in members:
+        sizes[r["girls_district"]] = sizes.get(r["girls_district"], 0) + 1
+
+    assigned = {r["name"]: r["girls_district"] for r in members if r["name"] in pair}
+    assert set(assigned) == pair
+    assert all(name != "Sunkist League" for name in assigned.values())
+    assert all(sizes[name] >= jd.districting_config().MIN_DISTRICT_SIZE
+               for name in assigned.values())
+
 def test_a_full_ladder_onto_a_24_team_state_and_a_16_team_toc(archived):
     arc = archived["arc"]
     for g in jh.NONPUBLIC_GROUPS:
