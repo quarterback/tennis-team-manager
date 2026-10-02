@@ -1,216 +1,267 @@
-# JHSAA Regional Access Round — Geographic Representation for the 24-Team State Field
+# JHSAA Regional Access Round — Geographic Representation in the 24-Team State Field
 
 **Status:** Proposed postseason design  
 **Classes studied:** 1A, 2A, 3A, 4A, Group 3  
 **Study window:** 2100–2106  
 **Sample:** 70 class-seasons
 
-## Recommendation
+## Decision
 
-For 1A through 4A and Group 3, expand the State field from 16 to **24 teams** without weakening the existing Zonal and Semi-State paths.
+The Regional Access Round is an **additional postseason round**, not a replacement for any part of the existing Road to State.
 
-Keep the first sixteen State qualifiers exactly as they are:
+For the studied classes:
 
-- 8 Zonal champions
-- 8 Semi-State winners
+1. Zonals stay unchanged.
+2. Super Regionals stay unchanged.
+3. Semi-State stays unchanged and continues to produce eight State qualifiers.
+4. The Regional Access Round then runs **every season** for eight additional State berths.
+5. State expands from 16 to **24 teams**.
 
-Then play a new **Regional Access Round** for the final eight State berths.
+The resulting field is:
 
-The Regional Access Round should always run. Its purpose is not to replace merit-based qualification or to redraw the Road to State around geography. Zonals remain the strongest predictive layer and should remain untouched. The new round gives the final eight places a geographic access function while still requiring every entrant to win a dual on court.
-
-The modeled evidence favors **six geographic regions per classification** as the starting rule.
-
-Six regions produced complete geographic representation in every modeled season while disturbing the competitive ordering much less than an eight-region model. It also leaves two of the eight Regional Access duals available to larger or deeper parts of the classification rather than forcing all eight berths into equal geographic buckets.
-
-## Why add a geographic access round
-
-Jefferson is geographically enormous, and the distribution of programs differs sharply by classification. A fixed statewide map based on the association's named areas would therefore be too rigid. Group 3, for example, occupies a very different part of Jefferson than 10B or 11B.
-
-The geography should instead be derived from the programs that actually exist in a classification during that alignment cycle.
-
-This is a representation safeguard at the tail end of qualification, not a replacement for the competitive ladder.
-
-A strong part of the state should not lose Zonal access because it has several good teams. A weak or remote part of the state should not receive an administrative State berth merely because it exists. The Regional Access Round balances those two principles:
-
-**the existing ladder identifies the strongest automatic qualifiers; geography determines where some of the final opportunities to play for State are placed.**
-
-## Proposed field
-
-The 24-team State field would be composed of:
-
-| Path | State berths |
+| Qualification path | Berths |
 |---|---:|
 | Zonal champions | 8 |
 | Semi-State winners | 8 |
 | Regional Access winners | 8 |
-| **Total** | **24** |
+| **State field** | **24** |
 
-Nothing about the first sixteen changes.
+Geography never displaces a Zonal champion or a Semi-State winner.
 
-The new round begins only after Zonals and Semi-State have finished, so the association knows both:
+The point of the new round is to make the tail of the State field more geographically representative while preserving the competitive spine that already works.
 
-1. who is already in State; and
-2. which parts of the classification are not represented.
+## Why the round is additive
 
-## How the Regional Access Round works
+The modeling strongly favors adding the new round after the existing two-step recovery path rather than replacing that path with a geographic tournament.
 
-After Zonals and Semi-State, every team not already qualified for State is part of the leftover pool.
+Across 70 class-seasons:
 
-The programs in that classification are divided geographically using the locations actually represented in the class. The boundaries should be generated from existing area, county, city and coordinate data rather than being forced to match Jefferson's named administrative regions.
+| Model | Average of the best 16 non-Zonal teams by rating that make State |
+|---|---:|
+| Current 16-team model: eight Semi-State winners only | 7.9 |
+| **Keep Super Regionals + Semi-State, then add Regional Access** | **12.7** |
+| Replace the two-step recovery path with a geographic round of 32 | 11.6 |
 
-The model should use **six regions**.
+Both geographic models produced a State team from every region in every modeled season.
 
-Each of the six regions receives one guaranteed Regional Access dual:
+The difference is competitive cost.
 
-- identify the two best available leftovers from that region;
-- they play each other;
-- the winner qualifies for State.
+Replacing the two-step path makes geography responsible for sixteen non-Zonal berths. Keeping Super Regionals and Semi-State intact limits geography to the final eight.
 
-That accounts for six of the eight berths.
+That preserves substantially more of the strongest non-Zonal teams.
 
-The final two Regional Access duals are awarded to the strongest remaining leftover pairs statewide. In practice, this lets the larger and deeper regions earn a second opportunity rather than forcing equal representation beyond the minimum geographic guarantee.
+The JHSAA should therefore **add the Regional Access Round after Semi-State**.
 
-Every berth is therefore won on court.
+## What the round is for
 
-There are no geographic byes and no direct regional appointments to State.
+Jefferson is geographically enormous, but its classifications do not occupy the state in the same way.
 
-## Why six regions
+The solution should not force every classification into the association's existing named Areas or into one permanent statewide sectional map. Instead, each classification should be divided using the geography of the programs that actually belong to that class.
 
-Four versions were modeled across 70 class-seasons: no geographic protection, eight regions, six regions and four regions.
+This is not a quota system and it is not a substitute for Zonals.
 
-| Model | Every region represented at State | Average winners drawn from the best 8 leftovers | Average Regional Access entrants from outside the best 16 leftovers | Winners with winning records | Median winner position within class |
-|---|---:|---:|---:|---:|---:|
-| Merit-only comparison | 87% | 5.9 | 0.0 | — | 31% |
-| 8 regions | 100% | 4.7 | 3.4 | 79% | 35% |
-| **6 regions** | **100%** | **4.8** | **1.9** | **82%** | **34%** |
-| 4 regions | 100% | 4.4 | 1.1 | 81% | 34% |
+Zonals remain untouched because they are highly predictive and already provide a strong route into State.
 
-Six regions is the best compromise.
+The Regional Access Round exists for the opposite end of the field:
 
-### Eight regions is too prescriptive
+> the strongest sixteen qualifiers are preserved, while the final eight opportunities are distributed through a statewide geographic structure.
 
-Eight regions guarantees representation, but it reaches too far down the leftover pool to do it.
+Every one of those eight berths is still earned by winning a dual.
 
-On average, **3.4 of the sixteen teams selected to play in the Regional Access Round came from outside the best sixteen leftovers**. That is nearly twice the number under the six-region model.
+## Regional construction
 
-The resulting winners were still generally credible teams, but the geography was doing more work than necessary.
+The classification is divided into geographic **sectors** using its own school population.
 
-### Four regions is too coarse
-
-Four regions uses fewer lower-ranked entrants, but the broad regions reduce the competitive value of the access round.
-
-Only **4.4 of the best eight leftovers** won seats on average, compared with 4.8 under six regions. It also provides much less geographic resolution in a state the size of Jefferson.
-
-### Six regions protects representation without taking over the bracket
-
-At six regions:
-
-- every region had at least one State team in **100% of the 70 modeled class-seasons**;
-- **4.8 of the best eight leftovers** still won State berths on average;
-- only **1.9 Regional Access participants per season** came from outside the best sixteen leftovers;
-- **82% of Regional Access winners had winning records**;
-- the median winner ranked at approximately the **34th percentile of the class**, only modestly below the merit-only comparison.
-
-This is enough geographic intervention to solve the representation problem without turning the final eight berths into a separate low-quality qualification track.
-
-## The geographic guarantee is smaller than it looks
-
-The Regional Access Round should not be understood as eight geographic set-asides.
-
-The modeling shows that most of the round is still serving regions that are already represented in State.
-
-With eight modeled regions, **7.3 of the eight winning berths per season came from regions that already had at least one State qualifier**. Only about **0.7 berth per season** was actually decisive in preventing an area of the classification from being shut out.
-
-The same principle is why six regions is preferable.
-
-The geographic guarantee is a floor. Most of the eight berths remain additional opportunities for already competitive parts of the state.
-
-That is desirable. The objective is not proportional representation. It is to prevent a large, meaningful geographic pocket of a classification from disappearing entirely while allowing stronger and denser regions to continue sending multiple teams.
-
-## Competitive cost
-
-There is a real cost to geographic access, but it is limited.
-
-Relative to a pure merit round, the six-region model causes roughly **one of the best eight leftovers** to miss State in a typical season.
-
-That is the trade being made.
-
-In exchange:
-
-- every part of the classification is represented;
-- the State field becomes meaningfully statewide;
-- the entrant still has to win a head-to-head dual;
-- four out of five winners still have winning records;
-- the quality of the added teams moves only slightly down the class distribution.
-
-The evidence does not support going further than this. Geography should affect the last eight opportunities, not the sixteen places already earned through Zonals and Semi-State.
-
-## Region construction
-
-The regions should be **classification-specific and alignment-specific**.
-
-They should not be permanent named sections of Jefferson.
-
-A six-region map should be produced from the schools participating in that classification using the geographic data already maintained by the association:
+The sector construction should use the geographic data already maintained by the association:
 
 - coordinates;
-- area;
+- Area;
 - county;
 - city.
 
-The goal is to create six coherent geographic pools with enough programs to support at least two eligible leftovers after Zonals and Semi-State.
+The sectors do not have to align precisely with named Jefferson regions. Their purpose is to create coherent statewide geographic slices from the schools actually present in that classification.
 
-In the 70 modeled class-seasons, **every region always had at least two leftovers available**, so every regional dual could be played.
+The map should remain fixed through an alignment cycle and be rebuilt when class membership changes.
 
-The map should remain fixed for the alignment cycle and be regenerated when classification membership is realigned. That gives the section-like championships geographic identity without creating another permanent administrative system that the owner must manage.
+The target may be as many as **eight sectors**.
 
-## Candidate ordering inside a region
+With eight sectors, each sector receives one Regional Access dual and therefore one chance to produce a Section Champion.
 
-Geography determines the pool. It should not determine which weak team gets selected from that pool.
+If a classification is better represented by fewer than eight coherent sectors, it still plays eight Regional Access duals. The additional games are allocated to sectors with the greatest representation deficit.
 
-Within each region, the two Regional Access participants should be the **two best remaining teams under the association's existing postseason ranking measure** after removing teams already qualified for State.
+## The eight Regional Access games
 
-The final two at-large Regional Access duals should likewise be built from the strongest remaining pairs after the six geographic games are populated.
+The round always consists of **eight berth-bearing duals**.
 
-This preserves the governing distinction:
+Every geographic sector receives at least one.
 
-> geography decides where opportunity exists; competitive results and ratings decide which teams receive that opportunity.
+Within each sector:
 
-## Relationship to the current Road to State
+1. remove every team already qualified through Zonals or Semi-State;
+2. identify the two best eligible leftovers;
+3. play one Regional Access dual;
+4. the winner becomes a **Section Champion** and qualifies for State.
 
-This proposal is deliberately additive.
+With eight sectors, those eight games fill the eight berths directly.
 
-It does not replace:
+With fewer than eight sectors, the extra games are assigned to sectors furthest behind their expected share of statewide opportunity.
 
-- Areas;
-- Sectionals;
-- Wards;
-- Regionals;
-- Zonals;
-- Super Regionals;
-- Semi-State.
+For those additional games, a sector's deficit is based on:
 
-For the five studied classifications, the existing sixteen-team qualification spine remains intact through Semi-State.
+**program share × 8 − actual Zonal champions**
 
-The new round is inserted **after Semi-State and before State** and expands the field from sixteen to twenty-four.
+This is used only to determine where the extra Regional Access games are placed.
 
-That matters because the modeling did not show a problem with Zonals. Zonals are highly predictive and are already doing the work they were designed to do. There is no reason to make the strongest qualification path worse merely to create regional representation.
+It does **not** determine whether the Regional Access Round runs. The round runs every season regardless of how geographically balanced the Zonal field already is.
 
-The Regional Access Round solves the narrower problem at the point where geography can do the least damage: the final eight berths.
+It also does not remove or reassign any Zonal or Semi-State berth.
 
-## Sectional-title interpretation
+## Why the extra games follow representation deficit
 
-If the association wants to adopt California-style sectional language, the six geographically guaranteed winners can function as **section champions** for that season's classification map.
+A larger or deeper geographic sector should be able to send more than one Regional Access winner.
 
-The two additional statewide Regional Access winners would qualify through the same round but would not need a separate geographic guarantee.
+If six sectors are used, for example, six games satisfy the one-game-per-sector floor. The remaining two should not simply go to the two best leftover teams statewide without regard to geography.
 
-Whether the association formally calls all eight winners regional/section champions or reserves that title for the six geographic winners is a naming decision. The competitive mechanism does not depend on it.
+Instead, they go to the sectors furthest behind relative to their share of the classification.
 
-The important distinction is that these are **earned championships or qualifying wins**, not committee selections.
+That gives larger geographic concentrations a second opportunity when appropriate while still guaranteeing the smaller sectors a route.
 
-## Pilot scope
+The mechanism therefore has two layers:
 
-The model was tested on:
+- **minimum access:** every sector gets one Regional Access game;
+- **additional access:** remaining games flow toward sectors most underrepresented relative to their program population.
+
+## Eligibility hierarchy
+
+The round cannot assume every sector will contain two teams that reached the same late postseason stage.
+
+The data shows why a fallback is necessary.
+
+At eight sectors:
+
+- **36% of sectors** had fewer than two Semi-State or Super Regional finishers available;
+- **8%** had none.
+
+At six sectors:
+
+- **18%** had fewer than two;
+- only **2%** had none.
+
+The candidate pool therefore needs an explicit hierarchy.
+
+Regional Access eligibility should be filled in this order:
+
+1. **Semi-State finishers** not already in State;
+2. **Super Regional finishers** not already in State;
+3. **Ward finishers**;
+4. all remaining teams, ordered by the association's rating.
+
+A lower tier is only consulted when the sector does not contain enough eligible teams from the tiers above it to stage its required dual.
+
+This preserves postseason accomplishment before falling back to rating.
+
+Geography determines which pool a team belongs to. It does not allow a weak early-round loser to jump a stronger late-round finisher from the same sector.
+
+## The quality effect
+
+The new round materially improves the quality of the expanded 24-team field compared with simply stopping after Semi-State.
+
+Among the sixteen best non-Zonal teams by rating:
+
+- the current 16-team model places only **7.9** into State on average;
+- adding Regional Access after the existing recovery path places **12.7**;
+- replacing the recovery path with a geographic field of 32 places **11.6**.
+
+So the added round is not merely geographic expansion. It also restores strong teams that were eliminated in a volatile postseason path.
+
+That is important to the design.
+
+A 24-team field should not merely be larger. It should use the eight new positions to improve both statewide representation and competitive depth.
+
+## Earlier geography modeling
+
+A separate comparison looked at how strongly geography should shape the final eight seats.
+
+| Regional model | Every region represented at State | Best 8 leftovers who win a seat | Round entrants from outside best 16 leftovers | Winners with winning records | Winners' median position down the class |
+|---|---:|---:|---:|---:|---:|
+| No geography, best 16 leftovers seeded | 87% | 5.9 | 0.0 | — | 31% |
+| 8 regions | 100% | 4.7 | 3.4 | 79% | 35% |
+| 6 regions | 100% | 4.8 | 1.9 | 82% | 34% |
+| 4 regions | 100% | 4.4 | 1.1 | 81% | 34% |
+
+Across the 70 class-seasons, **every modeled region had at least two leftovers**, so the round was always playable.
+
+The important result is not that geography is free. It is that the cost is small enough for the final eight berths.
+
+At six regions, complete geographic representation costs roughly one of the strongest eight leftovers relative to a pure merit round.
+
+At eight regions, the round reaches further down the pool because every geographic slice requires its own game.
+
+That tradeoff should inform how many sectors a classification uses, but it does not change the structural decision that the round always plays eight duals.
+
+## Geography is a floor, not proportional representation
+
+The purpose is not to make every sector equally represented in State.
+
+The evidence shows that strong regions will usually already have teams in the field through Zonals and Semi-State.
+
+In the earlier eight-region model, **7.3 of the eight Regional Access winners per season came from regions that already had at least one State team**. Only about **0.7 berth per season** was actually decisive in preventing a geographic shutout.
+
+That is desirable.
+
+The Regional Access Round does not flatten competitive geography. It ensures that no meaningful part of a classification is completely absent while still allowing deeper regions to send many more teams.
+
+The same logic governs the extra games when there are fewer than eight sectors: sectors with the largest representation deficit receive the additional opportunities.
+
+## Why Zonals remain untouched
+
+The geographic problem appears at the edge of the State field, not at the top of the qualification structure.
+
+Zonal champions have already earned their places and are highly predictive of State-level quality.
+
+Changing Zonals to manufacture geographic balance would deliberately weaken a mechanism that works.
+
+The new model instead makes a narrower intervention:
+
+> preserve all eight Zonal champions, preserve all eight Semi-State winners, then use geography to structure the eight new seats.
+
+That is the smallest change that accomplishes the statewide representation objective.
+
+## Section championships
+
+Each geographic berth-bearing dual is a genuine championship game.
+
+Its winner is a **Section Champion** for that classification and alignment map.
+
+This borrows the useful part of the California model without forcing Jefferson into permanent administrative sections.
+
+The Section is defined by the geography of that class for the current alignment cycle.
+
+A classification may therefore have a different Section map from another classification, because their schools occupy different parts of Jefferson.
+
+That is intentional.
+
+Where a sector receives a second Regional Access game because of representation deficit, the association can either treat both winners as Section Champions of separate numbered subdivisions or reserve the formal Section Champion title for the sector's primary game. The qualification mechanism itself does not depend on that naming choice.
+
+## Relationship to the Road to State
+
+The postseason sequence for these classes becomes:
+
+**Areas → Sectionals → Wards → Regionals → Zonals → Super Regionals → Semi-State → Regional Access → State**
+
+Nothing before Regional Access is removed.
+
+The current sixteen State qualifiers remain intact.
+
+The new round converts the five studied classes from a 16-team State field to a 24-team field by adding eight teams that have won one more postseason dual.
+
+This also preserves the JHSAA's larger design principle:
+
+> nobody reaches State merely because of a ranking, a geographic assignment or a bye; the final step into the field is won on court.
+
+## Pilot classes
+
+The model was evaluated on:
 
 - 1A
 - 2A
@@ -218,22 +269,25 @@ The model was tested on:
 - 4A
 - Group 3
 
-across seasons 2100 through 2106, 70 class-seasons in total.
+from 2100 through 2106, for **70 class-seasons**.
 
-These are appropriate pilot classes because their current 16-team State structure makes the effect legible: eight Zonal champions plus eight Semi-State winners already form a complete competitive field, so the Regional Access Round can be evaluated as a discrete expansion from 16 to 24.
+These classes are the correct initial application because they currently end with the cleanest sixteen-team qualification structure:
 
-The recommendation is to test the six-region model there before applying the mechanism to larger State fields or the Non-Public classes.
+- 8 Zonal champions;
+- 8 Semi-State winners.
 
-## Decision
+That makes the Regional Access Round a discrete addition rather than a wholesale redesign.
 
-Adopt the six-region version as the working JHSAA model:
+The same concept can later be evaluated for other classifications, including 10B and 11B, whose geography is especially dispersed, but the 1A–4A/Group 3 model should establish the rule first.
 
-**Eight Zonal champions + eight Semi-State winners + eight Regional Access winners = 24 State teams.**
+## Operating rule
 
-Six Regional Access games are geographically guaranteed, one per dynamically generated region. Two additional games go to the strongest remaining leftover pairs statewide.
+For the studied classes, the working rule is:
 
-This preserves the strength of the existing postseason, guarantees that no meaningful part of a classification disappears from State, and still allows the deeper regions to send additional teams.
+> After Semi-State, the JHSAA shall conduct eight Regional Access duals for the final eight places in the 24-team State Tournament. Each classification shall be divided into geographic sectors derived from its own member programs. Every sector shall receive at least one Regional Access dual. When fewer than eight sectors are used, additional duals shall be assigned to the sectors furthest below their expected representation based on their share of the classification and the Zonal champions they have already produced. Each Regional Access berth must be won on court. Geographic access shall not displace a Zonal champion or Semi-State winner.
 
-The modeling suggests the cost is small and measurable: approximately one elite leftover berth per season is exchanged for complete statewide geographic representation.
+Candidate selection within each sector follows the postseason hierarchy:
 
-That is an appropriate trade for the final eight places in a State tournament.
+**Semi-State → Super Regional → Ward → remaining teams by rating.**
+
+This is the design supported by the 70-season study.
