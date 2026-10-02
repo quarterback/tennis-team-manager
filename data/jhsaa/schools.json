@@ -9973,6 +9973,26 @@
       "boys_district": "Chinook League"
     },
     {
+      "name": "Kilbride",
+      "city": "Kilbride Switch",
+      "county": "Olivet",
+      "area": "Yarrowmere",
+      "classification": "5A",
+      "group": "5A",
+      "enrollment": 815,
+      "private": false,
+      "mascot": "Miners",
+      "colors": [
+        "#0f6a70",
+        "#f4f1ea"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Mariners League",
+      "boys_district": "Mariners League",
+      "source": "Kilbride Switch"
+    },
+    {
       "name": "Kilbride Hall",
       "city": "Olive Reach",
       "county": "Kernwood",
@@ -9994,23 +10014,24 @@
       "old_league": "Tailings League"
     },
     {
-      "name": "Kilbride Switch",
+      "name": "Kilbride South",
       "city": "Kilbride Switch",
       "county": "Olivet",
       "area": "Yarrowmere",
-      "classification": "5A",
-      "group": "5A",
-      "enrollment": 815,
+      "classification": "3A",
+      "group": "3A",
+      "enrollment": 458,
       "private": false,
-      "mascot": "Miners",
+      "mascot": "Spartans",
       "colors": [
-        "#0f6a70",
-        "#f4f1ea"
+        "#92400e",
+        "#1d1d1f"
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Mariners League",
-      "boys_district": "Mariners League"
+      "girls_district": "Quarry League",
+      "boys_district": "Quarry League",
+      "source": "Kilbride Switch South"
     },
     {
       "name": "Kimberly",
@@ -18742,26 +18763,6 @@
       "source": "St. Helena College Prep",
       "old_group": "7A",
       "old_league": "Chinook League"
-    },
-    {
-      "name": "Switchback",
-      "city": "Kilbride Switch",
-      "county": "Olivet",
-      "area": "Yarrowmere",
-      "classification": "3A",
-      "group": "3A",
-      "enrollment": 458,
-      "private": false,
-      "mascot": "Spartans",
-      "colors": [
-        "#92400e",
-        "#1d1d1f"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Quarry League",
-      "boys_district": "Quarry League",
-      "source": "Kilbride Switch South"
     },
     {
       "name": "Taft",

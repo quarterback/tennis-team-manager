@@ -354,7 +354,7 @@
     var r = byName[name]; if (!r) return;
     S.panel = name; save();
     $('jhx-p-name').textContent = r.name;
-    $('jhx-p-sub').textContent = r.classification + (r.sponsors ? '' : ' · no longer sponsors tennis');
+    $('jhx-p-sub').textContent = r.classification + (r.nonpublic ? ' · ' + r.size_class + '-sized' : '') + (r.sponsors ? '' : ' · no longer sponsors tennis');
     panel.querySelectorAll('input[name=jh_school]').forEach(function (i) { i.value = r.name; });
     panel.querySelector('input[name=jh_ident]').value = r.ident;
     $('jhx-p-arch').value = r.archetype || 'none';
@@ -367,7 +367,7 @@
       $('jhx-p-play-wrap').style.display = ''; no.hidden = true; $('jhx-p-play-save').hidden = false;
       ps.appendChild(new Option('no — stays in ' + r.classification, 'no', !r.plays_up, !r.plays_up));
       r.targets.forEach(function (g) { ps.appendChild(new Option('competes in ' + g, g, false, r.plays_up && r.competes === g)); });
-    } else { $('jhx-p-play-wrap').style.display = 'none'; no.hidden = false; $('jhx-p-play-save').hidden = true; no.textContent = r.classification + ' is too big — 4A and below only'; }
+    } else { $('jhx-p-play-wrap').style.display = 'none'; no.hidden = false; $('jhx-p-play-save').hidden = true; no.textContent = r.nonpublic ? 'Non-Public — the realignment cycle moves it between 10B and 11B' : r.classification + ' is too big — 4A and below only'; }
     $('jhx-p-play-flag').textContent = r.play_edited ? '· edited' : '';
     var flags = [r.arch_edited, r.band_edited, r.play_edited];
     panel.querySelectorAll('[data-reset]').forEach(function (b, i) { b.hidden = !flags[i]; });

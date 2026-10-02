@@ -29,6 +29,7 @@ import bisect
 import copy
 import datetime as _dt
 import json
+import logging
 import random
 import secrets
 import sqlite3
@@ -7855,8 +7856,17 @@ def _fold_season_rows(conn, world_id: int, year: int, gender: str) -> dict[str, 
 
 
 def _write_season_rows(conn, world_id: int, year: int, gender: str) -> None:
-    """Fold one season and store its rows (replacing any older-version rows)."""
-    rows = _fold_season_rows(conn, world_id, year, gender)
+    """Fold one season and store its rows (replacing any older-version rows).
+    Runs inside the CALLER's transaction — the season rung's, which owns the
+    write lock for the whole archive anyway. A READ path never calls this; it
+    backfills through `_ensure_season_rows`, which keeps the fold out of the
+    write transaction."""
+    _store_season_rows(conn, world_id, year, gender,
+                       _fold_season_rows(conn, world_id, year, gender))
+
+
+def _store_season_rows(conn, world_id: int, year: int, gender: str,
+                       rows: dict[str, dict]) -> None:
     conn.execute("DELETE FROM world_jhsaa_season_row WHERE world_id=? AND year=?"
                  " AND gender=?", (world_id, year, gender))
     conn.executemany(
@@ -7866,23 +7876,122 @@ def _write_season_rows(conn, world_id: int, year: int, gender: str) -> None:
          for school, row in rows.items()])
 
 
-def _ensure_season_rows(conn, world_id: int, gender: str, years=None) -> None:
-    """Backfill: every archived season of `gender` (or just `years`) that has no
-    rows at the current version gets folded ONCE and stored — the first read of
-    a save archived before the table existed pays what the old program page paid
-    per click, once, and never again. Commits on the caller's connection."""
+#: One fold per (world, gender) at a time — taken PER SEASON, never across a
+#: loop of them. Two requests for the same program (a reload, a second tab,
+#: the boys' and girls' pages of one school share nothing but still race on
+#: the table) would otherwise both fold every stale season — and both want
+#: the write lock to store them.
+_season_row_locks: dict = {}
+_season_row_locks_guard = threading.Lock()
+
+
+def _season_row_lock(world_id: int, gender: str):
+    key = (WORLD_DB, world_id, gender)
+    with _season_row_locks_guard:
+        return key, _season_row_locks.setdefault(key, threading.Lock())
+
+
+def _backfill_season(conn, world_id: int, gender: str, year: int, lock) -> bool:
+    """Fold and store ONE season at the current version, under `lock` for just
+    that season: re-check the stored version once the lock is held (a thread
+    that waited here behind another fold of the same season finds it done and
+    folds nothing), fold with NO transaction open, store, commit, release.
+    Returns True if it folded.
+
+    ‼️ The lock wraps one season, not a loop of them. Held across every stale
+    season of a long save it serialised every same-gender request behind a
+    refold that takes minutes — the stale rows a reader is meant to be served
+    meanwhile were behind the very lock the refold held."""
+    with lock:
+        have = conn.execute(
+            "SELECT MIN(v) AS v FROM world_jhsaa_season_row"
+            " WHERE world_id=? AND gender=? AND year=?",
+            (world_id, gender, year)).fetchone()
+        if have and have["v"] is not None and have["v"] >= _SEASON_ROW_VERSION:
+            return False
+        if conn.in_transaction:      # never fold inside somebody's write
+            conn.commit()
+        rows = _fold_season_rows(conn, world_id, year, gender)
+        _store_season_rows(conn, world_id, year, gender, rows)
+        conn.commit()
+        return True
+
+
+def _refold_stale_rows(world_id: int, gender: str, years: list[int]) -> None:
+    """Re-derive `years` at the current `_SEASON_ROW_VERSION` on a thread of its
+    own — the request that found them stale has already been served the old
+    rows. One short write per season (fold outside the transaction, commit
+    after each), the per-(world, gender) lock taken and released PER SEASON,
+    so a click arriving mid-refold waits only for the season in hand and
+    reads its stale rows between two folds."""
+    _key, lock = _season_row_lock(world_id, gender)
+    conn = _db()
+    try:
+        for y in years:
+            _backfill_season(conn, world_id, gender, y, lock)
+    except Exception:               # a background job never takes a page down
+        logging.getLogger(__name__).exception(
+            "season-row refold failed (world %s %s)", world_id, gender)
+    finally:
+        conn.close()
+
+
+_refolding: set = set()
+
+
+def _ensure_season_rows(conn, world_id: int, gender: str, years=None,
+                        current: bool = False) -> None:
+    """Backfill: every archived season of `gender` (or just `years`) that has NO
+    rows gets folded ONCE and stored — the first read of a save archived before
+    the table existed pays what the old program page paid per click, once, and
+    never again.
+
+    ‼️ A SEASON WITH ROWS AT AN OLDER VERSION IS SERVED AS IS AND RE-DERIVED IN
+    THE BACKGROUND (`current=False`, the page reads). A `_SEASON_ROW_VERSION`
+    bump used to re-fold EVERY archived season of the save on the next program
+    page opened — a whole-season blob parse and dual scan per season, minutes
+    on a long save, on the request thread, and (worse) inside ONE write
+    transaction opened at the first season's DELETE and committed after the
+    last. Any other writer on the file (a second click, a deferred job, the
+    rung) waited out its busy timeout and the page that was merely being
+    opened raised "database is locked". A version bump changes how a row is
+    LABELLED, never what season it records, so the stale row is the right
+    thing to show now; the refold runs on its own thread, one short write per
+    season, and the next read finds it done. Only a season with NO rows at all
+    is folded here — and even that is one short write per season with the
+    fold outside the transaction.
+
+    ‼️ `current=True` IS FOR THE EXPORTS, WHICH MUST NEVER PACKAGE A STALE
+    ROW. A page can show last version's label for a minute; a research zip or
+    the Clinch Report is a FILE the owner keeps, and the Clinch build caches
+    its zip, so an old-version row exported once is wrong for good. An export
+    caller folds the stale seasons inline — the same one-season-per-write
+    unit, under the same per-season lock, so it interleaves with a refold
+    already running rather than duplicating it."""
+    key, lock = _season_row_lock(world_id, gender)
     have = {r["year"]: r["v"] for r in conn.execute(
         "SELECT year, MIN(v) AS v FROM world_jhsaa_season_row"
         " WHERE world_id=? AND gender=? GROUP BY year", (world_id, gender)).fetchall()}
-    if years is None:
-        years = [r["year"] for r in conn.execute(
+    wanted = years
+    if wanted is None:
+        wanted = [r["year"] for r in conn.execute(
             "SELECT DISTINCT year FROM world_jhsaa WHERE world_id=? AND gender=?",
             (world_id, gender)).fetchall()]
-    todo = [y for y in years if have.get(y) is None or have[y] < _SEASON_ROW_VERSION]
-    for y in todo:
-        _write_season_rows(conn, world_id, y, gender)
-    if todo:
-        conn.commit()
+    missing = [y for y in wanted if have.get(y) is None]
+    stale = [y for y in wanted
+             if have.get(y) is not None and have[y] < _SEASON_ROW_VERSION]
+    for y in missing + (stale if current else []):
+        _backfill_season(conn, world_id, gender, y, lock)
+    if stale and not current and key not in _refolding:
+        _refolding.add(key)
+
+        def _job():
+            try:
+                _refold_stale_rows(world_id, gender, stale)
+            finally:
+                _refolding.discard(key)
+        threading.Thread(target=_job, name="jhsaa-season-row-refold",
+                         daemon=True).start()
 
 
 def jhsaa_school_seasons(world_id: int, gender: str, school: str) -> list[dict]:
@@ -8064,18 +8173,25 @@ def jhsaa_program_totals(seasons: list[dict]) -> dict:
     }
 
 
-def jhsaa_history_rows(world_id: int, gender: str) -> dict[str, list[dict]]:
+def jhsaa_history_rows(world_id: int, gender: str,
+                       current: bool = True) -> dict[str, list[dict]]:
     """EVERY program's season ledger for every archived year — the bulk
     counterpart of `jhsaa_school_seasons` for the research export and the
     retired-programs page. Reads the stored per-program rows (fix #2), grouped
     under each program's CURRENT name (a renamed program's older seasons meet its
-    newer ones), newest first per school."""
+    newer ones), newest first per school.
+
+    `current=True` (the default — the export is the main caller) waits for
+    every season to be at `_SEASON_ROW_VERSION`, folding the stale ones inline
+    one season per write: a research zip or the Clinch Report must never carry
+    a row at an older version. A PAGE reader passes `current=False` and takes
+    the stale-while-revalidate path every other JHSAA page takes."""
     from . import jhsaa as _jh
     _alias = _jh.former_names()
     conn = _db()
     out: dict[str, list[dict]] = {}
     try:
-        _ensure_season_rows(conn, world_id, gender)
+        _ensure_season_rows(conn, world_id, gender, current=current)
         rows = conn.execute(
             "SELECT year, school, data FROM world_jhsaa_season_row"
             " WHERE world_id=? AND gender=? ORDER BY year DESC", (world_id, gender)).fetchall()
@@ -8114,7 +8230,7 @@ def jhsaa_retired_programs(world_id: int, gender: str) -> list[dict]:
     this page) and `sponsors_sport` then excludes them for the ordinary
     reason: they are playing today."""
     from . import jhsaa as jh
-    rows = jhsaa_history_rows(world_id, gender)
+    rows = jhsaa_history_rows(world_id, gender, current=False)
     out = []
     for school, seasons in rows.items():
         if not seasons or jh.sponsors_sport(school, gender):

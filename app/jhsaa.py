@@ -6099,21 +6099,33 @@ def program_explorer() -> dict:
     out = []
     for r in rows:
         name, cls = r["name"], r["classification"]
-        target = plays_up(name, bool(r.get("play_up")), pmap, cls)
+        # ‼️ A PRIVATE IS SHOWN IN ITS NON-PUBLIC CLASS (owner report 2026-10:
+        # "programs page doesn't include 11B and 10B … still shows teams in
+        # their old classes"). 10B/11B are ordinary classes now: the private's
+        # `group` IS its class and its league is drawn there, while
+        # `classification` keeps its enrollment size (roster depth, the early-
+        # participation gate). The explorer assesses a program by the class it
+        # COMPETES in, so the row's class column, facet and grouping read the
+        # group for a private; the size class rides beside it. A private never
+        # plays up — the cycle moves it between 10B and 11B, nothing else.
+        nonpublic = r.get("group") in NONPUBLIC_GROUPS
+        shown = r["group"] if nonpublic else cls
+        target = None if nonpublic else plays_up(name, bool(r.get("play_up")), pmap, cls)
         # Every group strictly above the program's own class — the picker's real
         # menu (owner rule 2027-09, multi-step play-up). Ladder only: Group 1/2
         # are not "above" anything (can_play_up is False there).
         targets = ([g for g in LADDER_GROUPS[:LADDER_GROUPS.index(champ_group(cls))]]
-                   if can_play_up(cls) else [])
+                   if can_play_up(cls) and not nonpublic else [])
         ident = r.get("source") or name
         band_key = _effective_band(ident, bmap, amap.get(name, ""))
         band_now = _band_key_at(ident, bmap, None)
         out.append({
-            "name": name, "ident": ident, "classification": cls,
+            "name": name, "ident": ident, "classification": shown,
+            "size_class": cls, "nonpublic": nonpublic,
             "archetype": amap.get(name, ""),
             "plays_up": bool(target),
-            "can_play_up": can_play_up(cls),
-            "competes": target or play_up_group(cls),
+            "can_play_up": can_play_up(cls) and not nonpublic,
+            "competes": target or (shown if nonpublic else play_up_group(cls)),
             "targets": targets,
             "band": band_key,
             "band_label": tier_label.get(band_key, band_key),
@@ -6145,7 +6157,7 @@ def program_explorer() -> dict:
     for x in out:
         tier_counts[x["band"]] = tier_counts.get(x["band"], 0) + 1
     return {"rows": out, "tiers": tiers, "kinds": list(EDITABLE_ARCHETYPES),
-            "groups": [g for g in GROUPS], "counts": counts,
+            "groups": [g for g in ROAD_GROUPS], "counts": counts,
             "tier_counts": tier_counts}
 
 
