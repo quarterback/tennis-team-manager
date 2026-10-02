@@ -354,7 +354,7 @@
     var r = byName[name]; if (!r) return;
     S.panel = name; save();
     $('jhx-p-name').textContent = r.name;
-    $('jhx-p-sub').textContent = r.classification + (r.nonpublic ? ' · ' + r.size_class + '-sized' : '') + (r.sponsors ? '' : ' · no longer sponsors tennis');
+    $('jhx-p-sub').textContent = r.classification + (r.sponsors ? '' : ' · no longer sponsors tennis');
     panel.querySelectorAll('input[name=jh_school]').forEach(function (i) { i.value = r.name; });
     panel.querySelector('input[name=jh_ident]').value = r.ident;
     $('jhx-p-arch').value = r.archetype || 'none';

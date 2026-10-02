@@ -68,7 +68,7 @@
     <span class="jh-chip c-{{ view.group|replace(' ','') }}">{{ view.group }}</span>
     {% if view.private %}<span class="jh-chip ghost">PRIVATE</span>{% endif %}
     {% if view.road_group and view.road_group != view.group %}<span class="jh-chip c-{{ view.road_group }}" title="team championship class (Non-Public)">{{ view.road_group }}</span>{% endif %}
-    {% if view.old_league %}<span class="jh-chip ghost" title="old league — every public program in it is played once as a non-conference dual">OLD LEAGUE · {{ view.old_group }} {{ view.old_league }}</span>{% endif %}
+    {% if view.old_league %}<span class="jh-chip ghost" title="old league — every public program in it is played once as a non-conference dual">OLD LEAGUE · {{ view.old_league }}</span>{% endif %}
     {% if view.former %}<span class="jh-chip ghost" title="no longer sponsors this sport">FORMER PROGRAM</span>{% endif %}
     <h1>{{ view.school }}</h1>
     <div class="mascot">{{ view.mascot }}</div>
