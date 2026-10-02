@@ -3911,10 +3911,17 @@ def create_app() -> Flask:
         w = wd.get_or_create(DEFAULT_SEED)
         jc.ensure_seated(w["id"], wd.jhsaa_season_year(w), wd.active_salt(DEFAULT_SEED))
         prop = jc.pending_cycle(w["id"])
+        sy = wd.jhsaa_season_year(w)
         return render_template("jhsaa_coach_carousel.html", active="High School",
                                view=jhsaa_scope_view(DEFAULT_SEED, g, group, year),
                                prop=prop, pool=jc.free_pool(w["id"])[:60],
+                               # The market before a cycle: open head jobs, likely
+                               # openings, promotion candidates, head-ready
+                               # assistants (owner rule 2026-10). A read only.
+                               outlook=jc.market_outlook(w["id"], sy),
+                               churn=jc.churn_config(),
                                kinds={"retire": "Retires", "fire": "Let go",
+                                      "leave": "Leaves",
                                       "promote": "Promoted", "move": "Moves",
                                       "hired_away": "Hired away", "hire": "Hired",
                                       "alumnus": "Alumnus returns", "new": "New coach"},
@@ -3942,6 +3949,11 @@ def create_app() -> Flask:
             elif do == "dismiss":
                 jc.dismiss_cycle(w["id"])
                 msg = "Cycle dismissed."
+            elif do == "churn":
+                jc.set_churn_config({
+                    "enabled": "1" if request.form.get("enabled") else "0",
+                    "scale": float(request.form.get("scale") or 1.0)})
+                msg = "Turnover settings saved."
         except jc.StaffError as e:
             msg = str(e)
         resp = redirect(url_for("jhsaa_coach_carousel", u=u, g=g))

@@ -3282,6 +3282,39 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   equal) outranks an assistant's; a NEW coach only when nobody applied.
   ‼️ NO TENURE GATE on applying: a two-season minimum closed the whole market
   on a save seated one season earlier, and every opening became a new coach.
+  ‼️ **TURNOVER PRESSURE + THE PROMOTION SIGNAL (owner rule 2026-10,
+  `jhsaa_coaches.CHURN_TIER_BAND` / `program_churn` / `ASST_CHURN` /
+  `_promotion_signal` / `_mobility` / `_weak_head_firings`).** Retirements and
+  the own-norm firing alone turned over ~4% of head seats a year, so a good
+  assistant sat buried for a career. Now every head seat carries an ANNUAL
+  "leaves" chance drawn ONCE per program inside its TALENT TIER's band (dynasty
+  1-2% … abysmal 18-40%; re-rolled only when the tier changes) × the archetype
+  (neglect 1.6, blue_blood/coaching 0.6); assistants churn flat at `ASST_CHURN`.
+  **No reason is ever stored or shown — the line IS the transaction** (owner:
+  "that counterfactual is better left to my imagination"). A leaver is on the
+  market the SAME cycle for every seat but their own (`leavers`/`left_from`,
+  never `taken` — held in `taken` every opening fell to a brand-new coach).
+  Measured on a fresh full-size world at ×1: head seats ~12.6%/yr, assistants
+  moving or leaving ~21%, assistants landing head jobs ~5% (owner target 5-8%;
+  the dial covers it). `churn_config()` is the kill switch + intensity dial, set
+  on the carousel page; off, the cycle is byte-identical. Also: a sitting head's
+  interview for a head job adds this season's State finish, a recent COY, a
+  top-quarter class record and a step UP in enrollment; tenure 10+ and age 60+
+  (never 50) HALVE willingness to move, never block it; the top quarter of
+  assistants by rating carry `HEAD_READY_EDGE` into a head interview; and a
+  weak head (under the class's median) on a bottom-quarter program goes when a
+  materially better area assistant is on the market — never into a void.
+  `market_outlook` is the page's read-only panel (open head jobs, likely
+  openings, promotion candidates, head-ready assistants). ‼️ A COACHING COHORT
+  IS THE CHAMPIONSHIP `group`, never the enrollment class (`jhsaa_coaches.
+  cohort`, `COHORT_OF`: Group 1→8A, Group 2→5A, Group 3→2A, 10B→7A, 11B→4A) —
+  a 3A academy playing up in 7A is judged against the heads it faces, and
+  `_recent_pct` reads the history row's `grp`. ‼️ A season row is keyed on the
+  ARCHIVED name: `_promotion_signal` resolves it through `former_names()`.
+  ‼️ A VETOED DEPARTURE KEEPS THE COACH, not just the seat: a leaver's hire
+  elsewhere carries `from_ident`/`from_slot` and `commit_cycle` skips every fill
+  of a coach whose departure line is vetoed (`staying`). `tests/test_jhsaa_
+  coach_churn.py`, `tests/test_jhsaa_carousel_weak_head.py`.
   ‼️ **COACH OF THE YEAR (owner spec 2026-09, `app/jhsaa_coy.py`)** — District
   (per league) and State (per class), by gender, head coaches only, owner's
   weights (District 45 overperformance / 40 achievement / 10 improvement / 5

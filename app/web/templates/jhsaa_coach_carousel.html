@@ -39,6 +39,56 @@
   </form>
   {% endif %}
 </div>
+{# ‼️ THE MARKET BEFORE THE CYCLE (owner rule 2026-10): the lists the owner was
+   building by hand before every commit — open head jobs, the heads whose age or
+   tenure makes them plausible openings, the sitting heads the promotion signal
+   rates highest (a lower-class head who just won State), and the strongest
+   assistants. Read-only; the cycle above is where anything moves. Names and
+   the signal's own note only — never a rating breakdown (the COY rule). #}
+<div class="bl-panel" id="outlook">
+  <div class="bl-panel-head"><span class="bl-panel-title">Market outlook</span>
+    <span class="bl-panel-meta">{{ outlook.counts.open_heads }} open head jobs · {{ outlook.counts.retirements }} likely openings · {{ outlook.counts.promotions }} promotion candidates</span></div>
+  <div class="jh-cols2" style="padding:0 12px 8px">
+    <div>
+      <div class="jh-kv"><span class="k"><b>Open head jobs</b></span><span class="v"></span></div>
+      {% for r in outlook.open_heads %}
+      <div class="jh-kv"><span class="k"><a href="{{ url_for('jhsaa_school', school=r.school, u=u, g=r.gender) }}">{{ r.school }}</a></span>
+        <span class="v"><span class="s">{{ r.classification }} · {{ r.gender }}</span></span></div>
+      {% else %}<div class="jh-kv"><span class="k s">none</span><span class="v"></span></div>{% endfor %}
+      <div class="jh-kv" style="margin-top:8px"><span class="k"><b>Likely openings</b></span><span class="v"><span class="s">age {{ 60 }}+ or {{ 25 }}+ seasons</span></span></div>
+      {% for r in outlook.retirements %}
+      <div class="jh-kv"><span class="k"><a href="{{ url_for('jhsaa_coach', coach_id=r.coach_id, u=u, g=r.gender) }}">{{ r.name }}</a> · {{ r.school }}</span>
+        <span class="v"><span class="s">{{ r.classification }} · age {{ r.age }} · {{ r.tenure }} seasons</span></span></div>
+      {% else %}<div class="jh-kv"><span class="k s">none</span><span class="v"></span></div>{% endfor %}
+    </div>
+    <div>
+      <div class="jh-kv"><span class="k"><b>Promotion candidates</b></span><span class="v"></span></div>
+      {% for r in outlook.promotions %}
+      <div class="jh-kv"><span class="k"><a href="{{ url_for('jhsaa_coach', coach_id=r.coach_id, u=u, g=r.gender) }}">{{ r.name }}</a> · {{ r.school }}</span>
+        <span class="v"><span class="s">{{ r.classification }} · {{ r.note }}{% if r.mobility < 1 %} · likely stays{% endif %}</span></span></div>
+      {% else %}<div class="jh-kv"><span class="k s">none</span><span class="v"></span></div>{% endfor %}
+      <div class="jh-kv" style="margin-top:8px"><span class="k"><b>Head-ready assistants</b></span><span class="v"></span></div>
+      {% for r in outlook.head_ready %}
+      <div class="jh-kv"><span class="k"><a href="{{ url_for('jhsaa_coach', coach_id=r.coach_id, u=u, g=r.gender) }}">{{ r.name }}</a> · {{ r.school }}</span>
+        <span class="v"><span class="s">{{ r.classification }} · {{ r.quality }} OVR</span></span></div>
+      {% else %}<div class="jh-kv"><span class="k s">none</span><span class="v"></span></div>{% endfor %}
+    </div>
+  </div>
+</div>
+<div class="bl-panel" id="churn">
+  <div class="bl-panel-head"><span class="bl-panel-title">Turnover</span>
+    <span class="bl-panel-meta">{% if churn.enabled %}on · ×{{ churn.scale }}{% else %}off{% endif %}</span></div>
+  <form method="post" class="jh-form-row">
+    <input type="hidden" name="do" value="churn">
+    <label class="bit" style="display:flex;gap:6px;align-items:center;height:30px"><input type="checkbox" name="enabled" value="1" {% if churn.enabled %}checked{% endif %}> heads and assistants leave on their program's standing turnover (off: retirements and firings only)</label>
+    <select name="scale">
+      {% for v, lbl in [(0.5, 'quiet ×0.5'), (1.0, 'normal ×1'), (1.5, 'busy ×1.5'), (2.0, 'churning ×2')] %}
+      <option value="{{ v }}" {% if churn.scale == v %}selected{% endif %}>{{ lbl }}</option>
+      {% endfor %}
+    </select>
+    <button class="bl-pill" type="submit">Save</button>
+  </form>
+</div>
 {% if pool %}
 <div class="bl-panel" id="pool">
   <div class="bl-panel-head"><span class="bl-panel-title">Available coaches</span></div>

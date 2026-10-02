@@ -4767,10 +4767,9 @@ def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
             "season_year": ((arc or {}).get("season_year")
                             or world.jhsaa_season_year(w)),
             "from_year": jh.JV_STATE_FROM}
-    # ‼️ CAPTURED BEFORE ANY LOOP: the regional-table fold below reuses `region`
-    # as its loop variable, so by the time the regional-bracket panel resolves its
-    # selection the PARAMETER has been silently overwritten with the last sorted
-    # region — the switcher then ignores every choice and always shows that one.
+    # ‼️ CAPTURED UNDER ITS OWN NAME: a fold below once reused `region` as a loop
+    # variable and silently overwrote the PARAMETER, so the switcher ignored every
+    # choice. The fold is gone; the capture stays so it cannot come back.
     requested_region = region
     ev = world.jhsaa_jv_state(w["id"], yr, g)
     if not ev or not (ev.get("state") or {}).get("rounds"):
@@ -4841,30 +4840,18 @@ def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
                 for gm in rd["games"]]})
         return out
 
-    # The regional championships as a full-width table below the draw, one row per
-    # region: who won it, where they seeded statewide, and HOW FAR THEY WENT. Not how
-    # they entered — every champion is in the draw, so there is no distinction to
-    # draw there. NOT twenty trees: a reader who wants one program's route through
-    # its region has that program's schedule.
-    regions = []
-    for region in sorted(ev.get("regions") or {}):
-        br = ev["regions"][region]
-        champ = br.get("champion") or ""
-        res = world.jhsaa_state_result(render_st, champ) if champ else {}
-        regions.append({"region": region, "field_n": len(br.get("field") or ()),
-                        "champion": champ, "seed": seeds.get(champ, 0),
-                        "finish": res.get("finish", ""),
-                        "deco": _jh_deco(schools, champ, 22) if champ else None})
-    regions.sort(key=lambda r: (r["seed"] or 999, r["region"]))
-
+    # ‼️ NO REGIONAL-CHAMPIONS TABLE (owner, 2026-10). It was built here as one row
+    # per region (champion, statewide seed, State finish) when twenty areas each
+    # crowned one champion; since JHSAA rule 2096 a Region crowns nobody and sends
+    # its qualifiers, so every row read "—". The regional bracket panel below is
+    # the one surface a region's draw has.
     # ‼️ THE REGIONAL BRACKETS ARE ARCHIVED AND NOW RENDERED (owner rule 2070 — "make
     # it so I can see the team JV regional bracket somewhere; it's not been preserved
     # year over year"). They always WERE preserved — `run_regionals` archives every
     # region's full draw under `ev["regions"]`, for every season — but nothing ever
     # rendered one, which from the site is indistinguishable from the data being
     # gone. One region on screen at a time through a <select>, the section's own
-    # sibling-switcher idiom — never twenty trees down the page (that presentation
-    # was rejected when the summary table was designed, and the table stays).
+    # sibling-switcher idiom — never twenty trees down the page.
     # Seeds here are WITHIN-REGION: the archived `field` is the region's own seed
     # order, unrelated to the statewide ranking the State draw is cut from.
     region_names = sorted(ev.get("regions") or {})
@@ -4930,7 +4917,7 @@ def jhsaa_jv_state_view(seed: int, gender: str, group: str | None = None,
         "selection": selection,
         "index_jv": int(round(jvs.INDEX_JV_WEIGHT * 100)),
         "index_varsity": int(round(jvs.INDEX_VARSITY_WEIGHT * 100)),
-        "regions": regions, "region_n": len(regions),
+        "region_n": len(ev.get("regions") or ()),
         # Legacy opening games are merged back into their State bracket above, so
         # desktop's tree and the mobile round tabs render the same complete event.
         # ‼️ EVERY ROUND, off the FULL bracket — the Parastate included, so the
