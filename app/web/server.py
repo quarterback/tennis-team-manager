@@ -3918,7 +3918,7 @@ def create_app() -> Flask:
                                # The market before a cycle: open head jobs, likely
                                # openings, promotion candidates, head-ready
                                # assistants (owner rule 2026-10). A read only.
-                               outlook=jc.market_outlook(w["id"], sy),
+                               outlook=jc.market_outlook(w["id"], sy, gender=g),
                                churn=jc.churn_config(),
                                kinds={"retire": "Retires", "fire": "Let go",
                                       "leave": "Leaves",
@@ -3937,9 +3937,15 @@ def create_app() -> Flask:
         msg = ""
         try:
             if do == "run":
+                # ‼️ ONE GENDER PER CLICK (owner report 2026-10): the market on
+                # screen. Girls' and boys' coaches never compete for a seat, and
+                # running both doubled a request that already held the one
+                # gthread for the whole association's market.
+                run_g = request.form.get("g") or g
                 prop = jc.propose_cycle(w["id"], wd.jhsaa_season_year(w),
-                                       wd.active_salt(DEFAULT_SEED))
-                msg = f"{len(prop['lines'])} proposed changes."
+                                       wd.active_salt(DEFAULT_SEED), genders=(run_g,))
+                n = sum(1 for ln in prop["lines"] if ln["gender"] == run_g)
+                msg = f"{n} proposed {run_g} changes."
             elif do in ("save", "commit"):
                 jc.set_vetoes(w["id"], {int(x) for x in request.form.getlist("veto")})
                 if do == "commit":

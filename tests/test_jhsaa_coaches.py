@@ -238,7 +238,10 @@ def test_mentorship_grows_the_underclassmen_who_played(monkeypatch):
 def _small(real_load):
     def small(gender):
         out = []
-        for grp in jh.GROUPS:
+        # ‼️ GROUPS + NONPUBLIC_GROUPS: 10B/11B are road classes with no GROUPS
+        # entry, and a small world that omits them hands their road an EMPTY
+        # Ward field (`run_rounds` raises on it, by design).
+        for grp in jh.GROUPS + jh.NONPUBLIC_GROUPS:
             names = sorted({s.district for s in real_load(gender) if s.group == grp})
             keep, pool = set(), []
             for name in names:
@@ -608,6 +611,22 @@ def test_the_carousel_is_a_statewide_market_that_cascades(world_season):
     finally:
         jc.dismiss_cycle(wid)
     assert prop["lines"] == again["lines"]
+    # Gender-scoped (owner report 2026-10): one gender's run keeps the other's
+    # pending lines and vetoes, and the commit takes both.
+    try:
+        girls = jc.propose_cycle(wid, sy, genders=("girls",))
+        assert {ln["gender"] for ln in girls["lines"]} <= {"girls"}
+        assert girls["genders"] == ["girls"]
+        if girls["lines"]:
+            jc.set_vetoes(wid, {0})
+        both = jc.propose_cycle(wid, sy, genders=("boys",))
+        assert both["genders"] == ["girls", "boys"]
+        kept = [ln for ln in both["lines"] if ln["gender"] == "girls"]
+        assert len(kept) == len(girls["lines"])
+        assert not girls["lines"] or kept[0]["veto"]
+        assert [ln["n"] for ln in both["lines"]] == list(range(len(both["lines"])))
+    finally:
+        jc.dismiss_cycle(wid)
     fills = [ln for ln in prop["lines"] if ln.get("fill")]
     incoming = [ln["coach_id"] for ln in fills if ln["kind"] != "alumnus"]
     assert len(incoming) == len(set(incoming)), "a coach moved twice in one cycle"
@@ -616,7 +635,11 @@ def test_the_carousel_is_a_statewide_market_that_cascades(world_season):
     for i, ln in enumerate(fills):
         if ln.get("from_slot"):
             src = (ln["gender"], ln["from_ident"], ln["from_slot"])
-            assert src in filled[i + 1:], f"{src} was vacated by a move and never filled"
+            # A churn LEAVER re-hired elsewhere opened their seat at the
+            # departure, so it may be filled BEFORE the hire line that names it;
+            # a move/promotion opens its seat at the hire and is filled after.
+            later = filled if ln["kind"] == "hire" else filled[i + 1:]
+            assert src in later, f"{src} was vacated by a move and never filled"
     for ln in fills:
         if ln["kind"] == "new":
             assert "overall" in ln["why"]

@@ -529,3 +529,75 @@ test world (six programs' staffs removed): 8 of 9 head seats went to working coa
 (assistants stepping up and a head hired away), every club ended with a full staff, no
 coach in two seats, no vacant seat anywhere. The existing commit-path unit test stubs
 the two new database steps; it was edited but not run this session.
+
+## Addendum — the carousel rebuilt the labor market once per vacancy (2026-10)
+
+**Report.** "The coach carousel is causing a lot of problems … it's doing a
+statewide search every single time I click it … the changes I made to make coach
+migration more dynamic has exacerbated the problem." The page then "never loads" —
+which on the one-gthread worker is the request thread held for the whole market,
+`/api/health` starved, and the instance flapping (the standing failure mode of
+`docs/AAR-perf-regression-and-power-index-thread-race.md`).
+
+**What it was doing**, measured on a synthetic full-size market (the real school
+list, every seat filled, ten seasons of head history, six alumni a program —
+`cProfile` on `propose_cycle`, 6.5 s, 2,134 lines):
+
+| cost | where | share |
+|---|---|---|
+| 7,192 `execute` + 5,157 `fetchall` | one alumni query **per vacancy** inside the fill loop; `_head_run` **per sitting head** (the indexed query the 2026-09 addendum above made cheap — cheap × 1,900 is still 1,900 round trips); `_recent_pct` **twice** a gender and `legacy` once, each a full scan of the history table | 3.7 s |
+| `jhsaa.archetype()` **per program** in the churn loop | each call resolves `overrides.jhsaa_archetype_version()` — a SQLite connect, query and close — to key a memo that was already warm: the §5 trap of CLAUDE.md, verbatim | 1.1 s |
+| `where.items()` walked **per head vacancy** for the program's own assistants; `movers`/`laterals`/`head_seekers` filtered over the whole state per job; the free+leaver pool rebuilt per job | pure Python, ~1,000 × ~3,000 | 0.6 s |
+| girls AND boys on every click, whatever `g=` the page carried | ×2 of everything | — |
+
+The October turnover change did not cause this; it multiplied it. At ~4-5% head
+openings the quadratic shape finished; at 12.6% head turnover + 21% assistant
+movement, with every move opening the seat behind it, the number of vacancies
+roughly tripled and each one re-read the state. On the owner's fifty-season save
+the history and alumni tables are ten times this fixture's, so every "per
+vacancy" and "per head" read scaled with the age of the save, not just its size.
+
+**The shape now.** A cycle is `coaches once → this year's market → vacancies
+interview from the indexed market → the cascade advances on the same snapshot`:
+
+- **One history read per gender** (`_head_history`): `runs` (for `head_record`),
+  `by_ident` (for the firing rule's `_head_run`, now a list slice), `legacy`, and
+  `_recent_from` are all derived from one ordered scan. `_head_run`,
+  `_recent_pct`, `_head_runs` and `legacy` keep their signatures for callers
+  outside a cycle and the tests, and route through it.
+- **Alumni grouped once** per gender (`alumni_by_ident`), the archetype map
+  resolved once (`jhsaa._arch_map(version)` beside `_band_map`), the coefficient
+  computed once and passed into `_prestige`.
+- **Indexed pools** (`_Ranked`): movers and laterals sorted on the prestige of
+  the seat they hold, so a job at prestige P reads the eligible prefix under
+  `P − STEP_UP` by bisect; own assistants keyed by program; the willing-assistant
+  scan in `_weak_head_firings` keyed by area. The fill loop touches no table.
+- **Gender-scoped** (`propose_cycle(genders=)`): the page runs the gender on
+  screen; a pending proposal for the other gender of the same season is kept
+  with its vetoes and the new lines join it (`prop["genders"]` says which are
+  covered; Commit takes both). `genders=None` runs both, for tests and scripts.
+- **`market_outlook`** takes `gender` and is memoised on `_coach_stamp` — three
+  indexed aggregates (events, coach rows, history count) that move on every seat
+  change, rating edit and played season — so the redirect after a save, a veto or
+  a commit no longer reloads both markets to render a read-only panel.
+
+**Measured**, same fixture: both genders **6.5 s → 0.87 s**; one gender **0.51 s**;
+the outlook **0.3 s → 0.00 s** on a warm stamp. Lines proposed, kinds and the
+cascade invariants (deterministic for (world, season, gender); nobody moves twice;
+no seat filled twice; every vacated seat refilled) hold, verified on the full-size
+market and through `commit_cycle`.
+
+**Not done, on purpose.** It was not moved to a background thread first — that
+hides the symptom while the same GIL-bound work runs; a full cycle is now a
+bounded sub-second operation, so deferring it is optional rather than necessary.
+
+**Two things found on the way.** (1) The fixture of `tests/test_jhsaa_coaches.py`
+looped `jh.GROUPS`, so the small world carried no 10B/11B programs and `run_season`
+raised on their empty Ward field — every test in that module errored on the
+unmodified tree. It loops `GROUPS + NONPUBLIC_GROUPS` now (the rule is already in
+CLAUDE.md's Non-Public bullet). (2) The cascade test's "vacated by a move and never
+filled" check reads `filled[i + 1:]`, which a churn LEAVER re-hired elsewhere does
+not satisfy: their seat opens at the departure, so it is often filled before the
+`hire` line that names it as `from_slot`. The seat IS filled — it is an ordering
+artefact of the leave-then-hire shape, pre-existing, and the check is right for
+`move`/`promote`/`hired_away` lines, which open their seat at the hire.

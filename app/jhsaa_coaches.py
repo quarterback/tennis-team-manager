@@ -505,6 +505,8 @@ def reset() -> None:
     conn.executescript("".join(f"DELETE FROM {t};" for t in _TABLES))
     conn.commit()
     conn.close()
+    with _outlook_lock:
+        _outlook_cache.clear()
 
 
 def _coach_row(c: Coach) -> str:
@@ -1618,26 +1620,52 @@ def legacy(world_id: int, gender: str) -> dict:
     """{ident: 0-1} — a program's coaching LEGACY: how much of its archived
     history was coached by long-tenured heads (10+ seasons there). Reputation
     only: it raises how often the program's own alumni come home to coach, and
-    nothing in a match or a roster reads it."""
+    nothing in a match or a roster reads it. Off `_head_history` — a cycle
+    reads that once and takes `.legacy` from it rather than calling this."""
     conn = _conn()
     try:
-        rows = conn.execute("SELECT ident, coach_id, COUNT(*) FROM jhsaa_coach_history"
-                            " WHERE world_id=? AND gender=? AND slot='head'"
-                            " GROUP BY ident, coach_id", (world_id, gender)).fetchall()
+        return _head_history(conn, world_id, gender).legacy
     finally:
         conn.close()
-    out: dict = {}
-    for ident, _cid_, n in rows:
+
+
+class _HeadHistory:
+    __slots__ = ("runs", "by_ident", "legacy")
+
+    def __init__(self):
+        self.runs: dict = {}        # (ident, coach_id) -> [(year, wins, losses)]
+        self.by_ident: dict = {}    # ident -> [(year, coach_id, wins, losses, cls, grp)]
+        self.legacy: dict = {}      # ident -> 0-1 (see `legacy`)
+
+
+def _head_history(conn, world_id: int, gender: str) -> _HeadHistory:
+    h = _HeadHistory()
+    tenure: dict = {}
+    for ident, cid, year, w, l, cls, grp in conn.execute(
+            "SELECT ident, coach_id, year, wins, losses, classification, grp"
+            " FROM jhsaa_coach_history WHERE world_id=? AND gender=? AND slot='head'"
+            " ORDER BY year", (world_id, gender)):
+        w, l = w or 0, l or 0
+        h.runs.setdefault((ident, cid), []).append((year, w, l))
+        h.by_ident.setdefault(ident, []).append((year, cid, w, l, cls, grp))
+        tenure[(ident, cid)] = tenure.get((ident, cid), 0) + 1
+    for (ident, _cid_), n in tenure.items():
         if n >= 10:
-            out[ident] = min(1.0, out.get(ident, 0.0) + n / 20.0)
-    return out
+            h.legacy[ident] = min(1.0, h.legacy.get(ident, 0.0) + n / 20.0)
+    return h
 
 
-def _head_run(conn, world_id, gender, ident, coach_id):
-    rows = conn.execute("SELECT year, coach_id, wins, losses, classification"
-                        " FROM jhsaa_coach_history WHERE world_id=? AND gender=?"
-                        " AND ident=? AND slot='head' ORDER BY year",
-                        (world_id, gender, ident)).fetchall()
+def _head_run(conn, world_id, gender, ident, coach_id, hist: _HeadHistory | None = None):
+    """(mine, before) for one program's head: the coach's own seasons there and
+    the seasons under earlier heads. Off the one-read history when given one;
+    the per-program query is kept for callers outside a cycle."""
+    if hist is not None:
+        rows = [(y, cid, w, l, cls) for y, cid, w, l, cls, _g in hist.by_ident.get(ident, ())]
+    else:
+        rows = conn.execute("SELECT year, coach_id, wins, losses, classification"
+                            " FROM jhsaa_coach_history WHERE world_id=? AND gender=?"
+                            " AND ident=? AND slot='head' ORDER BY year",
+                            (world_id, gender, ident)).fetchall()
     mine = [r for r in rows if r[1] == coach_id]
     before = [r for r in rows if r[1] != coach_id and (not mine or r[0] < mine[0][0])]
     return mine, before
@@ -1669,13 +1697,14 @@ def _quality(c: Coach) -> float:
     return sum(to_grade(v) for v in c.grades.values()) / max(1, len(c.grades))
 
 
-def _prestige(world_id: int, gender: str, schools: dict, leg: dict) -> dict:
+def _prestige(world_id: int, gender: str, schools: dict, leg: dict,
+              coef: dict | None = None) -> dict:
     """{ident: 0-1} — how attractive a job is: the program's standing in its
     class on the coefficient, its SIZE (enrollment across the association) and
     its coaching legacy. A job-market reading only; nothing in a match or a
     roster reads it."""
-    from . import jhsaa_coefficient as jco
-    coef = _coef(world_id, gender)
+    if coef is None:
+        coef = _coef(world_id, gender)
     order = sorted(schools, key=lambda i: (schools[i].enrollment, i))
     n = len(order)
     size = {i: (k / (n - 1) if n > 1 else 0.5) for k, i in enumerate(order)}
@@ -1720,6 +1749,22 @@ def cohort(school) -> str:
     return COHORT_OF.get(g, g)
 
 
+def _recent_from(hist: _HeadHistory, schools: dict, window: int = FIRE_WEAK_WINDOW) -> dict:
+    """`_recent_pct` off the one-read history: newest `window` head seasons in the
+    program's CURRENT cohort."""
+    out: dict = {}
+    for ident, rows in hist.by_ident.items():
+        sc = schools.get(ident)
+        if sc is None:
+            continue
+        want = cohort(sc)
+        got = [(y, None, w, l) for y, _cid_, w, l, cls, grp in reversed(rows)
+               if COHORT_OF.get(grp or cls, grp or cls) == want][:window]
+        if got:
+            out[ident] = _pct(got)
+    return out
+
+
 def _recent_pct(conn, world_id: int, gender: str, schools: dict,
                 window: int = FIRE_WEAK_WINDOW) -> dict:
     """{ident: win pct over the program's last `window` head seasons IN ITS CURRENT
@@ -1727,32 +1772,29 @@ def _recent_pct(conn, world_id: int, gender: str, schools: dict,
     program with no season in its cohort reads None. A history row's `grp` is the
     championship it played that year; a row archived without one (older saves)
     falls back to its classification."""
-    rows: dict = {}
-    for ident, year, w, l, cls, grp in conn.execute(
-            "SELECT ident, year, wins, losses, classification, grp FROM jhsaa_coach_history"
-            " WHERE world_id=? AND gender=? AND slot='head' ORDER BY year DESC",
-            (world_id, gender)):
-        sc = schools.get(ident)
-        if sc is None or COHORT_OF.get(grp or cls, grp or cls) != cohort(sc):
-            continue
-        got = rows.setdefault(ident, [])
-        if len(got) < window:
-            got.append((year, w or 0, l or 0))
-    return {ident: _pct([(y, None, w, l) for y, w, l in got]) for ident, got in rows.items()}
+    return _recent_from(_head_history(conn, world_id, gender), schools, window)
 
 
 def _weak_head_firings(conn, world_id: int, gender: str, season_year: int,
                        schools: dict, where: dict, coaches: dict, wants: dict,
-                       taken: set) -> list:
+                       taken: set, recent: dict | None = None) -> list:
     """The programs whose head goes under `FIRE_WEAK_*`: bottom of the class on
     the recent window, head rated under the class's heads, a better assistant in
-    the area on the market. Returns [(ident, coach, why)]; mutates nothing."""
-    recent = _recent_pct(conn, world_id, gender, schools)
+    the area on the market. Returns [(ident, coach, why)]; mutates nothing.
+    `recent` is the cycle's one `_recent_pct` read when it has one."""
+    if recent is None:
+        recent = _recent_pct(conn, world_id, gender, schools)
     heads = {i: cid for cid, (i, slot, _s) in where.items()
              if slot == "head" and cid not in taken}
     by_cls: dict = {}
     for ident, cid in heads.items():
         by_cls.setdefault(cohort(schools[ident]), []).append(ident)
+    # Willing, free assistants by AREA, indexed once — never a walk over every
+    # seat in the state per bottom-of-class head.
+    asst_by_area: dict = {}
+    for a, (i2, s2, _s) in where.items():
+        if s2 != "head" and a not in taken and wants.get(a, 1.0) < ASST_HEAD_AMBITION:
+            asst_by_area.setdefault(schools[i2].area, []).append((a, i2, _quality(coaches[a])))
     out = []
     for cls, idents in sorted(by_cls.items()):
         ranked = sorted((i for i in idents if recent.get(i) is not None),
@@ -1771,18 +1813,14 @@ def _weak_head_firings(conn, world_id: int, gender: str, season_year: int,
             q = _quality(c)
             if q >= median_q:
                 continue
-            area = schools[ident].area
-            nearby = [a for a, (i2, s2, _s) in where.items()
-                      if s2 != "head" and a not in taken and i2 != ident
-                      and schools[i2].area == area
-                      and wants.get(a, 1.0) < ASST_HEAD_AMBITION
-                      and _quality(coaches[a]) >= q + FIRE_WEAK_MARGIN]
+            nearby = [(a, aq) for a, i2, aq in asst_by_area.get(schools[ident].area, ())
+                      if i2 != ident and aq >= q + FIRE_WEAK_MARGIN]
             if not nearby:
                 continue
             rng = _rng("jhsaa-carousel-weak", world_id, season_year, cid)
             if rng.random() >= FIRE_WEAK_CHANCE:
                 continue
-            best = max(nearby, key=lambda a: _quality(coaches[a]))
+            best = max(nearby, key=lambda t: (t[1], t[0]))[0]
             out.append((ident, c,
                         f"{recent[ident]:.3f} over the last {FIRE_WEAK_WINDOW} seasons,"
                         f" bottom of {cls}; rated {q:.0f} against the class's {median_q:.0f};"
@@ -1793,13 +1831,7 @@ def _weak_head_firings(conn, world_id: int, gender: str, season_year: int,
 
 def _head_runs(conn, world_id: int, gender: str) -> dict:
     """{(ident, coach_id): [(year, wins, losses), …]} — every head season, one read."""
-    out: dict = {}
-    for ident, cid, year, w, l in conn.execute(
-            "SELECT ident, coach_id, year, wins, losses FROM jhsaa_coach_history"
-            " WHERE world_id=? AND gender=? AND slot='head' ORDER BY year",
-            (world_id, gender)):
-        out.setdefault((ident, cid), []).append((year, w or 0, l or 0))
-    return out
+    return _head_history(conn, world_id, gender).runs
 
 
 HIRE_NOISE = 5.0              # how far one interview can misjudge a candidate
@@ -1818,10 +1850,324 @@ HEAD_EDGE = 18.0              # overall points for an average head record …
 HEAD_RECORD_EDGE = 30.0       # … ± this per unit of record quality from .500
 HEAD_RECORD_SHRINK = 20       # phantom .500 matches (a thin record means less)
 
+GENDERS = ("girls", "boys")
 
-def propose_cycle(world_id: int, season_year: int, salt: str = "") -> dict:
+
+class _Ranked:
+    """A candidate pool sorted on the prestige of the seat each coach HOLDS, so a
+    vacancy at prestige P reads the coaches a step below it as one bisected
+    prefix — never a scan of the whole state per job."""
+    __slots__ = ("keys", "cids")
+
+    def __init__(self, cids, prest_of):
+        pairs = sorted((prest_of(cid), cid) for cid in cids)
+        self.keys = [p for p, _c in pairs]
+        self.cids = [c for _p, c in pairs]
+
+    def below(self, p: float) -> list:
+        import bisect
+        return self.cids[:bisect.bisect_right(self.keys, p)]
+
+
+def _propose_gender(conn, world_id: int, season_year: int, gender: str, salt: str,
+                    churn: dict, bmap: dict, amap: dict, free: list, taken: set) -> list:
+    """One gender's cycle: departures, then the statewide market for every
+    vacancy, cascading. The market is read ONCE into indexed pools and the fill
+    loop touches no table — the whole point of the 2026-10 rebuild."""
+    from . import jhsaa
+    lines: list = []
+    schools = {s.ident: s for s in jhsaa.load_schools(gender)}
+    # One stable instability point per program, resolved once per cycle. ‼️ The
+    # archetype comes off the map resolved ONCE above, never `jhsaa.archetype()`
+    # per program — that call resolves the override fingerprint (a connect and a
+    # query) on every call, the §5 trap, and it alone was a fifth of a cycle.
+    churn_p = ({i: program_churn(i, jhsaa._effective_band(sc, bmap),
+                                 amap.get(sc.name, ""), salt)
+                for i, sc in schools.items()} if churn["enabled"] else {})
+    hist = _head_history(conn, world_id, gender)
+    leg = hist.legacy
+    coef = _coef(world_id, gender)
+    prest = _prestige(world_id, gender, schools, leg, coef)
+    seat_rows = seats(world_id, gender)
+    where: dict = {}                        # coach_id -> (ident, slot, since)
+    coaches: dict = {}
+    vacancies: list = []                    # (ident, slot)
+    leavers, left_from = [], {}             # churn departures, back on the market
+    for r in sorted(seat_rows, key=lambda r: (r["ident"], SLOTS.index(r["slot"]))):
+        ident, slot, c = r["ident"], r["slot"], r["coach"]
+        if ident not in schools:
+            continue
+        if c is None:                       # already vacant (a grown roster, a move)
+            vacancies.append((ident, slot))
+            continue
+        where[c.coach_id] = (ident, slot, r["since"])
+        coaches[c.coach_id] = c
+        rng = _rng("jhsaa-carousel", world_id, season_year, c.coach_id)
+        age = season_year - c.birth_year if c.birth_year else 45
+        tenure = season_year - (r["since"] or season_year)
+        p = next(ch for bound, ch in RETIRE_BY_AGE if age < bound)
+        if tenure >= RETIRE_LONG_TENURE[0]:
+            p += RETIRE_LONG_TENURE[1]
+        if rng.random() < p:
+            lines.append({"kind": "retire", "gender": gender, "ident": ident,
+                          "school": schools[ident].name, "slot": slot,
+                          "coach_id": c.coach_id, "name": c.name,
+                          "why": f"age {age}, {tenure} season{'s' if tenure != 1 else ''}"
+                                 " in the seat"})
+            taken.add(c.coach_id)
+            vacancies.append((ident, slot))
+            continue
+        # ‼️ TURNOVER PRESSURE (owner rule 2026-10): the seat's standing chance the
+        # coach simply leaves. No reason is recorded — the line is the
+        # transaction and nothing else.
+        if churn["enabled"]:
+            hazard = (churn_p[ident] if slot == "head" else ASST_CHURN) * churn["scale"]
+            if _rng("jhsaa-churn", world_id, season_year, c.coach_id).random() < min(CHURN_MAX, hazard):
+                lines.append({"kind": "leave", "gender": gender, "ident": ident,
+                              "school": schools[ident].name, "slot": slot,
+                              "coach_id": c.coach_id, "name": c.name, "why": ""})
+                # ‼️ NOT `taken`: a leaver is on the market THIS cycle for any
+                # other program's seat — only their own seat is closed to them.
+                # Held in `taken` they all fell through to brand-new coaches.
+                left_from[c.coach_id] = (ident, slot)
+                leavers.append(c)
+                del where[c.coach_id]
+                vacancies.append((ident, slot))
+                continue
+        if slot == "head":
+            mine, before = _head_run(conn, world_id, gender, ident, c.coach_id, hist)
+            # Only seasons in the program's CURRENT class count — a realignment
+            # is not the coach's doing.
+            cls = schools[ident].classification
+            mine_same = [r for r in mine if r[4] == cls]
+            norm = _pct(before)
+            got = _pct(mine_same)
+            if (len(mine_same) >= FIRE_MIN_SEASONS and norm is not None
+                    and got is not None and got < norm - FIRE_BELOW
+                    and rng.random() < FIRE_CHANCE):
+                lines.append({"kind": "fire", "gender": gender, "ident": ident,
+                              "school": schools[ident].name, "slot": "head",
+                              "coach_id": c.coach_id, "name": c.name,
+                              "why": f"{got:.3f} over {len(mine_same)} seasons"
+                                     f" against the program's {norm:.3f}"})
+                taken.add(c.coach_id)
+                vacancies.append((ident, "head"))
+
+    # ‼️ A PROGRAM WITH NO STAFF AT ALL IS FULLY VACANT (owner rule 2026-09: "a
+    # bunch of assistants across the state [should] consider taking these jobs …
+    # or other head coaches to leave and create a cascade"). Programs added to
+    # the association after the seats were written — the expansion clubs — have
+    # NO seat rows, and the market only ever filled seats that exist, so the
+    # season rung seated them with brand-new random coaches and nobody already
+    # working in the state ever got the job. Their head and assistant seats (the
+    # assistant count their roster size earns) join the ordinary vacancies here —
+    # best job first, cascading down — and `commit_cycle` writes the seat rows.
+    # Nothing is written by a PROPOSAL.
+    _has_seats = {r["ident"] for r in seat_rows}
+    for _ident, _sc in sorted(schools.items()):
+        if _ident in _has_seats:
+            continue
+        _n = assistants_for(jhsaa.roster_size(_sc.classification, _sc.key, salt))
+        vacancies.extend((_ident, SLOTS[i]) for i in range(1 + _n))
+
+    # Who is looking this cycle — one roll per coach, so a coach is either on
+    # the market or not, whichever job is open.
+    wants = {cid: _rng("jhsaa-carousel-want", world_id, season_year, cid).random()
+             for cid in where}
+    recent = _recent_from(hist, schools)
+    # ‼️ THE SECOND FIRING RULE runs here, not in the departures loop: it needs
+    # every head's quality and every assistant's market roll, and the loop above
+    # has neither until it has seen every seat.
+    for ident, c, why in _weak_head_firings(conn, world_id, gender, season_year,
+                                            schools, where, coaches, wants, taken,
+                                            recent=recent):
+        lines.append({"kind": "fire", "gender": gender, "ident": ident,
+                      "school": schools[ident].name, "slot": "head",
+                      "coach_id": c.coach_id, "name": c.name, "why": why})
+        taken.add(c.coach_id)
+        vacancies.append((ident, "head"))
+
+    # ---- THE MARKET, READ ONCE ------------------------------------------------
+    # Every coach makes ONE mobility decision a cycle; the jobs then interview
+    # from that already-known market. Built here, indexed, and never rebuilt
+    # while the cascade advances a seat.
+    by_coach: dict = {}
+    for (i, cid), rows in hist.runs.items():
+        by_coach.setdefault(cid, {})[(i, cid)] = rows
+    recs = {}
+    for cid in set(where) | {c.coach_id for c in free}:
+        if cid in by_coach:
+            recs[cid] = head_record(by_coach[cid], coef, cid)
+    head_seekers = sorted(cid for cid, (i, s, _since) in where.items()
+                          if s != "head" and wants[cid] < ASST_HEAD_AMBITION)
+
+    def _mob(cid):
+        c = coaches[cid]
+        age = season_year - c.birth_year if c.birth_year else 45
+        return _mobility(age, season_year - (where[cid][2] or season_year))
+    # ‼️ Tenure and age REDUCE a head's willingness to move; they never block it
+    # (owner rule 2026-10). Movers and laterals are ranked on the prestige of
+    # the seat they hold: a job at P interviews the prefix under P − STEP_UP.
+    prest_of = lambda cid: prest[where[cid][0]]
+    movers = _Ranked((cid for cid, (i, s, _since) in where.items()
+                      if s == "head" and wants[cid] < HEAD_AMBITION * _mob(cid)), prest_of)
+    laterals = _Ranked((cid for cid, (i, s, _since) in where.items()
+                        if s != "head" and wants[cid] < ASST_LATERAL), prest_of)
+    own_asst: dict = {}                     # ident -> [assistant coach ids]
+    for cid, (i, s, _since) in sorted(where.items()):
+        if s != "head":
+            own_asst.setdefault(i, []).append(cid)
+    promo = _promotion_signal(conn, world_id, gender, season_year, schools,
+                              {i: cid for cid, (i, s, _s) in where.items() if s == "head"},
+                              recent)
+    # The top share of assistants statewide by rating: head-ready.
+    asst_q = sorted(_quality(coaches[cid]) for cid, (i, s, _s) in where.items()
+                    if s != "head")
+    head_ready_q = (asst_q[int(len(asst_q) * (1 - HEAD_READY_SHARE))]
+                    if asst_q else float("inf"))
+    # The school's own alumni, grouped ONCE — the fill loop used to query the
+    # alumni table per vacancy (~1,000 queries a cycle on a full-size save).
+    alumni_by_ident: dict = {}
+    for pid, nm, gy, ident in conn.execute(
+            "SELECT pid, name, grad_year, ident FROM jhsaa_alumni WHERE world_id=?"
+            " AND gender=? AND grad_year<=? ORDER BY pid",
+            (world_id, gender, season_year - ALUMNI_MIN_YEARS)):
+        alumni_by_ident.setdefault(ident, []).append((pid, nm, gy))
+    # Unattached coaches plus this cycle's leavers: one pool, filtered per job.
+    pool_all = free + leavers
+
+    heap = [((slot != "head"), -prest[ident], ident, slot) for ident, slot in vacancies]
+    heapq.heapify(heap)
+    done = set()
+    while heap:
+        _h, _p, ident, slot = heapq.heappop(heap)
+        if (ident, slot) in done:
+            continue
+        done.add((ident, slot))
+        sc = schools[ident]
+        P = prest[ident]
+        rng = _rng("jhsaa-carousel-fill", world_id, season_year, gender, ident, slot)
+        head_job = slot == "head"
+        # Applicants from elsewhere: a better job draws a longer list.
+        if head_job:
+            outside = [cid for cid in head_seekers
+                       if cid not in taken and where[cid][0] != ident]
+            n_app = 4 + round(16 * P)
+            # Sitting heads get their OWN shortlist seats: a program stepping up
+            # always looks at heads, who would otherwise be a handful lost
+            # among thousands of assistants.
+            heads = [cid for cid in movers.below(P - STEP_UP)
+                     if cid not in taken and where[cid][0] != ident]
+            if len(heads) > HEAD_SHORTLIST:
+                heads = rng.sample(heads, HEAD_SHORTLIST)
+        else:
+            outside = [cid for cid in laterals.below(P - STEP_UP)
+                       if cid not in taken and where[cid][0] != ident]
+            n_app = 2 + round(8 * P)
+            heads = []
+        if len(outside) > n_app:
+            outside = rng.sample(outside, n_app)
+        outside += heads
+
+        def talent(c):
+            """Quality, plus — for a head job — what running a program is
+            worth (a past head in an assistant's seat carries it too)."""
+            q = _quality(c)
+            rec = recs.get(c.coach_id)
+            if head_job and rec:
+                q += rec[2]
+            return q
+        apps = []                            # (score, kind, coach|None, extra)
+        for cid in outside:
+            c = coaches[cid]
+            i2, s2, _since = where[cid]
+            q = talent(c) + (AREA_EDGE if schools[i2].area == sc.area else 0.0)
+            if head_job and s2 == "head":
+                # The promotion signal, and a step up in size is a positive.
+                q += promo.get(cid, (0.0, ""))[0]
+                if sc.enrollment > schools[i2].enrollment:
+                    q += PROMO_CLASS_UP
+            elif head_job and _quality(c) >= head_ready_q:
+                q += HEAD_READY_EDGE
+            apps.append((q, "hired_away" if s2 == "head" else "move", c, None))
+        if head_job:
+            for cid in own_asst.get(ident, ()):
+                if cid not in taken:
+                    apps.append((talent(coaches[cid]) + OWN_ASSISTANT_EDGE,
+                                 "promote", coaches[cid], None))
+        pool = [c for c in pool_all if c.coach_id not in taken
+                and left_from.get(c.coach_id, (None,))[0] != ident]
+        for c in (rng.sample(pool, 3) if len(pool) > 3 else pool):
+            apps.append((talent(c), "hire", c, None))
+        alum = [a for a in alumni_by_ident.get(ident, ())
+                if _cid(world_id, "player", a[0]) not in taken]
+        if alum and rng.random() < 0.25 + 0.5 * leg.get(ident, 0.0):
+            a = alum[rng.randrange(len(alum))]
+            apps.append((ALUMNUS_QUALITY + ALUMNUS_EDGE, "alumnus", None, a))
+        line = None
+        if apps:
+            scored = [(s + rng.gauss(0.0, HIRE_NOISE), k, c, x)
+                      for s, k, c, x in apps]
+            _s, kind, c, extra = max(scored, key=lambda t: (
+                t[0], t[2].coach_id if t[2] else t[3][0]))
+            if kind == "alumnus":
+                pid, nm, gy = extra
+                taken.add(_cid(world_id, "player", pid))
+                line = {"kind": "alumnus", "pid": pid, "name": nm,
+                        "why": f"class of {gy} — home to coach"}
+            elif kind == "hire":
+                taken.add(c.coach_id)
+                line = {"kind": "hire", "coach_id": c.coach_id, "name": c.name,
+                        "why": f"available coach, {round(_quality(c))} overall"}
+                if c.coach_id in left_from:
+                    # A churn leaver hired on: the line carries the seat they
+                    # are leaving, so a VETO of their leave line can keep them
+                    # (the commit suppresses this hire) and the ledger reads
+                    # where they came from.
+                    i2, s2 = left_from[c.coach_id]
+                    line.update({"from_ident": i2, "from_slot": s2,
+                                 "why": f"{'head coach' if s2 == 'head' else 'assistant'}"
+                                        f" at {schools[i2].name},"
+                                        f" {round(_quality(c))} overall"})
+            else:
+                taken.add(c.coach_id)
+                i2, s2, _since = where[c.coach_id]
+                if kind == "promote":
+                    why = "the program's own assistant"
+                elif kind == "hired_away":
+                    rec = recs.get(c.coach_id)   # a head with no season yet has none
+                    why = f"head coach at {schools[i2].name}"
+                    if rec:
+                        pct, n = rec[:2]
+                        why += f", {f'{pct:.3f}'.lstrip('0')} over {n} seasons"
+                    if c.coach_id in promo:
+                        why += f" — {promo[c.coach_id][1]}"
+                elif head_job:
+                    why = f"assistant at {schools[i2].name}, up to head coach"
+                else:
+                    why = f"assistant at {schools[i2].name}, a step up"
+                line = {"kind": kind, "coach_id": c.coach_id, "name": c.name,
+                        "why": why, "from_ident": i2, "from_slot": s2}
+                # The seat they leave is open now: the chain goes on — on the
+                # SAME market snapshot, never a fresh read.
+                heapq.heappush(heap, ((s2 != "head"), -prest[i2], i2, s2))
+        if line is None:
+            c = _new_candidate(world_id, season_year, gender, sc.city,
+                               f"{gender}|{ident}|{slot}")
+            line = {"kind": "new", "coach": json.loads(_coach_row(c)),
+                    "coach_id": c.coach_id, "name": c.name,
+                    "why": f"{PROFILE_LABELS.get(c.profile, c.profile)},"
+                           f" {round(_quality(c))} overall"}
+        line.update({"gender": gender, "ident": ident, "school": sc.name,
+                     "slot": slot, "fill": True})
+        lines.append(line)
+    return lines
+
+
+def propose_cycle(world_id: int, season_year: int, salt: str = "",
+                  genders=None) -> dict:
     """Build (and store as PENDING) one coaching cycle, deterministic for
-    (world, season).
+    (world, season, gender).
 
     1. DEPARTURES — retirement by age/tenure, and the rare firing.
     2. A STATEWIDE HIRING MARKET for every vacancy, best jobs first (head seats,
@@ -1838,289 +2184,47 @@ def propose_cycle(world_id: int, season_year: int, salt: str = "") -> dict:
        More prestigious jobs draw more applicants; the pick is the best
        interview (quality + a noisy read + small edges), so better coaches win
        more often, not always.
-    3. A NEW coach only when nobody applied — the last resort."""
+    3. A NEW coach only when nobody applied — the last resort.
+
+    ‼️ GENDER-SCOPED (owner report 2026-10). Girls' and boys' coaches are two
+    markets that never compete for a seat, so a run is `genders` — the page
+    runs the gender on screen. A pending proposal for the OTHER gender of the
+    same season is kept, vetoes and all, and the new lines join it; the commit
+    takes the lot. `genders=None` runs both (tests, scripts)."""
     from . import jhsaa
-    lines = []
+    genders = tuple(genders) if genders else GENDERS
+    for g in genders:
+        if g not in GENDERS:
+            raise StaffError(f"Unknown team {g!r}.")
     free = sorted(free_pool(world_id), key=lambda c: c.coach_id)
     taken: set = set()
+    old = pending_cycle(world_id)
+    kept = [ln for ln in (old["lines"] if old and old.get("year") == season_year else [])
+            if ln["gender"] not in genders]
+    for ln in kept:
+        if ln.get("fill") and ln["kind"] not in ("alumnus", "new") and ln.get("coach_id"):
+            taken.add(ln["coach_id"])      # a coach moved in the kept half stays moved
+        elif ln["kind"] == "alumnus":
+            taken.add(_cid(world_id, "player", ln["pid"]))
+    lines: list = []
     conn = _conn()
     try:
         churn = churn_config()
         from . import overrides as _ov
         bmap = jhsaa._band_map(_ov.jhsaa_band_version()) if churn["enabled"] else {}
-        for gender in ("girls", "boys"):
-            schools = {s.ident: s for s in jhsaa.load_schools(gender)}
-            # One stable instability point per program, resolved once per cycle.
-            churn_p = ({i: program_churn(i, jhsaa._effective_band(sc, bmap),
-                                         jhsaa.archetype(sc.name), salt)
-                        for i, sc in schools.items()} if churn["enabled"] else {})
-            leg = legacy(world_id, gender)
-            prest = _prestige(world_id, gender, schools, leg)
-            runs = _head_runs(conn, world_id, gender)
-            seat_rows = seats(world_id, gender)
-            where = {}                          # coach_id -> (ident, slot, since)
-            coaches = {}
-            vacancies = []                      # (ident, slot)
-            leavers, left_from = [], {}         # churn departures, back on the market
-            for r in sorted(seat_rows, key=lambda r: (r["ident"], SLOTS.index(r["slot"]))):
-                ident, slot, c = r["ident"], r["slot"], r["coach"]
-                if ident not in schools:
-                    continue
-                if c is None:                   # already vacant (a grown roster, a move)
-                    vacancies.append((ident, slot))
-                    continue
-                where[c.coach_id] = (ident, slot, r["since"])
-                coaches[c.coach_id] = c
-                rng = _rng("jhsaa-carousel", world_id, season_year, c.coach_id)
-                age = season_year - c.birth_year if c.birth_year else 45
-                tenure = season_year - (r["since"] or season_year)
-                p = next(ch for bound, ch in RETIRE_BY_AGE if age < bound)
-                if tenure >= RETIRE_LONG_TENURE[0]:
-                    p += RETIRE_LONG_TENURE[1]
-                if rng.random() < p:
-                    lines.append({"kind": "retire", "gender": gender, "ident": ident,
-                                  "school": schools[ident].name, "slot": slot,
-                                  "coach_id": c.coach_id, "name": c.name,
-                                  "why": f"age {age}, {tenure} season{'s' if tenure != 1 else ''}"
-                                         " in the seat"})
-                    taken.add(c.coach_id)
-                    vacancies.append((ident, slot))
-                    continue
-                # ‼️ TURNOVER PRESSURE (owner rule 2026-10): the seat's standing
-                # chance the coach simply leaves. No reason is recorded — the line
-                # is the transaction and nothing else.
-                if churn["enabled"]:
-                    hazard = (churn_p[ident] if slot == "head" else ASST_CHURN) * churn["scale"]
-                    if _rng("jhsaa-churn", world_id, season_year, c.coach_id).random() < min(CHURN_MAX, hazard):
-                        lines.append({"kind": "leave", "gender": gender, "ident": ident,
-                                      "school": schools[ident].name, "slot": slot,
-                                      "coach_id": c.coach_id, "name": c.name, "why": ""})
-                        # ‼️ NOT `taken`: a leaver is on the market THIS cycle for any
-                        # other program's seat (a head who becomes an assistant
-                        # elsewhere, an assistant who lands a head job across the
-                        # state) — only their own seat is closed to them. Held in
-                        # `taken` they all fell through to brand-new coaches.
-                        left_from[c.coach_id] = (ident, slot)
-                        leavers.append(c)
-                        del where[c.coach_id]
-                        vacancies.append((ident, slot))
-                        continue
-                if slot == "head":
-                    mine, before = _head_run(conn, world_id, gender, ident, c.coach_id)
-                    # Only seasons in the program's CURRENT class count —
-                    # a realignment is not the coach's doing.
-                    cls = schools[ident].classification
-                    mine_same = [r for r in mine if r[4] == cls]
-                    norm = _pct(before)
-                    got = _pct(mine_same)
-                    if (len(mine_same) >= FIRE_MIN_SEASONS and norm is not None
-                            and got is not None and got < norm - FIRE_BELOW
-                            and rng.random() < FIRE_CHANCE):
-                        lines.append({"kind": "fire", "gender": gender, "ident": ident,
-                                      "school": schools[ident].name, "slot": "head",
-                                      "coach_id": c.coach_id, "name": c.name,
-                                      "why": f"{got:.3f} over {len(mine_same)} seasons"
-                                             f" against the program's {norm:.3f}"})
-                        taken.add(c.coach_id)
-                        vacancies.append((ident, "head"))
-
-            # ‼️ A PROGRAM WITH NO STAFF AT ALL IS FULLY VACANT (owner rule 2026-09:
-            # "a bunch of assistants across the state [should] consider taking these
-            # jobs … or other head coaches to leave and create a cascade"). Programs
-            # added to the association after the seats were written — the expansion
-            # clubs — have NO seat rows, and the market only ever filled seats that
-            # exist, so the season rung seated them with brand-new random coaches and
-            # nobody already working in the state ever got the job. Their head and
-            # assistant seats (the assistant count their roster size earns) join the
-            # ordinary vacancies here — best job first, cascading down — and
-            # `commit_cycle` writes the seat rows. Nothing is written by a PROPOSAL.
-            _has_seats = {r["ident"] for r in seat_rows}
-            for _ident, _sc in sorted(schools.items()):
-                if _ident in _has_seats:
-                    continue
-                _n = assistants_for(jhsaa.roster_size(_sc.classification, _sc.key, salt))
-                vacancies.extend((_ident, SLOTS[i]) for i in range(1 + _n))
-
-            # Who is looking this cycle — one roll per coach, so a coach is either
-            # on the market or not, whichever job is open.
-            def want(cid):
-                return _rng("jhsaa-carousel-want", world_id, season_year, cid).random()
-            wants = {cid: want(cid) for cid in where}
-            # ‼️ THE SECOND FIRING RULE runs here, not in the departures loop: it
-            # needs every head's quality and every assistant's market roll, and
-            # the loop above has neither until it has seen every seat.
-            for ident, c, why in _weak_head_firings(conn, world_id, gender, season_year,
-                                                    schools, where, coaches, wants, taken):
-                lines.append({"kind": "fire", "gender": gender, "ident": ident,
-                              "school": schools[ident].name, "slot": "head",
-                              "coach_id": c.coach_id, "name": c.name, "why": why})
-                taken.add(c.coach_id)
-                vacancies.append((ident, "head"))
-            coef = _coef(world_id, gender)
-            by_coach: dict = {}
-            for (i, cid), rows in runs.items():
-                by_coach.setdefault(cid, {})[(i, cid)] = rows
-            recs = {}
-            for cid in set(where) | {c.coach_id for c in free}:
-                if cid in by_coach:
-                    recs[cid] = head_record(by_coach[cid], coef, cid)
-            head_seekers = sorted(cid for cid, (i, s, _since) in where.items()
-                                  if s != "head" and wants[cid] < ASST_HEAD_AMBITION)
-            laterals = sorted(cid for cid, (i, s, _since) in where.items()
-                              if s != "head" and wants[cid] < ASST_LATERAL)
-            def _mob(cid):
-                c = coaches[cid]
-                age = season_year - c.birth_year if c.birth_year else 45
-                return _mobility(age, season_year - (where[cid][2] or season_year))
-            # ‼️ Tenure and age REDUCE a head's willingness to move; they never
-            # block it (owner rule 2026-10).
-            movers = sorted(cid for cid, (i, s, _since) in where.items()
-                            if s == "head" and wants[cid] < HEAD_AMBITION * _mob(cid))
-            recent = _recent_pct(conn, world_id, gender, schools)
-            promo = _promotion_signal(conn, world_id, gender, season_year, schools,
-                                      {i: cid for cid, (i, s, _s) in where.items()
-                                       if s == "head"}, recent)
-            # The top share of assistants statewide by rating: head-ready.
-            asst_q = sorted(_quality(coaches[cid]) for cid, (i, s, _s) in where.items()
-                            if s != "head")
-            head_ready_q = (asst_q[int(len(asst_q) * (1 - HEAD_READY_SHARE))]
-                            if asst_q else float("inf"))
-
-            heap = [((slot != "head"), -prest[ident], ident, slot) for ident, slot in vacancies]
-            heapq.heapify(heap)
-            done = set()
-            while heap:
-                _h, _p, ident, slot = heapq.heappop(heap)
-                if (ident, slot) in done:
-                    continue
-                done.add((ident, slot))
-                sc = schools[ident]
-                P = prest[ident]
-                rng = _rng("jhsaa-carousel-fill", world_id, season_year, gender, ident, slot)
-                head_job = slot == "head"
-                # Applicants from elsewhere: a better job draws a longer list.
-                if head_job:
-                    outside = [cid for cid in head_seekers
-                               if cid not in taken and where[cid][0] != ident]
-                    n_app = 4 + round(16 * P)
-                    # Sitting heads get their OWN shortlist seats: a program
-                    # stepping up always looks at heads, who would otherwise be
-                    # a handful lost among thousands of assistants.
-                    heads = [cid for cid in movers if cid not in taken
-                             and where[cid][0] != ident
-                             and P >= prest[where[cid][0]] + STEP_UP]
-                    if len(heads) > HEAD_SHORTLIST:
-                        heads = rng.sample(heads, HEAD_SHORTLIST)
-                else:
-                    outside = [cid for cid in laterals
-                               if cid not in taken and where[cid][0] != ident
-                               and P >= prest[where[cid][0]] + STEP_UP]
-                    n_app = 2 + round(8 * P)
-                    heads = []
-                if len(outside) > n_app:
-                    outside = rng.sample(outside, n_app)
-                outside += heads
-                def talent(c):
-                    """Quality, plus — for a head job — what running a program
-                    is worth (a past head in an assistant's seat carries it too)."""
-                    q = _quality(c)
-                    rec = recs.get(c.coach_id)
-                    if head_job and rec:
-                        q += rec[2]
-                    return q
-                apps = []                        # (score, kind, coach|None, extra)
-                for cid in outside:
-                    c = coaches[cid]
-                    i2, s2, _since = where[cid]
-                    q = talent(c) + (AREA_EDGE if schools[i2].area == sc.area else 0.0)
-                    if head_job and s2 == "head":
-                        # The promotion signal, and a step up in size is a positive.
-                        q += promo.get(cid, (0.0, ""))[0]
-                        if sc.enrollment > schools[i2].enrollment:
-                            q += PROMO_CLASS_UP
-                    elif head_job and _quality(c) >= head_ready_q:
-                        q += HEAD_READY_EDGE
-                    apps.append((q, "hired_away" if s2 == "head" else "move", c, None))
-                if head_job:
-                    for cid, (i2, s2, _s) in where.items():
-                        if i2 == ident and s2 != "head" and cid not in taken:
-                            apps.append((talent(coaches[cid]) + OWN_ASSISTANT_EDGE,
-                                         "promote", coaches[cid], None))
-                pool = ([c for c in free if c.coach_id not in taken]
-                        + [c for c in leavers if c.coach_id not in taken
-                           and left_from[c.coach_id][0] != ident])
-                for c in (rng.sample(pool, 3) if len(pool) > 3 else pool):
-                    apps.append((talent(c), "hire", c, None))
-                alum = conn.execute(
-                    "SELECT pid, name, grad_year FROM jhsaa_alumni WHERE world_id=?"
-                    " AND gender=? AND ident=? AND grad_year<=? ORDER BY pid",
-                    (world_id, gender, ident, season_year - ALUMNI_MIN_YEARS)).fetchall()
-                alum = [a for a in alum if _cid(world_id, "player", a[0]) not in taken]
-                if alum and rng.random() < 0.25 + 0.5 * leg.get(ident, 0.0):
-                    a = alum[rng.randrange(len(alum))]
-                    apps.append((ALUMNUS_QUALITY + ALUMNUS_EDGE, "alumnus", None, a))
-                line = None
-                if apps:
-                    scored = [(s + rng.gauss(0.0, HIRE_NOISE), k, c, x)
-                              for s, k, c, x in apps]
-                    _s, kind, c, extra = max(scored, key=lambda t: (
-                        t[0], t[2].coach_id if t[2] else t[3][0]))
-                    if kind == "alumnus":
-                        pid, nm, gy = extra
-                        taken.add(_cid(world_id, "player", pid))
-                        line = {"kind": "alumnus", "pid": pid, "name": nm,
-                                "why": f"class of {gy} — home to coach"}
-                    elif kind == "hire":
-                        taken.add(c.coach_id)
-                        line = {"kind": "hire", "coach_id": c.coach_id, "name": c.name,
-                                "why": f"available coach, {round(_quality(c))} overall"}
-                        if c.coach_id in left_from:
-                            # A churn leaver hired on: the line carries the seat
-                            # they are leaving, so a VETO of their leave line can
-                            # keep them (the commit suppresses this hire) and the
-                            # ledger reads where they came from.
-                            i2, s2 = left_from[c.coach_id]
-                            line.update({"from_ident": i2, "from_slot": s2,
-                                         "why": f"{'head coach' if s2 == 'head' else 'assistant'}"
-                                                f" at {schools[i2].name},"
-                                                f" {round(_quality(c))} overall"})
-                    else:
-                        taken.add(c.coach_id)
-                        i2, s2, _since = where[c.coach_id]
-                        if kind == "promote":
-                            why = "the program's own assistant"
-                        elif kind == "hired_away":
-                            rec = recs.get(c.coach_id)   # a head with no season yet has none
-                            why = f"head coach at {schools[i2].name}"
-                            if rec:
-                                pct, n = rec[:2]
-                                why += f", {f'{pct:.3f}'.lstrip('0')} over {n} seasons"
-                            if c.coach_id in promo:
-                                why += f" — {promo[c.coach_id][1]}"
-                        elif head_job:
-                            why = f"assistant at {schools[i2].name}, up to head coach"
-                        else:
-                            why = f"assistant at {schools[i2].name}, a step up"
-                        line = {"kind": kind, "coach_id": c.coach_id, "name": c.name,
-                                "why": why, "from_ident": i2, "from_slot": s2}
-                        # The seat they leave is open now: the chain goes on.
-                        heapq.heappush(heap, ((s2 != "head"), -prest[i2], i2, s2))
-                if line is None:
-                    c = _new_candidate(world_id, season_year, gender, sc.city,
-                                       f"{gender}|{ident}|{slot}")
-                    line = {"kind": "new", "coach": json.loads(_coach_row(c)),
-                            "coach_id": c.coach_id, "name": c.name,
-                            "why": f"{PROFILE_LABELS.get(c.profile, c.profile)},"
-                                   f" {round(_quality(c))} overall"}
-                line.update({"gender": gender, "ident": ident, "school": sc.name,
-                             "slot": slot, "fill": True})
-                lines.append(line)
+        amap = jhsaa._arch_map(_ov.jhsaa_archetype_version()) if churn["enabled"] else {}
+        for gender in GENDERS:
+            if gender in genders:
+                lines.extend(_propose_gender(conn, world_id, season_year, gender, salt,
+                                             churn, bmap, amap, free, taken))
     finally:
         conn.close()
+    lines = kept + lines
     for i, ln in enumerate(lines):
         ln["n"] = i
-        ln["veto"] = False
-    prop = {"year": season_year, "lines": lines}
+        ln.setdefault("veto", False)
+    ran = sorted({ln["gender"] for ln in kept} | set(genders), key=GENDERS.index)
+    prop = {"year": season_year, "lines": lines, "genders": ran}
     conn = _cconn()
     try:
         conn.execute("DELETE FROM jhsaa_coach_carousel WHERE world_id=? AND status='pending'",
@@ -2133,24 +2237,53 @@ def propose_cycle(world_id: int, season_year: int, salt: str = "") -> dict:
     return prop
 
 
-def market_outlook(world_id: int, season_year: int, limit: int = 12) -> dict:
+_outlook_cache: dict = {}    # (world_id, season_year, gender, limit) -> (stamp, outlook)
+_outlook_lock = threading.Lock()
+
+
+def _coach_stamp(conn, world_id: int) -> tuple:
+    """A cheap fingerprint of the coaching state: every seat change writes an
+    event, every rating edit re-inserts the coach row, and the rung appends
+    history. Three indexed aggregates; never a hash of a table."""
+    ev = conn.execute("SELECT COUNT(*), MAX(rowid) FROM jhsaa_coach_event WHERE world_id=?",
+                      (world_id,)).fetchone()
+    co = conn.execute("SELECT COUNT(*), MAX(rowid) FROM jhsaa_coach WHERE world_id=?",
+                      (world_id,)).fetchone()
+    hi = conn.execute("SELECT COUNT(*) FROM jhsaa_coach_history WHERE world_id=?",
+                      (world_id,)).fetchone()
+    return (tuple(ev), tuple(co), tuple(hi))
+
+
+def market_outlook(world_id: int, season_year: int, limit: int = 12,
+                   gender: str | None = None) -> dict:
     """The market before a cycle is run (owner rule 2026-10): open head jobs,
     heads old or long-tenured enough to be plausible openings, sitting heads the
     promotion signal rates highest, and the strongest assistants. A READ for the
-    carousel page; it rolls nothing and proposes nothing."""
+    carousel page; it rolls nothing and proposes nothing.
+
+    ‼️ ONE GENDER, MEMOISED ON THE COACHING STATE. It is rendered on every visit
+    to the carousel page — the redirect after every save, veto and commit — and
+    it used to reload both markets each time. Keyed on `_coach_stamp`, so a
+    commit, an editor move or a played season refreshes it and nothing else
+    recomputes it."""
     from . import jhsaa
-    out = {"open_heads": [], "retirements": [], "promotions": [], "head_ready": []}
+    key = (world_id, season_year, gender, limit)
     conn = _conn()
     try:
-        for gender in ("girls", "boys"):
-            schools = {s.ident: s for s in jhsaa.load_schools(gender)}
-            rows = [r for r in seats(world_id, gender) if r["ident"] in schools]
+        stamp = _coach_stamp(conn, world_id)
+        hit = _outlook_cache.get(key)
+        if hit is not None and hit[0] == stamp:
+            return hit[1]
+        out = {"open_heads": [], "retirements": [], "promotions": [], "head_ready": []}
+        for g in (GENDERS if gender is None else (gender,)):
+            schools = {s.ident: s for s in jhsaa.load_schools(g)}
+            rows = [r for r in seats(world_id, g) if r["ident"] in schools]
             where = {r["coach"].coach_id: (r["ident"], r["slot"], r["since"])
                      for r in rows if r["coach"] is not None}
             coaches = {r["coach"].coach_id: r["coach"] for r in rows if r["coach"] is not None}
             for r in rows:
                 if r["slot"] == "head" and r["coach"] is None:
-                    out["open_heads"].append({"gender": gender, "school": schools[r["ident"]].name,
+                    out["open_heads"].append({"gender": g, "school": schools[r["ident"]].name,
                                               "classification": schools[r["ident"]].group})
             heads = {i: cid for cid, (i, s, _s) in where.items() if s == "head"}
             for i, cid in heads.items():
@@ -2158,18 +2291,18 @@ def market_outlook(world_id: int, season_year: int, limit: int = 12) -> dict:
                 age = season_year - c.birth_year if c.birth_year else 45
                 tenure = season_year - (where[cid][2] or season_year)
                 if age >= STAY_AGE[0] or tenure >= RETIRE_LONG_TENURE[0]:
-                    out["retirements"].append({"gender": gender, "school": schools[i].name,
+                    out["retirements"].append({"gender": g, "school": schools[i].name,
                                                "classification": schools[i].group,
                                                "coach_id": cid, "name": c.name,
                                                "age": age, "tenure": tenure})
-            recent = _recent_pct(conn, world_id, gender, schools)
-            promo = _promotion_signal(conn, world_id, gender, season_year, schools, heads, recent)
+            recent = _recent_from(_head_history(conn, world_id, g), schools)
+            promo = _promotion_signal(conn, world_id, g, season_year, schools, heads, recent)
             for i, cid in heads.items():
                 if cid in promo:
                     c = coaches[cid]
                     age = season_year - c.birth_year if c.birth_year else 45
                     tenure = season_year - (where[cid][2] or season_year)
-                    out["promotions"].append({"gender": gender, "school": schools[i].name,
+                    out["promotions"].append({"gender": g, "school": schools[i].name,
                                               "classification": schools[i].group,
                                               "coach_id": cid, "name": c.name,
                                               "edge": promo[cid][0], "note": promo[cid][1],
@@ -2177,7 +2310,7 @@ def market_outlook(world_id: int, season_year: int, limit: int = 12) -> dict:
                                               "mobility": _mobility(age, tenure)})
             for cid, (i, s, _s) in where.items():
                 if s != "head":
-                    out["head_ready"].append({"gender": gender, "school": schools[i].name,
+                    out["head_ready"].append({"gender": g, "school": schools[i].name,
                                               "classification": schools[i].group,
                                               "coach_id": cid, "name": coaches[cid].name,
                                               "quality": round(_quality(coaches[cid]))})
@@ -2190,6 +2323,10 @@ def market_outlook(world_id: int, season_year: int, limit: int = 12) -> dict:
     out["counts"] = {k: len(v) for k, v in out.items()}
     for k in ("retirements", "promotions", "head_ready", "open_heads"):
         out[k] = out[k][:limit]
+    with _outlook_lock:
+        if len(_outlook_cache) > 16:
+            _outlook_cache.clear()
+        _outlook_cache[key] = (stamp, out)
     return out
 
 
