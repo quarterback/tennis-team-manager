@@ -1837,7 +1837,8 @@ def _head_runs(conn, world_id: int, gender: str) -> dict:
 HIRE_NOISE = 5.0              # how far one interview can misjudge a candidate
 OWN_ASSISTANT_EDGE = 6.0      # continuity: the staff's own assistant is known
 ALUMNUS_EDGE = 4.0            # a program likes its own coming home
-AREA_EDGE = 2.0               # nearby is a little easier; never a requirement
+AREA_EDGE = 4.0               # nearby is easier (owner rule 2026-10: an outsider needs a
+                              # clear rating edge to beat a local); never a requirement
 ALUMNUS_QUALITY = 50.0        # an alumnus's ratings are unknown until hired
 HEAD_SHORTLIST = 5            # sitting heads a head job always interviews
 # ‼️ HEAD EXPERIENCE OUTRANKS AN ASSISTANT'S (owner rule 2026-09). For a head job
