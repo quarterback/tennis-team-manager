@@ -12375,7 +12375,84 @@ def run_toc_qualifier(finalists: dict[str, TeamSeason], *, seed: int
              "round_names": [TOC_QUALIFIER_NAME]}, survivors)
 
 
-def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
+def _toc_half(seed_no: int, size: int) -> bool:
+    """True when seed line `seed_no` sits in the TOP half of a `size`-slot strict
+    seed-line draw (`seed_line_slots`), so two teams on opposite halves can only
+    meet in the final."""
+    lines = seed_line_slots(list(range(1, size + 1)))
+    return seed_no in set(lines[: size // 2])
+
+
+def toc_seed_order(champions: list[TeamSeason], qualifiers: list[TeamSeason]
+                   ) -> list[TeamSeason]:
+    """The TOC field in SEED ORDER (owner rule 2026-10).
+
+    The champions take seeds 1..n on TOSS. ‼️ THE QUALIFIER WINNERS ARE ALWAYS THE
+    LOWEST SEEDS — a State runner-up that came in through `run_toc_qualifier` sits
+    at n+1 and n+2 (15 and 16 in the full field) whatever its TOSS says: it did not
+    win its class, so it never floats up the bracket onto a line a champion earned
+    ("a terrible matchup for whoever has to play them as a highly seeded team, but
+    they shouldn't be able to float in the bracket"). Measured before the rule, the
+    two qualifiers were seeding 7-10 on TOSS.
+
+    ‼️ AND A CHAMPION IS POWER-PROTECTED FROM ITS OWN RUNNER-UP: the two can only
+    meet again in the final. Seed 16 is in the 1-seed's half and 15 in the 2-seed's,
+    so first the two qualifiers are dealt to whichever of the two seats puts each
+    opposite its own class champion; if one still shares a half with its champion
+    (both champions drawn into the same half), THE CHAMPION moves — swapped with
+    the nearest champion seed on the other half that is not itself protected, which
+    on strict seed lines is its mirror seed (2k-1 <-> 2k), one line away. The
+    qualifiers never leave the last two seats. Pure over `.power`, `.road_group`
+    and `.school`, so it is testable with no season."""
+    champs = sorted(champions, key=lambda t: (-t.power, t.school.name))
+    quals = sorted(qualifiers, key=lambda t: (-t.power, t.school.name))
+    if not quals:
+        return champs
+    size = 1
+    while size < len(champs) + len(quals):
+        size *= 2
+
+    def cls(t: TeamSeason) -> str:
+        return t.road_group or t.school.group
+
+    def own_champ(q: TeamSeason) -> TeamSeason | None:
+        return next((c for c in champs if cls(c) == cls(q)), None)
+
+    def conflicts(field: list[TeamSeason]) -> list[TeamSeason]:
+        out = []
+        for q in quals:
+            c = own_champ(q)
+            if c is not None and (_toc_half(field.index(q) + 1, size)
+                                  == _toc_half(field.index(c) + 1, size)):
+                out.append(q)
+        return out
+
+    field = champs + quals
+    if len(quals) == 2:
+        alt = champs + [quals[1], quals[0]]
+        if len(conflicts(alt)) < len(conflicts(field)):
+            field = alt
+    protected = {id(own_champ(q)) for q in quals if own_champ(q) is not None}
+    for _ in range(len(quals)):
+        bad = conflicts(field)
+        if not bad:
+            break
+        q = bad[0]
+        c = own_champ(q)
+        ci = field.index(c)
+        c_half = _toc_half(ci + 1, size)
+        others = [i for i in range(len(champs))
+                  if i != ci and id(field[i]) not in protected
+                  and _toc_half(i + 1, size) != c_half]
+        if not others:
+            break
+        pi = min(others, key=lambda i: (abs(i - ci), i))
+        field[ci], field[pi] = field[pi], field[ci]
+    return field
+
+
+def run_toc(champions: list[TeamSeason], *, seed: int,
+            qualifiers: list[TeamSeason] | None = None) -> dict:
     """The TOURNAMENT OF CHAMPIONS — one dual-team champion for all of Jefferson.
 
     ONE champion per classification — twelve teams once every classification, the
@@ -12390,7 +12467,9 @@ def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
     Seeded on the TOSS Power Index they finished the regular season with (`t.power`,
     already stamped by `play_regular_season`), NOT on classification: a 4A champion that
     rated above the 6A one is the higher seed, which is the whole reason the event is
-    interesting.
+    interesting. ‼️ `qualifiers` (the TOC Qualifier winners) are NOT champions and
+    take the LOWEST seeds, each power-protected from its own class champion until
+    the final — `toc_seed_order` (owner rule 2026-10).
 
     ‼️ A REAL FIXED BRACKET ON STRICT SEED LINES (owner rule 2026-08 — "it's not
     complicated"). The field goes onto the standard seed-line slots of the next
@@ -12407,7 +12486,7 @@ def run_toc(champions: list[TeamSeason], *, seed: int) -> dict:
 
     Returned in the same shape `run_state` uses, so it renders on the shared bracket tree
     with no new geometry."""
-    field = sorted(champions, key=lambda t: (-t.power, t.school.name))
+    field = toc_seed_order(champions, list(qualifiers or ()))
     if len(field) < 2:
         return {"champion": field[0].school.name if field else None,
                 "rounds": [], "field": [t.school.name for t in field]}
@@ -13962,8 +14041,9 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     # settlement): the 9A/8A and 10B/11B State runners-up play one dual each for
     # the two seats that make the TOC a byeless sixteen. Its own phase and its
     # own key under `toc`, so a qualifier loser has no TOC appearance.
-    entrants = list(champs)
-    qualifier = None
+    # ‼️ The qualifier winners are passed APART from the champions: they take the
+    # two lowest seeds, never a TOSS line (owner rule 2026-10, `toc_seed_order`).
+    qualifier, q_winners = None, []
     if nonpublic_active(year):
         finalists = {}
         for g in {x for pair in TOC_QUALIFIER_PAIRS for x in pair}:
@@ -13974,8 +14054,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
                 if t is not None:
                     finalists[g] = t
         qualifier, q_winners = run_toc_qualifier(finalists, seed=seed + 7719)
-        entrants += q_winners
-    out["toc"] = run_toc(entrants, seed=seed + 7717)
+    out["toc"] = run_toc(champs, seed=seed + 7717, qualifiers=q_winners)
     if qualifier is not None:
         out["toc"]["qualifier"] = qualifier
 

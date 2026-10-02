@@ -1306,7 +1306,14 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   like every other TOC entrant — State finalist honour PLUS a TOC appearance with
   finish "TOC Qualifier", place field+1, no seed (owner reversed the "not a TOC
   appearance" draft); every "is this the TOC" branch reads `TOC_PHASES`, never
-  `"toc"`). `run_season` re-deals `by_group` into `road_by_group`
+  `"toc"`). ‼️ **THE TWO QUALIFIER WINNERS ARE ALWAYS THE LOWEST TOC SEEDS (owner
+  rule 2026-10, `jhsaa.toc_seed_order`)** — 15 and 16 whatever their TOSS (they
+  were floating to 7-10), passed to `run_toc(qualifiers=)` apart from the
+  champions; and each class champion is POWER-PROTECTED from its own runner-up
+  until the final: the qualifiers are dealt to the 15/16 seat opposite their own
+  champion, and if both champions share a half the CHAMPION swaps with its mirror
+  seed (one line), never the qualifier. See the TOC Qualifier addendum of
+  `docs/AAR-jhsaa-nonpublic-team-championships.md`. `run_season` re-deals `by_group` into `road_by_group`
   after the regular season; a private league champion's PROTECTED seat goes to
   the league's best public finisher (the filtered list's `ts[0]`). ‼️ 10B/11B are
   NEVER in `GROUPS` (no leagues, talent row, roster band or awards slate) and
