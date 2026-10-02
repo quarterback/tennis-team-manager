@@ -29,6 +29,7 @@ import bisect
 import copy
 import datetime as _dt
 import json
+import logging
 import random
 import secrets
 import sqlite3
@@ -7855,8 +7856,17 @@ def _fold_season_rows(conn, world_id: int, year: int, gender: str) -> dict[str, 
 
 
 def _write_season_rows(conn, world_id: int, year: int, gender: str) -> None:
-    """Fold one season and store its rows (replacing any older-version rows)."""
-    rows = _fold_season_rows(conn, world_id, year, gender)
+    """Fold one season and store its rows (replacing any older-version rows).
+    Runs inside the CALLER's transaction — the season rung's, which owns the
+    write lock for the whole archive anyway. A READ path never calls this; it
+    backfills through `_ensure_season_rows`, which keeps the fold out of the
+    write transaction."""
+    _store_season_rows(conn, world_id, year, gender,
+                       _fold_season_rows(conn, world_id, year, gender))
+
+
+def _store_season_rows(conn, world_id: int, year: int, gender: str,
+                       rows: dict[str, dict]) -> None:
     conn.execute("DELETE FROM world_jhsaa_season_row WHERE world_id=? AND year=?"
                  " AND gender=?", (world_id, year, gender))
     conn.executemany(
@@ -7866,23 +7876,98 @@ def _write_season_rows(conn, world_id: int, year: int, gender: str) -> None:
          for school, row in rows.items()])
 
 
+#: One backfill per (world, gender) at a time. Two requests for the same
+#: program (a reload, a second tab, the boys' and girls' pages of one school
+#: share nothing but still race on the table) would otherwise both fold every
+#: stale season — and both want the write lock to store them.
+_season_row_locks: dict = {}
+_season_row_locks_guard = threading.Lock()
+
+
+def _refold_stale_rows(world_id: int, gender: str, years: list[int]) -> None:
+    """Re-derive `years` at the current `_SEASON_ROW_VERSION` on a thread of its
+    own — the request that found them stale has already been served the old
+    rows. One short write per season (fold outside the transaction, commit
+    after each), under the same per-(world, gender) lock the inline backfill
+    takes, so a click arriving mid-refold waits only for the season in hand."""
+    key = (WORLD_DB, world_id, gender)
+    with _season_row_locks_guard:
+        lock = _season_row_locks.setdefault(key, threading.Lock())
+    with lock:
+        conn = _db()
+        try:
+            for y in years:
+                have = conn.execute(
+                    "SELECT MIN(v) AS v FROM world_jhsaa_season_row"
+                    " WHERE world_id=? AND gender=? AND year=?",
+                    (world_id, gender, y)).fetchone()
+                if have and have["v"] is not None and have["v"] >= _SEASON_ROW_VERSION:
+                    continue            # another thread got here first
+                rows = _fold_season_rows(conn, world_id, y, gender)
+                _store_season_rows(conn, world_id, y, gender, rows)
+                conn.commit()
+        except Exception:               # a background job never takes a page down
+            logging.getLogger(__name__).exception(
+                "season-row refold failed (world %s %s)", world_id, gender)
+        finally:
+            conn.close()
+
+
+_refolding: set = set()
+
+
 def _ensure_season_rows(conn, world_id: int, gender: str, years=None) -> None:
-    """Backfill: every archived season of `gender` (or just `years`) that has no
-    rows at the current version gets folded ONCE and stored — the first read of
-    a save archived before the table existed pays what the old program page paid
-    per click, once, and never again. Commits on the caller's connection."""
-    have = {r["year"]: r["v"] for r in conn.execute(
-        "SELECT year, MIN(v) AS v FROM world_jhsaa_season_row"
-        " WHERE world_id=? AND gender=? GROUP BY year", (world_id, gender)).fetchall()}
-    if years is None:
-        years = [r["year"] for r in conn.execute(
-            "SELECT DISTINCT year FROM world_jhsaa WHERE world_id=? AND gender=?",
-            (world_id, gender)).fetchall()]
-    todo = [y for y in years if have.get(y) is None or have[y] < _SEASON_ROW_VERSION]
-    for y in todo:
-        _write_season_rows(conn, world_id, y, gender)
-    if todo:
-        conn.commit()
+    """Backfill: every archived season of `gender` (or just `years`) that has NO
+    rows gets folded ONCE and stored — the first read of a save archived before
+    the table existed pays what the old program page paid per click, once, and
+    never again.
+
+    ‼️ A SEASON WITH ROWS AT AN OLDER VERSION IS SERVED AS IS AND RE-DERIVED IN
+    THE BACKGROUND. A `_SEASON_ROW_VERSION` bump used to re-fold EVERY archived
+    season of the save on the next program page opened — a whole-season blob
+    parse and dual scan per season, minutes on a long save, on the request
+    thread, and (worse) inside ONE write transaction opened at the first
+    season's DELETE and committed after the last. Any other writer on the file
+    (a second click, a deferred job, the rung) waited out its busy timeout and
+    the page that was merely being opened raised "database is locked". A
+    version bump changes how a row is LABELLED, never what season it records,
+    so the stale row is the right thing to show now; the refold runs on its
+    own thread, one short write per season, and the next read finds it done.
+    Only a season with NO rows at all is folded here — and even that is one
+    short write per season with the fold outside the transaction."""
+    key = (WORLD_DB, world_id, gender)
+    with _season_row_locks_guard:
+        lock = _season_row_locks.setdefault(key, threading.Lock())
+    with lock:
+        # Re-read UNDER the lock: a request that waited here behind another
+        # backfill finds those seasons already done and folds nothing.
+        have = {r["year"]: r["v"] for r in conn.execute(
+            "SELECT year, MIN(v) AS v FROM world_jhsaa_season_row"
+            " WHERE world_id=? AND gender=? GROUP BY year", (world_id, gender)).fetchall()}
+        wanted = years
+        if wanted is None:
+            wanted = [r["year"] for r in conn.execute(
+                "SELECT DISTINCT year FROM world_jhsaa WHERE world_id=? AND gender=?",
+                (world_id, gender)).fetchall()]
+        missing = [y for y in wanted if have.get(y) is None]
+        stale = [y for y in wanted
+                 if have.get(y) is not None and have[y] < _SEASON_ROW_VERSION]
+        if conn.in_transaction:      # never fold inside somebody's write
+            conn.commit()
+        for y in missing:
+            rows = _fold_season_rows(conn, world_id, y, gender)
+            _store_season_rows(conn, world_id, y, gender, rows)
+            conn.commit()
+    if stale and key not in _refolding:
+        _refolding.add(key)
+
+        def _job():
+            try:
+                _refold_stale_rows(world_id, gender, stale)
+            finally:
+                _refolding.discard(key)
+        threading.Thread(target=_job, name="jhsaa-season-row-refold",
+                         daemon=True).start()
 
 
 def jhsaa_school_seasons(world_id: int, gender: str, school: str) -> list[dict]:

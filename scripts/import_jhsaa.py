@@ -721,7 +721,7 @@ FORMER_NAMES = {
     "Kelview Union":                               "Iisalmi",
     "Kernwood County Catholic":                    "Holy Family",
     "Kernwood County Christian":                   "Kernwood Christian",
-    "Kilbride Switch South":                       "Switchback",
+    "Kilbride Switch South":                       "Kilbride South",
     "Klara Marchand":                              "Meriwether",
     "Kongisburg":                                  "Belyakov Vo-Tech",
     "Lake Esperanza South":                        "Malheur Flat",
@@ -1032,6 +1032,7 @@ FORMER_NAMES = {
     "Svenja Adler":                                "East Range Agricultural",
     "Svenja Bianchi":                              "Bonanza",
     "Svenja Ekström":                              "Memorial",
+    "Switchback":                                  "Kilbride South",
     "Sycamore Flat":                               "La Savane",
     "Tailing Crossing-Ewart Bar Union":            "Fountain Park",
     "Tailingford Union":                           "Millgrade",
@@ -1690,7 +1691,8 @@ RENAMES = {
     "Hawk Lake Southeast": "Pine Barrens",                     # 5A Hawk Lake
     "Homestead North": "Garden Plain",                         # 7A Harriman
     "Kelford Northwest": "Cedarbrook",                     # 3A Kelford
-    "Kilbride Switch South": "Switchback",                     # 3A Kilbride Switch
+    "Kilbride Switch": "Kilbride",                             # 5A Kilbride Switch
+    "Kilbride Switch South": "Kilbride South",                 # 3A Kilbride Switch
     "Lake Esperanza South": "Malheur Flat",                    # 7A Lake Esperanza
     "Llerena East": "Juniper Well",                            # 5A Llerena
     "Loomis City North": "Charlotte",                    # 6A Loomis City
