@@ -2,7 +2,7 @@
 """Redraw the JHSAA's Non-Public leagues (10B / 11B) like every other class's.
 
 There are no pods (owner rule 2026-10). Every private program sits in its
-Non-Public class — 10B at or above `jhsaa.NONPUBLIC_CUT` or in `NONPUBLIC_PLAYUP`,
+Non-Public class — 10B at or above `jhsaa.NONPUBLIC_CUT` (nothing is pinned by name),
 else 11B — and the two classes' leagues are drawn by `jhsaa_districting.redistrict`
 with the association's own `district_count` and cap, over the programs that
 sponsor a team. The app applies the same rule on every load

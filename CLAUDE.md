@@ -1276,8 +1276,15 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   their league class for EVERYTHING but the team-championship road — league,
   district honours, TOSS, All-State/District/Region, individual flights, JV all
   read `School.group` — and from `nonpublic_era()` leave the public bracket to
-  play the SAME full ladder onto a 24-team State in 10B (enrollment ≥ 550 or in
-  `NONPUBLIC_PLAYUP`: Condotti Vanguard Academy, Romero-Finniski) or 11B.
+  play the SAME full ladder onto a 24-team State in 10B (enrollment ≥ 550) or 11B.
+  ‼️ **`NONPUBLIC_PLAYUP` IS EMPTY AND THE CODIFIED RIVALRY IS GONE (owner rule
+  2026-10).** Condotti Vanguard Academy and Romero-Finniski were pinned to 10B by
+  name AND welded together by the one entry in `import_jhsaa.RIVALRIES` /
+  `jhsaa.RIVAL_OVERRIDES` / `districting.json["rivalries"]` (`keep_rivals` on every
+  redraw), and that special casing kept landing them ALONE in a two-team 10B
+  "Sunkist League" on the owner's save when no other program ever had the
+  problem. They are ordinary privates now — the 550 cut, the cycle, the derived
+  town rivalry, like everyone else. Never put a name back in any of the four.
   ‼️ **FORMATS (owner rule 2026-09): 10B's road plays 4S/5D (`WIDE_GROUPS`), 11B's
   plays its league 3S/4D through the postseason (`LEAGUE_SHAPE_GROUPS`, 6A's
   continuity pilot).** Both keep the universal 5S/2D early window and the 1S/4D TOC,
@@ -4594,7 +4601,8 @@ was a school marker, shipped "Baptist HS High School".
   Like the Groups, the privates are their own pool: pooled by `group` (never
   classification or area), sorted against privates only on the same effective size,
   cut into two equal bands, moving between 10B and 11B or not at all;
-  `NONPUBLIC_PLAYUP` pins its names to 10B. `_move` on a Non-Public class touches
+  nothing is pinned by name (`NONPUBLIC_PLAYUP` is empty, owner rule 2026-10).
+  `_move` on a Non-Public class touches
   `group` ONLY — a private's `classification` (roster depth, the early-participation
   gate, its old league) is never the cycle's to move. `_cls(r)` is the one reader of
   "which class does the cycle sort this row in"; every count, snapshot, `reapply`

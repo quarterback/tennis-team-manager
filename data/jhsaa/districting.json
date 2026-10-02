@@ -3631,12 +3631,7 @@
  ],
  "max_district": 11,
  "district_target": 9.5,
- "rivalries": [
-  [
-   "Condotti Vanguard Academy",
-   "Romero-Finniski"
-  ]
- ],
+ "rivalries": [],
  "min_district_size": 8,
  "consolidated_leagues": [
   [

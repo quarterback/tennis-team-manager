@@ -120,18 +120,18 @@ def test_privates_leave_the_public_road_and_play_exactly_one_nonpublic_one(archi
     assert set(seen) == {n for n, s in schools.items() if s.private}
 
 
-def test_the_bands_are_the_cut_plus_the_named_playups(archived):
+def test_the_bands_are_the_cut_and_nothing_is_pinned_by_name(archived):
+    """Owner rule 2026-10: no private is named into a band. Condotti Vanguard
+    Academy and Romero-Finniski were the one pinned pair and the pin (with the
+    codified rivalry) kept landing them alone in a two-team 10B league."""
+    assert not jh.NONPUBLIC_PLAYUP
     arc, schools = archived["arc"], archived["schools"]
     for name, g in arc["road"].items():
         s = schools[name]
-        if name in jh.NONPUBLIC_PLAYUP:
-            assert g == "10B", name
-        elif s.enrollment >= jh.NONPUBLIC_CUT:
+        if s.enrollment >= jh.NONPUBLIC_CUT:
             assert g == "10B", (name, s.enrollment)
         else:
             assert g == "11B", (name, s.enrollment)
-    assert {"Condotti Vanguard Academy", "Romero-Finniski"} <= {
-        n for n, g in arc["road"].items() if g == "10B"}
 
 
 def test_a_full_ladder_onto_a_24_team_state_and_a_16_team_toc(archived):

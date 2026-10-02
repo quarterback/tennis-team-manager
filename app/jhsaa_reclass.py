@@ -333,8 +333,6 @@ def build_proposal(world_id: int, years: list[int], cfg: dict | None = None,
                 pinned[r["name"]] = _cls(r)
             elif e.get("action") == "redirect" and e.get("to") in classes:
                 pinned[r["name"]] = e["to"]
-            elif key == "N" and r["name"] in jh.NONPUBLIC_PLAYUP:
-                pinned[r["name"]] = POOL_N[0]        # the owner's named 10B programs
             s = sc.get(r["name"]) or {}
             pts = s.get("pts", 0)
             wr = s.get("wr")

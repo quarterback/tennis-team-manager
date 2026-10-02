@@ -113,18 +113,19 @@ GROUP_SHORT = {"Group 1": "G1", "Group 2": "G2", "Group 3": "G3"}
 # loops, the TOC and the Championship pages iterate. Season-gated on
 # `nonpublic_era()` so archived seasons keep reading as the years they were.
 #
-# ‼️ `NONPUBLIC_PLAYUP` forces a named private UP a band, never down (owner rule
-# 2026-09): Condotti Vanguard Academy and Romero-Finniski are 3A-sized programs
-# that have played up to 7A their whole lives with 9A talent, and at a 550 cut
-# they would otherwise be the strongest programs in the SMALL class. The cut
-# itself is 550 rather than 500 because it lands the two bands nearly even.
-# ‼️ KEYED ON `School.ident` (the stable roster identity, `source or name`), never
-# the display name: a rename stamps `source` and keeps the ident, so the play-up
-# survives it; keyed on the name it would silently fall back to the cut.
+# ‼️ `NONPUBLIC_PLAYUP` IS EMPTY BY OWNER RULE (2026-10). It once pinned Condotti
+# Vanguard Academy and Romero-Finniski to 10B by name, and with the codified
+# rivalry that welded the same two together on every league draw, the pair kept
+# turning up alone in a two-team 10B "league" on the owner's save while no other
+# program ever did. There is no named private any more: a private is 10B at or
+# above `NONPUBLIC_CUT` and 11B below it, and the reclassification cycle moves it
+# after, exactly like every other program. The parameter stays on
+# `nonpublic_class`/`ensure_nonpublic` so the signature is unchanged; nothing
+# may put a name back in it.
 NONPUBLIC_GROUPS = ("10B", "11B")
 ROAD_GROUPS = GROUPS + NONPUBLIC_GROUPS
 NONPUBLIC_CUT = 550
-NONPUBLIC_PLAYUP = frozenset({"Condotti Vanguard Academy", "Romero-Finniski"})
+NONPUBLIC_PLAYUP: frozenset[str] = frozenset()
 
 # --- THE TOC FINALIST QUALIFIER (JHSAA rule 2026-09, adopted with the split) -----
 #
@@ -3803,8 +3804,8 @@ def road_group(school: "School", year: int | None) -> str:
     the coefficient and every page ask it rather than reading `private` themselves.
 
     A public program's road class is its league class. A private one's, from
-    `nonpublic_era()` on, is 10B at or above `NONPUBLIC_CUT` (or by name, via
-    `NONPUBLIC_PLAYUP`) and 11B below it. Enrollment only moves at a
+    `nonpublic_era()` on, is 10B at or above `NONPUBLIC_CUT` and 11B below it
+    (`NONPUBLIC_PLAYUP` is empty by owner rule 2026-10). Enrollment only moves at a
     reclassification commit, so "re-read the cut each cycle" is free."""
     # From the pods on (owner rule 2026-09) a private's `group` IS its Non-Public
     # class — the seed file says so — and the era gate has nothing left to gate.
@@ -12541,12 +12542,13 @@ RIVAL_MAX_GAP = 3
 # same fact for two different mechanisms — that one keeps a pair in the same
 # CLASSIFICATION at import, this one puts them on the schedule every season — and the
 # app cannot read `scripts/`, so they are separate lists and the agreement is asserted
-# instead (`tests/test_jhsaa_rivalries.py`). Without the entry the derivation quietly
-# breaks the named pair whenever a third program in town has a better claim: Alameda
-# and Condotti Vanguard Academy are both Ashbury 7A, so on class alone Alameda takes
-# the seat and the association's oldest rivalry stops being played.
+# instead (`tests/test_jhsaa_rivalries.py`). Both are EMPTY of named two-school pairs
+# by owner rule 2026-10: Condotti Vanguard Academy and Romero-Finniski were the one
+# codified pair, and being welded together on every league draw (plus the 10B name
+# pin) is what kept landing them alone in a two-team 10B league on the owner's save.
+# They now take whatever town rival the derivation gives them, like every other
+# program. Only the three-campus triangles below are hand-authored.
 RIVAL_OVERRIDES: list[tuple[str, str]] = [
-    ("Condotti Vanguard Academy", "Romero-Finniski"),
     # The three-campus towns are full round robins (owner rule 2026-09,
     # "they are all rivals with each other") — a triangle gives each member
     # exactly `RIVALS_PER_PROGRAM` seats. Deliberately NOT in
