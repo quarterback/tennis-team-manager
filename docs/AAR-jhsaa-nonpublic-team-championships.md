@@ -300,3 +300,39 @@ other teams and that should fix all of this once and for all."
   `_SEASON_ROW_VERSION` is bumped so archived honour lines re-derive with the
   right name. Seasons archived with two teams render as All-State First and
   Second Team.
+
+## Addendum — the two-team "11B Sunkist League" was the PLAY-UP map, not the district map (2026-10)
+
+**Report.** "Despite all the fixes on the repo IT STILL KEEPS PUTTING CONDOTTI VANGUARD
+AND ROMERO FINNISKI IN THEIR OWN DISTRICT." The 2033 girls' 11B rankings showed all
+58 programs, with the two at 2-0 and 0-2 in district: a two-team league, in a class
+whose repair (`ensure_nonpublic`) redraws any Non-Public league under eight.
+
+**Why every map repair missed it.** The repair, the reclass re-apply and the
+consolidations all run on the ROWS in `_rows()`, and the rows were right: both
+schools in the ten-team Cape-Meridian League. The fault was one step later.
+`load_schools` builds School objects, and its league is
+`moved.get(name, row["<gender>_district"])`, where `moved` is the PLAY-UP league map:
+`_compute_playup_league` places every program the play-up read names into the
+closest league of its target class, by NAME. It ran `_plays_up_row` on every row,
+privates included, and `load_schools` refused to move a private's GROUP but still
+took its LEAGUE from that map. A stale `jhsaa_playup` override row for the two
+(they were pinned to 10B by name in 2026-09 and that pin is long retired, but the
+per-save override table never forgot) resolved to a public target, the placement
+chose the nearest league in that class — the 8A Sunkist League — and the School came
+out `group=11B, district="Sunkist League"`: a league no row carried, holding exactly
+the two programs the override named, every season, through every repair. Reproduced
+on the repo data with one override each: both landed in "Summit League" under 11B.
+
+**Fix.** `_plays_up_row` answers None for any row whose `group` is Non-Public, so
+neither the mover list nor the loader's target can name a private; `load_schools`
+reads a private's league from the row alone. Pinned by
+`test_a_stale_play_up_override_never_moves_a_private_or_its_league`. The stale
+override rows are ignored rather than deleted (the explorer can still show and clear
+them); nothing in a map file needed to change, and killing the Sunkist NAME would
+have changed nothing — the next closest 8A league would have taken its place.
+
+**Lesson.** Three layers decide a program's league here — the seed file, the standing
+repairs on the rows, and the per-save overlays in `load_schools` — and a guard on one
+layer cannot see a fault in the next. When a league exists that no row carries, look
+at what `load_schools` ADDS to the rows, not at what wrote them.

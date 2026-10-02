@@ -304,6 +304,8 @@ def test_no_eligible_school_can_be_played_up_into_an_empty_league(clean):
             live_in[(r["group"], d)] = live_in.get((r["group"], d), 0) + 1
     checked = 0
     for r in rows:
+        if r.get("group") in jh.NONPUBLIC_GROUPS:
+            continue                  # a private is never on the play-up path (2026-10)
         target = jh.play_up_group(r["classification"]) if \
             jh.can_play_up(r["classification"]) else None
         if not target:

@@ -1364,6 +1364,15 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   never the importer's `draw_districts`, which scattered the 2052 affiliate
   leagues. `tests/conftest.py` keeps the split OFF for every suite;
   `tests/test_jhsaa_nonpublic.py` opts in.
+  ‼️ **A PRIVATE IS NEVER ON THE PLAY-UP PATH (owner incident 2026-10, the two-team
+  "11B Sunkist League" that survived every map repair).** `load_schools` overlays
+  the play-up LEAGUE map on the repaired rows, and a stale per-save `jhsaa_playup`
+  override for Condotti/Romero-Finniski routed both into the nearest 8A league by
+  NAME while they stayed in 11B — a league no row carried, so `ensure_nonpublic`
+  could not see it. `_plays_up_row` returns None for a Non-Public `group` and the
+  loader reads a private's league from the row alone. When a league exists that no
+  row carries, look at what `load_schools` ADDS, not at what wrote the rows. See the
+  2026-10 addendum of `docs/AAR-jhsaa-nonpublic-team-championships.md`.
   ‼️ **THERE ARE NO PODS — 10B/11B ARE ORDINARY CLASSES (owner rule 2026-10,
   supersedes the pods of 2026-09 and the league-class reading above).** A private's
   `group` IS 10B/11B in `schools.json` and its district is a LEAGUE drawn exactly like

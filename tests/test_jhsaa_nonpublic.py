@@ -168,6 +168,40 @@ def test_the_old_two_team_sunkist_failure_self_heals():
     assert all(sizes[name] >= jd.districting_config().MIN_DISTRICT_SIZE
                for name in assigned.values())
 
+def test_a_stale_play_up_override_never_moves_a_private_or_its_league():
+    """The owner's 2033 fault: a `jhsaa_playup` row left over from the era the two
+    were pinned by name sent Condotti and Romero-Finniski into an 8A league NAME
+    while they stayed in 11B — a two-team "11B Sunkist League" that no map repair
+    could see, because the rows were right and only the School objects were wrong.
+    A Non-Public program is never on the play-up path, whatever the table says."""
+    from app import overrides as ov
+    pair = ("Condotti Vanguard Academy", "Romero-Finniski")
+    before = {n: ov.get_jhsaa_playups().get(n) for n in pair}
+    try:
+        for n in pair:
+            ov.set_jhsaa_playup(n, "8A")
+        jh.reset_schools()
+        for g in ("girls", "boys"):
+            by = {s.name: s for s in jh.load_schools(g)}
+            for n in pair:
+                if n not in by:
+                    continue
+                s = by[n]
+                assert s.group in jh.NONPUBLIC_GROUPS, (n, s.group)
+                mates = [x for x in by.values() if x.group == s.group and x.district == s.district]
+                assert len(mates) >= jd.districting_config().MIN_DISTRICT_SIZE, (n, s.district, len(mates))
+                assert jh._plays_up_row({"name": n, "group": s.group, "play_up": True,
+                                         "classification": s.classification},
+                                        {n: "8A"}) is None
+    finally:
+        for n, v in before.items():
+            if v is None:
+                ov.clear_jhsaa_playup(n)
+            else:
+                ov.set_jhsaa_playup(n, v)
+        jh.reset_schools()
+
+
 def test_a_full_ladder_onto_a_24_team_state_and_a_16_team_toc(archived):
     arc = archived["arc"]
     for g in jh.NONPUBLIC_GROUPS:
