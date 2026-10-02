@@ -99,8 +99,31 @@ the last two TOC seats — a byeless sixteen, one more public and one more priva
   — Qualifier" line without a seed; the school page shows the TOC chip. A first
   draft used the Metastate posture (a qualifier exit is not a TOC appearance) and
   the owner reversed it. `_SEASON_ROW_VERSION` 3.
-- Winners enter the TOC seeded on TOSS with everyone else (measured in the smoke
-  season: seeds 7-10), so the qualifier buys a seat, never a line.
+- ~~Winners enter the TOC seeded on TOSS with everyone else (measured in the smoke
+  season: seeds 7-10), so the qualifier buys a seat, never a line.~~ **SUPERSEDED
+  (owner rule 2026-10, `jhsaa.toc_seed_order`).** On the owner's 2032 save the
+  qualifier winners were seeding well up the draw on TOSS — a State runner-up
+  landing on a line a champion earned, and "a terrible matchup for whoever has to
+  play them as a highly seeded team, but they shouldn't be able to float in the
+  bracket." The rule now:
+  - **The two qualifier winners are ALWAYS the two lowest seeds** (15 and 16 in the
+    full sixteen; n+1 and n+2 at any count), whatever their TOSS. The champions
+    take 1..14 on TOSS exactly as before. `run_toc(champions, qualifiers=)` takes
+    them APART from the champions — the rung no longer appends them to `entrants`.
+  - **A champion is POWER-PROTECTED from its own runner-up until the final.** On
+    strict seed lines seed 16 is in the 1-seed's half and 15 in the 2-seed's, so the
+    qualifiers are first dealt to whichever of the two seats puts each opposite
+    its own class champion (the class is `TeamSeason.road_group`). If one still
+    shares a half with its champion — both champions drawn into the same half — THE
+    CHAMPION moves, swapped with the nearest unprotected champion seed on the other
+    half, which on strict lines is its mirror seed (2k-1 ↔ 2k), one line away. The
+    qualifiers never leave the last two seats, and a field with no qualifiers is
+    byte-identical to the pure TOSS order.
+  - Measured on constructed fields: qualifiers rated above every champion still seed
+    15/16 with no champion moved; 9A at 1 and 10B at 4 (both top) moves the 10B
+    champion to 3 and nothing else; with both champions already on opposite halves
+    nothing moves. `_toc_half` is the one place that knows which seed lines share a
+    half, computed off `seed_line_slots`, never typed.
 - Smoke (scaled season, both genders): two qualifier duals among exactly the four
   runners-up, TOC field 16 with eight first-round games and no byes, losers off
   the draw with finish "TOC Qualifier" (a TOC appearance, place 17), schedule

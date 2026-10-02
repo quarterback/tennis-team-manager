@@ -2691,9 +2691,10 @@ COMPETITIVE_MOVES: dict[str, str] = {
 }
 
 
-RIVALRIES = [
-    ("Condotti Vanguard Academy", "Romero-Finniski"),
-]
+# EMPTY by owner rule 2026-10: the one codified pair (Condotti Vanguard Academy /
+# Romero-Finniski) kept being welded into a two-team Non-Public league by every
+# redraw; they are ordinary programs now. The mechanism stays for a future pair.
+RIVALRIES: list[tuple[str, str]] = []
 
 
 def rival_group(name: str) -> tuple[str, ...] | None:

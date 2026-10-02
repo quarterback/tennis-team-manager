@@ -549,13 +549,9 @@ def assign_regions(field: list[JVEntry], n: int = REGIONS) -> dict[str, str]:
     draw without storing the map. A bucket is named for its index, NOT for a place: it
     is not one, and naming it after the area it mostly covers would invite somebody to
     pin it there again."""
-    order = sorted(field, key=lambda e: (e.jv.school.area, e.jv.school.county,
-                                         e.jv.school.city, e.name))
-    if not order:
-        return {}
-    per = len(order) / n
-    return {e.name: f"JV Region {min(n, int(i // per) + 1)}"
-            for i, e in enumerate(order)}
+    buckets = jh.deal_contiguous(field, n, key=lambda e: (
+        e.jv.school.area, e.jv.school.county, e.jv.school.city, e.name))
+    return {e.name: f"JV Region {i + 1}" for i, b in enumerate(buckets) for e in b}
 
 
 def district_qualifiers(field: list[JVEntry]) -> list[JVEntry]:

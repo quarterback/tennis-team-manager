@@ -1122,6 +1122,37 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   AGAIN** ("I don't want 5/2 tennis to go away") — the wide classes' 4S/5D early
   window is retired; supersedes the 2070 note below. Pages:
   `/jhsaa/computer-ratings` (all groups), `/jhsaa/committee` (48 groups only).
+- **‼️ THE CIRCUIT ROUND — SUPER REGIONALS RECOMPOSED, SEMI-STATE REPLACED (owner
+  rule 2026-10, `jhsaa.CIRCUIT_GROUPS` / `circuit(group, year)` / `circuit_era`,
+  `docs/AAR-jhsaa-circuit-round.md`).** In a Circuit class (Group 1, Group 2,
+  Group 3, 10B, 11B, 1A-4A by owner default), from `circuit_era()`, the Super
+  Regionals and Semi-State are ONE stage in two rounds over a FIELD OF 32: the 24
+  already in recovery (16 Regional losers + 8 Zonal losers) plus the NEXT EIGHT on
+  seeding ATR from the class (`circuit_field`; Zonal champions and anyone already
+  admitted excluded, nothing pulled in or swapped for geography), dealt into EIGHT
+  CIRCUITS OF FOUR by where the programs are (`deal_circuits` → `deal_contiguous`,
+  the JV Region dealer generalised; a Circuit of three is rejected, the pool is
+  cut to a multiple of four). Each Circuit plays two semifinals (1 v 4, 2 v 3 on
+  seeding ATR within it) and a final. ‼️ **THE SEMIFINALS KEEP THE SUPER REGIONALS
+  NAME, HEADING AND LANE** (owner overruled the brief: "super regionals is
+  accurate and works" — composition changed, nomenclature did not); **the finals
+  are the Circuit round** (`CIRCUIT_PHASE`, Semi-State's lane, chip CIRCUIT, units
+  "Circuit 1"-"Circuit 8"), and its eight winners are **Circuit Champions** — a
+  State berth with no bye and no Zonal privilege, a title of its own (unit honour,
+  "<class> Circuit Champion" team honour, CIRC title-board column), never a State
+  title. Never Section/Sectional/Regional/Zonal/Divisional/Conference for this
+  stage. The final losers stand where Semi-State losers stood and the semifinal
+  losers where Super Regional losers stood, so the Divisionals and everything
+  below are untouched; Semi-State archives the "did not convene" shape. ‼️ A
+  16-TEAM PILOT CLASS ON THE CIRCUIT CROWNS FROM 24 (`CIRCUIT_PILOT_FIELD`): 8
+  Zonal + 8 Circuit + the 24-field tail 1A/10B/11B already run (4 Divisional + 4
+  Specials), on the ordinary 24 draw — `pilot = sixteen_state(...) and not circ`
+  in `_recovery` and `run_season`; the committee still selects nothing. Coefficient
+  0.25 (Semi-State's price, below Regionals). Per-class and SEASON-GATED like
+  `sixteen_state` (`jhsaa_circuit_era` in `ERA_SETTINGS`); the tests' conftest
+  turns it off (`_circuit_off`) and `tests/test_jhsaa_circuit.py` opts in. ‼️ A
+  fixture that loops `GROUPS` cannot see 10B/11B — loop `GROUPS +
+  NONPUBLIC_GROUPS` with the split on.
 - **‼️ THE 16-TEAM STATE PILOT — 4A/3A/2A/1A/GROUP 3, FROM 2099 (JHSAA rule 2099,
   owner rule 2026-09, `jhsaa.SIXTEEN_STATE_GROUPS` / `sixteen_state(group, year)`,
   `docs/reports/SPEC-jhsaa-16-team-state-pilot.md`,
@@ -1276,8 +1307,15 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   their league class for EVERYTHING but the team-championship road — league,
   district honours, TOSS, All-State/District/Region, individual flights, JV all
   read `School.group` — and from `nonpublic_era()` leave the public bracket to
-  play the SAME full ladder onto a 24-team State in 10B (enrollment ≥ 550 or in
-  `NONPUBLIC_PLAYUP`: Condotti Vanguard Academy, Romero-Finniski) or 11B.
+  play the SAME full ladder onto a 24-team State in 10B (enrollment ≥ 550) or 11B.
+  ‼️ **`NONPUBLIC_PLAYUP` IS EMPTY AND THE CODIFIED RIVALRY IS GONE (owner rule
+  2026-10).** Condotti Vanguard Academy and Romero-Finniski were pinned to 10B by
+  name AND welded together by the one entry in `import_jhsaa.RIVALRIES` /
+  `jhsaa.RIVAL_OVERRIDES` / `districting.json["rivalries"]` (`keep_rivals` on every
+  redraw), and that special casing kept landing them ALONE in a two-team 10B
+  "Sunkist League" on the owner's save when no other program ever had the
+  problem. They are ordinary privates now — the 550 cut, the cycle, the derived
+  town rivalry, like everyone else. Never put a name back in any of the four.
   ‼️ **FORMATS (owner rule 2026-09): 10B's road plays 4S/5D (`WIDE_GROUPS`), 11B's
   plays its league 3S/4D through the postseason (`LEAGUE_SHAPE_GROUPS`, 6A's
   continuity pilot).** Both keep the universal 5S/2D early window and the 1S/4D TOC,
@@ -1299,7 +1337,14 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   like every other TOC entrant — State finalist honour PLUS a TOC appearance with
   finish "TOC Qualifier", place field+1, no seed (owner reversed the "not a TOC
   appearance" draft); every "is this the TOC" branch reads `TOC_PHASES`, never
-  `"toc"`). `run_season` re-deals `by_group` into `road_by_group`
+  `"toc"`). ‼️ **THE TWO QUALIFIER WINNERS ARE ALWAYS THE LOWEST TOC SEEDS (owner
+  rule 2026-10, `jhsaa.toc_seed_order`)** — 15 and 16 whatever their TOSS (they
+  were floating to 7-10), passed to `run_toc(qualifiers=)` apart from the
+  champions; and each class champion is POWER-PROTECTED from its own runner-up
+  until the final: the qualifiers are dealt to the 15/16 seat opposite their own
+  champion, and if both champions share a half the CHAMPION swaps with its mirror
+  seed (one line), never the qualifier. See the TOC Qualifier addendum of
+  `docs/AAR-jhsaa-nonpublic-team-championships.md`. `run_season` re-deals `by_group` into `road_by_group`
   after the regular season; a private league champion's PROTECTED seat goes to
   the league's best public finisher (the filtered list's `ts[0]`). ‼️ 10B/11B are
   NEVER in `GROUPS` (no leagues, talent row, roster band or awards slate) and
@@ -4594,7 +4639,8 @@ was a school marker, shipped "Baptist HS High School".
   Like the Groups, the privates are their own pool: pooled by `group` (never
   classification or area), sorted against privates only on the same effective size,
   cut into two equal bands, moving between 10B and 11B or not at all;
-  `NONPUBLIC_PLAYUP` pins its names to 10B. `_move` on a Non-Public class touches
+  nothing is pinned by name (`NONPUBLIC_PLAYUP` is empty, owner rule 2026-10).
+  `_move` on a Non-Public class touches
   `group` ONLY — a private's `classification` (roster depth, the early-participation
   gate, its old league) is never the cycle's to move. `_cls(r)` is the one reader of
   "which class does the cycle sort this row in"; every count, snapshot, `reapply`

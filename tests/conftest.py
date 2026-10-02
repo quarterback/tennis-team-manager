@@ -47,6 +47,19 @@ def _sixteen_state_pilot_off():
 
 
 @pytest.fixture(autouse=True, scope="session")
+def _circuit_off():
+    """Keep every suite on the standing Super Regionals / Semi-State pair unless
+    it opts into the Circuit (owner rule 2026-10) — the `_sixteen_state_pilot_off`
+    idiom: a fresh database resolves `jhsaa.circuit_era()` to 0, i.e. the Circuit
+    from the first season. `tests/test_jhsaa_circuit.py` swaps it back."""
+    from app import jhsaa as jh
+    real = jh.circuit_era
+    jh.circuit_era = lambda: 10 ** 6
+    yield
+    jh.circuit_era = real
+
+
+@pytest.fixture(autouse=True, scope="session")
 def _nonpublic_split_off():
     """Keep the era gate off for every suite but the Non-Public one. Since the
     pods (owner rule 2026-09) a private's `group` IS 10B/11B in the seed file and

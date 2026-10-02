@@ -122,18 +122,24 @@ def test_every_named_rivalry_is_live_in_the_data():
 def test_the_two_rivalry_tables_agree():
     """‼️ Every `import_jhsaa.RIVALRIES` pair must also be a `RIVAL_OVERRIDES` pair.
     Without the entry the season-time derivation quietly breaks the named rivalry the
-    moment a third program in town has a better claim on the seat — Alameda and
-    Condotti Vanguard Academy are both Ashbury 7A, so on class alone Alameda takes it
-    and the association's oldest rivalry stops being played. Nothing errors; the card
-    just stops carrying the one dual the table exists to protect."""
+    moment a third program in town has a better claim on the seat. Nothing errors; the
+    card just stops carrying the one dual the table exists to protect. Owner rule
+    2026-10: the importer table holds NO two-school pair (Condotti Vanguard Academy /
+    Romero-Finniski was the one, and it kept welding them into a two-team league),
+    and the districting data agrees."""
     named = {frozenset(p) for p in _importer().RIVALRIES}
     coded = {frozenset(p) for p in jh.RIVAL_OVERRIDES}
     assert named <= coded, sorted(map(sorted, named - coded))
+    assert not named
+    assert frozenset({"Condotti Vanguard Academy", "Romero-Finniski"}) not in coded
+    from app import jhsaa_districting as jd
+    assert not jd.districting_config().RIVALRIES
 
 
 def test_a_named_pair_survives_a_better_claim_in_town():
-    """The override in action, against the shipped data: Condotti keeps Romero-Finniski
-    even though Alameda is the same class, the same town and alphabetically first."""
+    """The override in action, against the shipped data: a hand-authored pair holds
+    its seat whatever the derivation would have said (the campus triangles, when
+    both campuses field a team)."""
     for gender in ("girls", "boys"):
         rm = jh.rival_map(jh.load_schools(gender))
         for a, b in jh.RIVAL_OVERRIDES:

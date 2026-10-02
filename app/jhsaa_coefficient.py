@@ -60,6 +60,9 @@ def road_points() -> dict[str, float]:
         # Recovery. Priced BELOW the rungs they are a second chance at, which is the
         # whole correction: a ladder of consolation wins must not out-earn winning.
         jh._RECOVERY_NAMES["super_regional"]: 0.25,
+        # The Circuit (owner rule 2026-10) stands in Semi-State's place and is
+        # priced like it — below Regionals, in line with the halved schedule.
+        jh.CIRCUIT_NAME: 0.25,
         jh._RECOVERY_NAMES["semi_state"]: 0.25,
         jh._RECOVERY_NAMES["divisional"]: 0.5,
         jh._RECOVERY_NAMES["semi_conference"]: 0.25,
@@ -124,7 +127,7 @@ BOOTSTRAP_Q = 0.25
 #: own key and its losers are deliberately absent from the State draw's field, so
 #: neither the road walk nor the State lookup could see it before.
 _ROAD_KEYS = ("sectionals", "wards", "prestate", "epiregional", "metastate",
-              "super_regional",
+              "super_regional", "circuit",
               "semi_state", "divisional", "semi_conference", "conference",
               "special_challenger", "state_special")
 

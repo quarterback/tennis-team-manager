@@ -4371,6 +4371,11 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                                 for g in jhsaa.ROAD_GROUPS},
                 "super_regional": {g: season["groups"][g]["super_regional"]
                                    for g in jhsaa.ROAD_GROUPS},
+                # THE CIRCUIT (owner rule 2026-10) — the Circuit finals in a
+                # Circuit class, empty elsewhere; `.get` for seasons archived
+                # before it existed.
+                jhsaa.CIRCUIT_PHASE: {g: season["groups"][g].get(jhsaa.CIRCUIT_PHASE)
+                                      for g in jhsaa.ROAD_GROUPS},
                 "divisional": {g: season["groups"][g].get("divisional")
                                 for g in jhsaa.ROAD_GROUPS},
                 # The CONDITIONAL last rungs — present and empty in a year that did
@@ -7136,6 +7141,13 @@ def jhsaa_postseason_result(grp: dict, school: str) -> dict:
     if school in ((grp.get("semi_state") or {}).get("field") or ()):
         out["finish"] = "Semi-State"
         return out
+    # THE CIRCUIT (owner rule 2026-10) stands where Semi-State stands: a
+    # Circuit finalist that lost ended its year there, above the Super
+    # Regionals (its own semifinal) and below the Divisionals.
+    if school in ((grp.get("circuit") or {}).get("field") or ()):
+        from . import jhsaa as _jh
+        out["finish"] = _jh.CIRCUIT_NAME
+        return out
     if school in ((grp.get("super_regional") or {}).get("field") or ()):
         out["finish"] = "Super Regionals"
         return out
@@ -7244,6 +7256,7 @@ def jhsaa_title_stages() -> list[tuple[str, str, str]]:
             (jh.EPIREGIONAL_NAME, "EPI",
              "Epiregional wins — the Zonal champions' play-in for a State bye line"),
             (jh._RECOVERY_NAMES["super_regional"], "S-REG", "Super Regional titles"),
+            (jh.CIRCUIT_NAME, "CIRC", "Circuit titles — a State berth"),
             (jh._RECOVERY_NAMES["semi_state"], "S-ST", "Semi-State titles — a State berth"),
             (jh._RECOVERY_NAMES["divisional"], "DIV", "Divisional titles — a State berth"),
             (jh._RECOVERY_NAMES["semi_conference"], "S-CON",
@@ -7259,7 +7272,7 @@ def jhsaa_title_stages() -> list[tuple[str, str, str]]:
 
 #: The archive keys every unit-bearing stage is written under, in ladder order.
 _JH_STAGE_KEYS = ("sectionals", "wards", "prestate", "epiregional", "super_regional",
-                  "semi_state", "divisional", "semi_conference", "conference",
+                  "circuit", "semi_state", "divisional", "semi_conference", "conference",
                   "special_challenger", "state_special")
 
 #: A State finish, as a title-board column: `(key, full label)`. Keyed on the
@@ -7652,6 +7665,7 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
          "ward": (arc.get("wards") or {}).get(g),
          "prestate": (arc.get("prestate") or {}).get(g),
          "super_regional": (arc.get("super_regional") or {}).get(g),
+         "circuit": (arc.get("circuit") or {}).get(g),
          "semi_state": (arc.get("semi_state") or {}).get(g),
          "divisional": (arc.get("divisional") or {}).get(g),
          "semi_conference": (arc.get("semi_conference") or {}).get(g),
@@ -7720,6 +7734,12 @@ def _season_row(arc: dict, year: int, school: str, sched: list[dict]) -> dict | 
     # page separates Team trophies from Player honours, a list that mixes them
     # files "Tournament of Champions — Semifinal" under the PLAYERS and drops it
     # from the team side entirely. `honors` is individual awards, full stop.
+    # A CIRCUIT CHAMPION (owner rule 2026-10) is a title of its own — recorded in
+    # the program's history and on its page, separate from a State title: the
+    # unit honour ("Circuit III") already rides `unit_wins`; this is the line.
+    _ci = (arc.get("circuit") or {}).get(g) or {}
+    if school in (_ci.get("survivors") or ()):
+        row["team_honors"].append(f"{row['road_group'] or row['group']} Circuit Champion")
     if row["made_toc"] and not row["toc_champion"]:
         # A qualifier loser (owner rule 2026-09) is a TOC entrant like the rest: the
         # same line, minus a seed it never held.
@@ -8069,7 +8089,7 @@ def jh_road_ladder() -> tuple[str, ...]:
     deepest rung first — one ladder, read from either end."""
     from . import jhsaa as _jh
     return ("Areas", "Sectionals", "Wards", "Regionals", "Zonals",
-            "Super Regionals", "Semi-State", _jh.DIVISIONAL_NAME,
+            "Super Regionals", _jh.CIRCUIT_NAME, "Semi-State", _jh.DIVISIONAL_NAME,
             _jh.SEMI_CONFERENCE_NAME, _jh.CONFERENCE_NAME,
             _jh.SPECIAL_CHALLENGER_FINISH, _jh.STATE_SPECIAL_FINISH,
             _jh.METASTATE_FINISH)

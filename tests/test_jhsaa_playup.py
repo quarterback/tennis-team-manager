@@ -35,16 +35,12 @@ def clean():
     jh.reset_schools()
 
 
-#: Condotti Vanguard Academy and Romero-Finniski are a deliberate, owner-named
-#: exception to the play-up mechanism (owner correction 2026-08: they are
-#: enrollment-level 3A academies competing in 7A while GENERATING 9A-caliber
-#: rosters — `School.talent` pins the generation class by decree, the one place
-#: in the association talent is decoupled from enrollment). They trip
-#: `School.plays_up` (a raw classification/group mismatch detector) but arrived
-#: in 7A by owner edict, not through the play-up override system this file
-#: tests — same pattern as `import_jhsaa.OWNER_EDICTS`/`RIVALRIES`, a named
-#: exception rather than a rule.
-_PLAY_DOWN_EXCEPTIONS = {"Condotti Vanguard Academy", "Romero-Finniski"}
+#: Owner rule 2026-10: there are NO named exceptions to the play-up mechanism any
+#: more. Condotti Vanguard Academy and Romero-Finniski were once pinned here (and
+#: to 10B, and to each other as a codified rivalry) and the special casing kept
+#: welding them into a two-team Non-Public league; they are ordinary privates in
+#: 10B/11B now and `School.plays_up` reads them like everyone else.
+_PLAY_DOWN_EXCEPTIONS: set[str] = set()
 
 
 def _ups(gender="girls"):
