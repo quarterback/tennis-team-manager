@@ -7,263 +7,229 @@
 
 ## Decision
 
-Replace the current **Super Regional → Semi-State** recovery sequence with a geographically organized **Circuit Round**.
+Replace the current **Super Regional → Semi-State** recovery mechanism with a geographically organized **Circuit Round**.
 
-This is not an additional postseason stage.
+The Circuit is not an additional postseason layer. It occupies the same two-round place in the Road to State and produces the same **eight qualifiers**.
 
-It occupies the same place in the Road to State, takes over the same recovery function, and produces the same **eight qualifiers** that Super Regionals and Semi-State currently produce.
+Zonals remain unchanged.
 
-Zonals remain untouched.
+Everything downstream of the eight Circuit qualifiers remains unchanged.
 
-Everything downstream of those eight qualifiers remains unchanged.
+The Circuit shape is:
 
-The structure is therefore:
-
-**Areas → Sectionals → Wards → Regionals → Zonals → Circuit → existing downstream postseason**
-
-For the current 16-team State classes, that means:
-
-- 8 Zonal champions
-- 8 Circuit champions
-- 16-team State field
-
-For any class whose postseason continues through additional recovery or qualifying stages after this point, those stages continue to operate on the Circuit's outputs exactly as they operate on the current Super Regional/Semi-State outputs.
-
-The Circuit changes **how this recovery pool is organized**, not the rest of the postseason.
-
-## Why replace Super Regionals and Semi-State
-
-The existing two-stage recovery path works competitively, but it is not geographically representative by design.
-
-Jefferson is large enough, and its classifications are distributed unevenly enough, that the association wants the recovery route to guarantee a meaningful statewide geographic path without weakening Zonals.
-
-The Circuit accomplishes that by reorganizing the recovery population geographically.
-
-It does **not**:
-
-- take a berth from a Zonal champion;
-- add another postseason round;
-- create a second Sectional system;
-- require fixed statewide administrative regions;
-- replace the rest of the Road to State.
-
-It simply takes the population that would otherwise move through Super Regionals and Semi-State and organizes that competition into geographically coherent Circuit championships.
-
-## The modeled alternatives
-
-Three structures were compared across 70 class-seasons.
-
-| Model | Average of the best 16 non-Zonal teams by rating that make the State field |
-|---|---:|
-| Current Super Regional → Semi-State recovery | 7.9 |
-| Keep the current two-step recovery and add another geographic round afterward | 12.7 |
-| **Replace the two-step recovery with a geographic Circuit field of 32** | **11.6** |
-
-The additive model retained slightly more of the highest-rated non-Zonal teams, but it does so by creating an entirely new stage and additional State access on top of the current recovery path.
-
-That is not the chosen architecture.
-
-The Circuit replacement is cleaner:
-
-- it uses the existing recovery slot;
-- it preserves the rest of the postseason;
-- it makes geography structurally meaningful;
-- and it improves the representation of strong non-Zonal teams substantially over the current model.
-
-The move from **7.9 to 11.6** of the best sixteen non-Zonal teams reaching State is a major improvement even before considering geography.
-
-## The Circuit field
-
-The working model is a **32-team Circuit field** producing eight winners.
-
-The 32 teams are divided into **eight four-team Circuit championships**.
+**32 eligible non-Zonal teams → 8 geographic Circuits of 4 → 8 Circuit champions**
 
 Each Circuit plays:
 
-- two semifinals;
-- one Circuit championship dual.
+- semifinal: 1 vs. 4;
+- semifinal: 2 vs. 3;
+- Circuit championship.
 
-Each four-team Circuit therefore produces exactly one winner.
+That is two rounds, **24 duals**, and eight qualifiers.
 
-Eight Circuits produce:
+The current Super Regional/Semi-State mechanism uses 16 duals, so the Circuit adds eight duals statewide per class but does **not** add another calendar round.
 
-**8 Circuit champions = 8 qualifiers**
+## What geography does
 
-That is the same number of qualifiers currently produced by the Super Regional/Semi-State mechanism.
+Geography does not choose the 32-team field.
 
-The Circuit is therefore functionally a replacement for those two rounds:
+The 32 eligible teams are selected first under the association's postseason rules.
 
-**32 → 16 → 8**
+Only then are those 32 divided geographically into eight equal groups of four.
 
-but the draw is organized geographically rather than as one statewide recovery pool.
+This is the same basic geographic-bucketing idiom already used by the JHSAA JV Regions:
 
-## Geography
+1. order the field by **Area**;
+2. then **county**;
+3. then **city**;
+4. then school name;
+5. divide the ordered field into equal contiguous buckets.
 
-Circuit geography is built separately for each classification from the schools actually present in that class.
+For the Circuit, 32 divides cleanly into eight groups of four.
 
-It should use the geographic information already maintained by the association:
+There are therefore:
 
-- coordinates;
-- Area;
-- county;
-- city.
+- no three-team groups;
+- no stocking rules;
+- no geographic replacements;
+- no permanent statewide section boundaries;
+- no need to force every classification into Jefferson's named regions.
 
-The Circuit map should not be forced to match Jefferson's named Areas.
+A Circuit is a geographic bucket created from the teams actually eligible in that classification that season.
 
-That would be too constraining because the geographic distribution of Group 3 is fundamentally different from the distribution of 10B, 11B, or the numbered public classifications.
+## The 32 eligible teams
 
-Instead, each class's own membership defines its Circuit geography.
+Two ways of defining the 32 were tested:
 
-The map can remain stable through the alignment cycle and be rebuilt when class membership changes.
+1. the best 32 non-Zonal teams by rating;
+2. the teams already belonging to the current 24-team Super Regional/Semi-State recovery population, plus the next eight eligible teams.
 
-## Sectors and Circuits are not the same thing
+The results were effectively the same.
 
-The geography may naturally form fewer than eight broad sectors.
+| Circuit field definition | Every class sector has a State team | Best 8 non-Zonal teams who make State |
+|---|---:|---:|
+| Best 32 by rating | 72% | 4.6 of 8 |
+| Current 24 recovery teams + next 8 | 70% | 4.6 of 8 |
 
-That does not reduce the number of Circuit championships.
+Because the competitive results are essentially identical, the cleaner implementation is to preserve the existing Road to State hierarchy and expand its current recovery population to 32 rather than introduce a new rating-only selection rule.
 
-Every meaningful geographic sector receives at least one Circuit.
+The Circuit should therefore begin from the association's existing recovery eligibility and use the next eight teams under that same ordering to reach 32.
 
-If there are fewer than eight sectors, the remaining Circuits are assigned to the sectors with the greatest need for an additional path.
+## The draw
 
-The placement measure previously modeled for this purpose is:
+After the 32 are selected, they are ordered geographically and split into eight Circuits of four.
 
-**program share × 8 − actual Zonal champions**
+Inside each Circuit, the four teams are seeded by the existing merit measure.
 
-This measure is used only to decide where the additional Circuit fields belong.
+The bracket is fixed:
 
-It does not turn the Circuit on or off.
+- No. 1 vs. No. 4
+- No. 2 vs. No. 3
+- winners meet for the Circuit championship
 
-The Circuit always runs.
+The Circuit champion advances.
 
-It also does not move or remove any Zonal champion.
+Across eight Circuits:
 
-Example:
+- 16 semifinal duals;
+- 8 championship duals;
+- 8 Circuit champions.
 
-- six coherent geographic sectors are found;
-- all six receive one four-team Circuit;
-- two additional four-team Circuits are assigned to the sectors furthest behind their expected representation after Zonals.
+Every berth is won on court.
 
-A large or deep part of the state can therefore support multiple Circuit championships while a smaller geographic pocket is still guaranteed a path.
+## Why this is different from a geographic guarantee
 
-## Geographic representation
+The Circuit makes the recovery path much more local, but it does **not** guarantee that every broad part of Jefferson produces a State team.
 
-The geographic models were successful at eliminating complete regional exclusion.
+That is deliberate.
 
-Across the 70 class-seasons, both of the tested geographic structures produced at least one State team from every modeled region in **100% of seasons**.
+The 32-team field already reaches almost the entire geography of each classification. Across the study, only **0.06 of eight class sectors per season**, on average, had no team among the 32.
 
-That is the central geographic result.
+The remaining variation comes from competition: several Circuit champions can still emerge from the same broader part of the state.
 
-The Circuit does not require equal representation.
+The data shows:
 
-It establishes a geographic floor while allowing stronger and larger parts of the state to send many more teams through Zonals and through additional Circuit fields.
+| Model | Every class sector has a State team | Best 8 non-Zonal teams who make State |
+|---|---:|---:|
+| Existing Super Regional → Semi-State system | 43% | 6.0 of 8 |
+| Circuit, best 32 by rating | 72% | 4.6 of 8 |
+| Circuit, current recovery pool + next 8 | 70% | 4.6 of 8 |
 
-The objective is:
+So the Circuit substantially improves geographic representation without imposing a hard quota.
 
-> no meaningful geographic part of a classification should be shut out of the State field simply because the statewide recovery draw concentrated elsewhere.
+A separate hard-guarantee model was tested by forcing every geographic sector into the draw. It reached 100% representation but did not improve the merit result enough to justify the additional intervention: only **4.7 of the best eight non-Zonal teams** made State, essentially the same as the ordinary Circuit.
 
-## Geography versus pure merit
+The Circuit therefore should remain a **geographic draw**, not a geographic guarantee.
 
-Earlier modeling measured the cost of using geography to structure the last opportunities.
+## Geographic compactness
 
-| Regional model | Every region represented at State | Best 8 leftovers who win a seat | Round entrants from outside best 16 leftovers | Winners with winning records | Winners' median position down the class |
-|---|---:|---:|---:|---:|---:|
-| No geography | 87% | 5.9 | 0.0 | — | 31% |
-| 8 regions | 100% | 4.7 | 3.4 | 79% | 35% |
-| 6 regions | 100% | 4.8 | 1.9 | 82% | 34% |
-| 4 regions | 100% | 4.4 | 1.1 | 81% | 34% |
+The eight-by-four Circuit model produces genuinely local brackets.
 
-The result is not that geography has no competitive cost.
+Across the 70 studied class-seasons, the median geographic spread within a four-team Circuit was approximately **153 miles**.
 
-The result is that the cost is modest relative to the geographic gain.
+For Jefferson's scale, that is a meaningful regionalization of a statewide recovery pool.
 
-Even the geographically structured winners remained credible State-level teams:
+The Circuit therefore accomplishes the intended structural change without requiring permanent administrative Sections:
 
-- roughly four in five had winning records;
-- median quality moved only a few points down the classification;
-- complete geographic representation rose from 87% to 100%.
+> the State qualification path becomes locally organized while the actual qualifiers are still determined entirely by results.
 
-The Circuit therefore should not be optimized to reproduce a pure rating-selected field.
+## Competitive tradeoff
 
-Its purpose is to combine competitive qualification with statewide access.
+The Circuit is more geographically representative than the current recovery system, but it is less efficient at preserving the eight highest-rated non-Zonal teams.
 
-## Why Zonals do not change
+Under the current two-step recovery system:
 
-Zonals remain the strongest and most predictable route into State.
+- **6.0 of the best eight non-Zonal teams** qualify on average.
 
-There is no evidence-based reason to weaken that system in order to improve geographic representation.
+Under the Circuit:
 
-The Circuit begins only after the Zonal champions have been established.
+- **4.6 of the best eight** qualify.
 
-Those eight champions are protected completely.
+That is the competitive price of localizing the draw.
 
-The design principle is:
+The effect is intentional rather than accidental. A strong team may have to survive a stronger local Circuit instead of benefiting from a statewide seeded recovery bracket.
 
-> **Zonals determine the automatic statewide qualifiers. The Circuit geographically organizes the recovery path.**
+But the Circuit is not selecting weak teams directly. All 32 entrants are already legitimate recovery candidates, and every State berth still requires two wins.
 
-Strong regions can continue to dominate Zonals if they win the matches.
+## Why Zonals stay untouched
 
-The geographic intervention applies only to teams that still need another route.
+The data does not show a reason to regionalize Zonals.
 
-## Taking over the existing recovery pool
+Zonals are highly predictive and remain the primary automatic route into State.
 
-The Circuit should inherit the **existing Super Regional/Semi-State recovery population and qualification priorities**, rather than invent an unrelated new at-large pool.
+The Circuit begins only after the eight Zonal champions have been removed from the recovery population.
 
-This is important.
+The governing distinction is:
 
-The redesign is about the organization of the recovery competition, not about opening the postseason to a new category of teams.
+> **Zonals identify the eight automatic qualifiers. The Circuit geographically organizes the second route.**
 
-The implementation should begin from the teams the current recovery machinery considers eligible and then distribute the required Circuit field geographically.
+Strong geographic areas remain free to dominate Zonals if they win those matches.
 
-If the geographic construction requires additional bodies to complete a four-team Circuit, existing postseason depth should remain the priority before rating-only fallback is used.
+The Circuit does not take anything away from them.
 
-The exact fallback ordering should preserve the current Road to State principle:
+## Relationship to the current Road to State
 
-> a team eliminated later in the postseason is not passed over for a team eliminated earlier unless the geographic Circuit cannot otherwise be filled.
+The current sequence contains:
 
-No team receives a State berth by rating alone. Rating can select an entrant into a Circuit; the entrant still must win the Circuit on court.
+**Areas → Sectionals → Wards → Regionals → Zonals → Super Regionals → Semi-State → downstream postseason**
 
-## Why a four-team Circuit
+The proposed sequence becomes:
 
-A four-team Circuit is the natural replacement for the two stages being removed.
+**Areas → Sectionals → Wards → Regionals → Zonals → Circuit → downstream postseason**
 
-It preserves the existing two-match maximum path:
+The Circuit replaces only **Super Regionals and Semi-State**.
 
-- Circuit semifinal
-- Circuit championship
+It does not replace:
 
-That is exactly the competitive space previously occupied by Super Regionals and Semi-State.
+- Sectionals;
+- Wards;
+- Regionals;
+- Zonals;
+- Divisionals;
+- Semi-Conference;
+- Conference;
+- State Specials;
+- State.
 
-It also makes the geographic title meaningful.
+Classes that currently stop their recovery path after Semi-State receive the eight Circuit champions in those same eight positions.
 
-A Circuit champion has won a small regional tournament rather than merely a single play-in dual.
+Classes with later recovery stages continue into those stages exactly as they do today.
 
-The winner earns both:
+## Why four-team Circuits
 
-- the Circuit championship;
-- advancement to the next existing postseason stage or State field, according to the class's existing architecture.
+Four is the natural size because the Circuit is replacing two rounds.
+
+Each Circuit champion must win:
+
+1. a semifinal;
+2. a final.
+
+No byes are required.
+
+No team reaches State merely through geographic placement.
+
+And the Circuit title represents an actual small championship bracket rather than a single play-in game.
 
 ## Naming
 
-Do not call these Section championships.
+The new stage should be called **Circuit**, not Section.
 
-The JHSAA already has **Sectionals** earlier in the Road to State.
+The JHSAA already uses **Sectionals** earlier in the postseason, so reusing that term would make the Road to State harder to understand.
 
-The new unit is a **Circuit**.
+The eight winners are Circuit champions.
 
-Appropriate program-history honors are therefore:
+The association can number them within each classification:
 
-- Circuit I Champion
-- Circuit II Champion
-- etc.
+- Circuit I
+- Circuit II
+- …
+- Circuit VIII
 
-or named geographic Circuit championships if the association later chooses to give the generated geographies stable names.
+The buckets themselves do not need permanent geographic names. Like JV Regions, they are geographic tournament units rather than constitutional territories.
 
-The important point is that “Circuit” is a distinct level in the existing postseason vocabulary and does not collide with Sectionals, Regionals, or State.
+## Evidence base
 
-## Pilot evidence
-
-The model was evaluated on:
+The model was tested across:
 
 - 1A
 - 2A
@@ -271,29 +237,24 @@ The model was evaluated on:
 - 4A
 - Group 3
 
-from 2100 through 2106.
+for seasons 2100 through 2106: **70 class-seasons**.
 
-That produced **70 class-seasons** of comparison.
+The principal findings are:
 
-The most important measured results are:
-
-1. geographic Circuit organization produced a State representative from every modeled region in every season;
-2. replacing Super Regionals/Semi-State with the 32-team geographic Circuit model increased the average number of the best sixteen non-Zonal teams making the field from **7.9 to 11.6**;
-3. adding an entirely new round would improve that figure further to 12.7, but at the cost of adding another postseason layer and changing the qualification architecture;
-4. the Circuit replacement achieves most of the competitive improvement while preserving the existing postseason footprint.
+- the current two-step recovery system gives every broad class sector a State representative in only **43%** of seasons;
+- the ordinary eight-by-four Circuit raises that to approximately **70–72%**;
+- nearly every broad sector already has at least one team among the Circuit's 32 entrants;
+- Circuit groups have a median geographic spread of approximately **153 miles**;
+- the definition of the 32-team field has almost no effect on the modeled results;
+- the Circuit sends about **4.6 of the best eight non-Zonal teams** to State, compared with **6.0** under the current statewide recovery model;
+- forcing a hard geographic guarantee adds complexity without materially improving competitive quality.
 
 ## Operating rule
 
-The proposed JHSAA rule is:
+The proposed rule is:
 
-> The Super Regional and Semi-State stages shall be replaced by the Circuit championship stage. The Circuit stage shall draw from the recovery population otherwise eligible for those stages and shall be organized geographically from the member programs of each classification. The Circuit field shall produce eight champions. Each Circuit berth shall be won on court. Zonal champions shall remain unaffected, and all postseason stages following the current Super Regional/Semi-State mechanism shall continue unchanged with the Circuit champions occupying the same qualifying positions.
+> The Super Regional and Semi-State stages shall be replaced by the Circuit stage. Thirty-two eligible non-Zonal teams shall enter the Circuit stage. The field shall be ordered geographically by Area, county, city and school and divided into eight four-team Circuits. Teams within each Circuit shall be seeded by the association's existing postseason merit measure. Each Circuit shall play two semifinals and a championship dual. The eight Circuit champions shall advance into the same qualifying positions previously produced by Super Regionals and Semi-State. Zonal champions and all postseason stages before and after the replaced stages shall remain unchanged.
 
-The working full-size shape is:
+In short:
 
-**32 Circuit entrants → eight four-team Circuits → eight Circuit champions.**
-
-Geography determines the Circuit fields.
-
-Competition determines the eight winners.
-
-Everything else in the Road to State remains in place.
+**pick the 32 on merit and postseason eligibility; group them on geography; qualify the eight winners on court.**
