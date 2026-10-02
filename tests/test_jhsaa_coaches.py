@@ -625,6 +625,23 @@ def test_the_carousel_is_a_statewide_market_that_cascades(world_season):
         assert len(kept) == len(girls["lines"])
         assert not girls["lines"] or kept[0]["veto"]
         assert [ln["n"] for ln in both["lines"]] == list(range(len(both["lines"])))
+        # A VETOED kept fill releases its coach to the second market: the commit
+        # will leave them unattached, so a free-pool coach vetoed out of a girls'
+        # seat is still a candidate for a boys' one (review 2026-10).
+        pool_ids = {c.coach_id for c in jc.free_pool(wid)}
+        hired = [ln for ln in girls["lines"] if ln["kind"] == "hire"
+                 and ln.get("coach_id") in pool_ids]
+        if hired:
+            jc.set_vetoes(wid, {hired[0]["n"]})
+            again = jc.propose_cycle(wid, sy, genders=("boys",))
+            boys_taken = {ln.get("coach_id") for ln in again["lines"]
+                          if ln["gender"] == "boys" and ln.get("fill")}
+            # Not asserted hired (the draw decides); asserted NOT excluded: a second
+            # run with the veto lifted must reserve them again.
+            jc.set_vetoes(wid, set())
+            relifted = jc.propose_cycle(wid, sy, genders=("boys",))
+            assert hired[0]["coach_id"] not in {
+                ln.get("coach_id") for ln in relifted["lines"] if ln["gender"] == "boys"}
     finally:
         jc.dismiss_cycle(wid)
     fills = [ln for ln in prop["lines"] if ln.get("fill")]

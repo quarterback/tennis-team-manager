@@ -2202,11 +2202,26 @@ def propose_cycle(world_id: int, season_year: int, salt: str = "",
     old = pending_cycle(world_id)
     kept = [ln for ln in (old["lines"] if old and old.get("year") == season_year else [])
             if ln["gender"] not in genders]
+    # ‼️ ONLY A FILL THE COMMIT CAN STILL APPLY RESERVES ITS COACH (review 2026-10).
+    # A vetoed fill, a fill of a coach whose departure was vetoed (they stay), or
+    # a fill onto a seat a vetoed departure keeps occupied is skipped by
+    # `commit_cycle`, so its coach ends the cycle unattached — reserving them
+    # here would bar a free-pool coach from the second market for nothing and
+    # force a weaker or brand-new hire.
+    staying = {ln["coach_id"] for ln in kept if ln.get("veto") and ln["kind"] in DEPARTURES}
+    kept_seat = {(ln["gender"], ln["ident"], ln["slot"]) for ln in kept
+                 if ln.get("veto") and ln["kind"] in DEPARTURES}
     for ln in kept:
-        if ln.get("fill") and ln["kind"] not in ("alumnus", "new") and ln.get("coach_id"):
-            taken.add(ln["coach_id"])      # a coach moved in the kept half stays moved
-        elif ln["kind"] == "alumnus":
+        if not ln.get("fill") or ln.get("veto"):
+            continue
+        if ln.get("coach_id") in staying:
+            continue
+        if (ln["gender"], ln["ident"], ln["slot"]) in kept_seat:
+            continue
+        if ln["kind"] == "alumnus":
             taken.add(_cid(world_id, "player", ln["pid"]))
+        elif ln["kind"] != "new" and ln.get("coach_id"):
+            taken.add(ln["coach_id"])      # a coach moved in the kept half stays moved
     lines: list = []
     conn = _conn()
     try:
