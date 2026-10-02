@@ -3305,7 +3305,15 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   weak head (under the class's median) on a bottom-quarter program goes when a
   materially better area assistant is on the market — never into a void.
   `market_outlook` is the page's read-only panel (open head jobs, likely
-  openings, promotion candidates, head-ready assistants). `tests/test_jhsaa_
+  openings, promotion candidates, head-ready assistants). ‼️ A COACHING COHORT
+  IS THE CHAMPIONSHIP `group`, never the enrollment class (`jhsaa_coaches.
+  cohort`, `COHORT_OF`: Group 1→8A, Group 2→5A, Group 3→2A, 10B→7A, 11B→4A) —
+  a 3A academy playing up in 7A is judged against the heads it faces, and
+  `_recent_pct` reads the history row's `grp`. ‼️ A season row is keyed on the
+  ARCHIVED name: `_promotion_signal` resolves it through `former_names()`.
+  ‼️ A VETOED DEPARTURE KEEPS THE COACH, not just the seat: a leaver's hire
+  elsewhere carries `from_ident`/`from_slot` and `commit_cycle` skips every fill
+  of a coach whose departure line is vetoed (`staying`). `tests/test_jhsaa_
   coach_churn.py`, `tests/test_jhsaa_carousel_weak_head.py`.
   ‼️ **COACH OF THE YEAR (owner spec 2026-09, `app/jhsaa_coy.py`)** — District
   (per league) and State (per class), by gender, head coaches only, owner's

@@ -41,13 +41,16 @@ def _conn():
     return conn
 
 
-def test_the_promotion_signal_reads_a_state_title_a_coy_and_a_top_record():
+def test_the_promotion_signal_reads_a_state_title_a_coy_and_a_top_record(monkeypatch):
     conn = _conn()
-    schools = {i: SimpleNamespace(name=i, classification="2A", area="N", enrollment=300)
+    schools = {i: SimpleNamespace(name=i, classification="2A", group="2A", area="N", enrollment=300)
                for i in ("Champ", "Final", "Plain", "Coy", "Record")}
     heads = {i: "h" + i for i in schools}
+    # ‼️ The champion was RENAMED after the season was archived: the row carries
+    # the old name and must still reach today's program through the rename map.
+    monkeypatch.setattr("app.jhsaa.former_names", lambda: {"Old Champ": "Champ"})
     conn.executemany("INSERT INTO world_jhsaa_season_row VALUES (1, 70, 'girls', ?, 5, ?)", [
-        ("Champ", json.dumps({"champion": True, "state_finish": "Champion", "season_year": 2101})),
+        ("Old Champ", json.dumps({"champion": True, "state_finish": "Champion", "season_year": 2101})),
         ("Final", json.dumps({"champion": False, "state_finish": "Finalist"})),
         ("Plain", json.dumps({"champion": False, "state_finish": ""})),
     ])
@@ -73,3 +76,24 @@ def test_a_leave_line_empties_the_seat_and_is_a_departure_for_the_commit_rules()
     # A vetoed leave keeps its seat exactly as a vetoed retirement does: the same
     # tuple the commit reads for both.
     assert set(jc.DEPARTURES) >= {"retire", "fire"}
+
+
+def test_a_coaching_cohort_is_the_championship_group_not_the_enrollment_class():
+    """A 3A academy playing up in 7A is judged against the 7A heads it faces; the
+    Groups and the Non-Public classes fold onto the ladder class they play like."""
+    assert jc.cohort(SimpleNamespace(classification="3A", group="7A")) == "7A"
+    assert jc.cohort(SimpleNamespace(classification="7A", group="Group 1")) == "8A"
+    assert jc.cohort(SimpleNamespace(classification="4A", group="Group 2")) == "5A"
+    assert jc.cohort(SimpleNamespace(classification="1A", group="Group 3")) == "2A"
+    assert jc.cohort(SimpleNamespace(classification="3A", group="10B")) == "7A"
+    assert jc.cohort(SimpleNamespace(classification="6A", group="11B")) == "4A"
+    # The recent record reads the history row's championship, not its class.
+    conn = _conn()
+    conn.executemany(
+        "INSERT INTO jhsaa_coach_history (world_id, year, ident, gender, slot, coach_id,"
+        " school, classification, grp, wins, losses, ties, eff)"
+        " VALUES (1, ?, 'Acad', 'girls', 'head', 'h', 'Acad', '3A', ?, ?, ?, 0, '')",
+        [(2100, "7A", 10, 8), (2099, "7A", 12, 6), (2098, "3A", 18, 0)])
+    schools = {"Acad": SimpleNamespace(name="Acad", classification="3A", group="7A")}
+    recent = jc._recent_pct(conn, 1, "girls", schools)
+    assert abs(recent["Acad"] - 22 / 36) < 1e-9          # the 3A season is not in the cohort
