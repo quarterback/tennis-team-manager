@@ -488,12 +488,13 @@ def test_an_archive_from_the_play_in_build_still_reads(jv, monkeypatch, tmp_path
     assert [c["n"] for c in v["canvas"]["columns"]] == [16, 8]
     first_col = [c for c in v["canvas"]["cards"] if c["col"] == 0]
     assert sum(c["played"] for c in first_col) == 4
-    # The regional table shows how far each champion went, not how they entered.
-    finish = {r["champion"]: r["finish"] for r in v["regions"]}
-    assert finish[r16[0]["winner"]] == "Champion"
-    assert all(f for n, f in finish.items() if n in set(draw))
+    # ‼️ NO REGIONAL-CHAMPIONS TABLE (owner, 2026-10): since rule 2096 a Region crowns
+    # nobody, so the page carries no per-region champion rows at all — the finishes
+    # are read off the bracket, where every entrant has a route drawn.
+    assert "regions" not in v
     losers = {g["away"] for g in quals}
-    assert {finish[n] for n in losers} == {"Round of 20"}
+    first = {g["home"]: g for g in v["rounds"][0]["games"]} | {g["away"]: g for g in v["rounds"][0]["games"]}
+    assert losers <= set(first)
 
 
 def test_a_regional_dual_is_archived_under_its_own_phase(jv):

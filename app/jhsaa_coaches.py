@@ -1392,6 +1392,21 @@ RETIRE_LONG_TENURE = (25, 0.05)                          # years, extra chance
 FIRE_MIN_SEASONS = 5          # a head is judged only on a long run…
 FIRE_BELOW = 0.20             # …of this far below the program's own norm
 FIRE_CHANCE = 0.30            # and even then, usually kept
+# ‼️ A WEAK HEAD ON A BAD PROGRAM GOES WHEN A BETTER ASSISTANT NEARBY WANTS THE JOB
+# (owner rule 2026-10). The rule above judges a head against the program's OWN
+# norm, so a program that has always been bad keeps a bad coach for ever — the
+# norm is the coach. This one judges the program against its CLASSIFICATION and
+# the coach against the other heads in it: a program in the bottom share of its
+# class over the recent window, run by a head rated under the class's heads, is
+# let go when an assistant in the same area who is on the market would be a
+# clear upgrade. The board does not fire into a void — no such assistant, no
+# firing — and the market then runs as it does for any vacancy (that assistant
+# applies with the area edge, and still has to win the interview).
+FIRE_WEAK_WINDOW = 3          # recent seasons the program is judged on
+FIRE_WEAK_MIN_SEASONS = 2     # a new hire gets at least this long
+FIRE_WEAK_BOTTOM = 0.25       # bottom share of the class, by recent win pct
+FIRE_WEAK_MARGIN = 5.0        # how much better (quality) the nearby assistant must be
+FIRE_WEAK_CHANCE = 0.60       # usually goes, not always
 ALUMNI_MIN_YEARS = 4          # an alumnus coaches once they are this far out
 
 # ‼️ A STATEWIDE MARKET (owner rule 2026-09). Coaches move for jobs, so a vacancy
@@ -1507,6 +1522,75 @@ def head_record(runs: dict, coef: dict, coach_id: str) -> tuple | None:
     record = 0.6 * shrunk + 0.4 * coef.get(last[-1][3], 0.5)
     edge = max(0.0, n / (n + 1) * (HEAD_EDGE + HEAD_RECORD_EDGE * (record - 0.5)))
     return (w / (w + l) if w + l else 0.5, n, edge, last[-1][3])
+
+
+def _recent_pct(conn, world_id: int, gender: str, schools: dict,
+                window: int = FIRE_WEAK_WINDOW) -> dict:
+    """{ident: win pct over the program's last `window` head seasons IN ITS CURRENT
+    CLASSIFICATION} — the program's recent standing, whoever coached it. One read;
+    a program with no season in its class reads None."""
+    rows: dict = {}
+    for ident, year, w, l, cls in conn.execute(
+            "SELECT ident, year, wins, losses, classification FROM jhsaa_coach_history"
+            " WHERE world_id=? AND gender=? AND slot='head' ORDER BY year DESC",
+            (world_id, gender)):
+        sc = schools.get(ident)
+        if sc is None or cls != sc.classification:
+            continue
+        got = rows.setdefault(ident, [])
+        if len(got) < window:
+            got.append((year, w or 0, l or 0))
+    return {ident: _pct([(y, None, w, l) for y, w, l in got]) for ident, got in rows.items()}
+
+
+def _weak_head_firings(conn, world_id: int, gender: str, season_year: int,
+                       schools: dict, where: dict, coaches: dict, wants: dict,
+                       taken: set) -> list:
+    """The programs whose head goes under `FIRE_WEAK_*`: bottom of the class on
+    the recent window, head rated under the class's heads, a better assistant in
+    the area on the market. Returns [(ident, coach, why)]; mutates nothing."""
+    recent = _recent_pct(conn, world_id, gender, schools)
+    heads = {i: cid for cid, (i, slot, _s) in where.items()
+             if slot == "head" and cid not in taken}
+    by_cls: dict = {}
+    for ident, cid in heads.items():
+        by_cls.setdefault(schools[ident].classification, []).append(ident)
+    out = []
+    for cls, idents in sorted(by_cls.items()):
+        ranked = sorted((i for i in idents if recent.get(i) is not None),
+                        key=lambda i: (recent[i], i))
+        if len(ranked) < 4:
+            continue
+        bottom = set(ranked[:max(1, int(len(ranked) * FIRE_WEAK_BOTTOM))])
+        qual = sorted(_quality(coaches[heads[i]]) for i in idents)
+        median_q = qual[len(qual) // 2]
+        for ident in sorted(bottom):
+            cid = heads[ident]
+            c = coaches[cid]
+            tenure = season_year - (where[cid][2] or season_year)
+            if tenure < FIRE_WEAK_MIN_SEASONS:
+                continue
+            q = _quality(c)
+            if q >= median_q:
+                continue
+            area = schools[ident].area
+            nearby = [a for a, (i2, s2, _s) in where.items()
+                      if s2 != "head" and a not in taken and i2 != ident
+                      and schools[i2].area == area
+                      and wants.get(a, 1.0) < ASST_HEAD_AMBITION
+                      and _quality(coaches[a]) >= q + FIRE_WEAK_MARGIN]
+            if not nearby:
+                continue
+            rng = _rng("jhsaa-carousel-weak", world_id, season_year, cid)
+            if rng.random() >= FIRE_WEAK_CHANCE:
+                continue
+            best = max(nearby, key=lambda a: _quality(coaches[a]))
+            out.append((ident, c,
+                        f"{recent[ident]:.3f} over the last {FIRE_WEAK_WINDOW} seasons,"
+                        f" bottom of {cls}; rated {q:.0f} against the class's {median_q:.0f};"
+                        f" {coaches[best].name} ({schools[where[best][0]].name}) in the"
+                        f" area wants the job"))
+    return out
 
 
 def _head_runs(conn, world_id: int, gender: str) -> dict:
@@ -1637,6 +1721,16 @@ def propose_cycle(world_id: int, season_year: int, salt: str = "") -> dict:
             def want(cid):
                 return _rng("jhsaa-carousel-want", world_id, season_year, cid).random()
             wants = {cid: want(cid) for cid in where}
+            # ‼️ THE SECOND FIRING RULE runs here, not in the departures loop: it
+            # needs every head's quality and every assistant's market roll, and
+            # the loop above has neither until it has seen every seat.
+            for ident, c, why in _weak_head_firings(conn, world_id, gender, season_year,
+                                                    schools, where, coaches, wants, taken):
+                lines.append({"kind": "fire", "gender": gender, "ident": ident,
+                              "school": schools[ident].name, "slot": "head",
+                              "coach_id": c.coach_id, "name": c.name, "why": why})
+                taken.add(c.coach_id)
+                vacancies.append((ident, "head"))
             coef = _coef(world_id, gender)
             by_coach: dict = {}
             for (i, cid), rows in runs.items():

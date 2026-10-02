@@ -16,9 +16,10 @@
    the whole association — and the scope bar's boys/girls switch selects which of the
    two draws is on screen. "State" is implied here as on every championship page. #}
 {{ jh_header(view.scope, u, 'jv_state', 'JV Team State Tournament',
-             'The JV team championship — statewide, no classifications. Districts earn
-              berths on their JV record, twenty regions crown champions, and sixteen
-              at-large selections play a Parastate round to join them.',
+             'The JV team championship — statewide, no classifications. Every JV team
+              enters one of thirty Regions on its JV record, each Region sends its
+              qualifiers to the State draw, and the at-large selections play a
+              Parastate round to join them.',
              ([('Season', view.season_year|cal), ('Entered', view.field_n),
                ('Regions', view.region_n)]
               + ([('At-large', view.at_large_n)] if view.at_large_n else [])
@@ -118,41 +119,13 @@
    inside the bracket not a separate area." The mobile `jh_round_tabs` above stays —
    that is the same tree at a width the canvas cannot serve, not a second copy of it. #}
 
-{# ‼️ FULL WIDTH, AND SCROLLING INSIDE ITS OWN WRAPPER. `.bl-table` carries a 920px
-   min-width, so in the 322px rail this panel used to sit in it parked its champion
-   column off-screen — the exact fault the app's row components were written to
-   replace. `.bl-tablescroll` is the app's standing answer for a wide table: the
-   overflow belongs to the table, never to the page. #}
-<div class="bl-panel" style="margin-top:14px">
-  <div class="bl-panel-head"><span class="bl-panel-title">Regional champions</span>
-    <span class="bl-panel-note">{{ view.qualifier_n }} district qualifiers · {{ view.region_n }} regions</span></div>
-  <div class="bl-tablescroll">
-    <div class="bl-table" style="--bl-grid-cols: 44px 1fr auto 1.1fr 96px 110px">
-      <div class="bl-thead">
-        <span class="bl-th num">SEED</span>
-        <span class="bl-th">CHAMPION</span>
-        <span class="bl-th"></span>
-        <span class="bl-th">REGION</span>
-        <span class="bl-th num">REG. DRAW</span>
-        <span class="bl-th">STATE</span>
-      </div>
-      {% for r in view.regions %}
-      <div class="bl-row">
-        <span class="bl-rank">{{ r.seed or '—' }}</span>
-        <a class="bl-school" href="{{ url_for('jhsaa_school', school=r.champion, u=u, g=view.gender, year=view.scope.pin) }}">{{ r.champion }}</a>
-        <span>{{ r.deco.mark|safe if r.deco }}</span>
-        <span>{{ r.region }}</span>
-        <span class="bl-cell-num">{{ r.field_n }}</span>
-        {# ‼️ HOW FAR THEY WENT, NOT HOW THEY GOT IN. Every region champion is in the
-           draw, so "entered directly / qualified" described a distinction that does
-           not exist; the finish is the thing this row can say that the bracket
-           cannot say at a glance for twenty programs. #}
-        <span class="jh-tag {{ 'jvstate' if r.finish == 'Champion' else 'jvroad' if r.finish in ('Finalist', 'Semifinalist') }}">{{ r.finish or '—' }}</span>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-</div>
+{# ‼️ NO "REGIONAL CHAMPIONS" TABLE (owner, 2026-10). It listed one champion per
+   region beside its statewide seed and State finish — the shape the event had when
+   twenty areas each crowned ONE champion and those twenty were the State field.
+   Since JHSAA rule 2096 a Region crowns nobody and sends its qualifiers, so the
+   table rendered thirty rows with no champion, no seed and no finish: an empty
+   ledger for a distinction the event no longer makes. The regional bracket below
+   still shows a region's draw, one at a time. #}
 {# ‼️ THE REGIONAL BRACKET, ONE REGION AT A TIME (owner rule 2070). Every region's
    full draw has been archived since the event began — `run_regionals` stores it under
    `ev["regions"]` for every season — but no surface ever rendered one, which read as
