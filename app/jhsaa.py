@@ -436,6 +436,73 @@ def sixteen_state(group: str | None, year: int | None) -> bool:
     return year >= sixteen_state_era()
 
 
+# --- THE CIRCUIT ROUND (owner rule 2026-10) ------------------------------------
+#
+# In a Circuit class, from `circuit_era()`, the two recovery rounds that used to
+# be Super Regionals (16 Regional losers, paired high-low) and Semi-State (the 8
+# Super Regional winners + the 8 Zonal losers) are ONE stage played in two rounds
+# over a FIELD OF 32: the 24 teams already in recovery (16 Regional losers + 8
+# Zonal losers) plus the NEXT EIGHT on seeding ATR from the whole class, the
+# Zonal champions and anyone already admitted excluded. The 32 are dealt into
+# EIGHT CIRCUITS OF FOUR by WHERE THEY ARE (area, county, city, name — the JV
+# Region dealer, `deal_contiguous`, at a group size of 4), nothing pulled or
+# swapped to force geography, and each Circuit plays two semifinals (1 v 4 and
+# 2 v 3 on seeding ATR within the Circuit) and a final. The semifinals KEEP the
+# Super Regionals name, heading and calendar lane (owner: "super regionals is
+# accurate and works") — the composition changed, the nomenclature did not. The
+# finals are the CIRCUIT round (`CIRCUIT_PHASE`, replacing Semi-State in its
+# lane), chipped Circuits; every dual is a numbered unit, "Circuit 1" to
+# "Circuit 8", and the eight winners are CIRCUIT CHAMPIONS — a State berth with
+# no bye and no Zonal privilege, recorded as a title of its own, never a State
+# title. Everything below (Divisionals, Semi-Conference, Conference, the
+# Challengers and the Specials) feeds off the Circuit's losers exactly as it fed
+# off Semi-State's and Super Regionals' — the final losers where Semi-State
+# losers went, the semifinal losers where Super Regional losers went.
+#
+# ‼️ NEVER Section, Sectional, Regional, Zonal, Divisional or Conference for this
+# stage: every one is a different playoff unit here.
+#
+# ‼️ A PER-CLASS, SEASON-GATED SWITCH — the `sixteen_state` idiom exactly: an
+# explicit tuple, never a derivation, and every shape question goes through
+# `circuit(group, year)`. A 16-team State pilot class that plays the Circuit
+# GROWS TO A 24-TEAM STATE (`CIRCUIT_PILOT_FIELD`): 8 Zonal champions, 8 Circuit
+# champions and the last 8 through the SAME tail a 24-field class (1A, 10B,
+# 11B) already runs — Divisionals and the Specials — nothing invented.
+CIRCUIT_GROUPS = ("Group 1", "Group 2", "Group 3", "10B", "11B", "1A", "2A", "3A", "4A")
+CIRCUIT_PHASE = "circuit"
+CIRCUIT_NAME = "Circuit"
+CIRCUIT_FIELD = 32
+CIRCUIT_SIZE = 4
+#: A pilot class on the Circuit crowns from 24, not 16 (owner rule 2026-10).
+CIRCUIT_PILOT_FIELD = 24
+
+
+def circuit(group: str | None, year: int | None) -> bool:
+    """Is `group`'s `year` season played with the Circuit round in place of the
+    Super Regionals / Semi-State pair? Membership AND the season, never
+    membership alone; `year` None answers False without touching the database
+    (the `sixteen_state` contract)."""
+    if year is None or group not in CIRCUIT_GROUPS:
+        return False
+    return year >= circuit_era()
+
+
+def deal_contiguous(items: list, n: int, key) -> list[list]:
+    """Deal `items` into `n` contiguous buckets of near-equal size, ordered by `key`
+    — the JV Region dealer (`jhsaa_jv_state.assign_regions`) generalised to any
+    bucket count: ordering first puts neighbours together, which is all the
+    geography a bucket needs, and dealing equal slices means no bucket is a
+    tenth the size of another. Deterministic and stateless."""
+    order = sorted(items, key=key)
+    if not order or n <= 0:
+        return []
+    per = len(order) / n
+    out: list[list] = [[] for _ in range(n)]
+    for i, it in enumerate(order):
+        out[min(n, int(i // per) + 1) - 1].append(it)
+    return out
+
+
 
 def metastate_bids(group: str | None, year: int | None = None) -> int:
     """How many of the field's LOWEST seeds play the metas — the group's whole
@@ -560,7 +627,8 @@ EARLY_FORMAT_PHASE = "early"
 # phase at all because that is the only thing that keeps a meta loser out of the
 # State draw's field (see `METASTATE_FINISH`).
 POSTSEASON = ("sectional", "ward", "regional", "zonal", "epiregional",
-              "super_regional", "semi_state", "divisional", "semi_conference",
+              "super_regional", CIRCUIT_PHASE, "semi_state", "divisional",
+              "semi_conference",
               "conference", "special_challenger", "state_special",
               "metastate", "state", TOC_QUALIFIER_PHASE, "toc")
 
@@ -1380,7 +1448,9 @@ def state_field_size(group: str, year: int | None = None) -> int:
     ‼️ Pass the season whenever there is one — the table is not the pilot's
     field, and a caller that drops the year describes the wrong event."""
     if sixteen_state(group, year):
-        return SIXTEEN_STATE_FIELD
+        # A pilot class on the Circuit (owner rule 2026-10) crowns from 24: the
+        # 8 Zonal champions, the 8 Circuit champions and the 24-field tail.
+        return CIRCUIT_PILOT_FIELD if circuit(group, year) else SIXTEEN_STATE_FIELD
     return STATE_FIELD.get(group, STATE_FIELD_DEFAULT)
 
 
@@ -1425,7 +1495,19 @@ def recovery_shape(group: str, year: int | None = None) -> dict:
 
     sr = _even(reg_losers)
     sr_w, sr_l = sr // 2, sr - sr // 2
-    if sixteen_state(group, year):
+    circ = 0
+    if circuit(group, year):
+        # ‼️ THE CIRCUIT (owner rule 2026-10): the Super Regionals are the eight
+        # Circuits' semifinals over a 32 (the 24 in recovery + the next 8 on
+        # seeding ATR) and the Circuit round is their eight finals. The finals'
+        # winners take the berths Semi-State used to award; the final losers
+        # and the semifinal losers feed the Divisionals exactly as Semi-State
+        # and Super Regional losers did. Semi-State does not convene.
+        sr = CIRCUIT_FIELD
+        circ = CIRCUIT_FIELD // 2
+        sr_w, sr_l = circ, sr - circ
+        ss_w, ss_l = circ // 2, circ - circ // 2
+    if sixteen_state(group, year) and not circuit(group, year):
         # ‼️ THE 16-TEAM STATE PILOT (JHSAA rule 2099): recovery ENDS at
         # Semi-State. Super Regionals and Semi-State run exactly as below; the
         # Semi-State winners are the only recovery qualifiers and nothing after
@@ -1451,8 +1533,11 @@ def recovery_shape(group: str, year: int | None = None) -> dict:
     # Semi-State + 8 Divisional + 8 Conference (whose winners play the Specials
     # for those last 8 berths); a 40 field is 8 + 8 + 8 + 16, the Conference
     # absorbing the remainder as it always has.
-    ss = _even(sr_w + zon_losers)
-    ss_w, ss_l = ss // 2, ss - ss // 2
+    if circ:
+        ss = 0
+    else:
+        ss = _even(sr_w + zon_losers)
+        ss_w, ss_l = ss // 2, ss - ss // 2
 
     # ‼️ THE DIVISIONALS TAKE AT MOST ONE BLOCK, and the Conference takes the
     # rest — capping at `champions` is what makes the three field sizes come out
@@ -1468,7 +1553,8 @@ def recovery_shape(group: str, year: int | None = None) -> dict:
     # somewhere in the ladder — the direct pool is the Divisional losers.
     body_seats = max(0, cf_seats - dv_l) if cf_seats else 0
     return {"berths": berths, "champions": champions,
-            "super_regional": sr, "semi_state": ss, "divisional": dv,
+            "super_regional": sr, CIRCUIT_PHASE: circ, "semi_state": ss,
+            "divisional": dv,
             "semi_conference": 2 * body_seats, "conference": cf_seats,
             "body_seats": body_seats}
 
@@ -3423,6 +3509,7 @@ def reset_schools() -> None:
     _jv_parastate_era_cache.clear()
     _jv_qualifying_era_cache.clear()
     _sixteen_state_era_cache.clear()
+    _circuit_era_cache.clear()
     _nonpublic_era_cache.clear()
     _sibling_era_cache.clear()
     _town_cache.clear()
@@ -3780,6 +3867,17 @@ def sixteen_state_era() -> int:
     return _resolve_era("jhsaa_sixteen_state_era", _sixteen_state_era_cache)
 
 
+_circuit_era_cache: dict = {}
+
+
+def circuit_era() -> int:
+    """The first SEASON the Circuit round is played in a `CIRCUIT_GROUPS` class
+    (owner rule 2026-10) — the `sixteen_state_era` idiom: the first season the
+    save has not archived, 0 on a fresh save, pinnable through `worldconfig`
+    (`jhsaa_circuit_era`). Resolve once per season, never per team."""
+    return _resolve_era("jhsaa_circuit_era", _circuit_era_cache)
+
+
 _nonpublic_era_cache: dict = {}
 
 
@@ -4095,6 +4193,7 @@ ERA_SETTINGS = ("jhsaa_name_era", "jhsaa_dev_era", "jhsaa_talent_era",
                 "jhsaa_band_era", "jhsaa_style_era", "jhsaa_jv_parastate_era",
                 "jhsaa_jv_qualifying_era",
                 "jhsaa_sibling_era", "jhsaa_sixteen_state_era",
+                "jhsaa_circuit_era",
                 "jhsaa_early_era", "jhsaa_early_seat_era", "jhsaa_early_pot_era",
                 "jhsaa_nonpublic_era")
 
@@ -11037,12 +11136,14 @@ SPECIAL_CHALLENGER_NAME = "Special Challengers"
 SPECIAL_CHALLENGER_FINISH = "Challengers"
 
 _RECOVERY_NAMES = {"super_regional": "Super Regionals", "semi_state": "Semi-State",
+                   CIRCUIT_PHASE: CIRCUIT_NAME,
                    "divisional": DIVISIONAL_NAME,
                    "semi_conference": SEMI_CONFERENCE_NAME,
                    "conference": CONFERENCE_NAME,
                    "special_challenger": SPECIAL_CHALLENGER_NAME,
                    "state_special": STATE_SPECIAL_NAME}
 _RECOVERY_UNITS = {"super_regional": "Super Regional", "semi_state": "Semi-State",
+                   CIRCUIT_PHASE: "Circuit",
                    "divisional": "Division",
                    "semi_conference": SEMI_CONFERENCE_NAME,
                    "conference": "Conference",
@@ -11273,16 +11374,112 @@ def _recovery_round(pool: list[TeamSeason], *, phase: str,
              "round_names": [_RECOVERY_NAMES[phase]]}, winners)
 
 
+def circuit_field(by_name: dict, reg_losers: list, zon_losers: list,
+                  zonal_champs: list, power: dict) -> list:
+    """The Circuit's 32 (owner rule 2026-10): the 24 already in recovery — the
+    Regional losers and the Zonal losers — plus the NEXT EIGHT on seeding ATR
+    (`seed_atr`, standardised over the whole class) from everyone else, the
+    Zonal champions excluded. A district champion has a protected Regionals seat,
+    so it is either a champion or already in the 24; nothing is pulled in to
+    force geography and nothing is swapped. A thin class (a small world) fills
+    what it can; the pool is then cut to a multiple of `CIRCUIT_SIZE` by dropping
+    its weakest, because a Circuit of three is rejected, never played."""
+    inside = {t.school.name for t in reg_losers} | {t.school.name for t in zon_losers}
+    champs = {t.school.name for t in zonal_champs}
+    rest = [t for t in by_name.values()
+            if t.school.name not in inside and t.school.name not in champs]
+    satr = seed_atr(list(by_name.values()), power)
+    key = _seed_atr_key(satr)
+    extra = sorted(rest, key=key)[:max(0, CIRCUIT_FIELD - len(inside))]
+    pool = sorted(list(reg_losers) + list(zon_losers) + extra, key=key)[:CIRCUIT_FIELD]
+    keep = len(pool) - len(pool) % CIRCUIT_SIZE
+    return pool[:keep]
+
+
+def deal_circuits(pool: list) -> list[list]:
+    """`pool` dealt into Circuits of `CIRCUIT_SIZE` by WHERE the programs are —
+    area, then county, then city, then name (`deal_contiguous`, the JV Region
+    dealer). Each Circuit is returned in that geographic order; the caller seeds
+    it. Every Circuit is exactly `CIRCUIT_SIZE`: `circuit_field` cut the pool to
+    a multiple, so a short Circuit is a caller bug, not a shape."""
+    n = len(pool) // CIRCUIT_SIZE
+    if n == 0:
+        return []
+    groups = deal_contiguous(pool, n, key=lambda t: (t.school.area, t.school.county,
+                                                     t.school.city, t.school.name))
+    assert all(len(g) == CIRCUIT_SIZE for g in groups), [len(g) for g in groups]
+    return groups
+
+
+def _circuit_stage(pool: list, power: dict, rng: random.Random
+                   ) -> tuple[dict, dict, list, list, list]:
+    """Play the Circuit: eight (at full size) Circuits of four, each a 1 v 4 and
+    2 v 3 semifinal on seeding ATR within the Circuit (phase `super_regional` —
+    the Super Regionals, by name and lane) and a final (phase `CIRCUIT_PHASE`).
+    Returns (super_regional_arc, circuit_arc, champions, final_losers,
+    semifinal_losers). Every dual is a numbered unit: the semifinals count on as
+    Super Regionals always have, the finals are "Circuit N", and both arcs carry
+    `circuits` (the Circuits in seed order) so a page can show who was dealt
+    where."""
+    circuits = deal_circuits(pool)
+    satr = seed_atr(pool, power)
+    key = _seed_atr_key(satr)
+    seeded = [sorted(c, key=key) for c in circuits]
+    semi_games, final_games = [], []
+    champions, final_losers, semi_losers = [], [], []
+    n_semi = 0
+    for ci, c in enumerate(seeded, start=1):
+        finalists = []
+        for a, b in ((c[0], c[3]), (c[1], c[2])):
+            n_semi += 1
+            res = play_dual(a, b, seed=rng.randrange(1 << 30), phase="super_regional")
+            win, lose = (a, b) if res.winner == 0 else (b, a)
+            semi_games.append({"home": a.school.name, "away": b.school.name,
+                               "home_points": res.home_points,
+                               "away_points": res.away_points,
+                               "winner": win.school.name,
+                               "unit": f"{_RECOVERY_UNITS['super_regional']} {n_semi}",
+                               "circuit": ci})
+            finalists.append(win)
+            semi_losers.append(lose)
+        a, b = finalists
+        res = play_dual(a, b, seed=rng.randrange(1 << 30), phase=CIRCUIT_PHASE)
+        win, lose = (a, b) if res.winner == 0 else (b, a)
+        final_games.append({"home": a.school.name, "away": b.school.name,
+                            "home_points": res.home_points,
+                            "away_points": res.away_points,
+                            "winner": win.school.name,
+                            "unit": f"{_RECOVERY_UNITS[CIRCUIT_PHASE]} {ci}",
+                            "circuit": ci})
+        champions.append(win)
+        final_losers.append(lose)
+    names = [[t.school.name for t in c] for c in seeded]
+    sr_arc = {"field": [t.school.name for c in seeded for t in c],
+              "rounds": [semi_games],
+              "survivors": [gm["winner"] for gm in semi_games],
+              "round_names": [_RECOVERY_NAMES["super_regional"]],
+              "circuits": names}
+    ci_arc = {"field": [gm["winner"] for gm in semi_games],
+              "rounds": [final_games],
+              "survivors": [t.school.name for t in champions],
+              "round_names": [CIRCUIT_NAME],
+              "circuits": names}
+    return sr_arc, ci_arc, champions, final_losers, semi_losers
+
+
 def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
               prestate: dict, zonal_champs: list, district_champs: list[str],
               power: dict, *,
               seed: int, year: int | None = None) -> tuple[dict, dict, dict, dict, dict,
-                                                          list, list[str], dict]:
+                                                          list, list[str], dict, dict]:
     """The whole recovery path for one group: who still needs a berth, who gets
     another chance, and the FOUR rounds that decide it.
 
     Returns (super_regional, semi_state, divisional, semi_conference, conference,
-    qualifiers, district_qualifiers, atr_used).
+    qualifiers, district_qualifiers, atr_used, circuit) — `circuit` is the
+    Circuit round's arc in a Circuit class (owner rule 2026-10) and the
+    "did not convene" shape everywhere else, exactly as `semi_state` is the
+    other way round.
 
     ‼️ NOBODY REACHES STATE ON A BYE (owner rule 2027-08 — the goal the whole
     design serves). Every recovery round pairs its ENTIRE field, so a bye is
@@ -11333,7 +11530,10 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     # every reader (`jhsaa_postseason_result`, the ledger chip) already handles
     # the key, so retiring the rule does not have to rewrite history.
     district_qualifiers: list[str] = []
-    pilot = sixteen_state(group, year)
+    circ = circuit(group, year)
+    # A pilot class on the Circuit runs the standard ladder onto a 24 (owner
+    # rule 2026-10); the pilot's early return is for the 16 only.
+    pilot = sixteen_state(group, year) and not circ
     berths = max(0, state_field_size(group, year) - len(zonal_champs))
     reg_losers = [by_name[n] for n in _losers(prestate, 0)]
     zon_losers = [by_name[n] for n in _losers(prestate, 1)]
@@ -11372,21 +11572,40 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
     # readmitted one rung later, into the Divisionals, so both rounds are the
     # same size and deliver the same block of berths. The old `ceil(4*berths/3)`
     # Semi-State floor (and the readmission window it sized) is gone with it.
-    sr_pool = sorted(reg_losers, key=_atr_key(power))
-    if len(sr_pool) % 2:                        # reservoir dry: the weakest sits out
-        sr_pool = sr_pool[:-1]
     rng = random.Random(seed)
-    sr_arc, sr_winners = _recovery_round(sr_pool, phase="super_regional", rng=rng)
+    ci_arc = {"field": [], "rounds": [[]], "survivors": [],
+              "round_names": [CIRCUIT_NAME]}
+    if circ:
+        # ‼️ THE CIRCUIT (owner rule 2026-10): the Super Regionals are the
+        # Circuits' semifinals over a 32 and the Circuit round is their finals.
+        # The champions take Semi-State's berths; the final losers stand where
+        # Semi-State losers stood and the semifinal losers where Super Regional
+        # losers stood, so the Divisionals and everything below are untouched.
+        pool = circuit_field(by_name, reg_losers, zon_losers, zonal_champs, power)
+        sr_arc, ci_arc, ss_winners, ss_losers, sr_losers = _circuit_stage(
+            pool, power, rng)
+        ss_losers = sorted(ss_losers, key=_atr_key(power))
+        sr_losers = sorted(sr_losers, key=_atr_key(power))
+        ss_pool = list(ss_winners) + list(ss_losers)
+        ss_arc = {"field": [], "rounds": [[]], "survivors": [],
+                  "round_names": [_RECOVERY_NAMES["semi_state"]]}
+    else:
+        sr_pool = sorted(reg_losers, key=_atr_key(power))
+        if len(sr_pool) % 2:                    # reservoir dry: the weakest sits out
+            sr_pool = sr_pool[:-1]
+        sr_arc, sr_winners = _recovery_round(sr_pool, phase="super_regional", rng=rng)
 
-    # Semi-State: the Super Regional winners and the Zonal losers, and nobody
-    # else. Byeless, so an odd pool drops its weakest — which cannot happen at
-    # full size (both halves are even by construction).
-    won = {id(t) for t in sr_winners}
-    sr_losers = sorted((t for t in sr_pool if id(t) not in won), key=_atr_key(power))
-    ss_pool = sorted(list(sr_winners) + zon_losers, key=_atr_key(power))
-    if len(ss_pool) % 2:
-        ss_pool = ss_pool[:-1]
-    if pilot and len(ss_pool) < 2 * berths:
+        # Semi-State: the Super Regional winners and the Zonal losers, and nobody
+        # else. Byeless, so an odd pool drops its weakest — which cannot happen at
+        # full size (both halves are even by construction).
+        won = {id(t) for t in sr_winners}
+        sr_losers = sorted((t for t in sr_pool if id(t) not in won), key=_atr_key(power))
+        ss_pool = sorted(list(sr_winners) + zon_losers, key=_atr_key(power))
+        if len(ss_pool) % 2:
+            ss_pool = ss_pool[:-1]
+    if circ:
+        pass
+    elif pilot and len(ss_pool) < 2 * berths:
         # ‼️ TOO FEW FOR A SEMI-STATE (owner rule 2026-09): a class that cannot
         # fill it — only possible under the ward gate, never at real size — does
         # not play one. State is the Zonal champions plus the SUPER REGIONAL
@@ -11421,13 +11640,14 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
                  "round_names": [_RECOVERY_NAMES["semi_conference"]]},
                 {"field": [], "rounds": [[]], "survivors": [],
                  "round_names": [_RECOVERY_NAMES["conference"]]},
-                list(ss_winners), district_qualifiers, atr_used)
+                list(ss_winners), district_qualifiers, atr_used, ci_arc)
 
     # Divisionals: the berths Semi-State could not fill, contested by the best
     # Semi-State losers. `L = 0` is legal and means the round did not convene.
-    ss_won = {id(t) for t in ss_winners}
-    ss_losers = sorted((t for t in ss_pool if id(t) not in ss_won),
-                       key=_atr_key(power))
+    if not circ:
+        ss_won = {id(t) for t in ss_winners}
+        ss_losers = sorted((t for t in ss_pool if id(t) not in ss_won),
+                           key=_atr_key(power))
     # At most ONE block here; the Conference takes whatever is left (see
     # `recovery_shape`). 24 -> 4, 32 -> 8, 40 -> 8.
     dv_n = min(len(zonal_champs), max(0, berths - len(ss_winners)) // 2)
@@ -11579,12 +11799,12 @@ def _recovery(group: str, by_name: dict, sectionals: dict, wards: dict,
 
     if len(qualifiers) != berths:
         log.warning("JHSAA %s recovery filled %d of %d berths (pool %d, "
-                    "semi-state %d, divisional %d, semi-conference %d, "
+                    "semi-state/circuit %d, divisional %d, semi-conference %d, "
                     "conference %d)", group,
-                    len(qualifiers), berths, len(sr_pool), len(ss_pool),
-                    len(dv_pool), len(sc_pool), len(cf_pool))
+                    len(qualifiers), berths, len(sr_arc.get("field") or ()),
+                    len(ss_pool), len(dv_pool), len(sc_pool), len(cf_pool))
     return (sr_arc, ss_arc, dv_arc, sc_arc, cf_arc,
-            qualifiers, district_qualifiers, atr_used)
+            qualifiers, district_qualifiers, atr_used, ci_arc)
 
 
 def _recovery_24(group: str, by_name: dict, prestate: dict, zonal_champs: list,
@@ -13581,6 +13801,8 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
           # season played on either side of `sixteen_state_era` is two different
           # postseasons, and the era is a worldconfig value a save can re-pin.
           sixteen_state(SIXTEEN_STATE_GROUPS[0], year),
+          # ‼️ AND THE CIRCUIT'S GATE (owner rule 2026-10), for the same reason.
+          circuit(CIRCUIT_GROUPS[0], year),
           # ‼️ AND THE NON-PUBLIC SPLIT'S GATE (owner rule 2026-09): the same
           # season on either side of `nonpublic_era` is two different roads.
           nonpublic_active(year))
@@ -13805,6 +14027,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     # any State draw: the remaining berths are earned on court, and the State
     # seeding TOSS is recomputed once more AFTERWARD so it includes them.
     super_regionals, semi_states, divisionals = {}, {}, {}
+    circuits: dict[str, dict] = {}
     semi_conferences, conferences = {}, {}
     atr_snap: dict[str, float] = {}
     recovery_q, district_q = {}, {}
@@ -13819,11 +14042,12 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
         # 32, 8/8/8/16 at 40 — and the dynamic ladder produces all three
         # exactly once the Divisionals are capped at one block. See
         # `_recovery_24`, kept unwired for the archive it explains.
-        sr, ss, dv, sc, cf, quals, dq, atr_used = _recovery(
+        sr, ss, dv, sc, cf, quals, dq, atr_used, ci = _recovery(
             group, by_name_g, sectionals[group], wards[group], prestates[group],
             zonal_champs[group], district_champs[group], post_power,
             seed=seed + hash(group) % 9973 + 16223, year=year)
         super_regionals[group], semi_states[group] = sr, ss
+        circuits[group] = ci
         divisionals[group], semi_conferences[group] = dv, sc
         conferences[group] = cf
         recovery_q[group], district_q[group] = quals, dq
@@ -13832,7 +14056,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
     special_challengers: dict[str, dict] = {}
     state_pools: dict[str, list] = {}
     for group in ROAD_GROUPS:
-        if sixteen_state(group, year):
+        if sixteen_state(group, year) and not circuit(group, year):
             # ‼️ THE 16-TEAM STATE PILOT (JHSAA rule 2099): no Special
             # Challengers, no State Specials and no emergency reconciliation.
             # The road's recovery qualifiers ARE the Semi-State winners, and a
@@ -13964,9 +14188,11 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
         # `champions=STATE_BYES` keeps `run_state`'s bye budget and expansion
         # rule exactly where they were, so every draw keeps its shape: 8 single
         # byes in a 24, 8 double byes in a 40, placement only in a 32.
-        if sixteen_state(group, year):
+        if sixteen_state(group, year) and not circuit(group, year):
             # ‼️ THE 16-TEAM STATE PILOT (JHSAA rule 2099): no committee, no
-            # Metastate, no Parastate. The committee selects, seeds and
+            # Metastate, no Parastate. A pilot class on the CIRCUIT (owner rule
+            # 2026-10) crowns from 24 on the ordinary 24-field draw below —
+            # still no committee (`at_large_bids` answers 0 for it). The committee selects, seeds and
             # publishes NOTHING for a pilot class (`committee` None, the
             # archive's "this class has no committee" value).
             committee_by_group[group] = None
@@ -13974,7 +14200,12 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
                 zonal_champs[group], epi_winners[group], state_pools[group],
                 final_power, seed=seed + hash(group) % 9973 + 12281)
             continue
-        if group in ATLARGE_GROUPS:
+        # ‼️ THE SEASON'S bids, never the table's: a 16-team pilot class on the
+        # Circuit (owner rule 2026-10) crowns from a plain 24 with no committee —
+        # `at_large_bids(group, year)` answers 0 for it — and the pilot's own
+        # `continue` above no longer shields it from this branch. Read off the
+        # table, 1A and Group 3 grew eight at-larges back and crowned from 32.
+        if group in ATLARGE_GROUPS and at_large_bids(group, year):
             # THE PARASTATE FIELD (owner spec 2026-09; 8A/9A joined and 7A went
             # to 8 bids 2026-09). The road is untouched — its 32 qualifiers are
             # exactly `zonal_champs + state_pools` — and the seeds are all
@@ -14135,6 +14366,10 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
             # before it existed carry no key.
             "epiregional": epiregionals[group],
             "super_regional": super_regionals[group],
+            # THE CIRCUIT (owner rule 2026-10) — the eight Circuit finals in a
+            # Circuit class, the "did not convene" shape elsewhere; `.get` on
+            # read for seasons archived before it existed.
+            CIRCUIT_PHASE: circuits[group],
             "semi_state": semi_states[group],
             "divisional": divisionals[group],
             "semi_conference": semi_conferences[group],

@@ -3654,6 +3654,7 @@ _JH_PHASE_LABEL = {"showcase_pod": "Showcase (Pod)", "showcase_tiered": "Showcas
                    "conference": "Conference",
                    "semi_conference": "Semi-Conference", "divisional": "Divisionals",
                    "semi_state": "Semi-State", "super_regional": "Super Regional",
+                   "circuit": "Circuit",
                    "epiregional": "Epiregional",
                    "metastate": "Metastate",
                    "zonal": "Zonal", "regional": "Regional", "ward": "Ward",
@@ -5205,7 +5206,7 @@ def jhsaa_bracket_view(seed: int, gender: str, group: str | None = None,
     # and the fold is skipped.
     for key in (jh.METASTATE_PHASE, "state_special", "special_challenger", "conference",
                 "semi_conference", "divisional",
-                "semi_state", "super_regional"):
+                "semi_state", jh.CIRCUIT_PHASE, "super_regional"):
         d = (arc.get(key) or {}).get(grp) or {}
         if d.get("rounds") and d["rounds"][0]:
             # Recovery rounds are BYELESS BY CONSTRUCTION — each pairs its entire
@@ -5560,6 +5561,7 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     pre_seeds = _jh_seeds((arc or {}).get("prestate", {}).get(road_g) or {})
     epi_seeds = _jh_seeds((arc or {}).get("epiregional", {}).get(road_g) or {})
     sr_seeds = _jh_seeds((arc or {}).get("super_regional", {}).get(road_g) or {})
+    ci_seeds = _jh_seeds((arc or {}).get(jh.CIRCUIT_PHASE, {}).get(road_g) or {})
     ss_seeds = _jh_seeds((arc or {}).get("semi_state", {}).get(road_g) or {})
     dv_seeds = _jh_seeds((arc or {}).get("divisional", {}).get(road_g) or {})
     sc_seeds = _jh_seeds((arc or {}).get("semi_conference", {}).get(road_g) or {})
@@ -5592,6 +5594,9 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
              "conference": "CONFERENCE",
              "semi_conference": "SEMI-CONFERENCE",
              "divisional": "DIVISIONAL", "semi_state": "SEMI-STATE",
+             # The Circuit finals (owner rule 2026-10): their own chip. The
+             # Circuit semifinals are the Super Regionals, by name and lane.
+             "circuit": "CIRCUIT",
              "super_regional": "SUPER REGIONAL", "epiregional": "EPIREGIONAL",
              "zonal": "ZONAL",
              "regional": "REGIONAL", "ward": "WARD", "sectional": "SECTIONAL"}
@@ -5666,7 +5671,7 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
               "CONFERENCE": cf_seeds,
               "SEMI-CONFERENCE": sc_seeds,
               "DIVISIONAL": dv_seeds,
-              "SEMI-STATE": ss_seeds,
+              "SEMI-STATE": ss_seeds, "CIRCUIT": ci_seeds,
               "SUPER REGIONAL": sr_seeds, "EPIREGIONAL": epi_seeds,
               "ZONAL": pre_seeds,
               "REGIONAL": pre_seeds, "WARD": ward_seeds, "SECTIONAL": sec_seeds,

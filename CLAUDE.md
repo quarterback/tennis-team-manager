@@ -1122,6 +1122,37 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   AGAIN** ("I don't want 5/2 tennis to go away") — the wide classes' 4S/5D early
   window is retired; supersedes the 2070 note below. Pages:
   `/jhsaa/computer-ratings` (all groups), `/jhsaa/committee` (48 groups only).
+- **‼️ THE CIRCUIT ROUND — SUPER REGIONALS RECOMPOSED, SEMI-STATE REPLACED (owner
+  rule 2026-10, `jhsaa.CIRCUIT_GROUPS` / `circuit(group, year)` / `circuit_era`,
+  `docs/AAR-jhsaa-circuit-round.md`).** In a Circuit class (Group 1, Group 2,
+  Group 3, 10B, 11B, 1A-4A by owner default), from `circuit_era()`, the Super
+  Regionals and Semi-State are ONE stage in two rounds over a FIELD OF 32: the 24
+  already in recovery (16 Regional losers + 8 Zonal losers) plus the NEXT EIGHT on
+  seeding ATR from the class (`circuit_field`; Zonal champions and anyone already
+  admitted excluded, nothing pulled in or swapped for geography), dealt into EIGHT
+  CIRCUITS OF FOUR by where the programs are (`deal_circuits` → `deal_contiguous`,
+  the JV Region dealer generalised; a Circuit of three is rejected, the pool is
+  cut to a multiple of four). Each Circuit plays two semifinals (1 v 4, 2 v 3 on
+  seeding ATR within it) and a final. ‼️ **THE SEMIFINALS KEEP THE SUPER REGIONALS
+  NAME, HEADING AND LANE** (owner overruled the brief: "super regionals is
+  accurate and works" — composition changed, nomenclature did not); **the finals
+  are the Circuit round** (`CIRCUIT_PHASE`, Semi-State's lane, chip CIRCUIT, units
+  "Circuit 1"-"Circuit 8"), and its eight winners are **Circuit Champions** — a
+  State berth with no bye and no Zonal privilege, a title of its own (unit honour,
+  "<class> Circuit Champion" team honour, CIRC title-board column), never a State
+  title. Never Section/Sectional/Regional/Zonal/Divisional/Conference for this
+  stage. The final losers stand where Semi-State losers stood and the semifinal
+  losers where Super Regional losers stood, so the Divisionals and everything
+  below are untouched; Semi-State archives the "did not convene" shape. ‼️ A
+  16-TEAM PILOT CLASS ON THE CIRCUIT CROWNS FROM 24 (`CIRCUIT_PILOT_FIELD`): 8
+  Zonal + 8 Circuit + the 24-field tail 1A/10B/11B already run (4 Divisional + 4
+  Specials), on the ordinary 24 draw — `pilot = sixteen_state(...) and not circ`
+  in `_recovery` and `run_season`; the committee still selects nothing. Coefficient
+  0.25 (Semi-State's price, below Regionals). Per-class and SEASON-GATED like
+  `sixteen_state` (`jhsaa_circuit_era` in `ERA_SETTINGS`); the tests' conftest
+  turns it off (`_circuit_off`) and `tests/test_jhsaa_circuit.py` opts in. ‼️ A
+  fixture that loops `GROUPS` cannot see 10B/11B — loop `GROUPS +
+  NONPUBLIC_GROUPS` with the split on.
 - **‼️ THE 16-TEAM STATE PILOT — 4A/3A/2A/1A/GROUP 3, FROM 2099 (JHSAA rule 2099,
   owner rule 2026-09, `jhsaa.SIXTEEN_STATE_GROUPS` / `sixteen_state(group, year)`,
   `docs/reports/SPEC-jhsaa-16-team-state-pilot.md`,
