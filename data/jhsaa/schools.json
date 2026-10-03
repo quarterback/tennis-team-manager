@@ -6287,28 +6287,6 @@
       "boys_district": "Ambassador League"
     },
     {
-      "name": "Evans",
-      "source": "Evans Western Institute",
-      "city": "Redfork",
-      "county": "Tamarack",
-      "area": "Cascade Divide",
-      "classification": "3A",
-      "group": "11B",
-      "enrollment": 423,
-      "private": true,
-      "mascot": "Alpenglow",
-      "colors": [
-        "#5b2a86",
-        "#e5e7eb"
-      ],
-      "girls": true,
-      "boys": true,
-      "girls_district": "Intermountain Athletic Association",
-      "boys_district": "Intermountain Athletic Association",
-      "old_group": "3A",
-      "old_league": "Juniper League"
-    },
-    {
       "name": "Evans Larsen Day",
       "source": "Jefferson School of Science and Technology North",
       "city": "Ashbury",
@@ -18864,6 +18842,28 @@
       "boys_district": "Halbrook Basin League",
       "source": "Ashbury Central",
       "locality": "Tallulah"
+    },
+    {
+      "name": "Tamarack County",
+      "source": "Evans Western Institute",
+      "city": "Redfork",
+      "county": "Tamarack",
+      "area": "Cascade Divide",
+      "classification": "3A",
+      "group": "11B",
+      "enrollment": 423,
+      "private": true,
+      "mascot": "Loggers",
+      "colors": [
+        "#5b2a86",
+        "#e5e7eb"
+      ],
+      "girls": true,
+      "boys": true,
+      "girls_district": "Intermountain Athletic Association",
+      "boys_district": "Intermountain Athletic Association",
+      "old_group": "3A",
+      "old_league": "Juniper League"
     },
     {
       "name": "Taylor",

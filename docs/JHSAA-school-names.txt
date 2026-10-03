@@ -138,7 +138,7 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     3A   430  Vesper Polytech                        Vesper                 Vesper Polytechnic Institute
 
 
--- SAME LEADING WORD, DIFFERENT CITIES (86 groups)
+-- SAME LEADING WORD, DIFFERENT CITIES (85 groups)
     7A  1444  Alder Crossing                         Boyerstown             Boyerstown North
     3A   438  Alder Co-op                            Monte Blanco           Claudette Freeman
 
@@ -208,9 +208,6 @@ NEAR-DUPLICATES — pairs sharing a leading word, same city first
     5A   860  East Range Agricultural                Blackpine              Svenja Adler
    Group 3   293  East Simmons                           East Simmons           Aspen Harbor
     5A   953  East Burlington                        Leidesdorff            Leidesdorff Academy of Music and Media
-
-    7A  1437  Evans Larsen Day                       Ashbury                Jefferson School of Science and Technology North
-    3A   423  Evans                                  Redfork                Evans Western Institute
 
     6A  1105  Ferris County                          Moriarty               Lorna Booker
     9A  2527  Ferris                                 Valderra               Carmen Valera
@@ -1999,7 +1996,7 @@ Ransoms Landing — 1 program (Antler County, Alderwold)
 Redfork — 3 programs (Tamarack County, Cascade Divide)
     6A  1304 pub  Redfork West                                              Three Rivers League                Redfork West
     3A   447 pub  Western Slope                                             Juniper League                     Western Slope Christian
-    3A   423 priv Evans                                                     Intermountain Athletic Association Evans Western Institute
+    3A   423 priv Tamarack County                                           Intermountain Athletic Association Evans Western Institute
 
 Richmond — 1 program (Vance County, Silver Basin)
    Group 2   728 pub  Richmond                                                  Confluence Athletic Association    Richmond Technical
