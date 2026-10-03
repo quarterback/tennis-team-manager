@@ -1437,9 +1437,9 @@
       "county": "Halbrook",
       "area": "Belmonte Metro",
       "classification": "4A",
-      "group": "10B",
+      "group": "4A",
       "enrollment": 762,
-      "private": true,
+      "private": false,
       "mascot": "Matadors",
       "colors": [
         "#1e2a4a",
@@ -1447,11 +1447,9 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Trinity Interscholastic League",
-      "boys_district": "Trinity Interscholastic League",
-      "source": "Andrés Valera",
-      "old_group": "4A",
-      "old_league": "Millworks Athletic Association"
+      "girls_district": "Millworks Athletic Association",
+      "boys_district": "Millworks Athletic Association",
+      "source": "Andrés Valera"
     },
     {
       "name": "Basin Gate",
@@ -4293,8 +4291,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Intermountain Athletic Association",
-      "boys_district": "Intermountain Athletic Association",
+      "girls_district": "Wildwood Association",
+      "boys_district": "Wildwood Association",
       "old_group": "1A",
       "old_league": "Marble Valley League"
     },
@@ -4768,8 +4766,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Intermountain Athletic Association",
-      "boys_district": "Intermountain Athletic Association",
+      "girls_district": "Shasta League",
+      "boys_district": "Shasta League",
       "source": "Copper Crossing",
       "old_group": "1A",
       "old_league": "Desert Sky League"
@@ -6317,9 +6315,9 @@
       "county": "Marlow",
       "area": "Ashbury Metro",
       "classification": "7A",
-      "group": "7A",
+      "group": "10B",
       "enrollment": 1437,
-      "private": false,
+      "private": true,
       "mascot": "Steeplejacks",
       "colors": [
         "#1e5631",
@@ -6327,9 +6325,11 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Premier Athletic Association",
-      "boys_district": "Premier Athletic Association",
-      "locality": "Bannock"
+      "girls_district": "Breakwater Athletic Association",
+      "boys_district": "Breakwater Athletic Association",
+      "locality": "Bannock",
+      "old_group": "7A",
+      "old_league": "Premier Athletic Association"
     },
     {
       "name": "Evergreen",
@@ -7811,8 +7811,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Intermountain Athletic Association",
-      "boys_district": "Intermountain Athletic Association",
+      "girls_district": "Wildwood Association",
+      "boys_district": "Wildwood Association",
       "source": "Calvary Chapel Kilbride Switch",
       "old_group": "1A",
       "old_league": "Marble Valley League"
@@ -8757,8 +8757,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Cape-Meridian League",
-      "boys_district": "Cape-Meridian League",
+      "girls_district": "Intermountain Athletic Association",
+      "boys_district": "Intermountain Athletic Association",
       "old_group": "3A",
       "old_league": "Rim Country League"
     },
@@ -9079,8 +9079,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Shasta League",
-      "boys_district": "Shasta League",
+      "girls_district": "Klamonia League",
+      "boys_district": "Klamonia League",
       "source": "Miren Garmendia",
       "old_group": "Group 2",
       "old_league": "Olympic League"
@@ -9948,8 +9948,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Jefferson Athletic League",
-      "boys_district": "Jefferson Athletic League",
+      "girls_district": "Intermountain Athletic Association",
+      "boys_district": "Intermountain Athletic Association",
       "old_group": "1A",
       "old_league": "Old Jefferson Athletic Association"
     },
@@ -10008,8 +10008,8 @@
       ],
       "girls": true,
       "boys": false,
-      "girls_district": "Wildwood Association",
-      "boys_district": "Wildwood Association",
+      "girls_district": "Jefferson Athletic League",
+      "boys_district": "Jefferson Athletic League",
       "old_group": "1A",
       "old_league": "Tailings League"
     },
@@ -10715,8 +10715,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Madrone Athletic Conference",
-      "boys_district": "Madrone Athletic Conference",
+      "girls_district": "Crestview League",
+      "boys_district": "Crestview League",
       "old_group": "4A",
       "old_league": "Mission League"
     },
@@ -13558,8 +13558,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Breakwater Athletic Association",
-      "boys_district": "Breakwater Athletic Association",
+      "girls_district": "Crestview League",
+      "boys_district": "Crestview League",
       "source": "Oskar Bellini",
       "old_group": "9A",
       "old_league": "Rim Country League"
@@ -13823,8 +13823,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Wildwood Association",
-      "boys_district": "Wildwood Association",
+      "girls_district": "Jefferson Athletic League",
+      "boys_district": "Jefferson Athletic League",
       "source": "Olive Reach Baptist",
       "old_group": "3A",
       "old_league": "Assay Athletic Association"
@@ -14484,9 +14484,9 @@
       "area": "Boise Frontier",
       "state": "Idaho",
       "classification": "3A",
-      "group": "11B",
+      "group": "3A",
       "enrollment": 458,
-      "private": true,
+      "private": false,
       "mascot": "Falcons",
       "colors": [
         "#1a2332",
@@ -14494,10 +14494,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Shasta League",
-      "boys_district": "Shasta League",
-      "old_group": "3A",
-      "old_league": "Timber Valley League"
+      "girls_district": "Timber Valley League",
+      "boys_district": "Timber Valley League"
     },
     {
       "name": "Perry Green",
@@ -16555,8 +16553,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Cape-Meridian League",
-      "boys_district": "Cape-Meridian League",
+      "girls_district": "Intermountain Athletic Association",
+      "boys_district": "Intermountain Athletic Association",
       "old_group": "1A",
       "old_league": "Desert Sky League"
     },
@@ -18457,8 +18455,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Intermountain Athletic Association",
-      "boys_district": "Intermountain Athletic Association",
+      "girls_district": "Shasta League",
+      "boys_district": "Shasta League",
       "source": "Summervale Northwest",
       "old_group": "3A",
       "old_league": "Juniper League"
@@ -18905,8 +18903,8 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Crestview League",
-      "boys_district": "Crestview League",
+      "girls_district": "Breakwater Athletic Association",
+      "boys_district": "Breakwater Athletic Association",
       "old_group": "9A",
       "old_league": "Rim Country League"
     },
@@ -20489,9 +20487,9 @@
       "county": "Barlowe",
       "area": "Boise Frontier",
       "classification": "1A",
-      "group": "11B",
+      "group": "1A",
       "enrollment": 129,
-      "private": true,
+      "private": false,
       "mascot": "Crimson Hurricanes",
       "colors": [
         "#167339",
@@ -20499,11 +20497,9 @@
       ],
       "girls": true,
       "boys": true,
-      "girls_district": "Klamonia League",
-      "boys_district": "Klamonia League",
-      "source": "St. Genevieve",
-      "old_group": "1A",
-      "old_league": "Hacienda League"
+      "girls_district": "Hacienda League",
+      "boys_district": "Hacienda League",
+      "source": "St. Genevieve"
     },
     {
       "name": "Websterfield",

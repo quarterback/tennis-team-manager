@@ -2214,7 +2214,22 @@ PRIVATE_SCHOOLS = {
     "Belmonte Collegiate",
     "Walter-Kenny",
     "Lycee Valmont",
+    # 2026-10 status worklist (owner decision): Evans Larsen Day was listed public
+    # and is private, seated by the 550 cut (`jhsaa.NONPUBLIC_CUT`), never by size
+    # class. The same pass ruled Washington San Cordero, Peregrine and Basalt
+    # PUBLIC — they are deliberately NOT here (`PUBLIC_SCHOOLS` below overrides
+    # prep-network's private flag for them).
+    "Evans Larsen Day",
 }
+
+# Schools the owner ruled PUBLIC whatever the source record's flag says (2026-10
+# status worklist). Keyed on the display name like `PRIVATE_SCHOOLS`; a name here
+# must never also be in `PRIVATE_SCHOOLS` (asserted below). Seated in their size
+# class, not a Non-Public class.
+PUBLIC_SCHOOLS = {
+    "Washington San Cordero", "Peregrine", "Basalt",
+}
+assert not (PUBLIC_SCHOOLS & PRIVATE_SCHOOLS), PUBLIC_SCHOOLS & PRIVATE_SCHOOLS
 
 # ‼️ THE FLAGSHIP PLAYS THE SPORT (owner rule 2027-08). Nine cities had a MAGNET
 # school in the tennis association while the plain city high school — which
@@ -4183,7 +4198,8 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
             # Renamed schools carry their institution's status, not the source
             # record's: a public high school that becomes Sacred Heart Cathedral
             # is a private school (see PRIVATE_SCHOOLS).
-            "private": s["private"] or display in PRIVATE_SCHOOLS,
+            "private": (display not in PUBLIC_SCHOOLS
+                        and (s["private"] or display in PRIVATE_SCHOOLS)),
             # The per-school override first, then the foreign-fauna cleanup —
             # an owner pick is a decision and must outrank a table.
             "mascot": MASCOTS.get(display) or fix_mascot(display, s["mascot"]),
