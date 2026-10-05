@@ -2214,6 +2214,17 @@ PRIVATE_SCHOOLS = {
     # PUBLIC — they are deliberately NOT here (`PUBLIC_SCHOOLS` below overrides
     # prep-network's private flag for them).
     "Evans Larsen Day",
+    # 2026-10 private expansion (owner-named, net-new; `scripts/jhsaa_private_
+    # expansion_2026_10.py` holds the rows): 25 programs in the seven areas with the
+    # thinnest private coverage. Written bare per the no-suffix rule.
+    "Valderra Catholic", "Esperanza Bay Country Day", "The Cortland School", "St. Jude",
+    "Valois Military Institute", "Aurelia Hall", "St. Luke's", "Latgaway Christian",
+    "Dovetail Mountain", "Echevarria Christian", "Silver Basin Country Day",
+    "Zubieta Catholic", "The Greaves School", "San Cordero Catholic", "Cascade Ridge",
+    "Summit Pines", "Annie Springs Christian", "Blackpine Christian",
+    "Black Springs Country Day", "Tamarack Lutheran", "Canyon Creek",
+    "Blue Mountain Christian", "Eastern Oregon Heritage Academy", "Hermiston Catholic",
+    "Columbia Gorge Christian",
 }
 
 # Schools the owner ruled PUBLIC whatever the source record's flag says (2026-10

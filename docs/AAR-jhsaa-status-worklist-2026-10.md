@@ -51,3 +51,28 @@ floor (`jhsaa.sponsor_floor`), so the 015287a5 gap-fill rule did not fire.
 Every private's class agrees with the 550 cut; no public row sits in 10B/11B (both
 asserted by the script before it writes). Name list regenerated; the gazetteer
 needs the prep-network checkout and was not regenerated in this pass.
+
+## Addendum — the 2026-10 private expansion (25 net-new programs)
+
+Follow-up from the same pass. prep-network has no private school left to add
+(every private-flagged row was already in the association after 2026-09), so
+the owner named 25 net-new programs for the seven areas with the thinnest private
+coverage, placed in towns from the city records (`scripts/jhsaa_private_
+expansion_2026_10.py` holds the rows; `PRIVATE_SCHOOLS` carries the names).
+Names are written bare per the no-suffix rule ("Valderra Catholic", not
+"Valderra Catholic High School"); mascots and colours are placeholders.
+
+| area | private sponsors before → after |
+|---|---|
+| Gold Valley | 9 → 13 |
+| Kangas | 3 → 8 |
+| Silver Basin | 4 → 8 |
+| Cascade Divide | 3 → 7 |
+| Alderwold | 2 → 6 |
+| Blue Mountain Country | 0 → 3 |
+| Columbia Gorge | 0 → 1 |
+
+10B 58 → 65 programs (seven leagues, 8-11); 11B 56 → 74 (eight leagues, 8-11).
+Each new row's `old_league` is the league of the biggest public in its town of
+the same size class. `roll_talent_bands.py` wrote rolled defaults for every
+unassigned school, which also covered 33 earlier expansion rows that had none.
