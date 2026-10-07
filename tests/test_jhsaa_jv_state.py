@@ -131,7 +131,7 @@ def test_the_index_is_30_jv_70_varsity_regular_season_only():
                                 win_pct=0.25, points_for=0, points_against=0,
                                 school=types.SimpleNamespace(name="X"))
     e = jvs.JVEntry(jv=jvt)
-    assert jvs.varsity_record(e) == (3, 1)
+    assert jvs.varsity_record(e) == (3, 1, 0)
     assert abs(jvs.selection_index(e) - (0.30 * 0.25 + 0.70 * 0.75)) < 1e-9
     assert jvs.INDEX_JV_WEIGHT + jvs.INDEX_VARSITY_WEIGHT == 1.0
 

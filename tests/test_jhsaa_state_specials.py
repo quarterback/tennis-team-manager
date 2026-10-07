@@ -139,9 +139,23 @@ def test_challenger_ranking_ignores_postseason_results():
     then added)."""
     a = _Team("A", reg=(12, 4), post=(0, 3))
     b = _Team("B", reg=(11, 5), post=(3, 0))
-    assert jh._reg_season_record(a) == (12, 4)
-    assert jh._reg_season_record(b) == (11, 5)
+    assert jh._reg_season_record(a) == (12, 4, 0)
+    assert jh._reg_season_record(b) == (11, 5, 0)
     assert sorted([b, a], key=jh._challenger_key({}))[0] is a
+
+
+def test_a_regular_season_draw_is_half_a_win_in_the_challenger_ranking():
+    """A drawn dual (Group 2's 3S/3D) stores won=False; read alone it counted as a
+    LOSS. It is its own count and half a win: 8-4-4 is .625, so it outranks a
+    9-7 (.5625) — filed as 8-8 it ranked below."""
+    drew = _Team("Drew", reg=(8, 4))
+    drew.schedule += ([{"opp": "x", "phase": "regular", "won": False, "tied": True}] * 4
+                      + [{"opp": "x", "phase": "state", "won": False, "tied": True}])
+    assert jh._reg_season_record(drew) == (8, 4, 4)
+    assert jh.reg_pct(8, 4, 4) == 0.625
+    other = _Team("Other", reg=(9, 7))
+    key = jh._challenger_key({})
+    assert key(drew)[0] < key(other)[0]
 
 
 def test_pairing_is_best_challenger_vs_weakest_winner(monkeypatch):

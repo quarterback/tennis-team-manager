@@ -74,7 +74,11 @@ real season-long position.
   TOSS gave the away side a win, and `_tiebreak` counted only `won`, so a drawn
   head-to-head scored zero. Rows now carry `tied`, `rating.compute_ratings` counts a
   draw as half a win to each side (`RatingLine.ties`; no college dual ever sets it,
-  so college ratings are unchanged), and the head-to-head rung scores it 0.5. (None occurred in the measured boys season's 436
+  so college ratings are unchanged), and the head-to-head rung scores it 0.5. The
+  regular-season record behind the State Specials challenger ranking and the JV State
+  selection index (`_reg_season_record`) had the same fault; it now returns W-L-T and
+  both rank on `reg_pct` (a draw is half a win). The JV State page and
+  `jhsaa_jv_state.csv` carry the varsity ties (`varsity_reg_ties`). (None occurred in the measured boys season's 436
   Group 2 district duals; the tests pin the path with a program played against a copy
   of itself.)
 - **Roster-facing readers follow the district lineup.** The preseason store's V1 cut,

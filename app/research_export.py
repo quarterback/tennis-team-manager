@@ -661,6 +661,7 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                 "jv_ties": r.get("jv_ties", ""), "jv_pct": r.get("jv_pct", ""),
                 "varsity_reg_wins": r.get("v_wins", ""),
                 "varsity_reg_losses": r.get("v_losses", ""),
+                "varsity_reg_ties": r.get("v_ties", ""),
                 "varsity_reg_pct": r.get("v_pct", ""),
                 "selection_index": r.get("index", ""),
                 "made_main_draw": int(res["finish"] != _jh.PARASTATE_NAME),

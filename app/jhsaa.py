@@ -12049,18 +12049,28 @@ def _recovery_24(group: str, by_name: dict, prestate: dict, zonal_champs: list,
             qualifiers, district_qualifiers, atr_used)
 
 
-def _reg_season_record(t: TeamSeason) -> tuple[int, int]:
-    """Regular-season W-L ONLY (owner rule 2026-08): every dual played outside the
+def _reg_season_record(t: TeamSeason) -> tuple[int, int, int]:
+    """Regular-season W-L-T ONLY (owner rule 2026-08): every dual played outside the
     `POSTSEASON` phases — district play, invitationals, showcases, the early
     window. The State Specials challenger ranking must not see postseason results:
     the round exists because Conference access was letting losing-record teams in,
     and a challenger's claim is what they did across the season, not how far the
-    bracket happened to carry them."""
-    w = sum(1 for e in t.schedule
-            if e.get("phase") not in POSTSEASON and e.get("won"))
-    l = sum(1 for e in t.schedule
-            if e.get("phase") not in POSTSEASON and not e.get("won"))
-    return w, l
+    bracket happened to carry them.
+
+    ‼️ A DRAW IS ITS OWN COUNT, never a loss: a drawn dual stores `won=False`, so
+    reading `won` alone filed every Group 2 3S/3D draw (league or showcase) under
+    losses. Callers score a tie as half a win (`reg_pct`)."""
+    reg = [e for e in t.schedule if e.get("phase") not in POSTSEASON]
+    w = sum(1 for e in reg if e.get("won"))
+    d = sum(1 for e in reg if not e.get("won") and e.get("tied"))
+    return w, len(reg) - w - d, d
+
+
+def reg_pct(w: int, l: int, d: int = 0) -> float:
+    """Win percentage off a W-L-T record, a draw counting half a win — the
+    convention every JHSAA win% here uses (`TeamSeason.win_pct`)."""
+    n = w + l + d
+    return (w + 0.5 * d) / n if n else 0.0
 
 
 def _challenger_key(power: dict):
@@ -12068,9 +12078,8 @@ def _challenger_key(power: dict):
     regular-season winning percentage, then regular-season wins, then ATR as the
     final tiebreak (with `_atr_key`'s name tiebreak keeping it reproducible)."""
     def key(t: TeamSeason):
-        w, l = _reg_season_record(t)
-        pct = w / (w + l) if w + l else 0.0
-        return (-pct, -w) + _atr_key(power)(t)
+        w, l, d = _reg_season_record(t)
+        return (-reg_pct(w, l, d), -w) + _atr_key(power)(t)
     return key
 
 

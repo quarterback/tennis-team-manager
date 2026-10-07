@@ -308,8 +308,8 @@ def seed_key(e: JVEntry) -> float:
     return e.jv.win_pct + diff / 1000.0
 
 
-def varsity_record(e: JVEntry) -> tuple[int, int]:
-    """The program's VARSITY regular-season W-L, off the `TeamSeason` the JV team
+def varsity_record(e: JVEntry) -> tuple[int, int, int]:
+    """The program's VARSITY regular-season W-L-T, off the `TeamSeason` the JV team
     hangs from — `jhsaa._reg_season_record`, so the postseason never reaches the
     index."""
     return jh._reg_season_record(e.jv.team)
@@ -319,8 +319,7 @@ def selection_index(e: JVEntry) -> float:
     """`INDEX_JV_WEIGHT` × JV win% + `INDEX_VARSITY_WEIGHT` × varsity regular-season
     win%. A program with no varsity duals scores 0 on that term — a real answer,
     never a default that quietly hands it the JV share twice."""
-    w, l = varsity_record(e)
-    var = w / (w + l) if w + l else 0.0
+    var = jh.reg_pct(*varsity_record(e))
     return INDEX_JV_WEIGHT * e.jv.win_pct + INDEX_VARSITY_WEIGHT * var
 
 
@@ -344,14 +343,14 @@ def selection_rows(field: list[JVEntry], champions: set[str],
     research export flattens this to `jhsaa_jv_state.csv`."""
     out = []
     for e in field:
-        vw, vl = varsity_record(e)
+        vw, vl, vt = varsity_record(e)
         out.append({"school": e.name,
                     "entry": "champion" if e.name in champions else "at_large",
                     "region": region_of.get(e.name, e.region),
                     "jv_wins": e.jv.wins, "jv_losses": e.jv.losses,
                     "jv_ties": e.jv.ties, "jv_pct": round(e.jv.win_pct, 4),
-                    "v_wins": vw, "v_losses": vl,
-                    "v_pct": round(vw / (vw + vl), 4) if vw + vl else 0.0,
+                    "v_wins": vw, "v_losses": vl, "v_ties": vt,
+                    "v_pct": round(jh.reg_pct(vw, vl, vt), 4),
                     "index": round(selection_index(e), 4)})
     return out
 
@@ -369,13 +368,13 @@ def qualifier_rows(ranked: list[JVEntry], region_of: dict[str, str]) -> list[dic
     the thing this rule removed."""
     out = []
     for e in ranked:
-        vw, vl = varsity_record(e)
+        vw, vl, vt = varsity_record(e)
         out.append({"school": e.name, "entry": "qualifier",
                     "region": region_of.get(e.name, ""),
                     "jv_wins": e.jv.wins, "jv_losses": e.jv.losses,
                     "jv_ties": e.jv.ties, "jv_pct": round(e.jv.win_pct, 4),
-                    "v_wins": vw, "v_losses": vl,
-                    "v_pct": round(vw / (vw + vl), 4) if vw + vl else 0.0,
+                    "v_wins": vw, "v_losses": vl, "v_ties": vt,
+                    "v_pct": round(jh.reg_pct(vw, vl, vt), 4),
                     "index": ""})
     return out
 
