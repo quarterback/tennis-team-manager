@@ -431,7 +431,6 @@ FORMER_NAMES = {
     "Astrid Ricci":                                "Jesuit",
     "Aurelia Classical Academy":                   "Goodman",
     "Baptist HS":                                  "Baptist",
-    "Baptiste":                                    "Point Sable",
     "Barclay Golden Gate":                         "Gate City",
     "Barlowe County Christian":                    "Barlowe Christian",
     "Barlowe County High":                         "Barlowe County",
@@ -542,7 +541,6 @@ FORMER_NAMES = {
     "Dolores Huerta":                              "Huerta",
     "Doyle Junction":                              "Doyle Pass",
     "Drayfield Foundry High":                      "South Drayfield",
-    "Dry Creek Co-op":                             "Dry Creek",
     "Dusty Spur":                                  "Skyline",
     "Eastmont Christian":                          "Eastmont",
     "Echevarria Foundry High":                     "Bitterroot",
@@ -568,7 +566,8 @@ FORMER_NAMES = {
     "Emilia Jansen":                               "Sharpstown",
     "Empire":                                      "South Drayfield",
     "Esteban Téllez":                              "Sawtelle",
-    "Evans Western Institute":                     "Evans",
+    "Evans":                                       "Tamarack County",
+    "Evans Western Institute":                     "Tamarack County",
     "Evelyn Booker":                               "Taft",
     "Evenfall":                                    "Vespertine North",
     "Ewart City":                                  "Cook City",
@@ -622,7 +621,6 @@ FORMER_NAMES = {
     "Green Valley School":                         "Green Valley",
     "Greta Adler":                                 "Topanga",
     "Greta Bellini":                               "Glassell Park",
-    "Gruesome Ridge":                              "A. Ashe",
     "Gulch Bend":                                  "West El Paso",
     "Gwendolyn Brooks":                            "Brooks",
     "Gwendolyn Brooks North":                      "Lakewood",
@@ -655,7 +653,6 @@ FORMER_NAMES = {
     "Heritage Christian":                          "Longmeadow",
     "Hetfield":                                    "Brynildson Hill",
     "High Bar":                                    "Fall River Valley",
-    "High Desert Co-op":                           "High Desert",
     "Homecroft Manufacturing and Technology Academy": "West Burlington",
     "Homeland":                                    "Garmendia",
     "Homestead North":                             "Garden Plain",
@@ -721,6 +718,7 @@ FORMER_NAMES = {
     "Kelview Union":                               "Iisalmi",
     "Kernwood County Catholic":                    "Holy Family",
     "Kernwood County Christian":                   "Kernwood Christian",
+    "Kilbride Switch":                             "Kilbride",
     "Kilbride Switch South":                       "Kilbride South",
     "Klara Marchand":                              "Meriwether",
     "Kongisburg":                                  "Belyakov Vo-Tech",
@@ -742,7 +740,6 @@ FORMER_NAMES = {
     "Lev Voronin":                                 "Cole Valley",
     "Lillian Price":                               "North Coast",
     "Lillian Stokes":                              "Franklin",
-    "Lizarra":                                     "Lizard Creek",
     "Llerena East":                                "Juniper Well",
     "Llerena School of Science and Industry":      "Crow Basin",
     "Llerena Science":                             "Crow Basin",
@@ -780,7 +777,6 @@ FORMER_NAMES = {
     "Mercer City Technical Arts Academy":          "Twin Mills",
     "Mercy Academy":                               "Natchez Mercy",
     "Meridian Regional":                           "Meridian",
-    "Mesa Co-op":                                  "Mesa",
     "Metropolitan Country Day School":             "Metropolitan Country Day",
     "Mickey Mantle":                               "Marigot",
     "Mikel Echevarria":                            "Fir Valley",
@@ -800,7 +796,6 @@ FORMER_NAMES = {
     "Mondale":                                     "Evergreen",
     "Money":                                       "Corinne",
     "Moriarty Foundry High":                       "Windmill Ridge",
-    "Morne Caribou Polytechnic":                   "Morne Caribou",
     "Mother Lode":                                 "Siskiyou Valley",
     "Nadia Chernov":                               "C. Coolidge",
     "Nadia Chernov North":                         "Roosevelt",
@@ -955,7 +950,6 @@ FORMER_NAMES = {
     "Sergei Petrenko":                             "Willowbrook",
     "Serrano Applied Sciences Institute":          "Arroyo Seco",
     "Serrano Depot High":                          "Serrano East",
-    "Shasta Agricultural":                         "Shasta",
     "Shirley Chisholm":                            "Chisholm",
     "Sierra Works":                                "Sierra",
     "Silton Union":                                "Silton Ridge",
@@ -1062,7 +1056,6 @@ FORMER_NAMES = {
     "Timberline North":                            "Allegheny",
     "Tindall Heights":                             "Montpelier",
     "Tomás Mendoza":                               "Fairgrounds",
-    "Trailsend":                                   "Ridgeline",
     "Treasure Valley North":                       "Petoskey",
     "Trinity Christian":                           "Stillwater",
     "Trout Point":                                 "North Simmons",
@@ -1074,7 +1067,6 @@ FORMER_NAMES = {
     "Tunnel Diggings Hall":                        "Quartz City Collegiate",
     "Valderra Aviation and Engineering Academy":   "Rampart",
     "Valderra Technical Arts Academy":             "D. Eisenhower",
-    "Valera":                                      "New Casper",
     "Valley Forge North":                          "Forge Hollow",
     "Vasquez":                                     "Fruitvale",
     "Vasquez North":                               "Fontainebleau",
@@ -1131,7 +1123,9 @@ RENAMES = {
     "Jefferson Methodist School":                  "Leidesdorff Country Day",
     "St. Francis Catholic":                        "St. Francis",
     "Tunnel Diggings Hall":                        "Quartz City Collegiate",
-    "Evans Western Institute":                     "Evans",
+    # Owner rename 2026-10: "Evans" read as a twin of Evans Larsen Day. Named for
+    # its county (Redfork, Tamarack); mascot is the owner's pick too.
+    "Evans Western Institute":                     "Tamarack County",
     "Kernwood County Christian":                   "Kernwood Christian",
     "Kernwood County Catholic":                    "Holy Family",
     "Barlowe County Christian":                    "Barlowe Christian",
@@ -2199,7 +2193,7 @@ PRIVATE_SCHOOLS = {
     # Francis public; the owner: "they actually are" private).
     "St. Isidore Academy", "Bishop Valera", "St. Francis", "Belmonte Catholic",
     "Ashbury Latin", "Leidesdorff Country Day", "Quartz City Collegiate",
-    "Calvary Chapel Kernwood", "Evans", "Kernwood Christian", "Holy Family",
+    "Calvary Chapel Kernwood", "Tamarack County", "Kernwood Christian", "Holy Family",
     "Barlowe Christian", "Veritas Academy", "Pope Francis", "Paddock Episcopal",
     "Monsignor Barrow", "Sage Summit", "Olivet",
     "Mater Dei", "Jesuit", "Notre Dame", "Archbishop Gregory",
@@ -2214,7 +2208,33 @@ PRIVATE_SCHOOLS = {
     "Belmonte Collegiate",
     "Walter-Kenny",
     "Lycee Valmont",
+    # 2026-10 status worklist (owner decision): Evans Larsen Day was listed public
+    # and is private, seated by the 550 cut (`jhsaa.NONPUBLIC_CUT`), never by size
+    # class. The same pass ruled Washington San Cordero, Peregrine and Basalt
+    # PUBLIC — they are deliberately NOT here (`PUBLIC_SCHOOLS` below overrides
+    # prep-network's private flag for them).
+    "Evans Larsen Day",
+    # 2026-10 private expansion (owner-named, net-new; `scripts/jhsaa_private_
+    # expansion_2026_10.py` holds the rows): 25 programs in the seven areas with the
+    # thinnest private coverage. Written bare per the no-suffix rule.
+    "Valderra Catholic", "Esperanza Bay Country Day", "The Cortland School", "St. Jude",
+    "Valois Military Institute", "Aurelia Hall", "St. Luke's", "Latgaway Christian",
+    "Dovetail Mountain", "Echevarria Christian", "Silver Basin Country Day",
+    "Zubieta Catholic", "The Greaves School", "San Cordero Catholic", "Cascade Ridge",
+    "Summit Pines", "Annie Springs Christian", "Blackpine Christian",
+    "Black Springs Country Day", "Tamarack Lutheran", "Canyon Creek",
+    "Blue Mountain Christian", "Eastern Oregon Heritage Academy", "Hermiston Catholic",
+    "Columbia Gorge Christian",
 }
+
+# Schools the owner ruled PUBLIC whatever the source record's flag says (2026-10
+# status worklist). Keyed on the display name like `PRIVATE_SCHOOLS`; a name here
+# must never also be in `PRIVATE_SCHOOLS` (asserted below). Seated in their size
+# class, not a Non-Public class.
+PUBLIC_SCHOOLS = {
+    "Washington San Cordero", "Peregrine", "Basalt",
+}
+assert not (PUBLIC_SCHOOLS & PRIVATE_SCHOOLS), PUBLIC_SCHOOLS & PRIVATE_SCHOOLS
 
 # ‼️ THE FLAGSHIP PLAYS THE SPORT (owner rule 2027-08). Nine cities had a MAGNET
 # school in the tennis association while the plain city high school — which
@@ -3299,6 +3319,7 @@ MASCOTS = {
     # Owner pick 2026-09 — "what the fuck is a Brickie?" (it came in with the
     # source record). Condotti's rival, so the two sit together here.
     "Romero-Finniski": "Nor'westers",
+    "Tamarack County": "Loggers",                   # owner 2026-10 (was Alpenglow)
     # ── owner picks 2026-09, the mascot survey (applied exactly as named) ──
     "Shasta": "Cherry Pickers",
     "B.T. Washington": "Shovelers",
@@ -4183,7 +4204,8 @@ def build(schools: list[dict], cities: dict) -> list[dict]:
             # Renamed schools carry their institution's status, not the source
             # record's: a public high school that becomes Sacred Heart Cathedral
             # is a private school (see PRIVATE_SCHOOLS).
-            "private": s["private"] or display in PRIVATE_SCHOOLS,
+            "private": (display not in PUBLIC_SCHOOLS
+                        and (s["private"] or display in PRIVATE_SCHOOLS)),
             # The per-school override first, then the foreign-fauna cleanup —
             # an owner pick is a decision and must outrank a table.
             "mascot": MASCOTS.get(display) or fix_mascot(display, s["mascot"]),

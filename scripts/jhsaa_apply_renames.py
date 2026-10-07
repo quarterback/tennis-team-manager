@@ -160,7 +160,10 @@ def apply(rows: list[dict], m) -> list[tuple[str, str]]:
             r["source"] = src
         else:
             r.pop("source", None)
-        r["private"] = bool(r.get("private")) or display in m.PRIVATE_SCHOOLS
+        # `PUBLIC_SCHOOLS` (2026-10) outranks both the source flag and the private
+        # table, exactly as `import_jhsaa.build` emits it.
+        r["private"] = (display not in getattr(m, "PUBLIC_SCHOOLS", set())
+                        and (bool(r.get("private")) or display in m.PRIVATE_SCHOOLS))
         if display in m.MASCOTS:
             r["mascot"] = m.MASCOTS[display]
         if display in m.COLORS:
