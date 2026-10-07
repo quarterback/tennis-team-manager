@@ -144,11 +144,13 @@ def _school(n_varsity, v_ovr, n_reserve, r_ovr, start=0):
 
 def test_finder_flags_the_rockridge_shape():
     from app.jhsaa import _find_cohorts
+    # Each varsity is the class's DISTRICT lineup (owner rule 2026-10): fourteen
+    # in 9A (4S/5D), sixteen in 5A (6S/5D) — the reserves start below it.
     rosters = {
-        "Deep 9A": _school(11, 65, 8, 55),          # the second-team program
-        "Ordinary 9A": _school(11, 50, 8, 30, 100),
-        "Weak 9A": _school(11, 40, 8, 25, 200),
-        "Weak 5A": _school(11, 35, 8, 20, 300),
+        "Deep 9A": _school(14, 65, 8, 55),          # the second-team program
+        "Ordinary 9A": _school(14, 50, 8, 30, 100),
+        "Weak 9A": _school(14, 40, 8, 25, 200),
+        "Weak 5A": _school(16, 35, 8, 20, 300),
     }
     groups = {"Deep 9A": "9A", "Ordinary 9A": "9A", "Weak 9A": "9A",
               "Weak 5A": "5A"}
@@ -182,3 +184,33 @@ def test_finder_host_shapes():
 def test_cohorts_route_empty_state(client):
     r = client.get("/jhsaa/cohorts?g=boys")
     assert r.status_code == 200
+
+
+def test_the_v1_cut_is_each_destinations_district_lineup():
+    """With no `top_slot`, a destination's V1 is ITS class's district lineup
+    (owner rule 2026-10) — the cut the portal and the preseason store read. A 5A
+    program (6S/5D, sixteen) takes a player who would be its 14th; a 1A program
+    (2S/3D, eight) does not take one who would be its 9th."""
+    from app.jhsaa import district_need
+    assert (district_need("5A"), district_need("1A")) == (16, 8)
+    groups = {"Home 5A": "5A", "Deep 5A": "5A"}
+    ladders = {"Home 5A": [70] * 20, "Deep 5A": [60] * 13 + [30] * 4}
+    out = _propose_destinations([_cand("p1", "Home 5A", "5A", 50)], ladders, groups)
+    assert out[0]["to"] == "Deep 5A" and out[0]["slot"] == 14
+    groups = {"Home 1A": "1A", "Deep 1A": "1A"}
+    ladders = {"Home 1A": [70] * 16, "Deep 1A": [60] * 8 + [30] * 4}
+    out = _propose_destinations([_cand("p1", "Home 1A", "1A", 50)], ladders, groups)
+    assert out[0]["to"] == ""
+
+
+def test_cohort_reserves_start_below_the_district_lineup():
+    """A reserve cohort is the players BELOW the program's district lineup: a 1A
+    program's ninth player is already a reserve, a 5A program's sixteenth is not."""
+    from app.jhsaa import _find_cohorts
+    rosters = {"Deep 1A": _school(8, 60, 8, 50), "Deep 5A": _school(16, 60, 8, 50, 100),
+               "Weak 1A": _school(8, 30, 8, 20, 200),
+               "Weak 5A": _school(16, 30, 8, 20, 300)}
+    groups = {s: s.split()[1] for s in rosters}
+    srcs = {s["school"]: s for s in _find_cohorts(rosters, groups)["sources"]}
+    for school in ("Deep 1A", "Deep 5A"):
+        assert all(p["pid"].startswith("r") for p in srcs[school]["cohort"]), school

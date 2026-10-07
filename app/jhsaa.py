@@ -5889,7 +5889,10 @@ def _propose_destinations(cands: list[dict], ladders: dict, groups: dict, *,
 
     Rules, straight from the brief: a candidate is placed at the HIGHEST level
     with a genuinely useful role — a projected ladder slot inside the varsity
-    lineup (`top_slot`, default `lineup_need("regular")`). Own class outranks
+    lineup. That lineup is the DESTINATION's district (regular-season) lineup,
+    `district_need(groups[s])` — 16 in 5A, 8 in 1A — the same V1 cut the portal
+    and the preseason store read (owner rule 2026-10); `top_slot` overrides it
+    with one number for every destination. Own class outranks
     the lateral class-mate, which outranks a drop; a DROP destination where the
     arrival would be the outright new #1 is skipped (dominance is not the goal —
     lateral #1s are fine, a weak same-level program is exactly who should get
@@ -5897,7 +5900,8 @@ def _propose_destinations(cands: list[dict], ladders: dict, groups: dict, *,
     Arrivals stack: each placement counts against the destination's ladder and
     its `max_per_school` allowance, so a wave cannot pile onto one program."""
     from collections import defaultdict
-    top_slot = top_slot or lineup_need("regular")
+    def _cut(s: str) -> int:
+        return top_slot or district_need(groups[s])
     next_ovr = next_ovr or {}
     lvl = {}
     for i, band in enumerate(CLEARING_LEVELS):
@@ -5939,13 +5943,15 @@ def _propose_destinations(cands: list[dict], ladders: dict, groups: dict, *,
                 above = (sum(1 for v in lad if v >= ovr)
                          + sum(1 for v in arrivals[s] if v >= ovr))
                 slot = above + 1
-                if slot > top_slot:
+                cut = _cut(s)
+                if slot > cut:
                     continue
                 # Becoming the outright #1 on a DROP is dominance, not
                 # opportunity — a last resort within the tier, never a bar
                 # (the market guarantees everyone a home).
                 dominant = 1 if (step > 0 and slot == 1) else 0
-                picks.append((dominant, abs(slot - 7), slot, s))
+                # The middle of THIS destination's lineup (7 of an eleven).
+                picks.append((dominant, abs(slot - (cut + 3) // 2), slot, s))
             if picks:
                 _, _, slot, s = min(picks)
                 best = (s, slot, step)
@@ -6011,8 +6017,8 @@ def _find_cohorts(rosters: dict, groups: dict, *, cohort_size: int = RESERVE_COH
     `groups` maps school -> group. Returns:
 
     - `sources`: programs whose top `cohort_size` reserves (ranks below the
-      league lineup) average to a varsity-caliber unit — `plays_like` is the
-      HIGHEST class whose median team strength the cohort's mean clears, walked
+      program's district lineup, `district_need` — the V1 cut) average to a
+      varsity-caliber unit — `plays_like` is the HIGHEST class whose median team strength the cohort's mean clears, walked
       down `LADDER_GROUPS` (a GB group compares within itself only). Each
       carries its cohort players and up to three suggested hosts in the fit
       class and the one below: the class's weakest programs, with the COMBINED
@@ -6025,7 +6031,8 @@ def _find_cohorts(rosters: dict, groups: dict, *, cohort_size: int = RESERVE_COH
       every column above is read against.
     """
     from statistics import median
-    cut = lineup_need("regular")
+    def _cut(s: str) -> int:
+        return district_need(groups[s])
     def _mean(vals):
         return round(sum(vals) / len(vals), 1) if vals else 0.0
     team_mean = {s: _mean([p["ovr"] for p in r[:VARSITY_CORE]])
@@ -6049,7 +6056,7 @@ def _find_cohorts(rosters: dict, groups: dict, *, cohort_size: int = RESERVE_COH
         ss = by_group[grp]
         rows = []
         for s in sorted(ss, key=lambda s: team_mean[s])[:hosts_per_class]:
-            core = sum(1 for p in rosters[s][:cut] if p["ovr"] >= medians[grp])
+            core = sum(1 for p in rosters[s][:_cut(s)] if p["ovr"] >= medians[grp])
             rows.append({"school": s, "group": grp, "mean": team_mean[s],
                          "gap": round(medians[grp] - team_mean[s], 1),
                          "core": core,
@@ -6059,7 +6066,7 @@ def _find_cohorts(rosters: dict, groups: dict, *, cohort_size: int = RESERVE_COH
 
     sources = []
     for s, roster in rosters.items():
-        reserves = roster[cut:]
+        reserves = roster[_cut(s):]
         if len(reserves) < min_reserves:
             continue
         cohort = reserves[:cohort_size]
@@ -10288,7 +10295,9 @@ def _tiebreak(group: list[TeamSeason], oowp: dict[str, float]) -> list[TeamSeaso
     h2h: dict[str, tuple[float, int]] = {}
     for t in group:
         met = _district_duals(t, names - {t.school.name})
-        wins = sum(1 for x in met if x["won"])
+        # A drawn league dual (Group 2's 3S/3D) is half a win, as in `district_pct`;
+        # `won` is False on a draw, so reading it alone scored the draw as a loss.
+        wins = sum(1.0 if x["won"] else 0.5 if x.get("tied") else 0.0 for x in met)
         margin = sum(x["pf"] - x["pa"] for x in met)
         h2h[t.school.name] = (wins / len(met) if met else 0.0, margin)
     return sorted(group, key=lambda t: (
@@ -10566,7 +10575,11 @@ def rating_duals(teams, prestate: bool = False) -> list[dict]:
             grp = d.get("shape_group") if "shape_group" in d else shape_group(
                 d.get("phase") or "regular", t.school.group, _group_of.get(d["opp"]),
                 district=dist)
+            # `tied` rides with the result: a drawn dual stores won=False, and
+            # read alone that hands the AWAY side a win (`compute_ratings` scores
+            # a draw half a win to each).
             row = {"home": t.school.name, "away": d["opp"], "home_won": d["won"],
+                   "tied": bool(d.get("tied")),
                    "home_points": d["pf"], "away_points": d["pa"], "lines": lines,
                    "weights": flight_weights(d.get("phase") or "regular", grp,
                                              district=dist)}
@@ -10575,7 +10588,7 @@ def rating_duals(teams, prestate: bool = False) -> list[dict]:
                 # only the V1 side and reads the opposing school at the discount.
                 if not d.get("home"):
                     row.update({"home": d["opp"], "away": t.school.name,
-                                "home_won": not d["won"],
+                                "home_won": not d["won"] and not row["tied"],
                                 "home_points": d["pa"], "away_points": d["pf"]})
                 row["squad_side"] = "away" if d.get("home") else "home"
                 row["squad_factor"] = SQUAD_DISCOUNT[osq]

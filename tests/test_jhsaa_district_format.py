@@ -169,3 +169,56 @@ def test_captains_are_drawn_from_the_smaller_dressing_group():
     order = [p.pid for p in jh._order(a)]
     for pid in jh.pick_captains(a, salt="t", year=2031):
         assert order.index(pid) < 9
+
+
+def test_a_drawn_dual_is_half_a_win_in_toss():
+    """A draw is half a win to each side in TOSS, not an away win — `home_won` is
+    False on a draw, so read alone it handed the visitor the result."""
+    from app.rating import compute_ratings
+    lines = [{"slot": "S1", "home_won": True, "home_games": 6, "away_games": 4},
+             {"slot": "D1", "home_won": False, "home_games": 4, "away_games": 6}]
+    r = compute_ratings([{"home": "A", "away": "B", "home_won": False, "tied": True,
+                          "home_points": 1, "away_points": 1, "lines": lines}],
+                        weights=jh.FLIGHT_WEIGHTS)
+    a, b = r["A"], r["B"]
+    assert (a.wins, a.losses, a.ties) == (b.wins, b.losses, b.ties) == (0, 0, 1)
+    assert a.record == "0-0-1" and a.win_pct == pytest.approx(0.5)
+    assert a.apr == pytest.approx(b.apr)
+
+
+def test_rating_duals_carries_the_draw():
+    """`rating_duals` passes the tied state on, so the draw reaches TOSS."""
+    a0, _ = _two("Group 2", "girls")
+    for seed in range(1, 3000):
+        a = jh.TeamSeason(school=a0.school, roster=a0.roster)
+        b = jh.TeamSeason(school=a0.school, roster=a0.roster)
+        jh.play_dual(a, b, seed=seed, phase="regular", district=True)
+        if a.schedule[-1]["tied"]:
+            break
+    else:
+        pytest.skip("no drawn Group 2 district dual in the seed window")
+    rows = jh.rating_duals([a, b])
+    assert len(rows) == 1 and rows[0]["tied"] is True
+
+
+def test_the_district_tiebreak_counts_a_drawn_meeting_as_half():
+    """Rung 1 of the district tiebreak (head-to-head) scores a drawn league dual as
+    half a win, the way `district_pct` does. A three-way tie: A drew B and lost to
+    C, B drew A and beat C, C beat A and lost to B. Head-to-head is B .75, C .50,
+    A .25 — counting the draw as a loss had B and C level at .50, and C's bigger
+    margin put C first."""
+    teams = {}
+    for name in "ABC":
+        a, _ = _two("Group 2", "girls")
+        teams[name] = jh.TeamSeason(school=a.school.__class__(**{**a.school.__dict__,
+                                                                 "name": name}),
+                                    roster=a.roster)
+
+    def meet(x, y, won, tied, pf, pa):
+        teams[x].schedule.append({"opp": y, "district": True, "phase": "regular",
+                                  "won": won, "tied": tied, "pf": pf, "pa": pa})
+    meet("A", "B", False, True, 3, 3); meet("B", "A", False, True, 3, 3)
+    meet("A", "C", False, False, 0, 6); meet("C", "A", True, False, 6, 0)
+    meet("B", "C", True, False, 4, 2); meet("C", "B", False, False, 2, 4)
+    order = jh._tiebreak(list(teams.values()), {})
+    assert [t.school.name for t in order] == ["B", "C", "A"]

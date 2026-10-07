@@ -69,11 +69,18 @@ real season-long position.
 - **Group 2 district duals can tie.** 3S/3D is even. Regular season, so the JV ladder
   (points, sets, games) and then a TIE: `TeamSeason.dties`, half a win in
   `district_pct`, a W-L-T `district_record`. `world._wl` partitioned on the first hyphen
-  and read "12-3-1" as 0-0 — fixed. (None occurred in the measured boys season's 436
+  and read "12-3-1" as 0-0 — fixed. ‼️ A review then found the draw still read as a
+  LOSS in two consumers: `rating_duals` passed `won=False` on as `home_won=False`, so
+  TOSS gave the away side a win, and `_tiebreak` counted only `won`, so a drawn
+  head-to-head scored zero. Rows now carry `tied`, `rating.compute_ratings` counts a
+  draw as half a win to each side (`RatingLine.ties`; no college dual ever sets it,
+  so college ratings are unchanged), and the head-to-head rung scores it 0.5. (None occurred in the measured boys season's 436
   Group 2 district duals; the tests pin the path with a program played against a copy
   of itself.)
-- **Roster-facing readers follow the district lineup.** The preseason store's V1 cut
-  and the rising-freshman portal's projected V1 seat read `district_need`; captains are
+- **Roster-facing readers follow the district lineup.** The preseason store's V1 cut,
+  the rising-freshman portal's projected V1 seat, and the bulk transfer tools (the
+  opportunity-clearing matcher's destination seat and the reserve-cohort finder's
+  reserve line, both per school's class) read `district_need`; captains are
   drawn from the smaller of the district and invitational dressing groups, so a captain
   dresses for every league dual by construction.
 - **Readers that meant "the 3S/4D regular season"** — the format profile's regular
