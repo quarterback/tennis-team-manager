@@ -3253,27 +3253,17 @@ def jv_pool(ts: TeamSeason) -> list:
 
 
 def jv_postseason_cut(group: str | None = None) -> int:
-    """Where the ladder cut sits for the JV STATE TOURNAMENT's eligibility freeze.
+    """The widest of the class's regular-season and State lineups — the JV
+    INDIVIDUAL tournaments' rank guard reads it (`jhsaa_jv_individuals.event_from`).
 
-    The JV SEASON's cut is `jv_pool`'s — the class's district lineup since owner
-    rule 2026-10 (a fixed #12 under the 2070 rule). This is the POSTSEASON freeze,
-    and it stays the widest of the class's regular-season lineups: 8A/9A dress
-    FOURTEEN in the varsity playoffs, so their JV playoff field is frozen below
-    that, at rank #15 down.
-
-    ‼️ AND IT IS NOT AN EXCLUSION. A player may be in the varsity playoff fourteen
-    AND the JV championship squad — the owner is explicit that the overlap does not
-    matter — so this is where the JV bracket's own line is drawn, not a rule about
-    who is spoken for. Derived from `lineup_need` rather than typed, so it follows
-    the pilot's shape if the shape ever moves."""
+    It is no longer the JV TEAM State Tournament's eligibility line: that event
+    takes only players who played no varsity regular-season dual at all (owner
+    rule 2026-10, `jhsaa_jv_state.freeze_eligibility`), which no rank can stand in
+    for. Derived from `lineup_need` rather than typed, so it follows a class's
+    shape if the shape ever moves."""
     return max(lineup_need("regular", group),
                lineup_need(EARLY_FORMAT_PHASE, group),
                lineup_need("state", group))
-
-
-def jv_state_pool(ts: TeamSeason) -> list:
-    """`jv_pool` for the JV STATE TOURNAMENT — cut at `jv_postseason_cut`."""
-    return _order(ts)[jv_postseason_cut(ts.school.group):]
 
 
 def dates_left(ts: TeamSeason, p) -> int:

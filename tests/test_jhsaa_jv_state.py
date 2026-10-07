@@ -269,16 +269,19 @@ def test_district_berths_match_the_association_table():
 
 
 def test_every_entrant_is_eligible_and_actually_played_jv(jv):
-    """Both halves of the eligibility rule, checked against the roster rather than
-    against a second copy of the rule: below the varsity eleven on the frozen ladder,
-    AND having appeared in a JV dual this season."""
+    """Both halves of the eligibility rule, checked against the season's own logs
+    rather than a second copy of the rule: NO varsity regular-season dual (owner
+    rule 2026-10 — "not eligible if they play varsity duals, full stop"), AND an
+    appearance in a JV dual this season."""
     field = jvs.entries(jv)
     assert field, "no program entered"
     for e in field:
-        pool = {p.pid for p in jh.jv_pool(e.jv.team)}
         played = jvs.played_jv(e.jv)
         for p in e.players:
-            assert p.pid in pool, (e.name, p.name)
+            varsity = [m for m in e.jv.team.matches.get(p.pid, ())
+                       if m[2] not in jh.POSTSEASON
+                       and m[2] not in ("individual", "individual_mixed")]
+            assert not varsity, (e.name, p.name, len(varsity))
             assert p.name in played, (e.name, p.name)
         # ‼️ 16 IS A CEILING, NOT A SQUAD SIZE — a program carries up to sixteen and
         # dresses seven, so the roster may be anywhere in between.
@@ -629,3 +632,20 @@ def test_the_36_renders_two_trees_and_the_selection_table(big36, monkeypatch,
     r = c.get("/jhsaa/jv-state?g=boys")
     assert r.status_code == 200
     assert b"Parastate" in r.data and b"At-large selection" in r.data
+
+
+def test_one_varsity_regular_season_dual_rules_a_player_out(jv):
+    """Rank does not decide it — playing does. A JV-eligible player credited with a
+    single varsity league dual drops out of the frozen roster; a preseason
+    individual-tournament appearance (not a dual) does not."""
+    e = jvs.entries(jv)[0]
+    p = e.players[0]
+    team = e.jv.team
+    saved = list(team.matches.get(p.pid, ()))
+    try:
+        team.matches[p.pid] = saved + [("D4", True, "individual", (), None, "", False)]
+        assert p in jvs.freeze_eligibility(e.jv)
+        team.matches[p.pid] = saved + [("D4", True, "regular", (), None, "", True)]
+        assert p not in jvs.freeze_eligibility(e.jv)
+    finally:
+        team.matches[p.pid] = saved

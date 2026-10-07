@@ -189,6 +189,8 @@ programs.
 - **Eligibility freezes once**, at the start of the JV postseason: ladder rank #12+
   (`jv_pool`, the one cut — no second roster split is invented) AND actual JV
   participation, read off the `played` list `play_jv_dual` already records.
+  ⚠️ Superseded 2026-10: there is no rank cut now — a player is eligible only if they
+  played NO varsity regular-season dual (`played_varsity`) and did play JV.
 - **The event archives the VARSITY STATE DRAW'S SHAPE** (`{champion, field, rounds,
   round_names}`), which is why the page needed no bracket code: `state.
   _jh_bracket_cols` → `_bracket_canvas` → `templates/_bracket.html` reads it unchanged,
