@@ -105,12 +105,14 @@ That is the consequence accepted deliberately: the wide classes put three to fiv
 players on court in every district dual, the narrow ones two to three fewer. The
 classifications now demand different things of a roster.
 
-## Open (owner decisions, not done)
+## Open / decided after
 
-- **`jv_pool` stays at #12 down.** A 5A district dual dresses sixteen, so ranks #12–#16
-  there are district starters AND JV players (on different dates — rule 2101 allows one
-  level per date). Cutting JV at the district lineup would leave a floor-sized (20) 5A
-  program four spare, below `JV_MIN_SPARE`, i.e. no JV season.
+- **`jv_pool` now follows the district lineup** (owner decision, the same day):
+  JV starts directly below the class's district dressing group — #15 in the 4S/5D
+  classes, #17 in 5A, #12 in 6A/11B, #10 in the 1S/4D classes and Group 2, #9 in 1A.
+  Measured at roster level, 16 of 82 girls' and 14 of 77 boys' 5A programs drop
+  below `JV_MIN_SPARE` and field no JV; every other class keeps all its JV teams.
+  The JV State freeze (`jv_postseason_cut`) did not move.
 - **The 1S/4D classes' and 1A's slates are arranged one or two singles seats wider than
   their State format** (4A arranges S1–S3 + D1–D4 off its top eleven, with S1–S3 and D1
   drawn from the top five), because they keep No. 2/No. 3 Singles that their State

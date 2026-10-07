@@ -3213,7 +3213,7 @@ class JVTeam:
 
 
 def jv_pool(ts: TeamSeason) -> list:
-    """The players below the varsity eleven on the ladder — the JV, in order.
+    """The players below the class's district varsity lineup — the JV, in order.
 
     ‼️ Read off `_order`, which is the ONE ladder (owner rule 2026-08): there is no
     standing JV squad to keep in step with anything. A varsity player who lost through
@@ -3242,24 +3242,24 @@ def jv_pool(ts: TeamSeason) -> list:
     rule 2026-08). Threading a varsity dual's rest into a JV dual's size would couple
     two schedules that are explicitly independent.
 
-    ‼️ AND IT STAYS AT #12 THOUGH DISTRICT DUALS GREW (owner rule 2026-10). A 5A
-    district dual dresses sixteen and a 4S/5D one fourteen, so ranks #12-#16 there
-    are district starters AND JV players. That is deliberate for now, not an
-    oversight: the invitationals still dress eleven, the participation rule (2101)
-    keeps any player to one level per date and 24 dates in all, and cutting at the
-    district lineup would leave a floor-sized 5A program (20) four spare — below
-    `JV_MIN_SPARE`, so no JV season at all. Moving this cut is an owner decision."""
-    return _order(ts)[lineup_need("regular"):]
+    ‼️ THE CUT IS THE CLASS'S DISTRICT LINEUP (owner rule 2026-10), not a fixed
+    #12. District duals play the class's State format, so JV starts directly below
+    the players that format dresses: #15 in the 4S/5D classes, #17 in 5A, #12 in
+    6A/11B, #10 in the 1S/4D classes and Group 2, #9 in 1A. It replaced the 2070
+    rule that the JV season's cut never moves. Accepted consequence: a 5A program
+    near `ROSTER_FLOOR` (20) has four spare and fields no JV dual (`jv_format`
+    needs `JV_MIN_SPARE`)."""
+    return _order(ts)[district_need(ts.school.group):]
 
 
 def jv_postseason_cut(group: str | None = None) -> int:
     """Where the ladder cut sits for the JV STATE TOURNAMENT's eligibility freeze.
 
-    ‼️ THE JV SEASON'S OWN CUT NEVER MOVES (owner rule 2070). `jv_pool` is rank #12
-    down for every classification, 8A/9A included — the JV league season is staffed
-    off the 3S/4D varsity eleven and nothing about the 4S/5D pilot touches it. What
-    moves is the POSTSEASON freeze: 8A/9A dress FOURTEEN in the varsity playoffs, so
-    their JV playoff field is frozen below that, at rank #15 down.
+    The JV SEASON's cut is `jv_pool`'s — the class's district lineup since owner
+    rule 2026-10 (a fixed #12 under the 2070 rule). This is the POSTSEASON freeze,
+    and it stays the widest of the class's regular-season lineups: 8A/9A dress
+    FOURTEEN in the varsity playoffs, so their JV playoff field is frozen below
+    that, at rank #15 down.
 
     ‼️ AND IT IS NOT AN EXCLUSION. A player may be in the varsity playoff fourteen
     AND the JV championship squad — the owner is explicit that the overlap does not
@@ -3369,7 +3369,8 @@ class SquadTeam:
 
 
 def squad_depth(ts: TeamSeason) -> int:
-    """HEALTHY players below the varsity eleven — the depth gate's input."""
+    """HEALTHY players below the district varsity lineup (`jv_pool`) — the depth
+    gate's input."""
     return sum(1 for p in jv_pool(ts) if p.pid not in ts.injuries)
 
 

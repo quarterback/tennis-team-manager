@@ -1683,8 +1683,11 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   - **Roster-facing readers key off the district lineup**: the preseason store's V1
     cut and the portal's projected V1 seat (`district_need`), and captains are drawn
     from the SMALLER of the district and invitational dressing groups.
-    **`jv_pool` does NOT move** (still #12 down) — moving it would leave a
-    floor-sized 5A program four spare and no JV; that is an owner decision.
+    **`jv_pool` follows the district lineup too** (owner rule 2026-10, superseding
+    the 2070 "the JV season cut never moves"): JV starts at #15 in the 4S/5D
+    classes, #17 in 5A, #12 in 6A/11B, #10 in the 1S/4D classes and Group 2, #9 in
+    1A. Measured at roster level: 16 of 82 girls' and 14 of 77 boys' 5A programs
+    fall below `JV_MIN_SPARE` and field no JV; no other class loses one.
   - Analytics' "regular" card shape and the format profile's regular sample now read
     NON-district regular duals only (the invitationals' 3S/4D).
 - **‼️ THE LEAGUE SEASON PLAYS 3S/4D, NOT 5S/2D (owner rule 2027-08, swapped).**

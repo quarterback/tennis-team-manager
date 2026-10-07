@@ -153,7 +153,8 @@ def test_the_cap_is_a_limit_and_the_showcase_sits_outside_it():
 def test_the_jv_pool_is_the_ladder_below_varsity():
     t = _teams(_slice(groups=("9A",), per=1))[0]
     order = jh._order(t)
-    assert jh.jv_pool(t) == order[jh.lineup_need("regular"):]
+    # JV starts directly below the class's DISTRICT lineup (owner rule 2026-10)
+    assert jh.jv_pool(t) == order[jh.district_need(t.school.group):]
     top = order[0]
     t.records[top.pid] = [0, 40]
     assert jh._order(t)[0] is not top

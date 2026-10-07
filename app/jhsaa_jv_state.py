@@ -266,8 +266,10 @@ def freeze_eligibility(jvt) -> list:
       * ranked below the varsity playoff lineup on the school ladder — #12 or
         lower in every classification, and #15 or lower in 8A/9A, whose playoffs
         dress fourteen (owner rule 2070). That is `jv_postseason_cut`, derived from
-        `lineup_need` and NOT a second roster split: the JV SEASON's own cut
-        (`jv_pool`) is #12 everywhere and does not move. The overlap is deliberate
+        `lineup_need` and NOT a second roster split. The JV SEASON's own cut
+        (`jv_pool`) is the class's district lineup (owner rule 2026-10), which in
+        the 1S/4D classes and 1A sits ABOVE this freeze — so a #10 or #11 there
+        plays JV duals but is not championship-eligible. The overlap is deliberate
         and harmless — a player may dress for both playoff fields.
       * they actually played JV this season.
       * split-time players count, and fall out for free: a player who spent the year

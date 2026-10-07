@@ -154,8 +154,8 @@ ENTRY_SIZE = {SINGLES: 1, DOUBLES: 2}
 # --- eligibility ------------------------------------------------------------
 
 #: ‼️ WHERE THE TOURNAMENT'S ELIGIBILITY STARTS — 1-based ladder rank (owner rule
-#: 2026-09, measured). The JV SEASON staffs its duals from rank 12 down
-#: (`jhsaa.jv_pool`, the plain cut below the varsity eleven) and that is unchanged.
+#: 2026-09, measured). The JV SEASON staffs its duals from below the class's
+#: district lineup (`jhsaa.jv_pool` — owner rule 2026-10; it was a fixed #12).
 #: The EVENT is stricter, because the owner measured what those ranks actually do
 #: across a season and ranks 12-13 are not JV players, they are varsity swing
 #: players:
@@ -224,13 +224,15 @@ def jv_eligible(ts, bracket: str, ladder: list | None = None) -> list:
     still asks one place, should the association split them again.
 
     ‼️ THE RANK CUT IS THE EVENT'S, NOT THE SEASON'S. `jv_ladder` is the whole JV
-    pool, which staffs JV duals from rank 12 down; the tournament drops the
+    pool, which staffs JV duals from below the district lineup; the tournament drops the
     varsity swing ranks and, in a class that dresses more than eleven for
     varsity, everyone in that wider lineup (see `EVENT_FROM`). The filter lives
     here so both brackets and every caller get it from one place."""
     pool = jv_ladder(ts) if ladder is None else ladder
-    from .jhsaa import lineup_need
-    skip = max(0, event_from(ts.school.group) - 1 - lineup_need("regular"))
+    # `jv_pool` starts below the class's DISTRICT lineup (owner rule 2026-10), so
+    # the offset to the event's rank guard is measured from there.
+    from .jhsaa import district_need
+    skip = max(0, event_from(ts.school.group) - 1 - district_need(ts.school.group))
     return pool[skip:]
 
 
