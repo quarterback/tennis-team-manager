@@ -12,7 +12,8 @@ it down, one row per program per season (`world_jhsaa_preseason_state`):
     (grade, OVR, potential estimate, stars, STR, country, sibling) and the
     evaluation it was ranked on (`eval`, the `_order` key with no results —
     the preseason ladder) plus its parts (read, future, interest, tenure, prior);
-  * the V1 cut (`lineup_need("regular", group)`) and the **V1 FLOOR** — the key
+  * the V1 cut (`district_need(group)` — the class's DISTRICT lineup, which is
+    its State format since owner rule 2026-10) and the **V1 FLOOR** — the key
     of the last V1 seat — so "would this player make V1 here?" is one key and a
     comparison, never a roster build;
   * the staff effect the ladder was read with (lens, future/loyalty weights).
@@ -116,7 +117,7 @@ def team_state(ts, season_year: int) -> dict:
             "prior": ({"apps": pr.apps, "wins": pr.wins, "losses": pr.losses, "rank": pr.rank}
                       if pr else None)})
     entries.sort(key=lambda e: (-e["eval"], -e["str"]))
-    v1 = jh.lineup_need("regular", ts.school.group)
+    v1 = jh.district_need(ts.school.group)   # the class's district lineup (owner rule 2026-10)
     keys = [(e["eval"], e["str"]) for e in entries]
     return {"school": ts.school.name, "ident": ts.school.ident, "season_year": season_year,
             "classification": ts.school.classification, "group": ts.school.group,

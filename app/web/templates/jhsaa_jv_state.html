@@ -99,7 +99,7 @@
       <td class="nm">{{ r.deco.mark|safe }} <a href="{{ url_for('jhsaa_school', school=r.school, u=u, g=view.gender, year=view.scope.pin) }}">{{ r.school }}</a></td>
       <td class="bl-cell-num">{{ r.jv_wins }}-{{ r.jv_losses }}{% if r.jv_ties %}-{{ r.jv_ties }}{% endif %}</td>
       <td class="bl-cell-num">{{ '%.3f'|format(r.jv_pct) }}</td>
-      <td class="bl-cell-num">{{ r.v_wins }}-{{ r.v_losses }}</td>
+      <td class="bl-cell-num">{{ r.v_wins }}-{{ r.v_losses }}{% if r.v_ties %}-{{ r.v_ties }}{% endif %}</td>
       <td class="bl-cell-num">{{ '%.3f'|format(r.v_pct) }}</td>
       <td class="bl-cell-num">{{ '%.3f'|format(r.index) }}</td>
       <td>{{ r.finish }}</td>

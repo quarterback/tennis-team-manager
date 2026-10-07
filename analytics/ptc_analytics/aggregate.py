@@ -285,7 +285,13 @@ class Bundle:
     def _dual_bucket(self, d: dict) -> str | None:
         if self.family == "jhsaa":
             phase = d.get("phase")
-            if phase == "regular":
+            # ‼️ NON-DISTRICT regular duals only (owner rule 2026-10): a district
+            # dual now plays its CLASS's State format (4S/5D, 6S/5D, 1S/4D, 2S/3D,
+            # 3S/3D or 3S/4D), so "regular" stopped naming one shape. The
+            # association's common regular-season format is the invitationals'
+            # 3S/4D, and that is what this bucket measures; the district duals are a
+            # per-class shape, not noise to take a most-common vote over.
+            if phase == "regular" and not _i(d.get("district")):
                 return _REGULAR_BUCKET
             if phase in ("state", "toc"):
                 return _POSTSEASON_BUCKET

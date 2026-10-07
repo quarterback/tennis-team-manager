@@ -4679,9 +4679,15 @@ def jhsaa_individual_view(seed: int, gender: str, group: str | None = None,
     years = world.jhsaa_years(w["id"], g)
     yr = (years[0] if years else w["year"]) if year is None else year
     grp = group if group in jh.ROAD_GROUPS else jh.ROAD_GROUPS[0]
-    fl = (flight if flight in ji.FLIGHTS or flight == "XD"
+    # The class's slate for THIS season — off the archive when it has one (a season
+    # played before the 2026-10 widening crowned six), else the class's current
+    # slate (`flights_for`). A flight the class does not crown falls back to S1, so
+    # a class switch from 9A No. 4 Singles to 4A lands on a real draw.
+    class_flights = (world.jhsaa_individual_flights(w["id"], yr, g, grp)
+                     or ji.flights_for(grp))
+    fl = (flight if flight in class_flights or flight == "XD"
           or flight in jvi.BRACKETS or flight in jvi.QUAL_BRACKETS
-          else ji.FLIGHTS[0])
+          else class_flights[0])
     # ‼️ THE JV BRACKETS ARE CLASSLESS — the one JHSAA championship that is. The
     # draw lives under `GROUP_KEY` whatever class the rail shows, so a class
     # switch keeps you on the same statewide draw (the TOC's own posture: a
@@ -4694,7 +4700,7 @@ def jhsaa_individual_view(seed: int, gender: str, group: str | None = None,
                       (arc or {}).get("season_year"), arc)
     base = {"gender": g, "year": yr, "years": years, "group": grp,
             "groups": list(jh.ROAD_GROUPS), "flight": fl,
-            "flights": [(f, ji.FLIGHT_NAMES[f]) for f in ji.FLIGHTS],
+            "flights": [(f, ji.FLIGHT_NAMES[f]) for f in class_flights],
             "flight_name": _jv_name(fl) if is_jv else ji.FLIGHT_NAMES[fl],
             "mixed_flight": "XD", "mixed_name": ji.FLIGHT_NAMES["XD"],
             # The JV brackets sit on the rail set apart, like mixed: a different
@@ -7037,8 +7043,12 @@ def jhsaa_individual_winners(seed: int, gender: str, group: str | None = None,
     w = world.get_or_create(seed)
     g = _jh_g(gender)
     grp = group if group in jh.GROUPS else jh.GROUPS[0]
-    fl = (flight if flight in ji.FLIGHTS or flight == "XD"
-          or flight in jvi.BRACKETS else ji.FLIGHTS[0])
+    # Every flight this class crowns today — a season from before the 2026-10
+    # widening simply has no row for the added flights, which is the roll's own
+    # "a season played before the event existed" case.
+    class_flights = ji.flights_for(grp)
+    fl = (flight if flight in class_flights or flight == "XD"
+          or flight in jvi.BRACKETS else class_flights[0])
     # The JV brackets are CLASSLESS (`GROUP_KEY`), so their roll ignores the
     # class on the scope bar exactly as the bracket page does — the same titles
     # whatever class the rail shows, and no class in the heading.
@@ -7080,7 +7090,7 @@ def jhsaa_individual_winners(seed: int, gender: str, group: str | None = None,
                            else f"{grp} {ji.FLIGHT_NAMES[fl]}"),
             "heading": (jvi.BRACKET_NAMES[fl] if is_jv
                         else f"{grp} Individual Champions"),
-            "flights": [(f, ji.FLIGHT_NAMES[f]) for f in ji.FLIGHTS],
+            "flights": [(f, ji.FLIGHT_NAMES[f]) for f in class_flights],
             "jv_flights": [(f, jvi.BRACKET_NAMES[f]) for f in jvi.BRACKETS],
             "mixed_flight": "XD", "mixed_name": ji.FLIGHT_NAMES["XD"],
             "section_icon": ji.SECTION_ICON,

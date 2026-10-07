@@ -260,19 +260,16 @@ def played_jv(jvt) -> set[str]:
 
 
 def freeze_eligibility(jvt) -> list:
-    """The program's championship-eligible players, FROZEN.
+    """The program's championship-eligible players, FROZEN, in ladder order.
 
-    Three rules, all the spec's:
-      * ranked below the varsity playoff lineup on the school ladder — #12 or
-        lower in every classification, and #15 or lower in 8A/9A, whose playoffs
-        dress fourteen (owner rule 2070). That is `jv_postseason_cut`, derived from
-        `lineup_need` and NOT a second roster split: the JV SEASON's own cut
-        (`jv_pool`) is #12 everywhere and does not move. The overlap is deliberate
-        and harmless — a player may dress for both playoff fields.
-      * they actually played JV this season.
-      * split-time players count, and fall out for free: a player who spent the year
-        moving between varsity and JV is eligible if the ladder has them at #12 or
-        lower AT THE FREEZE, which is the only reading a frozen order can support.
+    ‼️ VARSITY/JV STATUS IS THE REGULAR-SEASON CUT (owner rule 2026-10): a player
+    ranked inside the class's district lineup is varsity, everyone below it is JV —
+    #10 down in a 1S/4D class, #15 down in a 4S/5D class, #17 down in 5A. That is
+    `jhsaa.jv_pool`, the same slice the JV season is staffed from. How many varsity
+    matches a player happened to dress for does not enter it, and the postseason
+    lineup does not move it. Two rules:
+      * below the regular-season cut on the school ladder at the freeze (`jv_pool`).
+      * they actually played JV this season (`played_jv`).
 
     ‼️ CALLED ONCE, at the start of the postseason. The ladder is live all season
     (`coach_eval` moves it on results), so re-reading it between rounds would let a
@@ -280,7 +277,7 @@ def freeze_eligibility(jvt) -> list:
     anti-stacking freeze exists to stop, arriving by a different door.
     """
     played = played_jv(jvt)
-    return [p for p in jh.jv_state_pool(jvt.team) if p.name in played]
+    return [p for p in jh.jv_pool(jvt.team) if p.name in played]
 
 
 def entries(jv: dict) -> list[JVEntry]:
@@ -311,8 +308,8 @@ def seed_key(e: JVEntry) -> float:
     return e.jv.win_pct + diff / 1000.0
 
 
-def varsity_record(e: JVEntry) -> tuple[int, int]:
-    """The program's VARSITY regular-season W-L, off the `TeamSeason` the JV team
+def varsity_record(e: JVEntry) -> tuple[int, int, int]:
+    """The program's VARSITY regular-season W-L-T, off the `TeamSeason` the JV team
     hangs from — `jhsaa._reg_season_record`, so the postseason never reaches the
     index."""
     return jh._reg_season_record(e.jv.team)
@@ -322,8 +319,7 @@ def selection_index(e: JVEntry) -> float:
     """`INDEX_JV_WEIGHT` × JV win% + `INDEX_VARSITY_WEIGHT` × varsity regular-season
     win%. A program with no varsity duals scores 0 on that term — a real answer,
     never a default that quietly hands it the JV share twice."""
-    w, l = varsity_record(e)
-    var = w / (w + l) if w + l else 0.0
+    var = jh.reg_pct(*varsity_record(e))
     return INDEX_JV_WEIGHT * e.jv.win_pct + INDEX_VARSITY_WEIGHT * var
 
 
@@ -347,14 +343,14 @@ def selection_rows(field: list[JVEntry], champions: set[str],
     research export flattens this to `jhsaa_jv_state.csv`."""
     out = []
     for e in field:
-        vw, vl = varsity_record(e)
+        vw, vl, vt = varsity_record(e)
         out.append({"school": e.name,
                     "entry": "champion" if e.name in champions else "at_large",
                     "region": region_of.get(e.name, e.region),
                     "jv_wins": e.jv.wins, "jv_losses": e.jv.losses,
                     "jv_ties": e.jv.ties, "jv_pct": round(e.jv.win_pct, 4),
-                    "v_wins": vw, "v_losses": vl,
-                    "v_pct": round(vw / (vw + vl), 4) if vw + vl else 0.0,
+                    "v_wins": vw, "v_losses": vl, "v_ties": vt,
+                    "v_pct": round(jh.reg_pct(vw, vl, vt), 4),
                     "index": round(selection_index(e), 4)})
     return out
 
@@ -372,13 +368,13 @@ def qualifier_rows(ranked: list[JVEntry], region_of: dict[str, str]) -> list[dic
     the thing this rule removed."""
     out = []
     for e in ranked:
-        vw, vl = varsity_record(e)
+        vw, vl, vt = varsity_record(e)
         out.append({"school": e.name, "entry": "qualifier",
                     "region": region_of.get(e.name, ""),
                     "jv_wins": e.jv.wins, "jv_losses": e.jv.losses,
                     "jv_ties": e.jv.ties, "jv_pct": round(e.jv.win_pct, 4),
-                    "v_wins": vw, "v_losses": vl,
-                    "v_pct": round(vw / (vw + vl), 4) if vw + vl else 0.0,
+                    "v_wins": vw, "v_losses": vl, "v_ties": vt,
+                    "v_pct": round(jh.reg_pct(vw, vl, vt), 4),
                     "index": ""})
     return out
 

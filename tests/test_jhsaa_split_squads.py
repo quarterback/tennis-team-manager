@@ -83,8 +83,8 @@ def test_both_gates_must_pass(tiers, monkeypatch):
         assert jh.squad_eligible(t) == want, (tier, depth)
 
 
-def test_depth_gate_counts_healthy_players_below_the_varsity_eleven(tiers):
-    t = _team("Deep", n=11 + 18)
+def test_depth_gate_counts_healthy_players_below_the_district_lineup(tiers):
+    t = _team("Deep", n=jh.district_need("5A") + 18)
     tiers["Deep"] = "elite"
     assert jh.squad_depth(t) == 18
     assert jh.squad_eligible(t) == ["V2", "V3"]
@@ -94,18 +94,18 @@ def test_depth_gate_counts_healthy_players_below_the_varsity_eleven(tiers):
 
 
 def test_squad_pools_are_disjoint_slices_of_the_jv():
-    t = _team("Deep", n=11 + 18)
+    t = _team("Deep", n=jh.district_need("5A") + 18)
     v2, v3 = jh.squad_pool(t, "V2"), jh.squad_pool(t, "V3")
     assert len(v2) == 11 and len(v3) == 7
     assert not {p.pid for p in v2} & {p.pid for p in v3}
-    varsity = {p.pid for p in jh._order(t)[:11]}
+    varsity = {p.pid for p in jh._order(t)[:jh.district_need("5A")]}
     assert not varsity & {p.pid for p in v2 + v3}
 
 
 # --- 2. year gate --------------------------------------------------------------
 
 def test_nothing_is_fielded_before_2097(tiers):
-    t = _team("Deep", n=11 + 18)
+    t = _team("Deep", n=jh.district_need("5A") + 18)
     tiers["Deep"] = "dynasty"
     assert jh.field_squads([t], 2096) == [] and t.squads == []
     got = jh.field_squads([t], jh.SPLIT_SQUAD_FROM)
@@ -122,7 +122,7 @@ def test_squad_formats():
 
 @pytest.mark.parametrize("squad,courts", [("V2", 7), ("V3", 5)])
 def test_a_squad_dual_plays_the_squad_format_and_credits_only_the_v1(squad, courts):
-    host, sq_school = _team("Host", n=30), _team("Deep", n=11 + 18,
+    host, sq_school = _team("Host", n=30), _team("Deep", n=jh.district_need("5A") + 18,
                                                   district="Beta League")
     sq = jh.SquadTeam(team=sq_school, squad=squad)
     jh.play_squad_dual(host, sq, seed=7)
@@ -187,7 +187,9 @@ def test_pairing_rules():
 
 
 def test_squad_vs_squad_is_jv_on_both_sides():
-    x, y = _team("X", n=30), _team("Y", n=30, district="Beta")
+    # 5A dresses sixteen in district play, so V2 + V3 needs 16 + 18 (owner rule 2026-10)
+    deep = jh.district_need("5A") + 18
+    x, y = _team("X", n=deep), _team("Y", n=deep, district="Beta")
     sx, sy = jh.SquadTeam(team=x, squad="V2"), jh.SquadTeam(team=y, squad="V3")
     jh.play_squad_dual(sx, sy, seed=4)
     r1, r2 = sx.schedule[-1], sy.schedule[-1]
@@ -245,7 +247,8 @@ def test_oowp_reads_the_squads_school_at_the_discount():
 
 def test_rating_duals_marks_the_squad_side_from_the_v1_row():
     host = _team("Host", n=30)
-    sq = jh.SquadTeam(team=_team("Deep", n=29, district="Beta"), squad="V3")
+    sq = jh.SquadTeam(team=_team("Deep", n=jh.district_need("5A") + 18,
+                                 district="Beta"), squad="V3")
     jh.play_squad_dual(sq, host, seed=3)                # the squad hosts
     rows = jh.rating_duals([host])
     assert len(rows) == 1

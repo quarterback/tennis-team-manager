@@ -325,7 +325,7 @@ def _flight_no(slot: str) -> int:
 
 
 def _weight(slot: str, phase: str, postseason, alpha: float = 1.0,
-            group: str | None = None) -> float:
+            group: str | None = None, district: bool = False) -> float:
     """The résumé weight of one appearance.
 
     ‼️ NORMALISED BY THE TABLE'S TOP COURT, which matters now that a shape can price
@@ -337,9 +337,14 @@ def _weight(slot: str, phase: str, postseason, alpha: float = 1.0,
     the same court. Dividing by the table's maximum keeps the association's ORDERING
     (which is the decision it made) and drops its scale (which is not about players).
     The ordinary table's maximum is 1.00, so every other class is untouched to the
-    last bit."""
+    last bit.
+
+    ‼️ `district` (the log entry's seventh field, owner rule 2026-10): a district
+    dual is `phase="regular"` but plays the class's State format, so a 9A league
+    S2 is priced on the 4S/5D table and a 5A one on the 6S/5D table — not the 3S/4D
+    table the phase alone would name."""
     from .jhsaa import flight_weights
-    table = flight_weights(phase, group)
+    table = flight_weights(phase, group, district=district)
     top = max(table.values()) or 1.0
     base = table.get(slot, 0.25) / top
     if phase == "regular" and slot in FLIGHT_S2S3_REGULAR:
@@ -439,7 +444,7 @@ def _pairs(players: dict) -> dict:
     out: dict[tuple, dict] = {}
     for pid, rec in players.items():
         for m in rec["log"]:
-            slot, _won, _ph, opps, partner, _os = m
+            slot, _won, _ph, opps, partner, _os, *_d = m
             if _is_singles(slot) or not partner or partner >= pid:
                 continue                    # log it once, from the higher pid
             mate = players.get(partner)
@@ -489,8 +494,8 @@ def _resume(log, q_of, postseason, alpha: float = 1.0,
     classification — it selects the flight weight table for the shapes that
     classification plays (see `_weight`)."""
     total = 0.0
-    for slot, won, phase, opps, _partner, _os in log:
-        w = _weight(slot, phase, postseason, alpha, group)
+    for slot, won, phase, opps, _partner, _os, *dist in log:
+        w = _weight(slot, phase, postseason, alpha, group, bool(dist and dist[0]))
         q = q_of(opps)
         if won:
             total += w * (WIN_BASE + WIN_SLOPE * q)
@@ -516,7 +521,7 @@ def _q_pairs(base: dict):
 def _h2h_players(a: dict, b: dict) -> int:
     """Net head-to-head between two players: +1 a leads, -1 b leads, 0 level."""
     net = 0
-    for slot, won, _ph, opps, _pt, _os in a["log"]:
+    for slot, won, _ph, opps, _pt, _os, *_d in a["log"]:
         if _is_singles(slot) and b["pid"] in opps:
             net += 1 if won else -1
     return (net > 0) - (net < 0)
@@ -526,7 +531,7 @@ def _h2h_pairs(a: dict, b: dict) -> int:
     """Net head-to-head between two PARTNERSHIPS — the pairs that met, not the
     individuals inside them."""
     net = 0
-    for _slot, won, _ph, opps, _pt, _os in a["log"]:
+    for _slot, won, _ph, opps, _pt, _os, *_d in a["log"]:
         if _pair_key(opps) == b["pids"]:
             net += 1 if won else -1
     return (net > 0) - (net < 0)
@@ -566,7 +571,7 @@ def _extraordinary(rec: dict, floor: int, flight_of: dict) -> bool:
     n, w = rec["s_n"], rec["s_w"]
     if not n or w / n < EXTRAORDINARY_PCT:
         return False
-    for slot, won, _ph, opps, _pt, _os in rec["log"]:
+    for slot, won, _ph, opps, _pt, _os, *_d in rec["log"]:
         if won and _is_singles(slot) and any(flight_of.get(o, 99) <= floor for o in opps):
             return True
     return False

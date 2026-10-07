@@ -29,10 +29,62 @@ def draw(teams):
 
 # --- what the event IS -------------------------------------------------------
 
-def test_it_is_three_singles_and_three_doubles():
+def test_every_class_keeps_the_core_six():
+    """The original No. 1-3 singles and No. 1-3 doubles championships are a FLOOR
+    (owner rule 2026-10): no class loses one because its championship dual has
+    fewer singles or doubles flights."""
     assert ji.SINGLES_FLIGHTS == ("S1", "S2", "S3")
     assert ji.DOUBLES_FLIGHTS == ("D1", "D2", "D3")
-    assert len(ji.FLIGHTS) == 6
+    for g in jh.ROAD_GROUPS:
+        assert set(ji.CORE_FLIGHTS) <= set(ji.flights_for(g)), g
+
+
+def test_each_class_adds_every_flight_its_state_format_contests():
+    """Owner rule 2026-10: the slate is the core six plus every further flight the
+    class's STATE team format plays — 110 championships a gender."""
+    want = {"9A": "S1-S4 D1-D5", "8A": "S1-S4 D1-D5", "7A": "S1-S4 D1-D5",
+            "Group 1": "S1-S4 D1-D5", "10B": "S1-S4 D1-D5",
+            "6A": "S1-S3 D1-D4", "11B": "S1-S3 D1-D4",
+            "5A": "S1-S6 D1-D5",
+            "4A": "S1-S3 D1-D4", "3A": "S1-S3 D1-D4", "2A": "S1-S3 D1-D4",
+            "Group 3": "S1-S3 D1-D4",
+            "1A": "S1-S3 D1-D3", "Group 2": "S1-S3 D1-D3"}
+    for g, spec in want.items():
+        s, d = spec.split()
+        ns, nd = int(s[-1]), int(d[-1])
+        assert ji.flights_for(g) == (tuple(f"S{i}" for i in range(1, ns + 1))
+                                     + tuple(f"D{i}" for i in range(1, nd + 1))), g
+        f = jh.dual_format("state", g)
+        assert ns == max(3, f.n_singles) and nd == max(3, f.n_doubles), g
+    assert set(want) == set(jh.ROAD_GROUPS)
+    assert sum(len(ji.flights_for(g)) for g in jh.ROAD_GROUPS) == 110
+    # FLIGHTS is exactly the union — every name lookup covers every class.
+    assert set(ji.FLIGHTS) == {f for g in jh.ROAD_GROUPS for f in ji.flights_for(g)}
+
+
+def test_flight_positions_read_the_arranged_sheet_in_slot_order():
+    """`flight_ranks` indexes the ARRANGED sheet, which is in slot order
+    [S1..Sn, D1a, D1b, …] — every position used once, singles first."""
+    assert ji.flight_ranks("1A") == ji.FLIGHT_RANKS
+    assert ji.flight_ranks("Group 2") == ji.FLIGHT_RANKS
+    r5 = ji.flight_ranks("5A")
+    assert r5["S6"] == (5,) and r5["D1"] == (6, 7) and r5["D5"] == (14, 15)
+    for g in jh.ROAD_GROUPS:
+        pos = [i for f in ji.flights_for(g) for i in ji.flight_ranks(g)[f]]
+        assert pos == list(range(ji.entry_count(g))), g
+
+
+def test_the_slate_format_is_the_state_format_or_wider():
+    """Arranged at the class's State format wherever the slate matches it; where
+    the kept core flights outrun it (1S/4D, 2S/3D) the slate is the same mechanism
+    one or two singles seats wider — never narrower."""
+    for g in jh.ROAD_GROUPS:
+        sf, st = ji.slate_format(g), jh.dual_format("state", g)
+        assert sf.n_doubles == max(3, st.n_doubles), g
+        assert sf.n_singles == max(3, st.n_singles), g
+    for g in ("9A", "5A", "6A", "Group 2", "10B", "11B"):
+        sf, st = ji.slate_format(g), jh.dual_format("state", g)
+        assert (sf.n_singles, sf.n_doubles) == (st.n_singles, st.n_doubles), g
 
 
 def test_the_flights_are_the_same_slot_names_a_dual_uses():
@@ -46,38 +98,62 @@ def test_the_flights_are_the_same_slot_names_a_dual_uses():
         assert f in jh.FLIGHT_WEIGHTS, f
 
 
-def test_no_dual_format_reaches_this_module(teams):
-    """‼️ Owner rule: "even in 1A, it's still a 3/3 event". 1A's postseason dresses
-    EIGHT under the 2S/3D pilot and its league season eleven, and neither may change
-    what this event is. Selection must be identical whichever group it is told."""
+def test_a_narrow_format_never_shrinks_the_slate(teams):
+    """‼️ Owner rule: "even in 1A, it's still a 3/3 event" — and since 2026-10 the
+    State format can only WIDEN a class's slate, never narrow it. 1A's 2S/3D and
+    Group 2's 3S/3D keep the six-flight sheet exactly."""
     a = ji.flight_entry(teams[0], "D3")
-    for group in ("1A", "5A", "9A"):
-        # `flight_entry` takes no group at all, which is the guarantee; this pins
-        # that the ranks it draws are fixed rather than looked up per class.
-        assert ji.FLIGHT_RANKS["D3"] == (7, 8)
+    for group in ("1A", "Group 2"):
+        assert ji.flight_ranks(group)["D3"] == (7, 8)
+        assert ji.flights_for(group) == ji.CORE_FLIGHTS
     assert a is not None and len(a.players) == 2
 
 
-def test_entries_come_off_the_ability_ladder_not_the_league_lineup(teams):
-    """‼️ The league's 3S/4D format is doubles-forward: S1=#1, doubles=#2-#9,
-    S2/S3=#10-#11. So a program's "No. 2 singles" in a league dual is its TENTH-best
-    player, and entering that person in the No. 2 singles championship would be
-    absurd. S2 here is rank #2 of the ability ladder."""
-    ts = teams[0]
-    ladder = jh._order(ts)
-    assert ji.flight_entry(ts, "S1").players[0].pid == ladder[0].pid
-    assert ji.flight_entry(ts, "S2").players[0].pid == ladder[1].pid
-    assert ji.flight_entry(ts, "S3").players[0].pid == ladder[2].pid
-    assert [p.pid for p in ji.flight_entry(ts, "D1").players] == \
-           [ladder[3].pid, ladder[4].pid]
+def test_entries_are_seated_by_the_state_arrangement_not_by_rank(teams):
+    """‼️ Owner rule 2026-10: the preseason ability ladder is the INPUT, and the
+    seats are assigned by the same arrangement the class uses at team State. The
+    entrants are exactly the top of the ladder; who plays which flight is
+    `_arrange_postseason`'s decision at the slate's width — so a strong doubles
+    player can be seated at D1 rather than forced into a singles flight by rank."""
+    for ts in teams[:12]:
+        g = ts.school.group
+        n = ji.entry_count(g)
+        ladder = jh._order(ts)
+        want = jh._arrange_postseason(ladder[:n], ji.slate_format(g), ts.sibling_ids,
+                                      ts.pair_counts, ts.culture)
+        sheet = ji.arrange_sheet(ts)
+        assert [p.pid for p in sheet] == [p.pid for p in want]
+        assert {p.pid for p in sheet} == {p.pid for p in ladder[:n]}
+        for f in ji.flights_for(g):
+            got = [p.pid for p in ji.flight_entry(ts, f).players]
+            assert got == [sheet[i].pid for i in ji.flight_ranks(g)[f]], f
+        # S1-S3 + D1 come from the top five (the anti-stacking pool), D2 down below
+        top5 = {p.pid for p in ladder[:5]}
+        for f in ("S1", "S2", "S3", "D1"):
+            assert {p.pid for p in ji.flight_entry(ts, f).players} <= top5, f
+
+
+def test_a_5a_sheet_seats_the_top_eight_at_s1_s6_and_d1():
+    """The owner's worked example: 5A takes sixteen, the top EIGHT supply S1-S6 and
+    D1, and #9-#16 form D2-D5."""
+    schools = [s for s in jh.load_schools("girls") if s.group == "5A"][:6]
+    for ts in jh.district_teams(schools, YEAR, SALT):
+        ladder = jh._order(ts)
+        if len(ladder) < 16:
+            continue
+        sheet = ji.arrange_sheet(ts)
+        top8 = {p.pid for p in ladder[:8]}
+        assert {p.pid for p in sheet[:8]} == top8
+        assert {p.pid for p in sheet[8:16]} == {p.pid for p in ladder[8:16]}
 
 
 def test_the_nine_entrants_are_all_different_people(teams):
     """A pair is two DIFFERENT people and no player may be in two flights — unlike a
     short dual side, which wraps a player onto two lines rather than crashing."""
     for ts in teams[:12]:
-        pids = [p.pid for f in ji.FLIGHTS for p in ji.flight_entry(ts, f).players]
-        assert len(pids) == len(set(pids)) == 9
+        pids = [p.pid for f in ji.flights_for(ts.school.group)
+                for p in ji.flight_entry(ts, f).players]
+        assert len(pids) == len(set(pids)) == ji.entry_count(ts.school.group)
 
 
 def test_nobody_is_entered_in_two_flights_once_results_are_credited(teams):
@@ -258,17 +334,21 @@ def test_individual_s2_s3_are_priced_at_the_table_and_so_is_the_league_now():
 # --- mixed doubles -----------------------------------------------------------
 
 def test_mixed_draws_from_below_the_nine_the_main_event_uses():
-    """A CONSOLATION event (owner rule): it exists for the players the six flights
-    have no seat for, so it starts at rank #9 — never the school's best two."""
+    """A CONSOLATION event (owner rule): it exists for the players the main slate
+    has no seat for, so it starts directly below the class's entries — #9 on the
+    six-flight sheet, #16 in 5A — never the school's best two."""
     assert ji.MIXED_FROM_RANK == 9
     assert ji.MIXED_FROM_RANK == max(max(r) for r in ji.FLIGHT_RANKS.values()) + 1
+    for g in jh.ROAD_GROUPS:
+        assert ji.mixed_from_rank(g) == max(
+            max(r) for r in ji.flight_ranks(g).values()) + 1, g
 
 
 def test_the_roster_floor_guarantees_a_mixed_pool():
-    """‼️ If `ROSTER_FLOOR` ever drops to 9 the event silently empties. The floor is
-    16 and the main draw consumes nine, so every roster carries at least seven
-    below the line in each gender."""
-    assert jh.ROSTER_FLOOR - ji.MIXED_FROM_RANK >= 1
+    """‼️ If `ROSTER_FLOOR` ever drops to the widest slate's entry count the event
+    silently empties for that class. 5A enters sixteen; the floor is 20."""
+    for g in jh.ROAD_GROUPS:
+        assert jh.ROSTER_FLOOR - ji.mixed_from_rank(g) >= 1, g
 
 
 def test_mixed_is_one_bracket_not_a_flighted_ladder():

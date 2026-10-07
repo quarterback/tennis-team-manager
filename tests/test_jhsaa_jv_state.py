@@ -131,7 +131,7 @@ def test_the_index_is_30_jv_70_varsity_regular_season_only():
                                 win_pct=0.25, points_for=0, points_against=0,
                                 school=types.SimpleNamespace(name="X"))
     e = jvs.JVEntry(jv=jvt)
-    assert jvs.varsity_record(e) == (3, 1)
+    assert jvs.varsity_record(e) == (3, 1, 0)
     assert abs(jvs.selection_index(e) - (0.30 * 0.25 + 0.70 * 0.75)) < 1e-9
     assert jvs.INDEX_JV_WEIGHT + jvs.INDEX_VARSITY_WEIGHT == 1.0
 
@@ -270,15 +270,17 @@ def test_district_berths_match_the_association_table():
 
 def test_every_entrant_is_eligible_and_actually_played_jv(jv):
     """Both halves of the eligibility rule, checked against the roster rather than
-    against a second copy of the rule: below the varsity eleven on the frozen ladder,
-    AND having appeared in a JV dual this season."""
+    against a second copy of the rule: below the class's REGULAR-SEASON varsity
+    lineup on the frozen ladder (owner rule 2026-10), AND having appeared in a JV
+    dual this season."""
     field = jvs.entries(jv)
     assert field, "no program entered"
     for e in field:
-        pool = {p.pid for p in jh.jv_pool(e.jv.team)}
+        cut = jh.district_need(e.jv.team.school.group)
+        order = [p.pid for p in jh._order(e.jv.team)]
         played = jvs.played_jv(e.jv)
         for p in e.players:
-            assert p.pid in pool, (e.name, p.name)
+            assert order.index(p.pid) >= cut, (e.name, p.name)
             assert p.name in played, (e.name, p.name)
         # ‼️ 16 IS A CEILING, NOT A SQUAD SIZE — a program carries up to sixteen and
         # dresses seven, so the roster may be anywhere in between.
@@ -629,3 +631,18 @@ def test_the_36_renders_two_trees_and_the_selection_table(big36, monkeypatch,
     r = c.get("/jhsaa/jv-state?g=boys")
     assert r.status_code == 200
     assert b"Parastate" in r.data and b"At-large selection" in r.data
+
+
+def test_varsity_appearances_do_not_decide_eligibility(jv):
+    """The regular-season cut decides it, not how many varsity duals a player
+    dressed for: an eligible player credited with a varsity league dual stays
+    eligible."""
+    e = jvs.entries(jv)[0]
+    p = e.players[0]
+    team = e.jv.team
+    saved = list(team.matches.get(p.pid, ()))
+    try:
+        team.matches[p.pid] = saved + [("D4", False, "regular", (), None, "", True)]
+        assert p.pid in {q.pid for q in jvs.freeze_eligibility(e.jv)}
+    finally:
+        team.matches[p.pid] = saved

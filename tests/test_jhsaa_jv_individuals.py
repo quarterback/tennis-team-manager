@@ -203,8 +203,8 @@ def test_a_school_short_of_eligible_players_enters_nobody(by_group):
     the swing ranks is JV for duals and still not eligible here."""
     _, _, teams = _one_district(by_group)
     g = _by_grade(by_group)
-    need = jh.lineup_need("regular")
     school = teams[0].school
+    need = jh.district_need(school.group)    # JV starts below the district lineup
     swing = jvi.event_from(school.group) - 1 - need
     assert swing > 0, "vacuous: no swing ranks between the eleven and the guard"
     # the strongest upperclassmen make a full varsity eleven; the weakest
@@ -249,7 +249,7 @@ def test_a_district_with_no_eligible_players_emits_no_champion(by_group):
     a champion off."""
     group, district, teams = _one_district(by_group)
     g = _by_grade(by_group)
-    need = jh.lineup_need("regular")
+    need = jh.district_need(teams[0].school.group)
     swing = jvi.event_from(teams[0].school.group) - 1 - need
     base = sorted(g[12] + g[11], key=lambda p: -p.current_overall())[:need]
     league = [_Squad(t.school, base + g[9][-swing:]) for t in teams]

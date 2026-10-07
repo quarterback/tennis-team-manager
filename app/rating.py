@@ -106,6 +106,7 @@ class RatingLine:
     school: str
     wins: int = 0
     losses: int = 0
+    ties: int = 0            # drawn duals (JHSAA even shapes only; college never ties)
     road_wins: int = 0       # away wins (carry the ITA +10% bonus into APR)
     apr: float = 0.0
     fqi: float = 0.0
@@ -115,12 +116,14 @@ class RatingLine:
 
     @property
     def record(self) -> str:
+        if self.ties:
+            return f"{self.wins}-{self.losses}-{self.ties}"
         return f"{self.wins}-{self.losses}"
 
     @property
     def win_pct(self) -> float:
-        n = self.wins + self.losses
-        return self.wins / n if n else 0.0
+        n = self.wins + self.losses + self.ties
+        return (self.wins + 0.5 * self.ties) / n if n else 0.0
 
 
 def _flight_score(lines: list[dict], side: str, weights: dict | None = None) -> float | None:
@@ -204,7 +207,15 @@ def compute_ratings(duals: list[dict], *,
         if sq != "away":
             opps[d["away"]].append(d["home"])
             opp_f.setdefault(d["away"], []).append(f)
-        if d["home_won"]:
+        if d.get("tied"):
+            # A DRAWN dual (a JHSAA even shape — Group 2's 3S/3D league or
+            # showcase) is half a win to each side. Read before `home_won`,
+            # which is False on a draw and would hand the AWAY side a win.
+            if sq != "home":
+                h.ties += 1
+            if sq != "away":
+                a.ties += 1
+        elif d["home_won"]:
             if sq != "home":
                 h.wins += 1
             if sq != "away":
@@ -215,16 +226,20 @@ def compute_ratings(duals: list[dict], *,
             if sq != "home":
                 h.losses += 1
 
-    # Per-team game log (opponent, won, is_road) — feeds the quality-adjusted win%.
+    # Per-team game log (opponent, result, is_road) — feeds the quality-adjusted
+    # win%. The result is a bool for a decided dual and 0.5 for a draw; the loss
+    # weight below reads it as the share of the dual LOST, so a bool contributes
+    # exactly what it always did.
     games: dict[str, list] = {t: [] for t in teams}
     for d in duals:
         h, a, hw = d["home"], d["away"], d["home_won"]
         sq = d.get("squad_side")
         f = d.get("squad_factor", 1.0)
+        tied = bool(d.get("tied"))
         if sq != "home":
-            games[h].append((a, hw, False, f))
+            games[h].append((a, 0.5 if tied else hw, False, f))
         if sq != "away":
-            games[a].append((h, not hw, True, f))
+            games[a].append((h, 0.5 if tied else not hw, True, f))
 
     # --- APR: iterated, strength-of-schedule-aware ---
     # Classic RPI compresses (built for a single overlapping league). Here the
@@ -237,16 +252,23 @@ def compute_ratings(duals: list[dict], *,
     # Loss weighting is ASYMMETRIC (see LOSS_FORGIVE): a loss to a strong opponent
     # barely dents the win%, so it's recomputed each iteration as opponent ratings S
     # firm up — a top team's few losses (all to other top teams) hardly hurt it.
-    win_num = {t: teams[t].wins + ROAD_WIN_BONUS * teams[t].road_wins for t in teams}
+    # A draw is half a win: half in the numerator and, through the game log, half a
+    # (forgivable) loss in the denominator. With no draws every term is unchanged.
+    win_num = {t: teams[t].wins + 0.5 * teams[t].ties
+               + ROAD_WIN_BONUS * teams[t].road_wins for t in teams}
 
     def _ewp(t: str, S: dict) -> float:
-        loss_wt = sum(1.0 - LOSS_FORGIVE * (S.get(o, 0.5) if f == 1.0
-                                            else S.get(o, 0.5) * f)
-                      for (o, won, _r, f) in games[t] if not won)
-        den = teams[t].wins + loss_wt
+        loss_wt = sum((1.0 - won)
+                      * (1.0 - LOSS_FORGIVE * (S.get(o, 0.5) if f == 1.0
+                                               else S.get(o, 0.5) * f))
+                      for (o, won, _r, f) in games[t] if won < 1)
+        den = teams[t].wins + 0.5 * teams[t].ties + loss_wt
         return min(1.0, win_num[t] / den) if den else 0.0
 
-    S = {t: (min(1.0, win_num[t] / (r.wins + r.losses)) if (r.wins + r.losses) else 0.0)
+    def _played(r: RatingLine) -> int:
+        return r.wins + r.losses + r.ties
+
+    S = {t: (min(1.0, win_num[t] / _played(r)) if _played(r) else 0.0)
          for t, r in teams.items()}
     for _ in range(SOS_ITERS):
         ewp = {t: _ewp(t, S) for t in teams}
