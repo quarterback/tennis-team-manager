@@ -11,7 +11,8 @@ of their V1 destinations, drop a move), then commits or dismisses it.
 ‼️ V1 IS THE GAME'S OWN PROJECTION, never "top eleven by OVR": the coach's
 preseason ladder (`jhsaa._order` on the team `district_teams` builds, with last
 season's evidence and the program's named staff — the rung's own inputs), cut at
-the regular-season lineup (`lineup_need("regular", group)`). A destination
+the class's DISTRICT lineup (`district_need(group)` — its State format since
+owner rule 2026-10: 8 in 1A, 9 in 2A/Group 3). A destination
 qualifies only if that same projection, with the player added, seats them on it.
 
 ‼️ GEOGRAPHY IS A CASCADE, NOT A SCORE: same COUNTY first, then the same AREA,
@@ -105,7 +106,9 @@ def area_neighbors() -> dict:
 # ------------------------------------------------------------ projection ----
 
 def v1_size(ts) -> int:
-    return jh.lineup_need("regular", ts.school.group)
+    # The class's DISTRICT lineup (owner rule 2026-10): 8 in 1A, 9 in the 1S/4D
+    # classes — V1 is the side that plays for the league title.
+    return jh.district_need(ts.school.group)
 
 
 def v1_rank(ts, pid: str) -> int | None:

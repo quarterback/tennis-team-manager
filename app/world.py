@@ -4800,6 +4800,29 @@ def jhsaa_individual_draw(world_id: int, year: int, gender: str, group: str,
     return _relabel(json.loads(r["data"])) if r else None
 
 
+def jhsaa_individual_flights(world_id: int, year: int, gender: str,
+                             group: str) -> tuple:
+    """The varsity flights a class actually crowned in an archived season, in the
+    slate's own order — or `()` when nothing is archived for it.
+
+    ‼️ A SEASON'S SLATE IS THE ARCHIVE'S, NEVER TODAY'S MODULE (owner rule 2026-10
+    widened the slate; the `pi` rule). A 9A season played on the six-flight slate
+    has no No. 4 Singles draw, and offering one would render an empty tab across
+    every season ever played before the change. Flight names only — no draw is
+    parsed."""
+    from . import jhsaa_individuals as ji
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT DISTINCT flight FROM world_jhsaa_individual WHERE world_id=?"
+            " AND year=? AND gender=? AND grp=?",
+            (world_id, year, gender, group)).fetchall()
+    finally:
+        conn.close()
+    got = {r["flight"] for r in rows}
+    return tuple(f for f in ji.FLIGHTS if f in got)
+
+
 def jhsaa_jv_district_draws(world_id: int, year: int, gender: str,
                             group: str, district: str) -> dict:
     """`{bracket: draw}` — a district's own JV qualifying brackets for a season.
@@ -7470,11 +7493,14 @@ def jhsaa_group_ranking(arc: dict, group: str) -> list[dict]:
 
 
 def _wl(record: str | None) -> tuple[int, int]:
-    """"25-6" -> (25, 6). Blank/malformed reads as 0-0 rather than raising: an archive
-    written before a field existed must degrade, not 500 a program page."""
-    w, _, l = (record or "").partition("-")
+    """"25-6" -> (25, 6), "12-3-1" -> (12, 3). Blank/malformed reads as 0-0 rather
+    than raising: an archive written before a field existed must degrade, not 500 a
+    program page. A W-L-T record (a Group 2 tie, owner rule 2026-10 puts them in
+    district play) keeps its W and L — partitioned on the FIRST hyphen it used to
+    read "3-1" as the loss count and fall to 0-0."""
+    bits = (record or "").split("-")
     try:
-        return int(w or 0), int(l or 0)
+        return int(bits[0] or 0), int(bits[1] or 0) if len(bits) > 1 else 0
     except ValueError:
         return 0, 0
 

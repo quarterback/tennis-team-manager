@@ -8,7 +8,8 @@ shared `engine.run_tournament`, and a JSON-flattenable result.
 
 WHAT IS DIFFERENT FROM THE COLLEGE EVENT, and why:
 
-  * **FLIGHTED.** Six draws per classification per gender — S1 S2 S3 D1 D2 D3 —
+  * **FLIGHTED.** Six to eleven draws per classification per gender — the core
+    S1 S2 S3 D1 D2 D3 and the flights the class's State format adds —
     so a program's #6 player has a title to chase, not just its best. The college
     event pools every program's top two into ONE draw; this one gives each rank
     its own.
@@ -24,8 +25,9 @@ WHAT IS DIFFERENT FROM THE COLLEGE EVENT, and why:
     would send the wrong players — a strong league's third-best beats a weak
     league's champion.
   * **MIXED DOUBLES is a CONSOLATION event**, one flight and one bracket, one
-    entry per school drawn from BELOW #9 — the players the six-flight slate has no
-    seat for. See `run_mixed`.
+    entry per school drawn from below the class's entries (#9 on the six-flight
+    sheet, #16 in 5A) — the players the main slate has no seat for. See
+    `run_mixed`.
   * **SCORED THE WAY THE COLLEGE INDIVIDUAL CHAMPIONSHIPS ARE** —
     `individuals.INDIV_FMT`, imported rather than re-declared so the two events
     cannot drift. Best-of-3, no-ad, and a **FULL third set** (owner rule
@@ -34,25 +36,34 @@ WHAT IS DIFFERENT FROM THE COLLEGE EVENT, and why:
     no longer the one place the individual event differs from the league season.
     See `INDIV_FORMAT`.
 
-‼️ THE EVENT IS 3 SINGLES + 3 DOUBLES FOR EVERY CLASSIFICATION, INCLUDING 1A.
-It is an individual tournament and has NOTHING to do with any dual format — the
-1S/4D postseason, the 3S/4D league season and 1A's 2S/3D pilot are all irrelevant
-here, and no branch in this module reads a group's dual shape. 1A crowns the same
-six individual titles as 9A.
+‼️ EVERY CLASS CROWNS THE CORE SIX, AND THEN EVERY FLIGHT ITS STATE FORMAT ADDS
+(owner rule 2026-10, superseding "3 singles + 3 doubles for every classification").
+The slate is `flights_for(group)`: No. 1-3 singles and No. 1-3 doubles always, plus
+S4 + D4-D5 in the 4S/5D classes (9A/8A/7A/Group 1/10B), S4-S6 + D4-D5 in 5A, and D4
+in the classes whose State format carries four doubles flights (6A/11B, 4A/3A/2A/
+Group 3). 1A (2S/3D) and Group 2 (3S/3D) keep exactly the six. 110 championships a
+gender across the fourteen classes. The core six are a FLOOR: a doubles-heavy class
+does not lose No. 2 singles because its championship dual has one singles flight.
 
-‼️ FLIGHT ENTRIES COME OFF THE ABILITY LADDER, NOT `_arrange_regular`. (Under the
-2027-08 doubles-forward league seating a league "#2 singles" was the program's
-TENTH-best player; since 2026-09 the league seats #1-#3 at S1-S3, so the two now
-agree on singles — but the entry sheet still reads the ladder directly, because a
-lineup is a per-dual decision and an entry is not.) Preseason there are no results,
-no `order_of_ability` freeze (it binds from the first POSTSEASON dual) and no
-lineup to protect, so entries are simply:
+‼️ ENTRIES ARE ASSIGNED BY THE CLASS'S STATE ARRANGEMENT, NOT BY RANK (owner rule
+2026-10). The preseason ability order (`_order` with no results) is the input; the
+seats are decided exactly as the class decides them at team State —
+`jhsaa._arrange_postseason` on the top `entry_count(group)` players, at the slate's
+own width (`slate_format`):
 
-    S1 = #1   S2 = #2   S3 = #3   D1 = #4+#5   D2 = #6+#7   D3 = #8+#9
+  * 5A (6S/5D, 16): the top EIGHT supply S1-S6 and D1, the strongest configuration
+    decides which six play singles and which two pair at D1, and #9-#16 form D2-D5
+    in the order their actual doubles strength and the rank-sum boundary give.
+  * 4S/5D classes (14): the top SIX supply S1-S4 and D1; #7-#14 form D2-D5.
+  * 6A/11B and Group 2 likewise at 3S/4D and 3S/3D.
 
-— nine players, and the SAME nine in every classification. That number belongs to
-this event's own 3+3 shape and is not read off any dual format: 1A's road dresses
-eight and the league season eleven, and neither is relevant here.
+"No. 6 Singles" is therefore whoever a 5A coach would seat at S6 at State, never
+simply the sixth player while a strong doubles specialist is pushed down the sheet.
+
+Where the slate is WIDER than the State format — the classes that keep the core
+No. 2/No. 3 Singles their championship dual does not seat (1S/4D's 4A/3A/2A/Group 3
+crown S1-S3 + D1-D4, 1A's 2S/3D crowns S1-S3 + D1-D3) — the slate is arranged as
+one format by the same mechanism one seat wider: the top five supply S1-S3 and D1.
 """
 from __future__ import annotations
 
@@ -85,16 +96,84 @@ INDIV_FORMAT = INDIV_FMT
 #: The six flights, in card order. Deliberately the same slot names the duals use,
 #: so `FLIGHT_WEIGHTS` prices them with no new entries and the awards need no
 #: special case (see the design doc's "full credit" section).
+#:
+#: ‼️ THE SIX ARE A FLOOR, NOT THE SLATE (owner rule 2026-10). Every class keeps
+#: its No. 1-3 singles and No. 1-3 doubles championships, and then adds every
+#: further flight its STATE team format contests (`flights_for`): S4 + D4-D5 in
+#: the 4S/5D classes, S4-S6 + D4-D5 in 5A, D4 in the 1S/4D classes and 6A/11B.
+#: Never fewer than the six — a doubles-heavy class does not lose No. 2 singles
+#: because its championship dual has one singles flight.
 SINGLES_FLIGHTS = ("S1", "S2", "S3")
 DOUBLES_FLIGHTS = ("D1", "D2", "D3")
-FLIGHTS = SINGLES_FLIGHTS + DOUBLES_FLIGHTS
+CORE_FLIGHTS = SINGLES_FLIGHTS + DOUBLES_FLIGHTS
+#: Every flight ANY class can crown, singles then doubles — for name lookups,
+#: rankings and the career rolls. What a class actually crowns is `flights_for`;
+#: `tests/test_jhsaa_individuals.py` asserts this is exactly their union.
+FLIGHTS = ("S1", "S2", "S3", "S4", "S5", "S6", "D1", "D2", "D3", "D4", "D5")
+
+
+def flight_counts(group: str | None) -> tuple[int, int]:
+    """(singles, doubles) championships `group` crowns: the core three of each,
+    widened to its STATE team format (owner rule 2026-10). Read off
+    `jhsaa.dual_format("state", group)` — the format, never a typed table, so a
+    class that changes format changes its slate with it."""
+    from .jhsaa import dual_format
+    f = dual_format("state", group)
+    return (max(len(SINGLES_FLIGHTS), f.n_singles),
+            max(len(DOUBLES_FLIGHTS), f.n_doubles))
+
+
+def flights_for(group: str | None) -> tuple:
+    """The flights `group`'s Individual State Tournament crowns, singles first."""
+    n_s, n_d = flight_counts(group)
+    return (tuple(f"S{i}" for i in range(1, n_s + 1))
+            + tuple(f"D{i}" for i in range(1, n_d + 1)))
+
+
+def slate_format(group: str | None):
+    """`group`'s individual slate written as a dual format — what the entry sheet
+    is arranged at. Equal to the class's State format wherever the slate is
+    (4S/5D, 6S/5D, 3S/4D, 3S/3D); one or two singles seats wider where the core
+    six outrun it (1S/4D → 3S/4D, 2S/3D → 3S/3D)."""
+    from engine import DualFormat
+    n_s, n_d = flight_counts(group)
+    return DualFormat(n_singles=n_s, n_doubles=n_d, doubles_team_point=False)
+
+
+def flight_ranks(group: str | None) -> dict:
+    """`{flight: sheet positions}` for `group` (0-based) — where each flight's
+    entrant sits in the ARRANGED entry sheet (`entry_sheet`), which is in slot
+    order [S1..Sn, D1a, D1b, D2a, …]. These are positions in the arranged lineup,
+    NOT ladder ranks: who occupies them is the State arrangement's decision."""
+    n_s, n_d = flight_counts(group)
+    out = {f"S{i}": (i - 1,) for i in range(1, n_s + 1)}
+    for j in range(1, n_d + 1):
+        a = n_s + 2 * (j - 1)
+        out[f"D{j}"] = (a, a + 1)
+    return out
+
+
+def entry_count(group: str | None) -> int:
+    """Players a program enters across `group`'s flights — 9 for the six-flight
+    classes, 11 for the 1S/4D classes and 6A/11B, 14 for 4S/5D, 16 for 5A."""
+    n_s, n_d = flight_counts(group)
+    return n_s + 2 * n_d
+
+
+def mixed_from_rank(group: str | None) -> int:
+    """Mixed doubles' pool starts directly below `group`'s individual entries — the
+    consolation event is for the players the main slate has no seat for, at
+    whatever width that slate is."""
+    return entry_count(group)
 
 #: How a flight is written out. The chip stays terse (S1) and the heading is the
 #: sport's own phrasing — "No. 1 Singles", never "first flight" or "S1 draw"; see
 #: CLAUDE.md's VOCABULARY section, which is emphatic that positions are named
 #: No. 1 through No. 3.
 FLIGHT_NAMES = {"S1": "No. 1 Singles", "S2": "No. 2 Singles", "S3": "No. 3 Singles",
+                "S4": "No. 4 Singles", "S5": "No. 5 Singles", "S6": "No. 6 Singles",
                 "D1": "No. 1 Doubles", "D2": "No. 2 Doubles", "D3": "No. 3 Doubles",
+                "D4": "No. 4 Doubles", "D5": "No. 5 Doubles",
                 "XD": "Mixed Doubles"}
 
 #: ‼️ ONE DESTINATION, SEVEN VIEWS (owner, 2026-08). The event is reached from the
@@ -106,9 +185,9 @@ FLIGHT_NAMES = {"S1": "No. 1 Singles", "S2": "No. 2 Singles", "S3": "No. 3 Singl
 #: state association puts on the page ("Select a position: 1S 2S 3S …").
 SUBRAIL_LABEL = "Individual State"
 
-#: Ability-ladder ranks each flight draws from (0-based) — nine players per school,
-#: the SAME for every classification. NOT the league card's allocation, and not tied
-#: to any dual format; see the module docstring.
+#: Ability-ladder ranks each CORE flight draws from (0-based) — the six-flight
+#: sheet, nine players. A wider class reads `flight_ranks(group)`, which reproduces
+#: this exactly for the six and extends it by the same rule.
 FLIGHT_RANKS = {"S1": (0,), "S2": (1,), "S3": (2,),
                 "D1": (3, 4), "D2": (5, 6), "D3": (7, 8)}
 
@@ -121,7 +200,8 @@ PHASE = "individual"
 #: Mixed doubles is its own event, so its own phase.
 MIXED_PHASE = "individual_mixed"
 
-#: Mixed doubles draws from BELOW the nine the main event uses.
+#: Mixed doubles draws from BELOW the nine the six-flight slate uses; a wider
+#: class starts lower (`mixed_from_rank`).
 MIXED_FROM_RANK = 9
 
 
@@ -379,8 +459,28 @@ def _ladder(ts) -> list:
     return _order(ts)
 
 
+def arrange_sheet(ts, ladder: list | None = None, group: str | None = None) -> list:
+    """One program's entry sheet in slot order — the top `entry_count(group)` of
+    the preseason ladder, ARRANGED the way the class arranges its State lineup
+    (`jhsaa._arrange_postseason` at `slate_format(group)`), with the program's own
+    sibling ties, partner history and doubles culture. A roster too short to fill
+    the slate comes back in plain ladder order and the flights it cannot fill are
+    simply not entered (`flight_entry`)."""
+    from .jhsaa import _arrange_postseason
+    g = ts.school.group if group is None else group
+    ladder = _ladder(ts) if ladder is None else ladder
+    n = entry_count(g)
+    pool = list(ladder[:n])
+    if len(pool) < n:
+        return pool
+    return _arrange_postseason(pool, slate_format(g), getattr(ts, "sibling_ids", None),
+                               getattr(ts, "pair_counts", None),
+                               getattr(ts, "culture", 1.0))
+
+
 def entry_sheet(teams: list) -> dict:
-    """`{school: ladder}` resolved ONCE, before any flight is played.
+    """`{school: arranged sheet}` resolved ONCE, before any flight is played —
+    see `arrange_sheet` for how the seats are assigned.
 
     ‼️ THE LADDER MUST BE FROZEN BEFORE THE FIRST DRAW, and this is not a
     micro-optimisation — reading it per flight is a CORRECTNESS bug. `credit_draw`
@@ -394,10 +494,11 @@ def entry_sheet(teams: list) -> dict:
     It is also what the event MEANS. Every flight's entry is filed at the same
     moment, in the preseason, off one order of ability — not re-derived after each
     draw as though a program could re-enter halfway through its own championships."""
-    return {t.school.name: _ladder(t) for t in teams}
+    return {t.school.name: arrange_sheet(t) for t in teams}
 
 
-def flight_entry(ts, flight: str, ladder: list | None = None) -> Entry | None:
+def flight_entry(ts, flight: str, ladder: list | None = None,
+                 group: str | None = None) -> Entry | None:
     """A program's entry in `flight`, or None if the roster cannot fill it.
 
     A pair is two DIFFERENT people, so unlike a dual — where a short side plays
@@ -406,11 +507,17 @@ def flight_entry(ts, flight: str, ladder: list | None = None) -> Entry | None:
     practice this never fires; it is here so a hand-edited roster cannot crash a
     statewide draw.
 
-    `ladder` is the program's frozen entry sheet (`entry_sheet`). It falls back to
-    reading the ladder live, which is right for a single lookup but WRONG across a
-    slate — see `entry_sheet`."""
-    ranks = FLIGHT_RANKS[flight]
-    ladder = _ladder(ts) if ladder is None else ladder
+    `ladder` is the program's frozen, ARRANGED entry sheet (`entry_sheet`). It
+    falls back to arranging the live ladder, which is right for a single lookup but
+    WRONG across a slate — see `entry_sheet`.
+
+    `group` selects the class's sheet (`flight_ranks`); it defaults to the
+    program's own classification."""
+    g = ts.school.group if group is None else group
+    ranks = flight_ranks(g).get(flight)
+    if ranks is None:                       # a flight this class does not crown
+        return None
+    ladder = arrange_sheet(ts, group=g) if ladder is None else ladder
     if len(ladder) <= max(ranks):
         return None
     picks = [ladder[i] for i in ranks]
@@ -424,7 +531,8 @@ def flight_entry(ts, flight: str, ladder: list | None = None) -> Entry | None:
                  rating=doubles_rating(a, b), flight=flight)
 
 
-def select_field(teams: list, flight: str, sheet: dict | None = None) -> list:
+def select_field(teams: list, flight: str, sheet: dict | None = None,
+                 group: str | None = None) -> list:
     """Every program's entry in `flight`, seed-ordered.
 
     ‼️ NO CUT AND NO DISTRICT QUOTA (owner rule). Talent is not evenly distributed
@@ -433,7 +541,7 @@ def select_field(teams: list, flight: str, sheet: dict | None = None) -> list:
     `run_tournament` sizes the bracket, byes to the top seeds. Ties break on school
     name so the order is reproducible rather than dict-ordered."""
     out = [e for e in (flight_entry(t, flight,
-                                    (sheet or {}).get(t.school.name))
+                                    (sheet or {}).get(t.school.name), group)
                        for t in teams) if e is not None]
     out.sort(key=lambda e: (-e.rating, e.school))
     return out
@@ -471,7 +579,7 @@ def run_flight(teams: list, gender: str, group: str, flight: str, *,
     Pass `sheet` (from `entry_sheet`) whenever more than one flight is being played
     off these teams — see `entry_sheet` for why leaving it out is a correctness bug
     rather than a slower path."""
-    entries = select_field(teams, flight, sheet)
+    entries = select_field(teams, flight, sheet, group)
     # ‼️ WILD CARDS ARE ADDED, NOT SELECTED — the field rule above is untouched and
     # `extra` is empty for every flight but No. 3 (see `jhsaa.run_season`). They are
     # entrants this flight's own selection would never have produced (the reigning JV
@@ -516,7 +624,7 @@ def _draw_seed(base: int, *parts: str) -> int:
 
 def run_preseason(by_group: dict, gender: str, year: int, *,
                   seed: int = 0, wildcards: dict | None = None) -> dict:
-    """Every classification's six flight draws, played and CREDITED, returned
+    """Every classification's flight draws, played and CREDITED, returned
     archive-flattened as `{group: {flight: dict}}`.
 
     ‼️ IT RUNS BEFORE THE LEAGUE SEASON, WHICH IS WHAT MAKES IT HONEST. Selecting
@@ -539,7 +647,9 @@ def run_preseason(by_group: dict, gender: str, year: int, *,
         # and enters somebody twice — see `entry_sheet`.
         sheet = entry_sheet(teams)
         drawn = {}
-        for flight in FLIGHTS:
+        # The class's own slate (owner rule 2026-10) — the core six plus every
+        # further flight its State format contests.
+        for flight in flights_for(group):
             d = run_flight(teams, gender, group, flight, sheet=sheet,
                            extra=(wildcards or {}).get(group, {}).get(flight),
                            seed=_draw_seed(seed, gender, str(year), group, flight))
@@ -604,7 +714,7 @@ def credit_draw(draw: FlightDraw, teams: dict) -> int:
 
 # --- mixed doubles ----------------------------------------------------------
 
-def mixed_entry(boys_ts, girls_ts) -> Entry | None:
+def mixed_entry(boys_ts, girls_ts, group: str | None = None) -> Entry | None:
     """A school's ONE mixed pair — its best boy and best girl from BELOW #9.
 
     ‼️ THE POOL IS BELOW #9, BY DESIGN. This is a CONSOLATION event (owner rule):
@@ -617,11 +727,16 @@ def mixed_entry(boys_ts, girls_ts) -> Entry | None:
 
     ‼️ AND THE FLOOR IS WHY THIS WORKS AT ALL. If `ROSTER_FLOOR` ever drops to 9 or
     below there is no pool and the event silently empties, so the relationship is
-    asserted at import (see `jhsaa`'s own `ROSTER_FLOOR` assertion idiom)."""
+    asserted at import (see `jhsaa`'s own `ROSTER_FLOOR` assertion idiom).
+
+    ‼️ "BELOW #9" IS "BELOW THE CLASS'S INDIVIDUAL ENTRIES" (owner rule 2026-10):
+    a 5A program enters sixteen across eleven flights, so its mixed pair comes from
+    #17 down, not from among its own No. 5 doubles team (`mixed_from_rank`)."""
     b, g = _ladder(boys_ts), _ladder(girls_ts)
-    if len(b) <= MIXED_FROM_RANK or len(g) <= MIXED_FROM_RANK:
+    rank = mixed_from_rank(boys_ts.school.group if group is None else group)
+    if len(b) <= rank or len(g) <= rank:
         return None
-    boy, girl = b[MIXED_FROM_RANK], g[MIXED_FROM_RANK]
+    boy, girl = b[rank], g[rank]
     eb, eg = boy.engine_player(), girl.engine_player()
     pair = DoublesTeam(players=(eb, eg), name=f"{boy.name} / {girl.name}")
     return Entry(school=boys_ts.school.name, players=[boy, girl], engine=pair,
@@ -644,7 +759,7 @@ def run_mixed(boys_by_school: dict, girls_by_school: dict, group: str, *,
     it from there."""
     entries = []
     for name in sorted(set(boys_by_school) & set(girls_by_school)):
-        e = mixed_entry(boys_by_school[name], girls_by_school[name])
+        e = mixed_entry(boys_by_school[name], girls_by_school[name], group)
         if e is not None:
             entries.append(e)
     if len(entries) < 2:

@@ -15,6 +15,11 @@ FORMATS (owner rule 2027-08) — read them through `dual_format()`, never by lit
   * early non-district  5 singles / 2 doubles → 7 points
   * regular season      3 singles / 4 doubles → 7 points
   * state tournament    1 singles / 4 doubles → 5 points
+‼️ DISTRICT DUALS PLAY THE CLASS'S STATE FORMAT (owner rule 2026-10,
+`dual_format(..., district=True)`, `docs/AAR-jhsaa-district-plays-the-state-format.md`).
+"Regular season 3S/4D" now means the INVITATIONALS; a league dual plays whatever the
+class's road to State plays (4S/5D, 6S/5D, 1S/4D, 2S/3D, 3S/3D, or 3S/4D in 6A/11B).
+Where the pilots below say a class's "league season stays 3S/4D", read invitationals.
 ‼️ 1A PILOT (owner rule 2026-08, `docs/AAR-jhsaa-1a-2s3d-postseason-pilot.md`): 1A
 ALONE plays 2 singles / 3 doubles → 5 points for its ROAD-TO-STATE-THROUGH-STATE
 postseason (`dual_format(phase, group)` — every other class, and 1A's own TOC entry,
@@ -227,7 +232,9 @@ DECIDER_TARGET = 10
 # so this comment claimed a shape the code had already stopped playing.
 #
 # Everything else about these two classes is untouched: the league season is still
-# 3S/4D, the mid-season showcases are still 1S/4D, the TOC is still 1S/4D (it fields
+# 3S/4D (‼️ SUPERSEDED for DISTRICT duals — owner rule 2026-10, a district dual plays
+# the class's State format; the invitationals stay 3S/4D), the mid-season showcases
+# are still 1S/4D, the TOC is still 1S/4D (it fields
 # every classification's champion at ONE shape — the 1A pilot's own carve-out, for the
 # same reason), and the individual state tournaments are still 3S+3D and read no dual
 # format at all. Nine courts is odd, so a 4S/5D dual cannot tie and no tie-breaking
@@ -246,8 +253,8 @@ WIDE_GROUPS = ("7A", "8A", "9A", "Group 1",
 # on the 5A schools' own petition). The association's widest format by two flights:
 # six singles and five doubles, SIXTEEN players. Membership in
 # `SINGLES_FORWARD_GROUPS` is the whole change, exactly as `WIDE_GROUPS` was — the
-# road to State, the State draw and a 5A-hosted showcase play it; the league season
-# stays the universal 3S/4D, the early window stays 5S/2D, the TOC stays 1S/4D like
+# road to State, the State draw and a 5A-hosted showcase play it — and, since owner
+# rule 2026-10, every 5A DISTRICT dual; the invitationals stay the universal 3S/4D, the early window stays 5S/2D, the TOC stays 1S/4D like
 # every other pilot's entrant, and the individual state tournaments read no dual
 # format at all.
 #
@@ -641,12 +648,22 @@ POSTSEASON = ("sectional", "ward", "regional", "zonal", "epiregional",
 SHOWCASE = ("showcase_pod", "showcase_tiered")
 
 
-def dual_format(phase: str, group: str | None = None) -> DualFormat:
+def dual_format(phase: str, group: str | None = None, *,
+                district: bool = False) -> DualFormat:
     """The dual shape for `phase` ("early" | "regular" | a showcase | one of
-    `POSTSEASON`). District duals play the regular-season shape (they are always
-    `phase="regular"`); the postseason switches — and so do the showcases, which exist
-    precisely to play the 1S/4D card in the middle of a 3S/4D league season. The early
-    non-district window switches the other way, to 5S/2D.
+    `POSTSEASON`).
+
+    ‼️ A DISTRICT DUAL PLAYS ITS CLASS'S STATE FORMAT (owner rule 2026-10,
+    `district=True`). District duals are still `phase="regular"` — the phase is the
+    archive's identity for an event, and a league dual is a regular-season dual —
+    but the class's league season now plays the format the class's road to State
+    and State draw play: 4S/5D in the wide classes, 6S/5D in 5A, 2S/3D in 1A, 3S/3D
+    in Group 2, 1S/4D in 4A/3A/2A/Group 3, and the unchanged 3S/4D in 6A/11B. A
+    NON-district regular-season dual (invitationals, rivalries, the challenge, the
+    old-league pairs) stays the association's 3S/4D, and the early window stays
+    5S/2D. So the season reads: 5S/2D early → 3S/4D invitationals → the class's own
+    format in district play → the same format on the road to State.
+    See docs/AAR-jhsaa-district-plays-the-state-format.md.
 
     ‼️ THE 1A PILOT IS SCOPED TO THE ROAD-TO-STATE, NOT `POSTSEASON` WHOLESALE
     (owner rule 2026-08). `POSTSEASON` includes `"toc"` — the Tournament of
@@ -677,7 +694,9 @@ def dual_format(phase: str, group: str | None = None) -> DualFormat:
     # showcases are now the rehearsal, so the wide classes' early window came back
     # from 4S/5D. A Group 2 showcase can finish 3-3 — regular season, so the JV
     # ladder (sets, games, then a TIE), never the deciders.
-    rehearsal = road or phase in SHOWCASE
+    # A DISTRICT dual is the third member (owner rule 2026-10): the league season is
+    # where a class plays its own championship format, not a rehearsal for it.
+    rehearsal = road or phase in SHOWCASE or (district and phase == "regular")
     if wide and rehearsal:
         return FORMATS["state_4s5d"]
     if group in PILOT_GROUPS and rehearsal:
@@ -694,14 +713,15 @@ def dual_format(phase: str, group: str | None = None) -> DualFormat:
     # through the road, State and a 6A-hosted showcase; the TOC excepted.
     if group in LEAGUE_SHAPE_GROUPS and rehearsal:
         return FORMATS["regular"]
-    if phase in POSTSEASON or phase in SHOWCASE:
+    if phase in POSTSEASON or phase in SHOWCASE or rehearsal:
         return FORMATS["state"]
     if phase == EARLY_FORMAT_PHASE:
         return FORMATS["early"]
     return FORMATS["regular"]
 
 
-def shape_group(phase: str, a_group: str | None, b_group: str | None) -> str | None:
+def shape_group(phase: str, a_group: str | None, b_group: str | None, *,
+                district: bool = False) -> str | None:
     """The group whose shape governs a dual between programs in `a_group` and
     `b_group` — what to hand `dual_format`, `lineup_need`, `_squad`, `_lineup` and
     `_slot_players` for that dual.
@@ -722,7 +742,8 @@ def shape_group(phase: str, a_group: str | None, b_group: str | None) -> str | N
     `ROSTER_FLOOR` is a hard 16, against fourteen on court), so a 7A team meeting an
     8A one in the early window simply plays 4S/5D. Forcing the dual down to 5S/2D
     would be defending a roster constraint that does not exist here."""
-    fa, fb = dual_format(phase, a_group), dual_format(phase, b_group)
+    fa = dual_format(phase, a_group, district=district)
+    fb = dual_format(phase, b_group, district=district)
     if fa is fb:
         return a_group
     return a_group if _courts(fa) >= _courts(fb) else b_group
@@ -769,10 +790,26 @@ def match_format(phase: str):
     return SHOWCASE_FORMAT.get(phase, MATCH_FORMAT)
 
 
-def lineup_need(phase: str, group: str | None = None) -> int:
+def lineup_need(phase: str, group: str | None = None, *,
+                district: bool = False) -> int:
     """Players a program must dress for `phase` with nobody doubling up."""
-    f = dual_format(phase, group)
+    f = dual_format(phase, group, district=district)
     return f.n_singles + 2 * f.n_doubles          # 3+8=11 regular, 1+8=9 state, 2+6=8 1A, 3+6=9 Group 2
+
+
+def district_format(group: str | None) -> DualFormat:
+    """The format `group`'s DISTRICT duals are played at — the class's State format
+    (owner rule 2026-10). One name for the question every roster-facing reader asks
+    ("what does this class's league season dress?") so none of them re-derives it."""
+    return dual_format("regular", group, district=True)
+
+
+def district_need(group: str | None) -> int:
+    """Players `group` dresses for a district dual: 16 in 5A (6S/5D), 14 in the
+    4S/5D classes, 11 in 6A/11B, 9 in the 1S/4D classes and Group 2 (3S/3D), 8 in
+    1A (2S/3D). THE VARSITY LINEUP every roster-facing reader means — the V1 cut,
+    the portal's projected seat, the captains' dressing group."""
+    return lineup_need("regular", group, district=True)
 
 
 # --- THE JV SEASON (owner rule 2026-08) --------------------------------------
@@ -2961,6 +2998,9 @@ class TeamSeason:
     ties: int = 0
     dwins: int = 0                      # DISTRICT only — what decides district place
     dlosses: int = 0
+    # A drawn DISTRICT dual — reachable only in Group 2, whose district format is
+    # 3S/3D (owner rule 2026-10). Half a win in `district_pct`, like `ties`.
+    dties: int = 0
     points_for: float = 0.0
     points_against: float = 0.0
     district_place: int = 0
@@ -2971,8 +3011,10 @@ class TeamSeason:
     # pid -> [wins, losses] at any line. Awards are individual, so they need this.
     records: dict = field(default_factory=dict)
     by_pid: dict = field(default_factory=dict)
-    # pid -> [(slot, won, phase, opp_pids, partner_pid, opp_school), ...] — the
-    # match-by-match RÉSUMÉ the awards are selected from (`_credit`).
+    # pid -> [(slot, won, phase, opp_pids, partner_pid, opp_school[, district]), ...]
+    # — the match-by-match RÉSUMÉ the awards are selected from (`_credit`). The
+    # seventh field marks a DISTRICT dual (owner rule 2026-10); entries written by
+    # the individual championships carry six.
     matches: dict = field(default_factory=dict)
     # Every dual this team played, in order. Kept so a school's season can be read
     # match by match without replaying it — the college side's schedule view.
@@ -3101,7 +3143,10 @@ class TeamSeason:
 
     @property
     def district_record(self) -> str:
-        return f"{self.dwins}-{self.dlosses}"
+        # W-L-T only when a T exists, so every district record that cannot carry a
+        # tie reads exactly as it always has.
+        return (f"{self.dwins}-{self.dlosses}-{self.dties}" if self.dties
+                else f"{self.dwins}-{self.dlosses}")
 
     @property
     def win_pct(self) -> float:
@@ -3110,8 +3155,8 @@ class TeamSeason:
 
     @property
     def district_pct(self) -> float:
-        n = self.dwins + self.dlosses
-        return self.dwins / n if n else 0.0
+        n = self.dwins + self.dlosses + self.dties
+        return (self.dwins + 0.5 * self.dties) / n if n else 0.0
 
 
 @dataclass
@@ -3195,7 +3240,15 @@ def jv_pool(ts: TeamSeason) -> list:
     sits 1-2 starters out entirely) and bench rotation are per-DUAL decisions about a
     varsity match, and "available that day" for JV is the per-program constant (owner
     rule 2026-08). Threading a varsity dual's rest into a JV dual's size would couple
-    two schedules that are explicitly independent."""
+    two schedules that are explicitly independent.
+
+    ‼️ AND IT STAYS AT #12 THOUGH DISTRICT DUALS GREW (owner rule 2026-10). A 5A
+    district dual dresses sixteen and a 4S/5D one fourteen, so ranks #12-#16 there
+    are district starters AND JV players. That is deliberate for now, not an
+    oversight: the invitationals still dress eleven, the participation rule (2101)
+    keeps any player to one level per date and 24 dates in all, and cutting at the
+    district lineup would leave a floor-sized 5A program (20) four spare — below
+    `JV_MIN_SPARE`, so no JV season at all. Moving this cut is an owner decision."""
     return _order(ts)[lineup_need("regular"):]
 
 
@@ -8204,7 +8257,13 @@ def pick_captains(ts: TeamSeason, salt: str = "", year: int = 0) -> list:
         return []
     # "They're always on varsity — it doesn't work otherwise." A captain who does not
     # dress is not a captain, so every seat is filled from the dressing group.
-    varsity = order[:lineup_need("regular")] or order
+    # ‼️ THE DRESSING GROUP IS THE SMALLER OF THE TWO REGULAR-SEASON LINEUPS (owner
+    # rule 2026-10): a 1S/4D class dresses NINE for its district duals and eleven
+    # for its invitationals, so a captain drawn from the eleven could be forced into
+    # every league dual from #10. Drawing from whichever group is smaller keeps the
+    # promise that a coach never STARTS a season with that problem.
+    varsity = order[:min(lineup_need("regular"),
+                         district_need(ts.school.group))] or order
     rng = random.Random(f"{salt}|jhsaa-captains|{ts.school.key}|{year}")
     want = min(_captain_count(rng), CAPTAINS_MAX, len(varsity))
     taken: set = set()
@@ -9024,7 +9083,7 @@ def _arrange_postseason(pool: list, fmt: DualFormat, sibling_ids: dict | None,
 
 
 def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None,
-            group=_OWN_GROUP) -> list:
+            group=_OWN_GROUP, district: bool = False) -> list:
     """The nine — or eight on 1A's road to State, fourteen on 8A/9A's — who dress
     for THIS dual, in slot order. `opp` (the opposing TeamSeason, regular season
     only) lets the coach rest starters against a truly weaker side — see
@@ -9077,7 +9136,13 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None,
                                    ts.pair_counts, ts.culture)
     order = _healthy(ts, _order(ts))
     g = ts.school.group if group is _OWN_GROUP else group
-    need = lineup_need(phase, g)
+    # A DISTRICT dual dresses for its class's State format (owner rule 2026-10) —
+    # 14 in the 4S/5D classes, 16 in 5A, 9 in the 1S/4D classes, 8 in 1A — and
+    # otherwise takes exactly this branch: the LIVE ladder, the participation rule,
+    # talent-aware rest and the bench rotation. It is the regular season; the
+    # Order of Ability freeze still binds only from the first postseason dual.
+    fmt = dual_format(phase, g, district=district)
+    need = lineup_need(phase, g, district=district)
     # THE PARTICIPATION RULE (2101): a spent player is out of the regular season,
     # and a starter short of dates for the remaining slate is rested against a
     # weaker side — before the talent-aware rest below, so that rest still reads
@@ -9118,6 +9183,17 @@ def _lineup(ts: TeamSeason, phase: str, rng: random.Random, opp=None,
     # as `_squad`'s default positional mapping always did for that shape. 8A/9A's early
     # window plays 4S/5D (owner rule 2070) and takes the same plain-order path — the
     # allocation is the format's there too.
+    if phase == "regular" and fmt is not FORMATS["regular"]:
+        # A district dual at the class's State format (owner rule 2026-10) is
+        # arranged the way that format is arranged on the road — the anti-stacking
+        # arrangement keyed on the SHAPE (`_arrange_postseason`), here over the LIVE
+        # dressing group rather than a frozen Order of Ability. `_arrange_regular`'s
+        # philosophies are built for the 3S/4D card's eleven positions and only
+        # mean something there, so 6A/11B's district duals (3S/4D) still take them.
+        # The philosophy flip draw still runs, so the rng stream stays aligned.
+        rng.random()
+        return _arrange_postseason(nine, fmt, ts.sibling_ids, ts.pair_counts,
+                                   ts.culture)
     if phase == "regular":
         # the per-dual flip draw runs either way, so the rng stream stays aligned.
         flip = rng.random() < _PHILOSOPHY_FLIP
@@ -9156,7 +9232,7 @@ def _slot_players(lineup: list, phase: str, slot: str,
 
 def _credit(ts: TeamSeason, lineup: list, phase: str, slot: str, won: bool,
             opp_lineup: list | None = None, opp_school: str = "",
-            fmt: DualFormat | None = None) -> None:
+            fmt: DualFormat | None = None, district: bool = False) -> None:
     """Credit a line to the players who played it — and LOG the match.
 
     The W-L counters alone cannot answer any of the questions the awards ask
@@ -9170,8 +9246,16 @@ def _credit(ts: TeamSeason, lineup: list, phase: str, slot: str, won: bool,
     (2S/3D) resolves D-slots against 2 singles and an 8A/9A one (4S/5D) against 4,
     rather than the 1S/4D default `dual_format(phase, None)` would silently fall
     back to. It is ONE shape for both sides — a dual has one card, and taking it
-    from each side's own group is what `shape_group` exists to prevent."""
-    f = fmt or dual_format(phase, ts.school.group)
+    from each side's own group is what `shape_group` exists to prevent.
+
+    ‼️ THE LOG ENTRY CARRIES `district` AS A SEVENTH FIELD (owner rule 2026-10). A
+    district dual is `phase="regular"` and plays the class's State format, so the
+    phase alone no longer says which weight table a flight was contested on; the
+    awards price an appearance with it (`jhsaa_awards._weight`). Appended LAST so
+    every reader that indexes the first six (`m[2]`, `r[4]`) is untouched, and the
+    awards unpack with a trailing `*_` so a six-field entry (the individual
+    championships write those) still reads."""
+    f = fmt or dual_format(phase, ts.school.group, district=district)
     mates = _slot_players(lineup, phase, slot, f)
     opps = (tuple(p.pid for p in _slot_players(opp_lineup, phase, slot, f))
             if opp_lineup else ())
@@ -9191,7 +9275,7 @@ def _credit(ts: TeamSeason, lineup: list, phase: str, slot: str, won: bool,
         ts.by_pid.setdefault(p.pid, p)
         partner = next((q.pid for q in mates if q.pid != p.pid), "")
         ts.matches.setdefault(p.pid, []).append(
-            (slot, bool(won), phase, opps, partner, opp_school))
+            (slot, bool(won), phase, opps, partner, opp_school, bool(district)))
 
 
 def _score_str(ln) -> str:
@@ -9453,11 +9537,20 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     # unchanged (`road_group == school.group`); the TOC is not road and keeps
     # every entrant at 1S/4D; every regular-season phase still reads the league.
     road = phase in POSTSEASON and phase not in TOC_PHASES
+    # ‼️ A DISTRICT DUAL PLAYS THE CLASS'S STATE FORMAT (owner rule 2026-10). Both
+    # sides of a league dual share a classification (a district IS `(group, name)`),
+    # so `shape_group` returns that group and `dual_format(district=True)` its State
+    # format. `district` is threaded to every shape question below — the lineup, the
+    # credit log and the archive row — because `phase` alone ("regular") no longer
+    # says what was played.
+    dist = district and phase == "regular"
     grp = (shape_group(phase, (a.road_group or a.school.group) if road else a.school.group,
-                       (b.road_group or b.school.group) if road else b.school.group)
+                       (b.road_group or b.school.group) if road else b.school.group,
+                       district=dist)
            if group is _OWN_GROUP else group)
-    shape = dual_format(phase, grp)
-    la, lb = _lineup(a, phase, lrng, b, grp), _lineup(b, phase, lrng, a, grp)
+    shape = dual_format(phase, grp, district=dist)
+    la = _lineup(a, phase, lrng, b, grp, district=dist)
+    lb = _lineup(b, phase, lrng, a, grp, district=dist)
     # THE PARTICIPATION RULE (2101): a regular-season dual charges a competition
     # date to everyone who dressed; `date_key` folds a showcase day's duals into
     # one. The postseason charges nothing — it does not count toward the limit.
@@ -9481,8 +9574,8 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
         if hw is None:
             continue
         slot = getattr(ln, "slot", "")
-        _credit(a, la, phase, slot, bool(hw), lb, b.school.name, shape)
-        _credit(b, lb, phase, slot, not hw, la, a.school.name, shape)
+        _credit(a, la, phase, slot, bool(hw), lb, b.school.name, shape, dist)
+        _credit(b, lb, phase, slot, not hw, la, a.school.name, shape, dist)
         lines.append({"slot": slot,
                       "home": [x.name for x in _slot_players(la, phase, slot, shape)],
                       "away": [x.name for x in _slot_players(lb, phase, slot, shape)],
@@ -9497,8 +9590,9 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     # i.e. an AWAY win on a draw (the `jv_outcome` trap). A POSTSEASON dual is
     # settled by three concurrent 10-point tiebreakers — S1, D1, D2, best two of
     # three, the same players who played those flights (`_deciding_tiebreaks`);
-    # a REGULAR-SEASON dual (unreachable today) uses the JV ladder — points,
-    # sets, games — and a dual still level after that is a TIE, recorded as one.
+    # a REGULAR-SEASON dual — a Group 2-hosted showcase or, since owner rule
+    # 2026-10, a Group 2 DISTRICT dual — uses the JV ladder — points, sets, games
+    # — and a dual still level after that is a TIE, recorded as one.
     deciders: list = []
     tied = False
     if res.home_points == res.away_points:
@@ -9537,6 +9631,12 @@ def play_dual(a: TeamSeason, b: TeamSeason, *, seed: int, phase: str = "regular"
     if tied:
         a.ties += 1
         b.ties += 1
+        if district:
+            # Group 2's district format is 3S/3D (owner rule 2026-10), so a league
+            # dual CAN finish level — the first varsity shape where district place
+            # has to read a tie. It is half a win, as everywhere else.
+            a.dties += 1
+            b.dties += 1
     elif res.winner == 0:
         a.wins += 1
         b.losses += 1
@@ -10364,15 +10464,20 @@ FLIGHT_WEIGHTS_6S5D = {
 }
 
 
-def flight_weights(phase: str, group: str | None = None) -> dict:
+def flight_weights(phase: str, group: str | None = None, *,
+                   district: bool = False) -> dict:
     """The flight weight table for a dual of `phase` at `group`'s shape.
 
     ‼️ KEYED ON THE SHAPE, NOT THE CLASSIFICATION. 8A/9A's league season is 3S/4D
     like everybody's and rates on the ordinary table; only the shapes that actually
     play nine courts — their road to State and their early window — use
     `FLIGHT_WEIGHTS_4S5D`; only 5A's road, State and showcases use
-    `FLIGHT_WEIGHTS_6S5D`. Pass `shape_group`'s answer for a real dual."""
-    fmt = dual_format(phase, group)
+    `FLIGHT_WEIGHTS_6S5D`. Pass `shape_group`'s answer for a real dual.
+
+    ‼️ AND A DISTRICT DUAL (owner rule 2026-10) plays its class's State format, so
+    it rates on that format's table — pass `district=` off the schedule row, or a
+    9A league dual is priced on the 3S/4D table it was not played at."""
+    fmt = dual_format(phase, group, district=district)
     if fmt is FORMATS["state_4s5d"]:
         return FLIGHT_WEIGHTS_4S5D
     if fmt is FORMATS["state_6s5d"]:
@@ -10467,11 +10572,14 @@ def rating_duals(teams, prestate: bool = False) -> list[dict]:
             # A showcase is played at its HOST's format (owner rule 2026-09), which
             # the two sides cannot reproduce — the row carries the group it was
             # played at. In-memory rows only; the archive path never rates.
+            dist = bool(d.get("district"))
             grp = d.get("shape_group") if "shape_group" in d else shape_group(
-                d.get("phase") or "regular", t.school.group, _group_of.get(d["opp"]))
+                d.get("phase") or "regular", t.school.group, _group_of.get(d["opp"]),
+                district=dist)
             row = {"home": t.school.name, "away": d["opp"], "home_won": d["won"],
                    "home_points": d["pf"], "away_points": d["pa"], "lines": lines,
-                   "weights": flight_weights(d.get("phase") or "regular", grp)}
+                   "weights": flight_weights(d.get("phase") or "regular", grp,
+                                             district=dist)}
             if osq:
                 # ‼️ The squad side is NEVER rated: `rating.compute_ratings` credits
                 # only the V1 side and reads the opposing school at the discount.
@@ -10536,12 +10644,17 @@ def _fmt_sample(schedule: list[dict], *, showcase: bool) -> list[dict]:
     sample too, for the same reason — it plays its own 5S/2D shape (the old regular-
     season card, pre-2027-08), not the 3S/4D card this metric means by "regular
     season". Folding it in would quietly average two different formats into one
-    number and call it the team's regular-season baseline."""
+    number and call it the team's regular-season baseline.
+
+    ‼️ DISTRICT duals are excluded from the regular sample too (owner rule 2026-10):
+    they play the class's State format now, so for most classes they belong with
+    the showcases, not the invitationals. The regular sample is the 3S/4D
+    invitationals — the shape this metric has always meant by "regular season"."""
     if showcase:
         return [d for d in schedule if d.get("phase") in SHOWCASE]
     return [d for d in schedule
             if d.get("phase") not in SHOWCASE and d.get("phase") not in POSTSEASON
-            and d.get("phase") != EARLY_FORMAT_PHASE]
+            and d.get("phase") != EARLY_FORMAT_PHASE and not d.get("district")]
 
 
 def _fmt_split(sample: list[dict]) -> dict:

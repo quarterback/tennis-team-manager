@@ -1655,7 +1655,41 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     program; it was exhaustive over PROGRAMS and a single draw over OUTCOMES. **When
     the quantity is a rate over simulated results, the sample size is the number of
     DUALS, never the number of teams.**
+- **‼️ A DISTRICT DUAL PLAYS ITS CLASS'S STATE FORMAT (owner rule 2026-10,
+  `jhsaa.dual_format(..., district=True)` / `district_format` / `district_need`,
+  `docs/AAR-jhsaa-district-plays-the-state-format.md`).** The district title is what
+  qualifies and protects a program on the road, so the league season is where a
+  class plays its own championship format: **4S/5D** 9A/8A/7A/Group 1/10B ·
+  **6S/5D** 5A · **3S/4D** 6A/11B · **1S/4D** 4A/3A/2A/Group 3 · **2S/3D** 1A ·
+  **3S/3D** Group 2. Invitationals (every other regular-season dual — rivalries,
+  the challenge, old-league pairs) stay **3S/4D**, the early window stays **5S/2D**,
+  showcases play the host's State format, the TOC stays 1S/4D. Read the class's
+  district format ONLY through `district_format(group)` — it IS `dual_format("state",
+  group)`, never a second table.
+  - **District duals stay `phase="regular"`** — the phase is the archive's identity
+    for an event. So `phase` alone no longer names the shape: `play_dual` threads
+    `district` to `_lineup`, `_credit`, the archive row (`district` was already on it)
+    and `rating_duals` → `flight_weights(..., district=)` (a 9A league dual rates on
+    `FLIGHT_WEIGHTS_4S5D`). The résumé log gained a SEVENTH field (`district`) so the
+    awards price an appearance on the table it was played at; appended last, read
+    with `*_` (the individual championships still write six).
+  - **Lineup**: the regular-season branch of `_lineup` — LIVE ladder, participation,
+    rest, rotation, captains — dressing `lineup_need(..., district=True)`, then
+    arranged by `_arrange_postseason` at the shape (no Order-of-Ability freeze; that
+    still binds from the first postseason dual). 6A/11B keep `_arrange_regular`.
+  - **‼️ GROUP 2 DISTRICT DUALS CAN TIE** (3S/3D). Regular season → the JV ladder,
+    then a TIE (`dties`, half a win in `district_pct`, `district_record` W-L-T).
+    `world._wl` partitioned on the first hyphen and read "12-3-1" as 0-0 — fixed.
+  - **Roster-facing readers key off the district lineup**: the preseason store's V1
+    cut and the portal's projected V1 seat (`district_need`), and captains are drawn
+    from the SMALLER of the district and invitational dressing groups.
+    **`jv_pool` does NOT move** (still #12 down) — moving it would leave a
+    floor-sized 5A program four spare and no JV; that is an owner decision.
+  - Analytics' "regular" card shape and the format profile's regular sample now read
+    NON-district regular duals only (the invitationals' 3S/4D).
 - **‼️ THE LEAGUE SEASON PLAYS 3S/4D, NOT 5S/2D (owner rule 2027-08, swapped).**
+  ⚠️ Since owner rule 2026-10 this is the INVITATIONALS' format; a DISTRICT dual
+  plays the class's State format (bullet above).
   `FORMATS['regular']`/`['early']` were swapped so the whole league year trains
   the postseason's doubles-forward shape, not just the early non-district
   window (which now plays the OLD 5S/2D card instead). The 3S/4D lineup
@@ -2423,15 +2457,24 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   `app/individuals.py` and deliberately the same shape. Lessons:
   `docs/AAR-jhsaa-individual-state-tournaments.md`; design:
   `docs/DESIGN-jhsaa-individual-tournament.md`.
-  - **‼️ IT IS 3 SINGLES + 3 DOUBLES IN EVERY CLASSIFICATION, 1A INCLUDED, AND IT READS
-    NO DUAL FORMAT** (owner: *"so the 1/4, 2/3, 3/4 discussion is irrelevant"*, *"even
-    in 1A, it's still a 3/3 event"*). The 1S/4D postseason, the 3S/4D league season and
-    1A's 2S/3D pilot are all irrelevant here; no branch in the module reads a group's
-    shape. Do not "fix" 1A to six flights of eight.
-  - **‼️ ENTRIES COME OFF THE ABILITY LADDER, NOT THE LEAGUE LINEUP.** The 3S/4D league
-    format is doubles-forward — S1 = #1, the doubles pool = #2-#9, **S2/S3 = #10-#11** —
-    so a program's "No. 2 singles" in a league dual is its TENTH-best player. Entries are
-    `S1=#1 S2=#2 S3=#3 D1=#4+#5 D2=#6+#7 D3=#8+#9` off `_order`.
+  - **‼️ THE CORE SIX, PLUS EVERY FLIGHT THE CLASS'S STATE FORMAT CONTESTS (owner
+    rule 2026-10, superseding "3 singles + 3 doubles in every classification").**
+    `jhsaa_individuals.flights_for(group)`: No. 1-3 singles and No. 1-3 doubles
+    ALWAYS (a floor — a doubles-heavy class never loses No. 2 singles), widened to the
+    State format: S1-S4 + D1-D5 in the 4S/5D classes, S1-S6 + D1-D5 in 5A, S1-S3 +
+    D1-D4 in 6A/11B and the 1S/4D classes, the six in 1A and Group 2. **110
+    championships a gender.** `FLIGHTS` is the union (S1-S6, D1-D5) for name lookups
+    and rankings; a page shows a SEASON's flights off the archive
+    (`world.jhsaa_individual_flights`), never today's slate, so pre-change seasons
+    render their six.
+  - **‼️ ENTRIES ARE SEATED BY THE CLASS'S STATE ARRANGEMENT, NOT BY RANK (owner rule
+    2026-10).** The preseason ability ladder is the INPUT; `arrange_sheet` runs
+    `jhsaa._arrange_postseason` on the top `entry_count(group)` at `slate_format(group)`
+    — 5A's top eight supply S1-S6 + D1 and the strongest configuration decides who
+    plays singles, #9-#16 form D2-D5 by doubles strength. Where the kept core flights
+    outrun the State format (1S/4D, 2S/3D) the slate is arranged one or two singles
+    seats wider by the same mechanism (4A: 3S/4D off the top eleven). `flight_ranks`
+    are POSITIONS in that arranged sheet. Never rank → flight by hand again.
   - **PRESEASON is what makes ability-selection honest** and it is why the event is an
     INPUT: run before a league dual there are no results to earn a berth on, and
     `credit_draw` writes into the same `records` `coach_eval` reads, so a deep run
@@ -2516,9 +2559,9 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   - **‼️ MIXED DOUBLES CANNOT LIVE IN `run_season`.** That takes ONE gender and a mixed
     pair is one player from each, so it runs at the WORLD rung (`run_mixed_season`) —
     where `renumber_divisions`/`reletter_conferences` run. One flight, one bracket,
-    **one entry per school**, drawn from **below #9** (a consolation event for the
-    players the six flights have no seat for; `ROSTER_FLOOR` 16 − 9 leaves ≥7, median
-    8). It is archived under gender **`'mixed'`** — it belongs to neither field — and
+    **one entry per school**, drawn from **below the class's individual entries**
+    (`mixed_from_rank` — #9 on the six-flight slate, #16 in 5A; a consolation event for
+    the players the main slate has no seat for; `ROSTER_FLOOR` 20 − 16 leaves ≥4). It is archived under gender **`'mixed'`** — it belongs to neither field — and
     **credits NOTHING to anybody** (owner rule), which is what lets it run outside any
     season at all.
   - **‼️ THE LEAGUE YEAR BEGINS IN JULY (owner rule 2026-08): summer mixed → fall boys
