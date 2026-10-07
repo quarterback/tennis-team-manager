@@ -259,47 +259,25 @@ def played_jv(jvt) -> set[str]:
     return out
 
 
-#: Résumé-log phases that are NOT varsity duals: the preseason individual state
-#: tournaments credit a player's log but are not a dual (and mixed credits nothing).
-_NOT_A_DUAL = ("individual", "individual_mixed")
-
-
-def played_varsity(team) -> set[str]:
-    """Pids of everyone who played a VARSITY REGULAR-SEASON dual this season — any
-    format, district or invitational, early window or showcase. Read off the résumé
-    log `_credit` writes for every varsity appearance (`TeamSeason.matches`), never
-    off the ladder: a rank says where a coach would put someone, this says whether
-    they actually played."""
-    out = set()
-    for pid, log in team.matches.items():
-        if any(m[2] not in jh.POSTSEASON and m[2] not in _NOT_A_DUAL for m in log):
-            out.add(pid)
-    return out
-
-
 def freeze_eligibility(jvt) -> list:
     """The program's championship-eligible players, FROZEN, in ladder order.
 
-    ‼️ JV TEAM STATE IS FOR PLAYERS WHO DID NOT PLAY VARSITY (owner rule 2026-10):
-    "they should not be eligible if they play varsity duals, full stop". Two rules:
-      * they played ZERO varsity regular-season duals (`played_varsity`). One is
-        enough to rule them out, whatever their rank. There is no ladder cut any
-        more: it was a proxy for "not a varsity player", and in the 1S/4D classes
-        and 1A it let a #10 or #11 who had played varsity league duals into the JV
-        championship.
+    ‼️ VARSITY/JV STATUS IS THE REGULAR-SEASON CUT (owner rule 2026-10): a player
+    ranked inside the class's district lineup is varsity, everyone below it is JV —
+    #10 down in a 1S/4D class, #15 down in a 4S/5D class, #17 down in 5A. That is
+    `jhsaa.jv_pool`, the same slice the JV season is staffed from. How many varsity
+    matches a player happened to dress for does not enter it, and the postseason
+    lineup does not move it. Two rules:
+      * below the regular-season cut on the school ladder at the freeze (`jv_pool`).
       * they actually played JV this season (`played_jv`).
-    A varsity postseason appearance needs no separate rule — the postseason lineup
-    comes off the same players who dressed in the regular season.
 
-    ‼️ CALLED ONCE, at the start of the postseason. The ladder ORDER is live all
-    season, so re-reading it between rounds would let a program's championship
-    roster drift mid-tournament — the drift the varsity anti-stacking freeze exists
-    to stop, arriving by a different door.
+    ‼️ CALLED ONCE, at the start of the postseason. The ladder is live all season
+    (`coach_eval` moves it on results), so re-reading it between rounds would let a
+    program's eligible set drift mid-tournament — the same drift the varsity
+    anti-stacking freeze exists to stop, arriving by a different door.
     """
     played = played_jv(jvt)
-    varsity = played_varsity(jvt.team)
-    return [p for p in jh._order(jvt.team)
-            if p.name in played and p.pid not in varsity]
+    return [p for p in jh.jv_pool(jvt.team) if p.name in played]
 
 
 def entries(jv: dict) -> list[JVEntry]:

@@ -113,13 +113,13 @@ classifications now demand different things of a roster.
   Measured at roster level, 16 of 82 girls' and 14 of 77 boys' 5A programs drop
   below `JV_MIN_SPARE` and field no JV; every other class keeps all its JV teams.
   The JV State freeze (`jv_postseason_cut`) did not move.
-- **JV Team State eligibility is now "played no varsity regular-season dual"**
-  (owner decision, the same day), replacing the `jv_postseason_cut` rank line. Under
-  the rank line a 1S/4D class's #10 and #11 — who dress for every invitational —
-  could enter the JV championship. Owner: "they should not be eligible if they play
-  varsity duals, full stop … JV team state is for kids who do not get to play varsity
-  matches." `jhsaa_jv_state.played_varsity` reads the résumé log; the player must
-  also have played JV.
+- **JV Team State eligibility now reads the regular-season cut** (owner decision,
+  the same day): varsity/JV status is set by the class's district lineup, so the
+  championship freeze is `jv_pool` — #10 down in the 1S/4D classes, #15 down in
+  4S/5D, #17 down in 5A — replacing `jv_postseason_cut`. Owner: "the regular season
+  cut line dictates varsity/JV status, not the team tournament." A draft that
+  instead excluded anyone with a varsity appearance was rejected: varsity matches
+  played do not decide it.
 - **The 1S/4D classes' and 1A's slates are arranged one or two singles seats wider than
   their State format** (4A arranges S1–S3 + D1–D4 off its top eleven, with S1–S3 and D1
   drawn from the top five), because they keep No. 2/No. 3 Singles that their State

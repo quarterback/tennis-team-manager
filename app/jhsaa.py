@@ -3257,9 +3257,8 @@ def jv_postseason_cut(group: str | None = None) -> int:
     INDIVIDUAL tournaments' rank guard reads it (`jhsaa_jv_individuals.event_from`).
 
     It is no longer the JV TEAM State Tournament's eligibility line: that event
-    takes only players who played no varsity regular-season dual at all (owner
-    rule 2026-10, `jhsaa_jv_state.freeze_eligibility`), which no rank can stand in
-    for. Derived from `lineup_need` rather than typed, so it follows a class's
+    reads the regular-season cut, `jv_pool` (owner rule 2026-10,
+    `jhsaa_jv_state.freeze_eligibility`). Derived from `lineup_need` rather than typed, so it follows a class's
     shape if the shape ever moves."""
     return max(lineup_need("regular", group),
                lineup_need(EARLY_FORMAT_PHASE, group),

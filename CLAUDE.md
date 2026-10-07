@@ -1551,9 +1551,9 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
     league season is staffed off the varsity eleven and the pilot does not touch it.
     Only the JV state tournament's eligibility freeze moved, cut below the varsity
     playoff lineup (`jv_postseason_cut`). ⚠️ SUPERSEDED (owner rule 2026-10): JV team
-    state now excludes anyone who played a varsity regular-season dual and has no
-    rank cut at all (see the JV Team State bullet); `jv_postseason_cut` survives only
-    as the JV INDIVIDUAL events' rank guard.
+    state now reads the REGULAR-SEASON cut (`jv_pool`, see the JV Team State
+    bullet); `jv_postseason_cut` survives only as the JV INDIVIDUAL events' rank
+    guard.
 - **‼️ 6A KEEPS ITS LEAGUE 3S/4D THROUGH THE POSTSEASON (owner rule 2026-09,
   `jhsaa.LEAGUE_SHAPE_GROUPS`, the format-continuity pilot —
   `docs/reports/REPORT-jhsaa-6a-state-format-study-2079.md`, the 2079 companion
@@ -1957,15 +1957,15 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
       season (measured: seed 9 playing in while seed 15 was seeded through), which is
       right for a State draw and wrong here. Pinned as arithmetic on the order fold,
       so it needs no season and cannot rot behind a small fixture.
-    - **‼️ ELIGIBILITY: NO VARSITY REGULAR-SEASON DUAL, FULL STOP (owner rule
-      2026-10, `jhsaa_jv_state.freeze_eligibility` / `played_varsity`)** — "JV team
-      state is for kids who do not get to play varsity matches". One varsity league
-      or invitational dual (any format, read off `TeamSeason.matches`; the preseason
-      individual draws are not duals) rules a player out whatever their rank, AND
-      they must have actually played JV (`played_jv`, off the `played` lists). There
-      is NO ladder cut — the old #12+ (later `jv_postseason_cut`) was a proxy for "not
-      a varsity player" and let a 1S/4D class's #10-#11 who had played league duals
-      in. The ladder only ORDERS the frozen roster.
+    - **‼️ ELIGIBILITY IS THE REGULAR-SEASON CUT (owner rule 2026-10,
+      `jhsaa_jv_state.freeze_eligibility`)** — "the regular season cut line dictates
+      varsity/JV status, not the team tournament". A player ranked below the class's
+      district (regular-season) lineup on the frozen ladder is JV: #10 down in a 1S/4D
+      class, #15 down in 4S/5D, #17 down in 5A — `jhsaa.jv_pool`, the same slice the
+      JV season staffs from. How many varsity duals they dressed for does NOT matter
+      (a draft excluding anyone with a varsity appearance was rejected), and the
+      postseason lineup (`jv_postseason_cut`) does not move it. They must also have
+      actually played JV (`played_jv`).
     - **A YEAR GATE, NOT A FLAG** (`JV_STATE_FROM` 2068) — the owner added the event
       after the **2067 season of a longstanding save**, so every year already archived
       there must keep reading as the year it was played. Same device the 1A 2S/3D
