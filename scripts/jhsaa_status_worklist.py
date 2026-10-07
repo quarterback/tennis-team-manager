@@ -10,8 +10,8 @@ brings the committed file in line with them, the `jhsaa_apply_renames.py` idiom.
 
 What a status change does, and does not, touch:
   * `private` follows the tables. A school ruled PRIVATE goes to its Non-Public
-    class by the 550 cut — `jhsaa_districting.ensure_nonpublic(force=True)`, the
-    owner's forced-redraw tool, which also records the public league it leaves as
+    class by the 550 cut — `jhsaa_districting.ensure_nonpublic` under its standing rule (force OFF, so a
+    private a later cycle has already placed stays put), which also records the public league it leaves as
     `old_group`/`old_league` and redraws 10B/11B. A school ruled PUBLIC returns to
     its size class (`group = classification`), drops `old_group`/`old_league`, and
     takes the seat in that league (no redraw of the class for one returning member).
@@ -107,8 +107,11 @@ def main() -> None:
     public_cls = {r["classification"] for r in to_private} | {r["group"] for r in to_public}
     before = {cls: sizes(rows, cls) for cls in sorted(touched | public_cls | set(jh.NONPUBLIC_GROUPS))}
 
-    out = jd.ensure_nonpublic(rows, jh.NONPUBLIC_CUT, jh.NONPUBLIC_PLAYUP,
-                              force=True, log=print)
+    # Standing rule, force OFF: only a private still in a public group (the ones
+    # this run just flagged) is cut by enrollment and seated; a private a later
+    # reclassification cycle moved between 10B and 11B stays where the cycle
+    # put it. (The run already returns above when no flag changes.)
+    out = jd.ensure_nonpublic(rows, jh.NONPUBLIC_CUT, jh.NONPUBLIC_PLAYUP, log=print)
     print(f"{out['moved']} private rows moved to their Non-Public class; "
           f"redrawn: {out['redrawn']}")
     notes = jd.redraw_classes(rows, sorted(touched))
@@ -121,10 +124,12 @@ def main() -> None:
               f"{r['classification']:>7} {r['enrollment']:5} -> {r['group']:7} "
               f"{r['girls_district']}" + (f"  (old: {r.get('old_group')} {r.get('old_league')})"
                                          if r.get('old_group') else ""))
+    # Only the rows THIS run seated must agree with the cut — an older private may
+    # legitimately sit where a later reclassification cycle moved it.
+    for r in to_private:
+        if r["group"] != jd.nonpublic_class(r, jh.NONPUBLIC_CUT, jh.NONPUBLIC_PLAYUP):
+            sys.exit(f"{r['name']}: seated in {r['group']} against the {jh.NONPUBLIC_CUT} cut")
     for r in rows:
-        if r.get("private") and r["group"] != jd.nonpublic_class(r, jh.NONPUBLIC_CUT,
-                                                                 jh.NONPUBLIC_PLAYUP):
-            sys.exit(f"{r['name']}: private in {r['group']} against the {jh.NONPUBLIC_CUT} cut")
         if not r.get("private") and r["group"] in jh.NONPUBLIC_GROUPS:
             sys.exit(f"{r['name']}: public row in {r['group']}")
     cfg = jd.districting_config()

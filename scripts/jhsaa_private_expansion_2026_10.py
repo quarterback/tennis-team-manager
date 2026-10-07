@@ -8,12 +8,15 @@ Every private school prep-network carries was already in the association after
 the 2026-09 expansion, so these are net-new, the Antler Valley idiom: a row
 with the town's county and area (and `state` where the town is an Oregon
 affiliate), `private` on, seated in 10B/11B by the 550 cut
-(`jhsaa.NONPUBLIC_CUT`) through the forced redraw (`ensure_nonpublic(force=True)`),
+(`jhsaa.NONPUBLIC_CUT`) through the standing rule (`ensure_nonpublic`, force OFF —
+only the new rows are cut; privates a later reclassification cycle has placed
+stay put), both classes redrawn once for the arrivals,
 and `old_group`/`old_league` taken from the public league of the biggest public
 in its town, so the once-a-year public duals have a league to read. Public
 classes are not redrawn. Names are the owner's (written bare per the no-suffix
 rule); mascots and colours are placeholders the owner can change in
-`import_jhsaa.MASCOTS`/`COLORS`. Idempotent — a row already present is skipped.
+`import_jhsaa.MASCOTS`/`COLORS`. Idempotent — a row already present is skipped, and a run that adds nothing
+returns before touching the map.
 """
 import argparse
 import collections
@@ -119,10 +122,20 @@ def main() -> None:
                     "boys_district": same[0]["girls_district"] if same else ""})
         rows.append(row)
         added.append(row)
+    if not added:
+        # ‼️ A RERUN MUST NOT RESET LATER REALIGNMENTS. A reclassification cycle
+        # moves privates between 10B and 11B on its own sort; `force=True` would
+        # re-cut every one of them by enrollment and redraw both classes, undoing
+        # those committed moves for the sake of 25 rows that are already present.
+        print("every expansion row is already present; nothing to do")
+        return
     rows.sort(key=lambda r: r["name"])
     before = {c: collections.Counter(r["girls_district"] for r in rows
                                      if r["group"] == c and r["girls"]) for c in jh.NONPUBLIC_GROUPS}
-    out = jd.ensure_nonpublic(rows, jh.NONPUBLIC_CUT, jh.NONPUBLIC_PLAYUP, force=True, log=print)
+    # The standing rule, not the forced one: only a private still in a public
+    # group (the rows just added) is cut by enrollment; a private the cycle has
+    # already placed in 10B/11B stays where the cycle put it.
+    out = jd.ensure_nonpublic(rows, jh.NONPUBLIC_CUT, jh.NONPUBLIC_PLAYUP, log=print)
     print(f"{out['moved']} rows seated; redrawn {out['redrawn']}")
     for r in added:
         print(f"  + {r['name']:32} {r['classification']:>3} {r['enrollment']:4} -> {r['group']} "
@@ -134,9 +147,14 @@ def main() -> None:
               f"leagues {sorted(before[c].values())} -> {sorted(after.values())}")
         if after and (max(after.values()) > cfg.MAX_DISTRICT or min(after.values()) < cfg.MIN_DISTRICT_SIZE):
             sys.exit(f"{c}: league outside {cfg.MIN_DISTRICT_SIZE}-{cfg.MAX_DISTRICT}")
+    # Only the rows THIS run seated must agree with the cut — an older private may
+    # legitimately sit where a later reclassification cycle moved it.
+    for r in added:
+        if r["group"] != jd.nonpublic_class(r, jh.NONPUBLIC_CUT, jh.NONPUBLIC_PLAYUP):
+            sys.exit(f"{r['name']}: seated in {r['group']} against the cut")
     for r in rows:
-        if r["private"] and r["group"] != jd.nonpublic_class(r, jh.NONPUBLIC_CUT, jh.NONPUBLIC_PLAYUP):
-            sys.exit(f"{r['name']}: private in {r['group']} against the cut")
+        if not r["private"] and r["group"] in jh.NONPUBLIC_GROUPS:
+            sys.exit(f"{r['name']}: public row in {r['group']}")
     print(f"{len(added)} added; {len(rows)} rows")
     if args.dry_run:
         print("--dry-run: nothing written"); return
