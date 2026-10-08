@@ -79,6 +79,9 @@ compromise (`docs/reports/REPORT-jhsaa-toc-16-team-finalist-qualifier-proposal.m
 "hotly debated, but ultimately passed"): the **9A and 8A State runners-up** play one
 dual, the **10B and 11B State runners-up** play one dual, and the two winners take
 the last two TOC seats — a byeless sixteen, one more public and one more private.
+⚠️ **The pairs changed (owner rule 2026-10): 9A v 10B and 8A v 11B**, each public
+against private — see `docs/AAR-jhsaa-toc-qualifier-pairings.md`. Everything else in
+this addendum stands.
 - `TOC_QUALIFIER_PAIRS`, `TOC_QUALIFIER_PHASE` (`"toc_qualifier"`, in `POSTSEASON`
   directly before `"toc"`), `TOC_PHASES`. Every "is this the TOC?" branch reads
   `TOC_PHASES`, never the string `"toc"`: the road-shape check in `dual_format`/

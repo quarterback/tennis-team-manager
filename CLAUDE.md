@@ -1332,8 +1332,10 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   move for 11B because the league's eleven already dominated 1S/4D's nine. Neither
   class has a committee or metas;
   the TOC is a byeless SIXTEEN: fourteen champions plus the two **TOC Qualifier**
-  winners (JHSAA rule 2026-09, `TOC_QUALIFIER_PAIRS`: 9A v 8A and 10B v 11B State
-  runners-up, one dual each, phase `toc_qualifier`; a qualifier LOSER is treated
+  winners (JHSAA rule 2026-09, `TOC_QUALIFIER_PAIRS`: **9A v 10B and 8A v 11B**
+  State runners-up — public against private, owner rule 2026-10, replacing 9A v 8A
+  and 10B v 11B, which 10B and 9A won 14 and 10 times of 16; see
+  `docs/AAR-jhsaa-toc-qualifier-pairings.md` — one dual each, phase `toc_qualifier`; a qualifier LOSER is treated
   like every other TOC entrant — State finalist honour PLUS a TOC appearance with
   finish "TOC Qualifier", place field+1, no seed (owner reversed the "not a TOC
   appearance" draft); every "is this the TOC" branch reads `TOC_PHASES`, never
