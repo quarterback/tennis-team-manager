@@ -395,6 +395,9 @@ That makes Schultze look less like a bug and more like the intended extreme tail
 
 ## Addendum — Coaching calibration and the staff-dividend proposal (2026-10-09)
 
+**Historical proposal note:** The attribute-level developmental-capacity addendum below supersedes the generic additive-dividend recommendation in this section. Its synthetic figures did not test attribute-specific coaching.
+
+
 **Status: proposal and synthetic sensitivity tests only; not implemented.**
 
 The 2103–2111 development panel supports the career model but **does not validate coaching calibration**. Among players with at least 10 headroom and 6–25 exposure units, the mean annual gain was **4.23 OVR** in the bottom coaching quartile versus **4.54** in the top, a difference of **0.31 (7.3%)**. This is an association, not a controlled comparison of the same players. The earlier 2094–2104 coaching study likewise found stronger roster-level effects from Program builder and Feeder ties than from Development. Keep intrinsic development unchanged, but specifically test the intended coaching effect.
@@ -467,3 +470,125 @@ Use a **fixed-seed same-player replay** with named-staff Development disabled, c
 Preserve **seed determinism**, player identities across transfers, archived staff and bond-by-year, future-only era gating, the true-potential cap, a minimum ordinary development path, and no dividend at the trial upper ability gate. Export work ethic, coach/player fit, each coach's dividend, seasonal success roll, bond and realized extra OVR for analysis.
 
 **Decision:** keep the existing career engine and current DEV_K in code. Test the **whole-staff, work-ethic-conditioned, head-bond-scaled additive dividend** as a targeted change to coaching, not a general retuning of players.
+
+---
+
+## Addendum — Attribute-level developmental capacity and coaching portfolios (2026-10-09)
+
+**Status: owner-approved design direction; implementation and real-export calibration are pending.** This section **supersedes the preceding staff-dividend addendum as the proposed design**. The earlier addendum and its synthetic numbers remain as research history, not as evidence for the mechanism below. No JHSAA save, simulation parameter, development code, or archived result was changed in producing this report.
+
+> **Potential becomes a stock of developmental capacity, while coaching determines which capabilities a player can actually acquire.**
+>
+> A great assistant does not merely make an entire roster progress ten percent faster. That assistant might teach a mediocre baseline player to become a very good doubles player, or help an athlete with excellent movement and weak technique develop into a competitive varsity player.
+
+The objective is **real skill acquisition over a four-to-six-year school career**. Attributes improve, so the player's weighted OVR and on-court ability change through the **existing match engine**. There is **no new win-probability bonus for having a development coach**. The established Changeover advice roll must remain useful in close matches, distinct from the developmental effects. Existing Tactics and Singles match-side coaching rules should also remain separate and intact.
+
+### The rare, consequential career is part of the target
+
+The owner's real coaching observation is that some students arrive in ninth grade having never played tennis, then reach State singles semifinals or State doubles finals by senior year. This is **an experiential design reference, not a measured frequency from the JHSAA exports**. Such transformations are unusual but possible when a newcomer has substantial latent aptitude, absorbs instruction, trains consistently, competes and happens to have highly capable coaches.
+
+The existing 2103–2111 panel had a modest center (median annual gain +2 OVR) and a long tail (the extraordinary seventh-to-twelfth-grade Lamont Schultze career, +71). It validates the value of *latent capacity plus realization*, but **does not measure the desired impact of skill-specific instruction**. Do not force every low-rated freshman to remain weak because of their starting OVR. Equally, do not create a universal beginner-to-elite escalator.
+
+For the new mechanic, specifically stress-test **ninth-grade starters** with rare four-year development paths of +25, +35, +45 or more weighted OVR, when the generated latent capacity and coaching conditions permit. **These are test corridors, not calibrated targets or automatic rating grants.** A semifinal or final is an actual bracket outcome against contemporaneous opponents, not a direct reward for hitting an OVR threshold. Singles and doubles success should be distinguishable: net technique, poaching and doubles chemistry can develop far faster under one staff than baseline skills.
+
+### What exists in the repo
+
+- **51 rich player attributes**, not the stale 49 mentioned in older documentation: app/player_attributes.py defines RICH_ATTRS, separate OVR weights, and the conversion into the engine's skill drivers. Serve accuracy, volley touch, footwork, mental skills, coachability and training_drive already exist. Weighted OVR is computed from the attribute table; it is not itself a stat to increment directly.
+- **Per-attribute current and potential dictionaries** already exist in app/development.py. The generator draws individual potential ceilings around talent and shapes them by playing style. For college Prospect.develop, development already moves each attribute toward its own ceiling.
+- **JHSAA is different**: app/jhsaa.py:_career_plan / career_ability calculate an overall trajectory; _apply_career generates the prospect at the ceiling, then scales **every current attribute by the same career factor**. It preserves the player's original style proportions but cannot create a new skill-specific career path. The new model must replace this *scalar realization* for new cohorts, not append another generic OVR boost to it.
+- **Named staff** in app/jhsaa_coaches.py have stable coach identities, Development/Singles/Doubles/Tactics and other grades, up to three assistants, staff-history snapshots, and Changeover behavior. Today Development is one effective blended rating: the head's grade plus 40% of the gap to the best assistant. Other assistants do not independently contribute to actual player development.
+- **Professional proof of feasibility:** app/gtt_seasonmode.py:apply_club_coaching already picks an attribute portfolio by coach playing style and modifies specific current attributes according to coaching strength and player coachability. GTT allows gains beyond preexisting potential and is deliberately simple. Reuse its attribute-targeting idea, **not** its unrestricted growth rule in high school.
+- **Actual JHSAA matches run fast fidelity** (jhsaa.FIDELITY). engine/fast.py uses serve, return, rally, mental, stamina and style composites, and doubles has further net-specific channels. Verify every proposed teaching portfolio changes attributes that its intended singles/doubles match mode actually reads. A skill that raises only a display number is not a developmental success.
+
+### The new player contract: stock, targets and trainability
+
+**A player should be generated once with a complete latent developmental profile, but should not be guaranteed to realize it.** Keep four distinct objects, all deterministic from player identity and the relevant era:
+
+| Object | Meaning | Can a school change it? |
+|---|---|---|
+| **Current attribute vector** | What the player can actually do now, across all 51 attributes. Drives weighted OVR and the match engine. | Yes, by realized development. |
+| **Natural targets** | Attribute levels likely under ordinary development, without exceptional coaching. These preserve the default player-specific career shape. | They define the baseline; a specialist may help the player go further. |
+| **Trainable ceilings** | Player-specific upper limits for skill acquisition with unusually effective instruction; not simply the old low attribute POTs. Some weak areas are highly trainable; others really are limited. | No: determined from the player's latent aptitude and legitimate early-development events, not from the staff's reputation or team wins. |
+| **Developmental stock / budget** | A finite, possibly very large pool of additional attribute development available during the player's school career; can remain unused at graduation. | Coaches change *allocation and realization*, not the initial stock. Rare established maturity/early-POT events may add stock and expand trainable ceilings within the player's maximum scale. |
+
+The user's illustrative “236/600 plus another 300 potential attribute points” describes this **accounting concept**, not a literal sum on the current 51 × 20–100 attribute scale. Raw attribute points, weighted OVR and effective skill strength are **different units**. Implement a clearly named accounting unit and retain **both** a raw-attribute spending constraint and a weighted-OVR realization constraint: otherwise concentrating cheap or heavily weighted attributes can game the budget. Do not choose the budget's numerical distribution until real cohort replays have calibrated it.
+
+A natural target and a trainable ceiling may be far apart in one category: e.g. a ninth-grader's volley touch is 24, ordinary development might reach 38, but that **particular player's** trainable upper limit might be 60. Another player also starting at 24 might have a limit of 42. An elite net/doubles coach can help the first player reach into the upper range, subject to work, time and available developmental stock, but cannot do the same for everyone.
+
+**POT semantics need an explicit migration decision.** Existing p.potential[attr] already means “hidden true attribute ceiling.” For new-era JHSAA cohorts either promote this field to the genuine *trainable ceiling* and store natural targets separately, or add separate trainable limits while updating all POT consumers deliberately. Do not silently rewrite POT to mean both “default senior projection” and “best-ever trainable maximum.” The scouting estimate can remain uncertain; it should not disclose the whole latent budget. This is an implementation-design choice to resolve in the prototype, not a request to regenerate existing player ceilings.
+
+### Natural growth and coached growth draw from the SAME stock
+
+**Do not retain the full scalar JHSAA career gain and then add a second unaccounted pool of coach points.** That would double-count capacity and inflate the association. In the new era, generate the original expected growth curve, convert its *realized* growth into attribute-level baseline expenditures, then allow coached expenditures and reallocations from **remaining** stock.
+
+A year's development proceeds by these concepts:
+
+- **Intrinsic opportunity:** player-specific annual availability and the existing experience/exposure odometer supply ordinary growth, even if no staff is exceptional. No one loses their basic maturation merely for low work ethic.
+- **Responsiveness:** a stable work-ethic/disposition seed and category-specific coachability determine how much *additional* coaching the player can absorb; use generated values of the existing training_drive and coachability attributes as relevant evidence, without letting those trainable current ratings repeatedly multiply their own future growth. Keep latent effort traits stable across transfers.
+- **Teaching offers:** the head and **each** assistant can offer development in the categories they teach, with player-by-coach fit, year-specific exposure and actual remaining trainability. Coaches may be effective at improving a strength, filling a weakness, or both; no requirement that every staff is additive in every category.
+- **Allocation:** distribute the player's available seasonal and career stock among valid offers, subject to category trainable ceilings, season-rate limits, actual headroom, and the weighted-OVR budget. A poor fit or untrained category receives little or no coached growth. Low current skill alone is insufficient; high *trainability minus current skill* identifies a teachable weakness.
+- **Outcome:** update individual attributes, recompute derived drivers and OVR from app/player_attributes.py, and let the ordinary match engine decide matches afterward. Archive which coach/category and which kind of growth was realized.
+
+Illustrative interface sketch (NOT implementation):
+
+~~~python
+intrinsic = generate_player_yearly_opportunities(pid, grade, exposure)
+offers = []
+for coach in archived_staff(season):
+    for attribute in coach.teaching_portfolio:
+        remaining_skill = max(0, trainable_cap[attribute] - current[attribute])
+        offers.append(teach_offer(
+            player=pid, coach=coach.coach_id, attribute=attribute,
+            remaining=remaining_skill, effort=stable_work_ethic,
+            receptivity=player_coach_fit(pid, coach.coach_id, attribute),
+            exposure=exposure, head_bond=head_bond_at_season))
+gains = allocate_and_cap(
+    intrinsic, offers,
+    remaining_career_stock, year_stock,
+    raw_attribute_budget, weighted_ovr_budget,
+    personal_trainable_caps)
+current_attributes = apply_gains(current_attributes, gains)
+# OVR and engine characteristics derive from attributes, never vice versa.
+~~~
+
+The stock need not be exhausted, and the developmental offers are **not guaranteed payouts**. A stable, seeded player/coach/category/season check can govern whether instruction took hold. A player with high effort but the wrong teacher might spend an ordinary year without a coaching jump. A different teacher arriving later can open a new avenue of growth. Experience stays valuable, but winning a match **never directly creates attribute points**.
+
+### Every coach contributes something different
+
+The **head coach has the largest influence** over the effectiveness of the development program, the consistency of training, and how well assistants' work reaches the roster. The head also has a teaching portfolio. Assistants each contribute distinct offers to players; a superior assistant is not reduced to 40% of a gap behind the head.
+
+Keep the existing one-head-plus-one-to-three-assistants staff size. Generate each coach a **small stable teaching portfolio**, primarily from existing coach identity and Development, Singles, Doubles and Tactics grades, supplemented by a separately seeded specialization that does not redraw existing ratings. Example portfolios: serve/return mechanics; baseline technique and consistency; footwork/conditioning; net/transition/doubles play; tactical point construction; mental preparation.
+
+**Different mixes should generate different players.** A staff of four elite but identical serve coaches improves fewer *kinds* of skills than four comparably elite, complementary specialists. Overlapping expertise has diminishing returns; complementary instruction opens more attributes. The head should have the largest single influence, but replacing any strong assistant with a weak or mismatched specialist should measurably affect at least some player trajectories. An extraordinary three- or four-person elite staff plus an unusually trainable, hardworking player may support **very large total gains**, not merely a one-point improvement per season.
+
+**Bond remains a program-effectiveness governor, not a new talent generator.** The proposed head-coach bond rating can respond slowly to expected-versus-actual regular-season wins, expected-versus-actual Road-to-State round units (via jhsaa_coefficient), and program continuity. A new head starts near neutral. Make age optional, weak and tested rather than an automatic penalty or reward. Lag results by a completed season and bound the effect: four elite coaches should matter for **what they teach**, not because State titles compound into automatic future superstars.
+
+Keep the distinction between **teaching expertise** and **match-day coaching**. The standing fast-engine Changeover advice effect still rolls at set breaks and should remain a useful situational edge. Existing Singles and Tactics match effects likewise should stay in their own channels. New attribute development changes the *underlying player* before the match; it must not add a second live skill/match multiplier on top.
+
+### Possible player biographies this must make possible
+
+The following are **designed stress cases, not people or outcomes observed in the export**, and their OVR paths are illustrative rather than predicted calibration:
+
+| Career test | Ninth grade | Senior outcome under appropriate conditions | Mechanism that must explain it |
+|---|---|---|---|
+| **First-time player with extraordinary trainability** | Very low overall ability, major weaknesses, high hidden stock, high effort | Potentially **30–50+ weighted OVR** improvement across the ninth-to-twelfth-grade window, with a genuine chance to reach a State-level singles semifinal in some cohorts | Large latent stock, several complementary coaches, sustained absorption, attribute-specific technical growth and substantial exposure |
+| **Previously weak doubles prospect** | Modest baseline skills, weak volleys/poaching and undeveloped doubles play | A State-level doubles finalist is **possible**, even without becoming an equally distinguished singles player | Exceptional net/doubles instruction reallocates stock toward the skills the doubles engine reads |
+| **Good player, poor fit for staff** | Strong ninth-grade rating, relatively little headroom in useful categories | Ordinary, bounded improvement despite an elite staff | Coach quality cannot invent missing trainability or require that every player flourish |
+| **High-effort project, weak program** | Low-to-middle current level, strong effort, substantial remaining skill room | May improve naturally; a fitting new assistant or transfer creates a distinct opportunity later | Program staff changes allocate capacity; intrinsic trajectory survives |
+| **Low-engagement student on elite team** | Any starting level, ordinary or high natural potential | Mostly intrinsic growth, not automatic bonus growth | Low coaching absorption prevents a blanket team-wide escalator |
+
+A 30–50+ OVR transformation is **extreme** relative to the observed median of +2 per year. The prototype must prove that the generator can produce the underlying stock and that 51 actual attributes can move sufficiently, not merely write a desired OVR path onto a graph. The competitive target is **occasional actual State results**, not any guaranteed number of semifinalists or finalists. Check singles and doubles independently and account for championship-group strength, draw and format.
+
+### Prototype plan and calibration gates
+
+**Preserve history first.** Use a distinct development-era gate for newly entering JHSAA cohorts. Keep every pre-era saved/archived roster, POT, match result and identity unchanged. Generation streams for new latent stock/effort/trainability and all coaching rolls must be stable and separate from the old seat RNG. Do not allow coach changes, transfer, renamed schools, or current archetype tags to rewrite prior-year skills. Use archived **staff, bond, exposure and actual school for each year**; the same player_id must retain identity across schools.
+
+**Build a pure attribute-growth prototype**, reusing app/development.py per-attribute structures, app/player_attributes.py weighting, app/playstyles.py attribute emphasis as a reference, and app/jhsaa_coaches.py's real staffing. Replace JHSAA scalar _apply_career only in the new era. The GTT implementation is a starting example for targeting, not a drop-in growth policy.
+
+**Run an attribute-level matched-player experiment**, not an undifferentiated comparison of schools. Start with identical player creation, natural trajectory, work/coachability, early-POT/maturity rolls, and exposure. Replay with ordinary staff; strong head only; excellent assistant only; four overlapping elites; four complementary elites; a staff change in sophomore year; and transfer to a complementary staff. Remove one coach at a time to measure the attributable gain. Then perform a **separate** pass allowing coaching-dependent lineups and exposure to vary. Test both natural and exceptional rookie pools, including ninth-grade beginners who could legitimately develop into State-level competitors.
+
+**Measure what grew.** Export current and natural-target/trainable-cap attribute vectors, starting/remaining stock, spent credits per year, skills added by coach and specialty, player-coach fit and effort, head bond at season, coach moves, and actual on-court singles/doubles outcomes. Output paths by grade, not just terminal senior OVR. Distinguish improved serve placement from improved volley/poaching even when weighted OVR totals match. Verify that fast-fidelity singles and doubles consume the improved skills.
+
+**Protect the center while admitting a genuine upper tail.** Compare the original 2103–2111 panel to the new entry-era cohort: median/mean yearly gain, 90th/99th percentile annual changes, 20+/30+/40+/50+ career gain frequencies, OVR 80+/90+ graduates, attribute-group improvements, headroom remaining at graduation, within-program variation, sensitivity to each assistant, and inflation over repeated generations. The inherited panel supplies a historical benchmark, **not** a completed experiment on this proposal. If the new model produces more extraordinary developers, demand a corresponding audit of their latent stock, work, instruction and exposure rather than suppressing the tail merely because it exists.
+
+**Decision:** Do **not** retune the career model by increasing DEV_K, and do **not** implement the previous generic additive OVR dividend. Advance to a new-era **attribute-level developmental-stock and coaching-allocation model**, with unusually high but rare feasible gains, individually specialized staffs, and no new live match-outcome buff. Preserve Changeover advice as a separate, useful match-day mechanic.
