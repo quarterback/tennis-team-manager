@@ -429,6 +429,7 @@ def ensure_nonpublic(rows: list[dict], cut: int, playup: frozenset,
     changed reads as moved 0 / redrawn []."""
     say = log or (lambda s: None)
     m = districting_config()
+    returned = return_publics(rows, m, say)
     moved = 0
     for r in rows:
         if not r.get("private"):
@@ -460,7 +461,7 @@ def ensure_nonpublic(rows: list[dict], cut: int, playup: frozenset,
         taken = [r["name"] for r in mine if (r.get("girls_district") in public_names
                                              or r.get("boys_district") in public_names)]
         split = [r["name"] for r in mine if r.get("girls_district") != r.get("boys_district")]
-        if not (force or moved or thin or taken or split):
+        if not (force or moved or returned or thin or taken or split):
             continue
         reasons = []
         if thin:
@@ -471,6 +472,8 @@ def ensure_nonpublic(rows: list[dict], cut: int, playup: frozenset,
             reasons.append(f"gender halves apart on {split}")
         if moved:
             reasons.append(f"{moved} privates moved in")
+        if returned:
+            reasons.append(f"{returned} publics moved out")
         say(f"{cls}: redraw ({'; '.join(reasons) or 'forced'})")
         for r in mine:
             if r.get("girls_district") in public_names or r.get("boys_district") in public_names:
@@ -491,4 +494,50 @@ def ensure_nonpublic(rows: list[dict], cut: int, playup: frozenset,
             say(line)
         redrawn.append(cls)
         notes[cls] = cls_notes
-    return {"moved": moved, "redrawn": redrawn, "notes": notes}
+    return {"moved": moved, "returned": returned, "redrawn": redrawn, "notes": notes}
+
+
+def return_publics(rows: list[dict], m=None, say=None) -> int:
+    """Move every PUBLIC program found in 10B/11B back to its public class, IN
+    PLACE; returns how many moved. The mirror of `ensure_nonpublic`'s first pass
+    (owner report 2026-10: Basalt, Peregrine and Washington San Cordero were ruled
+    public and still sat in 11B — a cycle committed while they were flagged private
+    kept writing them back). The class is `old_group` when it is a public class,
+    else `classification`. The league is `old_league` when that league still exists
+    in the class, else the nearest league there with room under `MAX_DISTRICT`
+    (the nearest at all when none has room) — the school JOINS a league, the class
+    is never redrawn for it."""
+    say = say or (lambda s: None)
+    m = m or districting_config()
+    pos = None
+    n = 0
+    for r in rows:
+        if r.get("private") or r.get("group") not in NONPUBLIC:
+            continue
+        og = r.get("old_group")
+        cls = og if og and og not in NONPUBLIC else r.get("classification")
+        mates = [x for x in rows if x is not r and x.get("group") == cls
+                 and not x.get("private") and x.get("girls_district")]
+        leagues = collections.Counter(x["girls_district"] for x in mates
+                                      if x.get("girls") or x.get("boys"))
+        league = r.get("old_league") if r.get("old_league") in leagues else ""
+        if not league and leagues:
+            if pos is None:
+                pos = coords()
+            here = pos.get(r.get("city"))
+            def dist(name):
+                pts = [pos[x["city"]] for x in mates
+                       if x["girls_district"] == name and x.get("city") in pos]
+                if here is None or not pts:
+                    return float("inf")
+                c = (sum(p[0] for p in pts) / len(pts), sum(p[1] for p in pts) / len(pts))
+                return _miles(here, c)
+            room = [k for k, v in leagues.items() if v < m.MAX_DISTRICT]
+            league = min(room or list(leagues), key=lambda k: (dist(k), k))
+        say(f"  {r['name']}: public, {r['group']} -> {cls} {league}")
+        r["group"] = cls
+        r["girls_district"] = r["boys_district"] = league
+        r.pop("old_group", None)
+        r.pop("old_league", None)
+        n += 1
+    return n

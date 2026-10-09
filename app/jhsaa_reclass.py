@@ -209,9 +209,10 @@ def pool_of(cls: str) -> str | None:
 
 def _cls(r: dict) -> str:
     """The class the cycle SORTS a row in: a private's Non-Public class (`group`,
-    10B/11B), every public program's `classification`."""
+    10B/11B), every public program's `classification` — a public row found in
+    10B/11B included, so the cycle can never pool a public school as a private."""
     g = r.get("group")
-    return g if g in jd.NONPUBLIC else r["classification"]
+    return g if g in jd.NONPUBLIC and r.get("private") else r["classification"]
 
 
 def _ladder_pool_for(enrollment: int, rows: list[dict]) -> str:
@@ -768,6 +769,14 @@ def reapply(rows: list[dict]) -> int:
         if r is None:
             continue
         r["classification"] = e["cls"]
+        if not r.get("private") and (e.get("grp") in jd.NONPUBLIC
+                                     or r.get("group") in jd.NONPUBLIC):
+            # ‼️ A PUBLIC SCHOOL IS NEVER WRITTEN INTO 10B/11B (owner report
+            # 2026-10). A map committed while a school was flagged private records
+            # its Non-Public class and league; the owner has since ruled it public,
+            # so only its size class is put back and `ensure_nonpublic` seats it
+            # in a public league after this.
+            continue
         if r.get("group") in jd.NONPUBLIC:
             # ‼️ A PRIVATE PROGRAM'S GROUP IS ITS NON-PUBLIC CLASS (owner rule
             # 2026-09/10). A map from a cycle that pooled privates (2026-10) records

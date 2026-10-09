@@ -403,3 +403,60 @@ def test_each_toc_qualifier_pair_is_public_against_private():
     for pub, priv in jh.TOC_QUALIFIER_PAIRS:
         assert pub in jh.GROUPS and priv in jh.NONPUBLIC_GROUPS, (pub, priv)
     assert {g for pair in jh.TOC_QUALIFIER_PAIRS for g in pair} == {"9A", "8A", "10B", "11B"}
+
+
+THE_THREE = {"Basalt": "4A", "Peregrine": "3A", "Washington San Cordero": "1A"}
+
+
+def test_a_public_school_found_in_a_nonpublic_class_goes_home():
+    """Owner report 2026-10: Basalt, Peregrine and Washington San Cordero are
+    PUBLIC and still sat in 11B (a cycle committed while they were flagged private
+    kept writing them back). The standing repair moves any public row out of
+    10B/11B into its size class and a real league of that class."""
+    import json
+    with open(jh._DATA, encoding="utf-8") as fh:
+        rows = json.load(fh)["schools"]
+    home = {r["name"]: r["girls_district"] for r in rows if r["name"] in THE_THREE}
+    for r in rows:
+        if r["name"] in THE_THREE:
+            assert not r["private"], r["name"]
+            r["group"] = "11B"
+            r["girls_district"] = r["boys_district"] = "Some 11B League"
+    out = jd.ensure_nonpublic(rows, jh.NONPUBLIC_CUT, jh.NONPUBLIC_PLAYUP)
+    assert out["returned"] == 3
+    leagues = {}
+    for r in rows:
+        if r.get("group") in THE_THREE.values() and not r.get("private"):
+            leagues.setdefault(r["group"], set()).add(r["girls_district"])
+    for r in rows:
+        if r["name"] in THE_THREE:
+            assert r["group"] == THE_THREE[r["name"]], r["name"]
+            assert r["girls_district"] == r["boys_district"]
+            assert r["girls_district"] in leagues[r["group"]] - {"Some 11B League"}
+    assert all(r["group"] not in jh.NONPUBLIC_GROUPS for r in rows if not r["private"])
+    # a clean file is a no-op
+    again = jd.ensure_nonpublic(rows, jh.NONPUBLIC_CUT, jh.NONPUBLIC_PLAYUP)
+    assert again["returned"] == 0
+    assert home  # the three are in the seed file
+
+
+def test_a_map_from_when_they_were_private_never_writes_a_public_into_11b(monkeypatch):
+    """`reapply` writes the committed map back; an entry recorded while a school was
+    flagged private names 11B. A public row takes only its size class from it."""
+    import json
+    from app import jhsaa_reclass as rc
+    with open(jh._DATA, encoding="utf-8") as fh:
+        rows = json.load(fh)["schools"]
+    before = {r["name"]: dict(r) for r in rows if r["name"] in THE_THREE}
+    # one genuinely reverted school so the re-apply runs at all
+    mover = next(r for r in rows if r["group"] == "5A" and not r["private"])
+    m = {n: {"before": "11B", "cls": THE_THREE[n], "grp": "11B",
+             "gd": "Old 11B League", "bd": "Old 11B League"} for n in THE_THREE}
+    m[mover["name"]] = {"before": "5A", "cls": "6A", "grp": "6A",
+                        "gd": mover["girls_district"], "bd": mover["boys_district"]}
+    monkeypatch.setattr(rc, "committed_map", lambda rows: m)
+    assert rc.reapply(rows) == 1
+    for r in rows:
+        if r["name"] in THE_THREE:
+            assert r["group"] == before[r["name"]]["group"], r["name"]
+            assert r["girls_district"] == before[r["name"]]["girls_district"], r["name"]
