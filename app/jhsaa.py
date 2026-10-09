@@ -6718,9 +6718,10 @@ def _apply_nonpublic(rows: list[dict]) -> bool:
     except Exception as exc:
         log.warning("JHSAA Non-Public repair skipped: %s", exc)
         return False
-    if out["moved"] or out["redrawn"]:
-        log.warning("JHSAA Non-Public repair: %d privates moved to their class, leagues"
-                    " redrawn in %s", out["moved"], out["redrawn"] or "no class")
+    if out["moved"] or out.get("returned") or out["redrawn"]:
+        log.warning("JHSAA Non-Public repair: %d privates moved to their class, %d"
+                    " publics moved out, leagues redrawn in %s", out["moved"],
+                    out.get("returned", 0), out["redrawn"] or "no class")
         return True
     return False
 
