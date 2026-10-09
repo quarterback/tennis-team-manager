@@ -6,7 +6,8 @@ individual flights and the JV season — and leave the public bracket when the
 TEAM championship road begins, playing the same full ladder onto a 24-team State
 in one of two road classes: 10B (enrollment >= `NONPUBLIC_CUT`, or a named
 play-up) and 11B (below it). The TOC takes all fourteen champions plus the two
-TOC Qualifier winners (9A v 8A and 10B v 11B State runners-up), a byeless sixteen.
+TOC Qualifier winners (9A v 10B and 8A v 11B State runners-up, owner rule 2026-10),
+a byeless sixteen.
 
 `tests/conftest.py` keeps the split OFF for every other suite (the 16-team
 pilot's idiom); this file opts in. The association is the TOC test's scaled
@@ -215,13 +216,18 @@ def test_a_full_ladder_onto_a_24_team_state_and_a_16_team_toc(archived):
     toc = arc["toc"]
     assert len(jh.ROAD_GROUPS) == 14
     assert {arc["brackets"][g]["champion"] for g in jh.NONPUBLIC_GROUPS} <= set(toc["field"])
-    # THE TOC QUALIFIER (JHSAA rule 2026-09): the 9A/8A and 10B/11B State runners-up
-    # play one dual each for the last two seats, so the TOC is a byeless sixteen.
+    # THE TOC QUALIFIER (JHSAA rule 2026-09): the State runners-up play one dual
+    # each for the last two seats, so the TOC is a byeless sixteen. ‼️ The pairs are
+    # 9A v 10B and 8A v 11B (owner rule 2026-10) — read off who actually met, not
+    # just which four were there.
     q = toc["qualifier"]
     games = q["rounds"][0]
     assert len(games) == 2 and q["round_names"] == [jh.TOC_QUALIFIER_NAME]
     sides = {gm["home"] for gm in games} | {gm["away"] for gm in games}
-    assert sides == {jh.state_runner_up(arc["brackets"][g]) for g in ("9A", "8A", "10B", "11B")}
+    ru = {g: jh.state_runner_up(arc["brackets"][g]) for g in ("9A", "8A", "10B", "11B")}
+    assert sides == set(ru.values())
+    met = {frozenset((gm["home"], gm["away"])) for gm in games}
+    assert met == {frozenset((ru["9A"], ru["10B"])), frozenset((ru["8A"], ru["11B"]))}
     assert len(toc["field"]) == 16 and len(toc["rounds"][0]) == 8
     assert all(gm["home"] and gm["away"] for gm in toc["rounds"][0])   # no byes
     assert set(q["survivors"]) <= set(toc["field"])
@@ -387,3 +393,13 @@ def test_a_pre_pod_archive_still_pools_a_ranking_from_league_rows():
                          "10B": {}}}
     rows = wd.jhsaa_group_ranking(arc, "10B")
     assert [r["school"] for r in rows] == ["P"] and rows[0]["district"] == "7A Metro League"
+
+
+def test_each_toc_qualifier_pair_is_public_against_private():
+    """Owner rule 2026-10: 9A v 10B and 8A v 11B. Each pair puts a public
+    runner-up against a private one, and the four classes are the same four as
+    before — only who meets whom moved."""
+    assert jh.TOC_QUALIFIER_PAIRS == (("9A", "10B"), ("8A", "11B"))
+    for pub, priv in jh.TOC_QUALIFIER_PAIRS:
+        assert pub in jh.GROUPS and priv in jh.NONPUBLIC_GROUPS, (pub, priv)
+    assert {g for pair in jh.TOC_QUALIFIER_PAIRS for g in pair} == {"9A", "8A", "10B", "11B"}

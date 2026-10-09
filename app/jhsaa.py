@@ -137,16 +137,22 @@ NONPUBLIC_PLAYUP: frozenset[str] = frozenset()
 # Fourteen champions leave a 16-team Tournament of Champions two short and two byes
 # over. The association adopted the finalist-qualifier compromise brought by the
 # large-school coaches, a media consortium and the event's sponsors
-# (`docs/reports/REPORT-jhsaa-toc-16-team-finalist-qualifier-proposal.md`): the
-# 9A runner-up plays the 8A runner-up and the 10B runner-up plays the 11B runner-up,
-# and the two winners complete a 16-team TOC with NO byes. One more public, one more
-# private, and nothing further down the ladder. "Champion" stays a term of art — a
+# (`docs/reports/REPORT-jhsaa-toc-16-team-finalist-qualifier-proposal.md`): two
+# single duals between State runners-up, and the two winners complete a 16-team
+# TOC with NO byes. Nothing further down the ladder than 8A and 11B.
+# ‼️ THE PAIRS ARE 9A v 10B AND 8A v 11B (owner rule 2026-10), each a public
+# runner-up against a private one. The original 9A v 8A / 10B v 11B pairs were
+# lopsided on the owner's save: 10B beat 11B in 14 of 16 qualifiers since 2103 and
+# 9A beat 8A in 10 of 16, while 10B and 9A entrants split their meetings 10-9.
+# Every winner is protected from its OWN class champion in the TOC draw
+# (`toc_seed_order`, keyed on the winner's road class), so the pairs can change
+# without touching the seeding. See `docs/AAR-jhsaa-toc-qualifier-pairings.md`. "Champion" stays a term of art — a
 # qualifier winner is a TOC entrant, never a State champion; a qualifier loser has
 # NO TOC appearance (the Metastate posture: its own PHASE, its own archive key).
 # Season-gated with the split itself (`nonpublic_active`), since it is part of it.
 TOC_QUALIFIER_PHASE = "toc_qualifier"
 TOC_PHASES = (TOC_QUALIFIER_PHASE, "toc")
-TOC_QUALIFIER_PAIRS = (("9A", "8A"), ("10B", "11B"))
+TOC_QUALIFIER_PAIRS = (("9A", "10B"), ("8A", "11B"))
 TOC_QUALIFIER_NAME = "TOC Qualifier"
 
 
@@ -14409,7 +14415,7 @@ def run_season(gender: str, year: int, *, seed: int = 0, salt: str = "",
               for ts in road_by_group[group].values() for t in ts
               if t.school.name == st["champion"]]
     # THE TOC FINALIST QUALIFIER (JHSAA rule 2026-09, part of the Non-Public
-    # settlement): the 9A/8A and 10B/11B State runners-up play one dual each for
+    # settlement): the 9A/10B and 8A/11B State runners-up play one dual each for
     # the two seats that make the TOC a byeless sixteen. Its own phase and its
     # own key under `toc`, so a qualifier loser has no TOC appearance.
     # ‼️ The qualifier winners are passed APART from the champions: they take the

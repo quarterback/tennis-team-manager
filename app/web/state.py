@@ -7534,8 +7534,11 @@ def jhsaa_coefficient_view(seed: int, gender: str, group: str | None = None,
     years = world.jhsaa_years(w["id"], g)
     yr = (years[0] if years else w["year"]) if year is None else year
     arc = world.get_jhsaa(w["id"], yr, g) if years else None
-    grp = group if group in jh.GROUPS else jh.GROUPS[0]
-    scope = _jh_scope(g, grp, list(jh.GROUPS), yr, years,
+    # ROAD_GROUPS, not GROUPS: the coefficient ranks a private in its road class
+    # (10B/11B, `jhsaa.road_group`), so a GROUPS-only rail had no way to reach
+    # those two rankings at all.
+    grp = group if group in jh.ROAD_GROUPS else jh.ROAD_GROUPS[0]
+    scope = _jh_scope(g, grp, list(jh.ROAD_GROUPS), yr, years,
                       (arc or {}).get("season_year"), arc)
     # The picked season is the coefficient's boundary: window, ranking and trend
     # all end at `yr`, so browsing 2071 shows 2071's board, not today's.
@@ -7546,7 +7549,7 @@ def jhsaa_coefficient_view(seed: int, gender: str, group: str | None = None,
         a = world.get_jhsaa(w["id"], y, g)
         season_of[y] = (a or {}).get("season_year") or y
     return {"gender": g, "year": yr, "years": years, "group": grp,
-            "groups": list(jh.GROUPS), "scope": scope, "rows": rows,
+            "groups": list(jh.ROAD_GROUPS), "scope": scope, "rows": rows,
             "window": [(y, season_of.get(y, y), coef.WEIGHTS[i])
                        for i, y in enumerate(data["years"])],
             "established": sum(1 for r in rows if not r["bootstrap"]),
