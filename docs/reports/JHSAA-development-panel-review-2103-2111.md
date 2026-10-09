@@ -390,3 +390,80 @@ The model's most convincing result is no longer merely that **Lamont Schultze we
 It is that the same system produced **1,343 other six-year careers around him**, most of which were ordinary, some of which were very good, a small number of which were extraordinary, and almost none of which violated the information embedded in the player's starting capacity.
 
 That makes Schultze look less like a bug and more like the intended extreme tail of a working development model.
+
+---
+
+## Addendum — Coaching calibration and the staff-dividend proposal (2026-10-09)
+
+**Status: proposal and synthetic sensitivity tests only; not implemented.**
+
+The 2103–2111 development panel supports the career model but **does not validate coaching calibration**. Among players with at least 10 headroom and 6–25 exposure units, the mean annual gain was **4.23 OVR** in the bottom coaching quartile versus **4.54** in the top, a difference of **0.31 (7.3%)**. This is an association, not a controlled comparison of the same players. The earlier 2094–2104 coaching study likewise found stronger roster-level effects from Program builder and Feeder ties than from Development. Keep intrinsic development unchanged, but specifically test the intended coaching effect.
+
+### What exists, and what is missing
+
+In app/jhsaa_coaches.py, **DEV_K=0.40** and the named-staff multiplier is **1 + DEV_K × (effective Development quantile − 0.5)**. The head supplies the baseline; assistants supply only **40% of the positive gap to the single best assistant**. Other assistants do not independently add value. In app/jhsaa.py, this multiplier scales an archived season's intrinsic growth capacity, subject to exposure and the player's true peak.
+
+A school's **coaching archetype** is separate from its named staff. The coaching-tag mechanism uses COACHING_MATURE and CAREER_COACH_K, and can generate a **1.08–2.20×** multiplier independent of DEV_K. Future Value and Program Interest are other staff effects that influence lineup selection and therefore indirectly influence growth through playing time, rather than granting OVR themselves. Evaluate each layer separately and test whether the archetype and named-staff effects accidentally compound.
+
+The college model's interest_rate is not the JHSAA mechanism. The relevant JHSAA intrinsic characteristic is each player's pre-generated annual development capacity. Here **“irrespective of interest rate” means a coaching opportunity that does not merely multiply that player's intrinsic annual gain**. It must still respect unused true career capacity.
+
+### Three approaches to test
+
+| Approach | Mechanism | Judgment |
+|---|---|---|
+| **Curved DEV_K** | Make the existing staff multiplier nonlinear, with lower current-OVR and work-ethic eligibility. | Smallest change, but still scales intrinsic growth and still depends heavily on the strongest assistant. |
+| **Weighted staff multiplier** | Each coach contributes to a staff-wide nonlinear rate multiplier; head weighted most. | Makes all assistants matter, but does relatively little for intrinsically slow developers. |
+| **Conditional additive staff dividend** | Every coach supplies a weighted part of an independent, effort- and fit-gated growth opportunity; head-coach bond scales it. | **Preferred experiment**: selectively improves unfinished low/middle players without universally accelerating a roster. |
+
+Simply changing DEV_K from 0.40 to 0.60 does not create the desired player-by-player differences.
+
+### A trial additive model
+
+A four-coach staff's trial Development weights: **head 52%, assistants 23%, 15%, 10%**. For smaller staffs, redistribute weight without rewarding vacant assistant positions, and keep the head as the largest contributor. Assign a stable, independently seeded work-ethic/coachability trait to each player, unrelated to talent, current OVR, winning or intrinsic development. Assign stable **player × coach fit**, so a particular combination of coaches suits particular players; don't grant every player under a strong staff the same bonus.
+
+Each coach with Development quantile q contributes **d(q) = clamp((q − 0.50) / 0.40, 0, 1)^1.5**. Let **S** be the sum of the weighted individual contributions, adjusted by each player's fit. The *head-coach bond rating* B, a coach's program-development **credit/reliability rating**, multiplies this opportunity by a deliberately modest **0.85–1.15**. The first trial can use these gates:
+
+- **Work ethic:** no dividend below 0.55. Above that, a deterministic seasonal success check, with trial probability rising from 0.25 at 0.55 to 0.90 at 1.00; higher effort also raises the payout size. No success means no dividend, not reduced intrinsic development.
+- **Current ability:** full bonus eligibility at **OVR 60 or below**, linear taper to **zero at OVR 80**. Players at 80+ continue normal growth, but don't receive this exceptional coaching boost.
+- **Headroom:** payout decreases below 12 unused OVR and can never exceed the player's remaining real career peak after the year's intrinsic gain.
+- **Dividend:** in the illustrative version, extra annual realization is **4.0 × S × B × sqrt(clamp((work_ethic − 0.55) / 0.45,0,1)) × seasonal_draw × ability_gate × headroom_gate**, conditional on the check firing. The screening test used a composite player/staff fit factor of 0.65–1.20 and seasonal draw of 0.60–1.40. Production should use separate per-coach fits. **All constants are candidates, not settings or calibrated estimates.**
+
+The essential feature is that the **additive dividend is independent of the amount of ordinary annual growth**. A low-work-ethic player gets normal intrinsic growth but usually no coaching boost; a high-work-ethic, naturally slow developer with genuine headroom can have a good extra-growth year. No dividend raises hidden ceiling, manufactures an early-development roll, or awards ratings for winning.
+
+### Head-coach bond: ordinary success, not championships
+
+Propose a **3–5-season, recency-weighted rating**, beginning neutral for a new head and traveling cautiously with the coach after a move. Trial inputs: **55%** difference between actual and roster-expected regular-season win rate; **30%** actual-versus-expected Road-to-State round units, using the existing jhsaa_coefficient.road_points()/season_points() ledger, normalized by competition group; and **15%** continuity/experience. Shrink estimates with little history toward neutral, avoid double-counting postseason duals, and have past seasons affect *future* dividends only. A coach going 7–17 when 4–20 was expected should be able to gain credibility; a powerhouse merely meeting expectations should not automatically do so. Age is **optional**: if tested, use it modestly for rating confidence or volatility, not an automatic young/old bonus or a second reward for tenure. Bound B to 0.85–1.15 to prevent runaway winner reinforcement.
+
+### Synthetic sensitivity test, not JHSAA export results
+
+The raw 325,145-transition panel is not attached. The following is a **fixed-seed invented 100,000-player-season screening experiment**, not actual JHSAA estimates: OVR sampled uniformly over 20–92, invented positively skewed headroom, truncated intrinsic gain averaging **3.64**, independently beta-distributed work ethic, and the trial probabilities above. A **target** player is under 60 OVR, has at least 12 headroom and work ethic at least 0.65.
+
+| Staff development quantiles: head / three assistants | Bond | Current staff multiplier | Current extra OVR, whole sample | Additive extra OVR, whole sample | Additive extra OVR, **target** |
+|---|---:|---:|---:|---:|---:|
+| Weak .28 / .30 / .45 / .50 | .90 | .947× | −.192 | .000 | .000 |
+| Average .50 / .55 / .45 / .55 | 1.00 | 1.008× | +.027 | +.005 | +.021 |
+| Strong .82 / .72 / .74 / .62 | 1.10 | 1.128× | +.424 | **+.196** | **+.880** |
+| Average head, excellent assistants .50 / .90 / .78 / .60 | 1.00 | 1.064× | +.213 | **+.107** | **+.479** |
+
+For the strong staff, mean *additive* annual gains are about **+.31 at OVR 20–39**, **+.32 at 40–59**, **+.23 at 60–69**, **+.08 at 70–79**, and **zero at 80+**. Work ethic below 0.55 produces zero bonus, ethic 0.55–0.75 about +.24, and ethic above 0.75 about +.69. Only about **59% of eligible target player-seasons** gain at least a quarter OVR. Low-intrinsic-gain target players (under +1 annually) gained about **+.98** in the additive test versus **+.04** in a whole-staff *rate* alternative. The additive formula accomplishes something a bigger DEV_K alone cannot.
+
+A separate **four-transition stylized career replay** with 30,000 seeded draws per scenario, same strong staff and fixed starting player characteristics:
+
+| Start OVR / true peak | Natural annual gain | Work ethic | Natural four-year finish | Mean with additive dividend |
+|---|---:|---:|---:|---:|
+| 40 / 75 | +1.5 | .90 | 46 | **52.0** |
+| 40 / 75 | +3 | .90 | 52 | **58.0** |
+| 40 / 75 | +5 | .90 | 60 | **66.0** |
+| 40 / 75 | +3 | .45 | 52 | **52.0** |
+| 65 / 90 | +3 | .90 | 77 | **79.7** |
+| 80 / 95 | +3 | .90 | 92 | **92.0** |
+
+This shows the **desired behavior**, not a predicted real-world average. Six extra OVR over four seasons for a consistently responsive player is intentionally consequential; the association-wide inflation and elite tail must be evaluated on actual seasons.
+
+### Real-model validation before approval
+
+Use a **fixed-seed same-player replay** with named-staff Development disabled, current DEV_K, curved DEV_K, full-staff rate dividend, and full-staff **additive** dividend. Hold true peaks, annual intrinsic paths, early-POT and maturity rolls, exposure, transfers and program archetypes fixed first. Separately allow coach lineups to change exposure, to measure the indirect effect. Compare results by original OVR, headroom, work ethic, intrinsic capacity, staff and program; independently replace heads and assistants; test 1–3 assistant seats, ages and bond histories; and monitor cohort mean gain and 80+/90+ graduate rates. Check for additive/archetype stacking.
+
+Preserve **seed determinism**, player identities across transfers, archived staff and bond-by-year, future-only era gating, the true-potential cap, a minimum ordinary development path, and no dividend at the trial upper ability gate. Export work ethic, coach/player fit, each coach's dividend, seasonal success roll, bond and realized extra OVR for analysis.
+
+**Decision:** keep the existing career engine and current DEV_K in code. Test the **whole-staff, work-ethic-conditioned, head-bond-scaled additive dividend** as a targeted change to coaching, not a general retuning of players.
