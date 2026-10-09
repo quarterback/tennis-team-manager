@@ -3446,6 +3446,30 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   ‼️ **The program page shows OVR, age, first season and the head's record —
   never ratings** (those live on the coach page; the Staff tab keeps them
   collapsed).
+- **‼️ THE ATTRIBUTE-LEVEL DEVELOPMENT MODEL — DEVELOPMENTAL STOCK + COACHING
+  PORTFOLIOS (owner spec 2026-10, `app/jhsaa_develop.py`, cohort-gated on
+  `jhsaa.stock_era()`; `docs/AAR-jhsaa-attribute-development-stock.md` has the
+  maths).** From the era a player is NATURAL TARGETS (the old scalar ceilings) +
+  TRAINABLE CEILINGS per attribute (`p.potential` now) + a finite STOCK that both
+  natural and coached growth spend from + stable work ethic / coachability / per-coach
+  FIT. Each archived season EVERY coach on that season's staff (head and each
+  assistant, `jhsaa.staff_coaches_history`) teaches the categories of their
+  portfolio (`jhsaa_coaches.teaching_portfolio`); offers land on attributes under
+  caps, per-season rates, the stock and an OVR budget; the head's BOND
+  (`jhsaa_coaches.head_bond`, prior seasons only, 0.85–1.15) scales them. OVR and
+  the engine drivers DERIVE from the attributes after; there is NO match buff.
+  ‼️ **The blended staff `dev` multiplier is RETIRED for stock-era cohorts** (owner
+  decision) — coaching reaches them only through what it teaches; pre-era cohorts
+  keep it and `DEV_K` is untouched. ‼️ **POT on a card is a BLEND** of natural and
+  trainable (owner decision: "oh interesting, he's got a ceiling"), the misread on
+  top; the export carries both plus `ceiling_grade` = trainable. ‼️ The profile is
+  PINNED (`world_jhsaa_talent.stock`) at first archive — a constant retune reaches
+  new entrants only. ‼️ `flexibility` is NOT coached: nothing in the engine reads
+  it, and a coached point there would be a display number (pinned by
+  `test_every_coached_attribute_reaches_the_engine`). Every constant is a first-pass
+  candidate; `scripts/jhsaa_stock_replay.py` is the matched-player harness.
+  `tests/test_jhsaa_stock.py`. The superseded additive staff dividend (first
+  addendum) is NOT built — no OVR-80 gate, no flat dividend.
 - **‼️ SELECTION RUNS THROUGH A COACH EVALUATION LAYER — `_order` IS A JUDGMENT, NOT A
   TALENT RANKING (owner rule 2026-09, `jhsaa.coach_eval`, `docs/AAR-jhsaa-coach-evaluation-layer.md`).**
   `RAW ABILITY → COACH EVALUATION → LINEUP SELECTION → MATCH ENGINE (raw ability)`. The

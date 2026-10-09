@@ -30,6 +30,7 @@ inaugural reproduction exact.
 """
 from __future__ import annotations
 
+import dataclasses
 import hashlib
 import heapq
 import json
@@ -326,6 +327,12 @@ class StaffEffect:
     # archived season keeps reading as it was played.
     future: float | None = None
     loyalty: float | None = None
+    # THE HEAD-COACH BOND (owner spec 2026-10, the attribute-development model):
+    # the head's program-development reliability going INTO this season, folded
+    # from PRIOR archived seasons only (`head_bond`), bounded 0.85–1.15. It scales
+    # the staff's teaching offers (`jhsaa_develop`) and nothing a match reads.
+    # None = a history row from before it existed = neutral 1.0.
+    bond: float | None = None
 
     def fingerprint(self) -> tuple:
         # Everything that changes how a SEASON plays (rosters read history, not
@@ -744,7 +751,8 @@ def _eff_to_json(e: StaffEffect) -> str:
                        "changeover": e.changeover, "temperament": e.temperament,
                        "builder": e.builder, "feeder": e.feeder,
                        "tactics": e.tactics, "singles": e.singles,
-                       "future": e.future, "loyalty": e.loyalty})
+                       "future": e.future, "loyalty": e.loyalty,
+                       "bond": e.bond})
 
 
 def _eff_from_json(s: str) -> StaffEffect:
@@ -762,7 +770,8 @@ def _eff_from_json(s: str) -> StaffEffect:
                        temperament=d.get("temperament", "steady"),
                        builder=d.get("builder", 0.5), feeder=d.get("feeder", 0.5),
                        tactics=d.get("tactics"), singles=d.get("singles"),
-                       future=d.get("future"), loyalty=d.get("loyalty"))
+                       future=d.get("future"), loyalty=d.get("loyalty"),
+                       bond=d.get("bond"))
 
 
 def season_effects(world_id: int, year: int, gender: str) -> dict:
@@ -804,6 +813,10 @@ def record_season(conn, world_id: int, year: int, gender: str, teams, effects: d
         for slot, cid in sorted(slots.items(), key=lambda kv: SLOTS.index(kv[0])):
             if not cid:
                 continue
+            if slot == "head" and eff is not None:
+                # THE BOND going into this season — PRIOR seasons only, so the
+                # season being archived can never rate itself (owner spec 2026-10).
+                eff = dataclasses.replace(eff, bond=head_bond(conn, world_id, cid, year, gender))
             hist.append((world_id, year, s.ident, gender, slot, cid, s.name,
                          s.classification, s.group, t.wins, t.losses, t.ties,
                          _eff_to_json(eff) if (slot == "head" and eff) else None))
@@ -825,6 +838,139 @@ def record_season(conn, world_id: int, year: int, gender: str, teams, effects: d
     # concurrent reader re-cache the pre-commit history.
     from . import jhsaa
     jhsaa.invalidate_staff_history()
+
+
+# ------------------------------------------- the attribute-development model ----
+#
+# Owner spec 2026-10 (`app/jhsaa_develop.py`, `docs/AAR-jhsaa-attribute-development-
+# stock.md`). Two things the staff contributes to it live here because they are
+# properties of COACHES: what each coach teaches, and the head's bond.
+
+#: THE HEAD-COACH BOND — a 5-season recency-weighted fold of ordinary success
+#: against expectation, never championships: 55% actual minus EXPECTED regular-
+#: season win rate (expectation = the program's preseason-strength percentile in
+#: its gender-year, `jhsaa_preseason`), 30% postseason (made State, against the
+#: same percentile), 15% continuity (seasons as head at this program, up to 5).
+#: Shrunk toward neutral with little history (n / (n + 2)), bounded to
+#: `BOND_BAND`. A new head is 1.0. Travels with the coach_id. No age term.
+BOND_WEIGHTS = (0.55, 0.30, 0.15)
+BOND_RECENCY = (1.0, 0.8, 0.6, 0.45, 0.3)
+BOND_K = 0.15                      # score ±1 → bond 1 ± 0.15 (the whole band)
+BOND_BAND = (0.85, 1.15)
+
+
+def head_bond(conn, world_id: int, coach_id: str, year: int, gender: str) -> float:
+    """The bond `coach_id` carries INTO archive index `year`, from the seasons
+    before it. Read on the rung's own connection (inside its transaction) — the
+    rows it folds are already committed history."""
+    try:
+        rows = conn.execute(
+            "SELECT h.year, h.ident, h.wins, h.losses, h.ties, h.school,"
+            " p.strength FROM jhsaa_coach_history h"
+            " LEFT JOIN jhsaa_preseason p ON p.world_id=h.world_id AND p.year=h.year"
+            "   AND p.gender=h.gender AND p.school=h.school"
+            " WHERE h.world_id=? AND h.coach_id=? AND h.gender=? AND h.slot='head'"
+            "   AND h.year<? ORDER BY h.year DESC LIMIT ?",
+            (world_id, coach_id, gender, year, len(BOND_RECENCY))).fetchall()
+    except Exception:
+        return 1.0
+    if not rows:
+        return 1.0
+    score, wsum = 0.0, 0.0
+    tenure_ident = rows[0][1]
+    tenure = sum(1 for r in rows if r[1] == tenure_ident)
+    for i, (y, ident, w, l, t, school, strength) in enumerate(rows):
+        rec = BOND_RECENCY[i]
+        n = (w or 0) + (l or 0) + (t or 0)
+        pct = ((w or 0) + 0.5 * (t or 0)) / n if n else 0.5
+        exp = _strength_percentile(conn, world_id, y, gender, strength)
+        made = _made_state(conn, world_id, y, gender, school)
+        s = (BOND_WEIGHTS[0] * (pct - exp) * 2.0            # ±0.5 → ±1
+             + BOND_WEIGHTS[1] * ((1.0 if made else 0.0) - exp)
+             + BOND_WEIGHTS[2] * (min(tenure, 5) / 5.0 - 0.5) * 2.0)
+        score += rec * s
+        wsum += rec
+    s = (score / wsum) if wsum else 0.0
+    n = len(rows)
+    s *= n / (n + 2.0)
+    lo, hi = BOND_BAND
+    return round(max(lo, min(hi, 1.0 + BOND_K * s)), 4)
+
+
+def _strength_percentile(conn, world_id: int, year: int, gender: str, strength) -> float:
+    """The program's preseason-strength percentile in its gender-year (0..1);
+    0.5 with no stored strengths (a season before the preseason store)."""
+    if strength is None:
+        return 0.5
+    try:
+        r = conn.execute(
+            "SELECT SUM(CASE WHEN strength<? THEN 1 ELSE 0 END), COUNT(*)"
+            " FROM jhsaa_preseason WHERE world_id=? AND year=? AND gender=?",
+            (strength, world_id, year, gender)).fetchone()
+    except Exception:
+        return 0.5
+    below, n = (r[0] or 0), (r[1] or 0)
+    return (below + 0.5) / n if n else 0.5
+
+
+def _made_state(conn, world_id: int, year: int, gender: str, school: str) -> bool:
+    try:
+        r = conn.execute(
+            "SELECT data FROM world_jhsaa_season_row WHERE world_id=? AND year=?"
+            " AND gender=? AND school=? LIMIT 1", (world_id, year, gender, school)).fetchone()
+    except Exception:
+        return False
+    if not r:
+        return False
+    try:
+        return bool(json.loads(r[0]).get("made_state"))
+    except Exception:
+        return False
+
+
+#: WHAT EACH IDENTITY TEACHES — the primary categories, in order, with the
+#: intensities below. One SPECIALISATION category is added per coach from its own
+#: seeded draw (`teaching_portfolio`), so two singles specialists do not teach the
+#: identical set. Legacy identities map to the one they replaced for teaching
+#: only (their effects elsewhere are untouched — `LEGACY_PROFILE_LABELS`).
+PORTFOLIO = {
+    "singles":   ("baseline", "serve", "return"),
+    "doubles":   ("net", "touch", "return"),
+    "practice":  ("movement", "physical", "baseline"),
+    "tactician": ("touch", "return", "mental"),
+    "motivator": ("mental", "physical"),
+    "builder":   ("mental", "movement"),
+    "evaluator": ("baseline", "serve"),
+    "generalist": (),
+    "teacher": ("movement", "physical", "baseline"),
+    "jv_whisperer": ("movement", "physical", "baseline"),
+    "doubles_guru": ("net", "touch", "return"),
+}
+PORTFOLIO_INTENSITY = (1.0, 0.7, 0.45)
+SPECIALISATION_INTENSITY = 0.6
+_portfolio_cache: dict = {}
+
+
+def teaching_portfolio(coach_id: str, profile: str) -> dict:
+    """{category: intensity} this coach teaches — the identity's categories at
+    `PORTFOLIO_INTENSITY`, plus one specialisation drawn on the coach_id alone
+    (a generalist draws two). Deterministic and memoised; it never reads a
+    rating, so a grade edit changes how WELL a coach teaches, never what."""
+    got = _portfolio_cache.get(coach_id)
+    if got is not None:
+        return got
+    from .jhsaa_develop import COACHED
+    out = {}
+    cats = PORTFOLIO.get(profile, ())
+    for i, k in enumerate(cats):
+        out[k] = PORTFOLIO_INTENSITY[i] if i < len(PORTFOLIO_INTENSITY) else PORTFOLIO_INTENSITY[-1]
+    r = random.Random(f"jhsaa-portfolio|{coach_id}")
+    extra = 2 if not cats else 1
+    pool = [k for k in COACHED if k not in out]
+    for k in r.sample(pool, min(extra, len(pool))):
+        out[k] = SPECIALISATION_INTENSITY if cats else PORTFOLIO_INTENSITY[0]
+    _portfolio_cache[coach_id] = out
+    return out
 
 
 # ------------------------------------------------------------ read models ----

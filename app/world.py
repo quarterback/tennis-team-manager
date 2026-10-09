@@ -407,7 +407,7 @@ CREATE TABLE IF NOT EXISTS world_jhsaa_sibling_cover (
 CREATE TABLE IF NOT EXISTS world_jhsaa_talent (
   world_id INTEGER, pid TEXT, gender TEXT, ident TEXT, entry INTEGER,
   seat INTEGER, talent REAL, tier TEXT, year INTEGER,
-  kind TEXT, start REAL,
+  kind TEXT, start REAL, stock TEXT,
   PRIMARY KEY (world_id, pid)
 );
 CREATE INDEX IF NOT EXISTS ix_jhsaa_talent
@@ -471,7 +471,10 @@ def init_schema() -> None:
     # The talent pin's CREATION columns (owner rule 2026-09): the archetype the
     # seat was drawn under and the feeder start it walked in with. A pin table
     # created before they existed gains them here; a NULL reads as "use today's".
-    for col, typ in (("kind", "TEXT"), ("start", "REAL")):
+    # `stock` (owner spec 2026-10): the attribute-development model's latent
+    # profile — trainable caps, stock, work ethic — pinned at first archive so
+    # an enrolled player's capacity never regenerates from today's constants.
+    for col, typ in (("kind", "TEXT"), ("start", "REAL"), ("stock", "TEXT")):
         try:
             conn.execute(f"ALTER TABLE world_jhsaa_talent ADD COLUMN {col} {typ}")
         except sqlite3.OperationalError:
