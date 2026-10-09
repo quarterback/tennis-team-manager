@@ -853,6 +853,7 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     # reuses world_id=1 after this reset, so the next save's year 0 would read the
     # prior save's histogram. The archive rows it folds were deleted above.
     _scoreline_cache.clear()
+    _schoolchamps_cache.clear()
     _arc_cache.clear()
     from app import jhsaa_coefficient as _coef
     _coef.reset()
@@ -4861,9 +4862,9 @@ def jhsaa_individual_champions(world_id: int, year: int, gender: str,
 
     ‼️ It still loads each draw's JSON to reach its champion, which is the honest
     cost of keeping the champion inside the draw that determined it rather than
-    denormalising it onto the row. If this ever shows up on a profile, add a
-    `champion` COLUMN written at archive time — do not start storing a second
-    copy of the draw."""
+    denormalising it onto the row. ONE class, ONE season only — never call it in
+    a loop over seasons (the school page did, three times a season per click, and
+    took minutes on a long save; `_school_champion_index` is the fold for that)."""
     conn = _db()
     try:
         rows = conn.execute(
@@ -6335,7 +6336,7 @@ def _jh_choose_slots(opening: _dt.date, close: _dt.date, need: int,
 #: The regular season's BLOCKS, in play order (the share beside each is the
 #: nominal one; the layout sizes them off the busiest card in each). `play_regular_season` runs the whole gender through them
 #: in this order — early non-district -> district pass 1 -> the mid-season window
-#: (rivalries, old-league duals, invitationals, the challenge, the showcases) ->
+#: (rivalries, invitationals, the challenge, the showcases) ->
 #: district pass 2 -> the late tune-up — and a school's card is sliced into them off
 #: its own district duals (`_jh_blocks`). Targeting a dual inside its block is what
 #: keeps a slip from relaying down a season: the next block's targets restart.
@@ -8335,43 +8336,71 @@ def jhsaa_school_individual_champions(world_id: int, gender: str, school: str,
     That is the program-level counterpart of the rule one level down: on the career
     rolls a mixed title credits only the winner's own gender, since a career belongs
     to a person and a person has one. A PROGRAM has both teams."""
+    rows = _school_champion_index(world_id, gender).get(school) or ()
+    season_year = {s["year"]: s.get("season_year") or s["year"] for s in seasons}
+    return [{**r, "season_year": season_year.get(r["year"], r["year"])} for r in rows]
+
+
+_schoolchamps_cache: dict = {}
+
+
+def _school_champion_index(world_id: int, gender: str) -> dict:
+    """`{today's school name: [title rows, newest first]}` for EVERY program of a
+    gender — the index `jhsaa_school_individual_champions` reads one key of.
+
+    ‼️ ONE FOLD PER GENDER PER ARCHIVED SEASON, IN SQLITE (owner report 2026-10,
+    the school page "takes several minutes" on a long save). The per-school
+    version called `jhsaa_individual_champions` THREE times per archived season
+    (varsity, mixed, JV) and each call deserialised every draw of the class in
+    Python — ~1 MB of bracket JSON a season, ~85 MB per click on an 85-season
+    save, repeated on EVERY school visited, and the hero block needs this count
+    on every tab. The repeat-champions roll already solved the same read
+    (`jhsaa_individual_title_repeats`): `json_extract` returns just the champion
+    entrant, so no draw ever leaves the database. Memoised on the newest archived
+    year, so the whole association pays once after each season and every school
+    page after reads a dict; `_relabel` runs on the small entrant at fold time,
+    so a renamed school's titles file under its current name. Cleared by
+    `reset()` (a rename is a code change and a restart)."""
     from . import jhsaa_jv_individuals as jvi
-    out = []
-    for s in seasons:
-        grp = s.get("group")
-        if not grp:
+    years = jhsaa_years(world_id, gender)
+    key = (world_id, gender, years[0] if years else None)
+    got = _schoolchamps_cache.get(key)
+    if got is not None:
+        return got
+    flights = _jh_indiv_flight_order()
+    conn = _db()
+    try:
+        rows = conn.execute(
+            "SELECT year, grp, flight,"
+            " json_extract(data, '$.entries[' ||"
+            "   json_extract(data, '$.champion') || ']') AS champ"
+            " FROM world_jhsaa_individual WHERE world_id=? AND gender IN (?, 'mixed')"
+            f" AND flight IN ({','.join('?' * len(flights))})"
+            " AND json_extract(data, '$.champion') IS NOT NULL",
+            (world_id, gender, *flights)).fetchall()
+    finally:
+        conn.close()
+    order = {f: i for i, f in enumerate(flights)}
+    out: dict[str, list] = {}
+    for r in rows:
+        champion = _relabel(json.loads(r["champ"])) if r["champ"] else None
+        if not champion or not champion.get("school"):
             continue
-        # The mixed draw is archived under gender 'mixed' and its group comes off the
-        # school's row, which both its teams share — so this year's class is the
-        # right key for it too.
-        # ‼️ AND THE CLASSLESS JV STATE BRACKETS, under `GROUP_KEY`. They are a
-        # state title the program won and belong here for the same reason mixed
-        # doubles does — the counterpart of the player page's own section, which
-        # shows them (owner rule 2026-08). The key cannot collide with a class,
-        # so this reads one extra pair of rows per season and nothing else moves.
-        champs = {**jhsaa_individual_champions(world_id, s["year"], gender, grp),
-                  **jhsaa_individual_champions(world_id, s["year"], "mixed", grp),
-                  **jhsaa_individual_champions(world_id, s["year"], gender,
-                                               jvi.GROUP_KEY)}
-        for flight, c in champs.items():
-            champion = c.get("champion") or {}
-            if champion.get("school") != school:
-                continue
-            out.append({
-                "year": s["year"], "season_year": s.get("season_year") or s["year"],
-                # A JV title was contested statewide, so it is not this
-                # program's classification that year — the draw's own key is.
-                "group": jvi.GROUP_KEY if flight in jvi.BRACKETS else grp,
-                "flight": flight,
-                "flight_name": _jh_flight_name(flight),
-                "mixed": flight == "XD",
-                "jv": flight in jvi.BRACKETS,
-                "players": [{"pid": p.get("pid"), "name": p.get("name"),
-                            "grade": p.get("grade")}
-                           for p in champion.get("players") or ()],
-            })
-    order = {f: i for i, f in enumerate(_jh_indiv_flight_order())}
-    out.sort(key=lambda r: (-r["year"], order.get(r["flight"], 99)))
+        flight = r["flight"]
+        out.setdefault(champion["school"], []).append({
+            "year": r["year"],
+            "group": jvi.GROUP_KEY if flight in jvi.BRACKETS else r["grp"],
+            "flight": flight,
+            "flight_name": _jh_flight_name(flight),
+            "mixed": flight == "XD",
+            "jv": flight in jvi.BRACKETS,
+            "players": [{"pid": p.get("pid"), "name": p.get("name"),
+                         "grade": p.get("grade")}
+                        for p in champion.get("players") or ()],
+        })
+    for lst in out.values():
+        lst.sort(key=lambda r: (-r["year"], order.get(r["flight"], 99)))
+    _schoolchamps_cache[key] = out
     return out
 
 

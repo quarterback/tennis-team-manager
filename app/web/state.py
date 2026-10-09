@@ -5482,7 +5482,7 @@ def _jh_reclass_lines(world_id: int, school: str) -> list[dict]:
 
 
 def jhsaa_school_view(seed: int, gender: str, school: str,
-                      year: int | None = None) -> dict:
+                      year: int | None = None, hq: str = "overview") -> dict:
     """One JHSAA program, as a PROGRAM page: who they are, how this season went, the
     card match by match, the roster that played it, and the season ledger underneath.
 
@@ -5535,8 +5535,22 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     # on the varsity card — it shifts every tag and date after it by one. The JV season
     # is a separate tab on this page (owner rule 2026-08), never a second kind of row in
     # the varsity one.
-    all_sched = world.jhsaa_schedule(w["id"], yr, g, school)
-    cal = world.jhsaa_match_dates(w["id"], yr, g, season_year)
+    # ‼️ BUILD ONLY WHAT THE SELECTED TAB RENDERS (owner report 2026-10: a
+    # school click "takes several minutes" on a long save). `hq` is the tab; the
+    # hero and identity block are shared and come off the materialised season
+    # rows + the champion index above, which is cheap on any save. The schedule
+    # and the gender-season calendar belong to Overview / Roster / Schedule, the
+    # roster (with its injuries, captains, family ties and award badges) to
+    # Overview / Roster, the all-time wins fold to Records, the coaching
+    # history to History, and the staff to Overview / Staff. A tab that does not
+    # render a thing gets an empty value, never a stale one.
+    want_sched = hq in ("overview", "team", "season")
+    want_roster = hq in ("overview", "team")
+    if want_sched:
+        all_sched = world.jhsaa_schedule(w["id"], yr, g, school)
+        cal = world.jhsaa_match_dates(w["id"], yr, g, season_year)
+    else:
+        all_sched, cal = [], {}
     sched = [d for d in all_sched if (d.get("level") or "v") != "jv"]
     jv_sched = [d for d in all_sched if (d.get("level") or "v") == "jv"]
     dates = _jh_dates(sched, season_year, cal)
@@ -5547,9 +5561,12 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     # coach order comes off `world_jhsaa_preseason_state`, written by the rung
     # that played it. Only a season archived before the store rebuilds it here.
     import app.jhsaa_preseason as _jps
-    roster = _jps.stored_roster(w["id"], yr, g, school) if yr is not None else None
-    if roster is None:
-        roster = jh.build_roster(sc, season_year, salt)
+    roster = None
+    if want_roster:
+        roster = _jps.stored_roster(w["id"], yr, g, school) if yr is not None else None
+        if roster is None:
+            roster = jh.build_roster(sc, season_year, salt)
+    roster = roster or []
     # ‼️ THE ROAD CLASS FOR EVERY POSTSEASON KEY (owner rule 2026-09): a private
     # program's brackets sit under 10B/11B while its standings and awards stay
     # under its league class. Read off the archive's own `road` map, so an
@@ -5720,9 +5737,11 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     # `jhsaa.pick_captains` reads the ladder as it stood after the individual state
     # tournaments, so recovering it here would mean replaying them on the request
     # thread. One query per page, same as the injuries below.
-    captain_pids = set(world.jhsaa_captains(w["id"], yr, g).get(sc.name) or ())
-    injury_pids = _jh_injury_badges(
-        world.jhsaa_school_injuries(w["id"], yr, g, sc.name))
+    captain_pids, injury_pids = set(), {}
+    if want_roster:
+        captain_pids = set(world.jhsaa_captains(w["id"], yr, g).get(sc.name) or ())
+        injury_pids = _jh_injury_badges(
+            world.jhsaa_school_injuries(w["id"], yr, g, sc.name))
     honor_pids = {}
     # ‼️ A DOUBLES AWARD ROW HONOURS TWO ATHLETES (owner, 2027-08) — doubles
     # honours go to PAIRINGS. `jaw.row_pids` is the one place that knows how many
@@ -5756,7 +5775,7 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     # with total schools and years, which is why it read as "the school page
     # got slow after new schools were added" rather than a fixed one-time cost.
     career_wins = []
-    for r in world.jhsaa_program_wins(w["id"], g, school, salt):
+    for r in (world.jhsaa_program_wins(w["id"], g, school, salt) if hq == "records" else ()):
         career_wins.append({**r,
                             "span": (lambda f, l: str(f) if f == l
                                      else f"{f}–{str(l)[2:]}")(
@@ -5768,17 +5787,21 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
     # THE COACHING STAFF (owner spec 2026-09) — today's seats, with the staff's
     # effective value per attribute and who covers it. One read, this program only.
     import app.jhsaa_coaches as jc
-    jc.ensure_seated(w["id"], world.jhsaa_season_year(w), world.active_salt(seed))
-    staff = jc.program_staff(w["id"], sc.ident, g, world.jhsaa_season_year(w))
-    # Every varsity HEAD coach in the program's history (owner, 2026-09) — the
-    # Staff tab's second panel. One indexed read.
-    head_coaches = jc.program_head_coaches(w["id"], sc.ident, g,
-                                           world.jhsaa_season_year(w))
-    heads_by_year = jc.program_heads_by_year(w["id"], sc.ident, g)
-    import app.jhsaa_coy as _coy
-    for y, labels in _coy.program_awards(w["id"], sc.ident, g).items():
-        if y in heads_by_year:
-            heads_by_year[y] = {**heads_by_year[y], "coy": labels}
+    staff, head_coaches, heads_by_year = None, [], {}
+    if hq in ("overview", "staff", "history"):
+        jc.ensure_seated(w["id"], world.jhsaa_season_year(w), world.active_salt(seed))
+    if hq in ("overview", "staff"):
+        staff = jc.program_staff(w["id"], sc.ident, g, world.jhsaa_season_year(w))
+    if hq == "history":
+        # Every varsity HEAD coach in the program's history (owner, 2026-09) — the
+        # History tab's coach column and panel. One indexed read each.
+        head_coaches = jc.program_head_coaches(w["id"], sc.ident, g,
+                                               world.jhsaa_season_year(w))
+        heads_by_year = jc.program_heads_by_year(w["id"], sc.ident, g)
+        import app.jhsaa_coy as _coy
+        for y, labels in _coy.program_awards(w["id"], sc.ident, g).items():
+            if y in heads_by_year:
+                heads_by_year[y] = {**heads_by_year[y], "coy": labels}
     return {
         "found": True, "school": school, "gender": g, "year": yr, "years": years,
         "season_year": season_year, "is_current": bool(years) and yr == years[0],
@@ -5899,7 +5922,7 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         "career_wins": career_wins,
         # Every reclassification this program has been through (owner spec
         # 2026-09) — one line per committed move, oldest first.
-        "reclass": _jh_reclass_lines(w["id"], school),
+        "reclass": _jh_reclass_lines(w["id"], school) if hq == "history" else [],
     }
 
 

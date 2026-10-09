@@ -2941,8 +2941,9 @@ class School:
     state: str = ""
     # ‼️ THE OLD LEAGUE (owner rule 2026-09). A private program's `group` is its
     # Non-Public class (10B/11B) and `district` its POD; `old_group`/`old_league`
-    # name the PUBLIC league it would sit in under the current map, whose members
-    # it plays once each as non-conference duals (`_old_league_pairs`). Reset at
+    # name the PUBLIC league it would sit in under the current map. The once-each
+    # non-conference fixtures against it were RETIRED (owner rule 2026-10;
+    # `_old_league_pairs` is unwired). Reset at
     # every realignment (`jhsaa_districting.redraw_classes`). Empty on a public.
     old_group: str = ""
     old_league: str = ""
@@ -13315,15 +13316,15 @@ def play_regular_season(by_group: dict, year: int, gender: str,
     # first, so the venue could stay with one school two seasons running. A fixture
     # that the draw can pre-empt is a fixture only when the draw does not.
     rival_pairs = _rivalry_pairs(every_team, year, played)
-    # THE OLD-LEAGUE DUALS (owner rule 2026-09), reserved the same way and for the
-    # same reason; fixed dates, so the early allowance shrinks by what they take.
-    old_first, old_second = _old_league_pairs(every_team, year, played)
-    fixed: dict[int, int] = {}
-    for a, b in old_first + old_second:
-        fixed[id(a)] = fixed.get(id(a), 0) + 1
-        fixed[id(b)] = fixed.get(id(b), 0) + 1
-    for k, n in fixed.items():
-        owed[k] = max(0, round((quota[k] - reserved - n) * EARLY_SHARE))
+    # ‼️ THE OLD-LEAGUE FIXTURES ARE GONE (owner rule 2026-10, from JHSAA season 2111 —
+    # the Non-Public realignment had settled long enough). A private used to
+    # play every public of its old league once (`_old_league_pairs`, rule 2026-09),
+    # reserved here. A private carries 6-12 of them against a non-district quota of
+    # 6-8, and the deduction ran before the early share was cut, so 113 of 139 girls'
+    # and 109 of 135 boys' privates opened the season in league play with NO early
+    # 5S/2D window. Asked, the owner dropped the fixtures outright rather than
+    # re-balance them: a private schedules its non-district card like every other
+    # program. `School.old_group`/`old_league` stay as realignment data only.
     # SPLIT SQUADS (rule 2097) — fielded before the first draw, each carrying its
     # school's own non-district allowance, window by window. Empty before 2097, so
     # `pool` IS `every_team` and every draw below is byte-identical.
@@ -13359,7 +13360,6 @@ def play_regular_season(by_group: dict, year: int, gender: str,
     # Not drawn from `owed`: the `spent` fold at the tune-up counts them, so a rivalry
     # does not lengthen anybody's card.
     _play_pairs(rival_pairs, xrng)
-    _play_pairs(old_first, xrng)
 
     # --- the mid-season window: a non-district date, then the challenge ---
     owed = {id(t): MID_NONDISTRICT for t in pool}
@@ -13376,7 +13376,6 @@ def play_regular_season(by_group: dict, year: int, gender: str,
 
     for key, rr in rounds.items():
         play_rounds(rr[half[key]:], year, salt, key[1])
-    _play_pairs(old_second, xrng)
 
     # --- the late tune-up: whatever the allowance has left ---
     # ‼️ SPENT COUNTS INVITATIONALS, NOT SHOWCASES. Both are non-district, but the

@@ -3846,19 +3846,20 @@ def create_app() -> Flask:
         roster that played it and the standing it finished in — so a season row in the
         program history is a link into the season itself."""
         gender, label, u, g, _group, qyear = _jh_scope_args()
-        view = jhsaa_school_view(DEFAULT_SEED, g, school,
-                                 year if year is not None else qyear)
-        if not view.get("found"):
-            abort(404)
         # The program HQ's internal destination (owner rule 2026-09): one program,
         # a handful of clearly separated views — Overview is the light landing
         # ("what is happening with this program now"), the archives one click away.
         # A query arg, not a route, so `jh_scope_url` carries it: switching gender
-        # or season keeps you on the view you were reading.
+        # or season keeps you on the view you were reading. Resolved BEFORE the
+        # view is built: the view only computes what the tab renders.
         hq = request.args.get("view", "overview")
         if hq not in ("overview", "team", "season", "history", "honors", "records",
                       "staff"):
             hq = "overview"
+        view = jhsaa_school_view(DEFAULT_SEED, g, school,
+                                 year if year is not None else qyear, hq=hq)
+        if not view.get("found"):
+            abort(404)
         return render_template("jhsaa_school.html", active="High School", view=view,
                                gender=gender, u=u, uni_label=label, hq=hq)
 

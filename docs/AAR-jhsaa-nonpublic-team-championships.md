@@ -339,3 +339,20 @@ have changed nothing — the next closest 8A league would have taken its place.
 repairs on the rows, and the per-save overlays in `load_schools` — and a guard on one
 layer cannot see a fault in the next. When a league exists that no row carries, look
 at what `load_schools` ADDS to the rows, not at what wrote them.
+
+
+## Addendum 2026-10 — the old-league fixtures are retired (JHSAA season 2111, world year 2037)
+
+The old-league duals existed to carry the privates' public rivalries through the
+2026-09 Non-Public split. By the 2111 season the realignment had settled long enough
+that they were no longer necessary, and the association dropped them.
+
+What surfaced it: the owner reported 10B/11B programs opening the season straight
+into league play while 9A still had its early invitationals. `_old_league_pairs`
+reserved 6-12 fixtures per private and deducted them from the non-district quota
+(6-8) BEFORE the early share was cut, so `owed` rounded to zero — measured 113 of
+139 girls' and 109 of 135 boys' privates, plus the publics in leagues that had lost
+several. Asked, the owner dropped the fixtures entirely rather than re-balance them.
+`_old_league_pairs` is unwired; `old_group`/`old_league` remain realignment data;
+seasons archived with the fixtures stay as played. Pinned by
+`test_a_private_still_opens_with_the_early_window`.

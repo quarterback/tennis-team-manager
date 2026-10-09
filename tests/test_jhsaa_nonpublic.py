@@ -303,24 +303,26 @@ def test_the_pods_are_the_privates_leagues_and_publics_keep_their_own(archived):
         assert names[:2] == ["First Team", "Second Team"]
 
 
-def test_a_private_plays_every_old_league_public_once_outside_the_standings(archived):
-    arc, schools, w = archived["arc"], archived["schools"], archived["world"]
-    checked = 0
+def test_a_private_still_opens_with_the_early_window(archived):
+    """Owner report 2026-10: 10B/11B programs went straight into league play. The
+    old-league fixtures were deducted BEFORE the early share was cut, and a private
+    carries more of them than its whole allowance, so its early window rounded to
+    zero. The fixtures have their own dates; the opener is every program's."""
+    schools, w = archived["schools"], archived["world"]
+    from app import dbpath
+    short, checked = [], 0
     for name, s in schools.items():
         if not s.private or not s.old_league:
             continue
-        mates = [n for n, o in schools.items()
-                 if not o.private and (o.group, o.district) == (s.old_group, s.old_league)]
-        if not mates:
-            continue
-        from app import dbpath
         with dbpath.connect(archived["db"]) as conn:
             sched = wd._schedule_rows(conn, w["id"], w["year"], "girls", name)
-        played = [d for d in sched if d["opp"] in mates and d["phase"] == "regular"
-                  and not d["district"] and (d.get("level") or "v") == "v"]
-        assert sorted(d["opp"] for d in played) == sorted(mates), (name, mates)
+        early = [d for d in sched if d["phase"] == jh.EARLY_FORMAT_PHASE
+                 and (d.get("level") or "v") == "v"]
         checked += 1
+        if not early:
+            short.append(name)
     assert checked
+    assert not short, short
 
 
 def test_the_ledger_row_keeps_the_league_class_and_reads_the_road_class(archived):
