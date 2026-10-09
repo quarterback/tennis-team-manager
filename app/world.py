@@ -853,7 +853,7 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     # reuses world_id=1 after this reset, so the next save's year 0 would read the
     # prior save's histogram. The archive rows it folds were deleted above.
     _scoreline_cache.clear()
-    _schoolchamps_cache.clear()
+    _reset_school_champion_index()
     _arc_cache.clear()
     from app import jhsaa_coefficient as _coef
     _coef.reset()
@@ -8342,6 +8342,28 @@ def jhsaa_school_individual_champions(world_id: int, gender: str, school: str,
 
 
 _schoolchamps_cache: dict = {}
+# ‼️ THREADED WORKER (review 2026-10, P1/P2). The fold below is the whole gender's
+# title history, so a cold miss must build ONCE: with 32 gthreads a burst of
+# school-page requests after boot or a newly archived season would otherwise
+# each miss, each run the scan, and recreate the stall this index removed. One
+# lock per key (held through build and publish, the cache re-checked under it),
+# plus a GENERATION bumped by `reset()` so a build that straddled a reset never
+# publishes the old world's rows into the new world's cache (SQLite reuses
+# world_id=1 after `start_new`). Publishing a new (world, gender, year) EVICTS
+# the older years of the same (world, gender): each value is the complete
+# history to that year, so keeping every generation grew without bound on a
+# long save even though an older key is never asked for again.
+_schoolchamps_lock = threading.Lock()
+_schoolchamps_locks: dict = {}
+_schoolchamps_gen = 0
+
+
+def _reset_school_champion_index() -> None:
+    global _schoolchamps_gen
+    with _schoolchamps_lock:
+        _schoolchamps_gen += 1
+        _schoolchamps_cache.clear()
+        _schoolchamps_locks.clear()
 
 
 def _school_champion_index(world_id: int, gender: str) -> dict:
@@ -8361,12 +8383,31 @@ def _school_champion_index(world_id: int, gender: str) -> dict:
     page after reads a dict; `_relabel` runs on the small entrant at fold time,
     so a renamed school's titles file under its current name. Cleared by
     `reset()` (a rename is a code change and a restart)."""
-    from . import jhsaa_jv_individuals as jvi
     years = jhsaa_years(world_id, gender)
     key = (world_id, gender, years[0] if years else None)
     got = _schoolchamps_cache.get(key)
     if got is not None:
         return got
+    with _schoolchamps_lock:
+        gen = _schoolchamps_gen
+        klock = _schoolchamps_locks.setdefault(key, threading.Lock())
+    with klock:
+        got = _schoolchamps_cache.get(key)        # built while we waited
+        if got is not None:
+            return got
+        out = _fold_school_champion_index(world_id, gender)
+        with _schoolchamps_lock:
+            if gen == _schoolchamps_gen:          # no reset() since the miss
+                for k in [k for k in _schoolchamps_cache if k[:2] == key[:2]]:
+                    _schoolchamps_cache.pop(k, None)
+                    _schoolchamps_locks.pop(k, None)
+                _schoolchamps_cache[key] = out
+        return out
+
+
+def _fold_school_champion_index(world_id: int, gender: str) -> dict:
+    """The fold itself — see `_school_champion_index` for the cache contract."""
+    from . import jhsaa_jv_individuals as jvi
     flights = _jh_indiv_flight_order()
     conn = _db()
     try:
@@ -8400,7 +8441,6 @@ def _school_champion_index(world_id: int, gender: str) -> dict:
         })
     for lst in out.values():
         lst.sort(key=lambda r: (-r["year"], order.get(r["flight"], 99)))
-    _schoolchamps_cache[key] = out
     return out
 
 
