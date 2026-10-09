@@ -290,3 +290,22 @@ def test_a_reset_during_a_load_stops_the_old_save_publishing(monkeypatch):
     assert calls["n"] == 2 and second["A"]["points"] == want
     assert len(coef._season_cache) == 1                  # and this one IS published
     coef.reset()
+
+
+def test_the_page_reaches_the_non_public_classes(monkeypatch):
+    """A private is ranked in its ROAD class (10B/11B), so the page's class rail
+    must offer those two, and picking one must show its ranking — not fall back
+    to 9A. The rail used to be GROUPS only, and the two rankings were unreachable."""
+    import app.world as world
+    from app.web import state
+    rows = [{"school": "P", "name": "P", "coefficient": 5.0, "rank": 1,
+             "seasons": 3, "bootstrap": False, "points": 5.0, "breakdown": [],
+             "trend": 0.0}]
+    monkeypatch.setattr(world, "get_or_create", lambda seed: {"id": 1, "year": 3})
+    monkeypatch.setattr(world, "jhsaa_years", lambda wid, g: [3])
+    monkeypatch.setattr(world, "get_jhsaa", lambda wid, y, g: {"season_year": 2030})
+    monkeypatch.setattr(coef, "ranked", lambda wid, g, as_of=None:
+                        {"as_of": 3, "years": [3], "groups": {"10B": rows}})
+    view = state.jhsaa_coefficient_view(0, "girls", "10B")
+    assert {"10B", "11B"} <= set(view["groups"])
+    assert view["group"] == "10B" and view["rows"] == rows
