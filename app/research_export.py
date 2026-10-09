@@ -237,6 +237,33 @@ def _early_cols(p) -> dict:
     }
 
 
+def _stock_cols(p) -> dict:
+    """players.csv's attribute-development columns (owner spec 2026-10)."""
+    st = (getattr(p, "jhsaa", None) or {}).get("stock") or {}
+    return {
+        "work_ethic": st.get("ethic", ""),
+        "natural_grade": st.get("natural", ""),
+        "trainable_grade": st.get("trainable", ""),
+        "stock_total": st.get("total", ""),
+        "stock_left": st.get("left", ""),
+        "coached_ovr": st.get("coached_ovr", ""),
+    }
+
+
+def _ledger_rows(p, pid: str, program_id: str, gender: str) -> list[dict]:
+    """jhsaa_development_ledger.csv rows for one player: what each archived
+    season's named coaches taught, by category, in raw attribute points."""
+    out = []
+    for season in (getattr(p, "jhsaa", None) or {}).get("coached") or ():
+        for coach_id, cats in (season.get("by_coach") or {}).items():
+            for cat, raw in cats.items():
+                out.append({"player_id": pid, "program_id": program_id, "gender": gender,
+                            "season": season.get("season"), "coach_id": coach_id,
+                            "category": cat, "raw_points": raw,
+                            "season_raw": season.get("raw"), "season_ovr": season.get("ovr")})
+    return out
+
+
 def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=None) -> dict[str, bytes]:
     """Build JHSAA files. ``season`` is injectable for tests and archive adapters;
     otherwise READ from the persisted archive (see ``_load_archived_jhsaa_season``
@@ -256,6 +283,7 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
     included_names = selected_names | {d["opp"] for t in selected for d in t.schedule}
 
     programs, players, standings = [], [], []
+    development: list = []          # the attribute-development ledger (owner spec 2026-10)
     player_lookup = {}
     for team in all_teams:
         s = team.school
@@ -324,7 +352,11 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                 # archive path from the season's own staff; blank when injected.
                 "tenure_years": "", "future_value": "", "program_interest": "",
                 "coach_read_override": "",
+                # THE ATTRIBUTE-DEVELOPMENT MODEL (owner spec 2026-10,
+                # `app/jhsaa_develop.py`): blank for a pre-stock-era cohort.
+                **_stock_cols(p),
             })
+            development.extend(_ledger_rows(p, pid, s.key, gender))
 
     _player_rows = {r["player_id"]: r for r in players}
     duals, lines, line_players = [], [], []
@@ -818,6 +850,7 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
               "jhsaa_jv_state.csv": jv_state_rows,
               "jhsaa_program_history.csv": history,
               "jhsaa_individual_history.csv": individual_history,
+              "jhsaa_development_ledger.csv": development,
               **coach_tables}
     files = {name: _csv(rows) for name, rows in tables.items()}
     files.update({name: json.dumps(value, indent=2, ensure_ascii=False, default=str).encode()
@@ -1037,6 +1070,16 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "jhsaa_coach_records.csv is each head coach's career in this sport: head "
             "seasons, W-L-T, pct, programs, state_titles and Coach of the Year counts. "
             "coach_id joins across all five files.",
+            "jhsaa_development_ledger.csv is the ATTRIBUTE-DEVELOPMENT LEDGER (owner spec "
+            "2026-10, app/jhsaa_develop.py): one row per player per archived season per "
+            "coach per category of COACHED growth — raw attribute points a named coach "
+            "taught into one skill group, from the player's developmental stock. Only "
+            "stock-era cohorts (entry year >= jhsaa_stock_era) have rows; players.csv carries "
+            "their work_ethic, natural_grade (where ordinary coaching lands them), "
+            "trainable_grade (the hidden maximum), stock_total/stock_left (raw points) and "
+            "coached_ovr (weighted OVR the staff added over the career so far). "
+            "potential_grade for these players is the staff's estimate of a BLEND of "
+            "natural and trainable, never the exact maximum.",
             "jhsaa_portal.csv is the RISING-FRESHMAN PORTAL ledger (JHSAA rule 2100): one "
             "row per committed move, EVERY season the save has held a portal, this gender. "
             "A move is proposed only for an early participant (7th/8th grade at a 1A, 2A or "

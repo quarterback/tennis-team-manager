@@ -144,3 +144,29 @@ The one-time backfill of season rows on this fixture cost 1.5 s a gender; the
 provisional next-season state costs the rung one more whole-gender build (22 s here).
 Found on the way: the bulk history fold used by the export left `won` out of its
 schedule rows, so every exported JV record read 0-N; the stored rows fixed it.
+
+
+## Addendum 2026-10 — the school page, per tab
+
+Owner report: clicking a team on any schedule could take minutes on the 85-season
+save; no warming shell, the browser simply waited on `jhsaa_school_view`.
+
+What was still paid per click, whatever tab was selected:
+
+- `jhsaa_school_individual_champions` → `jhsaa_individual_champions` ×3 (varsity,
+  mixed, JV) per archived season, each `json.loads` of every draw of the class
+  (~1 MB a season, ~85 MB a click) plus `_relabel` over 128-entry draws. The hero
+  shows this count on every tab, so no tab escaped it. Replaced by
+  `world._school_champion_index`: one `json_extract` query per gender returning only
+  the champion entrant, memoised on the newest archived year.
+- `jhsaa_program_wins` (Records only) — a scan of every archived line of the
+  program, cached per newest year. Now built only for `view=records`.
+- `jhsaa_match_dates` (the whole gender-season layout, memoised) and the schedule
+  rows — now Overview/Roster/Schedule only.
+- roster + injuries + captains + award badges — Overview/Roster only.
+- coach history (`program_head_coaches`, `program_heads_by_year`, COY) and the
+  reclass ledger — History only; `program_staff` Overview/Staff only.
+
+`scripts/jhsaa_school_profile.py --db <copy>` times each section and each tab,
+cold and warm, across schools. Not yet run on the owner's real save from this
+session — run it there to confirm the Overview lands under a second.

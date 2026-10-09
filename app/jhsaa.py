@@ -2941,8 +2941,9 @@ class School:
     state: str = ""
     # ‼️ THE OLD LEAGUE (owner rule 2026-09). A private program's `group` is its
     # Non-Public class (10B/11B) and `district` its POD; `old_group`/`old_league`
-    # name the PUBLIC league it would sit in under the current map, whose members
-    # it plays once each as non-conference duals (`_old_league_pairs`). Reset at
+    # name the PUBLIC league it would sit in under the current map. The once-each
+    # non-conference fixtures against it were RETIRED (owner rule 2026-10;
+    # `_old_league_pairs` is unwired). Reset at
     # every realignment (`jhsaa_districting.redraw_classes`). Empty on a public.
     old_group: str = ""
     old_league: str = ""
@@ -3553,6 +3554,8 @@ def reset_schools() -> None:
     _early_era_cache.clear()
     _early_seat_era_cache.clear()
     _early_pot_era_cache.clear()
+    _stock_era_cache.clear()
+    _staff_coaches_cache.clear()
     _class_moves_cache.clear()
     _intl_era_cache.clear()
     _jv_parastate_era_cache.clear()
@@ -4244,7 +4247,7 @@ ERA_SETTINGS = ("jhsaa_name_era", "jhsaa_dev_era", "jhsaa_talent_era",
                 "jhsaa_sibling_era", "jhsaa_sixteen_state_era",
                 "jhsaa_circuit_era",
                 "jhsaa_early_era", "jhsaa_early_seat_era", "jhsaa_early_pot_era",
-                "jhsaa_nonpublic_era")
+                "jhsaa_nonpublic_era", "jhsaa_stock_era")
 
 
 def reset_eras() -> None:
@@ -4653,6 +4656,21 @@ def early_seasons(school: School, entry: int) -> tuple:
     if g7:
         return (s7, s8)
     return (s8,) if classification_in(school, s8) in EARLY_CLASSES else ()
+
+
+_stock_era_cache: dict = {}
+
+
+def stock_era() -> int:
+    """The first ENTRY year built on the attribute-level development model
+    (owner spec 2026-10, `app/jhsaa_develop.py`): a developmental STOCK, per-
+    attribute trainable ceilings, and coaches who teach specific skills. The
+    `career_era()` idiom — cohort-gated, self-configured to the first unseen
+    cohort on a save with an archive, 0 on a fresh one — because players are
+    rebuilt from seed and an ungated change would re-rate every archived
+    roster. Pre-era cohorts keep the scalar `_apply_career` realisation and the
+    blended staff `dev` multiplier byte for byte."""
+    return _resolve_era("jhsaa_stock_era", _stock_era_cache)
 
 
 def early_pot_era() -> int:
@@ -5084,12 +5102,13 @@ def pinned_talents(gender: str, ident: str) -> dict:
             conn = sqlite3.connect(db)
             try:
                 rows = conn.execute(
-                    "SELECT pid, talent, kind, start FROM world_jhsaa_talent"
+                    "SELECT pid, talent, kind, start, stock FROM world_jhsaa_talent"
                     " WHERE world_id=? AND gender=? AND ident=?",
                     (wid, gender, ident)).fetchall()
                 out = {pid: {"talent": float(t), "kind": kind,
-                             "start": (float(st) if st is not None else None)}
-                       for pid, t, kind, st in rows if t is not None}
+                             "start": (float(st) if st is not None else None),
+                             "stock": (json.loads(stk) if stk else None)}
+                       for pid, t, kind, st, stk in rows if t is not None}
             finally:
                 conn.close()
         except sqlite3.Error:
@@ -5117,6 +5136,7 @@ def invalidate_staff_history() -> None:
     with _staff_hist_lock:
         _staff_hist_gen += 1
         _staff_hist_cache.clear()
+        _staff_coaches_cache.clear()
 
 
 def staff_history(gender: str, ident: str) -> dict:
@@ -5164,6 +5184,64 @@ def staff_history(gender: str, ident: str) -> dict:
     return out
 
 
+_staff_coaches_cache: dict = {}
+
+
+def staff_coaches_history(gender: str, ident: str) -> dict:
+    """{season_year: (bond, [(coach_id, slot, grades, portfolio)])} — EVERY coach
+    the program was ARCHIVED with each season, head and assistants, for the
+    attribute-development model (owner spec 2026-10). `staff_history` carries
+    the head row's blended effect; this carries the PEOPLE, because each coach
+    teaches their own portfolio. The bond is the head row's archived `bond`
+    (1.0 before it existed). History only, one indexed read per (gender,
+    program), memoised and cleared with the staff history."""
+    from .dbpath import resolve_db_path
+    db = resolve_db_path()
+    key = (db, gender, ident)
+    with _staff_hist_lock:
+        got = _staff_coaches_cache.get(key)
+        gen = _staff_hist_gen
+    if got is not None:
+        return got
+    out: dict = {}
+    wid = _expo_world_id(db)
+    if wid is not None:
+        import sqlite3
+        try:
+            conn = sqlite3.connect(db)
+            try:
+                rows = conn.execute(
+                    "SELECT h.year, h.slot, h.coach_id, h.eff, c.data"
+                    " FROM jhsaa_coach_history h"
+                    " LEFT JOIN jhsaa_coach c ON c.world_id=h.world_id AND c.coach_id=h.coach_id"
+                    " WHERE h.world_id=? AND h.gender=? AND h.ident=? AND h.coach_id IS NOT NULL",
+                    (wid, gender, ident)).fetchall()
+            finally:
+                conn.close()
+            from .jhsaa_coaches import teaching_portfolio
+            from .world import BASE_YEAR
+            tmp: dict = {}
+            for y, slot, cid, eff, data in rows:
+                sy = BASE_YEAR + int(y) + 1
+                bond, coaches = tmp.setdefault(sy, [1.0, []])
+                if data:
+                    d = json.loads(data)
+                    grades = d.get("grades") or {}
+                    profile = d.get("profile") or "generalist"
+                    coaches.append((cid, slot, grades, teaching_portfolio(cid, profile)))
+                if slot == "head" and eff:
+                    b = json.loads(eff).get("bond")
+                    if b is not None:
+                        tmp[sy][0] = float(b)
+            out = {sy: (b, cs) for sy, (b, cs) in tmp.items()}
+        except sqlite3.Error:
+            out = {}
+    with _staff_hist_lock:
+        if gen == _staff_hist_gen:
+            _staff_coaches_cache[key] = out
+    return out
+
+
 def staff_culture(hist: dict, season_year: int) -> float:
     """Program culture going INTO `season_year` (owner spec 2026-09): an
     exponential carry of every archived staff's Program builder grade —
@@ -5202,15 +5280,17 @@ def record_talents(conn, world_id: int, year: int, gender: str, rosters) -> int:
             tal = meta.get("talent")
             if tal is None or not p.pid:
                 continue
+            stock = meta.get("stock_pin")
             rows.append((world_id, p.pid, gender, meta.get("ident", ""),
                          getattr(p, "entry_year", None), meta.get("seat"),
                          float(tal), meta.get("tier", ""), year,
-                         meta.get("kind", ""), float(meta.get("start", 0.0) or 0.0)))
+                         meta.get("kind", ""), float(meta.get("start", 0.0) or 0.0),
+                         json.dumps(stock, separators=(",", ":")) if stock else None))
     if rows:
         conn.executemany(
             "INSERT OR IGNORE INTO world_jhsaa_talent"
-            " (world_id, pid, gender, ident, entry, seat, talent, tier, year, kind, start)"
-            " VALUES (?,?,?,?,?,?,?,?,?,?,?)", rows)
+            " (world_id, pid, gender, ident, entry, seat, talent, tier, year, kind, start, stock)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", rows)
     _pins_cache.clear()
     return len(rows)
 
@@ -6971,6 +7051,49 @@ def _apply_career(p: Prospect, school_key: str, entry: int, seat: int,
     return p
 
 
+def _apply_stock_era(p: Prospect, pid: str, school: School, entry: int, seat: int,
+                     grade: int, salt: str, start_lift: float, pinned: dict | None,
+                     exposure: dict | None, early: dict | None,
+                     staff_coaches: dict | None) -> None:
+    """The attribute-level development model on top of the scalar baseline
+    `_apply_career` just set (owner spec 2026-10, `app/jhsaa_develop.py`).
+
+    The scalar result IS the intrinsic path (natural shape × career factor,
+    exposure-aware); this adds what the archived staffs TAUGHT, season by
+    season, from the player's developmental stock, and sets `p.potential` to
+    the trainable ceilings. The latent profile is drawn once on its own stream
+    and PINNED with the talent (`stock_pin`), so an enrolled player's capacity
+    never regenerates from today's constants."""
+    from . import jhsaa_develop as jd
+    from .player_attributes import OVERALL_WEIGHTS, _WEIGHT_TOTAL
+    natural = dict(p.potential)
+    ceiling = sum(OVERALL_WEIGHTS[a] * v for a, v in natural.items()) / _WEIGHT_TOTAL
+    start, peak, _caps = _career_plan(school.key, entry, seat, salt, ceiling, start_lift)
+    start_frac = start / ceiling if ceiling else 1.0
+    peak_frac = peak / ceiling if ceiling else 1.0
+    profile = pinned.get("stock") if pinned else None
+    if not profile:
+        profile = jd.latent_profile(school.key, entry, seat, salt, natural,
+                                    start_frac, peak_frac)
+    baseline = dict(p.current)
+    seasons = []
+    grades_played = [*(early or {}), *range(9, grade)]
+    for pg in grades_played:
+        sy = entry + (pg - 9)
+        bond, coaches = (staff_coaches or {}).get(sy, (1.0, []))
+        if not coaches:
+            continue
+        x = (early or {}).get(pg) if pg < 9 else (exposure or {}).get(pg)
+        seasons.append((sy, 1.0 if x is None else float(x), coaches, bond))
+    res = jd.apply_stock(p, pid, salt, profile, baseline, start_frac, seasons)
+    p.jhsaa["stock_pin"] = profile
+    p.jhsaa["stock"] = {"ethic": profile["ethic"], "total": profile["stock_total"],
+                        "left": res["stock_left"], "coached_ovr": res["coached_ovr"],
+                        "natural": res["natural_ovr"], "trainable": res["trainable_ovr"]}
+    if res["ledger"]:
+        p.jhsaa["coached"] = res["ledger"]
+
+
 def _draw_name(rng: random.Random, school: School, entry: int) -> tuple[str, str]:
     """The seat's (name, country) — ‼️ EXACTLY ONE draw off the main rng, in BOTH
     eras: the name stream is a separate rng seeded off it, so widening the name
@@ -7046,6 +7169,12 @@ def _stamp_pot_estimate(p, pid: str, salt: str, grade: int, exposure: dict | Non
     ceiling = sum(OVERALL_WEIGHTS[a] * v for a, v in p.potential.items()) / _WEIGHT_TOTAL
     current = sum(OVERALL_WEIGHTS[a] * v for a, v in p.current.items()) / _WEIGHT_TOTAL
     p.jhsaa["ceiling"] = round(ceiling, 4)
+    # THE STOCK ERA (owner rule 2026-10): POT on a card is a BLEND of the natural
+    # target and the trainable ceiling — "oh interesting, he's got a ceiling" —
+    # never the exact maximum. The misread and its shrink still ride on top.
+    st = p.jhsaa.get("stock")
+    if st:
+        ceiling = 0.5 * float(st["natural"]) + 0.5 * float(st["trainable"])
     if not POT_ESTIMATE_ENABLED:
         p.jhsaa["pot_est"] = round(ceiling, 4)
         return
@@ -7068,7 +7197,8 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
               salt: str, expo_years: dict | None = None,
               pins: dict | None = None,
               staff_years: dict | None = None,
-              early_s: tuple = (), fire_expo: dict | None = None) -> Prospect:
+              early_s: tuple = (), fire_expo: dict | None = None,
+              staff_coaches: dict | None = None) -> Prospect:
     """One seat's Prospect — pulled out of `build_roster` so a TRANSFER (see
     below) can regenerate the exact same person under the school they actually
     play for now, from the ORIGIN school's identity/program modifiers. `pid`
@@ -7292,11 +7422,20 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
                     f *= 1.0 + MENTOR_K * played
                 if f != 1.0:
                     staff_mult[pg] = f
+        stock = entry >= stock_era()
+        # ‼️ THE STOCK ERA (owner spec 2026-10): the blended staff `dev`
+        # multiplier is RETIRED for these cohorts — coaching reaches a player
+        # only through what each coach TEACHES (`jhsaa_develop`), never as a
+        # second blanket speed-up on top. Pre-era cohorts keep it.
         _apply_career(p, school.key, entry, seat, grade, salt,
                       exposure or None, coach_factor(mod.get("mature", 0.0)),
-                      start_lift, staff_mult or None, early, events or None,
+                      start_lift, None if stock else (staff_mult or None), early,
+                      events or None,
                       gen_talent / talent if boost and talent else 1.0,
                       early_pot or None, peg)
+        if stock:
+            _apply_stock_era(p, pid, school, entry, seat, grade, salt, start_lift,
+                             pinned, exposure, early, staff_coaches)
     elif compress:
         # The guarantee half: attribute noise lifts displayed ceilings past the
         # squashed centre, so the visible number is trimmed after generation.
@@ -7424,6 +7563,9 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     pins = pinned_talents(school.gender, school.ident)
     # The named staff's archived history (owner spec 2026-09) — one read.
     staff_years = staff_history(school.gender, school.ident)
+    # Every coach per archived season, for the attribute-development model
+    # (owner spec 2026-10) — one read, threaded down beside `staff_years`.
+    staff_coaches = staff_coaches_history(school.gender, school.ident)
     out = []
     fresh9_seats = 0
     def cohort_size(entry: int) -> int:
@@ -7453,7 +7595,7 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
             es = (early_seat_seasons(school, entry, seat, salt)
                   if entry in early else ())
             p = _gen_seat(school, mod, entry, seat, grade, salt, expo_years, pins,
-                          staff_years, es)
+                          staff_years, es, staff_coaches=staff_coaches)
             rec = tmap.get(p.pid)
             # Somewhere else THIS season — `transfer_school` walks every recorded
             # move and returns where they actually are, so a player who moved away
@@ -7479,7 +7621,7 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
             if year not in es:
                 continue
             p = _gen_seat(school, mod, entry, seat, grade, salt, expo_years,
-                          pins, staff_years, es)
+                          pins, staff_years, es, staff_coaches=staff_coaches)
             # An early participant's transfer record applies here too — `tmap`
             # carries the two early cohorts (`is_enrolled`) — through the ONE
             # authority that also knows a 7th-grader can only go where the
@@ -7495,7 +7637,7 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     if len(out) < ROSTER_FLOOR:
         for seat in range(fresh9_seats, fresh9_seats + (ROSTER_FLOOR - len(out))):
             out.append(_gen_seat(school, mod, year, seat, 9, salt, expo_years, pins,
-                                 staff_years))
+                                 staff_years, staff_coaches=staff_coaches))
     # Incoming: every transfer whose DESTINATION is this school AND this gender,
     # effective by now. School names are shared across a boys' and a girls' program
     # (the display identity is per-team, not per-school), so the name match alone
@@ -7509,11 +7651,14 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
     # them back to their ORIGIN is produced by the seat loop above, which no
     # longer skips them; adding them here too would roster the same person
     # twice) are all properties of the list, not checks per record.
+    by_name = None
     for pid, rec in inbound.get((school.gender, school.name), ()):
         entry = rec.get("entry")
         grade = year - entry + 9
         if grade not in GRADES and grade not in EARLY_GRADES:
             continue                       # not enrolled anywhere this year (yet, or graduated)
+        if by_name is None:                # once per build, only when a mover exists
+            by_name = {s.name: s for s in load_schools(school.gender)}
         origin = next((s for s in load_schools(rec.get("gender", school.gender))
                        if s.name == rec.get("from")), None)
         if origin is None:
@@ -7535,13 +7680,24 @@ def build_roster(school: School, year: int, salt: str = "") -> list[Prospect]:
         # played, at whichever school `transfer_school` puts them in each — the
         # HS odometer keeps its "transfers realise in full" rule untouched.
         fire_expo = {}
-        for sn in (*es, entry):
-            if sn < year and sn >= early_era():
-                where = transfer_school(rec, sn) or origin.name
+        # THE STAFFS THAT ACTUALLY COACHED A MOVER, season by season (owner spec
+        # 2026-10): the attribute-development model reads each archived season's
+        # staff at the school the player was AT that year — the odometer's own
+        # per-season rule, applied to the people.
+        fire_staff = {}
+        for sn in (*es, *range(entry, year)):
+            where = transfer_school(rec, sn) or origin.name
+            if sn < year and sn >= early_era() and sn in (*es, entry):
                 fire_expo[sn] = school_exposure(school.gender, where, (sn,)).get(sn)
+            sc_at = by_name.get(where)
+            if sc_at is not None:
+                got = staff_coaches_history(school.gender, sc_at.ident).get(sn)
+                if got:
+                    fire_staff[sn] = got
         p = _gen_seat(origin, omod, entry, rec.get("seat"), grade, salt,
                       pins=pinned_talents(origin.gender, origin.ident),
-                      early_s=es, fire_expo=fire_expo)
+                      early_s=es, fire_expo=fire_expo,
+                      staff_coaches=fire_staff or None)
         if p.pid != pid:
             continue                       # stale/mismatched record — never invent a player
         p.high_school = school.name
@@ -13315,15 +13471,15 @@ def play_regular_season(by_group: dict, year: int, gender: str,
     # first, so the venue could stay with one school two seasons running. A fixture
     # that the draw can pre-empt is a fixture only when the draw does not.
     rival_pairs = _rivalry_pairs(every_team, year, played)
-    # THE OLD-LEAGUE DUALS (owner rule 2026-09), reserved the same way and for the
-    # same reason; fixed dates, so the early allowance shrinks by what they take.
-    old_first, old_second = _old_league_pairs(every_team, year, played)
-    fixed: dict[int, int] = {}
-    for a, b in old_first + old_second:
-        fixed[id(a)] = fixed.get(id(a), 0) + 1
-        fixed[id(b)] = fixed.get(id(b), 0) + 1
-    for k, n in fixed.items():
-        owed[k] = max(0, round((quota[k] - reserved - n) * EARLY_SHARE))
+    # ‼️ THE OLD-LEAGUE FIXTURES ARE GONE (owner rule 2026-10, from JHSAA season 2111 —
+    # the Non-Public realignment had settled long enough). A private used to
+    # play every public of its old league once (`_old_league_pairs`, rule 2026-09),
+    # reserved here. A private carries 6-12 of them against a non-district quota of
+    # 6-8, and the deduction ran before the early share was cut, so 113 of 139 girls'
+    # and 109 of 135 boys' privates opened the season in league play with NO early
+    # 5S/2D window. Asked, the owner dropped the fixtures outright rather than
+    # re-balance them: a private schedules its non-district card like every other
+    # program. `School.old_group`/`old_league` stay as realignment data only.
     # SPLIT SQUADS (rule 2097) — fielded before the first draw, each carrying its
     # school's own non-district allowance, window by window. Empty before 2097, so
     # `pool` IS `every_team` and every draw below is byte-identical.
@@ -13359,7 +13515,6 @@ def play_regular_season(by_group: dict, year: int, gender: str,
     # Not drawn from `owed`: the `spent` fold at the tune-up counts them, so a rivalry
     # does not lengthen anybody's card.
     _play_pairs(rival_pairs, xrng)
-    _play_pairs(old_first, xrng)
 
     # --- the mid-season window: a non-district date, then the challenge ---
     owed = {id(t): MID_NONDISTRICT for t in pool}
@@ -13376,7 +13531,6 @@ def play_regular_season(by_group: dict, year: int, gender: str,
 
     for key, rr in rounds.items():
         play_rounds(rr[half[key]:], year, salt, key[1])
-    _play_pairs(old_second, xrng)
 
     # --- the late tune-up: whatever the allowance has left ---
     # ‼️ SPENT COUNTS INVITATIONALS, NOT SHOWCASES. Both are non-district, but the

@@ -1396,9 +1396,11 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   named and sized exactly like every other class** (owner rule 2026-10 — the 2026-09
   two-team "All-Star" slate was an agent's mistake; `slate_label` now says All-State
   for every class and `AS_TIERS` carries no Non-Public entry). Each private keeps an
-  `old_group`/`old_league` (the public league it would sit in) and plays every public
-  in it ONCE as a non-conference dual (`_old_league_pairs`: record and TOSS, never
-  standings; reserved before the first draw, played after pass 1 and pass 2).
+  `old_group`/`old_league` (the public league it would sit in). ‼️ **THE OLD-LEAGUE
+  FIXTURES ARE RETIRED (owner rule 2026-10)** — a private used to play every public
+  in it once; 6-12 such duals against a 6-8 allowance, deducted before the early
+  share was cut, left ~80% of privates with NO early 5S/2D window (they opened in
+  league play). `_old_league_pairs` is unwired; a private schedules like any program.
   `redraw_classes` resets the old league at every realignment by lending the private
   into the draw; `jhsaa_reclass._move` never moves a private's `group`, and
   `rc.reapply` never touches a private's group or league. A public league the split
@@ -1662,7 +1664,7 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   class plays its own championship format: **4S/5D** 9A/8A/7A/Group 1/10B ·
   **6S/5D** 5A · **3S/4D** 6A/11B · **1S/4D** 4A/3A/2A/Group 3 · **2S/3D** 1A ·
   **3S/3D** Group 2. Invitationals (every other regular-season dual — rivalries,
-  the challenge, old-league pairs) stay **3S/4D**, the early window stays **5S/2D**,
+  the challenge) stay **3S/4D**, the early window stays **5S/2D**,
   showcases play the host's State format, the TOC stays 1S/4D. Read the class's
   district format ONLY through `district_format(group)` — it IS `dual_format("state",
   group)`, never a second table.
@@ -3444,6 +3446,30 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   ‼️ **The program page shows OVR, age, first season and the head's record —
   never ratings** (those live on the coach page; the Staff tab keeps them
   collapsed).
+- **‼️ THE ATTRIBUTE-LEVEL DEVELOPMENT MODEL — DEVELOPMENTAL STOCK + COACHING
+  PORTFOLIOS (owner spec 2026-10, `app/jhsaa_develop.py`, cohort-gated on
+  `jhsaa.stock_era()`; `docs/AAR-jhsaa-attribute-development-stock.md` has the
+  maths).** From the era a player is NATURAL TARGETS (the old scalar ceilings) +
+  TRAINABLE CEILINGS per attribute (`p.potential` now) + a finite STOCK that both
+  natural and coached growth spend from + stable work ethic / coachability / per-coach
+  FIT. Each archived season EVERY coach on that season's staff (head and each
+  assistant, `jhsaa.staff_coaches_history`) teaches the categories of their
+  portfolio (`jhsaa_coaches.teaching_portfolio`); offers land on attributes under
+  caps, per-season rates, the stock and an OVR budget; the head's BOND
+  (`jhsaa_coaches.head_bond`, prior seasons only, 0.85–1.15) scales them. OVR and
+  the engine drivers DERIVE from the attributes after; there is NO match buff.
+  ‼️ **The blended staff `dev` multiplier is RETIRED for stock-era cohorts** (owner
+  decision) — coaching reaches them only through what it teaches; pre-era cohorts
+  keep it and `DEV_K` is untouched. ‼️ **POT on a card is a BLEND** of natural and
+  trainable (owner decision: "oh interesting, he's got a ceiling"), the misread on
+  top; the export carries both plus `ceiling_grade` = trainable. ‼️ The profile is
+  PINNED (`world_jhsaa_talent.stock`) at first archive — a constant retune reaches
+  new entrants only. ‼️ `flexibility` is NOT coached: nothing in the engine reads
+  it, and a coached point there would be a display number (pinned by
+  `test_every_coached_attribute_reaches_the_engine`). Every constant is a first-pass
+  candidate; `scripts/jhsaa_stock_replay.py` is the matched-player harness.
+  `tests/test_jhsaa_stock.py`. The superseded additive staff dividend (first
+  addendum) is NOT built — no OVR-80 gate, no flat dividend.
 - **‼️ SELECTION RUNS THROUGH A COACH EVALUATION LAYER — `_order` IS A JUDGMENT, NOT A
   TALENT RANKING (owner rule 2026-09, `jhsaa.coach_eval`, `docs/AAR-jhsaa-coach-evaluation-layer.md`).**
   `RAW ABILITY → COACH EVALUATION → LINEUP SELECTION → MATCH ENGINE (raw ability)`. The
@@ -3879,6 +3905,19 @@ rung is where roster and coach calculations happen. Four stores/fixes carry it:
 4. **The sibling index** (`world_jhsaa_sibling` + `_cover`): the rung writes every
    generated tie younger→older; `generated_siblings` reads it and scans (builds the
    town's next cohorts) only for a cohort season the index does not cover.
+5. **The school page builds ONLY the tab it renders** (`jhsaa_school_view(hq=)`,
+   owner report 2026-10: a school click "takes several minutes" on an 85-season
+   save). The hero needs the materialised season rows and the individual-champion
+   COUNT on every tab; the latter came from `jhsaa_individual_champions` called
+   THREE times per archived season per click, each deserialising every draw of the
+   class in Python (~85 MB of bracket JSON a click). It now reads ONE key of
+   `world._school_champion_index` — a gender-wide `json_extract` fold (the repeat
+   roll's idiom), memoised on the newest archived year. Schedule + calendar are
+   Overview/Roster/Schedule only; roster (injuries, captains, badges)
+   Overview/Roster; `jhsaa_program_wins` Records; coach history + reclass History;
+   staff Overview/Staff. `scripts/jhsaa_school_profile.py --db <copy>` times every
+   section and every tab, cold and warm — run it on the real save before and after
+   touching this page.
 Also: `dbpath.connect` sets WAL once per path per process (a page opens 40-160
 connections). Never add a page-side fold over every season or every program without
 asking what it costs on FIFTY seasons and ~860 programs; if the rung can write it,
