@@ -3468,6 +3468,15 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   it, and a coached point there would be a display number (pinned by
   `test_every_coached_attribute_reaches_the_engine`). Every constant is a first-pass
   candidate; `scripts/jhsaa_stock_replay.py` is the matched-player harness.
+  ‼️ **EVERYTHING THE MODEL PRODUCES IS IN THE RESEARCH EXPORT (owner rule 2026-10)**
+  — the owner evaluates it from the bundle, not the pages: `players.csv` carries the
+  whole latent contract (ethic, rho, both ceilings, both budgets and their remainders,
+  `train_*`/`coach_*` per category), `jhsaa_development_ledger.csv` every offer term
+  (slot, d, intensity, fit, p_took, overlap, bond, played, what was left after),
+  `jhsaa_development_profiles.csv` the three 51-attribute vectors + caps per player,
+  `jhsaa_coaches.csv` each coach's portfolio and per-category teaching quality,
+  `jhsaa_coach_seasons.csv` the head's bond. A new quantity in the model is not done
+  until it has a column; the manifest sentence names each.
   `tests/test_jhsaa_stock.py`. The superseded additive staff dividend (first
   addendum) is NOT built — no OVR-80 gate, no flat dividend.
 - **‼️ SELECTION RUNS THROUGH A COACH EVALUATION LAYER — `_order` IS A JUDGMENT, NOT A

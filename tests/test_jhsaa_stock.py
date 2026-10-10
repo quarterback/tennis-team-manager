@@ -154,3 +154,116 @@ def test_head_bond_is_neutral_without_history_and_bounded():
         conn.execute("INSERT INTO jhsaa_preseason VALUES (1,?,'girls','U',60.0)", (y,))
     b = jc.head_bond(conn, 1, "h1", 5, "girls")
     assert jc.BOND_BAND[0] <= b <= jc.BOND_BAND[1] and b > 1.0
+
+
+# --- the research export carries ALL of it (owner rule 2026-10) ----------------
+
+def _staffed_roster(sc, salt="t"):
+    """A stock-era roster built against a synthetic archived staff for every
+    prior season (monkeypatched `staff_coaches_history`), so seniors carry a
+    coached ledger."""
+    staff = [_coach("c-h", "head", "practice", 0.95), _coach("c-a1", "asst1", "singles", 0.95),
+             _coach("c-a2", "asst2", "doubles", 0.9)]
+    real_era, real_hist = jh.stock_era, jh.staff_coaches_history
+    try:
+        jh.stock_era = lambda: 0
+        jh.staff_coaches_history = lambda gender, ident: {y: (1.07, staff) for y in range(2000, 2100)}
+        return jh.build_roster(sc, 2030, salt)
+    finally:
+        jh.stock_era, jh.staff_coaches_history = real_era, real_hist
+
+
+def test_the_research_export_carries_the_whole_development_contract():
+    import csv
+    import io
+    from types import SimpleNamespace
+    from app.research_export import build_jhsaa
+    from app.player_attributes import RICH_ATTRS
+
+    jh._schools_cache = None
+    sc = jh.load_schools("girls")[0]
+    roster = _staffed_roster(sc)
+    coached = [p for p in roster if p.jhsaa.get("coached")]
+    assert coached, "a staffed senior class must carry a ledger"
+    team = SimpleNamespace(school=sc, roster=roster, wins=1, losses=0, ties=0, dwins=1,
+                           dlosses=0, district_place=1, points_for=4, points_against=3,
+                           power=1.0, schedule=[])
+    files = build_jhsaa(2027, "girls", "all",
+                        season={"teams": {sc.name: team}, "groups": {}, "awards": {},
+                                "individuals": {}})
+    read = lambda name: list(csv.DictReader(io.StringIO(files[name].decode())))
+    players = {r["player_id"]: r for r in read("players.csv")}
+    ledger = read("jhsaa_development_ledger.csv")
+    profiles = read("jhsaa_development_profiles.csv")
+    # players.csv: the whole latent contract, per category
+    row = players[coached[0].pid]
+    for k in ("work_ethic", "natural_grade", "trainable_grade", "stock_total", "stock_left",
+              "stock_intrinsic_spent", "stock_extra_raw", "stock_realise_rho",
+              "coached_ovr_budget", "coached_ovr_left", "coached_ovr", "seasons_staffed",
+              "seasons_coached"):
+        assert row[k] != "", k
+    for cat in jd.COACHED:
+        assert 0.0 <= float(row[f"train_{cat}"]) <= 1.0
+        assert 0.0 <= float(row[f"coach_{cat}"]) <= 1.0
+    assert int(row["seasons_coached"]) >= 1 and int(row["seasons_staffed"]) >= int(row["seasons_coached"])
+    # the ledger: every offer term, within its band
+    mine = [r for r in ledger if r["player_id"] == coached[0].pid]
+    assert mine
+    for r in mine:
+        assert r["slot"] in ("head", "asst1", "asst2")
+        assert jd.FIT_BAND[0] <= float(r["fit"]) <= jd.FIT_BAND[1]
+        assert 0.0 < float(r["teach_d"]) <= 1.0
+        assert float(r["bond"]) == 1.07 and float(r["overlap_w"]) in jd.OVERLAP
+        assert float(r["raw_points"]) <= float(r["offer"]) * float(r["overlap_w"]) + 1e-3
+        assert r["stock_left_after"] != "" and r["ovr_left_after"] != ""
+    # the profiles: 51 rows a stock-era player, natural <= cap, current <= cap
+    per = {}
+    for r in profiles:
+        per.setdefault(r["player_id"], []).append(r)
+    assert set(per) == {p.pid for p in roster}
+    for pid, rows in per.items():
+        assert len(rows) == len(RICH_ATTRS)
+        for r in rows:
+            assert float(r["natural"]) <= float(r["trainable_cap"]) + 1e-3
+            assert float(r["current"]) <= float(r["trainable_cap"]) + 1e-3
+            assert r["category"] == jd.CATEGORY_OF[r["attribute"]]
+    # the coached vector sums to what the ledger says landed
+    tot = sum(float(r["coached"]) for r in per[coached[0].pid])
+    assert abs(tot - sum(float(r["raw_points"]) for r in mine)) < 0.05
+
+
+def test_the_coach_tables_carry_portfolio_quality_and_bond():
+    import json
+    from app import jhsaa_coaches as jc
+    from app import world
+    world._db().close()                     # ensure the schema exists on the test DB
+    jc.reset()
+    conn = jc._conn()
+    try:
+        c = jc.Coach("coach-x", "Pat Example", {g: 0.9 for g in GRADES}, profile="singles")
+        jc.save_coach(conn, 1, c)
+        conn.execute("INSERT INTO jhsaa_coach_history (world_id, year, ident, gender, slot,"
+                     " coach_id, school, classification, grp, wins, losses, ties, eff)"
+                     " VALUES (1, 3, 'ident-a', 'girls', 'head', 'coach-x', 'A', '4A', '4A',"
+                     " 12, 4, 0, ?)", (json.dumps({"bond": 1.09}),))
+        conn.execute("INSERT INTO jhsaa_coach_history (world_id, year, ident, gender, slot,"
+                     " coach_id, school, classification, grp, wins, losses, ties, eff)"
+                     " VALUES (1, 3, 'ident-a', 'girls', 'asst1', 'coach-x', 'A', '4A', '4A',"
+                     " 12, 4, 0, NULL)")
+        conn.commit()
+    finally:
+        conn.close()
+    try:
+        t = jc.research_tables(1, "girls", {})
+    finally:
+        jc.reset()
+    coach = next(r for r in t["jhsaa_coaches.csv"] if r["coach_id"] == "coach-x")
+    port = teaching_portfolio("coach-x", "singles")
+    assert coach["portfolio"] == ";".join(f"{k}:{v}" for k, v in sorted(port.items()))
+    for k in jd.COACHED:
+        assert coach[f"teach_{k}"] == port.get(k, 0)
+        assert 0.0 <= coach[f"d_{k}"] <= 1.0
+    assert coach["d_serve"] == 1.0            # a 0.9-quantile coach is elite everywhere
+    seasons = {r["slot"]: r for r in t["jhsaa_coach_seasons.csv"]}
+    assert seasons["head"]["bond"] == 1.09
+    assert seasons["asst1"]["bond"] == ""
