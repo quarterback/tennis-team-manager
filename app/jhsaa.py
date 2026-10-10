@@ -4673,6 +4673,21 @@ def stock_era() -> int:
     return _resolve_era("jhsaa_stock_era", _stock_era_cache)
 
 
+def stock_cohort_eligible(entry: int, pinned: dict | None = None) -> bool:
+    """Only new, previously unrostered players enter the attribute-stock model.
+
+    A player's ninth-grade entry year is NOT their first season when they played
+    in seventh or eighth grade. Their first archived roster has a talent pin:
+    an old-system pin has stock=None, whereas a stock-era pin carries its
+    generated profile. Keep that original choice for the whole career, even
+    if ninth grade falls after stock_era(). For brand-new entrants there is no
+    pin yet, so the era applies normally. Transfers reuse their origin pin.
+    """
+    if entry < stock_era():
+        return False
+    return pinned is None or pinned.get("stock") is not None
+
+
 def early_pot_era() -> int:
     """The first SEASON the early-participation potential gradient is live in
     this save — the `exchange_era` idiom, gated on the season. Ability is
@@ -7435,7 +7450,7 @@ def _gen_seat(school: School, mod: dict, entry: int, seat: int, grade: int,
                     f *= 1.0 + MENTOR_K * played
                 if f != 1.0:
                     staff_mult[pg] = f
-        stock = entry >= stock_era()
+        stock = stock_cohort_eligible(entry, pinned)
         # ‼️ THE STOCK ERA (owner spec 2026-10): the blended staff `dev`
         # multiplier is RETIRED for these cohorts — coaching reaches a player
         # only through what each coach TEACHES (`jhsaa_develop`), never as a
