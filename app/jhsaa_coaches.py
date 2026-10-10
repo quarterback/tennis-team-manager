@@ -850,7 +850,8 @@ def record_season(conn, world_id: int, year: int, gender: str, teams, effects: d
 #
 # Owner spec 2026-10 (`app/jhsaa_develop.py`, `docs/AAR-jhsaa-attribute-development-
 # stock.md`). Two things the staff contributes to it live here because they are
-# properties of COACHES: what each coach teaches, and the#: THE HEAD-COACH BOND: how a coach's PROGRAM has developed over time.
+# properties of COACHES: what each coach teaches, and the head's bond.
+# THE HEAD-COACH BOND: how a coach's PROGRAM has developed over time.
 # These are reputation points, separate from the coach's permanent TEACHING
 # grades. An ordinary .500 season is a neutral starting point. Winning district
 # titles consistently matters; State and TOC results add distinction.
@@ -881,13 +882,29 @@ def _bond_pct(w, l, t=0):
     return ((w or 0) + 0.5 * (t or 0)) / n if n else 0.5
 
 
-def _bond_season_row(conn, world_id, year, gender, school):
-    """A cheap one-program, one-year archive read; no season-wide replay."""
+def _bond_season_row(conn, world_id, year, gender, ident, school):
+    """Read the previous season by stable program identity, across renames.
+
+    The program's name on today's coach row may differ from the name that was
+    archived last season. The previous head's history row holds that season's
+    actual name, even when the head coach also changed. Use the existing
+    (world_id, gender, ident, slot, year) index rather than guessing a name.
+    For years before coach history was recorded, retain the old exact-name
+    lookup as a fallback.
+    """
     try:
         r = conn.execute(
-            "SELECT data FROM world_jhsaa_season_row"
-            " WHERE world_id=? AND year=? AND gender=? AND school=? LIMIT 1",
-            (world_id, year, gender, school)).fetchone()
+            "SELECT s.data FROM jhsaa_coach_history h"
+            " JOIN world_jhsaa_season_row s ON s.world_id=h.world_id"
+            " AND s.year=h.year AND s.gender=h.gender AND s.school=h.school"
+            " WHERE h.world_id=? AND h.year=? AND h.gender=?"
+            " AND h.ident=? AND h.slot='head' LIMIT 1",
+            (world_id, year, gender, ident)).fetchone()
+        if r is None:
+            r = conn.execute(
+                "SELECT data FROM world_jhsaa_season_row"
+                " WHERE world_id=? AND year=? AND gender=? AND school=? LIMIT 1",
+                (world_id, year, gender, school)).fetchone()
         return json.loads(r[0]) if r and r[0] else {}
     except (sqlite3.Error, ValueError, TypeError):
         return {}
@@ -897,7 +914,7 @@ def _bond_annual_points(conn, world_id, gender, h, birth_year):
     """Earned points for a completed season, with its own annuity eligibility."""
     y, school, row = h["year"], h["school"], h["row"]
     pct = _bond_pct(h["wins"], h["losses"], h["ties"])
-    before = _bond_season_row(conn, world_id, y - 1, gender, school)
+    before = _bond_season_row(conn, world_id, y - 1, gender, h["ident"], school)
     previous = (_bond_pct(before.get("wins"), before.get("losses"))
                 if before and before.get("wins") is not None else None)
     change = pct - previous if previous is not None else 0.0
@@ -1022,7 +1039,6 @@ def head_bond(conn, world_id: int, coach_id: str, year: int, gender: str) -> flo
     return head_bond_details(conn, world_id, coach_id, year, gender)["bond"]
 
 
-D_K * s)), 4)
 
 
 def _strength_percentile(conn, world_id: int, year: int, gender: str, strength) -> float:
