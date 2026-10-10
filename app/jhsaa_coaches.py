@@ -1009,7 +1009,7 @@ def head_bond_details(conn, world_id: int, coach_id: str, year: int, gender: str
             pass
     # Experienced teachers on a losing team are not downgraded. Their technical
     # ratings were already fixed at creation; this protects earned reputation.
-    bond = max(1.0, previous_bond, raw) if veteran else raw
+    bond = min(BOND_BAND[1], max(1.0, previous_bond, raw)) if veteran else raw
     return {"bond": round(bond, 4), "score": round(avg, 3),
             "age": age, "tenure": same_school_tenure,
             "annuity_active": int(eligible), "development_coach": int(developer),
