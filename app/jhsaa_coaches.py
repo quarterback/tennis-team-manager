@@ -3092,16 +3092,13 @@ def research_tables(world_id: int, gender: str, key_by_ident: dict) -> dict:
         coach_rows.append(row)
 
     def bond_of(eff):
-        # The head-coach BOND the season was played with (`head_bond`, written
-        # into the head's eff JSON by `record_season` from Stage B on); blank
-        # for an assistant row and for a season archived before the bond.
+        # Read the archived reputation; do not infer it from today's coach grades.
         if not eff:
-            return ""
+            return {}
         try:
-            b = json.loads(eff).get("bond")
-        except ValueError:
-            return ""
-        return "" if b is None else b
+            return json.loads(eff)
+        except (ValueError, TypeError):
+            return {}
 
     season_rows = [{
         "season_year": season(y), "world_year": y, "coach_id": cid,
@@ -3109,7 +3106,24 @@ def research_tables(world_id: int, gender: str, key_by_ident: dict) -> dict:
         "program_ident": ident, "program_id": pid(ident), "school": school,
         "slot": slot, "classification": cls, "championship_group": grp,
         "wins": w or 0, "losses": l or 0, "ties": t or 0, "staff_effects_json": eff or "",
-        "bond": bond_of(eff) if slot == "head" else ""}
+        "bond": bond_of(eff).get("bond", "") if slot == "head" else "",
+        "bond_score": (bond_of(eff).get("bond_detail") or {}).get("score", "")
+                      if slot == "head" else "",
+        "bond_age": (bond_of(eff).get("bond_detail") or {}).get("age", "")
+                    if slot == "head" else "",
+        "bond_tenure": (bond_of(eff).get("bond_detail") or {}).get("tenure", "")
+                       if slot == "head" else "",
+        "bond_annuity_active": (bond_of(eff).get("bond_detail") or {}).get("annuity_active", "")
+                               if slot == "head" else "",
+        "bond_development_coach": (bond_of(eff).get("bond_detail") or {}).get("development_coach", "")
+                                  if slot == "head" else "",
+        "bond_veteran_protected": (bond_of(eff).get("bond_detail") or {}).get("veteran_protected", "")
+                                  if slot == "head" else "",
+        "bond_latest_annuity_bonus": (bond_of(eff).get("bond_detail") or {}).get("latest_annuity_bonus", "")
+                                     if slot == "head" else "",
+        "bond_recent_years_json": json.dumps((bond_of(eff).get("bond_detail") or {}).get("recent", []),
+                                             separators=(",", ":"))
+                                  if slot == "head" and bond_of(eff).get("bond_detail") else ""}
         for y, ident, slot, cid, school, cls, grp, w, l, t, eff in hist]
 
     event_rows = [{
