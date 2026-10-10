@@ -127,6 +127,27 @@ def test_district_success_counts_even_when_the_teams_record_is_ordinary():
     c.close()
 
 
+
+def test_year_over_year_improvement_uses_program_identity_after_rename():
+    """A renamed school keeps last year's W-L as the comparison, even with a new head."""
+    for replacement_head in (False, True):
+        c = db()
+        original = coach(c, "original", birth_year=1980)
+        incoming = coach(c, "incoming", birth_year=1985)
+        season(c, 0, "original", ident="permanent-program-id",
+               school="Original School Name", wins=6, losses=14, district=False)
+        cid, head = ("incoming", incoming) if replacement_head else ("original", original)
+        season(c, 1, cid, ident="permanent-program-id",
+               school="Renamed School", wins=13, losses=7, district=False)
+        details = jc.head_bond_details(c, 1, cid, 2, "girls", head, BASE_YEAR + 3)
+        latest = details["recent"][0]
+        assert latest["previous_pct"] == 0.3
+        assert latest["win_pct"] == 0.65
+        assert latest["yoy_change"] == 0.35
+        assert latest["improvement_points"] == 10.0
+        c.close()
+
+
 def test_bond_details_round_trip_into_effect_json():
     d = {"bond": 1.08, "tenure": 13, "annuity_active": 1,
          "recent": [{"annuity_bonus": 3.25, "total": 32.0}]}
