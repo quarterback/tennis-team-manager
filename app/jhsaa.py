@@ -7090,7 +7090,19 @@ def _apply_stock_era(p: Prospect, pid: str, school: School, entry: int, seat: in
     p.jhsaa["stock_pin"] = profile
     p.jhsaa["stock"] = {"ethic": profile["ethic"], "total": profile["stock_total"],
                         "left": res["stock_left"], "coached_ovr": res["coached_ovr"],
-                        "natural": res["natural_ovr"], "trainable": res["trainable_ovr"]}
+                        "natural": res["natural_ovr"], "trainable": res["trainable_ovr"],
+                        # the rest of the contract, for the research export
+                        # (owner rule 2026-10: ALL of it reaches the bundle)
+                        "rho": profile["rho"], "extra_raw": profile["extra_raw"],
+                        "extra_ovr": profile["extra_ovr"], "ovr_left": res["ovr_left"],
+                        "intrinsic": res["intrinsic"],
+                        "seasons_staffed": len(seasons),
+                        "seasons_coached": sum(1 for e in res["ledger"] if e["raw"] > 0)}
+    # Per-attribute vectors (natural target · intrinsic path · coached) for
+    # `jhsaa_development_profiles.csv`; the trainable caps are on the pin.
+    p.jhsaa["stock_attrs"] = {"natural": res["natural_attrs"],
+                              "baseline": res["baseline_attrs"],
+                              "coached": res["coached_attrs"]}
     if res["ledger"]:
         p.jhsaa["coached"] = res["ledger"]
 

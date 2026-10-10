@@ -214,12 +214,30 @@ def _took(salt: str, pid: str, coach_id: str, category: str, season: int, p: flo
 
 def season_offers(pid: str, salt: str, season: int, profile: dict, coaches: list,
                   played: float, bond: float) -> dict:
-    """{category: raw points offered this season} from one season's staff.
+    """{category: (total, parts)} offered this season by one season's staff.
 
     `coaches` is `[(coach_id, slot, grades, portfolio)]` for the staff archived
     that season (`jhsaa.staff_coaches_history`); `portfolio` is
     `{category: intensity}`; `played` is the exposure odometer's realisation
     (EXPO_FLOOR..1.0); `bond` the head's bond that season (1.0 neutral)."""
+    return season_attempts(pid, salt, season, profile, coaches, played, bond)[0]
+
+
+#: Why a teaching attempt did or did not move the player (the ledger's `outcome`):
+#: `floor` — the coach is under the teaching floor in that category (d = 0);
+#: `declined` — the seeded success check failed (instruction did not take);
+#: `blocked` — it took, but headroom, the per-season caps or the budgets left
+#: nothing to land; `landed` — raw points reached the attributes.
+OUTCOMES = ("floor", "declined", "blocked", "landed")
+
+
+def season_attempts(pid: str, salt: str, season: int, profile: dict, coaches: list,
+                    played: float, bond: float) -> tuple[dict, dict]:
+    """`season_offers` plus EVERY attempt: `{coach_id: {category: {terms…,
+    "outcome"}}}` for each coach × portfolio category, whether or not the
+    instruction took. The export needs the failures as rows — a `p_took` seen
+    only on successes is conditioned on success and says nothing about why one
+    player developed and another did not (review 2026-10)."""
     ethic_term = ETHIC_FLOOR + (1.0 - ETHIC_FLOOR) * profile["ethic"]
     from .jhsaa import EXPO_FLOOR
     share = max(0.0, (played - EXPO_FLOOR) / (1.0 - EXPO_FLOOR))
@@ -227,34 +245,48 @@ def season_offers(pid: str, salt: str, season: int, profile: dict, coaches: list
     lo, hi = BOND_BAND
     bond = max(lo, min(hi, bond))
     by_cat: dict[str, list] = {k: [] for k in COACHED}
+    attempts: dict = {}
     for coach_id, slot, grades, portfolio in coaches:
         slot_w = HEAD_W if slot == "head" else ASSISTANT_W
         for k, intensity in portfolio.items():
             if k not in by_cat or intensity <= 0:
                 continue
             d = d_of(governing_q(grades, k))
-            if d <= 0:
-                continue
             c_k = profile["coach"].get(k, 0.5)
             p_took = SUCCESS[0] + SUCCESS[1] * c_k * ethic_term
-            if not _took(salt, pid, coach_id, k, season, p_took):
+            fit = _fit(salt, pid, coach_id, k)
+            # Every term of the attempt rides to the ledger (and so the research
+            # export) whatever its outcome — never recomputed on read.
+            det = {"slot": slot, "d": round(d, 4), "intensity": intensity,
+                   "fit": round(fit, 4), "p_took": round(p_took, 4),
+                   "offer": 0.0, "overlap_w": 0.0, "outcome": "floor"}
+            attempts.setdefault(coach_id, {})[k] = det
+            if d <= 0:
                 continue
-            offer = (TEACH_RATE * slot_w * d * intensity * _fit(salt, pid, coach_id, k)
+            # ‼️ The success draw is consumed only past the floor, exactly as
+            # before — the rng stream and every landed result are byte-identical.
+            if not _took(salt, pid, coach_id, k, season, p_took):
+                det["outcome"] = "declined"
+                continue
+            offer = (TEACH_RATE * slot_w * d * intensity * fit
                      * c_k * ethic_term * reps * bond)
-            by_cat[k].append((offer, coach_id))
+            det["offer"] = round(offer, 3)
+            det["outcome"] = "blocked"          # until `allocate_detail` lands it
+            by_cat[k].append((offer, coach_id, det))
     out = {}
     for k, offers in by_cat.items():
         if not offers:
             continue
-        offers.sort(reverse=True)
+        offers.sort(key=lambda t: (t[0], t[1]), reverse=True)
         total = 0.0
         parts = []
-        for i, (o, cid) in enumerate(offers):
+        for i, (o, cid, det) in enumerate(offers):
             w = OVERLAP[i] if i < len(OVERLAP) else OVERLAP[-1]
             total += o * w
-            parts.append((cid, o * w))
+            det["overlap_w"] = w
+            parts.append((cid, o * w, det))
         out[k] = (total, parts)
-    return out
+    return out, attempts
 
 
 def allocate(current: dict, caps: dict, offers: dict, stock_left: float,
@@ -265,13 +297,23 @@ def allocate(current: dict, caps: dict, offers: dict, stock_left: float,
     HEADROOM (cap − current), capped per attribute (`ATTR_RATE`), per season
     (`SEASON_RAW_CAP` raw, `SEASON_OVR_CAP` weighted) and by what the stock and
     the OVR budget have left. Returns (gains by attribute, gains by coach and
-    category, stock spent, OVR spent)."""
+    category, stock spent, OVR spent). `by_coach` is `{coach_id: {category:
+    raw}}`; the offer terms each part carries come back through
+    `allocate_detail` for the ledger."""
+    gains, by_coach, raw, ovr, _ = allocate_detail(current, caps, offers, stock_left, ovr_left)
+    return gains, by_coach, raw, ovr
+
+
+def allocate_detail(current: dict, caps: dict, offers: dict, stock_left: float,
+                    ovr_left: float) -> tuple[dict, dict, float, float, dict]:
+    """`allocate`, plus `{coach_id: {category: {offer terms…, "raw": got}}}`."""
     gains = {a: 0.0 for a in RICH_ATTRS}
     by_coach: dict = {}
+    detail: dict = {}
     raw_budget = min(SEASON_RAW_CAP, max(0.0, stock_left))
     ovr_budget = min(SEASON_OVR_CAP, max(0.0, ovr_left))
     if raw_budget <= 0 or ovr_budget <= 0:
-        return gains, by_coach, 0.0, 0.0
+        return gains, by_coach, 0.0, 0.0, detail
     # Largest offers first, so a scarce budget goes where the staff is strongest.
     for k, (total, parts) in sorted(offers.items(), key=lambda kv: -kv[1][0]):
         attrs = CATEGORIES[k]
@@ -297,11 +339,17 @@ def allocate(current: dict, caps: dict, offers: dict, stock_left: float,
             raw_budget -= g
             ovr_budget -= g * w
         if got_k > 0:
-            for cid, part in parts:
-                by_coach.setdefault(cid, {})[k] = round(got_k * part / total, 3)
+            for cid, part, *rest in parts:
+                got = round(got_k * part / total, 3)
+                by_coach.setdefault(cid, {})[k] = got
+                det = dict(rest[0]) if rest else {}
+                det["raw"] = got
+                if got > 0:
+                    det["outcome"] = "landed"
+                detail.setdefault(cid, {})[k] = det
     spent_raw = sum(gains.values())
     spent_ovr = sum(gains[a] * OVERALL_WEIGHTS[a] for a in RICH_ATTRS) / _WEIGHT_TOTAL
-    return gains, by_coach, spent_raw, spent_ovr
+    return gains, by_coach, spent_raw, spent_ovr, detail
 
 
 def apply_stock(p, pid: str, salt: str, profile: dict, baseline: dict,
@@ -325,21 +373,36 @@ def apply_stock(p, pid: str, salt: str, profile: dict, baseline: dict,
     coached = {a: 0.0 for a in RICH_ATTRS}
     ledger = []
     for season, played, coaches, bond in seasons:
-        offers = season_offers(pid, salt, season, profile, coaches, played, bond)
-        if not offers:
-            continue
-        # Headroom is read against the player AS THEY STOOD that season: the
-        # intrinsic path's share by then plus what coaching had already added.
-        gains, by_coach, raw, ovr = allocate(
-            {a: cur[a] + coached[a] for a in RICH_ATTRS}, caps, offers, stock_left, ovr_left)
-        if raw <= 0:
-            continue
-        for a in RICH_ATTRS:
-            coached[a] += gains[a]
-        stock_left -= raw
-        ovr_left -= ovr
+        offers, attempts = season_attempts(pid, salt, season, profile, coaches, played, bond)
+        gains, by_coach, raw, ovr, detail = {}, {}, 0.0, 0.0, {}
+        if offers:
+            # Headroom is read against the player AS THEY STOOD that season: the
+            # intrinsic path's share by then plus what coaching had already added.
+            gains, by_coach, raw, ovr, detail = allocate_detail(
+                {a: cur[a] + coached[a] for a in RICH_ATTRS}, caps, offers, stock_left, ovr_left)
+        if raw > 0:
+            for a in RICH_ATTRS:
+                coached[a] += gains[a]
+            stock_left -= raw
+            ovr_left -= ovr
+        # Fold what landed back onto the attempt records (outcome + raw).
+        for cid, cats in detail.items():
+            for k, det in cats.items():
+                attempts.setdefault(cid, {})[k] = det
+        if not attempts:
+            continue        # a staff with nothing in its portfolios: no attempt made
+        # The season's full record for the export: every attempt and its outcome,
+        # what was offered (before the caps and budgets), what landed, by whom,
+        # under which terms, and what the stock and the OVR budget had left AFTER
+        # it. A season in which nothing landed is still a row — a failed attempt
+        # and no attempt are different facts. Derived every build, never pinned —
+        # the pin is the profile, the ledger is its consequence.
         ledger.append({"season": season, "raw": round(raw, 2), "ovr": round(ovr, 3),
-                       "by_coach": by_coach})
+                       "played": round(float(played), 4), "bond": round(float(bond), 4),
+                       "offered": round(sum(t for t, _ in offers.values()), 2),
+                       "stock_left": round(max(0.0, stock_left), 2),
+                       "ovr_left": round(max(0.0, ovr_left), 3),
+                       "by_coach": by_coach, "attempts": attempts})
     for a in RICH_ATTRS:
         # Coaching can never carry an attribute past its trainable cap; the
         # natural path itself is never clipped (a career peak may sit above the
@@ -351,6 +414,13 @@ def apply_stock(p, pid: str, salt: str, profile: dict, baseline: dict,
     coached_ovr = weighted({a: baseline[a] + coached[a] for a in RICH_ATTRS}) - weighted(baseline)
     return {"ledger": ledger,
             "stock_left": round(max(0.0, stock_left), 2),
+            "ovr_left": round(max(0.0, ovr_left), 3),
+            "intrinsic": round(intrinsic, 2),
             "coached_ovr": round(max(0.0, coached_ovr), 3),
             "natural_ovr": round(weighted(natural), 3),
-            "trainable_ovr": round(weighted(caps), 3)}
+            "trainable_ovr": round(weighted(caps), 3),
+            # Per-attribute vectors for the research export's profile file: the
+            # natural target, the intrinsic path at this grade and what coaching
+            # added on top (before the cap clip, which `p.current` applies).
+            "natural_attrs": natural, "baseline_attrs": dict(baseline),
+            "coached_attrs": {a: round(coached[a], 4) for a in RICH_ATTRS}}

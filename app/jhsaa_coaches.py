@@ -2897,6 +2897,7 @@ def research_tables(world_id: int, gender: str, key_by_ident: dict) -> dict:
     identity (empty when the program no longer sponsors this gender);
     `program_ident` is always the identity itself."""
     from .world import BASE_YEAR
+    from .jhsaa_develop import COACHED, d_of, governing_q
     names = ident_names(gender)
     conn = _conn()
     try:
@@ -2947,14 +2948,40 @@ def research_tables(world_id: int, gender: str, key_by_ident: dict) -> dict:
                "profile": c.profile, "pairing": c.pairing,
                "temperament": c.temperament}
         row.update({f"grade_{a}": c.grade(a) for a in GRADES})
+        # THE TEACHING PORTFOLIO (owner spec 2026-10, `teaching_portfolio`):
+        # which attribute categories this coach teaches and at what intensity —
+        # one column per coached category (0 = not in the portfolio) plus the
+        # compact string. Deterministic on coach_id + profile, so the export
+        # states exactly what the season rung used.
+        port = teaching_portfolio(cid, c.profile)
+        row.update({f"teach_{k}": port.get(k, 0) for k in COACHED})
+        row["portfolio"] = ";".join(f"{k}:{v}" for k, v in sorted(port.items()))
+        # The governing teaching quality per category (`jhsaa_develop.d_of` of
+        # the governing quantile): 0 means this coach is under the teaching
+        # floor there whatever the portfolio says.
+        q = {g: c.grades.get(g, 0.5) for g in GRADES}
+        row.update({f"d_{k}": round(d_of(governing_q(q, k)), 4) for k in COACHED})
         coach_rows.append(row)
+
+    def bond_of(eff):
+        # The head-coach BOND the season was played with (`head_bond`, written
+        # into the head's eff JSON by `record_season` from Stage B on); blank
+        # for an assistant row and for a season archived before the bond.
+        if not eff:
+            return ""
+        try:
+            b = json.loads(eff).get("bond")
+        except ValueError:
+            return ""
+        return "" if b is None else b
 
     season_rows = [{
         "season_year": season(y), "world_year": y, "coach_id": cid,
         "coach_name": coaches[cid].name if cid in coaches else "",
         "program_ident": ident, "program_id": pid(ident), "school": school,
         "slot": slot, "classification": cls, "championship_group": grp,
-        "wins": w or 0, "losses": l or 0, "ties": t or 0, "staff_effects_json": eff or ""}
+        "wins": w or 0, "losses": l or 0, "ties": t or 0, "staff_effects_json": eff or "",
+        "bond": bond_of(eff) if slot == "head" else ""}
         for y, ident, slot, cid, school, cls, grp, w, l, t, eff in hist]
 
     event_rows = [{
