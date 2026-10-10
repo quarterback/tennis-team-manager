@@ -35,6 +35,7 @@ import hashlib
 import heapq
 import json
 import random
+import sqlite3
 import threading
 from dataclasses import dataclass, field
 
@@ -333,6 +334,7 @@ class StaffEffect:
     # the staff's teaching offers (`jhsaa_develop`) and nothing a match reads.
     # None = a history row from before it existed = neutral 1.0.
     bond: float | None = None
+    bond_detail: dict | None = None   # achievement components and annuity tracking
 
     def fingerprint(self) -> tuple:
         # Everything that changes how a SEASON plays (rosters read history, not
@@ -752,7 +754,7 @@ def _eff_to_json(e: StaffEffect) -> str:
                        "builder": e.builder, "feeder": e.feeder,
                        "tactics": e.tactics, "singles": e.singles,
                        "future": e.future, "loyalty": e.loyalty,
-                       "bond": e.bond})
+                       "bond": e.bond, "bond_detail": e.bond_detail})
 
 
 def _eff_from_json(s: str) -> StaffEffect:
@@ -771,7 +773,7 @@ def _eff_from_json(s: str) -> StaffEffect:
                        builder=d.get("builder", 0.5), feeder=d.get("feeder", 0.5),
                        tactics=d.get("tactics"), singles=d.get("singles"),
                        future=d.get("future"), loyalty=d.get("loyalty"),
-                       bond=d.get("bond"))
+                       bond=d.get("bond"), bond_detail=d.get("bond_detail"))
 
 
 def season_effects(world_id: int, year: int, gender: str) -> dict:
@@ -803,6 +805,8 @@ def record_season(conn, world_id: int, year: int, gender: str, teams, effects: d
         "SELECT ident, slot, coach_id FROM jhsaa_coach_seat WHERE world_id=? AND gender=?",
         (world_id, gender)).fetchall()
     by_ident: dict = {}
+    heads = _load_coaches(conn, world_id, [cid for ident, slot, cid in seat_rows
+                                           if slot == "head" and cid])
     for ident, slot, cid in seat_rows:
         by_ident.setdefault(ident, {})[slot] = cid
     hist = []
@@ -816,7 +820,9 @@ def record_season(conn, world_id: int, year: int, gender: str, teams, effects: d
             if slot == "head" and eff is not None:
                 # THE BOND going into this season — PRIOR seasons only, so the
                 # season being archived can never rate itself (owner spec 2026-10).
-                eff = dataclasses.replace(eff, bond=head_bond(conn, world_id, cid, year, gender))
+                bond_data = head_bond_details(conn, world_id, cid, year, gender,
+                                              coach=heads.get(cid), season_year=season_year)
+                eff = dataclasses.replace(eff, bond=bond_data["bond"], bond_detail=bond_data)
             hist.append((world_id, year, s.ident, gender, slot, cid, s.name,
                          s.classification, s.group, t.wins, t.losses, t.ties,
                          _eff_to_json(eff) if (slot == "head" and eff) else None))
@@ -845,56 +851,194 @@ def record_season(conn, world_id: int, year: int, gender: str, teams, effects: d
 # Owner spec 2026-10 (`app/jhsaa_develop.py`, `docs/AAR-jhsaa-attribute-development-
 # stock.md`). Two things the staff contributes to it live here because they are
 # properties of COACHES: what each coach teaches, and the head's bond.
-
-#: THE HEAD-COACH BOND — a 5-season recency-weighted fold of ordinary success
-#: against expectation, never championships: 55% actual minus EXPECTED regular-
-#: season win rate (expectation = the program's preseason-strength percentile in
-#: its gender-year, `jhsaa_preseason`), 30% postseason (made State, against the
-#: same percentile), 15% continuity (seasons as head at this program, up to 5).
-#: Shrunk toward neutral with little history (n / (n + 2)), bounded to
-#: `BOND_BAND`. A new head is 1.0. Travels with the coach_id. No age term.
-BOND_WEIGHTS = (0.55, 0.30, 0.15)
+# THE HEAD-COACH BOND: how a coach's PROGRAM has developed over time.
+# These are reputation points, separate from the coach's permanent TEACHING
+# grades. An ordinary .500 season is a neutral starting point. Winning district
+# titles consistently matters; State and TOC results add distinction.
+#
+# BOND ANNUITY: age >40 and >10 consecutive completed seasons as this program's
+# head. Successful years earned after qualification receive 25% extra credit.
+# The annuity is specific to the school and resets when the head moves.
+# A DEVELOPMENT SPECIALIST age 55+ retains a neutral-or-better bond floor and
+# can raise but not lower the bond earned in their preceding head season.
 BOND_RECENCY = (1.0, 0.8, 0.6, 0.45, 0.3)
-BOND_K = 0.15                      # score ±1 → bond 1 ± 0.15 (the whole band)
+BOND_K = 0.15
 BOND_BAND = (0.85, 1.15)
+BOND_NEUTRAL_SCORE = 16.0
+BOND_SCORE_SPAN = 45.0
+BOND_ANNUITY_YEARS = 10
+BOND_ANNUITY_AGE = 40
+BOND_ANNUITY_BONUS = 0.25
+BOND_DEVELOPER_AGE = 55
+BOND_DEVELOPER_Q = 0.75
+BOND_DEVELOPER_PROFILES = ("practice", "teacher", "jv_whisperer")
+BOND_DISTRICT = 12.0
+BOND_ROAD_UNIT = 5.0
+BOND_TOC = 8.0
+
+
+def _bond_pct(w, l, t=0):
+    n = (w or 0) + (l or 0) + (t or 0)
+    return ((w or 0) + 0.5 * (t or 0)) / n if n else 0.5
+
+
+def _bond_season_row(conn, world_id, year, gender, ident, school):
+    """Read the previous season by stable program identity, across renames.
+
+    The program's name on today's coach row may differ from the name that was
+    archived last season. The previous head's history row holds that season's
+    actual name, even when the head coach also changed. Use the existing
+    (world_id, gender, ident, slot, year) index rather than guessing a name.
+    For years before coach history was recorded, retain the old exact-name
+    lookup as a fallback.
+    """
+    try:
+        r = conn.execute(
+            "SELECT s.data FROM jhsaa_coach_history h"
+            " JOIN world_jhsaa_season_row s ON s.world_id=h.world_id"
+            " AND s.year=h.year AND s.gender=h.gender AND s.school=h.school"
+            " WHERE h.world_id=? AND h.year=? AND h.gender=?"
+            " AND h.ident=? AND h.slot='head' LIMIT 1",
+            (world_id, year, gender, ident)).fetchone()
+        if r is None:
+            r = conn.execute(
+                "SELECT data FROM world_jhsaa_season_row"
+                " WHERE world_id=? AND year=? AND gender=? AND school=? LIMIT 1",
+                (world_id, year, gender, school)).fetchone()
+        return json.loads(r[0]) if r and r[0] else {}
+    except (sqlite3.Error, ValueError, TypeError):
+        return {}
+
+
+def _bond_annual_points(conn, world_id, gender, h, birth_year):
+    """Earned points for a completed season, with its own annuity eligibility."""
+    y, school, row = h["year"], h["school"], h["row"]
+    pct = _bond_pct(h["wins"], h["losses"], h["ties"])
+    before = _bond_season_row(conn, world_id, y - 1, gender, h["ident"], school)
+    previous = (_bond_pct(before.get("wins"), before.get("losses"))
+                if before and before.get("wins") is not None else None)
+    change = pct - previous if previous is not None else 0.0
+    improvement = max(-10.0, min(10.0, 50.0 * change))
+    district = bool(row.get("district_title") or row.get("place") == 1)
+    # The first entry in unit_wins is the DISTRICT trophy, when present.
+    road_units = max(0, len(row.get("unit_wins") or ()) - int(district))
+    place = row.get("state_place") or 0
+    try:
+        place = int(place)
+    except (ValueError, TypeError):
+        place = 0
+    if row.get("champion") or place == 1:
+        state_points = 30.0
+    elif 0 < place <= 2:
+        state_points = 23.0
+    elif 0 < place <= 4:
+        state_points = 17.0
+    elif 0 < place <= 8:
+        state_points = 11.0
+    else:
+        state_points = 4.0 if row.get("made_state") else 0.0
+    wins_points = 20.0 * pct
+    district_points = BOND_DISTRICT if district else 0.0
+    road_points = BOND_ROAD_UNIT * road_units
+    toc_points = BOND_TOC if row.get("toc_champion") else 0.0
+    tenure_points = min(8.0, 0.8 * h["tenure"])
+    age = (h["season_year"] - birth_year) if birth_year else 0
+    annuity = bool(h["tenure"] > BOND_ANNUITY_YEARS and age > BOND_ANNUITY_AGE)
+    # Do not multiply tenure or the ordinary .500 baseline. Only actual success.
+    success = (max(0.0, wins_points - 10.0) + max(0.0, improvement)
+               + district_points + road_points + state_points + toc_points)
+    annuity_bonus = BOND_ANNUITY_BONUS * success if annuity else 0.0
+    total = (wins_points + improvement + district_points + road_points
+             + state_points + toc_points + tenure_points + annuity_bonus)
+    return {"season_year": h["season_year"], "win_pct": round(pct, 4),
+            "previous_pct": None if previous is None else round(previous, 4),
+            "yoy_change": round(change, 4), "wins_points": round(wins_points, 3),
+            "improvement_points": round(improvement, 3), "district_title": int(district),
+            "district_points": district_points, "road_units": road_units,
+            "road_points": road_points, "state_appearance": int(bool(row.get("made_state"))),
+            "state_points": state_points, "state_title": int(bool(row.get("champion") or place == 1)),
+            "toc_title": int(bool(row.get("toc_champion"))), "toc_points": toc_points,
+            "tenure": h["tenure"], "tenure_points": round(tenure_points, 3),
+            "annuity_active": int(annuity), "annuity_bonus": round(annuity_bonus, 3),
+            "total": round(total, 3)}
+
+
+def head_bond_details(conn, world_id: int, coach_id: str, year: int, gender: str,
+                      coach: Coach | None = None, season_year: int | None = None) -> dict:
+    """Entering-season bond and auditable scoring. Prior seasons only."""
+    from .world import BASE_YEAR
+    if season_year is None:
+        season_year = BASE_YEAR + year + 1
+    if coach is None:
+        r = conn.execute("SELECT name, data FROM jhsaa_coach"
+                         " WHERE world_id=? AND coach_id=?", (world_id, coach_id)).fetchone()
+        if r:
+            coach = _coach_from(coach_id, r[0], r[1])
+    birth = coach.birth_year if coach else 0
+    age = season_year - birth if birth else 0
+    try:
+        rows = conn.execute(
+            "SELECT h.year, h.ident, h.school, h.wins, h.losses, h.ties, h.eff,"
+            " r.data FROM jhsaa_coach_history h"
+            " LEFT JOIN world_jhsaa_season_row r ON r.world_id=h.world_id"
+            " AND r.year=h.year AND r.gender=h.gender AND r.school=h.school"
+            " WHERE h.world_id=? AND h.coach_id=? AND h.gender=? AND h.slot='head'"
+            " AND h.year<? ORDER BY h.year",
+            (world_id, coach_id, gender, year)).fetchall()
+    except sqlite3.Error:
+        rows = []
+    hist = []
+    prev_year, prev_ident, tenure = None, None, 0
+    for y, ident, school, w, l, t, eff, data in rows:
+        tenure = (tenure + 1 if prev_year is not None and
+                  y == prev_year + 1 and ident == prev_ident else 1)
+        prev_year, prev_ident = y, ident
+        try:
+            row = json.loads(data) if data else {}
+        except (ValueError, TypeError):
+            row = {}
+        hist.append({"year": y, "season_year": BASE_YEAR + y + 1,
+                     "school": school, "ident": ident, "wins": w, "losses": l,
+                     "ties": t, "eff": eff, "row": row, "tenure": tenure})
+    last = hist[-1] if hist else None
+    same_school_tenure = last["tenure"] if last and last["year"] == year - 1 else 0
+    eligible = age > BOND_ANNUITY_AGE and same_school_tenure >= BOND_ANNUITY_YEARS
+    developer = bool(coach and (coach.profile in BOND_DEVELOPER_PROFILES
+                                or coach.grades.get("development", 0.5) >= BOND_DEVELOPER_Q))
+    veteran = bool(developer and age >= BOND_DEVELOPER_AGE)
+    recent = [_bond_annual_points(conn, world_id, gender, h, birth)
+              for h in hist[-len(BOND_RECENCY):][::-1]]
+    if not recent:
+        return {"bond": 1.0, "score": None, "age": age,
+                "tenure": same_school_tenure, "annuity_active": int(eligible),
+                "development_coach": int(developer), "veteran_protected": int(veteran),
+                "latest_annuity_bonus": 0.0, "recent": []}
+    weights = BOND_RECENCY[:len(recent)]
+    avg = sum(w * x["total"] for w, x in zip(weights, recent)) / sum(weights)
+    strength = max(-1.0, min(1.0, (avg - BOND_NEUTRAL_SCORE) / BOND_SCORE_SPAN))
+    strength *= len(recent) / (len(recent) + 2.0)
+    raw = max(BOND_BAND[0], min(BOND_BAND[1], 1.0 + BOND_K * strength))
+    previous_bond = 1.0
+    if last and last.get("eff"):
+        try:
+            previous_bond = float(json.loads(last["eff"]).get("bond") or 1.0)
+        except (TypeError, ValueError):
+            pass
+    # Experienced teachers on a losing team are not downgraded. Their technical
+    # ratings were already fixed at creation; this protects earned reputation.
+    bond = min(BOND_BAND[1], max(1.0, previous_bond, raw)) if veteran else raw
+    return {"bond": round(bond, 4), "score": round(avg, 3),
+            "age": age, "tenure": same_school_tenure,
+            "annuity_active": int(eligible), "development_coach": int(developer),
+            "veteran_protected": int(veteran),
+            "latest_annuity_bonus": recent[0]["annuity_bonus"], "recent": recent}
 
 
 def head_bond(conn, world_id: int, coach_id: str, year: int, gender: str) -> float:
-    """The bond `coach_id` carries INTO archive index `year`, from the seasons
-    before it. Read on the rung's own connection (inside its transaction) — the
-    rows it folds are already committed history."""
-    try:
-        rows = conn.execute(
-            "SELECT h.year, h.ident, h.wins, h.losses, h.ties, h.school,"
-            " p.strength FROM jhsaa_coach_history h"
-            " LEFT JOIN jhsaa_preseason p ON p.world_id=h.world_id AND p.year=h.year"
-            "   AND p.gender=h.gender AND p.school=h.school"
-            " WHERE h.world_id=? AND h.coach_id=? AND h.gender=? AND h.slot='head'"
-            "   AND h.year<? ORDER BY h.year DESC LIMIT ?",
-            (world_id, coach_id, gender, year, len(BOND_RECENCY))).fetchall()
-    except Exception:
-        return 1.0
-    if not rows:
-        return 1.0
-    score, wsum = 0.0, 0.0
-    tenure_ident = rows[0][1]
-    tenure = sum(1 for r in rows if r[1] == tenure_ident)
-    for i, (y, ident, w, l, t, school, strength) in enumerate(rows):
-        rec = BOND_RECENCY[i]
-        n = (w or 0) + (l or 0) + (t or 0)
-        pct = ((w or 0) + 0.5 * (t or 0)) / n if n else 0.5
-        exp = _strength_percentile(conn, world_id, y, gender, strength)
-        made = _made_state(conn, world_id, y, gender, school)
-        s = (BOND_WEIGHTS[0] * (pct - exp) * 2.0            # ±0.5 → ±1
-             + BOND_WEIGHTS[1] * ((1.0 if made else 0.0) - exp)
-             + BOND_WEIGHTS[2] * (min(tenure, 5) / 5.0 - 0.5) * 2.0)
-        score += rec * s
-        wsum += rec
-    s = (score / wsum) if wsum else 0.0
-    n = len(rows)
-    s *= n / (n + 2.0)
-    lo, hi = BOND_BAND
-    return round(max(lo, min(hi, 1.0 + BOND_K * s)), 4)
+    """Retain the existing simple API for callers that only need the multiplier."""
+    return head_bond_details(conn, world_id, coach_id, year, gender)["bond"]
+
+
 
 
 def _strength_percentile(conn, world_id: int, year: int, gender: str, strength) -> float:
@@ -2964,16 +3108,35 @@ def research_tables(world_id: int, gender: str, key_by_ident: dict) -> dict:
         coach_rows.append(row)
 
     def bond_of(eff):
-        # The head-coach BOND the season was played with (`head_bond`, written
-        # into the head's eff JSON by `record_season` from Stage B on); blank
-        # for an assistant row and for a season archived before the bond.
+        # Read the archived reputation; do not infer it from today's coach grades.
         if not eff:
-            return ""
+            return {}
         try:
-            b = json.loads(eff).get("bond")
-        except ValueError:
-            return ""
-        return "" if b is None else b
+            return json.loads(eff)
+        except (ValueError, TypeError):
+            return {}
+
+    def bond_columns(eff, is_head):
+        """Decode the archived head effect ONCE; old/assistant rows stay blank."""
+        names = ("bond", "bond_score", "bond_age", "bond_tenure",
+                 "bond_annuity_active", "bond_development_coach",
+                 "bond_veteran_protected", "bond_latest_annuity_bonus",
+                 "bond_recent_years_json")
+        if not is_head or not eff:
+            return {k: "" for k in names}
+        d = bond_of(eff)
+        detail = d.get("bond_detail") or {}
+        return {"bond": d.get("bond", ""),
+                "bond_score": detail.get("score", ""),
+                "bond_age": detail.get("age", ""),
+                "bond_tenure": detail.get("tenure", ""),
+                "bond_annuity_active": detail.get("annuity_active", ""),
+                "bond_development_coach": detail.get("development_coach", ""),
+                "bond_veteran_protected": detail.get("veteran_protected", ""),
+                "bond_latest_annuity_bonus": detail.get("latest_annuity_bonus", ""),
+                "bond_recent_years_json": (json.dumps(detail.get("recent", []),
+                                                     separators=(",", ":"))
+                                           if detail else "")}
 
     season_rows = [{
         "season_year": season(y), "world_year": y, "coach_id": cid,
@@ -2981,7 +3144,7 @@ def research_tables(world_id: int, gender: str, key_by_ident: dict) -> dict:
         "program_ident": ident, "program_id": pid(ident), "school": school,
         "slot": slot, "classification": cls, "championship_group": grp,
         "wins": w or 0, "losses": l or 0, "ties": t or 0, "staff_effects_json": eff or "",
-        "bond": bond_of(eff) if slot == "head" else ""}
+        **bond_columns(eff, slot == "head")}
         for y, ident, slot, cid, school, cls, grp, w, l, t, eff in hist]
 
     event_rows = [{

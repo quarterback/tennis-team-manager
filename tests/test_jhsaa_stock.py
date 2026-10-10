@@ -251,10 +251,16 @@ def test_the_coach_tables_carry_portfolio_quality_and_bond():
     try:
         c = jc.Coach("coach-x", "Pat Example", {g: 0.9 for g in GRADES}, profile="singles")
         jc.save_coach(conn, 1, c)
+        bond_history = {"bond": 1.09, "bond_detail": {
+            "score": 35.2, "age": 48, "tenure": 12, "annuity_active": 1,
+            "development_coach": 1, "veteran_protected": 0,
+            "latest_annuity_bonus": 4.1,
+            "recent": [{"season_year": 2029, "district_title": 1,
+                        "road_units": 2, "annuity_bonus": 4.1}]}}
         conn.execute("INSERT INTO jhsaa_coach_history (world_id, year, ident, gender, slot,"
                      " coach_id, school, classification, grp, wins, losses, ties, eff)"
                      " VALUES (1, 3, 'ident-a', 'girls', 'head', 'coach-x', 'A', '4A', '4A',"
-                     " 12, 4, 0, ?)", (json.dumps({"bond": 1.09}),))
+                     " 12, 4, 0, ?)", (json.dumps(bond_history),))
         conn.execute("INSERT INTO jhsaa_coach_history (world_id, year, ident, gender, slot,"
                      " coach_id, school, classification, grp, wins, losses, ties, eff)"
                      " VALUES (1, 3, 'ident-a', 'girls', 'asst1', 'coach-x', 'A', '4A', '4A',"
@@ -275,4 +281,11 @@ def test_the_coach_tables_carry_portfolio_quality_and_bond():
     assert coach["d_serve"] == 1.0            # a 0.9-quantile coach is elite everywhere
     seasons = {r["slot"]: r for r in t["jhsaa_coach_seasons.csv"]}
     assert seasons["head"]["bond"] == 1.09
+    assert seasons["head"]["bond_score"] == 35.2
+    assert seasons["head"]["bond_tenure"] == 12
+    assert seasons["head"]["bond_age"] == 48
+    assert seasons["head"]["bond_annuity_active"] == 1
+    assert seasons["head"]["bond_latest_annuity_bonus"] == 4.1
+    assert json.loads(seasons["head"]["bond_recent_years_json"])[0]["road_units"] == 2
     assert seasons["asst1"]["bond"] == ""
+    assert seasons["asst1"]["bond_annuity_active"] == ""

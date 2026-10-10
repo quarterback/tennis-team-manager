@@ -156,21 +156,13 @@ an elite coach (q ≈ 0.95) teaches at ≈ 1.0.
 | physical | development 0.5, builder 0.5 |
 | mental | clutch 0.5, changeover 0.3, talent_id 0.2 |
 
-### The head-coach bond (`jhsaa_coaches.head_bond`)
-Computed at `record_season` for the head of every program and stored on the head
-row's effect JSON (`bond`), from PRIOR archived seasons only (so a season can never
-rate itself), up to five, recency weights `(1.0, 0.8, 0.6, 0.45, 0.3)`:
+### The head-coach bond and earned annuity (`jhsaa_coaches.head_bond_details`)
 
-    s_year = 0.55 × (actual win% − expected) × 2
-           + 0.30 × ((made State ? 1 : 0) − expected)
-           + 0.15 × (min(tenure, 5)/5 − 0.5) × 2
-    expected = the program's preseason-strength PERCENTILE in its gender-year
-               (`jhsaa_preseason`; 0.5 when no strengths are stored)
-    s = recency-weighted mean of s_year × n / (n + 2)        # shrink toward neutral
-    bond = clamp(1 + 0.15 × s, 0.85, 1.15)
+**Updated 2026-10:** See [AAR-jhsaa-coach-bond-annuity.md](AAR-jhsaa-coach-bond-annuity.md) for the current scoring rules, veteran protections and research-export fields. The older percentile-of-preseason-strength / binary-State model was replaced.
 
-A new head is 1.0. It travels with the coach_id. No age term. It scales the whole
-staff's offers for the NEXT season and nothing a match reads.
+Bond still applies **only to the staff's attribute-teaching offers**, not match outcomes or player natural POT. It is an earned, bounded (0.85–1.15) reputation multiplier based on up to five previous completed seasons. Yearly credit includes winning percentage, improvement over the previous season, district titles, Road-to-State units, State advancement, TOC titles and head-coaching tenure. Coaches **older than 40 with ten completed consecutive head seasons at the same school** activate a **25% bond annuity on successful years going forward**, not an unconditional tenure bonus. Development specialists age **55+** have a no-decline floor for their earned bond, so coaching a weaker team does not erase their developmental credibility; their teaching grades remain unchanged.
+
+Every season's result and its scored historical components are archived in the head's effect JSON and exported through `jhsaa_coach_seasons.csv`. The `jhsaa_development_ledger.csv` separately shows the real attribute points attributable to each coach, so competitive reputation and developmental outcomes can be evaluated independently.
 
 ---
 
