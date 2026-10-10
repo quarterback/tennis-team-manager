@@ -333,6 +333,7 @@ class StaffEffect:
     # the staff's teaching offers (`jhsaa_develop`) and nothing a match reads.
     # None = a history row from before it existed = neutral 1.0.
     bond: float | None = None
+    bond_detail: dict | None = None   # achievement components and annuity tracking
 
     def fingerprint(self) -> tuple:
         # Everything that changes how a SEASON plays (rosters read history, not
@@ -752,7 +753,7 @@ def _eff_to_json(e: StaffEffect) -> str:
                        "builder": e.builder, "feeder": e.feeder,
                        "tactics": e.tactics, "singles": e.singles,
                        "future": e.future, "loyalty": e.loyalty,
-                       "bond": e.bond})
+                       "bond": e.bond, "bond_detail": e.bond_detail})
 
 
 def _eff_from_json(s: str) -> StaffEffect:
@@ -771,7 +772,7 @@ def _eff_from_json(s: str) -> StaffEffect:
                        builder=d.get("builder", 0.5), feeder=d.get("feeder", 0.5),
                        tactics=d.get("tactics"), singles=d.get("singles"),
                        future=d.get("future"), loyalty=d.get("loyalty"),
-                       bond=d.get("bond"))
+                       bond=d.get("bond"), bond_detail=d.get("bond_detail"))
 
 
 def season_effects(world_id: int, year: int, gender: str) -> dict:
@@ -803,6 +804,8 @@ def record_season(conn, world_id: int, year: int, gender: str, teams, effects: d
         "SELECT ident, slot, coach_id FROM jhsaa_coach_seat WHERE world_id=? AND gender=?",
         (world_id, gender)).fetchall()
     by_ident: dict = {}
+    heads = _load_coaches(conn, world_id, [cid for ident, slot, cid in seat_rows
+                                           if slot == "head" and cid])
     for ident, slot, cid in seat_rows:
         by_ident.setdefault(ident, {})[slot] = cid
     hist = []
@@ -816,7 +819,9 @@ def record_season(conn, world_id: int, year: int, gender: str, teams, effects: d
             if slot == "head" and eff is not None:
                 # THE BOND going into this season — PRIOR seasons only, so the
                 # season being archived can never rate itself (owner spec 2026-10).
-                eff = dataclasses.replace(eff, bond=head_bond(conn, world_id, cid, year, gender))
+                bond_data = head_bond_details(conn, world_id, cid, year, gender,
+                                              coach=heads.get(cid), season_year=season_year)
+                eff = dataclasses.replace(eff, bond=bond_data["bond"], bond_detail=bond_data)
             hist.append((world_id, year, s.ident, gender, slot, cid, s.name,
                          s.classification, s.group, t.wins, t.losses, t.ties,
                          _eff_to_json(eff) if (slot == "head" and eff) else None))
