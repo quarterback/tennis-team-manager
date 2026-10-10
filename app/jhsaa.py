@@ -7096,7 +7096,7 @@ def _apply_stock_era(p: Prospect, pid: str, school: School, entry: int, seat: in
                         "extra_ovr": profile["extra_ovr"], "ovr_left": res["ovr_left"],
                         "intrinsic": res["intrinsic"],
                         "seasons_staffed": len(seasons),
-                        "seasons_coached": len(res["ledger"])}
+                        "seasons_coached": sum(1 for e in res["ledger"] if e["raw"] > 0)}
     # Per-attribute vectors (natural target · intrinsic path · coached) for
     # `jhsaa_development_profiles.csv`; the trainable caps are on the pin.
     p.jhsaa["stock_attrs"] = {"natural": res["natural_attrs"],

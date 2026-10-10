@@ -206,16 +206,25 @@ def test_the_research_export_carries_the_whole_development_contract():
         assert 0.0 <= float(row[f"train_{cat}"]) <= 1.0
         assert 0.0 <= float(row[f"coach_{cat}"]) <= 1.0
     assert int(row["seasons_coached"]) >= 1 and int(row["seasons_staffed"]) >= int(row["seasons_coached"])
-    # the ledger: every offer term, within its band
+    # the ledger: EVERY attempt, failed ones included (review 2026-10), with
+    # every offer term within its band
     mine = [r for r in ledger if r["player_id"] == coached[0].pid]
     assert mine
+    assert {r["outcome"] for r in ledger} <= set(jd.OUTCOMES)
+    assert any(r["outcome"] != "landed" for r in ledger), "failed attempts must be rows"
     for r in mine:
         assert r["slot"] in ("head", "asst1", "asst2")
         assert jd.FIT_BAND[0] <= float(r["fit"]) <= jd.FIT_BAND[1]
-        assert 0.0 < float(r["teach_d"]) <= 1.0
-        assert float(r["bond"]) == 1.07 and float(r["overlap_w"]) in jd.OVERLAP
-        assert float(r["raw_points"]) <= float(r["offer"]) * float(r["overlap_w"]) + 1e-3
+        assert 0.0 <= float(r["teach_d"]) <= 1.0 and 0.0 < float(r["p_took"]) <= 1.0
+        assert float(r["bond"]) == 1.07
         assert r["stock_left_after"] != "" and r["ovr_left_after"] != ""
+        if r["outcome"] == "landed":
+            assert float(r["raw_points"]) > 0 and float(r["overlap_w"]) in jd.OVERLAP
+            assert float(r["raw_points"]) <= float(r["offer"]) * float(r["overlap_w"]) + 1e-3
+        else:
+            assert float(r["raw_points"]) == 0.0
+            if r["outcome"] in ("floor", "declined"):
+                assert float(r["offer"]) == 0.0
     # the profiles: 51 rows a stock-era player, natural <= cap, current <= cap
     per = {}
     for r in profiles:

@@ -243,10 +243,16 @@ In memory (`Prospect.jhsaa`, derived every build, never stored):
   51-attribute vectors (natural target · intrinsic path at this grade · coached
   points before the cap clip; the caps are on the pin).
 - `coached`: the per-season ledger `[{season, raw, ovr, played, bond, offered,
-  stock_left, ovr_left, by_coach: {coach_id: {category: raw}}, detail: {coach_id:
-  {category: {slot, d, intensity, fit, p_took, offer, overlap_w, raw}}}}]`.
-  `jhsaa_develop.allocate_detail` is `allocate` plus that detail; `allocate` is
-  unchanged for every other caller.
+  stock_left, ovr_left, by_coach: {coach_id: {category: raw}}, attempts: {coach_id:
+  {category: {slot, d, intensity, fit, p_took, offer, overlap_w, outcome, raw}}}}]`.
+  `attempts` is EVERY coach × portfolio category that season, whether or not the
+  instruction took (`jhsaa_develop.season_attempts`; `season_offers` is its first
+  return), with `outcome` one of `OUTCOMES` — `floor` (d = 0), `declined` (the
+  success check failed), `blocked` (took, but headroom/caps/budgets left nothing),
+  `landed`. A season in which nothing landed is still an entry. The rng stream is
+  untouched: the success draw is consumed only past the floor, exactly as before.
+  `jhsaa_develop.allocate_detail` is `allocate` plus the per-coach detail;
+  `allocate` is unchanged for every other caller.
 
 The bundle (every JHSAA export, archive path and injected season alike):
 - `players.csv` (blank for pre-era cohorts): `work_ethic`, `natural_grade`,
@@ -259,11 +265,18 @@ The bundle (every JHSAA export, archive path and injected season alike):
   trainability and coachability draws, 0-1). `potential_grade` is the blended
   estimate; `ceiling_grade` the trainable maximum.
 - `jhsaa_development_ledger.csv`: one row per player per archived season per
-  coach per category of coached growth — `raw_points`, and every term of the
-  offer behind it: `slot`, `offer` (pre-overlap), `overlap_w`, `teach_d`,
-  `intensity`, `fit`, `p_took`, the season's `played`, `bond`, `season_offered`,
-  `season_raw`, `season_ovr`, `stock_left_after`, `ovr_left_after`. So "why did
-  this assistant move this kid and that one didn't" is answerable from the file.
+  coach per category the coach ATTEMPTED to teach, landed or not — `outcome`
+  (floor / declined / blocked / landed), `raw_points` (0 on the first three), and
+  every term of the attempt: `slot`, `offer` (pre-overlap; 0 unless it took),
+  `overlap_w`, `teach_d`, `intensity`, `fit`, `p_took`, the season's `played`,
+  `bond`, `season_offered`, `season_raw`, `season_ovr`, `stock_left_after`,
+  `ovr_left_after`. ‼️ The failures are rows ON PURPOSE (review 2026-10): a
+  `p_took` exported only on successes is conditioned on success, and the bundle
+  could not tell a failed attempt from no attempt — which is exactly the
+  comparison "why did this kid develop and that one didn't" needs.
+- ‼️ The manifest's ranges (`OVERLAP`, `FIT_BAND`, `OUTCOMES`, `BOND_BAND`) are
+  BUILT from the constants, never typed, so a recalibration cannot leave the
+  self-describing export describing the old model (review 2026-10).
 - `jhsaa_development_profiles.csv` (new): one row per stock-era player per
   attribute (51): `category`, `natural`, `trainable_cap`, `baseline`, `coached`,
   `current`, `ovr_weight`. This is the file to measure the model on — the two

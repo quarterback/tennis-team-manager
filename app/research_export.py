@@ -270,22 +270,24 @@ def _stock_cols(p) -> dict:
 
 
 def _ledger_rows(p, pid: str, program_id: str, gender: str) -> list[dict]:
-    """jhsaa_development_ledger.csv rows for one player: what each archived
-    season's named coaches taught, by category, in raw attribute points — with
-    every term of the offer that produced it (slot, teaching quality d,
-    portfolio intensity, the stable player x coach x category fit, the success
-    probability, the pre-overlap offer and the overlap weight), plus the
-    season's exposure share, head bond, total offered, and what the stock and
-    the OVR budget had left after."""
+    """jhsaa_development_ledger.csv rows for one player: one row per archived
+    season per coach per category the coach ATTEMPTED to teach — landed or not
+    (`outcome`: floor / declined / blocked / landed; raw_points 0 on the first
+    three) — with every term of the attempt (slot, teaching quality d, portfolio
+    intensity, the stable player x coach x category fit, the success probability,
+    the pre-overlap offer and the overlap weight), plus the season's exposure
+    share, head bond, total offered, and what the stock and the OVR budget had
+    left after. The failures are rows on purpose: a p_took exported only on
+    successes is conditioned on success."""
     out = []
     for season in (getattr(p, "jhsaa", None) or {}).get("coached") or ():
-        detail = season.get("detail") or {}
-        for coach_id, cats in (season.get("by_coach") or {}).items():
-            for cat, raw in cats.items():
-                d = (detail.get(coach_id) or {}).get(cat) or {}
+        for coach_id, cats in (season.get("attempts") or {}).items():
+            for cat, d in cats.items():
                 out.append({"player_id": pid, "program_id": program_id, "gender": gender,
                             "season": season.get("season"), "coach_id": coach_id,
-                            "slot": d.get("slot", ""), "category": cat, "raw_points": raw,
+                            "slot": d.get("slot", ""), "category": cat,
+                            "outcome": d.get("outcome", ""),
+                            "raw_points": d.get("raw", 0.0),
                             "offer": d.get("offer", ""), "overlap_w": d.get("overlap_w", ""),
                             "teach_d": d.get("d", ""), "intensity": d.get("intensity", ""),
                             "fit": d.get("fit", ""), "p_took": d.get("p_took", ""),
@@ -894,6 +896,7 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             if row["portal_move"] == "":
                 row["portal_move"] = 0
     from app import jhsaa_coaches as _jc
+    from app import jhsaa_develop as _jd
     coach_tables = {name: [] for name in COACH_FILES}
     if w and not injected:
         coach_tables = _jc.research_tables(
@@ -1122,8 +1125,8 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "one row per coach per seat per season (slot head/asstN, that season's "
             "classification and group, the program's varsity W-L-T, staff_effects_json = "
             "the blended staff effects the season was played with, bond = the head's "
-            "player bond that season on the 0.85-1.15 band, head rows only, blank before "
-            "the bond existed). jhsaa_coach_events.csv "
+            f"player bond that season on the {_jc.BOND_BAND[0]}-{_jc.BOND_BAND[1]} band, "
+            "head rows only, blank before the bond existed). jhsaa_coach_events.csv "
             "is the raw staff ledger (hired, promoted, moved, hired_away, fired, retired, "
             "…) in season years; the coach page's Transactions panel is a fold over it. "
             "jhsaa_coach_awards.csv is every Coach of the Year finalist (top five per pool; "
@@ -1138,17 +1141,23 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "coach_id joins across all five files.",
             "jhsaa_development_ledger.csv is the ATTRIBUTE-DEVELOPMENT LEDGER (owner spec "
             "2026-10, app/jhsaa_develop.py): one row per player per archived season per "
-            "coach per category of COACHED growth — raw_points a named coach taught into "
-            "one skill group, from the player's developmental stock — with every term of "
-            "the offer behind it: slot (head/asstN), offer (pre-overlap raw points), "
-            "overlap_w (1.0 for the strongest coach in the category that season, then "
-            "0.25/0.10/0.05), teach_d (the coach's teaching quality in the category, "
-            "0-1), intensity (portfolio), fit (the stable player x coach x category fit, "
-            "0.6-1.3), p_took (the success probability that passed), played (the "
-            "season's exposure share), bond (the head's bond), season_offered (raw points "
-            "offered before caps and budgets), season_raw/season_ovr (what landed) and "
-            "stock_left_after/ovr_left_after. Only stock-era cohorts (entry year >= "
-            "jhsaa_stock_era) have rows. jhsaa_development_profiles.csv is one row per "
+            "coach per category the coach ATTEMPTED to teach, landed or not. outcome is "
+            + "/".join(_jd.OUTCOMES) + " — floor: the coach is under the teaching floor in "
+            "that category (teach_d 0); declined: the seeded success check (p_took) "
+            "failed; blocked: it took but headroom, the per-season caps or the budgets "
+            "left nothing to land; landed: raw_points reached the attributes (0 on the "
+            "other three). Failed attempts are rows on purpose: p_took seen only on "
+            "successes is conditioned on success. Every term of the attempt rides on the "
+            "row: slot (head/asstN), offer (pre-overlap raw points, 0 unless it took), "
+            "overlap_w (" + "/".join(f"{w:g}" for w in _jd.OVERLAP) + " for the strongest, "
+            "second, third… coach offering in the category that season; 0 unless it took), "
+            "teach_d (the coach's teaching quality in the category, 0-1), intensity "
+            f"(portfolio), fit (the stable player x coach x category fit, {_jd.FIT_BAND[0]}-"
+            f"{_jd.FIT_BAND[1]}), p_took, played (the season's exposure share), bond (the "
+            "head's bond), season_offered (raw points offered before caps and budgets), "
+            "season_raw/season_ovr (what landed) and stock_left_after/ovr_left_after. Only "
+            "stock-era cohorts (entry year >= jhsaa_stock_era) have rows. "
+            "jhsaa_development_profiles.csv is one row per "
             "stock-era player per attribute (51): category, natural (the target ordinary "
             "coaching reaches), trainable_cap (the hidden maximum), baseline (the "
             "intrinsic path at this grade), coached (what the staffs added, before the cap "
