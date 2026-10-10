@@ -3100,30 +3100,35 @@ def research_tables(world_id: int, gender: str, key_by_ident: dict) -> dict:
         except (ValueError, TypeError):
             return {}
 
+    def bond_columns(eff, is_head):
+        """Decode the archived head effect ONCE; old/assistant rows stay blank."""
+        names = ("bond", "bond_score", "bond_age", "bond_tenure",
+                 "bond_annuity_active", "bond_development_coach",
+                 "bond_veteran_protected", "bond_latest_annuity_bonus",
+                 "bond_recent_years_json")
+        if not is_head or not eff:
+            return {k: "" for k in names}
+        d = bond_of(eff)
+        detail = d.get("bond_detail") or {}
+        return {"bond": d.get("bond", ""),
+                "bond_score": detail.get("score", ""),
+                "bond_age": detail.get("age", ""),
+                "bond_tenure": detail.get("tenure", ""),
+                "bond_annuity_active": detail.get("annuity_active", ""),
+                "bond_development_coach": detail.get("development_coach", ""),
+                "bond_veteran_protected": detail.get("veteran_protected", ""),
+                "bond_latest_annuity_bonus": detail.get("latest_annuity_bonus", ""),
+                "bond_recent_years_json": (json.dumps(detail.get("recent", []),
+                                                     separators=(",", ":"))
+                                           if detail else "")}
+
     season_rows = [{
         "season_year": season(y), "world_year": y, "coach_id": cid,
         "coach_name": coaches[cid].name if cid in coaches else "",
         "program_ident": ident, "program_id": pid(ident), "school": school,
         "slot": slot, "classification": cls, "championship_group": grp,
         "wins": w or 0, "losses": l or 0, "ties": t or 0, "staff_effects_json": eff or "",
-        "bond": bond_of(eff).get("bond", "") if slot == "head" else "",
-        "bond_score": (bond_of(eff).get("bond_detail") or {}).get("score", "")
-                      if slot == "head" else "",
-        "bond_age": (bond_of(eff).get("bond_detail") or {}).get("age", "")
-                    if slot == "head" else "",
-        "bond_tenure": (bond_of(eff).get("bond_detail") or {}).get("tenure", "")
-                       if slot == "head" else "",
-        "bond_annuity_active": (bond_of(eff).get("bond_detail") or {}).get("annuity_active", "")
-                               if slot == "head" else "",
-        "bond_development_coach": (bond_of(eff).get("bond_detail") or {}).get("development_coach", "")
-                                  if slot == "head" else "",
-        "bond_veteran_protected": (bond_of(eff).get("bond_detail") or {}).get("veteran_protected", "")
-                                  if slot == "head" else "",
-        "bond_latest_annuity_bonus": (bond_of(eff).get("bond_detail") or {}).get("latest_annuity_bonus", "")
-                                     if slot == "head" else "",
-        "bond_recent_years_json": json.dumps((bond_of(eff).get("bond_detail") or {}).get("recent", []),
-                                             separators=(",", ":"))
-                                  if slot == "head" and bond_of(eff).get("bond_detail") else ""}
+        **bond_columns(eff, slot == "head")}
         for y, ident, slot, cid, school, cls, grp, w, l, t, eff in hist]
 
     event_rows = [{
