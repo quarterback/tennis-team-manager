@@ -6,6 +6,8 @@
 
 **Status:** Research from the exported save, not a new simulated experiment. No development coefficient, coach rating, bond formula, competitive result, or archived save was changed. The research bundle was supplied for analysis; the complete ZIP is **not** part of this Git repository. All individual skill ratings below are **internal calibration measures**, not ratings intended to be shown in the game world.
 
+**Companion reports and documentation.** The supplied 281-line original annual review is now filed at [docs/2112-jhsaa-season-review.md](../2112-jhsaa-season-review.md). For an extended, text-led competitive history, see [JHSAA 2112 season analysis](JHSAA-2112-season-analysis.md). For a focused longitudinal measurement guide separating earned bond, technical coaching skill and realized player improvement, see [JHSAA 2112 coaching/development baseline](JHSAA-2112-coaching-and-development-baseline.md). This report remains the **combined 2112 study**, including the extreme work-ethic × trainability analysis and the internal player watchlist. Both technical AARs link back to it.
+
 ## The main finding
 
 2112 gives us a useful first reading of the *coach* system and an unusually difficult year in which to interpret it. The bond and annuity are populated for 1,962 current head coaches. Veteran development coaches at weak programs do retain credible bond ratings. Long-serving coaches earn annuity credits, and the export records the annual achievements behind them. Competitive strength, however, moved sharply under realignment, so an improvement measure based on year-over-year winning percentage needs to be interpreted in that context.
