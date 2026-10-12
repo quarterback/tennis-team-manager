@@ -284,4 +284,8 @@ Each entry changes one named result. Everything before it is as played.
 
 ## Linked research
 
+**Combined research study:** [JHSAA 2112 — Realignment, Coaching Careers, and the First Development-Stock Cohorts](reports/JHSAA-2112-season-coaching-development-review.md). This is the central integrated analysis of the competitive season, bond/annuity design, early attribute-development evidence and future research watchlist.
+
+
+
 This is the original long-form 2112 season review supplied with the 2038 JHSAA research export, retained as the in-world annual record. For an additional analysis of the 2112 competitive patterns, see [2112 season analysis](reports/JHSAA-2112-season-analysis.md). For the experimental bond/annuity and player-development baseline, see [2112 coaching and development baseline](reports/JHSAA-2112-coaching-and-development-baseline.md). The technical design is documented in [Coach Bond and Annuity AAR](AAR-jhsaa-coach-bond-annuity.md) and [Attribute Development Stock AAR](AAR-jhsaa-attribute-development-stock.md).
