@@ -374,6 +374,10 @@ Use the report's 2112 research-only cohort watchlist and the longitudinal plan f
 
 ## First observed export — the 2112 cohort baseline
 
+The [combined 2112 research study](reports/JHSAA-2112-season-coaching-development-review.md) also measures the important interaction between trainability and work ethic; it is the main integrated record of this early stock-era cohort.
+
+
+
 See the [full 2112 coaching and development baseline](reports/JHSAA-2112-coaching-and-development-baseline.md), [expanded 2112 season analysis](reports/JHSAA-2112-season-analysis.md), and [complete 2112 season review](2112-jhsaa-season-review.md). The first full ZIP with these new research fields was supplied separately (play-to-clinch-jhsaa-2038-both.zip, 2112, both genders); it was used to calculate the results, **not committed to the repository**.
 
 The 2112 export contains **15,284 players carrying a stock profile** among **58,444 players**. Of those, only **44** (21 boys and 23 girls) have positive recorded coached skill gains, chiefly students who already had completed early participation. There are **877 historical coach/category/season attempts** tied to these 44 players: **427 landed, 346 declined, 103 below the teaching floor, one blocked**. The early additional coached OVR ranges from +0.023 to +0.654; **this is not a four- or six-year outcome sample**. The latent extra coached-OVR budgets average approximately 8.26 but are opportunities, not realized guaranteed growth.
