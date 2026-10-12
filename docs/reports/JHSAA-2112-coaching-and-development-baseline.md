@@ -6,6 +6,10 @@
 
 ## What this report is trying to determine
 
+The [combined 2112 research study](JHSAA-2112-season-coaching-development-review.md) is the main integrated reference; this document provides the focused bond/annuity specification, measured snapshot, examples and longitudinal join protocol.
+
+
+
 > **Bond is earned competitive reputation; teaching ability is what a coach knows how to teach; player development is what a student actually learned. These are related, but different facts.**
 
 This distinction is the heart of the design and of the research. A coach who regularly wins districts may be an accomplished program builder. A coach who develops a beginner into an excellent doubles player may be a first-rate teacher even when the program loses. A veteran teacher should be able to move to a weaker program without the simulation treating the move as a sudden loss of skill. A young coach should have a path to earn standing through improvement and competitive achievement. Strong programs with complementary staff should be capable of producing extraordinary player gains, but those gains must be explained by what individual coaches teach and what players can absorb.
