@@ -2,7 +2,11 @@
 
 *Expanded internal season analysis · World 2038 · both genders · October 2026*
 
-This is a companion analysis to [the complete 2112 annual review](../2112-jhsaa-season-review.md). The annual review retains the full championship tables, Player of the Year ledger, long-wait records, class notes and alternate-outcome forks. This report places those results alongside the two-gender 2038 research export, the coaches who were responsible for the competing programs, and the first research baseline for the newly implemented development system. The methods and attribution limits are documented in [2112 coaching and development baseline](JHSAA-2112-coaching-and-development-baseline.md).
+This is a companion analysis to 
+
+**Combined research study:** [JHSAA 2112 — Realignment, Coaching Careers, and the First Development-Stock Cohorts](JHSAA-2112-season-coaching-development-review.md), including the head-coach annuity cohort and longer-term developmental-capacity analysis.
+
+[the complete 2112 annual review](../2112-jhsaa-season-review.md). The annual review retains the full championship tables, Player of the Year ledger, long-wait records, class notes and alternate-outcome forks. This report places those results alongside the two-gender 2038 research export, the coaches who were responsible for the competing programs, and the first research baseline for the newly implemented development system. The methods and attribution limits are documented in [2112 coaching and development baseline](JHSAA-2112-coaching-and-development-baseline.md).
 
 **The season's central story:** 2112 was the first State championship season after a large-scale reclassification and the new 10B/11B private-school split. The transfer class, district lineup formats, qualification routes and schools' recent competitive histories all met in one season. One team won its first State title from a seventh seed through recovery; another moved up two classes and repeated; two schools fought over the Tournament of Champions, and the same private school produced an undefeated girls' season. The outcomes make more sense when read as a changing association rather than as a list of unrelated title winners.
 
