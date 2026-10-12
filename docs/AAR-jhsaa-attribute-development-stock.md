@@ -358,3 +358,13 @@ numbers above are the baseline to compare against.
 Known simplification: a season's staff for a player who transferred is resolved
 per season at the school they were at, but the pre-era `dev` multiplier path
 never did this; for stock-era players the per-season resolution is the one used.
+
+## First live export audit: 2112 stock-cohort baseline
+
+The [2112 coaching and development research report](reports/JHSAA-2112-season-coaching-development-review.md) checks the actual 2038-world / 2112-JHSAA export against this AAR and the 2103–2111 pre-stock panel.
+
+There are **15,284** current stock-era players (14,087 ninth-graders, 548 seventh-graders, 562 eighth-graders and 87 newly appearing eleventh-graders). **Only 44** have an archived coached gain, all from prior early participation: their **877** teaching attempts produced **427** landed results. The reported attribute coaching totals **10.4158 weighted OVR** across those 44 students; the final 51-attribute player profiles reflect **10.4153**. There is no 2112 evidence of meaningful coaching points being lost at the final cap, though the same check remains necessary as players approach their trainable ceilings.
+
+The spendable extra coaching budget has a median of **7.864 OVR**, 90th percentile **13.302**, maximum **27.232**. A major next-generation design question is the relatively weak overlap between the largest budgets and very high work ethic: among 14,087 stock-era ninth-graders, work ethic and coaching budget correlate at approximately **−0.405**; **zero** have both ethic ≥ .75 and budget ≥ 15 OVR. This is descriptive generator evidence, not a ruling that rare large careers cannot occur. Ordinary maturity and early-POT development remain **separate tracks**.
+
+Use the report's 2112 research-only cohort watchlist and the longitudinal plan for **2113 sophomore**, **2115 senior**, and **2117 six-year** evaluations. Do not characterize this first-live baseline as a completed test of four-coach elite development or exceptional State-level careers. The ZIP itself has not been copied into the repository.
