@@ -138,6 +138,10 @@ See the new report for stable-identity examples (Maxwell Salama, Lilly Flores, O
 
 ## First export baseline and longitudinal follow-up — 2112
 
+**Combined first-year study:** [JHSAA 2112 — Realignment, Coaching Careers, and the First Development-Stock Cohorts](reports/JHSAA-2112-season-coaching-development-review.md). The focused [longitudinal baseline](reports/JHSAA-2112-coaching-and-development-baseline.md) sits alongside it.
+
+
+
 **The system's first measured export has now been documented.** See [JHSAA 2112 coaching and development baseline](reports/JHSAA-2112-coaching-and-development-baseline.md) for the full statistical methods, counts, biographies, first teaching records, join rules and research design. Read [the expanded season analysis](reports/JHSAA-2112-season-analysis.md) for the competitive context, and [the complete original season review](2112-jhsaa-season-review.md) for every State result, realignment, player honour and season story.
 
 The first 2112 both-gender JHSAA research ZIP contains **1,962 current-season head-coach records, 489 annuity-eligible heads and 655 protected veteran teaching heads**, including **182** who satisfy both conditions. The entering-season bond median is **1.0059**, the average **1.0269**, and the observed range is **0.9638–1.1071**. Although the configured band is **0.85–1.15**, the five-year small-history reduction caps ordinary five-year positive bond around **1.1071**. These are measured observations from that export, not simulated predictions or promised effects.
