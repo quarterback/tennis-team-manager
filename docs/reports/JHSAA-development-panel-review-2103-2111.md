@@ -620,6 +620,10 @@ The [JHSAA 2112 season, coach-bond and developmental-stock report](JHSAA-2112-se
 
 ## 2112 measured follow-up and linked coaching baseline
 
+See also the [combined 2112 export analysis](JHSAA-2112-season-coaching-development-review.md), which continues this research while keeping the earlier intrinsic-development panel separate from the new coached-stock population.
+
+
+
 The first actual research export produced after PRs #493, #495 and #496 is the **2112 (world 2038), both-gender JHSAA bundle**. It is reviewed in [JHSAA 2112 coaching, bond, annuity and player-development baseline](JHSAA-2112-coaching-and-development-baseline.md) and placed in competitive context in [the expanded 2112 season analysis](JHSAA-2112-season-analysis.md), linked to the [complete season review](../2112-jhsaa-season-review.md).
 
 The 2103–2111 player-development analysis above describes the earlier natural development machinery. Its original findings **remain historical benchmarks**, not estimates of the new coach-stock model's effectiveness. In 2112, 15,284 players have new developmental-stock profiles but only 44 record positive coached skill gains; there are not yet completed four-year or six-year careers on which to judge rare beginner-to-State trajectories. The bond/annuity data already cover 1,962 named active heads, 489 annuity-qualified heads and 655 protected veteran specialists. Those coach classifications must be analyzed separately from technical teaching strength and realized player gains. The linked first-export study defines the join keys, caution about entering-season bond timing, and future longitudinal comparisons.
