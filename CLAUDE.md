@@ -567,6 +567,19 @@ college dual; the owner never reached the college game.
   ceiling, so read literally every recruit looked finished); playing time must
   SATURATE or everybody picks the weakest team (100+ All-Americans a class).
   `tests/test_jhsaa_college_v2.py`. The interface is untouched.
+  ‼️ **OWNER DECISIONS ON ITS HONOURS AND ENDINGS (2026-11) — do not "even out":**
+  **ALL-CONFERENCE COMES FIRST AT EVERY LEVEL** — a player is only considered for
+  All-American in a season they made All-Conference in the same discipline; it is a
+  GATE in `play_season` (the two lines come from different fields, so two
+  thresholds alone let a player clear the national line and miss their own). D1
+  All-Conference is deeper and reaches No. 4 singles / the No. 2 pair
+  (`ALL_CONFERENCE`; it measured zero in ~450 D1 careers before) while the D1
+  All-American standard is unchanged; D2/D3/D4 keep their All-Conference depth and
+  name a deeper All-American list (`ALL_AMERICAN`). The men's and women's D1
+  signing rates differ on purpose (the talent tables do). The attrition
+  probabilities are approved as measured; the four endings are kept APART on
+  `departure` (left_team · left_college · injury_ended · turned_pro, each with a
+  cause) and a transfer is a move, never a departure.
 - **‼️ ANY SCRIPT THAT CALLS INTO THE APP NEEDS `if __name__ == "__main__":`.** The
   pools use a SPAWN context, so a worker re-imports the launching script; unguarded,
   every worker re-runs the whole script against the same database (duplicate

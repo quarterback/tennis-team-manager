@@ -145,9 +145,23 @@ LEAVE_COLLEGE = 0.025
 TURN_PRO = 0.25               # a D1 singles All-American with eligibility left
 
 # --- honours -------------------------------------------------------------------------
-#: How many singles players / doubles teams a conference and a division honour.
-ALL_CONF_SINGLES, ALL_CONF_DOUBLES = 8, 4
-ALL_AMERICAN_SINGLES, ALL_AMERICAN_DOUBLES = 20, 10
+#: HONOURS, BY DIVISION (owner decisions 2026-11): how many singles players and
+#: doubles teams are honoured, and how far down a lineup an honour reaches —
+#: (singles depth, doubles depth, deepest singles position, deepest doubles pair).
+#:
+#: D1 ALL-CONFERENCE IS DEEPER AND REACHES FURTHER DOWN THE LINEUP. A D1
+#: conference names a first and a second team, and a strong No. 3 or No. 4 on a
+#: good team makes it. Measured before this: zero All-Conference singles in ~450
+#: D1 careers, because a Jefferson recruit is an average core player at the
+#: program that signs them and only reaches the top two on a weak team, where the
+#: record is not there. The lower divisions keep the depth they were measured at.
+ALL_CONFERENCE = {"D1": (14, 7, 4, 2), "D2": (8, 4, 2, 1),
+                  "D4": (8, 4, 2, 1), "D3": (8, 4, 2, 1)}
+#: D1 ALL-AMERICAN IS UNCHANGED. The lower divisions name a deeper list, so a
+#: genuinely strong player there — above all a D1-level player who is playing
+#: down, by choice or by transfer — is likelier to be recognised nationally.
+ALL_AMERICAN = {"D1": (20, 10, 2, 1), "D2": (40, 20, 2, 1),
+                "D4": (40, 20, 2, 1), "D3": (40, 20, 2, 1)}
 #: Results count beside level when a season is judged: points per unit of
 #: winning percentage above the record an honoured player ordinarily has. The
 #: line itself is built from LEVELS, so a record at that par adds nothing —
@@ -268,8 +282,8 @@ class Context:
             else:
                 pool += s[:2]
         pool.sort(reverse=True)
-        n = ((ALL_CONF_DOUBLES if doubles else ALL_CONF_SINGLES) if scope[0] == "conf"
-             else (ALL_AMERICAN_DOUBLES if doubles else ALL_AMERICAN_SINGLES))
+        n = (ALL_CONFERENCE if scope[0] == "conf" else ALL_AMERICAN)[scope[1]][
+            1 if doubles else 0]
         hit = pool[min(n, len(pool)) - 1] if pool else 1e9
         self._lines[key] = hit
         return hit
@@ -527,22 +541,33 @@ def play_season(ctx: Context, prog, season: int, age: int, pid: str, cohort: int
         else:
             d_l += 1
     honors = []
-    if s_pos and s_pos <= 2 and (s_w + s_l) >= 12:
+    conf_rule, div_rule = ALL_CONFERENCE[d], ALL_AMERICAN[d]
+    # ‼️ ALL-CONFERENCE COMES FIRST, AT EVERY LEVEL (owner rule 2026-11): a player
+    # is only CONSIDERED for All-American in a season they made All-Conference in
+    # that same discipline. It is a gate, not a coincidence of two thresholds —
+    # the two lines are built from different fields (a conference's, a
+    # division's), so without the gate a player in a strong conference could
+    # clear the national line and miss their own.
+    if s_pos and (s_w + s_l) >= 12:
         pct = s_w / (s_w + s_l)
-        if pct >= RESULT_MIN["div"] and s_lvl + RESULT_WEIGHT * (pct - RESULT_PAR["div"]) >= \
-                ctx.line(("div", d), season, False):
-            honors.append("All-American")
-        if pct >= RESULT_MIN["conf"] and s_lvl + RESULT_WEIGHT * (pct - RESULT_PAR["conf"]) >= \
+        if s_pos <= conf_rule[2] and pct >= RESULT_MIN["conf"] and \
+                s_lvl + RESULT_WEIGHT * (pct - RESULT_PAR["conf"]) >= \
                 ctx.line(("conf", d, prog.conf_abbr), season, False):
             honors.append("All-Conference")
-    if d_pair == 1 and (d_w + d_l) >= 12:
+            if s_pos <= div_rule[2] and pct >= RESULT_MIN["div"] and \
+                    s_lvl + RESULT_WEIGHT * (pct - RESULT_PAR["div"]) >= \
+                    ctx.line(("div", d), season, False):
+                honors.append("All-American")
+    if d_pair and (d_w + d_l) >= 12:
         pct = d_w / (d_w + d_l)
-        if pct >= RESULT_MIN["div"] and mine + RESULT_WEIGHT * (pct - RESULT_PAR["div"]) >= \
-                ctx.line(("div", d), season, True):
-            honors.append("All-American (doubles)")
-        if pct >= RESULT_MIN["conf"] and mine + RESULT_WEIGHT * (pct - RESULT_PAR["conf"]) >= \
+        if d_pair <= conf_rule[3] and pct >= RESULT_MIN["conf"] and \
+                mine + RESULT_WEIGHT * (pct - RESULT_PAR["conf"]) >= \
                 ctx.line(("conf", d, prog.conf_abbr), season, True):
             honors.append("All-Conference (doubles)")
+            if d_pair <= div_rule[3] and pct >= RESULT_MIN["div"] and \
+                    mine + RESULT_WEIGHT * (pct - RESULT_PAR["div"]) >= \
+                    ctx.line(("div", d), season, True):
+                honors.append("All-American (doubles)")
     role = ("out" if injured == "out" else "starter" if s_pos else
             "doubles" if d_pair else "reserve")
     return {"year": season, "class": _CLASS_YEARS[age], "college": prog.school,
@@ -588,6 +613,7 @@ def career(ctx: Context, snap: dict, lv: dict, taken: dict) -> dict | None:
     levels = _levels(lv, shape, rng)
     seasons, stints, transfers = [], [], []
     status, knock, cohort = "graduated", 0.0, first
+    cause = None                       # why a career ended early, when it did
     stint = {"college": prog.school, "division": prog.division,
              "conf": prog.conf_abbr, "from": first}
     for age in range(4):
@@ -606,13 +632,13 @@ def career(ctx: Context, snap: dict, lv: dict, taken: dict) -> dict | None:
         # --- what they do next ---
         if "All-American" in s["honors"] and prog.division == "D1" \
                 and rng.random() < TURN_PRO:
-            status = "turned_pro"
+            status, cause = "turned_pro", "professional"
             break
         if injured == "out" and rng.random() < 0.18:
-            status = "injury_ended"
+            status, cause = "injury_ended", "injury"
             break
         if rng.random() < LEAVE_COLLEGE:
-            status = "left_college"
+            status, cause = "left_college", "personal"
             break
         move = None
         if s["role"] == "reserve":
@@ -620,14 +646,16 @@ def career(ctx: Context, snap: dict, lv: dict, taken: dict) -> dict | None:
             if r < BENCH_TRANSFER[age]:
                 move = "opportunity"
             elif r < BENCH_TRANSFER[age] + BENCH_QUIT[age]:
-                status = "left_team"
+                # Hurt and then not playing is a different story from simply
+                # never getting on court.
+                status, cause = "left_team", ("injury" if injured else "no_role")
                 break
         elif s["role"] == "doubles":
             r = rng.random()
             if r < DOUBLES_ONLY_TRANSFER:
                 move = "opportunity"
             elif r < DOUBLES_ONLY_TRANSFER + DOUBLES_ONLY_QUIT:
-                status = "left_team"
+                status, cause = "left_team", "doubles_only"
                 break
         elif s["s_pos"] and s["s_pos"] <= 2 and (s["s_w"] + s["s_l"]) >= 12 \
                 and s["s_w"] / (s["s_w"] + s["s_l"]) >= 0.65 \
@@ -658,7 +686,14 @@ def career(ctx: Context, snap: dict, lv: dict, taken: dict) -> dict | None:
     for t in transfers:
         after = next((x for x in seasons if x["year"] == t["year"] + 1), None)
         t["role_after"] = after["role"] if after else None
-    return _finish(snap, lv, seasons, stints, transfers, status, shape, aspiration)
+    departure = None
+    if status != "graduated":
+        last = seasons[-1]
+        departure = {"kind": status, "cause": cause, "after": last["class"],
+                     "year": last["year"], "college": last["college"],
+                     "role": last["role"]}
+    return _finish(snap, lv, seasons, stints, transfers, status, shape, aspiration,
+                   departure)
 
 
 def _arc(seasons, transfers, status, lv, shape) -> str:
@@ -666,13 +701,10 @@ def _arc(seasons, transfers, status, lv, shape) -> str:
     assigned in advance."""
     starts = [s for s in seasons if s["role"] == "starter"]
     dbl_only = [s for s in seasons if s["role"] == "doubles"]
-    if status in ("left_team", "left_college", "injury_ended", "turned_pro") \
-            and len(seasons) < 4:
-        if status == "turned_pro":
-            return "turned_pro"
-        if status == "injury_ended" or any(s["injury"] for s in seasons):
-            return "injury_affected"
-        return "early_departure"
+    # A career that ended early is named for HOW it ended — the four are
+    # different stories and are never folded into one "departure".
+    if status != "graduated":
+        return status
     if transfers:
         before = [s for s in seasons if s["year"] <= transfers[0]["year"]]
         after = [s for s in seasons if s["year"] > transfers[0]["year"]]
@@ -700,7 +732,8 @@ def _arc(seasons, transfers, status, lv, shape) -> str:
     return "steady_contributor"
 
 
-def _finish(snap, lv, seasons, stints, transfers, status, shape, aspiration) -> dict:
+def _finish(snap, lv, seasons, stints, transfers, status, shape, aspiration,
+            departure=None) -> dict:
     s_pos = [s["s_pos"] for s in seasons if s["s_pos"]]
     d_pos = [s["d_pair"] for s in seasons if s["d_pair"]]
     tally = {}
@@ -725,6 +758,11 @@ def _finish(snap, lv, seasons, stints, transfers, status, shape, aspiration) -> 
         "college": first["college"], "division": first["division"],
         "conf": first["conf"],
         "colleges": stints, "transfers": transfers, "status": status,
+        # HOW A CAREER ENDED EARLY, kept apart (owner decision 2026-11): a
+        # transfer is a move and is in `transfers`; `departure` is one of
+        # left_team (still enrolled, no longer playing), left_college,
+        # injury_ended, turned_pro — with the class year it followed and why.
+        "departure": departure,
         "seasons": seasons, "years": len(seasons),
         "arc": _arc(seasons, transfers, status, lv, shape),
         "s_peak": min(s_pos) if s_pos else None,

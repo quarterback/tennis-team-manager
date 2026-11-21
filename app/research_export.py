@@ -823,6 +823,8 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
                     "hs_exit_ovr": a["hs_ovr"],
                     "career_type": a.get("arc", ""), "career_status": a.get("status", ""),
                     "seasons_played": a.get("years", len(a["seasons"])),
+                    "departure_cause": (a.get("departure") or {}).get("cause", ""),
+                    "departure_after": (a.get("departure") or {}).get("after", ""),
                     "season": cs["year"], "class_year": cs["class"],
                     "college": cs.get("college", a["college"]),
                     "division": cs.get("division", a["division"]),
@@ -1252,7 +1254,12 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "and doubles record, injury, career_type/career_status, the college actually "
             "attended EACH season (it changes on a transfer; transferred_to_after names "
             "the destination on the last season before the move) and seasons_played "
-            "(fewer than four when the player stopped). NOT SIMULATED: each line is "
+            "(fewer than four when the player stopped). career_status says HOW a career "
+            "ended — graduated, left_team (still enrolled, no longer playing), "
+            "left_college, injury_ended or turned_pro — with departure_cause and "
+            "departure_after (the class year it followed); a transfer is a move, not a "
+            "departure, and is not a status. An All-American season is always also an "
+            "All-Conference season in the same discipline. NOT SIMULATED: each line is "
             "generated once when the class graduates, from the senior's standing, the "
             "program's prestige and a per-player roll — no college dual is played, and "
             "nothing in the game reads these rows. A class that graduated before the "

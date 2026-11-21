@@ -145,6 +145,19 @@ def test_a_career_is_exactly_its_seasons(built):
                 ncaa.dual_format(s["division"]).n_doubles
             if s["injury"] == "out":
                 assert s["s_w"] + s["s_l"] + s["d_w"] + s["d_l"] == 0
+            # All-Conference comes first, at every level (owner rule 2026-11): an
+            # All-American season is always an All-Conference season in the same
+            # discipline.
+            assert "All-American" not in s["honors"] or "All-Conference" in s["honors"]
+            assert "All-American (doubles)" not in s["honors"] \
+                or "All-Conference (doubles)" in s["honors"]
+        # A career that ended early says how, and a transfer is never one of them.
+        assert (r["departure"] is None) == (r["status"] == "graduated")
+        if r["departure"]:
+            assert r["departure"]["kind"] == r["status"] == r["arc"]
+            assert r["departure"]["kind"] in ("left_team", "left_college",
+                                              "injury_ended", "turned_pro")
+            assert r["departure"]["year"] == ss[-1]["year"]
         # Model 1's keys still read, so a page built for it shows a model-2 career.
         assert (r["peak"], r["w"], r["l"]) == (r["s_peak"], r["s_w"], r["s_l"])
         assert all((s["pos"], s["w"], s["l"]) == (s["s_pos"], s["s_w"], s["s_l"])

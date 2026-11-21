@@ -198,6 +198,10 @@ def run(gender: str, n_classes: int, year: int, salt: str) -> None:
                 clash += key in seen
                 seen.add(key)
         assert r["s_w"] == sum(s["s_w"] for s in r["seasons"])
+        for s in r["seasons"]:                     # All-Conference comes first
+            assert "All-American" not in s["honors"] or "All-Conference" in s["honors"]
+            assert "All-American (doubles)" not in s["honors"] \
+                or "All-Conference (doubles)" in s["honors"]
         assert r["d_l"] == sum(s["d_l"] for s in r["seasons"])
         assert all(s["college"] in ctx.programs for s in r["seasons"])
         assert [c["college"] for c in r["colleges"]] == \
@@ -276,8 +280,47 @@ def run(gender: str, n_classes: int, year: int, salt: str) -> None:
                   key=lambda k: (("D1", "D2", "D4", "D3").index(k[0]), k[1]))
     for k in keys:
         print(f"| {k[0]} | {k[1]} | {m1['honors'][k] / n_classes:.1f} | {m2['honors'][k] / n_classes:.1f} |")
+    # ---- the owner's four calibration questions ----------------------------------
+    print("\n## Departures, kept apart (model 2)\n")
+    print("| how the career ended | share | after Fr | after So | after Jr | causes |")
+    print("|---|---|---|---|---|---|")
+    for kind in ("left_team", "left_college", "injury_ended", "turned_pro"):
+        deps = [r["departure"] for r in a2 if r["status"] == kind]
+        by = collections.Counter(d["after"] for d in deps)
+        why = collections.Counter(d["cause"] for d in deps)
+        print(f"| {kind.replace('_', ' ')} | {pct(len(deps), len(a2)).strip()} | {by['Fr']} | "
+              f"{by['So']} | {by['Jr']} | "
+              + ", ".join(f"{k} {v}" for k, v in why.most_common()) + " |")
+    tr = [t for r in a2 for t in r["transfers"]]
+    by = collections.Counter(t["after"] for t in tr)
+    why = collections.Counter(t["reason"] for t in tr)
+    print(f"| transferred (a move, not a departure) | "
+          f"{pct(sum(1 for r in a2 if r['transfers']), len(a2)).strip()} | {by['Fr']} | "
+          f"{by['So']} | {by['Jr']} | " + ", ".join(f"{k} {v}" for k, v in why.most_common()) + " |")
+    d1 = [r for r in a2 if r["division"] == "D1"]
+    ac = [r for r in d1 if any(h.startswith("All-Conference") and "doubles" not in h
+                               for s in r["seasons"] for h in s["honors"])]
+    acd = [r for r in d1 if any("All-Conference (doubles)" in s["honors"] for s in r["seasons"])]
+    print(f"\n**D1 All-Conference (model 2):** {len(ac)} of {len(d1)} D1 signees earned it in "
+          f"singles ({pct(len(ac), len(d1)).strip()}), {len(acd)} in doubles "
+          f"({pct(len(acd), len(d1)).strip()}); All-American while in D1: "
+          f"{sum(1 for r in d1 if any('All-American' in h for s in r['seasons'] if s['division'] == 'D1' for h in s['honors']))}.")
+    floor = min(ctx.level[p.school] for p in ctx.by_div["D1"]) - v2.REACH["D1"]
+    down = [r for r in a2 if r["level"]["talent"] >= floor
+            and any(s["division"] != "D1" and s["role"] == "starter" for s in r["seasons"])]
+    via = [r for r in down if r["division"] == "D1"]
+    aa = lambda rs: sum(1 for r in rs if any(                       # noqa: E731
+        "All-American" in h for s in r["seasons"] if s["division"] != "D1"
+        for h in s["honors"]))
+    low = [r for r in a2 if any(s["division"] != "D1" for s in r["seasons"])]
+    print(f"**Lower-division All-Americans (model 2):** {aa(low)} of {len(low)} careers with a "
+          f"lower-division season ({pct(aa(low), len(low)).strip()}), "
+          f"{aa(low) / n_classes:.1f} a class. **D1-level players playing down:** "
+          f"{len(down)} ({len(via)} of them by transferring out of D1); "
+          f"{aa(down)} became All-Americans there ({pct(aa(down), len(down)).strip()}).")
     print(f"\n**Integrity (model 2):** deterministic rebuild identical; totals equal the "
-          f"season sums; every college is a real program; no service academy holds a "
+          f"season sums; every All-American season is also an All-Conference season in "
+          f"the same discipline; every college is a real program; no service academy holds a "
           f"non-American and every D4 signee clears that program's academic gate; "
           f"{clash} of {len(seen)} singles positions claimed twice at one college in "
           f"one season. Doubles lineup seasons: {m2['dbl_starts']} of {m2['seasons']}.")
@@ -287,8 +330,8 @@ def run(gender: str, n_classes: int, year: int, salt: str) -> None:
     # ---- example careers ---------------------------------------------------------
     print("\n## Example careers (model 2)\n")
     want = ["immediate_star", "late_developer", "reserve", "doubles_specialist",
-            "stalled_prospect", "transfer_success", "injury_affected", "early_departure",
-            "steady_contributor", "turned_pro"]
+            "stalled_prospect", "transfer_success", "injury_affected", "left_team",
+            "left_college", "injury_ended", "steady_contributor", "turned_pro"]
     r = random.Random("examples")
     for arc in want:
         pool = [x for x in a2 if x["arc"] == arc]

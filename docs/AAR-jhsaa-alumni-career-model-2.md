@@ -115,7 +115,7 @@ strength shifts.
 | career singles record under .500 | 33% | 38% | 33% |
 | lineup moved DOWN over the career | 0.1% | 9% | — |
 | signed in Jefferson | 10% | 8% | 7% |
-| any honour | 9% | 20% | 25% |
+| any honour | 9% | 21% | 25% |
 
 Class strength now moves the class: a class 1.2 points stronger than the reference
 sent 260 girls on (49 to D1); one 1.2 points weaker sent 169 (28 to D1).
@@ -151,27 +151,55 @@ These are the reason the model is not on yet.
    project's rule that Jefferson's kids mostly leave; it is 7–8% now, about what
    model 1 produced.
 
-## Open questions for the owner
+## Owner decisions (2026-11) and what they measured at
 
-- **D1 singles honours are effectively absent**: zero All-Conference singles and
-  zero All-Americans among ~450 D1 careers. This follows from the game's scale —
-  after compression Jefferson's best senior each year is an ordinary
-  power-conference recruit, not a star, and D1 programs recruit them at their own
-  level — but it may be stingier than intended. The levers are `REACH["D1"]`,
-  how the top of the class maps onto the recruit scale, and the honour depth
-  (`ALL_CONF_SINGLES`).
-- **Boys sign D1 at less than half the girls' rate** (8% against 18%), because the
-  men's D1 band sits further above the men's recruit mean in `ncaa._TALENT`. It is
-  the college game's own asymmetry showing through, not a model constant.
-- **The attrition rates are outputs of first-candidate constants**, none tuned to
-  a target: 14–15% transfer (`BENCH_TRANSFER`, `STAR_TRANSFER_UP`), 11–13% stop
-  playing (`BENCH_QUIT`), 7–8% leave college (`LEAVE_COLLEGE`), 7% of seasons
-  injured (`INJURY_RATE`).
-- **Lower-division honours are common**: about 15–20 All-Conference singles a class
-  in each of D2 and D3. That is roughly the base rate for any regular at that level
-  (eight honoured of ~96 starters a conference), but it is a lot of chips on a page.
+The four open questions were answered, and one rule was added.
+
+1. **D1 honours — keep the All-American standard, fix All-Conference.** Zero
+   All-Conference singles in ~450 D1 careers was too restrictive. D1 All-Conference
+   is now deeper (14 singles, 7 doubles teams — a first and second team) and
+   reaches the No. 4 singles position and the No. 2 pair (`ALL_CONFERENCE`). The
+   cause of the zero was structural: a Jefferson recruit is an average core player
+   at the program that signs them and only reached the top two on a weak team,
+   where the record was not there. **Measured: 9.0% of girls' and 7.6% of boys' D1
+   signees earn All-Conference singles at some point** (8.1% and 6.8% in doubles),
+   about one a class for the girls. D1 All-American is unchanged and still did not
+   occur in these classes.
+2. **The gender gap in D1 signings stays.** The men's and women's talent tables are
+   intentionally different; nothing was changed.
+3. **Attrition — keep the probabilities, keep the endings apart.** No rate was
+   changed. A row now carries `departure` (`kind`, `cause`, the class year it
+   followed, the college, the role), and the career type is named for how it ended.
+   A transfer is a move and is never one of them.
+
+   | how a career ended | girls | boys | causes recorded |
+   |---|---|---|---|
+   | left the team, stayed enrolled | 13.1% | 11.4% | no role · doubles only · injury |
+   | left college | 7.6% | 7.1% | personal |
+   | injury ended it | 1.2% | 0.9% | injury |
+   | transferred (a move, not a departure) | 13.9% | 14.6% | opportunity · up |
+
+4. **Lower-division honours — keep All-Conference, more All-Americans.** D2, D3
+   and D4 All-Conference are untouched (15–20 singles a class in each of D2 and
+   D3). Their All-American lists are twice as deep (40 singles, 20 doubles teams,
+   `ALL_AMERICAN`). All-American seasons a class went from about 12.5 to 20.6
+   (girls) and 13.2 to 18.9 (boys); 8.1% of girls' and 6.6% of boys' careers with a
+   lower-division season include one. **Of D1-level players starting in a lower
+   division, 21.9% (girls) and 9.7% (boys) became All-Americans there.** The boys'
+   figure is lower because the men's top D2 programs are themselves D1-level in the
+   college game's tables, so a D1-level man is not a standout there.
+5. **All-Conference comes first, at every level.** A player is only considered for
+   All-American in a season they made All-Conference in the same discipline. It is
+   a gate in the code, not a coincidence of two thresholds: the conference line and
+   the division line are built from different fields, so without it a player in a
+   strong conference could clear the national line and miss their own. The
+   validation asserts it on every season it generates.
+
+Still open, and worth a look once real classes exist:
+
 - **Class size swings with strength** (169 to 260 across ±1.2 rating points). Real
-  classes may not differ that much; the first real seasons will say.
+  classes may not differ that much.
+- **D1 All-American has not occurred** in ~440 D1 careers across both genders.
 
 ## Not done
 
