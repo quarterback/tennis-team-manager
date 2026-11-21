@@ -846,7 +846,8 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     conn.executescript(_jp._SCHEMA + " DELETE FROM world_jhsaa_portal;")
     from . import jhsaa_college as _jcol
     conn.executescript(_jcol.SCHEMA + " DELETE FROM world_jhsaa_college;"
-                       " DELETE FROM world_jhsaa_college_stint;")
+                       " DELETE FROM world_jhsaa_college_stint;"
+                       " DELETE FROM world_jhsaa_grad_snapshot;")
     conn.commit()
     conn.close()
     # God-mode editor overrides (player moves, lineups, prestige/academics priors,

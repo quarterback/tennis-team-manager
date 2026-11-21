@@ -539,6 +539,20 @@ def record_class(conn, world_id: int, gender: str, grad_year: int, salt: str,
 
 
 def _ensure_class(conn, world_id: int, gender: str, grad_year: int, salt: str) -> None:
+    """Fill in `grad_year`, OLDER UNWRITTEN CLASSES FIRST. Model 2 seats a class on
+    depth charts that hold the three classes ahead of it, read from the careers
+    already written — so a newer class built before its elders is seated without
+    them, and the elders built afterwards cannot see it either: two classes
+    holding the same lineup positions, written for good. Chronological order is
+    the only one in which every class sees the teammates it had."""
+    if ACTIVE_MODEL == 2:
+        for gy in sorted(y for y in class_years(conn, world_id, gender)
+                         if y < grad_year):
+            _ensure_one(conn, world_id, gender, gy, salt)
+    _ensure_one(conn, world_id, gender, grad_year, salt)
+
+
+def _ensure_one(conn, world_id: int, gender: str, grad_year: int, salt: str) -> None:
     """Fill in a class that has no careers yet. ‼️ A class with ANY row is left
     alone — this never regenerates. The inputs are the graduation snapshot when
     the class has one, else the alumni index (the reduced path: every senior and
@@ -629,8 +643,8 @@ def all_rows(conn, world_id: int, salt: str, fill: bool = True) -> list:
     """Every tracked alumnus of the save, for the research export — filling in any
     class the index still holds first."""
     for gender in ("girls", "boys") if fill else ():
-        for gy in class_years(conn, world_id, gender):
-            _ensure_class(conn, world_id, gender, gy, salt)
+        for gy in sorted(class_years(conn, world_id, gender)):   # oldest first
+            _ensure_one(conn, world_id, gender, gy, salt)
     return [_relabelled(json.loads(r[0])) for r in conn.execute(
         "SELECT data FROM world_jhsaa_college WHERE world_id=?"
         " ORDER BY grad_year, gender, rank", (world_id,))]
