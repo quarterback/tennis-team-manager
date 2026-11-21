@@ -14854,6 +14854,57 @@ def apply_to_class(klass, gender: str, grad_year: int, salt: str) -> int:
     return min(len(slots), len(grads))
 
 
+def assign_real_schools(klass, gender: str, grad_year: int, salt: str) -> int:
+    """Give every Jefferson recruit in an already-generated national class a REAL,
+    current JHSAA school — and nothing else. Returns how many were placed.
+
+    ‼️ THIS IS THE COLLEGE GAME'S WHOLE CONTACT WITH THE JHSAA (owner rule
+    2026-11: "Jefferson can stay a state, its high schools real, but the JHSAA sim
+    should just be separate from the college game"). No season is played, no
+    roster is built and no archive is read: it is a read of the school list.
+    `apply_to_class` is the OTHER path — a save that simulates the high-school
+    season swaps in the seniors who actually graduated — and the two are never
+    both applied to one class (`world.recruit_class` picks).
+
+    The recruit keeps the name, ability and pid the national class generated, so
+    the class's size, talent spread and Jefferson slot count are untouched. Only
+    two display fields move:
+      - `high_school` — a program that sponsors this gender TODAY, inside
+        Jefferson (an out-of-state affiliate's students are not Jefferson
+        recruits). The generic per-state list in `high_schools.json` cannot do
+        this: its Jefferson entry is a snapshot from before the association's
+        renames, and most of what it holds names no current school.
+      - `hometown` — kept when the recruit's town has a tennis program (they
+        attend one there); otherwise moved to the town of the school drawn.
+    `jhsaa` stays empty: there is no high-school record, because none was played.
+
+    Schools are drawn by ENROLLMENT, so a 2,400-student school sends more players
+    than a 90-student one. Its OWN rng stream, keyed like the class — the class's
+    stream is not touched, and the result is the same on every build."""
+    slots = [p for p in klass.recruits if getattr(p, "region", "") == "Jefferson"]
+    if not slots:
+        return 0
+    schools = [s for s in load_schools(_GENDER[gender]) if not s.state]
+    if not schools:
+        return 0
+    by_city: dict = {}
+    for s in schools:
+        by_city.setdefault(s.city, []).append(s)
+    rng = random.Random(f"{salt}|jf-schools|{_GENDER[gender]}|{grad_year}")
+
+    def _draw(pool):
+        return rng.choices(pool, weights=[max(1, s.enrollment) for s in pool])[0]
+
+    for p in slots:
+        city = (p.hometown or "").rsplit(",", 1)[0].strip()
+        local = by_city.get(city)
+        school = _draw(local or schools)
+        p.high_school = school.name
+        if not local:
+            p.hometown = f"{school.city}, JF"
+    return len(slots)
+
+
 _GENDER = {"men": "boys", "male": "boys", "boys": "boys",
            "women": "girls", "female": "girls", "girls": "girls"}
 

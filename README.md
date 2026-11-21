@@ -157,9 +157,13 @@ hall of fame / archives**, and a live **editor** to move players, set lineups, a
 override prestige, academics, and scholarship limits.
 
 **The JHSAA** — Jefferson's high-school season, simulated and browsable at `/jhsaa`
-(districts, brackets, TOSS rankings, awards, program pages). Its graduating
-seniors feed the college recruit board. For offline analysis of many independent
-seasons without touching the college/pro world, see **JHSAA Lab** below.
+(districts, brackets, TOSS rankings, awards, program pages). It is **separate from
+the college game**: a college save does not simulate it (Jefferson is an ordinary
+state there, and its recruits attend real JHSAA schools), so a new league goes
+straight to college tennis. Play it in the **JHSAA Lab** below. A save can opt
+back in from the World hub ("High-school sim"), which adds the season as a long
+step at the start of every year and puts its graduating seniors on the recruit
+board.
 
 JHSAA match scorelines are calibrated against five seasons of REAL Oregon
 high-school results (`engine.fast.HS_PROFILE`; measured in-game at
@@ -186,6 +190,17 @@ Then open `http://localhost:<port>/jhsaa-lab`. It's always safe to run alongside
 your real app (default port 5000) — it is bound to the single persistent database
 `~/.tennis-team-manager/jhsaa_lab.db` and the `/jhsaa-lab*` routes only exist when
 `JHSAA_LAB_MODE=1`, which the launcher script sets for you.
+
+**College alumni.** The lab has no college world, so it does not simulate one.
+When a class graduates, its best 200 seniors per gender are each given a real
+college program and a finished four-year line — lineup position and singles record
+by season, peak position, career record, honours — written once and never
+re-rolled. See it at **History → College Alumni** (`/jhsaa/alumni`, one class at a
+time; the season in the scope bar is the class), in the **College** panel on a
+player's page, and in `jhsaa_college.csv` in the research export. Classes that
+graduated before the tracker existed fill in the first time they are opened. No
+college season is played for it, so it adds seconds to a season, not minutes. See
+`docs/AAR-jhsaa-sim-separation-and-alumni-tracker.md`.
 
 **Normal JHSAA gameplay has one canonical local database:
 `~/.tennis-team-manager/jhsaa_lab.db`. If that database cannot be used, the app

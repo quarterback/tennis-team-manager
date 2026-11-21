@@ -53,6 +53,7 @@ from .state import (jhsaa_view, jhsaa_scope_view, jhsaa_school_view, jhsaa_past_
                     jhsaa_district_jv_view,
                     jhsaa_individual_winners, jhsaa_retired_view,
                     jhsaa_repeat_poy, jhsaa_repeat_individual_champions,
+                    jhsaa_alumni_view,
                     jhsaa_career_wins_view, jhsaa_program_wins_view, jhsaa_dual_view)
 from .state import (preseason_portal_view, recruit_economy_view, portal_class_rankings,
                     wire_view)
@@ -364,6 +365,7 @@ def _game_context():
         # was only reachable from the World Hub. Name (and post to) the awards step
         # until it's done. Only computed in the offseason, so it costs nothing in-season.
         awards_pending = False
+        _hs_sim = worldconfig.jhsaa_sim()
         if stage == "complete":
             import app.honors as honors
             awards_pending = not all(honors.has_season(wd.display_base_year() + w["year"], d, g)
@@ -372,14 +374,18 @@ def _game_context():
                 action = "Run awards"
             elif not wd.cups_done(w):
                 action = "Run Davis / BJK Cup"
-        elif w["week"] == 0 and w["year"] > 0 and not wd.jhsaa_done(w) and _reclass_open(w):
+        # The three JHSAA labels exist only for a save that simulates the
+        # association (`worldconfig.jhsaa_sim`, owner rule 2026-11) — the same
+        # condition `advance_week` runs those steps under, or the button would
+        # advertise a step the click does not take.
+        elif _hs_sim and w["week"] == 0 and w["year"] > 0 and not wd.jhsaa_done(w) and _reclass_open(w):
             # A reclassification proposal is open: the advance holds on it, so the
             # button sends the reader to the review page (the fall-portal shape).
             stage, action = "jhsaa_reclass", "Review reclassification"
-        elif w["week"] == 0 and not wd.jhsaa_done(w) and _portal_open(w):
+        elif _hs_sim and w["week"] == 0 and not wd.jhsaa_done(w) and _portal_open(w):
             # The rising-freshman portal (rule 2100) holds the same way.
             stage, action = "jhsaa_portal", "Review rising-freshman portal"
-        elif w["week"] == 0 and not wd.jhsaa_done(w):
+        elif _hs_sim and w["week"] == 0 and not wd.jhsaa_done(w):
             # The JHSAA rung runs FIRST at week 0 (before the pros, before any college
             # dual — see advance_week), so the button must advertise it first or it
             # reads "Run NIT Kickoff" / "Run pro offseason" and then visibly does
@@ -589,10 +595,16 @@ def create_app() -> Flask:
                 # via get_or_create, so on a fresh install this thread would
                 # CREATE a league mid-onboarding (the one-world rule — never a
                 # graceful fallback on world resolution).
+                # ‼️ AND ONLY FOR A SAVE WITH A JHSAA SEASON TO SCOUT (owner rule
+                # 2026-11). The college game no longer simulates the association,
+                # so on an ordinary college save this was a whole-association
+                # roster build per gender at every boot for pages nobody opens.
                 from app.web import state as _state
                 if wd.exists(DEFAULT_SEED):
+                    _w = wd.load_world(DEFAULT_SEED)
                     for _g in ("boys", "girls"):
-                        _state._jhsaa_all_players(DEFAULT_SEED, _g)
+                        if wd.jhsaa_latest_season_year(_w["id"], _g):
+                            _state._jhsaa_all_players(DEFAULT_SEED, _g)
             except Exception:
                 pass                          # the lazy request path still covers it
             try:
@@ -1060,7 +1072,18 @@ def create_app() -> Flask:
         from app import worldconfig
         return render_template("world.html", active="World", hub=world_hub(), crest=crest,
                                box_stats=worldconfig.box_stats_enabled(),
-                               full_engine=worldconfig.match_fidelity() == "full")
+                               full_engine=worldconfig.match_fidelity() == "full",
+                               hs_sim=worldconfig.jhsaa_sim())
+
+    @app.route("/world/jhsaa-sim", methods=["POST"])
+    def world_jhsaa_sim():
+        # Per-save switch (owner rule 2026-11): does THIS save's college advance
+        # also simulate Jefferson's high-school season? Off is the college game.
+        # It only decides what the NEXT week-0 does — a season already archived
+        # stays archived, and a class already on the board is not rebuilt.
+        from app import worldconfig
+        worldconfig.set_jhsaa_sim(request.form.get("on") == "1")
+        return redirect(request.referrer or url_for("world_view"))
 
     @app.route("/world/boxstats", methods=["POST"])
     def world_boxstats():
@@ -2608,6 +2631,17 @@ def create_app() -> Flask:
         gender, label, u, g, group, _year = _jh_scope_args()
         view = jhsaa_repeat_poy(DEFAULT_SEED, g, group)
         return render_template("jhsaa_repeat_poy.html", active="High School",
+                               view=view, gender=gender, u=u, uni_label=label)
+
+    @app.route("/jhsaa/alumni")
+    def jhsaa_alumni():
+        """The Jefferson alumni tracker (owner rule 2026-11): one graduating class
+        and where it played college tennis — a program and a finished four-year
+        line each, written when the class graduated. The class is the season picked
+        in the scope bar. On the History sub-rail."""
+        gender, label, u, g, group, year = _jh_scope_args()
+        view = jhsaa_alumni_view(DEFAULT_SEED, g, group, year)
+        return render_template("jhsaa_alumni.html", active="High School",
                                view=view, gender=gender, u=u, uni_label=label)
 
     @app.route("/jhsaa/coach-records")

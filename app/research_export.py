@@ -791,6 +791,36 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
     # row, or worse attach it to whoever inherits the name. A row written
     # before the column existed falls back to the name. A school that has since
     # stopped sponsoring this gender gets an empty id, never a dangling one.
+    # THE ALUMNI TRACKER (owner rule 2026-11, `app/jhsaa_college.py`): where each
+    # graduating class's best seniors played college tennis — one row per alumnus
+    # per college SEASON, every class the save tracks (not just this export's
+    # season), this gender only. Read from the store the rung wrote; nothing is
+    # generated for an export. Archive path only.
+    college_rows = []
+    if w and not injected:
+        from app import jhsaa_college as _jcol
+        from app import world as _wd_col
+        _cc = _wd_col._db()
+        try:
+            _alumni = _jcol.all_rows(_cc, w["id"], _wd_col.active_salt())
+        finally:
+            _cc.close()
+        for a in _alumni:
+            if a["gender"] != gender:
+                continue
+            for cs in a["seasons"]:
+                college_rows.append({
+                    "grad_year": a["grad_year"], "gender": a["gender"],
+                    "class_rank": a["rank"], "player_id": a["pid"], "name": a["name"],
+                    "high_school": a["hs"], "hs_exit_ovr": a["hs_ovr"],
+                    "college": a["college"], "division": a["division"],
+                    "conference": a["conf"], "season": cs["year"],
+                    "class_year": cs["class"],
+                    "position": cs["pos"] if cs["pos"] else "",
+                    "wins": cs["w"], "losses": cs["l"],
+                    "honors": "; ".join(cs["honors"]),
+                    "career_peak": a["peak"] if a["peak"] else "",
+                    "career_wins": a["w"], "career_losses": a["l"]})
     from app import jhsaa_reclass as _rc
     realignments = []
     if w and not injected:
@@ -908,6 +938,7 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
               "jhsaa_coefficient.csv": coefficient_rows,
               "jhsaa_flights.csv": flight_rows,
               "jhsaa_realignments.csv": realignments,
+              "jhsaa_college.csv": college_rows,
               "jhsaa_portal.csv": portal_rows,
               "jhsaa_jv_state.csv": jv_state_rows,
               "jhsaa_program_history.csv": history,
@@ -1190,6 +1221,18 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "the owner sent them to another of their V1 options; options counts how many "
             "there were. A dropped proposal is not a row. Empty on an injected season or "
             "before the first portal.",
+            "jhsaa_college.csv is the ALUMNI TRACKER: where each graduating class's best "
+            "seniors played college tennis — one row per alumnus per college season, for "
+            "EVERY class the save tracks (not just this export's season), this gender only. "
+            "class_rank is the senior's rank in the graduating class by hs_exit_ovr; "
+            "player_id is the JHSAA pid. college/division/conference are a real program; "
+            "position is the singles lineup position that season (empty = not in the "
+            "lineup) and wins/losses the singles record. NOT SIMULATED: each line is "
+            "generated once when the class graduates, from the senior's standing, the "
+            "program's prestige and a per-player roll — no college dual is played, and "
+            "nothing in the game reads these rows. A class that graduated before the "
+            "tracker existed is filled in from the alumni index and carries no ceiling "
+            "information. Empty on an injected season and in a save with college attached.",
             "jhsaa_realignments.csv is the reclassification LEDGER: one row per school per "
             "committed realignment cycle, EVERY cycle the save has committed (newest first), "
             "not just this export's season, and identical in the girls' and boys' bundles — a "

@@ -458,6 +458,8 @@ def init_schema() -> None:
     conn.executescript(_jc._SCHEMA)
     from . import jhsaa_coy as _coy
     conn.executescript(_coy.SCHEMA)
+    from . import jhsaa_college as _jcol      # after the coaches' schema: it indexes
+    conn.executescript(_jcol.SCHEMA)          # their `jhsaa_alumni` table
     for col, typ in (("week_signed", "INTEGER DEFAULT 0"), ("flips", "INTEGER DEFAULT 0"),
                      ("commit_history", "TEXT DEFAULT '[]'")):
         try:
@@ -841,6 +843,8 @@ def reset(seed: int = DEFAULT_SEED) -> None:
                        " DELETE FROM world_jhsaa_reclass_move;")
     from . import jhsaa_portal as _jp
     conn.executescript(_jp._SCHEMA + " DELETE FROM world_jhsaa_portal;")
+    from . import jhsaa_college as _jcol
+    conn.executescript(_jcol.SCHEMA + " DELETE FROM world_jhsaa_college;")
     conn.commit()
     conn.close()
     # God-mode editor overrides (player moves, lineups, prestige/academics priors,
@@ -1343,6 +1347,28 @@ def resync_universes(seed: int = DEFAULT_SEED, max_steps: int = 500) -> dict:
 # Recruiting — national class + the weekly signing drip.
 # ==========================================================================
 _class_cache: dict = {}
+# ‼️ A CLASS IS PUBLISHED ONLY IF NOTHING INVALIDATED ITS YEAR WHILE IT WAS BUILDING.
+# A recruit class takes seconds to minutes to build and `_forget_recruit_classes`
+# can evict its year mid-build (the JHSAA rung, once the seniors have played). A
+# build that STARTED before the season was archived holds generated Jefferson
+# recruits; published after the eviction it would sit in the cache for the rest of
+# the process and the eviction would have achieved nothing. So each year carries a
+# GENERATION: a builder notes it before it starts and stores only if it has not
+# moved, with the check and the store under one lock. Both publication paths obey
+# it — the serial build in `recruit_class` and the pool results in
+# `prime_recruit_classes`.
+_class_gen: dict = {}
+_class_lock = threading.Lock()
+
+
+def _publish_class(key: tuple, klass, gen: int) -> bool:
+    """Store `klass` under `key` unless its year was invalidated since `gen` was
+    read. Returns whether it was stored."""
+    with _class_lock:
+        if _class_gen.get(key[2], 0) != gen:
+            return False
+        _class_cache[key] = klass
+        return True
 
 
 # The class generator (pids included via make_pid) is keyed by the gender string,
@@ -1369,24 +1395,74 @@ def recruit_class(gender: str, grad_year: int, salt: str):
     it. See AAR-junior-circuit-lazy-board-enrichment."""
     gender = _GENDER_CANON.get(gender, gender)
     key = (salt, gender, grad_year)
-    if key not in _class_cache:
+    # Computed into a LOCAL and returned from it — never `return _class_cache[key]`:
+    # `_forget_recruit_classes` can evict this key from another thread between the
+    # store and the return (the threaded-worker rule in CLAUDE.md).
+    klass = _class_cache.get(key)
+    # Built at most twice: a build overtaken by an invalidation is thrown away and
+    # redone, so the caller is handed the class as it stands AFTER the invalidation
+    # rather than a stale one. A second overtake returns the fresh build unpublished
+    # — correct for this caller, and the next reader builds its own.
+    for _attempt in range(2):
+        if klass is not None:
+            break
+        gen = _class_gen.get(grad_year, 0)
         rng = random.Random(f"{salt}|recruits|{gender}|{grad_year}")
         klass = generate_class(rng, n=RECRUIT_POOL, grad_year=grad_year,
                                gender=gender, talent_mean=_recruit_talent_mean(gender),
                                talent_sd=RECRUIT_TALENT_SD, intl_share=worldconfig.intl_share(),
                                intl_weights=worldconfig.region_weights())
-        # Jefferson's slots are not invented: swap in the JHSAA seniors who just
-        # graduated, carrying their real high-school records. Identity and ability
-        # only — the slot count still comes from the origin weight, and the pids are
-        # preserved. Silent no-op if the JHSAA data isn't present.
+        # ‼️ JEFFERSON ON THE BOARD — TWO PATHS, AND ONLY ONE TOUCHES THE SIM
+        # (owner rule 2026-11: the JHSAA sim is separate from the college game).
+        #
+        # A save that simulates the high-school season (`worldconfig.jhsaa_sim()`)
+        # AND has this class's season archived swaps in the seniors who just
+        # graduated, carrying their real records. Identity only — the slot count
+        # still comes from the origin weight and the pids are preserved.
+        # ‼️ "ARCHIVED" IS PART OF THE CONDITION: `apply_to_class` reads its
+        # seniors by REPLAYING the season (~8 minutes a gender, measured), and
+        # asked before the rung has played it would simulate one the save never
+        # archives — on whatever thread opened the board.
+        #
+        # Every other save — the college game — keeps the recruits the national
+        # class generated and gives each a REAL, current JHSAA school. No season,
+        # no rosters, no archive: Jefferson is a state and its schools exist.
         try:
             from . import jhsaa
-            jhsaa.apply_to_class(klass, gender, grad_year, salt)
+            if worldconfig.jhsaa_sim() and _jhsaa_archived_for(grad_year):
+                jhsaa.apply_to_class(klass, gender, grad_year, salt)
+            else:
+                jhsaa.assign_real_schools(klass, gender, grad_year, salt)
         except (OSError, ValueError, KeyError):
             pass
         rank_class(klass)                          # national rank + star ladder
-        _class_cache[key] = klass
-    return _class_cache[key]
+        if _publish_class(key, klass, gen) or _attempt:
+            break
+        klass = None                               # overtaken — build it again
+    return klass
+
+
+def _jhsaa_archived_for(grad_year: int) -> bool:
+    """True when THE world of this save has archived the JHSAA season whose
+    seniors are recruiting class `grad_year` (`jhsaa_season_year` and
+    `recruiting_grad_year` are the same number by design, so the archive key is
+    `grad_year - BASE_YEAR - 1`). False with no world at all."""
+    wid = _active_world_id()
+    if wid is None:
+        return False
+    return jhsaa_done({"id": wid, "year": grad_year - BASE_YEAR - 1})
+
+
+def _forget_recruit_classes(grad_year: int) -> None:
+    """Drop every cached recruit class for `grad_year`, whatever salt or gender it
+    was built under. Per-key pops, never a global `clear()` (the threaded-worker
+    rule): other years' classes are untouched."""
+    with _class_lock:
+        # Bump FIRST, under the lock a publisher takes: any build already under way
+        # for this year can no longer store its result (`_publish_class`).
+        _class_gen[grad_year] = _class_gen.get(grad_year, 0) + 1
+        for key in [k for k in list(_class_cache) if k[2] == grad_year]:
+            _class_cache.pop(key, None)
 
 
 # The junior circuit is simulated over the RECRUITED CADRE — the top of the pool
@@ -1476,12 +1552,16 @@ def prime_recruit_classes(seed: int = DEFAULT_SEED, year: int | None = None) -> 
     from app import worldconfig
     cfg = worldconfig.snapshot()
     tasks = [(salt, cfg, g, grad_year) for g in genders]
+    # The workers read the archive when they START, so the generation is noted
+    # BEFORE the pool is launched: a result that crossed an invalidation is dropped
+    # here and the class builds lazily at its next read (`_publish_class`).
+    gen = _class_gen.get(grad_year, 0)
     for (g, gy, dicts) in pmap(_build_board_class, tasks, workers=workers_for(len(tasks))):
         klass = RecruitClass(grad_year=gy, gender=g,
                              recruits=[prospect_from_dict(d) for d in dicts])
         _rank(klass)                            # match serial recruit_class's ranking exactly
         klass.circuit_done = True
-        _class_cache[(salt, g, gy)] = klass
+        _publish_class((salt, g, gy), klass, gen)
 
 
 def warm_caches(seed: int = DEFAULT_SEED) -> None:
@@ -3836,7 +3916,16 @@ def advance_week(seed: int = DEFAULT_SEED) -> dict:
     # proposal the owner reviews on /jhsaa/reclassification. The fall-portal
     # pattern: the first encounter builds the slate, later ones keep holding until
     # it is committed or dismissed. An off-cycle "Run now" opens the same hold.
-    if w["week"] == 0 and w["year"] > 0 and not jhsaa_done(w):
+    # ‼️ ONLY FOR A SAVE THAT SIMULATES THE HIGH-SCHOOL SEASON (owner rule 2026-11:
+    # "the JHSAA sim should just be separate from the college game"). The rung
+    # measured ~18 minutes on the request thread, and the recruit board then
+    # replayed the whole season a second time (~8 minutes) to name ~200 recruits —
+    # so a new college save was ~26 minutes from its first click to its first dual.
+    # `worldconfig.jhsaa_sim()` is OFF unless the save turns it on; off, none of
+    # the three week-0 JHSAA steps below exist and Jefferson is an ordinary state
+    # (`recruit_class`). Read ONCE here, before any connection is opened.
+    hs_sim = worldconfig.jhsaa_sim()
+    if hs_sim and w["week"] == 0 and w["year"] > 0 and not jhsaa_done(w):
         from . import jhsaa_reclass as rc
         cur = rc.pending(w["id"])
         if cur is None and rc.due(w):
@@ -3848,14 +3937,19 @@ def advance_week(seed: int = DEFAULT_SEED) -> dict:
     # after reclassification and before the season plays, every early participant
     # without a projected V1 seat is proposed a move; the world holds on
     # /jhsaa/portal until the owner commits or dismisses. An empty slate never holds.
-    if w["week"] == 0 and not jhsaa_done(w):
+    if hs_sim and w["week"] == 0 and not jhsaa_done(w):
         from . import jhsaa_portal as jp
         cur = jp.check_hold(w)
         if cur is not None:
             return {"event": "jhsaa_portal_pending", "year": w["year"],
                     "moves": len(cur["data"].get("moves", []))}
-    if w["week"] == 0 and not jhsaa_done(w):
-        return run_jhsaa(seed, w)
+    if hs_sim and w["week"] == 0 and not jhsaa_done(w):
+        res = run_jhsaa(seed, w)
+        # A recruit class built BEFORE its seniors had played (the boot warm, a
+        # recruiting page opened at week 0) holds generated Jefferson recruits;
+        # drop it so the next read hands the board the class that just graduated.
+        _forget_recruit_classes(BASE_YEAR + w["year"] + 1)
+        return res
 
     # Fresh year, week 0: the pro league drafts the class that just graduated. Its own
     # step, before the new college season plays a dual.
@@ -4275,6 +4369,10 @@ def run_jhsaa(seed: int, world: dict) -> dict:
     from . import jhsaa_coaches
     jhsaa_coaches.ensure_staff(world["id"], season_year, salt)
     staffs: dict = {}
+    # THE ALUMNI TRACKER (owner rule 2026-11) is for a world with NO college in it:
+    # a save that plays real college tennis sends its seniors to the real board.
+    # One indexed probe, resolved before the rung's transaction opens.
+    track_alumni = is_jhsaa_only(seed)
     conn = _db()
     champs = {}
     try:
@@ -4585,6 +4683,13 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                     honored.update(_jaw.row_pids(row))
             jhsaa_coaches.record_alumni(conn, world["id"], gender,
                                         season["teams"].values(), season_year, honored)
+            # WHERE THEY WENT — the class's best seniors, each with a college
+            # program and a finished four-year line, written once
+            # (`app/jhsaa_college.py`). No college season is simulated.
+            if track_alumni:
+                from . import jhsaa_college as _jcol
+                _jcol.record_class(conn, world["id"], gender, season_year, salt,
+                                   season["teams"].values())
             # THE PER-PROGRAM SEASON ROWS (read-path fix #2): every program's
             # ledger row for this season, folded ONCE here where the archive is
             # written, so no page ever parses the whole season to show one school.

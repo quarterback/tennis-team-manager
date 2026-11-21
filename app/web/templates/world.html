@@ -17,6 +17,13 @@
       <i class="fa-solid fa-gauge-high" aria-hidden="true"></i> Engine: {{ 'Full' if full_engine else 'Fast' }}
     </button>
   </form>
+  <form method="post" action="{{ url_for('world_jhsaa_sim') }}">
+    <input type="hidden" name="on" value="{{ '0' if hs_sim else '1' }}">
+    <button class="bl-pill" style="cursor:pointer"
+      title="Whether this save's advance also simulates Jefferson's high-school (JHSAA) season each year. Off = the college game on its own: no high-school step, and Jefferson recruits are generated like every other state's with a real JHSAA school. On adds a long step at the start of every year.">
+      <i class="fa-solid fa-school" aria-hidden="true"></i> High-school sim: {{ 'On' if hs_sim else 'Off' }}
+    </button>
+  </form>
   {% if hub.primary.link %}
   <a class="bl-run-big" href="{{ url_for(hub.primary.endpoint) }}" style="display:inline-flex;align-items:center;width:auto;height:32px;margin-left:8px;padding:0 16px;font-size:16px;text-decoration:none">
     {% if hub.primary.icon %}<i class="{{ hub.primary.icon }}" aria-hidden="true"></i> {% endif %}{{ hub.primary.label }}
