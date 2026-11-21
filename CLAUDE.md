@@ -542,6 +542,31 @@ college dual; the owner never reached the college game.
   rail; the scope bar's season IS the class), the player page's College panel,
   `jhsaa_college.csv`. `tests/test_jhsaa_college.py`;
   `docs/AAR-jhsaa-sim-separation-and-alumni-tracker.md`.
+- **‼️ CAREER MODEL 2 IS BUILT AND NOT ACTIVE (owner spec 2026-11,
+  `app/jhsaa_college_v2.py`, `docs/AAR-jhsaa-alumni-career-model-2.md`).**
+  `jhsaa_college.ACTIVE_MODEL` stays 1 until the owner signs off the measured
+  distribution (`scripts/jhsaa_college_validate.py` →
+  `docs/reports/REPORT-jhsaa-alumni-career-model-2-validation.md`): a career is
+  written once, so a class written under unapproved rates carries them for good.
+  ‼️ **EXISTING CAREERS ARE NEVER REGENERATED** — `_ensure_class` leaves any class
+  that has a row, whatever model wrote it; the earlier claim in this file that
+  "nothing reads these rows" was about game logic, and the pages and the export DO
+  read them. A historical rewrite is a separate, explicitly authorised migration.
+  Model 1 flattened careers at the PLACEMENT (`fit = standing - strength`, with
+  placement setting the two equal), so fix placement before adding events. Model 2:
+  level from the exit rating read against the five prior classes and mapped onto
+  the college recruit distribution; a destination CHOSEN among programs that would
+  recruit the player (no division quota; D4 academic gate and service academies are
+  hard gates); a depth chart per program-season seeded independently of the player
+  (`Context.seats`); a season-by-season career with singles and doubles separate,
+  injuries, transfers, stopping, leaving. The rung captures a graduation SNAPSHOT
+  (`world_jhsaa_grad_snapshot`) under either model. ‼️ Three traps the measurement
+  found: compare players and programs on ONE scale (`compress_talent` squashes
+  both; raw program means against compressed recruits signed ZERO D1 players); the
+  high-school ceiling gap is a RANKING, not a quantity (top seniors sit near their
+  ceiling, so read literally every recruit looked finished); playing time must
+  SATURATE or everybody picks the weakest team (100+ All-Americans a class).
+  `tests/test_jhsaa_college_v2.py`. The interface is untouched.
 - **‼️ ANY SCRIPT THAT CALLS INTO THE APP NEEDS `if __name__ == "__main__":`.** The
   pools use a SPAWN context, so a worker re-imports the launching script; unguarded,
   every worker re-runs the whole script against the same database (duplicate

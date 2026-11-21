@@ -287,4 +287,7 @@ def test_the_rung_hands_it_real_teams_and_only_in_a_world_without_college(lab_wo
     # tracker at once, and a college save never starts it.
     import inspect
     src = inspect.getsource(wd.run_jhsaa)
-    assert "track_alumni = is_jhsaa_only(seed)" in src and "if track_alumni:" in src
+    assert "track_alumni = tracks_alumni(seed)" in src and "if track_alumni:" in src
+    # …and that rule: a world with no college in it, or one that does not hand its
+    # seniors to a real recruit board.
+    assert wd.tracks_alumni(wd.DEFAULT_SEED)

@@ -6627,7 +6627,8 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
     from app import jhsaa_college as _jcol
     _cconn = world._db()
     try:
-        college = _jcol.line_for(_cconn, w["id"], pid, salt)
+        college = _jcol.line_for(_cconn, w["id"], pid, salt,
+                                 fill=world.tracks_alumni(seed))
     finally:
         _cconn.close()
     return {
@@ -7196,7 +7197,8 @@ def jhsaa_alumni_view(seed: int, gender: str, group: str | None = None,
     grad_year = world.BASE_YEAR + yr + 1
     conn = world._db()
     try:
-        rows = jcol.class_rows(conn, w["id"], g, grad_year, world.active_salt(seed))
+        rows = jcol.class_rows(conn, w["id"], g, grad_year, world.active_salt(seed),
+                               fill=world.tracks_alumni(seed))
     finally:
         conn.close()
     schools = _jh_schools(g)

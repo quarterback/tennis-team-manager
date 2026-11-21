@@ -34,6 +34,16 @@ import random
 
 from . import ncaa
 
+#: WHICH CAREER MODEL NEW CLASSES ARE WRITTEN WITH. Model 1 is the original
+#: rank-matched line below; model 2 is `jhsaa_college_v2` (owner spec 2026-11).
+#: ‼️ A career is written once and never regenerated, so switching this only
+#: changes classes that have no rows yet — and it stays at 1 until the owner has
+#: seen model 2's measured distribution (`scripts/jhsaa_college_validate.py`),
+#: because every class written in the meantime would carry unapproved rates
+#: permanently. Rewriting classes already stored is a separate, explicitly
+#: authorised migration and nothing here does it.
+ACTIVE_MODEL = 1
+
 #: How many seniors a gender send on each year — about what Jefferson's origin
 #: weight put on the national recruit board when the two sims were joined.
 CLASS_SIZE = 200
@@ -66,6 +76,18 @@ CREATE TABLE IF NOT EXISTS world_jhsaa_college (
 );
 CREATE INDEX IF NOT EXISTS ix_jhsaa_college_class
   ON world_jhsaa_college(world_id, grad_year, gender);
+-- THE GRADUATION SNAPSHOT (owner spec 2026-11): what a class's leading seniors
+-- had done and were when they graduated — ability, estimated and true ceiling,
+-- singles and doubles records by flight, honours, style, academics, where they
+-- are from — captured at the rung from the season it just played. It is the
+-- career model's input, kept so a career never needs a roster rebuilt to explain
+-- it. One row per senior, the class's top `CANDIDATES` by exit rating.
+CREATE TABLE IF NOT EXISTS world_jhsaa_grad_snapshot (
+  world_id INTEGER, grad_year INTEGER, gender TEXT, pid TEXT, data TEXT,
+  PRIMARY KEY (world_id, pid)
+);
+CREATE INDEX IF NOT EXISTS ix_jhsaa_grad_snapshot_class
+  ON world_jhsaa_grad_snapshot(world_id, grad_year, gender);
 -- The alumni index is read here one CLASS at a time (to fill in a class that
 -- graduated before the tracker); its own index is by school.
 CREATE INDEX IF NOT EXISTS ix_jhsaa_alumni_class
@@ -222,51 +244,208 @@ def build_class(seniors: list, gender: str, grad_year: int, salt: str) -> list:
                   key=lambda r: r["rank"])
 
 
+def ensure_columns(conn) -> None:
+    """Columns added after the table first shipped. `ver` is the career model a
+    row was written with (NULL reads as 1); `hs_ident` is the school's stable
+    identity (`School.ident`), which a rename never moves."""
+    for col, typ in (("ver", "INTEGER"), ("hs_ident", "TEXT")):
+        try:
+            conn.execute(f"ALTER TABLE world_jhsaa_college ADD COLUMN {col} {typ}")
+        except Exception:                           # already there
+            pass
+
+
 def _insert(conn, world_id: int, rows: list) -> None:
+    """Write careers. INSERT OR IGNORE on the pid: a career already on the record
+    is never replaced, whatever model or constants produced the new one."""
     conn.executemany(
         "INSERT OR IGNORE INTO world_jhsaa_college (world_id, grad_year, gender, pid,"
-        " rank, name, hs, college, division, data) VALUES (?,?,?,?,?,?,?,?,?,?)",
+        " rank, name, hs, college, division, data, ver, hs_ident)"
+        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
         [(world_id, r["grad_year"], r["gender"], r["pid"], r["rank"], r["name"],
-          r["hs"], r["college"], r["division"], json.dumps(r)) for r in rows])
+          r["hs"], r["college"], r["division"], json.dumps(r),
+          int(r.get("model", 1)), r.get("hs_ident", "")) for r in rows])
+
+
+def snapshot_of(p, team, awards: dict | None = None) -> dict:
+    """What one senior was at graduation, read off the season just played. Every
+    field is something the rung already holds — nothing is rebuilt for it."""
+    from . import jhsaa
+    from .development import _STYLE_CLUSTERS
+    log = team.matches.get(p.pid) or () if hasattr(team, "matches") else ()
+    rec = {"s": [0, 0], "d": [0, 0]}
+    flights: dict = {}
+    post = 0
+    for m in log:
+        slot, won, phase = m[0], m[1], m[2]
+        kind = "s" if str(slot).startswith("S") else "d"
+        rec[kind][0 if won else 1] += 1
+        flights[slot] = flights.get(slot, 0) + 1
+        post += phase in jhsaa.POSTSEASON
+    top = lambda k: max((f for f in flights if f.startswith(k)),        # noqa: E731
+                        key=lambda f: flights[f], default=None)
+    cur = getattr(p, "current", None) or {}
+    net = [cur[a] for a in _STYLE_CLUSTERS["net"] if a in cur]
+    serve = [cur[a] for a in _STYLE_CLUSTERS["serve"] if a in cur]
+    ovr = float(p.current_overall())
+    traits = getattr(p, "traits", {}) or {}
+    honors = []
+    if awards:
+        try:
+            honors = list(jhsaa.honors_for(p.pid, awards, team.school.group))
+        except Exception:                           # an award shape this cannot read
+            honors = []
+    played = bool(log)
+    return {
+        "pid": p.pid, "name": p.name,
+        "hs": team.school.name, "hs_ident": team.school.ident,
+        "hs_class": team.school.classification, "hs_group": team.school.group,
+        "hs_area": team.school.area, "hs_county": team.school.county,
+        "hometown": getattr(p, "hometown", ""),
+        "country": getattr(p, "country", "") or "US",
+        "domestic": bool(ncaa.is_domestic_player(p)),
+        "academic": int(getattr(p, "academic_rating", 0) or 0) or None,
+        "ovr": ovr, "pot": float(jhsaa.pot_display(p)),
+        "ceiling": float(p.ceiling_overall()),
+        "style": traits.get("play_style", ""), "trait": traits.get("style_trait", ""),
+        "net_edge": round(sum(net) / len(net) - ovr, 2) if net else None,
+        "serve_edge": round(sum(serve) / len(serve) - ovr, 2) if serve else None,
+        # The season's record — None when the senior did not play one (a class
+        # captured without a played season), so the model knows not to read it.
+        "s_w": rec["s"][0] if played else None, "s_l": rec["s"][1] if played else None,
+        "d_w": rec["d"][0] if played else None, "d_l": rec["d"][1] if played else None,
+        "s_flight": top("S"), "d_flight": top("D"),
+        "matches": len(log), "post_matches": post,
+        "honors": honors,
+        "dev": {k: v for k, v in (getattr(p, "jhsaa", None) or {}).items()
+                if isinstance(v, (int, float, str, bool))},
+    }
+
+
+def capture_snapshots(conn, world_id: int, gender: str, grad_year: int, teams,
+                      awards_by_group: dict | None = None,
+                      all_region: dict | None = None) -> list:
+    """Store the graduation snapshot of the class's leading seniors and return
+    them. Written once (the pid is the key) and on the rung's connection."""
+    from . import jhsaa_college_v2 as v2
+    pairs = [(p, t) for t in teams for p in t.roster if getattr(p, "grade", 0) == 12]
+    pairs.sort(key=lambda pt: (-pt[0].current_overall(), pt[0].pid))
+    snaps = []
+    for p, t in pairs[:v2.CANDIDATES]:
+        aw = None
+        if awards_by_group is not None:
+            aw = {**(awards_by_group.get(t.school.group) or {}),
+                  "all_region": all_region or {}}
+        snaps.append(snapshot_of(p, t, aw))
+    conn.executemany(
+        "INSERT OR IGNORE INTO world_jhsaa_grad_snapshot"
+        " (world_id, grad_year, gender, pid, data) VALUES (?,?,?,?,?)",
+        [(world_id, grad_year, gender, s["pid"], json.dumps(s)) for s in snaps])
+    return snaps
+
+
+def reference(conn, world_id: int, gender: str, grad_year: int) -> list:
+    """The exit ratings a class is read against: the leading seniors of each of
+    the classes before it, pooled, ascending. Empty for a save's first class."""
+    from . import jhsaa_college_v2 as v2
+    try:
+        rows = conn.execute(
+            "SELECT grad_year, ovr FROM jhsaa_alumni WHERE world_id=? AND gender=?"
+            " AND grad_year BETWEEN ? AND ? AND rank > 0",
+            (world_id, gender, grad_year - v2.REF_CLASSES, grad_year - 1)).fetchall()
+    except Exception:
+        return []
+    by_year: dict = {}
+    for gy, ovr in rows:
+        by_year.setdefault(gy, []).append(float(ovr or 0.0))
+    pool = []
+    for vals in by_year.values():
+        pool += sorted(vals, reverse=True)[:v2.TARGET_BOUND]
+    return sorted(pool)
+
+
+def stored_seasons(conn, world_id: int, gender: str, grad_year: int) -> dict:
+    """`{(college, year): [alumnus-season, …]}` for the model-2 careers of the
+    three classes ahead of this one — the alumni a new class will share a team
+    with, and whose positions are already on the record."""
+    out: dict = {}
+    for (data,) in conn.execute(
+            "SELECT data FROM world_jhsaa_college WHERE world_id=? AND gender=?"
+            " AND grad_year BETWEEN ? AND ? AND ver=2",
+            (world_id, gender, grad_year - 3, grad_year - 1)):
+        row = json.loads(data)
+        for s in row.get("seasons", []):
+            out.setdefault((s["college"], s["year"]), []).append(
+                {"pid": row["pid"], "slv": s.get("slv", 0.0), "dlv": s.get("dlv", 0.0),
+                 "s_pos": s.get("s_pos"), "d_pair": s.get("d_pair")})
+    return out
+
+
+def _build(conn, world_id: int, gender: str, grad_year: int, salt: str,
+           snaps: list) -> list:
+    """One class's careers under the ACTIVE model."""
+    if ACTIVE_MODEL == 1:
+        return build_class(snaps, gender, grad_year, salt)
+    from . import jhsaa_college_v2 as v2
+    return v2.build_class(snaps, gender, grad_year, salt,
+                          ref=reference(conn, world_id, gender, grad_year),
+                          stored=stored_seasons(conn, world_id, gender, grad_year))
 
 
 def record_class(conn, world_id: int, gender: str, grad_year: int, salt: str,
-                 teams) -> int:
+                 teams, awards_by_group: dict | None = None,
+                 all_region: dict | None = None) -> int:
     """Write this season's graduating class — on the rung's connection, from the
-    rosters the season was just played with. Written once: a pid already tracked is
-    left exactly as it was."""
-    from . import jhsaa
-    seniors = [{"pid": p.pid, "name": p.name, "hs": t.school.name,
-                "ovr": float(p.current_overall()),
-                # The staff's ESTIMATE of the ceiling, never the hidden one — the
-                # read a college coach would have had of the kid too.
-                "pot": float(jhsaa.pot_display(p)),
-                "domestic": ncaa.is_domestic_player(p)}
-               for t in teams for p in t.roster if getattr(p, "grade", 0) == 12]
-    rows = build_class(seniors, gender, grad_year, salt)
+    rosters and results of the season just played. Written once: a pid already
+    tracked is left exactly as it was.
+
+    The SNAPSHOT is captured whichever model is active, so a class that graduates
+    under model 1 still has its full inputs on record."""
+    ensure_columns(conn)
+    teams = list(teams)
+    snaps = capture_snapshots(conn, world_id, gender, grad_year, teams,
+                              awards_by_group, all_region)
+    if ACTIVE_MODEL == 1:
+        # Model 1 reads every senior (it takes its own top CLASS_SIZE).
+        from . import jhsaa
+        snaps = [{"pid": p.pid, "name": p.name, "hs": t.school.name,
+                  "hs_ident": t.school.ident, "ovr": float(p.current_overall()),
+                  "pot": float(jhsaa.pot_display(p)),
+                  "domestic": ncaa.is_domestic_player(p)}
+                 for t in teams for p in t.roster if getattr(p, "grade", 0) == 12]
+    rows = _build(conn, world_id, gender, grad_year, salt, snaps)
     _insert(conn, world_id, rows)
     return len(rows)
 
 
 def _ensure_class(conn, world_id: int, gender: str, grad_year: int, salt: str) -> None:
-    """Fill in a class that graduated before the tracker existed, from the alumni
-    index. No roster is rebuilt: the index already holds every senior and the rating
-    they left on. It carries no ceiling and no nationality, so growth is rolled and
-    the service academies are simply out of view for these classes."""
+    """Fill in a class that has no careers yet. ‼️ A class with ANY row is left
+    alone — this never regenerates. The inputs are the graduation snapshot when
+    the class has one, else the alumni index (the reduced path: every senior and
+    the rating they left on, no ceiling, no record, no nationality — the model
+    rolls what it cannot read, and the service academies are out of view).
+    No roster is rebuilt either way."""
     if conn.execute("SELECT 1 FROM world_jhsaa_college WHERE world_id=? AND grad_year=?"
                     " AND gender=? LIMIT 1", (world_id, grad_year, gender)).fetchone():
         return
-    try:
-        idx = conn.execute(
-            "SELECT pid, name, school, ovr FROM jhsaa_alumni WHERE world_id=? AND"
-            " gender=? AND grad_year=?", (world_id, gender, grad_year)).fetchall()
-    except Exception:                                   # no alumni index in this save
+    ensure_columns(conn)
+    snaps = [json.loads(r[0]) for r in conn.execute(
+        "SELECT data FROM world_jhsaa_grad_snapshot WHERE world_id=? AND grad_year=?"
+        " AND gender=?", (world_id, grad_year, gender))]
+    if not snaps:
+        try:
+            idx = conn.execute(
+                "SELECT pid, name, school, ovr, ident, style, trait FROM jhsaa_alumni"
+                " WHERE world_id=? AND gender=? AND grad_year=?",
+                (world_id, gender, grad_year)).fetchall()
+        except Exception:                           # no alumni index in this save
+            return
+        snaps = [{"pid": r[0], "name": r[1], "hs": r[2], "ovr": float(r[3] or 0.0),
+                  "hs_ident": r[4] or "", "style": r[5] or "", "trait": r[6] or ""}
+                 for r in idx]
+    if not snaps:
         return
-    if not idx:
-        return
-    seniors = [{"pid": r[0], "name": r[1], "hs": r[2], "ovr": float(r[3] or 0.0)}
-               for r in idx]
-    _insert(conn, world_id, build_class(seniors, gender, grad_year, salt))
+    _insert(conn, world_id, _build(conn, world_id, gender, grad_year, salt, snaps))
     conn.commit()
 
 
@@ -293,15 +472,19 @@ def class_years(conn, world_id: int, gender: str) -> list:
     return sorted(years, reverse=True)
 
 
-def class_rows(conn, world_id: int, gender: str, grad_year: int, salt: str) -> list:
-    """One class, in rank order."""
-    _ensure_class(conn, world_id, gender, grad_year, salt)
+def class_rows(conn, world_id: int, gender: str, grad_year: int, salt: str,
+               fill: bool = True) -> list:
+    """One class, in rank order. `fill` False only reads — the caller's save
+    sends its seniors to a real recruit board, so nothing is written for it."""
+    if fill:
+        _ensure_class(conn, world_id, gender, grad_year, salt)
     return [_relabelled(json.loads(r[0])) for r in conn.execute(
         "SELECT data FROM world_jhsaa_college WHERE world_id=? AND grad_year=? AND"
         " gender=? ORDER BY rank", (world_id, grad_year, gender))]
 
 
-def line_for(conn, world_id: int, pid: str, salt: str) -> dict | None:
+def line_for(conn, world_id: int, pid: str, salt: str,
+             fill: bool = True) -> dict | None:
     """One player's college line, or None — they have not graduated, or were not
     among the class's `CLASS_SIZE`. One indexed read."""
     def _read():
@@ -309,7 +492,7 @@ def line_for(conn, world_id: int, pid: str, salt: str) -> dict | None:
                          " pid=?", (world_id, pid)).fetchone()
         return _relabelled(json.loads(r[0])) if r else None
     hit = _read()
-    if hit is not None:
+    if hit is not None or not fill:
         return hit
     try:
         a = conn.execute("SELECT gender, grad_year FROM jhsaa_alumni WHERE world_id=?"
@@ -322,10 +505,10 @@ def line_for(conn, world_id: int, pid: str, salt: str) -> dict | None:
     return _read()
 
 
-def all_rows(conn, world_id: int, salt: str) -> list:
+def all_rows(conn, world_id: int, salt: str, fill: bool = True) -> list:
     """Every tracked alumnus of the save, for the research export — filling in any
     class the index still holds first."""
-    for gender in ("girls", "boys"):
+    for gender in ("girls", "boys") if fill else ():
         for gy in class_years(conn, world_id, gender):
             _ensure_class(conn, world_id, gender, gy, salt)
     return [_relabelled(json.loads(r[0])) for r in conn.execute(
