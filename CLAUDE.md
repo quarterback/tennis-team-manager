@@ -4140,6 +4140,13 @@ list is `server.SCHEMES`.
   contains NO colour dark enough to be ink — the darkest is 1.8:1 — so its ink and link
   are derived by pushing the palette's hues down. Dropped in as sent it would have
   rendered unreadable body text with no error anywhere.
+- **‼️ THE TEXT TIERS ARE CHROMATIC (owner, 2026-11: "still too gray").**
+  `--text-secondary` / `--text-muted` / `--text-faint` are the scheme's INK mixed
+  toward its LINK colour (`--brand-strong`), never a grey; `--text-kicker` (the
+  accent pulled toward ink) is for uppercase section labels, eyebrows and nav group
+  headings. All four live in the alias layer, so the ten schemes follow. The
+  `--gray-*` slots are for borders, rules and disabled states — do not read them
+  for text.
 - **Win/loss stays green/red in every scheme**: those carry MEANING, not identity.
 - **A swatch is keyed on the scheme NAME** — rename a scheme and its chip goes blank
   while everything else still works. Every key in `SCHEMES` needs a `.fm-theme-sw.s-*`

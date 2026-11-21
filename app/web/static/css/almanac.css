@@ -10,7 +10,7 @@
 .al-kpi-link:hover { border-color: var(--brand, #36c); }
 .al-kpi-k {
   font-size: 14px; text-transform: uppercase; letter-spacing: 0.04em;
-  color: var(--text-muted, #789); font-weight: 700;
+  color: var(--text-kicker); font-weight: 700;
 }
 .al-kpi-v {
   font-size: 24px; font-weight: 800; color: var(--text-primary, #111); line-height: 1.15;
