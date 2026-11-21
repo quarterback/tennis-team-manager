@@ -232,7 +232,7 @@
 .bl-crest {
   display: inline-flex; align-items: center; justify-content: center; flex: none;
   overflow: hidden; line-height: 1;
-  border-radius: 6px; color: #fff; font-family: var(--font-display); font-weight: 800; letter-spacing: -0.02em;
+  border-radius: 6px; color: #fff; font-family: var(--font-text); font-weight: 800; letter-spacing: -0.02em;
 }
 .bl-crest.xs { width: 20px; height: 20px; font-size: 9px; }
 .bl-crest.sm { width: 24px; height: 24px; font-size: 10px; }
@@ -745,3 +745,14 @@ img, svg, table { max-width: 100%; }
 .bl-ledger tbody tr:hover td { background: var(--surface-subtle); }
 .bl-ledger td:first-child { border-radius: 6px 0 0 6px; }
 .bl-ledger td:last-child { border-radius: 0 6px 6px 0; }
+
+
+/* ---- The number face (owner, 2026-11: the default look) ----
+   Ranks, records, indexes and scores are set in RX100, the canvas's number
+   face. It has one weight, so weight synthesis is off: emphasis on a number
+   comes from size and colour, never a faux bold. */
+.t-num, .bl-rank, .bl-stat, .bl-rec, .bl-crec, .bl-confrk, .bl-bigscore .n,
+.bl-sched-row .c-res .score, .bl-yeardiv-rec, .bl-bubble-rec, .bl-bubble-pi,
+.bl-brk-seed {
+  font-family: var(--font-num); font-weight: 400; font-synthesis: none;
+}

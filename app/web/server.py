@@ -472,7 +472,8 @@ def _str_scale_rows():
 # "Ensign" carries no attribute at all. Ported from the Varsity Apex sheet along
 # with the palettes themselves; ten light schemes, no dark mode.
 SCHEMES = [
-    ("default",    "Ensign",     "Deep twilight · cobalt · white · red · oxblood"),
+    ("default",    "Clinch",     "Midnight violet · dust grey · carrot · emerald · flag red"),
+    ("ensign",     "Ensign",     "Deep twilight · cobalt · white · red · oxblood"),
     ("laurel",     "Laurel",     "Evergreen · crimson · parchment · pink · amber"),
     ("apex",       "Apex",       "Prussian · amber · snow · flag red · steel blue"),
     ("rally",      "Rally",      "Blue bell · aqua · lemon · tiger flame · racing red"),
