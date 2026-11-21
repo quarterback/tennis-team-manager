@@ -267,6 +267,29 @@ def set_match_fidelity(full) -> None:
     set("match_fidelity", "full" if full else "fast")
 
 
+def jhsaa_sim() -> bool:
+    """Whether THIS save's college advance also simulates Jefferson's high-school
+    season (owner rule 2026-11: "the JHSAA sim should just be separate from the
+    college game"). OFF unless a save turns it on.
+
+    Off is the college game: `world.advance_week` has no week-0 JHSAA rung and no
+    reclassification / rising-freshman-portal holds, and the recruit board never
+    replays a high-school season to name Jefferson's recruits — Jefferson is an
+    ordinary state whose recruits are generated like every other state's and then
+    given a REAL, current JHSAA school (`jhsaa.assign_real_schools`).
+
+    On is the combined world (a lab save with college attached): the rung, its
+    holds and the senior hand-off (`jhsaa.apply_to_class`) run as they always did.
+
+    The JHSAA lab is untouched either way — it advances through
+    `world.advance_jhsaa_lab` and never reads this."""
+    return get("jhsaa_sim") == "on"
+
+
+def set_jhsaa_sim(on) -> None:
+    set("jhsaa_sim", "on" if on else "off")
+
+
 DEFAULT_PRESEASON_PORTAL_CAP = 250
 
 

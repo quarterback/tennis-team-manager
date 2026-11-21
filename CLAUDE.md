@@ -490,6 +490,46 @@ Traps:
   substituted magnets keep their identity in prep-network and merely stop sponsoring
   tennis, so they must NOT be renamed there.
 
+## ⚠️ THE JHSAA SIM IS SEPARATE FROM THE COLLEGE GAME (owner rule 2026-11, `worldconfig.jhsaa_sim`)
+"Jefferson can stay a state, its high schools real, but the JHSAA sim should just be
+separate from the college game." Measured on a fresh save before the rule: the week-0
+JHSAA rung took **~18 minutes on the request thread** (varsity 5.8, JV 5.6, roster
+builds ~2, individuals 1.7, next-season portal prep 1.4, mixed 1.0), and the next click
+**replayed the whole season a second time** — `prime_recruit_classes` builds each
+gender's board in a SPAWNED worker, whose `run_season` memo is empty, so
+`jhsaa.apply_to_class` re-simulated ~7.6 minutes a gender to name ~200 of 2,500
+recruits, and did it again at every boot warm. ~26 minutes from first click to first
+college dual; the owner never reached the college game.
+- **`worldconfig.jhsaa_sim()` is OFF unless a save turns it on** (World hub pill,
+  `POST /world/jhsaa-sim`). Off IS the college game: `advance_week` has no JHSAA rung
+  and consults neither JHSAA hold (reclassification, rising-freshman portal), the
+  advance button never advertises one, and the boot warm builds no JHSAA census for a
+  save with no archived season.
+- **Off, Jefferson is an ordinary state with real schools** (`jhsaa.assign_real_schools`,
+  picked in `world.recruit_class`): recruits keep the name, ability and pid the
+  national class generated; only `high_school` (a program sponsoring that gender
+  TODAY, in-state, drawn by enrollment) and, when their town has no program,
+  `hometown` move. Own rng stream; `p.jhsaa` stays empty — no record, because no
+  season was played. Both boards build in ~1.5 s with zero `run_season` calls.
+  ‼️ It does NOT use `high_schools.json["JF"]`: that list is a pre-rename snapshot
+  (122 of its 502 names are current programs). And do NOT "fix" that file to match —
+  `generate_prospect` draws from it on the caller's rng (`rng.choice` consumes a
+  length-dependent number of words), so resizing the list can shift every later roll
+  on that stream, and JHSAA players are regenerated from seed on every build.
+- **On is the combined world** (a lab save with college attached) and is otherwise
+  unchanged — with one condition added: `apply_to_class` is reached only for a class
+  whose season the save has ARCHIVED (`world._jhsaa_archived_for`). It gets its
+  seniors by replaying the season, so asked earlier it simulated one the save never
+  archives, on whatever thread opened the board. The rung evicts that year's cached
+  classes (`_forget_recruit_classes`, per key) so the board picks the seniors up.
+  ‼️ The replay itself is STILL THERE on this path — the fix is to persist the
+  graduating class at the rung and have the board READ it (rule 6 above), not built.
+- **The JHSAA lab never reads the switch** — it advances through
+  `advance_jhsaa_lab` → `run_jhsaa` directly.
+- Everything below this section describes the association itself and the combined
+  world; "its graduating seniors ARE Jefferson's entries on the college recruit board"
+  is true only with the switch on. `tests/test_jhsaa_sim_switch.py`.
+
 ## ⚠️ THE JHSAA — Jefferson's high-school season is SIMULATED and VISIBLE (`app/jhsaa.py`)
 Owner rule 2027-08, and it REVERSED an earlier "keep the HS season invisible" decision:
 Jefferson's ~335 girls'/~292 boys' programs play a full season **in this engine**, browsable
@@ -3014,7 +3054,9 @@ comes from that repo. Design: `docs/DESIGN-jhsaa-high-school-season.md`; lessons
   See `docs/AAR-jhsaa-program-history-and-design-pass.md`,
   `docs/AAR-jhsaa-postseason-calendar-lanes.md`, `docs/AAR-jhsaa-season-window.md` and
   `docs/AAR-jhsaa-calendar-fixed-window.md` (the current design).
-- **The rung runs at week 0, BEFORE anything college**, marked done by the `world_jhsaa`
+- **The rung runs at week 0, BEFORE anything college** — in a save that simulates the
+  association at all (`worldconfig.jhsaa_sim()`, OFF by default; see the section
+  above) — marked done by the `world_jhsaa`
   rows it writes (the cups' pattern, not a flag). It must simulate the SAME season the
   recruit hand-off does — `world.jhsaa_season_year()` and seed 0, never the world index.
 - **‼️ THE BOX SCORE IS THE DATABASE — one column, compressed, on the HOME ROW ONLY

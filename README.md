@@ -157,9 +157,13 @@ hall of fame / archives**, and a live **editor** to move players, set lineups, a
 override prestige, academics, and scholarship limits.
 
 **The JHSAA** — Jefferson's high-school season, simulated and browsable at `/jhsaa`
-(districts, brackets, TOSS rankings, awards, program pages). Its graduating
-seniors feed the college recruit board. For offline analysis of many independent
-seasons without touching the college/pro world, see **JHSAA Lab** below.
+(districts, brackets, TOSS rankings, awards, program pages). It is **separate from
+the college game**: a college save does not simulate it (Jefferson is an ordinary
+state there, and its recruits attend real JHSAA schools), so a new league goes
+straight to college tennis. Play it in the **JHSAA Lab** below. A save can opt
+back in from the World hub ("High-school sim"), which adds the season as a long
+step at the start of every year and puts its graduating seniors on the recruit
+board.
 
 JHSAA match scorelines are calibrated against five seasons of REAL Oregon
 high-school results (`engine.fast.HS_PROFILE`; measured in-game at
