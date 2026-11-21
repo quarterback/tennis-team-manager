@@ -318,7 +318,7 @@ body { background: var(--fm-app-bg); }
 .fm-search input::placeholder { color: color-mix(in oklab, var(--ink) 62%, var(--on-mast)); }
 .fm-search input:focus { border-color: var(--mast-rule); }
 .fm-theme > summary { background: transparent; color: var(--on-mast); border-color: var(--on-mast-dim); }
-.fm-theme > summary:hover, .fm-theme[open] > summary { color: var(--on-mast); border-color: var(--on-mast); }
+.fm-theme > summary:hover, .fm-theme[open] > summary { color: var(--on-mast); border-color: var(--on-mast); background: color-mix(in oklab, var(--on-mast) 16%, var(--surface-mast)); }
 .fm-advance { background: var(--mast-action); color: var(--on-mast-action); border-color: var(--mast-action); }
 .fm-advance:hover { background: var(--on-mast); color: var(--ink); border-color: var(--on-mast); }
 .fm-advance:focus-visible, .fm-tn-btn:focus-visible, .fm-theme > summary:focus-visible { outline-color: var(--mast-rule); }

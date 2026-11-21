@@ -61,3 +61,7 @@ was out of scope. No tests run, by request.
 ## Not done
 
 `prep-network/site/style.css` shares the scheme list and was not changed.
+
+## Follow-up: the open settings button
+
+The masthead override for the settings button set its colour and border but no background, so the base rule `.fm-theme[open] > summary` kept painting `--surface-hover` under it. Opened, the sliders icon sat as light text on a pale ground and nearly disappeared, worst in Ensign (white on pale blue). The hover and open states now set their own background, a 16% mix of the mast foreground into the mast colour, the same tint the record chip uses. Every scheme gets a dark tinted ground under light text that way.
