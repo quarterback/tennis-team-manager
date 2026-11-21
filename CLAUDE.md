@@ -576,7 +576,25 @@ college dual; the owner never reached the college game.
   20 players who define the All-American line win a measured median 57-59% at
   their position (the top is squashed against the cap and plays itself), and the
   bar asked for .65 least / .68 par (`NATIONAL_RECORD`).
-  `tests/test_jhsaa_college_v2.py`. The interface is untouched.
+  `tests/test_jhsaa_college_v2.py`.
+  ‼️ **THE ALUMNI PAGES ARE PAGED LISTS RUN IN SQL (owner, 2026-11: "pagination
+  instead of a 200 sort list").** `/jhsaa/alumni` has four views — the scope-bar
+  season's class, all classes, by college, by high school (how real trackers
+  organise it) — 25 careers a page (`state.ALUMNI_PER_PAGE`), with search, a
+  division filter, a career filter and sortable headings, all query args
+  (`jh_here` changes one and resets `page`). A program page has a **College** tab
+  and the player page a College panel; all three share
+  `templates/_jhsaa_alumni.html`. **A transfer is ONE career naming EVERY
+  college** and is on each college's list: `world_jhsaa_college_stint` holds one
+  row per college a career passed through, and the career table carries summary
+  columns (`_SUMMARY_COLS`). Both are DERIVED from `data` by
+  `jhsaa_college.summarise_pending` (versioned on `SUMMARY_VERSION`, rebuilt on
+  read, never edited) — every filter, sort and count reads them and only the page
+  on screen is parsed. Never write a list that loads `class_rows`/`all_rows` and
+  filters in Python: a career is a few KB of JSON and the all-classes view grows
+  by two classes a season. Only the Class view fills in an unwritten class; the
+  other three show what is written. Season-by-season lines are a hidden row under
+  each career. The division filter and counts mean "played in it at any point".
   ‼️ **OWNER DECISIONS ON ITS HONOURS AND ENDINGS (2026-11) — do not "even out":**
   **ALL-CONFERENCE COMES FIRST AT EVERY LEVEL** — a player is only considered for
   All-American in a season they made All-Conference in the same discipline; it is a

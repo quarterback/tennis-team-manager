@@ -263,14 +263,65 @@ Still open, and worth a look once real classes exist:
 - **Nobody turned professional** in these classes: the D1 All-American seasons
   were mostly senior years.
 
+## The pages (owner, 2026-11)
+
+> fix the page issues with alumni who have multiple schools, year by year lists
+> and pagination instead of a 200 sort list
+
+The page had been one table of a whole class reading a new-model career through
+the first model's keys: one college, singles only.
+
+How real trackers organise this was looked up first. They do it three ways: a
+commitment list per class year (TennisRecruiting), a page per college with its
+commitments by year (the same site), and a list per high school (the AJC's lists
+of Georgia players on college rosters, grouped under their high schools). The
+page has those three as views of one body of careers, plus every class at once.
+
+- **`/jhsaa/alumni`** — four views: the class of the season in the scope bar, all
+  classes, by college, by high school. Every list is 25 a page. A search box
+  (player, high school or college), a division filter and a career filter
+  (played four seasons, transferred, left the team, left college, injury ended
+  it, turned pro, any honour, All-American). Every column heading sorts.
+- **A transfer is one career that names every college**, in order, and is on each
+  of those colleges' lists. The division filter means "played in it at any
+  point".
+- **Season by season, one click down.** Each career opens to its year-by-year
+  lines: which college, singles position and record, doubles position and
+  record, honours, and whether the season was as a reserve, doubles only, or
+  lost to injury. One button opens every career on the page.
+- **A program's College tab** lists its own graduates, newest class first.
+- **The player page's College panel** shows every college, both records, how the
+  career ended, and the same season lines.
+
+How it is built:
+
+- **Lists run in SQL, never over parsed careers.** A career is a JSON blob of a
+  few kilobytes. The first page parsed a class; an all-classes view built the
+  same way would parse every career the save has ever written on each click. The
+  career table now carries summary columns (`_SUMMARY_COLS`: status, seasons,
+  peaks, records, honours, whether they moved), and
+  `world_jhsaa_college_stint` holds one row per college a career passed through.
+  Filters, sorts and counts read those; only the 25 careers on screen are parsed.
+  Measured on four classes (812 careers): about 50 ms a page.
+- **Both are derived from the stored career** (`summarise_pending`), versioned
+  (`SUMMARY_VERSION`), and rebuilt from it on the next read when missing or
+  stale. The career itself is never touched. Classes written before this are
+  summarised the first time a list is opened.
+- **Only the Class view fills in an old class.** The all-classes, college and
+  high-school views show what is written; opening them never builds a class.
+
+Checked by rendering all four views, the program tab and the player panel
+against four real classes (one written by the first model) and looking at
+screenshots; no page scrolls sideways at desktop or phone width.
+
 ## Not done
 
+- **Classes are tracked from when they are written.** The all-classes, college
+  and high-school views cover the classes that have careers; an older class
+  joins them when its own Class view is first opened. There is no button that
+  fills every past class at once.
 - **No historical regeneration.** Existing careers stay as written. Rewriting them
   is a separate, explicitly authorised migration and no code here does it.
-- **No interface work**: division filter, search, sortable columns, the all-time
-  view and per-school alumni history are untouched. The current page reads a
-  model-2 career through model 1's keys (singles only), so nothing breaks, but it
-  shows none of the new detail.
 - **The validation plays no season**, so the senior-year record inputs are covered
   by unit tests, not by the report.
 - **Program-year context is roster-level only.** A program's strength does not move

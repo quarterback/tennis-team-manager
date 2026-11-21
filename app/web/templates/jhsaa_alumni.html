@@ -1,42 +1,136 @@
 {% extends "base.html" %}
 {% from "_jhsaa.html" import jh_header %}
+{% from "_jhsaa_alumni.html" import alum_table, alum_th, alum_script %}
+{% from "_pager.html" import pager %}
 {% block title %}JHSAA College Alumni{% endblock %}
 {% block content %}
 
+{% set span = ((view.tracked|last)|cal ~ '–' ~ (view.tracked|first)|cal) if view.tracked|length > 1
+              else ((view.tracked|first)|cal if view.tracked else '—') %}
 {{ jh_header(view.scope, u, 'alumni', 'College Alumni', '',
-             [('Class of', view.grad_year|cal)] + view.divisions) }}
+             ([('Class of', view.grad_year|cal)] if view.mode == 'class' else [('Classes', span)])
+             + view.division_counts) }}
 
 <div class="jh-shell">
 
-{# ONE class on screen — the season in the scope bar IS the class — as one dense
-   table (the career rolls' shape). Each row was written once, when the class
-   graduated (`app/jhsaa_college.py`): a real program and a finished four-year
-   line. No college season is simulated, and nothing here feeds anything. #}
+{# FOUR VIEWS OF ONE BODY OF CAREERS (owner, 2026-11) — the ways real trackers
+   organise this: a list per class year, every class at once, a row per college,
+   a row per high school. Never a class-sized scroll: every list is paged, and
+   the filters and the sort run on the whole list, not on the page of it. #}
+<div class="jh-subrail jh-flightrail">
+  {% for key, label in view.modes %}
+  <a class="{{ 'on' if view.mode == key }}"
+     href="{{ jh_here(mode=(none if key == 'class' else key), sort=none, dir=none, status=none, college=none, hs=none) }}">
+    {%- if key == 'class' %}Class of {{ view.grad_year|cal }}{% else %}{{ label }}{% endif -%}
+  </a>
+  {% endfor %}
+</div>
+
+<form class="jh-dirbar jh-alumbar" method="get" action="{{ request.path }}">
+  {% for k in ('u', 'g', 'group', 'year', 'mode', 'sort', 'dir', 'college', 'hs') %}
+  {% if request.args.get(k) %}<input type="hidden" name="{{ k }}" value="{{ request.args.get(k) }}">{% endif %}
+  {% endfor %}
+  <input class="jh-dirfind" type="search" name="q" value="{{ view.q }}"
+         placeholder="{% if view.mode == 'colleges' %}Find a college{% elif view.mode == 'schools' %}Find a high school{% else %}Find a player, high school or college{% endif %}">
+  {% if view.mode != 'schools' %}
+  <select name="div" onchange="this.form.submit()" aria-label="Division">
+    <option value="">Every division</option>
+    {% for d in view.divisions_all %}<option value="{{ d }}"{{ ' selected' if view.division == d }}>{{ d }}</option>{% endfor %}
+  </select>
+  {% endif %}
+  {% if view.mode in ('class', 'all') %}
+  <select name="status" onchange="this.form.submit()" aria-label="Career">
+    <option value="">Every career</option>
+    {% for key, label in view.statuses %}<option value="{{ key }}"{{ ' selected' if view.status == key }}>{{ label }}</option>{% endfor %}
+  </select>
+  {% endif %}
+  <button type="submit">Find</button>
+  {% if view.college %}<a class="jh-alumchip" href="{{ jh_here(college=none) }}" title="Clear">{{ view.college }} ×</a>{% endif %}
+  {% if view.hs %}<a class="jh-alumchip" href="{{ jh_here(hs=none) }}" title="Clear">{{ view.hs }} ×</a>{% endif %}
+  {% if view.q or view.division or view.status %}<a class="jh-alumclear" href="{{ jh_here(q=none, div=none, status=none) }}">Clear filters</a>{% endif %}
+</form>
+
 <div class="bl-panel">
+  <div class="bl-panel-head">
+    <span class="bl-panel-title">
+      {%- if view.mode == 'class' %}Class of {{ view.grad_year|cal }}
+      {%- elif view.mode == 'all' %}All classes
+      {%- elif view.mode == 'colleges' %}Colleges
+      {%- else %}High schools{% endif -%}
+    </span>
+    <span class="bit">{{ view.total }} {{ 'colleges' if view.mode == 'colleges' else 'high schools' if view.mode == 'schools' else 'alumni' }}</span>
+  </div>
+
+  {% if view.mode in ('class', 'all') %}
+    {{ alum_table(view.rows, u, view.gender, lead=('rank' if view.mode == 'class' else 'class'),
+                  view=view,
+                  empty=('No class has graduated in this season yet.' if view.mode == 'class' and not (view.q or view.division or view.status)
+                         else 'No alumni match.')) }}
+
+  {% elif view.mode == 'colleges' %}
   <div class="bl-tablescroll">
-  <table class="bl-table jh-repeat jh-alumni">
+  <table class="bl-table jh-repeat jh-alum">
     <thead><tr>
-      <th class="n">#</th><th>Player</th><th>High school</th><th>College</th>
-      <th>Div</th><th class="n">Peak</th><th class="n">Record</th><th>Honours</th>
+      {{ alum_th(view, 'college', 'College') }}
+      {{ alum_th(view, 'division', 'Div') }}
+      {{ alum_th(view, 'alumni', 'Alumni', 'n', 'Jefferson alumni who played here, transfers in and out included') }}
+      {{ alum_th(view, 'seasons', 'Seasons', 'n', 'Seasons played here by those alumni') }}
+      {{ alum_th(view, 's_w', 'Singles', 'n', 'Their singles record here') }}
+      <th class="n">Doubles</th>
+      {{ alum_th(view, 'honors', 'Honours', 'n', 'Honoured seasons here') }}
+      {{ alum_th(view, 'aa', 'All-Amer.', 'n', 'All-American seasons here') }}
+      {{ alum_th(view, 'last', 'Classes', 'n') }}
     </tr></thead>
     <tbody>
-    {% if not view.rows %}<tr class="none"><td colspan="8">No class has graduated in this season yet.</td></tr>{% endif %}
-    {% for r in view.rows %}
+    {% if not view.colleges %}<tr class="none"><td colspan="9">No colleges match.</td></tr>{% endif %}
+    {% for c in view.colleges %}
     <tr>
-      <td class="n">{{ r.rank }}</td>
-      <td><a class="nm" href="{{ url_for('jhsaa_player', school=r.hs, pid=r.pid, u=u, g=view.gender) }}">{{ r.name }}</a></td>
-      <td class="sch"><span class="stint">{% if r.deco.mark %}<span class="mk">{{ r.deco.mark|safe }}</span>{% endif %}{{ r.hs }}</span></td>
-      <td>{{ r.college }} <span class="ti"><span class="pt">{{ r.conf }}</span></span></td>
-      <td>{{ r.division }}</td>
-      <td class="n">{% if r.peak %}{{ r.peak }}{% else %}—{% endif %}</td>
-      <td class="n">{{ r.w }}-{{ r.l }}</td>
-      <td class="won">{{ r.honors|join(', ') }}</td>
+      <td class="cols"><a class="nm" href="{{ url_for('jhsaa_alumni', u=u, g=view.gender, mode='all', college=c.college) }}">{{ c.college }}</a></td>
+      <td>{{ c.division }}{% if c.conf %} <span class="pt">{{ c.conf }}</span>{% endif %}</td>
+      <td class="n">{{ c.alumni }}</td>
+      <td class="n">{{ c.seasons }}</td>
+      <td class="n">{{ c.s_w }}-{{ c.s_l }}</td>
+      <td class="n">{% if c.d_w or c.d_l %}{{ c.d_w }}-{{ c.d_l }}{% else %}—{% endif %}</td>
+      <td class="n">{{ c.n_hon or '—' }}</td>
+      <td class="n">{{ c.aa or '—' }}</td>
+      <td class="n">{{ c.first_class|cal }}{% if c.last_class != c.first_class %}–{{ c.last_class|cal }}{% endif %}</td>
     </tr>
     {% endfor %}
     </tbody>
   </table>
   </div>
+
+  {% else %}
+  <div class="bl-tablescroll">
+  <table class="bl-table jh-repeat jh-alum">
+    <thead><tr>
+      {{ alum_th(view, 'hs', 'High school') }}
+      {{ alum_th(view, 'alumni', 'Alumni', 'n', 'Graduates tracked in college') }}
+      {{ alum_th(view, 'd1', 'D1', 'n', 'Of them, played in Division I') }}
+      {{ alum_th(view, 'honoured', 'Honoured', 'n', 'Of them, earned an honour') }}
+      {{ alum_th(view, 'aa', 'All-Amer.', 'n', 'Of them, an All-American') }}
+      {{ alum_th(view, 'last', 'Classes', 'n') }}
+    </tr></thead>
+    <tbody>
+    {% if not view.schools %}<tr class="none"><td colspan="6">No high schools match.</td></tr>{% endif %}
+    {% for s in view.schools %}
+    <tr>
+      <td class="sch"><span class="stint">{% if s.deco.mark %}<span class="mk">{{ s.deco.mark|safe }}</span>{% endif %}<a class="nm" href="{{ url_for('jhsaa_school', school=s.hs, u=u, g=view.gender, view='alumni') }}">{{ s.hs }}</a></span></td>
+      <td class="n">{{ s.alumni }}</td>
+      <td class="n">{{ s.d1 or '—' }}</td>
+      <td class="n">{{ s.honoured or '—' }}</td>
+      <td class="n">{{ s.aa or '—' }}</td>
+      <td class="n">{{ s.first_class|cal }}{% if s.last_class != s.first_class %}–{{ s.last_class|cal }}{% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+
+  {{ pager(view.pager, 'colleges' if view.mode == 'colleges' else 'high schools' if view.mode == 'schools' else 'alumni') }}
 </div>
 
 </div>
+{{ alum_script() }}
 {% endblock %}

@@ -235,22 +235,34 @@ def test_the_page_and_the_player_panel_render_a_class_with_data(lab_world):
 
     view = st.jhsaa_alumni_view(wd.DEFAULT_SEED, "girls")
     assert view["grad_year"] == grad_year and view["rows"]
-    assert sum(n for _d, n in view["divisions"]) == len(view["rows"])
+    # ONE PAGE of the class, never the class (owner, 2026-11); the counts are
+    # the whole class's.
+    assert len(view["rows"]) <= st.ALUMNI_PER_PAGE
+    assert sum(n for _d, n in view["division_counts"]) == view["total"]
     with app.test_request_context("/jhsaa/alumni?g=girls"):
         html = render_template("jhsaa_alumni.html", active="High School", view=view,
                                gender="women", u="D1-women", uni_label="")
     for r in view["rows"]:
-        assert r["name"] in html and r["college"] in html
-        assert f'{r["w"]}-{r["l"]}' in html
+        assert r["name"] in html and r["stints"][0]["college"] in html
+        assert f'{r["s_w"]}-{r["s_l"]}' in html
     assert "College Alumni" in html
+    # The other three views of the same careers render too.
+    for mode in ("all", "colleges", "schools"):
+        v = st.jhsaa_alumni_view(wd.DEFAULT_SEED, "girls", mode=mode)
+        assert v["total"] > 0
+        with app.test_request_context(f"/jhsaa/alumni?g=girls&mode={mode}"):
+            assert "College Alumni" in render_template(
+                "jhsaa_alumni.html", active="High School", view=v,
+                gender="women", u="D1-women", uni_label="")
 
     pv = st.jhsaa_player_view(wd.DEFAULT_SEED, "girls", school.name, senior.pid)
-    assert pv["found"] and pv["college"]["college"]
+    assert pv["found"] and pv["college"]["stints"][0]["college"]
     with app.test_request_context(f"/jhsaa/player/{school.name}/{senior.pid}?g=girls"):
         html = render_template("jhsaa_player.html", active="High School", view=pv,
                                gender="women", u="D1-women", uni_label="")
     line = pv["college"]
-    assert line["college"] in html and f'{line["w"]}-{line["l"]} singles' in html
+    assert line["stints"][0]["college"] in html
+    assert f'Singles {line["s_w"]}-{line["s_l"]}' in html
     assert all(s["class"] in html for s in line["seasons"])
 
 

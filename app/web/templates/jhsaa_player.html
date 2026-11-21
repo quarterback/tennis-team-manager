@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "_jhsaa.html" import jh_header, jh_tabs, jh_tabs_script %}
 {% from "_stars.html" import stars %}
+{% from "_jhsaa_alumni.html" import alum_colleges, alum_seasons %}
 {% block title %}{{ view.name }} — {{ view.school }} — JHSAA{% endblock %}
 {% block content %}
 
@@ -237,27 +238,19 @@
       </div>
     </div>
 
-    {# WHERE THEY WENT (owner, 2026-11): the finished college line — a program and
-       four seasons, written when the class graduated. Nothing here is simulated. #}
+    {# WHERE THEY WENT (owner, 2026-11): the finished college career — every
+       college it passed through, then season by season, singles and doubles
+       apart. Written when the class graduated; nothing here is simulated. #}
     {% if view.college %}{% set c = view.college %}
-    <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">College</span></div>
+    <div class="bl-panel jh-alum">
+      <div class="bl-panel-head"><span class="bl-panel-title">College</span>
+        <span class="bit">{{ c.years }} season{{ '' if c.years == 1 else 's' }}</span></div>
       <div class="bl-panel-body" style="padding:12px">
-        <div style="font-weight:750">{{ c.college }}</div>
-        <div class="tsub">{{ c.division }} · {{ c.conf }} · {{ c.w }}-{{ c.l }} singles{% if c.peak %} · peak No. {{ c.peak }}{% endif %}</div>
-        {% if c.honors %}<div class="tsub" style="margin-top:4px;color:var(--text-primary);font-weight:650">{{ c.honors|join(' · ') }}</div>{% endif %}
-        <table class="bl-table" style="margin-top:8px">
-          <thead><tr><th>Season</th><th>Class</th><th>Position</th><th>Record</th></tr></thead>
-          <tbody>
-          {% for cs in c.seasons %}
-          <tr>
-            <td>{{ cs.year|cal }}</td><td>{{ cs.class }}</td>
-            <td>{% if cs.pos %}No. {{ cs.pos }}{% else %}Reserve{% endif %}</td>
-            <td style="font-variant-numeric:tabular-nums">{{ cs.w }}-{{ cs.l }}</td>
-          </tr>
-          {% endfor %}
-          </tbody>
-        </table>
+        <div class="cols" style="font-weight:750">{{ alum_colleges(c, u, view.gender) }}</div>
+        <div class="tsub" style="margin-top:4px">Singles {{ c.s_w }}-{{ c.s_l }}{% if c.s_peak %} · peak No. {{ c.s_peak }}{% endif %}{% if c.doubles %} · Doubles {{ c.d_w }}-{{ c.d_l }}{% if c.d_peak %} · peak No. {{ c.d_peak }}{% endif %}{% endif %}</div>
+        {% for h in c.honors %}<div class="tsub" style="margin-top:4px;color:var(--text-primary);font-weight:650">{{ h }}</div>{% endfor %}
+        {% if c.ending %}<div class="tsub" style="margin-top:4px">{{ c.ending }}</div>{% endif %}
+        <div class="bl-tablescroll" style="margin-top:8px">{{ alum_seasons(c, compact=true) }}</div>
       </div>
     </div>
     {% endif %}

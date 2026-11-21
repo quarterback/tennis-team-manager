@@ -5482,7 +5482,8 @@ def _jh_reclass_lines(world_id: int, school: str) -> list[dict]:
 
 
 def jhsaa_school_view(seed: int, gender: str, school: str,
-                      year: int | None = None, hq: str = "overview") -> dict:
+                      year: int | None = None, hq: str = "overview",
+                      page: int = 1) -> dict:
     """One JHSAA program, as a PROGRAM page: who they are, how this season went, the
     card match by match, the roster that played it, and the season ledger underneath.
 
@@ -5923,6 +5924,9 @@ def jhsaa_school_view(seed: int, gender: str, school: str,
         # Every reclassification this program has been through (owner spec
         # 2026-09) — one line per committed move, oldest first.
         "reclass": _jh_reclass_lines(w["id"], school) if hq == "history" else [],
+        # The program's graduates in college (owner spec 2026-11) — its own tab,
+        # one page of careers, read only when that tab is on screen.
+        "alumni": jhsaa_school_alumni(w["id"], g, sc, page) if hq == "alumni" else None,
     }
 
 
@@ -6633,7 +6637,7 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
         _cconn.close()
     return {
         "found": True, "school": school, "gender": g, "pid": pid, "name": player.name,
-        "college": college,
+        "college": _alum_display(college) if college else None,
         "country": player.country,
         "hometown": player.hometown, "grade": player.grade,
         "ovr": round(player.current_overall(), 1),
@@ -7174,43 +7178,193 @@ def jhsaa_repeat_poy(seed: int, gender: str, group: str | None = None) -> dict:
                                years, None, None)}
 
 
+#: Careers on one page of an alumni list (owner, 2026-11: "pagination instead of a
+#: 200 sort list").
+ALUMNI_PER_PAGE = 25
+
+#: The alumni page's views — the three ways real trackers organise this (a
+#: commitment list per class year, a page per college, a list per high school)
+#: plus every class at once.
+ALUMNI_MODES = (("class", "Class"), ("all", "All classes"), ("colleges", "By college"),
+                ("schools", "By high school"))
+
+_ALUM_ROLE = {"starter": "", "doubles": "Doubles only", "reserve": "Reserve",
+              "out": "Out (injury)"}
+_ALUM_STATUS = {"left_team": "Left the team", "left_college": "Left college",
+                "injury_ended": "Injury ended it", "turned_pro": "Turned pro"}
+_ALUM_CAUSE = {"no_role": "no place in the lineup", "doubles_only": "doubles only",
+               "injury": "injury", "personal": ""}
+
+
+def _alum_display(row: dict, schools: dict | None = None) -> dict:
+    """One career as a page shows it, whichever model wrote it: every college it
+    passed through, the season-by-season lines, singles and doubles apart."""
+    from app import jhsaa_college as jcol
+    stints = jcol.stints_of(row)
+    sm = jcol.summary_of(row, stints)
+    v2 = int(row.get("model", 1)) >= 2
+    seasons = []
+    for s in row.get("seasons") or ():
+        s_pos = s.get("s_pos", s.get("pos"))
+        seasons.append({
+            "year": s.get("year"), "class": s.get("class", ""),
+            "college": s.get("college") or row.get("college", ""),
+            "division": s.get("division") or row.get("division", ""),
+            "s_pos": s_pos, "s_w": s.get("s_w", s.get("w", 0)),
+            "s_l": s.get("s_l", s.get("l", 0)),
+            "d_pair": s.get("d_pair"), "d_w": s.get("d_w", 0), "d_l": s.get("d_l", 0),
+            "note": _ALUM_ROLE.get(s.get("role"), "") if v2
+                    else ("" if s_pos else "Reserve"),
+            "injury": s.get("injury") == "part",
+            "honors": list(s.get("honors") or ()),
+        })
+    # ONE LINE PER HONOUR, singles and doubles counted on it — four separate
+    # "All-Conference (doubles) ×4" entries wrapped a decorated career's cell
+    # into a column of fragments.
+    tally: dict = {}
+    for s in seasons:
+        for h in s["honors"]:
+            base = h.replace(" (doubles)", "")
+            t = tally.setdefault(base, [0, 0])
+            t[1 if h.endswith("(doubles)") else 0] += 1
+    honor_lines = []
+    for base in ("All-American", "All-Conference"):
+        if base in tally:
+            n_s, n_d = tally[base]
+            parts = [f"{kind} ×{n}" if n > 1 else kind
+                     for kind, n in (("singles", n_s), ("doubles", n_d)) if n]
+            honor_lines.append(f"{base} · {', '.join(parts)}")
+    dep = row.get("departure") or {}
+    ending = ""
+    if dep.get("kind") in _ALUM_STATUS:
+        cause = _ALUM_CAUSE.get(dep.get("cause"), "")
+        ending = _ALUM_STATUS[dep["kind"]] + (f" after {dep['after']} year"
+                                               if dep.get("after") else "") \
+            + (f" · {cause}" if cause else "")
+    return {
+        "pid": row["pid"], "name": row["name"], "hs": row["hs"],
+        "grad_year": row["grad_year"], "rank": row.get("rank"),
+        "deco": _jh_deco(schools, row["hs"], 18) if schools is not None else None,
+        "stints": stints, "moved": len(stints) > 1,
+        "years": sm["years"], "doubles": v2,
+        "s_peak": sm["s_peak"], "s_w": sm["s_w"], "s_l": sm["s_l"],
+        "d_peak": sm["d_peak"], "d_w": sm["d_w"], "d_l": sm["d_l"],
+        "honors": honor_lines,
+        "career": (row.get("arc") or "").replace("_", " "),
+        "ending": ending,
+        "seasons": seasons,
+    }
+
+
 def jhsaa_alumni_view(seed: int, gender: str, group: str | None = None,
-                      year: int | None = None) -> dict:
-    """ONE graduating class and where it played college tennis — the Jefferson
-    alumni tracker (owner rule 2026-11, `app/jhsaa_college.py`).
+                      year: int | None = None, *, mode: str = "class",
+                      division: str = "", status: str = "", q: str = "",
+                      sort: str = "", direction: str = "", page: int = 1,
+                      college: str = "", hs: str = "") -> dict:
+    """Jefferson's graduates in college — the alumni tracker (owner rule 2026-11,
+    `app/jhsaa_college.py`), organised the ways real trackers are: one class at a
+    time, every class at once, by college, by high school.
 
-    The class on screen is the SEASON picked in the scope bar: that season's
-    seniors are the class of that year, so the page needs no selector of its own.
-    Class-BLIND like the other History pages — a class is drawn from the whole
-    association — and `group` is carried for the scope bar's memory only.
+    ‼️ ONE PAGE OF CAREERS, NEVER A CLASS-SIZED LIST (owner, 2026-11). Every
+    filter, sort and count runs in SQL on the summary columns and the stint table;
+    only the 25 careers on screen are parsed. A transfer is one career with EVERY
+    college it passed through, and is on each of those colleges' lists.
 
-    Read-only: the rows were written when the class graduated. A class from before
-    the tracker existed is filled in once from the alumni index (milliseconds, no
-    roster rebuilt) the first time it is opened."""
+    The class on the Class view is the SEASON picked in the scope bar. Class-BLIND
+    like the other History pages; `group` is carried for the scope bar's memory.
+    Read-only but for one thing: a class from before the tracker is filled in from
+    the alumni index the first time its own page is opened (the All/college/school
+    views never fill — they show what is written)."""
     import app.jhsaa as jh
     import app.world as world
     from app import jhsaa_college as jcol
+    from app.web.pagination import Page
     w = world.get_or_create(seed)
     g = _jh_g(gender)
     years = world.jhsaa_years(w["id"], g)
     yr = (years[0] if years else w["year"]) if year is None else year
     grad_year = world.BASE_YEAR + yr + 1
+    mode = mode if mode in dict(ALUMNI_MODES) else "class"
+    division = division if division in jcol.DIVISION_ORDER else ""
+    status = status if status in dict(jcol.STATUSES) else ""
+    desc = {"asc": False, "desc": True}.get(direction)
+    page = max(1, int(page or 1))
+    per = ALUMNI_PER_PAGE
+    schools = _jh_schools(g)
+    out = {"gender": g, "grad_year": grad_year, "mode": mode, "modes": ALUMNI_MODES,
+           "division": division, "status": status, "q": q.strip(), "college": college,
+           "hs": hs, "divisions_all": list(jcol.DIVISION_ORDER),
+           "statuses": jcol.STATUSES, "rows": [], "colleges": [], "schools": [],
+           "scope": _jh_scope(g, group if group in jh.GROUPS else jh.GROUPS[0],
+                              list(jh.GROUPS), yr, years, grad_year, None)}
     conn = world._db()
     try:
-        rows = jcol.class_rows(conn, w["id"], g, grad_year, world.active_salt(seed),
-                               fill=world.tracks_alumni(seed))
+        if mode == "class" and world.tracks_alumni(seed):
+            jcol._ensure_class(conn, w["id"], g, grad_year, world.active_salt(seed))
+        tracked = jcol.tracked_years(conn, w["id"], g)
+        gy = grad_year if mode == "class" else None
+        out["tracked"] = tracked
+        out["division_counts"] = jcol.division_counts_of(conn, w["id"], g, gy)
+        if mode in ("class", "all"):
+            key = sort if sort in jcol.SORTS else ("rank" if mode == "class" else "class")
+            names = None
+            if hs:
+                former = jh.former_names()
+                names = [hs] + [old for old, new in former.items() if new == hs]
+            total, rows = jcol.list_careers(
+                conn, w["id"], g, grad_year=gy, division=division or None,
+                college=college or None, hs_names=names, status=status or None,
+                q=q, sort=key, desc=desc, limit=per, offset=(page - 1) * per)
+            out["rows"] = [_alum_display(r, schools) for r in rows]
+            out["sorts"] = jcol.SORTS
+        elif mode == "colleges":
+            key = sort if sort in jcol.COLLEGE_SORTS else "alumni"
+            total, out["colleges"] = jcol.college_index(
+                conn, w["id"], g, division=division or None, q=q, sort=key, desc=desc,
+                limit=per, offset=(page - 1) * per)
+            out["sorts"] = jcol.COLLEGE_SORTS
+        else:
+            key = sort if sort in ("hs", "alumni", "d1", "honoured", "aa", "last") else "alumni"
+            rows = jcol.school_index(conn, w["id"], g, q=q)
+            field = {"hs": "hs", "last": "last_class"}.get(key, key)
+            down = (key != "hs") if desc is None else desc
+            rows.sort(key=lambda o: o["hs"])
+            rows.sort(key=lambda o: o[field], reverse=down)
+            total = len(rows)
+            for o in rows[(page - 1) * per:page * per]:
+                o["deco"] = _jh_deco(schools, o["hs"], 18)
+                out["schools"].append(o)
+            out["sorts"] = {k: (k, k != "hs") for k in
+                            ("hs", "alumni", "d1", "honoured", "aa", "last")}
     finally:
         conn.close()
-    schools = _jh_schools(g)
-    for r in rows:
-        r["deco"] = _jh_deco(schools, r["hs"], 18)
-    counts: dict = {}
-    for r in rows:
-        counts[r["division"]] = counts.get(r["division"], 0) + 1
-    return {"gender": g, "rows": rows, "grad_year": grad_year,
-            "divisions": [(d, counts[d]) for d in jcol.DIVISION_ORDER if d in counts],
-            "scope": _jh_scope(g, group if group in jh.GROUPS else jh.GROUPS[0],
-                               list(jh.GROUPS), yr, years, grad_year, None)}
+    out["sort"] = key
+    out["desc"] = out["sorts"][key][1] if desc is None else desc
+    out["total"] = total
+    out["pager"] = Page(items=[], page=page, per_page=per, total=total)
+    return out
+
+
+def jhsaa_school_alumni(world_id: int, gender: str, school, page: int = 1) -> dict:
+    """One program's graduates in college, newest class first — the program
+    page's College tab. Reads what is written; never fills a class."""
+    import app.jhsaa as jh
+    import app.world as world
+    from app import jhsaa_college as jcol
+    from app.web.pagination import Page
+    page = max(1, int(page or 1))
+    per = ALUMNI_PER_PAGE
+    former = jh.former_names()
+    names = [school.name] + [old for old, new in former.items() if new == school.name]
+    conn = world._db()
+    try:
+        total, rows = jcol.list_careers(
+            conn, world_id, gender, hs_names=names, hs_ident=school.ident,
+            sort="class", limit=per, offset=(page - 1) * per)
+    finally:
+        conn.close()
+    return {"rows": [_alum_display(r) for r in rows], "total": total,
+            "pager": Page(items=[], page=page, per_page=per, total=total)}
 
 
 def jhsaa_repeat_individual_champions(seed: int, gender: str,
