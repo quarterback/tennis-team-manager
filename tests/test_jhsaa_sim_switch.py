@@ -172,3 +172,69 @@ def test_a_simulating_save_reads_seniors_only_once_their_season_is_archived(monk
         wd.recruit_class("men", grad_year, salt)
         assert calls[-1] == expect
     _drop(salt)
+
+
+# --- a build already under way must not undo the rung's invalidation -----------
+
+def test_a_class_built_across_the_archive_is_not_published_stale(monkeypatch):
+    """The race: a board build starts BEFORE the season is archived (so it takes the
+    generated-recruits path), the rung finishes and evicts the year, and the build
+    then finishes. Stored, that pre-archive class would outlive the eviction for the
+    rest of the process. It must be thrown away and rebuilt from the archive."""
+    monkeypatch.setattr(wc, "jhsaa_sim", lambda: True)
+    grad_year, salt = wd.BASE_YEAR + 1, "sim-switch-race"
+    state = {"archived": False}
+    monkeypatch.setattr(wd, "_jhsaa_archived_for", lambda gy: state["archived"])
+
+    def generated(klass, g, gy, s):
+        klass.source = "generated"
+        # …and while this build is still running, the rung archives the season
+        # and evicts the year — exactly once.
+        if not state["archived"]:
+            state["archived"] = True
+            wd._forget_recruit_classes(gy)
+        return 0
+
+    def seniors(klass, g, gy, s):
+        klass.source = "seniors"
+        return 0
+
+    monkeypatch.setattr(jhsaa, "assign_real_schools", generated)
+    monkeypatch.setattr(jhsaa, "apply_to_class", seniors)
+    _drop(salt)
+    try:
+        klass = wd.recruit_class("men", grad_year, salt)
+        assert klass.source == "seniors"              # the caller gets the real class
+        cached = [v for k, v in wd._class_cache.items() if k[0] == salt]
+        assert cached == [klass]                      # and that is what was stored
+        assert wd.recruit_class("men", grad_year, salt) is klass
+    finally:
+        _drop(salt)
+
+
+def test_pool_results_that_crossed_an_invalidation_are_dropped(monkeypatch):
+    """The parallel path has the same race: `prime_recruit_classes` launches
+    workers that read the archive when they START, and publishes when they return.
+    If the year was invalidated in between, nothing is published."""
+    import app.parallel as parallel
+    grad_year, salt = wd.BASE_YEAR + 1, "sim-switch-pool"
+    monkeypatch.setattr(wd, "active_salt", lambda seed=wd.DEFAULT_SEED: salt)
+    monkeypatch.setattr(wd, "_active_unis", lambda: [("D1", "men"), ("D1", "women")])
+    monkeypatch.setattr(parallel, "workers_for", lambda n, **k: 2)
+    monkeypatch.setattr(wc, "snapshot", lambda: {})
+
+    def run(invalidate):
+        def fake_pmap(fn, tasks, workers=None):
+            if invalidate:                            # the rung lands mid-flight
+                wd._forget_recruit_classes(grad_year)
+            return [(g, gy, []) for (_salt, _cfg, g, gy) in tasks]
+        monkeypatch.setattr(parallel, "pmap", fake_pmap)
+        _drop(salt)
+        wd.prime_recruit_classes(wd.DEFAULT_SEED, 0)
+        return sorted(k[1] for k in wd._class_cache if k[0] == salt)
+
+    try:
+        assert len(run(invalidate=False)) == 2        # the ordinary case still stores
+        assert run(invalidate=True) == []             # a crossed result does not
+    finally:
+        _drop(salt)

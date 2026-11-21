@@ -134,6 +134,17 @@ owner had a definitive answer, most of it spent waiting on runs that could have
 been cut the moment the D1-only number came back. Report the first decisive number
 when it lands.
 
+**An eviction is not an invalidation while a build is in flight** (review finding,
+fixed the same day). The rung evicted that year's recruit classes after archiving
+the season, but a board build that had STARTED before the archive — the boot warm,
+a recruiting page, the pool workers in `prime_recruit_classes` — would finish
+afterwards and store its pre-archive class, where it stayed for the rest of the
+process. Each year now carries a generation (`world._class_gen`): a builder notes
+it before it starts and `_publish_class` stores only if it has not moved, check and
+store under one lock. The serial build retries once so its caller gets the
+post-archive class; pool results that crossed an invalidation are dropped and the
+class builds at its next read.
+
 ## Not done, and known gaps
 
 - **No full-size season has been played with the tracker on.** The wiring is covered

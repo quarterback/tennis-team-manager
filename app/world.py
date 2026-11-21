@@ -1347,6 +1347,28 @@ def resync_universes(seed: int = DEFAULT_SEED, max_steps: int = 500) -> dict:
 # Recruiting — national class + the weekly signing drip.
 # ==========================================================================
 _class_cache: dict = {}
+# ‼️ A CLASS IS PUBLISHED ONLY IF NOTHING INVALIDATED ITS YEAR WHILE IT WAS BUILDING.
+# A recruit class takes seconds to minutes to build and `_forget_recruit_classes`
+# can evict its year mid-build (the JHSAA rung, once the seniors have played). A
+# build that STARTED before the season was archived holds generated Jefferson
+# recruits; published after the eviction it would sit in the cache for the rest of
+# the process and the eviction would have achieved nothing. So each year carries a
+# GENERATION: a builder notes it before it starts and stores only if it has not
+# moved, with the check and the store under one lock. Both publication paths obey
+# it — the serial build in `recruit_class` and the pool results in
+# `prime_recruit_classes`.
+_class_gen: dict = {}
+_class_lock = threading.Lock()
+
+
+def _publish_class(key: tuple, klass, gen: int) -> bool:
+    """Store `klass` under `key` unless its year was invalidated since `gen` was
+    read. Returns whether it was stored."""
+    with _class_lock:
+        if _class_gen.get(key[2], 0) != gen:
+            return False
+        _class_cache[key] = klass
+        return True
 
 
 # The class generator (pids included via make_pid) is keyed by the gender string,
@@ -1377,7 +1399,14 @@ def recruit_class(gender: str, grad_year: int, salt: str):
     # `_forget_recruit_classes` can evict this key from another thread between the
     # store and the return (the threaded-worker rule in CLAUDE.md).
     klass = _class_cache.get(key)
-    if klass is None:
+    # Built at most twice: a build overtaken by an invalidation is thrown away and
+    # redone, so the caller is handed the class as it stands AFTER the invalidation
+    # rather than a stale one. A second overtake returns the fresh build unpublished
+    # — correct for this caller, and the next reader builds its own.
+    for _attempt in range(2):
+        if klass is not None:
+            break
+        gen = _class_gen.get(grad_year, 0)
         rng = random.Random(f"{salt}|recruits|{gender}|{grad_year}")
         klass = generate_class(rng, n=RECRUIT_POOL, grad_year=grad_year,
                                gender=gender, talent_mean=_recruit_talent_mean(gender),
@@ -1407,7 +1436,9 @@ def recruit_class(gender: str, grad_year: int, salt: str):
         except (OSError, ValueError, KeyError):
             pass
         rank_class(klass)                          # national rank + star ladder
-        _class_cache[key] = klass
+        if _publish_class(key, klass, gen) or _attempt:
+            break
+        klass = None                               # overtaken — build it again
     return klass
 
 
@@ -1426,8 +1457,12 @@ def _forget_recruit_classes(grad_year: int) -> None:
     """Drop every cached recruit class for `grad_year`, whatever salt or gender it
     was built under. Per-key pops, never a global `clear()` (the threaded-worker
     rule): other years' classes are untouched."""
-    for key in [k for k in list(_class_cache) if k[2] == grad_year]:
-        _class_cache.pop(key, None)
+    with _class_lock:
+        # Bump FIRST, under the lock a publisher takes: any build already under way
+        # for this year can no longer store its result (`_publish_class`).
+        _class_gen[grad_year] = _class_gen.get(grad_year, 0) + 1
+        for key in [k for k in list(_class_cache) if k[2] == grad_year]:
+            _class_cache.pop(key, None)
 
 
 # The junior circuit is simulated over the RECRUITED CADRE — the top of the pool
@@ -1517,12 +1552,16 @@ def prime_recruit_classes(seed: int = DEFAULT_SEED, year: int | None = None) -> 
     from app import worldconfig
     cfg = worldconfig.snapshot()
     tasks = [(salt, cfg, g, grad_year) for g in genders]
+    # The workers read the archive when they START, so the generation is noted
+    # BEFORE the pool is launched: a result that crossed an invalidation is dropped
+    # here and the class builds lazily at its next read (`_publish_class`).
+    gen = _class_gen.get(grad_year, 0)
     for (g, gy, dicts) in pmap(_build_board_class, tasks, workers=workers_for(len(tasks))):
         klass = RecruitClass(grad_year=gy, gender=g,
                              recruits=[prospect_from_dict(d) for d in dicts])
         _rank(klass)                            # match serial recruit_class's ranking exactly
         klass.circuit_done = True
-        _class_cache[(salt, g, gy)] = klass
+        _publish_class((salt, g, gy), klass, gen)
 
 
 def warm_caches(seed: int = DEFAULT_SEED) -> None:
