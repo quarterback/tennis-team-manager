@@ -98,7 +98,7 @@
 }
 .bl-th {
   font-family: var(--font-text); font-size: var(--fs-micro); font-weight: var(--fw-semibold);
-  letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-muted);
+  letter-spacing: var(--ls-eyebrow); text-transform: uppercase; color: var(--text-secondary);
   display: flex; align-items: center; gap: 4px;
 }
 .bl-th.num { justify-content: flex-end; text-align: right; }

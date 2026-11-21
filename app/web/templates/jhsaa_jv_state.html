@@ -153,7 +153,7 @@
         <input type="hidden" name="g" value="{{ view.gender }}">
         <input type="hidden" name="group" value="{{ view.scope.group }}">
         {% if view.scope.pin %}<input type="hidden" name="year" value="{{ view.scope.pin }}">{% endif %}
-        <select name="region" onchange="this.form.submit()">
+        <select aria-label="Region" name="region" onchange="this.form.submit()">
           {% for rn in view.region_brk.options %}
           <option value="{{ rn }}" {{ 'selected' if rn == view.region_brk.name }}>{{ rn }}</option>
           {% endfor %}

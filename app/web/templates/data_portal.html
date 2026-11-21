@@ -7,7 +7,7 @@
 <form method="get">
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
   <label class="bl-field"><span class="bl-field-label">Tour</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:118px">
+    <span class="bl-select-wrap"><select aria-label="Division and gender" class="bl-select" name="u" onchange="this.form.submit()" style="min-width:118px">
       {% for val, dd, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
     </select></span></label>
   <span class="al-feed">SIM DATA PORTAL</span>
@@ -141,6 +141,7 @@
   <section class="bl-panel">
     <div class="bl-panel-head"><span class="bl-panel-title">Junior Watchlist</span><a class="bl-panel-meta" href="{{ url_for('junior_rankings', u=u, grad_year=portal.grad_year) }}">Full board →</a></div>
     <div class="bl-panel-body al-leadwrap">
+      {% if not portal.top_prospects %}<div class="bl-panel-empty" style="padding:12px 16px;color:var(--text-muted)">The junior board has not been built for this class yet. <a href="{{ url_for('junior_rankings', u=u, grad_year=portal.grad_year) }}">Open the full board</a> to build it.</div>{% endif %}
       {% for p in portal.top_prospects %}
       <a class="al-player-row compact" href="{{ url_for('recruit', pid=p.pid, u=u, grad_year=portal.grad_year) }}">
         <span class="al-player-rk">{{ p.rk }}</span>

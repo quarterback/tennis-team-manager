@@ -15,19 +15,19 @@
       <input type="hidden" name="u" value="{{ u }}">
       <input type="hidden" name="find" value="1">
       <label>Gender
-        <select name="gender">
+        <select aria-label="Gender" name="gender">
           {% for val, lbl in [('boys','Boys'), ('girls','Girls'), ('all','Both')] %}
           <option value="{{ val }}" {{ 'selected' if gender_f == val }}>{{ lbl }}</option>
           {% endfor %}
         </select>
       </label>
       <label>Class
-        <select name="group">
+        <select aria-label="Classification" name="group">
           {% for gp in groups %}<option value="{{ gp }}" {{ 'selected' if group == gp }}>{{ gp }}</option>{% endfor %}
         </select>
       </label>
       <label>District
-        <select name="district">
+        <select aria-label="District" name="district">
           {% for d in districts %}<option value="{{ d }}" {{ 'selected' if district == d }}>{{ d }}</option>{% endfor %}
         </select>
       </label>
@@ -37,7 +37,7 @@
         </select>
       </label>
       <label>Sort
-        <select name="sort">
+        <select aria-label="Sort by" name="sort">
           {% for val, lbl in [('ceiling','Potential'), ('ovr','Current OVR'), ('stars','Stars'),
                               ('name','Name'), ('school','School')] %}
           <option value="{{ val }}" {{ 'selected' if sort == val }}>{{ lbl }}</option>

@@ -9,7 +9,7 @@
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
   <span style="font-size:16px;color:var(--text-muted)">Analytics Bureau › Team Scanner</span>
   <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Sort</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="sort" onchange="this.form.submit()" style="min-width:140px">
+    <span class="bl-select-wrap"><select aria-label="Sort by" class="bl-select" name="sort" onchange="this.form.submit()" style="min-width:140px">
       <option value="card_ovr"{% if sort == 'card_ovr' %} selected{% endif %}>Starters OVR</option>
       <option value="roster_ovr"{% if sort == 'roster_ovr' %} selected{% endif %}>Roster OVR</option>
       <option value="ceiling"{% if sort == 'ceiling' %} selected{% endif %}>Ceiling</option>
@@ -24,11 +24,11 @@
       <option value="asc"{% if direction == 'asc' %} selected{% endif %}>Weakest first</option>
     </select></span></label>
   <label class="bl-field"><span class="bl-field-label">Division</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="div" onchange="this.form.elements['conf'].value='All';this.form.submit()" style="min-width:84px">
+    <span class="bl-select-wrap"><select aria-label="Division" class="bl-select" name="div" onchange="this.form.elements['conf'].value='All';this.form.submit()" style="min-width:84px">
       {% for d in divisions %}<option{% if d == div_f %} selected{% endif %}>{{ d }}</option>{% endfor %}
     </select></span></label>
   <label class="bl-field"><span class="bl-field-label">Conference</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:110px"{% if not confs %} disabled{% endif %}>
+    <span class="bl-select-wrap"><select aria-label="Conference" class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:110px"{% if not confs %} disabled{% endif %}>
       <option value="All">All</option>
       {% for c in confs %}<option{% if c == conf_f %} selected{% endif %}>{{ c }}</option>{% endfor %}
     </select></span></label>

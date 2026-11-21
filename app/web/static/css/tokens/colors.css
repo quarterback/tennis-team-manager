@@ -92,13 +92,20 @@
 
   --text-primary: var(--ink);
   --text-secondary: var(--gray-600);
-  --text-muted: var(--gray-500);
+  /* ‼️ Muted and faint are both MIXED TOWARD gray-600 here (owner, 2026-11).
+     Raw gray-500 cleared 4.5:1 on a white page and nowhere else: measured on
+     70 pages it was 3.9-4.3:1 on every tinted surface (zebra rows, table
+     headings, the nav rail), and faint was 3.1-3.9:1 in all ten schemes.
+     Measured after, per scheme, on page / zebra / subtle / hover: muted
+     5.1-7.9:1, faint 4.7-6.9:1. On --surface-th harbor and citrus still sit
+     at ~4:1, so anything set ON that surface reads --text-secondary. */
+  --text-muted: color-mix(in oklab, var(--gray-500) 40%, var(--gray-600));
   /* ‼️ Faint is a HIERARCHY tier, not an invitation to fall under AA — the old
      alias read gray-400 raw (~3:1 on white in most schemes), which is where
-     "too low-contrast" metadata came from (owner, 2026-09). Mixed toward
-     gray-500 IN THE ALIAS layer so all ten schemes lift together; a scheme
+     "too low-contrast" metadata came from (owner, 2026-09). Mixed
+     IN THE ALIAS layer so all ten schemes lift together; a scheme
      overrides layers 1-2 only and never this line. */
-  --text-faint: color-mix(in oklab, var(--gray-500) 55%, var(--gray-400));
+  --text-faint: color-mix(in oklab, var(--gray-500) 60%, var(--gray-600));
   --text-link: var(--brand-strong);
 
   --border-subtle: var(--gray-200);

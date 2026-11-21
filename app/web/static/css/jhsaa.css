@@ -1321,7 +1321,12 @@ html[data-jh-scout="on"] .jh-scout { visibility: visible; }
   display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
   font-size: var(--fs-caption); color: var(--text-secondary); user-select: none;
 }
-.jh-scout-toggle input { margin: 0; cursor: pointer; }
+.jh-scout-toggle { min-height: 28px; }
+.jh-scout-toggle input { margin: 0; cursor: pointer; width: 18px; height: 18px; }
+/* A native checkbox is a 13px target. The explorer's cell is the target
+   instead: the box fills it, so a row is selectable anywhere in the column. */
+.jhx-tbl .jhx-ck input { width: 20px; height: 20px; margin: 2px; cursor: pointer; }
+@media (pointer: coarse) { .jhx-tbl .jhx-ck input { width: 26px; height: 26px; } }
 
 /* ‼️ THE CHAMPIONS TABLE LETS A NAME WRAP (owner, 2026-08). Everywhere else a school
    cell truncates, because it sits in a dense row where one line is the whole point.

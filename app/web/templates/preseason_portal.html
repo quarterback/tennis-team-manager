@@ -204,7 +204,7 @@
         {{ crest_box(t.dest_school, t.to_abbr, t.to_color, 'xs') }}
         {% if t.is_riser and not pp.done %}
           <input type="hidden" form="ppapply" name="cur_{{ t.pid }}" value="{{ t.dest_school }}">
-          <input class="bl-select pp-dest" form="ppapply" name="dest_{{ t.pid }}" list="pp-dests"
+          <input class="bl-select pp-dest" aria-label="Destination for {{ t.name }}" form="ppapply" name="dest_{{ t.pid }}" list="pp-dests"
                  value="{{ t.dest_school }}" data-home="{{ t.dest_school }}"
                  style="min-width:128px;height:24px;font-size:15px">
         {% else %}

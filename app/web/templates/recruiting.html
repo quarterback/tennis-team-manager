@@ -8,27 +8,27 @@
 <form method="get">
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
   <label class="bl-field"><span class="bl-field-label">Division</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
+    <span class="bl-select-wrap"><select aria-label="Division and gender" class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
       {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
     </select></span></label>
   <label class="bl-field"><span class="bl-field-label">Class</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="grad_year" onchange="this.form.submit()" style="min-width:78px">
+    <span class="bl-select-wrap"><select aria-label="Class year" class="bl-select" name="grad_year" onchange="this.form.submit()" style="min-width:78px">
       {% for y in grad_years %}<option{% if y == grad_year %} selected{% endif %}>{{ y|cal }}</option>{% endfor %}
     </select></span></label>
   <label class="bl-field"><span class="bl-field-label">Board</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="scope" onchange="this.form.submit()" style="min-width:120px">
+    <span class="bl-select-wrap"><select aria-label="Scope" class="bl-select" name="scope" onchange="this.form.submit()" style="min-width:120px">
       <option value="national"{% if scope=='national' %} selected{% endif %}>National</option>
       <option value="state"{% if scope=='state' %} selected{% endif %}>By State</option>
       <option value="intl"{% if scope=='intl' %} selected{% endif %}>International</option>
     </select></span></label>
   <label class="bl-field"><span class="bl-field-label">Status</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="status" onchange="this.form.submit()" style="min-width:130px">
+    <span class="bl-select-wrap"><select aria-label="Status" class="bl-select" name="status" onchange="this.form.submit()" style="min-width:130px">
       <option value="all"{% if status=='all' %} selected{% endif %}>All prospects</option>
       <option value="unsigned"{% if status=='unsigned' %} selected{% endif %}>Available only</option>
     </select></span></label>
   {% if scope == 'state' %}
   <label class="bl-field"><span class="bl-field-label">State</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="state" onchange="this.form.submit()" style="min-width:150px">
+    <span class="bl-select-wrap"><select aria-label="State" class="bl-select" name="state" onchange="this.form.submit()" style="min-width:150px">
       {% for s in states %}<option{% if s == state %} selected{% endif %}>{{ s }}</option>{% endfor %}
     </select></span></label>
   {% endif %}

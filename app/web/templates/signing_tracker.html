@@ -7,12 +7,12 @@
 <form method="get">
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
   <label class="bl-field"><span class="bl-field-label">Division</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
+    <span class="bl-select-wrap"><select aria-label="Division and gender" class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
       {% for val, dd, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
     </select></span></label>
   <label class="bl-field" title="Past classes are archived — see who signed and how they turned out">
     <span class="bl-field-label">Class</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="year" onchange="this.form.submit()" style="min-width:150px">
+    <span class="bl-select-wrap"><select aria-label="Season" class="bl-select" name="year" onchange="this.form.submit()" style="min-width:150px">
       {% for y in trk.years %}<option value="{{ y.val }}"{% if y.val == trk.year %} selected{% endif %}>{{ y.label }}</option>{% endfor %}
     </select></span></label>
   <span style="font-size:16px;color:var(--text-muted)">{{ uni_label }} · {% if trk.archive %}Class of {{ trk.class_of }}{% else %}live commitments this recruiting year{% endif %}</span>

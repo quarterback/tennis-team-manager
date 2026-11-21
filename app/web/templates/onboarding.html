@@ -93,7 +93,7 @@
               {% if r.is_domestic %}
               <span class="ob-rfixed" title="Set by the “US vs. world split” above">auto</span>
               {% else %}
-              <input type="number" name="w_{{ r.id }}" class="ob-rweight" min="0" step="1"
+              <input type="number" name="w_{{ r.id }}" class="ob-rweight" aria-label="{{ r.label|default(r.id) }} weight" min="0" step="1"
                      value="{{ r.weight }}" inputmode="numeric">
               {% endif %}
             </div>

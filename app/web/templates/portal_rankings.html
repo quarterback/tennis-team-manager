@@ -8,15 +8,15 @@
   <input type="hidden" name="u" value="{{ u }}">
   <span style="font-size:16px;color:var(--text-muted)">Transfer Portal › Class Rankings</span>
   <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Year</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="year" onchange="this.form.submit()" style="min-width:88px">
+    <span class="bl-select-wrap"><select aria-label="Season" class="bl-select" name="year" onchange="this.form.submit()" style="min-width:88px">
       {% for y in pr.years %}<option value="{{ y.val }}"{% if y.val == pr.year %} selected{% endif %}>{{ y.label }}</option>{% endfor %}
     </select></span></label>
   <label class="bl-field"><span class="bl-field-label">Gender</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="gender" onchange="this.form.submit()" style="min-width:84px">
+    <span class="bl-select-wrap"><select aria-label="Gender" class="bl-select" name="gender" onchange="this.form.submit()" style="min-width:84px">
       {% for g in genders %}<option value="{{ g }}"{% if g == pr.gender %} selected{% endif %}>{{ {'all':'All','men':'Men','women':'Women'}[g] }}</option>{% endfor %}
     </select></span></label>
   <label class="bl-field"><span class="bl-field-label">Classification</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="div" onchange="this.form.submit()" style="min-width:76px">
+    <span class="bl-select-wrap"><select aria-label="Division" class="bl-select" name="div" onchange="this.form.submit()" style="min-width:76px">
       {% for d in divisions %}<option{% if d == pr.division %} selected{% endif %}>{{ d }}</option>{% endfor %}
     </select></span></label>
   <button class="bl-pill" type="submit">Go</button>

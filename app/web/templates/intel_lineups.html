@@ -8,15 +8,15 @@
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
   <span style="font-size:16px;color:var(--text-muted)">Analytics Bureau › Lineup Lab</span>
   <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Division</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="div" onchange="document.getElementById('ll-conf').value='';this.form.submit()" style="min-width:84px">
+    <span class="bl-select-wrap"><select aria-label="Division" class="bl-select" name="div" onchange="document.getElementById('ll-conf').value='';this.form.submit()" style="min-width:84px">
       {% for d in divisions %}<option{% if d == div_f %} selected{% endif %}>{{ d }}</option>{% endfor %}
     </select></span></label>
   <label class="bl-field"><span class="bl-field-label">Conference</span>
-    <span class="bl-select-wrap"><select id="ll-conf" class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:130px">
+    <span class="bl-select-wrap"><select aria-label="Conference" id="ll-conf" class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:130px">
       {% for c in confs %}<option{% if c == conf %} selected{% endif %}>{{ c }}</option>{% endfor %}
     </select></span></label>
   <label class="bl-field"><span class="bl-field-label">Highlight team</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="team" onchange="this.form.submit()" style="min-width:150px">
+    <span class="bl-select-wrap"><select aria-label="Team" class="bl-select" name="team" onchange="this.form.submit()" style="min-width:150px">
       <option value="">— none —</option>
       {% for t in lineups %}<option value="{{ t.school }}"{% if t.school == highlight %} selected{% endif %}>{{ t.school }}</option>{% endfor %}
     </select></span></label>

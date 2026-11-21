@@ -68,7 +68,7 @@
   <div class="bl-panel-head" style="gap:10px;flex-wrap:wrap">
     <span class="bl-panel-title"><a href="{{ url_for('jhsaa_district', group=view.group, district=d.district, u=u, g=view.gender) }}">{{ d.district }}</a></span>
     <span class="bl-panel-meta">{{ d.moves|length }} proposed{% if d.stays %} · {{ d.stays|length }} stay{% endif %} · {{ view.in_view }} proposed across {{ view.district_index|length }} leagues in {{ view.gender }} {{ view.group }}</span>
-    <select class="bl-select" style="margin-left:auto;max-width:320px" onchange="if(this.value)window.location=this.value" title="Another league in this class">
+    <select class="bl-select" style="margin-left:auto;max-width:320px" aria-label="League" onchange="if(this.value)window.location=this.value" title="Another league in this class">
       {% for x in view.district_index %}
       <option value="{{ url_for('jhsaa_portal', u=u, g=view.gender, group=view.group, district=x.district) }}" {% if x.district == d.district %}selected{% endif %}>{{ x.district }} · {{ x.moves }} proposed{% if x.stays %} · {{ x.stays }} stay{% endif %}</option>
       {% endfor %}

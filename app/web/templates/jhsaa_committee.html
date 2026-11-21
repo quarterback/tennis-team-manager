@@ -30,7 +30,7 @@ the season each class's expanded field began.</div></div>
 
 <div class="jh-jump">
   <label><span class="k">Group</span>
-    <select onchange="if(this.value)window.location=this.value">
+    <select aria-label="Classification" onchange="if(this.value)window.location=this.value">
       {% for gp in view.groups %}
       <option value="{{ url_for('jhsaa_committee', u=u, g=view.gender, group=gp, year=view.scope.pin) }}"
               {{ 'selected' if gp == view.group }}>{{ gp }}</option>

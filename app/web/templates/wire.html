@@ -9,22 +9,22 @@
 <div class="bl-toolbar"><div class="bl-toolbar-inner" style="flex-wrap:wrap">
   <span style="font-size:16px;color:var(--text-muted)">The Wire</span>
   <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Season</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="year" onchange="this.form.submit()" style="min-width:88px">
+    <span class="bl-select-wrap"><select aria-label="Season" class="bl-select" name="year" onchange="this.form.submit()" style="min-width:88px">
       <option value="all"{% if v.year == 'all' %} selected{% endif %}>All seasons</option>
       {% for y in v.years %}<option value="{{ y }}"{% if v.year|string == y|string %} selected{% endif %}>{{ base_year + y }}</option>{% endfor %}
     </select></span></label>
   <label class="bl-field"><span class="bl-field-label">Gender</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="gender" onchange="this.form.submit()" style="min-width:82px">
+    <span class="bl-select-wrap"><select aria-label="Gender" class="bl-select" name="gender" onchange="this.form.submit()" style="min-width:82px">
       <option value="all"{% if v.gender == 'all' %} selected{% endif %}>Both</option>
       <option value="men"{% if v.gender == 'men' %} selected{% endif %}>Men</option>
       <option value="women"{% if v.gender == 'women' %} selected{% endif %}>Women</option>
     </select></span></label>
   <label class="bl-field"><span class="bl-field-label">Division</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="div" onchange="this.form.submit()" style="min-width:74px">
+    <span class="bl-select-wrap"><select aria-label="Division" class="bl-select" name="div" onchange="this.form.submit()" style="min-width:74px">
       {% for d in divisions %}<option{% if d == v.division %} selected{% endif %}>{{ d }}</option>{% endfor %}
     </select></span></label>
   <label class="bl-field"><span class="bl-field-label">Conference</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:110px">
+    <span class="bl-select-wrap"><select aria-label="Conference" class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:110px">
       <option{% if v.conf == 'All' %} selected{% endif %}>All</option>
       {% for c in v.confs %}<option{% if c == v.conf %} selected{% endif %}>{{ c }}</option>{% endfor %}
     </select></span></label>
@@ -36,7 +36,7 @@
       <option value="pro"{% if v.kind == 'pro' %} selected{% endif %}>Pros in</option>
     </select></span></label>
   <label class="bl-field"><span class="bl-field-label">Sort</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="sort" onchange="this.form.submit()" style="min-width:126px">
+    <span class="bl-select-wrap"><select aria-label="Sort by" class="bl-select" name="sort" onchange="this.form.submit()" style="min-width:126px">
       <option value="recent"{% if v.sort == 'recent' %} selected{% endif %}>Newest first</option>
       <option value="oldest"{% if v.sort == 'oldest' %} selected{% endif %}>Oldest first</option>
       <option value="str"{% if v.sort == 'str' %} selected{% endif %}>Highest STR</option>

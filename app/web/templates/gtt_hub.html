@@ -10,7 +10,7 @@
       {% if leagues %}
       <form method="get" style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
         <label class="bl-field"><span class="bl-field-label">League</span>
-          <span class="bl-select-wrap"><select class="bl-select" name="lg" onchange="this.form.submit()" style="min-width:240px">
+          <span class="bl-select-wrap"><select aria-label="League" class="bl-select" name="lg" onchange="this.form.submit()" style="min-width:240px">
             {% for l in leagues %}<option value="{{ l.id }}"{% if league and l.id == league.id %} selected{% endif %}>{{ l.name }}</option>{% endfor %}
           </select></span></label>
       </form>

@@ -721,7 +721,23 @@ def data_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> di
 
     rg = RECRUIT_GENDERS.get(gender, "male")
     junior_year = world.recruiting_grad_year(seed)
-    juniors = recruiting_hub(rg, junior_year, seed=seed)
+    # The watchlist is six rows. The board behind it is the whole recruiting
+    # class run through the junior circuit (full point engine), which on a world
+    # whose board has not been built yet held this page — and the one worker
+    # thread — for minutes (measured 2026-11: no response in 150 s on a fresh
+    # world). So the panel reads the board only when it is already built; the
+    # Recruiting pages are where it gets built.
+    _klass = world.recruit_class(rg, junior_year, world.active_salt(seed))
+    board_ready = bool(getattr(_klass, "circuit_done", False))
+    if board_ready:
+        juniors = recruiting_hub(rg, junior_year, seed=seed)
+    else:                      # the pool's own counts need no junior results
+        _rec = _klass.recruits
+        juniors = {"top_rows": [], "kpis": {
+            "class_size": len(_rec),
+            "bluechips": sum(1 for p in _rec if getattr(p, "recruit_stars", 0) >= 5),
+            "nations": len({p.country for p in _rec if not p.domestic}),
+        }}
     top_prospects = []
     for rk, p, stat, honor in juniors["top_rows"][:6]:
         top_prospects.append({
@@ -833,7 +849,8 @@ def data_portal_view(division: str, gender: str, seed: int = DEFAULT_SEED) -> di
         "prestige_board": prestige_board, "prestige_risers": prestige_risers,
         "prestige_fallers": prestige_fallers,
     }
-    _portal_cache[_pkey] = _portal_result
+    if board_ready:            # never memoise the page without its watchlist
+        _portal_cache[_pkey] = _portal_result
     return _portal_result
 
 
