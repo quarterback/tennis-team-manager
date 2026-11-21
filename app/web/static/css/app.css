@@ -717,16 +717,17 @@ img, svg, table { max-width: 100%; }
   vertical-align: middle;
 }
 
-/* ---- Season stepper (World Hub + Season Hub, templates/_stepper.html) ---- */
-.bl-stepper { display:flex; gap:6px; list-style:none; padding:0; margin:0 0 16px; flex-wrap:wrap; }
-.bl-step { display:flex; align-items:center; gap:8px; padding:6px 14px 6px 8px; border-radius:999px;
-  background:var(--surface-subtle); color:var(--text-muted); font-size:15px; font-weight:600; }
-.bl-step-dot { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px;
-  border-radius:50%; background:var(--border-subtle); color:var(--text-muted); font-size:14px; }
-.bl-step.done { color:var(--brand-strong); }
-.bl-step.done .bl-step-dot { background:var(--brand-strong); color:var(--brand-contrast); }
-.bl-step.current { background:var(--green-50); color:var(--brand-strong); box-shadow:inset 0 0 0 1px var(--brand-strong); }
-.bl-step.current .bl-step-dot { background:var(--brand-strong); color:var(--brand-contrast); }
+/* ---- Season tabs (World Hub + Season Hub, templates/_stepper.html) ----
+   The season's events as tabs, in order; the live one carries a Now tag. No
+   numbers, no pills: the left-to-right order already says what comes next. */
+.bl-seasontabs { display:flex; gap:0 28px; overflow-x:auto; margin:0 0 20px; }
+.bl-seasontabs a { display:flex; align-items:center; gap:8px; min-height:48px; white-space:nowrap;
+  font-size:var(--fs-body-s); font-weight:var(--fw-semibold); color:var(--text-primary);
+  text-decoration:none; }
+.bl-seasontabs a:hover { color:var(--brand-strong); }
+.bl-seasontabs a[aria-current="page"] { box-shadow:inset 0 -4px 0 var(--text-primary); }
+.bl-now { padding:1px 8px; background:var(--text-primary); color:var(--surface-card);
+  font-size:var(--fs-micro); font-weight:var(--fw-bold); }
 
 /* ---- Three presentation patterns (owner rule 2026-11, "no grids") ----
    SCOREBOARD — status that matters most (record, index, next opponent): big

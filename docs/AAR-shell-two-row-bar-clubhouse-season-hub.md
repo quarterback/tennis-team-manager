@@ -111,3 +111,21 @@ workspace — written up at the end of `app.css`):
   `<table>`s. The Clubhouse uses it; its sections are spacing, not cards.
 
 Checked in a browser on Clubhouse and Rankings at 1440px. No tests, by request.
+
+## Follow-up: the season stepper became season tabs
+
+The owner asked what the numbered stepper on the World Hub and Season Hub was
+for. It restated the top bar: the clock already names the live stage, and the
+advance button names the next step. The numbers and check-mark dots added nothing,
+since left-to-right order already says what comes next, and none of the steps
+went anywhere.
+
+`state.season_tabs(stage)` (from `SEASON_TABS`) replaces it as a row of links,
+one per season event that has a page: Overview, Preseason NIT, Fall portal,
+Regular season (standings, which also hold the conference tournaments), NCAA
+championship (the locked bracket, which also holds the bracket reveal), Awards,
+and World Cups. The live stage's tab carries a Now tag; the page you are on is
+underlined. The offseason has no page, so it has no tab. `_stepper.html` now
+holds the `season_tabs` macro, and `.bl-seasontabs` / `.bl-now` replace the
+`.bl-step*` rules. `stage_steps` stays, since the World Hub still reads the live
+stage's label from it. Templates parsed; no tests, by request.

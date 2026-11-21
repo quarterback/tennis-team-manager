@@ -5160,7 +5160,7 @@ def create_app() -> Flask:
                                conf_sel=conf_sel, last=last, top=top, me_row=me_row,
                                my_school=my_school, n_rated=len(field), crest=crest,
                                season_year=wd.display_base_year() + (wd.load_world()["year"] if wd.exists() else 0),
-                               stages=current_world_stage()["stages"],
+                               tabs=current_world_stage()["tabs"],
                                bubble=sm.bubble_watch(sid), ita_champ=sm.indoor_champion(sid))
 
     # NOTE: there is deliberately NO /season/advance. The Season Hub used to carry

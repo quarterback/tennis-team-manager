@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_stepper.html" import stepper %}
+{% from "_stepper.html" import season_tabs %}
 {% block title %}Play to Clinch — The World{% endblock %}
 {% block content %}
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
@@ -38,7 +38,7 @@
   {% endif %}
 </div></div>
 
-{{ stepper(hub.stages) }}
+{{ season_tabs(hub.tabs) }}
 
 <div class="bl-board">
   <div class="bl-scorehdr" style="grid-template-columns:auto 1fr auto;margin-bottom:18px">

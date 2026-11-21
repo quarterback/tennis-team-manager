@@ -3136,6 +3136,24 @@ def stage_steps(stage: str) -> list[dict]:
             for i, k in enumerate(STAGE_ORDER)]
 
 
+# The season tabs: the season's events in the order they happen, each one a
+# page. Conference tournaments live on the standings page and the bracket reveal
+# on the bracket page, so those ladder stages share a tab. The offseason has no
+# page of its own. The tab for the live stage carries a Now tag.
+SEASON_TABS = [("Overview", "season_hub", ()),
+               ("Preseason NIT", "season_ita", ("ita",)),
+               ("Fall portal", "fall_portal", ("fall_portal",)),
+               ("Regular season", "season_standings", ("regular", "conf_tournaments")),
+               ("NCAA championship", "ncaa_bracket", ("selection", "ncaa")),
+               ("Awards", "awards", ("awards",)),
+               ("World Cups", "world_cups", ("world_cups",))]
+
+
+def season_tabs(stage: str) -> list[dict]:
+    return [{"label": lab, "endpoint": ep, "now": stage in keys}
+            for lab, ep, keys in SEASON_TABS]
+
+
 def current_world_stage(seed: int = DEFAULT_SEED) -> dict:
     """Stage + stepper without priming the world: one season row per active
     universe, the same reads the header makes on every page."""
@@ -3143,12 +3161,13 @@ def current_world_stage(seed: int = DEFAULT_SEED) -> dict:
     import app.seasonmode as sm
     from app import worldconfig
     if not world.exists():
-        return {"stage": "regular", "stages": stage_steps("regular")}
+        return {"stage": "regular", "stages": stage_steps("regular"),
+                "tabs": season_tabs("regular")}
     w = world.load_world()
     active = [(d, g) for (_v, d, g, _l) in UNIVERSES if worldconfig.is_active(d, g)]
     phases = [sm.load_season(world.universe_sid(seed, w, d, g))["phase"] for (d, g) in active]
     stage = world_stage_key(w, phases, active)
-    return {"stage": stage, "stages": stage_steps(stage)}
+    return {"stage": stage, "stages": stage_steps(stage), "tabs": season_tabs(stage)}
 
 
 def world_hub(seed: int = DEFAULT_SEED):
@@ -3224,6 +3243,7 @@ def world_hub(seed: int = DEFAULT_SEED):
         "signed_total": sum(signed.values()), "in_sync": in_sync,
         "complete": complete, "awards_done": awards_done,
         "stage": stage, "primary": primary, "stages": stages,
+        "tabs": season_tabs(stage),
     }
 
 

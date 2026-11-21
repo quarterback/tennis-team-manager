@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_bubble.html" import bubble_compact %}
-{% from "_stepper.html" import stepper %}
+{% from "_stepper.html" import season_tabs %}
 {% block title %}Play to Clinch — Season{% endblock %}
 {% block content %}
 {% set ph = s.phase %}
@@ -39,7 +39,7 @@
 </div></div>
 
 <div class="bl-board">
-  {{ stepper(stages) }}
+  {{ season_tabs(tabs, u) }}
 
   {% if ph == 'complete' and s.champion %}
   <div class="bl-champ"><span class="bl-crest lg" style="background:{{ crest(s.champion)[1] }};width:56px;height:56px;font-size:17px">{{ crest(s.champion)[0] }}</span>
