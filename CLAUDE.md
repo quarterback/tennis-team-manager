@@ -4136,6 +4136,17 @@ palettes exist without touching a component rule. **Never write a raw colour out
 file.** `color-scheme: only light` is deliberate (Chromium's Auto Dark Theme re-inverts a
 page that never asked). Schemes are shared with `prep-network/site/style.css`; the picker
 list is `server.SCHEMES`.
+- **‼️ THE DEFAULT LOOK IS "CLINCH" (owner rule 2026-11: "it becomes the new default
+  look").** `:root` is the owner's palette: midnight violet ink and masthead, dust grey
+  ground, carrot orange mast rule and bar action, emerald detail, pine `#186038` for
+  links and secondary text, deep red `#ae2529` for live and rank. Large areas behind
+  text take TINTS (orange `#e8c799` = `--linen`, the JHSAA hero band; emerald
+  `#cedbcd` = hover), never the full colours. The old default is `[data-theme="ensign"]`.
+  Every scheme now also sets `--mast-action`/`--on-mast-action` (the advance button on
+  the dark bar). Type roles: Author display, Hanken Grotesk text, RX100 numbers
+  (`--font-num`, one weight, so every rule using it turns weight synthesis off).
+  Both `tokens/fonts.css` AND `tokens/colors.css` declare the type roles and colors
+  loads second, so change both. See `docs/AAR-clinch-default-look.md`.
 - **Measure every slot against its own ground before writing it down.** The `clay` scheme
   contains NO colour dark enough to be ink — the darkest is 1.8:1 — so its ink and link
   are derived by pushing the palette's hues down. Dropped in as sent it would have

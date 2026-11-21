@@ -514,3 +514,9 @@ a.brk-name:hover { text-decoration: underline; }
   .bl-bracket-layout2 { grid-template-columns: 1fr; }
   .bl-seedsheet { position: static; }
 }
+
+
+/* The number face (see app.css): seeds and scores in RX100, no faux bold. */
+.brk-seed, .brk-score, .bl-team-score, .bl-seed-row .seed {
+  font-family: var(--font-num); font-weight: 400; font-synthesis: none;
+}
