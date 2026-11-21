@@ -1,5 +1,7 @@
 # AAR — separating the JHSAA sim from the college game, and the alumni tracker
 
+**Current continuation:** The graduated-player epilogue is now implemented as [college career model 2](AAR-jhsaa-alumni-career-model-2.md); see [its design contract](DESIGN-jhsaa-alumni-college-career-model.md). The first-pass career-line results discussed below describe model 1 and should be read as historical implementation context.
+
 ## The report
 
 Owner, 2026-11: *"i haven't played the college version of this in a long time, and
