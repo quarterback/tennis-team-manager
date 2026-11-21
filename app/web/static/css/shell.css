@@ -8,7 +8,7 @@
 :root {
   --fm-sidebar-w: 240px;
   --fm-topbar-h: 58px;
-  --fm-app-bg: var(--gray-50);
+  --fm-app-bg: var(--surface-card);   /* one ground: panels stop reading as boxes */
 }
 
 /* App background sits a step below the white panels for depth. */
@@ -33,14 +33,14 @@ body { background: var(--fm-app-bg); }
   width: var(--fm-sidebar-w); height: 100vh; overflow-y: auto;
   transform: translateX(-100%);
   transition: transform var(--dur-base, 180ms) var(--ease-out, ease);
-  box-shadow: var(--shadow-lg, 0 8px 30px rgba(0,0,0,0.18));
+  box-shadow: none;    /* only while open: closed, its shadow bled in at the left edge */
   background: var(--surface-card);
   border-right: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   padding: 14px 12px 24px;
 }
-.fm-navtoggle:checked ~ .fm-sidebar { transform: none; }
+.fm-navtoggle:checked ~ .fm-sidebar { transform: none; box-shadow: var(--shadow-lg); }
 .fm-navtoggle:checked ~ .fm-scrim {
   display: block; position: fixed; inset: 0; z-index: 50;
   background: rgba(15, 20, 25, 0.4);
@@ -98,7 +98,7 @@ body { background: var(--fm-app-bg); }
   position: sticky; top: 0; z-index: 20; flex: none;
   display: flex; flex-direction: column;
   background: var(--surface-card);
-  border-bottom: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
 }
 .fm-bar1 {
   height: var(--fm-topbar-h);
@@ -183,7 +183,7 @@ body { background: var(--fm-app-bg); }
 .fm-tn-btn.active { box-shadow: inset 0 -3px 0 var(--brand); }
 .fm-tn-menu {
   position: absolute; top: calc(100% - 2px); left: 0; min-width: 220px;
-  background: var(--surface-card); border: 1px solid var(--border-subtle);
+  background: var(--surface-card); border: 1px solid var(--border-control);
   border-radius: 9px; box-shadow: var(--shadow-lg, 0 8px 30px rgba(0,0,0,0.16));
   padding: 6px; display: none; flex-direction: column; gap: 1px; z-index: 80;
 }

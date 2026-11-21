@@ -68,7 +68,7 @@
       </div>
       <form method="post" action="{{ url_for('my_program_lineup') }}" class="mp-lineup" data-n="{{ mp.n_lineup }}">
         <div class="mp-tscroll">
-        <table class="mp-table">
+        <table class="mp-table bl-ledger">
           <thead><tr><th scope="col">Flight</th><th scope="col">Player</th><th scope="col">Yr</th><th scope="col" class="mp-num">STR</th><th scope="col" class="mp-num">W–L</th><th scope="col">Aid</th><th scope="col"><span class="mp-sr">Move</span></th></tr></thead>
           <tbody>
             {% for r in ladder %}
@@ -253,17 +253,15 @@
     font-variant-numeric: tabular-nums; display: flex; align-items: baseline; gap: 8px; }
   .mp-v-sub { font-size: var(--fs-caption); font-weight: var(--fw-semibold); color: var(--text-secondary); }
   a.mp-v-sub { color: var(--text-link); }
-  .mp-next { display: flex; align-items: baseline; gap: 8px 16px; flex-wrap: wrap;
-    padding: 14px 18px; margin-bottom: 18px; border: 1px solid var(--border-subtle);
-    border-radius: 10px; background: var(--surface-card); }
+  .mp-next { display: flex; align-items: baseline; gap: 8px 16px; flex-wrap: wrap; margin: 4px 0 36px; }
   .mp-next-v { font-size: var(--fs-display-s); font-weight: var(--fw-bold); color: var(--text-primary); margin: 0; }
   .mp-next-t { font-size: var(--fs-body-s); color: var(--text-secondary); }
   .mp-next-links { margin-left: auto; display: flex; gap: 18px; flex-wrap: wrap; }
   .mp-next-link { font-size: var(--fs-body-s); font-weight: var(--fw-semibold); color: var(--text-link); }
-  .mp-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .mp-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 48px 40px; }
   .mp-grid > * { min-width: 0; }
-  .mp-card { border: 1px solid var(--border-subtle); border-radius: 12px; padding: 18px 20px;
-    background: var(--surface-card); }
+  /* Sections, not boxes: space and the heading do the separating. */
+  .mp-card { padding: 0; }
   .mp-span2 { grid-column: 1 / -1; }
   .mp-card h2 { font-size: var(--fs-title-l); margin: 0 0 12px; color: var(--text-primary); }
   .mp-card-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
@@ -273,19 +271,14 @@
      the page; min-width keeps the columns readable while the box scrolls. */
   .mp-tscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
   .mp-tscroll .mp-table { min-width: 34rem; }
-  .mp-table { width: 100%; border-collapse: collapse; font-size: var(--fs-body-s); }
-  .mp-table th { text-align: left; font-size: var(--fs-micro); font-weight: var(--fw-semibold);
-    color: var(--text-muted); padding: 6px 10px; border-bottom: 1px solid var(--border-default); }
-  .mp-table td { padding: 4px 10px; height: 44px; border-bottom: 1px solid var(--border-subtle); color: var(--text-primary); }
+  .mp-table td { padding-top: 4px; padding-bottom: 4px; height: 44px; }
   .mp-num { text-align: right; font-variant-numeric: tabular-nums; }
   .mp-line { font-weight: var(--fw-bold); color: var(--text-secondary); width: 64px; font-variant-numeric: tabular-nums; }
   .mp-name { font-weight: var(--fw-semibold); }
   .mp-hurt td { opacity: .6; }
-  .mp-benchrow td { color: var(--text-secondary); background: var(--surface-page); }
+  .mp-benchrow td { color: var(--text-secondary); }
   .mp-benchrow .mp-name { font-weight: var(--fw-medium); }
-  .mp-firstbench td { border-top: 2px solid var(--border-default); }
-  .mp-picked td { background: var(--green-50); }
-  .mp-picked td:first-child { box-shadow: inset 3px 0 0 var(--brand); }
+  .bl-ledger tbody tr.mp-picked td { background: var(--green-50); }
   .mp-movecell { width: 1%; text-align: right; }
   .mp-swap { min-height: 36px; min-width: 64px; padding: 0 12px; cursor: pointer;
     font: inherit; font-size: var(--fs-caption); font-weight: var(--fw-semibold); color: var(--text-link);
@@ -298,10 +291,10 @@
   .mp-lineup-msg { font-size: var(--fs-body-s); color: var(--text-secondary); }
   .mp-lineup-status { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
   .mp-badge { font-size: var(--fs-micro); font-weight: var(--fw-bold);
-    padding: 3px 10px; border-radius: 999px; color: var(--text-secondary); border: 1px solid var(--border-subtle); }
+    padding: 3px 10px; border-radius: 999px; color: var(--text-secondary); border: 1px solid var(--border-control); }
   .mp-badge.on { color: var(--brand-contrast); background: var(--brand); border-color: var(--brand); }
   .mp-reset { font-size: var(--fs-caption); font-weight: var(--fw-semibold); cursor: pointer; color: var(--text-link);
-    background: none; border: 1px solid var(--border-subtle); border-radius: 7px; padding: 6px 10px; min-height: 36px; }
+    background: none; border: 1px solid var(--border-control); border-radius: 7px; padding: 6px 10px; min-height: 36px; }
   .mp-tag { font-size: 12px; font-weight: 700; color: var(--brand-contrast); background: var(--stat-bad);
     border-radius: 4px; padding: 1px 4px; vertical-align: middle; }
   /* Ex-pro badge — green, portal-only elite tier. */
@@ -330,8 +323,7 @@
   .mp-bar { height: 8px; border-radius: 4px; background: var(--surface-page); overflow: hidden; margin-top: 12px; }
   .mp-bar span { display: block; height: 100%; background: var(--brand); }
   .mp-results { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; }
-  .mp-results li { display: flex; align-items: center; gap: 10px; font-size: var(--fs-body-s);
-    padding: 8px 0; border-bottom: 1px solid var(--border-subtle); }
+  .mp-results li { display: flex; align-items: center; gap: 10px; font-size: var(--fs-body-s); padding: 6px 0; }
   .mp-r-wl { font-weight: 800; width: 16px; }
   .mp-results li.win .mp-r-wl { color: var(--stat-good); }
   .mp-results li.loss .mp-r-wl { color: var(--stat-bad); }
@@ -347,7 +339,6 @@
     .mp-lineup .mp-table th:nth-child(6), .mp-lineup .mp-table td:nth-child(6) { display: none; }
     .mp-table td, .mp-table th { padding-left: 6px; padding-right: 6px; }
     .mp-line { width: 52px; }
-    .mp-card { padding: 16px 12px; }
     .mp-swap { min-width: 0; padding: 0 10px; } }
   .mp-table th.mp-num { text-align: right; }
 </style>

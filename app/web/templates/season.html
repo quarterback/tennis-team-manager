@@ -76,7 +76,7 @@
           </div>
           {% endfor %}
           {% if me_row %}
-          <div class="bl-row me sh-gap">
+          <div class="bl-row me">
             <span class="bl-rank">{{ me_row.rk }}</span>
             <a class="bl-school" href="{{ url_for('teams', school=me_row.school, u=u) }}">{{ me_row.school }}</a>
             <span class="bl-conf">{{ me_row.conf }}</span>
@@ -128,6 +128,5 @@
 <style>
 .sh-grid { grid-template-columns: minmax(0, 1fr) 380px; }
 @media (max-width: 1000px) { .sh-grid { grid-template-columns: 1fr; } }
-.sh-gap { border-top: 2px solid var(--border-default); }
 </style>
 {% endblock %}

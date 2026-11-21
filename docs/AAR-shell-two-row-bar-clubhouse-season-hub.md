@@ -87,3 +87,27 @@ to code.
   truth ("Season complete" in week 6). Derive labels from one table.
 - **Prototype seed data outlives the prototype.** `rankings_data._SEED` still backs
   `get_rankings`/`get_row`; nothing else should call them for live numbers.
+
+## Follow-up the same day: no grids, across the common styles
+
+Owner: "I just hate the grids all over the pages." Every page drew rows with a
+rule under each one AND a zebra fill, inside a bordered scroll box, inside a
+bordered panel, on a grey ground — four separation methods at once. Fixed in the
+shared layer, not page by page, following three patterns (scoreboard, ledger,
+workspace — written up at the end of `app.css`):
+
+- `tokens/colors.css`: `--border-subtle` → transparent (it drew nearly every row
+  rule, panel outline and card box); new `--border-control` keeps the old value
+  for things that need an edge; `--surface-th` → page colour (header bands gone,
+  still opaque for sticky headers).
+- 25 control rules (bracket tabs/buttons/finder/match cards/drawer, JHSAA nav
+  pills and tags, onboarding selects and segments, schedule pickers, Clubhouse
+  badges, the nav menu, `--shadow-pop`'s ring) moved to `--border-control`.
+- `shell.css`: the app ground is the card colour; the top bar separates by a
+  small shadow; the closed drawer no longer leaks its shadow at the left edge.
+- `app.css`: `.bl-row` lost its rule (zebra + hover + 12px padding), header rows
+  lost their `--border-default` underline (also in 6 JHSAA table heads and 3 intel
+  pages), `.bl-champ` lost its box, and `.bl-ledger` is the ledger for plain
+  `<table>`s. The Clubhouse uses it; its sections are spacing, not cards.
+
+Checked in a browser on Clubhouse and Rankings at 1440px. No tests, by request.

@@ -4147,6 +4147,15 @@ list is `server.SCHEMES`.
   headings. All four live in the alias layer, so the ten schemes follow. The
   `--gray-*` slots are for borders, rules and disabled states — do not read them
   for text.
+- **‼️ NO GRIDS (owner rule 2026-11: "I just hate the grids all over the pages").**
+  `--border-subtle` (the hairline behind ~200 row rules, panel outlines and card
+  boxes) is TRANSPARENT, `--surface-th` is the page colour, and the app background
+  is the card colour, so panels no longer read as boxes. Three patterns, in
+  `app.css`: SCOREBOARD (big status numbers on the open page), LEDGER (`.bl-row`,
+  `.bl-ledger`: zebra + hover, no rule under rows, no outer box), WORKSPACE
+  (controls keep their edges via `--border-control`; the area around them gets
+  none). Never point a row or panel rule at `--border-control`; separate with
+  spacing and type. See `docs/AAR-shell-two-row-bar-clubhouse-season-hub.md`.
 - **Win/loss stays green/red in every scheme**: those carry MEANING, not identity.
 - **A swatch is keyed on the scheme NAME** — rename a scheme and its chip goes blank
   while everything else still works. Every key in `SCHEMES` needs a `.fm-theme-sw.s-*`
