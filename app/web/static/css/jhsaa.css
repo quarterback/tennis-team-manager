@@ -337,7 +337,10 @@ a.jh-eyebrow:hover { color: var(--brand-strong); }
 table.jh-alum { min-width: 980px; }
 .jh-alum th, .jh-alum-yrs th { text-align: left; }
 .jh-alum th.n, .jh-alum-yrs th.n { text-align: right; }
-.jh-alum th a.srt { color: inherit; text-decoration: none; white-space: nowrap; }
+/* The whole heading is the sort target, never just its glyphs (a bare "#" was a
+   20x18px link; WCAG 2.2 asks 24x24). */
+.jh-alum th a.srt { color: inherit; text-decoration: none; white-space: nowrap;
+  display: block; min-width: 24px; min-height: 24px; line-height: 24px; }
 .jh-alum th a.srt:hover, .jh-alum th a.srt.on { color: var(--text-primary); }
 .jh-alum .n { width: auto; white-space: nowrap; }
 .jh-alum th.n { font-weight: 700; }
@@ -351,14 +354,28 @@ table.jh-alum { min-width: 980px; }
 .jh-alum .cols a:hover { color: var(--brand-strong); text-decoration: underline; }
 .jh-alum .cols .col { white-space: normal; }
 .jh-alum .cols .pt { white-space: nowrap; }
-.jh-alum .cols .arr { color: var(--text-faint); }
-.jh-alum .pt { color: var(--text-faint); font-size: var(--fs-micro); font-weight: 600; }
+/* Notes are muted, not faint: `--text-faint` measured 3.7-3.9:1 here, under the
+   4.5:1 body-text floor, and these carry real information (division, conference,
+   how a season went). On the tinted season rows they step up again. */
+.jh-alum .cols .arr { color: var(--text-muted); }
+.jh-alum .pt { color: var(--text-muted); font-size: var(--fs-micro); font-weight: 600; }
+.jh-alum tr.yrs .pt { color: var(--text-secondary); }
 .jh-alum .tg { width: 34px; padding-right: 0; }
 .jh-alum td.won .hl { white-space: nowrap; }
 .jh-alum-tog, .jh-alum-all {
-  border: 1px solid var(--border-subtle); background: var(--surface-card);
+  border: 1px solid var(--border-default); background: var(--surface-card);
   color: var(--text-secondary); border-radius: 6px; cursor: pointer;
   font-size: var(--fs-micro); font-weight: 700; line-height: 1; padding: 4px 6px;
+  min-width: 28px; min-height: 28px; touch-action: manipulation;
+}
+.jh-alum-yrscroll { overflow-x: auto; }
+/* A visible focus ring on every control of the page — keyboard users sort,
+   filter, page and open careers with the same controls a pointer does. */
+.jh-alum a:focus-visible, .jh-alum button:focus-visible,
+.jh-alumbar select:focus-visible, .jh-alumbar button:focus-visible,
+.jh-alumbar .jh-dirfind:focus-visible, .jh-alumchip:focus-visible,
+.jh-alumclear:focus-visible {
+  outline: 2px solid var(--brand-strong); outline-offset: 2px; border-radius: 4px;
 }
 .jh-alum-tog:hover, .jh-alum-all:hover { color: var(--brand-strong); border-color: var(--border-default); }
 .jh-alum tr.yrs > td { background: var(--surface-subtle); padding: 6px 10px 10px; }
@@ -382,6 +399,60 @@ table.jh-alum { min-width: 980px; }
   font-size: var(--fs-caption); font-weight: 700;
 }
 .jh-alumclear { font-size: var(--fs-caption); font-weight: 700; color: var(--text-muted); }
+/* The sort menu is the phone's stand-in for the column headings; on a wide
+   screen the headings do the job and it stays out of the bar. */
+.jh-alumbar .jh-alumsort { display: none; }
+/* Fingers, not pointers: 44px targets. */
+@media (pointer: coarse) {
+  .jh-alum-tog, .jh-alum-all { min-width: 44px; min-height: 44px; }
+  .jh-alumbar select, .jh-alumbar button { min-height: 44px; }
+}
+/* ---- On a phone a career is a BLOCK, not a row ----
+   A 980px table in a 390px screen is a sideways scroll with the name on one
+   screen and the record on the next. Below 720px every row stacks: the name
+   and class first, then the colleges, then the numbers — each carrying its own
+   label, since the headings are gone — then the honours. */
+@media (max-width: 720px) {
+  /* DIRECT children only: the season lines are a table INSIDE this one, and
+     they stack by their own rules below. */
+  table.jh-alum { min-width: 0; display: block; }
+  table.jh-alum > thead { display: none; }
+  table.jh-alum > tbody { display: block; }
+  table.jh-alum > tbody > tr { display: flex; flex-wrap: wrap; align-items: baseline;
+    gap: 4px 14px; padding: 10px 12px; border-top: 1px solid var(--border-subtle); }
+  table.jh-alum > tbody > tr[hidden] { display: none; }
+  table.jh-alum > tbody > tr > td { display: block; padding: 0; border: 0; width: auto; min-width: 0; }
+  table.jh-alum > tbody > tr > td.tg { order: 3; margin-left: auto; }
+  table.jh-alum > tbody > tr > td.ld { order: 2; }
+  table.jh-alum > tbody > tr > td.nmc,
+  table.jh-alum > tbody > tr > td:first-child:not(.tg):not(.sp) { order: 1; flex: 1 1 55%; font-size: var(--fs-body-s); }
+  table.jh-alum > tbody > tr > td.sch, table.jh-alum > tbody > tr > td.cols,
+  table.jh-alum > tbody > tr > td.dv { order: 4; flex: 1 1 100%; }
+  table.jh-alum > tbody > tr > td.n { order: 5; text-align: left; font-weight: 700; }
+  table.jh-alum td.n[data-l]::before { content: attr(data-l) " "; font-weight: 600; color: var(--text-muted); }
+  table.jh-alum > tbody > tr > td.won { order: 6; flex: 1 1 100%; }
+  table.jh-alum > tbody > tr > td.won:empty { display: none; }
+  table.jh-alum > tbody > tr.yrs { padding: 0; }
+  table.jh-alum > tbody > tr.yrs > td.sp { display: none; }
+  table.jh-alum > tbody > tr.yrs > td { flex: 1 1 100%; padding: 4px 12px 10px; }
+  /* A season: year, class year and college on one line, the positions and
+     records under it, then what the season was. */
+  .jh-alum-yrs:not(.compact) { display: block; width: 100%; }
+  .jh-alum-yrs:not(.compact) thead { display: none; }
+  .jh-alum-yrs:not(.compact) tbody { display: block; }
+  .jh-alum-yrs:not(.compact) tbody tr { display: flex; flex-wrap: wrap; align-items: baseline;
+    gap: 2px 12px; padding: 7px 0; border-top: 1px solid var(--border-subtle); }
+  .jh-alum-yrs:not(.compact) tbody tr:first-child { border-top: 0; }
+  .jh-alum-yrs:not(.compact) tbody td { display: block; padding: 0; border: 0; white-space: normal; }
+  .jh-alum-yrs:not(.compact) td.clg { flex: 1 1 calc(100% - 110px); font-weight: 650; }
+  .jh-alum-yrs:not(.compact) td.clg[data-d]::after { content: " · " attr(data-d); font-weight: 600; color: var(--text-secondary); }
+  .jh-alum-yrs:not(.compact) td.sd { display: none; }
+  .jh-alum-yrs:not(.compact) td.n { text-align: left; }
+  .jh-alum-yrs:not(.compact) td.won { flex: 1 1 100%; }
+  .jh-alum-yrs:not(.compact) td.won:empty { display: none; }
+  .jh-alumbar .jh-alumsort { display: block; }
+  .jh-alumbar select, .jh-alumbar button { font-size: var(--fs-body-s); flex: 1 1 auto; }
+}
 
 /* ---- Program directory (/jhsaa/schools) ---- */
 .jh-dirbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 14px; }

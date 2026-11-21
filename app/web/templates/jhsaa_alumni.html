@@ -19,7 +19,7 @@
    the filters and the sort run on the whole list, not on the page of it. #}
 <div class="jh-subrail jh-flightrail">
   {% for key, label in view.modes %}
-  <a class="{{ 'on' if view.mode == key }}"
+  <a class="{{ 'on' if view.mode == key }}"{% if view.mode == key %} aria-current="page"{% endif %}
      href="{{ jh_here(mode=(none if key == 'class' else key), sort=none, dir=none, status=none, college=none, hs=none) }}">
     {%- if key == 'class' %}Class of {{ view.grad_year|cal }}{% else %}{{ label }}{% endif -%}
   </a>
@@ -27,10 +27,11 @@
 </div>
 
 <form class="jh-dirbar jh-alumbar" method="get" action="{{ request.path }}">
-  {% for k in ('u', 'g', 'group', 'year', 'mode', 'sort', 'dir', 'college', 'hs') %}
+  {% for k in ('u', 'g', 'group', 'year', 'mode', 'dir', 'college', 'hs') %}
   {% if request.args.get(k) %}<input type="hidden" name="{{ k }}" value="{{ request.args.get(k) }}">{% endif %}
   {% endfor %}
-  <input class="jh-dirfind" type="search" name="q" value="{{ view.q }}"
+  {% set find_what = 'a college' if view.mode == 'colleges' else 'a high school' if view.mode == 'schools' else 'a player, high school or college' %}
+  <input class="jh-dirfind" type="search" name="q" value="{{ view.q }}" aria-label="Find {{ find_what }}"
          placeholder="{% if view.mode == 'colleges' %}Find a college{% elif view.mode == 'schools' %}Find a high school{% else %}Find a player, high school or college{% endif %}">
   {% if view.mode != 'schools' %}
   <select name="div" onchange="this.form.submit()" aria-label="Division">
@@ -44,6 +45,12 @@
     {% for key, label in view.statuses %}<option value="{{ key }}"{{ ' selected' if view.status == key }}>{{ label }}</option>{% endfor %}
   </select>
   {% endif %}
+  {# The sort, as a menu: a phone shows one block per career and has no column
+     headings to press. Always submitted, so a search keeps the sort it had. #}
+  <select name="sort" class="jh-alumsort" aria-label="Sort by"
+          onchange="if (this.form.dir) this.form.dir.value = ''; this.form.submit()">
+    {% for key, label in view.sort_options %}<option value="{{ key }}"{{ ' selected' if view.sort == key }}>Sort: {{ label }}</option>{% endfor %}
+  </select>
   <button type="submit">Find</button>
   {% if view.college %}<a class="jh-alumchip" href="{{ jh_here(college=none) }}" title="Clear">{{ view.college }} ×</a>{% endif %}
   {% if view.hs %}<a class="jh-alumchip" href="{{ jh_here(hs=none) }}" title="Clear">{{ view.hs }} ×</a>{% endif %}
@@ -86,14 +93,14 @@
     {% for c in view.colleges %}
     <tr>
       <td class="cols"><a class="nm" href="{{ url_for('jhsaa_alumni', u=u, g=view.gender, mode='all', college=c.college) }}">{{ c.college }}</a></td>
-      <td>{{ c.division }}{% if c.conf %} <span class="pt">{{ c.conf }}</span>{% endif %}</td>
-      <td class="n">{{ c.alumni }}</td>
-      <td class="n">{{ c.seasons }}</td>
-      <td class="n">{{ c.s_w }}-{{ c.s_l }}</td>
-      <td class="n">{% if c.d_w or c.d_l %}{{ c.d_w }}-{{ c.d_l }}{% else %}—{% endif %}</td>
-      <td class="n">{{ c.n_hon or '—' }}</td>
-      <td class="n">{{ c.aa or '—' }}</td>
-      <td class="n">{{ c.first_class|cal }}{% if c.last_class != c.first_class %}–{{ c.last_class|cal }}{% endif %}</td>
+      <td class="dv">{{ c.division }}{% if c.conf %} <span class="pt">{{ c.conf }}</span>{% endif %}</td>
+      <td class="n" data-l="Alumni">{{ c.alumni }}</td>
+      <td class="n" data-l="Seasons">{{ c.seasons }}</td>
+      <td class="n" data-l="Singles">{{ c.s_w }}-{{ c.s_l }}</td>
+      <td class="n" data-l="Doubles">{% if c.d_w or c.d_l %}{{ c.d_w }}-{{ c.d_l }}{% else %}—{% endif %}</td>
+      <td class="n" data-l="Honours">{{ c.n_hon or '—' }}</td>
+      <td class="n" data-l="All-Americans">{{ c.aa or '—' }}</td>
+      <td class="n" data-l="Classes">{{ c.first_class|cal }}{% if c.last_class != c.first_class %}–{{ c.last_class|cal }}{% endif %}</td>
     </tr>
     {% endfor %}
     </tbody>
@@ -116,11 +123,11 @@
     {% for s in view.schools %}
     <tr>
       <td class="sch"><span class="stint">{% if s.deco.mark %}<span class="mk">{{ s.deco.mark|safe }}</span>{% endif %}<a class="nm" href="{{ url_for('jhsaa_school', school=s.hs, u=u, g=view.gender, view='alumni') }}">{{ s.hs }}</a></span></td>
-      <td class="n">{{ s.alumni }}</td>
-      <td class="n">{{ s.d1 or '—' }}</td>
-      <td class="n">{{ s.honoured or '—' }}</td>
-      <td class="n">{{ s.aa or '—' }}</td>
-      <td class="n">{{ s.first_class|cal }}{% if s.last_class != s.first_class %}–{{ s.last_class|cal }}{% endif %}</td>
+      <td class="n" data-l="Alumni">{{ s.alumni }}</td>
+      <td class="n" data-l="Played D1">{{ s.d1 or '—' }}</td>
+      <td class="n" data-l="Honoured">{{ s.honoured or '—' }}</td>
+      <td class="n" data-l="All-Americans">{{ s.aa or '—' }}</td>
+      <td class="n" data-l="Classes">{{ s.first_class|cal }}{% if s.last_class != s.first_class %}–{{ s.last_class|cal }}{% endif %}</td>
     </tr>
     {% endfor %}
     </tbody>

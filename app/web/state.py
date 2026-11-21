@@ -7188,6 +7188,22 @@ ALUMNI_PER_PAGE = 25
 ALUMNI_MODES = (("class", "Class"), ("all", "All classes"), ("colleges", "By college"),
                 ("schools", "By high school"))
 
+#: The sort keys by name. A phone has no column headings to press (the table
+#: reflows into one block per career), so the same sorts are offered as a menu.
+_ALUM_SORT_LABELS = {
+    "careers": (("rank", "Class rank"), ("class", "Class year"), ("name", "Player"),
+                ("hs", "High school"), ("college", "College"), ("division", "Division"),
+                ("years", "Seasons played"), ("s_peak", "Singles position"),
+                ("s_pct", "Singles record"), ("d_peak", "Doubles position"),
+                ("d_w", "Doubles wins"), ("honors", "Honours")),
+    "colleges": (("alumni", "Alumni"), ("college", "College"), ("division", "Division"),
+                 ("seasons", "Seasons"), ("s_w", "Singles wins"), ("honors", "Honours"),
+                 ("aa", "All-Americans"), ("last", "Latest class")),
+    "schools": (("alumni", "Alumni"), ("hs", "High school"), ("d1", "Played D1"),
+                ("honoured", "Honoured"), ("aa", "All-Americans"),
+                ("last", "Latest class")),
+}
+
 _ALUM_ROLE = {"starter": "", "doubles": "Doubles only", "reserve": "Reserve",
               "out": "Out (injury)"}
 _ALUM_STATUS = {"left_team": "Left the team", "left_college": "Left college",
@@ -7340,6 +7356,8 @@ def jhsaa_alumni_view(seed: int, gender: str, group: str | None = None,
         conn.close()
     out["sort"] = key
     out["desc"] = out["sorts"][key][1] if desc is None else desc
+    out["sort_options"] = _ALUM_SORT_LABELS[mode if mode in ("colleges", "schools")
+                                            else "careers"]
     out["total"] = total
     out["pager"] = Page(items=[], page=page, per_page=per, total=total)
     return out

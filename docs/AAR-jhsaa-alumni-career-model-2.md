@@ -314,6 +314,34 @@ Checked by rendering all four views, the program tab and the player panel
 against four real classes (one written by the first model) and looking at
 screenshots; no page scrolls sideways at desktop or phone width.
 
+### Reviewed against a UI/UX rule set
+
+The owner pointed at a public UI/UX checklist (accessibility, touch targets,
+responsive layout, data tables). The pages were measured against it in a real
+browser, and five things failed:
+
+| rule | measured | now |
+|---|---|---|
+| body text contrast 4.5:1 | division, conference and season notes at 3.7–3.9:1 (`--text-faint`) | 5.2:1 on white, 10.5:1 on the tinted season rows |
+| target size 24×24 (44×44 for touch) | expand button 21×24, the "#" sort link 20×18 | 28×28 and 27×24; 44×44 on a touch screen |
+| a sortable table states its sort | no `aria-sort` | on the sorted heading |
+| controls have names | expand button and search box had none | `aria-label` on both |
+| visible keyboard focus | none on the page's own controls | a 2px ring on every one |
+
+And one layout rule: no sideways scroll on a phone. The table carries a 980px
+minimum, so on a phone it scrolled inside its wrapper with the name on one screen
+and the record on the next. Below 720px each career is now a block — name,
+high school, colleges, then the numbers each with its own label — and the sort
+is offered as a menu, since there are no column headings left to press.
+
+One trap from that: the season lines are a table INSIDE the career table, so
+phone rules written as `table.jh-alum tbody tr` restyled them too and the
+seasons came out as unlabelled fragments. The outer rules use direct-child
+selectors and the season lines have their own.
+
+The checklist's own scripts were not installed or run; it was used as a list of
+things to measure.
+
 ## Not done
 
 - **Classes are tracked from when they are written.** The all-classes, college

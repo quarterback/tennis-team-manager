@@ -9,7 +9,7 @@
 {# A sortable column heading: a link that sorts on `key`, or flips the direction
    when it is already the sort. #}
 {% macro alum_th(view, key, label, cls='', title='') -%}
-<th class="{{ cls }}"{% if title %} title="{{ title }}"{% endif %}>
+<th class="{{ cls }}"{% if title %} title="{{ title }}"{% endif %}{% if view.sort == key %} aria-sort="{{ 'descending' if view.desc else 'ascending' }}"{% endif %}>
   {%- if view.sort == key -%}
   <a class="srt on" href="{{ jh_here(sort=key, dir=('asc' if view.desc else 'desc')) }}">{{ label }} {{ '▾' if view.desc else '▴' }}</a>
   {%- else -%}
@@ -46,13 +46,13 @@
   <tbody>
   {% for s in r.seasons %}
   <tr>
-    <td class="n">{{ s.year|cal }}</td><td>{{ s.class }}</td>
-    <td class="clg">{{ s.college }}{% if compact and (s.honors or s.note or s.injury) %}<div class="won">{{ alum_notes(s) }}</div>{% endif %}</td>
-    {% if not compact %}<td>{{ s.division }}</td>{% endif %}
-    <td class="n">{% if s.s_pos %}No. {{ s.s_pos }}{% else %}—{% endif %}</td>
+    <td class="n sy">{{ s.year|cal }}</td><td class="sc">{{ s.class }}</td>
+    <td class="clg" data-d="{{ s.division }}">{{ s.college }}{% if compact and (s.honors or s.note or s.injury) %}<div class="won">{{ alum_notes(s) }}</div>{% endif %}</td>
+    {% if not compact %}<td class="sd">{{ s.division }}</td>{% endif %}
+    <td class="n" data-l="Singles">{% if s.s_pos %}No. {{ s.s_pos }}{% else %}—{% endif %}</td>
     <td class="n">{% if s.s_w or s.s_l %}{{ s.s_w }}-{{ s.s_l }}{% else %}—{% endif %}</td>
     {% if r.doubles %}
-    <td class="n">{% if s.d_pair %}No. {{ s.d_pair }}{% else %}—{% endif %}</td>
+    <td class="n" data-l="Doubles">{% if s.d_pair %}No. {{ s.d_pair }}{% else %}—{% endif %}</td>
     <td class="n">{% if s.d_w or s.d_l %}{{ s.d_w }}-{{ s.d_l }}{% else %}—{% endif %}</td>
     {% endif %}
     {% if not compact %}<td class="won">{{ alum_notes(s) }}</td>{% endif %}
@@ -93,21 +93,21 @@
   {% if not rows %}<tr class="none"><td colspan="{{ ncol }}">{{ empty }}</td></tr>{% endif %}
   {% for r in rows %}
   <tr class="car">
-    <td class="tg"><button type="button" class="jh-alum-tog" aria-expanded="false" title="Season by season">▸</button></td>
-    <td class="n">{% if lead == 'rank' %}{{ r.rank }}{% else %}{{ r.grad_year|cal }}{% endif %}</td>
+    <td class="tg"><button type="button" class="jh-alum-tog" aria-expanded="false" title="Season by season" aria-label="Seasons: {{ r.name }}">▸</button></td>
+    <td class="n ld" data-l="{{ 'Rank' if lead == 'rank' else 'Class of' }}">{% if lead == 'rank' %}{{ r.rank }}{% else %}{{ r.grad_year|cal }}{% endif %}</td>
     <td class="nmc"><a class="nm" href="{{ url_for('jhsaa_player', school=r.hs, pid=r.pid, u=u, g=gender) }}">{{ r.name }}</a></td>
     {% if show_hs %}
     <td class="sch"><span class="stint">{% if r.deco and r.deco.mark %}<span class="mk">{{ r.deco.mark|safe }}</span>{% endif %}<a href="{{ url_for('jhsaa_school', school=r.hs, u=u, g=gender, view='alumni') }}">{{ r.hs }}</a></span></td>
     {% endif %}
     <td class="cols">{{ alum_colleges(r, u, gender) }}</td>
-    <td class="n">{{ r.years }}</td>
-    <td class="n">{% if r.s_peak %}No. {{ r.s_peak }}{% else %}—{% endif %}</td>
-    <td class="n">{{ r.s_w }}-{{ r.s_l }}</td>
-    <td class="n">{% if r.d_peak %}No. {{ r.d_peak }}{% else %}—{% endif %}</td>
-    <td class="n">{% if r.doubles %}{{ r.d_w }}-{{ r.d_l }}{% else %}—{% endif %}</td>
+    <td class="n" data-l="Seasons">{{ r.years }}</td>
+    <td class="n" data-l="Singles">{% if r.s_peak %}No. {{ r.s_peak }}{% else %}—{% endif %}</td>
+    <td class="n" data-l="Record">{{ r.s_w }}-{{ r.s_l }}</td>
+    <td class="n" data-l="Doubles">{% if r.d_peak %}No. {{ r.d_peak }}{% else %}—{% endif %}</td>
+    <td class="n" data-l="Record">{% if r.doubles %}{{ r.d_w }}-{{ r.d_l }}{% else %}—{% endif %}</td>
     <td class="won">{% for h in r.honors %}<div class="hl">{{ h }}</div>{% endfor %}{% if r.ending %}<div class="hl pt">{{ r.ending }}</div>{% endif %}</td>
   </tr>
-  <tr class="yrs" hidden><td></td><td colspan="{{ ncol - 1 }}">{{ alum_seasons(r) }}</td></tr>
+  <tr class="yrs" hidden><td class="sp"></td><td colspan="{{ ncol - 1 }}"><div class="jh-alum-yrscroll">{{ alum_seasons(r) }}</div></td></tr>
   {% endfor %}
   </tbody>
 </table>

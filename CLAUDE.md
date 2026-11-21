@@ -595,6 +595,15 @@ college dual; the owner never reached the college game.
   by two classes a season. Only the Class view fills in an unwritten class; the
   other three show what is written. Season-by-season lines are a hidden row under
   each career. The division filter and counts mean "played in it at any point".
+  ‼️ Measured in a browser against an accessibility checklist and kept there:
+  notes use `--text-muted`/`--text-secondary` (`--text-faint` is 3.7-3.9:1 on
+  these rows, under the 4.5:1 floor — do not use it for text that carries
+  information); the expand button is 28px (44px on `pointer: coarse`); the sorted
+  heading carries `aria-sort`; every control has a focus ring. Below 720px a
+  career is a stacked block with labelled numbers (`data-l`) and the sort is a
+  menu. ‼️ The season lines are a table INSIDE the career table: phone rules for
+  the outer one must be direct-child selectors (`table.jh-alum > tbody > tr`), or
+  they restyle the nested rows into unlabelled fragments.
   ‼️ **OWNER DECISIONS ON ITS HONOURS AND ENDINGS (2026-11) — do not "even out":**
   **ALL-CONFERENCE COMES FIRST AT EVERY LEVEL** — a player is only considered for
   All-American in a season they made All-Conference in the same discipline; it is a
