@@ -32,11 +32,10 @@
     <span>Season honors are decided. These are the {{ uni_label }} winners for 2026.</span>
     {% else %}
     <span class="aw-banner-tag">In progress</span>
-    <span>Honors aren't weekly — they're named once the season concludes. The season is
-      still underway (week {{ week }} of {{ total_weeks }}, {{ phase|replace('_',' ') }}),
-      so All-American, All-Conference, Player &amp; Coach of the Year are announced after the
-      NCAA Championship. Track the live ratings race on the
-      <a href="{{ url_for('rankings', u=u) }}">Power Index</a> meanwhile.</span>
+    <span>The season is in week {{ week }} of {{ total_weeks }} ({{ phase|replace('_',' ') }}). All-American,
+      All-Conference, Player of the Year and Coach of the Year are named after the
+      NCAA championship. Until then, follow the race on the
+      <a href="{{ url_for('rankings', u=u) }}">Power Index</a>.</span>
     {% endif %}
   </div>
 </div>
@@ -74,10 +73,10 @@
         {% if aw.national_champion %}{% set abbr, color = crest(aw.national_champion) %}
         <div class="aw-natchamp">
           <span class="bl-crest lg" style="background:{{ color }};width:44px;height:44px;font-size:14.5px">{{ abbr }}</span>
-          <div><div class="aw-poty-label">National Champion</div>
+          <div><div class="aw-poty-label">National champion</div>
             <a class="bl-school aw-poty-name" href="{{ url_for('teams', school=aw.national_champion, u=u) }}">{{ aw.national_champion }}</a></div>
         </div>{% else %}<p class="aw-empty">No national champion yet.</p>{% endif %}
-        {% if aw.conf_champions %}<div class="aw-confchamp-head">Conference Champions</div>
+        {% if aw.conf_champions %}<div class="aw-confchamp-head">Conference champions</div>
         <div class="aw-cpoty-grid">
           {% for conf, school in aw.conf_champions %}
           <div class="aw-row">
@@ -139,7 +138,7 @@
         {% endfor %}
       </div>
       {% else %}
-      <p class="aw-empty">No All-Americans yet — advance the season so players build a record.</p>
+      <p class="aw-empty">No All-Americans yet. Advance the season so players build a record.</p>
       {% endif %}
     </div>
   </div>

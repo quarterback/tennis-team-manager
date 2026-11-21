@@ -19,55 +19,46 @@
   details.bl-appendix-group summary::marker { color: var(--text-link); }
 </style>
 <div class="bl-prose">
-  <h1>Play to Clinch — The Game Guide</h1>
-  <p class="lede">A complete, sectioned reference to how the game actually works: the rules, the economy, the ladder
-    of systems, and the numbers behind them. This is the in-app rendering of <code>docs/GUIDE.md</code> in the
-    repository — that file is the source of truth (and the place to point an LLM if you want help reasoning
-    about the game); this page exists for reading it without leaving the game.</p>
-
-  <div class="bl-note">
-    <strong>How this differs from the engineering docs:</strong> the repo's <code>CLAUDE.md</code> is guardrails
-    for an editing agent ("don't casually change this number, here's why"), and the <code>docs/AAR-*.md</code>
-    files are the changelog — one report per change, in the order it happened. This guide is the rulebook,
-    organized by system rather than by when it was built. <a href="#appendix-b">Appendix B</a> indexes every AAR
-    by topic if you want the origin story behind a rule.
-  </div>
+  <h1>How the game works</h1>
+  <p class="lede">The rules, the economy and the numbers behind them, organized by system. The source
+    is <code>docs/GUIDE.md</code> in the repository. <a href="#appendix-b">Appendix B</a> lists the after action
+    report behind each rule.</p>
 
   <div class="bl-toc">
     <div class="bl-toc-title">On this page</div>
     <ul>
-      <li><a href="#what-is">1. What Is Play to Clinch</a></li>
-      <li><a href="#starting">2. Starting a League</a></li>
-      <li><a href="#world-clock">3. The World Clock</a></li>
-      <li><a href="#divisions">4. Divisions, Conferences &amp; Prestige</a></li>
-      <li><a href="#dual-formats">5. Dual Match Formats</a></li>
-      <li><a href="#calendar">6. The Season Calendar &amp; Offseason Ladder</a></li>
-      <li><a href="#rosters">7. Rosters &amp; Walk-Ons</a></li>
-      <li><a href="#economy">8. Recruiting &amp; Scholarship Economy</a></li>
-      <li><a href="#aid-display">9. Scholarship Aid Display</a></li>
-      <li><a href="#coaching">10. Coaching &amp; Player Development</a></li>
-      <li><a href="#player-model">11. The Player Model</a></li>
+      <li><a href="#what-is">1. What is Play to Clinch</a></li>
+      <li><a href="#starting">2. Starting a league</a></li>
+      <li><a href="#world-clock">3. The world clock</a></li>
+      <li><a href="#divisions">4. Divisions, conferences and prestige</a></li>
+      <li><a href="#dual-formats">5. Dual match formats</a></li>
+      <li><a href="#calendar">6. The season calendar and the offseason ladder</a></li>
+      <li><a href="#rosters">7. Rosters and walk-ons</a></li>
+      <li><a href="#economy">8. The recruiting and scholarship economy</a></li>
+      <li><a href="#aid-display">9. Scholarship aid display</a></li>
+      <li><a href="#coaching">10. Coaching and player development</a></li>
+      <li><a href="#player-model">11. The player model: STR, OVR and playstyles</a></li>
       <li><a href="#injuries">12. Injuries</a></li>
-      <li><a href="#portal">13. The Transfer Portal</a></li>
-      <li><a href="#rankings">14. Rankings — the Power Index</a></li>
-      <li><a href="#nit">15. Preseason NIT</a></li>
-      <li><a href="#ncaa">16. The NCAA Championship</a></li>
-      <li><a href="#individuals">17. Singles &amp; Doubles Championships</a></li>
-      <li><a href="#cups">18. Davis Cup / BJK Cup</a></li>
-      <li><a href="#awards">19. Awards &amp; the Hall of Fame</a></li>
-      <li><a href="#jefferson">20. Jefferson — the 55th State</a></li>
-      <li><a href="#jhsaa">21. The JHSAA</a></li>
-      <li><a href="#gtt">22. The Pro Tour (GTT)</a></li>
-      <li><a href="#quickref">23. Quick-Reference Tables</a></li>
+      <li><a href="#portal">13. The transfer portal</a></li>
+      <li><a href="#rankings">14. Rankings: the Power Index (TOSS)</a></li>
+      <li><a href="#nit">15. The Preseason NIT (ITA Kickoff and National Team Indoor)</a></li>
+      <li><a href="#ncaa">16. The NCAA championship</a></li>
+      <li><a href="#individuals">17. Singles and doubles individual championships</a></li>
+      <li><a href="#cups">18. Davis Cup / Billie Jean King Cup</a></li>
+      <li><a href="#awards">19. Awards and the Hall of Fame</a></li>
+      <li><a href="#jefferson">20. Jefferson, the 55th state</a></li>
+      <li><a href="#jhsaa">21. The JHSAA: Jefferson's high school season</a></li>
+      <li><a href="#gtt">22. The pro tour (GTT)</a></li>
+      <li><a href="#quickref">23. Quick-reference tables</a></li>
       <li><a href="#glossary">24. Glossary</a></li>
-      <li><a href="#appendix-a">Appendix A: Design Invariants</a></li>
-      <li><a href="#appendix-b">Appendix B: AAR Index</a></li>
+      <li><a href="#appendix-a">Appendix A: Design invariants</a></li>
+      <li><a href="#appendix-b">Appendix B: Engineering changelog index</a></li>
     </ul>
   </div>
 
-  <div class="bl-part"><div class="bl-part-eyebrow">Part I</div><div class="bl-part-title">Getting Started</div></div>
+  <div class="bl-part"><div class="bl-part-eyebrow">Part I</div><div class="bl-part-title">Getting started</div></div>
 
-  <h2 id="what-is">1. What Is Play to Clinch</h2>
+  <h2 id="what-is">1. What is Play to Clinch</h2>
   <p>Play to Clinch is a single-player, god-mode-friendly tennis dynasty sim. You run a <strong>world</strong>:
     every NCAA-style division (D1, D2, D3, D4) across men's and women's tennis, all evolving together on
     <strong>one shared clock</strong>. You can coach one program's roster and lineup directly ("career mode") or
@@ -81,7 +72,7 @@
     Everything else can be, and that's fine — it's a single-player sandbox, and reproducibility is a feature,
     not a purity test.</p>
 
-  <h2 id="starting">2. Starting a League</h2>
+  <h2 id="starting">2. Starting a league</h2>
   <p>The onboarding screen asks four questions:</p>
   <ul>
     <li><strong>Which divisions and genders are active</strong> — run the whole NCAA (D1–D4, men's and
@@ -101,7 +92,7 @@
   <p>Starting a new league always replaces the previous save — there is exactly one world per save file
     (see <a href="#appendix-a">Appendix A</a>).</p>
 
-  <h2 id="world-clock">3. The World Clock</h2>
+  <h2 id="world-clock">3. The world clock</h2>
   <p>Every active division × gender universe advances <strong>together</strong>, on <strong>one clock</strong>,
     behind <strong>one button</strong> — the "Advance week" control in the top bar. This is deliberate: if D1
     men's and D1 women's could advance independently, they'd drift to different weeks with different conference
@@ -112,9 +103,9 @@
     hold it takes you to review and commit portal proposals (<a href="#portal">§13</a>); at season's end it
     steps through the offseason ladder, one event per click (<a href="#calendar">§6</a>).</p>
 
-  <div class="bl-part"><div class="bl-part-eyebrow">Part II</div><div class="bl-part-title">The Competitive Structure</div></div>
+  <div class="bl-part"><div class="bl-part-eyebrow">Part II</div><div class="bl-part-title">The competitive structure</div></div>
 
-  <h2 id="divisions">4. Divisions, Conferences &amp; Prestige</h2>
+  <h2 id="divisions">4. Divisions, conferences and prestige</h2>
   <p>Four divisions, each its own self-contained tournament ladder, run for both men's and women's tennis:</p>
   <ul>
     <li><strong>D1</strong> — the top tier. Conferences are tiered (Blue Blood / Major / High-major / Mid-major /
@@ -133,7 +124,7 @@
     curated content change (new conferences, programs switching leagues) — never something that happens
     automatically mid-save.</p>
 
-  <h2 id="dual-formats">5. Dual Match Formats</h2>
+  <h2 id="dual-formats">5. Dual match formats</h2>
   <p>Real college tennis plays 6 singles + 3 doubles (consolidated to one doubles point) everywhere, for
     court-availability and Title IX reasons this game doesn't have to honor. Play to Clinch instead gives
     <strong>each division its own shape</strong> — a bigger singles card is a much better lever for expressing
@@ -164,7 +155,7 @@
     regular season and the Preseason NIT deliberately keep rotation (everybody plays at some point);
     elimination duals do not.</p>
 
-  <h2 id="calendar">6. The Season Calendar &amp; the Offseason Ladder</h2>
+  <h2 id="calendar">6. The season calendar and the offseason ladder</h2>
   <p>A season plays out on a real calendar shape: non-conference play front-loads the early schedule (a team's
     conference duals don't start until it clears its own non-conference slate, typically weeks 4–5), D1 layers
     six preseason ITA weeks on top of that, and conference races heat up in the back half. It's completely
@@ -185,9 +176,9 @@
       (<a href="#portal">§13</a>), then the regular season.</li>
   </ol>
 
-  <div class="bl-part"><div class="bl-part-eyebrow">Part III</div><div class="bl-part-title">Building a Program</div></div>
+  <div class="bl-part"><div class="bl-part-eyebrow">Part III</div><div class="bl-part-title">Building a program</div></div>
 
-  <h2 id="rosters">7. Rosters &amp; Walk-Ons</h2>
+  <h2 id="rosters">7. Rosters and walk-ons</h2>
   <p>Rosters are not a flat number — capacity and sourcing both vary by division:</p>
   <table class="bl-protable">
     <thead><tr><th>Division</th><th>Roster cap</th><th>Walk-on sourcing</th></tr></thead>
@@ -203,7 +194,7 @@
     license to field an unplayable lineup — a short side degrades gracefully rather than crashing, and only a
     fully empty side stops the world outright.</p>
 
-  <h2 id="economy">8. The Recruiting &amp; Scholarship Economy</h2>
+  <h2 id="economy">8. The recruiting and scholarship economy</h2>
   <p>This is the game's central resource-management system. The short version: <strong>a program does not have a
     flat number of scholarships.</strong> It has a <strong>budget</strong> (set by conference tier) and it
     <strong>spends</strong> that budget on recruits, who <strong>cost</strong> scholarships by star rating. The
@@ -253,7 +244,7 @@
     six; <strong>warm weather / big-city appeal</strong> are small tiebreaks (weight 0.06 each) that can nudge a
     recruit against their home-state pull, never override it.</p>
 
-  <h2 id="aid-display">9. Scholarship Aid Display</h2>
+  <h2 id="aid-display">9. Scholarship aid display</h2>
   <p>Separate from the budget economy above: a per-division <strong>aid cap</strong> spreads across the recruited
     roster as full-ride/partial display fractions. This is what you see on a roster page as "scholarships" — a
     display of how aid is distributed, not what determined roster quality (the budget already did that).</p>
@@ -264,7 +255,7 @@
   <p>Deliberately the same cap for men and women — not real college tennis's men's 4.5-scholarship equivalency
     rule.</p>
 
-  <h2 id="coaching">10. Coaching &amp; Player Development</h2>
+  <h2 id="coaching">10. Coaching and player development</h2>
   <p>Coaches are persistent entities with careers of their own — they take jobs, get poached, retire, and build a
     lineage (former players can become coaches). A coach's <strong>development score</strong> drives how fast
     their roster's players grow each year, and the effect is strong: <strong>±30%</strong> on growth, anchored to
@@ -273,7 +264,7 @@
     home-country ties tilt which recruits their program actually lands. Development only applies to active
     college rosters — juniors and pro-tour decline are coach-free.</p>
 
-  <h2 id="player-model">11. The Player Model — STR, OVR &amp; Playstyles</h2>
+  <h2 id="player-model">11. The player model: STR, OVR and playstyles</h2>
   <p>Every player carries a rich set of attributes on a <strong>20–80 scouting scale</strong> (serve power,
     groundstrokes, movement, mental game, doubles skills, hardcourt comfort — the game is hardcourt-only). Two
     different numbers summarize a player:</p>
@@ -307,7 +298,7 @@
     than their overhead, and the league's prevailing "meta" rotates by era — the game's texture shifts across
     decades the way real tennis has moved through serve-and-volley, power baseline, and athletic-defense periods.</p>
 
-  <div class="bl-part"><div class="bl-part-eyebrow">Part IV</div><div class="bl-part-title">Living Seasons</div></div>
+  <div class="bl-part"><div class="bl-part-eyebrow">Part IV</div><div class="bl-part-title">Living seasons</div></div>
 
   <h2 id="injuries">12. Injuries</h2>
   <p>Injuries are the <strong>one deliberately non-deterministic system</strong> in the game — they roll on real
@@ -320,7 +311,7 @@
     A season-ending injury triggers a <strong>medical redshirt</strong> — the player repeats their class year
     with an <code>RS-</code> tag (RS-Jr → RS-Sr → a fifth year) that persists until they finally graduate.</p>
 
-  <h2 id="portal">13. The Transfer Portal</h2>
+  <h2 id="portal">13. The transfer portal</h2>
   <p>The <strong>fall transfer portal</strong> is the only in-season player movement, and it runs once, right
     after the ITA opener, as a deliberately curated reshuffle rather than a free-for-all migration:</p>
   <ul>
@@ -338,7 +329,7 @@
     the broader recruiting pipeline — signings drip across the season, skewed so higher-ranked recruits commit
     later, the way real recruiting cycles play out.</p>
 
-  <h2 id="rankings">14. Rankings — the Power Index (TOSS)</h2>
+  <h2 id="rankings">14. Rankings: the Power Index (TOSS)</h2>
   <p>Every team is rated by the <strong>Power Index</strong>, a composite of three weighted components — full
     formula and methodology at <a href="{{ url_for('methodology') }}">Methodology</a> in the nav, summarized here:</p>
   <div class="bl-formula">Power Index = (APR × 40%) + (FQI × 40%) + (oGS × 20%)</div>
@@ -352,9 +343,9 @@
     an unweighted flight is a missing decision, not a free default. Head-to-head results break close ties after
     Power Index is computed.</p>
 
-  <div class="bl-part"><div class="bl-part-eyebrow">Part V</div><div class="bl-part-title">Championships &amp; Cups</div></div>
+  <div class="bl-part"><div class="bl-part-eyebrow">Part V</div><div class="bl-part-title">Championships and cups</div></div>
 
-  <h2 id="nit">15. The Preseason NIT (ITA Kickoff &amp; National Team Indoor)</h2>
+  <h2 id="nit">15. The Preseason NIT (ITA Kickoff and National Team Indoor)</h2>
   <p>D1's season opens with a six-week preseason event (three weeks for non-D1) before the regular season begins:
     the top 60 D1 teams by prior-year ranking are snake-distributed into 15 cosmetic four-team
     <strong>Kickoff Weekend</strong> sites (seeded 1v4/2v3, single elimination); the 15 site winners plus a
@@ -364,7 +355,7 @@
     record). It shares the exact same bracket-drawing machinery as the NCAA Championship page, with seeds read
     back from the persisted draw rather than recomputed live.</p>
 
-  <h2 id="ncaa">16. The NCAA Championship</h2>
+  <h2 id="ncaa">16. The NCAA championship</h2>
   <p><strong>Selection and seeding are one score</strong>, computed once and locked:</p>
   <div class="bl-formula">Committee Seed Score = (Power Index rank × 45%) + (ITA points rank × 30%)
   + (auto-bid tier bonus × 15%) + (last-5 form × 10%)</div>
@@ -379,7 +370,7 @@
     regular-season rematch and avoiding two conference auto-bid teams meeting in round one. Once locked, the
     field/seeds/regions are always read back from that lock, never recomputed.</p>
 
-  <h2 id="individuals">17. Singles &amp; Doubles Individual Championships</h2>
+  <h2 id="individuals">17. Singles and doubles individual championships</h2>
   <p>Run once a division's team bracket finishes. <strong>Singles</strong> pools every program's top 2 players and
     takes the best 128 by ability. <strong>Doubles</strong> takes each program's #1 pair plus the best 64 pairs
     overall, played through the real four-player doubles engine. Format is best-of-3, no-ad, with set tiebreaks
@@ -396,7 +387,7 @@
     most 32 nations) by squad strength. A tie is 4 singles plus one doubles rubber, first to 3 rubbers. Titles are
     stamped as real honors onto a player's career record, alongside their college and pro-tour honors.</p>
 
-  <h2 id="awards">19. Awards &amp; the Hall of Fame</h2>
+  <h2 id="awards">19. Awards and the Hall of Fame</h2>
   <p>Individual honors — National/Conference Player of the Year, All-American, All-Conference — are computed
     purely from <strong>position-weighted wins</strong>, not rating or win percentage:</p>
   <table class="bl-protable">
@@ -415,9 +406,9 @@
     is manual enshrinement — a one-time, user-triggered action from a retired player's page that freezes their
     profile permanently.</p>
 
-  <div class="bl-part"><div class="bl-part-eyebrow">Part VI</div><div class="bl-part-title">The Wider World</div></div>
+  <div class="bl-part"><div class="bl-part-eyebrow">Part VI</div><div class="bl-part-title">The wider world</div></div>
 
-  <h2 id="jefferson">20. Jefferson — the 55th State</h2>
+  <h2 id="jefferson">20. Jefferson, the 55th state</h2>
   <p><strong>Jefferson (JF)</strong> is a fictional alternate-history state (~17.6M people) standing on real
     ground across southern Oregon, northern California, northern Nevada, and western Idaho. It's the 55th entry
     alongside the real 50 states, DC, and the territories, treated as an entirely ordinary state in every
@@ -432,7 +423,7 @@
     exactly the way California, Texas, and Florida's talent does. A big in-state D1 footprint was never the
     intended signal of "this is a good tennis state" — production, not retention, is the measure.</p>
 
-  <h2 id="jhsaa">21. The JHSAA — Jefferson's High School Season</h2>
+  <h2 id="jhsaa">21. The JHSAA: Jefferson's high school season</h2>
   <p>Jefferson's own high-school athletic association — roughly 335 girls' and 292 boys' programs — plays a
     complete season inside this engine, browsable at <a href="{{ url_for('jhsaa_front') }}">/jhsaa</a>, and its
     graduating seniors <em>are</em> Jefferson's entries on the college recruiting board. It's simulated once per
@@ -552,7 +543,7 @@
       and <code>coaching</code> replaces the first.</li>
   </ul>
 
-  <h2 id="gtt">22. The Pro Tour (GTT)</h2>
+  <h2 id="gtt">22. The pro tour (GTT)</h2>
   <p><strong>Global Team Tennis</strong> is a persistent, multi-season, co-ed professional league layered on top
     of the college game, built around one idea: <strong>player continuity</strong>. A college graduate keeps
     their real player identity into the pros, so a college Player of the Year and a later GTT MVP can be the
@@ -571,7 +562,7 @@
 
   <div class="bl-part"><div class="bl-part-eyebrow">Part VII</div><div class="bl-part-title">Reference</div></div>
 
-  <h2 id="quickref">23. Quick-Reference Tables</h2>
+  <h2 id="quickref">23. Quick-reference tables</h2>
   <table class="bl-protable">
     <thead><tr><th>Recruiting budget</th><th>Band</th></tr></thead>
     <tbody>
@@ -617,7 +608,7 @@
     </tbody>
   </table>
 
-  <h2 id="appendix-a">Appendix A: Design-Invariant Guardrails</h2>
+  <h2 id="appendix-a">Appendix A: Design invariants</h2>
   <p>The recruiting/scholarship economy, roster caps, dual formats, injury calibration, and a number of other
     systems in this guide are intentional game-design decisions, several of which deliberately diverge from real
     NCAA rules. The repository's <code>CLAUDE.md</code> documents exactly which numbers are load-bearing design
@@ -625,7 +616,7 @@
     <em>what</em> the rules are; <code>CLAUDE.md</code> explains <em>which ones are not up for a casual
     rebalance</em>.</p>
 
-  <h2 id="appendix-b">Appendix B: Engineering Changelog Index</h2>
+  <h2 id="appendix-b">Appendix B: Engineering changelog index</h2>
   <p>Every change to Play to Clinch is documented as an AAR (after-action report) in the repository's
     <code>docs/</code> folder — one file per change, with the reasoning, the mistake (if there was one), and the
     fix. There are 150+ of them. Grouped below by the system each one touches, from

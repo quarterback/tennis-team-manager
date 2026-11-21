@@ -3,8 +3,8 @@
 {% block title %}JHSAA Title Board{% endblock %}
 {% block content %}
 
-{{ jh_header(view.scope, u, 'titles', 'Title Board',
-             "Every program against everything there is to win — the Tournament of Champions, each State finish, and each round of the road to State.",
+{{ jh_header(view.scope, u, 'titles', 'Title board',
+             "Every program against everything there is to win: the Tournament of Champions, each State finish and each round of the road to State.",
              [('Programs', view.total), ('Seasons', view.seasons)]) }}
 {# The board folds EVERY archived season, so the scope bar's season does not narrow
    it — it is carried so the season you were browsing survives the visit. #}
@@ -12,8 +12,7 @@
 <div class="jh-shell">
 {% if not view.ready %}
 <div class="bl-panel"><div class="jh-empty">
-  Nothing archived yet — the board is a fold over played seasons, so it fills in as
-  the association plays them.
+  Nothing archived yet. The board fills in as seasons are played.
 </div></div>
 {% else %}
 
@@ -38,8 +37,8 @@
 
 <div class="bl-panel">
   <div class="bl-panel-head">
-    <span class="bl-panel-title">All-time — every archived season</span>
-    <span class="bl-panel-meta">Road cells are TITLES — units won. The State event has
+    <span class="bl-panel-title">All-time, every archived season</span>
+    <span class="bl-panel-meta">Road cells count titles, meaning units won. The State event has
       one title a class (STATE), so the rest of its columns count how far a program
       got: reaching the final, the semis, and so on down to the qualifying round.</span>
   </div>

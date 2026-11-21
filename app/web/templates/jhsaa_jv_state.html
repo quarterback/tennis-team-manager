@@ -15,9 +15,9 @@
    No class in the heading and no gender: the event is CLASSLESS — one champion for
    the whole association — and the scope bar's boys/girls switch selects which of the
    two draws is on screen. "State" is implied here as on every championship page. #}
-{{ jh_header(view.scope, u, 'jv_state', 'JV Team State Tournament',
-             'The JV team championship — statewide, no classifications. Every JV team
-              enters one of thirty Regions on its JV record, each Region sends its
+{{ jh_header(view.scope, u, 'jv_state', 'JV Team State tournament',
+             'One statewide JV championship with no classifications. Every JV team
+              enters one of thirty regions on its JV record. Each region sends its
               qualifiers to the State draw, and the at-large selections play a
               Parastate round to join them.',
              ([('Season', view.season_year|cal), ('Entered', view.field_n),
@@ -30,15 +30,14 @@
 {% if not view.ready %}
 <div class="bl-panel"><div class="jh-empty">
   No JV Team State Tournament archived for this season. The event is a pilot from
-  {{ view.from_year }}, played after the JV season it seeds — seasons before it are
-  archived as the years they were.</div></div>
+  {{ view.from_year }}, played after the JV season it seeds. Earlier seasons stay as they were played.</div></div>
 {% else %}
 
 {% if view.champion %}
 <div class="jh-champ" style="margin-bottom:12px">
   <span class="mark">{{ view.champion.mark|safe }}</span>
   <div style="min-width:0">
-    <span class="lbl">{{ view.season_year|cal }} JHSAA JV Team State Champion</span>
+    <span class="lbl">State champion</span>
     <a class="nm" href="{{ url_for('jhsaa_school', school=view.champion.name, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.champion.name }}</a>
     <div class="sub">{{ view.champion.mascot }} · {{ view.champion.city }}, {{ view.champion.state if view.champion.state else 'Jefferson' }}
       {%- if view.champion_region %} · {{ view.champion_region }}{% endif %}</div>
@@ -63,7 +62,7 @@
   <div class="brk-stage" id="brkstage">
     <section class="brk-region" data-view="all">
       <div class="brk-region-head">
-        <h2>{{ view.season_year|cal }} JV Team State · {{ view.main_field_n or view.state_field_n }}-team main draw</h2>
+        <h2>{{ view.main_field_n or view.state_field_n }}-team main draw</h2>
         <span class="brk-region-champ">
           {% if view.champion %}{{ view.champion.name }} def. {{ view.runner_up.name }}{% else %}in progress{% endif %}</span>
       </div>
@@ -72,7 +71,7 @@
     {% if view.qual_canvas %}
     <section class="brk-region" data-view="qual" hidden>
       <div class="brk-region-head">
-        <h2>{{ view.season_year|cal }} JV Team State · Parastate · {{ view.at_large_n }} at-large</h2>
+        <h2>Parastate · {{ view.at_large_n }} at-large</h2>
       </div>
       {{ brk_canvas(view.qual_canvas, u, false, 'jhsaa_school', {'g': view.gender, 'year': view.scope.pin}) }}
     </section>
@@ -146,7 +145,7 @@
    it gets a plain `.brk-region` block. #}
 {% if view.region_brk %}
 <div class="bl-panel" style="margin-top:14px">
-  <div class="bl-panel-head"><span class="bl-panel-title">Regional Championships</span>
+  <div class="bl-panel-head"><span class="bl-panel-title">Regional championships</span>
     <span class="bl-panel-note">
       <form method="get" style="display:inline">
         {% if u %}<input type="hidden" name="u" value="{{ u }}">{% endif %}

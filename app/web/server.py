@@ -75,7 +75,7 @@ from .state import DEFAULT_SEED
 
 # The coached program (career mode) is per-save state, resolved at request time
 # from worldconfig.user_program() — NOT a module constant. None => spectator mode
-# (the "Your Team" nav group hides entirely). See docs/DESIGN-team-takeover-career-mode.md.
+# (the "Your team" nav group hides entirely). See docs/DESIGN-team-takeover-career-mode.md.
 
 # A cold prime (fresh machine, or a rebuild after a week advance / roster move)
 # materialises the whole world's rosters and can take a minute+. Rather than block
@@ -101,7 +101,7 @@ LOADING_HTML = """<!doctype html><html lang=en><head><meta charset=utf-8>
 </style></head><body>
  <div class=ring></div>
  <div class=t>Warming up the league…</div>
- <div class=s>Building this season's rosters and ratings. This can take up to a minute on a cold start — the page will load automatically.</div>
+ <div class=s>Building this season's rosters and ratings. This can take up to a minute on a cold start, and the page loads by itself when it's ready.</div>
  <script>
  (function poll(){
    fetch('/api/ready',{cache:'no-store'}).then(function(r){return r.json()})
@@ -155,39 +155,39 @@ JHSAA_ONLY_HTML = """<!doctype html><html lang=en><head><meta charset=utf-8>
 # per-request so the universe `u` carries through. "World" is the primary
 # season-to-season surface; the legacy per-universe season views sit under it.
 NAV_GROUPS = [
-    # "Your Team" items are resolved per-request in _inject_chrome against the
+    # "Your team" items are resolved per-request in _inject_chrome against the
     # coached program: the school arg is injected and `u` is pinned to the
     # program's own universe. The whole group is hidden in spectator mode.
-    ("Your Team", [
+    ("Your team", [
         {"id": "my_program","label": "Clubhouse",    "icon": "fa-solid fa-house", "endpoint": "my_program",      "args": {}},
         {"id": "preseason", "label": "Preseason",     "icon": "fa-solid fa-gear", "endpoint": "preseason_view",   "args": {}},
         {"id": "roster",    "label": "Roster",       "icon": "fa-solid fa-table-tennis-paddle-ball", "endpoint": "teams",           "args": {}},
         {"id": "schedule",  "label": "Schedule",     "icon": "fa-solid fa-calendar-days", "endpoint": "season_schedule", "args": {}},
     ]),
     ("World", [
-        {"id": "season",    "label": "Season Hub",   "icon": "fa-solid fa-calendar", "endpoint": "season_hub",       "args": {}},
-        {"id": "world",     "label": "World Hub",    "icon": "fa-solid fa-earth-americas", "endpoint": "world_view",       "args": {}},
+        {"id": "season",    "label": "Season",   "icon": "fa-solid fa-calendar", "endpoint": "season_hub",       "args": {}},
+        {"id": "world",     "label": "All divisions",    "icon": "fa-solid fa-earth-americas", "endpoint": "world_view",       "args": {}},
         {"id": "dashboard", "label": "Dashboard",    "icon": "fa-solid fa-gauge-high", "endpoint": "dashboard",        "args": {}},
-        {"id": "data",      "label": "Data Portal",  "icon": "fa-solid fa-chart-line", "endpoint": "data_portal",      "args": {}},
+        {"id": "data",      "label": "Data portal",  "icon": "fa-solid fa-chart-line", "endpoint": "data_portal",      "args": {}},
         {"id": "rankings",  "label": "Rankings",     "icon": "fa-solid fa-ranking-star", "endpoint": "rankings",         "args": {}},
         {"id": "results",   "label": "Results",      "icon": "fa-solid fa-clipboard-list", "endpoint": "results",          "args": {}},
         {"id": "ita",       "label": "Preseason NIT", "icon": "fa-solid fa-snowflake", "endpoint": "season_ita",        "args": {}},
-        {"id": "ncaa",      "label": "NCAA Bracket", "icon": "fa-solid fa-medal", "endpoint": "ncaa_bracket",     "args": {}},
+        {"id": "ncaa",      "label": "NCAA bracket", "icon": "fa-solid fa-medal", "endpoint": "ncaa_bracket",     "args": {}},
         {"id": "standings", "label": "Standings",    "icon": "fa-solid fa-table-list", "endpoint": "season_standings", "args": {}},
         {"id": "injuries",  "label": "Injuries",     "icon": "fa-solid fa-bandage", "endpoint": "injuries_page",    "args": {}},
         {"id": "awards",    "label": "Awards",       "icon": "fa-solid fa-award", "endpoint": "awards",           "args": {}},
         {"id": "hof",       "label": "Hall of Fame", "icon": "fa-solid fa-building-columns", "endpoint": "hall_of_fame",     "args": {}},
-        {"id": "teams",     "label": "All Teams",    "icon": "fa-solid fa-school", "endpoint": "teams",            "args": {}},
+        {"id": "teams",     "label": "All teams",    "icon": "fa-solid fa-school", "endpoint": "teams",            "args": {}},
     ]),
     ("Management", [
-        {"id": "rec_hub",   "label": "Recruiting HQ", "icon": "fa-solid fa-binoculars", "endpoint": "recruiting_hub_page","args": {}},
-        {"id": "recruiting","label": "Recruiting Board","icon": "fa-solid fa-graduation-cap","endpoint": "recruiting",       "args": {}},
-        {"id": "transfers", "label": "Transfer Portal","icon": "fa-solid fa-right-left", "endpoint": "transfers",        "args": {}},
-        {"id": "portal_rk", "label": "Portal Rankings","icon": "fa-solid fa-ranking-star", "endpoint": "portal_rankings_page","args": {}},
+        {"id": "rec_hub",   "label": "Recruiting", "icon": "fa-solid fa-binoculars", "endpoint": "recruiting_hub_page","args": {}},
+        {"id": "recruiting","label": "Recruiting board","icon": "fa-solid fa-graduation-cap","endpoint": "recruiting",       "args": {}},
+        {"id": "transfers", "label": "Transfer portal","icon": "fa-solid fa-right-left", "endpoint": "transfers",        "args": {}},
+        {"id": "portal_rk", "label": "Portal rankings","icon": "fa-solid fa-ranking-star", "endpoint": "portal_rankings_page","args": {}},
         {"id": "wire",      "label": "The Wire",      "icon": "fa-solid fa-tower-broadcast", "endpoint": "wire_page",           "args": {}},
-        {"id": "signings",  "label": "Signing Tracker","icon": "fa-solid fa-file-signature", "endpoint": "signing_tracker_page","args": {}},
-        {"id": "staff",     "label": "Staff Search",  "icon": "fa-solid fa-user-tie", "endpoint": "staff_search_page","args": {}},
-        {"id": "rec_econ",  "label": "Scholarship Economy","icon": "fa-solid fa-coins", "endpoint": "recruit_economy_page","args": {}},
+        {"id": "signings",  "label": "Signing tracker","icon": "fa-solid fa-file-signature", "endpoint": "signing_tracker_page","args": {}},
+        {"id": "staff",     "label": "Staff search",  "icon": "fa-solid fa-user-tie", "endpoint": "staff_search_page","args": {}},
+        {"id": "rec_econ",  "label": "Scholarship economy","icon": "fa-solid fa-coins", "endpoint": "recruit_economy_page","args": {}},
     ]),
     # ‼️ JUNIOR TENNIS IS ITS OWN SECTION (owner rule 2026-08). The high-school
     # association, the junior rankings, the junior tour and the program editor were
@@ -197,34 +197,32 @@ NAV_GROUPS = [
     # moved three times for being unfindable; the nav is where the owner looks, and
     # a thing is only findable in the nav if it sits under the heading it belongs to.
     ("Juniors", [
-        {"id": "jhsaa",     "label": "High School",   "icon": "fa-solid fa-school-flag", "endpoint": "jhsaa_front",      "args": {}},
-        {"id": "juniors",   "label": "Junior Rankings","icon": "fa-solid fa-globe", "endpoint": "junior_rankings",  "args": {}},
-        {"id": "jrtour",    "label": "Junior Tour",   "icon": "fa-solid fa-calendar-days", "endpoint": "junior_tour",      "args": {}},
-        {"id": "jh_schools","label": "HS Schools",     "icon": "fa-solid fa-building-columns", "endpoint": "jhsaa_schools",    "args": {}},
-        {"id": "jh_prog",   "label": "HS Programs",   "icon": "fa-solid fa-sliders", "endpoint": "jhsaa_programs",   "args": {}},
-        {"id": "jh_transfers","label": "HS Transfers","icon": "fa-solid fa-right-left", "endpoint": "jhsaa_transfers",  "args": {}},
-        {"id": "junior_setup","label": "Junior Setup","icon": "fa-solid fa-gear", "endpoint": "junior_setup",     "args": {}},
+        {"id": "jhsaa",     "label": "High school",   "icon": "fa-solid fa-school-flag", "endpoint": "jhsaa_front",      "args": {}},
+        {"id": "juniors",   "label": "Rankings","icon": "fa-solid fa-globe", "endpoint": "junior_rankings",  "args": {}},
+        {"id": "jrtour",    "label": "Tour",   "icon": "fa-solid fa-calendar-days", "endpoint": "junior_tour",      "args": {}},
+        {"id": "jh_transfers","label": "High school transfers","icon": "fa-solid fa-right-left", "endpoint": "jhsaa_transfers",  "args": {}},
+        {"id": "junior_setup","label": "Setup","icon": "fa-solid fa-gear", "endpoint": "junior_setup",     "args": {}},
     ]),
     ("Analytics Bureau", [
-        {"id": "intel",        "label": "Bureau HQ",        "icon": "fa-solid fa-satellite", "endpoint": "intel_hub",         "args": {}},
-        {"id": "intel_targets","label": "My Transfer Targets","icon": "fa-solid fa-crosshairs", "endpoint": "intel_my_targets",  "args": {}},
-        {"id": "intel_search", "label": "Portal Search",    "icon": "fa-solid fa-magnifying-glass-location", "endpoint": "intel_portal_search", "args": {}},
-        {"id": "intel_teams",  "label": "Team Scanner",     "icon": "fa-solid fa-table-cells", "endpoint": "intel_teams",       "args": {}},
+        {"id": "intel",        "label": "Overview",        "icon": "fa-solid fa-satellite", "endpoint": "intel_hub",         "args": {}},
+        {"id": "intel_targets","label": "My transfer targets","icon": "fa-solid fa-crosshairs", "endpoint": "intel_my_targets",  "args": {}},
+        {"id": "intel_search", "label": "Portal search",    "icon": "fa-solid fa-magnifying-glass-location", "endpoint": "intel_portal_search", "args": {}},
+        {"id": "intel_teams",  "label": "Team scanner",     "icon": "fa-solid fa-table-cells", "endpoint": "intel_teams",       "args": {}},
         {"id": "intel_arch",   "label": "Lineup Architect", "icon": "fa-solid fa-compass-drafting", "endpoint": "intel_architect",   "args": {}},
         {"id": "intel_lineups","label": "Lineup Lab",       "icon": "fa-solid fa-flask", "endpoint": "intel_lineups",     "args": {}},
-        {"id": "intel_under",  "label": "Underplaced Talent","icon": "fa-solid fa-satellite-dish", "endpoint": "intel_underplaced", "args": {}},
-        {"id": "intel_aid",    "label": "Playing Time",    "icon": "fa-solid fa-clock", "endpoint": "intel_scholarships", "args": {}},
+        {"id": "intel_under",  "label": "Underplaced talent","icon": "fa-solid fa-satellite-dish", "endpoint": "intel_underplaced", "args": {}},
+        {"id": "intel_aid",    "label": "Playing time",    "icon": "fa-solid fa-clock", "endpoint": "intel_scholarships", "args": {}},
     ]),
     ("Simulate", [
-        {"id": "dual",      "label": "Dual Match",   "icon": "fa-solid fa-table-tennis", "endpoint": "dual",             "args": {}},
-        {"id": "bracket",   "label": "College Bracket", "icon": "fa-solid fa-sitemap", "endpoint": "bracket",        "args": {}},
-        {"id": "singles",   "label": "Singles Championship","icon": "fa-solid fa-user", "endpoint": "singles_championship", "args": {}},
-        {"id": "doubles",   "label": "Doubles Championship","icon": "fa-solid fa-user-group", "endpoint": "doubles_championship", "args": {}},
-        {"id": "projection","label": "Bracket Projection","icon": "fa-solid fa-wand-magic-sparkles", "endpoint": "projection",   "args": {}},
+        {"id": "dual",      "label": "Dual match",   "icon": "fa-solid fa-table-tennis", "endpoint": "dual",             "args": {}},
+        {"id": "bracket",   "label": "Custom bracket", "icon": "fa-solid fa-sitemap", "endpoint": "bracket",        "args": {}},
+        {"id": "singles",   "label": "Singles championship","icon": "fa-solid fa-user", "endpoint": "singles_championship", "args": {}},
+        {"id": "doubles",   "label": "Doubles championship","icon": "fa-solid fa-user-group", "endpoint": "doubles_championship", "args": {}},
+        {"id": "projection","label": "Bracket projection","icon": "fa-solid fa-wand-magic-sparkles", "endpoint": "projection",   "args": {}},
         {"id": "worldcups", "label": "World Cups",   "icon": "fa-solid fa-earth-americas", "endpoint": "world_cups",       "args": {}},
     ]),
-    ("Pro Tour", [
-        {"id": "gtt",       "label": "League Hub",   "icon": "fa-solid fa-globe", "endpoint": "gtt_hub",          "args": {}},
+    ("Pro tour", [
+        {"id": "gtt",       "label": "Overview",   "icon": "fa-solid fa-globe", "endpoint": "gtt_hub",          "args": {}},
         {"id": "gtt_sched", "label": "Schedule",     "icon": "fa-solid fa-calendar-days", "endpoint": "gtt_schedule",     "args": {}},
         {"id": "gtt_lead",  "label": "Leaders",      "icon": "fa-solid fa-ranking-star", "endpoint": "gtt_leaders",      "args": {}},
         {"id": "gtt_draft", "label": "Draft",        "icon": "fa-solid fa-list-ol", "endpoint": "gtt_draft",        "args": {}},
@@ -236,8 +234,8 @@ NAV_GROUPS = [
         # The report is a static site rendered ONCE; nothing else links back to
         # the build form after the first build, so it silently froze at that
         # season (owner, 2026-09). This is the way to it.
-        {"id": "clinch_manage", "label": "Rebuild Report", "icon": "fa-solid fa-hammer", "endpoint": "clinch_manage", "args": {}},
-        {"id": "research_export", "label": "Export Research Data", "icon": "fa-solid fa-file-arrow-down", "endpoint": "research_export", "args": {}},
+        {"id": "clinch_manage", "label": "Rebuild report", "icon": "fa-solid fa-hammer", "endpoint": "clinch_manage", "args": {}},
+        {"id": "research_export", "label": "Export research data", "icon": "fa-solid fa-file-arrow-down", "endpoint": "research_export", "args": {}},
         {"id": "guide",     "label": "Guide",        "icon": "fa-solid fa-book-open", "endpoint": "guide",           "args": {}},
         {"id": "editor",    "label": "Editor",       "icon": "fa-solid fa-screwdriver-wrench", "endpoint": "editor",          "args": {}},
         {"id": "methodology","label": "Methodology", "icon": "fa-solid fa-ruler-combined", "endpoint": "methodology",      "args": {}},
@@ -251,7 +249,7 @@ NAV_GROUPS = [
 if os.environ.get("JHSAA_LAB_MODE"):
     for _grp_name, _items in NAV_GROUPS:
         if _grp_name == "Tools":
-            _items.insert(0, {"id": "jhsaa_lab", "label": "JHSAA Lab",
+            _items.insert(0, {"id": "jhsaa_lab", "label": "JHSAA lab",
                               "icon": "fa-solid fa-flask-vial", "endpoint": "jhsaa_lab", "args": {}})
             break
 
@@ -285,8 +283,6 @@ def _active_nav(req) -> str:
     # The programs editor and the transfer board are both checked BEFORE the
     # section, since they're prefix matches on /jhsaa and would otherwise light
     # the High School entry instead of their own nav item.
-    if p.startswith("/jhsaa/schools"):    return "jh_schools"
-    if p.startswith("/jhsaa/programs"):   return "jh_prog"
     if p.startswith("/jhsaa/transfers"):  return "jh_transfers"
     if p.startswith("/jhsaa-lab"):        return "jhsaa_lab"
     if p.startswith("/jhsaa"):            return "jhsaa"
@@ -340,7 +336,7 @@ def _game_context():
                 "conf_tournaments": 3, "selection": 4, "ncaa": 5, "complete": 6}
         _LBL = {"ita_kickoff": "NIT Kickoff Weekend", "ita_indoor": "Preseason NIT",
                 "fall_portal": "Fall transfer portal", "regular": "Regular season",
-                "conf_tournaments": "Conf tournaments", "selection": "Bracket reveal",
+                "conf_tournaments": "Conference tournaments", "selection": "Bracket reveal",
                 "ncaa": "NCAA championship", "complete": "Postseason complete"}
         phases = []
         for _v, d, g, _lbl in UNIVERSES:
@@ -361,7 +357,7 @@ def _game_context():
         # what that page's button used to say about the stage.
         _ACT = {"ita_kickoff": "Run NIT Kickoff", "ita_indoor": "Run NIT Indoor",
                 "fall_portal": "Review fall portal", "regular": "Advance week",
-                "conf_tournaments": "Run conf tournaments", "selection": "Start NCAAs",
+                "conf_tournaments": "Run conference tournaments", "selection": "Start NCAA championship",
                 "ncaa": "Advance NCAA round", "complete": "Finalize season"}
         action = _ACT.get(stage, "Advance week")
         # The offseason runs as separate steps; the button names the one that's next.
@@ -702,7 +698,7 @@ def create_app(boot_warm: bool = True) -> Flask:
         prog = worldconfig.user_program()
         groups = []
         for glabel, items in NAV_GROUPS:
-            if glabel == "Your Team":
+            if glabel == "Your team":
                 if not prog:
                     continue                       # spectator mode: hide the group
                 pu = f"{prog['division']}-{prog['gender']}"   # pin to the coached universe

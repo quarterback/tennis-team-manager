@@ -68,7 +68,7 @@
     <div class="bl-title-card champion">
       {{ crest_box(br.champion.school, br.champion.abbr, br.champion.color, 'lg') }}
       <div>
-        <div class="bl-card-label">National Champion</div>
+        <div class="bl-card-label">National champion</div>
         <div class="bl-card-title">{% if cseed %}#{{ cseed }} {% endif %}{{ br.champion.school }}</div>
         <div class="bl-card-sub">{{ br.champion.conf }} champion run{% if final %} over {% if rseed %}#{{ rseed }} {% endif %}{{ br.runner_up.school }}{% endif %}</div>
       </div>
@@ -84,7 +84,7 @@
   <section class="bl-bracket-layout">
     <aside class="bl-sim-sidebar">
       <div class="bl-panel bl-panel-tight">
-        <div class="bl-panel-head"><span class="bl-panel-title">Committee Sheet</span></div>
+        <div class="bl-panel-head"><span class="bl-panel-title">Committee sheet</span></div>
         <div class="bl-seed-list">
           {% for p in br.seeds[:8] %}
             <a class="bl-seed-row" href="{{ url_for('dual', home=p.school) }}">
@@ -110,14 +110,14 @@
       </div>
 
       <div class="bl-note bl-bracket-note">
-        <strong>Selection model:</strong> conference tournament champions lock automatic bids, then the Power Index fills and seeds the at-large field. Every game here is a simulated college dual, not a bracket coin flip.
+        <strong>Selection model:</strong> conference tournament champions lock automatic bids, then the Power Index fills and seeds the at-large field. Every game here is a simulated college dual.
       </div>
     </aside>
 
     <main class="bl-tournament-main">
       <div class="bl-rounds-header">
         <div>
-          <div class="bl-card-label">Tournament Board</div>
+          <div class="bl-card-label">Tournament board</div>
           <h2>Round-by-round results</h2>
         </div>
         <div class="bl-legend"><span><i class="auto"></i>AQ</span><span><i></i>At-large</span></div>

@@ -5,16 +5,14 @@
 {% block content %}
 
 {{ jh_header(view.scope, u, 'state',
-             'JHSAA ' ~ view.group,
+             view.group ~ ' championship',
              '',
              [('Season', view.season_year|cal), ('Class', view.group)] if view.ready else []) }}
 
 <div class="jh-shell">
 {% if not view.ready %}
 <div class="bl-panel"><div class="jh-empty">
-  The high school season hasn't been played yet for this world year. It runs as its own
-  step at week&nbsp;0, before the college season — advance the world once and it will
-  appear here.
+  The high school season hasn't been played yet for this world year. It runs as its own step at week&nbsp;0, before the college season. Advance the world once and it will appear here.
 </div></div>
 {% else %}
 
@@ -27,7 +25,7 @@
     <div class="jh-champ">
       <span class="mark">{{ st.champion.mark|safe }}</span>
       <div style="min-width:0">
-        <span class="lbl">{{ view.season_year|cal }} JHSAA {{ view.group }} State Champions</span>
+        <span class="lbl">State champions</span>
         <a class="nm" href="{{ url_for('jhsaa_school', school=st.champion.name, u=u, g=view.gender, year=view.scope.pin) }}">{{ st.champion.name }}</a>
         {# An affiliate's real geography is city/state, never "city, Jefferson"
            — see School.state. #}
@@ -68,7 +66,7 @@
          bracket and the Preseason NIT), trimmed here to the business end. -->
     <div class="bl-panel">
       <div class="bl-panel-head">
-        <span class="bl-panel-title">State Tournament</span>
+        <span class="bl-panel-title">State tournament</span>
         <a class="jh-chip ghost" style="margin-left:auto;text-decoration:none"
            href="{{ url_for('jhsaa_bracket', u=u, g=view.gender, group=view.group, year=view.scope.pin) }}">FULL BRACKET →</a>
       </div>
@@ -122,7 +120,7 @@
   <div class="jh-stack">
 
     <div class="bl-panel jh-mod">
-      <div class="bl-panel-head"><span class="bl-panel-title">{{ view.group }} Rankings</span>
+      <div class="bl-panel-head"><span class="bl-panel-title">Rankings</span>
         <a class="bl-panel-meta" href="{{ url_for('jhsaa_rankings', u=u, g=view.gender, group=view.group, year=view.scope.pin) }}">all {{ view.rank_by|length }} →</a></div>
       <div class="bl-panel-body">
         {% for r in view.top %}
@@ -167,7 +165,7 @@
     {% endif %}
 
     <div class="bl-panel jh-mod">
-      <div class="bl-panel-head"><span class="bl-panel-title">State Champions</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title">State champions</span></div>
       <div class="bl-panel-body">
         {% for gp, ch in view.champions.items() %}
         <a class="jh-modrow" href="{{ url_for('jhsaa_page', u=u, g=view.gender, group=gp, year=view.year) }}">

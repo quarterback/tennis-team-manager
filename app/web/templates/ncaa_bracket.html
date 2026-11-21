@@ -15,7 +15,7 @@
 {% endmacro %}
 
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:16px;color:var(--text-muted)">{{ uni_label }} · NCAA {{ division }} Team Championship — as played</span>
+  <span style="font-size:16px;color:var(--text-muted)">NCAA {{ division }} team championship, as played</span>
   <span class="bl-bracket-pills" style="margin-left:auto">
     {% for val, d, g, lbl in universes %}
       <a class="bl-pill{% if val == u %} active{% endif %}" href="{{ url_for('ncaa_bracket', u=val, year=sel_year) }}">{{ lbl }}</a>
@@ -38,7 +38,7 @@
 </div></div>
 {% elif br.reveal %}
 <div class="bl-container"><div class="bl-note new">
-  <strong><i class="fa-solid fa-champagne-glasses" aria-hidden="true"></i> Bracket reveal — the field is set.</strong>
+  <strong><i class="fa-solid fa-champagne-glasses" aria-hidden="true"></i> Bracket reveal. The field is set.</strong>
   {% if br.field_regions %}<br>Four S-curve-balanced regions, each seeded 1–{{ br.field_regions[0].teams|length }};
   region champions meet in the national semifinals
   ({{ br.field_regions[0].name }} v {{ br.field_regions[1].name }} ·
@@ -65,7 +65,7 @@
 </div></div>
 {% else %}
 <div class="bl-container"><div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">The Field</span></div>
+  <div class="bl-panel-head"><span class="bl-panel-title">The field</span></div>
   <div class="rs-field">
     {% for p in br.field %}
     <a class="rs-seedrow" href="{{ url_for('teams', school=p.school, u=u) }}">
@@ -83,7 +83,7 @@
 
 {% if br.out_board %}
 <div class="bl-container"><div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">First Out</span></div>
+  <div class="bl-panel-head"><span class="bl-panel-title">First out</span></div>
   <div class="rs-field">
     {% for o in br.out_board %}
     <a class="rs-seedrow out" href="{{ url_for('teams', school=o.school, u=u) }}">
@@ -115,7 +115,7 @@
 {% if br.champion %}
 <div class="bl-container"><div class="bl-champ">
   {{ crest_box(br.champion.school, br.champion.abbr, br.champion.color, 'lg') }}
-  <div><div class="label">National Champion</div>
+  <div><div class="label">National champion</div>
     <div style="font-size:24px;font-weight:800;color:var(--text-primary)">{% if br.champion.seed %}#{{ br.champion.seed }} {% endif %}{{ br.champion.school }}</div></div>
 </div></div>
 {% endif %}
@@ -160,14 +160,13 @@
 
 <div class="bl-container">
   <details class="brk-drawer">
-    <summary>Committee sheet — how the field was drawn</summary>
+    <summary>How the field was drawn</summary>
     <div class="brk-drawer-body">
       <p class="brk-drawer-note">
         Seeds are REGION seeds: the {{ br.size or '' }} field is split into four S-curve-balanced regions seeded
         1–{{ br.region_size }}, so every region carries comparable strength. Bids are
         <span class="bl-bid auto">AQ</span> (conference champion, automatic) and
-        <span class="bl-bid">AL</span> (at-large). The draw is true-seeded — it is never rearranged to keep
-        same-conference teams apart — and only avoids regular-season rematches and two AQs meeting in round one.
+        <span class="bl-bid">AL</span> (at-large). The draw is true-seeded. It avoids only regular-season rematches and two automatic qualifiers meeting in round one.
       </p>
       {% if br.seed_regions %}
       <div class="brk-seedsheet">

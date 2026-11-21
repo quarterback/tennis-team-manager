@@ -3,15 +3,14 @@
 {% block title %}JHSAA Program Wins{% endblock %}
 {% block content %}
 
-{{ jh_header(view.scope, u, 'program_wins', 'Most Program Wins',
+{{ jh_header(view.scope, u, 'program_wins', 'Most program wins',
              'Every program by all-time dual wins.',
              [('Programs', view.total), ('Seasons', view.seasons)]) }}
 
 <div class="jh-shell">
 {% if not view.ready %}
 <div class="bl-panel"><div class="jh-empty">
-  Nothing archived yet — the board is a fold over played seasons, so it fills in as
-  the association plays them.
+  Nothing archived yet. The board fills in as seasons are played.
 </div></div>
 {% else %}
 
@@ -32,7 +31,7 @@
 
 <div class="bl-panel">
   <div class="bl-panel-head">
-    <span class="bl-panel-title">All-time — every archived season</span>
+    <span class="bl-panel-title">All-time, every archived season</span>
   </div>
   <div class="tbl-scroll">
     <table class="jh-tt" id="jh-tt">

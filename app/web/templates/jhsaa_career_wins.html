@@ -3,15 +3,14 @@
 {% block title %}JHSAA Career Wins{% endblock %}
 {% block content %}
 
-{{ jh_header(view.scope, u, 'career_wins', 'Most Career Wins',
-             'The most match wins over a high-school career.',
+{{ jh_header(view.scope, u, 'career_wins', 'Most career wins',
+             '',
              [('Seasons', view.seasons)]) }}
 
 <div class="jh-shell">
 {% if not view.ready %}
 <div class="bl-panel"><div class="jh-empty">
-  Nothing archived yet — the board is a fold over played seasons, so it fills in as
-  the association plays them.
+  Nothing archived yet. The board fills in as seasons are played.
 </div></div>
 {% else %}
 

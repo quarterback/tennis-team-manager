@@ -3,14 +3,13 @@
 {% block title %}JHSAA Retired Programs{% endblock %}
 {% block content %}
 
-{{ jh_header(view.scope, u, 'retired', 'Retired Programs',
+{{ jh_header(view.scope, u, 'retired', 'Retired programs',
              'Every program that no longer sponsors tennis, by the last season it played.',
              [('Programs', view.count)]) }}
 
 <div class="jh-shell">
 {% if not view.years %}
-<div class="bl-panel"><div class="jh-empty">No retired programs — every school that
-  has ever sponsored tennis here still fields a team.</div></div>
+<div class="bl-panel"><div class="jh-empty">No retired programs. Every school that has sponsored tennis here still fields a team.</div></div>
 {% else %}
 
 {# Same "By year" shape as the champions grid: a program groups with the year it

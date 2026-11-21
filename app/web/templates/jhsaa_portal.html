@@ -15,7 +15,7 @@
    OVERLAY on the stored proposal (jp.effective) — never a rebuild of the slate;
    only "Rebuild proposal" and the commit reproject everything. #}
 {{ jh_header(view.scope, u, 'portal', 'Rising-freshman portal',
-             'Early participants going into ninth grade with no projected V1 seat at the school they played for. Same county, then same area, then neighbouring areas; the best V1 seat in the first tier that has one.',
+             'Early participants going into ninth grade with no projected V1 seat at the school they played for. Same county, then same area, then neighboring areas; the best V1 seat in the first tier that has one.',
              [('Season', view.season), ('Sport', view.gender|capitalize), ('Class', view.group)]) }}
 
 <div class="jh-shell">
@@ -29,7 +29,7 @@
 
 <div class="bl-panel">
   <div class="bl-panel-head"><span class="bl-panel-title">Portal</span>
-    <span class="bl-panel-meta">{% if view.pending %}proposal open for the {{ view.season }} season · {{ view.kept }} moves in the slate{% if view.kept %} · {{ view.in_view }} in {{ view.gender }} {{ view.group }}{% endif %}{% elif view.due %}due — it opens on the next advance, or now{% else %}no proposal open{% endif %}</span></div>
+    <span class="bl-panel-meta">{% if view.pending %}proposal open for the {{ view.season }} season · {{ view.kept }} moves in the slate{% if view.kept %} · {{ view.in_view }} in {{ view.gender }} {{ view.group }}{% endif %}{% elif view.due %}due, opening on the next advance or now{% else %}no proposal open{% endif %}</span></div>
   <div class="bl-panel-body" style="padding:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:end">
     {% if not view.pending %}
     <form method="post" action="{{ url_for('jhsaa_portal_run') }}"

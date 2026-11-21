@@ -11,19 +11,19 @@
                  'massey_game': 'Massey-G', 'set_share': 'SetShare',
                  'sor': 'SOR', 'elo': 'Elo'} %}
 
-{{ jh_header(view.scope, u, 'committee', view.group ~ ' At-Large Committee',
+{{ jh_header(view.scope, u, 'committee', view.group ~ ' at-large committee',
              'The ' ~ view.field_n ~ '-team field: ' ~ view.road_n ~ ' road qualifiers plus '
-              ~ view.seats ~ ' committee at-larges, always seeded ' ~ (view.road_n + 1) ~ '-'
-              ~ view.field_n ~ '. ' ~ view.n_voters ~ ' voters, each a fixed published
-              philosophy over the computer systems. Every selection traces to those
-              ballots, never a coin flip.',
+              ~ view.seats ~ ' committee at-larges, always seeded ' ~ (view.road_n + 1) ~ ' to '
+              ~ view.field_n ~ '. ' ~ view.n_voters ~ ' voters, each applying a fixed, published
+              philosophy to the computer systems. Every selection traces back to
+              their ballots.',
              [('Season', view.season_year|cal), ('At-larges', view.selected|length),
               ('Auto bids', view.auto|length), ('Locks', view.locks|length)]
              if view.ready else []) }}
 
 <div class="jh-shell">
 {% if not view.ready %}
-<div class="bl-panel"><div class="jh-empty">No committee archived — the at-large
+<div class="bl-panel"><div class="jh-empty">No committee archived. The at-large
 committee runs for the Parastate classes only ({{ jh_parastate_blurb(view.season_year) }}), from
 the season each class's expanded field began.</div></div>
 {% else %}
@@ -132,9 +132,8 @@ the season each class's expanded field began.</div></div>
     {% endfor %}
     <div style="padding:8px 14px;color:var(--text-faint)">
       {{ view.n_voters }} voters. Each is a fixed set of weights over the computer
-      systems — published in the column tooltips, with no hidden judgement — so every
-      ranking on this tab can be explained exactly. A coach reading which voter keeps
-      them out is the point of it.
+      systems, published in the column tooltips, so every ranking on this tab can be
+      traced. A coach can see which voter kept them out.
     </div>
   </div>
 

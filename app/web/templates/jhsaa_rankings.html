@@ -15,9 +15,9 @@
   </th>
 {% endmacro %}
 
-{{ jh_header(view.scope, u, 'rankings', view.group ~ ' Rankings',
-             'Every program in the classification, in the order the association itself
-              ranks them — the TOSS Power Index, with the ATR the postseason is seeded on beside it.',
+{{ jh_header(view.scope, u, 'rankings', view.group ~ ' rankings',
+             'Every program in the classification in TOSS Power Index order, with the
+              ATR that seeds the postseason beside it.',
              [('Season', view.season_year|cal), ('Programs', view.rows|length),
               ('Qualified', view.qualified)] if view.ready else []) }}
 
@@ -41,7 +41,7 @@
 
 <div class="bl-panel">
   <div class="bl-panel-head">
-    <span class="bl-panel-title">{{ view.season_year|cal }} {{ view.group }}</span></div>
+    <span class="bl-panel-title">Programs</span></div>
   <div class="tbl-scroll">
     <table class="jh-ledger nowrap">
       <tr>
@@ -96,42 +96,35 @@
     </table>
   </div>
   <div class="bl-panel-body" style="padding:8px 13px;font-size:14px;color:var(--text-muted);border-top:1px solid var(--border-subtle)">
-    TOSS — 40% strength of schedule, 40% flight-weighted results, 20% game share. It is
-    computed over the whole association's regular season, not one classification, and is
-    archived with the season: at-large bids and state seeds were drawn from exactly these
+    TOSS is 40% strength of schedule, 40% flight-weighted results and 20% game share. It is
+    computed over the whole association's regular season and archived with the season: at-large bids and state seeds were drawn from exactly these
     numbers, so the ranking and the bracket cannot disagree.
     <br><br>
-    ATR — the Average Team Rating, half TOSS and half win percentage, archived the same
-    way. It is the only figure here that is not pure TOSS, and it exists for one job:
-    ranking the <strong>Conference</strong> pool, the last recovery round. TOSS measures
+    ATR, the Average Team Rating, is half TOSS and half win percentage, archived the same
+    way. It ranks the <strong>Conference</strong> pool, the last recovery round. TOSS measures
     who you played, so a middling team in a brutal district is propped up by the company
-    it keeps while a twenty-win season against an ordinary schedule rates below it —
-    the right trade for seeding a draw, the wrong one for the last seat in the field.
+    it keeps while a twenty-win season against an ordinary schedule rates below it.
+    That suits seeding a draw and misjudges the last seat in the field.
     Seasons archived before ATR existed show a dash.
     <br><br>
     The SHOWCASE columns answer one question: <strong>what does the State format do
-    to this team?</strong> State is decided at one singles line and four doubles; the
-    regular season is played at three and four (owner rule 2027-08 — it used to be
-    five and two, before the league card was swapped to match State's doubles-forward
-    shape all season). The gap between the two is narrower than it used to be — doubles
-    already carries roughly half the regular-season dual, not two-fifths — but it isn't
-    zero: State drops to one singles line instead of three. The mid-season Match
-    Showcases are the only place a team plays the State card before it counts, so these
-    compare the two.
+    to this team?</strong> State is decided at one singles line and four doubles, while the
+    regular season is played at three and four. Doubles already carries about half the
+    regular-season dual, so the gap is small, and State drops two singles lines. The
+    mid-season Match Showcases are the only place a team plays the State format before
+    it counts, so these columns compare the two.
     <br><br>
     <strong>SC</strong> is how many showcases the team played. <strong>Fmt</strong> is
     its showcase result minus its own regular-season result, in points: <strong>0 means
     the format changes nothing for them</strong>, +15 means they play fifteen points
-    better once the card drops to 1S/4D, −15 means worse. <strong>Dbl</strong> is the
-    same reading for doubles alone — how much more of the win doubles carries under the
-    State card, 0 being the share it already carries in the regular season.
+    better once the format drops to 1S/4D, −15 means worse. <strong>Dbl</strong> is the
+    same reading for doubles alone: how much more of the win doubles carries in the
+    State format, with 0 being the share it already carries in the regular season.
     <br><br>
-    Both are measured against the team's OWN regular season, not against the field, so
-    a weak team and a champion can both sit at 0: it means the format suits them the
-    same either way. And both are damped by how many showcases were played — three
-    duals is not evidence of a fifteen-point swing, so a thin sample reads near 0 until
-    it earns otherwise. Hover a cell for the dual count. None of this is TOSS or ATR
-    and none of it is archived toward a seed.
+    Both are measured against the team's own regular season, so a weak team and a
+    champion can both sit at 0 when the format suits them the same either way. Both
+    are damped by how many showcases were played, so a thin sample reads near 0. Hover
+    a cell for the dual count. These columns play no part in TOSS, ATR or seeding.
   </div>
 </div>
 {% endif %}

@@ -27,7 +27,7 @@
       The {{ proj.field }}-team field if the tournament were seeded today. <strong>Selection:</strong>
       projected conference leaders take the {{ proj.aq|length }} automatic bids (AQ); the remaining {{ cut }}
       at-large spots (AL) go to the best of the rest by <strong>Committee Seed Score</strong>.
-      <strong>Seeding:</strong> the whole field is then ranked by that same score — a committee-style blend of
+      <strong>Seeding:</strong> the whole field is then ranked by that same score, a committee-style blend of
       <strong>Power Index</strong> (base strength, 45%), <strong>team ranking points</strong> (résumé, 30%),
       a tiered <strong>championship bonus</strong> for automatic qualifiers (15%, larger for power-conference
       champs), and <strong>recent form</strong> (10%). AQ and AL interleave, so a strong at-large can out-seed
@@ -45,7 +45,7 @@
 
   {# Quick read: the cut line. #}
   <div class="bl-panel" style="margin-bottom:18px">
-    <div class="bl-panel-head"><span class="bl-panel-title">The Cut Line</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">The cut line</span></div>
     {{ bubble_split({'last_in': proj.last_in, 'first_out': proj.first_out}, u) }}
   </div>
 
@@ -53,7 +53,7 @@
     {# Seed list: the full field ranked by strength (AQ + at-large interleaved),
        the cut line at the field size, then the teams chasing in. #}
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">Seed List</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title">Seed list</span></div>
       <div class="bl-stand-hdr" style="grid-template-columns:42px 1fr 40px 56px 70px 56px">
         <span>Seed</span><span>Team</span><span>Bid</span><span>Conf</span><span>Overall</span><span>Score</span>
       </div>
@@ -86,7 +86,7 @@
 
     {# Projected automatic qualifiers (conference leaders). #}
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">Automatic Bids</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title">Automatic bids</span></div>
       {% for t in proj.aq %}
       <a class="bl-brk-match" style="grid-template-columns:1fr 50px 56px;text-decoration:none"
          href="{{ url_for('teams', school=t.school, u=u) }}">

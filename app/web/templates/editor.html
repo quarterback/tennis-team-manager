@@ -23,7 +23,7 @@
 
 <div class="bl-container" style="padding-top:14px">
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Scholarships per classification &amp; gender</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Scholarships per classification and gender</span></div>
     <form method="post" action="{{ url_for('editor_scholarship') }}">
       <input type="hidden" name="u" value="{{ u }}">
       <div class="bl-schol-grid">
@@ -88,7 +88,7 @@
       </form>
     </div>
     <div style="padding:0 16px 12px;font-size:15px;color:var(--text-muted)">
-      Bump a program above its conference default so it stands out and recruits accordingly. Edits feed recruiting appeal, not match results.</div>
+      Bump a program above its conference default so it stands out and recruits accordingly. Edits change recruiting appeal and leave match results alone.</div>
   </div>
 </div>
 
@@ -268,7 +268,7 @@
       <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="school" value="{{ school }}">
       <button class="bl-pill" type="submit" id="massmove-btn" disabled>Apply moves</button>
       <span style="font-size:15px;color:var(--text-muted)" id="massmove-note">Pick new programs in the
-        MOVE column, then apply them all at once — one rebuild for the whole batch instead of one per player.</span>
+        MOVE column, then apply them all at once in one rebuild.</span>
     </form>
     <script>
       (function () {
@@ -327,7 +327,7 @@
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">Active overrides</span></div>
       <div class="bl-panel-body" style="display:flex;flex-direction:column;gap:10px">
-        {% if not ov.any %}<div style="color:var(--text-faint);font-size:16px">No edits yet — rosters are at their deterministic defaults.</div>{% endif %}
+        {% if not ov.any %}<div style="color:var(--text-faint);font-size:16px">No edits yet. Rosters are at their defaults.</div>{% endif %}
         {% for m in ov.moves %}
         <div class="bl-clinchrow" style="align-items:center">
           <span class="bl-clinch-name" style="flex-direction:column;align-items:flex-start;gap:0">

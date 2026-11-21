@@ -17,13 +17,13 @@
 {% if g == 'girls' %}<span class="jh-gtag g">G</span>{% elif g == 'boys' %}<span class="jh-gtag b">B</span>{% else %}<span class="jh-gtag g">G</span><span class="jh-gtag b">B</span>{% endif %}
 {%- endmacro %}
 
-{{ jh_header(view.scope, u, 'front', 'The ' ~ view.season_year|cal ~ ' Season', '',
+{{ jh_header(view.scope, u, 'front', 'JHSAA', 'Jefferson High School Activities Association',
              [('Season', view.season_year|cal)] if view.ready else [], classless=true) }}
 
 <div class="jh-shell jh-front">
 {% if not view.ready %}
 <div class="bl-panel"><div class="jh-empty">No high-school season has been archived yet.
-  It runs as its own step at week&nbsp;0 — advance the world once and the front page fills.</div></div>
+  It runs as its own step at week&nbsp;0. Advance the world once and the front page fills.</div></div>
 {% else %}
 
 {# ---- The facts strip: counts over the season, large type, no panels ---- #}
@@ -40,7 +40,7 @@
   <div class="body">
     <div class="eyebrow">{{ gtag(s.gender) }}{% if s.group %}<span class="jh-chip c-{{ s.group|replace(' ','') }}">{{ s.group|jh_group_short }}</span>{% endif %}</div>
     <h2 class="hl">{{ s.headline }}</h2>
-    <p class="dek">{{ s.dek }}</p>
+    {% if s.dek %}<p class="dek">{{ s.dek }}</p>{% endif %}
   </div>
   <div class="stat">
     {% if s.mark %}<span class="mk">{{ s.mark|safe }}</span>{% endif %}
@@ -57,7 +57,7 @@
     <div class="eyebrow">{{ gtag(s.gender) }}{% if s.group %}<span class="jh-chip c-{{ s.group|replace(' ','') }}">{{ s.group|jh_group_short }}</span>{% endif %}
       <span class="stat"><span class="n">{{ s.stat }}</span><span class="l">{{ s.stat_label }}</span></span></div>
     <h3 class="hl">{{ s.headline }}</h3>
-    <p class="dek">{{ s.dek }}</p>
+    {% if s.dek %}<p class="dek">{{ s.dek }}</p>{% endif %}
   </a>
   {% endfor %}
 </div>
@@ -127,7 +127,7 @@
 {% set ch = view.chart %}
 <div class="bl-panel jh-datadesk">
   <div class="bl-panel-head"><span class="bl-panel-title">Data desk</span>
-    <span class="bl-panel-meta">every State dual this season — {% for g, n in ch.n.items() %}{{ g }} {{ n }}{% if not loop.last %} · {% endif %}{% endfor %}</span></div>
+    <span class="bl-panel-meta">every State dual this season: {% for g, n in ch.n.items() %}{{ g }} {{ n }}{% if not loop.last %} · {% endif %}{% endfor %}</span></div>
   <div class="bl-panel-body jh-cols2">
     <div>
       <div class="jh-dd-title">Favourite's win rate, by seed gap</div>
@@ -183,14 +183,14 @@
     <a href="{{ url_for('jhsaa_repeat_champions', u=u, g=view.gender) }}">Repeat champions</a>
   </div>
   <div class="door">
-    <span class="k">Honors &amp; awards</span>
+    <span class="k">Honors and awards</span>
     <a href="{{ url_for('jhsaa_honors', u=u, g=view.gender, year=view.scope.pin) }}">All-State</a>
     <a href="{{ url_for('jhsaa_champions', u=u, g=view.gender) }}">State champions</a>
     <a href="{{ url_for('jhsaa_titles', u=u, g=view.gender) }}">Title board</a>
     <a href="{{ url_for('jhsaa_repeat_poy_view', u=u, g=view.gender) }}">Repeat POY</a>
   </div>
   <div class="door">
-    <span class="k">Data &amp; analysis</span>
+    <span class="k">Data and analysis</span>
     <a href="{{ url_for('jhsaa_rankings', u=u, g=view.gender, year=view.scope.pin) }}">TOSS rankings</a>
     <a href="{{ url_for('jhsaa_computer', u=u, g=view.gender, year=view.scope.pin) }}">Computer ratings</a>
     <a href="{{ url_for('jhsaa_committee', u=u, g=view.gender, year=view.scope.pin) }}">Committee</a>

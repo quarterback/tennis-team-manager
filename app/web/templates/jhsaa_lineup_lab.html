@@ -6,7 +6,7 @@
 {% block content %}
 
 {{ jh_header(view.scope, u, 'lineup_lab', 'Lineup Lab',
-             'Deal mismatched talent into hypothetical nine-player squads and see where they would rank against a classification\'s real programs') }}
+             'Deal mismatched talent into hypothetical nine-player squads and see where they would rank against a classification\'s real programs.') }}
 
 <div class="jh-shell">
 <div class="bl-panel" style="margin-bottom:14px">
@@ -68,7 +68,7 @@
 
 {% if lab is none %}
 <div class="bl-panel"><div class="bl-panel-body" style="padding:16px">
-  <p class="jh-empty">Set your filters and hit Build — nothing is loaded until you ask, so the tab opens instantly.</p>
+  <p class="jh-empty">Set your filters and press Build. Nothing loads until you ask.</p>
 </div></div>
 {% else %}
 {% if not lab.squads %}

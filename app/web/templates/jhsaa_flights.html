@@ -14,11 +14,10 @@
   </th>
 {% endmacro %}
 
-{{ jh_header(view.scope, u, 'flights', view.group ~ ' Flight Efficiency',
-             'Every program\'s win rate at every flight beside what that flight\'s matchups were expected to return — where a
-              program is getting more, or less, out of a position than its opponents and results say it should. The expectation
-              is fitted on this season\'s own varsity flights, home court included, so a flight is judged against how the
-              association actually converted its matchups this year.',
+{{ jh_header(view.scope, u, 'flights', view.group ~ ' flight efficiency',
+             'Every program\'s win rate at every flight beside the rate its matchups predicted, which shows where a program
+              gets more or less out of a position than its opponents say it should. The prediction is fitted on this season\'s
+              varsity flights, home court included.',
              [('Season', view.season_year|cal), ('Flights priced', view.lines - view.unresolved),
               ('Rows', view.rows|length)] if view.ready else []) }}
 
@@ -54,7 +53,7 @@
 
 <div class="bl-panel">
   <div class="bl-panel-head">
-    <span class="bl-panel-title">{{ view.season_year|cal }} {{ view.group }} — actual vs expected, by flight</span></div>
+    <span class="bl-panel-title">Actual and expected win rates by flight</span></div>
   <div class="tbl-scroll">
     <table class="jh-ledger nowrap">
       <tr>

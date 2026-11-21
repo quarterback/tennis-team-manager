@@ -17,11 +17,11 @@
 
 <form class="bl-setup" method="get" action="{{ url_for('dual_run') }}">
   <input type="hidden" name="gender" value="{{ gender }}">
-  <h1>Simulate a Dual</h1>
-  <p class="intro">Benchmark any two programs — <strong>across divisions</strong>. Pick a division and team for
-    each side; Play to Clinch plays the doubles and the division's full singles card from each team's real roster, then
-    sweeps the fast model to estimate who wins. STR is one scale across every division, so a cross-level gap
-    shows up honestly in the result. Exhibition only — nothing is recorded.</p>
+  <h1>Simulate a dual</h1>
+  <p class="intro">Play any two programs against each other, <strong>across divisions</strong> if you like.
+    Pick a division and team for each side. Play to Clinch plays the doubles and the division's full singles lineup
+    from each team's real roster, then runs the fast model many times to estimate who wins. STR is one scale across
+    every division, so a gap between levels shows up in the result. This is an exhibition, and nothing is recorded.</p>
 
   <div class="bl-slots">
     {% set sides = [
@@ -81,6 +81,6 @@
   </div>
 
   <button class="bl-run-big" type="submit">Run Simulation →</button>
-  <div class="bl-engine-note">Engine: <code>Play to Clinch dual engine (NCAA, per-division format — majority of points clinches)</code> · seed-deterministic</div>
+  <div class="bl-engine-note">Engine: <code>Play to Clinch dual engine (NCAA, per-division format; a majority of points clinches)</code> · seed-deterministic</div>
 </form>
 {% endblock %}

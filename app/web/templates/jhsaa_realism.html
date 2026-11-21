@@ -3,13 +3,13 @@
 {% block title %}JHSAA Scoreline Realism{% endblock %}
 {% block content %}
 
-{{ jh_header(view.scope, u, 'realism', 'Scoreline Realism',
-             'This season\'s archived set scores beside last season\'s — did the shape of a set move? Five seasons of real Oregon high-school tennis (41,932 varsity matches) sit alongside as a baseline, not a target: the match engine runs on the competitive-band curve, and the Oregon column is there to show where real tennis sits. Association-wide; the class rail is scope memory only.') }}
+{{ jh_header(view.scope, u, 'realism', 'Scoreline realism',
+             'This season\'s set scores beside last season\'s, to show whether the shape of a set moved. Five seasons of real Oregon high school tennis (41,932 varsity matches) sit alongside as a baseline. The figures cover the whole association, whichever class is selected.') }}
 
 <div class="jh-shell">
 {% if not view.ready or not view.data %}
 <div class="bl-panel"><div class="bl-panel-body" style="padding:16px">
-  No archived season yet — the comparison reads the season the world rung wrote at week 0.
+  No archived season yet. The comparison reads the season the world rung wrote at week 0.
 </div></div>
 {% else %}
 {% set d = view.data %}
@@ -62,13 +62,13 @@
 {% endmacro %}
 
 <div class="bl-panel" style="margin-bottom:14px">
-  <div class="bl-panel-head"><span class="bl-panel-title">Whole association — {{ view.season_label }}{% if has_prev %} vs {{ view.prev_label }}{% endif %}</span>
+  <div class="bl-panel-head"><span class="bl-panel-title">Whole association, {{ view.season_label }}{% if has_prev %} vs {{ view.prev_label }}{% endif %}</span>
     <span class="bit"><span class="jh-rl-key sim"></span> {{ view.season_label }} &nbsp;
       {% if has_prev %}<span class="jh-rl-key prev"></span> {{ view.prev_label }} &nbsp;{% endif %}
       <span class="jh-rl-key tick"></span> Oregon baseline</span></div>
   <div class="bl-panel-body" style="padding:12px">
     {% if not has_prev %}
-    <div class="bit" style="margin-bottom:10px">Oldest archived season — nothing earlier to compare against yet. The Oregon column still reads as a baseline.</div>
+    <div class="bit" style="margin-bottom:10px">Oldest archived season, with nothing earlier to compare against yet. The Oregon column still reads as a baseline.</div>
     {% endif %}
     {{ dist_table(d.overall, d.real_three_set) }}
   </div>
@@ -80,7 +80,7 @@
    archive's names costs ~20 s cold, so it is computed on demand (the route
    defers it) and the rest of the page never waits on it. #}
 <div class="bl-panel" style="margin-bottom:14px">
-  <div class="bl-panel-head"><span class="bl-panel-title">By OVR gap band — favourite wins and decisiveness</span>
+  <div class="bl-panel-head"><span class="bl-panel-title">Favorite wins and decisiveness by OVR gap band</span>
     <span class="bit">{{ view.season_label }}{% if has_prev %} vs {{ view.prev_label }}{% endif %} · the owner's five competitive bands</span></div>
   <div class="bl-panel-body" style="padding:12px">
   {% if not view.bands %}
@@ -128,7 +128,7 @@
 
 <div class="bl-panel">
   <div class="bl-panel-head"><span class="bl-panel-title">By phase</span>
-    <span class="bit">the formats differ by design — compare each phase with itself, season on season</span></div>
+    <span class="bit">the formats differ by design, so compare each phase with itself season on season</span></div>
   <div class="bl-panel-body" style="padding:12px;display:flex;flex-wrap:wrap;gap:24px">
     {% for f in d.families %}{% if f.sets %}
     <div>

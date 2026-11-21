@@ -3101,8 +3101,8 @@ def search_players(query: str, seed: int = DEFAULT_SEED, limit: int = 80) -> dic
 STAGE_ORDER = ["ita", "fall_portal", "regular", "conf_tournaments", "selection", "ncaa",
                "awards", "world_cups", "offseason"]
 STAGE_LABELS = {"ita": "Preseason NIT", "fall_portal": "Fall portal",
-                "regular": "Regular season", "conf_tournaments": "Conf tournaments",
-                "selection": "Bracket Reveal", "ncaa": "NCAA championship",
+                "regular": "Regular season", "conf_tournaments": "Conference tournaments",
+                "selection": "Bracket reveal", "ncaa": "NCAA championship",
                 "awards": "Awards", "world_cups": "World Cups", "offseason": "Offseason"}
 _PHASE_RANK = {"ita_kickoff": -2, "ita_indoor": -1, "fall_portal": -0.5, "regular": 0,
                "conf_tournaments": 1, "selection": 2, "ncaa": 3, "complete": 4}
@@ -3162,7 +3162,7 @@ def current_world_stage(seed: int = DEFAULT_SEED) -> dict:
     from app import worldconfig
     if not world.exists():
         return {"stage": "regular", "stages": stage_steps("regular"),
-                "tabs": season_tabs("regular")}
+                "tabs": season_tabs("")}
     w = world.load_world()
     active = [(d, g) for (_v, d, g, _l) in UNIVERSES if worldconfig.is_active(d, g)]
     phases = [sm.load_season(world.universe_sid(seed, w, d, g))["phase"] for (d, g) in active]
@@ -3216,7 +3216,7 @@ def world_hub(seed: int = DEFAULT_SEED):
     if stage == "fall_portal":
         primary = {"endpoint": "fall_portal", "icon": "fa-solid fa-arrows-rotate", "label": "Review fall portal →", "link": True}
     elif stage == "selection":
-        primary = {"endpoint": "world_advance", "label": "Reveal complete — start NCAAs →"}
+        primary = {"endpoint": "world_advance", "label": "Start NCAA championship →"}
     elif stage in ("ita", "regular", "conf_tournaments", "ncaa"):
         if w["week"] == 0 and stage in ("ita", "regular"):
             primary = {"endpoint": "preseason_view", "icon": "fa-solid fa-gear", "label": "Preseason setup →", "link": True}
@@ -4807,7 +4807,7 @@ def jhsaa_individual_view(seed: int, gender: str, group: str | None = None,
             "event_name": (_jv_name(fl) if is_jv
                            else f"{grp} {ji.FLIGHT_NAMES[fl]}"),
             "heading": (_jv_name(fl) if is_jv
-                        else f"{grp} Individual State Tournament"),
+                        else f"{grp} individual State tournament"),
             "season_year": (arc or {}).get("season_year",
                                            world.jhsaa_season_year(w)),
             "scope": scope}
@@ -7211,7 +7211,7 @@ def jhsaa_individual_winners(seed: int, gender: str, group: str | None = None,
             "event_name": (jvi.BRACKET_NAMES[fl] if is_jv
                            else f"{grp} {ji.FLIGHT_NAMES[fl]}"),
             "heading": (jvi.BRACKET_NAMES[fl] if is_jv
-                        else f"{grp} Individual Champions"),
+                        else f"{grp} individual champions"),
             "flights": [(f, ji.FLIGHT_NAMES[f]) for f in class_flights],
             "jv_flights": [(f, jvi.BRACKET_NAMES[f]) for f in jvi.BRACKETS],
             "mixed_flight": "XD", "mixed_name": ji.FLIGHT_NAMES["XD"],
@@ -7521,7 +7521,7 @@ JH_CAREER_CATS = (("overall", "Overall"), ("singles", "Singles"),
                   # each half alone — a D1 specialist need not make the
                   # combined list at all.
                   ("top", "Top Flight (S1/D1)"),
-                  ("top_s", "No. 1 Singles"),
+                  ("top_s", "No. 1 singles"),
                   ("top_d", "No. 1 Doubles"))
 
 

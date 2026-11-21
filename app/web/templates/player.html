@@ -61,7 +61,7 @@
 
   <div class="bl-board-grid">
     <div style="display:flex;flex-direction:column;gap:16px">
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Career — by season</span></div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Career by season</span></div>
         <div class="bl-tablescroll" style="border:none">
           <div class="bl-table" style="--bl-grid-cols: 64px minmax(130px,1fr) 52px 64px 72px 56px 74px">
             <div class="bl-thead">
@@ -86,7 +86,7 @@
             </div>
             {% endfor %}
             {% else %}
-            <div class="bl-row"><span class="bl-conf" style="grid-column:1/-1">No college seasons yet — advance the season.</span></div>
+            <div class="bl-row"><span class="bl-conf" style="grid-column:1/-1">No college seasons yet. Advance the season.</span></div>
             {% endif %}
           </div>
         </div>
@@ -109,7 +109,7 @@
               <td>{{ box.toverall }}</td><td>{{ box.tdual }}</td></tr>
           </tbody></table>
           {% else %}
-          <p class="aw-empty" style="padding:8px 2px">No matches yet — advance the season.</p>
+          <p class="aw-empty" style="padding:8px 2px">No matches yet. Advance the season.</p>
           {% endif %}
         </div>
       </div>
@@ -145,14 +145,14 @@
               {% endfor %}
               {% endif %}
             {% endfor %}
-            {% if not played.any %}<div class="bl-row"><span class="bl-conf" style="grid-column:1/-1">No matches yet — advance the season.</span></div>{% endif %}
+            {% if not played.any %}<div class="bl-row"><span class="bl-conf" style="grid-column:1/-1">No matches yet. Advance the season.</span></div>{% endif %}
           </div>
         </div>
       </details>
     </div>
     <div style="display:flex;flex-direction:column;gap:16px">
       {% if ranks %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">STR Rating</span></div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">STR rating</span></div>
         <div class="bl-panel-body">
           <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px">
             <span class="bl-stat power" style="font-size:30px">{{ "%.1f"|format(ranks.str) }}</span>
@@ -173,7 +173,7 @@
       </div>
       {% endif %}
       {% if season_stats %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Season Box Stats</span></div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">Season box stats</span></div>
         <div class="bl-panel-body">
           {% for kind, st in [('Singles', season_stats.get('singles')), ('Doubles', season_stats.get('doubles'))] %}
           {% if st %}
@@ -206,7 +206,7 @@
       </div>
       {% endif %}
       {% if journey %}
-      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">The Journey</span></div>
+      <div class="bl-panel"><div class="bl-panel-head"><span class="bl-panel-title">The journey</span></div>
         <div class="bl-panel-body">
           {% set badge_class = {'current':'tier-IVY','transfer':'tier-D3','committed':'tier-D2','high_school':'tier-D4'} %}
           {% set badge_label = {'current':'CURRENT','transfer':'TRANSFER','committed':'COMMITTED','high_school':'HIGH SCHOOL'} %}
@@ -261,7 +261,7 @@
           </div>
           {% endfor %}
           {% else %}
-          <p class="aw-empty" style="padding:4px 2px">No honors yet — earned at season's end.</p>
+          <p class="aw-empty" style="padding:4px 2px">No honors yet. They are named at season's end.</p>
           {% endif %}
         </div>
       </div>

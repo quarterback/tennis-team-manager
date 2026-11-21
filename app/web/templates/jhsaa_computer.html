@@ -19,10 +19,10 @@
   </th>
 {% endmacro %}
 
-{{ jh_header(view.scope, u, 'computer', view.group ~ ' Computer Ratings',
-             'Nine independent rating systems and their composite — parallel to TOSS and
-              the seeding ATR, never a replacement. σ is the disagreement measure: a
-              high-σ team is controversial by construction, not by opinion.',
+{{ jh_header(view.scope, u, 'computer', view.group ~ ' computer ratings',
+             'Nine independent rating systems and their composite, shown beside TOSS and
+              the ATR that seeds the postseason. σ measures how far the systems disagree
+              about a team.',
              [('Season', view.season_year|cal), ('Teams', view.rows|length),
               ('Systems', view.systems|length)] if view.ready else []) }}
 
@@ -43,15 +43,15 @@
 
 {% if view.disconnected %}
 <div class="bl-panel"><div class="jh-empty">This group's schedule graph is
-disconnected, so the least-squares systems (Massey-D, Massey-G, SRS) are withheld
-rather than fit per component — the composite folds the systems that remain. Markov and the
+disconnected, so the least-squares systems (Massey-D, Massey-G, SRS) are withheld,
+and the composite uses the systems that remain. Markov and the
 record systems still rate, but within each component only: with no dual between two
 groups of teams, nothing in the results can order one against the other.</div></div>
 {% endif %}
 
 <div class="bl-panel">
   <div class="bl-panel-head">
-    <span class="bl-panel-title">{{ view.season_year|cal }} {{ view.group }} — composite by mean rank</span></div>
+    <span class="bl-panel-title">Composite by mean rank</span></div>
   <div class="tbl-scroll">
     <table class="jh-ledger nowrap">
       <tr>
@@ -82,7 +82,7 @@ groups of teams, nothing in the results can order one against the other.</div></
 </div>
 
 <div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">The {{ view.systems|length }} systems — a glossary</span></div>
+  <div class="bl-panel-head"><span class="bl-panel-title">The {{ view.systems|length }} systems</span></div>
   <div style="padding:10px 14px">
     {% for s in view.systems %}
     <p style="margin:6px 0"><b>{{ LABELS[s] }}</b> — {{ view.glossary[s] }}</p>

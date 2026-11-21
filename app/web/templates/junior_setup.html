@@ -2,7 +2,7 @@
 {% block title %}Play to Clinch — Junior Setup{% endblock %}
 {% block content %}
 <div class="bl-prose" style="max-width:760px">
-  <h1>Junior Setup</h1>
+  <h1>Junior setup</h1>
   <form method="post" action="{{ url_for('junior_setup') }}">
     <input type="hidden" name="u" value="{{ u }}">
 
@@ -20,7 +20,7 @@
 
     <h2>Tier bands</h2>
     <p>Each week the field is ranked by running points and sliced into tiers by these <strong>cumulative</strong>
-      cutoffs — e.g. the top % play Masters, the top % up to the next line play Majors, and so on down. State
+      cutoffs. For example, the top % play Masters, the top % up to the next line play Majors, and so on down. State
       catches everyone remaining (pinned to 100%).</p>
     <table class="bl-protable"><thead><tr><th>Tier</th><th class="w">Top % of field (cumulative)</th></tr></thead><tbody>
       {% for tier, pct in view.bands %}

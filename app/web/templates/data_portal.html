@@ -50,10 +50,10 @@
 
 <dialog id="research-export" class="al-export-dialog">
   <form method="post" action="{{ url_for('research_export') }}">
-    <div class="al-export-head"><div><div class="al-eyebrow">Portable research bundle</div><h2>Export Research Data</h2></div><button type="button" class="al-export-close" onclick="this.closest('dialog').close()" aria-label="Close">×</button></div>
+    <div class="al-export-head"><div><div class="al-eyebrow">Portable research bundle</div><h2>Export research data</h2></div><button type="button" class="al-export-close" onclick="this.closest('dialog').close()" aria-label="Close">×</button></div>
     <p>Download a self-describing ZIP of read-only CSV and JSON files, ready to upload to an analysis agent.</p>
     <div class="al-export-fields">
-      <label><span>Scope</span><select name="scope"><option value="jhsaa">JHSAA</option><option value="college" disabled>College — planned</option><option value="world" disabled>Whole world — planned</option></select></label>
+      <label><span>Scope</span><select name="scope"><option value="jhsaa">JHSAA</option><option value="college" disabled>College (planned)</option><option value="world" disabled>Whole world (planned)</option></select></label>
       <label><span>Season year</span><input name="year" type="number" min="1900" max="2200" value="{{ portal.grad_year|cal }}" required></label>
       <label><span>Gender</span><select name="gender"><option value="girls">Girls</option><option value="boys">Boys</option></select></label>
       <label><span>Classification</span><select name="classification"><option value="all">All classifications</option>{% for c in ['9A','8A','7A','6A','5A','4A','3A','2A','1A'] %}<option value="{{ c }}">{{ c }}</option>{% endfor %}</select></label>
@@ -84,7 +84,7 @@
 
 <div class="bl-container"><div class="al-portal-grid">
   <section class="bl-panel al-card-main">
-    <div class="bl-panel-head"><span class="bl-panel-title">Live Rankings</span><a class="bl-panel-meta" href="{{ url_for('rankings', u=u) }}">Full table →</a></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Live rankings</span><a class="bl-panel-meta" href="{{ url_for('rankings', u=u) }}">Full table →</a></div>
     <div class="bl-tablescroll">
     <div class="bl-table al-dense" style="--bl-grid-cols: 38px 46px minmax(160px,1fr) 58px 58px 74px 62px 62px">
       <div class="bl-thead"><span class="bl-th">RK</span><span class="bl-th num">MOVE</span><span class="bl-th">PROGRAM</span><span class="bl-th">CONF</span><span class="bl-th">REC</span><span class="bl-th num">PWR</span><span class="bl-th num">APR</span><span class="bl-th num">FQI</span></div>
@@ -102,7 +102,7 @@
   </section>
 
   <aside class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">STR Player Leaders</span><a class="bl-panel-meta" href="{{ url_for('rankings', u=u) }}">Stats →</a></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">STR player leaders</span><a class="bl-panel-meta" href="{{ url_for('rankings', u=u) }}">Stats →</a></div>
     <div class="bl-panel-body al-leadwrap">
       {% if portal.player_leaders %}
       {% for p in portal.player_leaders[:8] %}
@@ -119,7 +119,7 @@
 
 <div class="bl-container"><div class="al-portal-grid al-portal-grid--thirds">
   <section class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Race Leaders</span><a class="bl-panel-meta" href="{{ url_for('season_standings', u=u) }}">Standings →</a></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Race leaders</span><a class="bl-panel-meta" href="{{ url_for('season_standings', u=u) }}">Standings →</a></div>
     <div class="bl-panel-body al-leadwrap">
       {% for r in portal.standings_leaders %}
       <a class="al-leadrow" href="{{ url_for('season_standings', u=u, conf=r.conf) }}"><span class="al-leadname"><span class="bl-crest xs" style="background:{{ r.color }}">{{ r.abbr }}</span> {{ r.school }} <small>· {{ r.conf }}</small></span><span class="al-leadval">{{ r.w }}-{{ r.l }}</span></a>
@@ -128,7 +128,7 @@
   </section>
 
   <section class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">This Week</span><a class="bl-panel-meta" href="{{ url_for('season_schedule', u=u) }}">Schedule →</a></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">This week</span><a class="bl-panel-meta" href="{{ url_for('season_schedule', u=u) }}">Schedule →</a></div>
     <div class="bl-panel-body al-leadwrap">
       {% if portal.upcoming %}
       {% for d in portal.upcoming[:8] %}
@@ -139,7 +139,7 @@
   </section>
 
   <section class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Junior Watchlist</span><a class="bl-panel-meta" href="{{ url_for('junior_rankings', u=u, grad_year=portal.grad_year) }}">Full board →</a></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Junior watchlist</span><a class="bl-panel-meta" href="{{ url_for('junior_rankings', u=u, grad_year=portal.grad_year) }}">Full board →</a></div>
     <div class="bl-panel-body al-leadwrap">
       {% if not portal.top_prospects %}<div class="bl-panel-empty" style="padding:12px 16px;color:var(--text-muted)">The junior board has not been built for this class yet. <a href="{{ url_for('junior_rankings', u=u, grad_year=portal.grad_year) }}">Open the full board</a> to build it.</div>{% endif %}
       {% for p in portal.top_prospects %}
@@ -155,16 +155,16 @@
 
 <div class="bl-container"><div class="al-portal-grid al-portal-grid--thirds">
   <section class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Bracket Watch</span><a class="bl-panel-meta" href="{{ url_for('projection', u=u) }}">Projection →</a></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Bracket watch</span><a class="bl-panel-meta" href="{{ url_for('projection', u=u) }}">Projection →</a></div>
     <div class="bl-panel-body al-leadwrap">
       {% if portal.natl_champion %}
         <div class="al-champline"><i class="fa-solid fa-medal" aria-hidden="true"></i> <strong>{{ portal.natl_champion }}</strong><small>National Champion</small></div>
       {% elif portal.bubble %}
-        <div class="al-sublabel">Last Four In · {{ portal.bubble.field }}-team field</div>
+        <div class="al-sublabel">Last four in · {{ portal.bubble.field }}-team field</div>
         {% for t in portal.bubble.last_in %}
         <a class="al-leadrow" href="{{ url_for('teams', school=t.school, u=u) }}"><span class="al-leadname">{{ t.school | team_logo }} {{ t.school }} <small>· {{ t.conf }}</small></span><span class="al-leadval">#{{ t.field_rank }}</span></a>
         {% endfor %}
-        <div class="al-sublabel out">First Four Out</div>
+        <div class="al-sublabel out">First four out</div>
         {% for t in portal.bubble.first_out %}
         <a class="al-leadrow out" href="{{ url_for('teams', school=t.school, u=u) }}"><span class="al-leadname">{{ t.school | team_logo }} {{ t.school }} <small>· {{ t.conf }}</small></span><span class="al-leadval">#{{ t.field_rank }}</span></a>
         {% endfor %}
@@ -175,7 +175,7 @@
   </section>
 
   <section class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Season Opener</span><a class="bl-panel-meta" href="{{ url_for('season_ita', u=u) }}">NIT bracket →</a></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Season opener</span><a class="bl-panel-meta" href="{{ url_for('season_ita', u=u) }}">NIT bracket →</a></div>
     <div class="bl-panel-body al-leadwrap">
       {% if portal.ita_champion %}
         <div class="al-champline"><i class="fa-solid fa-snowflake" aria-hidden="true"></i> <strong>{{ portal.ita_champion }}</strong><small>Preseason NIT Champion</small></div>
@@ -188,7 +188,7 @@
   </section>
 
   <section class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Conference Power</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Conference power</span></div>
     <div class="bl-panel-body al-leadwrap">
       {% for c in portal.conf_power %}
       <a class="al-leadrow" href="{{ url_for('season_standings', u=u, conf=c.conf) }}"><span class="al-leadname">{{ loop.index }}. {{ c.conf }} <span class="al-tier al-tier-{{ c.tier }}">{{ c.tier }}</span> <small>· {{ c.n }} teams</small></span><span class="al-leadval">{{ '%.3f'|format(c.avg) }}</span></a>
@@ -199,7 +199,7 @@
 
 <div class="bl-container"><div class="al-portal-grid">
   <section class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Program Prestige</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Program prestige</span></div>
     <div class="bl-panel-body">
       <div class="al-presrow al-pres-hdr"><span>#</span><span>Team</span><span>Conf · tier</span><span>Prestige (base → now)</span><span>Trend</span></div>
       <div class="al-pres-scroll">
@@ -218,7 +218,7 @@
   </section>
 
   <section class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Prestige Risers &amp; Fallers</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Prestige risers and fallers</span></div>
     <div class="bl-panel-body al-leadwrap">
       {% for r in portal.prestige_risers %}
       <a class="al-leadrow" href="{{ url_for('teams', school=r.school, u=u) }}"><span class="al-leadname"><span class="al-move up">▲{{ '%.2f'|format(r.mom) }}</span> {{ r.school }} <small>· {{ r.conf }}</small></span><span class="al-leadval">{{ '%.3f'|format(r.prestige) }}</span></a>
@@ -226,7 +226,7 @@
       {% for r in portal.prestige_fallers %}
       <a class="al-leadrow" href="{{ url_for('teams', school=r.school, u=u) }}"><span class="al-leadname"><span class="al-move down">▼{{ '%.2f'|format(-r.mom) }}</span> {{ r.school }} <small>· {{ r.conf }}</small></span><span class="al-leadval">{{ '%.3f'|format(r.prestige) }}</span></a>
       {% endfor %}
-      {% if not portal.prestige_risers and not portal.prestige_fallers %}<p class="al-muted">Prestige drifts after a season rolls over — none yet.</p>{% endif %}
+      {% if not portal.prestige_risers and not portal.prestige_fallers %}<p class="al-muted">Prestige moves after a season rolls over. None yet.</p>{% endif %}
     </div>
   </section>
 </div></div>
@@ -253,7 +253,7 @@
 
 <div class="bl-container"><div class="al-portal-grid al-portal-grid--thirds">
   <section class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Hot Teams</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Hot teams</span></div>
     <div class="bl-panel-body al-leadwrap">
       {% for t in portal.hot_teams %}
       <a class="al-leadrow" href="{{ url_for('teams', school=t.school, u=u) }}"><span class="al-leadname"><span class="bl-crest xs" style="background:{{ t.color }}">{{ t.abbr }}</span> {{ t.school }} <small>· {{ t.rec }}</small></span><span class="al-leadval win">W{{ t.streak }}</span></a>
@@ -262,7 +262,7 @@
   </section>
 
   <section class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Top Movers</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Top movers</span></div>
     <div class="bl-panel-body al-leadwrap">
       {% for t in portal.movers.risers %}
       <a class="al-leadrow" href="{{ url_for('teams', school=t.school, u=u) }}"><span class="al-leadname"><span class="al-move up">{{ 'NEW' if t.new else '▲' ~ t.move }}</span> {{ t.school }} <small>· #{{ t.rk }} {{ t.conf }}</small></span></a>
@@ -275,7 +275,7 @@
   </section>
 
   <section class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Win Leaders</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Win leaders</span></div>
     <div class="bl-panel-body al-leadwrap">
       <div class="al-sublabel">Singles</div>
       {% for p in portal.singles_leaders[:5] %}

@@ -42,7 +42,7 @@
   <a href="{{ url_for('jhsaa_district', group=view.group, district=view.district, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.district }}</a>
   <span class="sep">›</span>
   <span>{{ view.school }}</span>
-  {% if not view.is_current %}<span class="jh-chip ghost">ARCHIVED {{ view.season_year|cal }} SEASON</span>{% endif %}
+  {% if not view.is_current %}<span class="jh-chip ghost">Archived season</span>{% endif %}
 </div>
 
 {# ‼️ A PROGRAM THAT STOPPED SPONSORING KEEPS ITS PAGE (owner rule 2026-08). The page
@@ -55,9 +55,7 @@
 <div class="bl-panel" style="margin-bottom:12px">
   <div class="bl-panel-body" style="padding:12px 14px">
     <b>{{ view.school }} no longer fields a {{ view.gender }} tennis team.</b>
-    {% if view.last_season %}Their last season was {{ view.last_season }}, and
-    everything below is the record of it — the seasons they played, the trophies they
-    won and the players who won them are unchanged.{% else %}No season is archived for
+    {% if view.last_season %}Their last season was {{ view.last_season }}, and everything below is the record of it: the seasons they played, the trophies they won and the players who won them.{% else %}No season is archived for
     this program.{% endif %}
   </div>
 </div>
@@ -267,7 +265,7 @@
 <!-- ============ TEAM: the current roster, in ladder order ============ -->
 <div class="bl-panel jh-hqnarrow">
   <div class="bl-panel-head"><span class="bl-panel-title">Roster</span>
-    {% if view.jv_schedule %}<span class="bl-panel-meta">JV season {{ view.jv_record }} — schedule under <a href="{{ hq_url('season') }}">Schedule</a></span>{% endif %}</div>
+    {% if view.jv_schedule %}<span class="bl-panel-meta">JV season {{ view.jv_record }}, schedule under <a href="{{ hq_url('season') }}">Schedule</a></span>{% endif %}</div>
   <div class="tbl-scroll">
     <table class="jh-roster">
       <tr><th>Player</th><th style="width:48px">Gr</th><th class="num" style="width:64px">Singles</th>
@@ -615,7 +613,7 @@
 <details class="bl-panel jh-fold" style="margin-top:18px" open>
   <summary class="bl-panel-head">
     <span class="bl-panel-title">Seasons</span>
-    <span class="bl-panel-meta">a row expands to that season's trophies and honours — the year link opens the season itself</span></summary>
+    <span class="bl-panel-meta">a row expands to that season's trophies and honors, and the year opens the season</span></summary>
   <div class="tbl-scroll">
     {% if view.history.seasons %}
     {# `figures` opts this ONE table into the mono figure face: season, record,
@@ -705,7 +703,7 @@
     })();
     </script>
     {% else %}
-    <p class="jh-empty">No archived seasons yet — the JHSAA rung writes one each world year.</p>
+    <p class="jh-empty">No archived seasons yet. One is added each world year.</p>
     {% endif %}
   </div>
 </details>

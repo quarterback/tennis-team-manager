@@ -38,7 +38,7 @@
 {% if not view.ready %}
 <div class="bl-panel"><div class="jh-empty">
   No {{ view.flight_name|lower }} qualifier archived for this district
-  {%- if view.have %} — its
+  {%- if view.have %}. Its
   {% for f, name in view.brackets if f in view.have %}<a href="{{ url_for('jhsaa_district_jv', group=view.group, district=view.district, u=u, g=view.gender, year=view.scope.pin, flight=f) }}">{{ name|lower }}</a>{% endfor %}
   bracket was played{% endif %}.
   {# A district fields nobody in a bracket when no member school has enough
@@ -52,7 +52,7 @@
   <div style="min-width:0">
     {# A district title here is an INDIVIDUAL honour for the player and their
        school — never a road unit, which is a TEAM thing the title board counts. #}
-    <span class="lbl">{{ view.season_year|cal }} {{ view.ident }} {{ view.flight_name }} Champion{{ 's' if view.champion.players|length > 1 }}</span>
+    <span class="lbl">Champion{{ 's' if view.champion.players|length > 1 }}</span>
     <a class="nm" href="{{ url_for('jhsaa_player', school=view.champion.school, pid=view.champion.players[0].pid, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.champion.full_label or view.champion.label }}</a>
     <div class="sub">
       {{ view.champion.school }}{% if view.champion_grade_note %} {{ view.champion_grade_note }}{% endif %}
@@ -73,7 +73,7 @@
 <div class="brk-stage" id="brkstage">
   <section class="brk-region" data-view="all">
     <div class="brk-region-head">
-      <h2>{{ view.season_year|cal }} {{ view.flight_name }} qualifier · {{ view.field_n }} {{ 'entry' if view.field_n == 1 else 'entries' }}</h2>
+      <h2>Qualifier · {{ view.field_n }} {{ 'entry' if view.field_n == 1 else 'entries' }}</h2>
       <span class="brk-region-champ">
         {% if view.champion %}{{ view.champion.label }}{% if view.runner_up %} def. {{ view.runner_up.label }}{% endif %}{% else %}in progress{% endif %}</span>
     </div>
@@ -83,7 +83,7 @@
     {# One eligible school in the district qualifies it UNOPPOSED — a real
        outcome (`run_tournament` returns a lone entrant as champion), and a draw
        with no matches has no tree to draw. #}
-    <div class="jh-empty" style="padding:12px">Qualified unopposed — no other school in the district entered.</div>
+    <div class="jh-empty" style="padding:12px">Qualified unopposed. No other school in the district entered.</div>
     {% endif %}
   </section>
 </div>

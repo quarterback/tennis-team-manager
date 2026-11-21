@@ -4,7 +4,7 @@
 {% block content %}
 
 {{ jh_header(view.scope, u, 'reclass', 'Reclassification',
-             'The four-season realignment: geography first, then one sort per pool on effective size, cut into equal bands. Review, edit, commit.',
+             'The four-season realignment: geography first, then one sort per pool on effective size, cut into equal bands. Review, edit and commit.',
              [('Cycle', view.cycle_label)], classless=true) }}
 
 <datalist id="rc-schools">
@@ -20,7 +20,7 @@
 {# ---- controls: run / config ------------------------------------------------ #}
 <div class="bl-panel">
   <div class="bl-panel-head"><span class="bl-panel-title">Cycle</span>
-    <span class="bl-panel-meta">{% if view.pending %}proposal open · built from seasons {{ view.pending.data.season_years|join(', ') }}{% elif view.due %}a cycle is due — it opens on the next advance, or now{% elif not view.config.enabled %}automatic cycles OFF · last closed {{ view.last_label }}{% else %}no proposal open · last closed {{ view.last_label }}{% endif %}</span></div>
+    <span class="bl-panel-meta">{% if view.pending %}proposal open · built from seasons {{ view.pending.data.season_years|join(', ') }}{% elif view.due %}a cycle is due and opens on the next advance, or now{% elif not view.config.enabled %}automatic cycles OFF · last closed {{ view.last_label }}{% else %}no proposal open · last closed {{ view.last_label }}{% endif %}</span></div>
   <div class="bl-panel-body" style="padding:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:end">
     {% if not view.pending %}
     <form method="post" action="{{ url_for('jhsaa_reclass_run') }}">
@@ -85,7 +85,7 @@
 {# ---- add a school ---------------------------------------------------------- #}
 <div class="bl-panel">
   <div class="bl-panel-head"><span class="bl-panel-title">Add a school to a pool</span>
-    <span class="bl-panel-meta">a Group school asking back onto the A ladder (or the reverse) — the sort places it</span></div>
+    <span class="bl-panel-meta">a Group school asking back onto the A ladder (or the reverse); the sort places it</span></div>
   <div class="bl-panel-body" style="padding:12px">
     <form method="post" action="{{ url_for('jhsaa_reclass_edit') }}" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
       <input type="hidden" name="u" value="{{ u }}"><input type="hidden" name="action" value="add">
@@ -172,7 +172,7 @@
 {% if p.redraw_notes %}
 <div class="bl-panel">
   <div class="bl-panel-head"><span class="bl-panel-title">League redraw</span>
-    <span class="bl-panel-meta">every touched class is redrawn on commit — names inherited by overlap, new ones from the bank</span></div>
+    <span class="bl-panel-meta">every touched class is redrawn on commit, keeping league names by overlap and drawing new ones from the bank</span></div>
   <div class="bl-panel-body" style="padding:12px">
     {% for c, notes in p.redraw_notes.items() %}<p class="bit"><b>{{ c }}</b>{% for n in notes %}<br>{{ n }}{% endfor %}</p>{% endfor %}
   </div>

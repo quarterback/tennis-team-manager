@@ -6,8 +6,7 @@
     <a class="jo-back" href="{{ url_for('my_program') }}">← Clubhouse</a>
     <h1 class="jo-h1">Coaching carousel</h1>
     <p class="jo-sub">Currently: <strong>{{ off.school }}</strong> · {{ off.division }} {{ off.gender|capitalize }}
-      · {{ off.tier }} ({{ off.prestige }} prestige). A strong season opens bigger jobs —
-      take one or stay and keep building. You're never forced to move.</p>
+      · {{ off.tier }} ({{ off.prestige }} prestige). A strong season opens bigger jobs. Take one or stay and keep building.</p>
   </header>
 
   {% if not off.available %}

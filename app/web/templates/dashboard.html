@@ -56,7 +56,7 @@
   <div class="bl-board-grid" style="align-items:start">
     <!-- Top programs -->
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">Top Programs</span>
+      <div class="bl-panel-head"><span class="bl-panel-title">Top programs</span>
         <a class="bl-panel-meta" style="text-decoration:none" href="{{ url_for('rankings', u=u) }}">CTA Rankings · all {{ d.n_programs }} →</a></div>
       <div class="bl-tablescroll">
       <div class="bl-table" style="--bl-grid-cols: 34px auto 1fr 64px 88px">
@@ -79,7 +79,7 @@
     <div style="display:flex;flex-direction:column;gap:16px">
       <!-- STR leaders -->
       <div class="bl-panel">
-        <div class="bl-panel-head"><span class="bl-panel-title">STR Leaders</span></div>
+        <div class="bl-panel-head"><span class="bl-panel-title">STR leaders</span></div>
         <div class="bl-tablescroll">
         <div class="bl-table" style="--bl-grid-cols: 28px 1fr 52px 56px">
           <div class="bl-thead">
@@ -101,7 +101,7 @@
 
       <!-- Bracket teaser -->
       <div class="bl-panel">
-        <div class="bl-panel-head"><span class="bl-panel-title">NCAA Top Seeds</span>
+        <div class="bl-panel-head"><span class="bl-panel-title">NCAA top seeds</span>
           <a class="bl-panel-meta" style="text-decoration:none" href="{{ url_for('bracket', u=u) }}">Full bracket →</a></div>
         <div class="bl-panel-body" style="display:flex;flex-direction:column;gap:7px">
           {% if d.champion %}<div class="bl-champ" style="margin-bottom:4px"><i class="fa-solid fa-trophy" aria-hidden="true"></i> Projected champion: <strong>{{ d.champion }}</strong></div>{% endif %}
