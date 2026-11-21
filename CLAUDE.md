@@ -577,6 +577,19 @@ college dual; the owner never reached the college game.
   their position (the top is squashed against the cap and plays itself), and the
   bar asked for .65 least / .68 par (`NATIONAL_RECORD`).
   `tests/test_jhsaa_college_v2.py`.
+  ‼️ **AN OPPORTUNITY TRANSFER HAS TO BUY A BIGGER ROLE (owner spec 2026-11,
+  `jhsaa_college_v2.OPPORTUNITY` / `meaningful` / `project_role`).** Making the
+  destination's lineup is not enough: the projected role there is compared with
+  the projected role if they STAYED, both off next season's real depth chart
+  (`_standing` — the ONE reading the season is also played from), and `choose`
+  only considers programs that pass (`accept=`). Reserve → a clear singles place
+  and 12 more matches; doubles-only → that or the No. 1 pair; lower-lineup
+  starter (`LOW_LINEUP_TRANSFER`) → a top-three position. Nothing grants a role:
+  it falls out of the player's level against the receiving ladder. No program
+  passes → they stay. UP moves are separate and accept a smaller role when the
+  division rises. Every transfer carries `before` / `stay` / `projected` /
+  `played` / `change` / `improved`. The four regression tests in the spec were
+  NOT written (owner: no more tests).
   ‼️ **THE ALUMNI PAGES ARE PAGED LISTS RUN IN SQL (owner, 2026-11: "pagination
   instead of a 200 sort list").** `/jhsaa/alumni` has four views — the scope-bar
   season's class, all classes, by college, by high school (how real trackers

@@ -147,6 +147,39 @@ BENCH_QUIT = (0.12, 0.22, 0.30)
 DOUBLES_ONLY_TRANSFER, DOUBLES_ONLY_QUIT = 0.08, 0.05
 STAR_TRANSFER_UP = (0.12, 0.12, 0.04)
 LEAVE_COLLEGE = 0.025
+#: A singles starter in the LOWER part of the lineup (below this share of it)
+#: sometimes leaves for a program where they would play near the top — by class
+#: year just finished. Small: most lower-lineup starters are content to start.
+LOW_LINEUP_SHARE = 0.65
+LOW_LINEUP_TRANSFER = (0.05, 0.05, 0.02)
+
+# --- the opportunity transfer (owner spec 2026-11) ----------------------------------------
+#: ‼️ A PLAYER WHO LEAVES FOR PLAYING TIME HAS TO GET IT. "Would make the
+#: destination's lineup" is not enough: the projected role at the destination is
+#: compared with the projected role if they STAYED, both read off the real depth
+#: chart for next season (`project_role`, the same reading `play_season` makes),
+#: and a move that does not clear the bar for their situation does not happen —
+#: the player stays and meets next season's decisions like anybody else.
+#:
+#: What "meaningful" asks of the destination, by what the player was:
+#:   reserve  — a CLEAR singles starter: at least `clear` positions above the
+#:              last one, and `gain` more matches than staying projects.
+#:   doubles  — the same clear singles place, OR the No. 1 doubles pair when
+#:              they would not have it by staying.
+#:   starter  — (a lower-lineup starter) one of the top `top` singles positions,
+#:              at least `rise` positions higher than staying, and no fewer
+#:              matches.
+#: Nothing here grants a role. A D1 reserve becomes a D2 starter or a D3 No. 1
+#: because of where their level falls on that program's ladder.
+OPPORTUNITY = {"reserve": {"clear": 2, "gain": 12},
+               "doubles": {"clear": 2, "gain": 8},
+               "starter": {"top": 3, "rise": 2}}
+#: A player looking for somewhere to play looks much further down than a recruit
+#: does (`LOOK_DOWN`): a D1 reserve will take a D3 program's No. 1 position.
+LOOK_DOWN_TRANSFER = 14.0
+#: Duals in a season, on average (`play_season` draws 20-26), and the spot
+#: appearances a player just outside a lineup gets — what a projection counts.
+_DUALS, _SPOT_SINGLES, _SPOT_DOUBLES = 23.0, 2.5, 2.0
 TURN_PRO = 0.25               # a D1 singles All-American with eligibility left
 
 # --- honours -------------------------------------------------------------------------
@@ -393,13 +426,17 @@ def _projected_rank(ctx: Context, prog, season: int, level: float, age: int) -> 
 
 def choose(ctx: Context, lv: dict, season: int, rng: random.Random, taken: dict,
            *, level: float, age: int = 0, aspiration: str | None = None,
-           mode: str = "recruit", avoid: set | None = None):
+           mode: str = "recruit", avoid: set | None = None, accept=None):
     """The program this player joins for `season`, or None when nobody who would
     take them is somewhere they would go.
 
     `mode` "recruit" is a senior choosing; "opportunity" is a transfer looking for
     a place to play (the receiving staff reads today's level, not a projection);
-    "up" is a transfer by a player who outgrew their program."""
+    "up" is a transfer by a player who outgrew their program.
+
+    `accept(program) -> bool` is the caller's last word on a candidate — an
+    opportunity transfer passes the test that the move is a MEANINGFUL
+    improvement in role, so the choice is made among programs that are."""
     from . import recruit_economy
     weights = ASPIRATIONS[aspiration or "prestige"][1]
     if mode == "opportunity":
@@ -421,7 +458,7 @@ def choose(ctx: Context, lv: dict, season: int, rng: random.Random, taken: dict,
             gap = seen - ctx.level[p.school]
             if gap < -REACH[d]:
                 continue                           # this staff is not recruiting them
-            if gap > LOOK_DOWN:
+            if gap > (LOOK_DOWN_TRANSFER if mode == "opportunity" else LOOK_DOWN):
                 continue                           # and they are not looking this far down
             cap = PER_PROGRAM_HOME if p.state == "JF" else PER_PROGRAM
             if mode == "recruit" and taken.get(p.school, 0) >= cap:
@@ -445,7 +482,19 @@ def choose(ctx: Context, lv: dict, season: int, rng: random.Random, taken: dict,
             # A player who wants to LEAD a team sets the bar at the top three.
             safe = (0.3 if aspiration == "playing_time" else 0.6) * n_s
             pt = 1.0 if rank <= safe else max(-0.6, 1.0 - (rank - safe) / (n_s + 1 - safe))
-            if mode == "up" and rank > 4:
+            if mode == "opportunity" and rank <= n_s:
+                # Someone leaving FOR a role does tell the positions apart: the
+                # higher on the ladder, the more the move is worth.
+                pt = 1.0 - 0.45 * (rank - 1) / n_s
+            if mode == "up":
+                # ‼️ KEPT DISTINCT FROM THE OPPORTUNITY MOVE. A player stepping UP
+                # a division accepts a smaller role for stronger competition: a
+                # place anywhere in the lineup will do. Inside a division an
+                # upward move is still to a leading role.
+                rising = DIVISIONS.index(d) < DIVISIONS.index(lv.get("from_division", d))
+                if rank > (n_s if rising else 4):
+                    continue
+            if accept is not None and not accept(p):
                 continue
             home = (HOME_STATE if p.state == "JF" else 0.0) \
                 + HOME_REGION * ncaa.region_proximity("W", p.region) \
@@ -492,13 +541,14 @@ def _rank(level: float, mates: list, others: list, mkey: str, okey: str,
         + sum(1 for a in others if a.get(okey, -1e9) > eff)
 
 
-def play_season(ctx: Context, prog, season: int, age: int, pid: str, cohort: int,
-                s_lvl: float, d_lvl: float, rng: random.Random, *,
-                injured: str | None = None) -> dict:
-    """One season at `prog`: where the player stood on the depth chart and what
-    they did there, singles and doubles separately."""
-    d = prog.division
-    fmt = ncaa.dual_format(d)
+def _standing(ctx: Context, prog, season: int, age: int, pid: str, cohort: int,
+              s_lvl: float, d_lvl: float) -> dict:
+    """Where a player of these levels stands on `prog`'s depth chart in `season`:
+    singles and doubles ladder ranks and the lineup places they amount to. The
+    ONE reading of a depth chart — the season is played from it and a transfer
+    is judged on it, so a projected role and the role then played cannot be two
+    different calculations."""
+    fmt = ncaa.dual_format(prog.division)
     n_s, n_d = fmt.n_singles, fmt.n_doubles
     mates, others = _roster(ctx, prog, season, pid, cohort)
     s_rank = _rank(s_lvl, mates, others, "s", "slv", age)
@@ -508,8 +558,62 @@ def play_season(ctx: Context, prog, season: int, age: int, pid: str, cohort: int
     while s_rank in held:
         s_rank += 1
     d_rank = _rank(d_lvl, mates, others, "d", "dlv", age)
-    s_pos = s_rank if s_rank <= n_s else None
-    d_pair = (d_rank + 1) // 2 if d_rank <= 2 * n_d else None
+    return {"n_s": n_s, "n_d": n_d, "mates": mates, "others": others,
+            "s_rank": s_rank, "d_rank": d_rank,
+            "s_pos": s_rank if s_rank <= n_s else None,
+            "d_pair": (d_rank + 1) // 2 if d_rank <= 2 * n_d else None}
+
+
+def project_role(ctx: Context, prog, season: int, age: int, pid: str, cohort: int,
+                 s_lvl: float, d_lvl: float) -> dict:
+    """The role a player of these levels would have at `prog` in `season`:
+    singles position, doubles pair, expected singles starts and expected matches
+    in all. Read off the actual depth chart (`_standing`); the match counts are
+    what `play_season` gives a player in that place, on average."""
+    st = _standing(ctx, prog, season, age, pid, cohort, s_lvl, d_lvl)
+    d = prog.division
+    starts = (_DUALS * FINISH[d] if st["s_pos"]
+              else _SPOT_SINGLES if st["s_rank"] <= st["n_s"] + 3 else 0.0)
+    doubles = (_DUALS if st["d_pair"]
+               else _SPOT_DOUBLES if st["d_rank"] <= 2 * st["n_d"] + 3 else 0.0)
+    return {"college": prog.school, "division": d, "lineup": st["n_s"],
+            "s_pos": st["s_pos"], "d_pair": st["d_pair"],
+            "starts": round(starts), "matches": round(starts + doubles)}
+
+
+def meaningful(role: str, stay: dict, dest: dict) -> bool:
+    """Does `dest` (a `project_role`) give a player who was `role` — "reserve",
+    "doubles" (doubles only) or "starter" (a lower-lineup singles starter) — a
+    MEANINGFULLY bigger role than `stay`, the projection at their own program?
+    See `OPPORTUNITY`."""
+    rule = OPPORTUNITY[role]
+    gain = dest["matches"] - stay["matches"]
+    if role == "starter":
+        return (dest["s_pos"] is not None and dest["s_pos"] <= rule["top"]
+                and (stay["s_pos"] is None
+                     or dest["s_pos"] <= stay["s_pos"] - rule["rise"])
+                and gain >= 0)
+    clear = (dest["s_pos"] is not None
+             and dest["s_pos"] <= dest["lineup"] - rule["clear"]
+             # Someone who would start next year anyway has to do BETTER than
+             # that by leaving, not merely as well.
+             and (stay["s_pos"] is None or dest["s_pos"] <= stay["s_pos"] - 2))
+    if clear:
+        return gain >= rule["gain"]
+    if role == "doubles":
+        return dest["d_pair"] == 1 and stay["d_pair"] != 1 and gain >= 0
+    return False
+
+
+def play_season(ctx: Context, prog, season: int, age: int, pid: str, cohort: int,
+                s_lvl: float, d_lvl: float, rng: random.Random, *,
+                injured: str | None = None) -> dict:
+    """One season at `prog`: where the player stood on the depth chart and what
+    they did there, singles and doubles separately."""
+    d = prog.division
+    st = _standing(ctx, prog, season, age, pid, cohort, s_lvl, d_lvl)
+    n_s, n_d, mates, others = st["n_s"], st["n_d"], st["mates"], st["others"]
+    s_rank, d_rank, s_pos, d_pair = st["s_rank"], st["d_rank"], st["s_pos"], st["d_pair"]
     duals = rng.randint(20, 26)
     share = 1.0
     if injured == "out":
@@ -683,21 +787,52 @@ def career(ctx: Context, snap: dict, lv: dict, taken: dict) -> dict | None:
                 and s["s_w"] / (s["s_w"] + s["s_l"]) >= 0.65 \
                 and rng.random() < STAR_TRANSFER_UP[age]:
             move = "up"
+        elif s["role"] == "starter" and s["s_pos"] \
+                and s["s_pos"] > LOW_LINEUP_SHARE * ncaa.lineup_size(prog.division) \
+                and rng.random() < LOW_LINEUP_TRANSFER[age]:
+            move = "opportunity"
         if move:
-            dest = choose(ctx, lv, season + 1, rng, taken, level=levels[age] - knock,
-                          age=age + 1, mode=move, avoid={prog.school})
-            # A move has to be a move: up means a better program, opportunity
-            # means one where they would actually play.
-            if dest is not None and (
-                    (move == "up" and dest.prestige > prog.prestige + 0.03) or
-                    (move == "opportunity" and _projected_rank(
-                        ctx, dest, season + 1, levels[age] - knock, age + 1)
-                     <= ncaa.lineup_size(dest.division))):
+            # THE ROLE, BEFORE THE MOVE (owner spec 2026-11): what staying
+            # projects for next season, against what each destination projects —
+            # both off the real depth charts, on today's level.
+            now_s = levels[age] - knock
+            now_d = now_s + lv["lean"]
+            pid = snap["pid"]
+            stay = project_role(ctx, prog, season + 1, age + 1, pid, cohort,
+                                now_s, now_d)
+            was = s["role"] if s["role"] in ("reserve", "doubles") else "starter"
+
+            def gains(p, _stay=stay, _was=was, _s=now_s, _d=now_d, _age=age + 1,
+                      _season=season + 1):
+                return meaningful(_was, _stay, project_role(
+                    ctx, p, _season, _age, pid, cohort, _s, _d))
+
+            lv["from_division"] = prog.division
+            dest = choose(ctx, lv, season + 1, rng, taken, level=now_s,
+                          age=age + 1, mode=move, avoid={prog.school},
+                          accept=gains if move == "opportunity" else None)
+            # A move has to be a move. Opportunity: `choose` only considered
+            # programs where the role is meaningfully bigger, so finding none
+            # means they stay. Up: a better program.
+            if dest is not None and (move == "opportunity"
+                                     or dest.prestige > prog.prestige + 0.03):
                 stint["to"] = season
                 stints.append(stint)
-                transfers.append({"after": _CLASS_YEARS[age], "year": season,
-                                  "from": prog.school, "to": dest.school,
-                                  "reason": move, "role_before": s["role"]})
+                proj = project_role(ctx, dest, season + 1, age + 1, pid, cohort,
+                                    now_s, now_d)
+                keep = ("division", "s_pos", "d_pair", "starts", "matches")
+                transfers.append({
+                    "after": _CLASS_YEARS[age], "year": season,
+                    "from": prog.school, "to": dest.school,
+                    "reason": move, "role_before": s["role"],
+                    # What they did in the season they left after, what staying
+                    # projected, and what the destination projected.
+                    "before": {"division": prog.division, "s_pos": s["s_pos"],
+                               "d_pair": s["d_pair"],
+                               "starts": s["s_w"] + s["s_l"],
+                               "matches": s["s_w"] + s["s_l"] + s["d_w"] + s["d_l"]},
+                    "stay": {k: stay[k] for k in keep},
+                    "projected": {k: proj[k] for k in keep}})
                 prog = dest
                 # They join as a transfer; the seat they take is in the cohort
                 # that entered with them.
@@ -706,8 +841,26 @@ def career(ctx: Context, snap: dict, lv: dict, taken: dict) -> dict | None:
     stint["to"] = seasons[-1]["year"]
     stints.append(stint)
     for t in transfers:
+        # WHAT THE MOVE ACTUALLY BOUGHT: the season after it, as played, beside
+        # the season before it — the change in singles position, in doubles
+        # pair and in matches, on every transfer.
         after = next((x for x in seasons if x["year"] == t["year"] + 1), None)
         t["role_after"] = after["role"] if after else None
+        if after is None:
+            continue
+        b = t["before"]
+        a = {"division": after["division"], "s_pos": after["s_pos"],
+             "d_pair": after["d_pair"], "starts": after["s_w"] + after["s_l"],
+             "matches": after["s_w"] + after["s_l"] + after["d_w"] + after["d_l"]}
+        t["played"] = a
+        t["change"] = {
+            "matches": a["matches"] - b["matches"],
+            "starts": a["starts"] - b["starts"],
+            # Positions gained (+) or lost (−); None when one side had no place.
+            "s_pos": (b["s_pos"] - a["s_pos"]) if b["s_pos"] and a["s_pos"] else None,
+            "d_pair": (b["d_pair"] - a["d_pair"]) if b["d_pair"] and a["d_pair"] else None,
+            "into_singles": bool(a["s_pos"] and not b["s_pos"])}
+        t["improved"] = a["matches"] > b["matches"]
     departure = None
     if status != "graduated":
         last = seasons[-1]

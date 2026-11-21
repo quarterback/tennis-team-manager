@@ -263,6 +263,59 @@ Still open, and worth a look once real classes exist:
 - **Nobody turned professional** in these classes: the D1 All-American seasons
   were mostly senior years.
 
+## Opportunity transfers have to buy a bigger role (owner spec, 2026-11)
+
+A player who left for playing time only had to project into the destination's
+lineup — its last singles position was enough. The spec: evaluate the projected
+change in role before approving the move, require a meaningful improvement, and
+let the role come from the player's level against the receiving program.
+
+- **One reading of a depth chart** (`_standing`). The season is played from it
+  and a transfer is judged on it (`project_role`: singles position, doubles
+  pair, expected starts, expected matches), so a projected role and the role
+  then played are the same calculation.
+- **Staying is projected too.** The destination is compared with what the
+  player's own program projects for next season, both on today's level.
+- **What counts as meaningful** (`OPPORTUNITY`, `meaningful`):
+  a reserve needs a clear singles place (two or more positions above the last)
+  and 12 more matches than staying; a doubles-only player needs that, or the
+  No. 1 pair when staying would not give it; a lower-lineup starter needs a
+  top-three singles position, at least two higher than staying, and no fewer
+  matches.
+- **The choice is made among programs that pass**, weighing position (a higher
+  place is worth more to someone leaving for a role), level of tennis, academics
+  and geography as before. They now look much further down than a recruit does
+  (`LOOK_DOWN_TRANSFER`), which is what lets a D1 reserve reach a D3 program.
+- **No program passes → no transfer.** The player stays and meets next season's
+  decisions like anybody else.
+- **Lower-lineup starters can now leave** (`LOW_LINEUP_TRANSFER`, 5% / 5% / 2% by
+  class year). They never did before, so this adds transfers.
+- **Upward moves stay separate.** A player stepping up a division accepts any
+  place in the lineup; inside a division an upward move is still to a top-four
+  position. No improvement test applies.
+- **Every transfer records what it bought**: the season before (`before`), what
+  staying projected (`stay`), what the destination projected (`projected`), the
+  season after as played (`played`), the change in matches, starts, singles
+  position and doubles pair (`change`), and `improved`.
+
+One run on twelve synthetic classes (2,298 careers, 422 transfers with a season
+after them) — synthetic seniors, so the rates are not the real association's:
+
+| who moved | n | played more after | matches before → after | singles position after |
+|---|---|---|---|---|
+| reserve, for opportunity | 343 | 99.1% | 3 → 41 | median No. 2; 246 in the top three |
+| doubles only, for opportunity | 9 | 100% | 24 → 45 | all 9 gained a singles place |
+| lower-lineup starter, for opportunity | 54 | 72% | 30 → 42 | median No. 1; 49 in the top three |
+| starter, moving up | 16 | 25% | 45 → 38 | median No. 3 |
+
+All 73 D1 reserves who went to D2 played singles the next season, as did all 8
+lower-lineup D1 starters who went to D2 (positions 1 and 2). The sample had one
+D1-reserve-to-D3 move and one D2-to-D1 move (a No. 5).
+
+Not done: the four regression tests the spec asked for were not written, and
+nothing else was run, at the owner's instruction to stop testing. The run above
+is the only execution of this code.
+
 ## The pages (owner, 2026-11)
 
 > fix the page issues with alumni who have multiple schools, year by year lists
