@@ -5,379 +5,379 @@
 
 | class | strength | model 1 | D1/D2/D4/D3 | model 2 | D1/D2/D4/D3 |
 |---|---|---|---|---|---|
-| 2030 | +0.0 | 200 | 62/44/42/52 | 187 | 35/82/32/38 |
-| 2031 | +0.6 | 200 | 62/44/42/52 | 215 | 43/97/30/45 |
-| 2032 | -0.6 | 200 | 62/44/42/52 | 174 | 27/82/28/37 |
-| 2033 | +1.2 | 200 | 62/44/42/52 | 260 | 49/109/36/66 |
-| 2034 | -1.2 | 200 | 62/44/42/52 | 169 | 28/66/22/53 |
-| 2035 | +0.0 | 200 | 62/44/42/52 | 232 | 41/88/30/73 |
-| 2036 | +0.3 | 200 | 62/44/42/52 | 231 | 46/73/29/83 |
-| 2037 | -0.3 | 200 | 62/44/42/52 | 233 | 41/93/28/71 |
+| 2030 | +0.0 | 200 | 62/44/42/52 | 187 | 40/76/29/42 |
+| 2031 | +0.6 | 200 | 62/44/42/52 | 215 | 44/100/26/45 |
+| 2032 | -0.6 | 200 | 62/44/42/52 | 174 | 38/72/25/39 |
+| 2033 | +1.2 | 200 | 62/44/42/52 | 260 | 58/106/28/68 |
+| 2034 | -1.2 | 200 | 62/44/42/52 | 169 | 38/58/19/54 |
+| 2035 | +0.0 | 200 | 62/44/42/52 | 232 | 50/79/30/73 |
+| 2036 | +0.3 | 200 | 62/44/42/52 | 231 | 46/71/30/84 |
+| 2037 | -0.3 | 200 | 62/44/42/52 | 233 | 44/89/26/74 |
 
 ## All 8 classes pooled
 
 | | model 1 | model 2 |
 |---|---|---|
 | careers | 1600 | 1701 |
-| singles starter as a freshman |  90.6% |  44.4% |
-| still playing as a senior | 100.0% |  78.2% |
-| singles starter as a senior (of those) | 100.0% |  90.1% |
-| never a singles starter |   0.0% |  19.2% |
+| singles starter as a freshman |  90.6% |  41.4% |
+| still playing as a senior | 100.0% |  79.8% |
+| singles starter as a senior (of those) | 100.0% |  88.7% |
+| never a singles starter |   0.0% |  19.3% |
 | never in a singles OR doubles lineup |   0.0% |  16.6% |
-| D1 signees never a singles starter |   0.0% |  14.2% |
-| reached No. 1 singles at some point |  23.4% |  20.2% |
-| transferred |   0.0% |  13.9% |
-| played all four seasons | 100.0% |  78.2% |
-| career singles record under .500 |  33.6% |  38.3% |
-| any honour |   9.4% |  21.0% |
-| doubles specialists | — |   5.8% |
+| D1 signees never a singles starter |   0.0% |  13.4% |
+| reached No. 1 singles at some point |  23.4% |  20.3% |
+| transferred |   0.0% |  14.5% |
+| played all four seasons | 100.0% |  79.8% |
+| career singles record under .500 |  33.6% |  37.2% |
+| any honour |   9.4% |  21.8% |
+| doubles specialists | — |   4.1% |
 
 **Where they sign (model 1):** in Jefferson 9.6%, anywhere in the West 24.2%, 847 different colleges
 
-**Where they sign (model 2):** in Jefferson 7.8%, anywhere in the West 22.7%, 818 different colleges
-**Player talent minus the roster's, at signing (model 2):** D1 -0.5, D2 +0.3, D4 +0.2, D3 -1.3
+**Where they sign (model 2):** in Jefferson 6.8%, anywhere in the West 22.3%, 822 different colleges
+**Player talent minus the roster's, at signing (model 2):** D1 -0.8, D2 -0.1, D4 +0.2, D3 -1.1
 
-**How careers end (model 2):** graduated 78.2%, left team 13.1%, left college 7.6%, injury ended 1.2%
-**Seasons played (model 2):** 1 → 8.6%, 2 → 7.5%, 3 → 5.6%, 4 → 78.2%
-**Career types (model 2):** steady contributor 42.2%, left team 13.1%, transfer success 12.8%, left college 7.6%, doubles specialist 5.8%, late developer 4.9%, injury affected 4.3%, stalled prospect 3.4%, reserve 3.1%, immediate star 1.6%, injury ended 1.2%, transfer 0.1%
+**How careers end (model 2):** graduated 79.8%, left team 12.4%, left college 6.5%, injury ended 1.3%
+**Seasons played (model 2):** 1 → 7.8%, 2 → 7.3%, 3 → 5.0%, 4 → 79.8%
+**Career types (model 2):** steady contributor 40.0%, transfer success 13.3%, left team 12.4%, late developer 7.4%, left college 6.5%, injury affected 5.3%, reserve 4.6%, doubles specialist 4.1%, stalled prospect 3.6%, injury ended 1.3%, immediate star 1.1%, transfer 0.4%
 
 ## Singles winning percentage by class year (seasons of 10+ matches)
 
 | | model 1 | model 2 |
 |---|---|---|
-| Fr | p10 0.36 · median 0.58 · p90 0.76 | p10 0.40 · median 0.58 · p90 0.74 |
-| So | p10 0.36 · median 0.55 · p90 0.76 | p10 0.35 · median 0.54 · p90 0.72 |
-| Jr | p10 0.35 · median 0.55 · p90 0.74 | p10 0.33 · median 0.52 · p90 0.69 |
+| Fr | p10 0.36 · median 0.58 · p90 0.76 | p10 0.39 · median 0.57 · p90 0.74 |
+| So | p10 0.36 · median 0.55 · p90 0.76 | p10 0.35 · median 0.53 · p90 0.71 |
+| Jr | p10 0.35 · median 0.55 · p90 0.74 | p10 0.33 · median 0.52 · p90 0.70 |
 | Sr | p10 0.32 · median 0.52 · p90 0.71 | p10 0.33 · median 0.52 · p90 0.70 |
-| career | p10 0.40 · median 0.55 · p90 0.69 | p10 0.40 · median 0.53 · p90 0.66 |
+| career | p10 0.40 · median 0.55 · p90 0.69 | p10 0.40 · median 0.52 · p90 0.65 |
 
 ## Lineup movement, first starting season to last (+ = moved up)
 
 - model 1: moved up 99.0%, same 0.9%, moved DOWN 0.1% (mean +3.7 spots)
-- model 2: moved up 80.1%, same 10.6%, moved DOWN 9.3% (mean +2.5 spots)
+- model 2: moved up 79.8%, same 11.1%, moved DOWN 9.1% (mean +2.7 spots)
 
 ## Honours, per class (model 1 → model 2)
 
 | division | honour | model 1 | model 2 |
 |---|---|---|---|
-| D1 | All-American | 0.1 | 0.0 |
-| D1 | All-Conference | 3.5 | 1.1 |
-| D1 | All-Conference (doubles) | 0.0 | 2.2 |
-| D2 | All-American | 0.5 | 2.4 |
-| D2 | All-American (doubles) | 0.0 | 3.9 |
-| D2 | All-Conference | 6.1 | 15.4 |
-| D2 | All-Conference (doubles) | 0.0 | 20.2 |
-| D4 | All-American | 0.9 | 1.2 |
+| D1 | All-American | 0.1 | 0.5 |
+| D1 | All-American (doubles) | 0.0 | 0.5 |
+| D1 | All-Conference | 3.5 | 3.9 |
+| D1 | All-Conference (doubles) | 0.0 | 4.4 |
+| D2 | All-American | 0.5 | 3.5 |
+| D2 | All-American (doubles) | 0.0 | 4.9 |
+| D2 | All-Conference | 6.1 | 14.2 |
+| D2 | All-Conference (doubles) | 0.0 | 21.1 |
+| D4 | All-American | 0.9 | 1.5 |
 | D4 | All-American (doubles) | 0.0 | 3.0 |
-| D4 | All-Conference | 2.5 | 5.9 |
-| D4 | All-Conference (doubles) | 0.0 | 7.5 |
-| D3 | All-American | 1.2 | 6.6 |
-| D3 | All-American (doubles) | 0.0 | 3.5 |
-| D3 | All-Conference | 8.2 | 20.0 |
-| D3 | All-Conference (doubles) | 0.0 | 19.0 |
+| D4 | All-Conference | 2.5 | 5.1 |
+| D4 | All-Conference (doubles) | 0.0 | 8.6 |
+| D3 | All-American | 1.2 | 4.8 |
+| D3 | All-American (doubles) | 0.0 | 4.4 |
+| D3 | All-Conference | 8.2 | 18.4 |
+| D3 | All-Conference (doubles) | 0.0 | 18.0 |
 
 ## Departures, kept apart (model 2)
 
 | how the career ended | share | after Fr | after So | after Jr | causes |
 |---|---|---|---|---|---|
-| left team | 13.1% | 97 | 73 | 52 | no_role 196, doubles_only 15, injury 11 |
-| left college | 7.6% | 47 | 44 | 38 | personal 129 |
-| injury ended | 1.2% | 3 | 11 | 6 | injury 20 |
+| left team | 12.4% | 81 | 84 | 46 | no_role 189, doubles_only 16, injury 6 |
+| left college | 6.5% | 41 | 36 | 33 | personal 110 |
+| injury ended | 1.3% | 11 | 5 | 6 | injury 22 |
 | turned pro | 0.0% | 0 | 0 | 0 |  |
-| transferred (a move, not a departure) | 13.9% | 162 | 59 | 19 | opportunity 235, up 5 |
+| transferred (a move, not a departure) | 14.5% | 163 | 74 | 13 | opportunity 248, up 2 |
 
-**D1 All-Conference (model 2):** 28 of 310 D1 signees earned it in singles (9.0%), 25 in doubles (8.1%); All-American while in D1: 0.
-**Lower-division All-Americans (model 2):** 116 of 1426 careers with a lower-division season (8.1%), 14.5 a class. **D1-level players playing down:** 183 (25 of them by transferring out of D1); 40 became All-Americans there (21.9%).
+**D1 All-Conference (model 2):** 54 of 358 D1 signees earned it in singles (15.1%), 48 in doubles (13.4%); All-American while in D1: 7.
+**Lower-division All-Americans (model 2):** 119 of 1398 careers with a lower-division season (8.5%), 14.9 a class. **D1-level players playing down:** 157 (47 of them by transferring out of D1); 44 became All-Americans there (28.0%).
 
-**Integrity (model 2):** deterministic rebuild identical; totals equal the season sums; every All-American season is also an All-Conference season in the same discipline; every college is a real program; no service academy holds a non-American and every D4 signee clears that program's academic gate; 0 of 4322 singles positions claimed twice at one college in one season. Doubles lineup seasons: 3498 of 6011.
+**Integrity (model 2):** deterministic rebuild identical; totals equal the season sums; every All-American season is also an All-Conference season in the same discipline; every college is a real program; no service academy holds a non-American and every D4 signee clears that program's academic gate; 0 of 4251 singles positions claimed twice at one college in one season. Doubles lineup seasons: 3490 of 6070.
 **Cost (model 2):** 1.4s a class (max 1.6s); no season simulated, no roster built by the model.
 
 ## Example careers (model 2)
 
-**Melanie Holley** (Villard, class rank 152, exit 80.9) — *immediate star*
-  arrived at level 31.7 with 2.0 to grow (staffs estimated 1.6); development shape `steady`; wanted `playing_time`; doubles lean -6.0
-  chose Albright (D3, MAC Commonwealth) — roster talent 32.7 against the player's 36.6
-  2037 Fr Albright: No. 2 singles 14-9; no doubles · All-Conference
-  2038 So Albright: No. 2 singles 15-8; 1-3 doubles · All-Conference
-  2039 Jr Albright: No. 1 singles 10-14; 0-1 doubles
-  2040 Sr Albright: No. 1 singles 7-15; No. 3 doubles 9-13
-  finished: graduated after 4 season(s); singles 46-46, doubles 10-17; All-Conference ×2
+**Juliette Camarillo** (Chicago Island, class rank 181, exit 80.3) — *immediate star*
+  arrived at level 31.4 with 4.9 to grow (staffs estimated 4.9); development shape `steady`; wanted `playing_time`; doubles lean -1.3
+  chose Hanover (D3, HCAC) — roster talent 32.5 against the player's 36.2
+  2038 Fr Hanover: No. 2 singles 14-9; No. 2 doubles 10-13 · All-Conference
+  2039 So Hanover: No. 2 singles 12-8; No. 2 doubles 10-10 · All-Conference
+  2040 Jr Hanover: No. 2 singles 15-6; No. 1 doubles 8-13 · All-Conference
+  2041 Sr Hanover: No. 1 singles 15-8; No. 1 doubles 10-13 · All-Conference · All-American
+  finished: graduated after 4 season(s); singles 56-31, doubles 38-49; All-American, All-Conference ×4
 
-**Lilly Gross** (Terrace Park, class rank 209, exit 79.3) — *late developer*
-  arrived at level 24.9 with 4.1 to grow (staffs estimated 4.2); development shape `steady`; wanted `prestige`; doubles lean +3.6
-  chose La Roche (D3, AMCC) — roster talent 29.9 against the player's 28.8
-  2032 Fr La Roche: reserve, 1-1 in spot starts; No. 2 doubles 10-12
-  2033 So La Roche: No. 7 singles 9-16; No. 1 doubles 9-16
-  2034 Jr La Roche: No. 4 singles 8-12; No. 1 doubles 8-12
-  2035 Sr La Roche: No. 3 singles 5-15; No. 1 doubles 13-7 · All-Conference (doubles)
-  finished: graduated after 4 season(s); singles 23-44, doubles 40-47; All-Conference (doubles)
+**Anita Wright** (Marigny, class rank 73, exit 87.1) — *late developer*
+  arrived at level 39.9 with 6.1 to grow (staffs estimated 6.1); development shape `steady`; wanted `prestige`; doubles lean -0.1
+  chose Vermont (D1, America East) — roster talent 48.7 against the player's 46.1
+  2032 Fr Vermont: did not play singles; 1-2 doubles
+  2033 So Vermont: No. 8 singles 7-12; No. 4 doubles 14-9
+  2034 Jr Vermont: No. 6 singles 13-5; No. 3 doubles 8-14
+  2035 Sr Vermont: No. 3 singles 9-8; No. 2 doubles 12-9
+  finished: graduated after 4 season(s); singles 29-25, doubles 35-34
 
-**Victoria Myles** (River Plain, class rank 89, exit 86.6) — *reserve*
-  arrived at level 39.4 with 4.7 to grow (staffs estimated 6.0); development shape `stalled`; wanted `prestige`; doubles lean -2.5
-  chose Vermont (D1, America East) — roster talent 48.7 against the player's 45.6
-  2034 Fr Vermont: reserve, 2-3 in spot starts; 0-1 doubles
-  2035 So Vermont: reserve, 0-1 in spot starts; 0-1 doubles
-  2036 Jr Vermont: reserve, 1-1 in spot starts; 0-2 doubles
-  2037 Sr Vermont: reserve, 0-1 in spot starts; 0-3 doubles
-  finished: graduated after 4 season(s); singles 3-6, doubles 0-7
+**Dana Ferris** (Bonanza, class rank 118, exit 81.8) — *reserve*
+  arrived at level 32.5 with 5.3 to grow (staffs estimated 5.1); development shape `steady`; wanted `academic`; doubles lean -2.5
+  chose Hamilton (D4, Liberty League) — roster talent 41.3 against the player's 37.6
+  2035 Fr Hamilton: did not play singles; no doubles
+  2036 So Hamilton: reserve, 0-1 in spot starts; no doubles
+  2037 Jr Hamilton: reserve, 0-2 in spot starts; no doubles
+  2038 Sr Hamilton: No. 7 singles 14-12; no doubles
+  finished: graduated after 4 season(s); singles 14-15, doubles 0-0
 
-**Aoi Kiyomiya** (San Lorenzo, class rank 20, exit 93.0) — *doubles specialist*
-  arrived at level 43.1 with 1.8 to grow (staffs estimated 3.3); development shape `steady`; wanted `academic`; doubles lean +4.5
-  chose Augustana (SD) (D1, Summit) — roster talent 49.2 against the player's 49.9
-  2032 Fr Augustana (SD): No. 9 singles 10-7; No. 1 doubles 13-8 · All-Conference (doubles)
-  2033 So Augustana (SD): No. 6 singles 10-10; No. 1 doubles 12-13
-  2034 Jr Augustana (SD): No. 5 singles 8-10; No. 1 doubles 8-14
-  2035 Sr Augustana (SD): No. 6 singles 10-9; No. 1 doubles 10-13
-  finished: graduated after 4 season(s); singles 38-36, doubles 43-48; All-Conference (doubles)
+**Sandy Fishel** (Terrace Park, class rank 5, exit 97.6) — *doubles specialist*
+  arrived at level 44.3 with 4.6 to grow (staffs estimated 2.8); development shape `regress`; wanted `playing_time`; doubles lean +2.7
+  chose USC Upstate (D1, Big South) — roster talent 49.1 against the player's 51.2
+  2032 Fr USC Upstate: No. 8 singles 13-4; No. 3 doubles 13-8
+  2033 So USC Upstate: No. 7 singles 9-11; No. 1 doubles 13-12
+  2034 Jr USC Upstate: No. 6 singles 10-7; No. 2 doubles 10-11
+  2035 Sr USC Upstate: No. 9 singles 9-11; No. 3 doubles 8-16
+  finished: graduated after 4 season(s); singles 41-33, doubles 44-47
 
-**Brianna Rosario** (W.H. Harrison, class rank 117, exit 82.5) — *stalled prospect*
-  arrived at level 34.4 with 4.0 to grow (staffs estimated 3.2); development shape `stalled`; wanted `academic`; doubles lean -1.0
-  chose Ohio Wesleyan (D4, NCAC) — roster talent 40.6 against the player's 39.8
-  2033 Fr Ohio Wesleyan: reserve, 0-1 in spot starts; no doubles
-  2034 So Ohio Wesleyan: No. 8 singles 15-8; 1-2 doubles
-  2035 Jr Ohio Wesleyan: No. 7 singles 15-8; no doubles
-  2036 Sr Ohio Wesleyan: No. 10 singles 11-14; no doubles
-  finished: graduated after 4 season(s); singles 41-31, doubles 1-2
+**Emma Velazquez** (California Canyons, class rank 38, exit 88.5) — *stalled prospect*
+  arrived at level 40.9 with 4.2 to grow (staffs estimated 3.8); development shape `stalled`; wanted `prestige`; doubles lean -1.8
+  chose Oklahoma Christian (D2, LSC) — roster talent 45.2 against the player's 47.2
+  2033 Fr Oklahoma Christian: No. 6 singles 14-5; 0-1 doubles
+  2034 So Oklahoma Christian: No. 6 singles 6-4; no doubles · injured
+  2035 Jr Oklahoma Christian: did not play singles; no doubles · out injured
+  2036 Sr Oklahoma Christian: No. 8 singles 11-11; no doubles
+  finished: graduated after 4 season(s); singles 31-20, doubles 0-1
 
-**Cuiying Moore** (Ridgeline, class rank 66, exit 86.1) — *transfer success*
-  arrived at level 38.7 with 3.9 to grow (staffs estimated 5.3); development shape `early`; wanted `prestige`; doubles lean -1.9
-  chose Rochester (D4, UAA) — roster talent 45.4 against the player's 44.8
-  2035 Fr Rochester: reserve, 5-0 in spot starts; no doubles
-  2036 So Cairn: No. 3 singles 12-8; No. 2 doubles 10-13
-  2037 Jr Cairn: No. 2 singles 12-9; No. 1 doubles 10-15
-  2038 Sr Cairn: No. 1 singles 8-12; No. 1 doubles 11-13
-  transferred after Fr year: Rochester → Cairn (opportunity; reserve → starter)
-  finished: graduated after 4 season(s); singles 37-29, doubles 31-41
+**Nicole Urquiza** (Chaminade, class rank 70, exit 86.0) — *transfer success*
+  arrived at level 38.6 with 5.6 to grow (staffs estimated 5.6); development shape `stalled`; wanted `playing_time`; doubles lean -1.8
+  chose Henderson State (D2, GAC) — roster talent 42.9 against the player's 44.6
+  2035 Fr Henderson State: reserve, 2-1 in spot starts; no doubles
+  2036 So Chowan: No. 1 singles 9-13; No. 2 doubles 11-15
+  2037 Jr Chowan: No. 4 singles 10-12; No. 2 doubles 13-13
+  2038 Sr Chowan: No. 2 singles 6-15; No. 2 doubles 10-15
+  transferred after Fr year: Henderson State → Chowan (opportunity; reserve → starter)
+  finished: graduated after 4 season(s); singles 27-41, doubles 34-43
 
-**Leslie Neri** (Gottschalk-Herman, class rank 50, exit 88.4) — *injury affected*
-  arrived at level 40.8 with 3.5 to grow (staffs estimated 5.9); development shape `stalled`; wanted `academic`; doubles lean +4.2
-  chose Southern Utah (D1, WAC) — roster talent 49.9 against the player's 47.2
-  2037 Fr Southern Utah: did not play singles; No. 4 doubles 0-0 · out injured
-  2038 So Southern Utah: reserve, 0-1 in spot starts; No. 5 doubles 12-8
-  2039 Jr Southern Utah: did not play singles; No. 5 doubles 7-14
-  2040 Sr Southern Utah: reserve, 3-0 in spot starts; No. 4 doubles 10-14
-  finished: graduated after 4 season(s); singles 3-1, doubles 29-36
+**Rachel Hamada** (Calderwood, class rank 176, exit 78.2) — *injury affected*
+  arrived at level 22.7 with 3.4 to grow (staffs estimated 3.6); development shape `steady`; wanted `prestige`; doubles lean +3.1
+  chose Bluffton (D3, HCAC) — roster talent 28.2 against the player's 26.3
+  2035 Fr Bluffton: did not play singles; 1-1 doubles
+  2036 So Bluffton: reserve, 2-2 in spot starts; No. 3 doubles 10-10
+  2037 Jr Bluffton: No. 4 singles 0-0; No. 2 doubles 0-0 · out injured
+  2038 Sr Bluffton: No. 5 singles 8-18; No. 2 doubles 10-16
+  finished: graduated after 4 season(s); singles 10-20, doubles 21-27
 
-**Janiyah Northern** (Bridgewater, class rank 146, exit 81.9) — *left team*
-  arrived at level 33.5 with 2.3 to grow (staffs estimated 2.9); development shape `stalled`; wanted `close`; doubles lean -1.6
-  chose Hardin-Simmons (D4, CCS) — roster talent 41.6 against the player's 38.7
-  2031 Fr Hardin-Simmons: did not play singles; no doubles
-  2032 So Hardin-Simmons: reserve, 1-2 in spot starts; no doubles
-  finished: left team after 2 season(s); singles 1-2, doubles 0-0
+**Riley Brown** (Millworks, class rank 152, exit 81.4) — *left team*
+  arrived at level 32.7 with 2.1 to grow (staffs estimated 4.3); development shape `steady`; wanted `prestige`; doubles lean +0.1
+  chose Puerto Rico-Mayagüez (D2, C2C) — roster talent 42.8 against the player's 37.8
+  2031 Fr Puerto Rico-Mayagüez: reserve, 1-2 in spot starts; no doubles
+  finished: left team after 1 season(s); singles 1-2, doubles 0-0
 
-**Lilyana Rowe** (Kishwaukee, class rank 272, exit 76.7) — *left college*
-  arrived at level 20.8 with 2.8 to grow (staffs estimated 2.8); development shape `stalled`; wanted `prestige`; doubles lean -0.5
-  chose Lehman (D3, CUNYAC) — roster talent 31.5 against the player's 24.0
-  2037 Fr Lehman: did not play singles; no doubles
-  finished: left college after 1 season(s); singles 0-0, doubles 0-0
+**Sophie Carroll** (Cliffside, class rank 126, exit 81.3) — *left college*
+  arrived at level 31.3 with 1.3 to grow (staffs estimated 2.3); development shape `regress`; wanted `academic`; doubles lean +1.9
+  chose Saint Vincent (D4, PAC) — roster talent 37.5 against the player's 36.1
+  2035 Fr Saint Vincent: reserve, 2-3 in spot starts; 0-1 doubles
+  finished: left college after 1 season(s); singles 2-3, doubles 0-1
 
-**Nia Ibarbo** (Christian Brothers, class rank 71, exit 86.5) — *injury ended*
-  arrived at level 39.2 with 2.5 to grow (staffs estimated 2.0); development shape `late`; wanted `playing_time`; doubles lean -4.7
-  chose Ozarks (D4, SCAC) — roster talent 40.4 against the player's 45.4
-  2037 Fr Ozarks: No. 6 singles 18-7; no doubles
-  2038 So Ozarks: No. 4 singles 13-10; no doubles
-  2039 Jr Ozarks: No. 2 singles 0-0; no doubles · out injured
-  finished: injury ended after 3 season(s); singles 31-17, doubles 0-0
+**Taylor Valdivia** (Orellana Central, class rank 45, exit 89.0) — *injury ended*
+  arrived at level 41.3 with 5.1 to grow (staffs estimated 2.0); development shape `steady`; wanted `prestige`; doubles lean +0.4
+  chose Mount Olive (D2, Conference Carolinas) — roster talent 41.9 against the player's 47.8
+  2036 Fr Mount Olive: No. 5 singles 0-0; No. 3 doubles 0-0 · out injured
+  finished: injury ended after 1 season(s); singles 0-0, doubles 0-0
 
-**Victoria Myles** (River Plain, class rank 85, exit 85.8) — *steady contributor*
-  arrived at level 38.8 with 4.7 to grow (staffs estimated 5.8); development shape `steady`; wanted `prestige`; doubles lean -3.5
-  chose Lincoln (MO) (D2, GLVC) — roster talent 41.7 against the player's 44.9
-  2032 Fr Lincoln (MO): No. 1 singles 5-15; no doubles
-  2033 So Lincoln (MO): No. 1 singles 9-11; 2-2 doubles
-  2034 Jr Lincoln (MO): No. 1 singles 8-10; No. 3 doubles 10-11
-  2035 Sr Lincoln (MO): No. 1 singles 12-8; No. 2 doubles 8-16
-  finished: graduated after 4 season(s); singles 34-44, doubles 20-29
+**Sofia En-Nesyri** (Ashbrook, class rank 119, exit 83.7) — *steady contributor*
+  arrived at level 36.4 with 4.7 to grow (staffs estimated 4.7); development shape `steady`; wanted `prestige`; doubles lean +5.2
+  chose Lincoln (PA) (D2, CIAA) — roster talent 39.5 against the player's 42.1
+  2032 Fr Lincoln (PA): No. 6 singles 14-5; No. 1 doubles 9-13
+  2033 So Lincoln (PA): No. 3 singles 8-14; No. 1 doubles 10-16
+  2034 Jr Lincoln (PA): No. 2 singles 8-10; No. 1 doubles 14-7 · All-Conference (doubles)
+  2035 Sr Lincoln (PA): No. 1 singles 8-9; No. 1 doubles 12-8 · All-Conference (doubles)
+  finished: graduated after 4 season(s); singles 38-38, doubles 45-44; All-Conference (doubles) ×2
 
 *(no `turned_pro` career in these classes)*
 
 
-# boys: 5447 real seniors built in 24s (exit rating median 45.0, ceiling − exit median 17.0)
+# boys: 5447 real seniors built in 23s (exit rating median 45.0, ceiling − exit median 17.0)
 
 ## Class by class (the number of careers and where they start)
 
 | class | strength | model 1 | D1/D2/D4/D3 | model 2 | D1/D2/D4/D3 |
 |---|---|---|---|---|---|
-| 2030 | +0.0 | 200 | 63/44/42/51 | 191 | 17/109/29/36 |
-| 2031 | +0.6 | 200 | 63/44/42/51 | 190 | 21/109/23/37 |
-| 2032 | -0.6 | 200 | 63/44/42/51 | 181 | 11/117/25/28 |
-| 2033 | +1.2 | 200 | 63/44/42/51 | 225 | 32/125/35/33 |
-| 2034 | -1.2 | 200 | 63/44/42/51 | 173 | 7/121/20/25 |
-| 2035 | +0.0 | 200 | 63/44/42/51 | 206 | 20/98/35/53 |
-| 2036 | +0.3 | 200 | 63/44/42/51 | 205 | 10/131/30/34 |
-| 2037 | -0.3 | 200 | 63/44/42/51 | 208 | 14/112/25/57 |
+| 2030 | +0.0 | 200 | 63/44/42/51 | 191 | 37/95/27/32 |
+| 2031 | +0.6 | 200 | 63/44/42/51 | 190 | 41/86/26/37 |
+| 2032 | -0.6 | 200 | 63/44/42/51 | 181 | 33/95/25/28 |
+| 2033 | +1.2 | 200 | 63/44/42/51 | 225 | 57/101/25/42 |
+| 2034 | -1.2 | 200 | 63/44/42/51 | 173 | 29/102/19/23 |
+| 2035 | +0.0 | 200 | 63/44/42/51 | 206 | 40/82/29/55 |
+| 2036 | +0.3 | 200 | 63/44/42/51 | 205 | 36/104/27/38 |
+| 2037 | -0.3 | 200 | 63/44/42/51 | 208 | 33/92/25/58 |
 
 ## All 8 classes pooled
 
 | | model 1 | model 2 |
 |---|---|---|
 | careers | 1600 | 1579 |
-| singles starter as a freshman |  90.6% |  46.5% |
-| still playing as a senior | 100.0% |  80.6% |
-| singles starter as a senior (of those) |  99.9% |  92.8% |
-| never a singles starter |   0.1% |  16.7% |
-| never in a singles OR doubles lineup |   0.1% |  15.2% |
-| D1 signees never a singles starter |   0.2% |   6.8% |
-| reached No. 1 singles at some point |  24.9% |  23.6% |
-| transferred |   0.0% |  14.6% |
-| played all four seasons | 100.0% |  80.6% |
-| career singles record under .500 |  32.8% |  33.4% |
-| any honour |  10.6% |  25.1% |
-| doubles specialists | — |   2.9% |
+| singles starter as a freshman |  90.6% |  38.3% |
+| still playing as a senior | 100.0% |  78.2% |
+| singles starter as a senior (of those) |  99.9% |  91.7% |
+| never a singles starter |   0.1% |  19.3% |
+| never in a singles OR doubles lineup |   0.1% |  17.1% |
+| D1 signees never a singles starter |   0.2% |  15.0% |
+| reached No. 1 singles at some point |  24.9% |  20.5% |
+| transferred |   0.0% |  16.0% |
+| played all four seasons | 100.0% |  78.2% |
+| career singles record under .500 |  32.8% |  35.4% |
+| any honour |  10.6% |  22.4% |
+| doubles specialists | — |   3.2% |
 
 **Where they sign (model 1):** in Jefferson 9.3%, anywhere in the West 24.2%, 838 different colleges
 
-**Where they sign (model 2):** in Jefferson 7.2%, anywhere in the West 21.7%, 672 different colleges
-**Player talent minus the roster's, at signing (model 2):** D1 +0.4, D2 +0.8, D4 -0.2, D3 -1.2
+**Where they sign (model 2):** in Jefferson 7.2%, anywhere in the West 22.7%, 782 different colleges
+**Player talent minus the roster's, at signing (model 2):** D1 -1.2, D2 +0.1, D4 -0.2, D3 -1.0
 
-**How careers end (model 2):** graduated 80.6%, left team 11.4%, left college 7.1%, injury ended 0.9%
-**Seasons played (model 2):** 1 → 7.9%, 2 → 6.7%, 3 → 4.8%, 4 → 80.6%
-**Career types (model 2):** steady contributor 44.8%, transfer success 13.4%, left team 11.4%, late developer 7.9%, left college 7.1%, injury affected 4.6%, stalled prospect 3.0%, doubles specialist 2.9%, reserve 2.7%, immediate star 1.1%, injury ended 0.9%, transfer 0.3%
+**How careers end (model 2):** graduated 78.2%, left team 13.6%, left college 7.5%, injury ended 0.7%
+**Seasons played (model 2):** 1 → 9.3%, 2 → 7.7%, 3 → 4.8%, 4 → 78.2%
+**Career types (model 2):** steady contributor 39.3%, transfer success 14.9%, left team 13.6%, late developer 8.6%, left college 7.5%, injury affected 4.8%, stalled prospect 3.2%, doubles specialist 3.2%, reserve 3.1%, injury ended 0.7%, immediate star 0.6%, transfer 0.4%
 
 ## Singles winning percentage by class year (seasons of 10+ matches)
 
 | | model 1 | model 2 |
 |---|---|---|
-| Fr | p10 0.38 · median 0.58 · p90 0.77 | p10 0.40 · median 0.59 · p90 0.75 |
-| So | p10 0.36 · median 0.57 · p90 0.76 | p10 0.36 · median 0.55 · p90 0.72 |
-| Jr | p10 0.35 · median 0.54 · p90 0.74 | p10 0.35 · median 0.53 · p90 0.70 |
-| Sr | p10 0.33 · median 0.53 · p90 0.72 | p10 0.35 · median 0.53 · p90 0.72 |
-| career | p10 0.40 · median 0.55 · p90 0.70 | p10 0.41 · median 0.54 · p90 0.66 |
+| Fr | p10 0.38 · median 0.58 · p90 0.77 | p10 0.40 · median 0.55 · p90 0.73 |
+| So | p10 0.36 · median 0.57 · p90 0.76 | p10 0.37 · median 0.55 · p90 0.71 |
+| Jr | p10 0.35 · median 0.54 · p90 0.74 | p10 0.35 · median 0.52 · p90 0.70 |
+| Sr | p10 0.33 · median 0.53 · p90 0.72 | p10 0.35 · median 0.54 · p90 0.73 |
+| career | p10 0.40 · median 0.55 · p90 0.70 | p10 0.41 · median 0.53 · p90 0.66 |
 
 ## Lineup movement, first starting season to last (+ = moved up)
 
 - model 1: moved up 98.8%, same 1.1%, moved DOWN 0.1% (mean +3.7 spots)
-- model 2: moved up 83.3%, same 9.5%, moved DOWN 7.2% (mean +2.8 spots)
+- model 2: moved up 81.1%, same 11.4%, moved DOWN 7.6% (mean +2.7 spots)
 
 ## Honours, per class (model 1 → model 2)
 
 | division | honour | model 1 | model 2 |
 |---|---|---|---|
-| D1 | All-American | 0.4 | 0.0 |
-| D1 | All-Conference | 3.5 | 0.2 |
-| D1 | All-Conference (doubles) | 0.0 | 0.6 |
-| D2 | All-American | 0.8 | 1.0 |
-| D2 | All-American (doubles) | 0.0 | 3.1 |
-| D2 | All-Conference | 5.5 | 19.4 |
-| D2 | All-Conference (doubles) | 0.0 | 23.1 |
-| D4 | All-American | 0.6 | 2.5 |
-| D4 | All-American (doubles) | 0.0 | 2.5 |
-| D4 | All-Conference | 4.0 | 7.5 |
-| D4 | All-Conference (doubles) | 0.0 | 7.8 |
-| D3 | All-American | 1.1 | 6.4 |
-| D3 | All-American (doubles) | 0.0 | 3.4 |
-| D3 | All-Conference | 10.4 | 21.2 |
-| D3 | All-Conference (doubles) | 0.0 | 16.6 |
+| D1 | All-American | 0.4 | 0.4 |
+| D1 | All-American (doubles) | 0.0 | 0.2 |
+| D1 | All-Conference | 3.5 | 2.0 |
+| D1 | All-Conference (doubles) | 0.0 | 2.6 |
+| D2 | All-American | 0.8 | 5.4 |
+| D2 | All-American (doubles) | 0.0 | 4.6 |
+| D2 | All-Conference | 5.5 | 19.6 |
+| D2 | All-Conference (doubles) | 0.0 | 22.9 |
+| D4 | All-American | 0.6 | 2.1 |
+| D4 | All-American (doubles) | 0.0 | 1.8 |
+| D4 | All-Conference | 4.0 | 5.4 |
+| D4 | All-Conference (doubles) | 0.0 | 5.8 |
+| D3 | All-American | 1.1 | 4.8 |
+| D3 | All-American (doubles) | 0.0 | 3.8 |
+| D3 | All-Conference | 10.4 | 15.2 |
+| D3 | All-Conference (doubles) | 0.0 | 14.9 |
 
 ## Departures, kept apart (model 2)
 
 | how the career ended | share | after Fr | after So | after Jr | causes |
 |---|---|---|---|---|---|
-| left team | 11.4% | 76 | 60 | 44 | no_role 162, injury 10, doubles_only 8 |
-| left college | 7.1% | 47 | 40 | 25 | personal 112 |
-| injury ended | 0.9% | 2 | 6 | 7 | injury 15 |
+| left team | 13.6% | 97 | 76 | 41 | no_role 195, doubles_only 12, injury 7 |
+| left college | 7.5% | 45 | 43 | 31 | personal 119 |
+| injury ended | 0.7% | 5 | 2 | 4 | injury 11 |
 | turned pro | 0.0% | 0 | 0 | 0 |  |
-| transferred (a move, not a departure) | 14.6% | 167 | 55 | 11 | opportunity 226, up 7 |
+| transferred (a move, not a departure) | 16.0% | 171 | 71 | 14 | opportunity 252, up 4 |
 
-**D1 All-Conference (model 2):** 10 of 132 D1 signees earned it in singles (7.6%), 9 in doubles (6.8%); All-American while in D1: 0.
-**Lower-division All-Americans (model 2):** 97 of 1463 careers with a lower-division season (6.6%), 12.1 a class. **D1-level players playing down:** 319 (9 of them by transferring out of D1); 31 became All-Americans there (9.7%).
+**D1 All-Conference (model 2):** 43 of 306 D1 signees earned it in singles (14.1%), 36 in doubles (11.8%); All-American while in D1: 5.
+**Lower-division All-Americans (model 2):** 114 of 1329 careers with a lower-division season (8.6%), 14.2 a class. **D1-level players playing down:** 204 (51 of them by transferring out of D1); 51 became All-Americans there (25.0%).
 
-**Integrity (model 2):** deterministic rebuild identical; totals equal the season sums; every All-American season is also an All-Conference season in the same discipline; every college is a real program; no service academy holds a non-American and every D4 signee clears that program's academic gate; 0 of 4226 singles positions claimed twice at one college in one season. Doubles lineup seasons: 3359 of 5653.
-**Cost (model 2):** 1.3s a class (max 1.4s); no season simulated, no roster built by the model.
+**Integrity (model 2):** deterministic rebuild identical; totals equal the season sums; every All-American season is also an All-Conference season in the same discipline; every college is a real program; no service academy holds a non-American and every D4 signee clears that program's academic gate; 0 of 3925 singles positions claimed twice at one college in one season. Doubles lineup seasons: 3120 of 5557.
+**Cost (model 2):** 1.4s a class (max 1.6s); no season simulated, no roster built by the model.
 
 ## Example careers (model 2)
 
-**Quincy Adkisson** (Chaparral, class rank 26, exit 92.8) — *immediate star*
-  arrived at level 48.0 with 2.5 to grow (staffs estimated 3.8); development shape `early`; wanted `playing_time`; doubles lean +1.0
-  chose Galena University (D2, JVC) — roster talent 48.5 against the player's 55.5
-  2033 Fr Galena University: No. 2 singles 6-0; No. 1 doubles 5-2 · injured
-  2034 So Galena University: No. 1 singles 8-10; No. 2 doubles 12-9
-  2035 Jr Galena University: No. 2 singles 14-7; No. 2 doubles 19-6
-  2036 Sr Galena University: No. 1 singles 12-7; No. 1 doubles 13-9 · All-Conference · All-Conference (doubles)
-  finished: graduated after 4 season(s); singles 40-24, doubles 49-26; All-Conference, All-Conference (doubles)
+**Jayden Burnett** (Fort Valois, class rank 46, exit 90.1) — *immediate star*
+  arrived at level 46.8 with 6.6 to grow (staffs estimated 4.5); development shape `early`; wanted `playing_time`; doubles lean +0.1
+  chose Hillsdale (D2, G-MAC) — roster talent 48.3 against the player's 54.1
+  2038 Fr Hillsdale: No. 2 singles 10-9; No. 1 doubles 15-7 · All-Conference (doubles)
+  2039 So Hillsdale: No. 1 singles 16-6; No. 1 doubles 15-11 · All-Conference
+  2040 Jr Hillsdale: No. 1 singles 8-13; No. 1 doubles 16-9
+  2041 Sr Hillsdale: No. 1 singles 14-4; No. 1 doubles 13-8 · All-Conference · All-American · All-Conference (doubles)
+  finished: graduated after 4 season(s); singles 48-32, doubles 59-35; All-American, All-Conference ×2, All-Conference (doubles) ×2
 
-**Wesson O'Brien** (Redfork West, class rank 105, exit 85.6) — *late developer*
-  arrived at level 44.2 with 4.5 to grow (staffs estimated 5.0); development shape `late`; wanted `playing_time`; doubles lean +2.1
-  chose Goldey-Beacom (D2, CACC) — roster talent 49.0 against the player's 51.1
-  2034 Fr Goldey-Beacom: reserve, 1-0 in spot starts; No. 3 doubles 13-11
-  2035 So Goldey-Beacom: No. 7 singles 12-10; No. 3 doubles 11-15
-  2036 Jr Goldey-Beacom: No. 4 singles 5-5; No. 2 doubles 8-4 · injured
-  2037 Sr Goldey-Beacom: No. 2 singles 10-8; No. 1 doubles 11-10 · All-Conference
-  finished: graduated after 4 season(s); singles 28-23, doubles 43-40; All-Conference
+**Zaki Ali** (Jesuit, class rank 179, exit 79.6) — *late developer*
+  arrived at level 34.7 with 5.2 to grow (staffs estimated 5.0); development shape `late`; wanted `prestige`; doubles lean +0.8
+  chose Buffalo State (D3, SUNYAC) — roster talent 39.5 against the player's 40.1
+  2032 Fr Buffalo State: did not play singles; no doubles
+  2033 So Buffalo State: No. 5 singles 10-13; No. 3 doubles 14-9
+  2034 Jr Buffalo State: No. 5 singles 13-13; No. 2 doubles 15-11
+  2035 Sr Buffalo State: No. 1 singles 16-5; No. 1 doubles 13-8 · All-Conference · All-Conference (doubles)
+  finished: graduated after 4 season(s); singles 39-31, doubles 42-28; All-Conference, All-Conference (doubles)
 
-**Sifiso Mzobe** (Goodman, class rank 236, exit 77.0) — *reserve*
-  arrived at level 23.3 with 2.2 to grow (staffs estimated 2.5); development shape `steady`; wanted `prestige`; doubles lean -5.2
-  chose Hunter (D3, CUNYAC) — roster talent 35.4 against the player's 27.0
-  2031 Fr Hunter: did not play singles; no doubles
-  2032 So Hunter: did not play singles; no doubles
-  2033 Jr Hunter: did not play singles; no doubles
-  2034 Sr Hunter: did not play singles; no doubles
+**Babar Awan** (Clover, class rank 211, exit 78.0) — *reserve*
+  arrived at level 23.3 with 1.4 to grow (staffs estimated 1.5); development shape `steady`; wanted `academic`; doubles lean -3.5
+  chose Wisconsin Lutheran (D3, NACC) — roster talent 34.5 against the player's 27.0
+  2033 Fr Wisconsin Lutheran: did not play singles; no doubles
+  2034 So Wisconsin Lutheran: did not play singles; no doubles
+  2035 Jr Wisconsin Lutheran: did not play singles; no doubles
+  2036 Sr Wisconsin Lutheran: did not play singles; no doubles
   finished: graduated after 4 season(s); singles 0-0, doubles 0-0
 
-**Wesson O'Brien** (Redfork West, class rank 116, exit 82.5) — *doubles specialist*
-  arrived at level 40.9 with 4.3 to grow (staffs estimated 5.0); development shape `regress`; wanted `prestige`; doubles lean +3.3
-  chose Montelago State University (D2, JCC) — roster talent 49.6 against the player's 47.2
-  2035 Fr Montelago State University: did not play singles; 0-1 doubles
-  2036 So Montelago State University: reserve, 0-1 in spot starts; No. 3 doubles 16-10
-  2037 Jr Montelago State University: reserve, 1-4 in spot starts; No. 3 doubles 16-9
-  2038 Sr Montelago State University: reserve, 1-3 in spot starts; 0-2 doubles
-  finished: graduated after 4 season(s); singles 2-8, doubles 32-22
+**Nathan Tuttle** (Barclay, class rank 100, exit 83.7) — *doubles specialist*
+  arrived at level 42.6 with 1.7 to grow (staffs estimated 3.2); development shape `early`; wanted `academic`; doubles lean +6.0
+  chose Shepherd (D2, PSAC) — roster talent 49.6 against the player's 49.2
+  2031 Fr Shepherd: No. 8 singles 12-10; No. 1 doubles 12-14
+  2032 So Shepherd: No. 6 singles 0-0; No. 1 doubles 0-0 · out injured
+  2033 Jr Shepherd: No. 8 singles 8-12; No. 2 doubles 12-11
+  2034 Sr Shepherd: No. 8 singles 7-11; No. 2 doubles 14-7
+  finished: graduated after 4 season(s); singles 27-33, doubles 38-32
 
-**Chase Freeman** (Wyoming Valley, class rank 170, exit 79.2) — *stalled prospect*
-  arrived at level 33.9 with 5.2 to grow (staffs estimated 5.2); development shape `stalled`; wanted `prestige`; doubles lean +0.8
-  chose Pfeiffer (D3, USA South) — roster talent 35.5 against the player's 39.2
-  2035 Fr Pfeiffer: No. 4 singles 13-9; No. 2 doubles 13-9
-  2036 So Pfeiffer: No. 2 singles 8-5; No. 1 doubles 5-8 · injured
-  2037 Jr Pfeiffer: No. 3 singles 7-19; No. 2 doubles 9-17
-  2038 Sr Pfeiffer: No. 4 singles 8-5; No. 1 doubles 2-11 · injured
-  finished: graduated after 4 season(s); singles 36-38, doubles 29-45
+**Aaron Chung** (Cape Jean, class rank 93, exit 84.9) — *stalled prospect*
+  arrived at level 43.6 with 5.2 to grow (staffs estimated 4.9); development shape `stalled`; wanted `prestige`; doubles lean +0.7
+  chose Johnson & Wales (Charlotte) (D2, C2C) — roster talent 49.2 against the player's 50.4
+  2035 Fr Johnson & Wales (Charlotte): No. 7 singles 9-13; No. 3 doubles 11-15
+  2036 So Johnson & Wales (Charlotte): No. 5 singles 12-8; No. 3 doubles 12-12
+  2037 Jr Johnson & Wales (Charlotte): No. 5 singles 0-0; No. 3 doubles 0-0 · out injured
+  2038 Sr Johnson & Wales (Charlotte): No. 8 singles 11-7; 0-2 doubles
+  finished: graduated after 4 season(s); singles 32-28, doubles 23-29
 
-**Jeffery Silva** (Hayes, class rank 95, exit 84.7) — *transfer success*
-  arrived at level 43.4 with 3.7 to grow (staffs estimated 1.9); development shape `steady`; wanted `close`; doubles lean -3.5
-  chose Central Oklahoma (D2, MIAA) — roster talent 53.4 against the player's 50.2
-  2035 Fr Central Oklahoma: reserve, 1-0 in spot starts; no doubles
-  2036 So Reed: No. 5 singles 10-12; no doubles
-  2037 Jr Reed: No. 4 singles 15-7; 1-1 doubles
-  2038 Sr Reed: No. 3 singles 12-9; No. 2 doubles 10-11
-  transferred after Fr year: Central Oklahoma → Reed (opportunity; reserve → starter)
-  finished: graduated after 4 season(s); singles 38-28, doubles 11-12
+**Bodhi Johnson** (Orellana Central, class rank 36, exit 91.3) — *transfer success*
+  arrived at level 47.2 with 7.0 to grow (staffs estimated 8.5); development shape `stalled`; wanted `prestige`; doubles lean -1.1
+  chose Baylor (D1, Big 12) — roster talent 58.4 against the player's 54.6
+  2035 Fr Baylor: reserve, 1-3 in spot starts; 1-2 doubles
+  2036 So Chaminade: No. 4 singles 13-8; No. 3 doubles 13-12
+  2037 Jr Chaminade: No. 2 singles 2-15; No. 3 doubles 13-7
+  2038 Sr Chaminade: No. 3 singles 15-6; No. 2 doubles 16-9
+  transferred after Fr year: Baylor → Chaminade (opportunity; reserve → starter)
+  finished: graduated after 4 season(s); singles 31-32, doubles 43-30
 
-**Melvin Wesbrook** (Mt Jacqueline, class rank 76, exit 85.9) — *injury affected*
-  arrived at level 44.4 with 4.8 to grow (staffs estimated 5.9); development shape `stalled`; wanted `close`; doubles lean +2.8
-  chose Clayton State (D2, PBC) — roster talent 50.6 against the player's 51.3
-  2032 Fr Clayton State: No. 8 singles 14-7; No. 3 doubles 16-9
-  2033 So Clayton State: No. 7 singles 4-5; No. 2 doubles 4-6 · injured
-  2034 Jr Clayton State: reserve, 2-1 in spot starts; No. 2 doubles 9-12
-  2035 Sr Clayton State: did not play singles; No. 3 doubles 12-9
-  finished: graduated after 4 season(s); singles 20-13, doubles 41-36
+**Basil Kabiller** (Las Colinas, class rank 213, exit 77.9) — *injury affected*
+  arrived at level 27.9 with 1.2 to grow (staffs estimated 1.6); development shape `steady`; wanted `prestige`; doubles lean +4.7
+  chose Penn College (D3, United East) — roster talent 38.5 against the player's 32.3
+  2036 Fr Penn College: did not play singles; no doubles · out injured
+  2037 So Penn College: did not play singles; no doubles
+  2038 Jr Penn College: did not play singles; no doubles
+  2039 Sr Penn College: did not play singles; 2-2 doubles
+  finished: graduated after 4 season(s); singles 0-0, doubles 2-2
 
-**Noah Pelletier** (Springfield, class rank 203, exit 78.2) — *left team*
-  arrived at level 30.1 with 5.2 to grow (staffs estimated 5.2); development shape `early`; wanted `prestige`; doubles lean +0.6
-  chose Fisk (D3, Western Sky Conference) — roster talent 43.9 against the player's 34.8
-  2036 Fr Fisk: did not play singles; no doubles
-  2037 So Fisk: did not play singles; no doubles
-  finished: left team after 2 season(s); singles 0-0, doubles 0-0
+**Devon Smith** (Montclair, class rank 157, exit 81.0) — *left team*
+  arrived at level 38.2 with 2.7 to grow (staffs estimated 3.1); development shape `late`; wanted `prestige`; doubles lean +1.6
+  chose Johnson C. Smith (D2, CIAA) — roster talent 45.2 against the player's 44.2
+  2031 Fr Johnson C. Smith: reserve, 4-1 in spot starts; 1-3 doubles
+  2032 So Johnson C. Smith: reserve, 2-2 in spot starts; 2-2 doubles
+  finished: left team after 2 season(s); singles 6-3, doubles 3-5
 
-**Gregory Sawyer** (Fort Weller, class rank 207, exit 80.0) — *left college*
-  arrived at level 36.3 with 2.1 to grow (staffs estimated 3.8); development shape `steady`; wanted `close`; doubles lean +3.2
-  chose North Carolina Wesleyan (D3, USA South) — roster talent 38.3 against the player's 41.9
-  2034 Fr North Carolina Wesleyan: No. 5 singles 14-10; No. 2 doubles 11-13
-  finished: left college after 1 season(s); singles 14-10, doubles 11-13
+**Vaughn Story** (Baptist, class rank 139, exit 83.4) — *left college*
+  arrived at level 42.2 with 3.1 to grow (staffs estimated 3.7); development shape `stalled`; wanted `prestige`; doubles lean -2.0
+  chose Converse (D2, Conference Carolinas) — roster talent 49.5 against the player's 48.8
+  2034 Fr Converse: did not play singles; no doubles
+  finished: left college after 1 season(s); singles 0-0, doubles 0-0
 
-**Alexander Froehlich** (Morgan Park, class rank 108, exit 83.1) — *injury ended*
-  arrived at level 42.0 with 6.2 to grow (staffs estimated 6.4); development shape `regress`; wanted `close`; doubles lean -2.3
-  chose Hawaii Hilo (D2, PacWest) — roster talent 49.7 against the player's 48.5
-  2031 Fr Hawaii Hilo: reserve, 1-0 in spot starts; no doubles
-  2032 So Hawaii Hilo: did not play singles; no doubles · out injured
-  finished: injury ended after 2 season(s); singles 1-0, doubles 0-0
+**Andres Grosvenor** (Paddock Episcopal, class rank 143, exit 81.0) — *injury ended*
+  arrived at level 38.8 with 6.2 to grow (staffs estimated 6.9); development shape `steady`; wanted `close`; doubles lean -0.3
+  chose Roberts Wesleyan (D2, ECC) — roster talent 48.6 against the player's 44.9
+  2036 Fr Roberts Wesleyan: reserve, 0-1 in spot starts; no doubles · injured
+  2037 So Roberts Wesleyan: No. 8 singles 0-0; no doubles · out injured
+  2038 Jr Roberts Wesleyan: No. 5 singles 0-0; No. 3 doubles 0-0 · out injured
+  finished: injury ended after 3 season(s); singles 0-1, doubles 0-0
 
-**Alex Chidester** (Morgan Park, class rank 195, exit 80.3) — *steady contributor*
-  arrived at level 37.0 with 5.8 to grow (staffs estimated 6.0); development shape `steady`; wanted `prestige`; doubles lean -0.5
-  chose Eastern Mennonite (D4, ODAC) — roster talent 46.5 against the player's 42.8
-  2034 Fr Eastern Mennonite: reserve, 1-1 in spot starts; no doubles
-  2035 So Eastern Mennonite: reserve, 2-2 in spot starts; no doubles
-  2036 Jr Eastern Mennonite: No. 9 singles 11-15; 1-2 doubles
-  2037 Sr Eastern Mennonite: No. 7 singles 13-13; 0-1 doubles
-  finished: graduated after 4 season(s); singles 27-31, doubles 1-3
+**Ellis McCorkle** (Terrace Park, class rank 146, exit 81.1) — *steady contributor*
+  arrived at level 38.3 with 3.9 to grow (staffs estimated 3.4); development shape `steady`; wanted `playing_time`; doubles lean -1.6
+  chose Lawrence (D4, MWC) — roster talent 42.1 against the player's 44.3
+  2032 Fr Lawrence: No. 6 singles 10-11; no doubles
+  2033 So Lawrence: No. 3 singles 9-11; 2-1 doubles
+  2034 Jr Lawrence: No. 4 singles 3-22; no doubles
+  2035 Sr Lawrence: No. 2 singles 6-16; 1-2 doubles
+  finished: graduated after 4 season(s); singles 28-60, doubles 3-3
 
 *(no `turned_pro` career in these classes)*
 

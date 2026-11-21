@@ -36,10 +36,10 @@ SNAPSHOT taken at graduation (`jhsaa_college.capture_snapshots`) or, for a class
 that graduated before snapshots existed, the alumni index's exit rating alone —
 the REDUCED path, which rolls what it cannot read.
 
-‼️ EVERY CONSTANT BELOW IS A FIRST CANDIDATE. `scripts/jhsaa_college_validate.py`
-measures what they produce; nothing was tuned to hit a target rate, and the model
-is not the active one until the owner has seen those numbers
-(`jhsaa_college.ACTIVE_MODEL`).
+‼️ THIS IS THE ACTIVE MODEL (`jhsaa_college.ACTIVE_MODEL`, owner 2026-11). A career
+is written once, so measure a retuned constant with
+`scripts/jhsaa_college_validate.py` before it ships — a class carries its rates
+for good.
 """
 from __future__ import annotations
 
@@ -68,13 +68,18 @@ DIVISIONS = ("D1", "D2", "D4", "D3")
 #: recruit's growth from freshman to senior is what the college game's own class
 #: maturity gives a player of their talent (`ncaa._CLASS_MATURITY`, about a tenth
 #: of talent); how much of that a given senior gets is where their high-school
-#: headroom (ceiling minus exit rating) stands IN THEIR CLASS — this share at the
-#: bottom, rising by `HEADROOM_SPAN` to the top. The absolute high-school gap is
+#: headroom (ceiling minus exit rating) stands AMONG THE SENIORS RATED NEAREST
+#: THEM (`HEADROOM_WINDOW`) — this share at the bottom, rising by
+#: `HEADROOM_SPAN` to the top. The absolute high-school gap is
 #: not used: the best seniors sit close to their high-school ceiling, and read
 #: literally that made every Jefferson recruit look finished (measured: staffs
 #: projected a median 2.7 points of growth against a teammate's 4.3, and no D1
 #: program would take anybody).
 HEADROOM_FLOOR, HEADROOM_SPAN = 0.35, 1.30
+#: "In their class" means among the seniors rated nearest them — this many either
+#: side — so headroom is "more room than players like me", not "more room than a
+#: player forty points worse".
+HEADROOM_WINDOW = 20
 HEADROOM_MAX = 13.0
 #: Share of total growth banked by the end of each season, by career shape. A
 #: `regress` career goes backwards in absolute points (see `_levels`).
@@ -157,7 +162,8 @@ TURN_PRO = 0.25               # a D1 singles All-American with eligibility left
 #: record is not there. The lower divisions keep the depth they were measured at.
 ALL_CONFERENCE = {"D1": (14, 7, 4, 2), "D2": (8, 4, 2, 1),
                   "D4": (8, 4, 2, 1), "D3": (8, 4, 2, 1)}
-#: D1 ALL-AMERICAN IS UNCHANGED. The lower divisions name a deeper list, so a
+#: THE D1 ALL-AMERICAN LIST IS UNCHANGED (its record bar is `NATIONAL_RECORD`).
+#: The lower divisions name a deeper list, so a
 #: genuinely strong player there — above all a D1-level player who is playing
 #: down, by choice or by transfer — is likelier to be recognised nationally.
 ALL_AMERICAN = {"D1": (20, 10, 2, 1), "D2": (40, 20, 2, 1),
@@ -171,6 +177,20 @@ RESULT_WEIGHT = 6.0
 RESULT_PAR = {"conf": 0.60, "div": 0.68}
 #: And nobody is honoured for a season they lost: the least a record can be.
 RESULT_MIN = {"conf": 0.55, "div": 0.65}
+#: ‼️ THE D1 NATIONAL HONOUR IS READ ON D1's OWN RECORDS: (par, least, weight).
+#: The pars above were set where a division's best players stand well clear of
+#: their opposition. In D1 they do not: the top of the division is squashed
+#: against the talent cap and plays itself, so the players who DEFINE the
+#: All-American line (the 20 best No. 1/No. 2 players in the country) win a
+#: MEASURED median 57% (women) / 59% (men) on this model's schedule. Asked for
+#: .65 at least and .68 par, the country's own 20th-best player could not have
+#: been an All-American, and no Jefferson player was in ~440 D1 careers. The
+#: weight is higher because a D1 All-American is a ranking honour, decided on
+#: results: at 6 a player one point under the line needed a record about 2.2
+#: standard deviations better than their level predicts.
+#: The LIST (20 singles, 10 doubles teams, top two positions) is unchanged, and
+#: so is every lower-division rule.
+NATIONAL_RECORD = {"D1": (0.58, 0.55, 12.0)}
 
 
 def _sigmoid(x: float) -> float:
@@ -542,6 +562,8 @@ def play_season(ctx: Context, prog, season: int, age: int, pid: str, cohort: int
             d_l += 1
     honors = []
     conf_rule, div_rule = ALL_CONFERENCE[d], ALL_AMERICAN[d]
+    nat_par, nat_min, nat_w = NATIONAL_RECORD.get(
+        d, (RESULT_PAR["div"], RESULT_MIN["div"], RESULT_WEIGHT))
     # ‼️ ALL-CONFERENCE COMES FIRST, AT EVERY LEVEL (owner rule 2026-11): a player
     # is only CONSIDERED for All-American in a season they made All-Conference in
     # that same discipline. It is a gate, not a coincidence of two thresholds —
@@ -554,8 +576,8 @@ def play_season(ctx: Context, prog, season: int, age: int, pid: str, cohort: int
                 s_lvl + RESULT_WEIGHT * (pct - RESULT_PAR["conf"]) >= \
                 ctx.line(("conf", d, prog.conf_abbr), season, False):
             honors.append("All-Conference")
-            if s_pos <= div_rule[2] and pct >= RESULT_MIN["div"] and \
-                    s_lvl + RESULT_WEIGHT * (pct - RESULT_PAR["div"]) >= \
+            if s_pos <= div_rule[2] and pct >= nat_min and \
+                    s_lvl + nat_w * (pct - nat_par) >= \
                     ctx.line(("div", d), season, False):
                 honors.append("All-American")
     if d_pair and (d_w + d_l) >= 12:
@@ -564,8 +586,8 @@ def play_season(ctx: Context, prog, season: int, age: int, pid: str, cohort: int
                 mine + RESULT_WEIGHT * (pct - RESULT_PAR["conf"]) >= \
                 ctx.line(("conf", d, prog.conf_abbr), season, True):
             honors.append("All-Conference (doubles)")
-            if d_pair <= div_rule[3] and pct >= RESULT_MIN["div"] and \
-                    mine + RESULT_WEIGHT * (pct - RESULT_PAR["div"]) >= \
+            if d_pair <= div_rule[3] and pct >= nat_min and \
+                    mine + nat_w * (pct - nat_par) >= \
                     ctx.line(("div", d), season, True):
                 honors.append("All-American (doubles)")
     role = ("out" if injured == "out" else "starter" if s_pos else
@@ -790,12 +812,21 @@ def build_class(snaps: list, gender: str, grad_year: int, salt: str,
         s.update(rank=i, gender=gender, grad_year=grad_year)
     if not ref:
         ref = sorted(s["ovr"] for s in cands[:TARGET_BOUND])
-    # Headroom is read as a STANDING within the class (see `HEADROOM_FLOOR`).
+    # Headroom is read as a STANDING (see `HEADROOM_FLOOR`) — AMONG SENIORS OF
+    # SIMILAR RATING, never across the whole class. ‼️ The best seniors are the
+    # ones closest to their high-school ceiling, so ranked against everybody they
+    # all landed at the bottom: the model made Jefferson's best players its
+    # slowest developers in college. Measured before this fix: 18 top-two singles
+    # seasons in 310 D1 careers, the best of them ~3 points under the national
+    # line, and no D1 All-American in ~440 careers. `cands` is in rating order, so
+    # the neighbours are the `HEADROOM_WINDOW` either side.
     for key, src in (("head_q", "ceiling"), ("est_q", "pot")):
-        have = sorted(s[src] - s["ovr"] for s in cands if s.get(src) is not None)
-        for s in cands:
-            if s.get(src) is not None and len(have) > 1:
-                s[key] = percentile(s[src] - s["ovr"], have)
+        idx = [i for i, s in enumerate(cands) if s.get(src) is not None]
+        gaps = [cands[i][src] - cands[i]["ovr"] for i in idx]
+        for n, i in enumerate(idx):
+            near = sorted(gaps[max(0, n - HEADROOM_WINDOW):n + HEADROOM_WINDOW + 1])
+            if len(near) > 1:
+                cands[i][key] = percentile(gaps[n], near)
     ctx = Context(gender, salt, stored)
     floor = ref[0]
     taken, rows = {}, []

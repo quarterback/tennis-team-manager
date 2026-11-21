@@ -291,7 +291,7 @@ def test_careers_already_written_are_never_touched(lab_world, monkeypatch):
     teams = jh.district_teams(league, 2100, "v2-store")
     conn = wd._db()
     try:
-        assert jcol.ACTIVE_MODEL == 1                           # the shipped default
+        monkeypatch.setattr(jcol, "ACTIVE_MODEL", 1)             # a class written under model 1
         n = jcol.record_class(conn, w["id"], "girls", 2100, "v2-store", teams)
         conn.commit()
         seniors = sum(p.grade == 12 for t in teams for p in t.roster)

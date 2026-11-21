@@ -542,12 +542,14 @@ college dual; the owner never reached the college game.
   rail; the scope bar's season IS the class), the player page's College panel,
   `jhsaa_college.csv`. `tests/test_jhsaa_college.py`;
   `docs/AAR-jhsaa-sim-separation-and-alumni-tracker.md`.
-- **‼️ CAREER MODEL 2 IS BUILT AND NOT ACTIVE (owner spec 2026-11,
+- **‼️ CAREER MODEL 2 IS ON (owner spec 2026-11, switched on by the owner
+  2026-11: "turn on the new model, i don't care about past classes";
   `app/jhsaa_college_v2.py`, `docs/AAR-jhsaa-alumni-career-model-2.md`).**
-  `jhsaa_college.ACTIVE_MODEL` stays 1 until the owner signs off the measured
-  distribution (`scripts/jhsaa_college_validate.py` →
-  `docs/reports/REPORT-jhsaa-alumni-career-model-2-validation.md`): a career is
-  written once, so a class written under unapproved rates carries them for good.
+  `jhsaa_college.ACTIVE_MODEL` is 2: every class with no rows yet is written with
+  it. Model 1's code stays because classes it wrote are still read. Measure a
+  retune with `scripts/jhsaa_college_validate.py` (→
+  `docs/reports/REPORT-jhsaa-alumni-career-model-2-validation.md`) before it
+  ships: a career is written once, so a class carries its rates for good.
   ‼️ **EXISTING CAREERS ARE NEVER REGENERATED** — `_ensure_class` leaves any class
   that has a row, whatever model wrote it; the earlier claim in this file that
   "nothing reads these rows" was about game logic, and the pages and the export DO
@@ -566,6 +568,14 @@ college dual; the owner never reached the college game.
   high-school ceiling gap is a RANKING, not a quantity (top seniors sit near their
   ceiling, so read literally every recruit looked finished); playing time must
   SATURATE or everybody picks the weakest team (100+ All-Americans a class).
+  ‼️ Two more, found when D1 All-American measured ZERO in ~440 careers: (1)
+  headroom must be ranked AMONG SENIORS OF SIMILAR RATING (`HEADROOM_WINDOW`) —
+  ranked across the whole class the best seniors, who sit nearest their
+  high-school ceiling, all landed at the bottom and became the slowest developers
+  in college; (2) a record bar has to be one the FIELD ITSELF clears — in D1 the
+  20 players who define the All-American line win a measured median 57-59% at
+  their position (the top is squashed against the cap and plays itself), and the
+  bar asked for .65 least / .68 par (`NATIONAL_RECORD`).
   `tests/test_jhsaa_college_v2.py`. The interface is untouched.
   ‼️ **OWNER DECISIONS ON ITS HONOURS AND ENDINGS (2026-11) — do not "even out":**
   **ALL-CONFERENCE COMES FIRST AT EVERY LEVEL** — a player is only considered for
@@ -574,9 +584,13 @@ college dual; the owner never reached the college game.
   thresholds alone let a player clear the national line and miss their own). D1
   All-Conference is deeper and reaches No. 4 singles / the No. 2 pair
   (`ALL_CONFERENCE`; it measured zero in ~450 D1 careers before) while the D1
-  All-American standard is unchanged; D2/D3/D4 keep their All-Conference depth and
-  name a deeper All-American list (`ALL_AMERICAN`). The men's and women's D1
-  signing rates differ on purpose (the talent tables do). The attrition
+  All-American LIST is unchanged (20 singles, 10 doubles teams, top two
+  positions); D2/D3/D4 keep their All-Conference depth and name a deeper
+  All-American list (`ALL_AMERICAN`). **D1 All-American must not be 0%** (owner,
+  2026-11: "0% makes no sense") — it measures about 0.9 careers a class (girls)
+  and 0.6 (boys). Nothing gender-specific is tuned: the men's and women's talent
+  tables differ and the signing rates follow from them (21% and 19% of careers
+  start in D1 since the headroom fix; it was 18% and 8%). The attrition
   probabilities are approved as measured; the four endings are kept APART on
   `departure` (left_team · left_college · injury_ended · turned_pro, each with a
   cause) and a transfer is a move, never a departure.

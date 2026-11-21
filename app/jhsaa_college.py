@@ -34,15 +34,15 @@ import random
 
 from . import ncaa
 
-#: WHICH CAREER MODEL NEW CLASSES ARE WRITTEN WITH. Model 1 is the original
-#: rank-matched line below; model 2 is `jhsaa_college_v2` (owner spec 2026-11).
-#: ‼️ A career is written once and never regenerated, so switching this only
-#: changes classes that have no rows yet — and it stays at 1 until the owner has
-#: seen model 2's measured distribution (`scripts/jhsaa_college_validate.py`),
-#: because every class written in the meantime would carry unapproved rates
-#: permanently. Rewriting classes already stored is a separate, explicitly
-#: authorised migration and nothing here does it.
-ACTIVE_MODEL = 1
+#: WHICH CAREER MODEL NEW CLASSES ARE WRITTEN WITH. Model 2 (`jhsaa_college_v2`,
+#: owner spec 2026-11) is ON — owner, 2026-11: "turn on the new model, i don't
+#: care about past classes". Model 1 is the original rank-matched line below and
+#: stays, because classes it wrote are still read.
+#: ‼️ A career is written once and never regenerated, so this only decides
+#: classes that have no rows yet: a class already stored keeps the model that
+#: wrote it, whatever this says. Rewriting stored classes is a separate,
+#: explicitly authorised migration and nothing here does it.
+ACTIVE_MODEL = 2
 
 #: How many seniors a gender send on each year — about what Jefferson's origin
 #: weight put on the national recruit board when the two sims were joined.

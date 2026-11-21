@@ -25,6 +25,13 @@ from app import ncaa
 from app import world as wd
 
 
+@pytest.fixture(autouse=True)
+def _model_one(monkeypatch):
+    """This file covers the STORE and model 1, which classes already written
+    under it still read. Model 2 is the shipped default and has its own file."""
+    monkeypatch.setattr(jcol, "ACTIVE_MODEL", 1)
+
+
 def _seniors(n=900, seed=7, foreign_every=6):
     r = random.Random(seed)
     out = []
