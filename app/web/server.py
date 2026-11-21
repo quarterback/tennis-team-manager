@@ -53,6 +53,7 @@ from .state import (jhsaa_view, jhsaa_scope_view, jhsaa_school_view, jhsaa_past_
                     jhsaa_district_jv_view,
                     jhsaa_individual_winners, jhsaa_retired_view,
                     jhsaa_repeat_poy, jhsaa_repeat_individual_champions,
+                    jhsaa_alumni_view,
                     jhsaa_career_wins_view, jhsaa_program_wins_view, jhsaa_dual_view)
 from .state import (preseason_portal_view, recruit_economy_view, portal_class_rankings,
                     wire_view)
@@ -2630,6 +2631,17 @@ def create_app() -> Flask:
         gender, label, u, g, group, _year = _jh_scope_args()
         view = jhsaa_repeat_poy(DEFAULT_SEED, g, group)
         return render_template("jhsaa_repeat_poy.html", active="High School",
+                               view=view, gender=gender, u=u, uni_label=label)
+
+    @app.route("/jhsaa/alumni")
+    def jhsaa_alumni():
+        """The Jefferson alumni tracker (owner rule 2026-11): one graduating class
+        and where it played college tennis — a program and a finished four-year
+        line each, written when the class graduated. The class is the season picked
+        in the scope bar. On the History sub-rail."""
+        gender, label, u, g, group, year = _jh_scope_args()
+        view = jhsaa_alumni_view(DEFAULT_SEED, g, group, year)
+        return render_template("jhsaa_alumni.html", active="High School",
                                view=view, gender=gender, u=u, uni_label=label)
 
     @app.route("/jhsaa/coach-records")

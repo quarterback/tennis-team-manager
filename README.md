@@ -191,6 +191,17 @@ your real app (default port 5000) — it is bound to the single persistent datab
 `~/.tennis-team-manager/jhsaa_lab.db` and the `/jhsaa-lab*` routes only exist when
 `JHSAA_LAB_MODE=1`, which the launcher script sets for you.
 
+**College alumni.** The lab has no college world, so it does not simulate one.
+When a class graduates, its best 200 seniors per gender are each given a real
+college program and a finished four-year line — lineup position and singles record
+by season, peak position, career record, honours — written once and never
+re-rolled. See it at **History → College Alumni** (`/jhsaa/alumni`, one class at a
+time; the season in the scope bar is the class), in the **College** panel on a
+player's page, and in `jhsaa_college.csv` in the research export. Classes that
+graduated before the tracker existed fill in the first time they are opened. No
+college season is played for it, so it adds seconds to a season, not minutes. See
+`docs/AAR-jhsaa-sim-separation-and-alumni-tracker.md`.
+
 **Normal JHSAA gameplay has one canonical local database:
 `~/.tennis-team-manager/jhsaa_lab.db`. If that database cannot be used, the app
 stops. It never creates or falls back to another JHSAA database.** Alternate

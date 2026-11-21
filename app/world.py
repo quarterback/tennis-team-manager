@@ -458,6 +458,8 @@ def init_schema() -> None:
     conn.executescript(_jc._SCHEMA)
     from . import jhsaa_coy as _coy
     conn.executescript(_coy.SCHEMA)
+    from . import jhsaa_college as _jcol      # after the coaches' schema: it indexes
+    conn.executescript(_jcol.SCHEMA)          # their `jhsaa_alumni` table
     for col, typ in (("week_signed", "INTEGER DEFAULT 0"), ("flips", "INTEGER DEFAULT 0"),
                      ("commit_history", "TEXT DEFAULT '[]'")):
         try:
@@ -841,6 +843,8 @@ def reset(seed: int = DEFAULT_SEED) -> None:
                        " DELETE FROM world_jhsaa_reclass_move;")
     from . import jhsaa_portal as _jp
     conn.executescript(_jp._SCHEMA + " DELETE FROM world_jhsaa_portal;")
+    from . import jhsaa_college as _jcol
+    conn.executescript(_jcol.SCHEMA + " DELETE FROM world_jhsaa_college;")
     conn.commit()
     conn.close()
     # God-mode editor overrides (player moves, lineups, prestige/academics priors,
@@ -4326,6 +4330,10 @@ def run_jhsaa(seed: int, world: dict) -> dict:
     from . import jhsaa_coaches
     jhsaa_coaches.ensure_staff(world["id"], season_year, salt)
     staffs: dict = {}
+    # THE ALUMNI TRACKER (owner rule 2026-11) is for a world with NO college in it:
+    # a save that plays real college tennis sends its seniors to the real board.
+    # One indexed probe, resolved before the rung's transaction opens.
+    track_alumni = is_jhsaa_only(seed)
     conn = _db()
     champs = {}
     try:
@@ -4636,6 +4644,13 @@ def run_jhsaa(seed: int, world: dict) -> dict:
                     honored.update(_jaw.row_pids(row))
             jhsaa_coaches.record_alumni(conn, world["id"], gender,
                                         season["teams"].values(), season_year, honored)
+            # WHERE THEY WENT — the class's best seniors, each with a college
+            # program and a finished four-year line, written once
+            # (`app/jhsaa_college.py`). No college season is simulated.
+            if track_alumni:
+                from . import jhsaa_college as _jcol
+                _jcol.record_class(conn, world["id"], gender, season_year, salt,
+                                   season["teams"].values())
             # THE PER-PROGRAM SEASON ROWS (read-path fix #2): every program's
             # ledger row for this season, folded ONCE here where the archive is
             # written, so no page ever parses the whole season to show one school.

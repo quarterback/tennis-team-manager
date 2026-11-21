@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header %}
+{% block title %}JHSAA College Alumni{% endblock %}
+{% block content %}
+
+{{ jh_header(view.scope, u, 'alumni', 'College Alumni', '',
+             [('Class of', view.grad_year|cal)] + view.divisions) }}
+
+<div class="jh-shell">
+
+{# ONE class on screen — the season in the scope bar IS the class — as one dense
+   table (the career rolls' shape). Each row was written once, when the class
+   graduated (`app/jhsaa_college.py`): a real program and a finished four-year
+   line. No college season is simulated, and nothing here feeds anything. #}
+<div class="bl-panel">
+  <div class="bl-tablescroll">
+  <table class="bl-table jh-repeat jh-alumni">
+    <thead><tr>
+      <th class="n">#</th><th>Player</th><th>High school</th><th>College</th>
+      <th>Div</th><th class="n">Peak</th><th class="n">Record</th><th>Honours</th>
+    </tr></thead>
+    <tbody>
+    {% if not view.rows %}<tr class="none"><td colspan="8">No class has graduated in this season yet.</td></tr>{% endif %}
+    {% for r in view.rows %}
+    <tr>
+      <td class="n">{{ r.rank }}</td>
+      <td><a class="nm" href="{{ url_for('jhsaa_player', school=r.hs, pid=r.pid, u=u, g=view.gender) }}">{{ r.name }}</a></td>
+      <td class="sch"><span class="stint">{% if r.deco.mark %}<span class="mk">{{ r.deco.mark|safe }}</span>{% endif %}{{ r.hs }}</span></td>
+      <td>{{ r.college }} <span class="ti"><span class="pt">{{ r.conf }}</span></span></td>
+      <td>{{ r.division }}</td>
+      <td class="n">{% if r.peak %}{{ r.peak }}{% else %}—{% endif %}</td>
+      <td class="n">{{ r.w }}-{{ r.l }}</td>
+      <td class="won">{{ r.honors|join(', ') }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+
+</div>
+{% endblock %}

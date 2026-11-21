@@ -526,6 +526,27 @@ college dual; the owner never reached the college game.
   graduating class at the rung and have the board READ it (rule 6 above), not built.
 - **The JHSAA lab never reads the switch** — it advances through
   `advance_jhsaa_lab` → `run_jhsaa` directly.
+- **‼️ THE ALUMNI TRACKER (`app/jhsaa_college.py`, owner rule 2026-11) is how a lab
+  save follows its graduates** — "as a finished product rather than real time
+  seasons". College on autopilot was MEASURED and rejected: one hands-off college
+  year cost 10.0 minutes with only D1 active and ~25 with every division, on top of
+  the 18-minute season. So the tracker simulates NOTHING: at the rung, each gender's
+  best `CLASS_SIZE` (200) seniors get a real program (`ncaa.load_division`,
+  institutions only) and a finished four-year line, **written once**
+  (`world_jhsaa_college`, keyed on the pid) and only read after — a retune reaches
+  classes not yet graduated. Written only for `is_jhsaa_only` worlds. A class from
+  before the tracker is filled in from `jhsaa_alumni` (every senior, with exit
+  rating) on first read — one class, milliseconds, never a roster rebuild. It asks
+  `ncaa.us_only_program` like every placement pipeline. **Nothing reads these
+  rows** — no rating, ladder, award or board. Surfaces: `/jhsaa/alumni` (History
+  rail; the scope bar's season IS the class), the player page's College panel,
+  `jhsaa_college.csv`. `tests/test_jhsaa_college.py`;
+  `docs/AAR-jhsaa-sim-separation-and-alumni-tracker.md`.
+- **‼️ ANY SCRIPT THAT CALLS INTO THE APP NEEDS `if __name__ == "__main__":`.** The
+  pools use a SPAWN context, so a worker re-imports the launching script; unguarded,
+  every worker re-runs the whole script against the same database (duplicate
+  seasons, "database is locked", then a malformed file — it happened to the timing
+  driver for this very change).
 - Everything below this section describes the association itself and the combined
   world; "its graduating seniors ARE Jefferson's entries on the college recruit board"
   is true only with the switch on. `tests/test_jhsaa_sim_switch.py`.

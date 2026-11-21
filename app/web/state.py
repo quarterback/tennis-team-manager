@@ -6622,8 +6622,17 @@ def jhsaa_player_view(seed: int, gender: str, school: str, pid: str) -> dict:
     jv_flights = _jh_flight_box(_by_year, key="jv_slots", min_s=0, min_d=0)
     wins = sum(s["wins"] for s in seasons)
     losses = sum(s["losses"] for s in seasons)
+    # WHERE THEY WENT (owner rule 2026-11): the finished college line, if this
+    # player graduated among their class's tracked seniors. One indexed read.
+    from app import jhsaa_college as _jcol
+    _cconn = world._db()
+    try:
+        college = _jcol.line_for(_cconn, w["id"], pid, salt)
+    finally:
+        _cconn.close()
     return {
         "found": True, "school": school, "gender": g, "pid": pid, "name": player.name,
+        "college": college,
         "country": player.country,
         "hometown": player.hometown, "grade": player.grade,
         "ovr": round(player.current_overall(), 1),
@@ -7162,6 +7171,44 @@ def jhsaa_repeat_poy(seed: int, gender: str, group: str | None = None) -> dict:
             "scope": _jh_scope(g, group if group in jh.GROUPS else jh.GROUPS[0],
                                list(jh.GROUPS), years[0] if years else 0,
                                years, None, None)}
+
+
+def jhsaa_alumni_view(seed: int, gender: str, group: str | None = None,
+                      year: int | None = None) -> dict:
+    """ONE graduating class and where it played college tennis — the Jefferson
+    alumni tracker (owner rule 2026-11, `app/jhsaa_college.py`).
+
+    The class on screen is the SEASON picked in the scope bar: that season's
+    seniors are the class of that year, so the page needs no selector of its own.
+    Class-BLIND like the other History pages — a class is drawn from the whole
+    association — and `group` is carried for the scope bar's memory only.
+
+    Read-only: the rows were written when the class graduated. A class from before
+    the tracker existed is filled in once from the alumni index (milliseconds, no
+    roster rebuilt) the first time it is opened."""
+    import app.jhsaa as jh
+    import app.world as world
+    from app import jhsaa_college as jcol
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    years = world.jhsaa_years(w["id"], g)
+    yr = (years[0] if years else w["year"]) if year is None else year
+    grad_year = world.BASE_YEAR + yr + 1
+    conn = world._db()
+    try:
+        rows = jcol.class_rows(conn, w["id"], g, grad_year, world.active_salt(seed))
+    finally:
+        conn.close()
+    schools = _jh_schools(g)
+    for r in rows:
+        r["deco"] = _jh_deco(schools, r["hs"], 18)
+    counts: dict = {}
+    for r in rows:
+        counts[r["division"]] = counts.get(r["division"], 0) + 1
+    return {"gender": g, "rows": rows, "grad_year": grad_year,
+            "divisions": [(d, counts[d]) for d in jcol.DIVISION_ORDER if d in counts],
+            "scope": _jh_scope(g, group if group in jh.GROUPS else jh.GROUPS[0],
+                               list(jh.GROUPS), yr, years, grad_year, None)}
 
 
 def jhsaa_repeat_individual_champions(seed: int, gender: str,

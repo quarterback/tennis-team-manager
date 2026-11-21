@@ -237,6 +237,31 @@
       </div>
     </div>
 
+    {# WHERE THEY WENT (owner, 2026-11): the finished college line — a program and
+       four seasons, written when the class graduated. Nothing here is simulated. #}
+    {% if view.college %}{% set c = view.college %}
+    <div class="bl-panel">
+      <div class="bl-panel-head"><span class="bl-panel-title">College</span></div>
+      <div class="bl-panel-body" style="padding:12px">
+        <div style="font-weight:750">{{ c.college }}</div>
+        <div class="tsub">{{ c.division }} · {{ c.conf }} · {{ c.w }}-{{ c.l }} singles{% if c.peak %} · peak No. {{ c.peak }}{% endif %}</div>
+        {% if c.honors %}<div class="tsub" style="margin-top:4px;color:var(--text-primary);font-weight:650">{{ c.honors|join(' · ') }}</div>{% endif %}
+        <table class="bl-table" style="margin-top:8px">
+          <thead><tr><th>Season</th><th>Class</th><th>Position</th><th>Record</th></tr></thead>
+          <tbody>
+          {% for cs in c.seasons %}
+          <tr>
+            <td>{{ cs.year|cal }}</td><td>{{ cs.class }}</td>
+            <td>{% if cs.pos %}No. {{ cs.pos }}{% else %}Reserve{% endif %}</td>
+            <td style="font-variant-numeric:tabular-nums">{{ cs.w }}-{{ cs.l }}</td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+
     <div class="bl-panel jh-mod">
       <div class="bl-panel-head"><span class="bl-panel-title">Program</span></div>
       <div class="bl-panel-body">
