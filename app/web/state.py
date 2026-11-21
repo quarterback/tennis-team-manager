@@ -246,8 +246,8 @@ def warm_championships(seed: int = DEFAULT_SEED) -> None:
         return
     for _val, division, gender, _label in UNIVERSES:
         try:
-            sid = sm.get_or_create(division, gender, seed=world.current_year_seed(seed))
-            s = sm.load_season(sid)
+            sid = sm.find_season(division, gender, seed=world.current_year_seed(seed))
+            s = sm.load_season(sid) if sid else None
             if s and s["phase"] == "complete":
                 get_singles_championship(division, gender, seed)
                 get_doubles_championship(division, gender, seed)

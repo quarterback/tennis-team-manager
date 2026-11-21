@@ -346,8 +346,14 @@ def _game_context():
         for _v, d, g, _lbl in UNIVERSES:
             if not worldconfig.is_active(d, g):
                 continue
-            s = sm.load_season(sm.get_or_create(d, g, seed=wd.current_year_seed()))
-            phases.append(s.get("phase", "regular"))
+            # READ, never create: the shell renders on every page, and
+            # get_or_create here built a whole college season on the request
+            # thread the first time a page opened on a save that had none (every
+            # JHSAA lab page, every year). A missing season just isn't counted.
+            _sid = sm.find_season(d, g, seed=wd.current_year_seed())
+            s = sm.load_season(_sid) if _sid else None
+            if s:
+                phases.append(s.get("phase", "regular"))
         stage = min(phases, key=lambda p: _ORD.get(p, 0)) if phases else "regular"
         # The header's advance button is now the ONLY advance control in the app
         # (the Season Hub's per-universe one desynced saves — see
@@ -491,7 +497,10 @@ SCHEMES = [
 _advance_lock = threading.Lock()
 
 
-def create_app() -> Flask:
+def create_app(boot_warm: bool = True) -> Flask:
+    """`boot_warm=False` skips the background cache warm. `main()` passes it for
+    the debug reloader's PARENT process, which only watches files and never
+    serves a request: warming there spent the same minutes of CPU twice."""
     app = Flask(__name__)
 
     # Create every DB schema up front (before any sim transaction) so nested
@@ -575,17 +584,29 @@ def create_app() -> Flask:
     # request-path builds still cover anything this misses.
     # See docs/AAR-boot-cache-warm.md.
     import sys as _sys
-    if "pytest" not in _sys.modules and not os.environ.get("PTC_NO_BOOT_WARM"):
+    if boot_warm and "pytest" not in _sys.modules and not os.environ.get("PTC_NO_BOOT_WARM"):
         def _warm_caches_async():
+            # ‼️ A JHSAA-ONLY SAVE HAS NO COLLEGE GAME TO WARM (owner report
+            # 2026-11, "why is the high school game so slow"). The college steps
+            # below built the national recruit boards in SPAWNED worker processes
+            # (each re-importing the app and re-running the lab preflight on the
+            # whole database) and created/loaded college seasons, all for pages a
+            # lab never opens, while the warm thread held the GIL the high-school
+            # pages were waiting on. A lazy college page still builds on demand.
             try:
-                wd.warm_caches()              # roster cache + every gender's recruit board
+                _college = not wd.is_jhsaa_only()
             except Exception:
-                pass                          # lazy paths still build on demand
-            try:
-                from app.web import state as _state
-                _state.warm_championships()   # complete-season singles/doubles draws
-            except Exception:
-                pass                          # per-key build lock + lazy path cover the rest
+                _college = True
+            if _college:
+                try:
+                    wd.warm_caches()          # roster cache + every gender's recruit board
+                except Exception:
+                    pass                      # lazy paths still build on demand
+                try:
+                    from app.web import state as _state
+                    _state.warm_championships()   # complete-season singles/doubles draws
+                except Exception:
+                    pass                      # per-key build lock + lazy path cover the rest
             try:
                 # The JHSAA scouting census (Players / Mismatches / Lineup Lab
                 # all read it) — ~10-20s a gender on the request thread if the
@@ -5248,7 +5269,16 @@ def create_app() -> Flask:
 
 def main():
     port = int(os.environ.get("PORT", "5000"))
-    create_app().run(host="0.0.0.0", port=port, debug=True)
+    # ‼️ THE DEBUG RELOADER RUNS TWO PROCESSES, and both used to run the boot
+    # warm. The parent only watches files and never serves a page, so it now
+    # skips the warm; the child (WERKZEUG_RUN_MAIN) is the server. The JHSAA lab
+    # runs no reloader at all: its save is a long-lived universe, nobody edits
+    # code under it, and a reload restarts the warm mid-session.
+    lab = bool(os.environ.get("JHSAA_LAB_MODE"))
+    reloader = not lab
+    serving = (not reloader) or os.environ.get("WERKZEUG_RUN_MAIN") == "true"
+    create_app(boot_warm=serving).run(host="0.0.0.0", port=port, debug=True,
+                                      use_reloader=reloader)
 
 
 if __name__ == "__main__":
