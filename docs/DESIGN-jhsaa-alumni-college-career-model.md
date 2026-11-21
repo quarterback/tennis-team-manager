@@ -68,7 +68,7 @@ The game can recognize the following outcomes without allocating them as fixed c
 - A successful lower-division athlete transfers upward for a more competitive environment and accepts fewer starts.
 - A player stays at the same college for four years as a reliable contributor, improves late, stagnates, loses a role, suffers an injury, or leaves the team while continuing college.
 
-The five growth shapes supply different development timing. The destination and depth chart supply different *opportunities* to convert ability into competitive results. The transfer system changes the relationship between ability and opportunity; it should visibly affect minutes-equivalent participation (singles/doubles starts and matches), lineup placement and eventual honors.
+The five growth shapes supply different development timing. The destination and depth chart supply different *opportunities* to convert ability into competitive results. The transfer system changes the relationship between ability and opportunity; it should visibly affect actual match participation (singles/doubles starts and matches), lineup placement and eventual honors.
 
 ## Competitive recognition and gender-specific talent
 
