@@ -55,7 +55,7 @@
     </div>
     {% if mode == 'teams' and not archive %}
     <div class="bl-sortpills">
-      <span class="bl-sortpills-label">Sort By</span>
+      <span class="bl-sortpills-label">Sort by</span>
       <div class="bl-pills">
         {% for s in ['Rank','Power Index','APR','Power 6'] %}
           <button class="bl-pill{% if s == sort %} active{% endif %}" name="sort" value="{{ s }}">{{ s }}</button>
@@ -83,7 +83,7 @@
 <div class="bl-container">
   <div class="bl-entries">
     <div class="bl-entries-left">
-      {% if archive %}<strong style="color:var(--text-primary)">Final {{ season }} CTA Rankings</strong> — stamped when the conference tournaments ended{% if scope == 'regional' %} · top 10 {{ noun }} per region{% elif scope == 'newcomer' %} · D1 freshmen only{% endif %}
+      {% if archive %}<strong style="color:var(--text-primary)">Final {{ season }} CTA Rankings</strong> · set when the conference tournaments ended{% if scope == 'regional' %} · top 10 {{ noun }} per region{% elif scope == 'newcomer' %} · D1 freshmen only{% endif %}
       {% elif mode == 'regional' or scope == 'regional' %}CTA Regional Rankings — top 10 {{ noun }} per region (census divisions; AK · HI · DC &amp; territories file under Outlying)
       {% elif scope == 'newcomer' %}CTA Newcomer Rankings — D1 freshmen only · Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ matches }} {{ noun }}
       {% else %}Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ matches }}{% if matches != total %} (filtered from {{ total }}){% endif %} {{ noun }}{% endif %}

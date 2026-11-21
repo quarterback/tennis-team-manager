@@ -4,8 +4,8 @@
 {% block title %}JHSAA Reserve Cohorts{% endblock %}
 {% block content %}
 
-{{ jh_header(view.scope, u, 'cohorts', 'Reserve Cohorts',
-             'Programs carrying a second varsity-caliber team below their lineup, and the weak hosts a cohort like that could spend a varsity season at. Read-only — check players to send them into the transfer batch.') }}
+{{ jh_header(view.scope, u, 'cohorts', 'Reserve cohorts',
+             'Programs with a second varsity-caliber team below their lineup, and the weaker programs where that group could play a varsity season. Check players to add them to the transfer batch.') }}
 
 <div class="jh-shell">
 <div class="bl-panel" style="margin-bottom:14px">
@@ -23,14 +23,14 @@
       <label>Min cohort OVR
         <input type="number" name="minc" step="0.5" value="{{ minc if minc is not none }}" placeholder="any" style="width:70px"></label>
       <button type="submit" class="bl-btn">Find cohorts</button>
-      {% if year %}<span class="where">projected on the {{ year }} rosters — graduation and incoming freshmen included</span>{% endif %}
+      {% if year %}<span class="where">projected on the {{ year }} rosters, graduation and incoming freshmen included</span>{% endif %}
     </form>
   </div>
 </div>
 
 {% if res is none %}
 <div class="bl-panel"><div class="bl-panel-body" style="padding:16px">
-  <p class="jh-empty">{% if year %}Nothing computed yet — "Find cohorts" builds every program's next-season roster (a few seconds).{% else %}No world yet.{% endif %}</p>
+  <p class="jh-empty">{% if year %}Nothing computed yet. "Find cohorts" builds every program's next-season roster in a few seconds.{% else %}No world yet.{% endif %}</p>
 </div></div>
 {% else %}
 
@@ -41,7 +41,7 @@
 <div class="bl-panel" style="margin-bottom:14px">
   <div class="bl-panel-head">
     <span class="bl-panel-title">Reserve cohorts</span>
-    <span class="bit jh-scout">{{ src_pg.total if src_pg else 0 }} program{{ 's' if not src_pg or src_pg.total != 1 }} whose next-{{ cohort }} reserves average a varsity-caliber unit — strongest cohort first</span>
+    <span class="bit jh-scout">{{ src_pg.total if src_pg else 0 }} program{{ 's' if not src_pg or src_pg.total != 1 }} whose next-{{ cohort }} reserves average a varsity-caliber unit, strongest cohort first</span>
   </div>
   {% if src_pg and src_pg.items %}
   <div class="tbl-scroll">
@@ -69,7 +69,7 @@
         <td colspan="8" style="padding:8px 14px;background:var(--surface-2,transparent)">
           <div style="display:flex;gap:24px;flex-wrap:wrap">
             <div>
-              <div class="bit" style="margin-bottom:4px">The cohort (ranks below the league lineup) — check to queue a transfer</div>
+              <div class="bit" style="margin-bottom:4px">The cohort (ranks below the league lineup). Check a player to queue a transfer.</div>
               <table class="jh-ledger">
                 {% for p in src.cohort %}
                 <tr>
@@ -82,7 +82,7 @@
               </table>
             </div>
             <div>
-              <div class="bit" style="margin-bottom:4px">Suggested hosts — weakest programs in the fit class and one below, with the combined best-nine's projected rank</div>
+              <div class="bit" style="margin-bottom:4px">Suggested hosts: the weakest programs in the fit class and one below, with the combined best nine's projected rank</div>
               <table class="jh-ledger">
                 <tr><th>Host</th><th style="width:44px">Class</th><th style="width:90px">Shape</th>
                   <th class="num jh-scout" style="width:60px">Host</th>
@@ -109,13 +109,13 @@
   {{ pager(src_pg, 'sources') }}
   {{ jh_bulk_form(u, g, 'jh-bulk-schools') }}
   {% else %}
-  <div class="bl-panel-body" style="padding:16px"><p class="jh-empty">No reserve group matches — loosen the class or min-OVR filters, or no cohort clears any class's median this offseason.</p></div>
+  <div class="bl-panel-body" style="padding:16px"><p class="jh-empty">No reserve group matches. Loosen the class or minimum OVR filters. If none appears, no cohort clears any class's median this offseason.</p></div>
   {% endif %}
 </div>
 
 <div class="bl-panel">
   <div class="bl-panel-head"><span class="bl-panel-title">Host candidates</span>
-    <span class="bit jh-scout">each class's weakest programs by best-nine mean — "core + void" keeps 2-4 real varsity players, "rebuild" keeps at most one</span></div>
+    <span class="bit jh-scout">each class's weakest programs by best-nine mean. "Core + void" keeps 2-4 real varsity players, "rebuild" keeps at most one</span></div>
   <div class="tbl-scroll">
     <table class="jh-roster">
       <tr><th style="width:44px">Class</th><th>Program</th><th style="width:100px">Shape</th>

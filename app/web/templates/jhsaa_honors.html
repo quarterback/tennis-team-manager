@@ -3,9 +3,9 @@
 {% block title %}JHSAA {{ view.group }} Honors{% endblock %}
 {% block content %}
 
-{{ jh_header(view.scope, u, 'honors', view.group ~ ' Honors',
-             'Player of the Year, All-State, All-Region and All-District — selected on
-              this season\'s résumé, not on ability ratings. Every season is archived.',
+{{ jh_header(view.scope, u, 'honors', view.group ~ ' honors',
+             'Player of the Year, All-State, All-Region and All-District, chosen on
+              each player\'s season results.',
              [('Season', view.season_year|cal),
               ('All-State', view.teams|map(attribute='players')|map('length')|sum),
               ('Regions', view.regions|length),
@@ -108,8 +108,8 @@
 
     {% if view.honorable_mention %}
     <div class="jh-awardsec">
-      <div class="jh-awardsec-head">Honorable Mention
-        <span>{{ view.honorable_mention|length }} selections — a threshold, not a team</span></div>
+      <div class="jh-awardsec-head">Honorable mention
+        <span>{{ view.honorable_mention|length }} selections on a merit threshold</span></div>
       {{ award_team(view.honorable_mention, numbered=false) }}
     </div>
     {% else %}
@@ -156,7 +156,7 @@
       {% if rg.honorable_mention %}
       <div class="jh-awardsec">
         <div class="jh-awardsec-head">{{ rg.region }} All-Region · Honorable Mention
-          <span>{{ rg.honorable_mention|length }} selections — a threshold, not a team</span></div>
+          <span>{{ rg.honorable_mention|length }} selections on a merit threshold</span></div>
         {{ award_team(rg.honorable_mention, numbered=false) }}
       </div>
       {% endif %}
@@ -205,11 +205,9 @@
        never shown — no score, component, weight or record column here. --- #}
   <div class="jh-pane" data-pane="coaches" hidden>
     {% if view.coy_pending %}
-    <div class="jh-empty" style="padding:16px">Selecting this season's Coach of the Year —
-      refresh in a moment.</div>
+    <div class="jh-empty" style="padding:16px">Selecting this season's Coach of the Year. Refresh in a moment.</div>
     {% elif not view.coy_state and not view.coy_district %}
-    <div class="jh-empty" style="padding:16px">No Coach of the Year for this season —
-      it predates named coaches.</div>
+    <div class="jh-empty" style="padding:16px">No Coach of the Year for this season. It predates named coaches.</div>
     {% else %}
     {% if view.coy_state %}{% set w = view.coy_state[0] %}
     <div class="jh-poy" style="margin:10px 14px 4px">

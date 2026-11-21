@@ -15,11 +15,11 @@
 {% macro bubble_split(bubble, u) %}
 <div class="bl-bubble">
   <div class="bl-bubble-col">
-    <div class="bl-bubble-head bl-bubble-head--in">Last Four In</div>
+    <div class="bl-bubble-head bl-bubble-head--in">Last four in</div>
     {% for t in bubble.last_in %}{{ _row(t, u, 'in') }}{% endfor %}
   </div>
   <div class="bl-bubble-col">
-    <div class="bl-bubble-head bl-bubble-head--out">First Four Out</div>
+    <div class="bl-bubble-head bl-bubble-head--out">First four out</div>
     {% for t in bubble.first_out %}{{ _row(t, u, 'out') }}{% endfor %}
   </div>
 </div>
@@ -28,10 +28,10 @@
 {# Compact single-column card (narrow sidebars, e.g. the season hub). #}
 {% macro bubble_compact(bubble, u) %}
 <div class="bl-panel" style="align-self:start">
-  <div class="bl-panel-head"><span class="bl-panel-title">Bubble Watch</span></div>
-  <div class="bl-bubble-head bl-bubble-head--in">Last Four In</div>
+  <div class="bl-panel-head"><span class="bl-panel-title">Bubble watch</span></div>
+  <div class="bl-bubble-head bl-bubble-head--in">Last four in</div>
   {% for t in bubble.last_in %}{{ _row(t, u, 'in') }}{% endfor %}
-  <div class="bl-bubble-head bl-bubble-head--out">First Four Out</div>
+  <div class="bl-bubble-head bl-bubble-head--out">First four out</div>
   {% for t in bubble.first_out %}{{ _row(t, u, 'out') }}{% endfor %}
   <a class="bl-bubble-more" href="{{ url_for('projection', u=u) }}">Full bracket projection →</a>
 </div>

@@ -5,7 +5,7 @@
 
   {% if not league %}
   <div class="bl-panel"><div style="padding:16px;color:var(--text-muted)">
-    No league yet — create one from the <a href="{{ url_for('gtt_hub') }}">League Hub</a>.
+    No league yet. Create one from the <a href="{{ url_for('gtt_hub') }}">League Hub</a>.
   </div></div>
   {% else %}
 
@@ -44,7 +44,7 @@
   </div>
 
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Champions &amp; MVPs</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Champions and MVPs</span></div>
     {% if history %}
     <div class="bl-tablescroll"><div class="bl-table gtt-arch">
       <div class="bl-thead gtt-arch-row">

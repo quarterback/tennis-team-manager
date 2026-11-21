@@ -25,7 +25,7 @@
 
 <div class="bl-container" style="padding-top:18px;padding-bottom:50px">
   <div style="margin-bottom:14px">
-    <h1 style="margin:0 0 4px;font-size:24px">Lineup Lab — {{ div_f }} {{ conf }}</h1>
+    <h1 style="margin:0 0 4px;font-size:24px">Lineup Lab: {{ div_f }} {{ conf }}</h1>
   </div>
 
   {# ---- STR ↔ UTR ↔ WTN reference (collapsed by default; reference only) ---- #}
@@ -38,7 +38,7 @@
         <strong>STR</strong> is the game's native 31–57 rating. <strong>UTR</strong> (1.00–16.50) is the
         upward-facing real-world comparison; <strong>WTN</strong> (40 beginner → 1 elite pro) runs the other way.
         Endpoints line up exactly with the band, but UTR and WTN are separate proprietary systems, so the
-        off-anchor values are approximate — good enough for balancing, not a published conversion.
+        values between the anchors are approximate and fine for balancing only.
       </p>
       <div class="ll-scale-grid">
         <div class="ll-scale-hdr"><span>STR</span><span>UTR</span><span>WTN</span></div>
@@ -70,7 +70,7 @@
   <div class="bl-board-grid" style="grid-template-columns:1fr 380px;align-items:start">
     {# ---- per-team depth table ---- #}
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">{{ conf }} — team depth</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title">{{ conf }} team depth</span></div>
       <div class="ll-tbl ll-depth" style="--ll-ncard:{{ n_card }}">
         <div class="ll-thead">
           <span>#</span><span>Team</span><span class="n">Avg</span><span class="n">Top</span><span class="n">Low</span>
@@ -93,7 +93,7 @@
 
     {# ---- relative league strength ---- #}
     <div class="bl-panel">
-      <div class="bl-panel-head"><span class="bl-panel-title">{{ div_f }} — league strength</span></div>
+      <div class="bl-panel-head"><span class="bl-panel-title">{{ div_f }} league strength</span></div>
       <div class="ll-tbl ll-str">
         <div class="ll-thead">
           <span>#</span><span>Conf</span><span class="n">Tms</span><span class="n">Avg</span><span class="n">Top</span>

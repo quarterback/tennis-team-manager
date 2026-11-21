@@ -10,8 +10,7 @@
    Everything is positioned server-side by `state.ita_bracket_view`. #}
 
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:16px;color:var(--text-muted)">{{ uni_label }} · Preseason NIT —
-    {% if br and br.runs_kickoff %}Kickoff Weekend &amp; National Team Indoor{% else %}National Team Indoor{% endif %}</span>
+  <span style="font-size:16px;color:var(--text-muted)">{% if br and br.runs_kickoff %}Kickoff Weekend and National Team Indoor{% else %}National Team Indoor{% endif %}</span>
   <span class="bl-bracket-pills" style="margin-left:auto">
     {% for val, d, g, lbl in universes %}
       <a class="bl-pill{% if val == u %} active{% endif %}" href="{{ url_for('season_ita', u=val, year=sel_year) }}">{{ lbl }}</a>
@@ -38,9 +37,9 @@
 {% if br.champion %}
 <div class="bl-container"><div class="bl-champ">
   {{ crest_box(br.champion.school, br.champion.abbr, br.champion.color, 'lg') }}
-  <div><div class="label">Preseason NIT Champion</div>
+  <div><div class="label">Preseason NIT champion</div>
     <div style="font-size:24px;font-weight:800;color:var(--text-primary)">{% if br.champion.seed %}#{{ br.champion.seed }} {% endif %}{{ br.champion.school }}</div>
-    <div class="sub">{{ sel_year }} {{ uni_label }} — won the National Team Indoor Championship to open the season</div></div>
+    <div class="sub">Won the National Team Indoor to open the season</div></div>
 </div></div>
 {% endif %}
 
@@ -77,7 +76,7 @@
 
   <section class="brk-region" data-view="indoor">
     <div class="brk-region-head">
-      <h2>National Team Indoor Championship</h2>
+      <h2>National Team Indoor championship</h2>
       <span class="brk-region-champ">
         {% if br.champion %}won by {{ br.champion.school }}
         {% elif br.sites %}the {{ br.indoor_size }} Kickoff site champions
@@ -89,7 +88,7 @@
 
 <div class="bl-container">
   <details class="brk-drawer">
-    <summary>Draw sheet — how the NIT field was seeded</summary>
+    <summary>How the NIT field was seeded</summary>
     <div class="brk-drawer-body">
       <p class="brk-drawer-note">
         {% if br.sites %}
@@ -98,7 +97,7 @@
         seeded 1–4 and plays 1v4 / 2v3, host being its top seed; the {{ br.sites|length }} site champions make up the
         {{ br.indoor_size }}-team National Team Indoor draw, re-seeded by that same ranking.
         {% else %}
-        This division plays no Kickoff Weekend — its National Team Indoor is simply the top {{ br.indoor_size }} teams by
+        This division plays no Kickoff Weekend. Its National Team Indoor is the top {{ br.indoor_size }} teams by
         last season's final Power Index (roster Power 6 in year one), drawn 1v{{ br.indoor_size }} down the seed line.
         {% endif %}
         Every NIT dual counts toward the season record and the Power Index, so the opener is a real early read on who's good.

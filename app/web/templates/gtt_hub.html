@@ -24,7 +24,7 @@
             Season {{ league.current_year + 1 }} ·
             {% if league.phase == 'complete' %}complete
             {% elif league.phase == 'playoffs' %}Playoffs
-            {% else %}regular season — week {{ league.current_week }} of {{ league.total_weeks }}{% endif %}
+            {% else %}regular season, week {{ league.current_week }} of {{ league.total_weeks }}{% endif %}
           </div>
         </div>
         <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
@@ -38,7 +38,7 @@
           {% else %}
           <span class="bl-pill" style="cursor:default;opacity:.75"
             title="The pro league runs on the same clock as the college world. Finalize the college season (World page) and the off-season — graduate intake, Pro Round, draft — runs automatically.">
-            <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> Waiting on the college season — finalize it to run the draft</span>
+            <i class="fa-solid fa-hourglass-half" aria-hidden="true"></i> Waiting on the college season. Finalize it to run the draft.</span>
           {% endif %}
           {% else %}
           <form method="post" action="{{ url_for('gtt_advance') }}"><input type="hidden" name="lg" value="{{ league.id }}">

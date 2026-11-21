@@ -3,26 +3,25 @@
 {% block title %}Play to Clinch — The World{% endblock %}
 {% block content %}
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
-  <span style="font-size:16px;color:var(--text-muted)">Unified World · one calendar across every division &amp; gender</span>
   <form method="post" action="{{ url_for('world_boxstats') }}" style="margin-left:auto">
     <input type="hidden" name="on" value="{{ '0' if box_stats else '1' }}">
     <button class="bl-pill" style="cursor:pointer"
-      title="Per-match box stats (aces, double faults, winners, UEs, break points) recorded on every season dual. Scorelines are identical either way; off = faster sims, scoreline-only history.">
+      title="Records aces, double faults, winners, unforced errors and break points on every season dual. Scorelines come out the same either way. Off runs faster and keeps only scorelines.">
       <i class="fa-solid fa-chart-simple" aria-hidden="true"></i> Box stats: {{ 'On' if box_stats else 'Off' }}
     </button>
   </form>
   <form method="post" action="{{ url_for('world_fidelity') }}">
     <input type="hidden" name="full" value="{{ '0' if full_engine else '1' }}">
     <button class="bl-pill" style="cursor:pointer"
-      title="Match fidelity. Fast = the tuned game-level model (default, keeps the world responsive). Full = the point-by-point engine — much slower, meant for offline calibration on a local machine. Takes effect from the next dual on; flip it back to Fast when you're done.">
+      title="Fast plays each match game by game and is the default. Full plays every point, runs much slower and is meant for calibration on a local machine. The change applies from the next dual.">
       <i class="fa-solid fa-gauge-high" aria-hidden="true"></i> Engine: {{ 'Full' if full_engine else 'Fast' }}
     </button>
   </form>
   <form method="post" action="{{ url_for('world_jhsaa_sim') }}">
     <input type="hidden" name="on" value="{{ '0' if hs_sim else '1' }}">
     <button class="bl-pill" style="cursor:pointer"
-      title="Whether this save's advance also simulates Jefferson's high-school (JHSAA) season each year. Off = the college game on its own: no high-school step, and Jefferson recruits are generated like every other state's with a real JHSAA school. On adds a long step at the start of every year.">
-      <i class="fa-solid fa-school" aria-hidden="true"></i> High-school sim: {{ 'On' if hs_sim else 'Off' }}
+      title="On, each year starts by simulating Jefferson's high school season, which adds a long step. Off, Jefferson recruits are generated like any other state's and keep a real JHSAA school.">
+      <i class="fa-solid fa-school" aria-hidden="true"></i> High school sim: {{ 'On' if hs_sim else 'Off' }}
     </button>
   </form>
   {% if hub.primary.link %}
@@ -38,29 +37,17 @@
   {% endif %}
 </div></div>
 
-{{ season_tabs(hub.tabs) }}
-
 <div class="bl-board">
-  <div class="bl-scorehdr" style="grid-template-columns:auto 1fr auto;margin-bottom:18px">
-    <div><div class="label t-eyebrow" style="color:var(--brand-strong)">Season {{ hub.season_no }}</div>
-      <div class="tname" style="font-size:30px">{{ hub.year }}</div></div>
-    <div style="text-align:center">
-      <div class="bl-th" style="justify-content:center">Week</div>
-      <div class="bl-stat power" style="font-size:30px">{{ hub.week }}</div>
-      {% set _cur = hub.stages | selectattr('current') | list %}
-      <div class="tsub">{{ _cur[0].label if _cur else 'Regular season' }}</div></div>
-    <div style="text-align:right"><div class="bl-th" style="font-size:13px">CLASS SIGNED</div>
-      <span class="bl-stat" style="font-size:24px">{{ hub.signed_total }}</span>
-      <div class="tsub">{% for g, n in hub.signed.items() %}{{ n }} {{ g }}{{ ' · ' if not loop.last }}{% endfor %}
-        {% if not hub.signed %}commitments roll in weekly{% endif %}</div></div>
-  </div>
+  {{ season_tabs(hub.tabs) }}
 
+  {# The Season / Week / Class signed scoreboard that sat here repeated the
+     masthead word for word; the masthead is on every page, so it goes. #}
   {% if not hub.in_sync %}
   <div class="bl-note" style="margin-bottom:16px;border-color:#e0b050;background:#fdf6e6">
     <strong>Universes are out of step.</strong>
     <form method="post" action="{{ url_for('world_resync') }}" style="display:inline"
-          data-loading='{"title":"Re-syncing universes…","sub":"Playing the weeks the lagging divisions owe — this one takes a while.","stages":["Simulating missed weeks…","Tallying results &amp; rankings…"]}'>
-      <button class="bl-pill" type="submit" style="cursor:pointer">Re-sync universes →</button>
+          data-loading='{"title":"Re-syncing universes…","sub":"Playing the weeks the lagging divisions owe. This takes a while.","stages":["Simulating missed weeks…","Tallying results and rankings…"]}'>
+      <button class="bl-pill" type="submit" style="cursor:pointer">Re-sync</button>
     </form>
   </div>
   {% endif %}
@@ -74,7 +61,7 @@
       <div>
         {% if d.champion %}
         <div class="bl-result" style="grid-template-columns:auto 1fr;background:var(--green-50)">
-          <span class="t-eyebrow" style="color:var(--brand-strong)">CHAMP</span>
+          <span class="t-eyebrow" style="color:var(--brand-strong)">Champion</span>
           <span class="opp" style="font-weight:700">{{ d.champion }}</span></div>
         {% endif %}
         {% for t in d.top %}

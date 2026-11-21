@@ -40,8 +40,7 @@
     <div class="bl-entries-left"><strong style="color:var(--text-primary)">Play to Clinch {{ poll.label }}</strong>
       — {{ 'National' if scope == 'national' else scope }} {{ gender|capitalize }} · Week {{ poll.week }}</div>
     <span class="bl-entries-right">
-      {% if which == 'media' %}51 media voters — reactive{% else %}40 coaches — conservative{% endif %} ·
-      what humans believe, not the Power Index</span>
+      {% if which == 'media' %}51 media voters, quick to react{% else %}40 coaches, slow to move{% endif %} · how voters see it, beside the Power Index</span>
   </div>
 </div>
 
@@ -97,7 +96,7 @@
 {% if poll.others %}
 <div class="bl-container">
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Others Receiving Votes</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Others receiving votes</span></div>
     <div class="pl-orv">
       {% for s, pts in poll.others %}<span class="pl-orvitem">{{ s }} <b>{{ pts }}</b></span>{% endfor %}
     </div>

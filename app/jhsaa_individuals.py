@@ -170,11 +170,11 @@ def mixed_from_rank(group: str | None) -> int:
 #: sport's own phrasing — "No. 1 Singles", never "first flight" or "S1 draw"; see
 #: CLAUDE.md's VOCABULARY section, which is emphatic that positions are named
 #: No. 1 through No. 3.
-FLIGHT_NAMES = {"S1": "No. 1 Singles", "S2": "No. 2 Singles", "S3": "No. 3 Singles",
-                "S4": "No. 4 Singles", "S5": "No. 5 Singles", "S6": "No. 6 Singles",
-                "D1": "No. 1 Doubles", "D2": "No. 2 Doubles", "D3": "No. 3 Doubles",
-                "D4": "No. 4 Doubles", "D5": "No. 5 Doubles",
-                "XD": "Mixed Doubles"}
+FLIGHT_NAMES = {"S1": "No. 1 singles", "S2": "No. 2 singles", "S3": "No. 3 singles",
+                "S4": "No. 4 singles", "S5": "No. 5 singles", "S6": "No. 6 singles",
+                "D1": "No. 1 doubles", "D2": "No. 2 doubles", "D3": "No. 3 doubles",
+                "D4": "No. 4 doubles", "D5": "No. 5 doubles",
+                "XD": "Mixed doubles"}
 
 #: ‼️ ONE DESTINATION, SEVEN VIEWS (owner, 2026-08). The event is reached from the
 #: **Championship** sub-rail — beside State, Bracket and TOC — under this label.

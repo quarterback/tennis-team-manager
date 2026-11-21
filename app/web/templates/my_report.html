@@ -10,7 +10,7 @@
   </header>
 
   {% if not rep.started %}
-  <div class="rp-empty">No duals played yet — your report card unlocks once the season is underway.</div>
+  <div class="rp-empty">No duals played yet. Your report card unlocks once the season is underway.</div>
   {% else %}
 
   <div class="rp-verdict rp-{{ rep.verdict }}">
@@ -20,8 +20,7 @@
       {% else %}Met expectations{% endif %}
     </div>
     <div class="rp-verdict-v">
-      Picked to finish ~{{ rep.pres_rank }}{{ rep.pres_rank|ordsuffix }} of {{ rep.field_pres }} —
-      finished <strong>{{ rep.pi_rank }}{{ rep.pi_rank|ordsuffix }}</strong> of {{ rep.field }} by Power Index.
+      Picked to finish ~{{ rep.pres_rank }}{{ rep.pres_rank|ordsuffix }} of {{ rep.field_pres }}; finished <strong>{{ rep.pi_rank }}{{ rep.pi_rank|ordsuffix }}</strong> of {{ rep.field }} by Power Index.
     </div>
   </div>
 

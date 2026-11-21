@@ -7,7 +7,7 @@
 
 {% set span = ((view.tracked|last)|cal ~ '–' ~ (view.tracked|first)|cal) if view.tracked|length > 1
               else ((view.tracked|first)|cal if view.tracked else '—') %}
-{{ jh_header(view.scope, u, 'alumni', 'College Alumni', '',
+{{ jh_header(view.scope, u, 'alumni', 'College alumni', '',
              ([('Class of', view.grad_year|cal)] if view.mode == 'class' else [('Classes', span)])
              + view.division_counts) }}
 

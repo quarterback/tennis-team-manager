@@ -5,8 +5,8 @@
 {% block title %}JHSAA Talent Mismatches{% endblock %}
 {% block content %}
 
-{{ jh_header(view.scope, u, 'misapplied', 'Talent Mismatches',
-             'Players whose ceiling clears a BETTER classification\'s average — treating 9A-1A as a real ladder, the same way college divisions rank. Rosters are the CURRENT season\'s, whatever season the scope bar is set to.') }}
+{{ jh_header(view.scope, u, 'misapplied', 'Talent mismatches',
+             'Players whose ceiling clears a bigger classification\'s average, reading 9A through 1A as a ladder the way college divisions rank. Rosters are always the current season\'s.') }}
 
 <div class="jh-shell">
 <div class="bl-panel" style="margin-bottom:14px">
@@ -47,11 +47,11 @@
 
 {% if rows is none %}
 <div class="bl-panel"><div class="bl-panel-body" style="padding:16px">
-  <p class="jh-empty">Set your filters and hit Filter — nothing is loaded until you ask, so the tab opens instantly.</p>
+  <p class="jh-empty">Set your filters and press Filter. Nothing loads until you ask.</p>
 </div></div>
 {% else %}
 <div class="bl-panel">
-  <div class="bl-panel-head"><span class="bl-panel-title">Mismatched Talent</span>
+  <div class="bl-panel-head"><span class="bl-panel-title">Mismatched talent</span>
     <span class="bit">{{ total }} flagged</span></div>
   <div class="tbl-scroll">
     <table class="jh-roster">

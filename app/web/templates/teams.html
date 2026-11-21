@@ -86,7 +86,7 @@
   </div>
 
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Coaching Staff</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Coaching staff</span></div>
     <div class="bl-panel-body" style="display:flex;flex-direction:column;gap:0">
       {% for m in staff %}
       <div style="padding:12px 0;{% if not loop.last %}border-bottom:1px solid var(--border-subtle){% endif %}">
@@ -106,7 +106,7 @@
   </div>
 
   <div class="bl-panel">
-    <div class="bl-panel-head"><span class="bl-panel-title">Injury Log</span></div>
+    <div class="bl-panel-head"><span class="bl-panel-title">Injury log</span></div>
     {% if injuries %}
     <div class="bl-injlist">
       {% for i in injuries %}
@@ -128,7 +128,7 @@
 {% set h = history.honors %}
 {% if h.any %}
 <div class="bl-panel" style="margin-top:16px">
-  <div class="bl-panel-head"><span class="bl-panel-title">Program Honors</span></div>
+  <div class="bl-panel-head"><span class="bl-panel-title">Program honors</span></div>
   <div class="bl-honorgrid">
     {% macro hline(label, cls, count, detail) %}
     <div class="bl-honorrow">
@@ -159,7 +159,7 @@
 
 {% if history.seasons %}
 <div class="bl-panel" style="margin-top:16px">
-  <div class="bl-panel-head"><span class="bl-panel-title">Season Results by Year</span></div>
+  <div class="bl-panel-head"><span class="bl-panel-title">Season results by year</span></div>
   <div class="bl-tablescroll">
     <div class="bl-table" style="--bl-grid-cols: 86px 80px 88px 1fr 150px 130px">
       <div class="bl-thead">

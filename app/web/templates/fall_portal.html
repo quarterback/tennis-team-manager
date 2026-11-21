@@ -23,7 +23,7 @@
     <input type="hidden" name="page" value="{{ fp.page }}">
     <input type="hidden" name="per" value="{{ request.args.get('per', '') }}">
     <input type="hidden" name="q" value="{{ fp.q }}">
-    <label class="bl-field"><span class="bl-field-label">Add player(s) — comma-separated</span>
+    <label class="bl-field"><span class="bl-field-label">Add players, separated by commas</span>
       <input class="bl-select" name="player" placeholder="name, name, name…" style="min-width:200px" required></label>
     <label class="bl-field"><span class="bl-field-label">To (optional)</span>
       <input class="bl-select" name="dest" list="fp-dests" placeholder="auto (best fit)" style="min-width:140px"></label>
@@ -54,7 +54,7 @@
 {% set _signed = fp.pros|selectattr('signed')|list|length %}
 <div class="bl-container">
   <div class="bl-entries"><div class="bl-entries-left">
-    <strong style="color:var(--text-primary)"><span class="pro-badge">PRO</span> Pro free agents — fall window</strong>
+    <strong style="color:var(--text-primary)"><span class="pro-badge">PRO</span> Pro free agents, fall window</strong>
   </div><span class="bl-entries-right">{{ _signed }} signed · {{ fp.pros|length - _signed }} available</span></div>
   {% if request.args.get('signerr') %}
   <div class="bl-note" style="font-size:15px;margin-bottom:8px;border-color:#c0392b;color:#c0392b;background:rgba(192,57,43,.06)">
@@ -65,7 +65,7 @@
       <div class="bl-thead">
         <span class="bl-th">PLAYER</span><span class="bl-th num">STR</span>
         <span class="bl-th num" title="Scholarship-equivalency spent from the club's one budget">COST</span>
-        <span class="bl-th">{% if fp.pros_committed %}SIGNED WITH{% else %}SIGN WITH — any program{% endif %}</span>
+        <span class="bl-th">{% if fp.pros_committed %}SIGNED WITH{% else %}SIGN WITH (any program){% endif %}</span>
         <span class="bl-th"></span>
       </div>
       {% for pr in fp.pros %}
@@ -172,8 +172,7 @@
     <input type="hidden" name="per" value="{{ request.args.get('per', '') }}">
     <input type="hidden" name="q" value="{{ fp.q }}">
     <button class="bl-btn bl-btn-primary" type="submit" id="fpapply-btn" disabled>Apply changes</button>
-    <span style="font-size:15px;color:var(--text-muted)">Stage new destinations and tick ✕ to drop —
-      the whole batch lands in one submit.</span>
+    <span style="font-size:15px;color:var(--text-muted)">Stage new destinations and tick ✕ to drop. The whole batch lands in one submit.</span>
   </form>
   <script>
     (function () {

@@ -42,7 +42,7 @@
 
 <div class="bl-container"><div class="bl-entries">
   <div class="bl-entries-left"><strong style="color:var(--text-primary)">{{ year }}</strong> · {{ uni_label }} award winners</div>
-  <span class="bl-entries-right">archived — as stamped at season's end</span>
+  <span class="bl-entries-right">archived at season's end</span>
 </div></div>
 
 <div class="bl-container"><div class="aw-top">
@@ -67,10 +67,10 @@
       {% if aw.national_champion %}{% set c = aw.national_champion %}
       <div class="aw-natchamp">
         <span class="bl-crest lg" style="background:{{ c.color }};width:44px;height:44px;font-size:14.5px">{{ c.abbr }}</span>
-        <div><div class="aw-poty-label">National Champion</div>
+        <div><div class="aw-poty-label">National champion</div>
           <a class="bl-school aw-poty-name" href="{{ url_for('teams', school=c.school, u=u) }}">{{ c.school }}</a></div>
       </div>{% else %}<p class="aw-empty">—</p>{% endif %}
-      {% if aw.conf_champions %}<div class="aw-confchamp-head">Conference Champions</div>
+      {% if aw.conf_champions %}<div class="aw-confchamp-head">Conference champions</div>
       <div class="aw-cpoty-grid">
         {% for c in aw.conf_champions %}
         <div class="aw-row">

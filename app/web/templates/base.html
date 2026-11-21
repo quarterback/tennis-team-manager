@@ -143,9 +143,9 @@
              loud. Ten light schemes; there is deliberately no dark mode (see
              `color-scheme: only light` in tokens/colors.css). #}
           <details class="fm-theme">
-            <summary aria-label="Settings: colour scheme and new league"><span class="cur" aria-hidden="true"></span><i class="fa-solid fa-sliders" aria-hidden="true"></i></summary>
+            <summary aria-label="Settings: color scheme and new league"><span class="cur" aria-hidden="true"></span><i class="fa-solid fa-sliders" aria-hidden="true"></i></summary>
             <div class="fm-theme-menu">
-              <div class="fm-theme-head">Colour scheme</div>
+              <div class="fm-theme-head">Color scheme</div>
               {% for key, label, blurb in schemes %}
               <button type="button" class="fm-theme-row" data-theme-choice="{{ key }}" aria-pressed="false">
                 <span class="fm-theme-sw s-{{ key }}"></span>
@@ -176,7 +176,7 @@
           {% else %}
           {# Awards are their own step and /world/advance refuses to move past them,
              so post to the awards action while they're pending or the button lies. #}
-          <form method="post" action="{{ url_for('world_awards' if game and game.awards_pending else 'world_advance', u=u) }}" data-loading='{"title":"Advancing the season…","sub":"The first advance of a new world signs every recruiting class and runs the junior circuit — that one takes about a minute. Later weeks are quick.","stages":["Signing recruits…","Running the junior circuit…","Simulating the week…","Tallying results & rankings…"]}'>
+          <form method="post" action="{{ url_for('world_awards' if game and game.awards_pending else 'world_advance', u=u) }}" data-loading='{"title":"Advancing the season…","sub":"The first advance of a new world signs every recruiting class and runs the junior circuit, which takes about a minute. Later weeks are quick.","stages":["Signing recruits…","Running the junior circuit…","Simulating the week…","Tallying results and rankings…"]}'>
             <button class="fm-advance" type="submit">
               <span class="fm-advance-label">{{ game.action if game else 'Advance week' }}</span>
               <span aria-hidden="true"><i class="fa-solid fa-forward-step"></i></span></button>
@@ -217,7 +217,7 @@
       <div class="loading-title" id="loading-title">Working…</div>
       <div class="loading-stage" id="loading-stage"></div>
       <div class="loading-sub" id="loading-sub"></div>
-      <div class="loading-elapsed"><span id="loading-secs">0</span>s elapsed — please keep this tab open</div>
+      <div class="loading-elapsed"><span id="loading-secs">0</span> seconds. Keep this tab open.</div>
     </div>
   </div>
   <style>

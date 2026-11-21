@@ -51,7 +51,7 @@
 
 <div class="bl-container"><div class="bl-entries">
   <div class="bl-entries-left">Showing <strong style="color:var(--text-primary)">{{ p.start }}–{{ p.end }}</strong> of {{ total }} players</div>
-  <span class="bl-entries-right">{{ uni_label }} · the placeable pool — find who to move, then place them on the portal</span>
+  <span class="bl-entries-right">{{ uni_label }} · Find who to move, then place them on the portal</span>
 </div></div>
 
 <div class="bl-container"><div class="bl-tablescroll">
@@ -85,7 +85,7 @@
     </div>
     {% endfor %}
     {% if not rows %}
-    <div class="bl-row"><span></span><span class="bl-conf" style="color:var(--text-muted)">No players match these filters — widen the origin, region, or class.</span></div>
+    <div class="bl-row"><span></span><span class="bl-conf" style="color:var(--text-muted)">No players match these filters. Widen the origin, region or class.</span></div>
     {% endif %}
   </div>
 </div>

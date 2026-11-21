@@ -3,8 +3,8 @@
 {% block title %}JHSAA {{ view.group }} Districts{% endblock %}
 {% block content %}
 
-{{ jh_header(view.scope, u, 'districts', view.group ~ ' Districts',
-             "A double round-robin decides each league, and its champion is protected into Regionals.",
+{{ jh_header(view.scope, u, 'districts', view.group ~ ' districts',
+             "A double round robin decides each league, and its champion starts the playoffs at Regionals.",
              [('Season', view.season_year|cal), ('Districts', view.districts|length)]) }}
 
 <div class="jh-shell">

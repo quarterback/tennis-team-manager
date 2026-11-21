@@ -71,7 +71,7 @@ BRACKETS = (SINGLES, DOUBLES)
 
 #: How a bracket is written out. The association names positions No. 1 through
 #: No. 3 and this event has only one of each, so no number appears.
-BRACKET_NAMES = {SINGLES: "JV Singles", DOUBLES: "JV Doubles"}
+BRACKET_NAMES = {SINGLES: "JV singles", DOUBLES: "JV doubles"}
 
 #: ‼️ THE DISTRICT QUALIFIERS ARE THEIR OWN EVENT KEY, and that is what keeps
 #: them out of every reader that counts a STATE title. They are archived in the
@@ -141,8 +141,8 @@ QUAL_SINGLES = "QJVS"
 QUAL_DOUBLES = "QJVD"
 QUAL_BRACKETS = (QUAL_SINGLES, QUAL_DOUBLES)
 QUAL_OF = {SINGLES: QUAL_SINGLES, DOUBLES: QUAL_DOUBLES}
-QUAL_NAMES = {QUAL_SINGLES: "JV Singles Qualifying",
-              QUAL_DOUBLES: "JV Doubles Qualifying"}
+QUAL_NAMES = {QUAL_SINGLES: "JV singles qualifying",
+              QUAL_DOUBLES: "JV doubles qualifying"}
 
 #: How many players an entry is. `jhsaa_individuals` states this as fixed RANKS
 #: because all six of its flights draw from one pool; here the rule is stated as a

@@ -229,7 +229,7 @@ def d_cinderella(data: dict) -> list[dict]:
             head = f"No. {seed} seed {school} reached the {grp} semifinals"
         opp = d["loser"] if d["winner"] == school else d["winner"]
         verb = "def." if d["winner"] == school else "lost to"
-        dek = f"{GENDER_LABEL[g]} · {verb} {opp} {d['win_points']}–{d['lose_points']}"
+        dek = f"{'Beat' if verb == 'def.' else 'Lost to'} {opp} {d['win_points']}–{d['lose_points']}"
         out.append(_story("cinderella", g, best[0][0], head, dek, f"No. {seed}",
                           "seed", _link_bracket(grp, g), grp, "championship"))
     return out
@@ -279,7 +279,7 @@ def d_nailbiter(data: dict) -> list[dict]:
         rd = "final" if d["alive"] <= 2 else "semifinal"
         head = f"{d['winner']} {d['win_points']}–{d['lose_points']} {d['loser']} in the {d['group']} {rd}"
         n_finals = sum(1 for x in late if x["alive"] <= 2)
-        dek = f"{GENDER_LABEL[g]} · {n_finals} of {len([x for x in _state_duals(arc) if x['alive'] <= 2])} finals went to the last flight"
+        dek = f"{n_finals} of {len([x for x in _state_duals(arc) if x['alive'] <= 2])} finals went to the last flight"
         out.append(_story("nailbiter", g, 55 + (12 if d["alive"] <= 2 else 0) + d["gap"],
                           head, dek, f"{d['win_points']}–{d['lose_points']}", rd,
                           _link_bracket(d["group"], g), d["group"], "championship"))
@@ -303,12 +303,12 @@ def d_freshman_champ(data: dict) -> list[dict]:
                 if len(fresh) == len(players) and len(players) > 1:
                     name = " / ".join(p.get("name", "") for p in players)
                     head = f"{name} won {grp} {fname} as freshmen"
-                    dek = f"{GENDER_LABEL[g]} · {entry.get('school', '')}"
+                    dek = entry.get('school', '')
                 else:
                     name = fresh[0].get("name", "")
                     partner = [p for p in players if p is not fresh[0]]
                     head = f"{name} won {grp} {fname} as a freshman"
-                    dek = f"{GENDER_LABEL[g]} · {entry.get('school', '')}" + \
+                    dek = entry.get('school', '') + \
                         (f" · with {partner[0].get('name', '')} ({partner[0].get('grade', '')})" if partner else "")
                 pid = fresh[0].get("pid")
                 link = {"ep": "jhsaa_player", "args": {"school": entry.get("school", ""),
@@ -332,7 +332,7 @@ def d_undefeated(data: dict) -> list[dict]:
                     st = wd.jhsaa_state_result(br, r["school"])
                     fin = st["finish"] or "did not reach State"
                     head = f"{r['school']} went {r['record']}"
-                    dek = f"{GENDER_LABEL[g]} {grp} · {fin}"
+                    dek = fin[:1].upper() + fin[1:]
                     out.append(_story("undefeated", g, 60 + r["wins"] + (20 if st["champion"] else 0),
                                       head, dek, r["record"], "record",
                                       _link_school(r["school"], g), grp, "programs"))
@@ -359,7 +359,7 @@ def d_missed_state(data: dict) -> list[dict]:
         ps = wd.jhsaa_postseason_result(_stage_dict(arc, grp), r["school"])
         where = ps.get("finish") or "no postseason"
         head = f"No. {r['rank']} {r['school']} missed State"
-        dek = f"{GENDER_LABEL[g]} {grp} · {r['record']} · out at {where}"
+        dek = f"{r['record']} · out at {where}"
         out.append(_story("missed_state", g, 90 - r["rank"] * 6, head, dek,
                           f"No. {r['rank']}", "TOSS rank",
                           {"ep": "jhsaa_rankings", "args": {"group": grp, "g": g}},
@@ -384,8 +384,7 @@ def d_disagreement(data: dict) -> list[dict]:
             continue
         sig, school, grp, lo, hi, mean, rec = best
         head = f"{school} ranks No. {lo} to No. {hi} across nine systems"
-        dek = f"{GENDER_LABEL[g]} {grp} · {rec} · mean rank {mean:.1f}" if mean is not None else \
-            f"{GENDER_LABEL[g]} {grp} · {rec}"
+        dek = f"{rec} · mean rank {mean:.1f}" if mean is not None else rec
         out.append(_story("disagreement", g, 40 + sig * 3, head, dek, f"{lo}–{hi}",
                           "rank range", {"ep": "jhsaa_computer", "args": {"group": grp, "g": g}},
                           grp, "rankings"))
@@ -409,7 +408,7 @@ def d_one_flight(data: dict) -> list[dict]:
             continue
         _, school, w, l = best
         head = f"{school} went {w}–{l} in one-flight duals"
-        dek = f"{GENDER_LABEL[g]} {grp_of[school]} · {w + l} duals decided on the last flight"
+        dek = f"{w + l} duals decided on the last flight"
         out.append(_story("one_flight", g, 40 + (w / (w + l)) * 40 + (w + l),
                           head, dek, f"{w}–{l}", "one-flight duals",
                           _link_school(school, g), grp_of[school], "programs"))
@@ -428,7 +427,7 @@ def d_sweep(data: dict) -> list[dict]:
         ggrp, bgrp = gc[school], bc[school]
         head = (f"{school} won both {ggrp} titles" if ggrp == bgrp else
                 f"{school} won the girls' {ggrp} and boys' {bgrp} titles")
-        out.append(_story("sweep", "both", 85, head, "Girls and boys State champions",
+        out.append(_story("sweep", "both", 85, head, "",
                           "2", "state titles", _link_school(school, "girls"), ggrp, "programs"))
     return out
 
@@ -453,7 +452,7 @@ def d_riser(data: dict) -> list[dict]:
             continue
         rise, r, grp, old = best
         head = f"{r['school']} rose from No. {old} to No. {r['rank']} in {grp}"
-        dek = f"{GENDER_LABEL[g]} · {r['record']} · {data['season_year'] - 1} to {data['season_year']}"
+        dek = f"{r['record']} this season"
         out.append(_story("riser", g, 45 + rise, head, dek, f"+{rise}", "places",
                           _link_school(r["school"], g), grp, "programs"))
     return out

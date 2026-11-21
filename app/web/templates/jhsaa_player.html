@@ -492,10 +492,10 @@
           <span class="bit">{{ view.read_override.school }}'s coach reads this player {{ '%+.1f'|format(view.read_override.delta) }}.</span>
           {% endif %}
         </form>
-        <p class="bit">Manual and always-approved — no eligibility rules, no
-          sit-out. Takes effect the FOLLOWING season, never mid-year.
-          {% if view.transfer_moves %}A further move is recorded beside the ones
-          above rather than replacing them, so the seasons already played keep the
+        <p class="bit">Manual and always approved, with no eligibility rules or
+          sit-out. It takes effect the following season.
+          {% if view.transfer_moves %}A further move is added beside the ones
+          above, so the seasons already played keep the
           school they were played at.{% endif %}</p>
       </div>
     </div>

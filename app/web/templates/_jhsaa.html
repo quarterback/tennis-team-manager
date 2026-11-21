@@ -62,12 +62,14 @@
 <div class="jh-head"><div class="jh-head-inner">
   <div class="jh-titlerow">
     <div style="min-width:0">
-      {# The eyebrow is the way HOME: every JHSAA page links back to the front page. #}
-      <a class="jh-eyebrow" href="{{ url_for('jhsaa_front', u=u, g=scope.gender, year=scope.pin) }}"><i class="fa-solid fa-school-flag" aria-hidden="true"></i>
-        Jefferson High School Activities Association</a>
+      {# No eyebrow: it was the association's name on every page and a link home,
+         and the Front page tab two rows down is both. #}
       <h1 class="jh-title">{{ title }}</h1>
       {% if sub %}<p class="jh-sub">{{ sub }}</p>{% endif %}
     </div>
+    {# Season, class and sport are the scope bar's (and the masthead's) to say;
+       as readouts here they printed each a second time beside the title. #}
+    {% set meta = meta|rejectattr('0', 'in', ['Season', 'Class', 'Sport'])|list %}
     {% if meta %}
     <div class="jh-headmeta">
       {% for m in meta %}<div><span class="k">{{ m[0] }}</span><span class="v">{{ m[1] }}</span></div>{% endfor %}
@@ -76,7 +78,7 @@
     {# Scouting data (OVR/potential/stars) is a god-mode view, hidden by default
        everywhere it appears on this section — this is the one switch for it,
        so it always sits beside the title rather than being re-added per page. #}
-    <label class="jh-scout-toggle" title="OVR, potential and star ratings — a scouting view kept obscured by default">
+    <label class="jh-scout-toggle" title="Shows OVR, potential and star ratings, which stay hidden by default">
       <input type="checkbox" data-jh-scout-checkbox
              onchange="document.documentElement.setAttribute('data-jh-scout',this.checked?'on':'off');try{localStorage.setItem('jh-scout',this.checked?'on':'off')}catch(e){}">
       <span>Show ratings</span>
@@ -137,8 +139,8 @@
     </div>
     {% endif %}
     <div class="jh-tabs">
-      <a class="{{ 'on' if tab == 'front' }}" title="The association front page"
-         href="{{ url_for('jhsaa_front', u=u, g=scope.gender, year=scope.pin) }}">Front Page</a>
+      <a class="{{ 'on' if tab == 'front' }}"
+         href="{{ url_for('jhsaa_front', u=u, g=scope.gender, year=scope.pin) }}">Front page</a>
       {# ‼️ ONE CHAMPIONSHIP TAB, THREE VIEWS OF IT (owner, 2026-08). State, Bracket
          and TOC each led with the same champion hero and the same draw, so three of
          the twelve tabs asked one question. They stay three PAGES — the hub is an
@@ -157,7 +159,7 @@
       {# The DIRECTORY — every program in the association, by county or by class and
          league. Carries no group or year: it is the school list, which is a fact
          about the association rather than about one season. #}
-      <a class="{{ 'on' if tab == 'schools' }}" title="Every program — by county, class and league"
+      <a class="{{ 'on' if tab == 'schools' }}" title="Every program by county, class and league"
          href="{{ url_for('jhsaa_schools', u=u, g=scope.gender) }}">Schools</a>
       {# History is TWO pages on its own sub-rail (owner, 2026-08): the champions
          grid (who won each class each season) and the title board (what a program
@@ -169,15 +171,15 @@
          both properties belong to the SCHOOL and outlive any one season. #}
       <a class="{{ 'on' if tab in ('programs', 'program_tiers', 'coaches', 'carousel') }}" title="Archetypes, play-up, talent tiers and coaching staffs"
          href="{{ url_for('jhsaa_programs', u=u, g=scope.gender) }}">Programs</a>
-      <a class="{{ 'on' if tab == 'players' }}" title="Searchable directory — talent, potential, stars"
+      <a class="{{ 'on' if tab == 'players' }}" title="Search every player by talent, potential and stars"
          href="{{ url_for('jhsaa_players', u=u, g=scope.gender) }}">Players</a>
-      <a class="{{ 'on' if tab == 'misapplied' }}" title="Talent mismatches — buried above their classification's level"
+      <a class="{{ 'on' if tab == 'misapplied' }}" title="Players whose talent clears a bigger classification's level"
          href="{{ url_for('jhsaa_misapplied', u=u, g=scope.gender) }}">Mismatches</a>
       <a class="{{ 'on' if tab == 'lineup_lab' }}" title="Assemble hypothetical squads from mismatched talent"
          href="{{ url_for('jhsaa_lineup_lab_route', u=u, g=scope.gender) }}">Lineup Lab</a>
-      <a class="{{ 'on' if tab == 'cohorts' }}" title="Reserve cohorts — second varsity-caliber teams and the weak hosts they could play for"
+      <a class="{{ 'on' if tab == 'cohorts' }}" title="Second varsity-caliber squads and the weak programs they could play for"
          href="{{ url_for('jhsaa_cohorts', u=u, g=scope.gender) }}">Cohorts</a>
-      <a class="{{ 'on' if tab == 'realism' }}" title="This season's set scores against last season's, with real Oregon HS tennis as a baseline"
+      <a class="{{ 'on' if tab == 'realism' }}" title="This season's set scores beside last season's, with real Oregon high school tennis as a baseline"
          href="{{ url_for('jhsaa_realism', u=u, g=scope.gender) }}">Realism</a>
     </div>
   </div>
@@ -193,7 +195,7 @@
     <a class="{{ 'on' if tab == 'state' }}"
        href="{{ url_for('jhsaa_page', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Overview</a>
     <a class="{{ 'on' if tab == 'bracket' }}"
-       href="{{ url_for('jhsaa_bracket', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">{{ scope.group }} Draw</a>
+       href="{{ url_for('jhsaa_bracket', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Draw</a>
     {# ‼️ THE TOC IS CLASS-BLIND AND STILL CARRIES `group`. The event fields every
        classification's champion, so the class does not choose what is on screen —
        but it is the scope bar's MEMORY, and dropping it here reset the rail to the
@@ -201,13 +203,13 @@
        to the class you were browsing. #}
     <a class="{{ 'on' if tab == 'toc' }}"
        href="{{ url_for('jhsaa_toc', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Tournament of Champions</a>
-    <a class="{{ 'on' if tab == 'individuals' }}" title="No. 1-3 singles and doubles — six individual state champions, plus mixed"
+    <a class="{{ 'on' if tab == 'individuals' }}" title="No. 1 to No. 3 singles and doubles, plus mixed doubles"
        href="{{ url_for('jhsaa_individuals', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Individual State</a>
     {# The JV TEAM championship (pilot from 2068) — a championship the association
        crowns, so it belongs on this rail beside the others rather than on a tab of
        its own. Class-blind like the TOC and carrying `group` for the same reason:
        the rail is the section's scope memory, not a filter on this page. #}
-    <a class="{{ 'on' if tab == 'jv_state' }}" title="The JV team championship — statewide, no classifications, one champion a gender"
+    <a class="{{ 'on' if tab == 'jv_state' }}" title="The statewide JV team championship, one champion for each sport"
        href="{{ url_for('jhsaa_jv_state', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">JV Team State</a>
   </div>
   {% endif %}
@@ -220,43 +222,43 @@
   {% if tab in ('rankings', 'computer', 'committee', 'coefficient', 'flights') %}
   <div class="jh-subrail">
     <a class="{{ 'on' if tab == 'rankings' }}"
-       href="{{ url_for('jhsaa_rankings', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">TOSS Rankings</a>
-    <a class="{{ 'on' if tab == 'computer' }}" title="Nine independent computer systems and their composite — parallel to TOSS, never a replacement"
-       href="{{ url_for('jhsaa_computer', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Computer Ratings</a>
+       href="{{ url_for('jhsaa_rankings', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">TOSS rankings</a>
+    <a class="{{ 'on' if tab == 'computer' }}" title="Nine independent computer ratings and their composite, shown beside TOSS"
+       href="{{ url_for('jhsaa_computer', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Computer ratings</a>
     {# The committee runs for the Parastate classes only, and the page says so
        for the rest — carrying `group` keeps the scope bar's memory, the TOC's
        rule. The class list is DERIVED (`jh_parastate_blurb`): this tooltip named
        four classes for a while after the expansion made it ten. #}
-    <a class="{{ 'on' if tab == 'committee' }}" title="The at-large selection committee — the Parastate classes ({{ jh_parastate_blurb(scope.season_year) }})"
-       href="{{ url_for('jhsaa_committee', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">At-Large Committee</a>
+    <a class="{{ 'on' if tab == 'committee' }}" title="The at-large selection committee for the Parastate classes ({{ jh_parastate_blurb(scope.season_year) }})"
+       href="{{ url_for('jhsaa_committee', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">At-large committee</a>
     {# The Program Coefficient (owner spec 2026-09): nine seasons of road and
        State results, ranked within one class — never across classes. #}
     <a class="{{ 'on' if tab == 'coefficient' }}" title="Nine-season strength coefficient from road-to-state and State results, ranked within the class"
-       href="{{ url_for('jhsaa_coefficient', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Program Coefficient</a>
+       href="{{ url_for('jhsaa_coefficient', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Program coefficient</a>
     {# Flight efficiency (owner request 2026-09): every program's win rate at
        every flight against what the grades predicted. #}
     <a class="{{ 'on' if tab == 'flights' }}" title="Every program's win rate at every flight, against the rate the two sides' grades predicted"
-       href="{{ url_for('jhsaa_flights', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Flight Efficiency</a>
+       href="{{ url_for('jhsaa_flights', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">Flight efficiency</a>
   </div>
   {% endif %}
 
   {% if tab in ('history', 'titles', 'indiv_history', 'repeat_poy', 'repeat_champs', 'alumni', 'coach_records', 'retired', 'career_wins', 'program_wins', 'realignments') %}
   <div class="jh-subrail">
     <a class="{{ 'on' if tab == 'history' }}"
-       href="{{ url_for('jhsaa_champions', u=u, g=scope.gender, group=scope.group) }}">State Champions</a>
+       href="{{ url_for('jhsaa_champions', u=u, g=scope.gender, group=scope.group) }}">State champions</a>
     {# The individual titles are their OWN page, not a column on the team grid
        (owner, 2026-08): that grid crowns one champion per class per year, this event
        crowns six, so they cannot share a row. #}
     <a class="{{ 'on' if tab == 'indiv_history' }}"
-       href="{{ url_for('jhsaa_individual_champions', u=u, g=scope.gender, group=scope.group) }}">Individual Champions</a>
+       href="{{ url_for('jhsaa_individual_champions', u=u, g=scope.gender, group=scope.group) }}">Individual champions</a>
     <a class="{{ 'on' if tab == 'titles' }}"
-       href="{{ url_for('jhsaa_titles', u=u, g=scope.gender, group=scope.group) }}">Title Board</a>
+       href="{{ url_for('jhsaa_titles', u=u, g=scope.gender, group=scope.group) }}">Title board</a>
     {# The all-time WINS board (owner, 2026-08) — the Title Board's format, a
        separate view: trophies and wins are different questions. #}
-    <a class="{{ 'on' if tab == 'program_wins' }}" title="All-time program wins — the whole association, sortable"
-       href="{{ url_for('jhsaa_program_wins', u=u, g=scope.gender, group=scope.group) }}">Program Wins</a>
-    <a class="{{ 'on' if tab == 'career_wins' }}" title="Most match wins over a high-school career — singles, doubles, overall"
-       href="{{ url_for('jhsaa_career_wins', u=u, g=scope.gender, group=scope.group) }}">Career Wins</a>
+    <a class="{{ 'on' if tab == 'program_wins' }}" title="All-time dual wins for every program"
+       href="{{ url_for('jhsaa_program_wins', u=u, g=scope.gender, group=scope.group) }}">Program wins</a>
+    <a class="{{ 'on' if tab == 'career_wins' }}" title="Most match wins over a high school career in singles, doubles and overall"
+       href="{{ url_for('jhsaa_career_wins', u=u, g=scope.gender, group=scope.group) }}">Career wins</a>
     {# The two CAREER rolls (owner, 2026-08). Every other page in this section is
        scoped to one season, so a multi-year run is invisible — a name in 2028 and
        the same name in 2030 with nothing joining them. These fold across seasons,
@@ -265,19 +267,19 @@
     <a class="{{ 'on' if tab == 'repeat_poy' }}" title="Players who have won a classification POY more than once"
        href="{{ url_for('jhsaa_repeat_poy_view', u=u, g=scope.gender, group=scope.group) }}">Repeat POY</a>
     <a class="{{ 'on' if tab == 'repeat_champs' }}" title="Players with more than one individual state title"
-       href="{{ url_for('jhsaa_repeat_champions', u=u, g=scope.gender, group=scope.group) }}">Repeat State Champs</a>
+       href="{{ url_for('jhsaa_repeat_champions', u=u, g=scope.gender, group=scope.group) }}">Repeat State champs</a>
     {# The alumni tracker (owner, 2026-11): one graduating class and where it
        played college tennis. Carries the season, because the season IS the class. #}
     <a class="{{ 'on' if tab == 'alumni' }}" title="Where each graduating class played college tennis"
-       href="{{ url_for('jhsaa_alumni', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">College Alumni</a>
+       href="{{ url_for('jhsaa_alumni', u=u, g=scope.gender, group=scope.group, year=scope.pin) }}">College alumni</a>
     {# Coach records (owner, 2026-09): most head-coach wins, multiple state titles. #}
     <a class="{{ 'on' if tab == 'coach_records' }}" title="Most head-coach dual wins, and coaches with more than one state title"
-       href="{{ url_for('jhsaa_coach_records', u=u, g=scope.gender, group=scope.group) }}">Coach Records</a>
+       href="{{ url_for('jhsaa_coach_records', u=u, g=scope.gender, group=scope.group) }}">Coach records</a>
     {# Programs that no longer sponsor the sport — a school and its last season,
        so its history is findable without guessing what class it played in when
        it stopped. #}
     <a class="{{ 'on' if tab == 'retired' }}"
-       href="{{ url_for('jhsaa_retired', u=u, g=scope.gender, group=scope.group) }}">Retired Programs</a>
+       href="{{ url_for('jhsaa_retired', u=u, g=scope.gender, group=scope.group) }}">Retired programs</a>
     {# The reclassification cycles (owner spec 2026-09) — which schools moved
        class, when, and on what evidence. Class-blind like the Title Board. #}
     <a class="{{ 'on' if tab == 'realignments' }}" title="Every committed reclassification cycle"
@@ -293,8 +295,8 @@
     <a class="{{ 'on' if tab == 'programs' }}"
        href="{{ url_for('jhsaa_programs', u=u, g=scope.gender) }}">Programs</a>
     <a class="{{ 'on' if tab == 'program_tiers' }}"
-       href="{{ url_for('jhsaa_program_tiers', u=u, g=scope.gender) }}">Talent Tiers</a>
-    <a class="{{ 'on' if tab == 'coaches' }}" title="Every program's coaching staff — each coach's page is their editor"
+       href="{{ url_for('jhsaa_program_tiers', u=u, g=scope.gender) }}">Talent tiers</a>
+    <a class="{{ 'on' if tab == 'coaches' }}" title="Every program's coaching staff. Each coach's page is also their editor."
        href="{{ url_for('jhsaa_coaches', u=u, g=scope.gender) }}">Coaches</a>
     <a class="{{ 'on' if tab == 'carousel' }}" title="Run a coaching cycle, veto any line, commit"
        href="{{ url_for('jhsaa_coach_carousel', u=u, g=scope.gender) }}">Carousel</a>

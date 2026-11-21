@@ -5,16 +5,15 @@
 {% block content %}
 
 {{ jh_header(view.scope, u, 'toc', 'Tournament of Champions',
-             'Every classification champion in one draw, seeded on the TOSS Power Index
-              rather than on the size of the school, plus the two finalist-qualifier
-              winners that make it a byeless sixteen — the winner is the overall
-              champion of Jefferson.',
+             'Every classification champion in one draw, seeded on the TOSS Power Index,
+              plus the two finalist-qualifier winners, for a field of 16 with no byes.
+              The winner is the overall champion of Jefferson.',
              [('Season', view.season_year|cal), ('Field', view.field_n)] if view.ready else []) }}
 
 <div class="jh-shell">
 {% if not view.ready %}
 <div class="bl-panel"><div class="jh-empty">
-  No Tournament of Champions archived for this season yet — it is played after the
+  No Tournament of Champions archived for this season yet. It is played after the
   classification state tournaments that feed it.</div></div>
 {% else %}
 
@@ -22,7 +21,7 @@
 <div class="jh-champ" style="margin-bottom:12px">
   <span class="mark">{{ view.champion.mark|safe }}</span>
   <div style="min-width:0">
-    <span class="lbl">{{ view.season_year|cal }} JHSAA Tournament of Champions</span>
+    <span class="lbl">Overall champion</span>
     <a class="nm" href="{{ url_for('jhsaa_school', school=view.champion.name, u=u, g=view.gender, year=view.scope.pin) }}">{{ view.champion.name }}</a>
     {# An affiliate's real geography is city/state — see School.state. #}
     <div class="sub">{{ view.champion.mascot }} · {{ view.champion.city }}, {{ view.champion.state if view.champion.state else 'Jefferson' }}
@@ -73,7 +72,7 @@
   <div class="brk-stage" id="brkstage">
     <section class="brk-region" data-view="all">
       <div class="brk-region-head">
-        <h2>{{ view.season_year|cal }} TOC · {{ view.field_n }} teams</h2>
+        <h2>{{ view.field_n }} teams</h2>
         <span class="brk-region-champ">
           {% if view.champion %}{{ view.champion.name }} def. {{ view.runner_up.name }}{% else %}in progress{% endif %}</span>
       </div>

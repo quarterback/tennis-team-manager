@@ -75,7 +75,7 @@
     <div class="bl-title-card champion">
       {{ crest_box(ch.champion.program.school, ch.champion.program.abbr, ch.champion.program.color, 'lg') }}
       <div>
-        <div class="bl-card-label">Doubles National Champions</div>
+        <div class="bl-card-label">Doubles national champions</div>
         <div class="bl-card-title">{% if cseed %}#{{ cseed }} {% endif %}{{ ch.champion.label }}</div>
         <div class="bl-card-sub">{{ ch.champion.program.school }}{% if ch.runner_up %} — def. {% if rseed %}#{{ rseed }} {% endif %}{{ ch.runner_up.label }} ({{ ch.runner_up.program.school }}){% endif %}</div>
       </div>
@@ -92,7 +92,7 @@
   <section class="bl-bracket-layout">
     <aside class="bl-sim-sidebar">
       <div class="bl-panel bl-panel-tight">
-        <div class="bl-panel-head"><span class="bl-panel-title">Top Seeds</span></div>
+        <div class="bl-panel-head"><span class="bl-panel-title">Top seeds</span></div>
         <div class="bl-seed-list">
           {% for e in ch.entries[:8] %}
             <div class="bl-seed-row">
@@ -119,8 +119,7 @@
 
       <div class="bl-note bl-bracket-note">
         <strong>Model:</strong> each program enters its strongest pair, seeded by a
-        doubles-specific rating that rewards serve and net play — so a pair can seed
-        above its singles level. Every match is simulated point-by-point in the
+        doubles-specific rating that rewards serve and net play, so a pair can seed above its singles level. Every match is simulated point-by-point in the
         two-on-two engine.
       </div>
     </aside>
@@ -128,7 +127,7 @@
     <main class="bl-tournament-main">
       <div class="bl-rounds-header">
         <div>
-          <div class="bl-card-label">Tournament Board</div>
+          <div class="bl-card-label">Tournament board</div>
           <h2>Round-by-round results</h2>
         </div>
         <div class="bl-legend"><span><i class="upset"></i>Upset</span></div>

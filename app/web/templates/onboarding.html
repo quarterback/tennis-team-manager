@@ -41,9 +41,8 @@
         <summary>Fine-tune by nation/region <span class="ob-opt">optional</span></summary>
         <p class="ob-regions-hint">
           Set a <strong>weight</strong> for any region to author the <strong>international</strong>
-          mix directly — the weights are relative, so e.g. Europe 160, Latin America 60,
-          Canada 40, Africa 60, everything else 0 gives a European core with real Latin America,
-          Canada &amp; Africa. The <strong class="ob-reff-key">%</strong> next to each name is its
+          mix directly. The weights are relative, so e.g. Europe 160, Latin America 60,
+          Canada 40, Africa 60, everything else 0 gives a European core with real Latin America, Canada and Africa. The <strong class="ob-reff-key">%</strong> next to each name is its
           live share of the whole world (US included) and updates as you type.
           <em>Picking a band just pre-fills these weights; the US row is the “US vs. world split” above.</em>
           <button type="button" class="ob-reset" id="ob-reset">Reset to band</button>
@@ -75,8 +74,7 @@
             <button type="button" class="ob-mix-btn danger" id="ob-mix-del">Delete</button>
           </div>
           <p class="ob-mix-hint">
-            <strong>Download</strong> writes the whole mix — every weight, the band it started
-            from and the US/world split — to a small <code>.json</code> file on your machine, and
+            <strong>Download</strong> writes the whole mix (every weight, the band it started from and the US and world split) to a small <code>.json</code> file on your machine, and
             <strong>Load file…</strong> reads one straight back into the grid. That file is the
             copy that lasts: <em>Save to this world</em> keeps a named mix inside this save, so it
             goes away when the save does.
@@ -357,7 +355,7 @@
           {% endfor %}
         </div>
         <select name="user_program" id="ob-school" class="ob-select">
-          <option value="">Spectate — no team (browse only)</option>
+          <option value="">Spectate (no team, browse only)</option>
           {% for division, gender, label, schools in programs_by_universe %}
             {% for school in schools %}
             <option value="{{ division }}|{{ gender }}|{{ school }}" data-div="{{ division }}" data-gender="{{ gender }}"
@@ -373,7 +371,7 @@
         // non-matching <option>s from the DOM rather than using option.hidden, which
         // iOS/WebKit ignores in the native picker (it would leave every division/
         // gender selectable and let a hidden mismatch submit).
-        var spectate = { value: '', text: 'Spectate — no team (browse only)' };
+        var spectate = { value: '', text: 'Spectate (no team, browse only)' };
         var all = [], preselected = null;
         Array.prototype.forEach.call(sel.options, function (o) {
           if (!o.dataset.div) { spectate = { value: o.value, text: o.text }; return; }

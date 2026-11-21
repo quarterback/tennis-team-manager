@@ -8,10 +8,10 @@
 <div class="jh-shell">
 <div class="jh-ident" style="margin-bottom:14px">
   <div class="jh-ident-body">
-    <h1>JHSAA Lab</h1>
+    <h1>JHSAA lab</h1>
     <div class="where">
-      Standalone JHSAA seasons, decoupled from the college/pro sim — no world
-      advance, no college universe built. This process is bound to its own
+      Standalone JHSAA seasons, run apart from the college and pro game. No world
+      advance and no college universe. This process is bound to its own
       database (<code>{{ db_path }}</code>), separate from your real save.
     </div>
   </div>
@@ -22,8 +22,8 @@
   <div class="bl-panel-body" style="padding:12px">
     <p class="bit"><b>{{ 'Generating a new season' if job_kind == 'generate' else 'Advancing the season' }}…</b>
       {{ job_elapsed }}s elapsed. A cold run takes roughly 10 minutes per
-      season (~600 programs, both genders) — the normal app hides this behind
-      a background cache warm the lab doesn't have. This page refreshes itself
+      season (about 600 programs, both genders). The main app hides this behind
+      a background cache warm the lab lacks. This page refreshes itself
       every 5 seconds; no need to resubmit anything.</p>
   </div>
 </div>
@@ -58,9 +58,9 @@
       <a href="{{ url_for('jhsaa_front') }}">Browse it at /jhsaa</a> ·
       <a href="{{ url_for('research_export') }}">Export any of them as CSV/JSON</a>.
       Program history, honours and records accumulate across every season
-      you advance through — this is one continuous world, not separate runs.</p>
+      you advance through in one continuous world.</p>
     {% else %}
-    <p class="bit">No lab world yet — generate one below to start.</p>
+    <p class="bit">No lab world yet. Generate one below to start.</p>
     {% endif %}
   </div>
 </div>
@@ -78,10 +78,10 @@
     <p class="bit" style="margin-top:10px">
       Plays and archives one more JHSAA season per year, on the SAME lab
       world: existing cohorts age up and graduate, new freshmen arrive, and
-      program records/honours build up across every year — a real 20+ year
-      history to analyze, not 20 unrelated one-off seasons. Each year takes
+      program records and honors build up across every year into one history
+      you can analyze. Each year takes
       roughly 10 minutes cold, so advancing 20 at once will run in the
-      background for a while — this page will show progress and refresh
+      background for a while. This page shows progress and refresh
       itself until it's done.
       {% if not exists %}Generate a season first.{% endif %}
     </p>
@@ -92,18 +92,17 @@
   <div class="bl-panel-head"><span class="bl-panel-title">Start a fresh world</span></div>
   <div class="bl-panel-body">
     <form method="post" action="{{ url_for('jhsaa_lab_generate') }}">
-      <label class="s">Salt (optional — leave blank for a fresh random one)
+      <label class="s">Salt (optional; leave blank for a random one)
         <input type="text" name="salt" placeholder="e.g. run-014" {{ 'disabled' if job_running }}></label>
       <button type="submit" class="bl-run-big" style="width:auto;height:36px;margin-top:10px;padding:0 16px;font-size:16px" {{ 'disabled' if job_running }}>
         Generate new season (both genders)
       </button>
     </form>
     <p class="bit" style="margin-top:10px">
-      Wipes this database and starts an entirely new lab world at year one —
-      new programs' cohorts, a fresh salt if none is given. Use this to begin
-      a different run, not to add a season to the current one — for that use
-      Advance above. Runs in the background (~10 minutes cold) — this page
-      will show progress and refresh itself until it's done.
+      Wipes this database and starts a new lab world at year one, with
+      new cohorts and a fresh salt if none is given. To add a season to the
+      current world, use Advance above. This runs in the background (about 10
+      minutes cold), and this page shows progress and refresh itself until it's done.
     </p>
   </div>
 </div>

@@ -5,23 +5,23 @@
 
 <div class="ib-hero">
   <div class="rc-eyebrow">Analytics Bureau · {{ uni_label }}</div>
-  <h1>Player Intelligence Platform</h1>
+  <h1>Player intelligence platform</h1>
   <span class="ib-godmode"><span class="dot"></span> God mode · all-seeing · no noise</span>
 </div>
 
 <div class="ib-kpis">
-  <div class="ib-kpi"><div class="k">Players Scanned</div><div class="v">{{ ov.n_players }}</div></div>
+  <div class="ib-kpi"><div class="k">Players scanned</div><div class="v">{{ ov.n_players }}</div></div>
   <div class="ib-kpi"><div class="k">Programs</div><div class="v">{{ ov.n_teams }}</div></div>
   <a class="ib-kpi flag" style="text-decoration:none" href="{{ url_for('intel_underplaced', u=u) }}">
-    <div class="k">Underplaced Talent</div><div class="v">{{ ov.n_underplaced }}</div></a>
+    <div class="k">Underplaced talent</div><div class="v">{{ ov.n_underplaced }}</div></a>
   <a class="ib-kpi flag" style="text-decoration:none" href="{{ url_for('intel_scholarships', u=u) }}">
-    <div class="k">Aid Misallocations</div><div class="v">{{ ov.n_aid_flags }}</div></a>
+    <div class="k">Aid misallocations</div><div class="v">{{ ov.n_aid_flags }}</div></a>
   <a class="ib-kpi flag" style="text-decoration:none" href="{{ url_for('intel_lineups', u=u) }}">
     <div class="k">Lineup Lab</div><div class="v"><i class="fa-solid fa-chart-column" aria-hidden="true"></i></div><div class="k" style="margin-top:2px">every team by conference</div></a>
   <a class="ib-kpi flag" style="text-decoration:none" href="{{ url_for('intel_portal_search', u=u) }}">
-    <div class="k">Portal Search</div><div class="v"><i class="fa-solid fa-magnifying-glass-location" aria-hidden="true"></i></div><div class="k" style="margin-top:2px">by hometown · region · class</div></a>
+    <div class="k">Portal search</div><div class="v"><i class="fa-solid fa-magnifying-glass-location" aria-hidden="true"></i></div><div class="k" style="margin-top:2px">by hometown · region · class</div></a>
   <a class="ib-kpi flag" style="text-decoration:none" href="{{ url_for('intel_teams', u=u) }}">
-    <div class="k">Team Scanner</div><div class="v"><i class="fa-solid fa-table-cells" aria-hidden="true"></i></div><div class="k" style="margin-top:2px">every roster by OVR · all divisions</div></a>
+    <div class="k">Team scanner</div><div class="v"><i class="fa-solid fa-table-cells" aria-hidden="true"></i></div><div class="k" style="margin-top:2px">every roster by OVR · all divisions</div></a>
   <a class="ib-kpi flag" style="text-decoration:none" href="{{ url_for('intel_architect', u=u) }}">
     <div class="k">Lineup Architect</div><div class="v"><i class="fa-solid fa-compass-drafting" aria-hidden="true"></i></div><div class="k" style="margin-top:2px">whole squads from buried talent</div></a>
 </div>
