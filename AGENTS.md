@@ -91,6 +91,8 @@ Read the relevant document **before** changing a system, and write one **after**
 
 ---
 
+**JHSAA alumni college careers:** Read [`docs/DESIGN-jhsaa-alumni-college-career-model.md`](docs/DESIGN-jhsaa-alumni-college-career-model.md) before changing `app/jhsaa_college.py` or `app/jhsaa_college_v2.py`. The abbreviated, deterministic, write-once career model is intentional. An opportunity transfer must buy a meaningful increase in the receiving program's projected role (especially when moving to a lower division); evaluate staying and transferring against the same next-year depth-chart calculation. Upward transfers are separate. Also read [the implementation AAR](docs/AAR-jhsaa-alumni-career-model-2.md) and [validation report](docs/reports/REPORT-jhsaa-alumni-career-model-2-validation.md) for actual tested behavior and known gaps.
+
 ## Workflow
 
 1. **Read the AAR** for the system you're touching. Most surprising behaviour is documented.
