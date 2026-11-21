@@ -1,0 +1,12 @@
+{# The season stepper, shared by the World Hub and the Season Hub so both name
+   the stage the same way (state.stage_steps is the one source). #}
+{% macro stepper(stages) %}
+<ol class="bl-stepper" aria-label="Season stages">
+  {% for st in stages %}
+  <li class="bl-step{{ ' done' if st.done }}{{ ' current' if st.current }}"{% if st.current %} aria-current="step"{% endif %}>
+    <span class="bl-step-dot" aria-hidden="true">{{ '✓' if st.done else loop.index }}</span>
+    <span class="bl-step-label">{{ st.label }}</span>
+  </li>
+  {% endfor %}
+</ol>
+{% endmacro %}

@@ -34,7 +34,7 @@
       <span class="al-live-dot"></span>
       <div class="al-hero-k">{{ 'Live season' if portal.has_live_results else 'Preseason model' }}</div>
       <div class="al-hero-v">
-        {% if portal.phase == 'regular' %}Week {{ [portal.current_week, portal.total_weeks]|min }}{% elif portal.phase == 'conf_tournaments' %}Conference tournaments{% elif portal.phase == 'ncaa' %}NCAA championship{% else %}Season complete{% endif %}
+        {% if portal.phase == 'regular' %}Week {{ [portal.current_week, portal.total_weeks]|min }}{% elif portal.phase in ('ita_kickoff', 'ita_indoor') %}Preseason NIT{% elif portal.phase == 'fall_portal' %}Fall transfer portal{% elif portal.phase == 'conf_tournaments' %}Conference tournaments{% elif portal.phase == 'selection' %}Bracket reveal{% elif portal.phase == 'ncaa' %}NCAA championship{% else %}Season complete{% endif %}
       </div>
       <div class="al-hero-sub">{{ portal.programs }} programs · {{ portal.players }} players · {{ portal.conferences }} conferences</div>
     </div>

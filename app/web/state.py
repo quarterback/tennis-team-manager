@@ -3092,6 +3092,65 @@ def search_players(query: str, seed: int = DEFAULT_SEED, limit: int = 80) -> dic
             "n": len(players) + len(recruits), "short": False}
 
 
+# ONE reading of "where is the season", shared by the World Hub stepper, the
+# Season Hub stepper and the Season Hub's status line. Each page used to name the
+# stage from its own if-chain, and they disagreed: in week 6 of a fresh save the
+# header said "Review fall portal", the World Hub "regular season in progress"
+# and the Season Hub "Season complete" (its chain had no `fall_portal` branch, so
+# the open portal fell through to the `else`).
+STAGE_ORDER = ["ita", "fall_portal", "regular", "conf_tournaments", "selection", "ncaa",
+               "awards", "world_cups", "offseason"]
+STAGE_LABELS = {"ita": "Preseason NIT", "fall_portal": "Fall portal",
+                "regular": "Regular season", "conf_tournaments": "Conf tournaments",
+                "selection": "Bracket Reveal", "ncaa": "NCAA championship",
+                "awards": "Awards", "world_cups": "World Cups", "offseason": "Offseason"}
+_PHASE_RANK = {"ita_kickoff": -2, "ita_indoor": -1, "fall_portal": -0.5, "regular": 0,
+               "conf_tournaments": 1, "selection": 2, "ncaa": 3, "complete": 4}
+
+
+def world_stage_key(w: dict, phases: list[str], active_dg: list[tuple[str, str]]) -> str:
+    """The world's stage from the active universes' season phases. The trailing
+    universe sets it (the world clock waits for everyone)."""
+    import app.world as world
+    import app.honors as honors
+    year = world.display_base_year() + w["year"]
+    complete = bool(phases) and all(p == "complete" for p in phases)
+    if not complete:
+        raw = min(phases, key=lambda p: _PHASE_RANK.get(p, 0)) if phases else "regular"
+        stage = "ita" if raw in ("ita_kickoff", "ita_indoor") else raw
+        if w["week"] == 0 and w["year"] > 0 and not world.pros_rolled(w):
+            stage = "pro_offseason"
+        return stage
+    if not all(honors.has_season(year, d, g) for (d, g) in active_dg):
+        return "awards"
+    if not world.cups_done(w):
+        return "world_cups"
+    return "offseason"
+
+
+def stage_steps(stage: str) -> list[dict]:
+    """The stepper rows for a stage key. pro_offseason sits at week 0 of the NEW
+    year, past the season arc, so it shows as the Offseason step finishing up."""
+    ci = STAGE_ORDER.index("offseason" if stage == "pro_offseason" else stage)
+    return [{"key": k, "label": STAGE_LABELS[k], "done": i < ci, "current": i == ci}
+            for i, k in enumerate(STAGE_ORDER)]
+
+
+def current_world_stage(seed: int = DEFAULT_SEED) -> dict:
+    """Stage + stepper without priming the world: one season row per active
+    universe, the same reads the header makes on every page."""
+    import app.world as world
+    import app.seasonmode as sm
+    from app import worldconfig
+    if not world.exists():
+        return {"stage": "regular", "stages": stage_steps("regular")}
+    w = world.load_world()
+    active = [(d, g) for (_v, d, g, _l) in UNIVERSES if worldconfig.is_active(d, g)]
+    phases = [sm.load_season(world.universe_sid(seed, w, d, g))["phase"] for (d, g) in active]
+    stage = world_stage_key(w, phases, active)
+    return {"stage": stage, "stages": stage_steps(stage)}
+
+
 def world_hub(seed: int = DEFAULT_SEED):
     import app.world as world
     import app.seasonmode as sm
@@ -3133,22 +3192,8 @@ def world_hub(seed: int = DEFAULT_SEED):
     # Offseason runs as separate, visible steps: awards → world cups → rollover →
     # pro offseason. Each is one advance click, so nothing important happens inside
     # another step's click.
-    _ORDER = ["ita", "fall_portal", "regular", "conf_tournaments", "selection", "ncaa",
-              "awards", "world_cups", "offseason"]
-    _PH = {"ita_kickoff": -2, "ita_indoor": -1, "fall_portal": -0.5, "regular": 0,
-           "conf_tournaments": 1, "selection": 2, "ncaa": 3, "complete": 4}
-    pros_pending = (w["week"] == 0 and w["year"] > 0 and not world.pros_rolled(w))
-    if not complete:
-        raw = min((d["phase"] for d in divisions), key=lambda p: _PH[p])
-        stage = ("ita" if raw in ("ita_kickoff", "ita_indoor") else raw)
-        if pros_pending:
-            stage = "pro_offseason"
-    elif not awards_done:
-        stage = "awards"
-    elif not world.cups_done(w):
-        stage = "world_cups"
-    else:
-        stage = "offseason"
+    stage = world_stage_key(w, [d["phase"] for d in divisions],
+                            [(d, g) for (_v, d, g, _l) in active_unis])
     if stage == "fall_portal":
         primary = {"endpoint": "fall_portal", "icon": "fa-solid fa-arrows-rotate", "label": "Review fall portal →", "link": True}
     elif stage == "selection":
@@ -3171,15 +3216,7 @@ def world_hub(seed: int = DEFAULT_SEED):
                    "label": "Run pro league offseason →"}
     else:
         primary = {"endpoint": "world_advance", "label": f"Begin {year + 1} season →"}
-    _LABELS = {"ita": "Preseason NIT", "fall_portal": "Fall portal", "regular": "Regular season",
-               "conf_tournaments": "Conf tournaments", "selection": "Bracket Reveal",
-               "ncaa": "NCAA championship", "awards": "Awards", "world_cups": "World Cups",
-               "offseason": "Offseason"}
-    # pro_offseason sits at week 0 of the NEW year — past the stepper's season arc,
-    # so it shows as the (already-rolled-over) Offseason step still finishing up.
-    ci = _ORDER.index("offseason" if stage == "pro_offseason" else stage)
-    stages = [{"key": k, "label": _LABELS[k], "done": i < ci, "current": i == ci}
-              for i, k in enumerate(_ORDER)]
+    stages = stage_steps(stage)
 
     return {
         "year": year, "season_no": w["year"] + 1,
@@ -3244,8 +3281,12 @@ def my_program_view(seed: int = DEFAULT_SEED) -> dict | None:
     # exactly what the team fields, and renumber the singles lines to match.
     order = {pr.pid: i for i, pr in enumerate(build_roster(p))}
     roster.sort(key=lambda r: order.get(r["p"].pid, len(order)))
+    # The division's singles count (D1/D4 ten, D2/D3 eight) — never 6. This was
+    # `i <= 6`, so a D1 Clubhouse numbered six flights and showed courts 7-10 as
+    # bench while the dual fielded all ten.
+    n_lineup = _lineup_size(division)
     for i, r in enumerate(roster, 1):
-        r["line"] = i if i <= 6 else None
+        r["line"] = i if i <= n_lineup else None
     lineup_pinned = school in ov.get_lineups()
     doubles_pin = ov.get_doubles().get(school) or []
     rec = team_results(division, gender, school, seed)
@@ -3255,6 +3296,9 @@ def my_program_view(seed: int = DEFAULT_SEED) -> dict | None:
         opp = nxt["away"] if nxt["home"] == school else nxt["home"]
         nxt = {"week": nxt["week"], "opp": opp, "home": nxt["home"] == school,
                "round": nxt["round"], "conf": bool(nxt["is_conf"])}
+    # Power Index and its rank, from the same live ranking the Season Hub lists.
+    field = sm.national_top(sid, 10 ** 6)
+    mine = next((r for r in field if r["school"] == school), None)
     return {
         "division": division, "gender": gender, "school": school,
         "u": f"{division}-{gender}",
@@ -3272,7 +3316,11 @@ def my_program_view(seed: int = DEFAULT_SEED) -> dict | None:
         "doubles_pin": doubles_pin,
         # The division's dual shape, so the lineup/doubles editors render the right
         # number of slots (D1/D4 field 10 singles; D1 fields 5 doubles pairs).
-        "n_lineup": _lineup_size(division),
+        "n_lineup": n_lineup,
+        "pi": mine["pi"] if mine else None,
+        "pi_rank": mine["rk"] if mine else None,
+        "n_rated": len(field),
+        "location": getattr(p, "location", ""),
         "n_doubles": _dual_format(division).n_doubles,
         "budget": team_budget(division, gender, school),
         "incoming": team_recruiting_class(gender, school, seed),

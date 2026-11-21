@@ -6,47 +6,58 @@
   <header class="mp-head">
     <div class="mp-id">
       <h1 class="mp-h1">{{ mp.school }}</h1>
-      <div class="mp-sub" title="{{ mp.conf }}">{{ mp.division }} {{ mp.gender|capitalize }} · {{ mp.conf_abbr or mp.conf }}</div>
+      <div class="mp-sub" title="{{ mp.conf }}">{{ mp.division }} {{ mp.gender|capitalize }} · {{ mp.conf_abbr or mp.conf }}{% if mp.location %} · {{ mp.location }}{% endif %}</div>
     </div>
-    <div class="mp-meta">
-      <div class="mp-stat"><span class="mp-k">Record</span><span class="mp-v">{{ mp.wins }}–{{ mp.losses }}</span></div>
-      <div class="mp-stat"><span class="mp-k">Prestige</span><span class="mp-v">{{ mp.prestige }}</span></div>
-      <div class="mp-stat"><span class="mp-k">Season</span><span class="mp-v">{{ mp.year }}{% if mp.is_preseason %} · Preseason{% else %} · Wk {{ mp.week }}{% endif %}</span></div>
-    </div>
+    <dl class="mp-meta">
+      <div class="mp-stat"><dt class="mp-k">Record</dt><dd class="mp-v">{{ mp.wins }}–{{ mp.losses }}</dd></div>
+      {% if mp.pi is not none %}
+      <div class="mp-stat"><dt class="mp-k">Power Index</dt><dd class="mp-v">{{ "%.3f"|format(mp.pi) }}
+        <a class="mp-v-sub" href="{{ url_for('season_hub', u=mp.u) }}">{{ mp.pi_rank }} of {{ mp.n_rated }}</a></dd></div>
+      {% endif %}
+      <div class="mp-stat"><dt class="mp-k">Prestige</dt><dd class="mp-v">{{ mp.prestige }}</dd></div>
+      <div class="mp-stat"><dt class="mp-k">Season</dt><dd class="mp-v">{{ mp.year }}<span class="mp-v-sub">{% if mp.is_preseason %}Preseason{% else %}Week {{ mp.week }}{% endif %}</span></dd></div>
+    </dl>
   </header>
-
-  {% if not mp.is_preseason %}
-  <div class="mp-reportcta">
-    <a href="{{ url_for('my_report') }}"><i class="fa-solid fa-chart-column" aria-hidden="true"></i> Season report card →</a>
-    {% if mp.season_complete %}<a href="{{ url_for('my_offers') }}" style="margin-left:16px;"><i class="fa-solid fa-briefcase" aria-hidden="true"></i> Job offers →</a>{% endif %}
-  </div>
-  {% endif %}
 
   {% if mp.is_preseason %}
   <div class="mp-next">
-    <span class="mp-next-k">Preseason</span>
-    <span class="mp-next-v">Set your non-conference schedule</span>
-    <span class="mp-next-t">Pick who you play out of conference before the season locks.</span>
-    <a class="mp-next-link" href="{{ url_for('my_schedule') }}">Plan schedule →</a>
+    <h2 class="mp-next-v">Set your non-conference schedule</h2>
+    <a class="mp-next-link" href="{{ url_for('my_schedule') }}">Plan schedule</a>
   </div>
   {% elif mp.next %}
   <div class="mp-next">
-    <span class="mp-next-k">Next dual</span>
-    <span class="mp-next-v">{% if mp.next.home %}vs{% else %}at{% endif %} {{ mp.next.opp }}</span>
+    <h2 class="mp-next-v">Next dual {% if mp.next.home %}vs{% else %}at{% endif %} {{ mp.next.opp }}</h2>
     <span class="mp-next-t">Week {{ mp.next.week }}{% if mp.next.conf %} · conference{% endif %}</span>
-    <a class="mp-next-link" href="{{ url_for('season_schedule', u=mp.u, school=mp.school) }}">Full schedule →</a>
+    <span class="mp-next-links">
+      <a class="mp-next-link" href="{{ url_for('season_schedule', u=mp.u, school=mp.school) }}">Full schedule</a>
+      <a class="mp-next-link" href="{{ url_for('my_report') }}">Season report card</a>
+      {% if mp.season_complete %}<a class="mp-next-link" href="{{ url_for('my_offers') }}">Job offers</a>{% endif %}
+    </span>
+  </div>
+  {% elif not mp.is_preseason %}
+  <div class="mp-next">
+    <h2 class="mp-next-v">No duals left on the schedule</h2>
+    <span class="mp-next-links">
+      <a class="mp-next-link" href="{{ url_for('my_report') }}">Season report card</a>
+      {% if mp.season_complete %}<a class="mp-next-link" href="{{ url_for('my_offers') }}">Job offers</a>{% endif %}
+    </span>
   </div>
   {% endif %}
 
   <div class="mp-grid">
 
-    <section class="mp-card mp-span2">
-      <div class="mp-card-h"><h2>Singles lineup</h2>
-        <a class="mp-card-link" href="{{ url_for('teams', u=mp.u, school=mp.school) }}">Full roster →</a></div>
+    {# ONE singles lineup. The table used to be followed by a second copy of the
+       same ladder as ten dropdowns, so the lineup appeared twice and editing it
+       meant matching names between the two. Now the table IS the editor: pick a
+       player, pick another, and they swap flights; Save posts the same s1..sN
+       slots `my_program_lineup` always took. #}
+    {% set ladder = mp.starters + mp.bench %}
+    <section class="mp-card mp-span2" aria-labelledby="mp-singles-h">
+      <div class="mp-card-h"><h2 id="mp-singles-h">Singles lineup</h2>
+        <a class="mp-card-link" href="{{ url_for('teams', u=mp.u, school=mp.school) }}">Full roster</a></div>
       <div class="mp-lineup-status">
         {% if mp.lineup_pinned %}
           <span class="mp-badge on">Custom lineup</span>
-          <span class="mp-note" style="margin:0;">Your hand-set order is fielded every dual.</span>
           <form method="post" action="{{ url_for('my_program_lineup') }}" style="margin-left:auto;">
             <input type="hidden" name="action" value="reset">
             <button class="mp-reset" type="submit"><i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i> Reset to auto</button>
@@ -55,48 +66,61 @@
           <span class="mp-badge">Auto lineup</span>
         {% endif %}
       </div>
-      {% set ladder = mp.starters + mp.bench %}
-      <div class="mp-tscroll">
-      <table class="mp-table">
-        <thead><tr><th>#</th><th>Player</th><th>Yr</th><th class="mp-num">STR</th><th class="mp-num">W–L</th><th>Aid</th></tr></thead>
-        <tbody>
-          {% for r in ladder %}
-          <tr{% if r.injury %} class="mp-hurt"{% endif %}{% if not r.line %} class="mp-benchrow"{% endif %}>
-            <td class="mp-line">{{ r.line or '—' }}</td>
-            <td>{{ r.p.name }}{% if r.p | is_pro %} <span class="mp-pro" title="Ex-pro — entered via the portal">PRO</span>{% endif %}{% if r.injury %} <span class="mp-tag">OUT</span>{% endif %}</td>
-            <td>{{ r.p.class_year }}</td>
-            <td class="mp-num">{{ r.str }}</td>
-            <td class="mp-num">{{ r.w }}–{{ r.l }}</td>
-            <td>{{ r.schol }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      </div>
-      {% if ladder|length >= mp.n_lineup %}
-      {% set lpin = ladder[:mp.n_lineup]|map(attribute='p.pid')|list %}
-      <form method="post" action="{{ url_for('my_program_lineup') }}" class="mp-dbl" style="margin-top:12px">
-        {% for i in range(mp.n_lineup) %}
-        <div class="mp-dblrow">
-          <span class="mp-dbl-line">S{{ i + 1 }}</span>
-          <select name="s{{ i + 1 }}">{% for r in ladder %}<option value="{{ r.p.pid }}"{% if r.p.pid == lpin[i] %} selected{% endif %}>{{ r.p.name }}{% if r.injury %} (out){% endif %}</option>{% endfor %}</select>
+      <form method="post" action="{{ url_for('my_program_lineup') }}" class="mp-lineup" data-n="{{ mp.n_lineup }}">
+        <div class="mp-tscroll">
+        <table class="mp-table">
+          <thead><tr><th scope="col">Flight</th><th scope="col">Player</th><th scope="col">Yr</th><th scope="col" class="mp-num">STR</th><th scope="col" class="mp-num">W–L</th><th scope="col">Aid</th><th scope="col"><span class="mp-sr">Move</span></th></tr></thead>
+          <tbody>
+            {% for r in ladder %}
+            <tr data-pid="{{ r.p.pid }}" class="{{ 'mp-hurt' if r.injury }}{{ ' mp-benchrow' if not r.line }}{{ ' mp-firstbench' if loop.index == mp.n_lineup + 1 }}">
+              <td class="mp-line">{{ ('S' ~ r.line) if r.line else 'Bench' }}</td>
+              <td class="mp-name">{{ r.p.name }}{% if r.p | is_pro %} <span class="mp-pro" title="Ex-pro — entered via the portal">PRO</span>{% endif %}{% if r.injury %} <span class="mp-tag">OUT</span>{% endif %}</td>
+              <td>{{ r.p.class_year }}</td>
+              <td class="mp-num">{{ r.str }}</td>
+              <td class="mp-num">{{ r.w }}–{{ r.l }}</td>
+              <td>{{ r.schol }}</td>
+              <td class="mp-movecell"><button type="button" class="mp-swap" aria-pressed="false" aria-label="Move {{ r.p.name }}">Move</button></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
         </div>
-        {% endfor %}
-        <button class="mp-dbl-save" type="submit">Save lineup</button>
+        {% if ladder|length >= mp.n_lineup %}
+        <div class="mp-slots">
+          {% for i in range(mp.n_lineup) %}<input type="hidden" name="s{{ i + 1 }}" value="{{ ladder[i].p.pid }}">{% endfor %}
+        </div>
+        <div class="mp-lineup-foot">
+          <button class="mp-dbl-save" type="submit">Save lineup</button>
+          <span class="mp-lineup-msg" aria-live="polite"></span>
+        </div>
+        {% endif %}
       </form>
-      {% endif %}
+      {# Without script the Move buttons cannot swap, so the slot pickers stay
+         available as the fallback. #}
+      <noscript>
+        {% if ladder|length >= mp.n_lineup %}
+        <form method="post" action="{{ url_for('my_program_lineup') }}" class="mp-dbl" style="margin-top:12px">
+          {% for i in range(mp.n_lineup) %}
+          <div class="mp-dblrow">
+            <label class="mp-dbl-line" for="ns{{ i + 1 }}">S{{ i + 1 }}</label>
+            <select id="ns{{ i + 1 }}" name="s{{ i + 1 }}">{% for r in ladder %}<option value="{{ r.p.pid }}"{% if loop.index0 == i %} selected{% endif %}>{{ r.p.name }}</option>{% endfor %}</select>
+          </div>
+          {% endfor %}
+          <button class="mp-dbl-save" type="submit">Save lineup</button>
+        </form>
+        {% endif %}
+      </noscript>
     </section>
 
     {% set pool = mp.starters + mp.bench %}
     {% set dslots = mp.n_doubles * 2 %}
     {% if pool|length >= dslots %}
     {% set dpin = mp.doubles_pin if mp.doubles_pin|length == dslots else pool[:dslots]|map(attribute='p.pid')|list %}
-    <section class="mp-card mp-span2">
-      <div class="mp-card-h"><h2>Doubles lineup</h2></div>
+    <section class="mp-card mp-span2" aria-labelledby="mp-doubles-h">
+      <div class="mp-card-h"><h2 id="mp-doubles-h">Doubles lineup</h2></div>
       <div class="mp-lineup-status">
         {% if mp.doubles_pinned %}
           <span class="mp-badge on">Custom pairings</span>
-          <span class="mp-note" style="margin:0;">Your {{ mp.n_doubles }} pairs are fielded every dual.</span>
           <form method="post" action="{{ url_for('my_program_doubles') }}" style="margin-left:auto;">
             <input type="hidden" name="action" value="reset">
             <button class="mp-reset" type="submit"><i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i> Reset to auto</button>
@@ -105,14 +129,14 @@
           <span class="mp-badge">Auto pairings</span>
         {% endif %}
       </div>
-      <form method="post" action="{{ url_for('my_program_doubles') }}" class="mp-dbl">
+      <form method="post" action="{{ url_for('my_program_doubles') }}" class="mp-dbl mp-dblgrid">
         {% for i in range(mp.n_doubles) %}
         {% set base = i * 2 %}
         <div class="mp-dblrow">
           <span class="mp-dbl-line">D{{ i + 1 }}</span>
-          <select name="d{{ i + 1 }}a">{% for r in pool %}<option value="{{ r.p.pid }}"{% if r.p.pid == dpin[base] %} selected{% endif %}>{{ r.p.name }}{% if r.line %} · S{{ r.line }}{% endif %}</option>{% endfor %}</select>
-          <span class="mp-amp">&amp;</span>
-          <select name="d{{ i + 1 }}b">{% for r in pool %}<option value="{{ r.p.pid }}"{% if r.p.pid == dpin[base + 1] %} selected{% endif %}>{{ r.p.name }}{% if r.line %} · S{{ r.line }}{% endif %}</option>{% endfor %}</select>
+          <select name="d{{ i + 1 }}a" aria-label="D{{ i + 1 }} first player">{% for r in pool %}<option value="{{ r.p.pid }}"{% if r.p.pid == dpin[base] %} selected{% endif %}>{{ r.p.name }}{% if r.line %} · S{{ r.line }}{% endif %}</option>{% endfor %}</select>
+          <span class="mp-amp" aria-hidden="true">&amp;</span>
+          <select name="d{{ i + 1 }}b" aria-label="D{{ i + 1 }} second player">{% for r in pool %}<option value="{{ r.p.pid }}"{% if r.p.pid == dpin[base + 1] %} selected{% endif %}>{{ r.p.name }}{% if r.line %} · S{{ r.line }}{% endif %}</option>{% endfor %}</select>
         </div>
         {% endfor %}
         <button class="mp-dbl-save" type="submit">Save pairings</button>
@@ -120,9 +144,26 @@
     </section>
     {% endif %}
 
-    <section class="mp-card">
-      <div class="mp-card-h"><h2>Incoming class</h2>
-        <a class="mp-card-link" href="{{ url_for('team_recruiting', school=mp.school, u=mp.u) }}">Recruiting →</a></div>
+    <section class="mp-card" aria-labelledby="mp-results-h">
+      <h2 id="mp-results-h">Recent results</h2>
+      {% if mp.results %}
+      <ul class="mp-results">
+        {% for d in mp.results %}
+        <li class="{{ 'win' if d.won else 'loss' }}">
+          <span class="mp-r-wl">{{ 'W' if d.won else 'L' }}</span>
+          <span class="mp-r-opp">{% if d.home %}vs{% else %}at{% endif %} {{ d.opp }}</span>
+          <span class="mp-r-sc">{{ d.mine }}–{{ d.theirs }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="mp-note">No duals played yet.{% if mp.remaining_duals %} {{ mp.remaining_duals }} on the slate.{% endif %}</p>
+      {% endif %}
+    </section>
+
+    <section class="mp-card" aria-labelledby="mp-class-h">
+      <div class="mp-card-h"><h2 id="mp-class-h">Incoming class</h2>
+        <a class="mp-card-link" href="{{ url_for('team_recruiting', school=mp.school, u=mp.u) }}">Recruiting</a></div>
       <div class="mp-kpis">
         <div class="mp-kpi"><span class="mp-kpi-n">{{ mp.incoming.n }}</span><span class="mp-kpi-k">signed</span></div>
         <div class="mp-kpi"><span class="mp-kpi-n">{{ mp.incoming.score }}</span><span class="mp-kpi-k">class score</span></div>
@@ -140,127 +181,174 @@
       {% endif %}
     </section>
 
-    <section class="mp-card">
-      <h2>Scholarships</h2>
+    <section class="mp-card" aria-labelledby="mp-aid-h">
+      <h2 id="mp-aid-h">Scholarships</h2>
       {% if mp.budget.offers_aid %}
       <div class="mp-kpis">
         <div class="mp-kpi"><span class="mp-kpi-n">{{ mp.budget.allocated }}</span><span class="mp-kpi-k">of {{ mp.budget.cap }} used</span></div>
         <div class="mp-kpi"><span class="mp-kpi-n">{{ mp.budget.full_rides }}</span><span class="mp-kpi-k">full rides</span></div>
         <div class="mp-kpi"><span class="mp-kpi-n">{{ mp.budget.walk_ons }}</span><span class="mp-kpi-k">walk-ons</span></div>
       </div>
-      <div class="mp-bar"><span style="width: {{ (100 * mp.budget.allocated / mp.budget.cap)|round|int if mp.budget.cap else 0 }}%"></span></div>
+      <div class="mp-bar" aria-hidden="true"><span style="width: {{ (100 * mp.budget.allocated / mp.budget.cap)|round|int if mp.budget.cap else 0 }}%"></span></div>
       {% else %}
       <p class="mp-note">No athletic aid · {{ mp.budget.walk_ons }} walk-ons</p>
-      {% endif %}
-    </section>
-
-    <section class="mp-card">
-      <h2>Recent results</h2>
-      {% if mp.results %}
-      <ul class="mp-results">
-        {% for d in mp.results %}
-        <li class="{{ 'win' if d.won else 'loss' }}">
-          <span class="mp-r-wl">{{ 'W' if d.won else 'L' }}</span>
-          <span class="mp-r-opp">{% if d.home %}vs{% else %}at{% endif %} {{ d.opp }}</span>
-          <span class="mp-r-sc">{{ d.mine }}–{{ d.theirs }}</span>
-        </li>
-        {% endfor %}
-      </ul>
-      {% else %}
-      <p class="mp-note">No duals played yet.{% if mp.remaining_duals %} {{ mp.remaining_duals }} on the slate.{% endif %}</p>
       {% endif %}
     </section>
 
   </div>
 </div>
 
+<script>
+/* Click-to-swap lineup. Pick a player's Move button, then another's: the two
+   trade flights. The hidden s1..sN inputs always mirror the top N rows, so Save
+   posts exactly what the table shows. */
+(function () {
+  var form = document.querySelector(".mp-lineup");
+  if (!form) return;
+  var n = parseInt(form.dataset.n, 10);
+  var tbody = form.querySelector("tbody");
+  var slots = form.querySelectorAll(".mp-slots input");
+  var msg = form.querySelector(".mp-lineup-msg");
+  var picked = null;
+  function rows() { return Array.prototype.slice.call(tbody.querySelectorAll("tr[data-pid]")); }
+  function name(tr) { return tr.querySelector(".mp-name").firstChild.textContent.trim(); }
+  function mark(tr, on) {
+    tr.classList.toggle("mp-picked", on);
+    tr.querySelector(".mp-swap").setAttribute("aria-pressed", on ? "true" : "false");
+  }
+  function renumber() {
+    rows().forEach(function (tr, i) {
+      tr.querySelector(".mp-line").textContent = i < n ? "S" + (i + 1) : "Bench";
+      tr.classList.toggle("mp-benchrow", i >= n);
+      tr.classList.toggle("mp-firstbench", i === n);
+      if (i < n && slots[i]) slots[i].value = tr.dataset.pid;
+    });
+  }
+  tbody.addEventListener("click", function (e) {
+    var btn = e.target.closest(".mp-swap");
+    if (!btn) return;
+    var tr = btn.closest("tr");
+    if (!picked) { picked = tr; mark(tr, true); if (msg) msg.textContent = name(tr) + " picked"; return; }
+    if (picked === tr) { mark(tr, false); picked = null; if (msg) msg.textContent = ""; return; }
+    var a = picked, b = tr, hold = document.createComment("");
+    a.replaceWith(hold); b.replaceWith(a); hold.replaceWith(b);
+    mark(a, false); picked = null;
+    renumber();
+    if (msg) msg.textContent = name(a) + " and " + name(b) + " swapped. Not saved yet.";
+  });
+})();
+</script>
+
 <style>
-  .mp-wrap { max-width: 960px; margin: 0 auto; padding: 8px 4px 40px; }
-  .mp-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;
-    flex-wrap: wrap; margin-bottom: 16px; }
-  .mp-h1 { font-size: 26px; margin: 0; color: var(--text-primary); }
-  .mp-sub { font-size: 16px; color: var(--text-secondary); margin-top: 4px; }
-  .mp-meta { display: flex; gap: 18px; }
-  .mp-stat { display: flex; flex-direction: column; align-items: flex-end; }
-  .mp-k { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
-  .mp-v { font-size: 19px; font-weight: 700; color: var(--text-primary); }
-  .mp-next { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
-    padding: 10px 14px; margin-bottom: 18px; border: 1px solid var(--border-subtle);
+  .mp-wrap { max-width: 1200px; margin: 0 auto; padding: 16px 20px 48px; min-width: 0; }
+  .mp-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px 32px;
+    flex-wrap: wrap; margin-bottom: 18px; }
+  .mp-h1 { font-family: var(--font-display); font-size: var(--fs-display-xl); font-weight: var(--fw-black);
+    line-height: 1.05; margin: 0; color: var(--text-primary); }
+  .mp-sub { font-size: var(--fs-title-m); color: var(--text-secondary); margin-top: 6px; }
+  .mp-meta { display: flex; gap: 28px; margin: 0; flex-wrap: wrap; }
+  .mp-stat { display: flex; flex-direction: column; }
+  .mp-k { font-size: var(--fs-micro); font-weight: var(--fw-semibold); color: var(--text-muted); }
+  .mp-v { margin: 2px 0 0; font-size: var(--fs-display-m); font-weight: var(--fw-bold); color: var(--text-primary);
+    font-variant-numeric: tabular-nums; display: flex; align-items: baseline; gap: 8px; }
+  .mp-v-sub { font-size: var(--fs-caption); font-weight: var(--fw-semibold); color: var(--text-secondary); }
+  a.mp-v-sub { color: var(--text-link); }
+  .mp-next { display: flex; align-items: baseline; gap: 8px 16px; flex-wrap: wrap;
+    padding: 14px 18px; margin-bottom: 18px; border: 1px solid var(--border-subtle);
     border-radius: 10px; background: var(--surface-card); }
-  .mp-next-k { font-size: 14px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
-  .mp-next-v { font-size: 18px; font-weight: 700; color: var(--text-primary); }
-  .mp-next-t { font-size: 15px; color: var(--text-secondary); }
-  .mp-next-link { margin-left: auto; font-size: 16px; font-weight: 600; color: var(--text-link); text-decoration: none; }
-  .mp-reportcta { margin-bottom: 14px; }
-  .mp-reportcta a { font-size: 16px; font-weight: 600; color: var(--text-link); text-decoration: none; }
-  .mp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
-  .mp-card { border: 1px solid var(--border-subtle); border-radius: 12px; padding: 16px 18px;
+  .mp-next-v { font-size: var(--fs-display-s); font-weight: var(--fw-bold); color: var(--text-primary); margin: 0; }
+  .mp-next-t { font-size: var(--fs-body-s); color: var(--text-secondary); }
+  .mp-next-links { margin-left: auto; display: flex; gap: 18px; flex-wrap: wrap; }
+  .mp-next-link { font-size: var(--fs-body-s); font-weight: var(--fw-semibold); color: var(--text-link); }
+  .mp-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .mp-grid > * { min-width: 0; }
+  .mp-card { border: 1px solid var(--border-subtle); border-radius: 12px; padding: 18px 20px;
     background: var(--surface-card); }
   .mp-span2 { grid-column: 1 / -1; }
-  .mp-card h2 { font-size: 18px; margin: 0 0 12px; color: var(--text-primary); }
-  .mp-card-h { display: flex; align-items: baseline; justify-content: space-between; }
-  .mp-card-link { font-size: 15px; font-weight: 600; color: var(--text-link); text-decoration: none; }
-  .mp-wrap { min-width: 0; }
-  /* Grid cards must be allowed to shrink below their content width, or a wide table
-     stretches the track and (with html{overflow-x:hidden}) gets clipped unreachably. */
-  .mp-grid > * { min-width: 0; }
-  /* Wide tables scroll horizontally INSIDE their card instead of being clipped by the
-     page. min-width keeps the columns readable while the box scrolls on a phone. */
+  .mp-card h2 { font-size: var(--fs-title-l); margin: 0 0 12px; color: var(--text-primary); }
+  .mp-card-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .mp-card-link { font-size: var(--fs-caption); font-weight: var(--fw-semibold); color: var(--text-link); }
+  .mp-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  /* Wide tables scroll horizontally INSIDE their card instead of being clipped by
+     the page; min-width keeps the columns readable while the box scrolls. */
   .mp-tscroll { overflow-x: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
-  .mp-tscroll .mp-table { min-width: 30rem; }
-  .mp-table { width: 100%; border-collapse: collapse; font-size: 16px; }
-  .mp-table th { text-align: left; font-size: 13px; text-transform: uppercase; letter-spacing: .04em;
-    color: var(--text-muted); font-weight: 600; padding: 4px 8px; border-bottom: 1px solid var(--border-subtle); }
-  .mp-table td { padding: 6px 8px; border-bottom: 1px solid var(--border-subtle); color: var(--text-primary); }
+  .mp-tscroll .mp-table { min-width: 34rem; }
+  .mp-table { width: 100%; border-collapse: collapse; font-size: var(--fs-body-s); }
+  .mp-table th { text-align: left; font-size: var(--fs-micro); font-weight: var(--fw-semibold);
+    color: var(--text-muted); padding: 6px 10px; border-bottom: 1px solid var(--border-default); }
+  .mp-table td { padding: 4px 10px; height: 44px; border-bottom: 1px solid var(--border-subtle); color: var(--text-primary); }
   .mp-num { text-align: right; font-variant-numeric: tabular-nums; }
-  .mp-line { font-weight: 700; color: var(--text-secondary); }
+  .mp-line { font-weight: var(--fw-bold); color: var(--text-secondary); width: 64px; font-variant-numeric: tabular-nums; }
+  .mp-name { font-weight: var(--fw-semibold); }
   .mp-hurt td { opacity: .6; }
   .mp-benchrow td { color: var(--text-secondary); background: var(--surface-page); }
+  .mp-benchrow .mp-name { font-weight: var(--fw-medium); }
+  .mp-firstbench td { border-top: 2px solid var(--border-default); }
+  .mp-picked td { background: var(--green-50); }
+  .mp-picked td:first-child { box-shadow: inset 3px 0 0 var(--brand); }
+  .mp-movecell { width: 1%; text-align: right; }
+  .mp-swap { min-height: 36px; min-width: 64px; padding: 0 12px; cursor: pointer;
+    font: inherit; font-size: var(--fs-caption); font-weight: var(--fw-semibold); color: var(--text-link);
+    background: var(--surface-card); border: 1px solid var(--border-default); border-radius: 7px; }
+  .mp-swap:hover, .mp-swap[aria-pressed="true"] { border-color: var(--brand); color: var(--brand-strong); }
+  .mp-swap[aria-pressed="true"] { background: var(--surface-card); box-shadow: inset 0 0 0 1px var(--brand); }
+  .mp-swap:focus-visible, .mp-dbl-save:focus-visible, .mp-reset:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+  @media (pointer: coarse) { .mp-swap { min-height: 44px; } }
+  .mp-lineup-foot { display: flex; align-items: center; gap: 14px; margin-top: 14px; flex-wrap: wrap; }
+  .mp-lineup-msg { font-size: var(--fs-body-s); color: var(--text-secondary); }
   .mp-lineup-status { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
-  .mp-badge { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
-    padding: 2px 8px; border-radius: 999px; color: var(--text-secondary); border: 1px solid var(--border-subtle); }
-  .mp-badge.on { color: var(--brand-contrast, #fff); background: var(--brand); border-color: var(--brand); }
-  .mp-reset { font-size: 15px; font-weight: 600; cursor: pointer; color: var(--text-link);
-    background: none; border: 1px solid var(--border-subtle); border-radius: 7px; padding: 4px 9px; }
-  .mp-move { white-space: nowrap; text-align: right; }
-  .mp-move form { display: inline; }
-  .mp-move button { cursor: pointer; font-size: 14px; line-height: 1; color: var(--text-secondary);
-    background: var(--surface-page); border: 1px solid var(--border-subtle); border-radius: 5px; padding: 3px 6px; }
-  .mp-move button:disabled { opacity: .3; cursor: default; }
-  .mp-move button:hover:not(:disabled) { color: var(--brand); border-color: var(--brand); }
-  .mp-tag { font-size: 12px; font-weight: 700; color: #fff; background: var(--stat-bad, #c0392b);
+  .mp-badge { font-size: var(--fs-micro); font-weight: var(--fw-bold);
+    padding: 3px 10px; border-radius: 999px; color: var(--text-secondary); border: 1px solid var(--border-subtle); }
+  .mp-badge.on { color: var(--brand-contrast); background: var(--brand); border-color: var(--brand); }
+  .mp-reset { font-size: var(--fs-caption); font-weight: var(--fw-semibold); cursor: pointer; color: var(--text-link);
+    background: none; border: 1px solid var(--border-subtle); border-radius: 7px; padding: 6px 10px; min-height: 36px; }
+  .mp-tag { font-size: 12px; font-weight: 700; color: var(--brand-contrast); background: var(--stat-bad);
     border-radius: 4px; padding: 1px 4px; vertical-align: middle; }
   /* Ex-pro badge — green, portal-only elite tier. */
-  .mp-pro, .pro-badge { font-size: 12px; font-weight: 800; letter-spacing: .03em; color: #fff;
-    background: var(--stat-good, #2e7d32); border-radius: 4px; padding: 1px 5px;
-    vertical-align: middle; }
+  .mp-pro, .pro-badge { font-size: 12px; font-weight: 800; letter-spacing: .03em; color: var(--brand-contrast);
+    background: var(--stat-good); border-radius: 4px; padding: 1px 5px; vertical-align: middle; }
   .mp-dbl { display: flex; flex-direction: column; gap: 8px; }
-  .mp-dblrow { display: flex; align-items: center; gap: 8px; }
-  .mp-dbl-line { font-weight: 700; color: var(--text-secondary); width: 28px; flex: none; }
-  .mp-dblrow select { flex: 1 1 0; min-width: 0; font-size: 16px; padding: 5px 7px;
-    border: 1px solid var(--border-subtle); border-radius: 7px; background: var(--surface-page);
+  .mp-dblgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 10px 24px; }
+  .mp-dblgrid .mp-dbl-save { grid-column: 1 / -1; justify-self: start; }
+  .mp-dblrow { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .mp-dbl-line { font-weight: var(--fw-bold); color: var(--text-secondary); width: 30px; flex: none; }
+  .mp-dblrow select { flex: 1 1 0; min-width: 0; font-size: var(--fs-body-s); padding: 7px 8px; min-height: 40px;
+    border: 1px solid var(--border-default); border-radius: 7px; background: var(--surface-card);
     color: var(--text-primary); }
-  .mp-amp { color: var(--text-faint); flex: none; }
-  .mp-dbl-save { align-self: flex-start; margin-top: 2px; font-size: 16px; font-weight: 700; cursor: pointer;
-    color: var(--brand-contrast, #fff); background: var(--brand); border: 0; border-radius: 8px; padding: 7px 14px; }
-  .mp-dbl-save:hover { background: var(--brand-strong, var(--brand)); }
-  .mp-note { font-size: 15px; color: var(--text-muted); line-height: 1.5; margin: 10px 0 0; }
-  .mp-kpis { display: flex; gap: 18px; margin-bottom: 6px; }
+  .mp-amp { color: var(--text-muted); flex: none; }
+  .mp-dbl-save { align-self: flex-start; font-size: var(--fs-body-s); font-weight: var(--fw-bold); cursor: pointer;
+    color: var(--brand-contrast); background: var(--brand); border: 0; border-radius: 8px; padding: 0 18px; min-height: 44px; }
+  .mp-dbl-save:hover { background: var(--brand-strong); }
+  .mp-note { font-size: var(--fs-caption); color: var(--text-muted); line-height: 1.5; margin: 10px 0 0; }
+  .mp-kpis { display: flex; gap: 20px; margin-bottom: 6px; flex-wrap: wrap; }
   .mp-kpi { display: flex; flex-direction: column; }
-  .mp-kpi-n { font-size: 24px; font-weight: 800; color: var(--text-primary); line-height: 1.1; }
-  .mp-kpi-k { font-size: 14px; color: var(--text-muted); }
+  .mp-kpi-n { font-size: var(--fs-display-m); font-weight: var(--fw-black); color: var(--text-primary); line-height: 1.1; }
+  .mp-kpi-k { font-size: var(--fs-micro); color: var(--text-muted); }
   .mp-commits { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-direction: column; gap: 5px; }
-  .mp-commits li { display: flex; justify-content: space-between; font-size: 16px; color: var(--text-primary); }
-  .mp-c-tier { font-size: 14px; color: var(--text-secondary); }
-  .mp-bar { height: 7px; border-radius: 4px; background: var(--surface-page); overflow: hidden; margin-top: 10px; }
+  .mp-commits li { display: flex; justify-content: space-between; font-size: var(--fs-body-s); color: var(--text-primary); }
+  .mp-c-tier { font-size: var(--fs-micro); color: var(--text-secondary); }
+  .mp-bar { height: 8px; border-radius: 4px; background: var(--surface-page); overflow: hidden; margin-top: 12px; }
   .mp-bar span { display: block; height: 100%; background: var(--brand); }
-  .mp-results { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
-  .mp-results li { display: flex; align-items: center; gap: 10px; font-size: 16px; }
+  .mp-results { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; }
+  .mp-results li { display: flex; align-items: center; gap: 10px; font-size: var(--fs-body-s);
+    padding: 8px 0; border-bottom: 1px solid var(--border-subtle); }
   .mp-r-wl { font-weight: 800; width: 16px; }
-  .mp-results li.win .mp-r-wl { color: var(--stat-good, #2e7d32); }
-  .mp-results li.loss .mp-r-wl { color: var(--stat-bad, #c0392b); }
+  .mp-results li.win .mp-r-wl { color: var(--stat-good); }
+  .mp-results li.loss .mp-r-wl { color: var(--stat-bad); }
   .mp-r-opp { color: var(--text-primary); flex: 1 1 auto; }
   .mp-r-sc { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-  @media (max-width: 720px) { .mp-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 980px) { .mp-grid { grid-template-columns: 1fr; } .mp-dblgrid { grid-template-columns: 1fr; } }
+  @media (max-width: 620px) { .mp-wrap { padding: 12px 12px 40px; } .mp-h1 { font-size: var(--fs-display-l); }
+    .mp-next-links { margin-left: 0; }
+    /* Keep the Move button on screen: on a phone the lineup drops the record and
+       aid columns (both are on the roster page) and keeps the class year. */
+    .mp-lineup .mp-tscroll .mp-table { min-width: 0; }
+    .mp-lineup .mp-table th:nth-child(5), .mp-lineup .mp-table td:nth-child(5),
+    .mp-lineup .mp-table th:nth-child(6), .mp-lineup .mp-table td:nth-child(6) { display: none; }
+    .mp-table td, .mp-table th { padding-left: 6px; padding-right: 6px; }
+    .mp-line { width: 52px; }
+    .mp-card { padding: 16px 12px; }
+    .mp-swap { min-width: 0; padding: 0 10px; } }
+  .mp-table th.mp-num { text-align: right; }
 </style>
 {% endblock %}

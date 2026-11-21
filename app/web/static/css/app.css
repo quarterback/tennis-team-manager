@@ -713,3 +713,14 @@ img, svg, table { max-width: 100%; }
   background: var(--stat-good, #2e7d32); border-radius: 4px; padding: 1px 5px;
   vertical-align: middle;
 }
+
+/* ---- Season stepper (World Hub + Season Hub, templates/_stepper.html) ---- */
+.bl-stepper { display:flex; gap:6px; list-style:none; padding:0; margin:0 0 16px; flex-wrap:wrap; }
+.bl-step { display:flex; align-items:center; gap:8px; padding:6px 14px 6px 8px; border-radius:999px;
+  background:var(--surface-subtle); color:var(--text-muted); font-size:15px; font-weight:600; }
+.bl-step-dot { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px;
+  border-radius:50%; background:var(--border-subtle); color:var(--text-muted); font-size:14px; }
+.bl-step.done { color:var(--brand-strong); }
+.bl-step.done .bl-step-dot { background:var(--brand-strong); color:var(--brand-contrast); }
+.bl-step.current { background:var(--green-50); color:var(--brand-strong); box-shadow:inset 0 0 0 1px var(--brand-strong); }
+.bl-step.current .bl-step-dot { background:var(--brand-strong); color:var(--brand-contrast); }

@@ -16,7 +16,7 @@ import threading
 from flask import (Flask, render_template, request, abort, redirect, url_for,
                    jsonify, make_response, Response, send_file)
 
-from .rankings_data import all_schools, crest, get_row
+from .rankings_data import all_schools, crest
 from .sim import run_dual_view, FIDELITIES, programs_for
 from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     conferences_for, get_bracket, get_doubles_championship,
@@ -2244,7 +2244,14 @@ def create_app() -> Flask:
             rows = team_roster(division, gender, school)
         power6 = next((r.p6 for r in live if r.school == school), 0.0)
         abbr, color = crest(school)
-        row = get_row(school)
+        # The LIVE row. This used to be `rankings_data.get_row`, which reads the
+        # design prototype's hard-coded sample table: any school that table named
+        # showed the prototype's Power Index (Michigan 0.7765) while Rankings and
+        # the Season Hub showed the real one (0.8403), and every other school
+        # showed none at all.
+        row = next((r for r in live if r.school == school), None)
+        if row is not None and not row.pi:
+            row = None                              # unplayed: no index to show yet
         div_obj = load_division(division, gender)
         prog = div_obj.by_school(school)
         conf = team_conference(division, gender, school) or (row.conf if row else "")
@@ -5138,9 +5145,22 @@ def create_app() -> Flask:
                 champions = __import__("json").loads(s["champion"]) if s["phase"] == "ncaa" else {}
             except Exception:
                 champions = {}
+        # One national_top call for the whole field: the top 15 is the table, and
+        # the coached team's own row is appended when it sits below the cut.
+        from app import worldconfig
+        from .state import current_world_stage
+        prog = worldconfig.user_program()
+        my_school = (prog["school"] if prog and prog["division"] == division
+                     and prog["gender"] == gender else None)
+        field = sm.national_top(sid, 10 ** 6)
+        top = field[:15]
+        me_row = next((r for r in field[15:] if r["school"] == my_school), None)
         return render_template("season.html", active="Season", s=s, u=u, uni_label=label,
                                upcoming=upcoming, n_week=len(all_week), week_confs=week_confs,
-                               conf_sel=conf_sel, last=last, top=sm.national_top(sid, 15), crest=crest,
+                               conf_sel=conf_sel, last=last, top=top, me_row=me_row,
+                               my_school=my_school, n_rated=len(field), crest=crest,
+                               season_year=wd.display_base_year() + (wd.load_world()["year"] if wd.exists() else 0),
+                               stages=current_world_stage()["stages"],
                                bubble=sm.bubble_watch(sid), ita_champ=sm.indoor_champion(sid))
 
     # NOTE: there is deliberately NO /season/advance. The Season Hub used to carry
