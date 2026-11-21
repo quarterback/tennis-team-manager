@@ -16,7 +16,7 @@ import threading
 from flask import (Flask, render_template, request, abort, redirect, url_for,
                    jsonify, make_response, Response, send_file)
 
-from .rankings_data import all_schools, crest, get_row
+from .rankings_data import all_schools, crest
 from .sim import run_dual_view, FIDELITIES, programs_for
 from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     conferences_for, get_bracket, get_doubles_championship,
@@ -2244,7 +2244,14 @@ def create_app() -> Flask:
             rows = team_roster(division, gender, school)
         power6 = next((r.p6 for r in live if r.school == school), 0.0)
         abbr, color = crest(school)
-        row = get_row(school)
+        # The LIVE row. This used to be `rankings_data.get_row`, which reads the
+        # design prototype's hard-coded sample table: any school that table named
+        # showed the prototype's Power Index (Michigan 0.7765) while Rankings and
+        # the Season Hub showed the real one (0.8403), and every other school
+        # showed none at all.
+        row = next((r for r in live if r.school == school), None)
+        if row is not None and not row.pi:
+            row = None                              # unplayed: no index to show yet
         div_obj = load_division(division, gender)
         prog = div_obj.by_school(school)
         conf = team_conference(division, gender, school) or (row.conf if row else "")
@@ -2579,6 +2586,22 @@ def create_app() -> Flask:
         return url_for(ep, **{k: v for k, v in args.items() if v is not None})
 
     app.jinja_env.globals["jh_scope_url"] = jh_scope_url
+
+    def jh_here(**change):
+        """This page with some of ITS OWN query args changed — a sort, a filter,
+        a view. An empty value removes the arg, and `page` always resets: it is a
+        position in a list the change is about to re-make."""
+        from urllib.parse import urlencode
+        args = request.args.to_dict()
+        args.pop("page", None)
+        for k, v in change.items():
+            if v in (None, ""):
+                args.pop(k, None)
+            else:
+                args[k] = v
+        return request.path + ("?" + urlencode(args) if args else "")
+
+    app.jinja_env.globals["jh_here"] = jh_here
     # ‼️ WHICH CLASSES USE THE AT-LARGE COMMITTEE IS DERIVED, NEVER TYPED INTO A
     # TEMPLATE. The committee's empty state and the sub-rail tooltip each carried
     # their own hand-written list ("7A, 8A, 9A and Group 1", "the 48-team
@@ -2635,12 +2658,18 @@ def create_app() -> Flask:
 
     @app.route("/jhsaa/alumni")
     def jhsaa_alumni():
-        """The Jefferson alumni tracker (owner rule 2026-11): one graduating class
-        and where it played college tennis — a program and a finished four-year
-        line each, written when the class graduated. The class is the season picked
-        in the scope bar. On the History sub-rail."""
+        """The Jefferson alumni tracker (owner rule 2026-11): where each
+        graduating class played college tennis, as a paged, searchable list — one
+        class (the season in the scope bar), every class, by college or by high
+        school. Every filter is a query arg, so the scope bar carries them."""
         gender, label, u, g, group, year = _jh_scope_args()
-        view = jhsaa_alumni_view(DEFAULT_SEED, g, group, year)
+        a = request.args
+        view = jhsaa_alumni_view(
+            DEFAULT_SEED, g, group, year, mode=a.get("mode", "class"),
+            division=a.get("div", ""), status=a.get("status", ""), q=a.get("q", ""),
+            sort=a.get("sort", ""), direction=a.get("dir", ""),
+            page=a.get("page", 1, type=int) or 1, college=a.get("college", ""),
+            hs=a.get("hs", ""))
         return render_template("jhsaa_alumni.html", active="High School",
                                view=view, gender=gender, u=u, uni_label=label)
 
@@ -3888,10 +3917,11 @@ def create_app() -> Flask:
         # view is built: the view only computes what the tab renders.
         hq = request.args.get("view", "overview")
         if hq not in ("overview", "team", "season", "history", "honors", "records",
-                      "staff"):
+                      "staff", "alumni"):
             hq = "overview"
         view = jhsaa_school_view(DEFAULT_SEED, g, school,
-                                 year if year is not None else qyear, hq=hq)
+                                 year if year is not None else qyear, hq=hq,
+                                 page=request.args.get("page", 1, type=int) or 1)
         if not view.get("found"):
             abort(404)
         return render_template("jhsaa_school.html", active="High School", view=view,
@@ -5115,9 +5145,22 @@ def create_app() -> Flask:
                 champions = __import__("json").loads(s["champion"]) if s["phase"] == "ncaa" else {}
             except Exception:
                 champions = {}
+        # One national_top call for the whole field: the top 15 is the table, and
+        # the coached team's own row is appended when it sits below the cut.
+        from app import worldconfig
+        from .state import current_world_stage
+        prog = worldconfig.user_program()
+        my_school = (prog["school"] if prog and prog["division"] == division
+                     and prog["gender"] == gender else None)
+        field = sm.national_top(sid, 10 ** 6)
+        top = field[:15]
+        me_row = next((r for r in field[15:] if r["school"] == my_school), None)
         return render_template("season.html", active="Season", s=s, u=u, uni_label=label,
                                upcoming=upcoming, n_week=len(all_week), week_confs=week_confs,
-                               conf_sel=conf_sel, last=last, top=sm.national_top(sid, 15), crest=crest,
+                               conf_sel=conf_sel, last=last, top=top, me_row=me_row,
+                               my_school=my_school, n_rated=len(field), crest=crest,
+                               season_year=wd.display_base_year() + (wd.load_world()["year"] if wd.exists() else 0),
+                               tabs=current_world_stage()["tabs"],
                                bubble=sm.bubble_watch(sid), ita_champ=sm.indoor_champion(sid))
 
     # NOTE: there is deliberately NO /season/advance. The Season Hub used to carry

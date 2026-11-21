@@ -6,15 +6,15 @@
 <form method="get">
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
   <label class="bl-field"><span class="bl-field-label">Division</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
+    <span class="bl-select-wrap"><select aria-label="Division and gender" class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
       {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
     </select></span></label>
   <label class="bl-field"><span class="bl-field-label">Conference</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:180px">
+    <span class="bl-select-wrap"><select aria-label="Conference" class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:180px">
       {% for c in conferences %}<option{% if c == conf %} selected{% endif %}>{{ c }}</option>{% endfor %}
     </select></span></label>
   <label class="bl-field"><span class="bl-field-label">Show</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="status" onchange="this.form.submit()" style="min-width:130px">
+    <span class="bl-select-wrap"><select aria-label="Status" class="bl-select" name="status" onchange="this.form.submit()" style="min-width:130px">
       <option value="active"{% if status != 'all' %} selected{% endif %}>Currently out</option>
       <option value="all"{% if status == 'all' %} selected{% endif %}>All (season)</option>
     </select></span></label>

@@ -12,19 +12,19 @@
   <div class="bl-toolbar-inner">
     <label class="bl-field" title="Past seasons show the FINAL rankings, stamped when that year's conference tournaments ended">
       <span class="bl-field-label">Season</span>
-      <span class="bl-select-wrap"><select class="bl-select" name="season" onchange="this.form.submit()" style="min-width:110px">
+      <span class="bl-select-wrap"><select aria-label="Season" class="bl-select" name="season" onchange="this.form.submit()" style="min-width:110px">
         {% for y in season_opts %}<option value="{{ y }}"{% if y == season %} selected{% endif %}>{{ y }}{{ ' (live)' if loop.first else ' (final)' }}</option>{% endfor %}
       </select></span></label>
     <label class="bl-field"><span class="bl-field-label">Division</span>
-      <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
+      <span class="bl-select-wrap"><select aria-label="Division and gender" class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
         {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
       </select></span></label>
     <label class="bl-field"><span class="bl-field-label">Conference</span>
-      <span class="bl-select-wrap"><select class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:160px">
+      <span class="bl-select-wrap"><select aria-label="Conference" class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:160px">
         {% for c in conferences %}<option{% if c == conf %} selected{% endif %}>{{ c }}</option>{% endfor %}
       </select></span></label>
     <label class="bl-field"><span class="bl-field-label">Tier</span>
-      <span class="bl-select-wrap"><select class="bl-select" name="tier" onchange="this.form.submit()" style="min-width:78px">
+      <span class="bl-select-wrap"><select aria-label="Tier" class="bl-select" name="tier" onchange="this.form.submit()" style="min-width:78px">
         {% for t in tiers %}<option{% if t == tier %} selected{% endif %}>{{ t }}</option>{% endfor %}
       </select></span></label>
   </div>
@@ -66,12 +66,12 @@
     {% if mode in ('singles', 'doubles') and not archive %}
     <label class="bl-field" title="A player/pair must have played at least this many matches to be ranked — so a 1-0 record doesn't top the board">
       <span class="bl-field-label">Min matches</span>
-      <span class="bl-select-wrap"><select class="bl-select" name="minm" onchange="this.form.submit()" style="min-width:70px">
+      <span class="bl-select-wrap"><select aria-label="Minimum matches" class="bl-select" name="minm" onchange="this.form.submit()" style="min-width:70px">
         {% for m in [1, 2, 3, 5, 8, 10] %}<option value="{{ m }}"{% if m == minm %} selected{% endif %}>{{ m }}</option>{% endfor %}
       </select></span></label>
     {% endif %}
     <label class="bl-field"><span class="bl-field-label">Model A/B</span>
-      <span class="bl-select-wrap"><select class="bl-select" style="min-width:182px">
+      <span class="bl-select-wrap"><select class="bl-select" aria-label="Ranking" style="min-width:182px">
         <option>TOSS (primary)</option><option>QWS (experimental)</option><option>Legacy (RPI)</option>
       </select></span></label>
     <a class="bl-pill" style="text-decoration:none" href="{{ url_for('polls_page', u=u) }}">Media &amp; Coaches Polls →</a>

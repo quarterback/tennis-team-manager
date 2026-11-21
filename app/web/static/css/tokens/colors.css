@@ -76,7 +76,7 @@
   --surface-page: var(--paper);
   --surface-card: var(--paper);
   --surface-subtle: hsl(219, 60%, 97%);
-  --surface-th: var(--linen);
+  --surface-th: var(--surface-card);   /* header bands retired with the grids; stays OPAQUE for sticky headers */
   --surface-zebra: hsla(219, 70%, 90%, 0.34);
   --surface-hover: var(--cyan);
   --surface-mast: var(--twilight);   /* the bar IS the palette */
@@ -91,17 +91,33 @@
   --mast-rule: var(--pure-red);
 
   --text-primary: var(--ink);
-  --text-secondary: var(--gray-600);
-  --text-muted: var(--gray-500);
-  /* ‼️ Faint is a HIERARCHY tier, not an invitation to fall under AA — the old
-     alias read gray-400 raw (~3:1 on white in most schemes), which is where
-     "too low-contrast" metadata came from (owner, 2026-09). Mixed toward
-     gray-500 IN THE ALIAS layer so all ten schemes lift together; a scheme
-     overrides layers 1-2 only and never this line. */
-  --text-faint: color-mix(in oklab, var(--gray-500) 55%, var(--gray-400));
+  /* ‼️ THE TEXT HIERARCHY IS CHROMATIC, NOT GREY (owner, 2026-11: "still too
+     gray"). The tiers below ink are the scheme's own INK moving toward its own
+     LINK colour, so secondary text in the default scheme is twilight-to-cobalt
+     and in clay it is that palette's ink-to-pink — never a neutral. Both ends
+     are colours each scheme already carries body text in (ink, and
+     --brand-strong, which is link text everywhere), so every mix between them
+     holds at least the link colour's contrast on that scheme's page. The
+     gray-400/500/600 slots stay for borders, rules and disabled states only.
+     --text-kicker is the editorial label colour: section labels, eyebrows and
+     nav group headings in the scheme's accent, pulled toward ink to carry
+     small type. A scheme overrides layers 1-2 only and never these lines. */
+  --text-secondary: color-mix(in oklab, var(--ink) 78%, var(--brand-strong));
+  --text-muted: color-mix(in oklab, var(--ink) 50%, var(--brand-strong));
+  --text-faint: color-mix(in oklab, var(--ink) 28%, var(--brand-strong));
+  --text-kicker: color-mix(in oklab, var(--rank-gold) 68%, var(--ink));
   --text-link: var(--brand-strong);
 
-  --border-subtle: var(--gray-200);
+  /* ‼️ NO GRIDS (owner rule 2026-11: "I just hate the grids all over the pages").
+     --border-subtle was the hairline behind nearly every row rule, panel outline,
+     card box and section divider in the app (~200 uses), drawn alongside zebra
+     fills and header bands — several separation methods at once. It is retired to
+     transparent: rows separate by zebra/hover and spacing, sections by space and
+     type. A CONTROL still needs an edge (button, tab, input, chip, badge, a
+     bracket match card), so those read --border-control instead. Never point a
+     new row or panel rule at --border-control; use spacing. */
+  --border-subtle: transparent;
+  --border-control: var(--gray-200);
   --border-default: var(--gray-300);
   --rule: 2px solid var(--ink);
   --hairline: 1px solid var(--border-subtle);

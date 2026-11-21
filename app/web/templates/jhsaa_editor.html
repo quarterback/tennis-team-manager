@@ -74,7 +74,7 @@
   <div class="tbl-scroll">
     <table class="bl-tbl jhx-tbl" id="jhx-tbl">
       <thead><tr>
-        <th class="jhx-ck"><input type="checkbox" id="jhx-all" title="Select every program shown"></th>
+        <th class="jhx-ck"><input type="checkbox" id="jhx-all" aria-label="Select every program shown" title="Select every program shown"></th>
         <th data-sort="name" class="jhx-sort">School</th>
         <th data-sort="classification" class="jhx-sort" style="width:90px">Class</th>
         <th data-sort="archetype" class="jhx-sort" style="width:160px">Archetype</th>
@@ -250,7 +250,7 @@
   function rowHtml(r) {
     var on = SEL.has(r.name);
     return '<tr class="' + (on ? 'jhx-on' : '') + (r.sponsors ? '' : ' jhx-former') + '" data-n="' + esc(r.name) + '">' +
-      '<td class="jhx-ck"><input type="checkbox" data-ck="' + esc(r.name) + '"' + (on ? ' checked' : '') + '></td>' +
+      '<td class="jhx-ck"><input type="checkbox" aria-label="Select ' + esc(r.name) + '" data-ck="' + esc(r.name) + '"' + (on ? ' checked' : '') + '></td>' +
       '<td class="nm"><a href="#" data-open="' + esc(r.name) + '">' + esc(r.name) + '</a>' +
         (r.edited ? ' <span class="jhx-dot" title="edited in this save"></span>' : '') +
         (r.sponsors ? '' : ' <span class="jhx-muted">former</span>') + '</td>' +
@@ -269,7 +269,7 @@
       shown.forEach(function (r) { var k = groupKey(r); (groups[k] = groups[k] || []).push(r); });
       Object.keys(groups).sort(groupSort).forEach(function (k) {
         var rows = groups[k], allOn = rows.every(function (r) { return SEL.has(r.name); });
-        html += '<tr class="jhx-gh"><td class="jhx-ck"><input type="checkbox" data-gck="' + esc(k) + '"' + (allOn ? ' checked' : '') + '></td>' +
+        html += '<tr class="jhx-gh"><td class="jhx-ck"><input type="checkbox" aria-label="Select group ' + esc(k) + '" data-gck="' + esc(k) + '"' + (allOn ? ' checked' : '') + '></td>' +
           '<td colspan="6"><b>' + esc(groupLabel(k)) + '</b> <i>' + rows.length + '</i></td></tr>';
         rows.forEach(function (r) { html += rowHtml(r); });
       });

@@ -8,7 +8,7 @@
 :root {
   --fm-sidebar-w: 240px;
   --fm-topbar-h: 58px;
-  --fm-app-bg: var(--gray-50);
+  --fm-app-bg: var(--surface-card);   /* one ground: panels stop reading as boxes */
 }
 
 /* App background sits a step below the white panels for depth. */
@@ -33,14 +33,14 @@ body { background: var(--fm-app-bg); }
   width: var(--fm-sidebar-w); height: 100vh; overflow-y: auto;
   transform: translateX(-100%);
   transition: transform var(--dur-base, 180ms) var(--ease-out, ease);
-  box-shadow: var(--shadow-lg, 0 8px 30px rgba(0,0,0,0.18));
+  box-shadow: none;    /* only while open: closed, its shadow bled in at the left edge */
   background: var(--surface-card);
   border-right: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   padding: 14px 12px 24px;
 }
-.fm-navtoggle:checked ~ .fm-sidebar { transform: none; }
+.fm-navtoggle:checked ~ .fm-sidebar { transform: none; box-shadow: var(--shadow-lg); }
 .fm-navtoggle:checked ~ .fm-scrim {
   display: block; position: fixed; inset: 0; z-index: 50;
   background: rgba(15, 20, 25, 0.4);
@@ -65,7 +65,7 @@ body { background: var(--fm-app-bg); }
 .fm-navgroup { display: flex; flex-direction: column; gap: 1px; }
 .fm-navgroup-label {
   font-size: 13px; font-weight: 700; letter-spacing: 0.06em;
-  text-transform: uppercase; color: var(--text-faint);
+  text-transform: uppercase; color: var(--text-kicker);
   padding: 2px 10px 6px;
 }
 .fm-navitem {
@@ -87,78 +87,54 @@ body { background: var(--fm-app-bg); }
 /* ---------------------------------------------------------- Main column */
 .fm-main { grid-column: 1; min-width: 0; display: flex; flex-direction: column; }
 
-/* ---------------------------------------------------------- Top dropdown nav */
-.fm-topbrand {
-  flex: none; font-family: var(--font-display); font-weight: 800; font-size: 18px;
-  letter-spacing: -0.01em; color: var(--text-primary); text-decoration: none;
-  padding-right: 14px; margin-right: 6px; border-right: 1px solid var(--border-subtle);
-  white-space: nowrap;
-}
-.fm-topnav { display: flex; align-items: stretch; height: 100%; gap: 0; }
-.fm-tn-group { position: relative; display: flex; align-items: center; }
-.fm-tn-btn {
-  background: none; border: none; font: inherit; font-size: 16px; font-weight: 600;
-  color: var(--text-secondary); padding: 0 12px; height: 100%; cursor: pointer;
-  display: inline-flex; align-items: center; gap: 4px;
-}
-.fm-tn-caret { font-size: 12px; opacity: 0.7; }
-.fm-tn-group:hover .fm-tn-btn, .fm-tn-btn.active { color: var(--text-primary); }
-.fm-tn-btn.active { box-shadow: inset 0 -2px 0 var(--brand); }
-.fm-tn-menu {
-  position: absolute; top: calc(100% - 6px); left: 0; min-width: 210px;
-  background: var(--surface-card); border: 1px solid var(--border-subtle);
-  border-radius: 9px; box-shadow: var(--shadow-lg, 0 8px 30px rgba(0,0,0,0.16));
-  padding: 6px; display: none; flex-direction: column; gap: 1px; z-index: 80;
-}
-.fm-tn-group:hover .fm-tn-menu, .fm-tn-group:focus-within .fm-tn-menu { display: flex; }
-.fm-tn-item {
-  display: flex; align-items: center; gap: 9px; padding: 7px 10px; border-radius: 6px;
-  font-size: 16px; font-weight: 600; color: var(--text-secondary); white-space: nowrap;
-  text-decoration: none;
-}
-.fm-tn-item:hover { background: var(--surface-subtle); color: var(--text-primary); }
-.fm-tn-item.active { color: var(--brand-strong); background: var(--green-50); }
-.fm-tn-ic { flex: none; width: 18px; text-align: center; }
-
-/* ---------------------------------------------------------- Top bar (game state) */
+/* ---------------------------------------------------------- Top bar: two rows */
+/* Row one (.fm-bar1) is the game: brand, universe, world clock, settings and THE
+   advance control. Row two (.fm-topnav) is navigation. As a single fixed-height
+   row the bar needed ~1836px laid out in full, so every laptop shed pieces until
+   the advance button was squeezed against or past the right edge (measured at
+   1440px). With navigation on its own row, row one fits in ~1100px with nothing
+   shed, and the advance button is never what gives way. */
 .fm-topbar {
-  position: sticky; top: 0; z-index: 20;
-  height: var(--fm-topbar-h); flex: none;
-  display: flex; align-items: center; gap: 0;
-  flex-wrap: nowrap;
-  padding: 0 18px;
+  position: sticky; top: 0; z-index: 20; flex: none;
+  display: flex; flex-direction: column;
   background: var(--surface-card);
-  border-bottom: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
 }
-/* The bar is a FIXED-height single row: anything that wraps spills out of it
-   (the laptop-width breakage — "Analytics Bureau", "Pro Tour" and the phase label
-   each folded onto a second line and pushed the advance button off the edge).
-   Nothing in here may wrap, and the right-hand controls may never be squeezed;
-   width is bought by SHEDDING pieces in the ladder below, never by compressing. */
-.fm-topbrand, .fm-tn-btn, .fm-gc-k, .fm-gc-v, .fm-gc-sub,
-.fm-newleague, .fm-advance { white-space: nowrap; }
-.fm-topnav, .fm-gc, .fm-topbar-right, .fm-advance, .fm-newleague { flex: none; }
+.fm-bar1 {
+  height: var(--fm-topbar-h);
+  display: flex; align-items: center; gap: 0; flex-wrap: nowrap;
+  padding: 0 18px;
+}
+/* Nothing in row one may wrap and the right-hand controls may never be squeezed;
+   width is bought by SHEDDING the clock cells in the ladder below. */
+.fm-topbrand, .fm-tn-btn, .fm-gc-k, .fm-gc-v, .fm-advance { white-space: nowrap; }
+.fm-topbrand, .fm-uniform, .fm-gc, .fm-topbar-right, .fm-advance { flex: none; }
+.fm-topbrand {
+  font-family: var(--font-display); font-weight: 800; font-size: 20px;
+  letter-spacing: -0.01em; color: var(--text-primary); text-decoration: none;
+  padding-right: 16px; margin-right: 16px; border-right: 1px solid var(--border-subtle);
+}
 .fm-hamburger {
   display: none; flex: none; cursor: pointer;
-  width: 34px; height: 34px; margin-right: 6px;
+  width: 40px; height: 40px; margin-right: 10px;
   align-items: center; justify-content: center;
   border: 1px solid var(--border-default); border-radius: 7px;
   font-size: 19px; color: var(--text-secondary);
 }
 
-/* Game-context cells */
+/* Universe picker, labelled where it sits. */
+.fm-uniform { display: flex; align-items: center; gap: 8px; padding-right: 4px; }
+.fm-uni-label { font-size: 14px; font-weight: 700; color: var(--text-secondary); }
+
+/* Game-clock cells */
 .fm-gc { display: flex; align-items: center; gap: 9px; padding: 0 16px; }
 .fm-gc-sep { border-left: 1px solid var(--border-subtle); }
 .fm-gc-stack { display: flex; flex-direction: column; line-height: 1.15; }
-.fm-gc-k {
-  font-size: 13px; font-weight: 700; letter-spacing: 0.05em;
-  text-transform: uppercase; color: var(--text-muted);
-}
+.fm-gc-k { font-size: 14px; font-weight: 600; color: var(--text-muted); }
 .fm-gc-v {
   font-size: 18px; font-weight: 700; color: var(--text-primary);
   display: flex; align-items: center; gap: 6px;
 }
-.fm-gc-sub { font-weight: 500; color: var(--text-muted); }
 .fm-gc-rec {
   font-variant-numeric: tabular-nums; font-size: 15px; font-weight: 700;
   color: var(--brand-strong); background: var(--green-50);
@@ -169,80 +145,81 @@ body { background: var(--fm-app-bg); }
   margin-left: auto; display: flex; align-items: center; gap: 10px;
   padding-left: 16px;
 }
-.fm-uniform { display: flex; }
 .fm-search { display: flex; }
 .fm-search input {
-  height: 34px; width: 170px; padding: 0 12px; border-radius: 7px;
+  height: 40px; width: 190px; padding: 0 12px; border-radius: 7px;
   font-size: 16px; color: var(--text-primary);
   background: var(--surface-card); border: 1px solid var(--border-default);
   transition: border-color var(--dur-fast), width var(--dur-base);
 }
-.fm-search input:focus { outline: none; border-color: var(--brand); width: 220px; }
-.fm-search input::placeholder { color: var(--text-faint); }
-.fm-newleague-label { margin-left: 6px; }
+.fm-search input:focus { outline: none; border-color: var(--brand); width: 240px; }
+.fm-search input::placeholder { color: var(--text-muted); }
 .fm-advance {
-  height: 34px; padding: 0 15px; cursor: pointer; white-space: nowrap;
-  display: inline-flex; align-items: center; gap: 7px;
+  height: 40px; padding: 0 16px; cursor: pointer; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 8px;
   font-size: 16px; font-weight: 700; border-radius: 7px;
   color: var(--brand-contrast); background: var(--brand);
   border: 1px solid var(--brand);
   transition: background var(--dur-fast);
 }
 .fm-advance:hover { background: var(--brand-strong); }
-.fm-newleague {
-  display: inline-flex; align-items: center; height: 34px; padding: 0 12px;
-  font-size: 15px; font-weight: 600; white-space: nowrap; border-radius: 7px;
-  color: var(--text-secondary); border: 1px solid var(--border-default);
-  text-decoration: none; transition: color var(--dur-fast), border-color var(--dur-fast);
+.fm-advance:focus-visible, .fm-tn-btn:focus-visible, .fm-theme > summary:focus-visible {
+  outline: 2px solid var(--brand); outline-offset: 2px;
 }
-.fm-newleague:hover { color: var(--brand-strong); border-color: var(--border-strong); }
+
+/* ---------------------------------------------------------- Row two: navigation */
+.fm-topnav {
+  display: flex; align-items: stretch; gap: 0; height: 44px;
+  padding: 0 10px; border-top: 1px solid var(--border-subtle);
+}
+.fm-tn-group { position: relative; display: flex; align-items: center; }
+.fm-tn-btn {
+  background: none; border: none; font: inherit; font-size: 16px; font-weight: 600;
+  color: var(--text-secondary); padding: 0 12px; height: 100%; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 5px;
+}
+.fm-tn-caret { font-size: 12px; opacity: 0.7; }
+.fm-tn-group:hover .fm-tn-btn, .fm-tn-btn.active { color: var(--text-primary); }
+.fm-tn-btn.active { box-shadow: inset 0 -3px 0 var(--brand); }
+.fm-tn-menu {
+  position: absolute; top: calc(100% - 2px); left: 0; min-width: 220px;
+  background: var(--surface-card); border: 1px solid var(--border-control);
+  border-radius: 9px; box-shadow: var(--shadow-lg, 0 8px 30px rgba(0,0,0,0.16));
+  padding: 6px; display: none; flex-direction: column; gap: 1px; z-index: 80;
+}
+.fm-tn-group:hover .fm-tn-menu, .fm-tn-group:focus-within .fm-tn-menu { display: flex; }
+.fm-tn-item {
+  display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 6px;
+  font-size: 16px; font-weight: 600; color: var(--text-secondary); white-space: nowrap;
+  text-decoration: none;
+}
+.fm-tn-item:hover { background: var(--surface-subtle); color: var(--text-primary); }
+.fm-tn-item.active { color: var(--brand-strong); background: var(--green-50); }
+.fm-tn-ic { flex: none; width: 18px; text-align: center; }
 
 /* ---------------------------------------------------------- Content */
 .fm-content { flex: 1; min-width: 0; }
 
 /* ---------------------------------------------------------- Responsive */
-/* LAPTOP LADDER — thresholds measured, not guessed.
-   Laid out in full the bar needs ~1836px (brand 128 + nav 621 + season 92 +
-   world/phase 249 + right-hand controls 710 + padding). The breakpoints used to
-   jump straight from "everything" to 820px, so EVERY laptop overflowed — a 1440
-   MacBook lands at ~1380 CSS px and was ~230px over, which squeezed the row until
-   the labels wrapped out of the bar's fixed height and pushed the advance button
-   off-screen. Each rung below drops the least load-bearing thing left, measured so
-   the remaining width always fits:
-     Class Signed → search width + "New league" text → padding → phase label →
-     search → Season year → brand → nav (hamburger) */
-/* The Juniors group added another top-level label. Start shedding secondary
-   controls before a 2048px desktop runs out of room, so the advance/play button
-   is always fully visible rather than clipped against the viewport edge. */
-@media (max-width: 2200px) { .fm-gc-next { display: none; } }
-@media (max-width: 2100px) {
-  .fm-search input { width: 132px; }
-  .fm-search input:focus { width: 180px; }
-  .fm-newleague-label { display: none; }
-  .fm-newleague { padding: 0 10px; }
-}
-@media (max-width: 2000px) {
-  .fm-tn-btn { padding: 0 9px; }
-  .fm-gc { padding: 0 11px; }
-}
-/* The phase ("· NCAA championship", "· NIT Kickoff Weekend") is the single widest
-   cell and every page states its own phase, so it goes before anything clickable. */
-@media (max-width: 1850px) { .fm-gc-sub { display: none; } }
-@media (max-width: 1680px) { .fm-search { display: none; } }
-@media (max-width: 1510px) { .fm-gc-year { display: none; } }
-@media (max-width: 1370px) { .fm-topbrand { display: none; } }
-
-/* Narrow screens: hide the dropdown bar and fall back to the hamburger drawer. */
-@media (max-width: 1210px) {
+/* Row one laid out in full: brand ~170 + universe ~210 + three clock cells ~430 +
+   search 190 + settings 52 + advance ~220 + padding ≈ 1300px. Each rung drops the
+   least load-bearing thing left; the advance button and its label are kept down
+   to phone width. */
+@media (max-width: 1380px) { .fm-gc-next { display: none; } }
+@media (max-width: 1240px) { .fm-search { display: none; } }
+@media (max-width: 1080px) { .fm-gc-year { display: none; } }
+/* Narrow screens: the nav row folds into the hamburger drawer. */
+@media (max-width: 1000px) {
   .fm-topnav { display: none; }
   .fm-hamburger { display: inline-flex; }
 }
-
+@media (max-width: 820px) { .fm-topbrand { display: none; } .fm-uni-label { display: none; } }
 @media (max-width: 620px) {
-  .fm-gc-team .fm-gc-k { display: none; }
-  .fm-gc-sep { display: none; }
+  .fm-bar1 { padding: 0 10px; }
+  .fm-gc-sep { border-left: 0; }
+  .fm-gc { padding: 0 8px; }
   .fm-uniform { display: none; }          /* pages carry their own division switch */
-  .fm-advance { padding: 0 10px; gap: 0; }
+  .fm-advance { padding: 0 12px; gap: 0; }
   .fm-advance-label { display: none; }     /* icon-only CTA on phones */
 }
 
@@ -259,7 +236,7 @@ body { background: var(--fm-app-bg); }
 .fm-theme { position: relative; flex: none; }
 .fm-theme > summary {
   list-style: none; cursor: pointer; display: inline-flex; align-items: center;
-  justify-content: center; gap: 7px; height: 32px; padding: 0 11px;
+  justify-content: center; gap: 7px; height: 40px; min-width: 44px; padding: 0 10px;
   border: 1px solid var(--border-default); border-radius: 7px;
   background: var(--surface-card); color: var(--text-secondary);
   font-size: 15px; font-weight: 600; white-space: nowrap;
@@ -274,11 +251,11 @@ body { background: var(--fm-app-bg); }
   width: 15px; height: 15px; border-radius: 4px; border: 1px solid var(--border-default);
   background: linear-gradient(135deg, var(--brand) 0 50%, var(--accent-live, var(--brand-strong)) 0);
 }
-@media (max-width: 1180px) { .fm-theme > summary .lbl { display: none; } }
 .fm-theme-menu {
   position: absolute; right: 0; top: calc(100% + 6px); z-index: 60; width: 288px;
   background: var(--surface-card); border: 1px solid var(--border-default);
-  border-radius: 10px; box-shadow: 0 12px 30px rgba(0, 0, 0, .18); overflow: hidden;
+  border-radius: 10px; box-shadow: 0 12px 30px rgba(0, 0, 0, .18);
+  max-height: calc(100vh - 80px); overflow-y: auto;
 }
 .fm-theme-head {
   padding: 9px 13px 7px; font-size: 12px; font-weight: 800;
@@ -299,6 +276,12 @@ body { background: var(--fm-app-bg); }
 .fm-theme-t { min-width: 0; }
 .fm-theme-t .n { display: block; font-size: 15px; font-weight: 700; color: var(--text-primary); }
 .fm-theme-t .b { display: block; font-size: 13px; color: var(--text-muted); }
+.fm-theme-league {
+  display: flex; align-items: center; gap: 8px; padding: 11px 13px;
+  border-top: 1px solid var(--border-subtle); font-size: 15px; font-weight: 700;
+  color: var(--text-link); text-decoration: none;
+}
+.fm-theme-league:hover { background: var(--surface-hover); }
 
 /* ‼️ EVERY KEY IN `server.SCHEMES` NEEDS A SWATCH RULE. A renamed scheme still
    renders its row and still applies its palette — only the one thing in the menu

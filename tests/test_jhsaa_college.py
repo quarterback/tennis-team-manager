@@ -25,6 +25,13 @@ from app import ncaa
 from app import world as wd
 
 
+@pytest.fixture(autouse=True)
+def _model_one(monkeypatch):
+    """This file covers the STORE and model 1, which classes already written
+    under it still read. Model 2 is the shipped default and has its own file."""
+    monkeypatch.setattr(jcol, "ACTIVE_MODEL", 1)
+
+
 def _seniors(n=900, seed=7, foreign_every=6):
     r = random.Random(seed)
     out = []
@@ -228,22 +235,34 @@ def test_the_page_and_the_player_panel_render_a_class_with_data(lab_world):
 
     view = st.jhsaa_alumni_view(wd.DEFAULT_SEED, "girls")
     assert view["grad_year"] == grad_year and view["rows"]
-    assert sum(n for _d, n in view["divisions"]) == len(view["rows"])
+    # ONE PAGE of the class, never the class (owner, 2026-11); the counts are
+    # the whole class's.
+    assert len(view["rows"]) <= st.ALUMNI_PER_PAGE
+    assert sum(n for _d, n in view["division_counts"]) == view["total"]
     with app.test_request_context("/jhsaa/alumni?g=girls"):
         html = render_template("jhsaa_alumni.html", active="High School", view=view,
                                gender="women", u="D1-women", uni_label="")
     for r in view["rows"]:
-        assert r["name"] in html and r["college"] in html
-        assert f'{r["w"]}-{r["l"]}' in html
+        assert r["name"] in html and r["stints"][0]["college"] in html
+        assert f'{r["s_w"]}-{r["s_l"]}' in html
     assert "College Alumni" in html
+    # The other three views of the same careers render too.
+    for mode in ("all", "colleges", "schools"):
+        v = st.jhsaa_alumni_view(wd.DEFAULT_SEED, "girls", mode=mode)
+        assert v["total"] > 0
+        with app.test_request_context(f"/jhsaa/alumni?g=girls&mode={mode}"):
+            assert "College Alumni" in render_template(
+                "jhsaa_alumni.html", active="High School", view=v,
+                gender="women", u="D1-women", uni_label="")
 
     pv = st.jhsaa_player_view(wd.DEFAULT_SEED, "girls", school.name, senior.pid)
-    assert pv["found"] and pv["college"]["college"]
+    assert pv["found"] and pv["college"]["stints"][0]["college"]
     with app.test_request_context(f"/jhsaa/player/{school.name}/{senior.pid}?g=girls"):
         html = render_template("jhsaa_player.html", active="High School", view=pv,
                                gender="women", u="D1-women", uni_label="")
     line = pv["college"]
-    assert line["college"] in html and f'{line["w"]}-{line["l"]} singles' in html
+    assert line["stints"][0]["college"] in html
+    assert f'Singles {line["s_w"]}-{line["s_l"]}' in html
     assert all(s["class"] in html for s in line["seasons"])
 
 
@@ -287,4 +306,7 @@ def test_the_rung_hands_it_real_teams_and_only_in_a_world_without_college(lab_wo
     # tracker at once, and a college save never starts it.
     import inspect
     src = inspect.getsource(wd.run_jhsaa)
-    assert "track_alumni = is_jhsaa_only(seed)" in src and "if track_alumni:" in src
+    assert "track_alumni = tracks_alumni(seed)" in src and "if track_alumni:" in src
+    # …and that rule: a world with no college in it, or one that does not hand its
+    # seniors to a real recruit board.
+    assert wd.tracks_alumni(wd.DEFAULT_SEED)

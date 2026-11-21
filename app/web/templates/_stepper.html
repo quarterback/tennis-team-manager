@@ -1,0 +1,9 @@
+{# The season tabs, shared by the World Hub and the Season Hub (state.season_tabs
+   is the one source). Each tab is a page; the live stage is tagged Now. #}
+{% macro season_tabs(tabs, u=none) %}
+<nav class="bl-seasontabs" aria-label="Season">
+  {% for t in tabs %}
+  <a href="{{ url_for(t.endpoint, u=u) if u else url_for(t.endpoint) }}"{% if request.endpoint == t.endpoint %} aria-current="page"{% endif %}>{{ t.label }}{% if t.now %}<span class="bl-now">Now</span>{% endif %}</a>
+  {% endfor %}
+</nav>
+{% endmacro %}

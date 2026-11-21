@@ -18,7 +18,7 @@
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
   <span style="font-size:16px;color:var(--text-muted)">Analytics Bureau › My Transfer Targets</span>
   <label class="bl-field" style="margin-left:auto"><span class="bl-field-label">Sort</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="sort" onchange="this.form.submit()" style="min-width:130px">
+    <span class="bl-select-wrap"><select aria-label="Sort by" class="bl-select" name="sort" onchange="this.form.submit()" style="min-width:130px">
       <option value="fit"{% if tg.sort=='fit' %} selected{% endif %}>Best fit (impact)</option>
       <option value="talent"{% if tg.sort=='talent' %} selected{% endif %}>Highest ceiling</option>
       <option value="str"{% if tg.sort=='str' %} selected{% endif %}>Best right now</option>
@@ -30,7 +30,7 @@
       <option value="top6"{% if tg.impact=='top6' %} selected{% endif %}>Any starter (Top-6)</option>
     </select></span></label>
   <label class="bl-field"><span class="bl-field-label">From division</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="div" onchange="this.form.submit()" style="min-width:80px">
+    <span class="bl-select-wrap"><select aria-label="Division" class="bl-select" name="div" onchange="this.form.submit()" style="min-width:80px">
       {% for d in divisions %}<option{% if d == tg.div_filter %} selected{% endif %}>{{ d }}</option>{% endfor %}
     </select></span></label>
   <label class="bl-field" style="flex-direction:row;align-items:center;gap:6px">

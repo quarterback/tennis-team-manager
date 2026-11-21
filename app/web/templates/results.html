@@ -6,12 +6,12 @@
 <form method="get">
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
   <label class="bl-field"><span class="bl-field-label">Division</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
+    <span class="bl-select-wrap"><select aria-label="Division and gender" class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
       {% for val, d, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
     </select></span></label>
   {% if res.weeks %}
   <label class="bl-field"><span class="bl-field-label">Week</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="week" onchange="this.form.submit()" style="min-width:200px">
+    <span class="bl-select-wrap"><select aria-label="Week" class="bl-select" name="week" onchange="this.form.submit()" style="min-width:200px">
       {% for w in res.weeks %}<option value="{{ w.week }}"{% if w.week == res.week %} selected{% endif %}>Week {{ w.week }} · {{ w.phase }}</option>{% endfor %}
     </select></span></label>
   {% endif %}

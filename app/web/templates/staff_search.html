@@ -13,15 +13,15 @@
       {% for rv, rl in roles %}<option value="{{ rv }}"{% if rv == role %} selected{% endif %}>{{ rl }}</option>{% endfor %}
     </select></span></label>
   <label class="bl-field"><span class="bl-field-label">Gender</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="gender" onchange="this.form.submit()" style="min-width:82px">
+    <span class="bl-select-wrap"><select aria-label="Gender" class="bl-select" name="gender" onchange="this.form.submit()" style="min-width:82px">
       {% for gv, gl in genders %}<option value="{{ gv }}"{% if gv == gender %} selected{% endif %}>{{ gl }}</option>{% endfor %}
     </select></span></label>
   <label class="bl-field"><span class="bl-field-label">Division</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="div" onchange="this.form.submit()" style="min-width:74px">
+    <span class="bl-select-wrap"><select aria-label="Division" class="bl-select" name="div" onchange="this.form.submit()" style="min-width:74px">
       {% for d in divisions %}<option{% if d == div_f %} selected{% endif %}>{{ d }}</option>{% endfor %}
     </select></span></label>
   <label class="bl-field"><span class="bl-field-label">Sort</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="sort" onchange="this.form.submit()" style="min-width:110px">
+    <span class="bl-select-wrap"><select aria-label="Sort by" class="bl-select" name="sort" onchange="this.form.submit()" style="min-width:110px">
       <option value="overall"{% if sort == 'overall' %} selected{% endif %}>Overall</option>
       <option value="dev"{% if sort == 'dev' %} selected{% endif %}>Development</option>
       <option value="rec"{% if sort == 'rec' %} selected{% endif %}>Recruiting</option>

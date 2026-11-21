@@ -542,6 +542,98 @@ college dual; the owner never reached the college game.
   rail; the scope bar's season IS the class), the player page's College panel,
   `jhsaa_college.csv`. `tests/test_jhsaa_college.py`;
   `docs/AAR-jhsaa-sim-separation-and-alumni-tracker.md`.
+- **‼️ CAREER MODEL 2 IS ON (owner spec 2026-11, switched on by the owner
+  2026-11: "turn on the new model, i don't care about past classes";
+  `app/jhsaa_college_v2.py`, `docs/AAR-jhsaa-alumni-career-model-2.md`).**
+  `jhsaa_college.ACTIVE_MODEL` is 2: every class with no rows yet is written with
+  it. Model 1's code stays because classes it wrote are still read. Measure a
+  retune with `scripts/jhsaa_college_validate.py` (→
+  `docs/reports/REPORT-jhsaa-alumni-career-model-2-validation.md`) before it
+  ships: a career is written once, so a class carries its rates for good.
+  ‼️ **EXISTING CAREERS ARE NEVER REGENERATED** — `_ensure_class` leaves any class
+  that has a row, whatever model wrote it; the earlier claim in this file that
+  "nothing reads these rows" was about game logic, and the pages and the export DO
+  read them. A historical rewrite is a separate, explicitly authorised migration.
+  Model 1 flattened careers at the PLACEMENT (`fit = standing - strength`, with
+  placement setting the two equal), so fix placement before adding events. Model 2:
+  level from the exit rating read against the five prior classes and mapped onto
+  the college recruit distribution; a destination CHOSEN among programs that would
+  recruit the player (no division quota; D4 academic gate and service academies are
+  hard gates); a depth chart per program-season seeded independently of the player
+  (`Context.seats`); a season-by-season career with singles and doubles separate,
+  injuries, transfers, stopping, leaving. The rung captures a graduation SNAPSHOT
+  (`world_jhsaa_grad_snapshot`) under either model. ‼️ Three traps the measurement
+  found: compare players and programs on ONE scale (`compress_talent` squashes
+  both; raw program means against compressed recruits signed ZERO D1 players); the
+  high-school ceiling gap is a RANKING, not a quantity (top seniors sit near their
+  ceiling, so read literally every recruit looked finished); playing time must
+  SATURATE or everybody picks the weakest team (100+ All-Americans a class).
+  ‼️ Two more, found when D1 All-American measured ZERO in ~440 careers: (1)
+  headroom must be ranked AMONG SENIORS OF SIMILAR RATING (`HEADROOM_WINDOW`) —
+  ranked across the whole class the best seniors, who sit nearest their
+  high-school ceiling, all landed at the bottom and became the slowest developers
+  in college; (2) a record bar has to be one the FIELD ITSELF clears — in D1 the
+  20 players who define the All-American line win a measured median 57-59% at
+  their position (the top is squashed against the cap and plays itself), and the
+  bar asked for .65 least / .68 par (`NATIONAL_RECORD`).
+  `tests/test_jhsaa_college_v2.py`.
+  ‼️ **AN OPPORTUNITY TRANSFER HAS TO BUY A BIGGER ROLE (owner spec 2026-11,
+  `jhsaa_college_v2.OPPORTUNITY` / `meaningful` / `project_role`).** Making the
+  destination's lineup is not enough: the projected role there is compared with
+  the projected role if they STAYED, both off next season's real depth chart
+  (`_standing` — the ONE reading the season is also played from), and `choose`
+  only considers programs that pass (`accept=`). Reserve → a clear singles place
+  and 12 more matches; doubles-only → that or the No. 1 pair; lower-lineup
+  starter (`LOW_LINEUP_TRANSFER`) → a top-three position. Nothing grants a role:
+  it falls out of the player's level against the receiving ladder. No program
+  passes → they stay. UP moves are separate and accept a smaller role when the
+  division rises. Every transfer carries `before` / `stay` / `projected` /
+  `played` / `change` / `improved`. The four regression tests in the spec were
+  NOT written (owner: no more tests).
+  ‼️ **THE ALUMNI PAGES ARE PAGED LISTS RUN IN SQL (owner, 2026-11: "pagination
+  instead of a 200 sort list").** `/jhsaa/alumni` has four views — the scope-bar
+  season's class, all classes, by college, by high school (how real trackers
+  organise it) — 25 careers a page (`state.ALUMNI_PER_PAGE`), with search, a
+  division filter, a career filter and sortable headings, all query args
+  (`jh_here` changes one and resets `page`). A program page has a **College** tab
+  and the player page a College panel; all three share
+  `templates/_jhsaa_alumni.html`. **A transfer is ONE career naming EVERY
+  college** and is on each college's list: `world_jhsaa_college_stint` holds one
+  row per college a career passed through, and the career table carries summary
+  columns (`_SUMMARY_COLS`). Both are DERIVED from `data` by
+  `jhsaa_college.summarise_pending` (versioned on `SUMMARY_VERSION`, rebuilt on
+  read, never edited) — every filter, sort and count reads them and only the page
+  on screen is parsed. Never write a list that loads `class_rows`/`all_rows` and
+  filters in Python: a career is a few KB of JSON and the all-classes view grows
+  by two classes a season. Only the Class view fills in an unwritten class; the
+  other three show what is written. Season-by-season lines are a hidden row under
+  each career. The division filter and counts mean "played in it at any point".
+  ‼️ Measured in a browser against an accessibility checklist and kept there:
+  notes use `--text-muted`/`--text-secondary` (`--text-faint` is 3.7-3.9:1 on
+  these rows, under the 4.5:1 floor — do not use it for text that carries
+  information); the expand button is 28px (44px on `pointer: coarse`); the sorted
+  heading carries `aria-sort`; every control has a focus ring. Below 720px a
+  career is a stacked block with labelled numbers (`data-l`) and the sort is a
+  menu. ‼️ The season lines are a table INSIDE the career table: phone rules for
+  the outer one must be direct-child selectors (`table.jh-alum > tbody > tr`), or
+  they restyle the nested rows into unlabelled fragments.
+  ‼️ **OWNER DECISIONS ON ITS HONOURS AND ENDINGS (2026-11) — do not "even out":**
+  **ALL-CONFERENCE COMES FIRST AT EVERY LEVEL** — a player is only considered for
+  All-American in a season they made All-Conference in the same discipline; it is a
+  GATE in `play_season` (the two lines come from different fields, so two
+  thresholds alone let a player clear the national line and miss their own). D1
+  All-Conference is deeper and reaches No. 4 singles / the No. 2 pair
+  (`ALL_CONFERENCE`; it measured zero in ~450 D1 careers before) while the D1
+  All-American LIST is unchanged (20 singles, 10 doubles teams, top two
+  positions); D2/D3/D4 keep their All-Conference depth and name a deeper
+  All-American list (`ALL_AMERICAN`). **D1 All-American must not be 0%** (owner,
+  2026-11: "0% makes no sense") — it measures about 0.9 careers a class (girls)
+  and 0.6 (boys). Nothing gender-specific is tuned: the men's and women's talent
+  tables differ and the signing rates follow from them (21% and 19% of careers
+  start in D1 since the headroom fix; it was 18% and 8%). The attrition
+  probabilities are approved as measured; the four endings are kept APART on
+  `departure` (left_team · left_college · injury_ended · turned_pro, each with a
+  cause) and a transfer is a move, never a departure.
 - **‼️ ANY SCRIPT THAT CALLS INTO THE APP NEEDS `if __name__ == "__main__":`.** The
   pools use a SPAWN context, so a worker re-imports the launching script; unguarded,
   every worker re-runs the whole script against the same database (duplicate
@@ -4048,6 +4140,22 @@ list is `server.SCHEMES`.
   contains NO colour dark enough to be ink — the darkest is 1.8:1 — so its ink and link
   are derived by pushing the palette's hues down. Dropped in as sent it would have
   rendered unreadable body text with no error anywhere.
+- **‼️ THE TEXT TIERS ARE CHROMATIC (owner, 2026-11: "still too gray").**
+  `--text-secondary` / `--text-muted` / `--text-faint` are the scheme's INK mixed
+  toward its LINK colour (`--brand-strong`), never a grey; `--text-kicker` (the
+  accent pulled toward ink) is for uppercase section labels, eyebrows and nav group
+  headings. All four live in the alias layer, so the ten schemes follow. The
+  `--gray-*` slots are for borders, rules and disabled states — do not read them
+  for text.
+- **‼️ NO GRIDS (owner rule 2026-11: "I just hate the grids all over the pages").**
+  `--border-subtle` (the hairline behind ~200 row rules, panel outlines and card
+  boxes) is TRANSPARENT, `--surface-th` is the page colour, and the app background
+  is the card colour, so panels no longer read as boxes. Three patterns, in
+  `app.css`: SCOREBOARD (big status numbers on the open page), LEDGER (`.bl-row`,
+  `.bl-ledger`: zebra + hover, no rule under rows, no outer box), WORKSPACE
+  (controls keep their edges via `--border-control`; the area around them gets
+  none). Never point a row or panel rule at `--border-control`; separate with
+  spacing and type. See `docs/AAR-shell-two-row-bar-clubhouse-season-hub.md`.
 - **Win/loss stays green/red in every scheme**: those carry MEANING, not identity.
 - **A swatch is keyed on the scheme NAME** — rename a scheme and its chip goes blank
   while everything else still works. Every key in `SCHEMES` needs a `.fm-theme-sw.s-*`

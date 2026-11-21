@@ -78,24 +78,30 @@
 
     <!-- ============ Main column: top bar + content ============ -->
     <div class="fm-main">
+      {# TWO ROWS. Row one is the game: brand, universe, the world clock and THE
+         advance control. Row two is navigation. As one fixed-height row the bar
+         needed ~1836px laid out in full, so every laptop shed pieces until the
+         advance button — the one control that moves the game — was pushed against
+         or past the right edge (measured at 1440px on a fresh save). Navigation
+         now has its own row and can never take that width again. #}
       <header class="fm-topbar">
+        <div class="fm-bar1">
         <label for="fm-navtoggle" class="fm-hamburger" aria-label="Toggle navigation"><i class="fa-solid fa-bars" aria-hidden="true"></i></label>
         <a class="fm-topbrand" href="{{ url_for('world_view', u=u) }}">Play to Clinch</a>
 
-        <!-- Primary navigation: grouped dropdown menus (Super-Innings style) -->
-        <nav class="fm-topnav" aria-label="Primary">
-          {% for glabel, items in nav_groups %}
-          {% set group_active = items | selectattr('id', 'equalto', active_nav) | list | length > 0 %}
-          <div class="fm-tn-group">
-            <button class="fm-tn-btn{% if group_active %} active{% endif %}" type="button">{{ glabel }}<span class="fm-tn-caret">▾</span></button>
-            <div class="fm-tn-menu">
-              {% for it in items %}
-              <a class="fm-tn-item{% if it.id == active_nav %} active{% endif %}" href="{{ it.href }}"><span class="fm-tn-ic"><i class="{{ it.icon }}" aria-hidden="true"></i></span>{{ it.label }}</a>
-              {% endfor %}
-            </div>
-          </div>
-          {% endfor %}
-        </nav>
+        <form method="get" class="fm-uniform">
+          {# Carry the current page's filters across a universe switch so the
+             active league change doesn't reset what you're looking at (e.g. the
+             Analytics Bureau's Division/Class). #}
+          {% if request.args.get('div') %}<input type="hidden" name="div" value="{{ request.args.get('div') }}">{% endif %}
+          {% if request.args.get('class') %}<input type="hidden" name="class" value="{{ request.args.get('class') }}">{% endif %}
+          <label class="fm-uni-label" for="fm-uni">Universe</label>
+          <span class="bl-select-wrap">
+            <select class="bl-select" id="fm-uni" name="u" onchange="this.form.submit()">
+              {% for val, dd, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
+            </select>
+          </span>
+        </form>
 
         {% if game %}
         {# ‼️ The corner agrees with the page under it: the JHSAA plays a year
@@ -103,7 +109,7 @@
            class the college year then recruits), so High School pages show the
            JHSAA year — 2072 in the corner over a page full of 2073 read as a
            bug, not a calendar (owner report 2026-09). #}
-        <div class="fm-gc fm-gc-team fm-gc-year">
+        <div class="fm-gc fm-gc-sep fm-gc-year">
           <span class="fm-gc-stack">
             <span class="fm-gc-k">Season {{ game.season_no }}{% if active == 'High School' %} · HS{% endif %}</span>
             <span class="fm-gc-v">{{ game.jh_year if active == 'High School' else game.year }}</span>
@@ -111,15 +117,14 @@
         </div>
         <div class="fm-gc fm-gc-sep">
           <span class="fm-gc-stack">
-            <span class="fm-gc-k">World</span>
-            <span class="fm-gc-v">Week {{ game.week }}
-              <span class="fm-gc-sub">· {{ game.phase }}</span></span>
+            <span class="fm-gc-k">Week {{ game.week }}</span>
+            <span class="fm-gc-v fm-gc-phase">{{ game.phase }}</span>
           </span>
         </div>
         {% if game.signed %}
         <div class="fm-gc fm-gc-sep fm-gc-next">
           <span class="fm-gc-stack">
-            <span class="fm-gc-k">Class Signed</span>
+            <span class="fm-gc-k">Class signed</span>
             <span class="fm-gc-v">{{ game.signed }}</span>
           </span>
         </div>
@@ -130,15 +135,15 @@
           <form method="get" action="{{ url_for('search') }}" class="fm-search" role="search">
             <input type="search" name="q" placeholder="Search players…" aria-label="Search players">
           </form>
-          <a class="fm-newleague" href="{{ url_for('onboarding') }}" title="Start a new league"><i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i><span class="fm-newleague-label">New league</span></a>
 
-          {# The scheme picker. NAMED, not a row of unlabelled swatches — a strip
-             of coloured squares tells you nothing about what you are choosing,
-             and every one of these palettes has a character worth saying out
+          {# Settings: the colour scheme and "New league" share one menu. Both are
+             rare actions, and as separate controls they took ~260px of the row the
+             advance button needs. The scheme rows stay NAMED, not a strip of
+             unlabelled swatches — each palette has a character worth saying out
              loud. Ten light schemes; there is deliberately no dark mode (see
              `color-scheme: only light` in tokens/colors.css). #}
           <details class="fm-theme">
-            <summary title="Colour scheme"><span class="cur" aria-hidden="true"></span><span class="lbl">Theme</span></summary>
+            <summary aria-label="Settings: colour scheme and new league"><span class="cur" aria-hidden="true"></span><i class="fa-solid fa-sliders" aria-hidden="true"></i></summary>
             <div class="fm-theme-menu">
               <div class="fm-theme-head">Colour scheme</div>
               {% for key, label, blurb in schemes %}
@@ -147,20 +152,10 @@
                 <span class="fm-theme-t"><span class="n">{{ label }}</span><span class="b">{{ blurb }}</span></span>
               </button>
               {% endfor %}
+              <a class="fm-theme-league" href="{{ url_for('onboarding') }}"><i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i> Start a new league</a>
             </div>
           </details>
-          <form method="get" class="fm-uniform">
-            {# Carry the current page's filters across a universe switch so the
-               active league change doesn't reset what you're looking at (e.g. the
-               Analytics Bureau's Division/Class). #}
-            {% if request.args.get('div') %}<input type="hidden" name="div" value="{{ request.args.get('div') }}">{% endif %}
-            {% if request.args.get('class') %}<input type="hidden" name="class" value="{{ request.args.get('class') }}">{% endif %}
-            <span class="bl-select-wrap">
-              <select class="bl-select" name="u" onchange="this.form.submit()" aria-label="Universe">
-                {% for val, dd, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
-              </select>
-            </span>
-          </form>
+
           {# THE advance control — the only one in the app. A second button (the
              Season Hub's, which stepped one universe alone) is what forked saves
              into universes at different weeks; see
@@ -188,6 +183,22 @@
           </form>
           {% endif %}
         </div>
+        </div>
+
+        <!-- Primary navigation: grouped dropdown menus, on a row of their own -->
+        <nav class="fm-topnav" aria-label="Primary">
+          {% for glabel, items in nav_groups %}
+          {% set group_active = items | selectattr('id', 'equalto', active_nav) | list | length > 0 %}
+          <div class="fm-tn-group">
+            <button class="fm-tn-btn{% if group_active %} active{% endif %}" type="button" aria-haspopup="true"{% if group_active %} aria-current="true"{% endif %}>{{ glabel }}<span class="fm-tn-caret" aria-hidden="true">▾</span></button>
+            <div class="fm-tn-menu">
+              {% for it in items %}
+              <a class="fm-tn-item{% if it.id == active_nav %} active{% endif %}" href="{{ it.href }}"{% if it.id == active_nav %} aria-current="page"{% endif %}><span class="fm-tn-ic"><i class="{{ it.icon }}" aria-hidden="true"></i></span>{{ it.label }}</a>
+              {% endfor %}
+            </div>
+          </div>
+          {% endfor %}
+        </nav>
       </header>
 
       <main class="fm-content">

@@ -19,14 +19,14 @@
    the college standings page makes with its Conference select. #}
 <div class="jh-jump">
   <label><span class="k">District</span>
-    <select onchange="if(this.value)window.location=this.value">
+    <select aria-label="District" onchange="if(this.value)window.location=this.value">
       {% for d in view.peers %}
       <option value="{{ url_for('jhsaa_district', group=view.group, district=d, u=u, g=view.gender, year=view.scope.pin) }}"
               {{ 'selected' if d == view.district }}>{{ d }}</option>
       {% endfor %}
     </select></label>
   <label><span class="k">Class</span>
-    <select onchange="if(this.value)window.location=this.value">
+    <select aria-label="Classification" onchange="if(this.value)window.location=this.value">
       {% for gp in view.scope.groups %}
       <option value="{{ url_for('jhsaa_districts', u=u, g=view.gender, group=gp, year=view.scope.pin) }}"
               {{ 'selected' if gp == view.group }}>{{ gp }}</option>

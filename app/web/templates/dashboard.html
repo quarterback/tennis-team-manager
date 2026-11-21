@@ -5,7 +5,7 @@
 <form method="get">
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
   <label class="bl-field"><span class="bl-field-label">Division</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
+    <span class="bl-select-wrap"><select aria-label="Division and gender" class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
       {% for val, dd, g, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
     </select></span></label>
   <span style="font-size:16px;color:var(--text-muted)">{{ uni_label }} · {{ d.n_programs }} programs · {{ d.n_conferences }} conferences · simulated 2026 season</span>
@@ -57,7 +57,7 @@
     <!-- Top programs -->
     <div class="bl-panel">
       <div class="bl-panel-head"><span class="bl-panel-title">Top Programs</span>
-        <a class="bl-panel-meta" style="text-decoration:none" href="{{ url_for('rankings', u=u) }}">Power Index · all {{ d.n_programs }} →</a></div>
+        <a class="bl-panel-meta" style="text-decoration:none" href="{{ url_for('rankings', u=u) }}">CTA Rankings · all {{ d.n_programs }} →</a></div>
       <div class="bl-tablescroll">
       <div class="bl-table" style="--bl-grid-cols: 34px auto 1fr 64px 88px">
         <div class="bl-thead">

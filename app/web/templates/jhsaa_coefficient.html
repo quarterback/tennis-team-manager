@@ -13,7 +13,7 @@
 
 <div class="jh-laypick" style="margin-bottom:14px">
   <span class="jhx-facet-k">Class</span>
-  <span class="bl-select-wrap"><select class="bl-select" onchange="location.href=this.value">
+  <span class="bl-select-wrap"><select class="bl-select" aria-label="Classification" onchange="location.href=this.value">
     {% for gp in view.groups %}
     <option value="{{ url_for('jhsaa_coefficient', u=u, g=view.gender, group=gp, year=view.scope.pin) }}"
             {% if gp == view.group %}selected{% endif %}>{{ gp }}</option>

@@ -27,7 +27,7 @@
    page from the district you are already reading. #}
 <div class="jh-flightpick">
   <label for="jvpick">Bracket</label>
-  <select id="jvpick" onchange="location.href=this.value">
+  <select id="jvpick" aria-label="Bracket" onchange="location.href=this.value">
     {% for f, name in view.brackets %}
     <option value="{{ url_for('jhsaa_district_jv', group=view.group, district=view.district, u=u, g=view.gender, year=view.scope.pin, flight=f) }}"
             {{ 'selected' if view.flight == f }}>{{ name }}</option>

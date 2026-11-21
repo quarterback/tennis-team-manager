@@ -31,7 +31,7 @@
    select, the way the district page does. #}
 <div class="jh-jump">
   <label><span class="k">Classification</span>
-    <select onchange="if(this.value)window.location=this.value">
+    <select aria-label="Classification" onchange="if(this.value)window.location=this.value">
       {% for gp in view.groups %}
       <option value="{{ url_for('jhsaa_rankings', u=u, g=view.gender, group=gp, year=view.scope.pin) }}"
               {{ 'selected' if gp == view.group }}>{{ gp }}</option>

@@ -19,7 +19,7 @@
    per year, so the page cannot show everything at once and should not try. #}
 <div class="jh-flightpick">
   <label for="flpick">Flight</label>
-  <select id="flpick" onchange="location.href=this.value">
+  <select id="flpick" aria-label="Flight" onchange="location.href=this.value">
     {% for f, name in view.flights %}
     <option value="{{ url_for('jhsaa_individual_champions', u=u, g=view.gender, group=view.group, flight=f) }}"
             {{ 'selected' if view.flight == f }}>{{ name }}</option>

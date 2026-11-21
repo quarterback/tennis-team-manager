@@ -25,7 +25,7 @@
      Filtering on "the class it last played in" is a useful cut, not the identity of
      the row, so it defaults to every class. #}
   <label class="jh-ttfilter"><span class="k">Class</span>
-    <select class="bl-select" id="jh-ttclass">
+    <select class="bl-select" id="jh-ttclass" aria-label="Classification">
       <option value="">All classes</option>
       {% for gp in view.groups %}<option value="{{ gp }}">{{ gp }}</option>{% endfor %}
     </select>

@@ -1,0 +1,141 @@
+{# The alumni tracker's shared pieces (owner spec 2026-11): ONE career table for
+   the alumni page and a program's College tab, and the season-by-season lines
+   the table and the player page both show.
+
+   A career is one row whatever happened in it. A transfer names EVERY college it
+   passed through, in order, and the year-by-year lines say which season was
+   played where. Singles and doubles are separate columns throughout. #}
+
+{# A sortable column heading: a link that sorts on `key`, or flips the direction
+   when it is already the sort. #}
+{% macro alum_th(view, key, label, cls='', title='') -%}
+<th class="{{ cls }}"{% if title %} title="{{ title }}"{% endif %}{% if view.sort == key %} aria-sort="{{ 'descending' if view.desc else 'ascending' }}"{% endif %}>
+  {%- if view.sort == key -%}
+  <a class="srt on" href="{{ jh_here(sort=key, dir=('asc' if view.desc else 'desc')) }}">{{ label }} {{ '▾' if view.desc else '▴' }}</a>
+  {%- else -%}
+  <a class="srt" href="{{ jh_here(sort=key, dir=none) }}">{{ label }}</a>
+  {%- endif -%}
+</th>
+{%- endmacro %}
+
+{# Every college of a career, in order. `link` makes each a link to that
+   college's alumni list. #}
+{% macro alum_colleges(r, u, gender, link=true) -%}
+{%- for st in r.stints -%}
+{%- if not loop.first %} <span class="arr" aria-hidden="true">→</span> {% endif -%}
+<span class="col">{% if link %}<a href="{{ url_for('jhsaa_alumni', u=u, g=gender, mode='all', college=st.college) }}">{{ st.college }}</a>{% else %}{{ st.college }}{% endif %}
+ <span class="pt">{{ st.division }}{% if st.conf %} · {{ st.conf }}{% endif %}</span></span>
+{%- endfor -%}
+{%- endmacro %}
+
+{# The year-by-year lines of one career. `compact` is the player page's narrow
+   panel: the division is already on the line above it, and a season's honours
+   and notes sit under the college instead of in a column of their own. #}
+{% macro alum_notes(s) -%}
+{{ s.honors|join(' · ') }}{% if s.note %}{% if s.honors %} · {% endif %}<span class="pt">{{ s.note }}</span>{% endif %}{% if s.injury %}{% if s.honors or s.note %} · {% endif %}<span class="pt">Missed time (injury)</span>{% endif %}
+{%- endmacro %}
+
+{% macro alum_seasons(r, compact=false) %}
+<table class="bl-table jh-alum-yrs{{ ' compact' if compact }}">
+  <thead><tr>
+    <th>Season</th><th>Yr</th><th>College</th>{% if not compact %}<th>Div</th>{% endif %}
+    <th class="n">Singles</th><th class="n">Record</th>
+    {% if r.doubles %}<th class="n">Doubles</th><th class="n">Record</th>{% endif %}
+    {% if not compact %}<th>Honours</th>{% endif %}
+  </tr></thead>
+  <tbody>
+  {% for s in r.seasons %}
+  <tr>
+    <td class="n sy">{{ s.year|cal }}</td><td class="sc">{{ s.class }}</td>
+    <td class="clg" data-d="{{ s.division }}">{{ s.college }}{% if compact and (s.honors or s.note or s.injury) %}<div class="won">{{ alum_notes(s) }}</div>{% endif %}</td>
+    {% if not compact %}<td class="sd">{{ s.division }}</td>{% endif %}
+    <td class="n" data-l="Singles">{% if s.s_pos %}No. {{ s.s_pos }}{% else %}—{% endif %}</td>
+    <td class="n">{% if s.s_w or s.s_l %}{{ s.s_w }}-{{ s.s_l }}{% else %}—{% endif %}</td>
+    {% if r.doubles %}
+    <td class="n" data-l="Doubles">{% if s.d_pair %}No. {{ s.d_pair }}{% else %}—{% endif %}</td>
+    <td class="n">{% if s.d_w or s.d_l %}{{ s.d_w }}-{{ s.d_l }}{% else %}—{% endif %}</td>
+    {% endif %}
+    {% if not compact %}<td class="won">{{ alum_notes(s) }}</td>{% endif %}
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endmacro %}
+
+{# The career table. `lead` is the first column: 'rank' (one class on screen) or
+   'class' (several). `view` set → the headings sort; none → plain headings. #}
+{% macro alum_table(rows, u, gender, lead='rank', show_hs=true, view=none, empty='No alumni match.') %}
+{% set ncol = 10 + (1 if show_hs else 0) %}
+<div class="bl-tablescroll">
+<table class="bl-table jh-repeat jh-alum">
+  <thead><tr>
+    <th class="tg"><button type="button" class="jh-alum-all" title="Show or hide every career's seasons on this page">Seasons</button></th>
+    {% if view %}
+      {% if lead == 'rank' %}{{ alum_th(view, 'rank', '#', 'n', 'Rank in the graduating class, by exit rating') }}
+      {% else %}{{ alum_th(view, 'class', 'Class', 'n') }}{% endif %}
+      {{ alum_th(view, 'name', 'Player') }}
+      {% if show_hs %}{{ alum_th(view, 'hs', 'High school') }}{% endif %}
+      {{ alum_th(view, 'college', 'College') }}
+      {{ alum_th(view, 'years', 'Yrs', 'n', 'Seasons played') }}
+      {{ alum_th(view, 's_peak', 'Singles', 'n', 'Highest singles position') }}
+      {{ alum_th(view, 's_pct', 'Record', 'n', 'Career singles record — sorts on winning percentage, 20 matches or more') }}
+      {{ alum_th(view, 'd_peak', 'Doubles', 'n', 'Highest doubles position') }}
+      {{ alum_th(view, 'd_w', 'Record', 'n', 'Career doubles record — sorts on wins') }}
+      {{ alum_th(view, 'honors', 'Honours') }}
+    {% else %}
+      <th class="n">{{ '#' if lead == 'rank' else 'Class' }}</th><th>Player</th>
+      {% if show_hs %}<th>High school</th>{% endif %}
+      <th>College</th><th class="n">Yrs</th><th class="n">Singles</th><th class="n">Record</th>
+      <th class="n">Doubles</th><th class="n">Record</th><th>Honours</th>
+    {% endif %}
+  </tr></thead>
+  <tbody>
+  {% if not rows %}<tr class="none"><td colspan="{{ ncol }}">{{ empty }}</td></tr>{% endif %}
+  {% for r in rows %}
+  <tr class="car">
+    <td class="tg"><button type="button" class="jh-alum-tog" aria-expanded="false" title="Season by season" aria-label="Seasons: {{ r.name }}">▸</button></td>
+    <td class="n ld" data-l="{{ 'Rank' if lead == 'rank' else 'Class of' }}">{% if lead == 'rank' %}{{ r.rank }}{% else %}{{ r.grad_year|cal }}{% endif %}</td>
+    <td class="nmc"><a class="nm" href="{{ url_for('jhsaa_player', school=r.hs, pid=r.pid, u=u, g=gender) }}">{{ r.name }}</a></td>
+    {% if show_hs %}
+    <td class="sch"><span class="stint">{% if r.deco and r.deco.mark %}<span class="mk">{{ r.deco.mark|safe }}</span>{% endif %}<a href="{{ url_for('jhsaa_school', school=r.hs, u=u, g=gender, view='alumni') }}">{{ r.hs }}</a></span></td>
+    {% endif %}
+    <td class="cols">{{ alum_colleges(r, u, gender) }}</td>
+    <td class="n" data-l="Seasons">{{ r.years }}</td>
+    <td class="n" data-l="Singles">{% if r.s_peak %}No. {{ r.s_peak }}{% else %}—{% endif %}</td>
+    <td class="n" data-l="Record">{{ r.s_w }}-{{ r.s_l }}</td>
+    <td class="n" data-l="Doubles">{% if r.d_peak %}No. {{ r.d_peak }}{% else %}—{% endif %}</td>
+    <td class="n" data-l="Record">{% if r.doubles %}{{ r.d_w }}-{{ r.d_l }}{% else %}—{% endif %}</td>
+    <td class="won">{% for h in r.honors %}<div class="hl">{{ h }}</div>{% endfor %}{% if r.ending %}<div class="hl pt">{{ r.ending }}</div>{% endif %}</td>
+  </tr>
+  <tr class="yrs" hidden><td class="sp"></td><td colspan="{{ ncol - 1 }}"><div class="jh-alum-yrscroll">{{ alum_seasons(r) }}</div></td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endmacro %}
+
+{# One listener for every career table on the page. #}
+{% macro alum_script() %}
+<script>
+(function () {
+  function set(btn, open) {
+    var row = btn.closest('tr').nextElementSibling;
+    if (!row) return;
+    row.hidden = !open;
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    btn.textContent = open ? '▾' : '▸';
+  }
+  document.addEventListener('click', function (e) {
+    var one = e.target.closest('.jh-alum-tog');
+    if (one) { set(one, one.getAttribute('aria-expanded') !== 'true'); return; }
+    var all = e.target.closest('.jh-alum-all');
+    if (!all) return;
+    var togs = all.closest('table').querySelectorAll('.jh-alum-tog');
+    var open = !Array.prototype.some.call(togs, function (b) {
+      return b.getAttribute('aria-expanded') === 'true';
+    });
+    Array.prototype.forEach.call(togs, function (b) { set(b, open); });
+  });
+})();
+</script>
+{% endmacro %}

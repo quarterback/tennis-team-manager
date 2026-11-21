@@ -460,6 +460,7 @@ def init_schema() -> None:
     conn.executescript(_coy.SCHEMA)
     from . import jhsaa_college as _jcol      # after the coaches' schema: it indexes
     conn.executescript(_jcol.SCHEMA)          # their `jhsaa_alumni` table
+    _jcol.ensure_columns(conn)
     for col, typ in (("week_signed", "INTEGER DEFAULT 0"), ("flips", "INTEGER DEFAULT 0"),
                      ("commit_history", "TEXT DEFAULT '[]'")):
         try:
@@ -844,7 +845,9 @@ def reset(seed: int = DEFAULT_SEED) -> None:
     from . import jhsaa_portal as _jp
     conn.executescript(_jp._SCHEMA + " DELETE FROM world_jhsaa_portal;")
     from . import jhsaa_college as _jcol
-    conn.executescript(_jcol.SCHEMA + " DELETE FROM world_jhsaa_college;")
+    conn.executescript(_jcol.SCHEMA + " DELETE FROM world_jhsaa_college;"
+                       " DELETE FROM world_jhsaa_college_stint;"
+                       " DELETE FROM world_jhsaa_grad_snapshot;")
     conn.commit()
     conn.close()
     # God-mode editor overrides (player moves, lineups, prestige/academics priors,
@@ -1197,6 +1200,16 @@ def is_primed(seed: int = DEFAULT_SEED) -> bool:
     w = load_world(seed)
     stamp = (w["id"], w["year"], w["week"], ov.move_version())   # MUST match prime()'s stamp
     return _primed.get(seed) == stamp and bool(_roster_cache)
+
+
+def tracks_alumni(seed: int = DEFAULT_SEED) -> bool:
+    """Whether THIS save follows its JHSAA graduates with the alumni tracker
+    (`app/jhsaa_college.py`) — true unless the save hands its seniors to a real
+    college recruit board, i.e. unless it has college in it AND simulates the
+    high-school season (`worldconfig.jhsaa_sim`). Asked by the rung before it
+    writes a class and by the pages before they fill one in, so the tracker never
+    invents a college career for a player who is a real recruit."""
+    return is_jhsaa_only(seed) or not worldconfig.jhsaa_sim()
 
 
 def is_jhsaa_only(seed: int = DEFAULT_SEED) -> bool:
@@ -4372,7 +4385,7 @@ def run_jhsaa(seed: int, world: dict) -> dict:
     # THE ALUMNI TRACKER (owner rule 2026-11) is for a world with NO college in it:
     # a save that plays real college tennis sends its seniors to the real board.
     # One indexed probe, resolved before the rung's transaction opens.
-    track_alumni = is_jhsaa_only(seed)
+    track_alumni = tracks_alumni(seed)
     conn = _db()
     champs = {}
     try:
@@ -4689,7 +4702,8 @@ def run_jhsaa(seed: int, world: dict) -> dict:
             if track_alumni:
                 from . import jhsaa_college as _jcol
                 _jcol.record_class(conn, world["id"], gender, season_year, salt,
-                                   season["teams"].values())
+                                   season["teams"].values(),
+                                   season.get("awards"), season.get("all_region"))
             # THE PER-PROGRAM SEASON ROWS (read-path fix #2): every program's
             # ledger row for this season, folded ONCE here where the archive is
             # written, so no page ever parses the whole season to show one school.

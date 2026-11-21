@@ -5,11 +5,11 @@
 <form method="get">
 <div class="bl-toolbar"><div class="bl-toolbar-inner">
   <label class="bl-field"><span class="bl-field-label">Division</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
+    <span class="bl-select-wrap"><select aria-label="Division and gender" class="bl-select" name="u" onchange="this.form.submit()" style="min-width:104px">
       {% for val, dd, gg, lbl in universes %}<option value="{{ val }}"{% if val == u %} selected{% endif %}>{{ lbl }}</option>{% endfor %}
     </select></span></label>
   <label class="bl-field"><span class="bl-field-label">Conference</span>
-    <span class="bl-select-wrap"><select class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:150px">
+    <span class="bl-select-wrap"><select aria-label="Conference" class="bl-select" name="conf" onchange="this.form.submit()" style="min-width:150px">
       {% for c in conferences %}<option{% if c == conf %} selected{% endif %}>{{ c }}</option>{% endfor %}
     </select></span></label>
   <label class="bl-field"><span class="bl-field-label">Team</span>

@@ -7,7 +7,7 @@
     <input type="hidden" name="home_div" value="{{ home_div }}">
     <input type="hidden" name="away_div" value="{{ away_div }}">
     <label class="bl-field"><span class="bl-field-label">Gender</span>
-      <span class="bl-select-wrap"><select class="bl-select" name="gender" onchange="this.form.submit()" style="min-width:96px">
+      <span class="bl-select-wrap"><select aria-label="Gender" class="bl-select" name="gender" onchange="this.form.submit()" style="min-width:96px">
         <option value="men"{% if gender == 'men' %} selected{% endif %}>Men</option>
         <option value="women"{% if gender == 'women' %} selected{% endif %}>Women</option>
       </select></span></label>

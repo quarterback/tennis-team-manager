@@ -802,25 +802,46 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
         from app import world as _wd_col
         _cc = _wd_col._db()
         try:
-            _alumni = _jcol.all_rows(_cc, w["id"], _wd_col.active_salt())
+            _alumni = _jcol.all_rows(_cc, w["id"], _wd_col.active_salt(),
+                                     fill=_wd_col.tracks_alumni())
         finally:
             _cc.close()
         for a in _alumni:
             if a["gender"] != gender:
                 continue
+            # ONE header for both career models (the CSV takes it from the first
+            # row): a model-1 career has singles only and never moved, so its
+            # model-2 columns are simply empty.
+            moved = {t["year"]: t for t in a.get("transfers", [])}
             for cs in a["seasons"]:
+                t = moved.get(cs["year"])
                 college_rows.append({
+                    "model": a.get("model", 1),
                     "grad_year": a["grad_year"], "gender": a["gender"],
                     "class_rank": a["rank"], "player_id": a["pid"], "name": a["name"],
-                    "high_school": a["hs"], "hs_exit_ovr": a["hs_ovr"],
-                    "college": a["college"], "division": a["division"],
-                    "conference": a["conf"], "season": cs["year"],
-                    "class_year": cs["class"],
+                    "high_school": a["hs"], "high_school_id": a.get("hs_ident", ""),
+                    "hs_exit_ovr": a["hs_ovr"],
+                    "career_type": a.get("arc", ""), "career_status": a.get("status", ""),
+                    "seasons_played": a.get("years", len(a["seasons"])),
+                    "departure_cause": (a.get("departure") or {}).get("cause", ""),
+                    "departure_after": (a.get("departure") or {}).get("after", ""),
+                    "season": cs["year"], "class_year": cs["class"],
+                    "college": cs.get("college", a["college"]),
+                    "division": cs.get("division", a["division"]),
+                    "conference": cs.get("conf", a["conf"]),
+                    "role": cs.get("role", ""),
                     "position": cs["pos"] if cs["pos"] else "",
                     "wins": cs["w"], "losses": cs["l"],
+                    "doubles_position": cs.get("d_pair") or "",
+                    "doubles_wins": cs.get("d_w", ""), "doubles_losses": cs.get("d_l", ""),
+                    "injury": cs.get("injury") or "",
                     "honors": "; ".join(cs["honors"]),
+                    "transferred_to_after": t["to"] if t else "",
                     "career_peak": a["peak"] if a["peak"] else "",
-                    "career_wins": a["w"], "career_losses": a["l"]})
+                    "career_wins": a["w"], "career_losses": a["l"],
+                    "career_doubles_peak": a.get("d_peak") or "",
+                    "career_doubles_wins": a.get("d_w", ""),
+                    "career_doubles_losses": a.get("d_l", "")})
     from app import jhsaa_reclass as _rc
     realignments = []
     if w and not injected:
@@ -1227,7 +1248,18 @@ def build_jhsaa(year: int, gender: str, classification: str = "all", *, season=N
             "class_rank is the senior's rank in the graduating class by hs_exit_ovr; "
             "player_id is the JHSAA pid. college/division/conference are a real program; "
             "position is the singles lineup position that season (empty = not in the "
-            "lineup) and wins/losses the singles record. NOT SIMULATED: each line is "
+            "lineup) and wins/losses the singles record. `model` is the career model the "
+            "row was written with: model-1 careers are singles only, one college, four "
+            "seasons; model-2 careers also carry role, doubles_position (the PAIR number) "
+            "and doubles record, injury, career_type/career_status, the college actually "
+            "attended EACH season (it changes on a transfer; transferred_to_after names "
+            "the destination on the last season before the move) and seasons_played "
+            "(fewer than four when the player stopped). career_status says HOW a career "
+            "ended — graduated, left_team (still enrolled, no longer playing), "
+            "left_college, injury_ended or turned_pro — with departure_cause and "
+            "departure_after (the class year it followed); a transfer is a move, not a "
+            "departure, and is not a status. An All-American season is always also an "
+            "All-Conference season in the same discipline. NOT SIMULATED: each line is "
             "generated once when the class graduates, from the senior's standing, the "
             "program's prestige and a per-player roll — no college dual is played, and "
             "nothing in the game reads these rows. A class that graduated before the "

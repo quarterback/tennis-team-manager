@@ -96,7 +96,7 @@
       {# A DROPDOWN, not a two-button rail (owner, 2026-08) — the same control the
          season uses, so the whole bar reads one way. #}
       <span class="bl-select-wrap">
-        <select class="bl-select" onchange="location.href=this.value">
+        <select class="bl-select" aria-label="Sport" onchange="location.href=this.value">
           {% for g in ['boys','girls'] %}
           <option value="{{ jh_scope_url(scope, u, g=g) }}"
                   {% if scope.gender == g %}selected{% endif %}>{{ g|capitalize }}</option>
@@ -342,7 +342,7 @@
 {% macro jh_jump(label, name, options, current, endpoint, args) %}
 <label>
   <span class="k">{{ label }}</span>
-  <select onchange="if(this.value)window.location=this.value">
+  <select aria-label="{{ label|default('Switch to') }}" onchange="if(this.value)window.location=this.value">
     {% for value, text in options %}
     <option value="{{ value }}"{{ ' selected' if text == current }}>{{ text }}</option>
     {% endfor %}

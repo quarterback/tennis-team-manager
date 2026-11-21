@@ -9,7 +9,7 @@
   --shadow-sm: 0 1px 2px oklch(0.24 0.013 255 / 0.06);
   --shadow-md: 0 2px 6px oklch(0.24 0.013 255 / 0.08), 0 1px 2px oklch(0.24 0.013 255 / 0.06);
   --shadow-lg: 0 8px 20px oklch(0.24 0.013 255 / 0.12);
-  --shadow-pop: 0 6px 16px oklch(0.24 0.013 255 / 0.14), 0 0 0 1px var(--border-subtle);
+  --shadow-pop: 0 6px 16px oklch(0.24 0.013 255 / 0.14), 0 0 0 1px var(--border-control);
 
   --ring: 0 0 0 3px oklch(0.525 0.098 162 / 0.30);
 

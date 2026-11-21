@@ -19,7 +19,7 @@
   {# The class filter is the PAGE's — the Title Board's rule: a program's wins cross
      reclassification and play-up, so the cut reads the class it LAST played in. #}
   <label class="jh-ttfilter"><span class="k">Class</span>
-    <select class="bl-select" id="jh-ttclass">
+    <select class="bl-select" id="jh-ttclass" aria-label="Classification">
       <option value="">All classes</option>
       {% for gp in view.groups %}<option value="{{ gp }}">{{ gp }}</option>{% endfor %}
     </select>

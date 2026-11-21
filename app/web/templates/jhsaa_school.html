@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% from "_jhsaa.html" import jh_header, jh_player, jh_award_names, jh_tabs, jh_tabs_script %}
 {% from "_stars.html" import stars %}
+{% from "_jhsaa_alumni.html" import alum_table, alum_script %}
+{% from "_pager.html" import pager %}
 {% block title %}{{ view.school }} — JHSAA{% endblock %}
 {% block content %}
 {% set t = view.history.totals %}
@@ -132,6 +134,7 @@
   <a class="{{ 'on' if hq == 'honors' }}" href="{{ hq_url('honors') }}">Honors</a>
   <a class="{{ 'on' if hq == 'records' }}" href="{{ hq_url('records') }}">Records</a>
   <a class="{{ 'on' if hq == 'staff' }}" href="{{ hq_url('staff') }}">Staff</a>
+  <a class="{{ 'on' if hq == 'alumni' }}" href="{{ hq_url('alumni') }}">College</a>
 </nav>
 
 {% if hq == 'overview' %}
@@ -881,6 +884,19 @@
     {% endif %}
   </div>
 </div>
+
+{% elif hq == 'alumni' %}
+{# THE PROGRAM'S GRADUATES IN COLLEGE (owner spec 2026-11) — newest class first,
+   one page of careers, each with every college it passed through and its
+   seasons one click down. Read off the alumni tracker; nothing is built here. #}
+<div class="bl-panel">
+  <div class="bl-panel-head"><span class="bl-panel-title">In college</span>
+    <span class="bit">{{ view.alumni.total }} alumni</span></div>
+  {{ alum_table(view.alumni.rows, u, view.gender, lead='class', show_hs=false,
+                empty='No graduate of this program is tracked in college yet.') }}
+  {{ pager(view.alumni.pager, 'alumni') }}
+</div>
+{{ alum_script() }}
 
 {% elif hq == 'staff' %}
 <!-- ============ STAFF: the people coaching this program ============ -->
