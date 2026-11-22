@@ -54,6 +54,12 @@ The columnist is the one voice allowed an opinion and a first person.
 - Template-only prose or a model as the writer (run as a batch job and stored).
 - About 5% of varsity duals carry no display date; they need an edition rule.
 
+## The voice guide (`VOICE.md`)
+
+The file another agent loads: story types, paragraph order, agate formats, the
+desks, the decades, the columnist and how teenagers are written about. It states its
+own gaps.
+
 ## The corpus (`corpus/`)
 
 The generator is only as good as its ear, so the first step is a corpus of real
