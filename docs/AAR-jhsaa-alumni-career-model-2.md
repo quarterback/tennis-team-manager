@@ -415,3 +415,7 @@ things to measure.
   `tests/test_jhsaa_college_v2.py` were edited to pin model 1 where they cover
   it; those edits are unexecuted. The validation script ran clean, including its
   integrity assertions.
+
+## First stored 2113 graduating class
+
+The [2113 research companion](reports/JHSAA-2113-coaching-development-and-alumni-review.md) examines the first 2113 export containing **245 boys and 294 girls** with Model 2 finished college careers. These are four-year **precomputed epilogues**, not NCAA seasons actually played in the high-school save. The review tracks first destinations, playing roles, departures, 108 distinct transferred players, and the participation changes associated with moves down, lateral and up. The [in-world 2113 season review](2113-jhsaa-season-review.md) identifies the high-school accomplishments the graduates bring into this model. No stored college career was changed in producing the report.
