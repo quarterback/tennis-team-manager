@@ -9,10 +9,17 @@ patterns below; prose excerpts are short and verbatim.
 This paper is the AREA desk done well: one staff covering three or four counties,
 with the same kids and coaches turning up season after season.
 
-## 1. Vocabulary that differs from the rest of the corpus
+## 1. Vocabulary
 
-- Flights are ORDINAL WORDS, never "No. 1": **first singles, second singles, third
+- Flights are named in ORDINAL WORDS: **first singles, second singles, third
   singles, first doubles, second doubles**. A New Jersey dual is five flights.
+  ‼️ This is ordinary American tennis usage, not a New Jersey habit (owner
+  correction, 2026-11). Both it and "No. 1 singles" are standard. What varies is
+  which one a given PAPER printed. Counted over the tennis articles the collectors
+  fetched: ordinal words in 8 of 45 Northeast files (the Princeton weekly), 2 of 43
+  Southeast and 0 of 22 Northwest; "No. 1 singles" / "at No. 2" in 22, 28 and 9.
+  That is a small sample of papers with online text, not a survey of how people
+  talk. A generated paper should pick one form as its house style and hold it.
 - "d." for defeated in agate; "def." appears in the same column for some duals.
 - A tournament is won on **team scores**, flights are **titles**, players are
   **representatives**: "winning all five individual spots to run away with the team
