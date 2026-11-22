@@ -1,6 +1,6 @@
 # Prep Sports Journalism — Portable Agent Editorial Guide
 
-**Version 0.2 · November 22, 2026**  
+**Version 0.3 · November 22, 2026**  
 **Status:** Editorial reference and agent handoff; not wired into the simulator.  
 **Scope:** High-school, youth, college and fictional sport. Intended to travel to Viperball, hybrid-baseball/O27 and other projects.
 
@@ -24,6 +24,57 @@ This is a working editorial model, not a claim that all regional archives have b
 - *Perry Daily Journal* (Oklahoma), **Jan. 19, 1990**, Morrison–Glencoe: concise boys'/girls' account with the next placement games in view. https://gateway.okhistory.org/ark:/67531/metadc2255811/m1/7/
 
 Do not infer that the newspapers in every other state used exactly these conventions. The wider archive map below marks research targets, not verified stylistic evidence.
+
+## Close reading — *Courier-News* Central Jersey prep-tennis pages (user-supplied primary examples)
+
+**Source and limits.** Eight screenshots supplied on Nov. 22, 2026, from *Courier-News* pages displayed on Newspapers.com. They show portions of pages, not every article in full. They are **not stored in this repository**, and most screenshots do not expose their original page URL or issue date. Do not invent dates, complete headlines, bylines or words hidden by screenshot cropping. Where a year is indicated below, it comes from visible text, not an assumption about the full issue.
+
+This sample is especially valuable because it captures several **functions coexisting within the same local paper**, rather than cherry-picking feature stories. It is a reporting **corpus**, not evidence that every item is a sports column.
+
+| Screenshot | Visible material | Editorial form and reusable lesson |
+|---|---|---|
+| `IMG_3367(1).jpeg` | “Westfield takes all 5 flights in Union tennis tournament,” a *Courier-News* staff report; Westfield's tournament win, points standings, names of flight winners, other contenders, full bracket results and regular-season results | **Event story plus statistical agate**: an economical lead summarizing the headline result, then dense secondary results. The prose doesn't have to repeat each score. The smaller schools remain visible in the results package. |
+| `IMG_3372(1).jpeg` | “New faces bringing change to tennis,” a staff feature on minority participation in Central Jersey high-school tennis, with athletes and program coaches quoted, photographs, and surrounding schedules/scores | **Community / participation feature**: high-school sport is about who gets to play, coaches, access and changing school culture, not only championships. Its sourcing goes beyond a standings table. Sensitive demographic facts here come from actual interviews; an agent must not manufacture them in a fictional world. |
+| `IMG_3374(1).jpeg` | Union County tournament result listings, including Camille Alston at third singles, and separate regular-season duals | **Agate as a publication product**: bracket placements, seed numbers, flight scores, team totals and regular-season results coexist in compact, structured type. Scores are useful on their own; not every result gets an article. |
+| `IMG_3380(1).jpeg` | “City tennis program’s net worth: priceless,” by Leslie Baron Van Dorn, a correspondent; profile of Donald Van Blake and Plainfield's youth-tennis development, school program, city courts and clinics | **Local institution / coach profile**: follows a person, relationships across organizations, facilities and the youth-to-school pipeline. The protagonist is not necessarily a champion. The writer develops the story through interviews, historical details, and lived consequences. |
+| `IMG_3384.jpeg` | *Courier-News*, May 19, 1991, “The net result is very good tennis,” by Luther Turmelle; four players from four Central Jersey schools linked to a local tennis association's development work, with youth participation and player quotes | **Multi-school feature via a shared institution**: the connection among the players is a community development program rather than a single fixture. Region-wide coverage may join schools through coaches, facilities, training and recruiting networks. |
+| `IMG_3382.jpeg` | *Courier-News* “ALL-AREA Boys Tennis” package: named All-Area, All-Somerset, All-Hunterdon and All-Union-Middlesex selections; athlete photos/cards, season and career highlights, favorites, Coach of the Year feature on Van Blake | **Editorial package and recognition**: a whole section is assembled from multiple components—selection lists, concise player biographies, portraits, honors, and a reported coaching feature. The newspaper's All-Area distinctions are **media selections**, separate from the association's canonical awards. |
+| `IMG_3383.jpeg` | A girls' tennis year-end package referencing 2000 results: Top 10 area teams, Plainfield's 15–2 conference-title season, coach Esta Perle on the team's changing reputation, “Team match of the year” | **Season verdict plus rankings**: editor-selected top tens, story of an emerging program, quotes, and a named match let the paper evaluate a season on more than official placement. Rankings and “match of the year” are editorial claims that need declared criteria. |
+| `IMG_3376.jpeg` | A subsequent girls' tennis outlook organized by Union, Middlesex and Hunterdon counties, referencing 2000 results and returning players; notes Camille Alston's move to first singles and school-by-school expectations | **Geographically organized preseason survey**: four- to six-sentence team notes, projected lineup movement, returning starters, prior records, and a specific reason to watch each team. The county subdivisions are editorial geography, not necessarily the game's competition structure. |
+
+### What the spread teaches that isolated articles do not
+
+**1. The unit is the sports *page* or *package*, not the single generated story.** One page can contain a 300-word match account, a block of tightly set individual results, several brief regular-season scores, and a photograph. Another carries a long reported community feature alongside schedules and unrelated sports. An agent asked for an “edition” should choose a **mix of forms**, rather than writing five similarly sized features.
+
+**2. “Agate” is its own form.** Traditional agate is the compact small-type statistics/results section. The Union tournament page demonstrates that scores, brackets, seeding, records and classifications can be presented without narrative padding. Generate it deterministically from game records wherever possible. For tennis, preserve distinct team competition, singles and doubles flights, seeds, set scores and placements.
+
+**3. Recognitions can be the newspaper's own.** A *Courier-News* All-Area team and Top 10 are editorial judgments, not state association honors. A simulated newspaper could produce a year-end All-Area squad, coach of the year, or “match of the year” as **publication-owned awards**. Cite on-record criteria and label the newspaper as selector. Never add them to the simulation's official honours database or imply they were sanctioned by the league.
+
+**4. Coverage follows player and coaching pathways.** The Plainfield examples include youth-tennis programs, school competition, a longstanding coach's work, and later seasonal coverage. Do not infer that these different pieces establish a single causal history; the broader lesson is that reporters connect games to the people, places and organizations that make participation possible.
+
+**5. The local paper covers multiple levels of significance without apology.** A player appearing only in an individual results listing, a school getting two sentences in the county preview, a tournament champion getting a staff report, and a coach getting a feature all belong in one editorial system.
+
+**6. Geographic packages make scale possible.** County- and area-based preseason rundowns let a single staff cover many schools without a standalone article for every one. School-level notes may be short, but they can contain years of accumulated context.
+
+**7. Photos, captions and sidebars are reporting units.** A photo caption identifies a person, school and what was happening. A sidebar gives a concise season/career record. An agent can produce caption text and a photo *brief*, but must not claim a fictional photo actually exists if no image is supplied or generated.
+
+**8. These are not columnist samples.** The signed community stories are reported features; staff recaps and result blocks are straight coverage. The columnist role needs its **own primary-source examples** of signed, opinionated argument. Do not teach a columnist by relabeling these features as columns.
+
+### Add these publication forms to the agent's toolbox
+
+- **Agate / results wire** — structured team and individual scores, standings and seed placements. Produce from verified results, with little or no prose.
+- **County/area preseason survey** — a compact paragraph per school, ordered by editorial territory; note graduating contributors, returning starters and unresolved lineup questions.
+- **All-Area / year-end selection package** — newsroom's selections, short player cards, methodology, team records, noteworthy matches, accompanying reported piece.
+- **Youth-to-varsity pipeline feature** — a person or local program connects athletes across schools and seasons; requires established development-program, coaching, resource or facility evidence, or clearly bounded and internally consistent fictional context.
+- **Community change feature** — participation, facilities and access to sport; requires corroborated source facts. Never invent race, ethnicity, poverty, disability or other sensitive demographic attributes about youth athletes to supply a story.
+- **Coaching legacy feature** — decisions, apprenticeships, facilities, playing opportunities and remembered seasons, with attributed quotes and multi-year records when available.
+
+### Two sample editorial assignments (newspaper-first, no simulator integration required)
+
+**Tournament edition:** “Using only this completed county tournament and related regular-season match records, publish a local sports page: one 180–280-word staff report on the winning team, one compact standings-and-flight-results block, and three brief notes on schools that didn't win. Keep the result block strictly factual. Do not invent missing flight scores.”
+
+**Season-end area package:** “Using the full year's school, player and coach records, commission a newspaper-owned All-Area selection and a county-by-county season notebook. Include explicit selection criteria, player cards with actual accomplishments, one carefully reported coach/program feature, and one signed column *only if* the evidence supports a contestable opinion. Distinguish editorial honors from official awards.”
+
 
 ### Evidence for a separate columnist
 
