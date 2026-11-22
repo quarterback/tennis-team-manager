@@ -289,3 +289,7 @@ Each entry changes one named result. Everything before it is as played.
 
 
 This is the original long-form 2112 season review supplied with the 2038 JHSAA research export, retained as the in-world annual record. For an additional analysis of the 2112 competitive patterns, see [2112 season analysis](reports/JHSAA-2112-season-analysis.md). For the experimental bond/annuity and player-development baseline, see [2112 coaching and development baseline](reports/JHSAA-2112-coaching-and-development-baseline.md). The technical design is documented in [Coach Bond and Annuity AAR](AAR-jhsaa-coach-bond-annuity.md) and [Attribute Development Stock AAR](AAR-jhsaa-attribute-development-stock.md).
+
+## Following season: 2113
+
+The next annual report is [The 2039 (2113) JHSAA Tennis Season](2113-jhsaa-season-review.md). Its [research companion](reports/JHSAA-2113-coaching-development-and-alumni-review.md) follows the first substantial stock-era coaching gains, updates the bond/annuity cohort and analyzes the first stored Model 2 college-alumni class. These 2113 findings leave this 2112 archive unchanged.
