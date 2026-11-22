@@ -13,13 +13,10 @@ with the same kids and coaches turning up season after season.
 
 - Flights are named in ORDINAL WORDS: **first singles, second singles, third
   singles, first doubles, second doubles**. A New Jersey dual is five flights.
-  ‼️ This is ordinary American tennis usage, not a New Jersey habit (owner
-  correction, 2026-11). Both it and "No. 1 singles" are standard. What varies is
-  which one a given PAPER printed. Counted over the tennis articles the collectors
-  fetched: ordinal words in 8 of 45 Northeast files (the Princeton weekly), 2 of 43
-  Southeast and 0 of 22 Northwest; "No. 1 singles" / "at No. 2" in 22, 28 and 9.
-  That is a small sample of papers with online text, not a survey of how people
-  talk. A generated paper should pick one form as its house style and hold it.
+  ‼️ "No. 1 singles" and "first singles" are the SAME TERM (owner, 2026-11): the
+  numbered form is just the abbreviation, used everywhere. They are not regional
+  variants and not two house styles. A writer may use either, as a real paper does:
+  the abbreviation in agate and tight roundup copy, the words in running prose.
 - "d." for defeated in agate; "def." appears in the same column for some duals.
 - A tournament is won on **team scores**, flights are **titles**, players are
   **representatives**: "winning all five individual spots to run away with the team
