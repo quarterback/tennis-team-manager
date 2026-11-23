@@ -5,7 +5,8 @@ Load this file; the evidence behind it is in `corpus/`.
 
 ## What this is built from
 
-266 annotated articles and columns, plus 15 pages of Courier-News clippings seven NJ.com
+324 annotated articles and columns (58 of them from an eastern Oregon one-town
+weekly, 1985-96), plus 15 pages of Courier-News clippings seven NJ.com
 pages, five Oregon pages, twelve OSAAtoday tennis pieces (2021-26) and a set of
 2025-26 tennis pieces (Wyoming, Texas) supplied by the owner. By decade: 1980s 47, 1990s 158, 2000s 61. Tennis 121. By state: ID 42,
 KS 38, PA 37, NC 34, FL 22, VA 14, WA 12, CA 10, GA 10, NJ 9 (+ the clippings), MN 7,
@@ -14,9 +15,9 @@ WY 6, VT 6, TX 6, IL 6, MD 5, MI 2.
 Know its limits before trusting it:
 
 - The Kansas set is almost all 2002-2006.
-- Oregon period papers, Montana, Oklahoma and Colorado are absent. Rural Idaho, eastern Washington
+- Montana, Oklahoma and Colorado are absent. Oregon is one rural weekly. Rural Idaho, eastern Washington
   and Minnesota stand in for the rural West and Plains.
-- True one-town weeklies are thin: five papers, 27 articles.
+- True one-town weeklies: six papers, 85 articles, most from one of them.
 - Columnists are four writers from two small cities and one metro, all 1990s.
 - Many longer articles were read closely only at the top; quote counts are machine
   counts.
@@ -107,6 +108,39 @@ About 200 words, unsigned, no quotes, with a dateline at the site.
 6. When play resumes.
 
 Seeds go on every name. Bracket paths can be given as a string of scores.
+
+### The one-town weekly's week
+
+The local desk at its smallest (`corpus/oregon-rural/`). Nobody on staff writes
+sports: students cover their own school, sometimes their own team in the third
+person; one adult correspondent writes everything for a neighbouring town; a
+coach's write-up runs unsigned.
+
+- The unit is the week, not the game. One sentence leads: team, what happened,
+  opponent, day and date, site. Three shapes: travel ("traveled to ... on
+  Saturday, May 6 to take on the Blue Devils"), host ("hosted the ... Tigers ...
+  racking up three wins"), week in review ("had one last busy week before winding
+  their season down").
+- Completeness beats selection. Every entrant gets a sentence, JV gets a
+  paragraph, "Other placers were:" closes it, then the next match with a time.
+- Tennis has no team score here: "winning four matches and losing two", "went
+  3-3", "were shut out". Each result gets a small cause ("played off their
+  opponents' mistakes", "good teamwork and court position"). The format is
+  explained to readers who do not follow tennis.
+- Losses are short and flat: "suffered a setback at the hands of", then what was
+  won. "Played well but lost." "Too strong and too quick."
+- Weather and thin squads are ordinary facts: "a stiff and chilly wind", an
+  opponent with one boy who plays twice.
+- Zero or one quote, the coach, never an opponent. The coach thanks the crowd
+  that travelled.
+- Headlines are plain, present tense and often carry no result: "rack up",
+  "suffer setback", "wind up", "end season".
+- School life sits inside the sports story: an exchange student, the honour
+  roll. Opinion appears only as a dry aside ("If that isn't right, I'm sure
+  we'll hear about it").
+- Furniture: Players of the Week picked by coaches and sponsored by a local
+  business, line scores, "not available at press time", bowling and ladies'
+  golf alongside.
 
 ### Roundup
 
@@ -391,6 +425,5 @@ team". One per sport.
 ## What the corpus cannot tell you
 
 A retirement tribute in the old voice (the two here are recent); a small-town weekly
-editor's own column; 1980s columns; period papers from Oregon, Montana, Oklahoma,
-Colorado. Do not improvise
+editor's own column; 1980s columns; period papers from Montana, Oklahoma, Colorado. Do not improvise
 those from this guide. Ask for more source pages first.
