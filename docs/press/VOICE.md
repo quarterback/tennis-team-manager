@@ -226,6 +226,42 @@ Verbs throughout: downed, topped, edged, blanked, ousted, breezed, cruised, pace
 rolled over, eked out, outlasted. Nouns: tourney, crown, berth, semis, the draw,
 loser-out, twinbill, nightcap. "Play host to."
 
+## Colour: what to invent and remember
+
+Tennis is under-covered next to football, basketball and volleyball. Measured over
+55 state-association stories (`corpus/associations/`), the bigger sports carry
+things tennis stories mostly leave out. Write tennis the way those sports are
+written. In order of how much tennis is missing:
+
+- **The crowd and the place.** Who came, where they sat, what the courts are like,
+  what was heard. (40% of big-sport stories; 10% of tennis.)
+- **Bodies.** Height, reach, a knee brace, a taped wrist. (43% against 15%.)
+- **Injury and illness backstory.** What a player came back from. (31% against 10%.)
+- **One point told slowly.** The turning point of the deciding flight, shot by
+  shot. (40% against 26%.)
+- **The loser's voice.** Big-sport game stories gave the losing side 19 of 66
+  quotes; tennis result stories gave it 4 of 54. Let the loser concede.
+- **Program tradition and the town.** A saying, a ritual, a trophy case, who the
+  community is. (68% and 78% against 42% and 57%.)
+- **The coach as a person.** Where they played, who taught them, their rules.
+  (53% against 36%.)
+- **The venue's history.** (21% against 10%.)
+- **Humour**, mostly from older coaches. (43% against 26%.)
+
+Keep what tennis already does well: the arithmetic of flights and seeds, the
+player's own account of nerves and tactics, and references back to earlier meetings.
+
+Every item above is canon once printed.
+
+Quotes: about one per 125 words in a full story, eight in a typical one. Coaches
+explain, credit and set expectations. Players relive a moment, admit nerves and
+name a teammate. Parents supply childhood and logistics. Losers concede.
+
+Features open on an object or a scene (a towel kept for decades, an old photo), give
+the number in a nut paragraph, hang the biography on the school calendar, and bring
+in two to five voices, each introduced by relationship and graduating class. Most
+end on a quote.
+
 ## The columnist
 
 A small-paper column is a container, not an essay: a lead item of 200-400 words,
