@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from "_jhsaa.html" import jh_header %}
+{% block title %}{{ view.masthead or 'The paper' }} — High School{% endblock %}
+{% block content %}
+{{ jh_header(view.scope, u, 'paper', 'The paper',
+             'A local daily covering the season one edition at a time', [], classless=true) }}
+
+<div class="jh-shell">
+{% if not view.ready %}
+<div class="bl-panel"><div class="jh-empty">No high-school season has been archived yet.</div></div>
+{% else %}
+<div class="pp-controls">
+  <label>Area
+    <span class="bl-select-wrap"><select class="bl-select" onchange="location.href=this.value">
+      {% for t in view.areas %}
+      <option value="{{ url_for('jhsaa_paper', u=u, g=view.scope.gender, year=view.scope.pin, area=t.area, ed=view.n) }}"
+              {% if t.area == view.area %}selected{% endif %}>{{ t.area }} ({{ t.programs }})</option>
+      {% endfor %}
+    </select></span>
+  </label>
+  <label>Edition
+    <span class="bl-select-wrap"><select class="bl-select" onchange="location.href=this.value">
+      {% for e in view.editions %}
+      <option value="{{ url_for('jhsaa_paper', u=u, g=view.scope.gender, year=view.scope.pin, area=view.area, ed=e.n) }}"
+              {% if e.n == view.n %}selected{% endif %}>{{ e.label }}{{ ' ·' if e.date.isoformat() in view.written_dates }}</option>
+      {% endfor %}
+    </select></span>
+  </label>
+</div>
+{% with write_box=true %}
+{% include "_jhsaa_paper_edition.html" %}
+{% endwith %}
+{% endif %}
+</div>
+<style>.pp-controls{display:flex;gap:18px;flex-wrap:wrap;align-items:center;justify-content:flex-end;font-size:13px;padding:10px 0}</style>
+{% endblock %}

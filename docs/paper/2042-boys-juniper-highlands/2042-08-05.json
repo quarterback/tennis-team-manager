@@ -1,0 +1,56 @@
+{
+  "stories": [
+    {
+      "slot": "lead",
+      "headline": "Amoore takes No. 1, drops a set and Juniper Ridge wins its opener 6-1",
+      "byline": "By Dale Kreuger | Courier staff writer",
+      "about": ["Juniper Ridge", "Liberty Hill"],
+      "body": [
+        "Ezekiel Amoore lost the first set of his first match at No. 1 singles 6-1 to Liberty Hill junior Jaxton Martin. He won the next two, 7-5 and 6-3, and defending 5A champion Juniper Ridge opened its season with a 6-1 win Monday at Liberty Hill.",
+        "Ray Okafor said Saturday that he had four players who thought No. 1 belonged to them. Amoore, a senior who played much of last season at No. 4 doubles, was the one standing there when the season started.",
+        "\"Zeke was tight for a set and then he wasn't,\" Okafor said. \"That's about what I expected from the first day.\"",
+        "He was not the only Juniper Ridge player to come back. Sophomore Levi Chesnut, who did not lose a match last season, dropped his first set 6-3 to Ethan Cross at No. 4 singles before winning 6-0, 6-2, and senior Jonah Smith did the same at No. 5, 4-6, 6-0, 6-4. Deon Rennick won 6-3, 7-6 at No. 2 and Joshua Butcher won 6-3, 6-1 at No. 3.",
+        "Liberty Hill's point came at No. 1 doubles, where seniors Brooks Marco and Kannon Benito beat Gabriel Clark and Avery Hermes 7-6, 2-6, 6-4.",
+        "Juniper Ridge (1-0) is at home Tuesday against Pacersburg and Wednesday against Westfield Friends."
+      ]
+    },
+    {
+      "slot": "story",
+      "headline": "Dukes moves up to No. 1 and Altamonte sweeps Senator Gray",
+      "byline": "By Dale Kreuger | Courier staff writer",
+      "about": ["Altamonte", "Senator Gray"],
+      "body": [
+        "Roman Dukes played most of his matches at No. 2 and No. 4 doubles last season. In his first dual at No. 1 singles, the Altamonte senior beat Senator Gray's Cranston Diggins 6-1, 6-1, and Altamonte swept its crosstown rival 7-0 Monday at Senator Gray.",
+        "Grant Labbé, who went 8-23 at No. 1 singles a year ago, won at No. 2, 6-2, 6-4 over John Jensen. Dorian Sadiq, Liam Mochizuki and Michael Crawford finished the singles sweep without dropping a set.",
+        "Altamonte's freshmen Reed Fong and Carter Fiore won 6-4, 6-2 at No. 1 doubles. Joe Curran and sophomore Michael Williams lost the first set at No. 2 in a tiebreak and won 6-2, 6-4.",
+        "Senator Gray plays twice more this week, Wednesday at Bitterroot and Thursday at Ditch Fork. Altamonte opens the Big Basin League on Saturday at Anse Doree."
+      ]
+    },
+    {
+      "slot": "notebook",
+      "headline": "Six of the first 12 go 4-3",
+      "byline": "By Marisol Ybarra | Courier correspondent",
+      "about": ["Marlow County", "Aspen Hollow", "Calder", "Central West End", "Silton Ridge", "California Canyons"],
+      "body": [
+        "Half of Monday's 12 duals involving area teams ended 4-3. Marlow County won by that score at Carolina Island with help from two freshmen: Muhammad King won at No. 5 singles, 6-3, 7-5, and Abram Conn partnered senior Denis Strelkov to a 6-3, 6-3 win at No. 1 doubles. Sophomore Troy Holmes lost the first set 6-1 at No. 3 singles and won 6-1, 6-2.",
+        "Aspen Hollow won 4-3 at Seamus Town. Freshman Andre Salaun won 6-4, 7-6 at No. 5 singles and sophomore Colton Robinson came back from a set down at No. 2. Copper Gap beat Cornerstone Christian 4-3, Telfair Country Day won 4-3 at Doyle Pass, Trout Lake won 4-3 at Star Hollow and Fountain Park won 4-3 at Meridian Regional.",
+        "Calder went 8-17 last season. On Monday it beat Central West End, a 5A Octofinalist, 5-2 at home. Freshman Kostas Maniatis and sophomore Leroy Ryang beat seniors Isaiah Conway and Lucas Pogba 7-6, 7-5 at No. 1 doubles, and junior Charles Williams beat Nico Buchner 6-1, 7-6 at No. 1 singles.",
+        "Silton Ridge, last season's Desert Sky League champion, lost all seven matches at Espoo. Junior William Lemke, who played doubles most of last season, lost 6-3, 6-2 to Brandon Lei at No. 1 singles.",
+        "California Canyons won 5-2 at Summervale. Hudson Chiu lost a first-set tiebreak at No. 1 singles to Rohan Lancaster and won the next two sets 6-2, 6-1."
+      ]
+    },
+    {
+      "slot": "brief",
+      "headline": "League play starts this week",
+      "byline": "Courier staff",
+      "about": ["Marlow County", "Calder", "Trout Lake", "Central West End", "California Canyons", "Copper Gap", "Aspen Hollow", "Juniper Ridge", "Liberty Hill"],
+      "body": [
+        "Marlow County opens the Dual County League at home Tuesday against Archbishop Quinlan. On Wednesday Calder hosts Obama in the Fiesta Athletic Association, Trout Lake hosts Cornerstone Christian, Central West End is at Frontier and California Canyons is at Pomar.",
+        "Thursday's league openers include Copper Gap against Aspen Hollow in the Desert Sky League, Juniper Ridge at Cedar Exchange and Liberty Hill at Tidewater Catholic."
+      ]
+    }
+  ],
+  "ledger": [
+    "Okafor calls Ezekiel Amoore 'Zeke'"
+  ]
+}

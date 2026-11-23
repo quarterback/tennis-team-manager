@@ -15,6 +15,7 @@ transcript and scoreline exactly.
 from __future__ import annotations
 
 import argparse
+import os
 import random
 
 from engine import (
@@ -146,6 +147,80 @@ def cmd_presets(args):
         print(f"  {k:<14} {v}")
     print("\nName-region presets:")
     print("  " + ", ".join(list_presets()))
+
+
+def cmd_paper(args):
+    """THE PAPER (app.jhsaa_paper): print an edition's writing packet for an agent,
+    store an agent's stories, write editions through the API, or render a preview.
+
+    Against the lab save (the canonical database):
+      TENNIS_DB_PATH=~/.tennis-team-manager/jhsaa_lab.db JHSAA_LAB_MODE=1 \
+        python3 manage.py paper --season 2042 --gender boys --area "Juniper Highlands" --ed 3
+    Off a research export (no database):
+      python3 manage.py paper --export boys-2042.zip [--prior boys-2041.zip] --area ... --ed 0
+    """
+    import json
+    from app import jhsaa_paper as paper
+    if args.export:
+        season = paper.load_export(args.export)
+        prior = paper.load_export(args.prior) if args.prior else None
+        stories = paper.load_stories_dir(args.stories)
+        world_id = year = None
+    else:
+        from app import world as wd
+        w = wd.load_world(wd.DEFAULT_SEED)
+        if not w:
+            raise SystemExit("No world in this database. Point TENNIS_DB_PATH at the lab save.")
+        year = args.season - wd.BASE_YEAR - 1 if args.season else max(
+            wd.jhsaa_years(w["id"], args.gender))
+        season = paper.load_archive(w["id"], year, args.gender)
+        if not season:
+            raise SystemExit("That season is not archived.")
+        prior = paper.load_archive(w["id"], year - 1, args.gender)
+        world_id = w["id"]
+    area = args.area or paper.default_area(season)
+    if not args.export:
+        stories = paper.load_stories(world_id, year, args.gender, area)
+    eds = paper.editions(season, area)
+    if args.list:
+        for e in eds:
+            mark = "*" if e["date"].isoformat() in stories else " "
+            print(f"{mark} {e['n']:>2}  {e['date']}  {e['label']}")
+        return
+    if args.preview:
+        html = paper.render_preview(season, area, stories)
+        with open(args.preview, "w", encoding="utf-8") as fh:
+            fh.write(html)
+        print(f"wrote {args.preview}")
+        return
+    ed = eds[args.ed]
+    key = ed["date"].isoformat()
+    if args.file:
+        with open(args.file, encoding="utf-8") as fh:
+            payload = json.load(fh)
+        if args.export:
+            os.makedirs(args.stories, exist_ok=True)
+            with open(os.path.join(args.stories, key + ".json"), "w", encoding="utf-8") as fh:
+                json.dump(payload, fh, indent=2, ensure_ascii=False)
+        else:
+            paper.save_edition(world_id, year, args.gender, area, key, payload)
+        print(f"stored edition {args.ed} ({key})")
+        return
+    pk = paper.packet(season, area, args.ed, stories, prior=prior)
+    if args.write:
+        payload = paper.write_with_api(pk)
+        if args.export:
+            os.makedirs(args.stories, exist_ok=True)
+            with open(os.path.join(args.stories, key + ".json"), "w", encoding="utf-8") as fh:
+                json.dump(payload, fh, indent=2, ensure_ascii=False)
+        else:
+            paper.save_edition(world_id, year, args.gender, area, key, payload)
+        print(f"wrote edition {args.ed} ({key}): {len(payload['stories'])} stories")
+        return
+    system, user = paper.writer_prompt(pk)
+    print(system)
+    print("PACKET:")
+    print(json.dumps(pk, indent=1, default=str, ensure_ascii=False))
 
 
 def cmd_initdb(args):
@@ -526,7 +601,24 @@ def main():
     se.add_argument("--field", type=int, default=64, help="bracket field size (16–128; 64 default)")
     se.set_defaults(func=cmd_season)
 
+    pp = sub.add_parser("paper", help="the JHSAA paper: packets, stories, previews")
+    pp.add_argument("--season", type=int, help="calendar year of the season (archive mode)")
+    pp.add_argument("--gender", default="boys", choices=["boys", "girls"])
+    pp.add_argument("--area", default="")
+    pp.add_argument("--ed", type=int, default=0, help="edition number (see --list)")
+    pp.add_argument("--list", action="store_true", help="list the editions")
+    pp.add_argument("--file", help="store this stories JSON as the edition")
+    pp.add_argument("--write", action="store_true", help="write the edition via the API")
+    pp.add_argument("--export", help="read a research-export zip instead of the save")
+    pp.add_argument("--prior", help="the previous season's export (preseason rosters)")
+    pp.add_argument("--stories", default="paper-stories", help="stories dir (export mode)")
+    pp.add_argument("--preview", help="render a standalone HTML preview to this path")
+    pp.set_defaults(func=cmd_paper)
+
     args = ap.parse_args()
+    if args.func is cmd_paper and args.export:
+        args.func(args)          # export mode touches no database
+        return
     # Create all DB schemas up front so CLI sims never deadlock on first-time
     # table creation inside a held transaction.
     try:

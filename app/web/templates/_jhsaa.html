@@ -141,6 +141,10 @@
     <div class="jh-tabs">
       <a class="{{ 'on' if tab == 'front' }}"
          href="{{ url_for('jhsaa_front', u=u, g=scope.gender, year=scope.pin) }}">Front page</a>
+      {# THE PAPER (app.jhsaa_paper): the season replayed as an area daily's
+         editions, in date order. #}
+      <a class="{{ 'on' if tab == 'paper' }}" title="The season as a local paper covered it, one edition at a time"
+         href="{{ url_for('jhsaa_paper', u=u, g=scope.gender, year=scope.pin) }}">Paper</a>
       {# ‼️ ONE CHAMPIONSHIP TAB, THREE VIEWS OF IT (owner, 2026-08). State, Bracket
          and TOC each led with the same champion hero and the same draw, so three of
          the twelve tabs asked one question. They stay three PAGES — the hub is an
