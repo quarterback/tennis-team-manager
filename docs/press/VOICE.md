@@ -6,15 +6,15 @@ Load this file; the evidence behind it is in `corpus/`.
 ## What this is built from
 
 266 annotated articles and columns, plus 15 pages of Courier-News clippings seven NJ.com
-pages, five Oregon pages and a set of 2025-26 tennis pieces (Wyoming, Texas) supplied
-by the owner. By decade: 1980s 47, 1990s 158, 2000s 61. Tennis 121. By state: ID 42,
+pages, five Oregon pages, twelve OSAAtoday tennis pieces (2021-26) and a set of
+2025-26 tennis pieces (Wyoming, Texas) supplied by the owner. By decade: 1980s 47, 1990s 158, 2000s 61. Tennis 121. By state: ID 42,
 KS 38, PA 37, NC 34, FL 22, VA 14, WA 12, CA 10, GA 10, NJ 9 (+ the clippings), MN 7,
 WY 6, VT 6, TX 6, IL 6, MD 5, MI 2.
 
 Know its limits before trusting it:
 
 - The Kansas set is almost all 2002-2006.
-- Oregon, Montana, Oklahoma and Colorado are absent. Rural Idaho, eastern Washington
+- Oregon period papers, Montana, Oklahoma and Colorado are absent. Rural Idaho, eastern Washington
   and Minnesota stand in for the rural West and Plains.
 - True one-town weeklies are thin: five papers, 27 articles.
 - Columnists are four writers from two small cities and one metro, all 1990s.
@@ -112,6 +112,23 @@ who did it, record. Usually no quotes and often no set scores, only winners' nam
 One lead item, then short items under capitalised tags or bold one-line subheads
 ("RAIDER INJURED:", "Plainfield plays big", "NOTES:"). Records first, one coach
 quote, then the coach's view in indirect speech.
+
+### Profile before a tournament
+
+600-1,000 words on one player, two to six weeks before the championship. Where the
+career stands; the player's own quote early; this season in numbers; the field by
+name with head-to-head scores; every career loss listed; one earlier match as proof
+of character; the coach on temperament and a second adult (a rival's coach is
+best); one odd detail; who taught them; what comes after school; a family close.
+See `corpus/osaatoday-tennis.md`.
+
+### Championship preview
+
+One or two team features on the contenders, then one block per class and gender in
+a fixed shape: site and days; top four singles seeds; top four doubles seeds; last
+year's team scores; a Notes paragraph giving each seed's finish a year ago, who
+beat whom in the league tournament, who changed flight or partner, and which
+champion is not back and why.
 
 ### Season preview
 
@@ -253,6 +270,22 @@ player's own account of nerves and tactics, and references back to earlier meeti
 
 Every item above is canon once printed.
 
+### Threads
+
+A desk that keeps writing turns its own back pages into background. Followed over
+six seasons, one desk's tennis pieces form serials: a freshman's promise and the
+title two years on; two rivals trading a district final and a state final until
+the younger one wins; a sister and brother champions on the same day; a coach's
+death and a parent taking the team for one season. To carry a thread, remember:
+
+- the first mention and the promise it made;
+- the head to head as dated scores, restated plainly each time;
+- what each person said they wanted;
+- printed off-court facts, repeated the same way;
+- that the ending may be a loss, and the loser gets the headline's second line.
+
+See `corpus/osaatoday-tennis.md`, section 8.
+
 Quotes: about one per 125 words in a full story, eight in a typical one. Coaches
 explain, credit and set expectations. Players relive a moment, admit nerves and
 name a teammate. Parents supply childhood and logistics. Losers concede.
@@ -304,6 +337,13 @@ successor and the successor's statement, and a no-comment line. No adjectives an
 speculation. A resignation after a long tenure is written the same way with the
 titles first and the successor named. See `corpus/oregon-2026.md`.
 
+A retirement is a tribute, written before the last tournament: the record as
+counts and one superlative; credit passed to the players; why now, in personal
+terms; the coach's method with one example by name; an administrator; the coach's
+own start in the game and how they got the job; the place they built; the streak
+still alive. A question-and-answer with two lists (as an athlete, as a coach) is
+the second format. See `corpus/osaatoday-tennis.md`, section 9.
+
 ### Local rewrite of a statewide list
 
 Every all-league or all-state list gets a local story that leads with the home
@@ -312,6 +352,7 @@ team". One per sport.
 
 ## What the corpus cannot tell you
 
-A retirement tribute; a small-town weekly editor's
-own column; 1980s columns; Oregon, Montana, Oklahoma, Colorado. Do not improvise
+A retirement tribute in the old voice (the two here are recent); a small-town weekly
+editor's own column; 1980s columns; period papers from Oregon, Montana, Oklahoma,
+Colorado. Do not improvise
 those from this guide. Ask for more source pages first.
