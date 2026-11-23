@@ -234,8 +234,22 @@ programme note about what the column does next week.
 - Injury and loss are told as resilience, with an adult quoted.
 - Transfers are written as what families and schools do.
 
+### A coach leaves
+
+State the action and its formal cause in one sentence. Then the record under the
+coach, the named office that confirmed it, what that office would not say, the
+successor and the successor's statement, and a no-comment line. No adjectives and no
+speculation. A resignation after a long tenure is written the same way with the
+titles first and the successor named. See `corpus/oregon-2026.md`.
+
+### Local rewrite of a statewide list
+
+Every all-league or all-state list gets a local story that leads with the home
+names: "NAME, NAME lead SCHOOL's all-league picks"; "places eight on the all-league
+team". One per sport.
+
 ## What the corpus cannot tell you
 
-How a coach is let go in print; a retirement tribute; a small-town weekly editor's
+A retirement tribute; a small-town weekly editor's
 own column; 1980s columns; Oregon, Montana, Oklahoma, Colorado. Do not improvise
 those from this guide. Ask for more source pages first.
