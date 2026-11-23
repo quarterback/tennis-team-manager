@@ -96,3 +96,40 @@ shapes for the export loader.
   (`RuntimeError: JHSAA ward: field of 0`), as do two tests each in
   `test_jhsaa_routes.py` and `test_jhsaa_desk.py`. Not caused here; the paper's
   route test feeds the real 2042 export through the app instead.
+
+## Addendum: the copy desk (same day, after the owner read the demo)
+
+The first demo was written to a brief I condensed myself instead of the guides
+the owner had already put in the repo, and it read like one template run three
+times: "last season" 11 times, "No. 1 singles" nine times and "lineup" four
+times in the preseason edition alone, every piece built on the same angle (who
+replaces a graduated No. 1), AP errors throughout ("on Monday", "August 8"), and
+a factual error (it said most of Juniper Ridge's champions were back; seven
+regulars had graduated, which the packet did not yet show).
+
+What changed:
+
+- **The writer's instructions are the owner's guides, verbatim** (`DESK_DOCS`):
+  `docs/writing-guide-update.md`, `docs/PREPS-STYLE-GUIDE.md`,
+  `docs/paper/desk/AP-SPORTS.md` (the AP sports style sheet the desk applies)
+  and `docs/paper/desk/HUMANIZER.md` (vendored from blader/humanizer, MIT, with
+  its license). `WRITER_BRIEF` now only states the packet rules and the JSON
+  shape.
+- **`copy_desk()`** runs on every edition before it is saved: prose dashes, the
+  preps guide's banned phrases, AP month abbreviations with dates, no "on"
+  before a day, lowercase coach, numerals under 10, no exclamation points,
+  headline periods, repeated openings across pieces, and edition-wide caps on
+  the words that carried the first draft ("lineup" 2, "No. 1 singles" 3, "last
+  season" 4, "graduated" 2). Quoted speech is exempt from the AP checks.
+  `write_with_api` sends the findings back to the writer for up to two
+  revisions and stores whatever remains under `desk`.
+- **The preseason packet lists who graduated** (`graduated_from_last_season`,
+  last season's regulars missing from this roster).
+- The three demo editions were rewritten against the guides with a planned
+  angle, lead type and headline archetype per piece, then run through the copy
+  desk, Prosekeep (`check --profile vloora`, 0 findings) and Red Pen Editor
+  (`inspect`; the headlines that echoed their own first sentences were rewritten).
+
+Trap: the copy desk is the mechanical half. Angle rotation, history triggers and
+whether a piece passes the consequence gate are still the writer's judgment,
+which is why the guides go in whole rather than summarised.

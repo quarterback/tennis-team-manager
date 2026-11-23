@@ -706,79 +706,208 @@ def packet(season: dict, area: str, n: int, stories: dict | None = None,
 
 WRITER_BRIEF = """\
 You are the prep sports desk of {paper}, a local daily covering {sport} in the
-{area} area of Jefferson, a fictional US state, in the {season} season. The JHSAA
-is the state's high-school association. Write edition {number} ({label}).
+{area} area of Jefferson, a fictional US state, in the {season} season. Write
+edition {number} ({label}).
 
 You only know what is in the packet: results since the last edition, records and
-league standings as of this morning, the fixtures before the next paper, and the
-paper's own earlier stories. Nothing has happened after this morning. Never hint at
-how the season ends.
+league standings as of this morning, the published schedule, and the paper's own
+earlier stories. Nothing has happened after this morning. Never hint at how the
+season ends. Use the head coaches named in the packet; keep every invented person
+and fact consistent with the ledger, and add new ones to it. Follow up on what the
+paper already wrote instead of reintroducing teams. The preseason edition is a
+county-by-county outlook.
 
-What to write:
-- One lead story and two to four other pieces, chosen by what this area's readers
-  would care about: a league race, a rematch coming, a streak, a senior's last run,
-  a small school's good week, a postseason exit. Vary the forms: match story,
-  notebook, brief, preview, feature. A signed column only when the reporting
-  supports a real opinion. The preseason edition is a county-by-county outlook.
-- Lead with the consequence, then the score. Put numbers in service of a point.
-- A dual is a team contest of several matches; a player plays a match at a flight
-  (No. 1 singles, No. 2 doubles); a court is the physical surface. Never "courts won".
-- Never mention ratings, OVR, grades as numbers, potential or anything a reader
-  could not see. Describe players by record, flight, grade, opponents beaten.
-- You may invent texture the record does not hold: the weather, the drive, a
-  coach's or player's short quote, an assistant coach, how a pairing formed. It
-  must never contradict a score, a record, a date, a grade or a name in the
-  packet. Use the head coaches named in the packet; do not rename them. Keep every
-  invented person and fact consistent with the ledger, and add new ones to it.
-- Remember what the paper already wrote. Follow up on it; do not reintroduce a
-  team from scratch every edition.
-- Plain newspaper prose, 1990s local daily. Short paragraphs. No headings inside a
-  story. Headlines are plain and specific. Write scores the usual way (6-3, 4-3);
-  otherwise no dashes. No "It wasn't X,
-  it was Y" constructions, no sweeping lessons, no closing summary lines.
+The desk's rules follow: the association's reporting guide, the preps style guide,
+the AP sports style sheet and the humanizer guide. They are requirements. Plan the
+edition before drafting: each piece gets a different angle, lead type and headline
+archetype, and no angle, phrase or player position carries more than one piece.
 
 Return ONLY a JSON object:
 {{"stories": [{{"slot": "lead" | "story" | "brief" | "notebook" | "column",
                "headline": "...", "byline": "By ... | Courier staff writer",
                "body": ["paragraph", "..."], "about": ["School", "..."]}}],
-  "ledger": ["one line per invented person or fact, e.g. 'Assistant coach at X: Dana Ruiz'"]}}
-Reuse the same bylines across editions: the paper has a small staff.
+  "ledger": ["one line per invented person or fact"]}}
 """
+
+#: The desk's reference documents, loaded verbatim into the writer's instructions.
+DESK_DOCS = ("docs/writing-guide-update.md", "docs/PREPS-STYLE-GUIDE.md",
+             "docs/paper/desk/AP-SPORTS.md", "docs/paper/desk/HUMANIZER.md")
+
+
+def _repo_root() -> str:
+    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def desk_rules() -> str:
+    parts = []
+    for rel in DESK_DOCS:
+        path = os.path.join(_repo_root(), rel)
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as fh:
+                parts.append(f"=== {rel} ===\n{fh.read()}")
+    return "\n\n".join(parts)
 
 
 def writer_prompt(pk: dict) -> tuple[str, str]:
     e = pk["edition"]
     system = WRITER_BRIEF.format(paper=pk["paper"], sport=pk["sport"], area=pk["area"],
                                  season=pk["season"], number=e["number"], label=e["label"])
-    return system, json.dumps(pk, default=str, ensure_ascii=False)
+    return system + "\n\n" + desk_rules(), json.dumps(pk, default=str, ensure_ascii=False)
 
 
-def _parse_payload(text: str) -> dict:
-    s, e = text.find("{"), text.rfind("}")
-    data = json.loads(text[s:e + 1])
-    if not isinstance(data.get("stories"), list):
-        raise ValueError("writer returned no stories")
-    return {"stories": data["stories"], "ledger": data.get("ledger") or []}
+# --------------------------------------------------------- the copy desk ----
+#
+# Deterministic checks run on every edition before it is saved. They are the
+# mechanical half of AP-SPORTS.md, the preps style guide's banned phrases, and the
+# repetition rule; the writer revises against whatever they find.
+
+import re as _re
+
+_MONTH_FULL = {"January": "Jan.", "February": "Feb.", "August": "Aug.",
+               "September": "Sept.", "October": "Oct.", "November": "Nov.",
+               "December": "Dec."}
+_DAYS = "Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday"
+_SMALL = {"1": "one", "2": "two", "3": "three", "4": "four", "5": "five",
+          "6": "six", "7": "seven", "8": "eight", "9": "nine"}
+BANNED = ("testament to", "beacon of hope", "proved their mettle", "stark contrast",
+          "navigated the waters", "defied the odds", "from the get go", "passed the test",
+          "gutsy", "avenged", "when all was said and done", "the interesting part is",
+          "that is the story", "the distinction is", "the number that matters",
+          "the season was", "the year belonged to", "the lesson was",
+          "the story of the season", "in the end", "set the tone", "statement win",
+          "edged", "outlasted", "cruised", "rolled past", "stunning", "dominant",
+          "bitter", "lineup card", "courts won")
+#: Words that may carry one piece of an edition; past this count across the
+#: edition the desk asks for a different angle.
+WATCH = {"lineup": 2, "no. 1 singles": 3, "graduated": 2, "graduation": 1,
+         "returns": 2, "is back": 2, "are back": 2, "last season": 4, "a year ago": 2}
 
 
-def write_with_api(pk: dict, model: str | None = None) -> dict:
-    """Write one edition through the Anthropic Messages API. Needs
-    ANTHROPIC_API_KEY; the model is JHSAA_PAPER_MODEL or claude-opus-5-5."""
+def copy_desk(payload: dict, names: set | None = None) -> list[str]:
+    """Findings for one edition; an empty list means it passes the mechanical desk."""
+    out: list[str] = []
+    stories = payload.get("stories") or []
+    whole = []
+    for st in stories:
+        head = (st.get("headline") or "").strip()
+        tag = f"[{head[:48]}]"
+        if head.endswith("."):
+            out.append(f"{tag} headline ends with a period")
+        for raw in [head] + list(st.get("body") or []):
+            low = raw.lower()
+            whole.append(low)
+            # AP and banned-phrase checks read the reporter's words, not a quote's.
+            para = _re.sub(r'"[^"]*"', '""', raw) if raw is not head else raw
+            if "\u2014" in para or "\u2013" in para or " -- " in para or " - " in para:
+                out.append(f"{tag} a dash in prose: {para[:60]!r}")
+            for b in BANNED:
+                if _re.search(r"\b" + _re.escape(b) + r"\b", low):
+                    out.append(f"{tag} banned phrase {b!r}")
+            for full, short in _MONTH_FULL.items():
+                if _re.search(full + r" \d", para):
+                    out.append(f"{tag} AP: {full} with a date is {short}")
+            if _re.search(r"\bon (" + _DAYS + r")\b", para):
+                out.append(f"{tag} AP: no 'on' before a day ({para[:50]!r})")
+            if _re.search(r"[A-Za-z,] Coach [A-Z]", para):
+                out.append(f"{tag} AP: coach is lowercase before a name")
+            if "!" in para:
+                out.append(f"{tag} AP: no exclamation points")
+            if raw is not head:
+                for m in _re.finditer(r"(?<![\w.(-])([1-9])(?![\w.)-])", para):
+                    before = para[max(0, m.start() - 8):m.start()]
+                    if "No." in before or _re.search(
+                            r"(Jan|Feb|Aug|Sept|Oct|Nov|Dec)\. $|(March|April|May|June|July) $",
+                            before):
+                        continue
+                    out.append(f"{tag} AP: spell out {m.group(1)} ({_SMALL[m.group(1)]})")
+    text = "\n".join(whole)
+    for phrase, cap in WATCH.items():
+        n = len(_re.findall(r"\b" + _re.escape(phrase) + r"\b", text))
+        if n > cap:
+            out.append(f"repetition: {phrase!r} appears {n} times in the edition (keep it to {cap})")
+    # The same opening words on two pieces reads as one template run twice.
+    openers = {}
+    for st in stories:
+        body = st.get("body") or [""]
+        first = " ".join(body[0].split()[:3]).lower()
+        if first:
+            openers.setdefault(first, []).append(st.get("headline", "")[:40])
+    for first, heads in openers.items():
+        if len(heads) > 1:
+            out.append(f"repetition: {len(heads)} pieces open with {first!r}")
+    # Content words, excluding the packet's names, repeated across the edition.
+    skip = {w.lower() for n in (names or ()) for w in n.split()}
+    words = _re.findall(r"[a-z]{6,}", text)
+    common = {"singles", "doubles", "season", "league", "senior", "seniors", "junior",
+              "juniors", "freshman", "sophomore", "against", "second", "points", "matches",
+              "against", "before", "school", "schools", "played", "thursday", "tuesday",
+              "wednesday", "friday", "saturday", "monday", "sunday", "courier"}
+    counts = {}
+    for w in words:
+        if w not in skip and w not in common:
+            counts[w] = counts.get(w, 0) + 1
+    for w, n in sorted(counts.items(), key=lambda kv: -kv[1]):
+        if n >= 6:
+            out.append(f"repetition: {w!r} appears {n} times in the edition")
+    return out
+
+
+def _names(pk: dict) -> set:
+    names = {p["school"] for p in pk.get("programs") or []}
+    for rows in (pk.get("players") or {}).values():
+        for r in rows:
+            names.add(r.split(" (")[0].split(":")[0])
+    for r in pk.get("results_since_last_edition") or []:
+        names.update((r["home"], r["away"]))
+    return names
+
+
+REVISE = """\
+The copy desk returned these findings on your edition. Revise the edition to
+clear every one, keeping every fact as it is. Return the whole edition in the same
+JSON shape.
+
+Findings:
+{findings}
+
+Edition:
+{edition}
+"""
+
+
+def _call(system: str, user: str, model: str | None) -> str:
     import urllib.request
     key = os.environ.get("ANTHROPIC_API_KEY")
     if not key:
         raise RuntimeError("ANTHROPIC_API_KEY is not set")
-    system, user = writer_prompt(pk)
     body = json.dumps({"model": model or os.environ.get("JHSAA_PAPER_MODEL", "claude-opus-5-5"),
-                       "max_tokens": 8000, "system": system,
+                       "max_tokens": 12000, "system": system,
                        "messages": [{"role": "user", "content": user}]}).encode()
     req = urllib.request.Request("https://api.anthropic.com/v1/messages", data=body,
                                  headers={"x-api-key": key, "anthropic-version": "2023-06-01",
                                           "content-type": "application/json"})
     with urllib.request.urlopen(req, timeout=600) as r:
         out = json.loads(r.read())
-    text = "".join(b.get("text", "") for b in out.get("content", []) if b.get("type") == "text")
-    return _parse_payload(text)
+    return "".join(b.get("text", "") for b in out.get("content", []) if b.get("type") == "text")
+
+
+def write_with_api(pk: dict, model: str | None = None, rounds: int = 2) -> dict:
+    """Write one edition through the Anthropic Messages API, then put it through
+    the copy desk and revise until it passes or `rounds` revisions are spent.
+    Needs ANTHROPIC_API_KEY; the model is JHSAA_PAPER_MODEL or claude-opus-5-5.
+    Whatever the desk still finds is stored with the edition under "desk"."""
+    system, user = writer_prompt(pk)
+    payload = _parse_payload(_call(system, user, model))
+    names = _names(pk)
+    for _ in range(rounds):
+        findings = copy_desk(payload, names)
+        if not findings:
+            break
+        payload = _parse_payload(_call(system, REVISE.format(
+            findings="\n".join(f"- {f}" for f in findings),
+            edition=json.dumps(payload, ensure_ascii=False)), model))
+    payload["desk"] = copy_desk(payload, names)
+    return payload
 
 
 def can_write_in_app() -> bool:

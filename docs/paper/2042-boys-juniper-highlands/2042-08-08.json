@@ -2,56 +2,81 @@
   "stories": [
     {
       "slot": "lead",
-      "headline": "Westfield Friends wins all five singles matches and hands Juniper Ridge its first loss",
+      "headline": "Juniper Ridge wins both doubles and loses 5-2 to Westfield Friends",
       "byline": "By Dale Kreuger | Courier staff writer",
-      "about": ["Juniper Ridge", "Westfield Friends", "Pacersburg", "Cedar Exchange"],
+      "about": [
+        "Juniper Ridge",
+        "Westfield Friends"
+      ],
       "body": [
-        "Juniper Ridge lost a dual at home Wednesday for the first time this season, and it lost every singles match doing it.",
-        "Westfield Friends, a 4A school from Fort Meriwether that went 27-2 and reached the state quarterfinals last season, beat the defending 5A champions 5-2. Senior Grayson Adkins beat Ezekiel Amoore 7-6, 6-2 at No. 1 singles, and the other four singles matches also went to Westfield, three of them in a third set.",
-        "Levi Chesnut, the sophomore who went 16-0 last season, lost for the first time in his varsity career, 6-2, 7-5 to senior Kevin Larue at No. 4. Deon Rennick took Maverick Kulp to a third-set tiebreak at No. 2 before losing 6-2, 2-6, 7-6.",
-        "Juniper Ridge's two points came in doubles. Christian Pulliam and Gabriel Clark won at No. 1, 6-4, 4-6, 6-1, and freshman Dimitri Kimball and Gage McConathy won at No. 2, 6-2, 6-2.",
+        "Kevin Larue shook Levi Chesnut's hand at the net Wednesday after beating him 6-2, 7-5 at No. 4 singles. Chesnut had won his first 18 varsity matches, 16 of them as a freshman.",
+        "It was one of five singles matches Westfield Friends won at Juniper Ridge. Juniper Ridge's doubles pairs won both of theirs, and the defending 5A champions lost 5-2 at home to a 4A school from Fort Meriwether that is now 4-0.",
+        "Three of the five singles matches went to a third set. Deon Rennick took Maverick Kulp to a third-set tiebreak at second singles before losing 6-2, 2-6, 7-6, and Joshua Butcher lost 7-5, 3-6, 7-5 to Levi Bishop at third.",
         "\"They were better than us on Wednesday,\" Okafor said. \"I'd rather find that out in August.\"",
-        "The day before, Juniper Ridge beat Pacersburg 7-0 without losing more than four games in a set. The day after, it opened the Kajaani League with a 6-1 win at Cedar Exchange, where Amoore won 6-1, 6-3 at No. 1 singles.",
-        "Juniper Ridge (3-1, 1-0 Kajaani) is at home Friday against Lateral Seven. Westfield Friends is 4-0."
+        "Grayson Adkins beat Ezekiel Amoore 7-6, 6-2 at the top of the order, two days after Amoore had come back from a set down at Liberty Hill.",
+        "Christian Pulliam and Gabriel Clark won 6-4, 4-6, 6-1 at No. 1 doubles, and freshman Dimitri Kimball and Gage McConathy won 6-2, 6-2 at No. 2. Juniper Ridge then opened the Kajaani League Thursday with a 6-1 win at Cedar Exchange, Amoore winning 6-1, 6-3.",
+        "Juniper Ridge (3-1, 1-0 Kajaani) hosts Lateral Seven Friday."
       ]
     },
     {
       "slot": "story",
-      "headline": "Carroway's freshmen win at No. 1 doubles, and Jimmy Carter wins the dual",
+      "headline": "Carroway freshmen win at No. 1 doubles in a 4-3 loss",
       "byline": "By Dale Kreuger | Courier staff writer",
-      "about": ["Carroway", "Jimmy Carter", "Pacersburg"],
+      "about": [
+        "Carroway",
+        "Jimmy Carter"
+      ],
       "body": [
-        "Carroway beat Pacersburg 7-0 on Wednesday and lost 4-3 at home to Jimmy Carter of Garrow on Thursday, and all four matches it lost Thursday went to a third set.",
-        "Luke Palm, who moved from doubles to No. 1 singles this season, beat Ryan Byram 6-0, 6-3, and Primitivo Delgado won 6-4, 6-4 at No. 2. Freshmen Uwe Fiebich and Rashad McCloud won at No. 1 doubles, 6-4, 3-6, 7-5.",
-        "Senior Michael Stevens won the first set at No. 5 singles 6-3 and lost the next two 7-6, 7-5 to sophomore Gabriel Fong. Freshman Leo Walton at No. 3 and junior James Stacy at No. 4 also lost in three.",
-        "\"Every one of those went three sets,\" Haverkamp said. \"That's experience, and the young ones will get it.\"",
-        "Carroway (1-1) opens the Juniper League on Friday at Ostrander Union."
+        "Four matches went to a third set at Carroway Thursday, and Jimmy Carter of Garrow won all four to win the dual 4-3.",
+        "Senior Michael Stevens took the first set 6-3 at fifth singles and lost the next two 7-6, 7-5 to sophomore Gabriel Fong. Freshman Leo Walton at third singles and junior James Stacy at fourth also lost in three, and so did the No. 2 doubles team of Max Callender and freshman John Qin.",
+        "Carroway's points came at the top. Luke Palm, playing first singles after a season spent almost entirely in doubles, beat Ryan Byram 6-0, 6-3, and Primitivo Delgado won 6-4, 6-4 at second singles. The third point belonged to two of Haverkamp's seven freshmen, Uwe Fiebich and Rashad McCloud, who won 6-4, 3-6, 7-5 at No. 1 doubles in their second varsity dual.",
+        "Carroway beat Pacersburg 7-0 the day before. It opens the Juniper League Friday at Ostrander Union.",
+        "\"Every one of those went three sets,\" Haverkamp said, \"and every one of them is a kid who'll be better for it by October.\""
       ]
     },
     {
       "slot": "notebook",
-      "headline": "League notebook: Calder is 2-0 and Senator Gray recovers",
+      "headline": "Notebook: Calder wins its league opener in doubles",
       "byline": "By Marisol Ybarra | Courier correspondent",
-      "about": ["Calder", "Liberty Hill", "Copper Gap", "Marlow County", "Senator Gray", "Fairgrounds", "High Desert Christian", "Mt Jacqueline"],
+      "about": [
+        "Calder",
+        "Liberty Hill",
+        "Fairgrounds",
+        "Senator Gray",
+        "High Desert Christian",
+        "Mt Jacqueline",
+        "Copper Gap",
+        "Marlow County"
+      ],
       "body": [
-        "Calder followed its upset of Central West End with a 4-3 win over Obama in its Fiesta Athletic Association opener Wednesday. Calder lost No. 1 and No. 2 singles and won the dual in doubles, taking three of the four flights, while senior Luis Atteberry won 6-0, 6-4 at No. 3 singles. Calder (2-0) hosts Liberty Hill in a league dual Friday. Liberty Hill (2-2) lost its league opener 6-1 at Tidewater Catholic on Thursday.",
-        "Copper Gap opened the Desert Sky League with a 6-1 win over Aspen Hollow. Junior Jared Dixon won 6-1, 6-1 at No. 1 singles. Marlow County is 2-0 after a 6-1 league win over Archbishop Quinlan, with senior Jessie Smith winning 6-2, 6-3 at No. 1 and freshman Jayden Nielsen winning in three sets at No. 3.",
-        "Senator Gray lost 7-0 to Altamonte on Monday and then won 6-1 at Bitterroot and 5-2 at Ditch Fork. Cranston Diggins won both of his No. 1 singles matches, the first 6-4, 5-7, 7-6 over Joshua Cater.",
-        "Fairgrounds freshman Damien Paquette has played No. 1 singles in all three of his team's duals. On Thursday he lost the first set 6-0 to Las Colinas senior Alex Kunkel and won 0-6, 6-4, 6-3. Fairgrounds still lost the dual 4-3 and is 2-1.",
-        "High Desert Christian, 3-24 last season, beat Cornerstone Christian 4-3 on Tuesday and lost to Trinity Catholic by the same score a day later. Mt Jacqueline beat Copper Gap 4-3 on Tuesday and lost 7-0 at Mabryville, a 1A state semifinalist last season, on Wednesday."
+        "Calder. Beat Obama 4-3 Wednesday in the Fiesta Athletic Association opener while losing first and second singles. Calder won three of the four doubles matches, and senior Luis Atteberry supplied the fourth point at third singles, 6-0, 6-4. Calder hosts Liberty Hill Friday; Liberty Hill (2-2) lost its league opener 6-1 at Tidewater Catholic Thursday.",
+        "Fairgrounds. Freshman Damien Paquette has played first singles in all three of the team's duals. Against Las Colinas he lost the first set 6-0 to senior Alex Kunkel and won the next two 6-4, 6-3. Fairgrounds still lost 4-3 and is 2-1.",
+        "Senator Gray. Recovered from Monday's 7-0 loss to Altamonte with road wins at Bitterroot (6-1) and Ditch Fork (5-2). Cranston Diggins won his first singles match at Bitterroot 6-4, 5-7, 7-6 over Joshua Cater.",
+        "High Desert Christian. Beat Cornerstone Christian 4-3 Tuesday for its first dual win of the season and lost to Trinity Catholic by the same score a day later.",
+        "Mt Jacqueline. Won 4-3 at Copper Gap Tuesday, then lost 7-0 at Mabryville.",
+        "Copper Gap and Marlow County. Both won their league openers 6-1, Copper Gap over Aspen Hollow and Marlow County over Archbishop Quinlan."
       ]
     },
     {
       "slot": "brief",
       "headline": "Friday's league duals",
       "byline": "Courier staff",
-      "about": ["Carroway", "Ostrander Union", "Juniper Ridge", "Calder", "Liberty Hill", "Covenant", "Navrang"],
+      "about": [
+        "Carroway",
+        "Ostrander Union",
+        "Juniper Ridge",
+        "Calder",
+        "Liberty Hill",
+        "Covenant",
+        "Navrang",
+        "Trout Lake"
+      ],
       "body": [
         "Carroway is at Ostrander Union in the Juniper League, Juniper Ridge hosts Lateral Seven and Calder hosts Liberty Hill. Covenant is at Mission Terrace, Navrang hosts Box Canyon and Trout Lake hosts Seamus Town."
       ]
     }
   ],
   "ledger": [
-    "Juniper Ridge's loss to Westfield Friends was at home, Wednesday Aug. 6"
+    "Juniper Ridge's loss to Westfield Friends: at home, Wednesday Aug. 6"
   ]
 }
