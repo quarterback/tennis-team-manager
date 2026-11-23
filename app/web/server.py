@@ -39,7 +39,7 @@ from .state import (ranking_rows, singles_ranking_rows, doubles_ranking_rows,
                     world_hub, player_career, get_coach, injury_rows, fall_portal_view,
                     player_ranks, player_journey)
 from .state import preseason_view as preseason_view_data
-from .state import jhsaa_front_view
+from .state import jhsaa_front_view, jhsaa_paper_view
 from .state import jhsaa_reclass_view, jhsaa_realignments_view, jhsaa_portal_view
 from .state import (jhsaa_view, jhsaa_scope_view, jhsaa_school_view, jhsaa_past_winners,
                     jhsaa_bracket_view, jhsaa_toc_view, jhsaa_district_view, jhsaa_districts_view,
@@ -2785,6 +2785,37 @@ def create_app(boot_warm: bool = True) -> Flask:
         view = jhsaa_front_view(DEFAULT_SEED, g, year)
         return render_template("jhsaa_front.html", active="High School", view=view,
                                gender=gender, u=u, uni_label=label)
+
+    @app.route("/jhsaa/paper")
+    def jhsaa_paper():
+        """THE PAPER (`app.jhsaa_paper`): an area daily's coverage of one season,
+        one dated edition at a time, so the season reads as it happened. `ed` is
+        the edition number; `area` picks (and remembers) the circulation area."""
+        gender, label, u, g, group, year = _jh_scope_args()
+        view = jhsaa_paper_view(DEFAULT_SEED, g, year, request.args.get("area"),
+                                request.args.get("ed", type=int))
+        area = view.get("area")
+        return render_template(
+            "jhsaa_paper.html", active="High School", view=view, gender=gender, u=u,
+            uni_label=label,
+            school_href=lambda n: url_for("jhsaa_school", u=u, school=n, g=g),
+            edition_href=lambda k: url_for("jhsaa_paper", u=u, g=g, year=year,
+                                           area=area, ed=k))
+
+    @app.route("/jhsaa/paper/write", methods=["POST"])
+    def jhsaa_paper_write():
+        """Start writing every unwritten edition through `ed`, in order, on a
+        background thread (the request thread is never held). Needs
+        ANTHROPIC_API_KEY in the server's environment."""
+        import app.jhsaa_paper as paper
+        gender, label, u, g, group, year = _jh_scope_args()
+        w = wd.get_or_create(DEFAULT_SEED)
+        yr = year if year is not None else max(wd.jhsaa_years(w["id"], g) or [w["year"]])
+        area = request.form.get("area") or ""
+        through = request.form.get("ed", type=int) or 0
+        if paper.can_write_in_app() and area:
+            paper.start_writing(w["id"], yr, g, area, through)
+        return redirect(url_for("jhsaa_paper", u=u, g=g, year=year, area=area, ed=through))
 
     @app.route("/jhsaa/class")
     def jhsaa_page():

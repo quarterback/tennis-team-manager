@@ -1,8 +1,21 @@
 # Prep Sports Journalism — Portable Agent Editorial Guide
 
-**Version 0.4 · November 22, 2026**  
+**Version 0.5 · November 22, 2026**  
 **Status:** Editorial reference and agent handoff; not wired into the simulator.  
 **Scope:** High-school, youth, college and fictional sport. Intended to travel to Viperball, hybrid-baseball/O27 and other projects.
+
+> **For the 1980s–90s newspaper register, `docs/press/VOICE.md` is the
+> authoritative house voice.** This portable guide supplies research context
+> and role definitions. When older retrospective-only rules conflict with the
+> researched press style, keep correct tennis terminology and simulation facts,
+> but follow the old newspaper forms and cadence. Fictional details may be
+> invented wherever the game record is silent and remembered as press canon;
+> competition-changing events cannot be invented. Signed columnists may retain
+> opinions and recurring personas across editions.
+>
+> The first JHSAA adapter lives in `app/jhsaa_paper.py` and can be invoked
+> through the in-game Paper tab or CLI. The corpus and editorial guidance are
+> portable to other simulated sports without copying the game's rendering.
 
 ## Purpose
 

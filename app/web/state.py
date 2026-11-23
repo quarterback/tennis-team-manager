@@ -4330,6 +4330,39 @@ def jhsaa_front_view(seed: int, gender: str, year: int | None = None) -> dict:
             "groups": list(jh.GROUPS), "scope": scope, **page}
 
 
+def jhsaa_paper_view(seed: int, gender: str, year: int | None = None,
+                     area: str | None = None, edition: int | None = None) -> dict:
+    """THE PAPER (`app.jhsaa_paper`): one edition of the area daily's coverage of
+    one gender-season, read in date order. The area sticks per save once chosen
+    (`worldconfig` key `jhsaa_paper_area`)."""
+    import app.jhsaa as jh
+    import app.jhsaa_paper as paper
+    import app.world as world
+    from app import worldconfig
+    w = world.get_or_create(seed)
+    g = _jh_g(gender)
+    years = sorted(world.jhsaa_years(w["id"], g), reverse=True)
+    yr = (years[0] if years else w["year"]) if year is None else year
+    season = paper.load_archive(w["id"], yr, g) if years else None
+    scope = _jh_scope(g, jh.GROUPS[0], list(jh.GROUPS), yr, years,
+                      (season or {}).get("season_year"), None)
+    if not season:
+        return {"ready": False, "scope": scope}
+    known = {t["area"] for t in paper.territories(season)}
+    if area and area in known:
+        worldconfig.set("jhsaa_paper_area", area)
+    else:
+        area = worldconfig.get("jhsaa_paper_area")
+        if area not in known:
+            area = paper.default_area(season)
+    stories = paper.load_stories(w["id"], yr, g, area)
+    view = paper.edition_view(season, area, edition, stories)
+    view.update({"scope": scope, "year": yr, "world_id": w["id"],
+                 "can_write": paper.can_write_in_app(),
+                 "job": paper.job_status(w["id"], yr, g, area)})
+    return view
+
+
 def jhsaa_view(seed: int, gender: str, group: str | None = None,
                year: int | None = None) -> dict:
     """The JHSAA hub — the state high-school home, organised around the season being
