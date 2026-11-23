@@ -54,6 +54,12 @@ UTR figures or "commit" language.
    The one condition is consistency. An invented detail is written to the paper's
    canon the moment it is printed, and from then on it is either true every time
    it comes up or never mentioned again.
+   The game states THAT something happened and never why. The why is the paper's
+   to supply. If the game says a player was injured, the paper says how: a rolled
+   ankle in Tuesday's practice, a sore shoulder since the Ward final. The same
+   goes for why a player transferred, why a coach left, why a pair was split, why
+   a senior did not come out for the team. What the paper may not do is create the
+   event itself: no injury, transfer or departure the game did not record.
 
 "No. 1 singles" and "first singles" are the same term; the numbered form is the
 abbreviation. Use the abbreviation in agate and tight copy, the words in running

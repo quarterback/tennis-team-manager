@@ -4,6 +4,13 @@
 **Status:** Editorial reference and agent handoff; not wired into the simulator.  
 **Scope:** High-school, youth, college and fictional sport. Intended to travel to Viperball, hybrid-baseball/O27 and other projects.
 
+> **Where this guide and `docs/press/VOICE.md` disagree, `VOICE.md` is right
+> (owner, 2026-11).** Three points: (1) the target is the 1980s-90s newspaper
+> voice, not a neutral modern one; (2) invention is free wherever the record is
+> silent, including the cause of an injury, transfer or departure the game
+> recorded, provided it is written to the canon and kept consistent; only the
+> events themselves may not be invented; (3) columnists have full personas.
+
 ## Purpose
 
 Produce a believable **sports section**, not a generated results recap. The agent receives completed or developing game data, investigates a limited beat, writes several distinct forms of journalism, and maintains a record of what it has already reported. Its articles should make a simulated season worth following for its players, programs, rivalries, expectations, and small developments.
