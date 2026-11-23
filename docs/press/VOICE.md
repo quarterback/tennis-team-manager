@@ -5,10 +5,12 @@ Load this file; the evidence behind it is in `corpus/`.
 
 ## What this is built from
 
-324 annotated articles and columns (58 of them from an eastern Oregon one-town
-weekly, 1985-96), plus 15 pages of Courier-News clippings seven NJ.com
-pages, five Oregon pages, twelve OSAAtoday tennis pieces (2021-26) and a set of
-2025-26 tennis pieces (Wyoming, Texas) supplied by the owner. By decade: 1980s 47, 1990s 158, 2000s 61. Tennis 121. By state: ID 42,
+324 annotated articles and columns (including 58 from an eastern Oregon one-town
+weekly, 1985-96), plus 15 pages of Courier-News clippings, seven NJ.com
+pages, five Oregon pages, twelve OSAAtoday tennis pieces (2021-26), and a set of
+2025-26 tennis pieces (Wyoming, Texas) supplied by the owner.
+Across the 324 annotated records: 1980s 67, 1990s 196, 2000s 61. Tennis
+approximately 145 (including 24 eastern Oregon tennis reports). By state: OR 58, ID 42,
 KS 38, PA 37, NC 34, FL 22, VA 14, WA 12, CA 10, GA 10, NJ 9 (+ the clippings), MN 7,
 WY 6, VT 6, TX 6, IL 6, MD 5, MI 2.
 

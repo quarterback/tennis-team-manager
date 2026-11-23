@@ -1,0 +1,158 @@
+{# ONE EDITION OF THE PAPER (app.jhsaa_paper.edition_view). Shared by the in-app
+   page and the standalone preview, so it reads only `view` plus two callables:
+   `school_href(name)` and `edition_href(n)`, either of which may return None. #}
+{% macro school(name) -%}
+{%- set h = school_href(name) -%}
+{%- if h %}<a href="{{ h }}">{{ name }}</a>{% else %}{{ name }}{% endif -%}
+{%- endmacro %}
+{% macro story(s, lead=false) %}
+<article class="pp-story{{ ' pp-lead' if lead }} pp-{{ s.slot or 'story' }}">
+  {% if s.slot == 'column' %}<div class="pp-kind">Column</div>{% elif s.slot == 'notebook' %}<div class="pp-kind">Notebook</div>{% endif %}
+  <h2 class="pp-hed">{{ s.headline }}</h2>
+  {% if s.deck %}<p class="pp-deck">{{ s.deck }}</p>{% endif %}
+  {% if s.byline %}<p class="pp-byline">{{ s.byline }}</p>{% endif %}
+  <div class="pp-body">
+    {% for p in s.body or [] %}{% if p.isupper() and p|length < 48 %}<h4 class="pp-sub">{{ p }}</h4>{% else %}<p>{{ p }}</p>{% endif %}{% endfor %}
+  </div>
+</article>
+{% endmacro %}
+
+<div class="pp-paper" id="ed-{{ view.n }}">
+  <header class="pp-mast">
+    <div class="pp-name">{{ view.masthead }}</div>
+    <div class="pp-dateline">
+      <span>{{ view.gender|capitalize }} tennis</span>
+      <span>{{ view.edition.label }}, {{ view.edition.date.year }}</span>
+      <span>Edition {{ view.n + 1 }} of {{ view.count }}</span>
+    </div>
+  </header>
+
+  <nav class="pp-nav">
+    {% if view.prev %}{% set h = edition_href(view.prev.n) %}
+      {% if h %}<a class="pp-prev" href="{{ h }}">Previous: {{ view.prev.label }}</a>{% endif %}
+    {% else %}<span></span>{% endif %}
+    {% if view.next %}{% set h = edition_href(view.next.n) %}
+      {% if h %}<a class="pp-next" href="{{ h }}">Next: {{ view.next.label }}</a>{% endif %}
+    {% endif %}
+  </nav>
+
+  <section class="pp-front">
+    {% if view.lead %}{{ story(view.lead, lead=true) }}{% endif %}
+    {% if view.stories %}
+    <div class="pp-cols">
+      {% for s in view.stories %}{{ story(s) }}{% endfor %}
+    </div>
+    {% endif %}
+    {% if not view.written %}
+    <div class="pp-unwritten">
+      <p>No stories have been written for this edition.</p>
+      {% if write_box is defined and write_box %}{% include '_jhsaa_paper_write.html' %}{% endif %}
+    </div>
+    {% endif %}
+  </section>
+
+  <section class="pp-agate">
+    {% if view.wire %}
+    <div class="pp-block">
+      <h3 class="pp-agate-h">Around the state</h3>
+      {% for r in view.wire %}
+      <div class="pp-dual"><span class="pp-ev">{{ r.label }}</span> {{ r.head }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if view.results %}
+    <div class="pp-block">
+      <h3 class="pp-agate-h">Results</h3>
+      {% for day in view.results %}
+      <h4 class="pp-day">{{ day.date.strftime('%A, %b.') }} {{ day.date.day }}</h4>
+      {% for r in day.rows %}
+      <div class="pp-dual">
+        <div class="pp-dhead"><span class="pp-ev">{{ r.label }}</span> {{ r.head }}</div>
+        {% if r.lines %}<div class="pp-lines">{% for l in r.lines %}<span>{{ l }}</span>{% endfor %}</div>{% endif %}
+      </div>
+      {% endfor %}
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if view.tables %}
+    <div class="pp-block">
+      <h3 class="pp-agate-h">Standings this morning</h3>
+      {% for t in view.tables %}
+      <table class="pp-table">
+        <caption>{{ t.district }} <span>{{ t.group }}</span></caption>
+        <thead><tr><th></th><th>League</th><th>All</th></tr></thead>
+        <tbody>
+        {% for r in t.rows %}
+        <tr class="{{ 'pp-local' if r.local }}"><td>{{ school(r.school) }}</td><td>{{ r.league }}</td><td>{{ r.overall }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if view.ahead %}
+    <div class="pp-block">
+      <h3 class="pp-agate-h">Coming up</h3>
+      {% set ns = namespace(day=None) %}
+      {% for a in view.ahead %}
+      {% if a.date != ns.day %}{% set ns.day = a.date %}<h4 class="pp-day">{{ a.date.strftime('%A, %b.') }} {{ a.date.day }}</h4>{% endif %}
+      <div class="pp-dual"><span class="pp-ev">{{ a.label }}</span> {{ school(a.away) }} at {{ school(a.home) }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if view.edition.kind == 'preseason' %}
+    <div class="pp-block">
+      <h3 class="pp-agate-h">The area's programs</h3>
+      {% for p in view.local %}
+      <div class="pp-dual">{{ school(p.school) }} <span class="pp-ev">{{ p.group }}, {{ p.district }}</span></div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </section>
+</div>
+
+<style>
+.pp-paper { max-width: 1180px; margin: 0 auto; color: var(--text-primary, #14161a); }
+.pp-mast { text-align: center; padding: 18px 0 10px; }
+.pp-name { font-family: var(--font-serif, Georgia, serif); font-weight: 800; font-size: clamp(34px, 5vw, 58px); letter-spacing: -0.02em; line-height: 1; }
+.pp-dateline { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px 22px; margin-top: 10px; font-family: var(--font-label, var(--font-text, system-ui)); font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary, #4a4f57); }
+.pp-nav { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0 18px; font-size: 14px; }
+.pp-nav a { color: var(--brand, #1d4ed8); text-decoration: none; font-weight: 600; }
+.pp-front { padding-bottom: 28px; }
+.pp-story { break-inside: avoid; margin: 0 0 26px; }
+.pp-hed { font-family: var(--font-serif, Georgia, serif); font-weight: 700; font-size: 22px; line-height: 1.15; margin: 0 0 6px; }
+.pp-lead .pp-hed { font-size: clamp(30px, 3.6vw, 44px); line-height: 1.05; letter-spacing: -0.01em; }
+.pp-deck { font-family: var(--font-serif, Georgia, serif); font-size: 18px; color: var(--text-secondary, #4a4f57); margin: 0 0 8px; }
+.pp-byline { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted, #5f6670); margin: 0 0 10px; }
+.pp-kind { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--brand, #1d4ed8); margin-bottom: 4px; }
+.pp-body p { font-family: var(--font-serif, Georgia, serif); font-size: 17px; line-height: 1.55; margin: 0 0 0.8em; }
+.pp-sub { font-family: var(--font-label, var(--font-text, system-ui)); font-size: 12px; font-weight: 800; letter-spacing: 0.08em; margin: 14px 0 6px; }
+.pp-lead .pp-body { columns: 2 320px; column-gap: 36px; }
+.pp-lead .pp-body p { font-size: 18px; }
+.pp-cols { columns: 3 300px; column-gap: 36px; }
+.pp-brief .pp-hed { font-size: 18px; }
+.pp-brief .pp-body p { font-size: 16px; }
+.pp-unwritten { font-size: 15px; color: var(--text-secondary, #4a4f57); padding: 10px 0; }
+.pp-unwritten code { font-size: 13px; }
+.pp-agate { columns: 4 230px; column-gap: 28px; padding-top: 18px; font-family: var(--font-text, system-ui); font-size: 12.5px; line-height: 1.4; }
+.pp-block { break-inside: auto; margin-bottom: 18px; }
+.pp-agate-h { break-after: avoid; font-family: var(--font-label, var(--font-text, system-ui)); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 6px; }
+.pp-day { break-after: avoid; font-size: 12px; font-weight: 700; margin: 10px 0 4px; color: var(--text-secondary, #4a4f57); }
+.pp-dual { break-inside: avoid; margin-bottom: 6px; }
+.pp-dhead { font-weight: 700; }
+.pp-ev { font-weight: 500; color: var(--text-muted, #5f6670); }
+.pp-lines span { display: block; color: var(--text-secondary, #4a4f57); }
+.pp-table { width: 100%; border-collapse: collapse; margin: 0 0 12px; break-inside: avoid; font-variant-numeric: tabular-nums; }
+.pp-table caption { text-align: left; font-weight: 700; padding-bottom: 2px; }
+.pp-table caption span { font-weight: 500; color: var(--text-muted, #5f6670); }
+.pp-table th { font-weight: 600; color: var(--text-muted, #5f6670); text-align: right; }
+.pp-table td { padding: 1px 0; }
+.pp-table td + td, .pp-table th + th { text-align: right; padding-left: 8px; white-space: nowrap; }
+.pp-table td:first-child { overflow-wrap: anywhere; }
+.pp-local td:first-child { font-weight: 700; }
+.pp-agate a, .pp-front a { color: inherit; }
+</style>

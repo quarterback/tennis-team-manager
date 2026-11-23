@@ -1,6 +1,9 @@
 # The press desk — design notes and style corpus
 
-Status: design + research. No generator exists yet.
+Status: researched house voice, annotated corpus and reusable editorial rules.
+A first JHSAA-specific writing adapter is implemented in `app/jhsaa_paper.py`
+and can be used from the game or the CLI. There is not yet a generic
+multisport publishing runtime.
 
 ## The problem (owner, 2026-11)
 
@@ -32,11 +35,13 @@ with running coverage of programs, players and storylines.
 - **Storyline memory.** A ledger of open threads (an unbeaten run, a sibling pair, a
   new head coach's first year, a transfer facing an old school) that later editions
   pick up and close.
-- **A sidecar, not a page of the game.** It reads a game's database or research
-  export read-only, the way `analytics/` and the baseball game's `o27audio` do. Each
-  game supplies an adapter that emits ordered events; editions, threads, the writer
-  and the reader are shared, so viperball and the baseball game can use it. The
-  `/jhsaa` front page keeps its rule of no generated prose.
+- **Shared editorial logic, flexible delivery.** The JHSAA proof of concept
+  reads the archive without changing the simulation, writes editions through an
+  optional agent/API step, and shows the paper in the existing game UI. It also
+  supports a CLI and research-export workflow. A later cross-game adapter can
+  consume ordered events from tennis, Viperball and baseball without requiring
+  a second interface or a manual ZIP export. The ordinary `/jhsaa` data front
+  page keeps its no-generated-prose rule.
 
 ## Five voices
 

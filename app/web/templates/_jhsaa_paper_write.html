@@ -1,0 +1,15 @@
+{# The in-app writer's controls for an unwritten edition (jhsaa_paper.html). #}
+{% if view.job and view.job.running %}
+<p>Writing editions now ({{ view.job.done }} finished so far). This page refreshes on its own.</p>
+<script>setTimeout(function(){ location.reload(); }, 8000);</script>
+{% elif view.can_write %}
+<form method="post" action="{{ url_for('jhsaa_paper_write', u=u, g=view.scope.gender, year=view.scope.pin) }}">
+  <input type="hidden" name="area" value="{{ view.area }}">
+  <input type="hidden" name="ed" value="{{ view.n }}">
+  <button class="bl-btn" type="submit">Write the paper through this edition</button>
+</form>
+{% else %}
+<p>To write it, start the server with <code>ANTHROPIC_API_KEY</code> set, or have an agent run
+<code>python3 manage.py paper --season {{ view.season_year }} --gender {{ view.gender }} --area "{{ view.area }}" --ed {{ view.n }}</code>.</p>
+{% endif %}
+{% if view.job and view.job.error %}<p>The last run stopped: {{ view.job.error }}</p>{% endif %}
