@@ -138,3 +138,40 @@ def test_league_second_reference_rule():
     assert desk("Three Rivers League play opened.", "The TRL is deep.") == []
     # a coach may say it however he likes
     assert desk('Dual County League play. "The Dual County League is tough," he said.') == []
+
+
+def test_the_researched_press_voice_has_priority_in_the_writer():
+    """The integrated writer must load the original 1980s–90s corpus voice."""
+    system, user = paper.writer_prompt({
+        "paper": "The Juniper Highlands Courier", "sport": "boys tennis",
+        "area": "Juniper Highlands", "season": 2042,
+        "edition": {"number": 1, "label": "Friday, Aug. 8"},
+    })
+    assert "=== docs/press/VOICE.md ===" in system
+    assert "=== docs/PREPS-STYLE-GUIDE.md ===" in system
+    assert system.index("=== docs/press/VOICE.md ===") < system.index(
+        "=== docs/PREPS-STYLE-GUIDE.md ===")
+    assert "## The columnist" in system
+    assert "OPTIONAL" in system
+    assert '"paper": "The Juniper Highlands Courier"' in user
+
+
+def test_period_sports_verbs_are_not_blacklisted():
+    """Period newspaper verbs were mistakenly banned by the first copy desk."""
+    payload = {"stories": [
+        {"slot": "brief", "headline": "Westfield edges Plainfield",
+         "body": ["Westfield edged Plainfield 4-3.",
+                  "Smith outlasted Jones 6-4, 3-6, 6-2.",
+                  "Moore cruised past Knight in straight sets."]},
+        {"slot": "column", "headline": "A better way to play",
+         "body": ["KUDOS — To the girls who staffed the tournament.",
+                  "The officials kept the matches moving."]}
+    ]}
+    assert not paper.copy_desk(payload)
+
+
+def test_missing_house_voice_fails_explicitly(monkeypatch, tmp_path):
+    """Do not silently fall back to a generic modern writing register."""
+    monkeypatch.setattr(paper, "_repo_root", lambda: str(tmp_path))
+    with pytest.raises(FileNotFoundError, match="docs/press/VOICE.md"):
+        paper.desk_rules()

@@ -175,3 +175,32 @@ rewritten to match: "the PAA champion," "DCL play," "1-0 Kajaani," "its Fiesta
 opener," and league names in the headlines. The lesson for this desk: a style
 rule written for a national wire is the wrong default for a hometown paper, and
 the local papers' habits are the thing to copy, not to correct.
+
+
+## Reconciliation: archive research and the working paper
+
+The portable newsroom corpus from `claude/laughing-galileo-tiz0g1` is now
+included under `docs/press/`. Its `VOICE.md` has priority for the 1980s–90s
+newspaper register, article forms, agate, reporter roles and columnist character.
+The prior JHSAA reporting guide and `PREPS-STYLE-GUIDE.md` remain available
+for sport vocabulary, factual correctness and avoiding repetitive synthetic
+features, but do not override the period-appropriate newspaper cadence.
+
+The writer reads `VOICE.md` first and fails explicitly if it is absent.
+The preseason, dated results, edition navigation, archive storage, API writer,
+CLI and research-export path were preserved without changing match simulation.
+No second independent newspaper implementation is introduced.
+
+The copy desk previously blacklisted ordinary 1980s–90s sports verbs
+(`edged`, `outlasted`, `cruised`, `rolled past`) despite those forms
+being documented in the researched corpus. Those bans were removed. Banned
+phrases are now checked against the writer's prose instead of the content of
+quoted speech. Section labels such as `KUDOS —` are permitted in signed
+columns. New tests check house-style precedence, those verbs and the fail-closed
+loading rule.
+
+**Remaining boundaries:** `packet()` is the evidence boundary and earlier
+editions plus the invented-detail ledger are the initial continuity mechanism.
+A full shared multi-game writer service, permanent writer-profile schema,
+cross-game adapter and publication-wide storyline index are not implemented
+by this reconciliation. The corpus is research, not a set of articles to copy.
