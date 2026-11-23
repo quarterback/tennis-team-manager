@@ -6,9 +6,7 @@ Year), the girls tennis section index, a "historical project" hub and its 1990 b
 tennis final Top 20, and the openings of three paywalled stories (two football, one
 soccer). Player names are replaced with NAME below; excerpts are short and verbatim.
 
-‼️ This is 2026 writing. Use it for how a STATEWIDE desk is organised and what it
-publishes. Do not use it for the 1985-1999 voice; the Courier-News file and the
-regional sets carry that.
+Written 2026.
 
 ## 1. What a statewide desk publishes at season's end
 

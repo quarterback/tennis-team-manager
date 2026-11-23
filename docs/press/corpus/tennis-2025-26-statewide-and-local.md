@@ -4,8 +4,7 @@ Four items pasted by the owner (2026-11) plus eight WyoPreps tennis pages fetche
 directly, covering one whole Wyoming season from preview to all-state. People are
 replaced with NAME below; excerpts are short and verbatim.
 
-‼️ 2025-26 writing. Take the SEASON RHYTHM, the agate and the news patterns. The
-period voice comes from the 1980s-90s files.
+Written 2025-26.
 
 ## 1. A statewide desk's season, week by week (WyoPreps, Wyoming)
 

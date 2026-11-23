@@ -13,7 +13,7 @@ WY 6, VT 6, TX 6, IL 6, MD 5, MI 2.
 
 Know its limits before trusting it:
 
-- The Kansas set is almost all 2002-2006. Use it for structure, not period voice.
+- The Kansas set is almost all 2002-2006.
 - Oregon, Montana, Oklahoma and Colorado are absent. Rural Idaho, eastern Washington
   and Minnesota stand in for the rural West and Plains.
 - True one-town weeklies are thin: five papers, 27 articles.
@@ -21,7 +21,10 @@ Know its limits before trusting it:
 - Many longer articles were read closely only at the top; quote counts are machine
   counts.
 
-Target period: about 1985-1999. Write like that, not like a modern web capsule.
+What separates good prep coverage from bad is DEPTH, not decade (owner, 2026-11).
+The thing to avoid is the thin capsule: a score and one line. A 2026 one-town site
+that staffs the state meet and a 1991 county paper that prints every flight are doing
+the same job, and both are models here. Sources from every year are used alike.
 
 ## Rules that hold everywhere
 
@@ -173,8 +176,7 @@ all-flight teams; a team per classification; a postseason-honours story per leag
 the final Top 20 (rank, team, record) with a headline saying what moved. An honours
 story sets the award alone as a one-sentence paragraph, then the coach, then the
 résumé round by round, then what it was "a first" of. Team stories lead on the
-streak in numbers. See `corpus/njcom-statewide.md`; it is 2026 writing, so take the
-structure and leave the recruiting metrics and search-style headlines.
+streak in numbers. See `corpus/njcom-statewide.md`.
 
 ### The season as a calendar (statewide)
 
@@ -195,18 +197,22 @@ score prints as "??". See `corpus/tennis-2025-26-statewide-and-local.md`.
 | Statewide | class or group on every school, polls, pairings for every class, seeds | few | yes |
 | Columnist | a container column, see below | own voice | yes, with a standing title |
 
-## By decade
+## Optional flavour: a paper's vintage
+
+Wording did drift over the years, and a masthead may be given a vintage as a
+setting. It is seasoning, never a quality bar, and the default is none.
 
 - **1980s.** Conceit leads, long nut sentences, rotating attribution (offered,
-  remarked, noted, admitted, observed, lamented, explained, pointed out). Netmen,
-  hurlers, the nine, charges, mentor, titlist, campaign, foes, cagers, thinclads,
-  grapplers. Headlines in capitals or with every word capitalised.
+  remarked, noted, admitted, observed, lamented). Netmen, hurlers, the nine,
+  charges, mentor, titlist, campaign, foes, cagers, thinclads, grapplers.
 - **Early 1990s.** Headlines in capitals, short, punning on a nickname or surname
   ("EAGLES PIN BANTAMS"). Verbs: nips, trips, ousts, cops, blanks, stuns, whips.
 - **Late 1990s.** Sentence-case headlines with a second line. "Said" only. Teaser
-  leads. Players begin to be quoted.
+  leads.
+- **2020s.** Scene-first leads, players quoted as much as coaches, recruiting
+  ratings and college commitments, headlines that describe before they name.
 
-Verbs for any decade: downed, topped, edged, blanked, ousted, breezed, cruised,
+Verbs for any vintage: downed, topped, edged, blanked, ousted, breezed, cruised,
 paced, rolled over, eked out, outlasted. Nouns: tourney, crown, berth, semis, the
 draw, loser-out, twinbill, nightcap. "Play host to."
 

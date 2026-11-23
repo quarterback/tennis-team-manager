@@ -1,7 +1,7 @@
 # Plains and Texas — findings
 
 ‼️ The era target was mostly missed: 5 of 44 entries are from the 1990s, 39 are
-2002-2006. Use this set for structure and agate, not for period voice.
+2002-2006. 
 
 Sources: Lawrence Journal-World, Kansas (38; 35 from 2002, two 2004, one 2006 — its
 1990s text is not reachable); Dallas Morning News, Sept. 12, 1994 (4) and Fort Worth

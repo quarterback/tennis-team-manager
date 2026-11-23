@@ -5,9 +5,7 @@ dismissal, a playoff game story, an all-league list) and two from a one-town
 independent news site (its sports index and a full state-meet story). People are
 replaced with NAME / COACH below; excerpts are short and verbatim.
 
-‼️ 2026 writing. It fills two gaps the 1980s-90s corpus could not: how a coach's
-dismissal is reported, and what a true one-town local desk covers week to week. Take
-structure and news judgement from it, not period voice.
+Written 2026.
 
 ## 1. The local desk: one town, one school (Philomath News)
 
