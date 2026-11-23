@@ -99,3 +99,33 @@ def test_the_paper_page_renders_in_the_app(season, monkeypatch):
     html = c.get("/jhsaa/paper?g=boys&area=Juniper Highlands&ed=3").get_data(as_text=True)
     assert "Standings this morning" in html and "Big Basin League" in html
     assert "No. 1 singles:" in html
+
+
+def test_league_second_reference_rule():
+    """A league is spelled out once a story, never with parenthetical initials, and
+    its initials never come before the full name (AP; measured on Globe/Herald)."""
+    from app import jhsaa_paper as jp
+    assert jp.league_initials("Mid-Suburban League") == "MSL"
+    assert jp.league_initials("Dual County League") == "DCL"
+    assert jp.league_initials("Kajaani League") is None
+    assert jp.league_initials("Narpes Interscholastic League") is None  # NIL means something
+    assert jp.league_short("Fiesta Athletic Association") == "Fiesta"
+    season = {"programs": {"A": {"district": "Dual County League"},
+                           "B": {"district": "Kajaani League"}}}
+    refs = {r["full"]: r for r in jp.league_references(season, ["Dual County League",
+                                                                 "Kajaani League"])}
+    assert refs["Dual County League"]["second_reference"] == "DCL"
+    assert refs["Kajaani League"]["second_reference"] == "Kajaani"
+    leagues = list(refs.values())
+
+    def desk(*body):
+        return jp.copy_desk({"stories": [{"headline": "DCL opens", "body": list(body)}]},
+                            leagues=leagues)
+    assert desk("Marlow opened the Dual County League Tuesday.",
+                "It is 1-0 in the DCL.") == []
+    assert any("spelled out 2" in f for f in desk(
+        "Marlow opened the Dual County League Tuesday.", "The Dual County League is deep."))
+    assert any("no (DCL)" in f for f in desk("The Dual County League (DCL) opened."))
+    assert any("before" in f for f in desk("The DCL opened.", "Dual County League play."))
+    # a coach may say it however he likes
+    assert desk('Dual County League play. "The Dual County League is tough," he said.') == []

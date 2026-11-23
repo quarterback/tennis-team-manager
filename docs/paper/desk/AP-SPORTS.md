@@ -42,6 +42,50 @@ These are the rules the desk checks every edition against. `copy_desk()` in
   and other verbs that grade a result.
 - No exclamation points.
 
+## Leagues
+
+Spell a league out the first time a story names it. After that, use its second
+reference or "the league." Never put the initials in parentheses after the full
+name; AP says an abbreviation that would not be clear later without that crutch
+should not be used at all. Headlines may use the second reference cold, and so
+may agate (records in the form "4-1 DCL").
+
+The packet's `league_names` gives each league its second reference. It is the
+league's initials when the name has three or more words (hyphenated parts count
+apart, as in Mid-Suburban League to MSL) and no other league in the association
+shares them or they already mean something to a reader (NIL, AAA, DSL). A shorter
+name gets its own name without the tail: the Kajaani, the Desert Sky, Juniper
+play. Both forms show up in real coverage; `also` carries the other one.
+
+What the rule is measured on, read in November 2026 (body text, headlines and
+section labels left out):
+
+| Story | Full name in body | Initials after | "League," "conference" or a division after |
+|---|---|---|---|
+| Daily Herald, "Fremd edges Hersey to win MSL tournament" (2024) | 0 | 6 MSL | 5 |
+| Daily Herald, "Barrington, Stevenson, Grayslake Central win conference tournaments" | MSL 1, NSC 1, NLCC 0 | 3 MSL, 2 NSC, 1 NLCC, 1 FVC | 5 |
+| Daily Herald, "Barrington finishes brightly in MSL tournament" | 1 | 8 MSL | 5 |
+| Sun-Times, "Highland Park wins CSL North title" (2014) | 0 | 1 CSL North | 0 |
+| Boston Globe, "Wayland lined up to defend its title" (2023) | 1 | 2 DCL | 0 |
+| Boston Globe, Dual County League golf (Sept. 2026) | 1 | 7 DCL | 6 |
+
+No story repeated a league's full name after the first reference. Initials did
+most of the work where a league has them (MSL, DCL, NSC); "league play," "the
+league" and division names did the rest. The Globe also writes the short name
+("South Coast play") and the Herald writes "Mid-Suburban West." Two local habits
+the desk does not copy: the Herald's "Mid-Suburban League (MSL)" breaks the AP
+parentheses rule, and both Chicago papers sometimes use the home league's
+initials without ever spelling it out. The Courier spells it out first.
+
+Sources:
+- AP Stylebook, abbreviations and acronyms, as quoted in the UAMS style guide:
+  communications.uams.edu/web/kb/ap-style/
+- Daily Herald: dailyherald.com/?p=1297401, dailyherald.com/?p=2627,
+  dailyherald.com/?p=402074
+- Chicago Sun-Times: chicago.suntimes.com/2014/8/6/18506514/highland-park-wins-csl-north-title
+- Boston Globe: pressreader.com/usa/boston-sunday-globe/20230409/282389813760928,
+  bostonglobe.com/2026/09/27/sports/dual-county-league-golf-marblehead/
+
 ## Headlines
 
 - Present tense for a past event, active voice, no period.

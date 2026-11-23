@@ -133,3 +133,30 @@ What changed:
 Trap: the copy desk is the mechanical half. Angle rotation, history triggers and
 whether a piece passes the consequence gate are still the writer's judgment,
 which is why the guides go in whole rather than summarised.
+
+## Addendum: leagues on second reference
+
+The owner pointed out that papers abbreviate a league after first reference and
+asked for it to be measured rather than assumed. Six real stories were read
+(three Daily Herald tennis stories, one Sun-Times, two Boston Globe) and every
+league reference counted; the table is in `docs/paper/desk/AP-SPORTS.md`. None
+repeated a league's full name after the first use. Initials carried most later
+references where a league has them; "the league," "league play" and division
+names carried the rest.
+
+What changed:
+
+- `league_references()` gives every league in the packet a second reference
+  (`league_names`): initials for a name of three or more words when no other
+  league shares them and they do not already mean something (NIL, AAA, DSL);
+  otherwise the league's own name without its tail. The writer brief tells the
+  writer to spell a league out once per story and use that form after.
+- The copy desk flags a league's full name used twice in one story, initials in
+  parentheses after the full name, and initials that come before the full name.
+  Headlines and quotes are exempt.
+- The demo edition had one repeat ("the Kajaani League opener" in the same story
+  as its first reference) and is fixed.
+
+Not copied from the papers: the Herald's "Mid-Suburban League (MSL)" (against
+AP) and the Chicago habit of using a home league's initials without ever
+spelling it out.

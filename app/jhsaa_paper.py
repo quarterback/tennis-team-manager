@@ -42,6 +42,7 @@ import datetime as dt
 import io
 import json
 import os
+import re
 import threading
 import zipfile
 from collections import defaultdict
@@ -391,6 +392,56 @@ def _abbr(name: str) -> str:
     return name[:4]
 
 
+#: The generic tail of a league name. What is left is the league's own name, the
+#: form a paper uses on later references ("South Coast play", "the Desert Sky").
+_LEAGUE_TAILS = ("Interscholastic League", "Athletic Association", "Athletic League",
+                 "Athletic Conference", "League", "Association", "Alliance", "Conference",
+                 "Assembly", "Circuit", "District", "Organization", "Province")
+
+
+def league_short(name: str) -> str:
+    for tail in _LEAGUE_TAILS:
+        if name.endswith(" " + tail):
+            return name[: -len(tail) - 1]
+    return name
+
+
+#: Initials that already mean something to a reader. AP warns against alphabet
+#: soup; a league called the NIL on a sports page reads as name, image and likeness.
+_TAKEN_INITIALS = {"AAA", "NIL", "FAA", "DSL", "NBA", "NFL", "NHL", "MLB", "CIA", "FBI",
+                   "IRS", "ACT", "SAT", "GPA", "USA", "NRA", "DMV", "ESPN", "MLS"}
+
+
+def league_initials(name: str) -> str | None:
+    """MSL for Mid-Suburban League, DCL for Dual County League: the first letters
+    of every word, hyphenated parts counted apart. None under three letters, which
+    no paper prints (nobody calls the Kajaani League the KL)."""
+    words = [w for w in re.split(r"[\s-]+", name) if w and w.lower() not in ("of", "the", "and")]
+    ini = "".join(w[0].upper() for w in words)
+    return ini if len(words) >= 3 and ini not in _TAKEN_INITIALS else None
+
+
+def league_references(season: dict, leagues) -> list[dict]:
+    """How the paper names each league: the full name first, then the second
+    reference. Initials when the name has them and no other league in the
+    association shares them; otherwise the league's own name without its tail.
+    Both forms appear in real coverage, so the other one rides along."""
+    every = {p["district"] for p in season["programs"].values()}
+    taken: dict = {}
+    for lg in every:
+        ini = league_initials(lg)
+        if ini:
+            taken.setdefault(ini, set()).add(lg)
+    out = []
+    for lg in sorted(set(leagues)):
+        ini, short = league_initials(lg), league_short(lg)
+        if ini and len(taken.get(ini, ())) == 1:
+            out.append({"full": lg, "second_reference": ini, "also": short})
+        else:
+            out.append({"full": lg, "second_reference": short, "also": None})
+    return out
+
+
 def _slot_key(slot: str) -> tuple:
     """Singles before doubles, then by number: the order a results column prints."""
     return (0 if slot[:1] == "S" else 1, int(slot[1:]) if slot[1:].isdigit() else 0)
@@ -686,6 +737,10 @@ def packet(season: dict, area: str, n: int, stories: dict | None = None,
         "graduated_from_last_season": graduated,
         "results_since_last_edition": results,
         "league_standings_this_morning": view["tables"],
+        # Full name on first reference in a story, then the second reference.
+        "league_names": league_references(season, {
+            progs[x]["district"] for x in set(local)
+            | {r[k] for r in results for k in ("home", "away")} if x in progs}),
         "before_the_next_edition": [{"date": a["date"].isoformat(), "event": a["label"],
                                      "home": a["home"], "away": a["away"]}
                                     for a in view["ahead"]],
@@ -715,7 +770,9 @@ earlier stories. Nothing has happened after this morning. Never hint at how the
 season ends. Use the head coaches named in the packet; keep every invented person
 and fact consistent with the ledger, and add new ones to it. Follow up on what the
 paper already wrote instead of reintroducing teams. The preseason edition is a
-county-by-county outlook.
+county-by-county outlook. Spell a league out the first time a story names it,
+then use its second reference from league_names (or "the league") for the rest of
+that story; headlines may use the second reference.
 
 The desk's rules follow: the association's reporting guide, the preps style guide,
 the AP sports style sheet and the humanizer guide. They are requirements. Plan the
@@ -783,8 +840,33 @@ WATCH = {"lineup": 2, "no. 1 singles": 3, "graduated": 2, "graduation": 1,
          "returns": 2, "is back": 2, "are back": 2, "last season": 4, "a year ago": 2}
 
 
-def copy_desk(payload: dict, names: set | None = None) -> list[str]:
-    """Findings for one edition; an empty list means it passes the mechanical desk."""
+def _league_findings(tag: str, body: list[str], leagues: list[dict]) -> list[str]:
+    """AP and the measured house practice: a league is spelled out once in a story,
+    never with its initials in parentheses, and its initials never come before the
+    full name. Headlines are exempt; so are quotes."""
+    text = " ".join(_re.sub(r'"[^"]*"', '""', p) for p in body)
+    out = []
+    for lg in leagues or []:
+        full, second = lg["full"], lg["second_reference"]
+        hits = [m.start() for m in _re.finditer(r"\b" + _re.escape(full) + r"\b", text)]
+        if len(hits) > 1:
+            out.append(f"{tag} league: {full!r} spelled out {len(hits)} times; "
+                       f"after the first, write {second!r} or 'the league'")
+        for ini in {second, lg.get("also")} - {None}:
+            if _re.search(_re.escape(full) + r"\s*\(" + _re.escape(ini) + r"\)", text):
+                out.append(f"{tag} AP: no ({ini}) after {full!r}; just use {ini} later")
+        ini = second if second.isupper() else None
+        if ini:
+            m = _re.search(r"\b" + _re.escape(ini) + r"\b", text)
+            if m and (not hits or m.start() < hits[0]):
+                out.append(f"{tag} league: {ini} before {full!r} is spelled out")
+    return out
+
+
+def copy_desk(payload: dict, names: set | None = None,
+              leagues: list[dict] | None = None) -> list[str]:
+    """Findings for one edition; an empty list means it passes the mechanical desk.
+    `leagues` is the packet's league_names."""
     out: list[str] = []
     stories = payload.get("stories") or []
     whole = []
@@ -793,6 +875,7 @@ def copy_desk(payload: dict, names: set | None = None) -> list[str]:
         tag = f"[{head[:48]}]"
         if head.endswith("."):
             out.append(f"{tag} headline ends with a period")
+        out.extend(_league_findings(tag, list(st.get("body") or []), leagues))
         for raw in [head] + list(st.get("body") or []):
             low = raw.lower()
             whole.append(low)
@@ -907,15 +990,15 @@ def write_with_api(pk: dict, model: str | None = None, rounds: int = 2) -> dict:
     Whatever the desk still finds is stored with the edition under "desk"."""
     system, user = writer_prompt(pk)
     payload = _parse_payload(_call(system, user, model))
-    names = _names(pk)
+    names, leagues = _names(pk), pk.get("league_names")
     for _ in range(rounds):
-        findings = copy_desk(payload, names)
+        findings = copy_desk(payload, names, leagues)
         if not findings:
             break
         payload = _parse_payload(_call(system, REVISE.format(
             findings="\n".join(f"- {f}" for f in findings),
             edition=json.dumps(payload, ensure_ascii=False)), model))
-    payload["desk"] = copy_desk(payload, names)
+    payload["desk"] = copy_desk(payload, names, leagues)
     return payload
 
 
