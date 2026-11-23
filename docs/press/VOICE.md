@@ -226,6 +226,25 @@ score prints as "??". See `corpus/tennis-2025-26-statewide-and-local.md`.
 | Statewide | class or group on every school, polls, pairings for every class, seeds | few | yes |
 | Columnist | a container column, see below | own voice | yes, with a standing title |
 
+What each desk asks before assigning a story (from
+`docs/GUIDE-prep-sports-journalism-agent.md`, which also carries the agent handoff
+prompt and a checklist for finished copy):
+
+- Local: does it matter to this town? Bad records, JV and departing seniors count.
+- Beat: did our understanding of the subject change?
+- Area: which result matters to several communities?
+- Statewide: why would a reader outside the school's town care? No duty to cover
+  everything.
+- Columnist: is there a claim somebody could disagree with? If not, no column
+  this week.
+
+The paper gives its own honours as well as reporting the association's: an
+All-Area team, a Top 10, a coach of the year, a match of the year. They are the
+paper's selections, labelled as such, and never written into the game's honours.
+
+Photo captions and sidebars are pieces too: who, which school, what was happening;
+a season and career line. Do not claim a picture exists unless one does.
+
 ## The old voice, by years
 
 One voice, with a little drift inside it. Pick a year for a masthead and stay there.
@@ -311,6 +330,19 @@ Give a columnist one persona and keep it:
 - **The sober analyst.** No "I". A verdict on a rule or format, the other side
   conceded, then notes.
 - **The essayist.** One subject, one metaphor, an aphorism to close.
+
+Column forms: an argument (one claim, the evidence, the best counter-example, a
+concrete ending); a notebook of two or three signed observations; an after-the-game
+column seen through one person or decision; a season reckoning that revisits what
+the columnist wrote in preseason, mistakes included; a local-life column about what
+a team or rivalry says about a place.
+
+Subjects: an old coach who has outlasted rivals; a rule that keeps helping the
+same schools; a rivalry whose meaning has changed; a good player hidden on a weak
+team; preseason praise against what happened; what a graduating class leaves.
+
+A columnist keeps positions as well as a persona: what they have argued before is
+canon, and they can admit being wrong.
 
 How opinion is licensed: admit nobody asked; borrow a coach's authority; concede the
 other side first; cast it as a vote or a hope; mock yourself before and after.
