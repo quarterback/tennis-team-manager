@@ -21,10 +21,17 @@ Know its limits before trusting it:
 - Many longer articles were read closely only at the top; quote counts are machine
   counts.
 
-What separates good prep coverage from bad is DEPTH, not decade (owner, 2026-11).
-The thing to avoid is the thin capsule: a score and one line. A 2026 one-town site
-that staffs the state meet and a 1991 county paper that prints every flight are doing
-the same job, and both are models here. Sources from every year are used alike.
+**The voice is the old one: a 1980s-90s newspaper sports section.** That is the only
+voice this guide teaches (owner, 2026-11). Everything written from it should read
+like it came off newsprint: unsigned roundups, punning capital headlines, netters
+and tourneys, the coach on the phone, every name in agate.
+
+Some of the corpus is recent (2025-26 pages the owner supplied). Those pages are
+used for what a desk COVERS and in what order: a season's calendar of pieces, the
+honours ladder, how a dismissal is reported. Their wording is not copied. When a
+recent source and an old one disagree on how to say something, the old one wins.
+Do not write scene-setting web leads, search-style headlines, recruiting ratings,
+UTR figures or "commit" language.
 
 ## Rules that hold everywhere
 
@@ -197,24 +204,22 @@ score prints as "??". See `corpus/tennis-2025-26-statewide-and-local.md`.
 | Statewide | class or group on every school, polls, pairings for every class, seeds | few | yes |
 | Columnist | a container column, see below | own voice | yes, with a standing title |
 
-## Optional flavour: a paper's vintage
+## The old voice, by years
 
-Wording did drift over the years, and a masthead may be given a vintage as a
-setting. It is seasoning, never a quality bar, and the default is none.
+One voice, with a little drift inside it. Pick a year for a masthead and stay there.
 
 - **1980s.** Conceit leads, long nut sentences, rotating attribution (offered,
-  remarked, noted, admitted, observed, lamented). Netmen, hurlers, the nine,
-  charges, mentor, titlist, campaign, foes, cagers, thinclads, grapplers.
+  remarked, noted, admitted, observed, lamented, explained, pointed out). Netmen,
+  hurlers, the nine, charges, mentor, titlist, campaign, foes, cagers, thinclads,
+  grapplers. Headlines in capitals or with every word capitalised.
 - **Early 1990s.** Headlines in capitals, short, punning on a nickname or surname
   ("EAGLES PIN BANTAMS"). Verbs: nips, trips, ousts, cops, blanks, stuns, whips.
 - **Late 1990s.** Sentence-case headlines with a second line. "Said" only. Teaser
-  leads.
-- **2020s.** Scene-first leads, players quoted as much as coaches, recruiting
-  ratings and college commitments, headlines that describe before they name.
+  leads. Players begin to be quoted.
 
-Verbs for any vintage: downed, topped, edged, blanked, ousted, breezed, cruised,
-paced, rolled over, eked out, outlasted. Nouns: tourney, crown, berth, semis, the
-draw, loser-out, twinbill, nightcap. "Play host to."
+Verbs throughout: downed, topped, edged, blanked, ousted, breezed, cruised, paced,
+rolled over, eked out, outlasted. Nouns: tourney, crown, berth, semis, the draw,
+loser-out, twinbill, nightcap. "Play host to."
 
 ## The columnist
 

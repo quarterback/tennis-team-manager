@@ -5,7 +5,8 @@ dismissal, a playoff game story, an all-league list) and two from a one-town
 independent news site (its sports index and a full state-meet story). People are
 replaced with NAME / COACH below; excerpts are short and verbatim.
 
-Written 2026.
+Written 2026. Used for what a desk covers and in what order. The wording to
+imitate is the old voice in `../VOICE.md`, not this.
 
 ## 1. The local desk: one town, one school (Philomath News)
 

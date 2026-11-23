@@ -6,7 +6,8 @@ Year), the girls tennis section index, a "historical project" hub and its 1990 b
 tennis final Top 20, and the openings of three paywalled stories (two football, one
 soccer). Player names are replaced with NAME below; excerpts are short and verbatim.
 
-Written 2026.
+Written 2026. Used for what a desk covers and in what order. The wording to
+imitate is the old voice in `../VOICE.md`, not this.
 
 ## 1. What a statewide desk publishes at season's end
 

@@ -4,7 +4,8 @@ Four items pasted by the owner (2026-11) plus eight WyoPreps tennis pages fetche
 directly, covering one whole Wyoming season from preview to all-state. People are
 replaced with NAME below; excerpts are short and verbatim.
 
-Written 2025-26.
+Written 2025-26. Used for what a desk covers and in what order. The wording to
+imitate is the old voice in `../VOICE.md`, not this.
 
 ## 1. A statewide desk's season, week by week (WyoPreps, Wyoming)
 
