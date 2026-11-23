@@ -5,8 +5,9 @@ Load this file; the evidence behind it is in `corpus/`.
 
 ## What this is built from
 
-266 annotated articles and columns, plus 15 pages of Courier-News clippings and seven
-NJ.com pages supplied by the owner. By decade: 1980s 47, 1990s 158, 2000s 61. Tennis 121. By state: ID 42,
+266 annotated articles and columns, plus 15 pages of Courier-News clippings seven NJ.com
+pages, five Oregon pages and a set of 2025-26 tennis pieces (Wyoming, Texas) supplied
+by the owner. By decade: 1980s 47, 1990s 158, 2000s 61. Tennis 121. By state: ID 42,
 KS 38, PA 37, NC 34, FL 22, VA 14, WA 12, CA 10, GA 10, NJ 9 (+ the clippings), MN 7,
 WY 6, VT 6, TX 6, IL 6, MD 5, MI 2.
 
@@ -174,6 +175,15 @@ story sets the award alone as a one-sentence paragraph, then the coach, then the
 résumé round by round, then what it was "a first" of. Team stories lead on the
 streak in numbers. See `corpus/njcom-statewide.md`; it is 2026 writing, so take the
 structure and leave the recruiting metrics and search-style headlines.
+
+### The season as a calendar (statewide)
+
+One writer can carry a whole state's season in about ten recurring pieces: a season
+preview with dates and sites; a weekly scoreboard with a three-sentence top and
+every dual in agate; a qualifying-round piece that explains seeding and what is at
+stake; a championship preview by flight; results; a champions piece that walks each
+bracket path round by round; honours with the selection rule stated. An unreported
+score prints as "??". See `corpus/tennis-2025-26-statewide-and-local.md`.
 
 ## By desk
 
