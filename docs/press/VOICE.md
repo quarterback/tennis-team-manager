@@ -5,8 +5,8 @@ Load this file; the evidence behind it is in `corpus/`.
 
 ## What this is built from
 
-266 annotated articles and columns plus 15 pages of Courier-News clippings supplied by
-the owner. By decade: 1980s 47, 1990s 158, 2000s 61. Tennis 121. By state: ID 42,
+266 annotated articles and columns, plus 15 pages of Courier-News clippings and seven
+NJ.com pages supplied by the owner. By decade: 1980s 47, 1990s 158, 2000s 61. Tennis 121. By state: ID 42,
 KS 38, PA 37, NC 34, FL 22, VA 14, WA 12, CA 10, GA 10, NJ 9 (+ the clippings), MN 7,
 WY 6, VT 6, TX 6, IL 6, MD 5, MI 2.
 
@@ -163,6 +163,17 @@ Tournament:
 - JV or exhibition matches listed under varsity.
 - A scoreboard rail for the day: yesterday's scores by sport, today's schedule with
   times.
+
+### Statewide honours batch
+
+The statewide desk closes a season with one batch, most of it lists with a short
+top: Player, Team and Coach of the Year; All-State first, second and third teams;
+all-flight teams; a team per classification; a postseason-honours story per league;
+the final Top 20 (rank, team, record) with a headline saying what moved. An honours
+story sets the award alone as a one-sentence paragraph, then the coach, then the
+résumé round by round, then what it was "a first" of. Team stories lead on the
+streak in numbers. See `corpus/njcom-statewide.md`; it is 2026 writing, so take the
+structure and leave the recruiting metrics and search-style headlines.
 
 ## By desk
 
