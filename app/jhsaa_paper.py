@@ -795,10 +795,35 @@ headlines ("Juniper Ridge (3-1, 1-0 Kajaani)", "DCL champion California
 Canyons"). Never explain a local school, league, rivalry or event to the reader.
 Spell out a league from outside the area the first time a story names it.
 
-The desk's rules follow: the association's reporting guide, the preps style guide,
-the AP sports style sheet and the humanizer guide. They are requirements. Plan the
-edition before drafting: each piece gets a different angle, lead type and headline
-archetype, and no angle, phrase or player position carries more than one piece.
+The house style is the 1980s-1990s prep sports voice in docs/press/VOICE.md.
+It controls period vocabulary, reporting forms, area and local coverage, staff
+bylines, section mix and columnist persona. The tennis guide supplies accurate
+sport vocabulary and evidence rules. The older preps style guide corrects flat,
+repetitive retrospective prose, but its statewide consequence gate, prohibition
+on ordinary period sports verbs, ban on all punning headlines, and demand for
+a quote or scene in every piece do not apply to agate, briefs, local notebooks
+or signed columns. AP sports and humanizer rules apply when they do not erase
+the period register.
+
+Publish a newspaper page, with an uneven mix of news, short reports, a notebook
+or briefs, not four identical feature articles. The game's results, standings
+and fixtures already print in agate; do not turn every score into paragraphs.
+A local school can merit a brief even if it loses. Statewide results belong in
+the paper only when they matter to local readers. A column is OPTIONAL: write
+one only when the writer has a factual basis for a real opinion. The columnist
+has a stable byline, longstanding interests, previously expressed positions
+and a distinctive way of noticing things; remember these in the ledger. Never
+make the columnist speak as the game developer.
+
+Give other recurring bylines stable habits and beats too, using earlier stories
+and the ledger. Invent plausible quotes, scenes and off-court context, and
+record new durable details in the ledger. Do not create a new injury, transfer,
+family relationship already contradicted by the game, match result or award.
+You may interpret why an actual event happened, provided you maintain canon.
+Never fabricate an exact play-by-play point from an aggregate match score.
+
+Plan the edition before drafting; each substantial article needs a distinct
+angle and story form, but a results brief does not need a dramatic opening.
 
 Return ONLY a JSON object:
 {{"stories": [{{"slot": "lead" | "story" | "brief" | "notebook" | "column",
@@ -807,9 +832,10 @@ Return ONLY a JSON object:
   "ledger": ["one line per invented person or fact"]}}
 """
 
-#: The desk's reference documents, loaded verbatim into the writer's instructions.
-DESK_DOCS = ("docs/writing-guide-update.md", "docs/PREPS-STYLE-GUIDE.md",
-             "docs/paper/desk/AP-SPORTS.md", "docs/paper/desk/HUMANIZER.md")
+#: House voice leads. Earlier guides contribute tennis facts, not rival house voices.
+DESK_DOCS = ("docs/press/VOICE.md", "docs/JHSAA_HIGH_SCHOOL_TENNIS_REPORTING_GUIDE.md",
+             "docs/PREPS-STYLE-GUIDE.md", "docs/paper/desk/AP-SPORTS.md",
+             "docs/paper/desk/HUMANIZER.md")
 
 
 def _repo_root() -> str:
@@ -820,6 +846,8 @@ def desk_rules() -> str:
     parts = []
     for rel in DESK_DOCS:
         path = os.path.join(_repo_root(), rel)
+        if rel == "docs/press/VOICE.md" and not os.path.isfile(path):
+            raise FileNotFoundError("JHSAA paper requires docs/press/VOICE.md")
         if os.path.exists(path):
             with open(path, encoding="utf-8") as fh:
                 parts.append(f"=== {rel} ===\n{fh.read()}")
@@ -853,8 +881,7 @@ BANNED = ("testament to", "beacon of hope", "proved their mettle", "stark contra
           "that is the story", "the distinction is", "the number that matters",
           "the season was", "the year belonged to", "the lesson was",
           "the story of the season", "in the end", "set the tone", "statement win",
-          "edged", "outlasted", "cruised", "rolled past", "stunning", "dominant",
-          "bitter", "lineup card", "courts won")
+          "lineup card", "courts won")
 #: Words that may carry one piece of an edition; past this count across the
 #: edition the desk asks for a different angle.
 WATCH = {"lineup": 2, "no. 1 singles": 3, "graduated": 2, "graduation": 1,
@@ -903,10 +930,12 @@ def copy_desk(payload: dict, names: set | None = None,
             whole.append(low)
             # AP and banned-phrase checks read the reporter's words, not a quote's.
             para = _re.sub(r'"[^"]*"', '""', raw) if raw is not head else raw
-            if "\u2014" in para or "\u2013" in para or " -- " in para or " - " in para:
+            column_tag = (st.get("slot") == "column" and raw is not head
+                          and _re.match(r"^[A-Z][A-Z ]{3,32}\s*[—–-]\s+", para))
+            if ("\u2014" in para or "\u2013" in para or " -- " in para or " - " in para) and not column_tag:
                 out.append(f"{tag} a dash in prose: {para[:60]!r}")
             for b in BANNED:
-                if _re.search(r"\b" + _re.escape(b) + r"\b", low):
+                if _re.search(r"\b" + _re.escape(b) + r"\b", para.lower()):
                     out.append(f"{tag} banned phrase {b!r}")
             for full, short in _MONTH_FULL.items():
                 if _re.search(full + r" \d", para):
