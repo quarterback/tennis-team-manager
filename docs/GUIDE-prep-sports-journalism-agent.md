@@ -1,6 +1,6 @@
 # Prep Sports Journalism — Portable Agent Editorial Guide
 
-**Version 0.3 · November 22, 2026**  
+**Version 0.4 · November 22, 2026**  
 **Status:** Editorial reference and agent handoff; not wired into the simulator.  
 **Scope:** High-school, youth, college and fictional sport. Intended to travel to Viperball, hybrid-baseball/O27 and other projects.
 
@@ -11,6 +11,38 @@ Produce a believable **sports section**, not a generated results recap. The agen
 This editorial infrastructure is independent of the tennis game. No season scheduling, match logic, game interface or pipeline change is required to use it. A separate agent can be handed this document plus existing research exports and asked to write an edition.
 
 **Central rule:** Write like a reporter who has been following the same town, team, league or player for years. The match record supplies facts; the journalist supplies selection, continuity, proportion and interpretation.
+
+## Prior JHSAA editorial work — read before generating coverage
+
+The `docs/` directory contains a history of reporting instructions, revisions, internal season analysis and experiments. This portable guide **must not supplant or silently contradict that work**. For a JHSAA assignment, review these first:
+
+| File | Role in the workflow | Limitation |
+|---|---|---|
+| [`JHSAA_HIGH_SCHOOL_TENNIS_REPORTING_GUIDE.md`](JHSAA_HIGH_SCHOOL_TENNIS_REPORTING_GUIDE.md) | Source of tennis vocabulary, suitable subjects, use of record evidence, and distinction between a feature and a results list | Written primarily for JHSAA statewide season reporting |
+| [`PREPS-STYLE-GUIDE.md`](PREPS-STYLE-GUIDE.md) | Hard-earned corrections to generated season-review writing: angles, varied leads, real stakes, paragraph connections, accurate score language, endings | Some absolutes are **retrospective-specific**, not universal rules for a daily local sports page |
+| [`DESIGN-story-forms-from-sports-journalism.md`](DESIGN-story-forms-from-sports-journalism.md) | Ten evidence-driven feature/investigative story forms, including rematches, undercovered athletes, lineup choices, competitive rules, and historical changes | Primarily selects consequential cross-table findings, rather than ordinary beat coverage |
+| [`AAR-jhsaa-front-page-story-desk.md`](AAR-jhsaa-front-page-story-desk.md) | Explains deterministic archive headline detectors on the existing `/jhsaa` front page | Its strict noun/number headline register and no-prose design are for **data headlines**, not the full newspaper or signed columns |
+| [`2092-annual-report.md`](2092-annual-report.md), [`2113-jhsaa-season-review.md`](2113-jhsaa-season-review.md), [`reports/2035-jhsaa-season-review.md`](reports/2035-jhsaa-season-review.md), [`../2098-season-review.md`](../2098-season-review.md) | Concrete outputs showing what prior agents selected, calculated and compared, including continuity across years and neglected turnaround stories | These are **association reviews / internal research**, generally rich in tables, executive findings and policy calibration. Do not treat them as examples of a finished prep-sports newspaper. |
+| [`JHSAA_HIGH_SCHOOL_TENNIS_REPORTING_GUIDE (1).md`](JHSAA_HIGH_SCHOOL_TENNIS_REPORTING_GUIDE%20(1).md) and [`writing-guide-update.md`](writing-guide-update.md) | Identical copies of a longer reporting guide that adds a consequence filter and retrospective-selection advice | Keep the duplicates identifiable; do not assume file naming or the unnumbered version establishes editorial precedence |
+| [`design-story-real-news.md`](design-story-real-news.md) | Another stored version of the story-form design; source file displays encoding issues | Prefer the correctly encoded canonical design file for agent reference unless specifically investigating past revisions |
+
+### What the other agent learned, and what should *not* become universal rules
+
+The season reports demonstrate real analytical continuity: comparing one year to another, noticing transfer-created opportunity, identifying undercovered turnarounds, and testing whether the postseason structure behaved as intended. But they remain largely analyst documents. Many open with “Executive findings,” “How this review reads the season,” “Championship ledger,” or methodological notes and repeatedly frame results as evidence for changing rules.
+
+**Preserve two distinct editorial products.** An *association review* can explain bracket design, competitive balance, simulation calibration and official outcomes. A *newspaper* must make selective assignments from within the world: ordinary local results, previews, agate, a player story, a school notebook, and occasionally a signed argument. The same evidence can feed both, but the finished copy and its intended reader differ.
+
+Three instructions in earlier guides were reasonable for a consequential statewide season retrospective but should **not** be applied to every newspaper genre:
+
+1. **Consequence gate:** A statewide retrospective should prioritize events changing a title or competitive path. A local correspondent also covers a losing team, routine dual, graduating senior or coaching change because of the enduring local beat. Lower stakes do not mean zero news value.
+2. **History limited to three triggers / one sentence:** Efficient in a focused match report, but unsuitable as a universal rule for a coach profile, regional preseason package, multi-year player career, historical column or local-life feature. Use as much accurate history as the assigned form earns.
+3. **No adjectives in headlines / obligatory quotes, scenes and counterfactuals:** These are safeguards against repetitive generated prose and deterministic front-page headlines, not requirements that every results brief, photo caption, or opinion column must satisfy. A results block needs none of them. A compelling feature may need some, but their presence is not proof of good reporting.
+
+**Do retain the real error corrections:** No “court” for a tennis point or won position; “flight” for individual tournament groupings; don't use “card” for a lineup; never invent or contradict scores; don't spill simulation metadata, detector forms or export table names into reported prose; don't recycle invented interviews between seasons.
+
+The provided *Courier-News* sports pages and OSAAtoday articles clarify what is missing from many older internal reviews: editorial packages mixing results and reported features; recurring reporters who remember the same players; local development programs and family/coaching relationships; and history treated as working material for previews, not only as an anniversary or a drought. These are **reference patterns**, not authority to infer sensitive attributes or invent unsimulated competitive events.
+
+For a fiction sports-writing assignment, first identify the **publication, beat, edition, article form and reader**. Only then select from the available evidence and write. When the assignment is instead an **internal season analysis**, use the analytical reporting conventions without pretending it is newspaper copy.
 
 ## What has actually been researched
 
