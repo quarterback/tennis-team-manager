@@ -15,11 +15,20 @@ with running coverage of programs, players and storylines.
   sees only what has happened so far in the season's order of play. Dates inside a
   story can be invented, as long as they fall inside the season (owner: "the
   newspaper could just make up a date").
-- **Facts first, prose second.** A deterministic extractor builds a fact sheet per
-  story from the archive (who, score, flight results, records, streaks). A writer
-  turns the sheet into prose under a style policy. Any name or number in the prose
-  must be on the sheet. This is the split `quarterback/pbbg-content-schema` already
-  makes between game definitions, narrative and interface text.
+- **The record is fixed; colour is invented and remembered (owner rule, 2026-11).**
+  "This is all invented, writing counterfactuals is perfectly reasonable ... if we
+  say x kid has a brother he always does." Two stores feed a story:
+  - the RECORD, read from the game: scores, flights, standings, streaks, honours,
+    rosters, coaches, family ties the sim already has. Never contradicted.
+  - the CANON, written by the press itself: every invented detail a story prints
+    about a person, a program or a place (a quote's gist, a nickname, a pre-match
+    habit, a parent who is an alum, the state of the home courts). Keyed on the
+    game's stable ids, dated by edition, and read back before anything else is
+    written about that subject.
+  A writer may add to the canon and may leave a detail unused. A writer may not
+  print something that disagrees with either store. Where the game later produces a
+  real fact (a sibling tie, a transfer), the record wins and the canon entry is
+  retired.
 - **Storyline memory.** A ledger of open threads (an unbeaten run, a sibling pair, a
   new head coach's first year, a transfer facing an old school) that later editions
   pick up and close.
@@ -71,14 +80,12 @@ A writer profile holds a handful of habits, each one seen in the corpus:
 Profiles are data, a few lines each, and a masthead has a small staff of them: a
 sports editor who also writes the column, one or two staff writers, a stringer, and
 "staff reports" for everything phoned in. A writer keeps the same habits all season,
-which is what makes a byline recognisable. Nothing in a profile can add a fact; it
-only chooses among ways of saying what is on the fact sheet.
+which is what makes a byline recognisable.
 
 ## Open questions
 
-- Coach quotes. Real prep stories lean on them and the sim has none. Named coaches
-  carry rated attributes and philosophies a quote could be generated from; that is
-  an owner decision, not a default.
+- Quotes are invented (decided: yes). Open: how much of a coach's or player's way of
+  talking is fixed in the canon after the first quote.
 - Template-only prose or a model as the writer (run as a batch job and stored).
 - About 5% of varsity duals carry no display date; they need an edition rule.
 

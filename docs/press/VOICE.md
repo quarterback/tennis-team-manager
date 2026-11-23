@@ -47,8 +47,13 @@ UTR figures or "commit" language.
    calls the players "the kids". Players speak only in features and staffed finals.
 6. **End on what is next.** Opponent, day, sometimes the time and the site.
 7. **Admit what you do not have.** "No scores available." "Scoring was unavailable."
-8. **Never invent a fact.** Every name, score, record and streak comes from the fact
-   sheet. Voice is in the verbs and the order, not in made-up detail.
+8. **Never contradict the record; invent the rest freely and remember it.** Scores,
+   records, lineups, results and honours come from the game and are never changed.
+   Everything around them is fair to make up: quotes, a brother on the team, a
+   father who played there, what the weather did, what a kid eats before a match.
+   The one condition is consistency. An invented detail is written to the paper's
+   canon the moment it is printed, and from then on it is either true every time
+   it comes up or never mentioned again.
 
 "No. 1 singles" and "first singles" are the same term; the numbered form is the
 abbreviation. Use the abbreviation in agate and tight copy, the words in running
