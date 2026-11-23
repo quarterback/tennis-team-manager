@@ -117,5 +117,3 @@ honours as something readers come back for.
 - Streaks in numbers (76 straight, 102-1 since 2020) lead team stories.
 - A season hub page per year, linking that year's honours and final rankings, is
   the long-run reader surface. The sim already archives every season.
-- For a 1990s paper, drop the recruiting metrics and the search-style headlines and
-  keep everything else.
