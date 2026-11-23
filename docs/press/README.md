@@ -46,6 +46,34 @@ story, a line in the area roundup, and absent statewide unless it becomes a stre
 Threads are shared, so the statewide desk can pick up what a beat writer has followed.
 The columnist is the one voice allowed an opinion and a first person.
 
+## Writers
+
+A paper is several people, and the corpus shows them writing differently inside the
+same old voice. So style has three layers, and a story is written from all three:
+
+1. **The house voice** (`VOICE.md`): shared by everyone at every paper.
+2. **The desk and story type**: sets length, order, whether there are quotes and
+   whether it is signed. An unstaffed roundup has no author at all.
+3. **The writer**: a small standing profile attached to a byline, which only changes
+   choices the first two layers leave open.
+
+A writer profile holds a handful of habits, each one seen in the corpus:
+
+- lead habit: score-first, a conceit or pun, a one-line teaser, or a contrast
+- sentence length and how long the nut sentence runs
+- attribution: "said" only, or the rotating verbs
+- quote appetite: one coach quote, or six to fifteen
+- favourite verbs and nouns, and whether they pun in headlines
+- what they notice: the deciding flight, seniors, families, the program's history,
+  the numbers
+- for a columnist only: the persona, first person, running devices and targets
+
+Profiles are data, a few lines each, and a masthead has a small staff of them: a
+sports editor who also writes the column, one or two staff writers, a stringer, and
+"staff reports" for everything phoned in. A writer keeps the same habits all season,
+which is what makes a byline recognisable. Nothing in a profile can add a fact; it
+only chooses among ways of saying what is on the fact sheet.
+
 ## Open questions
 
 - Coach quotes. Real prep stories lean on them and the sim has none. Named coaches
