@@ -160,3 +160,18 @@ What changed:
 Not copied from the papers: the Herald's "Mid-Suburban League (MSL)" (against
 AP) and the Chicago habit of using a home league's initials without ever
 spelling it out.
+
+Correction, same day: the owner overruled the "spell it out first" half of that.
+The Courier is a local paper, and its readers know the area's leagues the way a
+Chicago reader knows the CSL; spelling them out reads like a writer who has never
+been here. The area's own leagues (`local` in `league_names`) now go by their
+second reference from the first mention, headlines included, and the copy desk
+only asks for a full name first on a league from outside the area. The writer
+brief now tells the writer to write as someone who has covered these teams for
+years and never explain a local school, league, rivalry or event. A short name
+that is also the start of a school, town, county or area keeps the full name
+(Juniper League next to Juniper Ridge and Juniper County). The demo editions were
+rewritten to match: "the PAA champion," "DCL play," "1-0 Kajaani," "its Fiesta
+opener," and league names in the headlines. The lesson for this desk: a style
+rule written for a national wire is the wrong default for a hometown paper, and
+the local papers' habits are the thing to copy, not to correct.

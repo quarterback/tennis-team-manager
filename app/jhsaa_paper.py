@@ -421,24 +421,38 @@ def league_initials(name: str) -> str | None:
     return ini if len(words) >= 3 and ini not in _TAKEN_INITIALS else None
 
 
-def league_references(season: dict, leagues) -> list[dict]:
-    """How the paper names each league: the full name first, then the second
-    reference. Initials when the name has them and no other league in the
-    association shares them; otherwise the league's own name without its tail.
-    Both forms appear in real coverage, so the other one rides along."""
-    every = {p["district"] for p in season["programs"].values()}
+def league_references(season: dict, leagues, local=()) -> list[dict]:
+    """How the paper names each league. Initials when the name has them and no
+    other league in the association shares them; otherwise the league's own name
+    without its tail, unless that is also the start of a school, town, county or
+    area name (the Juniper League stays the Juniper League next to Juniper Ridge
+    and Juniper County). `local` is the coverage area's leagues: readers know
+    those, so the paper uses the short form from the first mention, the way a
+    Chicago paper writes "CSL North title" in a headline and never spells it out.
+    A league from outside the area is spelled out the first time a story names it."""
+    progs = season["programs"].values()
+    every = {p["district"] for p in progs}
+    places = set()
+    for p in progs:
+        for k in ("name", "city", "county", "area"):
+            if p.get(k):
+                places.add(p[k])
     taken: dict = {}
     for lg in every:
         ini = league_initials(lg)
         if ini:
             taken.setdefault(ini, set()).add(lg)
+    local = set(local)
     out = []
     for lg in sorted(set(leagues)):
         ini, short = league_initials(lg), league_short(lg)
+        clash = any(pl == short or pl.startswith(short + " ") for pl in places)
         if ini and len(taken.get(ini, ())) == 1:
-            out.append({"full": lg, "second_reference": ini, "also": short})
+            ref, also = ini, (None if clash else short)
         else:
-            out.append({"full": lg, "second_reference": short, "also": None})
+            ref, also = (lg if clash else short), None
+        out.append({"full": lg, "second_reference": ref, "also": also,
+                    "local": lg in local})
     return out
 
 
@@ -740,7 +754,8 @@ def packet(season: dict, area: str, n: int, stories: dict | None = None,
         # Full name on first reference in a story, then the second reference.
         "league_names": league_references(season, {
             progs[x]["district"] for x in set(local)
-            | {r[k] for r in results for k in ("home", "away")} if x in progs}),
+            | {r[k] for r in results for k in ("home", "away")} if x in progs},
+            local={progs[x]["district"] for x in local if x in progs}),
         "before_the_next_edition": [{"date": a["date"].isoformat(), "event": a["label"],
                                      "home": a["home"], "away": a["away"]}
                                     for a in view["ahead"]],
@@ -770,9 +785,15 @@ earlier stories. Nothing has happened after this morning. Never hint at how the
 season ends. Use the head coaches named in the packet; keep every invented person
 and fact consistent with the ledger, and add new ones to it. Follow up on what the
 paper already wrote instead of reintroducing teams. The preseason edition is a
-county-by-county outlook. Spell a league out the first time a story names it,
-then use its second reference from league_names (or "the league") for the rest of
-that story; headlines may use the second reference.
+county-by-county outlook.
+
+This is a local paper. Its readers live here, went to these schools and know
+what a league title or a district tournament means. Write like a reporter who
+has covered these teams for years: call the area's leagues what the readers call
+them, the second reference in league_names, from the first mention and in
+headlines ("Juniper Ridge (3-1, 1-0 Kajaani)", "DCL champion California
+Canyons"). Never explain a local school, league, rivalry or event to the reader.
+Spell out a league from outside the area the first time a story names it.
 
 The desk's rules follow: the association's reporting guide, the preps style guide,
 the AP sports style sheet and the humanizer guide. They are requirements. Plan the
@@ -841,9 +862,10 @@ WATCH = {"lineup": 2, "no. 1 singles": 3, "graduated": 2, "graduation": 1,
 
 
 def _league_findings(tag: str, body: list[str], leagues: list[dict]) -> list[str]:
-    """AP and the measured house practice: a league is spelled out once in a story,
-    never with its initials in parentheses, and its initials never come before the
-    full name. Headlines are exempt; so are quotes."""
+    """A league is never spelled out twice in a story and never carries its
+    initials in parentheses. The area's own leagues go by their short form from
+    the first mention; a league from outside the area is spelled out before its
+    initials appear. Headlines and quotes are exempt."""
     text = " ".join(_re.sub(r'"[^"]*"', '""', p) for p in body)
     out = []
     for lg in leagues or []:
@@ -856,7 +878,7 @@ def _league_findings(tag: str, body: list[str], leagues: list[dict]) -> list[str
             if _re.search(_re.escape(full) + r"\s*\(" + _re.escape(ini) + r"\)", text):
                 out.append(f"{tag} AP: no ({ini}) after {full!r}; just use {ini} later")
         ini = second if second.isupper() else None
-        if ini:
+        if ini and not lg.get("local"):
             m = _re.search(r"\b" + _re.escape(ini) + r"\b", text)
             if m and (not hits or m.start() < hits[0]):
                 out.append(f"{tag} league: {ini} before {full!r} is spelled out")

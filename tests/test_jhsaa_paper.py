@@ -102,30 +102,39 @@ def test_the_paper_page_renders_in_the_app(season, monkeypatch):
 
 
 def test_league_second_reference_rule():
-    """A league is spelled out once a story, never with parenthetical initials, and
-    its initials never come before the full name (AP; measured on Globe/Herald)."""
+    """The area's own leagues go by their short form from the first mention (a
+    local paper, like the Chicago papers' "CSL North title"); a league from
+    outside the area is spelled out first. None is spelled out twice or carries
+    parenthetical initials."""
     from app import jhsaa_paper as jp
     assert jp.league_initials("Mid-Suburban League") == "MSL"
     assert jp.league_initials("Dual County League") == "DCL"
     assert jp.league_initials("Kajaani League") is None
     assert jp.league_initials("Narpes Interscholastic League") is None  # NIL means something
     assert jp.league_short("Fiesta Athletic Association") == "Fiesta"
-    season = {"programs": {"A": {"district": "Dual County League"},
-                           "B": {"district": "Kajaani League"}}}
-    refs = {r["full"]: r for r in jp.league_references(season, ["Dual County League",
-                                                                 "Kajaani League"])}
+    season = {"programs": {
+        "A": {"name": "A", "district": "Dual County League"},
+        "B": {"name": "B", "district": "Kajaani League"},
+        "Juniper Ridge": {"name": "Juniper Ridge", "district": "Juniper League"},
+        "C": {"name": "C", "district": "Three Rivers League"}}}
+    refs = {r["full"]: r for r in jp.league_references(
+        season, ["Dual County League", "Kajaani League", "Juniper League",
+                 "Three Rivers League"],
+        local={"Dual County League", "Kajaani League", "Juniper League"})}
     assert refs["Dual County League"]["second_reference"] == "DCL"
     assert refs["Kajaani League"]["second_reference"] == "Kajaani"
+    assert refs["Juniper League"]["second_reference"] == "Juniper League"
+    assert not refs["Three Rivers League"]["local"]
     leagues = list(refs.values())
 
     def desk(*body):
         return jp.copy_desk({"stories": [{"headline": "DCL opens", "body": list(body)}]},
                             leagues=leagues)
-    assert desk("Marlow opened the Dual County League Tuesday.",
-                "It is 1-0 in the DCL.") == []
+    assert desk("Marlow opened DCL play Tuesday.", "It is 1-0 in the DCL.") == []
     assert any("spelled out 2" in f for f in desk(
         "Marlow opened the Dual County League Tuesday.", "The Dual County League is deep."))
     assert any("no (DCL)" in f for f in desk("The Dual County League (DCL) opened."))
-    assert any("before" in f for f in desk("The DCL opened.", "Dual County League play."))
+    assert any("TRL before" in f for f in desk("The TRL opened.", "Three Rivers League play."))
+    assert desk("Three Rivers League play opened.", "The TRL is deep.") == []
     # a coach may say it however he likes
     assert desk('Dual County League play. "The Dual County League is tough," he said.') == []

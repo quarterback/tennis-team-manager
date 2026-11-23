@@ -44,18 +44,27 @@ These are the rules the desk checks every edition against. `copy_desk()` in
 
 ## Leagues
 
-Spell a league out the first time a story names it. After that, use its second
-reference or "the league." Never put the initials in parentheses after the full
-name; AP says an abbreviation that would not be clear later without that crutch
-should not be used at all. Headlines may use the second reference cold, and so
-may agate (records in the form "4-1 DCL").
+The Courier is a local paper. Its readers know the area's leagues the way a
+Chicago reader knows the CSL or the MSL and a Bergen County reader knows what a
+county tournament title is worth, so the paper writes them the way readers say
+them. The area's own leagues go by their second reference from the first
+mention, in headlines and in stories: "CSL North title," "Juniper Ridge (3-1,
+1-0 Kajaani)," "DCL champion California Canyons." Nobody at this paper explains a
+local league, school, rivalry or tournament to the reader.
 
-The packet's `league_names` gives each league its second reference. It is the
-league's initials when the name has three or more words (hyphenated parts count
-apart, as in Mid-Suburban League to MSL) and no other league in the association
-shares them or they already mean something to a reader (NIL, AAA, DSL). A shorter
-name gets its own name without the tail: the Kajaani, the Desert Sky, Juniper
-play. Both forms show up in real coverage; `also` carries the other one.
+A league from outside the coverage area is spelled out the first time a story
+names it, then shortened. No league is spelled out twice in one story, and no
+league carries its initials in parentheses after its name.
+
+The packet's `league_names` gives each league its second reference and marks the
+area's own leagues `local`. The second reference is the initials when the name
+has three or more words (hyphenated parts count apart, as in Mid-Suburban League
+to MSL), no other league in the association shares them and they do not already
+mean something to a reader (NIL, AAA, DSL). Otherwise it is the league's own name
+without its tail: the Kajaani, the Desert Sky, the Fiesta. When that short name
+is also the start of a school, town, county or area (Juniper Ridge, Juniper
+County), the league keeps its full name, as in "Juniper League play." `also`
+carries the other form when there is one.
 
 What the rule is measured on, read in November 2026 (body text, headlines and
 section labels left out):
@@ -72,10 +81,12 @@ section labels left out):
 No story repeated a league's full name after the first reference. Initials did
 most of the work where a league has them (MSL, DCL, NSC); "league play," "the
 league" and division names did the rest. The Globe also writes the short name
-("South Coast play") and the Herald writes "Mid-Suburban West." Two local habits
-the desk does not copy: the Herald's "Mid-Suburban League (MSL)" breaks the AP
-parentheses rule, and both Chicago papers sometimes use the home league's
-initials without ever spelling it out. The Courier spells it out first.
+("South Coast play") and the Herald writes "Mid-Suburban West." The Chicago
+papers use a home league's initials cold, in headlines and often in the story
+too: the Sun-Times never spelled out the CSL, and the Herald never spelled out
+the MSL in its 2024 tournament story. That is the model for the area's own
+leagues. The one habit the desk does not copy is the Herald's "Mid-Suburban
+League (MSL)," which breaks the AP parentheses rule.
 
 Sources:
 - AP Stylebook, abbreviations and acronyms, as quoted in the UAMS style guide:
