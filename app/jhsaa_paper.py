@@ -875,6 +875,15 @@ Edition:
 """
 
 
+def _parse_payload(text: str) -> dict:
+    """The edition JSON out of a model reply, whatever text surrounds it."""
+    s, e = text.find("{"), text.rfind("}")
+    data = json.loads(text[s:e + 1])
+    if not isinstance(data.get("stories"), list):
+        raise ValueError("writer returned no stories")
+    return {"stories": data["stories"], "ledger": data.get("ledger") or []}
+
+
 def _call(system: str, user: str, model: str | None) -> str:
     import urllib.request
     key = os.environ.get("ANTHROPIC_API_KEY")
