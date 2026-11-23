@@ -1,3 +1,4 @@
+{% macro pp_side(players) %}{% for p in players %}{% if not loop.first %} / {% endif %}<span class="pp-pl" data-grade="{{ p.grade or '' }}">{{ p.name }}{% if p.cls %}, <abbr class="pp-gr">{{ p.cls }}</abbr>{% endif %}</span>{% endfor %}{% endmacro %}
 {# ONE EDITION OF THE PAPER (app.jhsaa_paper.edition_view). Shared by the in-app
    page and the standalone preview, so it reads only `view` plus two callables:
    `school_href(name)` and `edition_href(n)`, either of which may return None. #}
@@ -22,7 +23,7 @@
     <div class="pp-name">{{ view.masthead }}</div>
     <div class="pp-dateline">
       <span>{{ view.gender|capitalize }} tennis</span>
-      <span>{{ view.edition.label }}, {{ view.edition.date.year }}</span>
+      <span>{{ view.edition.label }}, {{ view.display_year or view.edition.date.year }}</span>
       <span>Edition {{ view.n + 1 }} of {{ view.count }}</span>
     </div>
   </header>
@@ -69,7 +70,7 @@
       {% for r in day.rows %}
       <div class="pp-dual">
         <div class="pp-dhead"><span class="pp-ev">{{ r.label }}</span> {{ r.head }}</div>
-        {% if r.lines %}<div class="pp-lines">{% for l in r.lines %}<span>{{ l }}</span>{% endfor %}</div>{% endif %}
+        {% if r.lines %}<div class="pp-lines">{% for l in r.lines %}<span>{{ l.flight }}: {{ pp_side(l.win) }} ({{ l.win_tag }}) d. {{ pp_side(l.lose) }} ({{ l.lose_tag }}) {{ l.score }}</span>{% endfor %}</div>{% endif %}
       </div>
       {% endfor %}
       {% endfor %}
@@ -118,34 +119,33 @@
 <style>
 .pp-paper { max-width: 1180px; margin: 0 auto; color: var(--text-primary, #14161a); }
 .pp-mast { text-align: center; padding: 18px 0 10px; }
-.pp-name { font-family: var(--font-serif, Georgia, serif); font-weight: 800; font-size: clamp(34px, 5vw, 58px); letter-spacing: -0.02em; line-height: 1; }
-.pp-dateline { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px 22px; margin-top: 10px; font-family: var(--font-label, var(--font-text, system-ui)); font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary, #4a4f57); }
-.pp-nav { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0 18px; font-size: 14px; }
+.pp-name { font-family: var(--font-serif, Georgia, serif); font-weight: 800; font-size: clamp(var(--fs-display-l, 32px), 5vw, 58px); letter-spacing: -0.02em; line-height: 1; }
+.pp-dateline { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px 22px; margin-top: 10px; font-family: var(--font-label, var(--font-text, system-ui)); font-size: var(--fs-micro, 14px); text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-secondary, #4a4f57); }
+.pp-nav { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0 18px; font-size: var(--fs-micro, 14px); }
 .pp-nav a { color: var(--brand, #1d4ed8); text-decoration: none; font-weight: 600; }
 .pp-front { padding-bottom: 28px; }
 .pp-story { break-inside: avoid; margin: 0 0 26px; }
-.pp-hed { font-family: var(--font-serif, Georgia, serif); font-weight: 700; font-size: 22px; line-height: 1.15; margin: 0 0 6px; }
-.pp-lead .pp-hed { font-size: clamp(30px, 3.6vw, 44px); line-height: 1.05; letter-spacing: -0.01em; }
-.pp-deck { font-family: var(--font-serif, Georgia, serif); font-size: 18px; color: var(--text-secondary, #4a4f57); margin: 0 0 8px; }
-.pp-byline { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted, #5f6670); margin: 0 0 10px; }
-.pp-kind { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--brand, #1d4ed8); margin-bottom: 4px; }
-.pp-body p { font-family: var(--font-serif, Georgia, serif); font-size: 17px; line-height: 1.55; margin: 0 0 0.8em; }
-.pp-sub { font-family: var(--font-label, var(--font-text, system-ui)); font-size: 12px; font-weight: 800; letter-spacing: 0.08em; margin: 14px 0 6px; }
+.pp-hed { font-family: var(--font-serif, Georgia, serif); font-weight: 700; font-size: var(--fs-display-s, 22px); line-height: 1.15; margin: 0 0 6px; }
+.pp-lead .pp-hed { font-size: clamp(var(--fs-display-m, 26px), 3.6vw, var(--fs-display-xl, 44px)); line-height: 1.05; letter-spacing: -0.01em; }
+.pp-deck { font-family: var(--font-serif, Georgia, serif); font-size: var(--fs-body-m, 18px); color: var(--text-secondary, #4a4f57); margin: 0 0 8px; }
+.pp-byline { font-size: var(--fs-micro, 14px); text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted, #5f6670); margin: 0 0 10px; }
+.pp-kind { font-size: var(--fs-micro, 14px); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--brand, #1d4ed8); margin-bottom: 4px; }
+.pp-body p { font-family: var(--font-serif, Georgia, serif); font-size: var(--fs-body-m, 18px); line-height: 1.55; margin: 0 0 0.8em; }
+.pp-sub { font-family: var(--font-label, var(--font-text, system-ui)); font-size: var(--fs-micro, 14px); font-weight: 800; letter-spacing: 0.08em; margin: 14px 0 6px; }
 .pp-lead .pp-body { columns: 2 320px; column-gap: 36px; }
-.pp-lead .pp-body p { font-size: 18px; }
+.pp-lead .pp-body p { font-size: var(--fs-body-m, 18px); }
 .pp-cols { columns: 3 300px; column-gap: 36px; }
-.pp-brief .pp-hed { font-size: 18px; }
-.pp-brief .pp-body p { font-size: 16px; }
-.pp-unwritten { font-size: 15px; color: var(--text-secondary, #4a4f57); padding: 10px 0; }
-.pp-unwritten code { font-size: 13px; }
-.pp-agate { columns: 4 230px; column-gap: 28px; padding-top: 18px; font-family: var(--font-text, system-ui); font-size: 12.5px; line-height: 1.4; }
+.pp-brief .pp-hed { font-size: var(--fs-body-m, 18px); }
+.pp-brief .pp-body p { font-size: var(--fs-body-s, 16px); }
+.pp-unwritten { font-size: var(--fs-caption, 15px); color: var(--text-secondary, #4a4f57); padding: 10px 0; }
+.pp-agate { columns: 4 230px; column-gap: 28px; padding-top: 18px; font-family: var(--font-text, system-ui); font-size: var(--fs-micro, 14px); line-height: 1.4; }
 .pp-block { break-inside: auto; margin-bottom: 18px; }
-.pp-agate-h { break-after: avoid; font-family: var(--font-label, var(--font-text, system-ui)); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 6px; }
-.pp-day { break-after: avoid; font-size: 12px; font-weight: 700; margin: 10px 0 4px; color: var(--text-secondary, #4a4f57); }
+.pp-agate-h { break-after: avoid; font-family: var(--font-label, var(--font-text, system-ui)); font-size: var(--fs-micro, 14px); font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 6px; }
+.pp-day { break-after: avoid; font-size: var(--fs-micro, 14px); font-weight: 700; margin: 10px 0 4px; color: var(--text-secondary, #4a4f57); }
 .pp-dual { break-inside: avoid; margin-bottom: 6px; }
 .pp-dhead { font-weight: 700; }
 .pp-ev { font-weight: 500; color: var(--text-muted, #5f6670); }
-.pp-lines span { display: block; color: var(--text-secondary, #4a4f57); }
+.pp-lines > span { display: block; color: var(--text-secondary, #4a4f57); }
 .pp-table { width: 100%; border-collapse: collapse; margin: 0 0 12px; break-inside: avoid; font-variant-numeric: tabular-nums; }
 .pp-table caption { text-align: left; font-weight: 700; padding-bottom: 2px; }
 .pp-table caption span { font-weight: 500; color: var(--text-muted, #5f6670); }
@@ -155,4 +155,5 @@
 .pp-table td:first-child { overflow-wrap: anywhere; }
 .pp-local td:first-child { font-weight: 700; }
 .pp-agate a, .pp-front a { color: inherit; }
+.pp-gr { text-decoration: none; }
 </style>

@@ -4357,6 +4357,10 @@ def jhsaa_paper_view(seed: int, gender: str, year: int | None = None,
             area = paper.default_area(season)
     stories = paper.load_stories(w["id"], yr, g, area)
     view = paper.edition_view(season, area, edition, stories)
+    if view.get("edition"):
+        # The save's display calendar; storage keys and export previews keep the
+        # identity year.
+        view["display_year"] = world.display_year(view["edition"]["date"].year)
     view.update({"scope": scope, "year": yr, "world_id": w["id"],
                  "can_write": paper.can_write_in_app(),
                  "job": paper.job_status(w["id"], yr, g, area)})

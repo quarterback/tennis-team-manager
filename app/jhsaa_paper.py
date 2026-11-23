@@ -203,7 +203,8 @@ def load_archive(world_id: int, world_year: int, gender: str) -> dict | None:
                             "private": bool(s.private), "coach": coach.get(s.name, "")}
     season = {"season_year": season_year, "world_year": world_year, "gender": gender,
               "source": "archive", "world_id": world_id, "programs": programs,
-              "duals": duals, "grades": {}, "history": None}
+              "duals": duals, "grades": {}, "pid_grade": {}, "rosters": {},
+              "history": None}
     with _cache_lock:
         for k in [k for k in _cache if k[:4] == key[:4]]:
             _cache.pop(k, None)
@@ -229,24 +230,31 @@ def load_export(path: str) -> dict:
                                "area": p["area"], "group": p["championship_group"],
                                "district": p["district"], "private": p["private"] == "1",
                                "coach": ""}
-    grade_by_pid, grades = {}, {}
+    grade_by_pid, grades, rosters = {}, {}, defaultdict(list)
     for p in rows("players.csv"):
         g = int(p["grade"]) if p.get("grade", "").isdigit() else None
         grade_by_pid[p["player_id"]] = g
-        grades[(by_id.get(p["program_id"], ""), p["name"])] = g
+        sc = by_id.get(p["program_id"], "")
+        grades[(sc, p["name"])] = g
+        rosters[sc].append((p["player_id"], p["name"], g))
     for c in rows("jhsaa_coaches.csv"):
         nm = by_id.get(c.get("program_id", ""))
         if nm and (c.get("slot") or c.get("role") or "head") == "head" and c.get("name"):
             programs[nm]["coach"] = c["name"]
-    players = defaultdict(lambda: {"home": [], "away": []})
+    # Names are not unique (two team-mates can share one), so the player_id rides
+    # beside every name and is what records are joined on.
+    blank = {"home": [], "away": [], "home_ids": [], "away_ids": []}
+    players = defaultdict(lambda: {k: [] for k in blank})
     for lp in rows("line_players.csv"):
         players[lp["line_id"]][lp["side"]].append(lp["player_name"])
+        players[lp["line_id"]][lp["side"] + "_ids"].append(lp.get("player_id") or "")
     lines = defaultdict(list)
     for ln in rows("lines.csv"):
-        pl = players.get(ln["line_id"], {"home": [], "away": []})
+        pl = players.get(ln["line_id"], blank)
         lines[ln["dual_id"]].append({"slot": ln["slot"], "score": ln["score"],
                                      "home_won": ln["home_won"] == "1",
-                                     "home": pl["home"], "away": pl["away"]})
+                                     "home": pl["home"], "away": pl["away"],
+                                     "home_ids": pl["home_ids"], "away_ids": pl["away_ids"]})
     duals = []
     for d in rows("duals.csv"):
         if (d.get("level") or "v") != "v" or d.get("squad"):
@@ -274,6 +282,7 @@ def load_export(path: str) -> dict:
         v.sort(key=lambda r: -r["season_year"])
     return {"season_year": year, "world_year": None, "gender": gender, "source": "export",
             "programs": programs, "duals": duals, "grades": grades,
+            "pid_grade": grade_by_pid, "rosters": dict(rosters),
             "history": dict(history)}
 
 
@@ -461,17 +470,42 @@ def _slot_key(slot: str) -> tuple:
     return (0 if slot[:1] == "S" else 1, int(slot[1:]) if slot[1:].isdigit() else 0)
 
 
-def _line_text(ln: dict, home: str, away: str) -> str:
-    """'No. 1 singles: Ana Ruiz (LH) d. Lee Chen (Cal) 6-3, 6-4', winner first."""
-    hs = " / ".join(ln.get("home") or []) or "unknown"
-    as_ = " / ".join(ln.get("away") or []) or "unknown"
+_GRADE_ABBR = {12: "Sr.", 11: "Jr.", 10: "So.", 9: "Fr.", 8: "8th", 7: "7th"}
+
+
+def _pkey(ln: dict, side: str, i: int):
+    """A line participant's identity: the player_id when the source carries one
+    (the export does), else the name (the archive's box scores hold names only)."""
+    ids = ln.get(side + "_ids") or []
+    names = ln.get(side) or []
+    return (ids[i] if i < len(ids) and ids[i] else names[i])
+
+
+def _grade_of(season: dict, school: str, ln: dict, side: str, i: int):
+    ids = ln.get(side + "_ids") or []
+    if i < len(ids) and ids[i] and ids[i] in season.get("pid_grade", {}):
+        return season["pid_grade"][ids[i]]
+    return season.get("grades", {}).get((school, (ln.get(side) or [])[i]))
+
+
+def _line_row(ln: dict, home: str, away: str, season: dict) -> dict:
+    """One flight of a result, winner first, every player with a grade:
+    {flight, win: [{name, grade, cls}], win_tag, lose: [...], lose_tag, score}."""
+    def side(key, school):
+        out = []
+        for i, nm in enumerate(ln.get(key) or []):
+            g = _grade_of(season, school, ln, key, i)
+            out.append({"name": nm, "grade": g, "cls": _GRADE_ABBR.get(g, "")})
+        return out or [{"name": "unknown", "grade": None, "cls": ""}]
     hw = bool(ln.get("home_won"))
-    win = f"{hs} ({_abbr(home)})" if hw else f"{as_} ({_abbr(away)})"
-    lose = f"{as_} ({_abbr(away)})" if hw else f"{hs} ({_abbr(home)})"
     score = ln.get("score") or ""
     if not hw:
         score = _flip_score(score)
-    return f"{_flight_name(ln.get('slot', ''))}: {win} d. {lose} {score}".strip()
+    h, a = side("home", home), side("away", away)
+    return {"flight": _flight_name(ln.get("slot", "")),
+            "win": h if hw else a, "win_tag": _abbr(home if hw else away),
+            "lose": a if hw else h, "lose_tag": _abbr(away if hw else home),
+            "score": score}
 
 
 def _flip_score(score: str) -> str:
@@ -495,7 +529,7 @@ def _pts(x) -> str:
     return str(int(x)) if float(x) == int(x) else f"{x:g}"
 
 
-def _dual_row(d: dict, local: set) -> dict:
+def _dual_row(d: dict, local: set, season: dict) -> dict:
     """One results-column entry, winner first."""
     if d["tied"]:
         a, b, pa, pb = d["home"], d["away"], d["hp"], d["ap"]
@@ -509,7 +543,7 @@ def _dual_row(d: dict, local: set) -> dict:
             "label": phase_label(d["phase"], d["district"]), "head": head,
             "home": d["home"], "away": d["away"],
             "local": bool({d["home"], d["away"]} & local),
-            "lines": [_line_text(ln, d["home"], d["away"])
+            "lines": [_line_row(ln, d["home"], d["away"], season)
                       for ln in sorted(_lines(d), key=lambda x: _slot_key(x.get("slot") or ""))]}
 
 
@@ -550,14 +584,15 @@ def edition_view(season: dict, area: str, n: int | None = None,
     local = sorted(p["name"] for p in progs.values() if p.get("area") == area)
     lset = set(local)
     since, until = ed["since"], ed["date"]
+    _store_grades(season)        # grades for the results lists (one read, memoised)
     window = [d for d in season["duals"] if d["date"] and until > d["date"]
               and (since is None or d["date"] >= since)]
-    results = [_dual_row(d, lset) for d in window if {d["home"], d["away"]} & lset]
+    results = [_dual_row(d, lset, season) for d in window if {d["home"], d["away"]} & lset]
     results.sort(key=lambda r: (r["date"], r["phase"] != "regular", r["head"]))
     by_day = defaultdict(list)
     for r in results:
         by_day[r["date"]].append(r)
-    wire = [_dual_row(d, lset) for d in window if d["phase"] in WIRE_PHASES
+    wire = [_dual_row(d, lset, season) for d in window if d["phase"] in WIRE_PHASES
             and not ({d["home"], d["away"]} & lset)]
     ahead = []
     if nxt:
@@ -597,28 +632,62 @@ def _grade_word(g) -> str:
             8: "eighth-grader", 7: "seventh-grader"}.get(g, "")
 
 
+def _store_grades(season: dict) -> None:
+    """Archive mode: grades and rosters off the preseason store the season rung
+    wrote (one indexed read per season, memoised on the cached season). Cheap
+    enough for a page render; a season archived before the store has none."""
+    if season["source"] != "archive" or season.get("_stored"):
+        return
+    season["_stored"] = True
+    try:
+        from . import jhsaa as jh
+        from . import jhsaa_preseason as jp
+        for school, st in jp.load(season["world_id"], season["world_year"],
+                                  season["gender"]).items():
+            if st.get("provisional"):
+                continue
+            nm = jh.current_name(school, season["gender"])
+            rows = [(e["pid"], e["name"], e["grade"]) for e in st.get("ladder") or []]
+            season["rosters"][nm] = rows
+            for pid, name, g in rows:
+                season["grades"][(nm, name)] = g
+                season["pid_grade"][pid] = g
+    except Exception:
+        pass
+
+
 def _ensure_grades(season: dict, schools: list[str]) -> None:
-    """Fill `season["grades"]` for the area's programs in archive mode. Built off
-    the roster generator, so this runs in the WRITER (a background thread or the
-    CLI), never on a page render."""
-    if season["source"] != "archive" or season.get("_graded"):
+    """Fill grades and rosters for these programs in archive mode. The store is
+    read first; a program it does not hold is built off the roster generator, so
+    that part runs in the WRITER (a background thread or the CLI), never on a
+    page render. Tracked per school: a second area gets its own programs."""
+    if season["source"] != "archive":
+        return
+    _store_grades(season)
+    done = season.setdefault("_graded", set())
+    todo = [nm for nm in schools if nm not in done and nm not in season["rosters"]]
+    done.update(schools)
+    if not todo:
         return
     from . import jhsaa as jh
     from . import world as wd
     try:
         salt = wd.active_salt(wd.DEFAULT_SEED)
         by_name = {s.name: s for s in jh.load_schools(season["gender"])}
-        for nm in schools:
+        for nm in todo:
             s = by_name.get(nm)
             if not s:
                 continue
+            rows = []
             for p in jh.build_roster(s, season["season_year"], salt):
                 g = getattr(p, "grade", None) or getattr(p, "class_year", None)
                 if isinstance(g, int):
                     season["grades"][(nm, p.name)] = g
+                    season["pid_grade"][p.pid] = g
+                    rows.append((p.pid, p.name, g))
+            season["rosters"][nm] = rows
     except Exception:
         pass
-    season["_graded"] = True
 
 
 _FLIGHT_WORD = {"S": "singles", "D": "doubles"}
@@ -629,7 +698,9 @@ def _flight_name(slot: str) -> str:
 
 
 def player_lines(season: dict, schools: set, before: dt.date | None = None) -> dict:
-    """{(school, player): {"w", "l", "flights": {slot: n}}} over varsity duals
+    """{(school, player key): {"name", "w", "l", "flights": {slot: n}}}, the key
+    being the player_id where the source has one (never merge two same-named
+    team-mates), over varsity duals
     dated before `before` (all of them when None) for the given schools."""
     out: dict = {}
     for d in season["duals"]:
@@ -640,8 +711,9 @@ def player_lines(season: dict, schools: set, before: dt.date | None = None) -> d
                 continue
             for ln in _lines(d):
                 won = bool(ln.get("home_won")) == (side == "home")
-                for nm in ln.get(side) or []:
-                    r = out.setdefault((school, nm), {"w": 0, "l": 0, "flights": {}})
+                for i, nm in enumerate(ln.get(side) or []):
+                    r = out.setdefault((school, _pkey(ln, side, i)),
+                                       {"name": nm, "w": 0, "l": 0, "flights": {}})
                     r["w" if won else "l"] += 1
                     slot = ln.get("slot") or ""
                     r["flights"][slot] = r["flights"].get(slot, 0) + 1
@@ -667,10 +739,10 @@ def packet(season: dict, area: str, n: int, stories: dict | None = None,
     _ensure_grades(season, local)
     grades = season["grades"]
 
-    def who(school, names):
+    def who(school, ln, side):
         out = []
-        for nm in names or []:
-            g = grades.get((school, nm))
+        for i, nm in enumerate(ln.get(side) or []):
+            g = _grade_of(season, school, ln, side, i)
             out.append(f"{nm} ({_grade_word(g)})" if g else nm)
         return out
 
@@ -687,8 +759,8 @@ def packet(season: dict, area: str, n: int, stories: dict | None = None,
             "winner": d["winner"] or "tie", "local": bool({d["home"], d["away"]} & set(local)),
             "flights": [{"flight": ln.get("slot"), "score": ln.get("score"),
                          "won_by": d["home"] if ln.get("home_won") else d["away"],
-                         d["home"]: who(d["home"], ln.get("home")),
-                         d["away"]: who(d["away"], ln.get("away"))}
+                         d["home"]: who(d["home"], ln, "home"),
+                         d["away"]: who(d["away"], ln, "away")}
                         for ln in _lines(d)]})
     recs = records_through(season, until)
     programs = []
@@ -717,29 +789,38 @@ def packet(season: dict, area: str, n: int, stories: dict | None = None,
         # Returning players with what they did LAST season (the prior archive),
         # which is all a preseason writer can know about them.
         last = player_lines(prior, set(local)) if prior else {}
+        rosters = season.get("rosters") or {}
         for s in local:
-            names = sorted({nm for (sc, nm), g in grades.items() if sc == s},
-                           key=lambda nm: (-(grades.get((s, nm)) or 0), nm))
-            out = []
-            for nm in names:
-                g = _grade_word(grades[(s, nm)])
-                rec = last.get((s, nm))
-                out.append(f"{nm} ({g}; last season {_player_note(rec)})" if rec
-                           else f"{nm} ({g})")
+            roster = sorted(rosters.get(s) or [], key=lambda r: (-(r[2] or 0), r[1]))
+            out, matched = [], set()
+            for pid, nm, g in roster:
+                # The same player, by id; a name is only tried when last season's
+                # records carry no ids at all (an archive box score).
+                key = (s, pid) if (s, pid) in last else (s, nm)
+                rec = last.get(key)
+                if rec is not None:
+                    matched.add(key)
+                out.append(f"{nm} ({_grade_word(g)}; last season {_player_note(rec)})" if rec
+                           else f"{nm} ({_grade_word(g)})")
             roster_lines[s] = out
-        # Last season's regulars who are no longer on the roster: the graduates.
-        on_roster = {(sc, nm) for (sc, nm) in grades}
-        for (sc, nm), rec in sorted(last.items()):
-            if (rec["w"] + rec["l"]) >= 10 and (sc, nm) not in on_roster and on_roster:
-                graduated.setdefault(sc, []).append(f"{nm} ({_player_note(rec)})")
+            # Last season's regulars who are no longer on the roster: the graduates.
+            if roster:
+                for (sc, k), rec in sorted(last.items(), key=lambda kv: kv[1]["name"]):
+                    if sc == s and (sc, k) not in matched and (rec["w"] + rec["l"]) >= 10:
+                        graduated.setdefault(sc, []).append(
+                            f"{rec['name']} ({_player_note(rec)})")
     else:
         so_far = player_lines(season, set(local), until)
+        pid_grade = season.get("pid_grade") or {}
         for s in local:
-            rows = sorted(((nm, r) for (sc, nm), r in so_far.items() if sc == s),
+            rows = sorted(((k, r) for (sc, k), r in so_far.items() if sc == s),
                           key=lambda x: -(x[1]["w"] + x[1]["l"]))
-            roster_lines[s] = [
-                f"{nm}" + (f" ({_grade_word(grades.get((s, nm)))})" if grades.get((s, nm)) else "")
-                + f": {_player_note(r)}" for nm, r in rows]
+            out = []
+            for k, r in rows:
+                g = pid_grade.get(k, grades.get((s, r["name"])))
+                out.append(r["name"] + (f" ({_grade_word(g)})" if g else "")
+                           + f": {_player_note(r)}")
+            roster_lines[s] = out
     return {
         "paper": view["masthead"], "area": area, "sport": f"{season['gender']} tennis",
         "season": season["season_year"],
@@ -1131,12 +1212,13 @@ def start_writing(world_id: int, year: int, gender: str, area: str, through: int
     def run():
         try:
             season = load_archive(world_id, year, gender)
+            prior = load_archive(world_id, year - 1, gender)
             eds = editions(season, area)
             for ed in eds[:through + 1]:
                 stories = load_stories(world_id, year, gender, area)
                 if ed["date"].isoformat() in stories:
                     continue
-                pk = packet(season, area, ed["n"], stories)
+                pk = packet(season, area, ed["n"], stories, prior=prior)
                 save_edition(world_id, year, gender, area, ed["date"].isoformat(),
                              write_with_api(pk))
                 _jobs[key]["done"] += 1
