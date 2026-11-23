@@ -1,6 +1,6 @@
 # Oregon, 2026 — owner-supplied pages (The Oregonian/OregonLive and Philomath News)
 
-Pasted by the owner in 2026-11. Five pieces: three from the statewide paper (a coach's
+Pasted by the owner in 2026-11. Six pieces: three from the statewide paper (a coach's
 dismissal, a playoff game story, an all-league list) and two from a one-town
 independent news site (its sports index and a full state-meet story). People are
 replaced with NAME / COACH below; excerpts are short and verbatim.
@@ -115,6 +115,48 @@ records moves without a stated reason, which matches how this is written.
 - A player can appear at several positions and on both sides; the list does not
   dedupe.
 - Honorable mention is the longest section.
+
+## 5b. The association's own game story (OSAAtoday, ~900 words, two games)
+
+"2A football semifinals: Heppner, St. Paul set for final". One page covers both
+semifinals: a staffed story (~600 words, signed at the foot "-- NAME") and a
+second, shorter one under a bold score line, signed by a different writer. The
+site could not be read from here; the owner pasted it.
+
+Headline names both winners. The deck gives both results in a sentence, with the
+seed on the favourite.
+
+The staffed story:
+1. Dateline ("HERMISTON --"), then the star's line, the result, what it means
+   ("back in the ... final for the second year in a row") and the field's name.
+2. Winning coach, on the unit that won it.
+3. The next game in full: opponent, time, date, site, and how the opponent got
+   there.
+4. Winning coach again, on unfinished business from last year.
+5. The loser's season in one line: its seed, its first semifinal since a named
+   year, its final record.
+6. THE LOSING COACH, quoted early and generously: "They are a darn good football
+   team", and why his side lost.
+7. The game in order by quarter: punts, a fumble, a missed kick, then the scoring
+   plays with yards and clock times. One play gets a picture: "diving over the
+   goal line before ... could bring him down".
+8. The long drive told as a count: eleven carries, 8 1/2 minutes off the clock.
+9. The star, crediting the line: "it's the five guys up front who make it all
+   happen".
+10. Stat lines for both teams, offence then defence.
+11. Each coach praising the other side to close: "He is the best 2A linebacker I
+    have seen in years"; "If they were on the other side of the bracket ...".
+
+Quotes: eight, split winning coach four, losing coach two, star player one, and the
+last word goes to the winner about the loser.
+
+The second story is told from a box score: the lead, what the title would be for
+the program ("their 18th final overall and hope to earn their eighth
+championship"), stat lines, then the scoring in order, and a last line of history
+for the loser (no final since a title in 1954). No quotes.
+
+Vocabulary that would sit in any decade: scamper, strutted their stuff, clawed
+back, breathing room, to avoid the shutout, put the game away.
 
 ## 6. What this means for the generator
 
