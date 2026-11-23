@@ -1,6 +1,6 @@
 # Prep Sports Journalism — Portable Agent Editorial Guide
 
-**Version 0.5 · November 22, 2026**  
+**Version 0.4 · November 22, 2026**  
 **Status:** Editorial reference and agent handoff; not wired into the simulator.  
 **Scope:** High-school, youth, college and fictional sport. Intended to travel to Viperball, hybrid-baseball/O27 and other projects.
 
